@@ -1,9 +1,11 @@
 'use strict';
 jest.mock('../../db', () => ({ withTransaction: jest.fn() }));
 const {
-  createClient, configuration, seedConfiguration, safeReturnPolicyRows, GOLDEN_PRODUCER_NAME,
+  createClient, configuration, seedConfiguration, safeReturnPolicyRows,
+  GOLDEN_PRODUCER_NAME, GOLDEN_RETURN_POLICY_NAME,
 } = require('../../services/suppliers/allegro-sandbox-client');
 const PRODUCER_ID = '44444444-4444-4444-8444-444444444444';
+const RETURN_POLICY_ID = '55555555-5555-4555-8555-555555555555';
 const env = () => ({ KOMERCE_ALLOW_ALLEGRO_SANDBOX: '1', ALLEGRO_SANDBOX_CLIENT_ID: 'app',
   ALLEGRO_SANDBOX_CLIENT_SECRET: 'secret', ALLEGRO_SANDBOX_USER_AGENT: 'KomerceTest/1',
   ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY: 'ab'.repeat(32), ALLEGRO_SANDBOX_REFRESH_TOKEN: 'bootstrap' });
@@ -272,40 +274,73 @@ test('Golden responsible producer is reused exactly or created once with TEST ON
     producerData: { tradeName: 'Komerce Golden Sandbox Manufacturer' } });
 });
 
-test('seller publication activation is sandbox-only, explicit ACTIVATE and asynchronously inspectable', async () => {
+test('Golden return policy is reused exactly or created once with publishable TEST ONLY data', async () => {
   const s = setup();
   s.runtime.KOMERCE_ENV = 'staging';
   s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
-  const commandId = '123e4567-e89b-42d3-a456-426614174000';
   s.fetchImpl.mockImplementation(async (url, init) => {
     if (url.includes('/auth/')) return ok(token());
-    if (url.includes(`/sale/offer-publication-commands/${commandId}/tasks`)) {
-      return ok({ tasks: [{ offer: { id: '987654321' }, status: 'SUCCESS', errors: [] }] });
-    }
-    if (url.endsWith(`/sale/offer-publication-commands/${commandId}`) && init.method === 'PUT') {
-      return ok({ id: commandId, completedAt: null, taskCount: { total: 0, success: 0, failed: 0 } });
+    if (url.includes('/return-policies') && init.method === 'GET') return ok({ returnPolicies: [{
+      id: RETURN_POLICY_ID, name: GOLDEN_RETURN_POLICY_NAME, isFulfillment: false,
+      availability: { range: 'FULL' }, withdrawalPeriod: 'P14D',
+    }] });
+    return ok({});
+  });
+  await expect(s.client.ensureGoldenReturnPolicy()).resolves.toEqual({ id: RETURN_POLICY_ID, created: false });
+
+  const fresh = setup();
+  fresh.runtime.KOMERCE_ENV = 'staging';
+  fresh.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  fresh.fetchImpl.mockImplementation(async (url, init) => {
+    if (url.includes('/auth/')) return ok(token());
+    if (url.includes('/return-policies') && init.method === 'GET') return ok({ returnPolicies: [] });
+    if (url.includes('/return-policies') && init.method === 'POST') return ok({ id: RETURN_POLICY_ID });
+    return ok({});
+  });
+  await expect(fresh.client.ensureGoldenReturnPolicy()).resolves.toEqual({ id: RETURN_POLICY_ID, created: true });
+  const createCall = fresh.fetchImpl.mock.calls.find(([url, init]) => url.includes('/return-policies') && init.method === 'POST');
+  expect(JSON.parse(createCall[1].body)).toMatchObject({
+    name: GOLDEN_RETURN_POLICY_NAME, isFulfillment: false,
+    availability: { range: 'FULL' }, withdrawalPeriod: 'P14D',
+    returnCost: { coveredBy: 'BUYER' },
+  });
+});
+
+test('Golden return policy fails closed on an incompatible namesake', async () => {
+  const s = setup();
+  s.runtime.KOMERCE_ENV = 'staging';
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  s.fetchImpl.mockImplementation(async (url, init) => {
+    if (url.includes('/auth/')) return ok(token());
+    if (url.includes('/return-policies') && init.method === 'GET') return ok({ returnPolicies: [{
+      id: RETURN_POLICY_ID, name: GOLDEN_RETURN_POLICY_NAME, isFulfillment: true,
+      availability: { range: 'FULL' }, withdrawalPeriod: 'P14D',
+    }] });
+    return ok({});
+  });
+  await expect(s.client.ensureGoldenReturnPolicy()).rejects.toThrow('GOLDEN_RETURN_POLICY_INVALID');
+});
+
+test('seller publication activation is sandbox-only and patches the exact offer ACTIVE', async () => {
+  const s = setup();
+  s.runtime.KOMERCE_ENV = 'staging';
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  s.fetchImpl.mockImplementation(async (url, init) => {
+    if (url.includes('/auth/')) return ok(token());
+    if (url.endsWith('/sale/product-offers/987654321') && init.method === 'PATCH') {
+      return ok({ id: '987654321', publication: { status: 'ACTIVATING' } });
     }
     return ok({});
   });
 
-  const activated = await s.client.activateOffer('987654321', { commandId });
-  expect(activated).toMatchObject({ offer_id: '987654321', command_id: commandId,
-    provider: { id: commandId, completedAt: null } });
-  const putCall = s.fetchImpl.mock.calls.find(([url, init]) => url.endsWith(`/sale/offer-publication-commands/${commandId}`) && init.method === 'PUT');
-  expect(putCall).toBeTruthy();
-  expect(new URL(putCall[0]).hostname).toBe('api.allegro.pl.allegrosandbox.pl');
-  expect(putCall[1].headers['Content-Type']).toBe('application/vnd.allegro.public.v1+json');
-  expect(JSON.parse(putCall[1].body)).toEqual({
-    offerCriteria: [{ offers: [{ id: '987654321' }], type: 'CONTAINS_OFFERS' }],
-    publication: { action: 'ACTIVATE' },
-  });
-
-  const tasks = await s.client.getPublicationTasks(commandId, { limit: 1, offset: 0 });
-  expect(tasks.tasks[0]).toMatchObject({ offer: { id: '987654321' }, status: 'SUCCESS' });
-  const taskCall = s.fetchImpl.mock.calls.find(([url, init]) => url.includes(`/sale/offer-publication-commands/${commandId}/tasks`) && init.method === 'GET');
-  const taskUrl = new URL(taskCall[0]);
-  expect(taskUrl.searchParams.get('limit')).toBe('1');
-  expect(taskUrl.searchParams.get('offset')).toBe('0');
+  const activated = await s.client.activateOffer('987654321');
+  expect(activated).toMatchObject({ offer_id: '987654321', command_id: null,
+    provider: { id: '987654321', publication: { status: 'ACTIVATING' } } });
+  const patchCall = s.fetchImpl.mock.calls.find(([url, init]) => url.endsWith('/sale/product-offers/987654321') && init.method === 'PATCH');
+  expect(patchCall).toBeTruthy();
+  expect(new URL(patchCall[0]).hostname).toBe('api.allegro.pl.allegrosandbox.pl');
+  expect(patchCall[1].headers['Content-Type']).toBe('application/vnd.allegro.public.v1+json');
+  expect(JSON.parse(patchCall[1].body)).toEqual({ publication: { status: 'ACTIVE' } });
 });
 
 test('seller publication mutation validates exact offer, UUID and page before provider side effects', async () => {
@@ -313,16 +348,15 @@ test('seller publication mutation validates exact offer, UUID and page before pr
   s.runtime.KOMERCE_ENV = 'staging';
   s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
   const commandId = '123e4567-e89b-42d3-a456-426614174000';
-  await expect(s.client.activateOffer('../bad', { commandId })).rejects.toThrow('PUBLICATION_OFFER_ID_INVALID');
-  await expect(s.client.activateOffer('123', { commandId: 'not-a-uuid' })).rejects.toThrow('PUBLICATION_COMMAND_ID_INVALID');
+  await expect(s.client.activateOffer('../bad')).rejects.toThrow('PUBLICATION_OFFER_ID_INVALID');
   await expect(s.client.getPublicationTasks('not-a-uuid')).rejects.toThrow('PUBLICATION_COMMAND_ID_INVALID');
   await expect(s.client.getPublicationTasks(commandId, { limit: 1001 })).rejects.toThrow('PUBLICATION_TASK_PAGE_INVALID');
   expect(s.fetchImpl).not.toHaveBeenCalled();
 
   s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '0';
-  await expect(s.client.activateOffer('123', { commandId })).rejects.toThrow('SEED_DISABLED');
+  await expect(s.client.activateOffer('123')).rejects.toThrow('SEED_DISABLED');
   s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
   s.runtime.KOMERCE_ENV = 'production';
-  await expect(s.client.activateOffer('123', { commandId })).rejects.toThrow('STAGING_ONLY');
+  await expect(s.client.activateOffer('123')).rejects.toThrow('STAGING_ONLY');
   expect(s.fetchImpl).not.toHaveBeenCalled();
 });

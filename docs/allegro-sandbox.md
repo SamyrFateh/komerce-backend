@@ -17,13 +17,14 @@ but does **not** expose a buyer checkout-creation endpoint that Komerce can use 
 
 Official contracts: [OpenAPI](https://developer.allegro.pl/swagger.yaml),
 [API documentation](https://developer.allegro.pl/documentation).
+The cross-marketplace lessons learned from this first transactional boundary
+are recorded in `docs/ALLEGRO_REX_MARKETPLACE_TRANSACTION_CONTRACT.md`.
 Resources used by Komerce are deliberately bounded:
 
 - `GET /sale/offers`;
 - `GET /sale/product-offers/{offerId}`;
 - guarded staging seed: product search + seller draft creation;
-- guarded staging publication: `PUT /sale/offer-publication-commands/{commandId}` with hard-coded `ACTIVATE` for explicit offer IDs;
-- publication proof: `GET /sale/offer-publication-commands/{commandId}/tasks`;
+- guarded staging publication of one exact offer: `PATCH /sale/product-offers/{offerId}` with hard-coded `publication.status=ACTIVE`;
 - purchase reconciliation: `GET /order/checkout-forms/{checkoutFormId}`;
 - OAuth `POST /auth/oauth/token` with `grant_type=refresh_token`.
 
@@ -107,14 +108,16 @@ customer-purchasable offer and does not auto-publish anything.
 `--golden` is the one-command composition of one publishability-first seed,
 seller settings preparation, observed Allegro activation and bounded refinery
 import. Any missing prerequisite stops the flow before activation and import.
-Seller preparation selects a physical shipping rate and only a non-Fulfillment,
-fully available `P14D` return policy; it fails closed instead of attaching the
-first policy returned by the account.
+Seller preparation must select a seller-managed physical shipping rate that is
+explicitly compatible with the non-Fulfillment profile; `PHYSICAL` alone is not
+sufficient evidence. It also selects only a non-Fulfillment, fully available
+`P14D` return policy. The policy named `KOMERCE GOLDEN TEST ONLY`
+is reused by exact name or created once from the guarded staging runner; an
+existing namesake with incompatible semantics fails closed.
 When a Golden setup deliberately needs a controlled seller offer, the same
-staging-only seed gate exposes an explicit operator action that sends Allegro's
-asynchronous publication command with hard-coded `ACTIVATE` for the exact offer
-ID. The command must then be verified through its task report and the offer must
-be re-read as `ACTIVE` before Komerce imports it. This seller-side activation is
+staging-only seed gate exposes an explicit operator action that requests
+`publication.status=ACTIVE` for the exact offer ID. The offer must then be
+re-read as `ACTIVE` before Komerce imports it. This seller-side activation is
 setup for the sandbox proof; it is not catalog publication inside Komerce and it
 does not open auto-order.
 

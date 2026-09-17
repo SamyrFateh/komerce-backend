@@ -6,6 +6,7 @@ const dispatch = require('../../services/sourcing-import-dispatch');
 const connector = require('../../services/suppliers/connectors/allegro-connector');
 const client = require('../../services/suppliers/allegro-sandbox-client');
 const PRODUCER_ID = '44444444-4444-4444-8444-444444444444';
+const RETURN_POLICY_ID = '22222222-2222-4222-8222-222222222222';
 
 function deps() {
   return {
@@ -61,6 +62,7 @@ test('seller preparation binds existing settings and skips already active offers
       .mockResolvedValueOnce({ publication: { status: 'ACTIVE' } }),
     completeSeedOffer: jest.fn().mockResolvedValue({ offer_id: '123', delivery_bound: true }),
     ensureGoldenResponsibleProducer: jest.fn().mockResolvedValue({ id: PRODUCER_ID, created: false }),
+    ensureGoldenReturnPolicy: jest.fn().mockResolvedValue({ id: 'ret', created: false }),
   };
   const proof = await prepareOfferIds(['123', '456'], api);
   expect(api.completeSeedOffer).toHaveBeenCalledWith('123', {
@@ -77,7 +79,7 @@ test('explicit activation waits for observed ACTIVE seller state before canonica
       .mockResolvedValueOnce({ publication: { status: 'INACTIVE' } })
       .mockResolvedValueOnce({ publication: { status: 'ACTIVE' } }),
     activateOffer: jest.fn().mockResolvedValue({
-      offer_id: '123', command_id: '123e4567-e89b-42d3-a456-426614174000',
+      offer_id: '123', command_id: null,
     }),
     getPublicationTasks: jest.fn().mockResolvedValue({
       tasks: [{ offer: { id: '123' }, status: 'SUCCESS', errors: [] }],
@@ -90,11 +92,11 @@ test('explicit activation waits for observed ACTIVE seller state before canonica
     mode: 'activate', offer_ids: ['123'],
     activations: [{
       offer_id: '123', publication_status: 'ACTIVE', already_active: false,
-      tasks: [{ offer_id: '123', status: 'SUCCESS', error_codes: [] }],
+      tasks: [],
     }],
   });
   expect(api.activateOffer).toHaveBeenCalledWith('123');
-  expect(api.getPublicationTasks).toHaveBeenCalledWith('123e4567-e89b-42d3-a456-426614174000');
+  expect(api.getPublicationTasks).not.toHaveBeenCalled();
   expect(d.fetchProducts).toHaveBeenCalledWith({ productIds: ['123'] });
 });
 
@@ -125,8 +127,9 @@ test('one-command Golden reuses seed, prepares seller prerequisites, activates a
       offer_id: '123', delivery_bound: true, return_policy_bound: true, implied_warranty_bound: true,
     }),
     ensureGoldenResponsibleProducer: jest.fn().mockResolvedValue({ id: PRODUCER_ID, created: false }),
+    ensureGoldenReturnPolicy: jest.fn().mockResolvedValue({ id: RETURN_POLICY_ID, created: false }),
     activateOffer: jest.fn().mockResolvedValue({
-      offer_id: '123', command_id: '123e4567-e89b-42d3-a456-426614174000',
+      offer_id: '123', command_id: null,
     }),
     getPublicationTasks: jest.fn().mockResolvedValue({
       tasks: [{ offer: { id: '123' }, status: 'SUCCESS', errors: [] }],
@@ -143,6 +146,7 @@ test('one-command Golden reuses seed, prepares seller prerequisites, activates a
   });
   expect(api.completeSeedOffer).toHaveBeenCalledTimes(1);
   expect(api.activateOffer).toHaveBeenCalledTimes(1);
+  expect(api.getPublicationTasks).not.toHaveBeenCalled();
   expect(d.fetchProducts).toHaveBeenCalledWith({ productIds: ['123'] });
   expect(d.importCatalog).toHaveBeenCalledTimes(1);
 });
@@ -155,6 +159,7 @@ test('Golden stops before activation and import when seller prerequisites are ab
     getSellerSettings: jest.fn().mockResolvedValue({ shipping_rates: [], return_policies: [], implied_warranties: [] }),
     completeSeedOffer: jest.fn(),
     ensureGoldenResponsibleProducer: jest.fn(),
+    ensureGoldenReturnPolicy: jest.fn().mockResolvedValue({ id: RETURN_POLICY_ID, created: false }),
     activateOffer: jest.fn(),
   };
   await expect(run(['--golden'], { ...d, client: api, env: {} }))

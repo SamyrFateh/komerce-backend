@@ -24,10 +24,27 @@ const AAD = Buffer.from('komerce:supplier-oauth:allegro_sandbox:refresh');
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SAFE_PROVIDER_TOKEN_RE = /^[A-Za-z0-9_.\[\]-]{1,120}$/;
 const GOLDEN_PRODUCER_NAME = 'KOMERCE GOLDEN TEST ONLY';
+const GOLDEN_RETURN_POLICY_NAME = 'KOMERCE GOLDEN TEST ONLY';
 const GOLDEN_PRODUCER_DATA = Object.freeze({
   tradeName: 'Komerce Golden Sandbox Manufacturer',
   address: Object.freeze({ countryCode: 'PL', street: 'Testowa 1', postalCode: '00-001', city: 'Warszawa' }),
   contact: Object.freeze({ email: 'sandbox-golden@komerce.co' }),
+});
+const GOLDEN_RETURN_POLICY = Object.freeze({
+  name: GOLDEN_RETURN_POLICY_NAME,
+  isFulfillment: false,
+  availability: Object.freeze({ range: 'FULL' }),
+  withdrawalPeriod: 'P14D',
+  returnCost: Object.freeze({ coveredBy: 'BUYER' }),
+  address: Object.freeze({ name: 'Komerce Golden Sandbox', street: 'Testowa 1', postCode: '00-001', city: 'Warszawa', countryCode: 'PL' }),
+  contact: Object.freeze({ email: 'sandbox-golden@komerce.co', phoneNumber: null }),
+  options: Object.freeze({
+    cashOnDeliveryNotAllowed: true,
+    refundLoweredByReceivedDiscount: true,
+    businessReturnAllowed: false,
+    collectBySellerOnly: false,
+    freeAccessoriesReturnRequired: true,
+  }),
 });
 
 function configuration(env) {
@@ -284,6 +301,30 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     return { id: sellerSettingId(created?.id, 'GOLDEN_PRODUCER'), created: true };
   }
 
+  async function ensureGoldenReturnPolicy() {
+    const c = seedConfiguration(env);
+    const listUrl = new URL('/after-sales-service-conditions/return-policies', API);
+    listUrl.search = new URLSearchParams({ limit: '60', offset: '0' }).toString();
+    const listed = await authorizedJson(c, listUrl, { method: 'GET' });
+    const matches = (Array.isArray(listed?.returnPolicies) ? listed.returnPolicies : [])
+      .filter(row => row?.name === GOLDEN_RETURN_POLICY_NAME && UUID_RE.test(String(row?.id || '').toLowerCase()));
+    if (matches.length > 1) throw new Error('ALLEGRO_SANDBOX_GOLDEN_RETURN_POLICY_AMBIGUOUS');
+    if (matches.length === 1) {
+      const [policy] = matches;
+      if (policy?.isFulfillment !== false || policy?.availability?.range !== 'FULL'
+        || policy?.withdrawalPeriod !== 'P14D') {
+        throw new Error('ALLEGRO_SANDBOX_GOLDEN_RETURN_POLICY_INVALID');
+      }
+      return { id: String(policy.id).toLowerCase(), created: false };
+    }
+    const created = await authorizedJson(c, listUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/vnd.allegro.public.v1+json' },
+      body: JSON.stringify(GOLDEN_RETURN_POLICY),
+    });
+    return { id: sellerSettingId(created?.id, 'GOLDEN_RETURN_POLICY'), created: true };
+  }
+
   async function createDraftOffer({ productId, name, externalId, pricePln, stock = 10, responsibleProducerId }) {
     const c = seedConfiguration(env);
     const id = String(productId || '').trim();
@@ -367,21 +408,17 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     };
   }
 
-  async function activateOffer(offerId, { commandId = crypto.randomUUID() } = {}) {
+  async function activateOffer(offerId) {
     const c = seedConfiguration(env);
     const id = publicationOfferId(offerId);
-    const command = publicationCommandId(commandId);
-    const url = new URL(`/sale/offer-publication-commands/${command}`, API);
-    const payload = {
-      offerCriteria: [{ offers: [{ id }], type: 'CONTAINS_OFFERS' }],
-      publication: { action: 'ACTIVATE' },
-    };
+    const url = new URL(`/sale/product-offers/${id}`, API);
+    const payload = { publication: { status: 'ACTIVE' } };
     const provider = await authorizedJson(c, url, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/vnd.allegro.public.v1+json' },
       body: JSON.stringify(payload),
     });
-    return { offer_id: id, command_id: command, provider };
+    return { offer_id: id, command_id: null, provider };
   }
 
   async function getPublicationTasks(commandId, { limit = 100, offset = 0 } = {}) {
@@ -402,6 +439,7 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     searchProducts,
     inspectProductPublishability,
     ensureGoldenResponsibleProducer,
+    ensureGoldenReturnPolicy,
     createDraftOffer,
     getSellerSettings,
     completeSeedOffer,
@@ -418,12 +456,15 @@ module.exports = {
   safeSettingRows, safeReturnPolicyRows,
   requiredProductParameterIds,
   GOLDEN_PRODUCER_NAME,
+  GOLDEN_RETURN_POLICY_NAME,
+  GOLDEN_RETURN_POLICY,
   createClient,
   get: client.get,
   getSellerOrder: client.getSellerOrder,
   searchProducts: client.searchProducts,
   inspectProductPublishability: client.inspectProductPublishability,
   ensureGoldenResponsibleProducer: client.ensureGoldenResponsibleProducer,
+  ensureGoldenReturnPolicy: client.ensureGoldenReturnPolicy,
   createDraftOffer: client.createDraftOffer,
   getSellerSettings: client.getSellerSettings,
   completeSeedOffer: client.completeSeedOffer,

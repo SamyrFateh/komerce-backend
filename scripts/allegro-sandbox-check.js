@@ -119,8 +119,14 @@ function selectSellerSettings(settings) {
 }
 
 async function prepareOfferIds(ids, api = sandboxClient) {
-  const selected = selectSellerSettings(await api.getSellerSettings());
-  const producer = await api.ensureGoldenResponsibleProducer();
+  const [settings, producer, returnPolicy] = await Promise.all([
+    api.getSellerSettings(),
+    api.ensureGoldenResponsibleProducer(),
+    api.ensureGoldenReturnPolicy(),
+  ]);
+  const selected = selectSellerSettings({ ...settings, return_policies: [{
+    id: returnPolicy.id, is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D',
+  }] });
   const offers = [];
   for (const rawId of ids) {
     const id = connector.offerId(rawId);
@@ -137,7 +143,7 @@ async function prepareOfferIds(ids, api = sandboxClient) {
       responsibleProducerId: producer.id,
     }));
   }
-  return { selected, responsible_producer_id: producer.id, offers };
+  return { selected, responsible_producer_id: producer.id, return_policy_created: returnPolicy.created, offers };
 }
 
 function sanitizedPublicationTasks(payload) {
@@ -176,8 +182,9 @@ async function activateOfferIds(ids, api = sandboxClient, {
       if (publicationStatus === 'ACTIVE') break;
     }
 
-    const taskPayload = await api.getPublicationTasks(command.command_id);
-    const tasks = sanitizedPublicationTasks(taskPayload);
+    const tasks = command.command_id
+      ? sanitizedPublicationTasks(await api.getPublicationTasks(command.command_id))
+      : [];
     if (publicationStatus !== 'ACTIVE') {
       const taskStatus = tasks.map(task => task.status).filter(Boolean).join('_') || 'NO_TASK_STATUS';
       const errorCodes = [...new Set(tasks.flatMap(task => task.error_codes))].slice(0, 10);
