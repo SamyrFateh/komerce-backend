@@ -119,8 +119,14 @@ function selectSellerSettings(settings) {
 }
 
 async function prepareOfferIds(ids, api = sandboxClient) {
-  const selected = selectSellerSettings(await api.getSellerSettings());
-  const producer = await api.ensureGoldenResponsibleProducer();
+  const [settings, producer, returnPolicy] = await Promise.all([
+    api.getSellerSettings(),
+    api.ensureGoldenResponsibleProducer(),
+    api.ensureGoldenReturnPolicy(),
+  ]);
+  const selected = selectSellerSettings({ ...settings, return_policies: [{
+    id: returnPolicy.id, is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D',
+  }] });
   const offers = [];
   for (const rawId of ids) {
     const id = connector.offerId(rawId);
@@ -137,7 +143,7 @@ async function prepareOfferIds(ids, api = sandboxClient) {
       responsibleProducerId: producer.id,
     }));
   }
-  return { selected, responsible_producer_id: producer.id, offers };
+  return { selected, responsible_producer_id: producer.id, return_policy_created: returnPolicy.created, offers };
 }
 
 function sanitizedPublicationTasks(payload) {
