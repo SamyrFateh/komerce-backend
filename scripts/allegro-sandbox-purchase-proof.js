@@ -4,8 +4,8 @@
  * @domain        purchasing
  * @layer         script
  * @criticality   high
- * @inputs        purchase_order_id, Allegro checkoutForm id
- * @outputs       verified supplier purchase reconciliation and PO confirmation
+ * @inputs        purchase_order_id, optional Allegro checkoutForm id
+ * @outputs       discovered/verified supplier purchase reconciliation and PO confirmation
  * @depends       db.js, services/suppliers/allegro-purchase-reconciliation.js, services/purchasing-admin-service.js
  * @used-by       operator CLI / Golden E2E
  * @db-read       purchase_orders
@@ -31,7 +31,8 @@ function purchaseOrderId(value) {
 async function loadPurchaseOrder(dbImpl, id) {
   const { rows: [po] } = await dbImpl.query(`
     SELECT id, order_id, status, supplier_order_id, supplier_sku,
-           supplier_unit_ref, supplier_order_identity, qty, product_sku_id
+           supplier_unit_ref, supplier_order_identity, qty, product_sku_id,
+           supplier_unit_price, supplier_currency, created_at
       FROM purchase_orders
      WHERE id = $1
   `, [id]);
@@ -44,17 +45,32 @@ async function loadPurchaseOrder(dbImpl, id) {
 
 async function run(argv, {
   dbImpl = db,
+  discover = reconciliation.discoverCheckoutForm,
   reconcile = reconciliation.reconcile,
   confirm = confirmPurchaseOrder,
 } = {}) {
-  if (!Array.isArray(argv) || argv.length !== 2) {
-    throw new Error('Usage: node scripts/allegro-sandbox-purchase-proof.js PURCHASE_ORDER_ID CHECKOUT_FORM_ID');
+  if (!Array.isArray(argv) || argv.length < 1 || argv.length > 2) {
+    throw new Error('Usage: node scripts/allegro-sandbox-purchase-proof.js PURCHASE_ORDER_ID [CHECKOUT_FORM_ID]');
   }
   const poId = purchaseOrderId(argv[0]);
-  const checkoutFormId = String(argv[1] || '').trim().toLowerCase();
   const po = await loadPurchaseOrder(dbImpl, poId);
   if (!['pending', 'notified', 'confirmed'].includes(po.status)) {
     throw new Error(`PURCHASE_ORDER_STATUS_NOT_RECONCILABLE:${po.status}`);
+  }
+
+  let checkoutFormId = String(argv[1] || po.supplier_order_id || '').trim().toLowerCase();
+  let discovery = null;
+  if (!checkoutFormId) {
+    discovery = await discover({
+      identity: po.supplier_order_identity,
+      supplierUnitRef: po.supplier_unit_ref,
+      supplierSku: po.supplier_sku,
+      quantity: po.qty,
+      expectedUnitPrice: po.supplier_unit_price,
+      expectedCurrency: po.supplier_currency,
+      boughtAtGte: po.created_at,
+    });
+    checkoutFormId = discovery.checkoutFormId;
   }
 
   const proof = await reconcile({
@@ -74,6 +90,7 @@ async function run(argv, {
       order_id: po.order_id,
       purchase_confirmed: true,
       already_confirmed: true,
+      discovered_checkout_form: Boolean(discovery),
       proof,
     };
   }
@@ -86,6 +103,7 @@ async function run(argv, {
     order_id: po.order_id,
     purchase_confirmed: true,
     already_confirmed: false,
+    discovered_checkout_form: Boolean(discovery),
     purchase_order_status: confirmed?.purchase_order?.status || 'confirmed',
     proof,
   };
