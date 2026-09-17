@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        Allegro Sandbox seller settings and shipping detail reads
  * @outputs       P0-P3 provider contract proof and exact offer prerequisite bundle
- * @depends       services/suppliers/allegro-sandbox-client.js, services/suppliers/allegro-offer-prerequisites.js, scripts/provider-contract-proof.js
+ * @depends       services/suppliers/allegro-sandbox-client.js, services/suppliers/allegro-shipping-capability-adapter.js, scripts/provider-contract-proof.js
  * @used-by       operator CLI, Allegro Golden prerequisite proof
  * @db-read       supplier_oauth_connections
  * @db-write      supplier_oauth_connections; OAuth refresh rotation only
@@ -17,8 +17,53 @@
 'use strict';
 
 const client = require('../services/suppliers/allegro-sandbox-client');
-const { resolveOfferPrerequisites } = require('../services/suppliers/allegro-offer-prerequisites');
+const { adaptShippingRate } = require('../services/suppliers/allegro-shipping-capability-adapter');
 const { buildProof, assertThrough, summary } = require('./provider-contract-proof');
+
+function candidateShippingRateRefs(settings) {
+  return (Array.isArray(settings?.shipping_rates) ? settings.shipping_rates : [])
+    .filter(row => row?.id && row?.managed_by_allegro === false && row?.is_fulfillment === false)
+    .map(row => String(row.id));
+}
+
+function eligibleReturnPolicy(settings) {
+  return (Array.isArray(settings?.return_policies) ? settings.return_policies : [])
+    .find(row => row?.id && row?.is_fulfillment === false
+      && row?.availability_range === 'FULL' && row?.withdrawal_period === 'P14D') || null;
+}
+
+function impliedWarranty(settings) {
+  return (Array.isArray(settings?.implied_warranties) ? settings.implied_warranties : [])
+    .find(row => row?.id) || null;
+}
+
+async function resolveOfferPrerequisites(settings, api) {
+  if (!api || typeof api.getShippingRateDetail !== 'function') {
+    throw new Error('ALLEGRO_OFFER_PREREQUISITES_DETAIL_READER_REQUIRED');
+  }
+
+  const capabilities = [];
+  for (const ref of candidateShippingRateRefs(settings)) {
+    capabilities.push(adaptShippingRate(await api.getShippingRateDetail(ref)));
+  }
+  const bindable = capabilities.filter(capability => capability.bindable_to_standard_offer === true);
+  if (bindable.length > 1) throw new Error('ALLEGRO_OFFER_PREREQUISITES_SHIPPING_AMBIGUOUS');
+
+  const shippingCapability = bindable[0] || null;
+  const returns = eligibleReturnPolicy(settings);
+  const implied = impliedWarranty(settings);
+  const missing = [];
+  if (!shippingCapability) missing.push('SHIPPING_CAPABILITY');
+  if (!returns?.id) missing.push('RETURN_POLICY');
+  if (!implied?.id) missing.push('IMPLIED_WARRANTY');
+  if (missing.length) throw new Error(`ALLEGRO_OFFER_PREREQUISITES_MISSING_${missing.join('_')}`);
+
+  return Object.freeze({
+    shipping_capability: shippingCapability,
+    return_policy_ref: String(returns.id),
+    implied_warranty_ref: String(implied.id),
+  });
+}
 
 async function proveOfferPrerequisites(api = client) {
   const settings = await api.getSellerSettings();
@@ -75,4 +120,11 @@ if (require.main === module) {
     .finally(async () => { await require('../db').pool.end(); process.exit(process.exitCode || 0); });
 }
 
-module.exports = { proveOfferPrerequisites, run };
+module.exports = {
+  candidateShippingRateRefs,
+  eligibleReturnPolicy,
+  impliedWarranty,
+  resolveOfferPrerequisites,
+  proveOfferPrerequisites,
+  run,
+};
