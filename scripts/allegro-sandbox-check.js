@@ -102,7 +102,9 @@ function selectSellerSettings(settings) {
   const returnRows = Array.isArray(settings?.return_policies) ? settings.return_policies : [];
   const impliedRows = Array.isArray(settings?.implied_warranties) ? settings.implied_warranties : [];
   const shipping = shippingRows.find(row => row?.type === 'PHYSICAL') || shippingRows[0];
-  const returns = returnRows[0];
+  const returns = returnRows.find(row => row?.is_fulfillment === false
+    && row?.availability_range === 'FULL'
+    && row?.withdrawal_period === 'P14D');
   const implied = impliedRows[0];
   const missing = [];
   if (!shipping?.id) missing.push('SHIPPING_RATE');
