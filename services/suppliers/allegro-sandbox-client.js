@@ -408,21 +408,17 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
     };
   }
 
-  async function activateOffer(offerId, { commandId = crypto.randomUUID() } = {}) {
+  async function activateOffer(offerId) {
     const c = seedConfiguration(env);
     const id = publicationOfferId(offerId);
-    const command = publicationCommandId(commandId);
-    const url = new URL(`/sale/offer-publication-commands/${command}`, API);
-    const payload = {
-      offerCriteria: [{ offers: [{ id }], type: 'CONTAINS_OFFERS' }],
-      publication: { action: 'ACTIVATE' },
-    };
+    const url = new URL(`/sale/product-offers/${id}`, API);
+    const payload = { publication: { status: 'ACTIVE' } };
     const provider = await authorizedJson(c, url, {
-      method: 'PUT',
+      method: 'PATCH',
       headers: { 'Content-Type': 'application/vnd.allegro.public.v1+json' },
       body: JSON.stringify(payload),
     });
-    return { offer_id: id, command_id: command, provider };
+    return { offer_id: id, command_id: null, provider };
   }
 
   async function getPublicationTasks(commandId, { limit = 100, offset = 0 } = {}) {
