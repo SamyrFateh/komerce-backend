@@ -121,7 +121,9 @@ function buildSellerContractProof(settings) {
   const implied = impliedRows[0];
   const shippingFeaturesObserved = shippingRows.every(row => typeof row?.managed_by_allegro === 'boolean'
     && typeof row?.is_fulfillment === 'boolean');
-  const shippingTypeObserved = shippingRows.length === 0 || shippingRows.every(row => row?.type === 'PHYSICAL' || row?.type === 'ELECTRONIC');
+  const shippingCandidates = shippingRows.filter(row => row?.managed_by_allegro === false
+    && row?.is_fulfillment === false);
+  const shippingTypeObserved = shippingCandidates.every(row => row?.type === 'PHYSICAL' || row?.type === 'ELECTRONIC');
 
   return buildProof({
     provider: 'ALLEGRO',
@@ -147,7 +149,7 @@ function buildSellerContractProof(settings) {
         ],
         CONFIRMS: [
           { id: 'SHIPPING_OWNERSHIP_AND_FULFILLMENT', state: shippingFeaturesObserved ? 'KNOWN' : 'UNKNOWN', evidence: `${shippingRows.length}_RATES_SANITIZED` },
-          { id: 'SHIPPING_TYPE', state: shippingTypeObserved ? 'KNOWN' : 'UNKNOWN', evidence: shippingTypeObserved ? `${shippingRows.length}_RATE_TYPES_OBSERVED` : 'DETAIL_READ_REQUIRED' },
+          { id: 'SHIPPING_TYPE', state: shippingTypeObserved ? 'KNOWN' : 'UNKNOWN', evidence: shippingTypeObserved ? `${shippingCandidates.length}_CANDIDATE_TYPES_OBSERVED` : 'CANDIDATE_DETAIL_READ_REQUIRED' },
           { id: 'RETURN_POLICY_SHAPE', state: 'KNOWN', evidence: `${returnRows.length}_POLICIES_SANITIZED` },
           { id: 'IMPLIED_WARRANTY_REFERENCE', state: 'KNOWN', evidence: `${impliedRows.length}_WARRANTIES_SANITIZED` },
         ],
