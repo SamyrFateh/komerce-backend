@@ -9,6 +9,9 @@
 jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 jest.mock('../../services/notification-service', () => ({ notifyText: jest.fn() }));
 jest.mock('../../utils/alerts', () => ({ createAlert: jest.fn().mockResolvedValue({ id: 'alert-1' }) }));
+jest.mock('../../services/purchasing-canonical-money', () => ({
+  resolveCanonicalSupplierMoney: jest.fn(),
+}));
 jest.mock('../../utils/logger', () => {
   const mk = () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() });
   return { child: mk, forModule: mk, info: jest.fn(), warn: jest.fn(), error: jest.fn() };
@@ -16,6 +19,7 @@ jest.mock('../../utils/logger', () => {
 
 const db = require('../../db');
 const { createAlert } = require('../../utils/alerts');
+const { resolveCanonicalSupplierMoney } = require('../../services/purchasing-canonical-money');
 const { triggerPurchasing } = require('../../services/purchasing-trigger-service');
 
 const ORDER = { id: 'order-1', reference: 'KOM-EXACT-1', relais_id: null, relais_name: null };
@@ -48,6 +52,13 @@ describe('purchasing exact SKU procurement', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     delete process.env.ADMIN_PHONE;
+    resolveCanonicalSupplierMoney.mockResolvedValue({
+      unit_price: 29.9,
+      currency: 'PLN',
+      canonical_unit_id: 'unit-1',
+      supplier_unit_ref: 'UNIT-BLACK-M',
+      supplier_order_identity: IDENTITY,
+    });
   });
 
   it('LOCAL_STOCK ne déclenche aucune recherche fournisseur ni PO', async () => {
@@ -64,11 +75,12 @@ describe('purchasing exact SKU procurement', () => {
     expect(result.purchase_orders).toEqual([{
       item: 'Produit local', status: 'local_stock_no_purchase', purchase_order_id: null,
     }]);
+    expect(resolveCanonicalSupplierMoney).not.toHaveBeenCalled();
     expect(client.calls.some(c => c.sql.includes('FROM product_suppliers'))).toBe(false);
     expect(client.calls.some(c => c.sql.includes('INSERT INTO purchase_orders'))).toBe(false);
   });
 
-  it('IMPORT + sku_id snapshotte exactement la Supplier Order Identity vendue', async () => {
+  it('IMPORT + sku_id snapshotte SOI exacte et monnaie fournisseur native', async () => {
     const item = {
       id: 'oi-import', product_id: 'p1', product_name: 'T-shirt', category: 'mode',
       quantity: 2, sku_id: 'sku-black-m', fulfillment_source: 'IMPORT', price_aed: 50,
@@ -83,7 +95,7 @@ describe('purchasing exact SKU procurement', () => {
       }] };
       if (sql.includes('FROM product_suppliers')) return { rows: [{
         id: 'ps1', supplier_id: 'sup1', supplier_sku: 'GENERIC-PRODUCT-SKU',
-        supplier_price_aed: 30, supplier_name: 'AliExpress', platform: 'aliexpress',
+        supplier_price_aed: null, supplier_name: 'AliExpress', platform: 'aliexpress',
         auto_order: false, contact_phone: null, account_id: null, api_key_enc: null,
         api_secret_enc: null, lead_time_days: 5, supplier_url: null,
       }] };
@@ -99,7 +111,10 @@ describe('purchasing exact SKU procurement', () => {
 
     const result = await triggerPurchasing(ORDER.id);
 
-    expect(result.purchase_orders[0]).toMatchObject({ status: 'admin_notified', purchase_order_id: 'po1' });
+    expect(result.purchase_orders[0]).toMatchObject({
+      status: 'admin_notified', purchase_order_id: 'po1', supplier_unit_price: 29.9, supplier_currency: 'PLN',
+    });
+    expect(resolveCanonicalSupplierMoney).toHaveBeenCalledWith(client, expect.objectContaining({ id: 'sku-black-m' }));
     expect(client.calls.find(c => c.sql.includes('FROM product_suppliers')).sql).toContain('lower(s.platform) = lower($2)');
     expect(insertParams[0]).toBe(ORDER.id);
     expect(insertParams[1]).toBe('oi-import');
@@ -108,6 +123,10 @@ describe('purchasing exact SKU procurement', () => {
     expect(insertParams[6]).toBe('UNIT-BLACK-M');
     expect(JSON.parse(insertParams[7])).toEqual(IDENTITY);
     expect(insertParams[8]).toBe(2);
+    expect(insertParams[9]).toBeNull();
+    expect(insertParams[10]).toBe(29.9);
+    expect(insertParams[11]).toBe('PLN');
+    expect(insertParams[12]).toBe('manual');
   });
 
   it('IMPORT + sku_id sans SOI bloque avant le mapping fournisseur', async () => {
@@ -130,6 +149,7 @@ describe('purchasing exact SKU procurement', () => {
 
     expect(result.purchase_orders[0].status).toBe('error');
     expect(result.purchase_orders[0].error).toContain('BLOCKED_SUPPLIER_IDENTITY');
+    expect(resolveCanonicalSupplierMoney).not.toHaveBeenCalled();
     expect(client.calls.some(c => c.sql.includes('FROM product_suppliers'))).toBe(false);
     expect(createAlert).toHaveBeenCalledWith(client, expect.objectContaining({ type: 'purchasing_po_creation_failed' }));
   });
