@@ -7,8 +7,8 @@
  * @inputs        exact sold product_sku
  * @outputs       supplier native unit price + currency snapshot
  * @depends       services/sourcing-canonical-unit-product-sku-resolution.js, services/suppliers/supplier-order-identity.js
- * @used-by       services/purchasing-trigger-service.js
- * @db-read       delegated_to_sourcing_resolver
+ * @used-by       services/purchasing-trigger-service.js, routes/purchasing.js
+ * @db-read       product_skus, delegated_to_sourcing_resolver
  * @db-write      none
  * @db-txn        participates_in_caller_transaction
  * @doctrine      docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md
@@ -83,4 +83,29 @@ async function resolveCanonicalSupplierMoney(client, exactSku) {
   };
 }
 
-module.exports = { normalizeCurrency, resolveCanonicalSupplierMoney };
+async function resolveCanonicalMappingMoney(client, productId, supplierSku) {
+  const productIdValue = String(productId || '').trim();
+  const supplierSkuValue = String(supplierSku || '').trim();
+  if (!productIdValue || !supplierSkuValue) return null;
+
+  const result = await client.query(`
+    SELECT id, product_id, supplier_sku, supplier_unit_ref, supplier_order_identity
+    FROM product_skus
+    WHERE product_id = $1 AND supplier_sku = $2
+    ORDER BY created_at ASC
+    LIMIT 2
+  `, [productIdValue, supplierSkuValue]);
+  const rows = result?.rows || [];
+  if (rows.length === 0) return null;
+  if (rows.length > 1) {
+    throw blockedSupplierIdentity('plusieurs product_skus correspondent au mapping fournisseur', {
+      product_id: productIdValue,
+      supplier_sku: supplierSkuValue,
+      matches: rows.length,
+    });
+  }
+
+  return resolveCanonicalSupplierMoney(client, rows[0]);
+}
+
+module.exports = { normalizeCurrency, resolveCanonicalSupplierMoney, resolveCanonicalMappingMoney };
