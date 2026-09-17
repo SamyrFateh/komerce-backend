@@ -94,7 +94,6 @@ function buildCreatePayload(method) {
 
 function buildShippingProof({ settings, details, deliveryMethods, confirmedRate = null, selectedMethod = null }) {
   const shippingRows = Array.isArray(settings?.shipping_rates) ? settings.shipping_rates : [];
-  const candidates = candidateSellerRates(settings);
   const detailRows = Array.isArray(details) ? details : [];
   const eligible = detailRows.find(row => shippingRateDecision(row) === 'ELIGIBLE') || null;
   const unknownCandidateDetails = detailRows.filter(row => shippingRateDecision(row) === 'UNKNOWN');
@@ -106,10 +105,11 @@ function buildShippingProof({ settings, details, deliveryMethods, confirmedRate 
   const existingOrConfirmed = eligible || confirmed;
 
   let createPayloadState = 'KNOWN';
-  let createPayloadEvidence = existingOrConfirmed ? 'NOT_REQUIRED' : 'NO_COMPATIBLE_METHOD';
+  let createPayloadEvidence = existingOrConfirmed ? 'NOT_REQUIRED_EXISTING_RATE' : 'NO_COMPATIBLE_METHOD';
   if (!existingOrConfirmed && (!allFlagsObserved || unknownCandidateDetails.length > 0)) {
-    createPayloadState = 'UNKNOWN';
-    createPayloadEvidence = 'EXISTING_RATE_DECISION_INCOMPLETE';
+    // Creating a new rate is not yet a decision-relevant action. First finish
+    // confirming whether an existing seller-owned rate already satisfies us.
+    createPayloadEvidence = 'NOT_REQUIRED_UNTIL_EXISTING_RATE_DECISION';
   } else if (!existingOrConfirmed && method) {
     createPayloadState = 'DERIVED';
     createPayloadEvidence = `DELIVERY_METHOD_${method.id}`;
@@ -141,9 +141,11 @@ function buildShippingProof({ settings, details, deliveryMethods, confirmedRate 
           { id: 'CREATE_PAYLOAD', state: createPayloadState, evidence: createPayloadEvidence },
         ],
         RECEIVES: [
-          { id: 'SHIPPING_RATE_LIST', state: allFlagsObserved ? 'KNOWN' : 'UNKNOWN', evidence: `${shippingRows.length}_RATES_OBSERVED` },
-          { id: 'CANDIDATE_DETAILS', state: unknownCandidateDetails.length ? 'UNKNOWN' : 'KNOWN', evidence: `${detailRows.length}_DETAILS_READ` },
-          { id: 'DELIVERY_METHODS', state: eligible ? 'KNOWN' : 'KNOWN', evidence: eligible ? 'NOT_REQUIRED' : `${methods.length}_METHODS_OBSERVED` },
+          // Receiving a response is distinct from being able to confirm the
+          // business decision from it. Missing decision fields are handled below.
+          { id: 'SHIPPING_RATE_LIST', state: 'KNOWN', evidence: `${shippingRows.length}_RATES_OBSERVED` },
+          { id: 'CANDIDATE_DETAILS', state: 'KNOWN', evidence: `${detailRows.length}_DETAILS_READ` },
+          { id: 'DELIVERY_METHODS', state: 'KNOWN', evidence: eligible ? 'NOT_REQUIRED' : `${methods.length}_METHODS_OBSERVED` },
         ],
         CONFIRMS: [
           { id: 'EXISTING_RATE_DECISION', state: (!allFlagsObserved || unknownCandidateDetails.length) && !eligible ? 'UNKNOWN' : 'KNOWN', evidence: eligible?.id || 'NONE_ELIGIBLE_OBSERVED' },
