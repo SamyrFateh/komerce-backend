@@ -59,7 +59,7 @@ test('delivery method sanitizer exposes constraints, not provider labels', () =>
       maxPackageWeight: { supported: true, min: '5.000', max: '700.000', unit: 'KILOGRAM' },
       firstItemRate: { min: '0.00', max: '14.99', currency: 'PLN' },
       nextItemRate: { min: '0.00', max: '0.00', currency: 'PLN' },
-      shippingTime: { default: { from: 'PT24H', to: 'PT24H' }, customizable: false },
+      shippingTime: { default: { from: 'PT24H', to: 'PT72H' }, customizable: false },
     },
   }]);
 
@@ -72,11 +72,40 @@ test('delivery method sanitizer exposes constraints, not provider labels', () =>
       allowed: true,
       max_quantity_per_package_max: 999999,
       first_item_rate: { min: '0.00', max: '14.99', currency: 'PLN' },
-      shipping_time: { default: { from: 'PT24H', to: 'PT24H' }, customizable: false },
+      shipping_time: { default: { from: 'PT24H', to: 'PT72H' }, customizable: false },
     },
   });
   expect(JSON.stringify(rows)).not.toContain('Allegro Courier Provider Label');
   expect(JSON.stringify(rows)).not.toContain('nextItemRate');
+});
+
+test('guarded Golden create payload allows provider-owned shipping time to be omitted', () => {
+  const base = {
+    name: GOLDEN_SHIPPING_RATE_NAME,
+    type: 'PHYSICAL',
+    dispatchCountry: 'PL',
+    rates: [{
+      deliveryMethod: { id: METHOD_ID },
+      maxQuantityPerPackage: 1,
+      firstItemRate: { amount: '0.00', currency: 'PLN' },
+    }],
+  };
+  expect(goldenShippingRatePayload(base)).toEqual(base);
+});
+
+test('guarded Golden create payload accepts shippingTime only when caller explicitly supplies valid bounds', () => {
+  const base = {
+    name: GOLDEN_SHIPPING_RATE_NAME,
+    type: 'PHYSICAL',
+    dispatchCountry: 'PL',
+    rates: [{
+      deliveryMethod: { id: METHOD_ID },
+      maxQuantityPerPackage: 1,
+      firstItemRate: { amount: '0.00', currency: 'PLN' },
+      shippingTime: { from: 'PT24H', to: 'PT72H' },
+    }],
+  };
+  expect(goldenShippingRatePayload(base)).toEqual(base);
 });
 
 test('guarded Golden create payload forbids deprecated nextItemRate', () => {
@@ -88,10 +117,8 @@ test('guarded Golden create payload forbids deprecated nextItemRate', () => {
       deliveryMethod: { id: METHOD_ID },
       maxQuantityPerPackage: 1,
       firstItemRate: { amount: '0.00', currency: 'PLN' },
-      shippingTime: { from: 'PT24H', to: 'PT24H' },
     }],
   };
-  expect(goldenShippingRatePayload(base)).toEqual(base);
   expect(() => goldenShippingRatePayload({
     ...base,
     rates: [{ ...base.rates[0], nextItemRate: { amount: '0.00', currency: 'PLN' } }],
