@@ -93,6 +93,68 @@ function verifyCheckoutForm(payload, options = {}) {
   };
 }
 
+function expectedDiscoveryMoney(options = {}) {
+  const amount = options.expectedUnitPrice == null ? null : Number(options.expectedUnitPrice);
+  const currency = options.expectedCurrency == null
+    ? null
+    : String(options.expectedCurrency).trim().toUpperCase();
+  if (amount != null && (!Number.isFinite(amount) || amount <= 0)) {
+    throw new Error('ALLEGRO_RECONCILIATION_EXPECTED_PRICE_INVALID');
+  }
+  if (currency != null && currency !== 'PLN') {
+    throw new Error('ALLEGRO_RECONCILIATION_EXPECTED_CURRENCY_INVALID');
+  }
+  return { amount, currency };
+}
+
+function discoveryMatch(payload, options = {}) {
+  try {
+    const proof = verifyCheckoutForm(payload, {
+      ...options,
+      checkoutFormId: payload?.id,
+    });
+    const expected = expectedDiscoveryMoney(options);
+    if (expected.amount != null && proof.unit_price.toFixed(2) !== expected.amount.toFixed(2)) return null;
+    if (expected.currency != null && proof.currency !== expected.currency) return null;
+    return proof;
+  } catch {
+    return null;
+  }
+}
+
+async function discoverCheckoutForm(options = {}) {
+  const api = options.client || sandboxClient;
+  if (!api || typeof api.listSellerOrders !== 'function') {
+    throw new Error('ALLEGRO_RECONCILIATION_DISCOVERY_CLIENT_INVALID');
+  }
+  expectedOfferId(options.identity, options);
+  if (!Number.isSafeInteger(options.quantity) || options.quantity < 1) {
+    throw new Error('ALLEGRO_RECONCILIATION_QUANTITY_INVALID');
+  }
+  expectedDiscoveryMoney(options);
+
+  const listed = await api.listSellerOrders({
+    status: READY_STATUS,
+    limit: 20,
+    boughtAtGte: options.boughtAtGte || null,
+  });
+  if (!listed || !Array.isArray(listed.checkoutForms)) {
+    throw new Error('ALLEGRO_RECONCILIATION_DISCOVERY_RESPONSE_INVALID');
+  }
+  const matches = listed.checkoutForms
+    .map(row => discoveryMatch(row, options))
+    .filter(Boolean);
+
+  if (matches.length === 0) throw new Error('ALLEGRO_RECONCILIATION_ORDER_NOT_FOUND');
+  if (matches.length > 1) throw new Error('ALLEGRO_RECONCILIATION_ORDER_AMBIGUOUS');
+
+  return {
+    checkoutFormId: matches[0].supplier_order_id,
+    provider_status: matches[0].provider_status,
+    bought_at: matches[0].bought_at,
+  };
+}
+
 async function reconcile(options = {}) {
   const api = options.client || sandboxClient;
   if (!api || typeof api.getSellerOrder !== 'function') {
@@ -106,5 +168,8 @@ module.exports = {
   READY_STATUS,
   expectedOfferId,
   verifyCheckoutForm,
+  expectedDiscoveryMoney,
+  discoveryMatch,
+  discoverCheckoutForm,
   reconcile,
 };
