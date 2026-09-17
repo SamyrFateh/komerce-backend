@@ -64,7 +64,7 @@ describe('catalog promotion — Supplier Order Identity DB path', () => {
       'SUP-1',
       'UNIT-1',
       JSON.stringify(IDENTITY),
-      JSON.stringify({}),
+      null,
       8,
     ]);
   });
@@ -89,6 +89,7 @@ describe('catalog promotion — Supplier Order Identity DB path', () => {
     expect(client.calls[2].sql).toMatch(/SET supplier_unit_ref = \$1/);
     expect(client.calls[2].params[0]).toBe('UNIT-1');
     expect(client.calls[2].params[1]).toBe(JSON.stringify(IDENTITY));
+    expect(client.calls[2].params[2]).toBeNull();
   });
 
   test('conflicting persisted identity blocks before any SKU write', async () => {

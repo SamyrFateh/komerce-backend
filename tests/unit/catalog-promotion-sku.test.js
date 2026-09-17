@@ -35,6 +35,40 @@ describe('catalog-promotion/sku — planSkuReconciliation (PDC-8 Lot 4)', () => 
     expect(plan.toDeactivate).toEqual([]);
   });
 
+  test('unité sans options → SKU par défaut canonique (variant_combo null)', () => {
+    const plan = planSkuReconciliation([], [
+      { supplier_sku: 'SUP-DEFAULT', option_values: {}, stock_available: 10 },
+    ]);
+    expect(plan.toCreate).toEqual([
+      {
+        supplier_sku: 'SUP-DEFAULT',
+        variant_combo: null,
+        stock: 10,
+        stockKnown: true,
+        source: 'SUPPLIER',
+        media_refs: null,
+      },
+    ]);
+  });
+
+  test('replay répare un ancien variant_combo={} sans changer le sku_id', () => {
+    const existing = [supplierSku({
+      id: 'sup-default',
+      supplier_sku: 'SUP-DEFAULT',
+      variant_combo: {},
+    })];
+    const plan = planSkuReconciliation(existing, [
+      { supplier_sku: 'SUP-DEFAULT', option_values: {}, stock_available: 10 },
+    ]);
+    expect(plan.toCreate).toEqual([]);
+    expect(plan.toUpdate).toHaveLength(1);
+    expect(plan.toUpdate[0]).toMatchObject({
+      id: 'sup-default',
+      supplier_sku: 'SUP-DEFAULT',
+      variant_combo: null,
+    });
+  });
+
   test('#11 supplier_sku stable → même id conservé (toUpdate, pas toCreate)', () => {
     const existing = [supplierSku()];
     const plan = planSkuReconciliation(existing, [
