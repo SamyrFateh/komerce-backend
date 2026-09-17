@@ -42,6 +42,7 @@ module.exports = {
       'Supplier Fulfillment Adapter Contract universel : chaque fournisseur déclare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce',
       'Shipping Capability Adapter Contract : les faits de livraison natifs d\'un provider sont traduits en capacité canonique sans fuite de champs provider ni défaut implicite sur les faits inconnus',
       'Purchase Order exacte : pour une ligne vendue avec sku_id, la PO conserve order_item_id, product_sku_id et la Supplier Order Identity snapshotée ; un mapping produit-level ne peut pas remplacer la variante vendue',
+      'Supplier money canonique : pour une ligne SKU/SOI exacte, la PO snapshotte supplier_unit_price + supplier_currency depuis la Canonical Unit ; aucun prix natif non-AED ne peut être écrit dans unit_price_aed',
     ],
     out: [
       'cycle de vie de la commande cliente elle-même — orders reste seul propriétaire de order-status-machine.js ' +
@@ -55,6 +56,7 @@ module.exports = {
   docs: [
     'docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md',
     'docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md',
+    'docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md',
     'docs/allegro-sandbox.md',
     'docs/allegro-shipping-capability-p2.md',
   ],
@@ -66,6 +68,7 @@ module.exports = {
       'services/suppliers/allegro-shipping-capability-adapter.js',
       'services/suppliers/shipping-capability-contract.js',
       'services/purchasing-trigger-service.js',
+      'services/purchasing-canonical-money.js',
       'services/suppliers/supplier-order-identity.js',
       'services/suppliers/aliexpress-purchase-preflight.js',
       'services/suppliers/supplier-fulfillment-adapter-contract.js',
@@ -85,6 +88,7 @@ module.exports = {
     ],
     migrations: [
       'migrations/225_purchase_orders_exact_supplier_identity.sql',
+      'migrations/239_purchase_orders_canonical_supplier_money.sql',
     ],
     scripts: [
       'scripts/allegro-sandbox-purchase-proof.js',
@@ -104,6 +108,8 @@ module.exports = {
       'tests/unit/purchasing-cancel-service.test.js',
       'tests/unit/purchasing-route.test.js',
       'tests/unit/purchasing-trigger-service.test.js',
+      'tests/unit/purchasing-trigger-exact-sku.test.js',
+      'tests/unit/purchasing-canonical-money.test.js',
       'tests/unit/supplier-order-identity.test.js',
       'tests/unit/canonical-unit-purchasing-gate.test.js',
       'tests/unit/canonical-unit-cutover-comparison.test.js',
@@ -151,6 +157,7 @@ module.exports = {
     ],
     internalApi: [
       { fn: 'triggerPurchasing', file: 'services/purchasing-trigger-service.js' },
+      { fn: 'resolveCanonicalSupplierMoney', file: 'services/purchasing-canonical-money.js' },
       { fn: 'resolveSupplierUnit', file: 'services/suppliers/supplier-order-identity.js' },
       { fn: 'validateAdapter', file: 'services/suppliers/supplier-fulfillment-adapter-contract.js' },
       { fn: 'evaluateSupplierFulfillmentReadiness', file: 'services/suppliers/supplier-fulfillment-readiness.js' },
@@ -195,6 +202,8 @@ module.exports = {
       test: 'tests/unit/purchasing-trigger-service.test.js' },
     { statement: 'si order_items.sku_id est renseigné, la Purchase Order doit conserver exactement ce product_sku_id, son supplier_unit_ref et sa Supplier Order Identity ; product_suppliers ne peut pas substituer un supplier_sku générique',
       test: 'tests/integration/purchasing-exact-sku-po.test.js' },
+    { statement: 'pour une ligne SKU/SOI exacte, le prix et la devise du fournisseur viennent de la Canonical Unit et sont snapshotés nativement sur la PO ; un montant PLN/USD/CNY ne doit jamais être rebaptisé AED',
+      test: 'tests/unit/purchasing-canonical-money.test.js' },
     { statement: 'une unité ne devient jamais commandable par heuristique : Supplier Order Identity absente ou ambiguë = blocage',
       test: 'tests/unit/supplier-order-identity.test.js' },
     { statement: 'tout adapter fulfillment est provider-scopé, traite un payload d\'identité opaque et ne peut émettre que les verdicts canoniques Purchasing avec ready cohérent',
