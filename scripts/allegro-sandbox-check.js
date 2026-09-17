@@ -22,7 +22,12 @@ const sandboxClient = require('../services/suppliers/allegro-sandbox-client');
 const SEED_PREFIX = 'Komerce Sandbox Seed';
 const SEED_SEARCHES = Object.freeze(['kabel usb', 'mysz bezprzewodowa', 'lampka led']);
 const SEED_PRICES = Object.freeze([29.90, 49.90, 79.90]);
-const SEED_EXTERNAL_IDS = Object.freeze(['komerce-sandbox-seed-1', 'komerce-sandbox-seed-2', 'komerce-sandbox-seed-3']);
+const SEED_EXTERNAL_IDS = Object.freeze([
+  'komerce-sandbox-publishable-seed-1',
+  'komerce-sandbox-publishable-seed-2',
+  'komerce-sandbox-publishable-seed-3',
+]);
+const SEED_CANDIDATES_PER_SEARCH = 5;
 const ACTIVATION_ATTEMPTS = 10;
 const ACTIVATION_POLL_MS = 1000;
 const SAFE_TASK_TOKEN_RE = /^[A-Za-z0-9_.\[\]-]{1,120}$/;
@@ -45,7 +50,6 @@ function createdOfferId(payload) {
 async function seedOfferIds(count, api = sandboxClient, env = process.env) {
   api.seedConfiguration(env);
   const ids = new Array(count).fill(null);
-  const usedProducts = new Set();
 
   for (let index = 0; index < count; index += 1) {
     const listed = await api.get('/sale/offers', { 'external.id': SEED_EXTERNAL_IDS[index] });
@@ -55,22 +59,37 @@ async function seedOfferIds(count, api = sandboxClient, env = process.env) {
     if (offer) ids[index] = String(offer.id);
   }
 
-  for (let index = 0; index < count; index += 1) {
-    if (ids[index]) continue;
-    const phrase = SEED_SEARCHES[index];
-    const found = await api.searchProducts(phrase, { limit: 10 });
-    const products = Array.isArray(found?.products) ? found.products : [];
-    const product = products.find(row => row?.id && !usedProducts.has(String(row.id)));
-    if (!product) continue;
-    usedProducts.add(String(product.id));
-    const created = await api.createDraftOffer({
-      productId: String(product.id),
-      name: `${SEED_PREFIX} ${index + 1} - ${String(product.name || phrase)}`.slice(0, 75),
-      externalId: SEED_EXTERNAL_IDS[index],
-      pricePln: SEED_PRICES[index],
-      stock: 10 + index,
-    });
-    ids[index] = createdOfferId(created);
+  const missing = ids.reduce((out, id, index) => id ? out : [...out, index], []);
+  if (missing.length) {
+    const producer = await api.ensureGoldenResponsibleProducer();
+    const candidates = [];
+    const seen = new Set();
+    for (const phrase of SEED_SEARCHES) {
+      const found = await api.searchProducts(phrase, { limit: SEED_CANDIDATES_PER_SEARCH });
+      for (const row of Array.isArray(found?.products) ? found.products : []) {
+        const productId = String(row?.id || '');
+        if (!productId || seen.has(productId)) continue;
+        seen.add(productId);
+        const proof = await api.inspectProductPublishability(productId);
+        if (proof.publishable) candidates.push({ ...row, proof });
+      }
+    }
+    if (candidates.length < missing.length) {
+      throw new Error(`ALLEGRO_SANDBOX_PUBLISHABLE_SEED_INCOMPLETE_${candidates.length}_OF_${missing.length}`);
+    }
+    for (let position = 0; position < missing.length; position += 1) {
+      const index = missing[position];
+      const product = candidates[position];
+      const created = await api.createDraftOffer({
+        productId: String(product.id),
+        name: `${SEED_PREFIX} ${index + 1} - ${String(product.name || 'produit publiable')}`.slice(0, 75),
+        externalId: SEED_EXTERNAL_IDS[index],
+        pricePln: SEED_PRICES[index],
+        stock: 10 + index,
+        responsibleProducerId: producer.id,
+      });
+      ids[index] = createdOfferId(created);
+    }
   }
 
   const complete = ids.filter(Boolean);
@@ -83,7 +102,9 @@ function selectSellerSettings(settings) {
   const returnRows = Array.isArray(settings?.return_policies) ? settings.return_policies : [];
   const impliedRows = Array.isArray(settings?.implied_warranties) ? settings.implied_warranties : [];
   const shipping = shippingRows.find(row => row?.type === 'PHYSICAL') || shippingRows[0];
-  const returns = returnRows[0];
+  const returns = returnRows.find(row => row?.is_fulfillment === false
+    && row?.availability_range === 'FULL'
+    && row?.withdrawal_period === 'P14D');
   const implied = impliedRows[0];
   const missing = [];
   if (!shipping?.id) missing.push('SHIPPING_RATE');
@@ -99,6 +120,7 @@ function selectSellerSettings(settings) {
 
 async function prepareOfferIds(ids, api = sandboxClient) {
   const selected = selectSellerSettings(await api.getSellerSettings());
+  const producer = await api.ensureGoldenResponsibleProducer();
   const offers = [];
   for (const rawId of ids) {
     const id = connector.offerId(rawId);
@@ -112,9 +134,10 @@ async function prepareOfferIds(ids, api = sandboxClient) {
       shippingRateId: selected.shipping_rate_id,
       returnPolicyId: selected.return_policy_id,
       impliedWarrantyId: selected.implied_warranty_id,
+      responsibleProducerId: producer.id,
     }));
   }
-  return { selected, offers };
+  return { selected, responsible_producer_id: producer.id, offers };
 }
 
 function sanitizedPublicationTasks(payload) {
@@ -230,7 +253,7 @@ if (require.main === module) {
     .finally(async () => { await require('../db').pool.end(); process.exit(process.exitCode || 0); });
 }
 module.exports = {
-  SEED_PREFIX, SEED_SEARCHES, SEED_PRICES, SEED_EXTERNAL_IDS,
+  SEED_PREFIX, SEED_SEARCHES, SEED_PRICES, SEED_EXTERNAL_IDS, SEED_CANDIDATES_PER_SEARCH,
   seedCount, createdOfferId, seedOfferIds, selectSellerSettings, prepareOfferIds,
   sanitizedPublicationTasks, activateOfferIds, run,
 };

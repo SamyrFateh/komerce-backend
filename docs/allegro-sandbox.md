@@ -88,14 +88,28 @@ In the configured backend runtime:
 ```sh
 node scripts/allegro-sandbox-check.js OFFER_ID
 node scripts/allegro-sandbox-check.js --import OFFER_ID
+node scripts/allegro-sandbox-check.js --golden
 ```
 
 The first command performs authenticated reads (and durable OAuth refresh when
 needed). The second also imports through the existing refinery, without full
 snapshot archival or automatic customer publication.
 
-The guarded `--seed=1..3` mode creates seller **draft** offers only. Draft seed is
-not proof of a customer-purchasable offer and does not auto-publish anything.
+The guarded `--seed=1..3` mode creates seller **draft** offers only. It scans at
+most five candidates for each of the three bounded search phrases and selects a
+product only when it already has an image, safety information and every category
+parameter required for a product. The seller-owned GPSR producer entry named
+`KOMERCE GOLDEN TEST ONLY` is reused by exact name or created once, then attached
+by ID to the draft. The versioned external ID makes retries idempotent and keeps
+older incomplete seeds out of this proof. Draft seed is not proof of a
+customer-purchasable offer and does not auto-publish anything.
+
+`--golden` is the one-command composition of one publishability-first seed,
+seller settings preparation, observed Allegro activation and bounded refinery
+import. Any missing prerequisite stops the flow before activation and import.
+Seller preparation selects a physical shipping rate and only a non-Fulfillment,
+fully available `P14D` return policy; it fails closed instead of attaching the
+first policy returned by the account.
 When a Golden setup deliberately needs a controlled seller offer, the same
 staging-only seed gate exposes an explicit operator action that sends Allegro's
 asynchronous publication command with hard-coded `ACTIVATE` for the exact offer

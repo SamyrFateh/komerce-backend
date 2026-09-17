@@ -5,6 +5,7 @@ const {
 const dispatch = require('../../services/sourcing-import-dispatch');
 const connector = require('../../services/suppliers/connectors/allegro-connector');
 const client = require('../../services/suppliers/allegro-sandbox-client');
+const PRODUCER_ID = '44444444-4444-4444-8444-444444444444';
 
 function deps() {
   return {
@@ -29,12 +30,21 @@ test('default check reads without importing or claiming purchase, notification o
 test('seller settings select a physical shipping rate and fail closed when any prerequisite is missing', () => {
   const selected = selectSellerSettings({
     shipping_rates: [{ id: 'electronic', type: 'ELECTRONIC' }, { id: 'physical', type: 'PHYSICAL' }],
-    return_policies: [{ id: 'return' }],
+    return_policies: [
+      { id: 'fulfillment', is_fulfillment: true, availability_range: 'FULL', withdrawal_period: 'P14D' },
+      { id: 'disabled', is_fulfillment: false, availability_range: 'DISABLED', withdrawal_period: null },
+      { id: 'return', is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D' },
+    ],
     implied_warranties: [{ id: 'implied' }],
   });
   expect(selected).toEqual({
     shipping_rate_id: 'physical', return_policy_id: 'return', implied_warranty_id: 'implied',
   });
+  expect(() => selectSellerSettings({
+    shipping_rates: [{ id: 'physical', type: 'PHYSICAL' }],
+    return_policies: [{ id: 'fulfillment', is_fulfillment: true, availability_range: 'FULL', withdrawal_period: 'P14D' }],
+    implied_warranties: [{ id: 'implied' }],
+  })).toThrow('SELLER_SETTINGS_MISSING_RETURN_POLICY');
   expect(() => selectSellerSettings({ shipping_rates: [], return_policies: [], implied_warranties: [] }))
     .toThrow('SELLER_SETTINGS_MISSING_SHIPPING_RATE_RETURN_POLICY_IMPLIED_WARRANTY');
 });
@@ -43,17 +53,18 @@ test('seller preparation binds existing settings and skips already active offers
   const api = {
     getSellerSettings: jest.fn().mockResolvedValue({
       shipping_rates: [{ id: 'ship', type: 'PHYSICAL' }],
-      return_policies: [{ id: 'ret' }],
+      return_policies: [{ id: 'ret', is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D' }],
       implied_warranties: [{ id: 'imp' }],
     }),
     get: jest.fn()
       .mockResolvedValueOnce({ publication: { status: 'INACTIVE' } })
       .mockResolvedValueOnce({ publication: { status: 'ACTIVE' } }),
     completeSeedOffer: jest.fn().mockResolvedValue({ offer_id: '123', delivery_bound: true }),
+    ensureGoldenResponsibleProducer: jest.fn().mockResolvedValue({ id: PRODUCER_ID, created: false }),
   };
   const proof = await prepareOfferIds(['123', '456'], api);
   expect(api.completeSeedOffer).toHaveBeenCalledWith('123', {
-    shippingRateId: 'ship', returnPolicyId: 'ret', impliedWarrantyId: 'imp',
+    shippingRateId: 'ship', returnPolicyId: 'ret', impliedWarrantyId: 'imp', responsibleProducerId: PRODUCER_ID,
   });
   expect(api.completeSeedOffer).toHaveBeenCalledTimes(1);
   expect(proof.offers[1]).toEqual({ offer_id: '456', skipped: true, reason: 'ALREADY_ACTIVE' });
@@ -104,12 +115,16 @@ test('one-command Golden reuses seed, prepares seller prerequisites, activates a
     }),
     getSellerSettings: jest.fn().mockResolvedValue({
       shipping_rates: [{ id: '11111111-1111-4111-8111-111111111111', type: 'PHYSICAL' }],
-      return_policies: [{ id: '22222222-2222-4222-8222-222222222222' }],
+      return_policies: [{
+        id: '22222222-2222-4222-8222-222222222222',
+        is_fulfillment: false, availability_range: 'FULL', withdrawal_period: 'P14D',
+      }],
       implied_warranties: [{ id: '33333333-3333-4333-8333-333333333333' }],
     }),
     completeSeedOffer: jest.fn().mockResolvedValue({
       offer_id: '123', delivery_bound: true, return_policy_bound: true, implied_warranty_bound: true,
     }),
+    ensureGoldenResponsibleProducer: jest.fn().mockResolvedValue({ id: PRODUCER_ID, created: false }),
     activateOffer: jest.fn().mockResolvedValue({
       offer_id: '123', command_id: '123e4567-e89b-42d3-a456-426614174000',
     }),
@@ -139,6 +154,7 @@ test('Golden stops before activation and import when seller prerequisites are ab
     get: jest.fn().mockResolvedValue({ offers: [{ id: '123', external: { id: SEED_EXTERNAL_IDS[0] } }] }),
     getSellerSettings: jest.fn().mockResolvedValue({ shipping_rates: [], return_policies: [], implied_warranties: [] }),
     completeSeedOffer: jest.fn(),
+    ensureGoldenResponsibleProducer: jest.fn(),
     activateOffer: jest.fn(),
   };
   await expect(run(['--golden'], { ...d, client: api, env: {} }))
@@ -214,6 +230,8 @@ test('bounded seed creates real seller drafts then passes their ids through the 
       .mockResolvedValueOnce({ products: [{ id: 'p-1', name: 'USB Cable' }] })
       .mockResolvedValueOnce({ products: [{ id: 'p-2', name: 'Wireless Mouse' }] })
       .mockResolvedValueOnce({ products: [{ id: 'p-3', name: 'LED Lamp' }] }),
+    inspectProductPublishability: jest.fn().mockResolvedValue({ publishable: true }),
+    ensureGoldenResponsibleProducer: jest.fn().mockResolvedValue({ id: PRODUCER_ID, created: false }),
     createDraftOffer: jest
       .fn()
       .mockResolvedValueOnce({ id: '101' })
@@ -226,6 +244,10 @@ test('bounded seed creates real seller drafts then passes their ids through the 
   expect(api.seedConfiguration).toHaveBeenCalledWith(env);
   expect(api.get).toHaveBeenCalledTimes(3);
   expect(api.createDraftOffer).toHaveBeenCalledTimes(3);
+  expect(api.searchProducts).toHaveBeenCalledTimes(3);
+  expect(api.searchProducts).toHaveBeenCalledWith(expect.any(String), { limit: 5 });
+  expect(api.inspectProductPublishability).toHaveBeenCalledTimes(3);
+  expect(api.createDraftOffer).toHaveBeenCalledWith(expect.objectContaining({ responsibleProducerId: PRODUCER_ID }));
   expect(api.createDraftOffer.mock.calls.map(([arg]) => arg.externalId)).toEqual(SEED_EXTERNAL_IDS);
   expect(d.fetchProducts).toHaveBeenCalledWith({ productIds: ['101', '102', '103'] });
   expect(d.importCatalog).toHaveBeenCalledTimes(1);
@@ -243,11 +265,12 @@ test('seed reuses exact external ids and fails closed if sandbox catalog is insu
     searchProducts: jest.fn()
       .mockResolvedValueOnce({ products: [{ id: 'p-2', name: 'Mouse' }] })
       .mockResolvedValueOnce({ products: [] }),
+    inspectProductPublishability: jest.fn().mockResolvedValue({ publishable: true }),
+    ensureGoldenResponsibleProducer: jest.fn().mockResolvedValue({ id: PRODUCER_ID, created: false }),
     createDraftOffer: jest.fn().mockResolvedValue({ id: '202' }),
   };
   await expect(seedOfferIds(3, api, {})).rejects.toThrow('SEED_INCOMPLETE');
-  expect(api.createDraftOffer).toHaveBeenCalledTimes(1);
-  expect(api.createDraftOffer.mock.calls[0][0].externalId).toBe(SEED_EXTERNAL_IDS[1]);
+  expect(api.createDraftOffer).not.toHaveBeenCalled();
 
   api.get.mockImplementation(async (_path, params) => {
     const index = SEED_EXTERNAL_IDS.indexOf(params['external.id']);

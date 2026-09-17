@@ -1,11 +1,42 @@
 'use strict';
 jest.mock('../../db', () => ({ withTransaction: jest.fn() }));
-const { createClient, configuration, seedConfiguration } = require('../../services/suppliers/allegro-sandbox-client');
+const {
+  createClient, configuration, seedConfiguration, safeReturnPolicyRows, GOLDEN_PRODUCER_NAME,
+} = require('../../services/suppliers/allegro-sandbox-client');
+const PRODUCER_ID = '44444444-4444-4444-8444-444444444444';
 const env = () => ({ KOMERCE_ALLOW_ALLEGRO_SANDBOX: '1', ALLEGRO_SANDBOX_CLIENT_ID: 'app',
   ALLEGRO_SANDBOX_CLIENT_SECRET: 'secret', ALLEGRO_SANDBOX_USER_AGENT: 'KomerceTest/1',
   ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY: 'ab'.repeat(32), ALLEGRO_SANDBOX_REFRESH_TOKEN: 'bootstrap' });
 const token = (suffix = '1') => ({ access_token: `access-${suffix}`, refresh_token: `refresh-${suffix}`, expires_in: 3600, token_type: 'bearer' });
 const ok = data => ({ ok: true, json: async () => data });
+
+test('return policy projection preserves only bounded activation criteria', () => {
+  expect(safeReturnPolicyRows([
+    {
+      id: '11111111-1111-4111-8111-111111111111',
+      isFulfillment: false,
+      availability: { range: 'FULL', restrictionCause: { name: 'provider detail' } },
+      withdrawalPeriod: 'P14D',
+      name: 'private seller label',
+    },
+    { id: 'not-a-uuid', isFulfillment: false },
+    { id: '22222222-2222-4222-8222-222222222222', availability: { range: 'unsafe value' } },
+  ])).toEqual([
+    {
+      id: '11111111-1111-4111-8111-111111111111',
+      is_fulfillment: false,
+      availability_range: 'FULL',
+      withdrawal_period: 'P14D',
+    },
+    {
+      id: '22222222-2222-4222-8222-222222222222',
+      is_fulfillment: null,
+      availability_range: null,
+      withdrawal_period: null,
+    },
+  ]);
+});
+
 function setup() {
   let row;
   let time = 0;
@@ -141,8 +172,8 @@ test('seller draft creation stays sandbox-bound, minimal and token-encapsulated'
     return ok({ offers: [] });
   });
   const created = await s.client.createDraftOffer({
-    productId: 'abc-123', name: 'Komerce Sandbox USB Cable', externalId: 'komerce-sandbox-seed-1',
-    pricePln: 29.9, stock: 12,
+    productId: 'abc-123', name: 'Komerce Sandbox USB Cable', externalId: 'komerce-sandbox-publishable-seed-1',
+    pricePln: 29.9, stock: 12, responsibleProducerId: PRODUCER_ID,
   });
   expect(created).toEqual({ id: '987654321' });
   expect(s.dbImpl.withTransaction).toHaveBeenCalledTimes(1);
@@ -153,9 +184,9 @@ test('seller draft creation stays sandbox-bound, minimal and token-encapsulated'
   expect(init.redirect).toBe('error');
   const payload = JSON.parse(init.body);
   expect(payload).toEqual({
-    productSet: [{ product: { id: 'abc-123' } }],
+    productSet: [{ product: { id: 'abc-123' }, responsibleProducer: { type: 'ID', id: PRODUCER_ID } }],
     name: 'Komerce Sandbox USB Cable',
-    external: { id: 'komerce-sandbox-seed-1' },
+    external: { id: 'komerce-sandbox-publishable-seed-1' },
     sellingMode: { price: { amount: '29.90', currency: 'PLN' } },
     stock: { available: 12 },
     publication: { status: 'INACTIVE' },
@@ -168,17 +199,77 @@ test('seller seed input validation fails before provider side effects', async ()
   s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
   await expect(s.client.searchProducts('x')).rejects.toThrow('QUERY_INVALID');
   await expect(s.client.searchProducts('valid', { limit: 21 })).rejects.toThrow('LIMIT_INVALID');
-  const valid = { productId: 'abc-123', name: 'Valid name', externalId: 'komerce-sandbox-seed-1', pricePln: 10, stock: 1 };
+  const valid = { productId: 'abc-123', name: 'Valid name', externalId: 'komerce-sandbox-publishable-seed-1',
+    pricePln: 10, stock: 1, responsibleProducerId: PRODUCER_ID };
   for (const args of [
     { ...valid, productId: '../bad' },
     { ...valid, name: 'x' },
     { ...valid, externalId: 'bad' },
     { ...valid, pricePln: 0 },
     { ...valid, stock: 0 },
+    { ...valid, responsibleProducerId: 'bad' },
   ]) {
-    await expect(s.client.createDraftOffer(args)).rejects.toThrow('ALLEGRO_SANDBOX_SEED_');
+    await expect(s.client.createDraftOffer(args)).rejects.toThrow('ALLEGRO_SANDBOX_');
   }
   expect(s.fetchImpl).not.toHaveBeenCalled();
+});
+
+test('publishability inspection requires images, safety information and every required product parameter', async () => {
+  const s = setup();
+  s.runtime.KOMERCE_ENV = 'staging';
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  s.fetchImpl.mockImplementation(async url => {
+    if (url.includes('/auth/')) return ok(token());
+    if (url.includes('/sale/products/good') || url.includes('/sale/products/bad')) return ok({
+      category: { id: '123' }, images: [{ url: 'https://img.test/1' }],
+      parameters: url.includes('/good') ? [{ id: '224017' }, { id: '237206' }] : [{ id: '224017' }],
+      productSafety: url.includes('/good') ? { safetyInformation: { type: 'TEXT' } } : {},
+    });
+    if (url.includes('/sale/categories/123/parameters')) return ok({ parameters: [
+      { id: '224017', requiredForProduct: true }, { id: '237206', requiredForProduct: true },
+      { id: 'optional', requiredForProduct: false },
+    ] });
+    return ok({});
+  });
+  await expect(s.client.inspectProductPublishability('good')).resolves.toEqual({
+    product_id: 'good', category_id: '123', image_count: 1,
+    safety_information_present: true, responsible_producer_present: false,
+    missing_required_product_parameter_ids: [], publishable: true,
+  });
+  await expect(s.client.inspectProductPublishability('bad')).resolves.toMatchObject({
+    safety_information_present: false,
+    missing_required_product_parameter_ids: ['237206'],
+    publishable: false,
+  });
+});
+
+test('Golden responsible producer is reused exactly or created once with TEST ONLY data', async () => {
+  const s = setup();
+  s.runtime.KOMERCE_ENV = 'staging';
+  s.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  s.fetchImpl.mockImplementation(async (url, init) => {
+    if (url.includes('/auth/')) return ok(token());
+    if (url.includes('/sale/responsible-producers') && init.method === 'GET') {
+      return ok({ responsibleProducers: [{ id: PRODUCER_ID, name: GOLDEN_PRODUCER_NAME }] });
+    }
+    return ok({});
+  });
+  await expect(s.client.ensureGoldenResponsibleProducer()).resolves.toEqual({ id: PRODUCER_ID, created: false });
+  expect(s.fetchImpl.mock.calls.filter(([, init]) => init.method === 'POST')).toHaveLength(1);
+
+  const fresh = setup();
+  fresh.runtime.KOMERCE_ENV = 'staging';
+  fresh.runtime.KOMERCE_ALLOW_ALLEGRO_SANDBOX_SEED = '1';
+  fresh.fetchImpl.mockImplementation(async (url, init) => {
+    if (url.includes('/auth/')) return ok(token());
+    if (url.includes('/sale/responsible-producers') && init.method === 'GET') return ok({ responsibleProducers: [] });
+    if (url.includes('/sale/responsible-producers') && init.method === 'POST') return ok({ id: PRODUCER_ID });
+    return ok({});
+  });
+  await expect(fresh.client.ensureGoldenResponsibleProducer()).resolves.toEqual({ id: PRODUCER_ID, created: true });
+  const createCall = fresh.fetchImpl.mock.calls.find(([url, init]) => url.includes('/sale/responsible-producers') && init.method === 'POST');
+  expect(JSON.parse(createCall[1].body)).toMatchObject({ name: GOLDEN_PRODUCER_NAME,
+    producerData: { tradeName: 'Komerce Golden Sandbox Manufacturer' } });
 });
 
 test('seller publication activation is sandbox-only, explicit ACTIVATE and asynchronously inspectable', async () => {
