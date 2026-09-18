@@ -5,9 +5,9 @@
  * @layer         service
  * @criticality   high
  * @inputs        provider code (string)
- * @outputs       canonical provider list, support verdict, normalized code
+ * @outputs       canonical provider list, support verdict, normalized code, remote preflight requirement, reconciliation requirement
  * @depends       none
- * @used-by       validators/index.js (GAP-1), future adapter resolution (GAP-2)
+ * @used-by       services/suppliers/purchasing-validators.js (isSupportedProvider), services/suppliers/canonical-unit-purchasing-gate.js (remotePreflightRequirement, GAP-4A), services/purchasing-admin-service.js (reconciliationRequirement, GAP-5)
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -83,6 +83,31 @@ const PREFLIGHT_REQUIREMENT = Object.freeze({
   UNKNOWN: 'UNKNOWN',
 });
 
+// GAP-5 — Execution Evidence Boundary (docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md).
+//
+// Capability PROUVÉE, distincte de REMOTE_PREFLIGHT_REQUIRED : ce provider
+// dispose-t-il d'un mécanisme RÉEL de réconciliation post-achat (vérifier
+// qu'une preuve fournisseur correspond bien à l'intention Komerce) ? Ce
+// n'est PAS le même axe que le preflight (avant achat) — un provider peut
+// avoir l'un sans l'autre. `true` = un module de réconciliation existe et a
+// été exercé (Allegro : `allegro-purchase-reconciliation.js`, prouvé par
+// le Golden Sandbox). `false` = aucun mécanisme de réconciliation n'a
+// jamais été construit pour ce provider — fait constaté à ce jour, pas une
+// décision de ne jamais en avoir besoin. AliExpress a un preflight réel
+// mais aucune réconciliation post-achat n'existe encore : marqué `false`
+// ici délibérément (la confirmation manuelle AliExpress garde aujourd'hui
+// son comportement historique, non vérifié) — GAP-5 se limite à brancher
+// Allegro comme première preuve, ne force pas une exigence non prouvée
+// sur un second provider.
+const RECONCILIATION_REQUIRED = Object.freeze({
+  allegro: true,
+  aliexpress: false,
+  noon: false,
+  amazon_uae: false,
+  local: false,
+  whatsapp: false,
+});
+
 function normalizeProviderCode(code) {
   return String(code || '').trim().toLowerCase();
 }
@@ -102,10 +127,26 @@ function remotePreflightRequirement(code) {
     : PREFLIGHT_REQUIREMENT.NOT_REQUIRED;
 }
 
+// Réutilise le même vocabulaire REQUIRED/NOT_REQUIRED/UNKNOWN que le
+// preflight (PREFLIGHT_REQUIREMENT) — même sémantique fail-closed sur
+// UNKNOWN, axe différent. Pas de nouvel enum : un seul vocabulaire de
+// "requirement" pour tout provider-authority.
+function reconciliationRequirement(code) {
+  const normalized = normalizeProviderCode(code);
+  if (!PROVIDER_SET.has(normalized)) return PREFLIGHT_REQUIREMENT.UNKNOWN;
+  if (!Object.prototype.hasOwnProperty.call(RECONCILIATION_REQUIRED, normalized)) {
+    return PREFLIGHT_REQUIREMENT.UNKNOWN;
+  }
+  return RECONCILIATION_REQUIRED[normalized]
+    ? PREFLIGHT_REQUIREMENT.REQUIRED
+    : PREFLIGHT_REQUIREMENT.NOT_REQUIRED;
+}
+
 module.exports = {
   PROVIDERS,
   PREFLIGHT_REQUIREMENT,
   isSupportedProvider,
   normalizeProviderCode,
   remotePreflightRequirement,
+  reconciliationRequirement,
 };

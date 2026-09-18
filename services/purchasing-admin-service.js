@@ -4,14 +4,14 @@
  * @domain        purchasing
  * @layer         service
  * @criticality   high
- * @inputs        runtime_context, request_or_service_payload
- * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js
+ * @inputs        purchase order id, order id, supplier confirmation payload (supplier_order_id, tracking, notes)
+ * @outputs       confirmed/cancelled purchase order, side_effects
+ * @depends       db, utils/logger.js, services/order-mutation-service.js, services/suppliers/purchase-order-confirmation-boundary.js (confirmPurchaseOrder, GAP-5), services/suppliers/execution-adapter-registry.js (confirmPurchaseOrder, GAP-5)
  * @used-by       routes/purchasing.js
  * @db-read       purchase_orders, suppliers
  * @db-write      orders, product_suppliers, purchase_orders, suppliers
- * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
+ * @db-txn        owned
+ * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md, docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md
  * @impact-areas  dashboard, admin-dashboard
  * @version       2026-06
  */
@@ -33,6 +33,8 @@
 
 const db  = require('../db');
 const { setSupplierSnapshot } = require('./order-mutation-service');
+const { verifyProviderEvidenceForConfirmation, COMMITMENT_VERDICT } = require('./suppliers/purchase-order-confirmation-boundary');
+const { EXECUTION_ADAPTER_REGISTRY } = require('./suppliers/execution-adapter-registry');
 const log = require('../utils/logger').child({ module: 'purchasing-admin-service' });
 
 // ─── Fournisseurs ──────────────────────────────────────────────────────────────
@@ -103,19 +105,38 @@ async function deleteSupplier(id, forceDelete = false) {
 /**
  * Confirme une purchase order (pending/notified → confirmed).
  *
+ * GAP-5 — quand le provider de la PO a une réconciliation prouvée
+ * (aujourd'hui : Allegro seul), `supplier_order_id` n'est plus une
+ * chaîne de confiance aveugle : elle est vérifiée via
+ * purchase-order-confirmation-boundary.js avant toute écriture, et
+ * remplacée par la external_ref réconciliée en cas de succès. Pour tout
+ * autre provider (aucune réconciliation prouvée à ce jour) ou toute PO
+ * sans identité structurée, le comportement historique — confiance dans
+ * la valeur fournie — reste strictement inchangé.
+ *
  * @param {string} poId     - UUID de la PO
  * @param {string} orderId  - UUID de la commande parente (vérification appartenance)
  * @param {{ supplier_order_id?, unit_price_aed?, tracking_url?, tracking_number?, notes? }} data
+ *   Pour un provider à réconciliation requise, `supplier_order_id` est la
+ *   référence externe à vérifier (ex. Allegro : le checkoutFormId), pas
+ *   une valeur libre.
+ * @param {object} [options]
+ * @param {object} [options.context] Transmis tel quel jusqu'à
+ *   `adapter.reconcile()` — seam de test/injection déjà établi (GAP-4A :
+ *   `triggerPurchasing(orderId, {context})`). Vide par défaut :
+ *   comportement de production (client réel) inchangé.
  * @returns {{ success: true, purchase_order: object }}
- * @throws {{ status, error }} 404 si non trouvée, 409 si statut incompatible
+ * @throws {{ status, error }} 404 si non trouvée, 409 si statut
+ *   incompatible OU si la réconciliation requise échoue/rejette
  */
-async function confirmPurchaseOrder(poId, orderId, data = {}) {
+async function confirmPurchaseOrder(poId, orderId, data = {}, options = {}) {
   const { supplier_order_id, unit_price_aed, tracking_url, tracking_number, notes } = data;
 
   const CONFIRMABLE_STATUSES = ['pending', 'notified'];
 
   const { rows: [currentPo] } = await db.query(
-    'SELECT id, status FROM purchase_orders WHERE id = $1 AND order_id = $2',
+    `SELECT id, status, supplier_order_identity, supplier_unit_ref, supplier_sku, qty
+       FROM purchase_orders WHERE id = $1 AND order_id = $2`,
     [poId, orderId]
   );
   if (!currentPo) {
@@ -128,6 +149,35 @@ async function confirmPurchaseOrder(poId, orderId, data = {}) {
     err.status = 409;
     err.current_status = currentPo.status;
     throw err;
+  }
+
+  const evidence = await verifyProviderEvidenceForConfirmation({
+    identity: currentPo.supplier_order_identity,
+    externalRef: supplier_order_id,
+    supplierUnitRef: currentPo.supplier_unit_ref,
+    supplierSku: currentPo.supplier_sku,
+    quantity: currentPo.qty,
+    adapters: EXECUTION_ADAPTER_REGISTRY,
+    context: options.context || {},
+  });
+  let verifiedSupplierOrderId = supplier_order_id;
+  if (evidence.required) {
+    if (evidence.commitment_verdict !== COMMITMENT_VERDICT.COMMITTED) {
+      log.warn(
+        { po_id: poId, order_id: orderId, provider: evidence.provider, evidence: evidence.evidence },
+        '[PURCHASING] Confirmation rejetée — réconciliation fournisseur non validée'
+      );
+      const err = new Error(
+        `Confirmation impossible : réconciliation fournisseur non validée (${evidence.evidence?.reason || 'raison inconnue'}).`
+      );
+      err.status = 409;
+      err.current_status = currentPo.status;
+      throw err;
+    }
+    // Réconciliation réussie : la PO snapshotte la external_ref vérifiée,
+    // jamais la valeur brute non vérifiée fournie par l'opérateur — même
+    // si elles coïncident en pratique (le provider les valide déjà égales).
+    verifiedSupplierOrderId = evidence.external_ref;
   }
 
   const { rows: [po] } = await db.query(
@@ -144,7 +194,7 @@ async function confirmPurchaseOrder(poId, orderId, data = {}) {
         updated_at        = NOW()
       WHERE id = $6 AND order_id = $7
       RETURNING *`,
-    [supplier_order_id, unit_price_aed, tracking_url, tracking_number, notes, poId, orderId]
+    [verifiedSupplierOrderId, unit_price_aed, tracking_url, tracking_number, notes, poId, orderId]
   );
   if (!po) {
     const err = new Error('Purchase order introuvable');

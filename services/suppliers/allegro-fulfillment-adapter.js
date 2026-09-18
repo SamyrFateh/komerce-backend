@@ -4,10 +4,10 @@
  * @domain        purchasing
  * @layer         service
  * @criticality   high
- * @inputs        exact sandbox offer identity, quantity
- * @outputs       live stock/price evidence and exact manual procurement payload
- * @depends       services/suppliers/connectors/allegro-connector.js, services/suppliers/supplier-fulfillment-readiness.js
- * @used-by       scripts/allegro-sandbox-check.js
+ * @inputs        exact sandbox offer identity, quantity, external checkout reference (reconcile)
+ * @outputs       live stock/price evidence, exact manual procurement payload, reconciled purchase evidence (reconcile, GAP-5)
+ * @depends       services/suppliers/connectors/allegro-connector.js, services/suppliers/supplier-fulfillment-readiness.js, services/suppliers/allegro-purchase-reconciliation.js
+ * @used-by       services/suppliers/execution-adapter-registry.js (via canonical-unit-purchasing-gate.js GAP-4A, services/purchasing-admin-service.js GAP-5), scripts/allegro-sandbox-check.js, scripts/allegro-golden-prebuyer-proof.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -17,6 +17,7 @@
 'use strict';
 const connector = require('./connectors/allegro-connector');
 const { VERDICT, result } = require('./supplier-fulfillment-readiness');
+const reconciliation = require('./allegro-purchase-reconciliation');
 const provider = 'allegro';
 
 function exactOfferId(row, identity) {
@@ -90,4 +91,60 @@ async function buildOrderPayload({ identity, quantity, preflight }) {
   };
 }
 
-module.exports = { provider, exactOfferId, evaluate, buildOrderPayload };
+/**
+ * GAP-5 — Execution Evidence Boundary. Traduit l'appel générique de la
+ * frontière (services/suppliers/purchase-order-confirmation-boundary.js)
+ * vers le contrat Allegro-spécifique de allegro-purchase-reconciliation.js,
+ * et traduit son résultat natif vers le minimum canonique attendu par le
+ * cœur : { provider, external_ref, commitment_verdict, evidence }. Le
+ * cœur ne voit jamais `READY_FOR_PROCESSING` (le statut natif Allegro) ni
+ * les codes d'erreur `ALLEGRO_RECONCILIATION_*` — seulement `committed`
+ * ou `rejected`, et le détail opaque dans `evidence`.
+ *
+ * `client` d'API sandbox injectable via `context.allegroSandboxClient`
+ * (même convention que `context.aliexpressConnected` chez l'adapter
+ * AliExpress) — sans injection, le client réel de
+ * allegro-sandbox-client.js est utilisé (comportement de production
+ * inchangé).
+ *
+ * @param {object} params
+ * @param {string} params.externalRef Référence externe à vérifier (pour
+ *   Allegro : le checkoutFormId communiqué par l'opérateur après achat
+ *   manuel).
+ * @param {object} params.identity Supplier Order Identity normalisée.
+ * @param {string} [params.supplierUnitRef]
+ * @param {string} [params.supplierSku]
+ * @param {number} params.quantity
+ * @param {object} [params.context]
+ */
+async function reconcile({ externalRef, identity, supplierUnitRef, supplierSku, quantity, context = {} } = {}) {
+  try {
+    const verified = await reconciliation.reconcile({
+      client: context.allegroSandboxClient,
+      checkoutFormId: externalRef,
+      identity,
+      supplierUnitRef,
+      supplierSku,
+      quantity,
+    });
+    // verifyCheckoutForm() (appelée par reconciliation.reconcile) lève déjà
+    // si le statut natif n'est pas READY_FOR_PROCESSING — atteindre ce
+    // point garantit donc un engagement fournisseur confirmé.
+    return {
+      provider,
+      external_ref: verified.supplier_order_id,
+      commitment_verdict: 'committed',
+      evidence: verified,
+    };
+  } catch (error) {
+    return {
+      provider,
+      external_ref: externalRef || null,
+      commitment_verdict: 'rejected',
+      evidence: { reason: String(error?.message || error) },
+    };
+  }
+}
+
+module.exports = { provider, exactOfferId, evaluate, buildOrderPayload, reconcile };
+
