@@ -95,6 +95,9 @@ module.exports = {
       'migrations/190_shared_cart_auto_close_backfill.sql',   // répare les listes historiques 100% réclamées restées OPEN
     ],
     tests: [
+      'tests/unit/shared-cart-v4-2-creation.test.js',
+      'tests/unit/shares-snapshot-boundary.test.js',
+      'tests/unit/shares-token-entropy.test.js',
       'tests/unit/baskets.test.js',
       'tests/unit/shared-cart-creation.test.js',
       'tests/unit/shared-cart-creator-route.test.js',

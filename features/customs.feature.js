@@ -88,6 +88,8 @@ module.exports = {
       'tests/unit/customs-analytics.test.js',
       'tests/unit/customs-classification.test.js',
       'tests/unit/customs-shipment-service.test.js',
+      'tests/unit/customs-shipment-service-market-atomicity.test.js',
+      'tests/integration/customs-shipments-contract.test.js',
       // E2E fonctionnel — chantier currency debt, LOT 8 (clôture). Vérifie
       // que les DEUX colonnes générées de customs_history (customs_delta_kmf,
       // customs_delta_pct) recalculent juste après la conversion numeric de

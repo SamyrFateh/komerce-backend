@@ -110,6 +110,11 @@ module.exports = {
     ],
     tests: [
       'tests/unit/stripe-golden-p4.test.js',
+      'tests/unit/isweep-transactional-flows.test.js',
+      'tests/unit/payment-fx-authority.test.js',
+      'tests/unit/paypal-webhook.test.js',
+      'tests/integration/post-o8-payments-seams.test.js',
+      'tests/integration/stripe-payment-seams.test.js',
       'tests/e2e-api/payments.stripe-pipeline-p3.e2e.test.js',
       'tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js',
       'tests/e2e-api/payments.paypal-amount-currency.e2e.test.js',

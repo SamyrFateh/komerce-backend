@@ -74,6 +74,8 @@ module.exports = {
       'tests/integration/isweep-transactional-flows.test.js',
       'tests/integration/relais-idor-probe.test.js',
       'tests/integration/security-grid.test.js',
+      'tests/integration/alerts-contract-real-db.test.js',
+      'tests/integration/alerts-contract-red-proof.test.js',
       'tests/unit/validators.test.js',
       // Rapatriés depuis features/operations.feature.js (doublon supprimé,
       // audit 2026-07-06 §2c) — services/routes étaient déjà ici, seuls ces

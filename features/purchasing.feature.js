@@ -98,6 +98,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/allegro-fulfillment-adapter.test.js',
+      'tests/unit/shipping-capability-contract.test.js',
       'tests/unit/allegro-purchase-reconciliation.test.js',
       'tests/unit/allegro-seller-order-read.test.js',
       'tests/unit/allegro-sandbox-purchase-proof.test.js',
@@ -105,6 +106,7 @@ module.exports = {
       'tests/unit/allegro-shipping-capability-proof.test.js',
       'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js',
       'tests/integration/purchasing-exact-sku-po.test.js',
+      'tests/integration/purchasing-wa-url-w3-1.test.js',
       'tests/unit/purchasing.test.js',
       'tests/unit/purchasing-receive-service.test.js',
       'tests/unit/purchasing-cancel-service.test.js',

@@ -97,6 +97,11 @@ module.exports = {
       'css/checkout-vertical-rail.css',
     ],
     tests: [
+      'tests/unit/order-status-schema-canonical-closure.test.js',
+      'tests/unit/order-fulfillment-snapshot-migration.test.js',
+      'tests/unit/order-fulfillment-snapshot.test.js',
+      'tests/unit/order-status-machine-mobile-money.test.js',
+      'tests/unit/qr-collection-core-emission.test.js',
       // E2E fonctionnel — preuve d'unicite de remise (Lot 1 retrait-secours).
       'tests/e2e-api/orders.single-collect.e2e.test.js',
       // E2E fonctionnel Feature First — orders est PROPRIETAIRE ;
@@ -128,6 +133,7 @@ module.exports = {
       // structurellement impossible.
       'tests/e2e-api/orders.line-prices-numeric.e2e.test.js',
       'tests/unit/admin-order-refund.test.js',
+      'tests/unit/admin-order-refund-payment-service.test.js',
       'tests/unit/cancel-order-purchase-orders.test.js',
       'tests/unit/delete-order-cascade.test.js',
       'tests/unit/hub-mark-ordered.test.js',
