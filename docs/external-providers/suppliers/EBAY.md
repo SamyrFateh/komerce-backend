@@ -398,7 +398,41 @@ P0 therefore starts BLOCKED on these facts:
 
 None of these unknowns may be converted to false or guessed.
 
-## 8. Minimal P1 probes
+## 8. Executable read-only Browse proof
+
+The first executable characterization is deliberately limited to the non-mutating
+Buy Browse boundary:
+
+```bash
+EBAY_SANDBOX_CLIENT_ID=...
+EBAY_SANDBOX_CLIENT_SECRET=...
+EBAY_SANDBOX_MARKETPLACE_ID=EBAY_US
+EBAY_SANDBOX_ITEM_ID='v1|listing|variation'
+node scripts/ebay-sandbox-browse-proof.js --through=P1
+```
+
+Alternatively, before a deterministic fixture exists, use a bounded query:
+
+```bash
+EBAY_SANDBOX_SEARCH_QUERY='komerce sandbox'
+EBAY_SANDBOX_SEARCH_LIMIT=5
+node scripts/ebay-sandbox-browse-proof.js --through=P1
+```
+
+The script performs only:
+
+```text
+client credentials OAuth
+→ bounded Browse search when needed
+→ exact getItem read-back
+→ native money observation
+→ sanitized P0/P1 proof
+```
+
+It never persists the OAuth token and never includes configured credentials or
+provider free-text error bodies in proof output.
+
+## 12. Minimal P1 probes
 
 Once credentials exist, execute the following independently of the Komerce pipeline.
 
