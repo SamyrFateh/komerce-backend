@@ -11,6 +11,7 @@
       "features/dashboard.feature.js",
       "features/documents.feature.js",
       "features/economic-engine.feature.js",
+      "features/external-provider-contracts.feature.js",
       "features/incident-management.feature.js",
       "features/infrastructure.feature.js",
       "features/inventory.feature.js",
@@ -46,7 +47,7 @@
     "dashRoot": "public"
   },
   "scope": {
-    "businessManifestsResolved": 37,
+    "businessManifestsResolved": 38,
     "businessManifestsBroken": 0,
     "declaredOnlyNodes": 0,
     "dashRepoMounted": true,
@@ -215,6 +216,22 @@
         "since": "2025-09",
         "service": "Calculer les frontières économiques, la contribution et la couverture ; le marché borne le possible et le responsable autorisé décide le prix.",
         "businessKind": "business-feature",
+        "kindSource": "manifest.classification.kind",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
+        "id": "feature:external-provider-contracts",
+        "name": "external-provider-contracts",
+        "file": "features/external-provider-contracts.feature.js",
+        "legacyType": "transversal",
+        "status": "staging",
+        "owner": "backend-core",
+        "since": "2026-09",
+        "service": "Qualifier, prouver et publier ce que Komerce peut réellement croire d un système externe avant qu une feature métier ne s appuie sur son contrat.",
+        "businessKind": "technical-transversal",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
@@ -5860,6 +5877,20 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "external-provider-contracts",
+        "category": "scripts",
+        "declared": "scripts/provider-contract-proof.js",
+        "resolvedPath": "scripts/provider-contract-proof.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "category": "tests",
+        "declared": "tests/unit/provider-contract-proof.test.js",
+        "resolvedPath": "tests/unit/provider-contract-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "incident-management",
         "category": "services",
         "declared": "services/incident-service.js",
@@ -11364,6 +11395,13 @@
       {
         "feature": "purchasing",
         "category": "services",
+        "declared": "services/suppliers/purchase-order-confirmation-boundary.js",
+        "resolvedPath": "services/suppliers/purchase-order-confirmation-boundary.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
         "declared": "services/suppliers/canonical-unit-cutover-comparison.js",
         "resolvedPath": "services/suppliers/canonical-unit-cutover-comparison.js",
         "status": "resolved-in-technical-graph"
@@ -11590,6 +11628,13 @@
         "category": "tests",
         "declared": "tests/unit/procurement-execution-boundary.test.js",
         "resolvedPath": "tests/unit/procurement-execution-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/purchase-order-confirmation-boundary.test.js",
+        "resolvedPath": "tests/unit/purchase-order-confirmation-boundary.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -17845,6 +17890,36 @@
         "status": "resolved"
       },
       {
+        "feature": "external-provider-contracts",
+        "fn": "buildConversation",
+        "file": "scripts/provider-contract-proof.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "fn": "buildProof",
+        "file": "scripts/provider-contract-proof.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "fn": "assertConversation",
+        "file": "scripts/provider-contract-proof.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "fn": "assertThrough",
+        "file": "scripts/provider-contract-proof.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "fn": "summary",
+        "file": "scripts/provider-contract-proof.js",
+        "status": "resolved"
+      },
+      {
         "feature": "incident-management",
         "fn": "listIncidents",
         "file": "services/incident-service.js",
@@ -19006,6 +19081,12 @@
       },
       {
         "from": "catalog",
+        "to": "external-provider-contracts",
+        "raw": "external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les scripts Allegro catalog)",
+        "resolved": true
+      },
+      {
+        "from": "catalog",
         "to": "sourcing",
         "raw": "sourcing (API internes findCanonicalProductIdsForCatalogProduct, collectCanonicalProductProjectionById et applyCanonicalSourceReadSeam)",
         "resolved": true
@@ -19392,6 +19473,12 @@
         "from": "economic-engine",
         "to": "loyalty",
         "raw": "loyalty (invalidation du cache de configuration finance apres modification admin — services/loyalty-service.js invalidateConfigCache, O7.3 provider loyalty)",
+        "resolved": true
+      },
+      {
+        "from": "external-provider-contracts",
+        "to": "infrastructure",
+        "raw": "infrastructure — runtime Node et primitives techniques uniquement ; aucune vérité métier externe n est déléguée à infrastructure",
         "resolved": true
       },
       {
@@ -20202,6 +20289,12 @@
         "from": "providers-services",
         "to": "infrastructure",
         "raw": "infrastructure — dépendance technique db.js et résolution KOMERCE_ENV",
+        "resolved": true
+      },
+      {
+        "from": "purchasing",
+        "to": "external-provider-contracts",
+        "raw": "external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les proofs Purchasing)",
         "resolved": true
       },
       {
@@ -24139,6 +24232,26 @@
               {
                 "sourceFileId": "tests/unit/catalog-import-orchestrator-source-v2.test.js",
                 "targetFile": "services/pricing-engine.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "catalog",
+        "to": "external-provider-contracts",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "scripts/allegro-sandbox-check.js",
+                "targetFile": "scripts/provider-contract-proof.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-sandbox-check.test.js",
+                "targetFile": "scripts/provider-contract-proof.js"
               }
             ]
           }
@@ -33370,6 +33483,22 @@
       },
       {
         "from": "purchasing",
+        "to": "external-provider-contracts",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "scripts/allegro-shipping-capability-proof.js",
+                "targetFile": "scripts/provider-contract-proof.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "purchasing",
         "to": "infrastructure",
         "channels": [
           {
@@ -33465,6 +33594,10 @@
               },
               {
                 "sourceFileId": "tests/unit/purchasing-canonical-money.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/purchase-order-confirmation-boundary.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -35291,7 +35424,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1301
+        "filesObserved": 1305
       },
       "boutique": {
         "filesObserved": 217,
@@ -38151,8 +38284,8 @@
   "bigMap": {
     "perRepo": {
       "backend": {
-        "manifestsDiscovered": 33,
-        "manifestsConnected": 33,
+        "manifestsDiscovered": 34,
+        "manifestsConnected": 34,
         "technicalNodesTotal": 500,
         "technicalNodesOwned": 500,
         "technicalOrphans": 0
@@ -38196,6 +38329,7 @@
         "decision-signals",
         "documents",
         "economic-engine",
+        "external-provider-contracts",
         "incident-management",
         "infrastructure",
         "inventory",

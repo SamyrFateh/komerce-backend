@@ -7,7 +7,7 @@
  * @inputs        provider, supplier fulfillment adapter, supplier fulfillment verdict
  * @outputs       validated adapter shape and canonical verdict contract
  * @depends       none
- * @used-by       services/suppliers/supplier-fulfillment-readiness.js, services/suppliers/procurement-execution-boundary.js (GAP-4B)
+ * @used-by       services/suppliers/supplier-fulfillment-readiness.js, services/suppliers/canonical-unit-purchasing-gate.js (GAP-4A), services/suppliers/procurement-execution-boundary.js (GAP-4B), services/suppliers/purchase-order-confirmation-boundary.js (GAP-5)
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -63,6 +63,21 @@ function validateExecutionAdapter(provider, adapter) {
   return { ok: true, provider: base.provider, adapter: base.adapter };
 }
 
+/**
+ * GAP-5 — Execution Evidence Boundary. Un adapter n'est éligible à la
+ * réconciliation post-achat que s'il expose reconcile(). Réutilise
+ * validateAdapter pour le socle (provider match + evaluate), même
+ * discipline que validateExecutionAdapter.
+ */
+function validateReconciliationAdapter(provider, adapter) {
+  const base = validateAdapter(provider, adapter);
+  if (!base.ok) return base;
+  if (typeof base.adapter.reconcile !== 'function') {
+    return { ok: false, reason: `Adapter fulfillment ${base.provider} sans reconcile()` };
+  }
+  return { ok: true, provider: base.provider, adapter: base.adapter };
+}
+
 function validateVerdict(verdict, VERDICT) {
   if (!verdict || typeof verdict !== 'object' || Array.isArray(verdict)) {
     return { ok: false, reason: 'Verdict fulfillment absent ou invalide' };
@@ -100,5 +115,6 @@ module.exports = {
   normalizeProvider,
   validateAdapter,
   validateExecutionAdapter,
+  validateReconciliationAdapter,
   validateVerdict,
 };
