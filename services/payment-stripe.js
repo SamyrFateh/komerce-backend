@@ -60,44 +60,93 @@ const log = require('../utils/logger').child({ module: 'payment-stripe' });
  * @returns {{ client_secret, amount_eur, amount_cents, order_reference, reused? }}
  * @throws si Stripe échoue
  */
+function stripeIntentContractForOrder(order) {
+  const amountCents = Math.round(parseFloat(order.total_eur) * 100);
+  if (!Number.isFinite(amountCents) || amountCents <= 0) {
+    const err = new Error('STRIPE_PAYMENT_INTENT_AMOUNT_INVALID');
+    err.code = 'STRIPE_PAYMENT_INTENT_AMOUNT_INVALID';
+    throw err;
+  }
+  return Object.freeze({
+    amount: amountCents,
+    currency: 'eur',
+    orderId: String(order.id),
+    orderReference: String(order.reference),
+    komerce: 'true',
+  });
+}
+
+function assertStripeIntentMatchesOrder(intent, order, { requireClientSecret = false } = {}) {
+  const expected = stripeIntentContractForOrder(order);
+  const actual = intent || {};
+  const metadata = actual.metadata || {};
+  const mismatch =
+    Number(actual.amount) !== expected.amount ||
+    String(actual.currency || '').toLowerCase() !== expected.currency ||
+    String(metadata.order_id || '') !== expected.orderId ||
+    String(metadata.order_reference || '') !== expected.orderReference ||
+    String(metadata.komerce || '') !== expected.komerce;
+
+  if (mismatch) {
+    const err = new Error('STRIPE_PAYMENT_INTENT_CONTRACT_MISMATCH');
+    err.code = 'STRIPE_PAYMENT_INTENT_CONTRACT_MISMATCH';
+    throw err;
+  }
+  if (!actual.id || (requireClientSecret && !actual.client_secret)) {
+    const err = new Error('STRIPE_PAYMENT_INTENT_RESPONSE_INCOMPLETE');
+    err.code = 'STRIPE_PAYMENT_INTENT_RESPONSE_INCOMPLETE';
+    throw err;
+  }
+  return expected;
+}
+
 async function createStripeIntent(order, stripe, db) {
-  // Idempotence : réutiliser un intent existant si réutilisable
+  const expected = stripeIntentContractForOrder(order);
+
   if (order.stripe_payment_id) {
+    let existing;
     try {
-      const existing = await stripe.paymentIntents.retrieve(order.stripe_payment_id);
-      const REUSABLE = ['requires_payment_method', 'requires_confirmation', 'requires_action'];
-      if (REUSABLE.includes(existing.status)) {
-        log.info({ intent_id: existing.id, status: existing.status },
-          '[STRIPE] PaymentIntent existant réutilisé');
-        return {
-          client_secret:   existing.client_secret,
-          amount_eur:      order.total_eur,
-          amount_cents:    existing.amount,
-          order_reference: order.reference,
-          reused:          true,
-        };
-      }
-      log.warn({ intent_id: existing.id, status: existing.status },
-        '[STRIPE] PaymentIntent non-réutilisable — nouvel intent créé');
+      existing = await stripe.paymentIntents.retrieve(order.stripe_payment_id);
     } catch (retrieveErr) {
-      log.warn({ err: retrieveErr, intent_id: order.stripe_payment_id },
-        '[STRIPE] Échec retrieve — nouvel intent créé');
+      const err = new Error('STRIPE_PAYMENT_INTENT_READBACK_FAILED');
+      err.code = 'STRIPE_PAYMENT_INTENT_READBACK_FAILED';
+      err.cause = retrieveErr;
+      throw err;
     }
+
+    assertStripeIntentMatchesOrder(existing, order, { requireClientSecret: true });
+
+    const REUSABLE = ['requires_payment_method', 'requires_confirmation', 'requires_action'];
+    if (!REUSABLE.includes(existing.status)) {
+      const err = new Error('STRIPE_PAYMENT_INTENT_NOT_REUSABLE');
+      err.code = 'STRIPE_PAYMENT_INTENT_NOT_REUSABLE';
+      throw err;
+    }
+
+    log.info({ intent_id: existing.id, status: existing.status },
+      '[STRIPE] PaymentIntent existant réutilisé après read-back exact');
+    return {
+      client_secret:   existing.client_secret,
+      amount_eur:      order.total_eur,
+      amount_cents:    existing.amount,
+      order_reference: order.reference,
+      reused:          true,
+    };
   }
 
-  const amount_cents  = Math.round(parseFloat(order.total_eur) * 100);
   const idempotencyKey = `order_pi_${order.id}`;
-
   const intent = await stripe.paymentIntents.create({
-    amount:   amount_cents,
-    currency: 'eur',
+    amount:   expected.amount,
+    currency: expected.currency,
     metadata: {
-      order_reference: order.reference,
-      order_id:        order.id,
-      komerce:         'true',
+      order_reference: expected.orderReference,
+      order_id:        expected.orderId,
+      komerce:         expected.komerce,
     },
     description: `Komerce — Commande ${order.reference}`,
   }, { idempotencyKey });
+
+  assertStripeIntentMatchesOrder(intent, order, { requireClientSecret: true });
 
   await setStripePaymentId(db, {
     orderId: order.id,
@@ -107,7 +156,7 @@ async function createStripeIntent(order, stripe, db) {
   return {
     client_secret:   intent.client_secret,
     amount_eur:      order.total_eur,
-    amount_cents,
+    amount_cents:    expected.amount,
     order_reference: order.reference,
   };
 }
@@ -381,6 +430,8 @@ async function markStripeEventProcessed(event, payloadSummary, db) {
 }
 
 module.exports = {
+  stripeIntentContractForOrder,
+  assertStripeIntentMatchesOrder,
   createStripeIntent,
   handleStripeSucceeded,
   handleStripePaymentFailed,
