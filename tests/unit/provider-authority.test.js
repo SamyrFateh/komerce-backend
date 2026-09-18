@@ -105,16 +105,29 @@ describe('provider-authority — normalizeProviderCode', () => {
   });
 });
 
-describe('provider-authority — consommation par validators/index.js', () => {
-  test('validators/index.js importe provider-authority au lieu d\'un littéral PLATFORMS', () => {
+describe('provider-authority — consommation par purchasing-validators.js', () => {
+  // GAP-1 (v2) : validators/index.js NE doit PAS importer provider-authority.js.
+  // Un barrel @domain infrastructure qui importe un fichier @domain purchasing
+  // est l'edge OBSERVED-UNDECLARED-FEATURE-DEPENDENCY que ce repo verrouille à
+  // zéro (cf. governance/business-graph-drift-baseline.json, "Debt Zero
+  // absolute"). La validation purchasing vit donc dans son propre fichier
+  // @domain purchasing (services/suppliers/purchasing-validators.js), qui
+  // peut importer provider-authority.js sans franchir de frontière.
+  test('validators/index.js N\'importe PAS provider-authority (frontière infrastructure préservée)', () => {
     const src = fs.readFileSync(path.join(ROOT, 'validators', 'index.js'), 'utf8');
-    expect(src).toMatch(/require\(.*provider-authority.*\)/);
-    // Aucun littéral PLATFORMS local ne doit subsister
+    expect(src).not.toMatch(/require\(.*provider-authority.*\)/);
     expect(src).not.toMatch(/const PLATFORMS\s*=\s*\[\s*'/);
   });
 
+  test('purchasing-validators.js importe provider-authority (dépendance intra-feature)', () => {
+    const src = fs.readFileSync(
+      path.join(ROOT, 'services', 'suppliers', 'purchasing-validators.js'), 'utf8'
+    );
+    expect(src).toMatch(/require\(.*provider-authority.*\)/);
+  });
+
   test('createSupplier valide "allegro" et rejette "manual"', () => {
-    const { purchasing } = require('../../validators/index');
+    const { purchasing } = require('../../services/suppliers/purchasing-validators');
     const okResult = purchasing.createSupplier.body.validate({ name: 'Test', platform: 'allegro' });
     expect(okResult.error).toBeUndefined();
 

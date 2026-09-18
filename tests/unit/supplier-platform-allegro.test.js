@@ -24,9 +24,10 @@ const Joi = require('joi');
 const ROOT = path.join(__dirname, '..', '..');
 
 function extractPlatformsFromSource() {
-  // Depuis GAP-1, validators/index.js ne déclare plus de littéral PLATFORMS :
-  // il consomme services/suppliers/provider-authority.js. Ce test doit donc
-  // lire l'autorité canonique, pas parser le source du validator.
+  // L'autorité canonique vit dans services/suppliers/provider-authority.js
+  // et est consommée par services/suppliers/purchasing-validators.js
+  // (@domain purchasing) — jamais par validators/index.js (@domain
+  // infrastructure), cf. GAP-1 v2. Ce test lit l'autorité directement.
   const { PROVIDERS } = require('../../services/suppliers/provider-authority');
   return [...PROVIDERS];
 }
@@ -52,8 +53,12 @@ function extractPlatformsFromMigration() {
 
 let purchasingValidators;
 beforeAll(() => {
+  // Depuis GAP-1 (v2), la validation purchasing vit dans
+  // services/suppliers/purchasing-validators.js (@domain purchasing),
+  // pas dans le barrel infrastructure validators/index.js — cf.
+  // provider-authority.test.js pour la preuve de cette frontière.
   try {
-    purchasingValidators = require('../../validators/index').purchasing;
+    purchasingValidators = require('../../services/suppliers/purchasing-validators').purchasing;
   } catch { purchasingValidators = null; }
 });
 

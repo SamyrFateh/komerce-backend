@@ -71,6 +71,7 @@ module.exports = {
       'services/purchasing-canonical-money.js',
       'services/suppliers/supplier-order-identity.js',
       'services/suppliers/provider-authority.js',
+      'services/suppliers/purchasing-validators.js',
       'services/suppliers/aliexpress-purchase-preflight.js',
       'services/suppliers/supplier-fulfillment-adapter-contract.js',
       'services/suppliers/supplier-fulfillment-readiness.js',

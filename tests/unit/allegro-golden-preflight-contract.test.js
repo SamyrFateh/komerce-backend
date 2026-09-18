@@ -45,9 +45,10 @@ function extractPlatformsFromSchema(filePath) {
 }
 
 function extractPlatformsFromValidator() {
-  // Depuis GAP-1 (#1596), validators/index.js consomme
-  // services/suppliers/provider-authority.js au lieu de déclarer un
-  // littéral PLATFORMS local.
+  // L'autorité canonique vit dans services/suppliers/provider-authority.js.
+  // Depuis GAP-1 v2 elle est consommée par purchasing-validators.js
+  // (@domain purchasing), jamais par validators/index.js (@domain
+  // infrastructure) — cf. tests/unit/provider-authority.test.js.
   const { PROVIDERS } = require('../../services/suppliers/provider-authority');
   return [...PROVIDERS];
 }
