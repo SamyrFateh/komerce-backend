@@ -14,10 +14,10 @@
 
 | GAP | Statut | PR | Notes |
 |-----|--------|-----|-------|
-| **GAP-1** — Provider Authority | ✅ Exécuté, CI verte | [#1596](https://github.com/SamyrFateh/komerce-backend/pull/1596) — branche `feat/provider-authority-gap1` — **ouverte, pas encore mergée** | Voir « Leçons de GAP-1 » ci-dessous avant d'attaquer GAP-4 |
-| GAP-3 — Readiness Convergence | Non commencé | — | Prochain dans l'ordre de dépendance (doc-only, zéro comportement) |
-| GAP-2 — Adapter Resolution | Non commencé | — | Après GAP-3 |
-| GAP-4 — Branch Real Purchasing Through Gate | Non commencé | — | Le plus risqué ; lire la leçon de gouvernance ci-dessous avant de commencer |
+| **GAP-1** — Provider Authority | ✅ Exécuté, mergée | [#1596](https://github.com/SamyrFateh/komerce-backend/pull/1596) — mergée dans `main` | Voir « Leçons de GAP-1 » ci-dessous avant d'attaquer GAP-4 |
+| **GAP-3** — Readiness Convergence | ✅ Exécuté, mergée | [#1598](https://github.com/SamyrFateh/komerce-backend/pull/1598) — mergée dans `main` | Voir « Leçons de GAP-3 » ci-dessous avant d'attaquer GAP-4 |
+| **GAP-2** — Adapter Resolution | ✅ Exécuté, mergée | [#1599](https://github.com/SamyrFateh/komerce-backend/pull/1599) — mergée dans `main` | Voir « Leçons de GAP-2 » ci-dessous avant d'attaquer GAP-4 |
+| **GAP-4A/4B** — Canonical Procurement Readiness + Execution Boundary | ✅ Exécuté, CI verte | [#1601](https://github.com/SamyrFateh/komerce-backend/pull/1601) — branche `feat/canonical-procurement-readiness-gap4` — **ouverte, pas encore mergée** | GAP-4 a été scindé en deux fonctions distinctes pendant l'exécution (arbitrage validé) ; voir « Ce que GAP-4A/4B a livré » et « Leçons de GAP-4 » ci-dessous avant GAP-5 |
 | GAP-5 — Execution Evidence Boundary | Non commencé | — | |
 | GAP-6 — Environment Isolation | Non commencé | — | Majoritairement DEFER par arbitrage |
 | GAP-7 — Feature Manifest | Non commencé | — | Doit rester en dernier |
@@ -46,6 +46,59 @@ node scripts/feature-guard.js
 **3. Toujours vérifier les consommateurs réels avant de déplacer du code.** Le déplacement du bloc `purchasing` hors du barrel n'a été sûr que parce qu'une vérification (`grep -rln` sur tout le repo) a confirmé qu'il n'avait **aucun consommateur en production**, seulement 2 fichiers de test. Sans cette vérification, le déplacement aurait pu casser une route vivante.
 
 **4. Les artefacts générés (`docs/BUSINESS_FEATURE_GRAPH.json/.md`, `docs/O6_INVENTORY.md`) doivent être commités après toute régénération**, et le CI compare ces fichiers commités à une régénération fraîche (`--check`). Si le graphe n'a pas été régénéré depuis plusieurs PR (ce qui était le cas ici — pas régénéré depuis avant #1594/#1595), le premier agent qui le regénère absorbe tout le rattrapage dans son diff. Ce n'est pas une régression introduite par cet agent — mais il faut le documenter dans le commit pour que la revue ne s'y méprenne pas.
+
+### Ce que GAP-3 a réellement livré (PR #1598)
+
+- `docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md` §9bis — sépare explicitement CAPABILITY / READINESS / EXECUTION_MODE. Découverte en cours de route : la doctrine avait **déjà** une échelle capability à 4 niveaux (§8 : `MODEL_SIMULATION_READY` → `MANUAL_PROCUREMENT_READY` → `SUPPLIER_API_PREFLIGHT_READY` → `AUTO_ORDER_READY`), simplement jamais reliée au vocabulaire code. GAP-3 ne l'a pas réinventée, il l'a connectée.
+- Table de correspondance exacte `canonical-unit-purchasing-gate.js` → `VERDICT.*`, avec le vocabulaire canonique confirmé (`VERDICT.*`, déjà utilisé nativement par l'adapter Allegro).
+- `tests/unit/purchasing-readiness-vocabulary-mapping.test.js` (10 tests) — verrouille chaque affirmation de la doctrine contre le code réel.
+- **Zéro fichier de code production touché**, conformément à la contrainte GAP-3.
+
+### Leçons de GAP-3 — à lire avant GAP-4
+
+**1. Une doctrine écrite de mémoire peut se tromper — vérifier contre le code exact avant de publier, pas après.** Un premier jet de la table de correspondance a confondu les champs `.status` et `.reason` du gate (`canonical-unit-purchasing-gate.js`) : le gate ne retourne **pas** un `.status` différent par cause d'échec — `blocked(reason, evidence)` fixe `.status` à la constante unique `BLOCKED_SUPPLIER_IDENTITY` dans tous les cas, et c'est `.reason` qui porte la cause précise. L'erreur a été trouvée en retraçant le fichier source ligne par ligne avant d'écrire la doctrine finale, pas en la déployant puis en la corrigeant. **Pour GAP-4 : ne jamais documenter un contrat de statut/champ sans avoir relu le fichier source exact juste avant.**
+
+**2. `HARD_STOP` est un nom trompeur — c'est le succès terminal du gate, pas un échec.** `status:'HARD_STOP'` avec `ready:false` signifie « payload construit, prêt pour exécution manuelle ou automatique en aval » ; `ready:false` signifie seulement que `place_order_invoked` est faux, pas que la readiness est négative. **GAP-4 va manipuler directement ce retour** (c'est le composition root que GAP-4 doit brancher sur le vrai chemin) — ne pas traiter `HARD_STOP` comme une branche d'erreur en l'implémentant.
+
+**3. Dette identifiée, volontairement non corrigée : `triggerMode` (purchasing-trigger-service.js) et `evidence.execution_mode` (evidence de l'adapter) sont deux calculs indépendants.** Ils concordent aujourd'hui uniquement parce qu'Allegro fixe les deux en dur de façon cohérente (`execution_mode:'manual'` côté adapter, `auto_order:false` côté ligne fournisseur en base). Rien ne garantit cette cohérence pour un futur provider. **GAP-4, en branchant le gate (qui porte l'evidence adapter) sur `purchasing-trigger-service.js`, est le bon moment pour dériver `triggerMode` depuis `evidence.execution_mode`/`auto_order_ready` plutôt que depuis `ps.auto_order` recalculé indépendamment.** Ne pas découvrir ça en cours de GAP-4 — c'est déjà documenté, section 9bis.5 de la doctrine.
+
+### Ce que GAP-2 a réellement livré (PR #1599)
+
+- `services/suppliers/execution-adapter-registry.js` (nouveau) — composition root unique `{ allegro, aliexpress }`, gelé. Réutilise `supplier-fulfillment-adapter-contract.js:validateAdapter()` tel quel — même contrat déjà utilisé par le gate et la readiness, pas de nouvelle abstraction.
+- `purchasing-trigger-service.js` — `callSupplierAPI` ne contient plus aucun `switch(platform)` ni aucun nom de provider en dur. Les 3 stubs (`noonOrder`/`amazonOrder`/`aliexpressOrder`, qui n'ont jamais retourné `success:true`) ont disparu sans changement de comportement observable.
+- Deux causes d'échec distinctes (provider non enregistré vs adapter connu sans `placeOrder`), jamais confondues dans le message `.error`, mais produisant le **même résultat observable** (`api_failed_notified`, chemin manuel identique à aujourd'hui) — aucun comportement changé, seul le diagnostic est plus précis.
+- `tests/unit/purchasing-adapter-resolution.test.js` (10 tests) — dont une caractérisation explicite qu'Allegro `auto_order=false` n'atteint jamais la résolution d'adapter (fige le comportement Golden actuel).
+- **Zéro migration, zéro changement de comportement pour un provider réel.**
+
+### Leçons de GAP-2 — à lire avant GAP-4
+
+**1. Le registry d'exécution est délibérément conçu pour être réutilisé par GAP-4, pas dupliqué.** `execution-adapter-registry.js` exporte exactement la même forme de map `{provider: adapter}` que celle attendue par `canonical-unit-purchasing-gate.js` (paramètre `adapters`). **GAP-4 doit importer `EXECUTION_ADAPTER_REGISTRY` depuis ce fichier pour l'injecter dans le gate — ne pas construire une seconde map.** Un seul provider s'enregistre une fois, consommé par les deux usages (preflight readiness via le gate, résolution d'exécution auto-order via `callSupplierAPI`).
+
+**2. Une erreur de test peut ressembler à une erreur de production — vérifier lequel avant de corriger.** Le premier run des nouveaux tests GAP-2 a échoué avec `Cannot read properties of undefined (reading 'catch')`, y compris sur un test qui n'atteignait même pas le code modifié (`auto_order=false`). Ça sentait le bug de production, mais la cause était un oubli dans le `beforeEach` du **nouveau fichier de test lui-même** (`notifyText.mockResolvedValue(undefined)` manquant — présent dans le fichier de test existant, oublié en écrivant le nouveau). Diagnostiqué en comparant les deux fichiers de test avant de toucher au code de production. **Pour GAP-4 : un échec de test qui touche un chemin non modifié est un signal fort que le bug est dans le test, pas dans le code — vérifier le mock setup avant de suspecter une régression.**
+
+**3. Assertions de non-régression trop larges peuvent masquer un vrai changement de comportement — vérifier précisément ce qu'elles couvrent.** Les 4 tests existants `auto_order=true` (`purchasing-trigger-service.test.js`, `purchasing.test.js`) n'assertent que `result.purchase_orders[0].status`, jamais le contenu de `apiResult.error`. C'est ce qui a rendu le refactor GAP-2 invisible à ces tests — légitime ici (le contenu du message d'erreur n'est contractuel nulle part), mais **GAP-4 doit vérifier, avant de s'appuyer sur "les tests existants passent" comme preuve de non-régression, que ces tests assertent bien le champ que GAP-4 modifie** — sinon un vrai changement de comportement passerait aussi inaperçu.
+
+### Ce que GAP-4A/4B a réellement livré (PR #1601)
+
+**Divergence spec/réalité assumée** : le GAP-4 original prévoyait un composition root unique branchant le trigger sur le gate. En pratique, une preuve réelle a montré que la readiness (« cette unité × cette quantité est-elle commandable maintenant ? ») et l'exécution (« comment construire/exécuter l'ordre natif ? ») sont deux questions distinctes qui ne doivent jamais partager un même moteur — buildOrderPayload n'a rien à faire dans la readiness. Arbitrage validé : split en deux fonctions.
+
+- **GAP-4A — `evaluateCanonicalProcurementReadiness()`** (`canonical-unit-purchasing-gate.js`) : moteur unique de readiness pour le chemin réel. Ne construit jamais de payload natif. Le besoin de preflight distant est une **capability déclarée par `provider-authority.js:remotePreflightRequirement()`**, jamais dérivée de la présence/absence d'un adapter dans le registry — un adapter manquant pour un provider `REQUIRED` est un `HARD_STOP` explicite (`REMOTE_PREFLIGHT_ADAPTER_UNAVAILABLE`), jamais un repli silencieux vers "pas nécessaire". `prepareCanonicalUnitPurchase()` (composition root pré-existant, consommé par le script de preuve Allegro) reste inchangé dans son contrat.
+- **Cross-check SOI** : `identitiesMatch()` devient l'autorité unique de comparaison (`supplier-order-identity.js`), consommée à la fois par `purchasing-canonical-money.js` et par le gate — plus de comparaison dupliquée/divergente.
+- **GAP-4B — `services/suppliers/procurement-execution-boundary.js`** (nouveau) : frontière d'exécution séparée, atteinte uniquement si `auto_order=true`. Exige strictement `buildOrderPayload` **et** `placeOrder` sur le même adapter (`validateExecutionAdapter`) — un adapter avec une seule des deux capacités est traité `EXECUTION_ADAPTER_INCOMPLETE`, jamais un repli automatique silencieux vers le manuel. Aujourd'hui aucun adapter du registry (allegro, aliexpress) n'a les deux, donc ce chemin n'est jamais exercé en production — fait constaté, comportement Golden inchangé.
+- `purchasing-trigger-service.js` consomme désormais GAP-4A pour la readiness du SKU exact (remplace la résolution money inline) et GAP-4B pour la tentative d'exécution auto — `callSupplierAPI` (GAP-2) reste le chemin legacy pour le mapping manuel (sans exactSku).
+- `supplier-fulfillment-readiness.js` reste dormant comme prévu — seuls `VERDICT`/`result` sont réutilisés par le gate, jamais `evaluateSupplierFulfillmentReadiness` ni `procurementRoute`.
+
+### Leçons de GAP-4 — à lire avant GAP-5
+
+**1. Un diagnostic de bug écrit dans une session ne veut pas dire qu'il a été poussé — toujours vérifier l'état réel avant de continuer.** Une session de travail antérieure avait correctement diagnostiqué le bug principal (paramètres manquants dans `adapter.evaluate()`) et préparé un correctif local, mais celui-ci n'a jamais atteint GitHub. Un agent qui reprend doit vérifier l'état du repo/de la PR réels (`git fetch` + CI status), pas supposer que des notes de session décrivent l'état poussé.
+
+**2. Corriger le bug diagnostiqué peut en révéler un second, plus profond.** Une fois `evaluate()` correctement appelé, `identitiesMatch()` s'est révélée toujours fragile (`JSON.stringify`) malgré un commentaire prétendant le contraire — jamais réellement corrigée dans le code poussé. **Une doctrine écrite dans un commentaire n'est une preuve de rien ; seule la lecture du code l'est.**
+
+**3. Corriger le code peut révéler un trou d'architecture, pas juste un bug ponctuel.** Une fois les deux bugs corrigés, le test butait sur un besoin de credentials AliExpress réels — parce que `triggerPurchasing()` ne propageait **aucun contexte d'injection** vers l'adapter, alors que l'adapter lui-même expose déjà ce seam (`context.aliexpressConnected || connected`). **GAP-5, en formalisant la frontière `execute → evidence → verify → confirm`, doit vérifier si ce même besoin de threading de contexte se pose côté exécution/évidence** — le pattern est probablement réutilisable tel quel (thread `context` de bout en bout, jamais interprété par le cœur, seulement transmis).
+
+**4. GAP-4B ne couvre PAS le contrat de reconciliation de GAP-5.** `resolveAutoOrderResult()` marque la PO `status='confirmed'` dès que `boundary.crossed` est vrai (c.-à-d. dès que `placeOrder()` réussit) — **sans aucune étape de vérification/réconciliation séparée**. Ce n'est pas un bug (le chemin n'est jamais atteint en production aujourd'hui, aucun adapter n'ayant les deux capacités), mais GAP-5 doit combler précisément cet écart : « la confirmation d'une PO doit dépendre d'une preuve provider réconciliée » n'est pas encore vrai dans le code, seulement dans la doctrine.
+
+**5. Une divergence de calcul de baseline de migration entre environnement local et CI peut fausser une reproduction locale — vérifier contre les vrais logs CI avant de conclure.** Le calcul du "commit du dump" (`git log -1 -- docs/db/railway-live-schema.sql`) a donné un résultat différent en local (checkout complet) et en CI (probablement shallow sur ce job précis, contrairement au job `Backend gates` déjà corrigé par `5bf3fc3`) — sous-comptant différemment les migrations déjà baselinées. Ni l'un ni l'autre n'est fatal en soi (les deux finissent par appliquer les DDL manquantes), mais une reproduction locale naïve peut donner une erreur totalement différente de celle du CI réel (`relation does not exist` localement vs `credentials requises` en CI). **Toujours comparer l'erreur locale à l'erreur CI exacte avant de conclure qu'un correctif est suffisant.**
 
 ---
 
