@@ -153,6 +153,7 @@ module.exports = {
       'routes/market-delegation-performance.js',
     ],
     tests: [
+      'tests/unit/provision-market-operator.test.js',
       'tests/unit/market-delegation-p0.test.js',
       'tests/unit/market-delegation-team-service.test.js',
       'tests/unit/market-delegation-team-routes.test.js',

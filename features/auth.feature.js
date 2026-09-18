@@ -78,6 +78,8 @@ module.exports = {
     ],
     boutique: [],
     tests: [
+      'tests/unit/auth.test.js',
+      'tests/unit/login-market-operator-contract.test.js',
       'tests/unit/auth-cookie.test.js',
       'tests/unit/auth-session.test.js',
       'tests/unit/auth-session-policy.test.js',

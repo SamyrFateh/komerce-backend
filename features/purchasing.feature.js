@@ -98,6 +98,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/allegro-fulfillment-adapter.test.js',
+      'tests/unit/shipping-capability-contract.test.js',
       'tests/unit/allegro-purchase-reconciliation.test.js',
       'tests/unit/allegro-seller-order-read.test.js',
       'tests/unit/allegro-sandbox-purchase-proof.test.js',

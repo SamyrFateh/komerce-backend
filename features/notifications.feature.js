@@ -43,6 +43,10 @@ module.exports = {
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
     tests: [
+      'tests/unit/meta-whatsapp.test.js',
+      'tests/unit/notification-api.test.js',
+      'tests/unit/alerts.test.js',
+      'tests/unit/alert-engine.test.js',
       'core/test-whatsapp-notifications.js',
       // tests/unit/authkey-client.test.js rehomé depuis auth-identity (O7.1)
       'tests/unit/authkey-client.test.js',

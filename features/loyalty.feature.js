@@ -55,6 +55,7 @@ module.exports = {
       'tests/unit/loyalty-service.test.js',
       'tests/unit/admin-loyalty-route.test.js',
       'tests/integration/post-o8-loyalty-real-db.test.js',
+      'tests/unit/post-o8-loyalty-seams.test.js',
     ],
   },
 

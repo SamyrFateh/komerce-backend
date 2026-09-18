@@ -122,6 +122,7 @@ module.exports = {
       'tests/unit/providers-services-routes.test.js',
       'tests/unit/providers-interaction-policy.test.js',
       'tests/unit/seed-discovery-staging.test.js',
+      'tests/unit/manual-discovery-content.test.js',
     ],
   },
 
