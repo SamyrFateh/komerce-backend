@@ -11567,6 +11567,13 @@
       {
         "feature": "purchasing",
         "category": "tests",
+        "declared": "tests/unit/purchasing-readiness-vocabulary-mapping.test.js",
+        "resolvedPath": "tests/unit/purchasing-readiness-vocabulary-mapping.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
         "declared": "tests/unit/canonical-unit-cutover-comparison.test.js",
         "resolvedPath": "tests/unit/canonical-unit-cutover-comparison.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -35248,7 +35255,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1296
+        "filesObserved": 1297
       },
       "boutique": {
         "filesObserved": 217,
