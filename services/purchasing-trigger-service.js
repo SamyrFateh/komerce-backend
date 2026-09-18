@@ -132,14 +132,22 @@ async function loadExactSoldSku(client, item) {
  * Le cross-check fort SOI vendue ↔ SOI canonique (provider+version+payload)
  * reste obligatoire : il est appliqué par le gate lui-même via
  * `soldIdentity`, jamais réimplémenté ici.
+ *
+ * `context` est transmis tel quel à `adapter.evaluate()` (via le gate) —
+ * seam de test déjà établi par les adapters eux-mêmes (ex.
+ * `context.aliexpressConnected || connected` dans
+ * aliexpress-fulfillment-adapter.js), jamais interprété ici. Vide par
+ * défaut ({}) : le comportement de production (aucun contexte injecté)
+ * est inchangé.
  */
-async function resolveExactSkuProcurementReadiness(client, exactSku, quantity) {
+async function resolveExactSkuProcurementReadiness(client, exactSku, quantity, context = {}) {
   const readiness = await evaluateCanonicalProcurementReadiness({
     productSkuId: exactSku.id,
     quantity,
     soldIdentity: exactSku.supplier_order_identity,
     query: client.query.bind(client),
     adapters: EXECUTION_ADAPTER_REGISTRY,
+    context,
   });
   if (!readiness.ready) {
     throw blockedSupplierIdentity(readiness.reason || readiness.status, readiness.evidence || {});
@@ -238,7 +246,17 @@ async function alertItemFailure(client, orderId, item, savepointIdx, itemErr) {
   }
 }
 
-async function triggerPurchasing(orderId) {
+/**
+ * @param {string} orderId
+ * @param {object} [options]
+ * @param {object} [options.context] Transmis tel quel jusqu'à
+ *   `adapter.evaluate()` pour le SKU exactement vendu (readiness GAP-4A
+ *   uniquement — n'affecte pas GAP-4B). Seam de test/injection établi par
+ *   les adapters eux-mêmes ; jamais consommé ni interprété ici. Vide par
+ *   défaut : comportement de production strictement inchangé.
+ */
+async function triggerPurchasing(orderId, options = {}) {
+  const readinessContext = options.context || {};
   const results = [];
   const { rows: [order] } = await db.query(`SELECT o.*, r.name AS relais_name FROM orders o LEFT JOIN relais r ON r.id = o.relais_id WHERE o.id = $1`, [orderId]);
   if (!order) throw new Error(`Commande introuvable : ${orderId}`);
@@ -264,7 +282,7 @@ async function triggerPurchasing(orderId) {
       let canonicalMoney = null;
       try {
         exactSku = await loadExactSoldSku(client, item);
-        canonicalMoney = exactSku ? await resolveExactSkuProcurementReadiness(client, exactSku, item.quantity) : null;
+        canonicalMoney = exactSku ? await resolveExactSkuProcurementReadiness(client, exactSku, item.quantity, readinessContext) : null;
       } catch (itemErr) {
         await alertItemFailure(client, orderId, item, idx, itemErr);
         results.push({ item: item.product_name, status: 'error', error: itemErr.message });

@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_sku_id, quantity, canonical Unit resolver, provider adapters, provider authority
  * @outputs       blocked_verdict_or_readiness_verdict_or_built_payload_hard_stop
- * @depends       services/sourcing-canonical-unit-product-sku-resolution.js, services/suppliers/supplier-order-identity.js, services/suppliers/supplier-fulfillment-adapter-contract.js, services/suppliers/provider-authority.js
+ * @depends       services/sourcing-canonical-unit-product-sku-resolution.js, services/suppliers/supplier-order-identity.js, services/suppliers/supplier-fulfillment-adapter-contract.js, services/suppliers/provider-authority.js, services/suppliers/supplier-fulfillment-readiness.js (VERDICT/result uniquement — jamais evaluateSupplierFulfillmentReadiness ni procurementRoute)
  * @used-by       services/purchasing-trigger-service.js (GAP-4A, evaluateCanonicalProcurementReadiness), scripts/allegro-golden-prebuyer-proof.js (prepareCanonicalUnitPurchase)
  * @db-read       none
  * @db-write      none
@@ -55,9 +55,29 @@ const canonicalResolver = require('../sourcing-canonical-unit-product-sku-resolu
 const identityContract = require('./supplier-order-identity');
 const adapterContract = require('./supplier-fulfillment-adapter-contract');
 const providerAuthority = require('./provider-authority');
+// Contrat verdict adapter (VERDICT/result) — autorité unique déjà établie par
+// le composant fulfillment pré-existant. evaluateCanonicalProcurementReadiness
+// consomme ces deux exports pour appeler adapter.evaluate() dans la forme
+// complète que les adapters réels (ex. AliExpress) exigent, au lieu de
+// réimplémenter un sous-ensemble de paramètres qui les fait planter.
+const { VERDICT: ADAPTER_VERDICT, result: adapterResult } = require('./supplier-fulfillment-readiness');
 
 const BLOCKED = 'BLOCKED_SUPPLIER_IDENTITY';
 const READY = 'FULFILLMENT_READY';
+
+// Pays du hub d'achat pour le preflight distant — même convention déjà
+// établie dans scripts/aliexpress-prepayment-proof-core.js (AE/Dubaï par
+// défaut, override via KOMERCE_ALIEXPRESS_PROCUREMENT_HUB_COUNTRY_CODE).
+// Volontairement PAS l'abstraction procurementRoute complète (rejetée par
+// la doctrine pour ce moteur, cf. supplier-fulfillment-readiness.js) — les
+// adapters qui exigent une destination (AliExpress) n'ont besoin que du
+// pays, jamais d'un hub complet (code/province/ville).
+const DEFAULT_PROCUREMENT_HUB_COUNTRY_CODE = 'AE';
+function procurementHubCountryCode(env = process.env) {
+  return String(
+    env.KOMERCE_ALIEXPRESS_PROCUREMENT_HUB_COUNTRY_CODE || DEFAULT_PROCUREMENT_HUB_COUNTRY_CODE
+  ).trim().toUpperCase();
+}
 
 function blocked(reason, evidence = {}) {
   return { status: BLOCKED, ready: false, reason, evidence, place_order_invoked: false };
@@ -252,11 +272,15 @@ async function evaluateCanonicalProcurementReadiness({
     }
     try {
       preflight = await adapterCheck.adapter.evaluate({
+        db: { query },
         row: { ...resolution.legacy_sku, supplier_unit_ref: resolution.supplier_unit_ref },
         identity,
         quantity: requestedQuantity,
+        destination: { country_code: procurementHubCountryCode() },
         context,
         canonicalUnit: resolution.canonical_unit,
+        VERDICT: ADAPTER_VERDICT,
+        result: adapterResult,
       });
     } catch (error) {
       return blocked('PREFLIGHT_ERROR', { provider: identity.provider, error_name: error?.name || 'Error' });

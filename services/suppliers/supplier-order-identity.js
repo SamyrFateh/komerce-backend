@@ -118,6 +118,29 @@ function resolveSupplierUnit(contract, supplierSku, quantity = 1, options = {}) 
 }
 
 /**
+ * Égalité structurelle profonde, insensible à l'ordre des clés d'objet.
+ * JSON.stringify(a) === JSON.stringify(b) est fragile : deux objets
+ * logiquement identiques peuvent produire des chaînes différentes selon
+ * l'ordre d'insertion des clés — et Postgres JSONB ne garantit PAS la
+ * préservation de cet ordre à la relecture. Les tableaux restent
+ * comparés élément par élément, dans l'ordre (l'ordre y est
+ * sémantiquement significatif, contrairement aux clés d'objet).
+ */
+function deepEqual(a, b) {
+  if (a === b) return true;
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) {
+    if (a.length !== b.length) return false;
+    return a.every((item, i) => deepEqual(item, b[i]));
+  }
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  if (keysA.length !== keysB.length) return false;
+  return keysA.every((key) => Object.prototype.hasOwnProperty.call(b, key) && deepEqual(a[key], b[key]));
+}
+
+/**
  * Autorité unique de comparaison d'identité. Deux Supplier Order Identity
  * sont la MÊME unité commandable si et seulement si provider + version +
  * payload sont strictement identiques. Prédicat pur — le caller décide
@@ -130,7 +153,7 @@ function identitiesMatch(a, b) {
   if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
   return String(a.provider) === String(b.provider)
     && Number(a.version) === Number(b.version)
-    && JSON.stringify(a.payload) === JSON.stringify(b.payload);
+    && deepEqual(a.payload, b.payload);
 }
 
 module.exports = {

@@ -7,7 +7,7 @@
  * @inputs        product_sku.id, quantity, procurementRoute, provider adapters
  * @outputs       supplier_fulfillment_verdict
  * @depends       services/suppliers/supplier-order-identity.js, services/suppliers/supplier-fulfillment-adapter-contract.js
- * @used-by       internal purchasing callers
+ * @used-by       services/suppliers/allegro-fulfillment-adapter.js (require direct, VERDICT/result), services/suppliers/canonical-unit-purchasing-gate.js (require direct, VERDICT/result uniquement, GAP-4A — jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reçoit en paramètres injectés par cet appelant, sans require() propre
  * @db-read       product_skus
  * @db-write      none
  * @db-txn        none
