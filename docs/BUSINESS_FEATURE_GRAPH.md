@@ -79,7 +79,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 33 | 33 | 482 | 482 | 0 |
+| backend | 33 | 33 | 500 | 500 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 105 | 105 | 0 |
 
@@ -548,11 +548,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.
 
-- services: 22
+- services: 23
 - routes: 1
 - migrations: 2
 - scripts: 2
-- tests: 28
+- tests: 29
 - tables owned (lifecycle): 3 — `product_suppliers`, `purchase_orders`, `suppliers`
 - tables written: 3
 - interfaces exposed: 10
@@ -1989,7 +1989,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1299 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1301 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 217 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_

@@ -18,7 +18,7 @@
 'use strict';
 
 const resolver = require('./sourcing-canonical-unit-product-sku-resolution');
-const { blockedSupplierIdentity, normalizeIdentity } = require('./suppliers/supplier-order-identity');
+const { blockedSupplierIdentity, normalizeIdentity, identitiesMatch } = require('./suppliers/supplier-order-identity');
 
 function normalizeCurrency(value) {
   const currency = String(value || '').trim().toUpperCase();
@@ -63,11 +63,7 @@ async function resolveCanonicalSupplierMoney(client, exactSku) {
     exactSku.supplier_order_identity,
     exactSku.supplier_unit_ref
   );
-  if (
-    canonicalIdentity.provider !== soldIdentity.provider
-    || canonicalIdentity.version !== soldIdentity.version
-    || JSON.stringify(canonicalIdentity.payload) !== JSON.stringify(soldIdentity.payload)
-  ) {
+  if (!identitiesMatch(canonicalIdentity, soldIdentity)) {
     throw blockedSupplierIdentity('Supplier Order Identity canonique divergente du SKU vendu', {
       product_sku_id: exactSku.id,
       canonical_unit_id: resolution.canonical_unit_id,

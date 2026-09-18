@@ -9,8 +9,11 @@
 jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 jest.mock('../../services/notification-service', () => ({ notifyText: jest.fn() }));
 jest.mock('../../utils/alerts', () => ({ createAlert: jest.fn().mockResolvedValue({ id: 'alert-1' }) }));
-jest.mock('../../services/purchasing-canonical-money', () => ({
-  resolveCanonicalSupplierMoney: jest.fn(),
+// GAP-4A — le trigger appelle désormais le gate (moteur de décision unique)
+// au lieu de resolveCanonicalSupplierMoney directement. On mocke le point
+// d'entrée réel pour prouver la non-régression bit-for-bit de la PO Golden.
+jest.mock('../../services/suppliers/canonical-unit-purchasing-gate', () => ({
+  evaluateCanonicalProcurementReadiness: jest.fn(),
 }));
 jest.mock('../../utils/logger', () => {
   const mk = () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() });
@@ -19,7 +22,7 @@ jest.mock('../../utils/logger', () => {
 
 const db = require('../../db');
 const { createAlert } = require('../../utils/alerts');
-const { resolveCanonicalSupplierMoney } = require('../../services/purchasing-canonical-money');
+const { evaluateCanonicalProcurementReadiness } = require('../../services/suppliers/canonical-unit-purchasing-gate');
 const { triggerPurchasing } = require('../../services/purchasing-trigger-service');
 
 const ORDER = { id: 'order-1', reference: 'KOM-EXACT-1', relais_id: null, relais_name: null };
@@ -52,12 +55,20 @@ describe('purchasing exact SKU procurement', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     delete process.env.ADMIN_PHONE;
-    resolveCanonicalSupplierMoney.mockResolvedValue({
-      unit_price: 29.9,
-      currency: 'PLN',
+    // Verdict GAP-4A Golden — bit-for-bit identique à l'ancienne réponse de
+    // resolveCanonicalSupplierMoney (unit_price/currency/canonical_unit_id/
+    // supplier_unit_ref/identity), traduit dans la forme readiness du gate.
+    evaluateCanonicalProcurementReadiness.mockResolvedValue({
+      ready: true,
+      status: 'FULFILLMENT_READY',
+      provider: IDENTITY.provider,
       canonical_unit_id: 'unit-1',
+      canonical_unit: { canonical_unit_id: 'unit-1', current_state: {} },
       supplier_unit_ref: 'UNIT-BLACK-M',
-      supplier_order_identity: IDENTITY,
+      identity: IDENTITY,
+      money: { unit_price: 29.9, currency: 'PLN' },
+      preflight: null,
+      place_order_invoked: false,
     });
   });
 
@@ -75,7 +86,7 @@ describe('purchasing exact SKU procurement', () => {
     expect(result.purchase_orders).toEqual([{
       item: 'Produit local', status: 'local_stock_no_purchase', purchase_order_id: null,
     }]);
-    expect(resolveCanonicalSupplierMoney).not.toHaveBeenCalled();
+    expect(evaluateCanonicalProcurementReadiness).not.toHaveBeenCalled();
     expect(client.calls.some(c => c.sql.includes('FROM product_suppliers'))).toBe(false);
     expect(client.calls.some(c => c.sql.includes('INSERT INTO purchase_orders'))).toBe(false);
   });
@@ -114,7 +125,9 @@ describe('purchasing exact SKU procurement', () => {
     expect(result.purchase_orders[0]).toEqual({
       item: 'T-shirt', status: 'admin_notified', purchase_order_id: 'po1',
     });
-    expect(resolveCanonicalSupplierMoney).toHaveBeenCalledWith(client, expect.objectContaining({ id: 'sku-black-m' }));
+    expect(evaluateCanonicalProcurementReadiness).toHaveBeenCalledWith(expect.objectContaining({
+      productSkuId: 'sku-black-m', quantity: 2, soldIdentity: IDENTITY,
+    }));
     expect(client.calls.find(c => c.sql.includes('FROM product_suppliers')).sql).toContain('lower(s.platform) = lower($2)');
     expect(insertParams[0]).toBe(ORDER.id);
     expect(insertParams[1]).toBe('oi-import');
@@ -127,6 +140,70 @@ describe('purchasing exact SKU procurement', () => {
     expect(insertParams[10]).toBe(29.9);
     expect(insertParams[11]).toBe('PLN');
     expect(insertParams[12]).toBe('manual');
+  });
+
+  it('GAP-4A — readiness bloquée (adapter requis absent, identité divergente, etc.) devient une erreur item avec alerte, comme avant', async () => {
+    evaluateCanonicalProcurementReadiness.mockResolvedValueOnce({
+      ready: false, status: 'BLOCKED_SUPPLIER_IDENTITY',
+      reason: 'REMOTE_PREFLIGHT_ADAPTER_UNAVAILABLE', evidence: { provider: 'allegro' },
+      place_order_invoked: false,
+    });
+    const item = {
+      id: 'oi-blocked', product_id: 'p1', product_name: 'T-shirt', category: 'mode',
+      quantity: 1, sku_id: 'sku-black-m', fulfillment_source: 'IMPORT', price_aed: 50,
+    };
+    db.query.mockResolvedValueOnce({ rows: [ORDER] }).mockResolvedValueOnce({ rows: [item] });
+    const client = makeClient((sql) => {
+      if (sql.includes('FROM product_skus')) return { rows: [{
+        id: 'sku-black-m', product_id: 'p1', supplier_sku: 'ALI-BLACK-M',
+        supplier_unit_ref: 'UNIT-BLACK-M', supplier_order_identity: IDENTITY,
+      }] };
+      throw new Error(`SQL inattendu: ${sql}`);
+    });
+    db.getClient.mockResolvedValue(client);
+
+    const result = await triggerPurchasing(ORDER.id);
+
+    expect(result.purchase_orders[0].status).toBe('error');
+    expect(result.purchase_orders[0].error).toContain('REMOTE_PREFLIGHT_ADAPTER_UNAVAILABLE');
+    expect(client.calls.some(c => c.sql.includes('FROM product_suppliers'))).toBe(false);
+    expect(createAlert).toHaveBeenCalledWith(client, expect.objectContaining({ type: 'purchasing_po_creation_failed' }));
+  });
+
+  it('GAP-4B — exact-sku + auto_order=true retombe en mode manuel (aucun adapter n\'a placeOrder+buildOrderPayload), jamais un crash', async () => {
+    const item = {
+      id: 'oi-auto', product_id: 'p1', product_name: 'T-shirt', category: 'mode',
+      quantity: 1, sku_id: 'sku-black-m', fulfillment_source: 'IMPORT', price_aed: 50,
+    };
+    db.query.mockResolvedValueOnce({ rows: [ORDER] }).mockResolvedValueOnce({ rows: [item] });
+
+    let updateSql = null;
+    const client = makeClient((sql, params) => {
+      if (sql.includes('FROM product_skus')) return { rows: [{
+        id: 'sku-black-m', product_id: 'p1', supplier_sku: 'ALI-BLACK-M',
+        supplier_unit_ref: 'UNIT-BLACK-M', supplier_order_identity: IDENTITY,
+      }] };
+      if (sql.includes('FROM product_suppliers')) return { rows: [{
+        id: 'ps1', supplier_id: 'sup1', supplier_sku: 'GENERIC-PRODUCT-SKU',
+        supplier_price_aed: null, supplier_name: 'AliExpress', platform: 'aliexpress',
+        auto_order: true, contact_phone: null, account_id: null, api_key_enc: null,
+        api_secret_enc: null, lead_time_days: 5, supplier_url: null,
+      }] };
+      if (sql.startsWith('SELECT id, status FROM purchase_orders')) return { rows: [] };
+      if (sql.includes('INSERT INTO purchase_orders')) return { rows: [{ id: 'po1' }] };
+      if (sql.startsWith('UPDATE purchase_orders')) { updateSql = sql; return { rows: [] }; }
+      throw new Error(`SQL inattendu: ${sql}`);
+    });
+    db.getClient.mockResolvedValue(client);
+
+    const result = await triggerPurchasing(ORDER.id);
+
+    expect(result.purchase_orders[0]).toEqual({
+      item: 'T-shirt', status: 'api_failed_notified', purchase_order_id: 'po1',
+    });
+    // Mode manuel — jamais 'confirmed' — puisque la boundary n'est jamais franchie aujourd'hui.
+    expect(updateSql).toContain("status='notified'");
+    expect(updateSql).toContain("trigger_mode='manual'");
   });
 
   it('IMPORT + sku_id sans SOI bloque avant le mapping fournisseur', async () => {
@@ -149,7 +226,7 @@ describe('purchasing exact SKU procurement', () => {
 
     expect(result.purchase_orders[0].status).toBe('error');
     expect(result.purchase_orders[0].error).toContain('BLOCKED_SUPPLIER_IDENTITY');
-    expect(resolveCanonicalSupplierMoney).not.toHaveBeenCalled();
+    expect(evaluateCanonicalProcurementReadiness).not.toHaveBeenCalled();
     expect(client.calls.some(c => c.sql.includes('FROM product_suppliers'))).toBe(false);
     expect(createAlert).toHaveBeenCalledWith(client, expect.objectContaining({ type: 'purchasing_po_creation_failed' }));
   });

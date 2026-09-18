@@ -18,8 +18,10 @@ const path = require('path');
 
 const {
   PROVIDERS,
+  PREFLIGHT_REQUIREMENT,
   isSupportedProvider,
   normalizeProviderCode,
+  remotePreflightRequirement,
 } = require('../../services/suppliers/provider-authority');
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -102,6 +104,37 @@ describe('provider-authority — normalizeProviderCode', () => {
   test('valeurs non-string → chaîne vide normalisée', () => {
     expect(normalizeProviderCode(null)).toBe('');
     expect(normalizeProviderCode(undefined)).toBe('');
+  });
+});
+
+describe('provider-authority — remotePreflightRequirement (GAP-4A)', () => {
+  // Capability PROUVÉE (Golden Allegro sandbox + AliExpress preflight), pas
+  // dérivée de la présence d'un adapter dans un registry d'exécution.
+  test('allegro et aliexpress exigent un preflight distant (intégration live prouvée)', () => {
+    expect(remotePreflightRequirement('allegro')).toBe(PREFLIGHT_REQUIREMENT.REQUIRED);
+    expect(remotePreflightRequirement('aliexpress')).toBe(PREFLIGHT_REQUIREMENT.REQUIRED);
+  });
+
+  test('noon, amazon_uae, local, whatsapp n\'exigent aucun preflight distant (aucune intégration live)', () => {
+    for (const p of ['noon', 'amazon_uae', 'local', 'whatsapp']) {
+      expect(remotePreflightRequirement(p)).toBe(PREFLIGHT_REQUIREMENT.NOT_REQUIRED);
+    }
+  });
+
+  test('provider inconnu → UNKNOWN, jamais NOT_REQUIRED par défaut (fail-closed)', () => {
+    expect(remotePreflightRequirement('totally_unknown_provider')).toBe(PREFLIGHT_REQUIREMENT.UNKNOWN);
+    expect(remotePreflightRequirement('')).toBe(PREFLIGHT_REQUIREMENT.UNKNOWN);
+    expect(remotePreflightRequirement(null)).toBe(PREFLIGHT_REQUIREMENT.UNKNOWN);
+  });
+
+  test('chaque provider canonique a une capability déclarée (aucun UNKNOWN silencieux pour un provider supporté)', () => {
+    for (const p of PROVIDERS) {
+      expect(remotePreflightRequirement(p)).not.toBe(PREFLIGHT_REQUIREMENT.UNKNOWN);
+    }
+  });
+
+  test('insensible à la casse et aux espaces', () => {
+    expect(remotePreflightRequirement('  ALLEGRO  ')).toBe(PREFLIGHT_REQUIREMENT.REQUIRED);
   });
 });
 
