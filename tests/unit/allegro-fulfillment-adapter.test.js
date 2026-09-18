@@ -71,6 +71,20 @@ test('manual order payload requires a successful exact preflight and never fabri
   await expect(adapter.buildOrderPayload({ identity: a.identity, quantity: 1, preflight: { ready: false } }))
     .rejects.toThrow('MANUAL_PREFLIGHT_REQUIRED');
 });
+// GAP-6 — Environment Isolation. buildOrderPayload() a sa PROPRE vérification
+// environment, indépendante de celle de exactOfferId()/evaluate() (pas un
+// appel partagé — deux checks séparés, vérifiés ici séparément). Complète
+// la couverture des trois points de contrôle sandbox-only du provider
+// Allegro : evaluate (déjà couvert ci-dessus), reconcile (couvert dans
+// allegro-purchase-reconciliation.test.js), et buildOrderPayload (ici).
+// Aucune PO de production n'est possible aujourd'hui : les trois rejettent
+// indépendamment toute identity dont environment ≠ 'sandbox'.
+test('buildOrderPayload rejette indépendamment une identity non-sandbox (production)', async () => {
+  const prodIdentity = { provider: 'allegro', version: 1, payload: { environment: 'production', offer_id: '123' } };
+  await expect(adapter.buildOrderPayload({
+    identity: prodIdentity, quantity: 1, preflight: { ready: true, evidence: { manual_procurement_ready: true } },
+  })).rejects.toThrow('ALLEGRO_IDENTITY_MISMATCH');
+});
 test('default context uses configured client boundary', async () => {
   const a = args(); delete a.context;
   expect((await adapter.evaluate(a)).status).toBe('SUPPLIER_UNAVAILABLE');
