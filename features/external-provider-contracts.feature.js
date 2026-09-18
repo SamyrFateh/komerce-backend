@@ -74,6 +74,7 @@ module.exports = {
       'scripts/provider-contract-proof.js',
       'scripts/external-provider-boundary-scan.js',
       'scripts/stripe-provider-contract-proof.js',
+      'scripts/ebay-sandbox-browse-proof.js',
     ],
     config: [
       'governance/external-provider-registry.json',
@@ -82,6 +83,7 @@ module.exports = {
       'tests/unit/provider-contract-proof.test.js',
       'tests/unit/external-provider-boundary-scan.test.js',
       'tests/unit/stripe-provider-contract-proof.test.js',
+      'tests/unit/ebay-sandbox-browse-proof.test.js',
     ],
   },
 
@@ -106,6 +108,7 @@ module.exports = {
       { fn: 'summary', file: 'scripts/provider-contract-proof.js' },
       { fn: 'scanRepository', file: 'scripts/external-provider-boundary-scan.js' },
       { fn: 'runStripeReadOnlyProof', file: 'scripts/stripe-provider-contract-proof.js' },
+      { fn: 'runEbayBrowseReadOnlyProof', file: 'scripts/ebay-sandbox-browse-proof.js' },
     ],
     consumes: [
       'infrastructure — runtime Node et primitives techniques uniquement ; aucune vérité métier externe n est déléguée à infrastructure',

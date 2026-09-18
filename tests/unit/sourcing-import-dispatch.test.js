@@ -10,6 +10,7 @@ const mockCsvFetch = jest.fn();
 const mockManualFetch = jest.fn();
 const mockCjFetch = jest.fn();
 const mockAliExpressFetch = jest.fn();
+const mockEbayFetch = jest.fn();
 
 jest.mock('../../services/suppliers/connectors/csv-connector', () => ({
   fetchProducts: (...args) => mockCsvFetch(...args),
@@ -34,6 +35,12 @@ jest.mock('../../services/suppliers/connectors/aliexpress-connected-connector', 
   IS_ACTIVE: true,
   INACTIVE_REASON: null,
   fetchProducts: (...args) => mockAliExpressFetch(...args),
+}));
+
+jest.mock('../../services/suppliers/connectors/ebay-connector', () => ({
+  IS_ACTIVE: true,
+  INACTIVE_REASON: null,
+  fetchProducts: (...args) => mockEbayFetch(...args),
 }));
 
 const { connectorCatalog, apiConnectorOptions, dispatchToConnector } = require('../../services/sourcing-import-dispatch');
@@ -79,6 +86,7 @@ describe('sourcing-import-dispatch', () => {
       expect.objectContaining({ supplier: 'noon', active: false, reason: 'Noon disabled in test' }),
       expect.objectContaining({ supplier: 'cj', active: true, label: 'CJdropshipping API' }),
       expect.objectContaining({ supplier: 'aliexpress', active: true, label: 'AliExpress Dropshipper API' }),
+      expect.objectContaining({ supplier: 'ebay', active: true, label: 'eBay Sandbox Browse API' }),
     ]));
   });
 
@@ -144,6 +152,28 @@ describe('sourcing-import-dispatch', () => {
       verifiedWarehouse: 1,
     }));
     expect(JSON.stringify(mockCjFetch.mock.calls[0][0])).not.toContain('never-forward-me');
+  });
+
+  it('délègue eBay par le même contrat commun, borné et sans credential venant de la requête', async () => {
+    const expected = { products: [{ supplier_product_id: 'EBAY-1' }], invalid: [], total: 1 };
+    mockEbayFetch.mockResolvedValue(expected);
+
+    await expect(dispatchToConnector({
+      source_type: 'api',
+      supplier_id: 'EBAY',
+      product_ids: ['v1|1234567890|0'],
+      keyword: 'iphone',
+      page_size: 3,
+      api_key: 'never-forward',
+      client_secret: 'never-forward',
+    })).resolves.toBe(expected);
+
+    expect(mockEbayFetch).toHaveBeenCalledWith(expect.objectContaining({
+      productIds: ['v1|1234567890|0'],
+      keyword: 'iphone',
+      size: 3,
+    }));
+    expect(JSON.stringify(mockEbayFetch.mock.calls[0][0])).not.toContain('never-forward');
   });
 
   it('délègue AliExpress par le même contrat commun sans credential venant de la requête', async () => {
