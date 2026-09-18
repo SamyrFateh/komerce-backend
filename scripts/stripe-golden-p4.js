@@ -346,7 +346,7 @@ async function runStripeGoldenP4({ env = process.env, StripeCtor, dbModule } = {
   try {
     fixture = await createFixture(db, spec);
 
-    const created = await createStripeIntent(fixture.order, stripe, db);
+    await createStripeIntent(fixture.order, stripe, db);
     const paymentIntentId = String(
       (await db.query('SELECT stripe_payment_id FROM orders WHERE id = $1', [fixture.orderId]))
         .rows[0]?.stripe_payment_id || ''
