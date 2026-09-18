@@ -4,9 +4,9 @@
 >
 > Doctrine: `docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md`
 >
-> Status: **P2 PASS — ADAPTER PROVED, P3 NOT STARTED**
+> Status: **P3 PASS — SOURCING PIPELINE PROVED, P4 BLOCKED**
 >
-> No provider registration, adapter, DB migration, or runtime behavior is authorized by this document.
+> eBay is registered only on the provider-neutral sourcing/Browse path. Purchasing execution, buyer checkout, payment, seller mutation and global provider authority remain unproved and are not authorized by this proof.
 
 Analysis date: **2026-09-18**
 
@@ -43,8 +43,8 @@ The planes must not be collapsed into one generic "eBay API" capability.
 | P0 Business readiness | **PASS (Browse sourcing scope)** | real Komerce Sandbox keyset present; environment + marketplace structurally valid |
 | P1 Raw API | **PASS** | real client-credentials OAuth + bounded search + exact getItem + native money/availability/purchasability proved |
 | P2 Adapter | **PASS** | real repo connector maps exact Browse truth to NormalizedSupplierProduct V2 + opaque eBay SOI; generic resolveSupplierUnit accepts it fail-closed |
-| P3 Pipeline | **NOT STARTED** | eBay is not yet registered in the sourcing runtime dispatch |
-| P4 Golden E2E | **FORBIDDEN** | pipeline and buyer checkout entitlement remain unproved |
+| P3 Pipeline | **PASS (sourcing)** | generic sourcing dispatch → catalog import → Source/Capture/Product+Offer+Unit Observations → shadow Resolution proved against real eBay Sandbox on isolated PostgreSQL |
+| P4 Golden E2E | **BLOCKED** | deterministic seller fixture + buyer Order/member-checkout entitlement + controlled transaction remain unproved |
 
 A documented endpoint is not a proved Komerce capability.
 
@@ -480,8 +480,8 @@ Conversation    PASS
 P0              PASS
 P1              PASS
 P2              PASS
-P3              NOT STARTED
-P4              FORBIDDEN
+P3              PASS (sourcing)
+P4              BLOCKED
 ```
 
 P2 evidence:
@@ -522,6 +522,70 @@ Browse item truth, normalize it through the real repository connector, and pass
 the provider-neutral supplier-unit resolver without any eBay branch in the core.
 It does **not** prove seller fixture mutation, Order API entitlement, checkout,
 payment, or purchase execution.
+
+### P3 real sourcing-pipeline evidence
+
+P3 was then exercised through the real generic Komerce sourcing composition on
+an isolated PostgreSQL database. The proof does not use the production database
+and does not invoke any provider mutation:
+
+```text
+repo proof
+  scripts/ebay-p3-pipeline-proof.js
+  tests/unit/ebay-p3-pipeline-proof.test.js
+
+runtime registration
+  services/sourcing-import-dispatch.js
+  CONNECTORS.api.ebay
+  automation = null
+  no provider branch in the orchestrator
+
+isolated PostgreSQL
+  service: ebay-p3-isolated-proof
+  deployment: 1617fdf8-034a-418d-a618-bcbeff584e98
+  status: SUCCESS
+
+P3 runner
+  service: ebay-p3-runner
+  deployment: 80a9ad68-ab01-4002-aac0-0213d904f408
+  healthcheck: /health
+  status: SUCCESS
+```
+
+The P3 health server is created only after the following real path succeeds:
+
+```text
+real eBay Sandbox OAuth
+→ bounded Browse search
+→ exact getItem
+→ ebay-connector
+→ generic sourcing-import-dispatch
+→ catalog-import-orchestrator
+→ supplier_catalog_imports
+→ sourcing_candidates with V2 normalized_source_contract
+→ sourcing_sources: api:ebay
+→ complete sourcing_capture
+→ immutable Product / Offer / Unit observations
+→ exact eBay SOI only at Unit grain
+→ shadow Resolution
+→ active canonical bindings for all observations
+→ P3 PASS
+```
+
+The proof explicitly asserts:
+
+- Product does not receive Supplier Order Identity;
+- Unit `source_ref` remains the exact eBay REST item identity;
+- Unit SOI remains opaque (`provider=ebay`, version 1);
+- every observation reaches a canonical binding;
+- resolution does not require manual review or leave a deferred parent;
+- `placeOrder` is never invoked;
+- no eBay mutation is invoked.
+
+Therefore eBay is now a proved **sourcing provider through P3**. This does not
+promote eBay into Purchasing provider authority and does not claim checkout,
+payment, order placement, cancellation, refund, tracking, or seller-fixture
+mutation. Those remain separate P4/business-readiness work.
 
 ## 13. Minimal P1 probes
 
