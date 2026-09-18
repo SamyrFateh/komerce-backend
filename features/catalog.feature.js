@@ -33,7 +33,7 @@ module.exports = {
 
   perimeter: {
     in: [
-      'connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress, Allegro Sandbox)',
+      'connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress, Allegro Sandbox, eBay Sandbox Browse enregistré dans le dispatch générique P3)',
       'contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait',
       'publication produit et déclenchement de l audit prix via economic-engine',
       'categories boutique admin',
@@ -82,6 +82,7 @@ module.exports = {
     ],
     scripts: [
       'scripts/allegro-sandbox-check.js',
+      'scripts/ebay-p3-pipeline-proof.js',
       'scripts/cj-real-showcase-seed.js',
       'scripts/cj-full-catalog-sync.js',
       'scripts/aliexpress-500-catalog-sync.js',
@@ -89,6 +90,7 @@ module.exports = {
     services: [
       'services/suppliers/allegro-sandbox-client.js',
       'services/suppliers/connectors/allegro-connector.js',
+      'services/suppliers/connectors/ebay-connector.js',
       'services/product-publication-guard.js',
       'services/product-admin-service.js',
       'services/product-variant-service.js',
@@ -241,6 +243,8 @@ module.exports = {
     tests: [
       'tests/unit/allegro-sandbox-client.test.js',
       'tests/unit/allegro-connector.test.js',
+      'tests/unit/ebay-connector.test.js',
+      'tests/unit/ebay-p3-pipeline-proof.test.js',
       'tests/unit/allegro-sandbox-check.test.js',
       'tests/unit/admin-boutique-categories.test.js',
       'tests/unit/catalog-product-route-canary-http.test.js',

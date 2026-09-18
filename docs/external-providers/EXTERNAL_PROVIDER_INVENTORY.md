@@ -36,6 +36,7 @@ The scanner performs no network call and no mutation. It reports registered prov
 | **AliExpress DS** | catalog, sourcing, purchasing | connector, OAuth, purchase preflight, fulfillment adapter, multiple Golden/prepayment scripts/docs | **IMPLEMENTED / REQUALIFY** |
 | **CJ** | catalog, sourcing | connector, catalog index, full-catalog/showcase scripts, validation docs | **IMPLEMENTED / REQUALIFY** |
 | **Noon** | catalog, sourcing | `noon-connector.js`, dispatch/authority registration, unit tests | **IMPLEMENTED / REQUALIFY**; live/raw proof not assumed |
+| **eBay** | catalog, sourcing; purchasing candidate remains unproved | real Sandbox Browse P0/P1, exact V2 adapter P2, generic dispatch + isolated DB Source/Capture/Observation/Resolution pipeline P3 | **P3 PASS (SOURCING)** — buyer checkout/Order entitlement still unproved |
 | Manual/CSV/JSON sources | catalog, sourcing | local ingestion connectors | internal/local source contracts, **not external API providers** |
 
 ## 2. Payment
@@ -137,7 +138,7 @@ B — customer-visible outbound communication / identity
     Meta WhatsApp, AuthKey, Brevo
 
 C — supplier procurement/source truth
-    AliExpress, CJ, Noon
+    AliExpress, CJ, Noon, eBay
     Allegro already reference P4
 
 D — enrichment/media/operations
