@@ -30,6 +30,13 @@ function compact(value) {
   return String(value == null ? '' : value).trim();
 }
 
+function normalizeEnvironment(value) {
+  const environment = compact(value).toLowerCase();
+  if (!environment) return 'UNKNOWN';
+  if (!['sandbox', 'production'].includes(environment)) throw new Error('EBAY_ENV_INVALID');
+  return environment.toUpperCase();
+}
+
 function normalizeMarketplace(value) {
   const marketplace = compact(value || DEFAULT_MARKETPLACE).toUpperCase();
   if (!/^EBAY_[A-Z]{2,8}$/.test(marketplace)) throw new Error('EBAY_SANDBOX_MARKETPLACE_INVALID');
@@ -52,21 +59,24 @@ function normalizeItemId(value) {
 }
 
 function configuration(env = process.env) {
-  const clientId = compact(env.EBAY_SANDBOX_CLIENT_ID);
-  const clientSecret = compact(env.EBAY_SANDBOX_CLIENT_SECRET);
-  const marketplace = normalizeMarketplace(env.EBAY_SANDBOX_MARKETPLACE_ID);
-  const itemId = normalizeItemId(env.EBAY_SANDBOX_ITEM_ID);
-  const query = compact(env.EBAY_SANDBOX_SEARCH_QUERY);
-  const limit = normalizeLimit(env.EBAY_SANDBOX_SEARCH_LIMIT);
+  const clientId = compact(env.EBAY_CLIENT_ID);
+  const clientSecret = compact(env.EBAY_CLIENT_SECRET);
+  const environment = normalizeEnvironment(env.EBAY_ENV);
+  const marketplace = normalizeMarketplace(env.EBAY_MARKETPLACE_ID);
+  const itemId = normalizeItemId(env.EBAY_ITEM_ID);
+  const query = compact(env.EBAY_SEARCH_QUERY);
+  const limit = normalizeLimit(env.EBAY_SEARCH_LIMIT);
 
   return Object.freeze({
     clientId,
     clientSecret,
+    environment,
     marketplace,
     itemId,
     query,
     limit,
     credentialsConfigured: Boolean(clientId && clientSecret),
+    sandboxSelected: environment === 'SANDBOX',
     discoveryConfigured: Boolean(itemId || query),
   });
 }
@@ -210,7 +220,7 @@ async function runEbayBrowseReadOnlyProof({ env = process.env, fetchImpl = globa
   let exactItem = null;
   let exactItemError = null;
 
-  if (config.credentialsConfigured) {
+  if (config.credentialsConfigured && config.sandboxSelected) {
     try {
       tokenMeta = await requestApplicationToken({
         clientId: config.clientId,
@@ -277,6 +287,11 @@ async function runEbayBrowseReadOnlyProof({ env = process.env, fetchImpl = globa
             state: 'KNOWN',
             evidence: config.credentialsConfigured ? 'CONFIGURED' : 'MISSING',
           },
+          {
+            id: 'SANDBOX_ENVIRONMENT',
+            state: 'KNOWN',
+            evidence: config.environment,
+          },
           { id: 'APPLICATION_OAUTH_SCOPE', state: 'KNOWN', evidence: APPLICATION_SCOPE },
           { id: 'MARKETPLACE_CONTEXT', state: 'KNOWN', evidence: config.marketplace },
           {
@@ -336,12 +351,17 @@ async function runEbayBrowseReadOnlyProof({ env = process.env, fetchImpl = globa
           evidence: config.credentialsConfigured ? 'CLIENT_ID_AND_SECRET_PRESENT' : 'MISSING_CONFIGURATION',
         },
         {
+          id: 'SANDBOX_ENVIRONMENT_SELECTED',
+          pass: config.sandboxSelected,
+          evidence: config.environment,
+        },
+      ],
+      P1: [
+        {
           id: 'DISCOVERY_TARGET_CONFIGURED',
           pass: config.discoveryConfigured,
           evidence: config.itemId ? 'EXPLICIT_ITEM_ID' : (config.query ? 'SEARCH_QUERY' : 'MISSING'),
         },
-      ],
-      P1: [
         {
           id: 'APPLICATION_TOKEN_ACCEPTED',
           pass: tokenAccepted,
@@ -374,8 +394,10 @@ async function runEbayBrowseReadOnlyProof({ env = process.env, fetchImpl = globa
     proof,
     report: summary(proof),
     diagnostics: Object.freeze({
+      environment: config.environment,
       marketplace: config.marketplace,
       credentials_configured: config.credentialsConfigured,
+      sandbox_selected: config.sandboxSelected,
       discovery_target: config.itemId ? 'explicit_item_id' : (config.query ? 'bounded_search' : 'none'),
       search_limit: config.limit,
       token_accepted: tokenAccepted,
@@ -429,6 +451,7 @@ module.exports = {
   APPLICATION_SCOPE,
   DEFAULT_MARKETPLACE,
   configuration,
+  normalizeEnvironment,
   safeProviderError,
   requestApplicationToken,
   searchItems,
