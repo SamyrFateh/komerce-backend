@@ -1,0 +1,401 @@
+{
+  "schema_version": 1,
+  "doctrine": "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md",
+  "ignore_hosts": [
+    "komerce.co",
+    "localhost",
+    "127.0.0.1",
+    "github.com",
+    "docs.github.com",
+    "developer.paypal.com",
+    "console.twilio.com",
+    "railway.app"
+  ],
+  "providers": [
+    {
+      "id": "allegro",
+      "family": "supplier",
+      "expected_scope": "runtime",
+      "consumers": [
+        "catalog",
+        "sourcing",
+        "purchasing"
+      ],
+      "hosts": [
+        "api.allegro.pl.allegrosandbox.pl",
+        "allegro.pl.allegrosandbox.pl"
+      ],
+      "markers": [
+        "ALLEGRO_SANDBOX_",
+        "allegro-sandbox"
+      ],
+      "analysis_document": "docs/external-providers/suppliers/ALLEGRO_SANDBOX.md",
+      "highest_proof": "P4"
+    },
+    {
+      "id": "aliexpress",
+      "family": "supplier",
+      "expected_scope": "runtime",
+      "consumers": [
+        "catalog",
+        "sourcing",
+        "purchasing"
+      ],
+      "hosts": [
+        "api-sg.aliexpress.com"
+      ],
+      "markers": [
+        "ALIEXPRESS_APP_KEY",
+        "ALIEXPRESS_SESSION",
+        "provider: 'aliexpress'"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "cj",
+      "family": "supplier",
+      "expected_scope": "runtime",
+      "consumers": [
+        "catalog",
+        "sourcing"
+      ],
+      "hosts": [
+        "developers.cjdropshipping.com"
+      ],
+      "markers": [
+        "CJ_API_KEY",
+        "PROVIDER_ID = 'cj'",
+        "CJdropshipping"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "noon",
+      "family": "supplier",
+      "expected_scope": "runtime",
+      "consumers": [
+        "catalog",
+        "sourcing"
+      ],
+      "hosts": [],
+      "markers": [
+        "NOON_API",
+        "PROVIDER_ID = 'noon'",
+        "Noon"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "stripe",
+      "family": "payment",
+      "expected_scope": "runtime",
+      "consumers": [
+        "payments"
+      ],
+      "hosts": [],
+      "markers": [
+        "require('stripe')",
+        "STRIPE_SECRET_KEY",
+        "stripe.paymentIntents"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "paypal",
+      "family": "payment",
+      "expected_scope": "runtime",
+      "consumers": [
+        "payments"
+      ],
+      "hosts": [
+        "api-m.sandbox.paypal.com",
+        "api-m.paypal.com"
+      ],
+      "markers": [
+        "PAYPAL_CLIENT_ID",
+        "PAYPAL_ENV"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "mtn-momo-cg",
+      "family": "payment",
+      "expected_scope": "runtime",
+      "consumers": [
+        "payments"
+      ],
+      "hosts": [
+        "sandbox.momodeveloper.mtn.com"
+      ],
+      "markers": [
+        "MTN_MOMO_CG_"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "orange-money-cm",
+      "family": "payment",
+      "expected_scope": "runtime",
+      "consumers": [
+        "payments"
+      ],
+      "hosts": [
+        "api.orange.com"
+      ],
+      "markers": [
+        "ORANGE_MONEY_CM_"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "kartapay-km",
+      "family": "payment",
+      "expected_scope": "runtime",
+      "consumers": [
+        "payments"
+      ],
+      "hosts": [
+        "api-staging.kartapay.me",
+        "api.kartapay.me",
+        "auth.kartapay.me"
+      ],
+      "markers": [
+        "KARTAPAY_"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "meta-whatsapp",
+      "family": "messaging",
+      "expected_scope": "runtime",
+      "consumers": [
+        "notifications",
+        "auth-identity"
+      ],
+      "hosts": [
+        "graph.facebook.com"
+      ],
+      "markers": [
+        "META_WA_",
+        "META_WA_TOKEN",
+        "PHONE_NUMBER_ID"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "authkey",
+      "family": "messaging",
+      "expected_scope": "runtime",
+      "consumers": [
+        "notifications"
+      ],
+      "hosts": [
+        "authkey.io"
+      ],
+      "markers": [
+        "AUTHKEY_API_KEY",
+        "AUTHKEY_URL"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "brevo",
+      "family": "messaging",
+      "expected_scope": "runtime",
+      "consumers": [
+        "notifications"
+      ],
+      "hosts": [
+        "api.brevo.com"
+      ],
+      "markers": [
+        "BREVO_API_KEY",
+        "BREVO_KEY"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "anthropic",
+      "family": "ai",
+      "expected_scope": "runtime",
+      "consumers": [
+        "catalog"
+      ],
+      "hosts": [
+        "api.anthropic.com"
+      ],
+      "markers": [
+        "ANTHROPIC_API_KEY",
+        "ANTHROPIC_URL"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "openai",
+      "family": "ai",
+      "expected_scope": "runtime",
+      "consumers": [
+        "catalog"
+      ],
+      "hosts": [
+        "api.openai.com"
+      ],
+      "markers": [
+        "OPENAI_API_KEY",
+        "OPENAI_URL"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "imagekit",
+      "family": "media",
+      "expected_scope": "tooling",
+      "consumers": [
+        "catalog"
+      ],
+      "hosts": [
+        "upload.imagekit.io"
+      ],
+      "markers": [
+        "IMAGEKIT_PRIVATE_KEY",
+        "IMAGEKIT_UPLOAD_URL"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "cloudinary",
+      "family": "media",
+      "expected_scope": "tooling",
+      "consumers": [
+        "catalog"
+      ],
+      "hosts": [
+        "api.cloudinary.com"
+      ],
+      "markers": [
+        "CLOUDINARY_",
+        "cloudinary.com/v1_1"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "wikimedia",
+      "family": "media",
+      "expected_scope": "tooling",
+      "consumers": [
+        "catalog"
+      ],
+      "hosts": [
+        "commons.wikimedia.org",
+        "upload.wikimedia.org"
+      ],
+      "markers": [
+        "WIKIMEDIA_"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "dummyjson",
+      "family": "external-content",
+      "expected_scope": "tooling",
+      "consumers": [
+        "catalog"
+      ],
+      "hosts": [
+        "dummyjson.com"
+      ],
+      "markers": [],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "escuelajs",
+      "family": "external-content",
+      "expected_scope": "tooling",
+      "consumers": [
+        "catalog"
+      ],
+      "hosts": [
+        "api.escuelajs.co"
+      ],
+      "markers": [],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "qrserver",
+      "family": "media",
+      "expected_scope": "runtime",
+      "consumers": [
+        "logistics",
+        "documents"
+      ],
+      "hosts": [
+        "api.qrserver.com"
+      ],
+      "markers": [
+        "QRServer"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "sentry",
+      "family": "observability",
+      "expected_scope": "runtime",
+      "consumers": [
+        "platform-ops"
+      ],
+      "hosts": [],
+      "markers": [
+        "SENTRY_DSN",
+        "@sentry/node"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "twilio",
+      "family": "messaging",
+      "expected_scope": "config-only",
+      "consumers": [],
+      "hosts": [],
+      "markers": [
+        "TWILIO_ACCOUNT_SID",
+        "TWILIO_AUTH_TOKEN"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
+      "id": "africas-talking",
+      "family": "messaging",
+      "expected_scope": "config-only",
+      "consumers": [],
+      "hosts": [],
+      "markers": [
+        "AT_API_KEY",
+        "AT_USERNAME",
+        "AT_SENDER_ID"
+      ],
+      "analysis_document": null,
+      "highest_proof": "UNQUALIFIED"
+    }
+  ]
+}
