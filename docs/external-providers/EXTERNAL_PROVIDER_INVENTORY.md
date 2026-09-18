@@ -36,14 +36,14 @@ The scanner performs no network call and no mutation. It reports registered prov
 | **AliExpress DS** | catalog, sourcing, purchasing | connector, OAuth, purchase preflight, fulfillment adapter, multiple Golden/prepayment scripts/docs | **IMPLEMENTED / REQUALIFY** |
 | **CJ** | catalog, sourcing | connector, catalog index, full-catalog/showcase scripts, validation docs | **IMPLEMENTED / REQUALIFY** |
 | **Noon** | catalog, sourcing | `noon-connector.js`, dispatch/authority registration, unit tests | **IMPLEMENTED / REQUALIFY**; live/raw proof not assumed |
-| **eBay** | catalog, sourcing, purchasing candidate | official Buy Browse / Order + Sell Inventory contract characterized in `docs/external-providers/suppliers/EBAY.md`; no runtime integration | **CONVERSATION CHARACTERIZED / P0 BLOCKED** |
+| **eBay** | catalog, sourcing; purchasing candidate remains unproved | real Sandbox Browse P0/P1, exact V2 adapter P2, generic dispatch + isolated DB Source/Capture/Observation/Resolution pipeline P3 | **P3 PASS (SOURCING)** — buyer checkout/Order entitlement still unproved |
 | Manual/CSV/JSON sources | catalog, sourcing | local ingestion connectors | internal/local source contracts, **not external API providers** |
 
 ## 2. Payment
 
 | Provider | Consumers | Evidence found | L0 status |
 |---|---|---|---|
-| **Stripe** | payment, orders/refunds | PaymentIntent create/retrieve, real TEST webhook delivery, exact fail-closed Komerce mapping, refunds, idempotence | **P2 PASS candidate** — next P3 DB/API pipeline |
+| **Stripe** | payment, orders/refunds | PaymentIntent create/retrieve, real TEST webhook delivery, exact fail-closed mapping, real API/DB pipeline, guarded P4 runner, refunds, idempotence | **P3 PASS** — P4 runner ready, real execution pending |
 | **PayPal** | payment | `paypal-client.js`, create/capture/refund flow, webhook events, sandbox probe | **IMPLEMENTED / REQUALIFY** |
 | **MTN MoMo CG** | payment | provider adapter + sandbox probe + status normalization | **IMPLEMENTED / REQUALIFY** |
 | **Orange Money CM** | payment | provider adapter, OAuth, payment/status URLs fail-closed until merchant contract configured | **IMPLEMENTED / REQUALIFY** |
