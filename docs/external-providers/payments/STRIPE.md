@@ -3,8 +3,8 @@
 Analysis date: **2026-09-18**  
 Family: **payment**  
 Consumer: **payments**  
-Current highest proof: **P1 PASS (Stripe TEST / Komerce sandbox)**  
-Current gate: **P2 — prove the Komerce adapter/service mapping against the now-proved provider contract**
+Current highest proof: **P2 PASS candidate (pending PR gates)**  
+Current gate: **P3 — prove the real Komerce DB/API payment pipeline against the qualified Stripe mapping**
 
 Existing code is evidence to inspect, not an automatic external PASS.
 
@@ -45,7 +45,7 @@ POST /api/payments/stripe/intent currently:
 - uses a stable idempotency key;
 - persists the returned PaymentIntent ID.
 
-Implementation: routes/payments.js, services/payment-stripe.js, services/create-stripe-order-intent.js.
+Implementation authority: `routes/payments.js` → `services/payment-stripe.js`. The former orphan duplicate `services/create-stripe-order-intent.js` is removed by the P2 convergence.
 
 ### Payment confirmation
 
@@ -184,8 +184,8 @@ Under the doctrine, downstream stages cannot PASS while P0/P1 are blocked.
 | Conversation | **PASS** | official Stripe contract + Komerce boundary fully describable |
 | P0 Business readiness | **PASS (TEST)** | TEST credentials accepted; one enabled webhook observed; livemode=false; required payment events configured; API version 2026-03-25.dahlia |
 | P1 Raw API | **PASS (TEST)** | balance/read APIs accepted; PaymentIntent create → exact retrieve → canceled cleanup; real Stripe-signed webhook delivery returned HTTP 200 |
-| P2 Adapter | **NEXT** | internal service tests exist and can now be promoted against a proved provider contract |
-| P3 Pipeline | **BLOCKED BY P2** | existing Komerce DB/API pipeline evidence to re-run after P2 qualification |
+| P2 Adapter | **PASS candidate** | canonical `createStripeIntent` maps exact amount/currency/order metadata/idempotency; existing intents are read back and must match exactly; drift/read failure/non-reusable state hard-stop |
+| P3 Pipeline | **NEXT** | existing Komerce DB/API pipeline evidence to re-run against the now-qualified P2 boundary |
 | P4 Golden E2E | **BLOCKED** | controlled Komerce order → Stripe test payment → real webhook confirmation still to prove |
 
 Registry classification: highest_proof = P1.
@@ -244,6 +244,45 @@ The same PaymentIntent was then retrieved and proved:
 - livemode=false.
 
 The fixture ended in `requires_payment_method` and was canceled successfully as cleanup. No payment method was attached and no charge was made.
+
+
+
+## 6ter. P2 — Komerce ↔ Stripe mapping
+
+P2 converges the implementation on one runtime authority:
+
+```text
+routes/payments.js
+  → services/payment-stripe.js
+  → Stripe SDK
+```
+
+The orphan duplicate `services/create-stripe-order-intent.js` and its dedicated test are removed.
+
+The active adapter/service mapping is now proved to send:
+
+- amount = exact `orders.total_eur` converted to integer EUR minor units;
+- currency = `eur`;
+- metadata.order_id = exact Komerce order ID;
+- metadata.order_reference = exact Komerce order reference;
+- metadata.komerce = `true`;
+- description bound to the Komerce order reference;
+- stable idempotency key = `order_pi_<order.id>`.
+
+Existing PaymentIntent reuse is now fail-closed:
+
+1. retrieve the exact stored `stripe_payment_id`;
+2. require exact amount;
+3. require exact EUR currency;
+4. require exact order ID/reference/marker metadata;
+5. require a reusable Stripe status;
+6. only then expose the existing client secret.
+
+If read-back fails, provider data drifts, or the PaymentIntent is not reusable, Komerce blocks instead of silently creating/reusing another intent.
+
+A newly created PaymentIntent is also checked against the same contract before its external reference is persisted on the order.
+
+P2 evidence is in `tests/unit/payment-stripe.test.js` and the G2 invariant in `tests/integration/isweep-invariants.test.js`.
 
 
 ## 7. Findings
@@ -362,12 +401,12 @@ CONSUMER: payments
 CONVERSATION: PASS  
 P0: PASS (TEST)  
 P1: PASS (TEST)  
-P2: NEXT  
-P3: BLOCKED BY P2  
+P2: PASS candidate (pending PR gates)  
+P3: NEXT  
 P4: BLOCKED  
-HIGHEST PROOF: P1  
-MAIN NEXT ACTION: prove Komerce ↔ Stripe adapter/service mapping (P2), then pipeline composition (P3).
+HIGHEST PROOF: P2 candidate  
+MAIN NEXT ACTION: prove the real Komerce DB/API payment pipeline (P3).
 
 ## Komerce conclusion
 
-Stripe's external contract is now proved through **P1 in the real Stripe TEST environment**. Provider discovery is no longer the blocker. The next step is to promote the existing Komerce service/adapter evidence through P2, then prove the composed DB/API pipeline at P3 before a controlled P4 Golden.
+Stripe's external contract is proved through **P1 in the real Stripe TEST environment**, and the Komerce mapping is now converged and fail-closed for **P2**. Once the P2 PR gates pass, the next boundary is P3: the real Komerce DB/API payment pipeline, followed by a controlled P4 Golden.

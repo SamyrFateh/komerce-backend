@@ -84,14 +84,16 @@ describe('I-SWEEP invariants regression net', () => {
     expect(resolveCallIndex).toBeLessThan(commitIndex);
   });
 
-  test('G2: Stripe order intent uses command-level idempotency and reuses existing PaymentIntent', () => {
-    const service = read('services/create-stripe-order-intent.js');
+  test('G2: Stripe intent authority is fail-closed, idempotent and read-back verified', () => {
+    const service = read('services/payment-stripe.js');
 
     expect(service).toContain('stripe_payment_id');
     expect(service).toContain('paymentIntents.retrieve');
     expect(service).toContain('paymentIntents.create');
     expect(service).toContain('idempotencyKey');
-    expect(service).toContain('pi_order_${order.id}');
+    expect(service).toContain('order_pi_${order.id}');
+    expect(service).toContain('STRIPE_PAYMENT_INTENT_CONTRACT_MISMATCH');
+    expect(service).toContain('STRIPE_PAYMENT_INTENT_READBACK_FAILED');
   });
 
   test('G2: triggerPurchasing prevents replay duplicates per order and product supplier mapping', () => {

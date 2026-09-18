@@ -60,130 +60,180 @@ const {
   markStripeEventProcessed,
 } = require('../../services/payment-stripe');
 
-describe('createStripeIntent', () => {
+describe('createStripeIntent — P2 provider contract mapping', () => {
   beforeEach(() => {
     mockDbQuery.mockReset();
   });
 
-  test('réutilise un PaymentIntent existant si statut réutilisable', async () => {
-    const order = {
+  function order(overrides = {}) {
+    return {
       id: 'order-1',
       reference: 'KMC-001',
       total_eur: '49.90',
-      stripe_payment_id: 'pi_existing',
+      stripe_payment_id: null,
+      ...overrides,
     };
+  }
 
+  function exactIntent(overrides = {}) {
+    return {
+      id: 'pi_exact',
+      status: 'requires_payment_method',
+      client_secret: 'secret_exact',
+      amount: 4990,
+      currency: 'eur',
+      metadata: {
+        order_id: 'order-1',
+        order_reference: 'KMC-001',
+        komerce: 'true',
+      },
+      ...overrides,
+    };
+  }
+
+  test('mappe exactement amount/currency/metadata/description/idempotency vers Stripe', async () => {
     const stripe = {
       paymentIntents: {
-        retrieve: jest.fn().mockResolvedValue({
-          id: 'pi_existing',
-          status: 'requires_payment_method',
-          client_secret: 'secret_existing',
-          amount: 4990,
-        }),
+        retrieve: jest.fn(),
+        create: jest.fn().mockResolvedValue(exactIntent({ id: 'pi_new' })),
+      },
+    };
+    mockDbQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+
+    const result = await createStripeIntent(order(), stripe, { query: mockDbQuery });
+
+    expect(stripe.paymentIntents.create).toHaveBeenCalledWith({
+      amount: 4990,
+      currency: 'eur',
+      metadata: {
+        order_reference: 'KMC-001',
+        order_id: 'order-1',
+        komerce: 'true',
+      },
+      description: 'Komerce — Commande KMC-001',
+    }, {
+      idempotencyKey: 'order_pi_order-1',
+    });
+    expect(mockDbQuery).toHaveBeenCalledWith(
+      'UPDATE orders SET stripe_payment_id = $1 WHERE id = $2',
+      ['pi_new', 'order-1']
+    );
+    expect(result).toEqual({
+      client_secret: 'secret_exact',
+      amount_eur: '49.90',
+      amount_cents: 4990,
+      order_reference: 'KMC-001',
+    });
+  });
+
+  test('réutilise seulement un PaymentIntent relu et exactement conforme', async () => {
+    const stripe = {
+      paymentIntents: {
+        retrieve: jest.fn().mockResolvedValue(exactIntent()),
         create: jest.fn(),
       },
     };
 
-    const result = await createStripeIntent(order, stripe, { query: mockDbQuery });
+    const result = await createStripeIntent(
+      order({ stripe_payment_id: 'pi_exact' }),
+      stripe,
+      { query: mockDbQuery }
+    );
 
     expect(result.reused).toBe(true);
-    expect(result.client_secret).toBe('secret_existing');
+    expect(result.client_secret).toBe('secret_exact');
     expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
     expect(mockDbQuery).not.toHaveBeenCalled();
   });
 
-  test('crée un nouvel intent si aucun stripe_payment_id existant', async () => {
-    const order = {
-      id: 'order-2',
-      reference: 'KMC-002',
-      total_eur: '10.00',
-      stripe_payment_id: null,
+  test.each([
+    ['amount', { amount: 5000 }],
+    ['currency', { currency: 'usd' }],
+    ['order_id', { metadata: { order_id: 'other', order_reference: 'KMC-001', komerce: 'true' } }],
+    ['order_reference', { metadata: { order_id: 'order-1', order_reference: 'OTHER', komerce: 'true' } }],
+    ['komerce marker', { metadata: { order_id: 'order-1', order_reference: 'KMC-001', komerce: 'false' } }],
+  ])('bloque la réutilisation si le read-back diverge sur %s', async (_label, drift) => {
+    const stripe = {
+      paymentIntents: {
+        retrieve: jest.fn().mockResolvedValue(exactIntent(drift)),
+        create: jest.fn(),
+      },
     };
 
+    await expect(createStripeIntent(
+      order({ stripe_payment_id: 'pi_exact' }),
+      stripe,
+      { query: mockDbQuery }
+    )).rejects.toMatchObject({ code: 'STRIPE_PAYMENT_INTENT_CONTRACT_MISMATCH' });
+
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+    expect(mockDbQuery).not.toHaveBeenCalled();
+  });
+
+  test('bloque si le read-back Stripe échoue au lieu de créer un nouvel intent à l aveugle', async () => {
+    const stripe = {
+      paymentIntents: {
+        retrieve: jest.fn().mockRejectedValue(new Error('provider unavailable')),
+        create: jest.fn(),
+      },
+    };
+
+    await expect(createStripeIntent(
+      order({ stripe_payment_id: 'pi_existing' }),
+      stripe,
+      { query: mockDbQuery }
+    )).rejects.toMatchObject({ code: 'STRIPE_PAYMENT_INTENT_READBACK_FAILED' });
+
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+    expect(mockDbQuery).not.toHaveBeenCalled();
+  });
+
+  test('bloque un intent existant non réutilisable au lieu d en créer un second', async () => {
+    const stripe = {
+      paymentIntents: {
+        retrieve: jest.fn().mockResolvedValue(exactIntent({ status: 'succeeded' })),
+        create: jest.fn(),
+      },
+    };
+
+    await expect(createStripeIntent(
+      order({ stripe_payment_id: 'pi_exact' }),
+      stripe,
+      { query: mockDbQuery }
+    )).rejects.toMatchObject({ code: 'STRIPE_PAYMENT_INTENT_NOT_REUSABLE' });
+
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
+  test('bloque et ne persiste pas si la réponse de création ne respecte pas le contrat', async () => {
     const stripe = {
       paymentIntents: {
         retrieve: jest.fn(),
-        create: jest.fn().mockResolvedValue({
-          id: 'pi_new',
-          client_secret: 'secret_new',
-        }),
+        create: jest.fn().mockResolvedValue(exactIntent({ amount: 5000 })),
       },
     };
 
-    mockDbQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    await expect(createStripeIntent(order(), stripe, { query: mockDbQuery }))
+      .rejects.toMatchObject({ code: 'STRIPE_PAYMENT_INTENT_CONTRACT_MISMATCH' });
 
-    const result = await createStripeIntent(order, stripe, { query: mockDbQuery });
-
-    expect(stripe.paymentIntents.create).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: 1000, currency: 'eur' }),
-      expect.objectContaining({ idempotencyKey: 'order_pi_order-2' })
-    );
-    expect(mockDbQuery).toHaveBeenCalledWith(
-      'UPDATE orders SET stripe_payment_id = $1 WHERE id = $2',
-      ['pi_new', 'order-2']
-    );
-    expect(result.client_secret).toBe('secret_new');
-    expect(result.reused).toBeUndefined();
+    expect(mockDbQuery).not.toHaveBeenCalled();
   });
 
-  test('crée un nouvel intent si retrieve échoue', async () => {
-    const order = {
-      id: 'order-3',
-      reference: 'KMC-003',
-      total_eur: '20.00',
-      stripe_payment_id: 'pi_broken',
-    };
-
+  test('bloque un montant Komerce invalide avant tout appel provider', async () => {
     const stripe = {
       paymentIntents: {
-        retrieve: jest.fn().mockRejectedValue(new Error('not found')),
-        create: jest.fn().mockResolvedValue({
-          id: 'pi_new2',
-          client_secret: 'secret_new2',
-        }),
+        retrieve: jest.fn(),
+        create: jest.fn(),
       },
     };
 
-    mockDbQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    await expect(createStripeIntent(
+      order({ total_eur: '0.00' }),
+      stripe,
+      { query: mockDbQuery }
+    )).rejects.toMatchObject({ code: 'STRIPE_PAYMENT_INTENT_AMOUNT_INVALID' });
 
-    const result = await createStripeIntent(order, stripe, { query: mockDbQuery });
-
-    expect(stripe.paymentIntents.create).toHaveBeenCalled();
-    expect(result.client_secret).toBe('secret_new2');
-  });
-
-  test('crée un nouvel intent si le PaymentIntent existant n\'est plus réutilisable (statut non éligible)', async () => {
-    const order = {
-      id: 'order-4',
-      reference: 'KMC-004',
-      total_eur: '30.00',
-      stripe_payment_id: 'pi_stale',
-    };
-
-    const stripe = {
-      paymentIntents: {
-        retrieve: jest.fn().mockResolvedValue({
-          id: 'pi_stale',
-          status: 'succeeded', // pas dans REUSABLE → log.warn ligne 73, fallthrough
-          client_secret: 'secret_stale',
-          amount: 3000,
-        }),
-        create: jest.fn().mockResolvedValue({
-          id: 'pi_new4',
-          client_secret: 'secret_new4',
-        }),
-      },
-    };
-
-    mockDbQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
-
-    const result = await createStripeIntent(order, stripe, { query: mockDbQuery });
-
-    expect(stripe.paymentIntents.retrieve).toHaveBeenCalledWith('pi_stale');
-    expect(stripe.paymentIntents.create).toHaveBeenCalled();
-    expect(result.client_secret).toBe('secret_new4');
-    expect(result.reused).toBeUndefined();
+    expect(stripe.paymentIntents.create).not.toHaveBeenCalled();
   });
 });
 
