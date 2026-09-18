@@ -50,7 +50,7 @@
         "ebay-sandbox"
       ],
       "analysis_document": "docs/external-providers/suppliers/EBAY.md",
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "P1"
     },
     {
       "id": "aliexpress",
