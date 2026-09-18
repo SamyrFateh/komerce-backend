@@ -1,5 +1,12 @@
 # Doctrine — External Provider Contract Proofs
 
+
+## Feature ownership
+
+The transversal Feature-First authority for this doctrine is `external-provider-contracts`.
+
+It owns the generic trust/proof vocabulary — Conversation, KNOWN / DERIVED / UNKNOWN and P0..P4 — but **does not own provider-specific adapters or business side effects**. Stripe remains owned by Payments, Meta/AuthKey by Notifications, supplier adapters by their catalog/purchasing boundaries, and future provider clients by their consuming domain feature.
+
 ## Purpose
 
 Komerce must never use a full Golden E2E to discover whether the elementary contract of an external provider is valid.
