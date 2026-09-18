@@ -375,28 +375,26 @@ buyer test user
 
 The buyer half remains forbidden until member-checkout entitlement is explicitly proved.
 
-## 7. P0 blockers to resolve before code
+## 7. P0 baseline and remaining P4 business blockers
 
-Current repository evidence contains no eBay integration or eBay configuration.
-
-P0 therefore starts BLOCKED on these facts:
+The initial characterization started with these facts UNKNOWN. P0/P1/P2/P3 evidence above has since resolved the Browse-sourcing subset; seller/buyer transaction readiness remains separate:
 
 | Fact | State |
 |---|---|
-| eBay Developer account exists for Komerce | **UNKNOWN** |
-| Sandbox application keyset exists | **UNKNOWN** |
+| eBay Developer/Sandbox application keyset exists for Komerce | **KNOWN / P0 PASS for Browse** |
+| Sandbox application keyset authenticates | **KNOWN / P1 PASS** |
 | Production keyset exists | **UNKNOWN** |
 | Sandbox seller test user exists | **UNKNOWN** |
 | Sandbox buyer test user exists | **UNKNOWN** |
 | Seller business policies are configured | **UNKNOWN** |
 | Seller inventory location exists | **UNKNOWN** |
-| Browse API application-token call succeeds | **UNKNOWN** |
+| Browse API application-token call succeeds | **KNOWN / P1 PASS** |
 | Member Order API Sandbox entitlement granted | **UNKNOWN / likely gated** |
-| Target eBay marketplace selected | **UNKNOWN** |
+| Target eBay marketplace selected for current sourcing proof | **KNOWN** |
 | Target ship-to country accepted for intended use case | **UNKNOWN** |
 | Production eligibility for that marketplace | **UNKNOWN** |
 
-None of these unknowns may be converted to false or guessed.
+Remaining UNKNOWN facts stay BLOCKED and may not be converted to false or guessed.
 
 ## 8. Executable read-only Browse proof
 
@@ -686,7 +684,7 @@ Only after all earlier stages PASS.
 ## 10. What Komerce must not claim yet
 
 ```text
-eBay is a supported provider
+eBay is a supported Purchasing/execution provider
 eBay is auto-order capable
 eBay Sandbox checkout works for our account
 eBay production checkout is approved
@@ -735,7 +733,7 @@ real controlled transaction
 → P4
 ```
 
-No provider authority or runtime code should change before P0/P1 evidence exists.
+Purchasing provider authority or execution runtime must not change until the buyer-side business/readiness and raw Order API evidence are separately proved.
 
 ## 12. Official references used for this characterization
 
