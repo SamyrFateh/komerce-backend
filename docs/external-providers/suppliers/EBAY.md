@@ -4,7 +4,7 @@
 >
 > Doctrine: `docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md`
 >
-> Status: **CONVERSATION CHARACTERIZED — P0 BLOCKED**
+> Status: **P2 PASS — ADAPTER PROVED, P3 NOT STARTED**
 >
 > No provider registration, adapter, DB migration, or runtime behavior is authorized by this document.
 
@@ -40,11 +40,11 @@ The planes must not be collapsed into one generic "eBay API" capability.
 |---|---|---|
 | Conversation — sourcing | **PASS (documented)** | official Browse contract exposes search + exact item read |
 | Conversation — procurement | **PASS (documented)** | official member checkout flow exposes initiate → review → placeOrder → purchaseOrder read-back |
-| P0 Business readiness | **BLOCKED** | Komerce eBay account/keyset, Sandbox users, seller policies/location and member-checkout entitlement are not yet evidenced |
-| P1 Raw API | **NOT STARTED** | no eBay credentials or bounded live probe exists in the repo |
-| P2 Adapter | **NOT STARTED** | no eBay adapter exists |
-| P3 Pipeline | **NOT STARTED** | provider not registered |
-| P4 Golden E2E | **FORBIDDEN** | upstream proof incomplete |
+| P0 Business readiness | **PASS (Browse sourcing scope)** | real Komerce Sandbox keyset present; environment + marketplace structurally valid |
+| P1 Raw API | **PASS** | real client-credentials OAuth + bounded search + exact getItem + native money/availability/purchasability proved |
+| P2 Adapter | **PASS** | real repo connector maps exact Browse truth to NormalizedSupplierProduct V2 + opaque eBay SOI; generic resolveSupplierUnit accepts it fail-closed |
+| P3 Pipeline | **NOT STARTED** | eBay is not yet registered in the sourcing runtime dispatch |
+| P4 Golden E2E | **FORBIDDEN** | pipeline and buyer checkout entitlement remain unproved |
 
 A documented endpoint is not a proved Komerce capability.
 
@@ -479,14 +479,49 @@ Result:
 Conversation    PASS
 P0              PASS
 P1              PASS
-P2              NOT STARTED
+P2              PASS
 P3              NOT STARTED
 P4              FORBIDDEN
 ```
 
-This proves the real Komerce Sandbox keyset can authenticate and read exact eBay
-Browse item truth. It does **not** prove seller fixture mutation, Order API
-entitlement, checkout, payment, or purchase execution.
+P2 evidence:
+
+```text
+repo head
+  186c76f808e8ccb2e6693b06aa09f38b09e07305
+
+unit contract
+  tests/unit/ebay-connector.test.js
+  10/10 PASS
+
+live adapter proof
+  isolated Railway service: ebay-p2-live-proof
+  deployment: 0e082eda-ffc5-4d7b-a4a5-834e44dcd012
+  healthcheck: /health
+  deployment status: SUCCESS
+
+proof path
+  real eBay Sandbox OAuth
+  -> bounded Browse search
+  -> exact getItem
+  -> ebay-connector normalizeBrowseItem
+  -> NormalizedSupplierProduct V2
+  -> exact supplier_unit_ref
+  -> opaque SOI { provider: ebay, version: 1, ... }
+  -> generic resolveSupplierUnit
+  -> native money + real remaining quantity
+  -> active fixed-price / non-expired unit
+```
+
+The live proof service only exposes `/health` after all adapter + SOI + money +
+stock assertions pass; a failed assertion exits before the server starts, so
+Railway cannot mark the healthchecked deployment successful on a false positive.
+
+This proves the real Komerce Sandbox keyset can authenticate, read exact eBay
+Browse item truth, normalize it through the real repository connector, and pass
+the provider-neutral supplier-unit resolver without any eBay branch in the core.
+It does **not** prove seller fixture mutation, Order API entitlement, checkout,
+payment, or purchase execution.
 
 ## 13. Minimal P1 probes
 
