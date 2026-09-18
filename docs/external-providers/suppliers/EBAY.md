@@ -432,7 +432,7 @@ client credentials OAuth
 It never persists the OAuth token and never includes configured credentials or
 provider free-text error bodies in proof output.
 
-## 12. Minimal P1 probes
+## 9. Minimal P1 probes
 
 Once credentials exist, execute the following independently of the Komerce pipeline.
 
@@ -528,7 +528,7 @@ Only after O1 PASS and against the controlled Sandbox item.
 
 Only after all earlier stages PASS.
 
-## 9. What Komerce must not claim yet
+## 10. What Komerce must not claim yet
 
 ```text
 eBay is a supported provider
@@ -541,7 +541,7 @@ eBay cancellation/refund/returns are reconciled
 eBay tracking is normalized
 ```
 
-## 10. Initial architectural conclusion
+## 11. Initial architectural conclusion
 
 eBay is a promising provider because it challenges the abstraction in a useful way without requiring a provider branch in the core:
 
@@ -582,7 +582,7 @@ real controlled transaction
 
 No provider authority or runtime code should change before P0/P1 evidence exists.
 
-## 11. Official references used for this characterization
+## 12. Official references used for this characterization
 
 - eBay Buy APIs Overview / Buying Integration Guide
 - Browse API
