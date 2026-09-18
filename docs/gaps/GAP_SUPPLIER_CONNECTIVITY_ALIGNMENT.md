@@ -16,8 +16,8 @@
 |-----|--------|-----|-------|
 | **GAP-1** — Provider Authority | ✅ Exécuté, mergée | [#1596](https://github.com/SamyrFateh/komerce-backend/pull/1596) — mergée dans `main` | Voir « Leçons de GAP-1 » ci-dessous avant d'attaquer GAP-4 |
 | **GAP-3** — Readiness Convergence | ✅ Exécuté, CI verte | [#1598](https://github.com/SamyrFateh/komerce-backend/pull/1598) — branche `feat/readiness-convergence-gap3` — **ouverte, pas encore mergée** | Voir « Leçons de GAP-3 » ci-dessous avant d'attaquer GAP-4 |
-| GAP-2 — Adapter Resolution | Non commencé | — | Prochain dans l'ordre de dépendance |
-| GAP-4 — Branch Real Purchasing Through Gate | Non commencé | — | Le plus risqué ; lire la leçon de gouvernance ci-dessous avant de commencer |
+| **GAP-2** — Adapter Resolution | ✅ Exécuté, CI verte | [#1599](https://github.com/SamyrFateh/komerce-backend/pull/1599) — branche `feat/adapter-resolution-gap2` — **ouverte, pas encore mergée** | Voir « Leçons de GAP-2 » ci-dessous avant d'attaquer GAP-4 |
+| **GAP-4** — Branch Real Purchasing Through Gate | Non commencé | — | Prochain dans l'ordre de dépendance ; le plus risqué ; lire les leçons de GAP-1/2/3 ci-dessous avant de commencer |
 | GAP-5 — Execution Evidence Boundary | Non commencé | — | |
 | GAP-6 — Environment Isolation | Non commencé | — | Majoritairement DEFER par arbitrage |
 | GAP-7 — Feature Manifest | Non commencé | — | Doit rester en dernier |
@@ -61,6 +61,22 @@ node scripts/feature-guard.js
 **2. `HARD_STOP` est un nom trompeur — c'est le succès terminal du gate, pas un échec.** `status:'HARD_STOP'` avec `ready:false` signifie « payload construit, prêt pour exécution manuelle ou automatique en aval » ; `ready:false` signifie seulement que `place_order_invoked` est faux, pas que la readiness est négative. **GAP-4 va manipuler directement ce retour** (c'est le composition root que GAP-4 doit brancher sur le vrai chemin) — ne pas traiter `HARD_STOP` comme une branche d'erreur en l'implémentant.
 
 **3. Dette identifiée, volontairement non corrigée : `triggerMode` (purchasing-trigger-service.js) et `evidence.execution_mode` (evidence de l'adapter) sont deux calculs indépendants.** Ils concordent aujourd'hui uniquement parce qu'Allegro fixe les deux en dur de façon cohérente (`execution_mode:'manual'` côté adapter, `auto_order:false` côté ligne fournisseur en base). Rien ne garantit cette cohérence pour un futur provider. **GAP-4, en branchant le gate (qui porte l'evidence adapter) sur `purchasing-trigger-service.js`, est le bon moment pour dériver `triggerMode` depuis `evidence.execution_mode`/`auto_order_ready` plutôt que depuis `ps.auto_order` recalculé indépendamment.** Ne pas découvrir ça en cours de GAP-4 — c'est déjà documenté, section 9bis.5 de la doctrine.
+
+### Ce que GAP-2 a réellement livré (PR #1599)
+
+- `services/suppliers/execution-adapter-registry.js` (nouveau) — composition root unique `{ allegro, aliexpress }`, gelé. Réutilise `supplier-fulfillment-adapter-contract.js:validateAdapter()` tel quel — même contrat déjà utilisé par le gate et la readiness, pas de nouvelle abstraction.
+- `purchasing-trigger-service.js` — `callSupplierAPI` ne contient plus aucun `switch(platform)` ni aucun nom de provider en dur. Les 3 stubs (`noonOrder`/`amazonOrder`/`aliexpressOrder`, qui n'ont jamais retourné `success:true`) ont disparu sans changement de comportement observable.
+- Deux causes d'échec distinctes (provider non enregistré vs adapter connu sans `placeOrder`), jamais confondues dans le message `.error`, mais produisant le **même résultat observable** (`api_failed_notified`, chemin manuel identique à aujourd'hui) — aucun comportement changé, seul le diagnostic est plus précis.
+- `tests/unit/purchasing-adapter-resolution.test.js` (10 tests) — dont une caractérisation explicite qu'Allegro `auto_order=false` n'atteint jamais la résolution d'adapter (fige le comportement Golden actuel).
+- **Zéro migration, zéro changement de comportement pour un provider réel.**
+
+### Leçons de GAP-2 — à lire avant GAP-4
+
+**1. Le registry d'exécution est délibérément conçu pour être réutilisé par GAP-4, pas dupliqué.** `execution-adapter-registry.js` exporte exactement la même forme de map `{provider: adapter}` que celle attendue par `canonical-unit-purchasing-gate.js` (paramètre `adapters`). **GAP-4 doit importer `EXECUTION_ADAPTER_REGISTRY` depuis ce fichier pour l'injecter dans le gate — ne pas construire une seconde map.** Un seul provider s'enregistre une fois, consommé par les deux usages (preflight readiness via le gate, résolution d'exécution auto-order via `callSupplierAPI`).
+
+**2. Une erreur de test peut ressembler à une erreur de production — vérifier lequel avant de corriger.** Le premier run des nouveaux tests GAP-2 a échoué avec `Cannot read properties of undefined (reading 'catch')`, y compris sur un test qui n'atteignait même pas le code modifié (`auto_order=false`). Ça sentait le bug de production, mais la cause était un oubli dans le `beforeEach` du **nouveau fichier de test lui-même** (`notifyText.mockResolvedValue(undefined)` manquant — présent dans le fichier de test existant, oublié en écrivant le nouveau). Diagnostiqué en comparant les deux fichiers de test avant de toucher au code de production. **Pour GAP-4 : un échec de test qui touche un chemin non modifié est un signal fort que le bug est dans le test, pas dans le code — vérifier le mock setup avant de suspecter une régression.**
+
+**3. Assertions de non-régression trop larges peuvent masquer un vrai changement de comportement — vérifier précisément ce qu'elles couvrent.** Les 4 tests existants `auto_order=true` (`purchasing-trigger-service.test.js`, `purchasing.test.js`) n'assertent que `result.purchase_orders[0].status`, jamais le contenu de `apiResult.error`. C'est ce qui a rendu le refactor GAP-2 invisible à ces tests — légitime ici (le contenu du message d'erreur n'est contractuel nulle part), mais **GAP-4 doit vérifier, avant de s'appuyer sur "les tests existants passent" comme preuve de non-régression, que ces tests assertent bien le champ que GAP-4 modifie** — sinon un vrai changement de comportement passerait aussi inaperçu.
 
 ---
 
