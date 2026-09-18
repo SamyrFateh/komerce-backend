@@ -243,6 +243,21 @@ This is not automatically a defect, but the effective provider API version is pa
 - disputes/chargebacks qualified;
 - production/test environment contract formally proved.
 
+## 10. Read-only proof runner
+
+The first executable proof is now:
+
+node scripts/stripe-provider-contract-proof.js --through=P1
+
+It performs only read operations:
+
+- balance.retrieve();
+- paymentIntents.list({ limit: 1 });
+- webhookEndpoints.list({ limit: 100 });
+
+It never creates a PaymentIntent, refund, customer or payment method. Output is sanitized: no API key, webhook secret, balance amount, PaymentIntent ID, endpoint ID or customer data is emitted.
+
+The runner fails closed on missing/ambiguous webhook configuration, environment mismatch, missing required events, unreadable provider state or unknown effective API version.
 ## 10. Exact next proof
 
 ### P0 — read-only
