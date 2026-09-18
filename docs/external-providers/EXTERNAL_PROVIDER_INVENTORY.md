@@ -43,7 +43,7 @@ The scanner performs no network call and no mutation. It reports registered prov
 
 | Provider | Consumers | Evidence found | L0 status |
 |---|---|---|---|
-| **Stripe** | payment, orders/refunds | PaymentIntent create/retrieve, real TEST webhook delivery, exact fail-closed mapping, real API/DB pipeline, guarded P4 runner, refunds, idempotence | **P3 PASS** — P4 runner ready, real execution pending |
+| **Stripe** | payment, orders/refunds | PaymentIntent create/retrieve, real TEST webhook delivery, exact fail-closed mapping, real API/DB pipeline, guarded P4 Golden, refunds, idempotence | **P4 PASS (payment, TEST)** — real provider success + signed webhook + canonical DB transition proved; refund P4 remains separate |
 | **PayPal** | payment | `paypal-client.js`, create/capture/refund flow, webhook events, sandbox probe | **IMPLEMENTED / REQUALIFY** |
 | **MTN MoMo CG** | payment | provider adapter + sandbox probe + status normalization | **IMPLEMENTED / REQUALIFY** |
 | **Orange Money CM** | payment | provider adapter, OAuth, payment/status URLs fail-closed until merchant contract configured | **IMPLEMENTED / REQUALIFY** |
