@@ -178,7 +178,6 @@ module.exports = {
       'scripts/seed.js',
       'scripts/setup-hooks.sh',
       'scripts/test-settings-api.sh',
-      'scripts/test_e2e_full.sh',
       'scripts/touched-files-feature-gate.js',
       'scripts/touched-tests-gate.js',
       'scripts/validate-required-env.js',
@@ -248,10 +247,8 @@ module.exports = {
     ],
     ci: [
       '.github/CODEOWNERS',
-      '.github/workflows/railway-prod-unblock.yml',
       '.github/copilot-instructions.md',
       '.github/pull_request_template.md',
-      '.github/workflows/ci.yml',
       '.github/workflows/pr-enforcement.yml',
       '.github/workflows/staging-discovery-ops.yml',
       '.github/workflows/showcase-v2-media-realism.yml',

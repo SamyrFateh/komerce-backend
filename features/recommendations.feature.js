@@ -43,9 +43,7 @@ module.exports = {
   },
 
   files: {
-    ci: [
-      '.github/workflows/discovery-cj-local-repair.yml',
-    ],
+    ci: [],
     scripts: [
       'scripts/discovery-cj-local-repair.js',
     ],
