@@ -14,7 +14,7 @@ const {
 describe('PR enforcement scope — active GitHub workflows', () => {
   test.each([
     '.github/workflows/pr-enforcement.yml',
-    '.github/workflows/ci.yml',
+    '.github/workflows/schema-refresh.yml',
     '.github/workflows/security-checks.yaml',
   ])('classe %s dans governance', file => {
     expect(isGovernanceFile(file)).toBe(true);
