@@ -117,6 +117,7 @@ module.exports = {
       'tests/unit/supplier-order-identity.test.js',
       'tests/unit/provider-authority.test.js',
       'tests/unit/canonical-unit-purchasing-gate.test.js',
+      'tests/unit/purchasing-readiness-vocabulary-mapping.test.js',
       'tests/unit/canonical-unit-cutover-comparison.test.js',
       'tests/unit/aliexpress-purchase-preflight.test.js',
       'tests/unit/supplier-fulfillment-adapter-contract.test.js',

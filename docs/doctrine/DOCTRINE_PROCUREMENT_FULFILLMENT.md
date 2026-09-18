@@ -269,6 +269,96 @@ AUTO_ORDER_READY
 
 Un fournisseur n'est jamais déclaré `AUTO_ORDER_READY` sur la base d'une API supposée.
 
+## 9bis. Vocabulaire canonique — capability, readiness, execution mode (GAP-3)
+
+Trois vocabulaires de statut coexistent dans le code Purchasing. Ils ne sont **pas** trois façons redondantes de dire la même chose : ce sont trois axes distincts qui ont été historiquement mélangés. Cette section fixe le vocabulaire canonique de chaque axe et la table de correspondance exacte entre le code existant et ces axes — **sans réécrire le code** (convergence par mapping documenté, pas par migration).
+
+### 9bis.1 Les trois axes
+
+```
+CAPABILITY     = ce que l'intégration provider SAIT faire, niveau maturité de l'intégration
+                 (statique par provider, indépendant du SKU/quantité en cours)
+                 → déjà doctriné §8 : MODEL_SIMULATION_READY, MANUAL_PROCUREMENT_READY,
+                   SUPPLIER_API_PREFLIGHT_READY, AUTO_ORDER_READY
+
+READINESS      = est-ce que CETTE unité × CETTE quantité × CETTE route est exécutable
+                 MAINTENANT (runtime, calculé à chaque preflight)
+                 → vocabulaire canonique : VERDICT.* (services/suppliers/supplier-fulfillment-readiness.js)
+
+EXECUTION_MODE = comment l'achat sera exécuté pour CET essai : auto | manual | whatsapp
+                 → dérivé de CAPABILITY ∩ contexte fournisseur, jamais une source de vérité
+                   indépendante
+```
+
+Une capability absente ne réfute jamais une readiness différente niveau (doctrine §8.3, déjà en vigueur) : un provider sans API d'achat peut être `FULFILLMENT_READY` en readiness tout en restant plafonné à `MANUAL_PROCUREMENT_READY` en capability. Ce sont deux questions différentes — « peut-on acheter cette unité maintenant » et « avec quel degré d'automatisation » — et le code ne doit jamais faire dépendre l'une de l'autre implicitement.
+
+### 9bis.2 READINESS — vocabulaire canonique retenu
+
+`VERDICT` (`services/suppliers/supplier-fulfillment-readiness.js`) est le vocabulaire canonique : c'est le seul des trois avec un contrat de validation (`supplier-fulfillment-adapter-contract.js:validateVerdict`), et l'adapter Allegro l'utilise déjà nativement (`const { VERDICT, result } = require('./supplier-fulfillment-readiness')`).
+
+```
+FULFILLMENT_READY | BLOCKED_SUPPLIER_IDENTITY | PROCUREMENT_ROUTE_UNRESOLVED
+| SKU_INACTIVE | OUT_OF_STOCK | SUPPLIER_UNAVAILABLE | PRICE_DRIFT_BLOCKED
+| NOT_SHIPPABLE | FREIGHT_UNAVAILABLE | PREFLIGHT_FAILED
+```
+
+### 9bis.3 Table de correspondance — `canonical-unit-purchasing-gate.js` → `VERDICT.*`
+
+Le gate (`prepareCanonicalUnitPurchase`) ne retourne que **trois formes** de champ `.status` — pas une par cause d'échec. C'est un point de lecture important : le détail de la cause vit dans `.reason`, pas dans `.status`.
+
+**Forme 1 — `status: 'BLOCKED_SUPPLIER_IDENTITY'`** (constante `BLOCKED`, fixe). Tous les échecs internes au gate, *avant* que l'adapter fournisseur soit sollicité pour un verdict, passent par le helper `blocked(reason, evidence)` qui fixe `.status` à cette constante unique et place la cause précise dans `.reason` :
+
+| `.reason` observé | Origine | Équivalent `VERDICT.*` le plus proche | Nature |
+|---|---|---|---|
+| `INVALID_QUANTITY` | garde d'entrée (quantité ≤ 0 ou non finie) | — (aucun équivalent) | gate-only, avant toute résolution |
+| `CANONICAL_RESOLUTION_UNAVAILABLE` | exception levée par `resolveFn` | `PREFLIGHT_FAILED` | équivalent sémantique |
+| `NO_UNIT`, `AMBIGUOUS_PRODUCT`, `AMBIGUOUS_UNIT`, `NO_SUPPLIER_IDENTITY`, `INACTIVE_UNIT` *(resolver)* | `resolution.status` ≠ `RESOLVED` (résolveur Canonical Unit) | — (aucun équivalent) | gate-only, échec catalogue en amont de toute readiness fournisseur |
+| `"BLOCKED_SUPPLIER_IDENTITY: <détail>"` *(chaîne préfixée, pas un token court)* | `normalizeIdentity()` lève une erreur | `BLOCKED_SUPPLIER_IDENTITY` | même code sémantique ; forme de chaîne différente des autres `.reason` (préfixée, pas un simple token) |
+| `<texte libre>` (ex. "Adapter fulfillment absent pour X") | `validateAdapter()` — adapter absent/mal formé | `SUPPLIER_UNAVAILABLE` | équivalent sémantique, texte libre non normalisé |
+| `INACTIVE_UNIT` *(gate)* | `canonical_unit.current_state.is_active === false` | `SKU_INACTIVE` | **même nom que le `INACTIVE_UNIT` du resolver ci-dessus, cause différente** — homonymie à surveiller |
+| `STOCK_UNAVAILABLE` | stock absent, vide ou non numérique | `OUT_OF_STOCK` | équivalent large — le gate distingue "stock inconnu" de "stock insuffisant" (ligne suivante), `VERDICT` ne le fait pas |
+| `OUT_OF_STOCK` | stock numérique mais insuffisant | `OUT_OF_STOCK` | **token identique** |
+| `PRICE_UNAVAILABLE`, `CURRENCY_UNAVAILABLE` | prix/devise absents sur la Canonical Unit | `PRICE_DRIFT_BLOCKED` | équivalent le plus proche ; pas de distinction fine dans `VERDICT` |
+| `PREFLIGHT_ERROR` | exception non gérée pendant `adapter.evaluate()` | `PREFLIGHT_FAILED` | équivalent sémantique |
+| `BUILD_ORDER_PAYLOAD_CAPABILITY_UNAVAILABLE`, `BUILD_ORDER_PAYLOAD_ERROR`, `BUILD_ORDER_PAYLOAD_EMPTY` | échec **après** un verdict `ready:true` de l'adapter, pendant la construction du payload d'achat | — (aucun équivalent) | gate-only : la readiness fournisseur était positive, l'échec est postérieur (bug adapter ou payload vide) |
+
+**Forme 2 — `status` = la valeur `VERDICT.*` exacte retournée par l'adapter.** Quand `adapter.evaluate()` répond `ready:false`, le gate **ne passe pas** par `blocked()` : il retourne le verdict de l'adapter tel quel (`{ ...verdict, place_order_invoked: false }`, ligne 91). C'est le seul chemin où `.status` porte directement un littéral `VERDICT.*` — parce que l'adapter Allegro construit lui-même son verdict via `result(VERDICT.XXX, evidence, reason)`. Aucune traduction n'est nécessaire ici ; c'est déjà le vocabulaire canonique.
+
+**Forme 3 — `status: 'HARD_STOP'`** *(succès terminal, `ready:false`)*. Payload d'achat construit avec succès, en attente d'exécution manuelle ou automatique en aval. Équivalent conceptuel : `FULFILLMENT_READY` **+** capability `MANUAL_PROCUREMENT_READY` (doctrine §8.2).
+
+**⚠️ Piège de lecture** : `'HARD_STOP'` ne signifie *pas* un échec. `ready:false` ici signifie seulement que `place_order_invoked` est faux — le gate ne déclenche jamais l'achat lui-même, c'est son rôle par construction (cf. §7, contrat des adapters). Un lecteur qui infère « `HARD_STOP` = readiness négative » se trompe : c'est le chemin de succès du gate, celui qui produit un payload exploitable.
+
+### 9bis.4 Capability — le contrat d'evidence déjà en usage
+
+L'adapter Allegro (`allegro-fulfillment-adapter.js`) enrichit son `evidence` de champs qui **sont déjà**, en pratique, le signal de capability par tentative :
+
+```
+evidence.manual_procurement_ready : boolean   → capability §8.2, prouvée à ce preflight
+evidence.auto_order_ready          : boolean   → capability §8.4, prouvée à ce preflight
+evidence.execution_mode            : 'manual' | 'auto'   → dérivé, informatif
+```
+
+Ce n'est pas un vocabulaire concurrent de `VERDICT.*` : ce sont des champs additionnels *dans* l'evidence d'un verdict `VERDICT.*`, qui répondent à l'axe CAPABILITY, pas à l'axe READINESS. C'est la forme à retenir comme convention pour tout futur adapter (GAP-2) : le verdict porte la readiness, l'evidence porte la capability observée à ce preflight.
+
+### 9bis.5 Execution mode — deux calculs indépendants, non unifiés (dette pour GAP-4)
+
+`purchasing-trigger-service.js` calcule son propre `triggerMode` :
+
+```js
+const triggerMode = ps.auto_order ? 'auto' : (ps.platform === 'whatsapp' ? 'whatsapp' : 'manual');
+```
+
+Ce calcul **ne lit jamais** `evidence.execution_mode` produit par l'adapter. Les deux concordent aujourd'hui par coïncidence : Allegro fixe `execution_mode:'manual'` en dur, et son `auto_order` en base est `false`. Rien dans le code ne garantit que ces deux sources restent synchronisées pour un futur provider — un adapter qui déclarerait `auto_order_ready:true` alors que `ps.auto_order=false` en base (ou l'inverse) ne serait détecté par aucun contrôle.
+
+**Décision GAP-3 : ne pas unifier maintenant.** Documenté comme dette explicite pour GAP-4, qui branche le gate (porteur de l'evidence adapter) sur le chemin réel de `purchasing-trigger-service.js` — c'est à ce moment que `triggerMode` doit être dérivé de `evidence.execution_mode`/`auto_order_ready` plutôt que recalculé indépendamment depuis la ligne `suppliers.auto_order`.
+
+### 9bis.6 Ce que cette section NE fait PAS
+
+- Ne renomme aucun statut existant.
+- Ne supprime aucun des trois vocabulaires.
+- Ne modifie `triggerMode`, ni la table de correspondance ci-dessus n'est appliquée en code — c'est un mapping de lecture, pas une réécriture.
+- Ne fige pas de nouvelle capability au-delà de `manual_procurement_ready`/`auto_order_ready`, déjà prouvées par Allegro.
+
 ## 10. Coût logistique : pas de double comptage
 
 Le coût réel doit rester décomposable :
