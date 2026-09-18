@@ -11294,6 +11294,13 @@
       {
         "feature": "purchasing",
         "category": "services",
+        "declared": "services/suppliers/execution-adapter-registry.js",
+        "resolvedPath": "services/suppliers/execution-adapter-registry.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
         "declared": "services/purchasing-canonical-money.js",
         "resolvedPath": "services/purchasing-canonical-money.js",
         "status": "resolved-on-disk-no-header"
@@ -11527,6 +11534,13 @@
         "category": "tests",
         "declared": "tests/unit/purchasing-trigger-service.test.js",
         "resolvedPath": "tests/unit/purchasing-trigger-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/purchasing-adapter-resolution.test.js",
+        "resolvedPath": "tests/unit/purchasing-adapter-resolution.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -33428,6 +33442,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/purchasing-adapter-resolution.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/purchasing-trigger-exact-sku.test.js",
                 "targetFile": "db.js"
               },
@@ -33510,6 +33528,10 @@
               },
               {
                 "sourceFileId": "tests/unit/purchasing-trigger-service.test.js",
+                "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/purchasing-adapter-resolution.test.js",
                 "targetFile": "services/notification-service.js"
               },
               {
@@ -35255,7 +35277,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1297
+        "filesObserved": 1299
       },
       "boutique": {
         "filesObserved": 217,

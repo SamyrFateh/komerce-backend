@@ -23,6 +23,8 @@ const { notifyText } = require('../services/notification-service');
 const { createAlert } = require('../utils/alerts');
 const { blockedSupplierIdentity, normalizeIdentity } = require('./suppliers/supplier-order-identity');
 const { resolveCanonicalSupplierMoney } = require('./purchasing-canonical-money');
+const { validateAdapter } = require('./suppliers/supplier-fulfillment-adapter-contract');
+const { EXECUTION_ADAPTER_REGISTRY } = require('./suppliers/execution-adapter-registry');
 const log = require('../utils/logger').child({ module: 'purchasing-trigger' });
 
 const ADMIN_WA = process.env.ADMIN_WHATSAPP || process.env.WA_ADMIN;
@@ -92,16 +94,17 @@ async function notifySupplierWhatsApp(client, ps, order, item, purchaseOrderId) 
 }
 
 async function callSupplierAPI(ps, item) {
-  switch (ps.platform) {
-    case 'noon': return noonOrder(ps, item);
-    case 'amazon_uae': return amazonOrder(ps, item);
-    case 'aliexpress': return aliexpressOrder(ps, item);
-    default: return { success: false, error: 'Plateforme sans API — mode manuel' };
+  const check = validateAdapter(ps.platform, EXECUTION_ADAPTER_REGISTRY[String(ps.platform || '').trim().toLowerCase()]);
+  if (!check.ok) {
+    log.info(`[PURCHASING] Résolution adapter d'exécution échouée pour ${ps.platform} — mode manuel:`, check.reason);
+    return { success: false, error: `Adapter d'exécution absent ou invalide pour ${ps.platform} — mode manuel (${check.reason})` };
   }
+  if (typeof check.adapter.placeOrder !== 'function') {
+    log.info(`[PURCHASING] Adapter ${check.provider} sans capacité placeOrder — mode manuel:`, ps.supplier_sku);
+    return { success: false, error: `Adapter ${check.provider} sans capacité placeOrder — mode manuel` };
+  }
+  return check.adapter.placeOrder(ps, item);
 }
-async function noonOrder(ps) { log.info('[PURCHASING] Noon API — stub (Phase 2):', ps.supplier_sku); return { success: false, error: 'Noon API non implémentée (Phase 2)' }; }
-async function amazonOrder(ps) { log.info('[PURCHASING] Amazon UAE API — stub (Phase 2):', ps.supplier_sku); return { success: false, error: 'Amazon SP-API non implémentée (Phase 2)' }; }
-async function aliexpressOrder(ps) { log.info('[PURCHASING] AliExpress API — stub (Phase 2):', ps.supplier_sku); return { success: false, error: 'AliExpress API non implémentée (Phase 2)' }; }
 
 async function loadExactSoldSku(client, item) {
   if (!item.sku_id) return null;
