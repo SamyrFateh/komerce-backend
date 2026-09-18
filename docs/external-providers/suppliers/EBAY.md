@@ -404,20 +404,23 @@ The first executable characterization is deliberately limited to the non-mutatin
 Buy Browse boundary:
 
 ```bash
-EBAY_SANDBOX_CLIENT_ID=...
-EBAY_SANDBOX_CLIENT_SECRET=...
-EBAY_SANDBOX_MARKETPLACE_ID=EBAY_US
-EBAY_SANDBOX_ITEM_ID='v1|listing|variation'
+EBAY_CLIENT_ID=...
+EBAY_CLIENT_SECRET=...
+EBAY_ENV=sandbox
+EBAY_MARKETPLACE_ID=EBAY_US
+EBAY_ITEM_ID='v1|listing|variation'
 node scripts/ebay-sandbox-browse-proof.js --through=P1
 ```
 
 Alternatively, before a deterministic fixture exists, use a bounded query:
 
 ```bash
-EBAY_SANDBOX_SEARCH_QUERY='komerce sandbox'
-EBAY_SANDBOX_SEARCH_LIMIT=5
+EBAY_SEARCH_QUERY='komerce sandbox'
+EBAY_SEARCH_LIMIT=5
 node scripts/ebay-sandbox-browse-proof.js --through=P1
 ```
+
+Railway already exposes the canonical eBay variable names above on the Komerce backend service. `EBAY_DEV_ID` also exists but is not required for the REST client-credentials Browse proof.
 
 The script performs only:
 
