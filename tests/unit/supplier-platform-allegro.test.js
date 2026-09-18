@@ -24,10 +24,11 @@ const Joi = require('joi');
 const ROOT = path.join(__dirname, '..', '..');
 
 function extractPlatformsFromSource() {
-  const src = fs.readFileSync(path.join(ROOT, 'validators', 'index.js'), 'utf8');
-  const match = src.match(/const PLATFORMS\s*=\s*\[([^\]]+)\]/);
-  if (!match) throw new Error('PLATFORMS array not found');
-  return match[1].split(',').map(s => s.trim().replace(/['"]/g, '')).filter(Boolean);
+  // Depuis GAP-1, validators/index.js ne déclare plus de littéral PLATFORMS :
+  // il consomme services/suppliers/provider-authority.js. Ce test doit donc
+  // lire l'autorité canonique, pas parser le source du validator.
+  const { PROVIDERS } = require('../../services/suppliers/provider-authority');
+  return [...PROVIDERS];
 }
 
 function extractPlatformsFromSchema(filePath) {

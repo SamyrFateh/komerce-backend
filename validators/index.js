@@ -474,7 +474,7 @@ const pricing = {
   updateRates: { body: Joi.object({ eur_kmf: posNum.min(1).max(10000).required(), aed_kmf: posNum.min(1).max(10000).required() }) },
 };
 
-const PLATFORMS = ['noon', 'amazon_uae', 'aliexpress', 'whatsapp', 'manual', 'local', 'allegro'];
+const { PROVIDERS: PLATFORMS } = require('../services/suppliers/provider-authority');
 const purchasing = {
   createSupplier: { body: Joi.object({ name: safeStr(200).required(), platform: Joi.string().valid(...PLATFORMS).required(), contact_name: safeStr(100), contact_phone: phone, contact_email: email, api_key_enc: safeStr(500), api_secret_enc: safeStr(500), account_id: safeStr(100), auto_order: Joi.boolean().default(false), lead_time_days: Joi.number().integer().min(0).max(365).default(2), notes: safeStr(1000) }) },
   mapProduct: { params: Joi.object({ id: uuid.required() }), body: Joi.object({ product_id: uuid.required(), supplier_sku: safeStr(200).required(), supplier_url: url, supplier_price_aed: posNum.required(), min_order_qty: posInt.default(1), priority: Joi.number().integer().min(1).max(100).default(1), notes: safeStr(1000) }) },
