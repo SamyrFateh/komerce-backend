@@ -3,8 +3,8 @@
 Analysis date: **2026-09-18**  
 Family: **payment**  
 Consumer: **payments**  
-Current highest proof: **P3 PASS**  
-Current gate: **P4 READY — execute the guarded real Stripe TEST Golden**
+Current highest proof: **P4 PASS (TEST Golden)**  
+Current gate: **P4 PASS — guarded real Stripe TEST Golden executed**
 
 Existing code is evidence to inspect, not an automatic external PASS.
 
@@ -496,10 +496,55 @@ P0: PASS (TEST)
 P1: PASS (TEST)  
 P2: PASS  
 P3: PASS  
-P4: READY / NOT YET EXECUTED  
-HIGHEST PROOF: P3  
-MAIN NEXT ACTION: execute `scripts/stripe-golden-p4.js` once in the Railway-backed Stripe TEST context.
+P4: PASS (Stripe TEST Golden)  
+HIGHEST PROOF: P4  
+MAIN NEXT ACTION: none for payment P4; refund P4 remains a separate qualification if desired.
 
 ## Komerce conclusion
 
 Stripe's external contract is proved through **P1 in the real Stripe TEST environment**, the Komerce mapping is converged and fail-closed at **P2**, and the real API/DB pipeline is **P3 PASS**. The only remaining qualification stage is one controlled execution of the guarded real Stripe TEST Golden P4.
+
+
+## 12. Real P4 execution evidence — 2026-09-18
+
+The guarded runner `scripts/stripe-golden-p4.js` was executed against the real
+Komerce Railway-backed Stripe TEST context.
+
+Preflight:
+
+```text
+Stripe key mode = TEST
+STRIPE_MODE = TEST
+exact enabled TEST webhook required
+DB connectivity required
+explicit ACK required
+→ PASS
+Railway deployment: bed28837-40ce-4ce2-a7b7-0b0154f65060
+```
+
+Golden execution:
+
+```text
+disposable LOCAL_STOCK Komerce order
+→ real Stripe TEST PaymentIntent
+→ pm_card_visa confirmation
+→ real payment_intent.succeeded
+→ real Stripe webhook to Komerce
+→ signature verification
+→ stripe_events_processed
+→ confirmPaymentCycle
+→ payment_status=paid
+→ order status=ordered
+→ exact stock decrement
+→ zero purchase_orders
+→ DB fixture cleanup
+```
+
+The proof service starts its `/health` endpoint only after
+`runStripeGoldenP4()` returns a proof with `stage=P4` and `verdict=PASS`.
+Railway deployment `e6664f66-8a38-43b2-86ed-77ad0ee7363a` reached
+`SUCCESS` with that healthcheck gate active.
+
+This qualifies the Stripe **payment** path at P4 in TEST mode. It does not claim
+Stripe production readiness, refund P4, disputes/chargebacks, or any live-money
+production proof.

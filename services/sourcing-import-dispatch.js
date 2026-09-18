@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        supplier_import_payload
  * @outputs       normalized_supplier_products, connector_catalog, source_automation_catalog
- * @depends       services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/connectors/noon-connector.js, services/suppliers/connectors/cj-connector.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/allegro-connector.js
+ * @depends       services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/connectors/noon-connector.js, services/suppliers/connectors/cj-connector.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/allegro-connector.js, services/suppliers/connectors/ebay-connector.js
  * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js, services/sourcing-source-autopilot.js
  * @db-read       none
  * @db-write      none
@@ -24,6 +24,7 @@ const noonModule = require('./suppliers/connectors/noon-connector');
 const cjModule = require('./suppliers/connectors/cj-connector');
 const aliexpressModule = require('./suppliers/connectors/aliexpress-connected-connector');
 const allegroModule = require('./suppliers/connectors/allegro-connector');
+const ebayModule = require('./suppliers/connectors/ebay-connector');
 
 // `automation` is deliberately declarative. The autopilot runner never branches
 // on provider names: adding a future source means registering a connector and
@@ -56,6 +57,17 @@ const CONNECTORS = Object.freeze({
       get reason() { return allegroModule.INACTIVE_REASON; },
       supplierName: 'Allegro Sandbox',
       automation: Object.freeze({}),
+    },
+    ebay: {
+      supportsFullSnapshot: false,
+      module: ebayModule,
+      get active() { return ebayModule.IS_ACTIVE; },
+      label: 'eBay Sandbox Browse API',
+      get reason() { return ebayModule.INACTIVE_REASON; },
+      supplierName: 'eBay Sandbox',
+      // P3 registration only: no unattended broad crawl until a bounded
+      // automation policy is separately proved.
+      automation: null,
     },
     aliexpress: {
       module: aliexpressModule,
