@@ -210,7 +210,7 @@ describe('ebay-sandbox-browse-proof', () => {
     expect(() => assertThrough(result.proof, 'P1'))
       .toThrow('PROVIDER_CONTRACT_BLOCKED_EBAY_P1_APPLICATION_TOKEN_ACCEPTED');
     expect(result.diagnostics.token_error).toEqual({
-      message: 'EBAY_SANDBOX_OAUTH_FAILED_401',
+      message: 'EBAY_OAUTH_FAILED_401',
       diagnostic: { status: 401, provider_error_ids: ['1001'] },
     });
     expect(JSON.stringify(result)).not.toContain('provider detail omitted');
