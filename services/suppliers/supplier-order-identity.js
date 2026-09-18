@@ -117,10 +117,27 @@ function resolveSupplierUnit(contract, supplierSku, quantity = 1, options = {}) 
   };
 }
 
+/**
+ * Autorité unique de comparaison d'identité. Deux Supplier Order Identity
+ * sont la MÊME unité commandable si et seulement si provider + version +
+ * payload sont strictement identiques. Prédicat pur — le caller décide
+ * comment réagir à un mismatch (throw, verdict bloqué, etc.). Consommé par
+ * purchasing-canonical-money.js (cross-check historique) et par
+ * canonical-unit-purchasing-gate.js (GAP-4A) pour éviter toute
+ * réimplémentation divergente de cette comparaison.
+ */
+function identitiesMatch(a, b) {
+  if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+  return String(a.provider) === String(b.provider)
+    && Number(a.version) === Number(b.version)
+    && JSON.stringify(a.payload) === JSON.stringify(b.payload);
+}
+
 module.exports = {
   BLOCKED_SUPPLIER_IDENTITY,
   positiveInt,
   blockedSupplierIdentity,
   normalizeIdentity,
+  identitiesMatch,
   resolveSupplierUnit,
 };

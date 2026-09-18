@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/purchasing-canonical-money.js, services/suppliers/supplier-order-identity.js, utils/logger.js
+ * @depends       db, services/notification-service.js, services/suppliers/supplier-order-identity.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/procurement-execution-boundary.js, services/suppliers/execution-adapter-registry.js, utils/logger.js
  * @used-by       routes/cash.js, routes/purchasing.js
  * @db-read       order_items, orders, product_skus, product_suppliers, products, purchase_orders, relais, suppliers
  * @db-write      alerts, purchase_orders
@@ -22,9 +22,10 @@ const db = require('../db');
 const { notifyText } = require('../services/notification-service');
 const { createAlert } = require('../utils/alerts');
 const { blockedSupplierIdentity, normalizeIdentity } = require('./suppliers/supplier-order-identity');
-const { resolveCanonicalSupplierMoney } = require('./purchasing-canonical-money');
 const { validateAdapter } = require('./suppliers/supplier-fulfillment-adapter-contract');
 const { EXECUTION_ADAPTER_REGISTRY } = require('./suppliers/execution-adapter-registry');
+const { evaluateCanonicalProcurementReadiness } = require('./suppliers/canonical-unit-purchasing-gate');
+const { evaluateProcurementExecutionBoundary } = require('./suppliers/procurement-execution-boundary');
 const log = require('../utils/logger').child({ module: 'purchasing-trigger' });
 
 const ADMIN_WA = process.env.ADMIN_WHATSAPP || process.env.WA_ADMIN;
@@ -120,6 +121,70 @@ async function loadExactSoldSku(client, item) {
   return { ...sku, supplier_sku: supplierSku, supplier_unit_ref: supplierUnitRef, supplier_order_identity: identity };
 }
 
+/**
+ * GAP-4A — décision de readiness canonique pour le SKU exactement vendu,
+ * via le moteur unique (canonical-unit-purchasing-gate.js), plutôt qu'une
+ * résolution money réimplémentée en ligne. Le gate décide (identité, stock,
+ * prix, preflight distant si requis par l'autorité provider) ; cette
+ * fonction ne fait que traduire son verdict dans la forme attendue par
+ * triggerPurchasing — aucune logique métier supplémentaire ici.
+ *
+ * Le cross-check fort SOI vendue ↔ SOI canonique (provider+version+payload)
+ * reste obligatoire : il est appliqué par le gate lui-même via
+ * `soldIdentity`, jamais réimplémenté ici.
+ */
+async function resolveExactSkuProcurementReadiness(client, exactSku, quantity) {
+  const readiness = await evaluateCanonicalProcurementReadiness({
+    productSkuId: exactSku.id,
+    quantity,
+    soldIdentity: exactSku.supplier_order_identity,
+    query: client.query.bind(client),
+    adapters: EXECUTION_ADAPTER_REGISTRY,
+  });
+  if (!readiness.ready) {
+    throw blockedSupplierIdentity(readiness.reason || readiness.status, readiness.evidence || {});
+  }
+  return {
+    unit_price: readiness.money.unit_price,
+    currency: readiness.money.currency,
+    canonical_unit_id: readiness.canonical_unit_id,
+    canonical_unit: readiness.canonical_unit,
+    supplier_unit_ref: readiness.supplier_unit_ref,
+    supplier_order_identity: readiness.identity,
+    preflight: readiness.preflight,
+  };
+}
+
+/**
+ * GAP-4B — n'atteint la Procurement Execution Boundary que pour le chemin
+ * exact-sku (seul cas où GAP-4A fournit identity + canonical_unit). Le
+ * mapping manuel (pas d'exactSku) garde callSupplierAPI (legacy,
+ * inchangé) : aucun des deux ne peut aboutir aujourd'hui à une exécution
+ * réelle (aucun adapter n'a placeOrder), donc le comportement observable
+ * (fallback manuel) est identique dans les deux branches.
+ */
+async function resolveAutoOrderResult(client, exactSku, canonicalMoney, item, purchaseTarget) {
+  if (!exactSku) return callSupplierAPI(purchaseTarget, item);
+
+  const boundary = await evaluateProcurementExecutionBoundary({
+    identity: canonicalMoney.supplier_order_identity,
+    quantity: item.quantity,
+    canonicalUnit: canonicalMoney.canonical_unit,
+    preflight: canonicalMoney.preflight,
+    context: { item },
+    adapters: EXECUTION_ADAPTER_REGISTRY,
+  });
+  if (!boundary.crossed) {
+    log.info(`[PURCHASING] Procurement Execution Boundary non atteinte pour ${canonicalMoney.supplier_order_identity.provider} — mode manuel:`, boundary.reason);
+    return { success: false, error: `Procurement Execution Boundary non atteinte (${boundary.reason}) — mode manuel` };
+  }
+  return {
+    success: true,
+    supplier_order_id: boundary.result?.supplier_order_id || null,
+    tracking_url: boundary.result?.tracking_url || null,
+  };
+}
+
 async function loadSupplierMapping(client, item, exactSku) {
   const params = [item.product_id];
   let providerClause = '';
@@ -199,7 +264,7 @@ async function triggerPurchasing(orderId) {
       let canonicalMoney = null;
       try {
         exactSku = await loadExactSoldSku(client, item);
-        canonicalMoney = exactSku ? await resolveCanonicalSupplierMoney(client, exactSku) : null;
+        canonicalMoney = exactSku ? await resolveExactSkuProcurementReadiness(client, exactSku, item.quantity) : null;
       } catch (itemErr) {
         await alertItemFailure(client, orderId, item, idx, itemErr);
         results.push({ item: item.product_name, status: 'error', error: itemErr.message });
@@ -249,7 +314,7 @@ async function triggerPurchasing(orderId) {
           item.quantity, unitPriceAed, money.amount, money.currency, triggerMode]);
 
         if (ps.auto_order) {
-          const apiResult = await callSupplierAPI(purchaseTarget, item);
+          const apiResult = await resolveAutoOrderResult(client, exactSku, canonicalMoney, item, purchaseTarget);
           if (apiResult.success) {
             await client.query(`UPDATE purchase_orders SET status='confirmed', supplier_order_id=$1, tracking_url=$2, ordered_at=NOW(), updated_at=NOW() WHERE id=$3`, [apiResult.supplier_order_id, apiResult.tracking_url || null, po.id]);
             results.push({ item: item.product_name, status: 'auto_ordered', purchase_order_id: po.id, supplier_order_id: apiResult.supplier_order_id });

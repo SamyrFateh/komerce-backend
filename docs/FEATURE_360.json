@@ -53,7 +53,7 @@
     "healthy": 35,
     "attention": 2,
     "blocked": 0,
-    "businessDependencies": 272,
+    "businessDependencies": 279,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -2305,7 +2305,7 @@
       "service": "Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.",
       "perimeter": {
         "in": [
-          "connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping)",
+          "connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress, Allegro Sandbox)",
           "contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait",
           "publication produit et déclenchement de l audit prix via economic-engine",
           "categories boutique admin",
@@ -2315,10 +2315,14 @@
           "projection des rails de livraison deja commercialement exposes par logistics, sans inventer prix ni delai",
           "modal produit catalogue : un fetch Product Detail, un etat de selection SKU, deux compositions responsive mobile/desktop",
           "raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique",
+          "projection live Sources -> Raffinerie -> Boutique dans le Workspace Catalogue : observation des sources, du pipeline et du buyer-effective sans reprendre l autorite de mutation Sourcing ni de pricing marche",
           "glossaire metier EN->FR (catalog_glossary)",
           "file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active",
           "bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée",
           "pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique",
+          "source Allegro Sandbox vendeur : offres exactes V2 en PLN, OAuth refresh chiffré sous verrou, aucun achat automatique",
+          "source AliExpress de stress-test Raffinerie : Open Platform Drop Shipping api-sg, OAuth serveur géré et chiffré, feed/detail normalisés V2, aucune publication automatique",
+          "pool AliExpress staging borné à 500 références réellement en stock, dédupliqué et reprenable, alimenté exclusivement via la Raffinerie et sans publication automatique",
           "product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services",
           "migration 206 : snapshot de compatibilité produit x marché, reproduction exacte de publicCatalogVisibilitySql() croisée avec chaque marché actif — cutover, pas un all x all aveugle",
           "services/catalog-public-view.js::publicCatalogVisibilitySql(alias, { marketCodeParam }) : le chemin de lecture storefront consulte désormais product_market_exposure quand un marché est fourni ; sans marché, comportement historique inchangé à l’identique"
@@ -2335,6 +2339,10 @@
       "authority": "backend-core — normalized-product possede le contrat source versionne ; catalog possede le catalogue canonique et le contrat detail public ; toute modification modal catalogue suit DOCTRINE_PRODUCT_DETAIL_CONTRACT.md et docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
       "invariants": [
         "un produit publie a toujours passe product-publication-guard.js",
+        {
+          "statement": "products.price_kmf/cost_kmf/unsold_price_kmf (numeric depuis la migration 215) conservent leurs centimes et v_shipment_density calcule une marge exacte au centime à travers sa chaîne à 5 tables",
+          "test": "tests/e2e-api/products.kmf-numeric.e2e.test.js"
+        },
         "jamais de creation produit par formulaire vide : tout entre par un connecteur (le manuel EST un connecteur)",
         "la donnee source ne se perd jamais : raw_payload reste le brut integral et normalized_source_contract preserve separement le mapping V2 valide",
         "une structure riche connue ne doit pas etre aplatie puis reconstruite par heuristique ; une source pauvre reste pauvre honnêtement",
@@ -2352,7 +2360,10 @@
         "la modal produit affiche le catalogue vivant et ne doit pas servir de fiche snapshot panier partage",
         "le parcours mobile Voir en grand appartient a b-modal-image-ux.js et modal-media.css",
         "aucune fiche candidate issue du pipeline ne passe lifecycle_status=active sans etre passee par la file d approbation, meme si needs_review est faux",
-        "le pool fournisseur CJ de la Raffinerie ne dépasse jamais 1000 références propres ; son alimentation ne publie aucun produit automatiquement"
+        "le pool fournisseur CJ de la Raffinerie ne dépasse jamais 1000 références propres ; son alimentation ne publie aucun produit automatiquement",
+        "la source AliExpress reste une entrée de Raffinerie : elle ne crée ni ne publie jamais directement un produit canonique",
+        "le pool AliExpress staging ne dépasse jamais 500 références propres en stock et ne peut pas s exécuter en production",
+        "les access/refresh tokens fournisseur sont persistés chiffrés ; l App Secret reste uniquement en variable serveur et aucun token n est exposé au navigateur"
       ],
       "implementation": {
         "byCategory": {
@@ -2627,11 +2638,16 @@
             ]
           },
           "docs": {
-            "count": 11,
+            "count": 12,
             "files": [
               {
                 "declared": "docs/CJ_CONNECTOR.md",
                 "resolvedPath": "docs/CJ_CONNECTOR.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "docs/allegro-sandbox.md",
+                "resolvedPath": "docs/allegro-sandbox.md",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -2697,7 +2713,7 @@
             ]
           },
           "migrations": {
-            "count": 16,
+            "count": 17,
             "files": [
               {
                 "declared": "migrations/098_catalog_refinery_foundation.sql",
@@ -2778,11 +2794,16 @@
                 "declared": "migrations/206_catalog_product_market_exposure_snapshot.sql",
                 "resolvedPath": "migrations/206_catalog_product_market_exposure_snapshot.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/218_supplier_oauth_connections.sql",
+                "resolvedPath": "migrations/218_supplier_oauth_connections.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "routes": {
-            "count": 6,
+            "count": 7,
             "files": [
               {
                 "declared": "routes/admin-boutique-categories.js",
@@ -2807,6 +2828,11 @@
               {
                 "declared": "routes/categories.js",
                 "resolvedPath": "routes/categories.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/integrations-aliexpress.js",
+                "resolvedPath": "routes/integrations-aliexpress.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -2842,8 +2868,18 @@
             ]
           },
           "scripts": {
-            "count": 2,
+            "count": 4,
             "files": [
+              {
+                "declared": "scripts/aliexpress-500-catalog-sync.js",
+                "resolvedPath": "scripts/aliexpress-500-catalog-sync.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/allegro-sandbox-check.js",
+                "resolvedPath": "scripts/allegro-sandbox-check.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "scripts/cj-full-catalog-sync.js",
                 "resolvedPath": "scripts/cj-full-catalog-sync.js",
@@ -2857,7 +2893,7 @@
             ]
           },
           "services": {
-            "count": 43,
+            "count": 52,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -2885,6 +2921,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/catalog-live-flow.js",
+                "resolvedPath": "services/catalog-live-flow.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/catalog-market-exposure-service.js",
                 "resolvedPath": "services/catalog-market-exposure-service.js",
                 "status": "resolved-in-technical-graph"
@@ -2902,6 +2943,16 @@
               {
                 "declared": "services/catalog-product-mutation-service.js",
                 "resolvedPath": "services/catalog-product-mutation-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-product-route-canary.js",
+                "resolvedPath": "services/catalog-product-route-canary.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-product-source-read-service.js",
+                "resolvedPath": "services/catalog-product-source-read-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -2932,6 +2983,11 @@
               {
                 "declared": "services/catalog-public-view.js",
                 "resolvedPath": "services/catalog-public-view.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-workspace-live-composer.js",
+                "resolvedPath": "services/catalog-workspace-live-composer.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -2990,6 +3046,16 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/suppliers/aliexpress-oauth.js",
+                "resolvedPath": "services/suppliers/aliexpress-oauth.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/allegro-sandbox-client.js",
+                "resolvedPath": "services/suppliers/allegro-sandbox-client.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/suppliers/catalog-import-json.js",
                 "resolvedPath": "services/suppliers/catalog-import-json.js",
                 "status": "resolved-in-technical-graph"
@@ -3012,6 +3078,21 @@
               {
                 "declared": "services/suppliers/connectors/_connector-utils.js",
                 "resolvedPath": "services/suppliers/connectors/_connector-utils.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/connectors/aliexpress-connected-connector.js",
+                "resolvedPath": "services/suppliers/connectors/aliexpress-connected-connector.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/connectors/aliexpress-connector.js",
+                "resolvedPath": "services/suppliers/connectors/aliexpress-connector.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/connectors/allegro-connector.js",
+                "resolvedPath": "services/suppliers/connectors/allegro-connector.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -3077,8 +3158,13 @@
             ]
           },
           "tests": {
-            "count": 65,
+            "count": 75,
             "files": [
+              {
+                "declared": "tests/e2e-api/products.kmf-numeric.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/products.kmf-numeric.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/integration/catalog-import-json.integration.test.js",
                 "resolvedPath": "tests/integration/catalog-import-json.integration.test.js",
@@ -3092,6 +3178,36 @@
               {
                 "declared": "tests/unit/admin-catalog-workspace-route.test.js",
                 "resolvedPath": "tests/unit/admin-catalog-workspace-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/aliexpress-500-catalog-sync.test.js",
+                "resolvedPath": "tests/unit/aliexpress-500-catalog-sync.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/aliexpress-connector.test.js",
+                "resolvedPath": "tests/unit/aliexpress-connector.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/aliexpress-oauth.test.js",
+                "resolvedPath": "tests/unit/aliexpress-oauth.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-connector.test.js",
+                "resolvedPath": "tests/unit/allegro-connector.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-sandbox-check.test.js",
+                "resolvedPath": "tests/unit/allegro-sandbox-check.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-sandbox-client.test.js",
+                "resolvedPath": "tests/unit/allegro-sandbox-client.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3155,6 +3271,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/catalog-live-flow.test.js",
+                "resolvedPath": "tests/unit/catalog-live-flow.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/catalog-market-exposure-service.test.js",
                 "resolvedPath": "tests/unit/catalog-market-exposure-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3177,6 +3298,16 @@
               {
                 "declared": "tests/unit/catalog-product-mutation-service.test.js",
                 "resolvedPath": "tests/unit/catalog-product-mutation-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-product-route-canary-http.test.js",
+                "resolvedPath": "tests/unit/catalog-product-route-canary-http.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-product-source-read-service.test.js",
+                "resolvedPath": "tests/unit/catalog-product-source-read-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3417,7 +3548,7 @@
             ]
           }
         },
-        "totalFiles": 199,
+        "totalFiles": 223,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -3717,6 +3848,10 @@
           {
             "table": "supplier_catalog_sync_checkpoints",
             "resolution": "single-writer"
+          },
+          {
+            "table": "supplier_oauth_connections",
+            "resolution": "single-writer"
           }
         ],
         "writesTables": [
@@ -3806,6 +3941,12 @@
           },
           {
             "table": "supplier_catalog_sync_checkpoints",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_oauth_connections",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -3895,6 +4036,10 @@
           {
             "table": "supplier_catalog_sync_checkpoints",
             "resolution": "single-writer"
+          },
+          {
+            "table": "supplier_oauth_connections",
+            "resolution": "single-writer"
           }
         ],
         "writesTables": [
@@ -3987,6 +4132,12 @@
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
+          },
+          {
+            "table": "supplier_oauth_connections",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
           }
         ],
         "readsTables": [
@@ -4035,8 +4186,23 @@
             "status": "resolved"
           },
           {
+            "fn": "maybeApplyCatalogProductRouteCanary",
+            "file": "services/catalog-product-route-canary.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "readCatalogProductSource",
+            "file": "services/catalog-product-source-read-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "replaceVariantsForSourcing",
             "file": "services/catalog-product-mutation-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "resolveCatalogProductReadMode",
+            "file": "services/catalog-product-source-read-service.js",
             "status": "resolved"
           },
           {
@@ -4116,6 +4282,13 @@
         },
         {
           "provider": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -4248,6 +4421,7 @@
           "consumer": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -4474,8 +4648,13 @@
             ]
           },
           "tests": {
-            "count": 6,
+            "count": 7,
             "files": [
+              {
+                "declared": "tests/e2e-api/customs.unsold-fabrics-numeric.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/customs.unsold-fabrics-numeric.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/admin-customs-categories.test.js",
                 "resolvedPath": "tests/unit/admin-customs-categories.test.js",
@@ -4509,7 +4688,7 @@
             ]
           }
         },
-        "totalFiles": 20,
+        "totalFiles": 21,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -5488,7 +5667,7 @@
             ]
           },
           "services": {
-            "count": 23,
+            "count": 24,
             "files": [
               {
                 "declared": "services/client-360.js",
@@ -5558,6 +5737,11 @@
               {
                 "declared": "services/dashboard-ops-queries.js",
                 "resolvedPath": "services/dashboard-ops-queries.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/dashboard-orders.js",
+                "resolvedPath": "services/dashboard-orders.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -5948,7 +6132,7 @@
             ]
           }
         },
-        "totalFiles": 215,
+        "totalFiles": 216,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6369,6 +6553,13 @@
           ]
         },
         {
+          "provider": "local-stock",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -6530,17 +6721,21 @@
         "kind": "piloting-capability",
         "status": "staging"
       },
-      "service": "Detecter et qualifier des signaux operationnels (cash, colis, incidents) a partir des donnees produites par plusieurs features, pour l'aide a la decision admin.",
+      "service": "Detecter et qualifier des signaux operationnels et economiques a partir des donnees canoniques, puis porter leur cycle de vie global ou Market ID sans muter la verite metier source.",
       "perimeter": {
         "in": [
           "generation de signaux depuis des requetes radar cross-feature (cash, colis, incidents)",
           "cycle de vie du signal : acknowledge / resolve / snooze",
           "consultation admin des signaux (routes/signals.js)",
-          "Action Center Canonical : projection globale + lifecycle par signal_ref"
+          "Action Center Canonical global : uniquement les signaux market_id NULL",
+          "Action Center Canonical pays : projection et lifecycle bornes a un Market ID resolu serveur",
+          "identite d’un fait actif : signal_type + market_id + entity_type + entity_id"
         ],
         "out": [
           "aucune decision metier engageante : la capability detecte, elle ne tranche aucun statut de commande, colis ou wallet",
           "aucune UI ne devient propriétaire de la donnée source : Action Center reste une projection dashboard de cette capability",
+          "aucun market_id brut fourni par le navigateur ne devient une autorite",
+          "la regeneration des generateurs historiques reste globale tant qu’un generateur market-scoped owner n’est pas explicitement livre",
           "classement produit boutique (feature recommendations, qui reste seule proprietaire du ranking)"
         ]
       },
@@ -6548,8 +6743,11 @@
       "invariants": [
         "un signal est un constat derive, jamais une mutation d'une table possedee par une autre feature",
         "acknowledge/resolve/snooze changent uniquement l'etat du signal, jamais l'etat de la donnee source",
-        "open, acknowledged et snoozed forment un seul lifecycle actif ; disparition de la condition => auto-resolution",
-        "aucune autorite market n'est inventee tant que signals ne porte pas un market_id canonique"
+        "open, acknowledged et snoozed forment un seul lifecycle actif ; disparition de la condition => auto-resolution dans le meme scope",
+        "market_id NULL signifie explicitement fait global ; market_id non NULL signifie fait borne a ce Market ID canonique",
+        "le Centre d’actions global ne lit ni ne mute jamais les signaux pays",
+        "le Centre d’actions pays ne lit ni ne mute jamais un autre Market ID et le navigateur ne fournit jamais le market_id autoritatif",
+        "toute mutation lifecycle pays et son audit de délégation partagent une seule transaction DB"
       ],
       "implementation": {
         "byCategory": {
@@ -6564,11 +6762,16 @@
             ]
           },
           "migrations": {
-            "count": 1,
+            "count": 2,
             "files": [
               {
                 "declared": "migrations/153_action_center_signal_authority.sql",
                 "resolvedPath": "migrations/153_action_center_signal_authority.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/222_decision_signals_market_scope.sql",
+                "resolvedPath": "migrations/222_decision_signals_market_scope.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -6639,7 +6842,7 @@
             ]
           },
           "tests": {
-            "count": 13,
+            "count": 14,
             "files": [
               {
                 "declared": "tests/unit/action-center-migration-contract.test.js",
@@ -6654,6 +6857,11 @@
               {
                 "declared": "tests/unit/admin-action-center-route.test.js",
                 "resolvedPath": "tests/unit/admin-action-center-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/decision-signals-market-scope-contract.test.js",
+                "resolvedPath": "tests/unit/decision-signals-market-scope-contract.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6709,7 +6917,7 @@
             ]
           }
         },
-        "totalFiles": 26,
+        "totalFiles": 28,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -6753,7 +6961,7 @@
       "interfaces": {
         "internalApis": [],
         "httpInterfaces": {
-          "count": 5
+          "count": 9
         }
       },
       "businessDependencies": [
@@ -6784,6 +6992,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "provider": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
@@ -6800,6 +7015,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "consumer": "incident-management",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         }
       ],
@@ -6980,8 +7202,13 @@
             ]
           },
           "tests": {
-            "count": 14,
+            "count": 15,
             "files": [
+              {
+                "declared": "tests/e2e-api/invoices-finance-config.kmf-numeric.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/invoices-finance-config.kmf-numeric.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/customs-invoice-html.test.js",
                 "resolvedPath": "tests/unit/customs-invoice-html.test.js",
@@ -7085,7 +7312,7 @@
             ]
           }
         },
-        "totalFiles": 36,
+        "totalFiles": 37,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -7456,6 +7683,7 @@
       "service": "Calculer les frontières économiques, la contribution et la couverture ; le marché borne le possible et le responsable autorisé décide le prix.",
       "perimeter": {
         "in": [
+          "taux sourcing PLN vers KMF explicite dans finance_config, aucun taux par défaut",
           "moteur de pricing et application des regles",
           "audit des changements de prix produit dans price_history",
           "allocation de cout",
@@ -7536,7 +7764,7 @@
             ]
           },
           "migrations": {
-            "count": 28,
+            "count": 29,
             "files": [
               {
                 "declared": "migrations/019_finance_columns.sql",
@@ -7676,6 +7904,11 @@
               {
                 "declared": "migrations/192_market_price_observations.sql",
                 "resolvedPath": "migrations/192_market_price_observations.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/235_sourcing_pln_rate.sql",
+                "resolvedPath": "migrations/235_sourcing_pln_rate.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -8326,7 +8559,7 @@
             ]
           }
         },
-        "totalFiles": 160,
+        "totalFiles": 161,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -9302,12 +9535,19 @@
       "service": "Détecter, qualifier et résoudre les écarts entre l'état attendu et l'état réel d'une opération, avec impact client traçable.",
       "perimeter": {
         "in": [
-          "création, qualification (type/sévérité/impact client) et résolution (reship/refund/manual_fix/dismissed/auto_resolved) d'un incident",
+          "création, qualification (type/sévérité/impact client) et résolution d’un incident sous autorité explicite",
           "table incidents possédée par incident-management ; les producteurs cross-feature passent par incident-write-service.js",
-          "engagement opérationnel réel déclenché par une résolution (ex. reship crée un incident fils)"
+          "gouvernance F2 : origin_domain, resolver_domain et resolution_class déterminés dès la création",
+          "policy de blocage des transitions physiques irréversibles consommée par Logistics",
+          "F3 : due_at persistant, escalade SLA durable vers Action Center et marqueur d’escalade idempotent",
+          "F3 : fermeture PHYSICAL_PROOF uniquement après nouvelle preuve scan_events et revalidation synchrone du prédicat",
+          "F3 : fermeture UPSTREAM_TRUTH uniquement après correction authoritative amont puis revalidation du prédicat par le caller",
+          "engagement opérationnel réel déclenché par une résolution lorsque l’autorité le permet"
         ],
         "out": [
           "logique métier propre au domaine qui a détecté l'écart (logistics, payments, notifications restent propriétaires de leurs propres flux)",
+          "preuve physique : scan_events reste lifecycle-owned par Logistics",
+          "correction de vérité UPSTREAM_TRUTH : reste propriétaire du domaine resolver_domain ; Incident Management ne fait que revalider/fermer ensuite",
           "health check / observation technique passive (feature platform-ops)"
         ]
       },
@@ -9315,13 +9555,30 @@
       "invariants": [
         "jamais de suppression d'incident (soft-close uniquement)",
         "résolution explicite avec raison et type",
-        "une résolution reship crée un incident fils"
+        "origin_domain, resolver_domain et resolution_class sont queryables dès la création gouvernée",
+        "tout nouvel incident gouverné possède due_at dérivé uniquement de resolution_class",
+        "un incident historique UNCLASSIFIED ne peut pas être fermé par un chemin terminal générique",
+        "UPSTREAM_TRUTH ne peut jamais être fermé avant correction authoritative amont et revalidation du prédicat original",
+        "PHYSICAL_PROOF ne peut jamais être fermé par un chemin terminal générique : nouvelle preuve + revalidation sont obligatoires",
+        "une escalade SLA ne résout jamais l’incident et atteint un sink durable Action Center",
+        "le marqueur escalation_level et le signal Action Center sont atomiques dans une même transaction",
+        "scan_events reste append-only/lifecycle-owned par Logistics ; Incident Management ne réécrit jamais la preuve"
       ],
       "implementation": {
         "byCategory": {
           "services": {
-            "count": 2,
+            "count": 5,
             "files": [
+              {
+                "declared": "services/incident-escalation.js",
+                "resolvedPath": "services/incident-escalation.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/incident-governance.js",
+                "resolvedPath": "services/incident-governance.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/incident-service.js",
                 "resolvedPath": "services/incident-service.js",
@@ -9331,12 +9588,32 @@
                 "declared": "services/incident-write-service.js",
                 "resolvedPath": "services/incident-write-service.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/parcel-transition-guard.js",
+                "resolvedPath": "services/parcel-transition-guard.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
           "tests": {
-            "count": 2,
+            "count": 7,
             "files": [
+              {
+                "declared": "tests/integration/incident-f3-postgres.test.js",
+                "resolvedPath": "tests/integration/incident-f3-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/incident-escalation.test.js",
+                "resolvedPath": "tests/unit/incident-escalation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/incident-governance.test.js",
+                "resolvedPath": "tests/unit/incident-governance.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/incident-service.test.js",
                 "resolvedPath": "tests/unit/incident-service.test.js",
@@ -9346,11 +9623,21 @@
                 "declared": "tests/unit/incident-write-service.test.js",
                 "resolvedPath": "tests/unit/incident-write-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/parcel-operations-incident-governance.test.js",
+                "resolvedPath": "tests/unit/parcel-operations-incident-governance.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/parcel-transition-guard.test.js",
+                "resolvedPath": "tests/unit/parcel-transition-guard.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 4,
+        "totalFiles": 12,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -9425,6 +9712,11 @@
             "status": "resolved"
           },
           {
+            "fn": "assertParcelTransitionAllowed",
+            "file": "services/parcel-transition-guard.js",
+            "status": "resolved"
+          },
+          {
             "fn": "createAlertEngineIncidentIfNew",
             "file": "services/incident-write-service.js",
             "status": "resolved"
@@ -9475,6 +9767,21 @@
             "status": "resolved"
           },
           {
+            "fn": "resolvePhysicalProofIncident",
+            "file": "services/incident-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "resolveUpstreamTruthIncident",
+            "file": "services/incident-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "scanOverdueIncidents",
+            "file": "services/incident-escalation.js",
+            "status": "resolved"
+          },
+          {
             "fn": "seedIncident",
             "file": "services/incident-write-service.js",
             "status": "resolved"
@@ -9486,6 +9793,13 @@
       },
       "businessDependencies": [
         {
+          "provider": "decision-signals",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -9496,6 +9810,7 @@
           "provider": "logistics",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -10452,7 +10767,7 @@
             ]
           },
           "migrations": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "migrations/016_add_missing_indexes.sql",
@@ -10477,6 +10792,11 @@
               {
                 "declared": "migrations/084_jwt_revocation.sql",
                 "resolvedPath": "migrations/084_jwt_revocation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/228_outbox_events_foundation.sql",
+                "resolvedPath": "migrations/228_outbox_events_foundation.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -10966,12 +11286,37 @@
               }
             ]
           },
+          "services": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "services/outbox-producer.js",
+                "resolvedPath": "services/outbox-producer.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/outbox-worker.js",
+                "resolvedPath": "services/outbox-worker.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
           "tests": {
-            "count": 19,
+            "count": 21,
             "files": [
               {
                 "declared": "tests/integration/groupe-paiement.manual.js",
                 "resolvedPath": "tests/integration/groupe-paiement.manual.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/outbox-producer.test.js",
+                "resolvedPath": "tests/integration/outbox-producer.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/outbox-worker.test.js",
+                "resolvedPath": "tests/integration/outbox-worker.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -11102,7 +11447,7 @@
             ]
           }
         },
-        "totalFiles": 282,
+        "totalFiles": 287,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11111,6 +11456,14 @@
       },
       "ownership": {
         "ownsTables": [
+          {
+            "table": "outbox_events",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "physical_outcome_receipts",
+            "resolution": "single-writer"
+          },
           {
             "table": "schema_migrations",
             "resolution": "single-writer"
@@ -11122,6 +11475,18 @@
             "mode": "W",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "outbox_events",
+            "mode": "W",
+            "lifecycleOwner": "infrastructure",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "physical_outcome_receipts",
+            "mode": "W",
+            "lifecycleOwner": "infrastructure",
+            "ownershipStatus": "owner"
           },
           {
             "table": "pickup_print_tokens",
@@ -11153,6 +11518,14 @@
       "data": {
         "ownsTables": [
           {
+            "table": "outbox_events",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "physical_outcome_receipts",
+            "resolution": "single-writer"
+          },
+          {
             "table": "schema_migrations",
             "resolution": "single-writer"
           }
@@ -11163,6 +11536,18 @@
             "mode": "W",
             "lifecycleOwner": "economic-engine",
             "ownershipStatus": "writer-not-owner"
+          },
+          {
+            "table": "outbox_events",
+            "mode": "W",
+            "lifecycleOwner": "infrastructure",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "physical_outcome_receipts",
+            "mode": "W",
+            "lifecycleOwner": "infrastructure",
+            "ownershipStatus": "owner"
           },
           {
             "table": "pickup_print_tokens",
@@ -11588,7 +11973,7 @@
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
-        "compositionRootRelations": 13,
+        "compositionRootRelations": 14,
         "details": [
           {
             "to": "auth-identity",
@@ -11608,6 +11993,10 @@
           },
           {
             "to": "documents",
+            "family": "COMPOSITION_ROOT_WIRING"
+          },
+          {
+            "to": "incident-management",
             "family": "COMPOSITION_ROOT_WIRING"
           },
           {
@@ -12264,6 +12653,7 @@
           "table local_stock : quantité physique, marché, lieu et commercial_exposure",
           "table local_stock_allocations : engagement anti-survente avant paiement",
           "projection availability calculée AVAILABLE_NOW | UNAVAILABLE, jamais persistée",
+          "projection décisionnelle interne minimale : tracked / commercial_exposure / availability / exposable, sans quantité brute ni identifiant interne",
           "projection checkout read-only LOCAL_STOCK | IMPORT | REVIEW_REQUIRED, quantité-aware et relay-scoped, jamais persistée",
           "isStockExposable() : exposure ENABLED et disponibilité nette positive",
           "cycle allocate -> consume | release, atomique avec la transaction orders",
@@ -12290,6 +12680,10 @@
         {
           "statement": "la disponibilité locale n’est jamais lue depuis products.stock ou product_skus.stock",
           "test": "tests/unit/local-stock-service.test.js"
+        },
+        {
+          "statement": "la projection décisionnelle interne calcule la disponibilité nette dans local-stock et ne divulgue ni quantité brute ni identifiant interne",
+          "test": "tests/unit/local-stock-decision-projection.test.js"
         },
         {
           "statement": "availability, preview et allocation déduisent les allocations actives ; jamais qty_physical brut seul",
@@ -12341,11 +12735,16 @@
             ]
           },
           "services": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "services/local-stock-checkout-preview.js",
                 "resolvedPath": "services/local-stock-checkout-preview.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/local-stock-decision-projection.js",
+                "resolvedPath": "services/local-stock-decision-projection.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -12356,11 +12755,16 @@
             ]
           },
           "tests": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "tests/unit/local-stock-checkout-preview.test.js",
                 "resolvedPath": "tests/unit/local-stock-checkout-preview.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/local-stock-decision-projection.test.js",
+                "resolvedPath": "tests/unit/local-stock-decision-projection.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12381,7 +12785,7 @@
             ]
           }
         },
-        "totalFiles": 7,
+        "totalFiles": 9,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -12481,6 +12885,11 @@
             "status": "resolved"
           },
           {
+            "fn": "getDecisionAvailabilityEvidence",
+            "file": "services/local-stock-decision-projection.js",
+            "status": "resolved"
+          },
+          {
             "fn": "previewCheckoutFulfillmentSources",
             "file": "services/local-stock-checkout-preview.js",
             "status": "resolved"
@@ -12531,6 +12940,13 @@
         }
       ],
       "consumedBy": [
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
         {
           "consumer": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
@@ -12618,15 +13034,21 @@
           "tracking client et transitaire",
           "relais et transporteurs",
           "consignes hub prescrites au scan : repack, mesure volume, photo de scelle (bornes de responsabilite)",
-          "saisie volumes produits (POST /hub/volume) et photos de scelle (POST /hub/photo)"
+          "saisie volumes produits (POST /hub/volume) et photos de scelle (POST /hub/photo)",
+          "HUB-001 : identité physique distincte de l allocation économique ; snapshot exact Purchase Order → order item/SKU/Supplier Order Identity → Market/destination",
+          "HUB-001 : placement physique et custody append-only ; SPLIT/MERGE/REPACK déplacent la matière sans réassigner la destination économique",
+          "HUB-001 : inbound fournisseur potentiellement multi-market, outbound PACKED/DISPATCHED obligatoirement homogène sur exactement un Market",
+          "HUB-001 : constat physique LOST/STOLEN/DESTROYED/DAMAGED_UNUSABLE atomique avec l outbox transactionnelle F0"
         ],
         "out": [
           "cout du transport (feature economic-engine)",
           "declaration douaniere (feature customs)",
-          "preuve de retrait document (feature documents, consommee ici)"
+          "preuve de retrait document (feature documents, consommee ici)",
+          "réparation ou réinterprétation de Supplier Order Identity / Canonical Unit / Purchase Order : autorité purchasing+sourcing uniquement",
+          "réassignation commerciale d une ligne, d un Market ou d une destination client depuis le Hub"
         ]
       },
-      "authority": "backend-core — tout changement de la machine de scan doit etre valide par le proprietaire de scan-engine.js",
+      "authority": "backend-core — logistics possède la vérité physique et la custody ; scan-engine.js reste autorité de la machine de scan colis legacy, hub-physical-identity.js possède HUB-001 sans jamais réassigner les vérités Purchasing/Orders/Market",
       "invariants": [
         "le fret maritime ne se ventile jamais au poids : volume si snapshot, repartition egale confidence low sinon",
         "un produit tague fragile ne se repacke jamais (repack_exempt) : la protection prime sur le volume",
@@ -12639,7 +13061,27 @@
         },
         "le retrait exceptionnel par autorisation nominative ne revele jamais le nom attendu a l'agent relais — comparaison aveugle uniquement",
         "le compteur de tentatives du retrait exceptionnel (exceptional_pickup_attempts) est distinct de celui du code secret (pickup_secret_attempts) — un echec sur l'un ne bloque jamais l'autre",
-        "le jalon disponible au relais transmet à notifications le nom et l adresse publics nécessaires au lien de localisation, sans géocodage bloquant"
+        "le jalon disponible au relais transmet à notifications le nom et l adresse publics nécessaires au lien de localisation, sans géocodage bloquant",
+        {
+          "statement": "HUB-001 : l allocation économique est snapshotée depuis une Purchase Order exacte ; Supplier Order Identity, SKU, order item, Market et destination sont immuables côté Hub et ne sont jamais devinés",
+          "test": "tests/integration/hub-physical-identity-postgres.test.js"
+        },
+        {
+          "statement": "HUB-001 : un inbound supplier package peut contenir plusieurs Markets, mais PACKED/DISPATCHED exige exactement un Market résolu depuis les allocations actives",
+          "test": "tests/integration/hub-physical-identity-postgres.test.js"
+        },
+        {
+          "statement": "HUB-001 : SPLIT/MERGE/REPACK changent uniquement les placements physiques ; aucune opération Hub ne réassigne l allocation économique",
+          "test": "tests/integration/hub-physical-identity-postgres.test.js"
+        },
+        {
+          "statement": "HUB-001 : placements et custody conservent leur histoire ; custody est append-only et une quantité achetée ne peut pas être physiquement dupliquée même sous concurrence",
+          "test": "tests/integration/hub-physical-identity-postgres.test.js"
+        },
+        {
+          "statement": "HUB-001 : un constat LOST/STOLEN/DESTROYED/DAMAGED_UNUSABLE et son événement outbox F0 sont atomiques dans la transaction de l appelant et idempotents au rejeu",
+          "test": "tests/integration/hub-physical-identity-postgres.test.js"
+        }
       ],
       "implementation": {
         "byCategory": {
@@ -12669,11 +13111,16 @@
             ]
           },
           "docs": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
                 "resolvedPath": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md",
+                "resolvedPath": "docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12704,7 +13151,7 @@
             ]
           },
           "migrations": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "migrations/095_value_density_foundation.sql",
@@ -12714,6 +13161,11 @@
               {
                 "declared": "migrations/096_quality_foundation.sql",
                 "resolvedPath": "migrations/096_quality_foundation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/233_hub_physical_identity_allocation_custody.sql",
+                "resolvedPath": "migrations/233_hub_physical_identity_allocation_custody.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -12814,7 +13266,7 @@
             ]
           },
           "services": {
-            "count": 24,
+            "count": 25,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -12824,6 +13276,11 @@
               {
                 "declared": "services/hub-operations.js",
                 "resolvedPath": "services/hub-operations.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-physical-identity.js",
+                "resolvedPath": "services/hub-physical-identity.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -12939,11 +13396,16 @@
             ]
           },
           "tests": {
-            "count": 46,
+            "count": 47,
             "files": [
               {
                 "declared": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/hub-physical-identity-postgres.test.js",
+                "resolvedPath": "tests/integration/hub-physical-identity-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -13194,7 +13656,7 @@
             ]
           }
         },
-        "totalFiles": 101,
+        "totalFiles": 105,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -13206,6 +13668,22 @@
           {
             "table": "carriers",
             "resolution": "single-writer"
+          },
+          {
+            "table": "hub_custody_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "hub_physical_unit_placements",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "hub_physical_units",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "hub_purchase_allocations",
+            "resolution": "declared-table-owner"
           },
           {
             "table": "parcel_events",
@@ -13251,6 +13729,30 @@
         "writesTables": [
           {
             "table": "carriers",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_custody_events",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_physical_unit_placements",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_physical_units",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_purchase_allocations",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -13370,6 +13872,22 @@
             "resolution": "single-writer"
           },
           {
+            "table": "hub_custody_events",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "hub_physical_unit_placements",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "hub_physical_units",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "hub_purchase_allocations",
+            "resolution": "declared-table-owner"
+          },
+          {
             "table": "parcel_events",
             "resolution": "single-writer"
           },
@@ -13413,6 +13931,30 @@
         "writesTables": [
           {
             "table": "carriers",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_custody_events",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_physical_unit_placements",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_physical_units",
+            "mode": "RW",
+            "lifecycleOwner": "logistics",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "hub_purchase_allocations",
             "mode": "RW",
             "lifecycleOwner": "logistics",
             "ownershipStatus": "owner"
@@ -13563,6 +14105,11 @@
             "status": "resolved"
           },
           {
+            "fn": "createPhysicalUnit",
+            "file": "services/hub-physical-identity.js",
+            "status": "resolved"
+          },
+          {
             "fn": "createRelais",
             "file": "services/relais-mutation-service.js",
             "status": "resolved"
@@ -13593,8 +14140,23 @@
             "status": "resolved"
           },
           {
+            "fn": "moveAllocationQuantity",
+            "file": "services/hub-physical-identity.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "receiveSupplierPackage",
+            "file": "services/hub-physical-identity.js",
+            "status": "resolved"
+          },
+          {
             "fn": "recordHubPreparationScan",
             "file": "services/scan-write-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "recordPhysicalUnitOutcome",
+            "file": "services/hub-physical-identity.js",
             "status": "resolved"
           },
           {
@@ -13608,6 +14170,11 @@
             "status": "resolved"
           },
           {
+            "fn": "resolvePurchaseSnapshot",
+            "file": "services/hub-physical-identity.js",
+            "status": "resolved"
+          },
+          {
             "fn": "setParcelWeight",
             "file": "services/parcel-mutation-service.js",
             "status": "resolved"
@@ -13618,8 +14185,18 @@
             "status": "resolved"
           },
           {
+            "fn": "snapshotPurchaseAllocation",
+            "file": "services/hub-physical-identity.js",
+            "status": "resolved"
+          },
+          {
             "fn": "transitionParcelStatus",
             "file": "services/parcel-operations.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "transitionPhysicalUnit",
+            "file": "services/hub-physical-identity.js",
             "status": "resolved"
           },
           {
@@ -13811,6 +14388,7 @@
           "consumer": "incident-management",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -15035,6 +15613,13 @@
           ]
         },
         {
+          "consumer": "recommendations",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -16246,6 +16831,13 @@
           ]
         },
         {
+          "consumer": "decision-signals",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "economic-engine",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -16254,6 +16846,13 @@
         },
         {
           "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "market-operator-dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -16457,6 +17056,13 @@
         },
         {
           "provider": "market-autonomy",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "market-delegation",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -17253,6 +17859,18 @@
         "annulation libre et 100% avant ordered (plancher 24h) ; commande ferme des ordered — demande wallet-only ensuite (DOCTRINE_ANNULATION)",
         "le badge Remboursable/Ferme du suivi EST le contrat : il ne dit jamais autre chose que ce que le code fait",
         {
+          "statement": "orders.total_kmf (numeric depuis la migration 213) reste décodée en number côté JS, jamais en string — sans quoi toute arithmétique bare sur ce champ deviendrait une concaténation de chaînes",
+          "test": "tests/e2e-api/orders.total-kmf-numeric.e2e.test.js"
+        },
+        {
+          "statement": "les prix LIGNE (order_items/basket_items/product_skus/product_variants) sont numeric depuis la migration 219 : la somme des lignes à centimes égale exactement orders.total_kmf, ce qui était structurellement impossible tant que les lignes restaient integer",
+          "test": "tests/e2e-api/orders.line-prices-numeric.e2e.test.js"
+        },
+        {
+          "statement": "les 10 colonnes monétaires restantes d'orders (migration 214) conservent leurs centimes après conversion, et trg_compute_real_margin reste strictement column-specific (BEFORE UPDATE OF cost_real_kmf), vérifié par inspection directe de la définition en base, pas par inférence comportementale",
+          "test": "tests/e2e-api/orders.remaining-kmf-numeric.e2e.test.js"
+        },
+        {
           "statement": "tout remboursement retourne au payeur, jamais au destinataire",
           "test": "tests/invariants/orders.refund-to-payer.test.js"
         },
@@ -17449,7 +18067,7 @@
             ]
           },
           "tests": {
-            "count": 38,
+            "count": 41,
             "files": [
               {
                 "declared": "tests/e2e-api/orders.cancellation-doctrine.e2e.test.js",
@@ -17462,8 +18080,23 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/e2e-api/orders.line-prices-numeric.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/orders.line-prices-numeric.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/orders.remaining-kmf-numeric.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/orders.remaining-kmf-numeric.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/e2e-api/orders.single-collect.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/orders.single-collect.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e-api/orders.total-kmf-numeric.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/orders.total-kmf-numeric.e2e.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -17654,7 +18287,7 @@
             ]
           }
         },
-        "totalFiles": 71,
+        "totalFiles": 74,
         "boutiqueManifest": "orders-client",
         "boutiqueFiles": {
           "count": 17,
@@ -19677,7 +20310,7 @@
             ]
           },
           "tests": {
-            "count": 20,
+            "count": 19,
             "files": [
               {
                 "declared": "tests/integration/api.test.js",
@@ -19740,11 +20373,6 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/relais-idor-probe.test.js",
-                "resolvedPath": "tests/unit/relais-idor-probe.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/scenarios.test.js",
                 "resolvedPath": "tests/unit/scenarios.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19782,7 +20410,7 @@
             ]
           }
         },
-        "totalFiles": 40,
+        "totalFiles": 39,
         "boutiqueManifest": "platform-ops",
         "boutiqueFiles": {
           "count": 26,
@@ -20419,19 +21047,21 @@
         "kind": "business-feature",
         "status": "staging"
       },
-      "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle contextualisé de demande/rappel. La cible service_id XOR physical_offer_id porte toujours le propos connu ; le client choisit request ou callback. Aucun paiement, settlement, calendrier structuré, contact provider direct ou order Komerce n’est créé par cette interaction.",
+      "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle contextualisé de demande/rappel. La cible service_id XOR physical_offer_id porte toujours le propos connu ; le client choisit request ou callback. Pour un Service explicitement compatible WhatsApp, le serveur peut remettre un handoff de conversation après création de l Inquiry, sans publier le numéro dans le détail. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par cette interaction.",
       "perimeter": {
         "in": [
           "table providers (identité et contact privé, market, statut pending|active|suspended)",
           "table services (prestation d’un provider, exposition DISABLED par défaut, image_ref public optionnel)",
           "table physical_offers (produit physique tiers, image_ref public optionnel)",
-          "actions_enabled historiques sur service/physical_offer, projetées publiquement vers request et/ou callback",
+          "actions_enabled historiques sur service/physical_offer, projetées publiquement vers request et/ou callback ; whatsapp reste en plus un capability flag de handoff pour Service",
           "projection publique provider_name pour humaniser une fiche exposable sans exposer provider_id ni contact privé",
+          "projection publique service whatsapp_available booléenne ; jamais le numéro provider lui-même",
           "table inquiries (cycle sent -> answered -> accepted|declined ; exactement une cible service_id XOR physical_offer_id)",
           "intent request|callback et requester_note facultative : la note enrichit la cible sans jamais remplacer le propos connu",
+          "handoff=whatsapp facultatif sur POST /inquiries pour Service seulement : résolution serveur de public_whatsapp, référence SR-* et URL préremplie remises après succès de l Inquiry",
           "isServiceExposable() / isPhysicalOfferExposable() — provider actif + objet actif + exposition ENABLED + marché correspondant",
           "POST /api/providers-services/inquiries — mutation client authentifiée, téléphone demandeur dérivé de la session canonique serveur",
-          "consumer Boutique des actions request/callback — identité Komerce puis création de l’Inquiry propriétaire",
+          "consumer Boutique des actions request/callback et handoff WhatsApp service — identité Komerce puis création de l’Inquiry propriétaire",
           "seed Discovery staging Anjouan — dataset déterministe, idempotent, strictement opt-in et impossible en production",
           "seed modal V2 staging — cas sérieux pièce auto, plomberie, électricité, ciment et réception",
           "listProviders(marketId) — lecture scopée marché, suspendus en dernier",
@@ -20444,11 +21074,12 @@
         "out": [
           "authentification provider (pas de users / user_role pour le provider)",
           "profil public provider riche, bio, téléphone, adresse exacte, métriques sociales ou comparaison de providers",
-          "exposition de providers.phone, public_phone ou public_whatsapp dans le détail client",
-          "appel direct tel: ou WhatsApp provider depuis la fiche Discovery",
+          "exposition brute de providers.phone, public_phone ou public_whatsapp dans le détail client",
+          "appel direct tel: provider ou WhatsApp sans identité et Inquiry préalables",
+          "handoff WhatsApp pour physical_offer",
           "scheduler / créneaux structurés : requested_window/proposed_window restent du texte libre",
           "paiement, commission, settlement, provider wallet",
-          "orders Komerce : request/callback créent une Inquiry, jamais une ligne orders",
+          "orders Komerce : request/callback/handoff créent une Inquiry, jamais une ligne orders",
           "action order sur providers-services tant qu’aucun contrat orders explicite n’existe ; un Product Komerce continue d’utiliser le parcours product",
           "market_offer / multi-offres / ranking",
           "god-table Listing/Offer unifiée",
@@ -20458,7 +21089,7 @@
           "hébergement/stockage binaire des médias — image_ref reste une référence, pas un media service"
         ]
       },
-      "authority": "backend-core — providers-services possède le cycle demande/confirmation, la projection request/callback, le nom public minimal du provider, les médias source service/physical_offer, le contexte Inquiry et ses données de démonstration staging ; recommendations ne fait que projeter ces lectures.",
+      "authority": "backend-core — providers-services possède le cycle demande/confirmation, la projection request/callback, le capability WhatsApp service, la résolution serveur du handoff après Inquiry, le nom public minimal du provider, les médias source service/physical_offer, le contexte Inquiry et ses données de démonstration staging ; recommendations ne fait que projeter ces lectures.",
       "invariants": [
         {
           "statement": "un service ne peut être créé que pour un provider déjà actif",
@@ -20473,19 +21104,23 @@
           "test": "tests/unit/providers-services-routes.test.js"
         },
         {
-          "statement": "la projection publique ne contient que request et/ou callback ; call/whatsapp historiques convergent vers callback et aucun contact provider n’est exposé",
+          "statement": "la projection publique des intentions ne contient que request et/ou callback ; call/whatsapp historiques convergent vers callback et aucune coordonnée provider brute n est exposée",
           "test": "tests/unit/providers-interaction-policy.test.js"
+        },
+        {
+          "statement": "un Service peut signaler whatsapp_available sans exposer le numéro ; le handoff WhatsApp est résolu serveur, exige une Inquiry et ne s applique jamais à physical_offer",
+          "test": "tests/unit/providers-services-routes.test.js"
         },
         {
           "statement": "market est toujours résolu côté serveur avant les checks d’exposabilité",
           "test": "tests/unit/providers-services-routes.test.js"
         },
         {
-          "statement": "POST /inquiries dérive requester_phone de la session authentifiée et accepte seulement intent request|callback",
+          "statement": "POST /inquiries dérive requester_phone de la session authentifiée et accepte seulement intent request|callback ; whatsapp reste un handoff et non une intention",
           "test": "tests/unit/providers-services-routes.test.js"
         },
         {
-          "statement": "request/callback sur une physical_offer restent des Inquiry providers-services et ne créent jamais une order Komerce",
+          "statement": "request/callback sur une physical_offer restent des Inquiry providers-services et ne créent jamais une order Komerce ni un handoff WhatsApp",
           "test": "public/boutique/tests/unit/discovery-inquiry.test.js"
         },
         {
@@ -20897,13 +21532,23 @@
       "service": "Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.",
       "perimeter": {
         "in": [
+          "préflight Allegro Sandbox : identité exacte et stock/prix live ; fulfillment manuel prêt sans prétendre à un buyer placeOrder API",
+          "réconciliation d'achat manuel Allegro Sandbox : le proof runner peut découvrir de façon bornée la commande vendeur READY_FOR_PROCESSING postérieure à la PO, exige un match unique sur offer_id/SOI + quantité + monnaie native, puis confirme uniquement ce checkoutForm exact",
           "déclenchement automatique d'un bon de commande (purchase_order) quand une commande client nécessite un réassort fournisseur",
           "notification/confirmation du fournisseur (manuel ou WhatsApp) et suivi du statut du bon de commande",
           "réception (partielle ou totale) d'un bon de commande, et rattachement au flux logistique",
           "synchronisation d'annulation : pending/notified suivent l'annulation de la commande ; les POs engagées déclenchent une alerte sans forçage",
           "réparation/rattrapage des commandes marquées \"ordered\" sans (ou avec) bon de commande cohérent (outils admin de correction)",
           "gestion des fournisseurs et de leur mapping produit (routes/purchasing.js /suppliers/*)",
-          "administration transverse des bons de commande, historiquement exposée depuis le dashboard (services/purchasing-admin-service.js — retaggé @domain purchasing au Lot O2, écrit orders/product_suppliers/purchase_orders/suppliers)"
+          "administration transverse des bons de commande, historiquement exposée depuis le dashboard (services/purchasing-admin-service.js — retaggé @domain purchasing au Lot O2, écrit orders/product_suppliers/purchase_orders/suppliers)",
+          "Supplier Order Identity universelle : une unité vendable doit se résoudre sans ambiguïté vers exactement une unité commandable fournisseur avant tout engagement",
+          "Procurement Route canonique : l'achat fournisseur est routé vers un Procurement Hub explicite avant la jambe logistique Market ; aucune destination client/Market brute ne peut être assimilée à la destination fournisseur",
+          "préflight fournisseur AliExpress avant engagement : réconciliation SKU, stock/prix live, fret Supplier → Procurement Hub et construction fail-closed du payload d'achat sans exécution automatique",
+          "Supplier Fulfillment Readiness dynamique : évaluer SKU × quantité × Procurement Route à partir de l'identité fournisseur persistée, du refresh live et du fret, sans mutation fournisseur",
+          "Supplier Fulfillment Adapter Contract universel : chaque fournisseur déclare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce",
+          "Shipping Capability Adapter Contract : les faits de livraison natifs d'un provider sont traduits en capacité canonique sans fuite de champs provider ni défaut implicite sur les faits inconnus",
+          "Purchase Order exacte : pour une ligne vendue avec sku_id, la PO conserve order_item_id, product_sku_id et la Supplier Order Identity snapshotée ; un mapping produit-level ne peut pas remplacer la variante vendue",
+          "Supplier money canonique : pour une ligne SKU/SOI exacte, la PO snapshotte supplier_unit_price + supplier_currency depuis la Canonical Unit ; aucun prix natif non-AED ne peut être écrit dans unit_price_aed"
         ],
         "out": [
           "cycle de vie de la commande cliente elle-même — orders reste seul propriétaire de order-status-machine.js (feature orders, scindée au Lot O1.4)",
@@ -20912,19 +21557,79 @@
           "entrée catalogue / import fournisseur en amont (feature catalog — sourcing/catalog-import, hors périmètre purchasing)"
         ]
       },
-      "authority": "backend-core — tout changement du flux d'engagement fournisseur (déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing",
+      "authority": "backend-core — tout changement du flux d'engagement fournisseur (identité commandable, Procurement Route, contrat d'adapter, readiness dynamique, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing",
       "invariants": [
         {
           "statement": "un besoin d'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)",
           "test": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js"
         },
+        {
+          "statement": "une ligne LOCAL_STOCK ne crée jamais de Purchase Order fournisseur ; seules les lignes IMPORT appartiennent au procurement fournisseur",
+          "test": "tests/unit/purchasing-trigger-service.test.js"
+        },
+        {
+          "statement": "si order_items.sku_id est renseigné, la Purchase Order doit conserver exactement ce product_sku_id, son supplier_unit_ref et sa Supplier Order Identity ; product_suppliers ne peut pas substituer un supplier_sku générique",
+          "test": "tests/integration/purchasing-exact-sku-po.test.js"
+        },
+        {
+          "statement": "pour une ligne SKU/SOI exacte, le prix et la devise du fournisseur viennent de la Canonical Unit et sont snapshotés nativement sur la PO ; un montant PLN/USD/CNY ne doit jamais être rebaptisé AED",
+          "test": "tests/unit/purchasing-canonical-money.test.js"
+        },
+        {
+          "statement": "une unité ne devient jamais commandable par heuristique : Supplier Order Identity absente ou ambiguë = blocage",
+          "test": "tests/unit/supplier-order-identity.test.js"
+        },
+        {
+          "statement": "tout adapter fulfillment est provider-scopé, traite un payload d'identité opaque et ne peut émettre que les verdicts canoniques Purchasing avec ready cohérent",
+          "test": "tests/unit/supplier-fulfillment-adapter-contract.test.js"
+        },
+        {
+          "statement": "une capacité de livraison provider ne franchit la frontière Purchasing que sous forme ShippingCapability canonique ; les champs natifs restent dans l'adapter et tout fait décisionnel inconnu bloque au lieu d'être inventé",
+          "test": "tests/unit/allegro-shipping-capability-adapter.test.js"
+        },
+        {
+          "statement": "Fulfillment Ready est un verdict dynamique SKU × quantité × Procurement Route ; identité résolue seule ne suffit pas et aucun preflight ne peut appeler placeOrder ni un paiement",
+          "test": "tests/unit/supplier-fulfillment-readiness.test.js"
+        },
+        {
+          "statement": "Allegro Sandbox peut être fulfillment-ready en exécution manuelle après identité + stock + prix live, tout en restant auto_order_ready=false et sans jamais invoquer de buyer placeOrder API",
+          "test": "tests/unit/allegro-fulfillment-adapter.test.js"
+        },
+        {
+          "statement": "une preuve d'achat manuel Allegro ne confirme la PO que si une commande vendeur READY_FOR_PROCESSING correspond exactement à offer id/SOI, quantité et monnaie native ; la discovery est bornée dans le temps, zéro ou plusieurs matchs bloquent, un rejeu identique est idempotent et un rebind différent est refusé",
+          "test": "tests/unit/allegro-sandbox-purchase-proof.test.js"
+        },
+        {
+          "statement": "la destination fournisseur est dérivée d'une Procurement Route explicite ; le moteur actuel n'ouvre que PROCUREMENT_HUB et refuse une destination Market/client brute ainsi que tout mode direct fournisseur-client implicite",
+          "test": "tests/unit/supplier-fulfillment-readiness.test.js"
+        },
+        {
+          "statement": "pour AliExpress freight.calculate, l'identité SKU reste résolue en amont mais le fret utilise uniquement le DTO complexe produit × quantité × destination hub encapsulé sous param_aeop_freight_calculate_for_buyer_d_t_o ; aucun sku_id n'est inventé",
+          "test": "tests/unit/aliexpress-purchase-preflight.test.js"
+        },
         "purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)",
         "une réception ne peut être appliquée qu'à un bon de commande existant et cohérent",
         "aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js",
-        "tout message WhatsApp fournisseur part d un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon ni ne confirme son statut"
+        "tout message WhatsApp fournisseur part d un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon ni ne confirme son statut",
+        "un préflight fournisseur ne peut jamais créer de commande fournisseur ni déclencher un paiement ; toute mutation externe exige un gate explicite séparé"
       ],
       "implementation": {
         "byCategory": {
+          "migrations": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "migrations/225_purchase_orders_exact_supplier_identity.sql",
+                "resolvedPath": "migrations/225_purchase_orders_exact_supplier_identity.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/239_purchase_orders_canonical_supplier_money.sql",
+                "resolvedPath": "migrations/239_purchase_orders_canonical_supplier_money.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
           "routes": {
             "count": 1,
             "files": [
@@ -20935,8 +21640,23 @@
               }
             ]
           },
+          "scripts": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "scripts/allegro-sandbox-purchase-proof.js",
+                "resolvedPath": "scripts/allegro-sandbox-purchase-proof.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/allegro-shipping-capability-proof.js",
+                "resolvedPath": "scripts/allegro-shipping-capability-proof.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
           "services": {
-            "count": 7,
+            "count": 23,
             "files": [
               {
                 "declared": "services/purchasing-admin-service.js",
@@ -20946,6 +21666,11 @@
               {
                 "declared": "services/purchasing-cancel-service.js",
                 "resolvedPath": "services/purchasing-cancel-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/purchasing-canonical-money.js",
+                "resolvedPath": "services/purchasing-canonical-money.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -20972,15 +21697,155 @@
                 "declared": "services/repair-ordered-without-purchase-orders.js",
                 "resolvedPath": "services/repair-ordered-without-purchase-orders.js",
                 "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/aliexpress-fulfillment-adapter.js",
+                "resolvedPath": "services/suppliers/aliexpress-fulfillment-adapter.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/aliexpress-purchase-preflight.js",
+                "resolvedPath": "services/suppliers/aliexpress-purchase-preflight.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/allegro-fulfillment-adapter.js",
+                "resolvedPath": "services/suppliers/allegro-fulfillment-adapter.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/allegro-purchase-reconciliation.js",
+                "resolvedPath": "services/suppliers/allegro-purchase-reconciliation.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/allegro-shipping-capability-adapter.js",
+                "resolvedPath": "services/suppliers/allegro-shipping-capability-adapter.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/canonical-unit-cutover-comparison.js",
+                "resolvedPath": "services/suppliers/canonical-unit-cutover-comparison.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/canonical-unit-purchasing-gate.js",
+                "resolvedPath": "services/suppliers/canonical-unit-purchasing-gate.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/execution-adapter-registry.js",
+                "resolvedPath": "services/suppliers/execution-adapter-registry.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/procurement-execution-boundary.js",
+                "resolvedPath": "services/suppliers/procurement-execution-boundary.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/provider-authority.js",
+                "resolvedPath": "services/suppliers/provider-authority.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/purchasing-validators.js",
+                "resolvedPath": "services/suppliers/purchasing-validators.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/shipping-capability-contract.js",
+                "resolvedPath": "services/suppliers/shipping-capability-contract.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+                "resolvedPath": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/supplier-fulfillment-readiness.js",
+                "resolvedPath": "services/suppliers/supplier-fulfillment-readiness.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/supplier-order-identity.js",
+                "resolvedPath": "services/suppliers/supplier-order-identity.js",
+                "status": "resolved-in-technical-graph"
               }
             ]
           },
           "tests": {
-            "count": 10,
+            "count": 29,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/purchasing-exact-sku-po.test.js",
+                "resolvedPath": "tests/integration/purchasing-exact-sku-po.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/aliexpress-purchase-preflight.test.js",
+                "resolvedPath": "tests/unit/aliexpress-purchase-preflight.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-fulfillment-adapter.test.js",
+                "resolvedPath": "tests/unit/allegro-fulfillment-adapter.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-purchase-reconciliation.test.js",
+                "resolvedPath": "tests/unit/allegro-purchase-reconciliation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-sandbox-purchase-proof.test.js",
+                "resolvedPath": "tests/unit/allegro-sandbox-purchase-proof.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-seller-order-read.test.js",
+                "resolvedPath": "tests/unit/allegro-seller-order-read.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-shipping-capability-adapter.test.js",
+                "resolvedPath": "tests/unit/allegro-shipping-capability-adapter.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-shipping-capability-proof.test.js",
+                "resolvedPath": "tests/unit/allegro-shipping-capability-proof.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-unit-cutover-comparison.test.js",
+                "resolvedPath": "tests/unit/canonical-unit-cutover-comparison.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-unit-purchasing-gate.test.js",
+                "resolvedPath": "tests/unit/canonical-unit-purchasing-gate.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/procurement-execution-boundary.test.js",
+                "resolvedPath": "tests/unit/procurement-execution-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/provider-authority.test.js",
+                "resolvedPath": "tests/unit/provider-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-adapter-resolution.test.js",
+                "resolvedPath": "tests/unit/purchasing-adapter-resolution.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -20994,6 +21859,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/purchasing-canonical-money.test.js",
+                "resolvedPath": "tests/unit/purchasing-canonical-money.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-readiness-vocabulary-mapping.test.js",
+                "resolvedPath": "tests/unit/purchasing-readiness-vocabulary-mapping.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/purchasing-receive-service.test.js",
                 "resolvedPath": "tests/unit/purchasing-receive-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -21001,6 +21876,11 @@
               {
                 "declared": "tests/unit/purchasing-route.test.js",
                 "resolvedPath": "tests/unit/purchasing-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-trigger-exact-sku.test.js",
+                "resolvedPath": "tests/unit/purchasing-trigger-exact-sku.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21027,11 +21907,26 @@
                 "declared": "tests/unit/repair-ordered-without-purchase-orders.test.js",
                 "resolvedPath": "tests/unit/repair-ordered-without-purchase-orders.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
+                "resolvedPath": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/supplier-fulfillment-readiness.test.js",
+                "resolvedPath": "tests/unit/supplier-fulfillment-readiness.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/supplier-order-identity.test.js",
+                "resolvedPath": "tests/unit/supplier-order-identity.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 18,
+        "totalFiles": 57,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -21081,6 +21976,10 @@
           {
             "table": "orders",
             "lifecycleOwner": "orders"
+          },
+          {
+            "table": "product_skus",
+            "lifecycleOwner": "catalog"
           },
           {
             "table": "products",
@@ -21137,6 +22036,10 @@
             "lifecycleOwner": "orders"
           },
           {
+            "table": "product_skus",
+            "lifecycleOwner": "catalog"
+          },
+          {
             "table": "products",
             "lifecycleOwner": "catalog"
           },
@@ -21149,8 +22052,48 @@
       "interfaces": {
         "internalApis": [
           {
+            "fn": "adaptShippingRate",
+            "file": "services/suppliers/allegro-shipping-capability-adapter.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "compareLegacyCanonicalUnit",
+            "file": "services/suppliers/canonical-unit-cutover-comparison.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "evaluateSupplierFulfillmentReadiness",
+            "file": "services/suppliers/supplier-fulfillment-readiness.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "normalizeCapability",
+            "file": "services/suppliers/shipping-capability-contract.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "prepareCanonicalUnitPurchase",
+            "file": "services/suppliers/canonical-unit-purchasing-gate.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "reconcile",
+            "file": "services/suppliers/allegro-purchase-reconciliation.js",
+            "status": "resolved"
+          },
+          {
             "fn": "repairOrderedWithoutPurchaseOrders",
             "file": "services/repair-ordered-without-purchase-orders.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "resolveCanonicalSupplierMoney",
+            "file": "services/purchasing-canonical-money.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "resolveSupplierUnit",
+            "file": "services/suppliers/supplier-order-identity.js",
             "status": "resolved"
           },
           {
@@ -21161,6 +22104,11 @@
           {
             "fn": "triggerPurchasing",
             "file": "services/purchasing-trigger-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "validateAdapter",
+            "file": "services/suppliers/supplier-fulfillment-adapter-contract.js",
             "status": "resolved"
           }
         ],
@@ -21180,6 +22128,7 @@
           "provider": "catalog",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
+            "static-code",
             "data-read"
           ]
         },
@@ -21212,9 +22161,23 @@
             "static-code",
             "data-read"
           ]
+        },
+        {
+          "provider": "sourcing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "consumedBy": [
+        {
+          "consumer": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
         {
           "consumer": "dashboard",
           "disposition": "DECLARED_AND_OBSERVED",
@@ -21313,13 +22276,13 @@
           "moteur de classement boutique",
           "endpoint de suggestions",
           "DiscoveryCard — projection de lecture mixte (product|physical_offer|service), jamais persistée",
-          "politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre",
-          "surface read-only surface=local sur la façade /api/boutique/suggestions"
+          "politique éditoriale serveur explicite du rail local : activation globale, candidats et ordre"
         ],
         "out": [
           "données produit source (feature catalog)",
-          "prix affiché (feature economic-engine)",
+          "prix affiché (feature economic-engine / market-autonomy)",
           "vérité d’exposabilité stock/service/offre physique (local-stock / providers-services)",
+          "décision d’exposition commerciale pays (catalog)",
           "cycle Inquiry, paiement, réservation ou settlement",
           "taxonomie ou navigation frontend parallèle pour le local"
         ]
@@ -21329,6 +22292,10 @@
         "le ranking ne modifie jamais les données produit, lecture seule sur catalog",
         {
           "statement": "discovery-rail-composer.js ne fait jamais de SQL direct sur les tables local_stock, services ou physical_offers — uniquement via les fonctions propriétaires ; Discovery ne possède aucune vérité, il la compose",
+          "test": "tests/unit/discovery-rail-composer.test.js"
+        },
+        {
+          "statement": "un Product affiché « Disponible maintenant » cumule stock local exposable, product_market_exposure ENABLED et prix LOCAL_ACTIVE buyer-effective ; le prix de la carte est le prix marché effectif, jamais products.price_kmf en fallback",
           "test": "tests/unit/discovery-rail-composer.test.js"
         },
         {
@@ -21577,6 +22544,13 @@
           ]
         },
         {
+          "provider": "market-autonomy",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "orders",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -21705,8 +22679,13 @@
             ]
           },
           "tests": {
-            "count": 4,
+            "count": 5,
             "files": [
+              {
+                "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
@@ -21740,7 +22719,7 @@
             ]
           }
         },
-        "totalFiles": 6,
+        "totalFiles": 7,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -23108,6 +24087,14 @@
       "perimeter": {
         "in": [
           "ingestion catalogue fournisseur brut (dispatch CSV / saisie manuelle / API)",
+          "activation explicite Source ON/OFF pour l acquisition automatique récurrente : OFF par défaut, runner provider-agnostic, pull borné et lock distribué par source",
+          "shadow ingestion NormalizedSupplierProduct V2 vers Source/Capture/Observation, sans bascule d autorite",
+          "Candidate Retrieval et Resolution shadow des Observations vers Canonical Product/Offer/Unit sans Selection",
+          "preuve multi-source read-only avant essai de projection canonique Product",
+          "Golden E2E provider-agnostic de Source à Canonical Unit puis Purchasing HARD_STOP",
+          "projection canonique Product read-only en shadow, consensus-only avec conflits préservés",
+          "comparaison parallèle read-only entre projection Product canonique et autorité historique reliée",
+          "santé opérationnelle read-only et snapshot d autorité finale Sourcing sans inventer de tendance",
           "scan de candidat (pricing-engine) et décision garder / watchlist / rejeter",
           "cycle de vie du candidat : raw_imported → normalized → scanned → imported_to_catalog / rejected / watchlist",
           "transformation candidat → produit (déclenchement, pas la fiche catalogue elle-même)",
@@ -23120,15 +24107,34 @@
           "enrichissement FR de la fiche produit après import (feature catalog, catalog-enrichment)",
           "fiche produit elle-même une fois créée (feature catalog)",
           "moteur margin/rail admin economic-engine (routes/sourcing.js, services/sourcing-analysis.js, services/sourcing-mutations.js) — HOMONYME sans rapport : voir note ci-dessous",
-          "calcul de prix (feature economic-engine, pricing-engine, consommé ici en lecture)"
+          "calcul de prix (feature economic-engine, pricing-engine, consommé ici en lecture)",
+          "Selection fournisseur, publication, exposition commerciale et commande fournisseur",
+          "routage Hub, consolidation physique, destination pays et séparation des flux Hub"
         ]
       },
       "authority": "backend-core — tout changement du cycle de vie candidat (states, transitions) doit être validé par le propriétaire de routes/sourcing-scanner.js",
       "invariants": [
         "un candidat exclu (rejet manuel ou auto-exclusion douane/légale) n'est jamais ré-importable (ING-5 verrou 1)",
-        "une devise hors whitelist (AED, EUR, USD, KMF) ne produit jamais de purchase_price_kmf faux (ING-5 verrou 2)",
+        "une devise hors whitelist (AED, EUR, USD, KMF, PLN ; PLN exige un taux explicite) ne produit jamais de purchase_price_kmf faux (ING-5 verrou 2)",
         "un candidat déjà importé (état imported_to_catalog + product_id) ne peut pas être ré-importé",
-        "le payload fournisseur brut est conservé intégralement (raw_payload) pour rejouabilité"
+        "le payload fournisseur brut est conservé intégralement (raw_payload) pour rejouabilité",
+        "une ré-observation V2 crée une nouvelle Capture et de nouvelles Observations ; elle ne mute jamais une Observation existante",
+        "un échec du writer shadow ne bloque jamais l import sourcing_candidates autoritatif",
+        "Candidate Retrieval réduit l espace de comparaison mais ne décide jamais seul de l identité",
+        "Resolution ne compare jamais prix, stock, fret ou délai et ne sélectionne aucun fournisseur",
+        "un LINK automatique PR 3 exige une preuve forte non contradictoire : source_ref exacte, contexte Offer même Source+parent, ou GTIN exact",
+        "le Product projection trial reste ferme tant que la preuve multi-source n est pas invariant-safe et cross-source",
+        "la projection Product shadow ne projette aucun prix, devise, stock, MOQ, délai, sellable_unit ou Supplier Order Identity",
+        "un conflit descriptif multi-source est préservé explicitement et ne devient jamais une valeur canonique silencieuse",
+        "la comparaison Product parallèle ne fabrique jamais un lien catalogue : seul sourcing_candidates.product_id autorise la parité products",
+        "l absence de produit catalogue relié bloque le gate de cutover sans invalider la projection canonique",
+        "Manual, CJ et AliExpress sont des preuves minimales, jamais une whitelist : une source future reste compatible via refs namespacées et SOI opaque",
+        "le Golden E2E est read-only et termine toujours par HARD_STOP ou BLOCKED_SUPPLIER_IDENTITY sans placeOrder",
+        "l autopilot est une autorisation opérateur distincte du lifecycle source ; il reste false par défaut et ne démarre jamais une source historique implicitement",
+        "le runner autopilot ne contient aucune branche fournisseur et n execute que des pulls bornés déclarés par le registry connecteur",
+        "le dashboard Sourcing affiche BROKEN uniquement lorsqu un invariant d intégrité est rompu ; ATTENTION couvre les exceptions opérationnelles bloquées",
+        "le dashboard ne fabrique aucune tendance sans historique persistant",
+        "le routage Hub et la destination physique restent hors autorité Sourcing et constituent le domaine suivant"
       ],
       "implementation": {
         "byCategory": {
@@ -23143,7 +24149,7 @@
             ]
           },
           "migrations": {
-            "count": 5,
+            "count": 8,
             "files": [
               {
                 "declared": "migrations/041_sourcing_candidates.sql",
@@ -23169,6 +24175,21 @@
                 "declared": "migrations/149_sourcing_workspace_business_refs.sql",
                 "resolvedPath": "migrations/149_sourcing_workspace_business_refs.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/226_sourcing_observation_foundation.sql",
+                "resolvedPath": "migrations/226_sourcing_observation_foundation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/227_sourcing_resolution_foundation.sql",
+                "resolvedPath": "migrations/227_sourcing_resolution_foundation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/238_sourcing_source_autopilot.sql",
+                "resolvedPath": "migrations/238_sourcing_source_autopilot.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -23187,9 +24208,54 @@
               }
             ]
           },
-          "services": {
-            "count": 3,
+          "scripts": {
+            "count": 7,
             "files": [
+              {
+                "declared": "scripts/catalog-product-read-cutover-trial-staging.js",
+                "resolvedPath": "scripts/catalog-product-read-cutover-trial-staging.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/sourcing-golden-e2e-staging.js",
+                "resolvedPath": "scripts/sourcing-golden-e2e-staging.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/sourcing-integrity-audit.js",
+                "resolvedPath": "scripts/sourcing-integrity-audit.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/sourcing-product-projection-trial-staging.js",
+                "resolvedPath": "scripts/sourcing-product-projection-trial-staging.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/sourcing-product-read-comparison-staging.js",
+                "resolvedPath": "scripts/sourcing-product-read-comparison-staging.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/sourcing-shadow-proof-staging.js",
+                "resolvedPath": "scripts/sourcing-shadow-proof-staging.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/sourcing-source-autopilot.js",
+                "resolvedPath": "scripts/sourcing-source-autopilot.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "services": {
+            "count": 20,
+            "files": [
+              {
+                "declared": "services/catalog-product-read-cutover-trial.js",
+                "resolvedPath": "services/catalog-product-read-cutover-trial.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/sourcing-candidate-actions.js",
                 "resolvedPath": "services/sourcing-candidate-actions.js",
@@ -23201,6 +24267,86 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/sourcing-canonical-commercial-projection-core.js",
+                "resolvedPath": "services/sourcing-canonical-commercial-projection-core.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-canonical-offer-projection.js",
+                "resolvedPath": "services/sourcing-canonical-offer-projection.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-canonical-offer-unit-comparison.js",
+                "resolvedPath": "services/sourcing-canonical-offer-unit-comparison.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-canonical-product-projection.js",
+                "resolvedPath": "services/sourcing-canonical-product-projection.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-canonical-unit-product-sku-resolution.js",
+                "resolvedPath": "services/sourcing-canonical-unit-product-sku-resolution.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-canonical-unit-projection.js",
+                "resolvedPath": "services/sourcing-canonical-unit-projection.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-catalog-product-linkage.js",
+                "resolvedPath": "services/sourcing-catalog-product-linkage.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-golden-e2e-service.js",
+                "resolvedPath": "services/sourcing-golden-e2e-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-integrity-service.js",
+                "resolvedPath": "services/sourcing-integrity-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-observation-shadow-plan.js",
+                "resolvedPath": "services/sourcing-observation-shadow-plan.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-observation-shadow-service.js",
+                "resolvedPath": "services/sourcing-observation-shadow-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-product-read-comparison.js",
+                "resolvedPath": "services/sourcing-product-read-comparison.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-resolution-evidence.js",
+                "resolvedPath": "services/sourcing-resolution-evidence.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-shadow-proof-service.js",
+                "resolvedPath": "services/sourcing-shadow-proof-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-shadow-resolution-service.js",
+                "resolvedPath": "services/sourcing-shadow-resolution-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-source-autopilot.js",
+                "resolvedPath": "services/sourcing-source-autopilot.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/sourcing-workspace.js",
                 "resolvedPath": "services/sourcing-workspace.js",
                 "status": "resolved-in-technical-graph"
@@ -23208,11 +24354,21 @@
             ]
           },
           "tests": {
-            "count": 6,
+            "count": 25,
             "files": [
               {
                 "declared": "tests/unit/admin-sourcing-workspace-route.test.js",
                 "resolvedPath": "tests/unit/admin-sourcing-workspace-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-product-read-cutover-trial.test.js",
+                "resolvedPath": "tests/unit/catalog-product-read-cutover-trial.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-product-route-canary.test.js",
+                "resolvedPath": "tests/unit/catalog-product-route-canary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -23231,8 +24387,93 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/sourcing-canonical-offer-projection.test.js",
+                "resolvedPath": "tests/unit/sourcing-canonical-offer-projection.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-canonical-offer-unit-comparison.test.js",
+                "resolvedPath": "tests/unit/sourcing-canonical-offer-unit-comparison.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-canonical-product-projection.test.js",
+                "resolvedPath": "tests/unit/sourcing-canonical-product-projection.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-canonical-unit-product-sku-resolution.test.js",
+                "resolvedPath": "tests/unit/sourcing-canonical-unit-product-sku-resolution.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-canonical-unit-projection.test.js",
+                "resolvedPath": "tests/unit/sourcing-canonical-unit-projection.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-catalog-product-linkage.test.js",
+                "resolvedPath": "tests/unit/sourcing-catalog-product-linkage.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-golden-e2e-service.test.js",
+                "resolvedPath": "tests/unit/sourcing-golden-e2e-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-integrity-audit.test.js",
+                "resolvedPath": "tests/unit/sourcing-integrity-audit.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-observation-foundation-migration.test.js",
+                "resolvedPath": "tests/unit/sourcing-observation-foundation-migration.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-observation-shadow-plan.test.js",
+                "resolvedPath": "tests/unit/sourcing-observation-shadow-plan.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-observation-shadow-service.test.js",
+                "resolvedPath": "tests/unit/sourcing-observation-shadow-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-product-read-comparison.test.js",
+                "resolvedPath": "tests/unit/sourcing-product-read-comparison.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-resolution-evidence.test.js",
+                "resolvedPath": "tests/unit/sourcing-resolution-evidence.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-resolution-foundation-migration.test.js",
+                "resolvedPath": "tests/unit/sourcing-resolution-foundation-migration.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/sourcing-scanner.test.js",
                 "resolvedPath": "tests/unit/sourcing-scanner.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-shadow-proof-service.test.js",
+                "resolvedPath": "tests/unit/sourcing-shadow-proof-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-shadow-resolution-service.test.js",
+                "resolvedPath": "tests/unit/sourcing-shadow-resolution-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-source-autopilot.test.js",
+                "resolvedPath": "tests/unit/sourcing-source-autopilot.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -23243,7 +24484,7 @@
             ]
           }
         },
-        "totalFiles": 17,
+        "totalFiles": 63,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -23259,6 +24500,46 @@
           {
             "table": "sourcing_candidates",
             "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_canonical_entities",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_canonical_entity_refs",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_captures",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_match_proposals",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_observation_evidence",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_observations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_resolution_bindings",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_resolution_decisions",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_source_provides",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_sources",
+            "resolution": "declared-table-owner"
           }
         ],
         "writesTables": [
@@ -23270,6 +24551,66 @@
           },
           {
             "table": "sourcing_candidates",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_canonical_entities",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_canonical_entity_refs",
+            "mode": "W",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_captures",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_match_proposals",
+            "mode": "W",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_observation_evidence",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_observations",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_resolution_bindings",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_resolution_decisions",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_source_provides",
+            "mode": "W",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_sources",
             "mode": "RW",
             "lifecycleOwner": "sourcing",
             "ownershipStatus": "owner"
@@ -23290,6 +24631,10 @@
           },
           {
             "table": "product_variants",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "products",
             "lifecycleOwner": "catalog"
           },
           {
@@ -23307,6 +24652,46 @@
           {
             "table": "sourcing_candidates",
             "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_canonical_entities",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_canonical_entity_refs",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_captures",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_match_proposals",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_observation_evidence",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_observations",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_resolution_bindings",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_resolution_decisions",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_source_provides",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "sourcing_sources",
+            "resolution": "declared-table-owner"
           }
         ],
         "writesTables": [
@@ -23318,6 +24703,66 @@
           },
           {
             "table": "sourcing_candidates",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_canonical_entities",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_canonical_entity_refs",
+            "mode": "W",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_captures",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_match_proposals",
+            "mode": "W",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_observation_evidence",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_observations",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_resolution_bindings",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_resolution_decisions",
+            "mode": "RW",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_source_provides",
+            "mode": "W",
+            "lifecycleOwner": "sourcing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "sourcing_sources",
             "mode": "RW",
             "lifecycleOwner": "sourcing",
             "ownershipStatus": "owner"
@@ -23341,6 +24786,10 @@
             "lifecycleOwner": "catalog"
           },
           {
+            "table": "products",
+            "lifecycleOwner": "catalog"
+          },
+          {
             "table": "supplier_catalog_imports",
             "lifecycleOwner": "catalog"
           }
@@ -23349,8 +24798,93 @@
       "interfaces": {
         "internalApis": [
           {
+            "fn": "applyCanonicalSourceReadSeam",
+            "file": "services/catalog-product-read-cutover-trial.js",
+            "status": "resolved"
+          },
+          {
             "fn": "archiveMissingCandidatesFromCatalogImport",
             "file": "services/sourcing-candidate-import-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "buildFinalAuthoritySnapshot",
+            "file": "services/sourcing-integrity-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "buildHealthDashboard",
+            "file": "services/sourcing-integrity-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "collectCanonicalOfferProjectionById",
+            "file": "services/sourcing-canonical-offer-projection.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "collectCanonicalProductProjectionById",
+            "file": "services/sourcing-canonical-product-projection.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "collectCanonicalProductProjections",
+            "file": "services/sourcing-canonical-product-projection.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "collectCanonicalUnitProjectionById",
+            "file": "services/sourcing-canonical-unit-projection.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "collectCatalogProductReadCutoverTrial",
+            "file": "services/catalog-product-read-cutover-trial.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "collectGoldenE2E",
+            "file": "services/sourcing-golden-e2e-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "collectIntegrityAudit",
+            "file": "services/sourcing-integrity-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "collectProductReadComparison",
+            "file": "services/sourcing-product-read-comparison.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "collectShadowProof",
+            "file": "services/sourcing-shadow-proof-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "compareCanonicalOfferUnitWithLegacy",
+            "file": "services/sourcing-canonical-offer-unit-comparison.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "findCanonicalProductIdsForCatalogProduct",
+            "file": "services/sourcing-catalog-product-linkage.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "recordCatalogImportObservationsShadow",
+            "file": "services/sourcing-observation-shadow-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "resolveCanonicalUnitForProductSku",
+            "file": "services/sourcing-canonical-unit-product-sku-resolution.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "resolveCaptureShadow",
+            "file": "services/sourcing-shadow-resolution-service.js",
             "status": "resolved"
           },
           {
@@ -23360,7 +24894,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 23
+          "count": 25
         }
       },
       "businessDependencies": [
@@ -23416,6 +24950,13 @@
             "static-code",
             "data-read"
           ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "projections": {
@@ -23423,9 +24964,14 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 0,
+        "testOnlyRelations": 1,
         "compositionRootRelations": 0,
-        "details": []
+        "details": [
+          {
+            "to": "purchasing",
+            "family": "NON_RUNTIME_TEST"
+          }
+        ]
       },
       "boundaryHealth": {
         "status": "HEALTHY",
