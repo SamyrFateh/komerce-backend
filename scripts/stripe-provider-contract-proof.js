@@ -38,8 +38,18 @@ function classifyStripeKey(key) {
 
 function expectedWebhookUrl(env) {
   if (env.STRIPE_WEBHOOK_URL) return String(env.STRIPE_WEBHOOK_URL).trim();
-  const base = String(env.KOMERCE_API_URL || '').trim().replace(/\/+$/, '');
-  return base ? base + '/api/payments/stripe/webhook' : null;
+
+  const explicitBase = String(
+    env.PUBLIC_BASE_URL ||
+    env.KOMERCE_API_URL ||
+    ''
+  ).trim().replace(/\/+$/, '');
+  if (explicitBase) return explicitBase + '/api/payments/stripe/webhook';
+
+  const railwayDomain = String(env.RAILWAY_PUBLIC_DOMAIN || '').trim().replace(/^https?:\/\//, '').replace(/\/+$/, '');
+  return railwayDomain
+    ? 'https://' + railwayDomain + '/api/payments/stripe/webhook'
+    : null;
 }
 
 function eventEnabled(endpoint, eventName) {
