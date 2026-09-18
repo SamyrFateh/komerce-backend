@@ -33,26 +33,6 @@
       "highest_proof": "P4"
     },
     {
-      "id": "ebay",
-      "family": "supplier",
-      "expected_scope": "runtime",
-      "consumers": [
-        "catalog",
-        "sourcing",
-        "purchasing"
-      ],
-      "hosts": [
-        "api.sandbox.ebay.com"
-      ],
-      "markers": [
-        "EBAY_CLIENT_ID",
-        "EBAY_ENV",
-        "ebay-sandbox"
-      ],
-      "analysis_document": "docs/external-providers/suppliers/EBAY.md",
-      "highest_proof": "P3"
-    },
-    {
       "id": "aliexpress",
       "family": "supplier",
       "expected_scope": "runtime",
@@ -122,7 +102,7 @@
         "stripe.paymentIntents"
       ],
       "analysis_document": "docs/external-providers/payments/STRIPE.md",
-      "highest_proof": "P3"
+      "highest_proof": "P4"
     },
     {
       "id": "paypal",
