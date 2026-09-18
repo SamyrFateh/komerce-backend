@@ -53,9 +53,11 @@ const order = { id: 'o1', reference: 'KOM-001', relais_id: 'r1', relais_name: 'R
 const item = { product_id: 'p1', product_name: 'Sac Ali', category: 'sacs', quantity: 2, price_aed: 50 };
 
 function supplierRow(overrides = {}) {
+  // platform: 'local' — provider réel de la liste canonique. `manual` est un
+  // mode d'exécution, jamais un provider (cf. provider-authority.js).
   return {
     id: 'ps1', supplier_id: 's1', supplier_sku: 'SKU-1', supplier_price_aed: 30,
-    supplier_name: 'Supplier X', platform: 'manual', auto_order: false,
+    supplier_name: 'Supplier X', platform: 'local', auto_order: false,
     contact_phone: '971500000000', account_id: null, api_key_enc: null,
     api_secret_enc: null, lead_time_days: 5, supplier_url: 'https://x.test/p',
     ...overrides,
@@ -160,11 +162,11 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
     expect(db.query).not.toHaveBeenCalledWith(expect.stringContaining('UPDATE purchase_orders SET notes'), expect.anything());
   });
 
-  it('fournisseur manuel standard (auto_order=false, platform≠whatsapp) → admin_notified', async () => {
+  it('fournisseur générique (auto_order=false, platform≠whatsapp) → triggerMode manual → admin_notified', async () => {
     process.env.ADMIN_PHONE = '+269900000';
     db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
     const client = makeClient([
-      { rows: [supplierRow({ platform: 'manual', auto_order: false })] },
+      { rows: [supplierRow({ platform: 'local', auto_order: false })] },
       { rows: [] },
       { rows: [{ id: 'po3' }] },
       {},

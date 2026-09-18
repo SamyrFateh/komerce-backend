@@ -45,10 +45,12 @@ function extractPlatformsFromSchema(filePath) {
 }
 
 function extractPlatformsFromValidator() {
-  const src = fs.readFileSync(path.join(ROOT, 'validators', 'index.js'), 'utf8');
-  const match = src.match(/const PLATFORMS\s*=\s*\[([^\]]+)\]/);
-  if (!match) return [];
-  return match[1].split(',').map(s => s.trim().replace(/['"]/g, '')).filter(Boolean);
+  // L'autorité canonique vit dans services/suppliers/provider-authority.js.
+  // Depuis GAP-1 v2 elle est consommée par purchasing-validators.js
+  // (@domain purchasing), jamais par validators/index.js (@domain
+  // infrastructure) — cf. tests/unit/provider-authority.test.js.
+  const { PROVIDERS } = require('../../services/suppliers/provider-authority');
+  return [...PROVIDERS];
 }
 
 function migrationContains(pattern, text) {
