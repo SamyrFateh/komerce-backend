@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          provider-authority
- * @domain        purchasing
+ * @domain        supplier-connectivity
  * @layer         service
  * @criticality   high
  * @inputs        provider code (string)

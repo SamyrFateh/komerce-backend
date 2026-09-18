@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 605
-- Files with full headers: 560
+- Scanned code files: 606
+- Files with full headers: 561
 - Files with lite headers: 45
-- Files with any headers: 605
+- Files with any headers: 606
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1444
-- Edges: 7198
+- Graph nodes: 1445
+- Edges: 7226
 - DB tables: 173
 - Doctrines: 483
 - Impact areas: 183
-- Unresolved code edges: 691
+- Unresolved code edges: 710
 - Tables multi-écrivains directs (>=2): 73
 - Avertissements db-write / db-write-via en chevauchement: 8
 
@@ -53,7 +53,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - orders: 30
 - payment: 26
 - providers-services: 7
-- purchasing: 24
+- purchasing: 22
 - recommendations: 6
 - refunds: 2
 - settlement: 2
@@ -61,6 +61,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - shared-cart: 25
 - shared-cart-modal: 7
 - sourcing: 23
+- supplier-connectivity: 3
 - tracking: 1
 - unsold-resolution: 1
 - wallet: 3
@@ -85,7 +86,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 127
 - route-manifest: 1
 - schema: 1
-- service: 303
+- service: 304
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -508,12 +509,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/suppliers/pipeline-constants.js — catalog-pipeline-constants (catalog, high, full)
 - services/suppliers/procurement-execution-boundary.js — procurement-execution-boundary (purchasing, high, full)
 - services/suppliers/promotion-classifier.js — catalog-promotion-classifier (catalog, high, full)
-- services/suppliers/provider-authority.js — provider-authority (purchasing, high, full)
+- services/suppliers/provider-authority.js — provider-authority (supplier-connectivity, high, full)
+- services/suppliers/purchase-order-confirmation-boundary.js — purchase-order-confirmation-boundary (purchasing, high, full)
 - services/suppliers/shipping-capability-contract.js — shipping-capability-contract (purchasing, high, full)
 - services/suppliers/source-product-normalizer.js — catalog-source-product-normalizer (catalog, high, full)
-- services/suppliers/supplier-fulfillment-adapter-contract.js — supplier-fulfillment-adapter-contract (purchasing, high, full)
+- services/suppliers/supplier-fulfillment-adapter-contract.js — supplier-fulfillment-adapter-contract (supplier-connectivity, high, full)
 - services/suppliers/supplier-fulfillment-readiness.js — supplier-fulfillment-readiness (purchasing, high, full)
-- services/suppliers/supplier-order-identity.js — supplier-order-identity (purchasing, high, full)
+- services/suppliers/supplier-order-identity.js — supplier-order-identity (supplier-connectivity, high, full)
 - services/transport-cost-allocation.js — transport-cost-allocation-contract (economic-engine, high, full)
 - services/transport-pricing.js — transport-pricing-quote (economic-engine, high, full)
 - services/transport-rails.js — transport-rail-registry (logistics, high, full)
@@ -943,7 +945,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: feature_modules -> public/boutique/js/komerce-api.js (feature_modules)
 - uses: futur HUB-001 (Physical Identity -> services/outbox-producer.js (futur HUB-001 (Physical Identity)
 - uses: futur HUB-001 (Physical Identity -> services/outbox-worker.js (futur HUB-001 (Physical Identity)
-- uses: future adapter resolution (GAP-2) -> services/suppliers/provider-authority.js (future adapter resolution (GAP-2))
 - uses: future b-modal-core.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-core.js)
 - uses: future b-modal-desktop-enhancers.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-desktop-enhancers.js)
 - uses: future b-modal-product.js -> public/boutique/js/view-models/modal-selection-model.js (future b-modal-product.js)
@@ -951,9 +952,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: future pricing strategy gate -> services/pricing-market-coverage.js (future pricing strategy gate)
 - uses: future shipment cost ingestion -> services/transport-cost-allocation.js (future shipment cost ingestion)
 - uses: future transport routing and packing orchestration -> services/transport-rails.js (future transport routing and packing orchestration)
+- uses: GAP-4A — jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reçoit en paramètres injectés par cet appelant -> services/suppliers/supplier-fulfillment-readiness.js (GAP-4A — jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reçoit en paramètres injectés par cet appelant)
+- uses: GAP-4A) -> services/suppliers/provider-authority.js (GAP-4A))
+- uses: GAP-5) -> services/suppliers/provider-authority.js (GAP-5))
+- uses: GAP-5) -> services/suppliers/purchase-order-confirmation-boundary.js (GAP-5))
 - uses: home-personalization -> routes/boutique-suggestions.js (home-personalization)
 - uses: HUB-001 internal logistics boundary -> services/hub-physical-identity.js (HUB-001 internal logistics boundary)
-- uses: internal purchasing callers -> services/suppliers/supplier-fulfillment-readiness.js (internal purchasing callers)
 - uses: inventory -> services/order-mutation-service.js (inventory)
 - uses: lecture verrouillée) -> services/pickup-authorization-service.js (lecture verrouillée))
 - uses: logistics -> services/order-mutation-service.js (logistics)
@@ -1022,8 +1026,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/b-store.js -> DOM (DOM)
 - depends: public/boutique/js/b-store.js -> localStorage (localStorage)
 - depends: public/boutique/js/b-store.js -> sessionStorage (sessionStorage)
-- depends: public/boutique/js/b-utils.js -> fetch (fetch)
-- depends: public/boutique/js/b-utils.js -> Intl (Intl)
 
 ## Files Still Without Headers Or Aggregation
 

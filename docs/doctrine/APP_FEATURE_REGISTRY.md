@@ -1,6 +1,6 @@
 # Registre Canonique des Features — Application complète Komerce
 
-> **Version** : 2.0 — 2026-09 (`external-provider-contracts` ajouté comme transversal technique d'autorité de preuve des frontières externes ; historique 1.9 conservé)
+> **Version** : 2.1 — 2026-09 (`supplier-connectivity` ajouté comme feature d'autorité/gateway provider ; historique 2.0 conservé)
 > **Statut** : registre actif — gouverné par `docs/doctrine/FEATURE_DOCTRINE.md`
 > **Construit à partir de** : headers `@komerce-arch` réels (`@domain`) du dépôt
 > **backend**, croisés avec les fichiers réels des dépôts **bout** (boutique frontend)
@@ -57,7 +57,9 @@ interfaces, autorité, invariants). Ce registre est l'index — pas le détail.
 | 26 | `incident-management` | transversal (business) | backend | [`incident-management.feature.js`](../../features/incident-management.feature.js) | production | Détection, qualification et résolution d'écarts opérationnels avec impact client traçable — scindé de `platform-ops` (Lot O2, 2026-07-12) |
 | 27 | `business-rules` | transversal (business) | backend | [`business-rules.feature.js`](../../features/business-rules.feature.js) | production | Référentiel versionné des règles métier paramétrables, servi aux features consommatrices avec valeur de repli |
 | 28 | `market-operator-dashboard` | feature | backend + dash | [`market-operator-dashboard.feature.js`](../../features/market-operator-dashboard.feature.js) | staging | Accès market_operator au dashboard Canonical scopé marché — Operations Workspace en lecture, filtrage navigation par rôle, provisioning CLI |
-| 29 | `market-delegation` | feature | backend | [`market-delegation.feature.js`](../../features/market-delegation.feature.js) | staging | Mandat d'exploitation d'un Market ID, plafond de capacités, équipe locale, audit et projection d'autorisation |\n| 30 | `external-provider-contracts` | transversal | backend | [`external-provider-contracts.feature.js`](../../features/external-provider-contracts.feature.js) | staging | Autorité transverse de qualification et de preuve des contrats API externes (Conversation, KNOWN/DERIVED/UNKNOWN, P0→P4), sans posséder les adapters métier |
+| 29 | `market-delegation` | feature | backend | [`market-delegation.feature.js`](../../features/market-delegation.feature.js) | staging | Mandat d'exploitation d'un Market ID, plafond de capacités, équipe locale, audit et projection d'autorisation |
+| 30 | `external-provider-contracts` | transversal | backend | [`external-provider-contracts.feature.js`](../../features/external-provider-contracts.feature.js) | staging | Autorité transverse de qualification et de preuve des contrats API externes (Conversation, KNOWN/DERIVED/UNKNOWN, P0→P4), sans posséder les adapters métier |
+| 31 | `supplier-connectivity` | feature | backend | [`supplier-connectivity.feature.js`](../../features/supplier-connectivity.feature.js) | staging | Autorité d'identité provider, Supplier Order Identity opaque et contrats d'adapter fail-closed, sans transfert des décisions métier |
 
 > ⚠️ **Note sur les lignes #19/#20 vs #22/#23** : le dépôt dashboards contient un
 > sous-dossier `dashboards/` imbriqué (donc `public/dashboards/**` une fois déployé)

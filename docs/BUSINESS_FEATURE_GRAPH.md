@@ -80,7 +80,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 34 | 34 | 500 | 500 | 0 |
+| backend | 35 | 35 | 501 | 501 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 105 | 105 | 0 |
 
@@ -89,7 +89,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 ### Identités canoniques
 
 - **Cross-repo features** (11) : `auth-identity`, `auth-passkey`, `catalog`, `notifications`, `orders`, `payments`, `platform-ops`, `providers-services`, `recommendations`, `shared-cart`, `wallet`
-- **Single-repo features** (27) : `admin-dashboard`, `auth`, `business-rules`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `external-provider-contracts`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `local-stock`, `logistics`, `loyalty`, `market`, `market-autonomy`, `market-delegation`, `market-operator-dashboard`, `platform`, `purchasing`, `refunds`, `settlement`, `sourcing`, `unsold-resolution`, `wallet-loyalty`
+- **Single-repo features** (28) : `admin-dashboard`, `auth`, `business-rules`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `external-provider-contracts`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `local-stock`, `logistics`, `loyalty`, `market`, `market-autonomy`, `market-delegation`, `market-operator-dashboard`, `platform`, `purchasing`, `refunds`, `settlement`, `sourcing`, `supplier-connectivity`, `unsold-resolution`, `wallet-loyalty`
 - **Unmapped local manifests** (0) : —
 
 ### Ontology gaps
@@ -194,7 +194,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 16
 - interfaces exposed: 31
 - internal APIs: 9
-- dependencies (consumes): 15 — external-provider-contracts, sourcing, notifications, auth-identity, platform-ops, infrastructure, business-rules, economic-engine, market-autonomy, sourcing, purchasing, logistics, shared-cart, auth, orders
+- dependencies (consumes): 16 — external-provider-contracts, sourcing, notifications, auth-identity, platform-ops, infrastructure, business-rules, economic-engine, market-autonomy, sourcing, supplier-connectivity, purchasing, logistics, shared-cart, auth, orders
 - consumers: 20 — auth-identity, customs, documents, economic-engine, infrastructure, inventory, local-stock, logistics, market-autonomy, market-delegation, market-operator-dashboard, orders, platform-ops, purchasing, recommendations, recommendations, shared-cart, sourcing, unsold-resolution, admin-dashboard
 
 ### customs _(business-feature)_
@@ -284,14 +284,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Qualifier, prouver et publier ce que Komerce peut réellement croire d un système externe avant qu une feature métier ne s appuie sur son contrat.
 
-- scripts: 1
-- tests: 1
+- scripts: 2
+- config: 1
+- tests: 2
 - tables owned (lifecycle): 0
 - tables written: 0
 - interfaces exposed: 0
-- internal APIs: 5
+- internal APIs: 6
 - dependencies (consumes): 1 — infrastructure
-- consumers: 2 — catalog, purchasing
+- consumers: 3 — catalog, purchasing, supplier-connectivity
 
 ### incident-management _(business-transversal)_
 
@@ -562,16 +563,16 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.
 
-- services: 24
+- services: 21
 - routes: 1
 - migrations: 2
 - scripts: 2
-- tests: 30
+- tests: 27
 - tables owned (lifecycle): 3 — `product_suppliers`, `purchase_orders`, `suppliers`
 - tables written: 3
 - interfaces exposed: 10
-- internal APIs: 12
-- dependencies (consumes): 8 — external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, notifications, logistics
+- internal APIs: 10
+- dependencies (consumes): 9 — supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, notifications, logistics
 - consumers: 6 — catalog, dashboard, logistics, orders, payments, platform-ops
 
 ### recommendations _(business-feature)_
@@ -652,6 +653,19 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - internal APIs: 19
 - dependencies (consumes): 5 — infrastructure, catalog, economic-engine, auth, dashboard
 - consumers: 4 — catalog, catalog, purchasing, admin-dashboard
+
+### supplier-connectivity _(integration-adapter)_
+
+> Permettre à Komerce d accueillir un fournisseur par une autorité unique d identité provider, une Supplier Order Identity opaque et une résolution d adapter fail-closed, sans déplacer les décisions métier des features consommatrices.
+
+- services: 3
+- tests: 3
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 10
+- dependencies (consumes): 1 — external-provider-contracts
+- consumers: 2 — catalog, purchasing
 
 ### unsold-resolution _(business-feature)_
 
@@ -1423,6 +1437,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `assertConversation` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
 | `assertThrough` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
 | `summary` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `scanRepository` | `scripts/external-provider-boundary-scan.js` | external-provider-contracts | resolved |
 | `listIncidents` | `services/incident-service.js` | incident-management | resolved |
 | `getIncident` | `services/incident-service.js` | incident-management | resolved |
 | `resolveIncident` | `services/incident-service.js` | incident-management | resolved |
@@ -1557,8 +1572,6 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `makeInput` | `public/boutique/js/b-checkout.js` | orders | resolved |
 | `triggerPurchasing` | `services/purchasing-trigger-service.js` | purchasing | resolved |
 | `resolveCanonicalSupplierMoney` | `services/purchasing-canonical-money.js` | purchasing | resolved |
-| `resolveSupplierUnit` | `services/suppliers/supplier-order-identity.js` | purchasing | resolved |
-| `validateAdapter` | `services/suppliers/supplier-fulfillment-adapter-contract.js` | purchasing | resolved |
 | `evaluateSupplierFulfillmentReadiness` | `services/suppliers/supplier-fulfillment-readiness.js` | purchasing | resolved |
 | `normalizeCapability` | `services/suppliers/shipping-capability-contract.js` | purchasing | resolved |
 | `adaptShippingRate` | `services/suppliers/allegro-shipping-capability-adapter.js` | purchasing | resolved |
@@ -1595,6 +1608,16 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `applyCanonicalSourceReadSeam` | `services/catalog-product-read-cutover-trial.js` | sourcing | resolved |
 | `collectProductReadComparison` | `services/sourcing-product-read-comparison.js` | sourcing | resolved |
 | `collectCatalogProductReadCutoverTrial` | `services/catalog-product-read-cutover-trial.js` | sourcing | resolved |
+| `isSupportedProvider` | `services/suppliers/provider-authority.js` | supplier-connectivity | resolved |
+| `normalizeProviderCode` | `services/suppliers/provider-authority.js` | supplier-connectivity | resolved |
+| `remotePreflightRequirement` | `services/suppliers/provider-authority.js` | supplier-connectivity | resolved |
+| `reconciliationRequirement` | `services/suppliers/provider-authority.js` | supplier-connectivity | resolved |
+| `normalizeIdentity` | `services/suppliers/supplier-order-identity.js` | supplier-connectivity | resolved |
+| `identitiesMatch` | `services/suppliers/supplier-order-identity.js` | supplier-connectivity | resolved |
+| `resolveSupplierUnit` | `services/suppliers/supplier-order-identity.js` | supplier-connectivity | resolved |
+| `validateAdapter` | `services/suppliers/supplier-fulfillment-adapter-contract.js` | supplier-connectivity | resolved |
+| `validateExecutionAdapter` | `services/suppliers/supplier-fulfillment-adapter-contract.js` | supplier-connectivity | resolved |
+| `validateReconciliationAdapter` | `services/suppliers/supplier-fulfillment-adapter-contract.js` | supplier-connectivity | resolved |
 
 ## Cross-feature dependencies
 
@@ -1631,7 +1654,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | catalog | economic-engine (`economic-engine (prix produit, valorisation commerciale transport et audit price_history propriétaire)`) | ✔ |
 | catalog | market-autonomy (`market-autonomy (résolution buyer du prix LOCAL_ACTIVE par marché ; le catalogue reste propriétaire du produit global)`) | ✔ |
 | catalog | sourcing (`sourcing (persistence lifecycle sourcing_candidates et sourcing_candidate_events via sourcing-candidate-import-service ; catalog n execute plus de SQL direct sur ces tables)`) | ✔ |
-| catalog | purchasing (`purchasing (Supplier Order Identity canonique : catalog persiste et valide l’identité commandable via services/suppliers/supplier-order-identity.js ; aucun payload fournisseur n’est réinterprété par heuristique)`) | ✔ |
+| catalog | supplier-connectivity (`supplier-connectivity (Supplier Order Identity canonique : catalog persiste et valide l’identité commandable via services/suppliers/supplier-order-identity.js ; aucun payload fournisseur n’est réinterprété par heuristique)`) | ✔ |
+| catalog | purchasing (`purchasing (scripts/allegro-sandbox-check.js compose l adapter Allegro fulfillment possédé par Purchasing pour la preuve sandbox ; aucune autorité Purchasing n est recopiée dans Catalogue)`) | ✔ |
 | catalog | logistics (`logistics (rails et eligibilite transport ; le catalog ne decide jamais le rail)`) | ✔ |
 | catalog | shared-cart (`shared-cart (ne pas reutiliser la modal catalogue pour la fiche snapshot)`) | ✔ |
 | catalog | auth (`auth`) | ✔ |
@@ -1823,6 +1847,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | providers-services | local-stock (`local-stock — déclaration et exposition du stock local Product Komerce du seed Discovery staging via les primitives owner`) | ✔ |
 | providers-services | recommendations (`recommendations — réutilise le tooling Discovery CJ pour construire les candidats staging ; recommendations reste propriétaire de la sélection et de l ordre éditorial`) | ✔ |
 | providers-services | infrastructure (`infrastructure — dépendance technique db.js et résolution KOMERCE_ENV`) | ✔ |
+| purchasing | supplier-connectivity (`supplier-connectivity (autorité provider, Supplier Order Identity opaque et contrats adapter fail-closed)`) | ✔ |
 | purchasing | external-provider-contracts (`external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les proofs Purchasing)`) | ✔ |
 | purchasing | sourcing (`sourcing (resolveCanonicalUnitForProductSku — frontière canonique exacte, sans lecture directe des tables Resolution)`) | ✔ |
 | purchasing | catalog (`catalog (contrat V2 sellable_units + Supplier Order Identity fournie par les connecteurs, client Allegro Sandbox borné)`) | ✔ |
@@ -1864,6 +1889,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | sourcing | economic-engine (`economic-engine (pricing-engine.loadGlobalConfig — config de scan)`) | ✔ |
 | sourcing | auth (`auth`) | ✔ |
 | sourcing | dashboard (`dashboard (registre partenaires partagé via partner-admin-service ; 4E filtre strictement partner_type=sourcing)`) | ✔ |
+| supplier-connectivity | external-provider-contracts (`external-provider-contracts (méthode transverse de qualification et de preuve P0→P4 avant déclaration d une capability provider)`) | ✔ |
 | unsold-resolution | orders (`orders (commande source de l'invendu)`) | ✔ |
 | unsold-resolution | catalog (`catalog (produit concerné)`) | ✔ |
 | unsold-resolution | auth (`auth`) | ✔ |
@@ -1903,7 +1929,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 - none
 
-### TOPOLOGIE ATTENDUE — hors dette (37)
+### TOPOLOGIE ATTENDUE — hors dette (38)
 
 - **[DASH-MANIFEST-DUPLICATE-COPY]** admin-dashboard — "public/features/admin-dashboard.feature.js" est une copie déclarée de "public/dashboards/features/admin-dashboard.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
@@ -1933,6 +1959,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** refunds -> auth — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "refunds" vers "auth"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** refunds -> payments — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "refunds" vers "payments"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** sourcing -> purchasing — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "sourcing" vers "purchasing"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** supplier-connectivity -> purchasing — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "supplier-connectivity" vers "purchasing"
 - **[WRITER-NOT-OWNER]** invoices — table "invoices" : lifecycle owner = documents (classification.signals.ownsTables), mais aussi écrite par dashboard
 - **[WRITER-NOT-OWNER]** order_comments — table "order_comments" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
 - **[WRITER-NOT-OWNER]** order_status_history — table "order_status_history" : lifecycle owner = orders (classification.signals.ownsTables), mais aussi écrite par dashboard
@@ -2011,7 +2038,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1305 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1307 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 217 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2065,9 +2092,10 @@ Meta Graph monté : oui.
 | catalog | notifications | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | catalog | orders | static-code, data-read | 15 | **DECLARED_AND_OBSERVED** |
 | catalog | platform-ops | static-code | 76 | **DECLARED_AND_OBSERVED** |
-| catalog | purchasing | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| catalog | purchasing | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code, interface | 13 | **DECLARED_AND_OBSERVED** |
 | catalog | sourcing | static-code, data-read | 10 | **DECLARED_AND_OBSERVED** |
+| catalog | supplier-connectivity | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | customs | documents | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -2284,6 +2312,7 @@ Meta Graph monté : oui.
 | purchasing | notifications | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | purchasing | sourcing | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| purchasing | supplier-connectivity | static-code | 16 | **DECLARED_AND_OBSERVED** |
 | recommendations | catalog | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | recommendations | infrastructure | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | recommendations | local-stock | static-code | 3 | **DECLARED_AND_OBSERVED** |
@@ -2319,6 +2348,7 @@ Meta Graph monté : oui.
 | sourcing | economic-engine | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | sourcing | infrastructure | static-code | 28 | **DECLARED_AND_OBSERVED** |
 | sourcing | purchasing | static-code | 1 | **OBSERVED_UNDECLARED** |
+| supplier-connectivity | purchasing | static-code | 3 | **OBSERVED_UNDECLARED** |
 | unsold-resolution | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | unsold-resolution | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | unsold-resolution | infrastructure | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -2358,6 +2388,7 @@ Meta Graph monté : oui.
 - `refunds` → `auth` (canaux: static-code)
 - `refunds` → `payments` (canaux: static-code)
 - `sourcing` → `purchasing` (canaux: static-code)
+- `supplier-connectivity` → `purchasing` (canaux: static-code)
 
 ### Declared without observed evidence (canal A/D uniquement — ne signifie pas "dépendance inexistante")
 
@@ -2368,6 +2399,7 @@ Meta Graph monté : oui.
 - `market-operator-dashboard` → `dashboard` (déclaré : `dashboard (admin-dashboard-market routes, admin-context, canonical navigation/app.js, operations workspace, admin-finance-accounting-workspace — projection Finance pays et actions explicitement déléguées, jamais autorité globale implicite)`)
 - `market-operator-dashboard` → `orders` (déclaré : `orders (commandes et order_items market-scoped)`)
 - `market-operator-dashboard` → `logistics` (déclaré : `logistics (Hub/Relais, expéditions, douane et primitives de suivi market-scoped)`)
+- `supplier-connectivity` → `external-provider-contracts` (déclaré : `external-provider-contracts (méthode transverse de qualification et de preuve P0→P4 avant déclaration d une capability provider)`)
 
 ### Transversal topology (consumer = local-manifest frontend-transversal, hors ontology gap)
 
@@ -2402,14 +2434,14 @@ Composition-root owners (dérivés de l'ownership des fichiers wiring, pas du no
 |---|---|---|
 | PROJECTION | 0 | projection-dependency-policy |
 | COMPOSITION_ROOT_WIRING | 19 | application-wiring-not-consumption |
-| NON_RUNTIME_TEST | 7 | non-runtime-evidence |
+| NON_RUNTIME_TEST | 8 | non-runtime-evidence |
 | TECHNICAL_PRIMITIVE | 0 | technical-dependency-policy |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 | business-dependency-declare-candidate |
 | CROSS_FEATURE_DIRECT_IMPORT | 0 | boundary-remediation-required |
 | BUSINESS_FEATURE_INTERFACE | 0 | business-dependency-declare-candidate |
 | PILOTING_CAPABILITY | 0 | piloting-capability-dependency |
 | UNCLASSIFIED | 0 | _(bloquant si > 0)_ |
-| **TOTAL** | **26** | |
+| **TOTAL** | **27** | |
 
 ### Projection dependencies
 
@@ -2452,6 +2484,7 @@ Preuves 100 % tests/. Visible mais hors dette de contrat runtime.
 - `refunds` → `auth` — technical-primitive, TEST_ONLY
 - `refunds` → `payments` — business-file-import, TEST_ONLY
 - `sourcing` → `purchasing` — business-file-import, TEST_ONLY
+- `supplier-connectivity` → `purchasing` — business-file-import, TEST_ONLY
 
 ### Technical primitives
 
