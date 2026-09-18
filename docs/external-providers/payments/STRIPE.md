@@ -3,8 +3,8 @@
 Analysis date: **2026-09-18**  
 Family: **payment**  
 Consumer: **payments**  
-Current highest proof: **P3 PASS candidate (pending PR gates)**  
-Current gate: **P4 — controlled real Stripe TEST Golden through payment success and real signed webhook confirmation**
+Current highest proof: **P3 PASS**  
+Current gate: **P4 READY — execute the guarded real Stripe TEST Golden**
 
 Existing code is evidence to inspect, not an automatic external PASS.
 
@@ -185,7 +185,7 @@ Under the doctrine, downstream stages cannot PASS while P0/P1 are blocked.
 | P0 Business readiness | **PASS (TEST)** | TEST credentials accepted; one enabled webhook observed; livemode=false; required payment events configured; API version 2026-03-25.dahlia |
 | P1 Raw API | **PASS (TEST)** | balance/read APIs accepted; PaymentIntent create → exact retrieve → canceled cleanup; real Stripe-signed webhook delivery returned HTTP 200 |
 | P2 Adapter | **PASS** | canonical `createStripeIntent` maps exact amount/currency/order metadata/idempotency; existing intents are read back and must match exactly; drift/read failure/non-reusable state hard-stop |
-| P3 Pipeline | **PASS candidate** | public `/stripe/intent` → real auth/validation/order DB → P2 mapping → persisted `stripe_payment_id` → replay via provider read-back; existing real-DB webhook E2E proves signed event → canonical payment cycle/idempotence |
+| P3 Pipeline | **PASS** | public `/stripe/intent` → real auth/validation/order DB → P2 mapping → persisted `stripe_payment_id` → replay via provider read-back; existing real-DB webhook E2E proves signed event → canonical payment cycle/idempotence |
 | P4 Golden E2E | **BLOCKED** | controlled Komerce order → Stripe test payment → real webhook confirmation still to prove |
 
 Registry classification: highest_proof = P1.
@@ -326,6 +326,58 @@ That test intentionally simulates only the provider network/signing boundary. P1
 P3 is therefore the composition proof between the qualified provider boundary and Komerce's real API/DB pipeline. P4 is the first stage that recombines both sides live in one Golden.
 
 
+
+## 6quinquies. P4 runner — guarded real Stripe TEST Golden
+
+The P4 runner is owned by **payments** because it performs real provider and DB mutations:
+
+`scripts/stripe-golden-p4.js`
+
+It is intentionally impossible to execute accidentally. All of these guards must pass:
+
+- Stripe secret key must be explicitly TEST (`sk_test_` or `rk_test_`);
+- `STRIPE_MODE` must be TEST;
+- `STRIPE_WEBHOOK_SECRET` must exist;
+- DB connectivity must exist;
+- explicit acknowledgement `STRIPE_GOLDEN_P4_ACK=STRIPE_TEST_P4_MUTATION` is required;
+- CLI `--execute` is required;
+- exactly one enabled TEST webhook destination must match the Komerce Stripe endpoint and required events.
+
+The disposable business fixture is designed to avoid unrelated external effects:
+
+- no user;
+- no recipient;
+- no tracking phone;
+- one disposable local-stock product;
+- `fulfillment_source=LOCAL_STOCK`, so Purchasing must not create a PO or call a supplier adapter;
+- private invoice generation remains internal;
+- payment notification resolves to no-contact / skipped.
+
+The real composition to prove is:
+
+```text
+disposable Komerce order
+  → canonical createStripeIntent()
+  → real Stripe TEST PaymentIntent
+  → Stripe test-card confirmation
+  → real payment_intent.succeeded
+  → configured Railway webhook
+  → real Stripe signature verification
+  → stripe_events_processed
+  → confirmPaymentCycle()
+  → payment_status=paid
+  → status=ordered
+  → exact stock decrement
+  → zero purchase_orders
+```
+
+On PASS, the runner emits a bounded JSON proof containing only the Komerce test reference, Stripe PaymentIntent/Event references, final statuses and stock delta. Secrets, customer data and balance data are never emitted.
+
+The DB fixture is removed after a successful proof. The succeeded PaymentIntent remains only as Stripe TEST evidence. If Stripe has already succeeded but the real webhook composition times out, the fixture is deliberately retained for forensic replay rather than being deleted before a late webhook arrives.
+
+**P4 is not PASS merely because this runner exists.** Registry promotion to P4 happens only after one real execution returns `verdict: PASS`.
+
+
 ## 7. Findings
 
 ### A. Implementation maturity is not proof maturity
@@ -443,11 +495,11 @@ CONVERSATION: PASS
 P0: PASS (TEST)  
 P1: PASS (TEST)  
 P2: PASS  
-P3: PASS candidate (pending PR gates)  
-P4: NEXT  
-HIGHEST PROOF: P3 candidate  
-MAIN NEXT ACTION: controlled real Stripe TEST Golden (P4).
+P3: PASS  
+P4: READY / NOT YET EXECUTED  
+HIGHEST PROOF: P3  
+MAIN NEXT ACTION: execute `scripts/stripe-golden-p4.js` once in the Railway-backed Stripe TEST context.
 
 ## Komerce conclusion
 
-Stripe's external contract is proved through **P1 in the real Stripe TEST environment**, the Komerce mapping is converged and fail-closed at **P2**, and the real API/DB pipeline is now covered by a dedicated **P3** proof. Once the P3 PR gates pass, the only remaining qualification stage is the controlled real Stripe TEST Golden P4.
+Stripe's external contract is proved through **P1 in the real Stripe TEST environment**, the Komerce mapping is converged and fail-closed at **P2**, and the real API/DB pipeline is **P3 PASS**. The only remaining qualification stage is one controlled execution of the guarded real Stripe TEST Golden P4.
