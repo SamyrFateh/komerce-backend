@@ -178,6 +178,7 @@ module.exports = {
       { fn: 'syncPurchaseOrdersOnOrderCancel', file: 'services/purchasing-cancel-service.js' },
     ],
     consumes: [
+      'external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les proofs Purchasing)',
       'sourcing (resolveCanonicalUnitForProductSku — frontière canonique exacte, sans lecture directe des tables Resolution)',
       'catalog (contrat V2 sellable_units + Supplier Order Identity fournie par les connecteurs, client Allegro Sandbox borné)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
