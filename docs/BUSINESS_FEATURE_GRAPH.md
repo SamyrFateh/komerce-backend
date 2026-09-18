@@ -43,6 +43,7 @@
 ### Technical transversals
 
 - `auth`
+- `external-provider-contracts`
 - `platform-ops`
 
 ### Piloting capabilities
@@ -79,7 +80,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 33 | 33 | 500 | 500 | 0 |
+| backend | 34 | 34 | 500 | 500 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 105 | 105 | 0 |
 
@@ -88,7 +89,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 ### Identités canoniques
 
 - **Cross-repo features** (11) : `auth-identity`, `auth-passkey`, `catalog`, `notifications`, `orders`, `payments`, `platform-ops`, `providers-services`, `recommendations`, `shared-cart`, `wallet`
-- **Single-repo features** (26) : `admin-dashboard`, `auth`, `business-rules`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `local-stock`, `logistics`, `loyalty`, `market`, `market-autonomy`, `market-delegation`, `market-operator-dashboard`, `platform`, `purchasing`, `refunds`, `settlement`, `sourcing`, `unsold-resolution`, `wallet-loyalty`
+- **Single-repo features** (27) : `admin-dashboard`, `auth`, `business-rules`, `customs`, `dashboard`, `decision-signals`, `documents`, `economic-engine`, `external-provider-contracts`, `incident-management`, `infrastructure`, `inventory`, `legacy-control-tower`, `local-stock`, `logistics`, `loyalty`, `market`, `market-autonomy`, `market-delegation`, `market-operator-dashboard`, `platform`, `purchasing`, `refunds`, `settlement`, `sourcing`, `unsold-resolution`, `wallet-loyalty`
 - **Unmapped local manifests** (0) : —
 
 ### Ontology gaps
@@ -193,7 +194,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 16
 - interfaces exposed: 31
 - internal APIs: 9
-- dependencies (consumes): 14 — sourcing, notifications, auth-identity, platform-ops, infrastructure, business-rules, economic-engine, market-autonomy, sourcing, purchasing, logistics, shared-cart, auth, orders
+- dependencies (consumes): 15 — external-provider-contracts, sourcing, notifications, auth-identity, platform-ops, infrastructure, business-rules, economic-engine, market-autonomy, sourcing, purchasing, logistics, shared-cart, auth, orders
 - consumers: 20 — auth-identity, customs, documents, economic-engine, infrastructure, inventory, local-stock, logistics, market-autonomy, market-delegation, market-operator-dashboard, orders, platform-ops, purchasing, recommendations, recommendations, shared-cart, sourcing, unsold-resolution, admin-dashboard
 
 ### customs _(business-feature)_
@@ -279,6 +280,19 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - dependencies (consumes): 15 — refunds, platform-ops, customs, business-rules, auth-identity, market, market-autonomy, market-delegation, infrastructure, logistics, catalog, auth, dashboard, orders, loyalty
 - consumers: 11 — catalog, customs, dashboard, infrastructure, loyalty, market-autonomy, market-delegation, orders, platform-ops, sourcing, admin-dashboard
 
+### external-provider-contracts _(technical-transversal)_
+
+> Qualifier, prouver et publier ce que Komerce peut réellement croire d un système externe avant qu une feature métier ne s appuie sur son contrat.
+
+- scripts: 1
+- tests: 1
+- tables owned (lifecycle): 0
+- tables written: 0
+- interfaces exposed: 0
+- internal APIs: 5
+- dependencies (consumes): 1 — infrastructure
+- consumers: 2 — catalog, purchasing
+
 ### incident-management _(business-transversal)_
 
 > Détecter, qualifier et résoudre les écarts entre l'état attendu et l'état réel d'une opération, avec impact client traçable.
@@ -315,7 +329,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 4
 - internal APIs: 11
 - dependencies (consumes): 14 — auth, catalog, customs, dashboard, economic-engine, inventory, logistics, notifications, platform-ops, orders, payments, recommendations, shared-cart, wallet
-- consumers: 32 — auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, documents, economic-engine, incident-management, inventory, local-stock, logistics, loyalty, market, market-autonomy, market-delegation, market-operator-dashboard, notifications, orders, payments, platform-ops, providers-services, purchasing, recommendations, refunds, settlement, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
+- consumers: 33 — auth, auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, documents, economic-engine, external-provider-contracts, incident-management, inventory, local-stock, logistics, loyalty, market, market-autonomy, market-delegation, market-operator-dashboard, notifications, orders, payments, platform-ops, providers-services, purchasing, recommendations, refunds, settlement, shared-cart, sourcing, unsold-resolution, wallet, decision-signals
 
 ### inventory _(business-feature)_
 
@@ -548,16 +562,16 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.
 
-- services: 23
+- services: 24
 - routes: 1
 - migrations: 2
 - scripts: 2
-- tests: 29
+- tests: 30
 - tables owned (lifecycle): 3 — `product_suppliers`, `purchase_orders`, `suppliers`
 - tables written: 3
 - interfaces exposed: 10
 - internal APIs: 12
-- dependencies (consumes): 7 — sourcing, catalog, infrastructure, orders, auth, notifications, logistics
+- dependencies (consumes): 8 — external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, notifications, logistics
 - consumers: 6 — catalog, dashboard, logistics, orders, payments, platform-ops
 
 ### recommendations _(business-feature)_
@@ -1404,6 +1418,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `resolveCatalogProductReadMode` | `services/catalog-product-source-read-service.js` | catalog | resolved |
 | `recommend` | `services/pricing-engine.js` | economic-engine | resolved |
 | `recordProductPriceChange` | `services/economic-price-audit-service.js` | economic-engine | resolved |
+| `buildConversation` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `buildProof` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `assertConversation` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `assertThrough` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `summary` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
 | `listIncidents` | `services/incident-service.js` | incident-management | resolved |
 | `getIncident` | `services/incident-service.js` | incident-management | resolved |
 | `resolveIncident` | `services/incident-service.js` | incident-management | resolved |
@@ -1602,6 +1621,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | business-rules | auth-identity (`auth-identity (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | business-rules | auth (`auth (garde de route admin)`) | ✔ |
 | business-rules | infrastructure (`infrastructure (journalisation, acces base)`) | ✔ |
+| catalog | external-provider-contracts (`external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les scripts Allegro catalog)`) | ✔ |
 | catalog | sourcing (`sourcing (API internes findCanonicalProductIdsForCatalogProduct, collectCanonicalProductProjectionById et applyCanonicalSourceReadSeam)`) | ✔ |
 | catalog | notifications (`notifications (alert persistence via utils/alerts.js)`) | ✔ |
 | catalog | auth-identity (`auth-identity (projection boutique b-greeting consomme /api/auth/me pour personnaliser la surface catalogue)`) | ✔ |
@@ -1667,6 +1687,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | economic-engine | dashboard (`dashboard`) | ✔ |
 | economic-engine | orders (`orders`) | ✔ |
 | economic-engine | loyalty (`loyalty (invalidation du cache de configuration finance apres modification admin — services/loyalty-service.js invalidateConfigCache, O7.3 provider loyalty)`) | ✔ |
+| external-provider-contracts | infrastructure (`infrastructure — runtime Node et primitives techniques uniquement ; aucune vérité métier externe n est déléguée à infrastructure`) | ✔ |
 | incident-management | orders (`orders (dépendance data cross-feature observée et gouvernée par O5)`) | ✔ |
 | incident-management | infrastructure (`infrastructure (DB/logger/bootstrap techniques)`) | ✔ |
 | incident-management | logistics (`logistics (producteur d’incidents physiques via incident-write-service ; consommateur du guard de transition F2/F3)`) | ✔ |
@@ -1802,6 +1823,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | providers-services | local-stock (`local-stock — déclaration et exposition du stock local Product Komerce du seed Discovery staging via les primitives owner`) | ✔ |
 | providers-services | recommendations (`recommendations — réutilise le tooling Discovery CJ pour construire les candidats staging ; recommendations reste propriétaire de la sélection et de l ordre éditorial`) | ✔ |
 | providers-services | infrastructure (`infrastructure — dépendance technique db.js et résolution KOMERCE_ENV`) | ✔ |
+| purchasing | external-provider-contracts (`external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les proofs Purchasing)`) | ✔ |
 | purchasing | sourcing (`sourcing (resolveCanonicalUnitForProductSku — frontière canonique exacte, sans lecture directe des tables Resolution)`) | ✔ |
 | purchasing | catalog (`catalog (contrat V2 sellable_units + Supplier Order Identity fournie par les connecteurs, client Allegro Sandbox borné)`) | ✔ |
 | purchasing | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
@@ -1989,7 +2011,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1301 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1305 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 217 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2036,6 +2058,7 @@ Meta Graph monté : oui.
 | catalog | auth-identity | interface | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | business-rules | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | catalog | economic-engine | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| catalog | external-provider-contracts | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | catalog | infrastructure | static-code | 46 | **DECLARED_AND_OBSERVED** |
 | catalog | logistics | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | market-autonomy | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -2255,7 +2278,8 @@ Meta Graph monté : oui.
 | providers-services | recommendations | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
-| purchasing | infrastructure | static-code | 27 | **DECLARED_AND_OBSERVED** |
+| purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 28 | **DECLARED_AND_OBSERVED** |
 | purchasing | logistics | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | purchasing | notifications | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
@@ -2337,6 +2361,7 @@ Meta Graph monté : oui.
 
 ### Declared without observed evidence (canal A/D uniquement — ne signifie pas "dépendance inexistante")
 
+- `external-provider-contracts` → `infrastructure` (déclaré : `infrastructure — runtime Node et primitives techniques uniquement ; aucune vérité métier externe n est déléguée à infrastructure`)
 - `market-autonomy` → `market-delegation` (déclaré : `market-delegation — memberships, capabilities team.*, provider.manage, cash_control.policy.manage et acceptation d’invitation ; l’UI n’invente aucune autorité`)
 - `market-autonomy` → `auth-identity` (déclaré : `auth-identity — création optionnelle d’un compte client depuis le lien d’invitation avant acceptation explicite`)
 - `market-operator-dashboard` → `auth` (déclaré : `auth (authenticate, requireRole + capabilities market-scoped)`)
