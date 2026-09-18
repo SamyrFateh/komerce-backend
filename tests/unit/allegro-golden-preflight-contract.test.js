@@ -45,10 +45,11 @@ function extractPlatformsFromSchema(filePath) {
 }
 
 function extractPlatformsFromValidator() {
-  const src = fs.readFileSync(path.join(ROOT, 'validators', 'index.js'), 'utf8');
-  const match = src.match(/const PLATFORMS\s*=\s*\[([^\]]+)\]/);
-  if (!match) return [];
-  return match[1].split(',').map(s => s.trim().replace(/['"]/g, '')).filter(Boolean);
+  // Depuis GAP-1 (#1596), validators/index.js consomme
+  // services/suppliers/provider-authority.js au lieu de déclarer un
+  // littéral PLATFORMS local.
+  const { PROVIDERS } = require('../../services/suppliers/provider-authority');
+  return [...PROVIDERS];
 }
 
 function migrationContains(pattern, text) {
