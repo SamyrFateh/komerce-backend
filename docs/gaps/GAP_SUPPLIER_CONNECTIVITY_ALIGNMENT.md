@@ -18,8 +18,8 @@
 | **GAP-3** — Readiness Convergence | ✅ Exécuté, mergée | [#1598](https://github.com/SamyrFateh/komerce-backend/pull/1598) — mergée dans `main` | Voir « Leçons de GAP-3 » ci-dessous avant d'attaquer GAP-4 |
 | **GAP-2** — Adapter Resolution | ✅ Exécuté, mergée | [#1599](https://github.com/SamyrFateh/komerce-backend/pull/1599) — mergée dans `main` | Voir « Leçons de GAP-2 » ci-dessous avant d'attaquer GAP-4 |
 | **GAP-4A/4B** — Canonical Procurement Readiness + Execution Boundary | ✅ Exécuté, mergée | [#1601](https://github.com/SamyrFateh/komerce-backend/pull/1601) — mergée dans `main` | GAP-4 a été scindé en deux fonctions distinctes pendant l'exécution (arbitrage validé) ; voir « Ce que GAP-4A/4B a livré » et « Leçons de GAP-4 » ci-dessous avant GAP-5 |
-| **GAP-5** — Execution Evidence Boundary | ✅ Exécuté, CI verte | [#1606](https://github.com/SamyrFateh/komerce-backend/pull/1606) — branche `feat/execution-evidence-boundary-gap5` — **ouverte, pas encore mergée** | Divergence majeure avec la spec : le vrai point de câblage était `confirmPurchaseOrder()` (route manuelle réelle), pas le bloc auto (inatteignable) ; voir « Ce que GAP-5 a livré » et « Leçons de GAP-5 » ci-dessous avant GAP-6 |
-| GAP-6 — Environment Isolation | Non commencé | — | Majoritairement DEFER par arbitrage |
+| **GAP-5** — Execution Evidence Boundary | ✅ Exécuté, mergée | [#1606](https://github.com/SamyrFateh/komerce-backend/pull/1606) — mergée dans `main` | Divergence majeure avec la spec : le vrai point de câblage était `confirmPurchaseOrder()` (route manuelle réelle), pas le bloc auto (inatteignable) ; voir « Ce que GAP-5 a livré » et « Leçons de GAP-5 » ci-dessous avant GAP-6 |
+| **GAP-6** — Environment Isolation | ✅ Exécuté, CI verte | [#1607](https://github.com/SamyrFateh/komerce-backend/pull/1607) — branche `feat/environment-isolation-gap6` — **ouverte, pas encore mergée** | Vérification uniquement (DEFER confirmé), conforme à la recommandation de la spec ; voir « Ce que GAP-6 a livré » ci-dessous avant GAP-7 |
 | GAP-7 — Feature Manifest | Non commencé | — | Doit rester en dernier |
 
 ### Ce que GAP-1 a réellement livré (PR #1596)
@@ -119,6 +119,13 @@ node scripts/feature-guard.js
 **3. Un test qui passe peut tester la mauvaise chose — vérifier le contenu réel des logs, pas seulement l'assertion verte.** Deux tests censés prouver qu'une réconciliation invalide est rejetée passaient bien (`toMatchObject({status:409})`), mais pour la mauvaise raison : sans client mocké injecté, le code tombait sur un garde-fou d'environnement incident (`ALLEGRO_SANDBOX_DISABLED`) plutôt que sur la logique de réconciliation elle-même. Trouvé en lisant le contenu du log d'erreur affiché pendant le run, pas en faisant confiance à l'assertion. **Un test d'échec qui ne vérifie pas la RAISON précise de l'échec peut accidentellement prouver autre chose que ce que son nom affirme.**
 
 **4. GAP-6 (Environment Isolation) a maintenant un point de câblage naturel identifié.** La frontière de confirmation (`purchase-order-confirmation-boundary.js`) est exactement l'endroit où l'arbitrage GAP-6 avait anticipé un garde-fou runtime fail-closed (`evidence.environment != po.expected_environment`) — si nécessaire avant qu'une PO de production existe. Vérifier d'abord si ce besoin est encore différé (aucune PO Allegro production n'existe à ce jour) avant de coder quoi que ce soit.
+
+### Ce que GAP-6 a réellement livré (PR #1607)
+
+**Le plus court des GAP exécutés — vérification, pas code.** Confirmé précisément que trois points de contrôle indépendants (`evaluate()`/`exactOfferId()`, `buildOrderPayload()` — check séparé, pas partagé — et `expectedOfferId()` côté réconciliation GAP-5) exigent chacun littéralement `identity.payload.environment === 'sandbox'`. Aucune PO Allegro de production n'est possible aujourd'hui à travers un quelconque chemin de code existant. **Le DEFER de la spec est confirmé, pas contourné.**
+
+- Un seul test ajouté (`allegro-fulfillment-adapter.test.js`) : `buildOrderPayload` avait son propre check environment, jamais couvert par un test dédié contrairement à `evaluate()` et `reconcile()`. Complète la couverture des trois points de contrôle.
+- **Zéro code de production touché.** Aucune migration. Le déplacement structurel d'`environment` dans SOI (option A de la spec) reste classé DEFER — n'a pas été réévalué, toujours sans besoin prouvé.
 
 ---
 
