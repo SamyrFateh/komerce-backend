@@ -101,8 +101,8 @@
         "STRIPE_SECRET_KEY",
         "stripe.paymentIntents"
       ],
-      "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "analysis_document": "docs/external-providers/payments/STRIPE.md",
+      "highest_proof": "CONVERSATION"
     },
     {
       "id": "paypal",
