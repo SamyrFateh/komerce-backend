@@ -39,14 +39,14 @@ function normalizeEnvironment(value) {
 
 function normalizeMarketplace(value) {
   const marketplace = compact(value || DEFAULT_MARKETPLACE).toUpperCase();
-  if (!/^EBAY_[A-Z]{2,8}$/.test(marketplace)) throw new Error('EBAY_SANDBOX_MARKETPLACE_INVALID');
+  if (!/^EBAY_[A-Z]{2,8}$/.test(marketplace)) throw new Error('EBAY_MARKETPLACE_INVALID');
   return marketplace;
 }
 
 function normalizeLimit(value) {
   const limit = value == null || value === '' ? DEFAULT_LIMIT : Number.parseInt(String(value), 10);
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
-    throw new Error(`EBAY_SANDBOX_BROWSE_LIMIT_INVALID_MAX_${MAX_LIMIT}`);
+    throw new Error(`EBAY_BROWSE_LIMIT_INVALID_MAX_${MAX_LIMIT}`);
   }
   return limit;
 }
@@ -54,7 +54,7 @@ function normalizeLimit(value) {
 function normalizeItemId(value) {
   const itemId = compact(value);
   if (!itemId) return null;
-  if (!ITEM_ID_RE.test(itemId)) throw new Error('EBAY_SANDBOX_ITEM_ID_INVALID');
+  if (!ITEM_ID_RE.test(itemId)) throw new Error('EBAY_ITEM_ID_INVALID');
   return itemId;
 }
 
@@ -102,8 +102,8 @@ async function readJson(response) {
 }
 
 async function requestApplicationToken({ clientId, clientSecret, fetchImpl = global.fetch }) {
-  if (!clientId || !clientSecret) throw new Error('EBAY_SANDBOX_APPLICATION_CREDENTIALS_REQUIRED');
-  if (typeof fetchImpl !== 'function') throw new Error('EBAY_SANDBOX_FETCH_REQUIRED');
+  if (!clientId || !clientSecret) throw new Error('EBAY_APPLICATION_CREDENTIALS_REQUIRED');
+  if (typeof fetchImpl !== 'function') throw new Error('EBAY_FETCH_REQUIRED');
 
   const basic = Buffer.from(`${clientId}:${clientSecret}`, 'utf8').toString('base64');
   const body = new URLSearchParams({
@@ -122,7 +122,7 @@ async function requestApplicationToken({ clientId, clientSecret, fetchImpl = glo
   const payload = await readJson(response);
   if (!response.ok) {
     const diagnostic = safeProviderError(response.status, payload);
-    const error = new Error(`EBAY_SANDBOX_OAUTH_FAILED_${response.status}`);
+    const error = new Error(`EBAY_OAUTH_FAILED_${response.status}`);
     error.diagnostic = diagnostic;
     throw error;
   }
@@ -130,7 +130,7 @@ async function requestApplicationToken({ clientId, clientSecret, fetchImpl = glo
   const token = compact(payload?.access_token);
   const tokenType = compact(payload?.token_type);
   const expiresIn = Number(payload?.expires_in);
-  if (!token) throw new Error('EBAY_SANDBOX_OAUTH_TOKEN_MISSING');
+  if (!token) throw new Error('EBAY_OAUTH_TOKEN_MISSING');
 
   return Object.freeze({
     token,
@@ -140,7 +140,7 @@ async function requestApplicationToken({ clientId, clientSecret, fetchImpl = glo
 }
 
 async function authorizedGet(url, { token, marketplace, fetchImpl = global.fetch }) {
-  if (!token) throw new Error('EBAY_SANDBOX_APPLICATION_TOKEN_REQUIRED');
+  if (!token) throw new Error('EBAY_APPLICATION_TOKEN_REQUIRED');
   const response = await fetchImpl(url, {
     method: 'GET',
     headers: {
@@ -151,7 +151,7 @@ async function authorizedGet(url, { token, marketplace, fetchImpl = global.fetch
   const payload = await readJson(response);
   if (!response.ok) {
     const diagnostic = safeProviderError(response.status, payload);
-    const error = new Error(`EBAY_SANDBOX_BROWSE_FAILED_${response.status}`);
+    const error = new Error(`EBAY_BROWSE_FAILED_${response.status}`);
     error.diagnostic = diagnostic;
     throw error;
   }
@@ -160,7 +160,7 @@ async function authorizedGet(url, { token, marketplace, fetchImpl = global.fetch
 
 async function searchItems({ token, marketplace, query, limit = DEFAULT_LIMIT, fetchImpl = global.fetch }) {
   const q = compact(query);
-  if (!q) throw new Error('EBAY_SANDBOX_SEARCH_QUERY_REQUIRED');
+  if (!q) throw new Error('EBAY_SEARCH_QUERY_REQUIRED');
   const boundedLimit = normalizeLimit(limit);
   const url = new URL('/buy/browse/v1/item_summary/search', BROWSE_BASE_URL);
   url.search = new URLSearchParams({ q, limit: String(boundedLimit) }).toString();
@@ -180,7 +180,7 @@ async function searchItems({ token, marketplace, query, limit = DEFAULT_LIMIT, f
 
 async function getItem({ token, marketplace, itemId, fetchImpl = global.fetch }) {
   const exactItemId = normalizeItemId(itemId);
-  if (!exactItemId) throw new Error('EBAY_SANDBOX_ITEM_ID_REQUIRED');
+  if (!exactItemId) throw new Error('EBAY_ITEM_ID_REQUIRED');
   const url = new URL(`/buy/browse/v1/item/${encodeURIComponent(exactItemId)}`, BROWSE_BASE_URL);
   const payload = await authorizedGet(url, { token, marketplace, fetchImpl });
 
