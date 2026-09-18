@@ -7,7 +7,7 @@
  * @inputs        eBay Sandbox Browse item/search responses
  * @outputs       NormalizedSupplierProduct V2 with exact eBay REST item identity
  * @depends       services/suppliers/normalized-product.js
- * @used-by       P2 external-provider contract proof only; not runtime-registered
+ * @used-by       services/sourcing-import-dispatch.js, P2/P3 external-provider contract proofs
  * @db-read       none
  * @db-write      none
  * @db-txn        none
