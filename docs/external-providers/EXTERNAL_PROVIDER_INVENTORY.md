@@ -42,7 +42,7 @@ The scanner performs no network call and no mutation. It reports registered prov
 
 | Provider | Consumers | Evidence found | L0 status |
 |---|---|---|---|
-| **Stripe** | payment, orders/refunds | PaymentIntent create/retrieve, real TEST webhook delivery, refunds, idempotence; provider card + executable proof | **P1 PASS (TEST)** — next P2 Komerce mapping |
+| **Stripe** | payment, orders/refunds | PaymentIntent create/retrieve, real TEST webhook delivery, exact fail-closed Komerce mapping, refunds, idempotence | **P2 PASS candidate** — next P3 DB/API pipeline |
 | **PayPal** | payment | `paypal-client.js`, create/capture/refund flow, webhook events, sandbox probe | **IMPLEMENTED / REQUALIFY** |
 | **MTN MoMo CG** | payment | provider adapter + sandbox probe + status normalization | **IMPLEMENTED / REQUALIFY** |
 | **Orange Money CM** | payment | provider adapter, OAuth, payment/status URLs fail-closed until merchant contract configured | **IMPLEMENTED / REQUALIFY** |
