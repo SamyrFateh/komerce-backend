@@ -71,6 +71,16 @@ describe('E2E impact scope', () => {
     )).toMatchObject({ mode: 'full' });
   });
 
+  test('CI workflow change remains full', () => {
+    expect(computeImpact(
+      ['.github/workflows/pr-enforcement.yml'],
+      { manifests: manifests(), e2eFeatures }
+    )).toMatchObject({
+      mode: 'full',
+      reason: 'deep/transversal: .github/workflows/pr-enforcement.yml',
+    });
+  });
+
   test('unowned peripheral file fails closed to full', () => {
     expect(computeImpact(
       ['services/suppliers/connectors/future-connector.js'],
