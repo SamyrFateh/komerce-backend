@@ -26,10 +26,11 @@ function response(status, payload) {
 
 function baseEnv(overrides = {}) {
   return {
-    EBAY_SANDBOX_CLIENT_ID: 'test-client',
-    EBAY_SANDBOX_CLIENT_SECRET: 'test-credential',
-    EBAY_SANDBOX_MARKETPLACE_ID: 'EBAY_US',
-    EBAY_SANDBOX_ITEM_ID: 'v1|123456789012|0',
+    EBAY_CLIENT_ID: 'test-client',
+    EBAY_CLIENT_SECRET: 'test-credential',
+    EBAY_ENV: 'sandbox',
+    EBAY_MARKETPLACE_ID: 'EBAY_US',
+    EBAY_ITEM_ID: 'v1|123456789012|0',
     ...overrides,
   };
 }
@@ -70,20 +71,23 @@ function successfulFetch() {
 describe('ebay-sandbox-browse-proof', () => {
   test('configuration remains sandbox-only and requires a discovery target', () => {
     expect(configuration(baseEnv())).toEqual(expect.objectContaining({
+      environment: 'SANDBOX',
       marketplace: 'EBAY_US',
       credentialsConfigured: true,
+      sandboxSelected: true,
       discoveryConfigured: true,
       itemId: 'v1|123456789012|0',
     }));
     expect(configuration({
-      EBAY_SANDBOX_CLIENT_ID: 'id',
-      EBAY_SANDBOX_CLIENT_SECRET: 'credential',
+      EBAY_CLIENT_ID: 'id',
+      EBAY_CLIENT_SECRET: 'credential',
+      EBAY_ENV: 'sandbox',
     }).discoveryConfigured).toBe(false);
   });
 
   test('rejects malformed RESTful item identity before any provider call', () => {
-    expect(() => configuration(baseEnv({ EBAY_SANDBOX_ITEM_ID: '123456789012' })))
-      .toThrow('EBAY_SANDBOX_ITEM_ID_INVALID');
+    expect(() => configuration(baseEnv({ EBAY_ITEM_ID: '123456789012' })))
+      .toThrow('EBAY_ITEM_ID_INVALID');
   });
 
   test('requests application OAuth token with client-credentials scope', async () => {
@@ -158,9 +162,9 @@ describe('ebay-sandbox-browse-proof', () => {
 
     const result = await runEbayBrowseReadOnlyProof({
       env: baseEnv({
-        EBAY_SANDBOX_ITEM_ID: '',
-        EBAY_SANDBOX_SEARCH_QUERY: 'komerce sandbox',
-        EBAY_SANDBOX_SEARCH_LIMIT: '3',
+        EBAY_ITEM_ID: '',
+        EBAY_SEARCH_QUERY: 'komerce sandbox',
+        EBAY_SEARCH_LIMIT: '3',
       }),
       fetchImpl,
     });
@@ -174,7 +178,7 @@ describe('ebay-sandbox-browse-proof', () => {
   test('blocks at P0 without credentials and never calls eBay', async () => {
     const fetchImpl = jest.fn();
     const result = await runEbayBrowseReadOnlyProof({
-      env: { EBAY_SANDBOX_ITEM_ID: 'v1|123456789012|0' },
+      env: { EBAY_ENV: 'sandbox', EBAY_ITEM_ID: 'v1|123456789012|0' },
       fetchImpl,
     });
 
@@ -182,6 +186,19 @@ describe('ebay-sandbox-browse-proof', () => {
     expect(result.report.conversation.status).toBe('PASS');
     expect(() => assertThrough(result.proof, 'P0'))
       .toThrow('PROVIDER_CONTRACT_BLOCKED_EBAY_P0_SANDBOX_KEYSET_CONFIGURED');
+  });
+
+
+  test('blocks at P0 when Railway points to production credentials', async () => {
+    const fetchImpl = jest.fn();
+    const result = await runEbayBrowseReadOnlyProof({
+      env: baseEnv({ EBAY_ENV: 'production' }),
+      fetchImpl,
+    });
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(() => assertThrough(result.proof, 'P0'))
+      .toThrow('PROVIDER_CONTRACT_BLOCKED_EBAY_P0_SANDBOX_ENVIRONMENT_SELECTED');
   });
 
   test('blocks P1 on OAuth rejection with bounded error evidence', async () => {
@@ -204,7 +221,7 @@ describe('ebay-sandbox-browse-proof', () => {
     const result = await runEbayBrowseReadOnlyProof({ env, fetchImpl: successfulFetch() });
     const serialized = JSON.stringify({ report: result.report, diagnostics: result.diagnostics });
 
-    expect(serialized).not.toContain(env.EBAY_SANDBOX_CLIENT_SECRET);
+    expect(serialized).not.toContain(env.EBAY_CLIENT_SECRET);
     expect(serialized).not.toContain('opaque-test-token');
   });
 
