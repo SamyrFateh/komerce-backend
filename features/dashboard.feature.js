@@ -481,6 +481,10 @@ module.exports = {
       'css/ct-inventory.css',
     ],
     tests: [
+      'tests/integration/dashboard-admin-context-isolation.test.js',
+      'tests/integration/dashboard-global-authority-isolation.test.js',
+      'tests/integration/dashboard-market-scope-isolation.test.js',
+      'tests/integration/txg03-hub-dashboard.test.js',
       'tests/test-dashboard.js',
       'tests/unit/admin-costing-full.test.js',
       'tests/unit/admin-dashboard-route.test.js',

@@ -96,6 +96,7 @@ module.exports = {
       'tests/integration/market-open-mayotte.test.js',
       'tests/integration/market-open-cameroon.test.js',
       'tests/integration/market-open-congo.test.js',
+      'tests/integration/f1-market-integrity-destructive.test.js',
     ],
   },
 

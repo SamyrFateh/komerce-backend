@@ -98,6 +98,7 @@ module.exports = {
       'tests/unit/wallet-receipt-html.test.js',
       'tests/unit/wallet-receipt.test.js',
       'tests/unit/refund-receipt.test.js',
+      'tests/integration/admin-documents-contract.test.js',
       'tests/unit/invoice-service.test.js',
       'tests/unit/invoices-route.test.js',
       'tests/unit/documents-route.test.js',

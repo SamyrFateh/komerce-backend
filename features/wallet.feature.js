@@ -59,9 +59,11 @@ module.exports = {
     ],
     tests: [
       'tests/e2e-api/wallet.no-double-credit-concurrent.e2e.test.js',
+      'tests/e2e-api/wallet.kmf-numeric.e2e.test.js',
       'tests/unit/wallet-service.test.js',
       'tests/unit/store-credits.test.js',
       'tests/unit/wallet-route.test.js',
+      'tests/integration/wallet-refund-seams.test.js',
     ],
   },
 

@@ -340,6 +340,9 @@ module.exports = {
     tests: [
       'tests/unit/impact-check-security-conventions.test.js',
       'tests/integration/groupe-paiement.manual.js',
+      'tests/integration/o9-1-critical-runtime-proofs.test.js',
+      'tests/integration/r6-crash-window.test.js',
+      'tests/integration/txg04-system.test.js',
       'tests/integration/test-harness/mock-db.js',
       'tests/test-benchmarks.js',
       'tests/test-chain.js',

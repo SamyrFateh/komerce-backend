@@ -240,6 +240,7 @@ module.exports = {
       'dashboards/admin/js/views/CatalogApprovalView.js',
     ],
     tests: [
+      'tests/integration/catalog-approval-queue-contract.test.js',
       'tests/unit/allegro-sandbox-client.test.js',
       'tests/unit/allegro-connector.test.js',
       'tests/unit/ebay-connector.test.js',

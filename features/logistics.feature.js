@@ -145,6 +145,9 @@ module.exports = {
     tests: [
       'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js',
       'tests/integration/hub-physical-identity-postgres.test.js',
+      'tests/integration/hub-physical-hardening-postgres.test.js',
+      'tests/integration/hub-volume-photo-contract.test.js',
+      'tests/integration/txg05-parcel-items-product-id.test.js',
       'tests/integration/test-harness/seed-helpers.js',
       'tests/unit/auto-distribute-api.test.js',
       'tests/unit/auto-parcel.test.js',
