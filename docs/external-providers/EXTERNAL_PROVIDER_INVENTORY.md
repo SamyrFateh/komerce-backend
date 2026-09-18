@@ -42,7 +42,7 @@ The scanner performs no network call and no mutation. It reports registered prov
 
 | Provider | Consumers | Evidence found | L0 status |
 |---|---|---|---|
-| **Stripe** | payment, orders/refunds | Stripe SDK use, PaymentIntent create/retrieve, webhook processing, refunds, idempotence tables | **IMPLEMENTED / REQUALIFY** |
+| **Stripe** | payment, orders/refunds | PaymentIntent create/retrieve, signed webhook processing, refunds, idempotence; provider card added | **CONVERSATION PASS / P0 BLOCKED** — current account + raw provider proof still required |
 | **PayPal** | payment | `paypal-client.js`, create/capture/refund flow, webhook events, sandbox probe | **IMPLEMENTED / REQUALIFY** |
 | **MTN MoMo CG** | payment | provider adapter + sandbox probe + status normalization | **IMPLEMENTED / REQUALIFY** |
 | **Orange Money CM** | payment | provider adapter, OAuth, payment/status URLs fail-closed until merchant contract configured | **IMPLEMENTED / REQUALIFY** |
