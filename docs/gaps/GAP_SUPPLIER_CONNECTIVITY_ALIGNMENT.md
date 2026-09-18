@@ -17,10 +17,10 @@
 | **GAP-1** — Provider Authority | ✅ Exécuté, mergée | [#1596](https://github.com/SamyrFateh/komerce-backend/pull/1596) — mergée dans `main` | Voir « Leçons de GAP-1 » ci-dessous avant d'attaquer GAP-4 |
 | **GAP-3** — Readiness Convergence | ✅ Exécuté, mergée | [#1598](https://github.com/SamyrFateh/komerce-backend/pull/1598) — mergée dans `main` | Voir « Leçons de GAP-3 » ci-dessous avant d'attaquer GAP-4 |
 | **GAP-2** — Adapter Resolution | ✅ Exécuté, mergée | [#1599](https://github.com/SamyrFateh/komerce-backend/pull/1599) — mergée dans `main` | Voir « Leçons de GAP-2 » ci-dessous avant d'attaquer GAP-4 |
-| **GAP-4A/4B** — Canonical Procurement Readiness + Execution Boundary | ✅ Exécuté, CI verte | [#1601](https://github.com/SamyrFateh/komerce-backend/pull/1601) — branche `feat/canonical-procurement-readiness-gap4` — **ouverte, pas encore mergée** | GAP-4 a été scindé en deux fonctions distinctes pendant l'exécution (arbitrage validé) ; voir « Ce que GAP-4A/4B a livré » et « Leçons de GAP-4 » ci-dessous avant GAP-5 |
-| GAP-5 — Execution Evidence Boundary | Non commencé | — | |
-| GAP-6 — Environment Isolation | Non commencé | — | Majoritairement DEFER par arbitrage |
-| GAP-7 — Feature Manifest | Non commencé | — | Doit rester en dernier |
+| **GAP-4A/4B** — Canonical Procurement Readiness + Execution Boundary | ✅ Exécuté, mergée | [#1601](https://github.com/SamyrFateh/komerce-backend/pull/1601) — mergée dans `main` | GAP-4 a été scindé en deux fonctions distinctes pendant l'exécution (arbitrage validé) ; voir « Ce que GAP-4A/4B a livré » et « Leçons de GAP-4 » ci-dessous avant GAP-5 |
+| **GAP-5** — Execution Evidence Boundary | ✅ Exécuté, mergée | [#1606](https://github.com/SamyrFateh/komerce-backend/pull/1606) — mergée dans `main` | Frontière `evidence → verify/reconcile → confirm` branchée sur la route live |
+| **GAP-6** — Environment Isolation | ✅ Exécuté, mergée | [#1607](https://github.com/SamyrFateh/komerce-backend/pull/1607) — mergée dans `main` | Garde-fou runtime prouvé ; déplacement structurel de `environment` reste DEFER |
+| **GAP-7** — Feature Manifest | ✅ Exécuté, validation locale verte | PR #1608 | Manifest `supplier-connectivity` créé sans table ni capability spéculative ; ownership générique séparé de Purchasing |
 
 ### Ce que GAP-1 a réellement livré (PR #1596)
 

@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          supplier-order-identity
- * @domain        purchasing
+ * @domain        supplier-connectivity
  * @layer         service
  * @criticality   high
  * @inputs        NormalizedSupplierProduct V2 sellable_unit

@@ -13,6 +13,7 @@
         "features/dashboard.feature.js",
         "features/documents.feature.js",
         "features/economic-engine.feature.js",
+        "features/external-provider-contracts.feature.js",
         "features/incident-management.feature.js",
         "features/infrastructure.feature.js",
         "features/inventory.feature.js",
@@ -34,6 +35,7 @@
         "features/settlement.feature.js",
         "features/shared-cart.feature.js",
         "features/sourcing.feature.js",
+        "features/supplier-connectivity.feature.js",
         "features/unsold-resolution.feature.js",
         "features/wallet.feature.js",
         "features/wallet-loyalty.feature.js",
@@ -49,17 +51,17 @@
     }
   },
   "summary": {
-    "features": 37,
+    "features": 39,
     "healthy": 35,
-    "attention": 2,
+    "attention": 4,
     "blocked": 0,
-    "businessDependencies": 279,
+    "businessDependencies": 283,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 6,
-    "gateHealthy": 34,
+    "debtItemsTotal": 8,
+    "gateHealthy": 36,
     "gateBlocked": 2
   },
   "projectionIntegrity": {
@@ -4245,6 +4247,13 @@
           ]
         },
         {
+          "provider": "external-provider-contracts",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "infrastructure",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -4308,6 +4317,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "provider": "supplier-connectivity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         }
       ],
@@ -9515,6 +9531,208 @@
       "architecturalDebt": {
         "debtCount": 0,
         "debtItems": []
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "external-provider-contracts",
+      "kind": "technical-transversal",
+      "status": "staging",
+      "manifestFile": "features/external-provider-contracts.feature.js",
+      "repo": "backend",
+      "identity": {
+        "id": "external-provider-contracts",
+        "kind": "technical-transversal",
+        "status": "staging"
+      },
+      "service": "Qualifier, prouver et publier ce que Komerce peut réellement croire d un système externe avant qu une feature métier ne s appuie sur son contrat.",
+      "perimeter": {
+        "in": [
+          "contrat de conversation externe EXPECTS / REQUIRES / SENDS / RECEIVES / CONFIRMS / EXPOSES",
+          "états de faits KNOWN / DERIVED / UNKNOWN",
+          "preuves provider P0 Business readiness → P1 Raw API → P2 Adapter → P3 Pipeline → P4 Golden E2E",
+          "règle fail-closed commune : une preuve absente, inconnue ou ambiguë ne devient jamais implicitement PASS",
+          "inventaire et fiches de qualification des frontières API externes de Komerce"
+        ],
+        "out": [
+          "les adapters et clients provider spécifiques, qui restent dans la feature métier consommatrice (payments, notifications, catalog/purchasing, etc.)",
+          "les credentials/secrets et leur cycle de rotation, qui restent dans l ownership technique ou métier approprié",
+          "la décision métier consommant le fait externe : payer, commander, notifier, enrichir ou livrer reste propriété de sa feature",
+          "les appels provider mutatifs eux-mêmes : cette feature prouve le contrat mais ne centralise pas les side effects externes"
+        ]
+      },
+      "authority": "backend-core — le vocabulaire KNOWN/DERIVED/UNKNOWN, le contrat de conversation, les étapes P0..P4 et les règles communes de preuve externe ne peuvent diverger par provider ou par feature consommatrice.",
+      "invariants": [
+        "réalité avant abstraction : un contrat provider réel est lu avant de figer sa représentation canonique",
+        "UNKNOWN ne devient jamais PASS, false ou capability supportée par défaut",
+        "une requête externe acceptée ne vaut pas confirmation métier lorsqu un read-back ou une preuve provider est nécessaire",
+        "une preuve Sandbox/staging ne satisfait jamais implicitement un contrat Production",
+        "une correspondance externe ambiguë bloque : Komerce ne devine jamais une référence ou un état provider",
+        "un Golden E2E prouve la composition de contrats élémentaires déjà qualifiés ; il ne sert jamais à découvrir P0/P1 à l aveugle",
+        "les adapters provider et les side effects restent possédés par leurs features métier ; external-provider-contracts ne devient jamais un god-adapter"
+      ],
+      "implementation": {
+        "byCategory": {
+          "config": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "governance/external-provider-registry.json",
+                "resolvedPath": "governance/external-provider-registry.json",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "scripts": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "scripts/external-provider-boundary-scan.js",
+                "resolvedPath": "scripts/external-provider-boundary-scan.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/provider-contract-proof.js",
+                "resolvedPath": "scripts/provider-contract-proof.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "tests": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "tests/unit/external-provider-boundary-scan.test.js",
+                "resolvedPath": "tests/unit/external-provider-boundary-scan.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/provider-contract-proof.test.js",
+                "resolvedPath": "tests/unit/provider-contract-proof.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          }
+        },
+        "totalFiles": 5,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [],
+        "writesTables": [],
+        "readsTables": []
+      },
+      "data": {
+        "ownsTables": [],
+        "writesTables": [],
+        "readsTables": []
+      },
+      "interfaces": {
+        "internalApis": [
+          {
+            "fn": "assertConversation",
+            "file": "scripts/provider-contract-proof.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "assertThrough",
+            "file": "scripts/provider-contract-proof.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "buildConversation",
+            "file": "scripts/provider-contract-proof.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "buildProof",
+            "file": "scripts/provider-contract-proof.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "scanRepository",
+            "file": "scripts/external-provider-boundary-scan.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "summary",
+            "file": "scripts/provider-contract-proof.js",
+            "status": "resolved"
+          }
+        ],
+        "httpInterfaces": {
+          "count": 0
+        }
+      },
+      "businessDependencies": [],
+      "consumedBy": [
+        {
+          "consumer": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
+      "projections": {
+        "projectedBy": []
+      },
+      "technicalContext": {
+        "technicalPrimitiveDependencies": 0,
+        "testOnlyRelations": 0,
+        "compositionRootRelations": 0,
+        "details": []
+      },
+      "boundaryHealth": {
+        "status": "ATTENTION",
+        "directCrossFeatureImports": 0,
+        "runtimeCycles": 0,
+        "unclassifiedDependencies": 0,
+        "declaredNotObserved": 1,
+        "declaredNotObservedEvidence": [
+          "infrastructure"
+        ]
+      },
+      "governanceHealth": {
+        "status": "HEALTHY",
+        "manifestPresent": true,
+        "registryPresent": true,
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 1,
+        "debtItems": [
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"infrastructure\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          }
+        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -21557,7 +21775,7 @@
           "entrée catalogue / import fournisseur en amont (feature catalog — sourcing/catalog-import, hors périmètre purchasing)"
         ]
       },
-      "authority": "backend-core — tout changement du flux d'engagement fournisseur (identité commandable, Procurement Route, contrat d'adapter, readiness dynamique, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing",
+      "authority": "backend-core — tout changement du flux d'engagement fournisseur (Procurement Route, readiness dynamique, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing ; supplier-connectivity possède l'identité provider, la Supplier Order Identity et le contrat générique d'adapter",
       "invariants": [
         {
           "statement": "un besoin d'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)",
@@ -21574,14 +21792,6 @@
         {
           "statement": "pour une ligne SKU/SOI exacte, le prix et la devise du fournisseur viennent de la Canonical Unit et sont snapshotés nativement sur la PO ; un montant PLN/USD/CNY ne doit jamais être rebaptisé AED",
           "test": "tests/unit/purchasing-canonical-money.test.js"
-        },
-        {
-          "statement": "une unité ne devient jamais commandable par heuristique : Supplier Order Identity absente ou ambiguë = blocage",
-          "test": "tests/unit/supplier-order-identity.test.js"
-        },
-        {
-          "statement": "tout adapter fulfillment est provider-scopé, traite un payload d'identité opaque et ne peut émettre que les verdicts canoniques Purchasing avec ready cohérent",
-          "test": "tests/unit/supplier-fulfillment-adapter-contract.test.js"
         },
         {
           "statement": "une capacité de livraison provider ne franchit la frontière Purchasing que sous forme ShippingCapability canonique ; les champs natifs restent dans l'adapter et tout fait décisionnel inconnu bloque au lieu d'être inventé",
@@ -21656,7 +21866,7 @@
             ]
           },
           "services": {
-            "count": 23,
+            "count": 21,
             "files": [
               {
                 "declared": "services/purchasing-admin-service.js",
@@ -21744,8 +21954,8 @@
                 "status": "resolved-in-technical-graph"
               },
               {
-                "declared": "services/suppliers/provider-authority.js",
-                "resolvedPath": "services/suppliers/provider-authority.js",
+                "declared": "services/suppliers/purchase-order-confirmation-boundary.js",
+                "resolvedPath": "services/suppliers/purchase-order-confirmation-boundary.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -21759,24 +21969,14 @@
                 "status": "resolved-in-technical-graph"
               },
               {
-                "declared": "services/suppliers/supplier-fulfillment-adapter-contract.js",
-                "resolvedPath": "services/suppliers/supplier-fulfillment-adapter-contract.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
                 "declared": "services/suppliers/supplier-fulfillment-readiness.js",
                 "resolvedPath": "services/suppliers/supplier-fulfillment-readiness.js",
-                "status": "resolved-in-technical-graph"
-              },
-              {
-                "declared": "services/suppliers/supplier-order-identity.js",
-                "resolvedPath": "services/suppliers/supplier-order-identity.js",
                 "status": "resolved-in-technical-graph"
               }
             ]
           },
           "tests": {
-            "count": 29,
+            "count": 27,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
@@ -21839,8 +22039,8 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/provider-authority.test.js",
-                "resolvedPath": "tests/unit/provider-authority.test.js",
+                "declared": "tests/unit/purchase-order-confirmation-boundary.test.js",
+                "resolvedPath": "tests/unit/purchase-order-confirmation-boundary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21909,24 +22109,14 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
-                "resolvedPath": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
                 "declared": "tests/unit/supplier-fulfillment-readiness.test.js",
                 "resolvedPath": "tests/unit/supplier-fulfillment-readiness.test.js",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": "tests/unit/supplier-order-identity.test.js",
-                "resolvedPath": "tests/unit/supplier-order-identity.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 57,
+        "totalFiles": 53,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -22092,11 +22282,6 @@
             "status": "resolved"
           },
           {
-            "fn": "resolveSupplierUnit",
-            "file": "services/suppliers/supplier-order-identity.js",
-            "status": "resolved"
-          },
-          {
             "fn": "syncPurchaseOrdersOnOrderCancel",
             "file": "services/purchasing-cancel-service.js",
             "status": "resolved"
@@ -22104,11 +22289,6 @@
           {
             "fn": "triggerPurchasing",
             "file": "services/purchasing-trigger-service.js",
-            "status": "resolved"
-          },
-          {
-            "fn": "validateAdapter",
-            "file": "services/suppliers/supplier-fulfillment-adapter-contract.js",
             "status": "resolved"
           }
         ],
@@ -22130,6 +22310,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "provider": "external-provider-contracts",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -22164,6 +22351,13 @@
         },
         {
           "provider": "sourcing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "supplier-connectivity",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -25001,6 +25195,249 @@
       "architecturalDebt": {
         "debtCount": 0,
         "debtItems": []
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "supplier-connectivity",
+      "kind": "integration-adapter",
+      "status": "staging",
+      "manifestFile": "features/supplier-connectivity.feature.js",
+      "repo": "backend",
+      "identity": {
+        "id": "supplier-connectivity",
+        "kind": "integration-adapter",
+        "status": "staging"
+      },
+      "service": "Permettre à Komerce d accueillir un fournisseur par une autorité unique d identité provider, une Supplier Order Identity opaque et une résolution d adapter fail-closed, sans déplacer les décisions métier des features consommatrices.",
+      "perimeter": {
+        "in": [
+          "autorité canonique des providers supportés et séparation stricte provider identity / execution mode",
+          "Supplier Order Identity canonique {provider, version, payload opaque}",
+          "contrat générique de validation des adapters fulfillment et reconciliation, provider-scopé et fail-closed",
+          "déclaration en code des seules exigences de preflight et de reconciliation déjà prouvées"
+        ],
+        "out": [
+          "cycle de vie, persistence, readiness, exécution, confirmation et réception des Purchase Orders — feature purchasing",
+          "connecteurs d import catalogue et normalisation produit fournisseur — feature catalog",
+          "qualification et résolution des observations multi-source — feature sourcing",
+          "mécanisme de discovery d une référence externe — adapter-owned et provider-specific",
+          "adapters concrets et appels provider mutatifs — propriété de la feature métier consommatrice",
+          "credentials, secrets, rotation de tokens et connexion provider"
+        ]
+      },
+      "authority": "backend-core — cette feature est la seule autorité de l identité provider supportée, de la Supplier Order Identity opaque et du contrat générique de résolution d adapter ; les features consommatrices restent seules propriétaires de leurs décisions et side effects métier.",
+      "invariants": [
+        {
+          "statement": "un provider inconnu ou un adapter absent/incompatible bloque ; il n existe aucun fall-through silencieux",
+          "test": "tests/unit/supplier-fulfillment-adapter-contract.test.js"
+        },
+        {
+          "statement": "provider identity et execution mode sont deux dimensions distinctes ; manual et automatic ne sont jamais des providers",
+          "test": "tests/unit/provider-authority.test.js"
+        },
+        {
+          "statement": "seules les exigences provider prouvées sont déclarées ; une valeur inconnue reste UNKNOWN et ne devient jamais NOT_REQUIRED par défaut",
+          "test": "tests/unit/provider-authority.test.js"
+        },
+        {
+          "statement": "la Supplier Order Identity conserve un payload opaque et se résout sans heuristique ; une identité absente ou ambiguë bloque",
+          "test": "tests/unit/supplier-order-identity.test.js"
+        },
+        {
+          "statement": "une comparaison de Supplier Order Identity est structurelle et indépendante de l ordre des clés du payload",
+          "test": "tests/unit/supplier-order-identity.test.js"
+        },
+        "Purchasing, Sourcing et Catalogue ne doivent jamais brancher leur cœur sur un nom de provider ni parser le payload SOI pour inventer une décision générique",
+        "aucune table supplier_providers ni capability non prouvée ne peut être ajoutée au seul motif d accueillir un futur provider hypothétique"
+      ],
+      "implementation": {
+        "byCategory": {
+          "services": {
+            "count": 3,
+            "files": [
+              {
+                "declared": "services/suppliers/provider-authority.js",
+                "resolvedPath": "services/suppliers/provider-authority.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+                "resolvedPath": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/supplier-order-identity.js",
+                "resolvedPath": "services/suppliers/supplier-order-identity.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "tests": {
+            "count": 3,
+            "files": [
+              {
+                "declared": "tests/unit/provider-authority.test.js",
+                "resolvedPath": "tests/unit/provider-authority.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
+                "resolvedPath": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/supplier-order-identity.test.js",
+                "resolvedPath": "tests/unit/supplier-order-identity.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          }
+        },
+        "totalFiles": 6,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [],
+        "writesTables": [],
+        "readsTables": []
+      },
+      "data": {
+        "ownsTables": [],
+        "writesTables": [],
+        "readsTables": []
+      },
+      "interfaces": {
+        "internalApis": [
+          {
+            "fn": "identitiesMatch",
+            "file": "services/suppliers/supplier-order-identity.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "isSupportedProvider",
+            "file": "services/suppliers/provider-authority.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "normalizeIdentity",
+            "file": "services/suppliers/supplier-order-identity.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "normalizeProviderCode",
+            "file": "services/suppliers/provider-authority.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "reconciliationRequirement",
+            "file": "services/suppliers/provider-authority.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "remotePreflightRequirement",
+            "file": "services/suppliers/provider-authority.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "resolveSupplierUnit",
+            "file": "services/suppliers/supplier-order-identity.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "validateAdapter",
+            "file": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "validateExecutionAdapter",
+            "file": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "validateReconciliationAdapter",
+            "file": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+            "status": "resolved"
+          }
+        ],
+        "httpInterfaces": {
+          "count": 0
+        }
+      },
+      "businessDependencies": [],
+      "consumedBy": [
+        {
+          "consumer": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
+      "projections": {
+        "projectedBy": []
+      },
+      "technicalContext": {
+        "technicalPrimitiveDependencies": 0,
+        "testOnlyRelations": 1,
+        "compositionRootRelations": 0,
+        "details": [
+          {
+            "to": "purchasing",
+            "family": "NON_RUNTIME_TEST"
+          }
+        ]
+      },
+      "boundaryHealth": {
+        "status": "ATTENTION",
+        "directCrossFeatureImports": 0,
+        "runtimeCycles": 0,
+        "unclassifiedDependencies": 0,
+        "declaredNotObserved": 1,
+        "declaredNotObservedEvidence": [
+          "external-provider-contracts"
+        ]
+      },
+      "governanceHealth": {
+        "status": "HEALTHY",
+        "manifestPresent": true,
+        "registryPresent": true,
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 1,
+        "debtItems": [
+          {
+            "type": "DECLARED_NOT_OBSERVED",
+            "severity": "low",
+            "evidence": "contract.consumes déclare \"external-provider-contracts\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
+          }
+        ]
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",

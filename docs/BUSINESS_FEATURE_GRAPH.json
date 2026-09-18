@@ -33,6 +33,7 @@
       "features/settlement.feature.js",
       "features/shared-cart.feature.js",
       "features/sourcing.feature.js",
+      "features/supplier-connectivity.feature.js",
       "features/unsold-resolution.feature.js",
       "features/wallet.feature.js",
       "features/wallet-loyalty.feature.js",
@@ -47,7 +48,7 @@
     "dashRoot": "public"
   },
   "scope": {
-    "businessManifestsResolved": 38,
+    "businessManifestsResolved": 39,
     "businessManifestsBroken": 0,
     "declaredOnlyNodes": 0,
     "dashRepoMounted": true,
@@ -568,6 +569,22 @@
         "since": "2026-07",
         "service": "Identifier, qualifier et arbitrer des opportunités fournisseur ou produit (scan pricing, décision garder/watchlist/rejeter) avant leur entrée dans le catalogue.",
         "businessKind": "business-feature",
+        "kindSource": "manifest.classification.kind",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
+        "id": "feature:supplier-connectivity",
+        "name": "supplier-connectivity",
+        "file": "features/supplier-connectivity.feature.js",
+        "legacyType": "feature",
+        "status": "staging",
+        "owner": "backend-core",
+        "since": "2026-09",
+        "service": "Permettre à Komerce d accueillir un fournisseur par une autorité unique d identité provider, une Supplier Order Identity opaque et une résolution d adapter fail-closed, sans déplacer les décisions métier des features consommatrices.",
+        "businessKind": "integration-adapter",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
         "repo": "backend",
@@ -5885,9 +5902,30 @@
       },
       {
         "feature": "external-provider-contracts",
+        "category": "scripts",
+        "declared": "scripts/external-provider-boundary-scan.js",
+        "resolvedPath": "scripts/external-provider-boundary-scan.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "category": "config",
+        "declared": "governance/external-provider-registry.json",
+        "resolvedPath": "governance/external-provider-registry.json",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "external-provider-contracts",
         "category": "tests",
         "declared": "tests/unit/provider-contract-proof.test.js",
         "resolvedPath": "tests/unit/provider-contract-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "category": "tests",
+        "declared": "tests/unit/external-provider-boundary-scan.test.js",
+        "resolvedPath": "tests/unit/external-provider-boundary-scan.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -11339,20 +11377,6 @@
       {
         "feature": "purchasing",
         "category": "services",
-        "declared": "services/suppliers/supplier-order-identity.js",
-        "resolvedPath": "services/suppliers/supplier-order-identity.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "purchasing",
-        "category": "services",
-        "declared": "services/suppliers/provider-authority.js",
-        "resolvedPath": "services/suppliers/provider-authority.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "purchasing",
-        "category": "services",
         "declared": "services/suppliers/purchasing-validators.js",
         "resolvedPath": "services/suppliers/purchasing-validators.js",
         "status": "resolved-in-technical-graph"
@@ -11362,13 +11386,6 @@
         "category": "services",
         "declared": "services/suppliers/aliexpress-purchase-preflight.js",
         "resolvedPath": "services/suppliers/aliexpress-purchase-preflight.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "purchasing",
-        "category": "services",
-        "declared": "services/suppliers/supplier-fulfillment-adapter-contract.js",
-        "resolvedPath": "services/suppliers/supplier-fulfillment-adapter-contract.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -11397,7 +11414,7 @@
         "category": "services",
         "declared": "services/suppliers/purchase-order-confirmation-boundary.js",
         "resolvedPath": "services/suppliers/purchase-order-confirmation-boundary.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
@@ -11605,20 +11622,6 @@
       {
         "feature": "purchasing",
         "category": "tests",
-        "declared": "tests/unit/supplier-order-identity.test.js",
-        "resolvedPath": "tests/unit/supplier-order-identity.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "purchasing",
-        "category": "tests",
-        "declared": "tests/unit/provider-authority.test.js",
-        "resolvedPath": "tests/unit/provider-authority.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "purchasing",
-        "category": "tests",
         "declared": "tests/unit/canonical-unit-purchasing-gate.test.js",
         "resolvedPath": "tests/unit/canonical-unit-purchasing-gate.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11656,13 +11659,6 @@
         "category": "tests",
         "declared": "tests/unit/aliexpress-purchase-preflight.test.js",
         "resolvedPath": "tests/unit/aliexpress-purchase-preflight.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "purchasing",
-        "category": "tests",
-        "declared": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
-        "resolvedPath": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12720,6 +12716,48 @@
         "category": "tests",
         "declared": "tests/unit/sourcing-resolution-foundation-migration.test.js",
         "resolvedPath": "tests/unit/sourcing-resolution-foundation-migration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "category": "services",
+        "declared": "services/suppliers/provider-authority.js",
+        "resolvedPath": "services/suppliers/provider-authority.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "category": "services",
+        "declared": "services/suppliers/supplier-order-identity.js",
+        "resolvedPath": "services/suppliers/supplier-order-identity.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "category": "services",
+        "declared": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "resolvedPath": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "category": "tests",
+        "declared": "tests/unit/provider-authority.test.js",
+        "resolvedPath": "tests/unit/provider-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "category": "tests",
+        "declared": "tests/unit/supplier-order-identity.test.js",
+        "resolvedPath": "tests/unit/supplier-order-identity.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "category": "tests",
+        "declared": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
+        "resolvedPath": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -17920,6 +17958,12 @@
         "status": "resolved"
       },
       {
+        "feature": "external-provider-contracts",
+        "fn": "scanRepository",
+        "file": "scripts/external-provider-boundary-scan.js",
+        "status": "resolved"
+      },
+      {
         "feature": "incident-management",
         "fn": "listIncidents",
         "file": "services/incident-service.js",
@@ -18725,18 +18769,6 @@
       },
       {
         "feature": "purchasing",
-        "fn": "resolveSupplierUnit",
-        "file": "services/suppliers/supplier-order-identity.js",
-        "status": "resolved"
-      },
-      {
-        "feature": "purchasing",
-        "fn": "validateAdapter",
-        "file": "services/suppliers/supplier-fulfillment-adapter-contract.js",
-        "status": "resolved"
-      },
-      {
-        "feature": "purchasing",
         "fn": "evaluateSupplierFulfillmentReadiness",
         "file": "services/suppliers/supplier-fulfillment-readiness.js",
         "status": "resolved"
@@ -18950,6 +18982,66 @@
         "fn": "collectCatalogProductReadCutoverTrial",
         "file": "services/catalog-product-read-cutover-trial.js",
         "status": "resolved"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "fn": "isSupportedProvider",
+        "file": "services/suppliers/provider-authority.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "fn": "normalizeProviderCode",
+        "file": "services/suppliers/provider-authority.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "fn": "remotePreflightRequirement",
+        "file": "services/suppliers/provider-authority.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "fn": "reconciliationRequirement",
+        "file": "services/suppliers/provider-authority.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "fn": "normalizeIdentity",
+        "file": "services/suppliers/supplier-order-identity.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "fn": "identitiesMatch",
+        "file": "services/suppliers/supplier-order-identity.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "fn": "resolveSupplierUnit",
+        "file": "services/suppliers/supplier-order-identity.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "fn": "validateAdapter",
+        "file": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "fn": "validateExecutionAdapter",
+        "file": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "supplier-connectivity",
+        "fn": "validateReconciliationAdapter",
+        "file": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "status": "resolved"
       }
     ],
     "consumesFeature": [
@@ -19141,8 +19233,14 @@
       },
       {
         "from": "catalog",
+        "to": "supplier-connectivity",
+        "raw": "supplier-connectivity (Supplier Order Identity canonique : catalog persiste et valide l’identité commandable via services/suppliers/supplier-order-identity.js ; aucun payload fournisseur n’est réinterprété par heuristique)",
+        "resolved": true
+      },
+      {
+        "from": "catalog",
         "to": "purchasing",
-        "raw": "purchasing (Supplier Order Identity canonique : catalog persiste et valide l’identité commandable via services/suppliers/supplier-order-identity.js ; aucun payload fournisseur n’est réinterprété par heuristique)",
+        "raw": "purchasing (scripts/allegro-sandbox-check.js compose l adapter Allegro fulfillment possédé par Purchasing pour la preuve sandbox ; aucune autorité Purchasing n est recopiée dans Catalogue)",
         "resolved": true
       },
       {
@@ -20293,6 +20391,12 @@
       },
       {
         "from": "purchasing",
+        "to": "supplier-connectivity",
+        "raw": "supplier-connectivity (autorité provider, Supplier Order Identity opaque et contrats adapter fail-closed)",
+        "resolved": true
+      },
+      {
+        "from": "purchasing",
         "to": "external-provider-contracts",
         "raw": "external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les proofs Purchasing)",
         "resolved": true
@@ -20535,6 +20639,12 @@
         "from": "sourcing",
         "to": "dashboard",
         "raw": "dashboard (registre partenaires partagé via partner-admin-service ; 4E filtre strictement partner_type=sourcing)",
+        "resolved": true
+      },
+      {
+        "from": "supplier-connectivity",
+        "to": "external-provider-contracts",
+        "raw": "external-provider-contracts (méthode transverse de qualification et de preuve P0→P4 avant déclaration d une capability provider)",
         "resolved": true
       },
       {
@@ -24929,14 +25039,6 @@
               {
                 "sourceFileId": "scripts/allegro-sandbox-check.js",
                 "targetFile": "services/suppliers/allegro-fulfillment-adapter.js"
-              },
-              {
-                "sourceFileId": "services/catalog-promotion/sku.js",
-                "targetFile": "services/suppliers/supplier-order-identity.js"
-              },
-              {
-                "sourceFileId": "tests/unit/allegro-connector.test.js",
-                "targetFile": "services/suppliers/supplier-order-identity.js"
               }
             ]
           }
@@ -25064,6 +25166,26 @@
               {
                 "table": "sourcing_candidates",
                 "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "catalog",
+        "to": "supplier-connectivity",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/catalog-promotion/sku.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-connector.test.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
               }
             ]
           }
@@ -33764,6 +33886,82 @@
         "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
+        "from": "purchasing",
+        "to": "supplier-connectivity",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/purchasing-trigger-service.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-trigger-service.js",
+                "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-canonical-money.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/purchasing-validators.js",
+                "targetFile": "services/suppliers/provider-authority.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/aliexpress-purchase-preflight.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/supplier-fulfillment-readiness.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/supplier-fulfillment-readiness.js",
+                "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/canonical-unit-purchasing-gate.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/canonical-unit-purchasing-gate.js",
+                "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/canonical-unit-purchasing-gate.js",
+                "targetFile": "services/suppliers/provider-authority.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/procurement-execution-boundary.js",
+                "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/purchase-order-confirmation-boundary.js",
+                "targetFile": "services/suppliers/provider-authority.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/purchase-order-confirmation-boundary.js",
+                "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
+              },
+              {
+                "sourceFileId": "tests/unit/purchasing-adapter-resolution.test.js",
+                "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
+              },
+              {
+                "sourceFileId": "tests/unit/purchase-order-confirmation-boundary.test.js",
+                "targetFile": "services/suppliers/provider-authority.js"
+              },
+              {
+                "sourceFileId": "tests/unit/purchase-order-confirmation-boundary.test.js",
+                "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "recommendations",
         "to": "catalog",
         "channels": [
@@ -35071,6 +35269,30 @@
         "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
+        "from": "supplier-connectivity",
+        "to": "purchasing",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/unit/provider-authority.test.js",
+                "targetFile": "services/suppliers/purchasing-validators.js"
+              },
+              {
+                "sourceFileId": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
+                "targetFile": "services/suppliers/supplier-fulfillment-readiness.js"
+              },
+              {
+                "sourceFileId": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
+                "targetFile": "services/suppliers/aliexpress-fulfillment-adapter.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
         "from": "unsold-resolution",
         "to": "auth",
         "channels": [
@@ -35424,7 +35646,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1305
+        "filesObserved": 1307
       },
       "boutique": {
         "filesObserved": 217,
@@ -35460,7 +35682,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 19,
-      "NON_RUNTIME_TEST": 7,
+      "NON_RUNTIME_TEST": 8,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -35858,6 +36080,21 @@
         "policy": "non-runtime-evidence",
         "exceptionRequired": false,
         "exceptionReasons": []
+      },
+      {
+        "from": "supplier-connectivity",
+        "to": "purchasing",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "integration-adapter",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       }
     ],
     "unclassified": [],
@@ -35873,7 +36110,8 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|technical-transversal|technical-primitive": 1
+      "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
+      "NON_RUNTIME_TEST|TEST_ONLY|integration-adapter|business-feature|business-file-import": 1
     },
     "runtimeCycles": [],
     "exceptions": [],
@@ -38284,10 +38522,10 @@
   "bigMap": {
     "perRepo": {
       "backend": {
-        "manifestsDiscovered": 34,
-        "manifestsConnected": 34,
-        "technicalNodesTotal": 500,
-        "technicalNodesOwned": 500,
+        "manifestsDiscovered": 35,
+        "manifestsConnected": 35,
+        "technicalNodesTotal": 501,
+        "technicalNodesOwned": 501,
         "technicalOrphans": 0
       },
       "dash": {
@@ -38346,6 +38584,7 @@
         "refunds",
         "settlement",
         "sourcing",
+        "supplier-connectivity",
         "unsold-resolution",
         "wallet-loyalty"
       ],
@@ -38526,6 +38765,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "sourcing -> purchasing",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"sourcing\" vers \"purchasing\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "supplier-connectivity -> purchasing",
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"supplier-connectivity\" vers \"purchasing\""
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -38843,9 +39087,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 37,
+      "expectedTopology": 38,
       "generatorLimitations": 53,
-      "classifiedCandidates": 90
+      "classifiedCandidates": 91
     }
   }
 }

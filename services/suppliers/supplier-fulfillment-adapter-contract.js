@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          supplier-fulfillment-adapter-contract
- * @domain        purchasing
+ * @domain        supplier-connectivity
  * @layer         service
  * @criticality   high
  * @inputs        provider, supplier fulfillment adapter, supplier fulfillment verdict

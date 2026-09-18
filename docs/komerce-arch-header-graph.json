@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 605,
-    "filesWithFullHeaders": 560,
+    "scannedCodeFiles": 606,
+    "filesWithFullHeaders": 561,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 605,
+    "filesWithAnyHeaders": 606,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1444,
-    "edges": 7198,
+    "graphNodes": 1445,
+    "edges": 7226,
     "dbTables": 173,
     "doctrines": 483,
     "impactAreas": 183,
-    "unresolvedCodeEdges": 691,
+    "unresolvedCodeEdges": 710,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 73
   },
@@ -64,11 +64,12 @@
     "operations": 11,
     "inventory": 2,
     "local-stock": 4,
-    "purchasing": 24,
+    "purchasing": 22,
     "unsold-resolution": 1,
     "incident-management": 5,
     "market-autonomy": 4,
     "refunds": 2,
+    "supplier-connectivity": 3,
     "shared": 1
   },
   "byLayer": {
@@ -105,7 +106,7 @@
     "schema": 1,
     "route": 127,
     "entrypoint": 1,
-    "service": 303,
+    "service": 304,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -116,7 +117,7 @@
   "byCriticality": {
     "critical": 89,
     "medium": 129,
-    "high": 334,
+    "high": 335,
     "low": 53
   },
   "nodes": [
@@ -22487,16 +22488,24 @@
       "owner": null,
       "purpose": null,
       "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
+        "purchase order id",
+        "order id",
+        "supplier confirmation payload (supplier_order_id",
+        "tracking",
+        "notes)"
       ],
       "outputs": [
-        "response_or_domain_result",
+        "confirmed/cancelled purchase order",
         "side_effects"
       ],
       "depends": [
         "db",
-        "utils/logger.js"
+        "utils/logger.js",
+        "services/order-mutation-service.js",
+        "services/suppliers/purchase-order-confirmation-boundary.js (confirmPurchaseOrder",
+        "GAP-5)",
+        "services/suppliers/execution-adapter-registry.js (confirmPurchaseOrder",
+        "GAP-5)"
       ],
       "usedBy": [
         "routes/purchasing.js"
@@ -22513,10 +22522,11 @@
       ],
       "dbWriteVia": [],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "owned"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
       ],
       "impactAreas": [
         "dashboard",
@@ -25749,17 +25759,25 @@
       "purpose": null,
       "inputs": [
         "exact sandbox offer identity",
-        "quantity"
+        "quantity",
+        "external checkout reference (reconcile)"
       ],
       "outputs": [
-        "live stock/price evidence and exact manual procurement payload"
+        "live stock/price evidence",
+        "exact manual procurement payload",
+        "reconciled purchase evidence (reconcile",
+        "GAP-5)"
       ],
       "depends": [
         "services/suppliers/connectors/allegro-connector.js",
-        "services/suppliers/supplier-fulfillment-readiness.js"
+        "services/suppliers/supplier-fulfillment-readiness.js",
+        "services/suppliers/allegro-purchase-reconciliation.js"
       ],
       "usedBy": [
-        "scripts/allegro-sandbox-check.js"
+        "services/suppliers/execution-adapter-registry.js (via canonical-unit-purchasing-gate.js GAP-4A",
+        "services/purchasing-admin-service.js GAP-5)",
+        "scripts/allegro-sandbox-check.js",
+        "scripts/allegro-golden-prebuyer-proof.js"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -25964,7 +25982,8 @@
         "services/sourcing-canonical-unit-product-sku-resolution.js",
         "services/suppliers/supplier-order-identity.js",
         "services/suppliers/supplier-fulfillment-adapter-contract.js",
-        "services/suppliers/provider-authority.js"
+        "services/suppliers/provider-authority.js",
+        "services/suppliers/supplier-fulfillment-readiness.js (VERDICT/result uniquement — jamais evaluateSupplierFulfillmentReadiness ni procurementRoute)"
       ],
       "usedBy": [
         "services/purchasing-trigger-service.js (GAP-4A",
@@ -26859,7 +26878,7 @@
       "type": "file",
       "headerType": "full",
       "role": "provider-authority",
-      "domain": "purchasing",
+      "domain": "supplier-connectivity",
       "layer": "service",
       "criticality": "high",
       "owner": null,
@@ -26870,18 +26889,65 @@
       "outputs": [
         "canonical provider list",
         "support verdict",
-        "normalized code"
+        "normalized code",
+        "remote preflight requirement",
+        "reconciliation requirement"
       ],
       "depends": [],
       "usedBy": [
-        "validators/index.js (GAP-1)",
-        "future adapter resolution (GAP-2)"
+        "services/suppliers/purchasing-validators.js (isSupportedProvider)",
+        "services/suppliers/canonical-unit-purchasing-gate.js (remotePreflightRequirement",
+        "GAP-4A)",
+        "services/purchasing-admin-service.js (reconciliationRequirement",
+        "GAP-5)"
       ],
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/suppliers/purchase-order-confirmation-boundary.js",
+      "file": "services/suppliers/purchase-order-confirmation-boundary.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "purchase-order-confirmation-boundary",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "Supplier Order Identity",
+        "external reference to verify",
+        "provider adapters",
+        "provider authority"
+      ],
+      "outputs": [
+        "reconciliation_required_verdict_or_committed_or_rejected"
+      ],
+      "depends": [
+        "services/suppliers/provider-authority.js",
+        "services/suppliers/supplier-fulfillment-adapter-contract.js"
+      ],
+      "usedBy": [
+        "services/purchasing-admin-service.js (confirmPurchaseOrder",
+        "GAP-5)"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
         "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
       ],
       "impactAreas": [
@@ -27008,7 +27074,7 @@
       "type": "file",
       "headerType": "full",
       "role": "supplier-fulfillment-adapter-contract",
-      "domain": "purchasing",
+      "domain": "supplier-connectivity",
       "layer": "service",
       "criticality": "high",
       "owner": null,
@@ -27024,7 +27090,9 @@
       "depends": [],
       "usedBy": [
         "services/suppliers/supplier-fulfillment-readiness.js",
-        "services/suppliers/procurement-execution-boundary.js (GAP-4B)"
+        "services/suppliers/canonical-unit-purchasing-gate.js (GAP-4A)",
+        "services/suppliers/procurement-execution-boundary.js (GAP-4B)",
+        "services/suppliers/purchase-order-confirmation-boundary.js (GAP-5)"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -27064,7 +27132,12 @@
         "services/suppliers/supplier-fulfillment-adapter-contract.js"
       ],
       "usedBy": [
-        "internal purchasing callers"
+        "services/suppliers/allegro-fulfillment-adapter.js (require direct",
+        "VERDICT/result)",
+        "services/suppliers/canonical-unit-purchasing-gate.js (require direct",
+        "VERDICT/result uniquement",
+        "GAP-4A — jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reçoit en paramètres injectés par cet appelant",
+        "sans require() propre"
       ],
       "dbRead": [
         "product_skus"
@@ -27089,7 +27162,7 @@
       "type": "file",
       "headerType": "full",
       "role": "supplier-order-identity",
-      "domain": "purchasing",
+      "domain": "supplier-connectivity",
       "layer": "service",
       "criticality": "high",
       "owner": null,
@@ -31870,14 +31943,19 @@
       "doctrine": "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services"
     },
     {
-      "id": "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
-    },
-    {
       "id": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+    },
+    {
+      "id": "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+      "type": "doctrine",
+      "doctrine": "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+    },
+    {
+      "id": "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
     },
     {
       "id": "doctrine:qr_pickup_single_validation (P5-L5)",
@@ -32058,11 +32136,6 @@
       "id": "doctrine:docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md"
-    },
-    {
-      "id": "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
-      "type": "doctrine",
-      "doctrine": "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
     },
     {
       "id": "doctrine:docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md",
@@ -66962,6 +67035,30 @@
       "label": "utils/logger.js"
     },
     {
+      "from": "services/purchasing-admin-service.js",
+      "to": "services/order-mutation-service.js",
+      "type": "depends",
+      "label": "services/order-mutation-service.js"
+    },
+    {
+      "from": "services/purchasing-admin-service.js",
+      "to": "services/suppliers/purchase-order-confirmation-boundary.js (confirmPurchaseOrder",
+      "type": "depends",
+      "label": "services/suppliers/purchase-order-confirmation-boundary.js (confirmPurchaseOrder"
+    },
+    {
+      "from": "services/purchasing-admin-service.js",
+      "to": "GAP-5)",
+      "type": "depends",
+      "label": "GAP-5)"
+    },
+    {
+      "from": "services/purchasing-admin-service.js",
+      "to": "services/suppliers/execution-adapter-registry.js (confirmPurchaseOrder",
+      "type": "depends",
+      "label": "services/suppliers/execution-adapter-registry.js (confirmPurchaseOrder"
+    },
+    {
       "from": "routes/purchasing.js",
       "to": "services/purchasing-admin-service.js",
       "type": "uses",
@@ -67005,9 +67102,15 @@
     },
     {
       "from": "services/purchasing-admin-service.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+    },
+    {
+      "from": "services/purchasing-admin-service.js",
+      "to": "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+      "type": "doctrine",
+      "label": "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
     },
     {
       "from": "services/purchasing-admin-service.js",
@@ -72028,10 +72131,34 @@
       "label": "services/suppliers/supplier-fulfillment-readiness.js"
     },
     {
+      "from": "services/suppliers/allegro-fulfillment-adapter.js",
+      "to": "services/suppliers/allegro-purchase-reconciliation.js",
+      "type": "depends",
+      "label": "services/suppliers/allegro-purchase-reconciliation.js"
+    },
+    {
+      "from": "services/suppliers/execution-adapter-registry.js (via canonical-unit-purchasing-gate.js GAP-4A",
+      "to": "services/suppliers/allegro-fulfillment-adapter.js",
+      "type": "uses",
+      "label": "services/suppliers/execution-adapter-registry.js (via canonical-unit-purchasing-gate.js GAP-4A"
+    },
+    {
+      "from": "services/purchasing-admin-service.js GAP-5)",
+      "to": "services/suppliers/allegro-fulfillment-adapter.js",
+      "type": "uses",
+      "label": "services/purchasing-admin-service.js GAP-5)"
+    },
+    {
       "from": "scripts/allegro-sandbox-check.js",
       "to": "services/suppliers/allegro-fulfillment-adapter.js",
       "type": "uses",
       "label": "scripts/allegro-sandbox-check.js"
+    },
+    {
+      "from": "scripts/allegro-golden-prebuyer-proof.js",
+      "to": "services/suppliers/allegro-fulfillment-adapter.js",
+      "type": "uses",
+      "label": "scripts/allegro-golden-prebuyer-proof.js"
     },
     {
       "from": "services/suppliers/allegro-fulfillment-adapter.js",
@@ -72260,6 +72387,12 @@
       "to": "services/suppliers/provider-authority.js",
       "type": "depends",
       "label": "services/suppliers/provider-authority.js"
+    },
+    {
+      "from": "services/suppliers/canonical-unit-purchasing-gate.js",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js (VERDICT/result uniquement — jamais evaluateSupplierFulfillmentReadiness ni procurementRoute)",
+      "type": "depends",
+      "label": "services/suppliers/supplier-fulfillment-readiness.js (VERDICT/result uniquement — jamais evaluateSupplierFulfillmentReadiness ni procurementRoute)"
     },
     {
       "from": "services/purchasing-trigger-service.js (GAP-4A",
@@ -73330,16 +73463,34 @@
       "label": "product-discovery"
     },
     {
-      "from": "validators/index.js (GAP-1)",
+      "from": "services/suppliers/purchasing-validators.js (isSupportedProvider)",
       "to": "services/suppliers/provider-authority.js",
       "type": "uses",
-      "label": "validators/index.js (GAP-1)"
+      "label": "services/suppliers/purchasing-validators.js (isSupportedProvider)"
     },
     {
-      "from": "future adapter resolution (GAP-2)",
+      "from": "services/suppliers/canonical-unit-purchasing-gate.js (remotePreflightRequirement",
       "to": "services/suppliers/provider-authority.js",
       "type": "uses",
-      "label": "future adapter resolution (GAP-2)"
+      "label": "services/suppliers/canonical-unit-purchasing-gate.js (remotePreflightRequirement"
+    },
+    {
+      "from": "GAP-4A)",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "uses",
+      "label": "GAP-4A)"
+    },
+    {
+      "from": "services/purchasing-admin-service.js (reconciliationRequirement",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "uses",
+      "label": "services/purchasing-admin-service.js (reconciliationRequirement"
+    },
+    {
+      "from": "GAP-5)",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "uses",
+      "label": "GAP-5)"
     },
     {
       "from": "services/suppliers/provider-authority.js",
@@ -73355,6 +73506,54 @@
     },
     {
       "from": "services/suppliers/provider-authority.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
+    },
+    {
+      "from": "services/suppliers/purchase-order-confirmation-boundary.js",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "depends",
+      "label": "services/suppliers/provider-authority.js"
+    },
+    {
+      "from": "services/suppliers/purchase-order-confirmation-boundary.js",
+      "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "type": "depends",
+      "label": "services/suppliers/supplier-fulfillment-adapter-contract.js"
+    },
+    {
+      "from": "services/purchasing-admin-service.js (confirmPurchaseOrder",
+      "to": "services/suppliers/purchase-order-confirmation-boundary.js",
+      "type": "uses",
+      "label": "services/purchasing-admin-service.js (confirmPurchaseOrder"
+    },
+    {
+      "from": "GAP-5)",
+      "to": "services/suppliers/purchase-order-confirmation-boundary.js",
+      "type": "uses",
+      "label": "GAP-5)"
+    },
+    {
+      "from": "services/suppliers/purchase-order-confirmation-boundary.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+    },
+    {
+      "from": "services/suppliers/purchase-order-confirmation-boundary.js",
+      "to": "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+      "type": "doctrine",
+      "label": "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+    },
+    {
+      "from": "services/suppliers/purchase-order-confirmation-boundary.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/purchase-order-confirmation-boundary.js",
       "to": "impact:supplier-integration",
       "type": "impact",
       "label": "supplier-integration"
@@ -73474,10 +73673,22 @@
       "label": "services/suppliers/supplier-fulfillment-readiness.js"
     },
     {
+      "from": "services/suppliers/canonical-unit-purchasing-gate.js (GAP-4A)",
+      "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "type": "uses",
+      "label": "services/suppliers/canonical-unit-purchasing-gate.js (GAP-4A)"
+    },
+    {
       "from": "services/suppliers/procurement-execution-boundary.js (GAP-4B)",
       "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
       "type": "uses",
       "label": "services/suppliers/procurement-execution-boundary.js (GAP-4B)"
+    },
+    {
+      "from": "services/suppliers/purchase-order-confirmation-boundary.js (GAP-5)",
+      "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "type": "uses",
+      "label": "services/suppliers/purchase-order-confirmation-boundary.js (GAP-5)"
     },
     {
       "from": "services/suppliers/supplier-fulfillment-adapter-contract.js",
@@ -73510,10 +73721,40 @@
       "label": "services/suppliers/supplier-fulfillment-adapter-contract.js"
     },
     {
-      "from": "internal purchasing callers",
+      "from": "services/suppliers/allegro-fulfillment-adapter.js (require direct",
       "to": "services/suppliers/supplier-fulfillment-readiness.js",
       "type": "uses",
-      "label": "internal purchasing callers"
+      "label": "services/suppliers/allegro-fulfillment-adapter.js (require direct"
+    },
+    {
+      "from": "VERDICT/result)",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "uses",
+      "label": "VERDICT/result)"
+    },
+    {
+      "from": "services/suppliers/canonical-unit-purchasing-gate.js (require direct",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "uses",
+      "label": "services/suppliers/canonical-unit-purchasing-gate.js (require direct"
+    },
+    {
+      "from": "VERDICT/result uniquement",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "uses",
+      "label": "VERDICT/result uniquement"
+    },
+    {
+      "from": "GAP-4A — jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reçoit en paramètres injectés par cet appelant",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "uses",
+      "label": "GAP-4A — jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reçoit en paramètres injectés par cet appelant"
+    },
+    {
+      "from": "sans require() propre",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "uses",
+      "label": "sans require() propre"
     },
     {
       "from": "services/suppliers/supplier-fulfillment-readiness.js",
@@ -95565,6 +95806,7 @@
         "services/pickup-secret-issuer.js",
         "services/pickup-secret-rotation-service.js",
         "services/pickup-secret-service.js",
+        "services/purchasing-admin-service.js",
         "services/wallet-service.js"
       ]
     },
@@ -98906,7 +99148,11 @@
       "purpose": null,
       "directDependsOn": [
         "db",
-        "utils/logger.js"
+        "utils/logger.js",
+        "services/order-mutation-service.js",
+        "services/suppliers/purchase-order-confirmation-boundary.js (confirmPurchaseOrder",
+        "GAP-5)",
+        "services/suppliers/execution-adapter-registry.js (confirmPurchaseOrder"
       ],
       "directUsedBy": [
         "routes/purchasing.js"
@@ -98924,7 +99170,8 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
       ],
       "impactAreas": [
         "dashboard",
@@ -98935,10 +99182,12 @@
         "db:product_suppliers",
         "db:purchase_orders",
         "db:suppliers",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
         "impact:admin-dashboard",
         "impact:dashboard",
         "routes/purchasing.js",
+        "services/order-mutation-service.js",
         "utils/logger.js"
       ]
     },
@@ -102101,10 +102350,14 @@
       "purpose": null,
       "directDependsOn": [
         "services/suppliers/connectors/allegro-connector.js",
-        "services/suppliers/supplier-fulfillment-readiness.js"
+        "services/suppliers/supplier-fulfillment-readiness.js",
+        "services/suppliers/allegro-purchase-reconciliation.js"
       ],
       "directUsedBy": [
-        "scripts/allegro-sandbox-check.js"
+        "services/suppliers/execution-adapter-registry.js (via canonical-unit-purchasing-gate.js GAP-4A",
+        "services/purchasing-admin-service.js GAP-5)",
+        "scripts/allegro-sandbox-check.js",
+        "scripts/allegro-golden-prebuyer-proof.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -102123,6 +102376,7 @@
         "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
         "impact:purchasing",
         "impact:supplier-integration",
+        "services/suppliers/allegro-purchase-reconciliation.js",
         "services/suppliers/connectors/allegro-connector.js",
         "services/suppliers/execution-adapter-registry.js",
         "services/suppliers/supplier-fulfillment-readiness.js"
@@ -102156,6 +102410,7 @@
         "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
         "impact:purchasing",
         "impact:supplier-integration",
+        "services/suppliers/allegro-fulfillment-adapter.js",
         "services/suppliers/allegro-sandbox-client.js"
       ]
     },
@@ -102279,7 +102534,8 @@
         "services/sourcing-canonical-unit-product-sku-resolution.js",
         "services/suppliers/supplier-order-identity.js",
         "services/suppliers/supplier-fulfillment-adapter-contract.js",
-        "services/suppliers/provider-authority.js"
+        "services/suppliers/provider-authority.js",
+        "services/suppliers/supplier-fulfillment-readiness.js (VERDICT/result uniquement — jamais evaluateSupplierFulfillmentReadiness ni procurementRoute)"
       ],
       "directUsedBy": [
         "services/purchasing-trigger-service.js (GAP-4A",
@@ -103122,15 +103378,18 @@
     },
     "services/suppliers/provider-authority.js": {
       "role": "provider-authority",
-      "domain": "purchasing",
+      "domain": "supplier-connectivity",
       "criticality": "high",
       "headerType": "full",
       "owner": null,
       "purpose": null,
       "directDependsOn": [],
       "directUsedBy": [
-        "validators/index.js (GAP-1)",
-        "future adapter resolution (GAP-2)"
+        "services/suppliers/purchasing-validators.js (isSupportedProvider)",
+        "services/suppliers/canonical-unit-purchasing-gate.js (remotePreflightRequirement",
+        "GAP-4A)",
+        "services/purchasing-admin-service.js (reconciliationRequirement",
+        "GAP-5)"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -103148,7 +103407,44 @@
         "impact:purchasing",
         "impact:supplier-integration",
         "services/suppliers/canonical-unit-purchasing-gate.js",
+        "services/suppliers/purchase-order-confirmation-boundary.js",
         "services/suppliers/purchasing-validators.js"
+      ]
+    },
+    "services/suppliers/purchase-order-confirmation-boundary.js": {
+      "role": "purchase-order-confirmation-boundary",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/provider-authority.js",
+        "services/suppliers/supplier-fulfillment-adapter-contract.js"
+      ],
+      "directUsedBy": [
+        "services/purchasing-admin-service.js (confirmPurchaseOrder",
+        "GAP-5)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+        "impact:purchasing",
+        "impact:supplier-integration",
+        "services/suppliers/provider-authority.js",
+        "services/suppliers/supplier-fulfillment-adapter-contract.js"
       ]
     },
     "services/suppliers/purchasing-validators.js": {
@@ -103253,7 +103549,7 @@
     },
     "services/suppliers/supplier-fulfillment-adapter-contract.js": {
       "role": "supplier-fulfillment-adapter-contract",
-      "domain": "purchasing",
+      "domain": "supplier-connectivity",
       "criticality": "high",
       "headerType": "full",
       "owner": null,
@@ -103261,7 +103557,9 @@
       "directDependsOn": [],
       "directUsedBy": [
         "services/suppliers/supplier-fulfillment-readiness.js",
-        "services/suppliers/procurement-execution-boundary.js (GAP-4B)"
+        "services/suppliers/canonical-unit-purchasing-gate.js (GAP-4A)",
+        "services/suppliers/procurement-execution-boundary.js (GAP-4B)",
+        "services/suppliers/purchase-order-confirmation-boundary.js (GAP-5)"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -103280,6 +103578,7 @@
         "impact:supplier-integration",
         "services/suppliers/canonical-unit-purchasing-gate.js",
         "services/suppliers/procurement-execution-boundary.js",
+        "services/suppliers/purchase-order-confirmation-boundary.js",
         "services/suppliers/supplier-fulfillment-readiness.js"
       ]
     },
@@ -103295,7 +103594,12 @@
         "services/suppliers/supplier-fulfillment-adapter-contract.js"
       ],
       "directUsedBy": [
-        "internal purchasing callers"
+        "services/suppliers/allegro-fulfillment-adapter.js (require direct",
+        "VERDICT/result)",
+        "services/suppliers/canonical-unit-purchasing-gate.js (require direct",
+        "VERDICT/result uniquement",
+        "GAP-4A — jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reçoit en paramètres injectés par cet appelant",
+        "sans require() propre"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -103326,7 +103630,7 @@
     },
     "services/suppliers/supplier-order-identity.js": {
       "role": "supplier-order-identity",
-      "domain": "purchasing",
+      "domain": "supplier-connectivity",
       "criticality": "high",
       "headerType": "full",
       "owner": null,
@@ -109183,6 +109487,24 @@
       "label": "db"
     },
     {
+      "from": "services/purchasing-admin-service.js",
+      "to": "services/suppliers/purchase-order-confirmation-boundary.js (confirmPurchaseOrder",
+      "type": "depends",
+      "label": "services/suppliers/purchase-order-confirmation-boundary.js (confirmPurchaseOrder"
+    },
+    {
+      "from": "services/purchasing-admin-service.js",
+      "to": "GAP-5)",
+      "type": "depends",
+      "label": "GAP-5)"
+    },
+    {
+      "from": "services/purchasing-admin-service.js",
+      "to": "services/suppliers/execution-adapter-registry.js (confirmPurchaseOrder",
+      "type": "depends",
+      "label": "services/suppliers/execution-adapter-registry.js (confirmPurchaseOrder"
+    },
+    {
       "from": "services/purchasing-cancel-service.js",
       "to": "db",
       "type": "depends",
@@ -109579,10 +109901,28 @@
       "label": "node:crypto"
     },
     {
+      "from": "services/suppliers/execution-adapter-registry.js (via canonical-unit-purchasing-gate.js GAP-4A",
+      "to": "services/suppliers/allegro-fulfillment-adapter.js",
+      "type": "uses",
+      "label": "services/suppliers/execution-adapter-registry.js (via canonical-unit-purchasing-gate.js GAP-4A"
+    },
+    {
+      "from": "services/purchasing-admin-service.js GAP-5)",
+      "to": "services/suppliers/allegro-fulfillment-adapter.js",
+      "type": "uses",
+      "label": "services/purchasing-admin-service.js GAP-5)"
+    },
+    {
       "from": "scripts/allegro-sandbox-check.js",
       "to": "services/suppliers/allegro-fulfillment-adapter.js",
       "type": "uses",
       "label": "scripts/allegro-sandbox-check.js"
+    },
+    {
+      "from": "scripts/allegro-golden-prebuyer-proof.js",
+      "to": "services/suppliers/allegro-fulfillment-adapter.js",
+      "type": "uses",
+      "label": "scripts/allegro-golden-prebuyer-proof.js"
     },
     {
       "from": "scripts/allegro-sandbox-purchase-proof.js",
@@ -109631,6 +109971,12 @@
       "to": "services/suppliers/canonical-unit-cutover-comparison.js",
       "type": "uses",
       "label": "purchasing cutover reports"
+    },
+    {
+      "from": "services/suppliers/canonical-unit-purchasing-gate.js",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js (VERDICT/result uniquement — jamais evaluateSupplierFulfillmentReadiness ni procurementRoute)",
+      "type": "depends",
+      "label": "services/suppliers/supplier-fulfillment-readiness.js (VERDICT/result uniquement — jamais evaluateSupplierFulfillmentReadiness ni procurementRoute)"
     },
     {
       "from": "services/purchasing-trigger-service.js (GAP-4A",
@@ -109771,16 +110117,46 @@
       "label": "services/purchasing-trigger-service.js (GAP-4B)"
     },
     {
-      "from": "validators/index.js (GAP-1)",
+      "from": "services/suppliers/purchasing-validators.js (isSupportedProvider)",
       "to": "services/suppliers/provider-authority.js",
       "type": "uses",
-      "label": "validators/index.js (GAP-1)"
+      "label": "services/suppliers/purchasing-validators.js (isSupportedProvider)"
     },
     {
-      "from": "future adapter resolution (GAP-2)",
+      "from": "services/suppliers/canonical-unit-purchasing-gate.js (remotePreflightRequirement",
       "to": "services/suppliers/provider-authority.js",
       "type": "uses",
-      "label": "future adapter resolution (GAP-2)"
+      "label": "services/suppliers/canonical-unit-purchasing-gate.js (remotePreflightRequirement"
+    },
+    {
+      "from": "GAP-4A)",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "uses",
+      "label": "GAP-4A)"
+    },
+    {
+      "from": "services/purchasing-admin-service.js (reconciliationRequirement",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "uses",
+      "label": "services/purchasing-admin-service.js (reconciliationRequirement"
+    },
+    {
+      "from": "GAP-5)",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "uses",
+      "label": "GAP-5)"
+    },
+    {
+      "from": "services/purchasing-admin-service.js (confirmPurchaseOrder",
+      "to": "services/suppliers/purchase-order-confirmation-boundary.js",
+      "type": "uses",
+      "label": "services/purchasing-admin-service.js (confirmPurchaseOrder"
+    },
+    {
+      "from": "GAP-5)",
+      "to": "services/suppliers/purchase-order-confirmation-boundary.js",
+      "type": "uses",
+      "label": "GAP-5)"
     },
     {
       "from": "(see files.tests in features/purchasing.feature.js — not yet",
@@ -109795,16 +110171,58 @@
       "label": "provider shipping capability adapters and contract proofs"
     },
     {
+      "from": "services/suppliers/canonical-unit-purchasing-gate.js (GAP-4A)",
+      "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "type": "uses",
+      "label": "services/suppliers/canonical-unit-purchasing-gate.js (GAP-4A)"
+    },
+    {
       "from": "services/suppliers/procurement-execution-boundary.js (GAP-4B)",
       "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
       "type": "uses",
       "label": "services/suppliers/procurement-execution-boundary.js (GAP-4B)"
     },
     {
-      "from": "internal purchasing callers",
+      "from": "services/suppliers/purchase-order-confirmation-boundary.js (GAP-5)",
+      "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "type": "uses",
+      "label": "services/suppliers/purchase-order-confirmation-boundary.js (GAP-5)"
+    },
+    {
+      "from": "services/suppliers/allegro-fulfillment-adapter.js (require direct",
       "to": "services/suppliers/supplier-fulfillment-readiness.js",
       "type": "uses",
-      "label": "internal purchasing callers"
+      "label": "services/suppliers/allegro-fulfillment-adapter.js (require direct"
+    },
+    {
+      "from": "VERDICT/result)",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "uses",
+      "label": "VERDICT/result)"
+    },
+    {
+      "from": "services/suppliers/canonical-unit-purchasing-gate.js (require direct",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "uses",
+      "label": "services/suppliers/canonical-unit-purchasing-gate.js (require direct"
+    },
+    {
+      "from": "VERDICT/result uniquement",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "uses",
+      "label": "VERDICT/result uniquement"
+    },
+    {
+      "from": "GAP-4A — jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reçoit en paramètres injectés par cet appelant",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "uses",
+      "label": "GAP-4A — jamais evaluateSupplierFulfillmentReadiness) ; services/suppliers/aliexpress-fulfillment-adapter.js les reçoit en paramètres injectés par cet appelant"
+    },
+    {
+      "from": "sans require() propre",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "uses",
+      "label": "sans require() propre"
     },
     {
       "from": "supplier purchasing adapters",
