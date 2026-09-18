@@ -3,8 +3,8 @@
 Analysis date: **2026-09-18**  
 Family: **payment**  
 Consumer: **payments**  
-Current highest proof: **CONVERSATION PASS**  
-Current gate: **P0 BLOCKED — current Stripe account/business readiness not yet re-proved under this framework**
+Current highest proof: **P1 PASS (Stripe TEST / Komerce sandbox)**  
+Current gate: **P2 — prove the Komerce adapter/service mapping against the now-proved provider contract**
 
 Existing code is evidence to inspect, not an automatic external PASS.
 
@@ -76,7 +76,7 @@ For Stripe-paid orders, services/refund-service.js:
 
 routes/health.js already contains a read-only stripe.balance.retrieve() call.
 
-This is a useful seed for P1, but it is **not P1 PASS** until a bounded real provider result is captured by the External Provider Contract proof flow.
+This read-only seed has now been exercised against the real Stripe TEST account as part of the P0/P1 evidence below.
 
 ## 3. Conversation contract
 
@@ -144,12 +144,12 @@ Canonical facts safe for the Payments feature:
 
 | Capability | Official contract | Komerce implementation | External proof state |
 |---|---|---|---|
-| Create PaymentIntent | YES | YES | P1 NOT RE-PROVED |
-| Retrieve PaymentIntent | YES | YES | P1 NOT RE-PROVED |
-| Stable payment reference | YES | YES | contract known; real proof pending |
-| Success webhook | YES | YES | real delivery not re-proved |
-| Failure webhook | YES | YES | real delivery not re-proved |
-| Signature verification | YES | YES | internal tests only in this framework |
+| Create PaymentIntent | YES | YES | **P1 PASS — TEST create observed** |
+| Retrieve PaymentIntent | YES | YES | **P1 PASS — exact read-back observed** |
+| Stable payment reference | YES | YES | **P1 PASS** |
+| Success webhook | YES | YES | **P1 PASS — Stripe-originated TEST delivery HTTP 200** |
+| Failure webhook | YES | YES | configured/listened; destructive failure path not separately triggered |
+| Signature verification | YES | YES | **P1 PASS — real Stripe-signed TEST events accepted** |
 | Event replay protection | Event ID available | YES | internal proof present |
 | Request idempotency | YES | YES for PI/refund | internal mapping proof present |
 | Partial refund | YES | YES by amount | real provider refund not re-proved |
@@ -182,13 +182,69 @@ Under the doctrine, downstream stages cannot PASS while P0/P1 are blocked.
 | Stage | Status | Evidence / blocker |
 |---|---|---|
 | Conversation | **PASS** | official Stripe contract + Komerce boundary fully describable |
-| P0 Business readiness | **BLOCKED** | current account/environment/payment capability + webhook registration not yet captured |
-| P1 Raw API | **BLOCKED** | no current bounded direct Stripe proof recorded |
-| P2 Adapter | **BLOCKED BY P0/P1** | internal service tests exist |
-| P3 Pipeline | **BLOCKED BY P0/P1** | real Komerce pipeline tests exist with locally generated Stripe-shaped events |
-| P4 Golden E2E | **BLOCKED** | no current real Stripe test-mode side-effect + provider confirmation proof |
+| P0 Business readiness | **PASS (TEST)** | TEST credentials accepted; one enabled webhook observed; livemode=false; required payment events configured; API version 2026-03-25.dahlia |
+| P1 Raw API | **PASS (TEST)** | balance/read APIs accepted; PaymentIntent create → exact retrieve → canceled cleanup; real Stripe-signed webhook delivery returned HTTP 200 |
+| P2 Adapter | **NEXT** | internal service tests exist and can now be promoted against a proved provider contract |
+| P3 Pipeline | **BLOCKED BY P2** | existing Komerce DB/API pipeline evidence to re-run after P2 qualification |
+| P4 Golden E2E | **BLOCKED** | controlled Komerce order → Stripe test payment → real webhook confirmation still to prove |
 
-Registry classification: highest_proof = CONVERSATION.
+Registry classification: highest_proof = P1.
+
+
+## 6bis. Real Stripe TEST evidence — 2026-09-18
+
+The following bounded facts were observed against the real **Komerce sandbox** Stripe environment.
+
+### P0
+
+- secret key present and classified TEST;
+- webhook signing secret configured in the Komerce Railway environment;
+- Stripe API authentication accepted;
+- exactly one Stripe webhook destination observed for the Komerce payment endpoint;
+- destination status enabled;
+- destination livemode=false;
+- Stripe API version observed: `2026-03-25.dahlia`;
+- `payment_intent.succeeded` and `payment_intent.payment_failed` are enabled on the destination;
+- unsigned manual POST to the endpoint returned HTTP 400 `Webhook signature invalid`, proving fail-closed signature enforcement before business handling.
+
+### P1 — provider reads
+
+Read-only provider calls succeeded:
+
+- `balance.retrieve()`;
+- `paymentIntents.list({ limit: 1 })`;
+- `webhookEndpoints.list({ limit: 100 })`.
+
+No balance amount, customer data or provider secret is retained as proof.
+
+### P1 — real provider webhook
+
+Stripe TEST generated provider events and delivered them to the configured Railway endpoint:
+
+- `payment_intent.created` → HTTP 200 with `{"received":true}`;
+- `payment_intent.succeeded` → HTTP 200 with `{"received":true,"ignored":true}` because the Stripe CLI fixture had no Komerce `metadata.order_id`.
+
+The latter is the expected safe behavior: the provider signature is accepted, but an event not bound to a Komerce order cannot confirm an arbitrary order.
+
+### P1 — PaymentIntent create/read-back
+
+A controlled Stripe TEST PaymentIntent was created with:
+
+- amount = 1234 minor units;
+- currency = EUR;
+- bounded Komerce proof metadata;
+- stable idempotency key.
+
+The same PaymentIntent was then retrieved and proved:
+
+- same external reference;
+- exact amount;
+- exact currency;
+- exact metadata;
+- livemode=false.
+
+The fixture ended in `requires_payment_method` and was canceled successfully as cleanup. No payment method was attached and no charge was made.
+
 
 ## 7. Findings
 
@@ -200,9 +256,9 @@ stable Komerce order → stable PaymentIntent → signed provider evidence → r
 
 That is good architecture, but it does not replace P0/P1.
 
-### B. P1 is close
+### B. P1 is now proven in Stripe TEST
 
-The existing read-only balance.retrieve() health probe proves that Komerce already has the seed of a raw connectivity probe. The missing part is bounded/sanitized evidence plus explicit assertions through the shared provider-contract proof engine.
+The existing read-only probe seed has been exercised against the real provider, then extended by a controlled PaymentIntent create/read-back/cleanup and real Stripe-signed webhook deliveries. The next trust boundary is now P2: Komerce mapping, not provider discovery.
 
 ### C. Refund deserves a distinct confirmation decision
 
@@ -231,18 +287,32 @@ This is not automatically a defect, but the effective provider API version is pa
 - event replay protection exists.
 - no-double-confirm guards exist.
 - refund request idempotency exists.
-- the external Stripe contract is understood at Conversation level.
+- the external Stripe contract is proved through **P1 in TEST**.
 
 ## 9. What Komerce must NOT claim yet
 
-- current Stripe account P0 readiness proven;
-- current raw Stripe API P1 proven;
-- real Stripe webhook delivery proven by this framework;
+- Stripe **production** readiness proven;
+- Stripe **production** raw API proven;
 - real Stripe refund Golden proven;
 - P4 Stripe Golden complete;
 - disputes/chargebacks qualified;
 - production/test environment contract formally proved.
 
+## 10. Read-only proof runner
+
+The first executable proof is now:
+
+node scripts/stripe-provider-contract-proof.js --through=P1
+
+It performs only read operations:
+
+- balance.retrieve();
+- paymentIntents.list({ limit: 1 });
+- webhookEndpoints.list({ limit: 100 });
+
+It never creates a PaymentIntent, refund, customer or payment method. Output is sanitized: no API key, webhook secret, balance amount, PaymentIntent ID, endpoint ID or customer data is emitted.
+
+The runner fails closed on missing/ambiguous webhook configuration, environment mismatch, missing required events, unreadable provider state or unknown effective API version.
 ## 10. Exact next proof
 
 ### P0 — read-only
@@ -290,14 +360,14 @@ PROVIDER: Stripe
 FAMILY: payment  
 CONSUMER: payments  
 CONVERSATION: PASS  
-P0: BLOCKED  
-P1: BLOCKED  
-P2: BLOCKED BY UPSTREAM  
-P3: BLOCKED BY UPSTREAM  
+P0: PASS (TEST)  
+P1: PASS (TEST)  
+P2: NEXT  
+P3: BLOCKED BY P2  
 P4: BLOCKED  
-HIGHEST PROOF: CONVERSATION  
-MAIN NEXT ACTION: read-only P0/P1 proof against Stripe, then controlled test-mode PaymentIntent Golden.
+HIGHEST PROOF: P1  
+MAIN NEXT ACTION: prove Komerce ↔ Stripe adapter/service mapping (P2), then pipeline composition (P3).
 
 ## Komerce conclusion
 
-Stripe's contract is understood and the internal implementation is already mature, but implementation tests are not provider proof. Stripe stays at **Conversation PASS** until Komerce captures current account readiness and a bounded direct Stripe API proof. Only then can the existing adapter/pipeline evidence be promoted through P2/P3 and a real test-mode Golden be executed.
+Stripe's external contract is now proved through **P1 in the real Stripe TEST environment**. Provider discovery is no longer the blocker. The next step is to promote the existing Komerce service/adapter evidence through P2, then prove the composed DB/API pipeline at P3 before a controlled P4 Golden.

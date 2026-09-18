@@ -73,6 +73,7 @@ module.exports = {
     scripts: [
       'scripts/provider-contract-proof.js',
       'scripts/external-provider-boundary-scan.js',
+      'scripts/stripe-provider-contract-proof.js',
     ],
     config: [
       'governance/external-provider-registry.json',
@@ -80,6 +81,7 @@ module.exports = {
     tests: [
       'tests/unit/provider-contract-proof.test.js',
       'tests/unit/external-provider-boundary-scan.test.js',
+      'tests/unit/stripe-provider-contract-proof.test.js',
     ],
   },
 
@@ -103,6 +105,7 @@ module.exports = {
       { fn: 'assertThrough', file: 'scripts/provider-contract-proof.js' },
       { fn: 'summary', file: 'scripts/provider-contract-proof.js' },
       { fn: 'scanRepository', file: 'scripts/external-provider-boundary-scan.js' },
+      { fn: 'runStripeReadOnlyProof', file: 'scripts/stripe-provider-contract-proof.js' },
     ],
     consumes: [
       'infrastructure — runtime Node et primitives techniques uniquement ; aucune vérité métier externe n est déléguée à infrastructure',

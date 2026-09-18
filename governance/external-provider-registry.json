@@ -102,7 +102,7 @@
         "stripe.paymentIntents"
       ],
       "analysis_document": "docs/external-providers/payments/STRIPE.md",
-      "highest_proof": "CONVERSATION"
+      "highest_proof": "P1"
     },
     {
       "id": "paypal",
