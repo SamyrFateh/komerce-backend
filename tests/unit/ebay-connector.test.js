@@ -136,6 +136,7 @@ describe('eBay Browse P2 mapper', () => {
 
   test('fails closed on native currency outside current canonical money contract', () => {
     expect(() => normalizeBrowseItem(raw({
+      listingMarketplaceId: 'EBAY_GB',
       price: { value: '29.90', currency: 'GBP' },
     }), {
       expectedItemId: ITEM_ID,
