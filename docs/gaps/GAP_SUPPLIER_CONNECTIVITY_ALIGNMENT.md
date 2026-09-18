@@ -20,7 +20,7 @@
 | **GAP-4A/4B** — Canonical Procurement Readiness + Execution Boundary | ✅ Exécuté, mergée | [#1601](https://github.com/SamyrFateh/komerce-backend/pull/1601) — mergée dans `main` | GAP-4 a été scindé en deux fonctions distinctes pendant l'exécution (arbitrage validé) ; voir « Ce que GAP-4A/4B a livré » et « Leçons de GAP-4 » ci-dessous avant GAP-5 |
 | **GAP-5** — Execution Evidence Boundary | ✅ Exécuté, mergée | [#1606](https://github.com/SamyrFateh/komerce-backend/pull/1606) — mergée dans `main` | Frontière `evidence → verify/reconcile → confirm` branchée sur la route live |
 | **GAP-6** — Environment Isolation | ✅ Exécuté, mergée | [#1607](https://github.com/SamyrFateh/komerce-backend/pull/1607) — mergée dans `main` | Garde-fou runtime prouvé ; déplacement structurel de `environment` reste DEFER |
-| **GAP-7** — Feature Manifest | ✅ Exécuté, validation locale verte | À ouvrir | Manifest `supplier-connectivity` créé sans table ni capability spéculative ; ownership générique séparé de Purchasing |
+| **GAP-7** — Feature Manifest | ✅ Exécuté, validation locale verte | PR #1608 | Manifest `supplier-connectivity` créé sans table ni capability spéculative ; ownership générique séparé de Purchasing |
 
 ### Ce que GAP-1 a réellement livré (PR #1596)
 
