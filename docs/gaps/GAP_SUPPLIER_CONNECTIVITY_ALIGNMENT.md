@@ -14,9 +14,9 @@
 
 | GAP | Statut | PR | Notes |
 |-----|--------|-----|-------|
-| **GAP-1** — Provider Authority | ✅ Exécuté, CI verte | [#1596](https://github.com/SamyrFateh/komerce-backend/pull/1596) — branche `feat/provider-authority-gap1` — **ouverte, pas encore mergée** | Voir « Leçons de GAP-1 » ci-dessous avant d'attaquer GAP-4 |
-| GAP-3 — Readiness Convergence | Non commencé | — | Prochain dans l'ordre de dépendance (doc-only, zéro comportement) |
-| GAP-2 — Adapter Resolution | Non commencé | — | Après GAP-3 |
+| **GAP-1** — Provider Authority | ✅ Exécuté, mergée | [#1596](https://github.com/SamyrFateh/komerce-backend/pull/1596) — mergée dans `main` | Voir « Leçons de GAP-1 » ci-dessous avant d'attaquer GAP-4 |
+| **GAP-3** — Readiness Convergence | ✅ Exécuté, CI verte | [#1598](https://github.com/SamyrFateh/komerce-backend/pull/1598) — branche `feat/readiness-convergence-gap3` — **ouverte, pas encore mergée** | Voir « Leçons de GAP-3 » ci-dessous avant d'attaquer GAP-4 |
+| GAP-2 — Adapter Resolution | Non commencé | — | Prochain dans l'ordre de dépendance |
 | GAP-4 — Branch Real Purchasing Through Gate | Non commencé | — | Le plus risqué ; lire la leçon de gouvernance ci-dessous avant de commencer |
 | GAP-5 — Execution Evidence Boundary | Non commencé | — | |
 | GAP-6 — Environment Isolation | Non commencé | — | Majoritairement DEFER par arbitrage |
@@ -46,6 +46,21 @@ node scripts/feature-guard.js
 **3. Toujours vérifier les consommateurs réels avant de déplacer du code.** Le déplacement du bloc `purchasing` hors du barrel n'a été sûr que parce qu'une vérification (`grep -rln` sur tout le repo) a confirmé qu'il n'avait **aucun consommateur en production**, seulement 2 fichiers de test. Sans cette vérification, le déplacement aurait pu casser une route vivante.
 
 **4. Les artefacts générés (`docs/BUSINESS_FEATURE_GRAPH.json/.md`, `docs/O6_INVENTORY.md`) doivent être commités après toute régénération**, et le CI compare ces fichiers commités à une régénération fraîche (`--check`). Si le graphe n'a pas été régénéré depuis plusieurs PR (ce qui était le cas ici — pas régénéré depuis avant #1594/#1595), le premier agent qui le regénère absorbe tout le rattrapage dans son diff. Ce n'est pas une régression introduite par cet agent — mais il faut le documenter dans le commit pour que la revue ne s'y méprenne pas.
+
+### Ce que GAP-3 a réellement livré (PR #1598)
+
+- `docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md` §9bis — sépare explicitement CAPABILITY / READINESS / EXECUTION_MODE. Découverte en cours de route : la doctrine avait **déjà** une échelle capability à 4 niveaux (§8 : `MODEL_SIMULATION_READY` → `MANUAL_PROCUREMENT_READY` → `SUPPLIER_API_PREFLIGHT_READY` → `AUTO_ORDER_READY`), simplement jamais reliée au vocabulaire code. GAP-3 ne l'a pas réinventée, il l'a connectée.
+- Table de correspondance exacte `canonical-unit-purchasing-gate.js` → `VERDICT.*`, avec le vocabulaire canonique confirmé (`VERDICT.*`, déjà utilisé nativement par l'adapter Allegro).
+- `tests/unit/purchasing-readiness-vocabulary-mapping.test.js` (10 tests) — verrouille chaque affirmation de la doctrine contre le code réel.
+- **Zéro fichier de code production touché**, conformément à la contrainte GAP-3.
+
+### Leçons de GAP-3 — à lire avant GAP-4
+
+**1. Une doctrine écrite de mémoire peut se tromper — vérifier contre le code exact avant de publier, pas après.** Un premier jet de la table de correspondance a confondu les champs `.status` et `.reason` du gate (`canonical-unit-purchasing-gate.js`) : le gate ne retourne **pas** un `.status` différent par cause d'échec — `blocked(reason, evidence)` fixe `.status` à la constante unique `BLOCKED_SUPPLIER_IDENTITY` dans tous les cas, et c'est `.reason` qui porte la cause précise. L'erreur a été trouvée en retraçant le fichier source ligne par ligne avant d'écrire la doctrine finale, pas en la déployant puis en la corrigeant. **Pour GAP-4 : ne jamais documenter un contrat de statut/champ sans avoir relu le fichier source exact juste avant.**
+
+**2. `HARD_STOP` est un nom trompeur — c'est le succès terminal du gate, pas un échec.** `status:'HARD_STOP'` avec `ready:false` signifie « payload construit, prêt pour exécution manuelle ou automatique en aval » ; `ready:false` signifie seulement que `place_order_invoked` est faux, pas que la readiness est négative. **GAP-4 va manipuler directement ce retour** (c'est le composition root que GAP-4 doit brancher sur le vrai chemin) — ne pas traiter `HARD_STOP` comme une branche d'erreur en l'implémentant.
+
+**3. Dette identifiée, volontairement non corrigée : `triggerMode` (purchasing-trigger-service.js) et `evidence.execution_mode` (evidence de l'adapter) sont deux calculs indépendants.** Ils concordent aujourd'hui uniquement parce qu'Allegro fixe les deux en dur de façon cohérente (`execution_mode:'manual'` côté adapter, `auto_order:false` côté ligne fournisseur en base). Rien ne garantit cette cohérence pour un futur provider. **GAP-4, en branchant le gate (qui porte l'evidence adapter) sur `purchasing-trigger-service.js`, est le bon moment pour dériver `triggerMode` depuis `evidence.execution_mode`/`auto_order_ready` plutôt que depuis `ps.auto_order` recalculé indépendamment.** Ne pas découvrir ça en cours de GAP-4 — c'est déjà documenté, section 9bis.5 de la doctrine.
 
 ---
 
