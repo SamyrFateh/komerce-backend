@@ -407,6 +407,7 @@ module.exports = {
       { fn: 'resolveCatalogProductReadMode', file: 'services/catalog-product-source-read-service.js' },
     ],
     consumes: [
+      'external-provider-contracts (contrat transverse de preuve provider : Conversation + KNOWN/DERIVED/UNKNOWN + P0..P4 consommé par les scripts Allegro catalog)',
       'sourcing (API internes findCanonicalProductIdsForCatalogProduct, collectCanonicalProductProjectionById et applyCanonicalSourceReadSeam)',
       'notifications (alert persistence via utils/alerts.js)',
       'auth-identity (projection boutique b-greeting consomme /api/auth/me pour personnaliser la surface catalogue)',
