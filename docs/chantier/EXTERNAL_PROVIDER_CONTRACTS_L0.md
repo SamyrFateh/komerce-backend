@@ -57,8 +57,8 @@ What proof stage has really passed?
 name: external-provider-contracts
 type: transversal
 kind: technical-transversal
-decision: feature-transverse
-status: draft → staging after L1
+decision: transversal-technique
+status: staging (L1)
 ```
 
 ### Why it qualifies
