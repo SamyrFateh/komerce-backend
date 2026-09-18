@@ -3,8 +3,8 @@
 Analysis date: **2026-09-18**  
 Family: **payment**  
 Consumer: **payments**  
-Current highest proof: **P2 PASS candidate (pending PR gates)**  
-Current gate: **P3 — prove the real Komerce DB/API payment pipeline against the qualified Stripe mapping**
+Current highest proof: **P3 PASS candidate (pending PR gates)**  
+Current gate: **P4 — controlled real Stripe TEST Golden through payment success and real signed webhook confirmation**
 
 Existing code is evidence to inspect, not an automatic external PASS.
 
@@ -184,8 +184,8 @@ Under the doctrine, downstream stages cannot PASS while P0/P1 are blocked.
 | Conversation | **PASS** | official Stripe contract + Komerce boundary fully describable |
 | P0 Business readiness | **PASS (TEST)** | TEST credentials accepted; one enabled webhook observed; livemode=false; required payment events configured; API version 2026-03-25.dahlia |
 | P1 Raw API | **PASS (TEST)** | balance/read APIs accepted; PaymentIntent create → exact retrieve → canceled cleanup; real Stripe-signed webhook delivery returned HTTP 200 |
-| P2 Adapter | **PASS candidate** | canonical `createStripeIntent` maps exact amount/currency/order metadata/idempotency; existing intents are read back and must match exactly; drift/read failure/non-reusable state hard-stop |
-| P3 Pipeline | **NEXT** | existing Komerce DB/API pipeline evidence to re-run against the now-qualified P2 boundary |
+| P2 Adapter | **PASS** | canonical `createStripeIntent` maps exact amount/currency/order metadata/idempotency; existing intents are read back and must match exactly; drift/read failure/non-reusable state hard-stop |
+| P3 Pipeline | **PASS candidate** | public `/stripe/intent` → real auth/validation/order DB → P2 mapping → persisted `stripe_payment_id` → replay via provider read-back; existing real-DB webhook E2E proves signed event → canonical payment cycle/idempotence |
 | P4 Golden E2E | **BLOCKED** | controlled Komerce order → Stripe test payment → real webhook confirmation still to prove |
 
 Registry classification: highest_proof = P1.
@@ -283,6 +283,47 @@ If read-back fails, provider data drifts, or the PaymentIntent is not reusable, 
 A newly created PaymentIntent is also checked against the same contract before its external reference is persisted on the order.
 
 P2 evidence is in `tests/unit/payment-stripe.test.js` and the G2 invariant in `tests/integration/isweep-invariants.test.js`.
+
+
+
+## 6quater. P3 — Komerce API + DB pipeline
+
+P3 deliberately replaces only the **provider network** with the already qualified P2 contract. The Komerce pipeline itself remains real.
+
+Creation-side proof:
+
+```text
+HTTP POST /api/payments/stripe/intent
+  → real auth
+  → real validation
+  → real orders lookup
+  → canonical createStripeIntent mapping
+  → qualified Stripe P2 boundary
+  → real orders.stripe_payment_id persistence
+  → replay
+  → provider read-back
+  → same external ref reused
+```
+
+Evidence: `tests/e2e-api/payments.stripe-pipeline-p3.e2e.test.js`.
+
+The provider fake returns exactly the P2-qualified PaymentIntent shape and nothing more. The test proves that the real route and real Postgres persist the exact external reference without changing payment/order state prematurely, then reuse it on replay after exact read-back.
+
+Confirmation-side proof already exists in `tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js`:
+
+```text
+signed Stripe-shaped event
+  → real /api/payments/stripe/webhook
+  → real signature verification path
+  → real stripe_events_processed idempotency
+  → real canonical payment cycle
+  → real order status history
+  → real stock transition
+```
+
+That test intentionally simulates only the provider network/signing boundary. P1 already proves that real Stripe-originated signed events reach the Railway webhook, so P3 does not need to rediscover the provider.
+
+P3 is therefore the composition proof between the qualified provider boundary and Komerce's real API/DB pipeline. P4 is the first stage that recombines both sides live in one Golden.
 
 
 ## 7. Findings
@@ -401,12 +442,12 @@ CONSUMER: payments
 CONVERSATION: PASS  
 P0: PASS (TEST)  
 P1: PASS (TEST)  
-P2: PASS candidate (pending PR gates)  
-P3: NEXT  
-P4: BLOCKED  
-HIGHEST PROOF: P2 candidate  
-MAIN NEXT ACTION: prove the real Komerce DB/API payment pipeline (P3).
+P2: PASS  
+P3: PASS candidate (pending PR gates)  
+P4: NEXT  
+HIGHEST PROOF: P3 candidate  
+MAIN NEXT ACTION: controlled real Stripe TEST Golden (P4).
 
 ## Komerce conclusion
 
-Stripe's external contract is proved through **P1 in the real Stripe TEST environment**, and the Komerce mapping is now converged and fail-closed for **P2**. Once the P2 PR gates pass, the next boundary is P3: the real Komerce DB/API payment pipeline, followed by a controlled P4 Golden.
+Stripe's external contract is proved through **P1 in the real Stripe TEST environment**, the Komerce mapping is converged and fail-closed at **P2**, and the real API/DB pipeline is now covered by a dedicated **P3** proof. Once the P3 PR gates pass, the only remaining qualification stage is the controlled real Stripe TEST Golden P4.
