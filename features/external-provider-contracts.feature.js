@@ -72,9 +72,14 @@ module.exports = {
   files: {
     scripts: [
       'scripts/provider-contract-proof.js',
+      'scripts/external-provider-boundary-scan.js',
+    ],
+    config: [
+      'governance/external-provider-registry.json',
     ],
     tests: [
       'tests/unit/provider-contract-proof.test.js',
+      'tests/unit/external-provider-boundary-scan.test.js',
     ],
   },
 
@@ -97,6 +102,7 @@ module.exports = {
       { fn: 'assertConversation', file: 'scripts/provider-contract-proof.js' },
       { fn: 'assertThrough', file: 'scripts/provider-contract-proof.js' },
       { fn: 'summary', file: 'scripts/provider-contract-proof.js' },
+      { fn: 'scanRepository', file: 'scripts/external-provider-boundary-scan.js' },
     ],
     consumes: [
       'infrastructure — runtime Node et primitives techniques uniquement ; aucune vérité métier externe n est déléguée à infrastructure',

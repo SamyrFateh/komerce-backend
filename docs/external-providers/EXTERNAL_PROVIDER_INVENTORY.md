@@ -16,6 +16,18 @@ Statuses:
 - **CONFIG-ONLY / VERIFY** — configuration/documentation found but no active runtime client found in this L0 search.
 - **NOT AN API BOUNDARY** — external navigation/link only; excluded unless code later calls an API.
 
+
+## Reproducible L2 scan
+
+The static inventory can now be recomputed read-only from the repository:
+
+```bash
+node scripts/external-provider-boundary-scan.js
+node scripts/external-provider-boundary-scan.js --json
+```
+
+The scanner performs no network call and no mutation. It reports registered providers, observed files/domains/scopes, registered-but-unobserved providers and unknown literal HTTPS hosts. In L2, unknowns are **observations only**, not CI failures; enforcement belongs to the later L5 ratchet.
+
 ## 1. Supplier / marketplace
 
 | Provider | Consumers | Evidence found | L0 status |
