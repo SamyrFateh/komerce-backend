@@ -13,35 +13,35 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 587,
-    "filesWithFullHeaders": 542,
+    "scannedCodeFiles": 605,
+    "filesWithFullHeaders": 560,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 587,
+    "filesWithAnyHeaders": 605,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1396,
-    "edges": 6955,
-    "dbTables": 167,
-    "doctrines": 459,
+    "graphNodes": 1444,
+    "edges": 7198,
+    "dbTables": 173,
+    "doctrines": 483,
     "impactAreas": 183,
-    "unresolvedCodeEdges": 665,
-    "dbWriteViaOverlapWarnings": 7,
-    "multiWriterTables": 71
+    "unresolvedCodeEdges": 691,
+    "dbWriteViaOverlapWarnings": 8,
+    "multiWriterTables": 73
   },
   "byDomain": {
     "infrastructure": 22,
     "bootstrap": 2,
     "notification": 21,
     "auth": 14,
-    "catalog": 102,
+    "catalog": 106,
     "admin-dashboard": 22,
     "decision-signals": 12,
     "market-delegation": 25,
     "market": 3,
     "economic-engine": 56,
-    "sourcing": 22,
-    "logistics": 46,
+    "sourcing": 23,
+    "logistics": 47,
     "boutique": 21,
     "checkout": 3,
     "shared-cart": 25,
@@ -64,9 +64,9 @@
     "operations": 11,
     "inventory": 2,
     "local-stock": 4,
-    "purchasing": 15,
+    "purchasing": 24,
     "unsold-resolution": 1,
-    "incident-management": 2,
+    "incident-management": 5,
     "market-autonomy": 4,
     "refunds": 2,
     "shared": 1
@@ -105,7 +105,7 @@
     "schema": 1,
     "route": 127,
     "entrypoint": 1,
-    "service": 285,
+    "service": 303,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -114,9 +114,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 87,
-    "medium": 127,
-    "high": 320,
+    "critical": 89,
+    "medium": 129,
+    "high": 334,
     "low": 53
   },
   "nodes": [
@@ -248,7 +248,8 @@
       "outputs": [
         "automatic_transitions",
         "purges",
-        "reminders"
+        "reminders",
+        "incident_sla_escalations"
       ],
       "depends": [
         "services/cash-reminder-service.js",
@@ -274,14 +275,16 @@
       "doctrine": [
         "idempotence_cron",
         "retention_snapshots",
-        "bounded_mobile_money_reconciliation"
+        "bounded_mobile_money_reconciliation",
+        "bounded_incident_sla_escalation"
       ],
       "impactAreas": [
         "cash-reminders",
         "inventory",
         "auth-security",
         "economic-engine",
-        "payments"
+        "payments",
+        "incident-management"
       ],
       "version": "2026-09"
     },
@@ -2762,7 +2765,7 @@
       "layer": "ui-renderer",
       "criticality": "low",
       "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal avec deux intentions lisibles : demander ou être rappelé, toujours sur un propos connu.",
+      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal ; Service possède une surface dédiée et peut handoff vers WhatsApp après création de l'Inquiry.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -4343,7 +4346,7 @@
       "layer": "ui-service",
       "criticality": "low",
       "owner": "public/boutique/js/discovery-inquiry.js",
-      "purpose": "Consommer demander/rappel depuis le détail Discovery et créer l'Inquiry canonique après identité Komerce.",
+      "purpose": "Consommer demander/rappel/WhatsApp depuis le détail Discovery et créer l'Inquiry canonique après identité Komerce.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -5052,7 +5055,7 @@
       "layer": "adapter",
       "criticality": "low",
       "owner": "public/boutique/js/providers-services-api.js",
-      "purpose": "Frontière frontend des mutations providers-services ; le téléphone reste exclusivement dérivé de la session serveur.",
+      "purpose": "Frontière frontend des mutations providers-services ; le téléphone requester reste exclusivement dérivé de la session serveur et le handoff WhatsApp reste serveur-owned.",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -5219,7 +5222,7 @@
         "catalog",
         "product-discovery"
       ],
-      "version": "2026-07"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/shop-schema.js",
@@ -5523,7 +5526,7 @@
         "catalog",
         "product-discovery"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/view-models/product-content-model.js",
@@ -5706,7 +5709,7 @@
       "depends": [
         "middleware/auth.js",
         "middleware/require-catalog-global-authority.js",
-        "services/catalog-workspace.js"
+        "services/catalog-workspace-live-composer.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -5729,7 +5732,7 @@
         "catalog",
         "authorization"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "routes/admin-client-360.js",
@@ -6865,7 +6868,8 @@
       ],
       "outputs": [
         "global_sourcing_projection",
-        "sourcing_action_results"
+        "sourcing_action_results",
+        "source_autopilot_switch_results"
       ],
       "depends": [
         "middleware/auth.js",
@@ -6887,6 +6891,7 @@
         "global_sourcing_authority",
         "no_client_market_dimension",
         "no_browser_internal_ids",
+        "source_autopilot_is_explicit_operator_authority",
         "dashboard_observes_server_truth"
       ],
       "impactAreas": [
@@ -7917,7 +7922,6 @@
         "db.js",
         "services/catalog-product-detail.js",
         "services/catalog-public-view.js",
-        "services/catalog-market-exposure-service.js",
         "services/market-local-price-resolution-service.js"
       ],
       "usedBy": [
@@ -7929,6 +7933,7 @@
         "product_variants",
         "products",
         "product_market_exposure",
+        "product_market_price_drafts",
         "markets"
       ],
       "dbWrite": [],
@@ -7936,7 +7941,8 @@
       "dbTxn": [],
       "doctrine": [
         "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
-        "only_LOCAL_ACTIVE_is_buyer_effective"
+        "only_LOCAL_ACTIVE_is_buyer_effective",
+        "visible_means_sellable"
       ],
       "impactAreas": [
         "catalog",
@@ -7944,7 +7950,7 @@
         "modal",
         "market-autonomy"
       ],
-      "version": "2026-09"
+      "version": "2026-09-business-truth"
     },
     {
       "id": "routes/categories.js",
@@ -8778,7 +8784,7 @@
         "middleware/auth.js",
         "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
-        "services/*"
+        "services/hub-operations.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -8792,11 +8798,11 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "service_owned"
       ],
       "doctrine": [
-        "resolve_before_behavior_change",
-        "market_operator_scoping (GAP-1)"
+        "HUB-001 Physical Identity",
+        "Allocation & Custody; HUB-002 Operator Execution Cutover; market_operator_scoping"
       ],
       "impactAreas": [
         "logistics",
@@ -11149,26 +11155,30 @@
         "résolu serveur)",
         "inquiry target",
         "intent",
-        "requester_note"
+        "requester_note",
+        "handoff"
       ],
       "outputs": [
         "service_public_fields",
         "physical_offer_public_fields",
-        "inquiry_public_result"
+        "inquiry_public_result",
+        "optional_whatsapp_handoff"
       ],
       "depends": [
         "services/providers-service.js",
         "services/providers-inquiry-service.js",
         "services/providers-interaction-policy.js",
         "middleware/auth-guest.js",
-        "db (résolution code marché)"
+        "db (résolution code marché + handoff WhatsApp)"
       ],
       "usedBy": [
         "bootstrap/api-routes.js",
         "public/boutique/js/discovery-api.js"
       ],
       "dbRead": [
-        "markets"
+        "markets",
+        "services",
+        "providers"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -11362,7 +11372,8 @@
       "depends": [
         "db.js",
         "middleware/auth.js",
-        "services/*"
+        "services/scan-operations.js",
+        "services/hub-operations.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -11378,15 +11389,16 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "service_owned"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "HUB-002 Operator Execution Cutover"
       ],
       "impactAreas": [
         "logistics"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "routes/shared-cart-saved.js",
@@ -12202,7 +12214,7 @@
       "impactAreas": [
         "notification"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/apply-pricing-updates.js",
@@ -12871,7 +12883,8 @@
       "purpose": null,
       "inputs": [
         "sourcing_candidate",
-        "initial_price"
+        "initial_price",
+        "normalized_source_contract"
       ],
       "outputs": [
         "product_id"
@@ -12895,7 +12908,7 @@
         "catalog",
         "sourcing"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/catalog-eligibility.js",
@@ -12985,6 +12998,66 @@
         "sourcing"
       ],
       "version": "2026-08"
+    },
+    {
+      "id": "services/catalog-live-flow.js",
+      "file": "services/catalog-live-flow.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-live-source-flow-projection",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "sourcing_source_runtime",
+        "sourcing_candidates",
+        "catalog_products",
+        "market_visibility"
+      ],
+      "outputs": [
+        "catalog_live_sources",
+        "refinery_pipeline",
+        "incoming_products",
+        "source_discovery",
+        "catalog_business_truth"
+      ],
+      "depends": [
+        "db.js",
+        "services/sourcing-source-autopilot.js",
+        "services/sourcing-import-dispatch.js",
+        "services/product-publication-guard.js",
+        "services/catalog-public-view.js"
+      ],
+      "usedBy": [
+        "services/catalog-workspace-live-composer.js"
+      ],
+      "dbRead": [
+        "sourcing_candidates",
+        "products",
+        "catalog_media",
+        "product_market_exposure",
+        "product_market_price_drafts",
+        "product_skus",
+        "product_variants",
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "catalog_observes_sourcing_without_stealing_mutation_authority",
+        "dashboard_exposes_business_truth_not_backend_states",
+        "visible_means_sellable"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "boutique",
+        "admin-dashboard"
+      ],
+      "version": "2026-09-business-truth"
     },
     {
       "id": "services/catalog-market-exposure-service.js",
@@ -13552,20 +13625,72 @@
       ],
       "dbRead": [
         "markets",
-        "product_market_exposure"
+        "product_market_exposure",
+        "product_market_price_drafts",
+        "product_skus",
+        "product_variants"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+        "docs/doctrine/DOCTRINE_CATALOGUE.md",
+        "only_LOCAL_ACTIVE_is_buyer_effective",
+        "visible_means_sellable"
       ],
       "impactAreas": [
         "catalog",
         "product-discovery",
-        "modal"
+        "modal",
+        "market-autonomy",
+        "checkout"
       ],
-      "version": "2026-09"
+      "version": "2026-09-business-truth"
+    },
+    {
+      "id": "services/catalog-workspace-live-composer.js",
+      "file": "services/catalog-workspace-live-composer.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "canonical-catalog-workspace-live-composer",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "catalog_workspace_projection",
+        "sourcing_live_flow_projection"
+      ],
+      "outputs": [
+        "catalog_workspace_with_live_flow_and_business_truth"
+      ],
+      "depends": [
+        "services/catalog-workspace.js",
+        "services/catalog-live-flow.js"
+      ],
+      "usedBy": [
+        "routes/admin-catalog-workspace.js"
+      ],
+      "dbRead": [
+        "delegated"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "delegated"
+      ],
+      "doctrine": [
+        "catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority",
+        "dashboard_exposes_business_truth"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "boutique",
+        "admin-dashboard"
+      ],
+      "version": "2026-09-business-truth"
     },
     {
       "id": "services/catalog-workspace.js",
@@ -15134,6 +15259,8 @@
       "depends": [
         "db",
         "services/local-stock-service.js",
+        "services/catalog-market-exposure-service.js",
+        "services/market-local-price-resolution-service.js",
         "services/providers-service.js",
         "services/catalog-public-view.js"
       ],
@@ -15150,13 +15277,16 @@
       ],
       "doctrine": [
         "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
-        "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
+        "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md",
+        "only_LOCAL_ACTIVE_is_buyer_effective"
       ],
       "impactAreas": [
         "recommendations",
         "boutique",
         "discovery-rail",
-        "category-navigation"
+        "category-navigation",
+        "market-autonomy",
+        "pricing"
       ],
       "version": "2026-09"
     },
@@ -16049,49 +16179,242 @@
       "role": "hub-operations",
       "domain": "logistics",
       "layer": "service",
-      "criticality": "medium",
+      "criticality": "critical",
       "owner": null,
       "purpose": null,
       "inputs": [
         "runtime_context",
-        "request_or_service_payload"
+        "operator_command_payload"
       ],
       "outputs": [
-        "response_or_domain_result",
-        "side_effects"
+        "physical_unit_result",
+        "custody_side_effects"
       ],
       "depends": [
         "db",
-        "utils/parcelSync.js"
+        "services/hub-physical-identity.js"
       ],
       "usedBy": [
-        "routes/hub.js"
+        "routes/hub.js",
+        "routes/scans.js"
       ],
       "dbRead": [
         "business_rules",
+        "hub_physical_units",
         "parcel_items",
         "parcels",
         "products",
         "scan_events"
       ],
       "dbWrite": [
-        "parcels",
         "products",
         "scan_events"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "hub-physical-identity",
+          "tables": [
+            "hub_purchase_allocations",
+            "hub_physical_units",
+            "hub_physical_unit_placements",
+            "hub_custody_events",
+            "incidents",
+            "outbox_events"
+          ]
+        }
+      ],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "operator_command_atomic"
       ],
       "doctrine": [
-        "resolve_before_behavior_change",
-        "DOCTRINE_DENSITE_VALEUR (V-4",
-        "2026-07-02)"
+        "HUB-001 Physical Identity",
+        "Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR"
       ],
       "impactAreas": [
-        "unknown"
+        "logistics",
+        "purchasing",
+        "incident-management"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
+    },
+    {
+      "id": "services/hub-physical-identity.js",
+      "file": "services/hub-physical-identity.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "hub-physical-identity",
+      "domain": "logistics",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "caller_owned_transaction_executor",
+        "purchase_order_identity",
+        "physical_unit_operation"
+      ],
+      "outputs": [
+        "immutable_purchase_allocation",
+        "physical_unit",
+        "custody_events",
+        "governed_incident",
+        "transactional_outbox_event"
+      ],
+      "depends": [
+        "services/outbox-producer.js",
+        "services/incident-write-service.js"
+      ],
+      "usedBy": [
+        "HUB-001 internal logistics boundary"
+      ],
+      "dbRead": [
+        "purchase_orders",
+        "orders",
+        "order_items",
+        "incidents",
+        "hub_purchase_allocations",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_custody_events"
+      ],
+      "dbWrite": [
+        "hub_purchase_allocations",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_custody_events"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "incident-write-service",
+          "tables": [
+            "incidents"
+          ]
+        },
+        {
+          "via": "outbox-producer",
+          "tables": [
+            "outbox_events"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "caller_owned_transaction_required"
+      ],
+      "doctrine": [
+        "HUB-001 Physical Identity",
+        "Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT"
+      ],
+      "impactAreas": [
+        "logistics",
+        "purchasing",
+        "market",
+        "incident-management"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/incident-escalation.js",
+      "file": "services/incident-escalation.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "incident-sla-escalation",
+      "domain": "incident-management",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "overdue_incidents",
+        "incident_governance",
+        "caller_or_pool_transaction"
+      ],
+      "outputs": [
+        "durable_action_center_signal",
+        "durable_escalation_marker"
+      ],
+      "depends": [
+        "db.js",
+        "services/incident-governance.js",
+        "services/signal-service.js"
+      ],
+      "usedBy": [
+        "bootstrap/crons.js",
+        "tests/unit/incident-escalation.test.js",
+        "tests/integration/incident-f3-postgres.test.js"
+      ],
+      "dbRead": [
+        "incidents",
+        "orders",
+        "parcels"
+      ],
+      "dbWrite": [
+        "incidents"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "signal-service",
+          "tables": [
+            "signals"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "per_incident_atomic_signal_and_marker"
+      ],
+      "doctrine": [
+        "F3_INCIDENT_SLA_CONTRACT",
+        "durable_operational_recipient",
+        "no_auto_resolution"
+      ],
+      "impactAreas": [
+        "incident-management",
+        "decision-signals",
+        "logistics",
+        "orders",
+        "purchasing",
+        "payments"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/incident-governance.js",
+      "file": "services/incident-governance.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "incident-management-governance-mapping",
+      "domain": "incident-management",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "incident_type",
+        "reconciliation subtype (details.type)"
+      ],
+      "outputs": [
+        "origin_domain",
+        "resolver_domain",
+        "resolution_class"
+      ],
+      "depends": [],
+      "usedBy": [
+        "services/incident-write-service.js",
+        "services/incident-service.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "F2_INCIDENT_GOVERNANCE_CONTRACT"
+      ],
+      "impactAreas": [
+        "incident-management",
+        "logistics",
+        "orders",
+        "purchasing"
+      ],
+      "version": "2026-09 (rev.3 — HUB-001 upstream quarantine subtypes)"
     },
     {
       "id": "services/incident-service.js",
@@ -16113,7 +16436,8 @@
         "side_effects"
       ],
       "depends": [
-        "db"
+        "db",
+        "services/incident-governance"
       ],
       "usedBy": [],
       "dbRead": [
@@ -16130,12 +16454,13 @@
         "resolve_before_behavior_change"
       ],
       "doctrine": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "F2_INCIDENT_GOVERNANCE_CONTRACT"
       ],
       "impactAreas": [
         "unknown"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/incident-write-service.js",
@@ -16155,14 +16480,17 @@
       "outputs": [
         "incident_mutation_result"
       ],
-      "depends": [],
+      "depends": [
+        "services/incident-governance"
+      ],
       "usedBy": [
         "services/scan-engine.js",
         "services/reconciliation-service.js",
         "services/alert-engine.js"
       ],
       "dbRead": [
-        "incidents"
+        "incidents",
+        "scan_events"
       ],
       "dbWrite": [
         "incidents"
@@ -16173,7 +16501,9 @@
       ],
       "doctrine": [
         "lifecycle_owner_boundary",
-        "preserve_caller_transaction"
+        "preserve_caller_transaction",
+        "F2_INCIDENT_GOVERNANCE_CONTRACT",
+        "F3_PROOF_REVALIDATION_CONTRACT"
       ],
       "impactAreas": [
         "incident-management",
@@ -16183,7 +16513,7 @@
         "dashboard",
         "platform-ops"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/inventory-service.js",
@@ -19053,7 +19383,9 @@
         "futur HUB-001 (Physical Identity",
         "Allocation & Custody)"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "outbox_events"
+      ],
       "dbWrite": [
         "outbox_events"
       ],
@@ -19331,6 +19663,7 @@
         "services/order-status-machine.js",
         "services/parcel-guards.js",
         "services/parcel-service.js",
+        "services/parcel-transition-guard.js",
         "services/refund-service.js",
         "utils/logger.js",
         "utils/reference.js",
@@ -19383,7 +19716,7 @@
       "impactAreas": [
         "logistics"
       ],
-      "version": "2026-06"
+      "version": "2026-09"
     },
     {
       "id": "services/parcel-security.js",
@@ -19471,6 +19804,50 @@
         "logistics"
       ],
       "version": "2026-06"
+    },
+    {
+      "id": "services/parcel-transition-guard.js",
+      "file": "services/parcel-transition-guard.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "incident-management-transition-guard",
+      "domain": "incident-management",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "parcel_id",
+        "target_status"
+      ],
+      "outputs": [
+        "throws on blocked transition",
+        "resolves {allowed:true} otherwise"
+      ],
+      "depends": [
+        "db",
+        "services/incident-governance"
+      ],
+      "usedBy": [
+        "services/parcel-operations.js#transitionParcelStatus"
+      ],
+      "dbRead": [
+        "incidents",
+        "parcels"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "caller_owned_queryable"
+      ],
+      "doctrine": [
+        "F2_INCIDENT_GOVERNANCE_CONTRACT"
+      ],
+      "impactAreas": [
+        "incident-management",
+        "logistics"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "services/parcelOptimizationService.js",
@@ -22196,6 +22573,50 @@
       "version": "2026-08"
     },
     {
+      "id": "services/purchasing-canonical-money.js",
+      "file": "services/purchasing-canonical-money.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "purchasing-canonical-supplier-money",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "exact sold product_sku"
+      ],
+      "outputs": [
+        "supplier native unit price + currency snapshot"
+      ],
+      "depends": [
+        "services/sourcing-canonical-unit-product-sku-resolution.js",
+        "services/suppliers/supplier-order-identity.js"
+      ],
+      "usedBy": [
+        "services/purchasing-trigger-service.js",
+        "routes/purchasing.js"
+      ],
+      "dbRead": [
+        "product_skus",
+        "delegated_to_sourcing_resolver"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "participates_in_caller_transaction"
+      ],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "sourcing",
+        "finance"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/purchasing-receive-service.js",
       "file": "services/purchasing-receive-service.js",
       "type": "file",
@@ -22264,6 +22685,9 @@
         "db",
         "services/notification-service.js",
         "services/suppliers/supplier-order-identity.js",
+        "services/suppliers/canonical-unit-purchasing-gate.js",
+        "services/suppliers/procurement-execution-boundary.js",
+        "services/suppliers/execution-adapter-registry.js",
         "utils/logger.js"
       ],
       "usedBy": [
@@ -22291,7 +22715,8 @@
       "doctrine": [
         "resolve_before_behavior_change",
         "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
-        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
       ],
       "impactAreas": [
         "purchasing",
@@ -23728,7 +24153,8 @@
       "inputs": [
         "runtime_context",
         "request_or_service_payload",
-        "optional_server_resolved_market_id"
+        "optional_server_resolved_market_id",
+        "optional_transaction_executor"
       ],
       "outputs": [
         "response_or_domain_result",
@@ -23754,18 +24180,20 @@
       ],
       "dbWriteVia": [],
       "dbTxn": [
-        "resolve_before_behavior_change"
+        "optional_caller_owned_transaction_for_upsert"
       ],
       "doctrine": [
         "resolve_before_behavior_change",
-        "market_scope_is_server_authority"
+        "market_scope_is_server_authority",
+        "preserve_caller_transaction"
       ],
       "impactAreas": [
         "decision-signals",
         "purchasing",
         "orders",
         "logistics",
-        "market-authorization"
+        "market-authorization",
+        "incident-management"
       ],
       "version": "2026-09"
     },
@@ -24551,25 +24979,29 @@
       ],
       "outputs": [
         "normalized_supplier_products",
-        "connector_catalog"
+        "connector_catalog",
+        "source_automation_catalog"
       ],
       "depends": [
         "services/suppliers/connectors/csv-connector.js",
         "services/suppliers/connectors/manual-connector.js",
         "services/suppliers/connectors/noon-connector.js",
         "services/suppliers/connectors/cj-connector.js",
-        "services/suppliers/connectors/aliexpress-connected-connector.js"
+        "services/suppliers/connectors/aliexpress-connected-connector.js",
+        "services/suppliers/connectors/allegro-connector.js"
       ],
       "usedBy": [
         "routes/sourcing-scanner.js",
-        "services/sourcing-workspace.js"
+        "services/sourcing-workspace.js",
+        "services/sourcing-source-autopilot.js"
       ],
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "single_connector_dispatch_authority"
+        "single_connector_dispatch_authority",
+        "source_autopull_is_registry_metadata_not_provider_branching"
       ],
       "impactAreas": [
         "sourcing",
@@ -24968,6 +25400,74 @@
       "version": "2026-09"
     },
     {
+      "id": "services/sourcing-source-autopilot.js",
+      "file": "services/sourcing-source-autopilot.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "sourcing-source-autopilot",
+      "domain": "sourcing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "sourcing_sources_autopilot_switch",
+        "connector_automation_registry"
+      ],
+      "outputs": [
+        "recurring_source_imports",
+        "source_runtime_projection"
+      ],
+      "depends": [
+        "db.js",
+        "services/sourcing-import-dispatch.js",
+        "services/suppliers/catalog-import-orchestrator.js",
+        "services/sourcing-observation-shadow-service.js"
+      ],
+      "usedBy": [
+        "services/sourcing-workspace.js",
+        "scripts/sourcing-source-autopilot.js"
+      ],
+      "dbRead": [
+        "sourcing_sources",
+        "sourcing_captures"
+      ],
+      "dbWrite": [
+        "sourcing_sources",
+        "sourcing_captures"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "catalog-import-orchestrator",
+          "tables": [
+            "supplier_catalog_imports",
+            "sourcing_candidates",
+            "sourcing_sources",
+            "sourcing_source_provides",
+            "sourcing_captures",
+            "sourcing_observations"
+          ]
+        }
+      ],
+      "dbTxn": [
+        "advisory_lock_per_source"
+      ],
+      "doctrine": [
+        "source_on_means_active_recurring_acquisition",
+        "source_lifecycle_is_not_autopilot_authority",
+        "provider_agnostic_runner",
+        "bounded_pull",
+        "fail_closed_connector_readiness"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "catalog",
+        "supplier-import"
+      ],
+      "version": "2026-09",
+      "dbWriteViaOverlapWarning": "services/sourcing-source-autopilot.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_sources, sourcing_captures"
+    },
+    {
       "id": "services/sourcing-workspace.js",
       "file": "services/sourcing-workspace.js",
       "type": "file",
@@ -24993,6 +25493,7 @@
         "services/sourcing-mutations.js",
         "services/sourcing-candidate-actions.js",
         "services/sourcing-import-dispatch.js",
+        "services/sourcing-source-autopilot.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "services/partner-admin-service.js"
       ],
@@ -25004,7 +25505,9 @@
         "sourcing_candidates",
         "supplier_catalog_imports",
         "partners",
-        "suppliers_stats"
+        "suppliers_stats",
+        "sourcing_sources",
+        "sourcing_captures"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -25034,6 +25537,13 @@
           ]
         },
         {
+          "via": "sourcing-source-autopilot",
+          "tables": [
+            "sourcing_sources",
+            "sourcing_captures"
+          ]
+        },
+        {
           "via": "partner-admin-service",
           "tables": [
             "partners"
@@ -25047,6 +25557,7 @@
         "global_sourcing_authority",
         "browser_business_refs_only",
         "sourcing_partners_only",
+        "source_autopilot_authority_delegated",
         "workspace_orchestrates_not_reimplements"
       ],
       "impactAreas": [
@@ -25055,7 +25566,7 @@
         "partners",
         "admin-dashboard"
       ],
-      "version": "2026-08"
+      "version": "2026-09"
     },
     {
       "id": "services/supplier-catalog-scanner.js",
@@ -25226,6 +25737,174 @@
       "version": "2026-09-ae-prepayment-v5"
     },
     {
+      "id": "services/suppliers/allegro-fulfillment-adapter.js",
+      "file": "services/suppliers/allegro-fulfillment-adapter.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "allegro-sandbox-fulfillment-adapter",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "exact sandbox offer identity",
+        "quantity"
+      ],
+      "outputs": [
+        "live stock/price evidence and exact manual procurement payload"
+      ],
+      "depends": [
+        "services/suppliers/connectors/allegro-connector.js",
+        "services/suppliers/supplier-fulfillment-readiness.js"
+      ],
+      "usedBy": [
+        "scripts/allegro-sandbox-check.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "version": null
+    },
+    {
+      "id": "services/suppliers/allegro-purchase-reconciliation.js",
+      "file": "services/suppliers/allegro-purchase-reconciliation.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "allegro-sandbox-purchase-reconciliation",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "checkoutForm id",
+        "expected Supplier Order Identity",
+        "quantity"
+      ],
+      "outputs": [
+        "sanitized verified supplier purchase evidence"
+      ],
+      "depends": [
+        "services/suppliers/allegro-sandbox-client.js"
+      ],
+      "usedBy": [
+        "scripts/allegro-sandbox-purchase-proof.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "version": null
+    },
+    {
+      "id": "services/suppliers/allegro-sandbox-client.js",
+      "file": "services/suppliers/allegro-sandbox-client.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "allegro-sandbox-client",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "sandbox credentials",
+        "bounded read request",
+        "guarded seller draft/shipping seed/publication"
+      ],
+      "outputs": [
+        "provider JSON",
+        "bounded shipping capabilities",
+        "ephemeral access token"
+      ],
+      "depends": [
+        "db.js",
+        "node:crypto"
+      ],
+      "usedBy": [
+        "services/suppliers/connectors/allegro-connector.js",
+        "services/suppliers/allegro-purchase-reconciliation.js",
+        "scripts/allegro-sandbox-check.js",
+        "scripts/allegro-shipping-rate-contract.js"
+      ],
+      "dbRead": [
+        "supplier_oauth_connections"
+      ],
+      "dbWrite": [
+        "supplier_oauth_connections"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "owned"
+      ],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "supplier-import",
+        "purchasing",
+        "secrets"
+      ],
+      "version": null
+    },
+    {
+      "id": "services/suppliers/allegro-shipping-capability-adapter.js",
+      "file": "services/suppliers/allegro-shipping-capability-adapter.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "allegro-shipping-capability-adapter",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "sanitized Allegro shipping-rate detail"
+      ],
+      "outputs": [
+        "canonical ShippingCapability"
+      ],
+      "depends": [
+        "services/suppliers/shipping-capability-contract.js"
+      ],
+      "usedBy": [
+        "scripts/allegro-shipping-capability-proof.js",
+        "provider contract tests"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "version": null
+    },
+    {
       "id": "services/suppliers/canonical-unit-cutover-comparison.js",
       "file": "services/suppliers/canonical-unit-cutover-comparison.js",
       "type": "file",
@@ -25275,25 +25954,30 @@
         "product_sku_id",
         "quantity",
         "canonical Unit resolver",
-        "provider adapters"
+        "provider adapters",
+        "provider authority"
       ],
       "outputs": [
-        "blocked_verdict_or_built_payload_hard_stop"
+        "blocked_verdict_or_readiness_verdict_or_built_payload_hard_stop"
       ],
       "depends": [
         "services/sourcing-canonical-unit-product-sku-resolution.js",
         "services/suppliers/supplier-order-identity.js",
-        "services/suppliers/supplier-fulfillment-adapter-contract.js"
+        "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "services/suppliers/provider-authority.js"
       ],
       "usedBy": [
-        "future purchasing cutover composition root"
+        "services/purchasing-trigger-service.js (GAP-4A",
+        "evaluateCanonicalProcurementReadiness)",
+        "scripts/allegro-golden-prebuyer-proof.js (prepareCanonicalUnitPurchase)"
       ],
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
       "dbTxn": [],
       "doctrine": [
-        "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
+        "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
       ],
       "impactAreas": [
         "purchasing",
@@ -25603,6 +26287,45 @@
       "version": "2026-09-v4"
     },
     {
+      "id": "services/suppliers/connectors/allegro-connector.js",
+      "file": "services/suppliers/connectors/allegro-connector.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "allegro-sandbox-source-connector",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "sandbox seller offer IDs or bounded page"
+      ],
+      "outputs": [
+        "NormalizedSupplierProduct V2",
+        "native PLN facts"
+      ],
+      "depends": [
+        "services/suppliers/allegro-sandbox-client.js",
+        "services/suppliers/normalized-product.js"
+      ],
+      "usedBy": [
+        "services/sourcing-import-dispatch.js",
+        "services/suppliers/allegro-fulfillment-adapter.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "version": null
+    },
+    {
       "id": "services/suppliers/connectors/api-connector.base.js",
       "file": "services/suppliers/connectors/api-connector.base.js",
       "type": "file",
@@ -25846,6 +26569,42 @@
       "version": "2026-06"
     },
     {
+      "id": "services/suppliers/execution-adapter-registry.js",
+      "file": "services/suppliers/execution-adapter-registry.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "execution-adapter-registry",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "none (static composition root)"
+      ],
+      "outputs": [
+        "map of provider code -> fulfillment adapter object"
+      ],
+      "depends": [
+        "services/suppliers/allegro-fulfillment-adapter.js",
+        "services/suppliers/aliexpress-fulfillment-adapter.js"
+      ],
+      "usedBy": [
+        "services/purchasing-trigger-service.js (GAP-2)"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/suppliers/json-source-pipeline.js",
       "file": "services/suppliers/json-source-pipeline.js",
       "type": "file",
@@ -26015,6 +26774,44 @@
       "version": "2026-08 (ING-6 — extrait de json-source-pipeline.js, domaine 2/5)"
     },
     {
+      "id": "services/suppliers/procurement-execution-boundary.js",
+      "file": "services/suppliers/procurement-execution-boundary.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "procurement-execution-boundary",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "canonical procurement readiness verdict (GAP-4A)",
+        "provider adapters"
+      ],
+      "outputs": [
+        "execution_boundary_verdict (crossed_or_not_reached)"
+      ],
+      "depends": [
+        "services/suppliers/supplier-fulfillment-adapter-contract.js"
+      ],
+      "usedBy": [
+        "services/purchasing-trigger-service.js (GAP-4B)"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/suppliers/promotion-classifier.js",
       "file": "services/suppliers/promotion-classifier.js",
       "type": "file",
@@ -26055,6 +26852,112 @@
         "product-discovery"
       ],
       "version": "2026-08 (nettoyage architectural — ne porte plus que la classification ; parsing/poids/devise/contrat déplacés vers services/suppliers/source-product-normalizer.js)"
+    },
+    {
+      "id": "services/suppliers/provider-authority.js",
+      "file": "services/suppliers/provider-authority.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "provider-authority",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "provider code (string)"
+      ],
+      "outputs": [
+        "canonical provider list",
+        "support verdict",
+        "normalized code"
+      ],
+      "depends": [],
+      "usedBy": [
+        "validators/index.js (GAP-1)",
+        "future adapter resolution (GAP-2)"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/suppliers/purchasing-validators.js",
+      "file": "services/suppliers/purchasing-validators.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "purchasing-validators",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "request body/params for supplier + purchase order endpoints"
+      ],
+      "outputs": [
+        "Joi validation schemas"
+      ],
+      "depends": [
+        "services/suppliers/provider-authority.js"
+      ],
+      "usedBy": [
+        "(see files.tests in features/purchasing.feature.js — not yet"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/suppliers/shipping-capability-contract.js",
+      "file": "services/suppliers/shipping-capability-contract.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "shipping-capability-contract",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "normalized provider shipping capability"
+      ],
+      "outputs": [
+        "exact canonical shipping capability or fail-closed validation error"
+      ],
+      "depends": [],
+      "usedBy": [
+        "provider shipping capability adapters and contract proofs"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "version": null
     },
     {
       "id": "services/suppliers/source-product-normalizer.js",
@@ -26120,7 +27023,8 @@
       ],
       "depends": [],
       "usedBy": [
-        "services/suppliers/supplier-fulfillment-readiness.js"
+        "services/suppliers/supplier-fulfillment-readiness.js",
+        "services/suppliers/procurement-execution-boundary.js (GAP-4B)"
       ],
       "dbRead": [],
       "dbWrite": [],
@@ -28341,6 +29245,11 @@
       "table": "product_market_exposure"
     },
     {
+      "id": "db:product_market_price_drafts",
+      "type": "db-table",
+      "table": "product_market_price_drafts"
+    },
+    {
       "id": "db:boutique_categories",
       "type": "db-table",
       "table": "boutique_categories"
@@ -28611,6 +29520,11 @@
       "table": "sourcing_captures"
     },
     {
+      "id": "db:delegated",
+      "type": "db-table",
+      "table": "delegated"
+    },
+    {
       "id": "db:webauthn_credentials",
       "type": "db-table",
       "table": "webauthn_credentials"
@@ -28651,6 +29565,31 @@
       "table": "economic_variables"
     },
     {
+      "id": "db:hub_physical_units",
+      "type": "db-table",
+      "table": "hub_physical_units"
+    },
+    {
+      "id": "db:hub_purchase_allocations",
+      "type": "db-table",
+      "table": "hub_purchase_allocations"
+    },
+    {
+      "id": "db:hub_physical_unit_placements",
+      "type": "db-table",
+      "table": "hub_physical_unit_placements"
+    },
+    {
+      "id": "db:hub_custody_events",
+      "type": "db-table",
+      "table": "hub_custody_events"
+    },
+    {
+      "id": "db:outbox_events",
+      "type": "db-table",
+      "table": "outbox_events"
+    },
+    {
       "id": "db:inventory_items",
       "type": "db-table",
       "table": "inventory_items"
@@ -28666,11 +29605,6 @@
       "table": "local_stock_allocations"
     },
     {
-      "id": "db:product_market_price_drafts",
-      "type": "db-table",
-      "table": "product_market_price_drafts"
-    },
-    {
       "id": "db:product_market_price_draft_events",
       "type": "db-table",
       "table": "product_market_price_draft_events"
@@ -28684,11 +29618,6 @@
       "id": "db:ceiling_template_capabilities",
       "type": "db-table",
       "table": "ceiling_template_capabilities"
-    },
-    {
-      "id": "db:outbox_events",
-      "type": "db-table",
-      "table": "outbox_events"
     },
     {
       "id": "db:physical_outcome_receipts",
@@ -28769,6 +29698,11 @@
       "id": "db:pricing_strategy_history",
       "type": "db-table",
       "table": "pricing_strategy_history"
+    },
+    {
+      "id": "db:delegated_to_sourcing_resolver",
+      "type": "db-table",
+      "table": "delegated_to_sourcing_resolver"
     },
     {
       "id": "db:shared_cart_saved_access",
@@ -28859,6 +29793,11 @@
       "id": "doctrine:bounded_mobile_money_reconciliation",
       "type": "doctrine",
       "doctrine": "bounded_mobile_money_reconciliation"
+    },
+    {
+      "id": "doctrine:bounded_incident_sla_escalation",
+      "type": "doctrine",
+      "doctrine": "bounded_incident_sla_escalation"
     },
     {
       "id": "doctrine:feature_first",
@@ -29646,6 +30585,11 @@
       "doctrine": "no_browser_internal_ids"
     },
     {
+      "id": "doctrine:source_autopilot_is_explicit_operator_authority",
+      "type": "doctrine",
+      "doctrine": "source_autopilot_is_explicit_operator_authority"
+    },
+    {
       "id": "doctrine:dashboard_observes_server_truth",
       "type": "doctrine",
       "doctrine": "dashboard_observes_server_truth"
@@ -29706,6 +30650,11 @@
       "doctrine": "only_LOCAL_ACTIVE_is_buyer_effective"
     },
     {
+      "id": "doctrine:visible_means_sellable",
+      "type": "doctrine",
+      "doctrine": "visible_means_sellable"
+    },
+    {
       "id": "doctrine:moteur_economique_lisible",
       "type": "doctrine",
       "doctrine": "moteur_economique_lisible"
@@ -29724,6 +30673,16 @@
       "id": "doctrine:market_operator_scoping (GAP-1)",
       "type": "doctrine",
       "doctrine": "market_operator_scoping (GAP-1)"
+    },
+    {
+      "id": "doctrine:HUB-001 Physical Identity",
+      "type": "doctrine",
+      "doctrine": "HUB-001 Physical Identity"
+    },
+    {
+      "id": "doctrine:Allocation & Custody; HUB-002 Operator Execution Cutover; market_operator_scoping",
+      "type": "doctrine",
+      "doctrine": "Allocation & Custody; HUB-002 Operator Execution Cutover; market_operator_scoping"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
@@ -29921,6 +30880,11 @@
       "doctrine": "market_operator_scoping (GAP-2)"
     },
     {
+      "id": "doctrine:HUB-002 Operator Execution Cutover",
+      "type": "doctrine",
+      "doctrine": "HUB-002 Operator Execution Cutover"
+    },
+    {
       "id": "doctrine:domaine_minimal_boutique_first",
       "type": "doctrine",
       "doctrine": "domaine_minimal_boutique_first"
@@ -30071,6 +31035,16 @@
       "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md"
     },
     {
+      "id": "doctrine:catalog_observes_sourcing_without_stealing_mutation_authority",
+      "type": "doctrine",
+      "doctrine": "catalog_observes_sourcing_without_stealing_mutation_authority"
+    },
+    {
+      "id": "doctrine:dashboard_exposes_business_truth_not_backend_states",
+      "type": "doctrine",
+      "doctrine": "dashboard_exposes_business_truth_not_backend_states"
+    },
+    {
       "id": "doctrine:writer_not_owner_boundary",
       "type": "doctrine",
       "doctrine": "writer_not_owner_boundary"
@@ -30159,6 +31133,16 @@
       "id": "doctrine:§DOCTRINE ZÉRO HEURISTIQUE; docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
       "type": "doctrine",
       "doctrine": "§DOCTRINE ZÉRO HEURISTIQUE; docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+    },
+    {
+      "id": "doctrine:catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority",
+      "type": "doctrine",
+      "doctrine": "catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority"
+    },
+    {
+      "id": "doctrine:dashboard_exposes_business_truth",
+      "type": "doctrine",
+      "doctrine": "dashboard_exposes_business_truth"
     },
     {
       "id": "doctrine:reuse_domain_mutation_authorities",
@@ -30286,14 +31270,34 @@
       "doctrine": "no_global_workspace_mutation"
     },
     {
-      "id": "doctrine:DOCTRINE_DENSITE_VALEUR (V-4",
+      "id": "doctrine:Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR",
       "type": "doctrine",
-      "doctrine": "DOCTRINE_DENSITE_VALEUR (V-4"
+      "doctrine": "Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR"
     },
     {
-      "id": "doctrine:2026-07-02)",
+      "id": "doctrine:Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT",
       "type": "doctrine",
-      "doctrine": "2026-07-02)"
+      "doctrine": "Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT"
+    },
+    {
+      "id": "doctrine:F3_INCIDENT_SLA_CONTRACT",
+      "type": "doctrine",
+      "doctrine": "F3_INCIDENT_SLA_CONTRACT"
+    },
+    {
+      "id": "doctrine:durable_operational_recipient",
+      "type": "doctrine",
+      "doctrine": "durable_operational_recipient"
+    },
+    {
+      "id": "doctrine:no_auto_resolution",
+      "type": "doctrine",
+      "doctrine": "no_auto_resolution"
+    },
+    {
+      "id": "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
+      "type": "doctrine",
+      "doctrine": "F2_INCIDENT_GOVERNANCE_CONTRACT"
     },
     {
       "id": "doctrine:lifecycle_owner_boundary",
@@ -30304,6 +31308,11 @@
       "id": "doctrine:preserve_caller_transaction",
       "type": "doctrine",
       "doctrine": "preserve_caller_transaction"
+    },
+    {
+      "id": "doctrine:F3_PROOF_REVALIDATION_CONTRACT",
+      "type": "doctrine",
+      "doctrine": "F3_PROOF_REVALIDATION_CONTRACT"
     },
     {
       "id": "doctrine:invoice_displays_actual_payment_currency",
@@ -30861,6 +31870,11 @@
       "doctrine": "IMPACT_FEATURE_FIRST_DISCOVERY_LOCALE.md §Providers-services"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
@@ -30956,11 +31970,6 @@
       "doctrine": "docs/doctrine/DOCTRINE_SOURCE_PRODUCT_PROJECTION_TRIAL.md"
     },
     {
-      "id": "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
-    },
-    {
       "id": "doctrine:docs/doctrine/DOCTRINE_SOURCING_GOLDEN_E2E.md",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_SOURCING_GOLDEN_E2E.md"
@@ -30969,6 +31978,11 @@
       "id": "doctrine:single_connector_dispatch_authority",
       "type": "doctrine",
       "doctrine": "single_connector_dispatch_authority"
+    },
+    {
+      "id": "doctrine:source_autopull_is_registry_metadata_not_provider_branching",
+      "type": "doctrine",
+      "doctrine": "source_autopull_is_registry_metadata_not_provider_branching"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_SOURCING_FINAL_AUTHORITY.md",
@@ -30996,9 +32010,39 @@
       "doctrine": "docs/doctrine/DOCTRINE_SOURCE_SHADOW_PROOF.md"
     },
     {
+      "id": "doctrine:source_on_means_active_recurring_acquisition",
+      "type": "doctrine",
+      "doctrine": "source_on_means_active_recurring_acquisition"
+    },
+    {
+      "id": "doctrine:source_lifecycle_is_not_autopilot_authority",
+      "type": "doctrine",
+      "doctrine": "source_lifecycle_is_not_autopilot_authority"
+    },
+    {
+      "id": "doctrine:provider_agnostic_runner",
+      "type": "doctrine",
+      "doctrine": "provider_agnostic_runner"
+    },
+    {
+      "id": "doctrine:bounded_pull",
+      "type": "doctrine",
+      "doctrine": "bounded_pull"
+    },
+    {
+      "id": "doctrine:fail_closed_connector_readiness",
+      "type": "doctrine",
+      "doctrine": "fail_closed_connector_readiness"
+    },
+    {
       "id": "doctrine:sourcing_partners_only",
       "type": "doctrine",
       "doctrine": "sourcing_partners_only"
+    },
+    {
+      "id": "doctrine:source_autopilot_authority_delegated",
+      "type": "doctrine",
+      "doctrine": "source_autopilot_authority_delegated"
     },
     {
       "id": "doctrine:workspace_orchestrates_not_reimplements",
@@ -31009,6 +32053,16 @@
       "id": "doctrine:docs/ALIEXPRESS_BUSINESS_READINESS.md",
       "type": "doctrine",
       "doctrine": "docs/ALIEXPRESS_BUSINESS_READINESS.md"
+    },
+    {
+      "id": "doctrine:docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md"
+    },
+    {
+      "id": "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+      "type": "doctrine",
+      "doctrine": "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
     },
     {
       "id": "doctrine:docs/doctrine/PROPOSITION_TRANSACTION_IMPORT_CATALOGUE.md",
@@ -31189,6 +32243,11 @@
       "id": "impact:payments",
       "type": "impact-area",
       "area": "payments"
+    },
+    {
+      "id": "impact:incident-management",
+      "type": "impact-area",
+      "area": "incident-management"
     },
     {
       "id": "impact:whatsapp",
@@ -31951,11 +33010,6 @@
       "area": "finance-config"
     },
     {
-      "id": "impact:incident-management",
-      "type": "impact-area",
-      "area": "incident-management"
-    },
-    {
       "id": "impact:platform-ops",
       "type": "impact-area",
       "area": "platform-ops"
@@ -32405,6 +33459,12 @@
     },
     {
       "from": "bootstrap/crons.js",
+      "to": "doctrine:bounded_incident_sla_escalation",
+      "type": "doctrine",
+      "label": "bounded_incident_sla_escalation"
+    },
+    {
+      "from": "bootstrap/crons.js",
       "to": "impact:cash-reminders",
       "type": "impact",
       "label": "cash-reminders"
@@ -32432,6 +33492,12 @@
       "to": "impact:payments",
       "type": "impact",
       "label": "payments"
+    },
+    {
+      "from": "bootstrap/crons.js",
+      "to": "impact:incident-management",
+      "type": "impact",
+      "label": "incident-management"
     },
     {
       "from": "bootstrap/env.js",
@@ -39913,9 +40979,9 @@
     },
     {
       "from": "routes/admin-catalog-workspace.js",
-      "to": "services/catalog-workspace.js",
+      "to": "services/catalog-workspace-live-composer.js",
       "type": "depends",
-      "label": "services/catalog-workspace.js"
+      "label": "services/catalog-workspace-live-composer.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -41890,6 +42956,12 @@
     },
     {
       "from": "routes/admin-sourcing-workspace.js",
+      "to": "doctrine:source_autopilot_is_explicit_operator_authority",
+      "type": "doctrine",
+      "label": "source_autopilot_is_explicit_operator_authority"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
       "to": "doctrine:dashboard_observes_server_truth",
       "type": "doctrine",
       "label": "dashboard_observes_server_truth"
@@ -43366,12 +44438,6 @@
     },
     {
       "from": "routes/catalog-product-detail.js",
-      "to": "services/catalog-market-exposure-service.js",
-      "type": "depends",
-      "label": "services/catalog-market-exposure-service.js"
-    },
-    {
-      "from": "routes/catalog-product-detail.js",
       "to": "services/market-local-price-resolution-service.js",
       "type": "depends",
       "label": "services/market-local-price-resolution-service.js"
@@ -43414,6 +44480,12 @@
     },
     {
       "from": "routes/catalog-product-detail.js",
+      "to": "db:product_market_price_drafts",
+      "type": "db-read",
+      "label": "product_market_price_drafts"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
       "to": "db:markets",
       "type": "db-read",
       "label": "markets"
@@ -43429,6 +44501,12 @@
       "to": "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
       "type": "doctrine",
       "label": "only_LOCAL_ACTIVE_is_buyer_effective"
+    },
+    {
+      "from": "routes/catalog-product-detail.js",
+      "to": "doctrine:visible_means_sellable",
+      "type": "doctrine",
+      "label": "visible_means_sellable"
     },
     {
       "from": "routes/catalog-product-detail.js",
@@ -44563,9 +45641,9 @@
     },
     {
       "from": "routes/hub.js",
-      "to": "services/*",
+      "to": "services/hub-operations.js",
       "type": "depends",
-      "label": "services/*"
+      "label": "services/hub-operations.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -44599,15 +45677,15 @@
     },
     {
       "from": "routes/hub.js",
-      "to": "doctrine:resolve_before_behavior_change",
+      "to": "doctrine:HUB-001 Physical Identity",
       "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "label": "HUB-001 Physical Identity"
     },
     {
       "from": "routes/hub.js",
-      "to": "doctrine:market_operator_scoping (GAP-1)",
+      "to": "doctrine:Allocation & Custody; HUB-002 Operator Execution Cutover; market_operator_scoping",
       "type": "doctrine",
-      "label": "market_operator_scoping (GAP-1)"
+      "label": "Allocation & Custody; HUB-002 Operator Execution Cutover; market_operator_scoping"
     },
     {
       "from": "routes/hub.js",
@@ -48035,9 +49113,9 @@
     },
     {
       "from": "routes/providers-services.js",
-      "to": "db (résolution code marché)",
+      "to": "db (résolution code marché + handoff WhatsApp)",
       "type": "depends",
-      "label": "db (résolution code marché)"
+      "label": "db (résolution code marché + handoff WhatsApp)"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -48056,6 +49134,18 @@
       "to": "db:markets",
       "type": "db-read",
       "label": "markets"
+    },
+    {
+      "from": "routes/providers-services.js",
+      "to": "db:services",
+      "type": "db-read",
+      "label": "services"
+    },
+    {
+      "from": "routes/providers-services.js",
+      "to": "db:providers",
+      "type": "db-read",
+      "label": "providers"
     },
     {
       "from": "routes/providers-services.js",
@@ -48330,9 +49420,15 @@
     },
     {
       "from": "routes/scans.js",
-      "to": "services/*",
+      "to": "services/scan-operations.js",
       "type": "depends",
-      "label": "services/*"
+      "label": "services/scan-operations.js"
+    },
+    {
+      "from": "routes/scans.js",
+      "to": "services/hub-operations.js",
+      "type": "depends",
+      "label": "services/hub-operations.js"
     },
     {
       "from": "bootstrap/api-routes.js",
@@ -48381,6 +49477,12 @@
       "to": "doctrine:resolve_before_behavior_change",
       "type": "doctrine",
       "label": "resolve_before_behavior_change"
+    },
+    {
+      "from": "routes/scans.js",
+      "to": "doctrine:HUB-002 Operator Execution Cutover",
+      "type": "doctrine",
+      "label": "HUB-002 Operator Execution Cutover"
     },
     {
       "from": "routes/scans.js",
@@ -50726,6 +51828,132 @@
       "label": "sourcing"
     },
     {
+      "from": "services/catalog-live-flow.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "services/sourcing-source-autopilot.js",
+      "type": "depends",
+      "label": "services/sourcing-source-autopilot.js"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "services/sourcing-import-dispatch.js",
+      "type": "depends",
+      "label": "services/sourcing-import-dispatch.js"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "services/product-publication-guard.js",
+      "type": "depends",
+      "label": "services/product-publication-guard.js"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "services/catalog-public-view.js",
+      "type": "depends",
+      "label": "services/catalog-public-view.js"
+    },
+    {
+      "from": "services/catalog-workspace-live-composer.js",
+      "to": "services/catalog-live-flow.js",
+      "type": "uses",
+      "label": "services/catalog-workspace-live-composer.js"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "db:catalog_media",
+      "type": "db-read",
+      "label": "catalog_media"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "db:product_market_exposure",
+      "type": "db-read",
+      "label": "product_market_exposure"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "db:product_market_price_drafts",
+      "type": "db-read",
+      "label": "product_market_price_drafts"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "db:product_variants",
+      "type": "db-read",
+      "label": "product_variants"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "doctrine:catalog_observes_sourcing_without_stealing_mutation_authority",
+      "type": "doctrine",
+      "label": "catalog_observes_sourcing_without_stealing_mutation_authority"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "doctrine:dashboard_exposes_business_truth_not_backend_states",
+      "type": "doctrine",
+      "label": "dashboard_exposes_business_truth_not_backend_states"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "doctrine:visible_means_sellable",
+      "type": "doctrine",
+      "label": "visible_means_sellable"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/catalog-market-exposure-service.js",
       "to": "none (executor fourni par l'appelant",
       "type": "depends",
@@ -51519,9 +52747,39 @@
     },
     {
       "from": "services/catalog-public-view.js",
+      "to": "db:product_market_price_drafts",
+      "type": "db-read",
+      "label": "product_market_price_drafts"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "db:product_variants",
+      "type": "db-read",
+      "label": "product_variants"
+    },
+    {
+      "from": "services/catalog-public-view.js",
       "to": "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
       "type": "doctrine",
       "label": "docs/doctrine/DOCTRINE_CATALOGUE.md"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
+      "type": "doctrine",
+      "label": "only_LOCAL_ACTIVE_is_buyer_effective"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "doctrine:visible_means_sellable",
+      "type": "doctrine",
+      "label": "visible_means_sellable"
     },
     {
       "from": "services/catalog-public-view.js",
@@ -51540,6 +52798,78 @@
       "to": "impact:modal",
       "type": "impact",
       "label": "modal"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "impact:market-autonomy",
+      "type": "impact",
+      "label": "market-autonomy"
+    },
+    {
+      "from": "services/catalog-public-view.js",
+      "to": "impact:checkout",
+      "type": "impact",
+      "label": "checkout"
+    },
+    {
+      "from": "services/catalog-workspace-live-composer.js",
+      "to": "services/catalog-workspace.js",
+      "type": "depends",
+      "label": "services/catalog-workspace.js"
+    },
+    {
+      "from": "services/catalog-workspace-live-composer.js",
+      "to": "services/catalog-live-flow.js",
+      "type": "depends",
+      "label": "services/catalog-live-flow.js"
+    },
+    {
+      "from": "routes/admin-catalog-workspace.js",
+      "to": "services/catalog-workspace-live-composer.js",
+      "type": "uses",
+      "label": "routes/admin-catalog-workspace.js"
+    },
+    {
+      "from": "services/catalog-workspace-live-composer.js",
+      "to": "db:delegated",
+      "type": "db-read",
+      "label": "delegated"
+    },
+    {
+      "from": "services/catalog-workspace-live-composer.js",
+      "to": "doctrine:catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority",
+      "type": "doctrine",
+      "label": "catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority"
+    },
+    {
+      "from": "services/catalog-workspace-live-composer.js",
+      "to": "doctrine:dashboard_exposes_business_truth",
+      "type": "doctrine",
+      "label": "dashboard_exposes_business_truth"
+    },
+    {
+      "from": "services/catalog-workspace-live-composer.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-workspace-live-composer.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/catalog-workspace-live-composer.js",
+      "to": "impact:boutique",
+      "type": "impact",
+      "label": "boutique"
+    },
+    {
+      "from": "services/catalog-workspace-live-composer.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "services/catalog-workspace.js",
@@ -54154,6 +55484,18 @@
     },
     {
       "from": "services/discovery-rail-composer.js",
+      "to": "services/catalog-market-exposure-service.js",
+      "type": "depends",
+      "label": "services/catalog-market-exposure-service.js"
+    },
+    {
+      "from": "services/discovery-rail-composer.js",
+      "to": "services/market-local-price-resolution-service.js",
+      "type": "depends",
+      "label": "services/market-local-price-resolution-service.js"
+    },
+    {
+      "from": "services/discovery-rail-composer.js",
       "to": "services/providers-service.js",
       "type": "depends",
       "label": "services/providers-service.js"
@@ -54190,6 +55532,12 @@
     },
     {
       "from": "services/discovery-rail-composer.js",
+      "to": "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
+      "type": "doctrine",
+      "label": "only_LOCAL_ACTIVE_is_buyer_effective"
+    },
+    {
+      "from": "services/discovery-rail-composer.js",
       "to": "impact:recommendations",
       "type": "impact",
       "label": "recommendations"
@@ -54211,6 +55559,18 @@
       "to": "impact:category-navigation",
       "type": "impact",
       "label": "category-navigation"
+    },
+    {
+      "from": "services/discovery-rail-composer.js",
+      "to": "impact:market-autonomy",
+      "type": "impact",
+      "label": "market-autonomy"
+    },
+    {
+      "from": "services/discovery-rail-composer.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
     },
     {
       "from": "services/discovery-rail-service.js",
@@ -55613,9 +56973,9 @@
     },
     {
       "from": "services/hub-operations.js",
-      "to": "utils/parcelSync.js",
+      "to": "services/hub-physical-identity.js",
       "type": "depends",
-      "label": "utils/parcelSync.js"
+      "label": "services/hub-physical-identity.js"
     },
     {
       "from": "routes/hub.js",
@@ -55624,10 +56984,22 @@
       "label": "routes/hub.js"
     },
     {
+      "from": "routes/scans.js",
+      "to": "services/hub-operations.js",
+      "type": "uses",
+      "label": "routes/scans.js"
+    },
+    {
       "from": "services/hub-operations.js",
       "to": "db:business_rules",
       "type": "db-read",
       "label": "business_rules"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
     },
     {
       "from": "services/hub-operations.js",
@@ -55655,12 +57027,6 @@
     },
     {
       "from": "services/hub-operations.js",
-      "to": "db:parcels",
-      "type": "db-write",
-      "label": "parcels"
-    },
-    {
-      "from": "services/hub-operations.js",
       "to": "db:products",
       "type": "db-write",
       "label": "products"
@@ -55673,33 +57039,390 @@
     },
     {
       "from": "services/hub-operations.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
+      "to": "db:hub_purchase_allocations",
+      "type": "db-write-via",
+      "label": "hub_purchase_allocations",
+      "via": "hub-physical-identity"
     },
     {
       "from": "services/hub-operations.js",
-      "to": "doctrine:DOCTRINE_DENSITE_VALEUR (V-4",
-      "type": "doctrine",
-      "label": "DOCTRINE_DENSITE_VALEUR (V-4"
+      "to": "db:hub_physical_units",
+      "type": "db-write-via",
+      "label": "hub_physical_units",
+      "via": "hub-physical-identity"
     },
     {
       "from": "services/hub-operations.js",
-      "to": "doctrine:2026-07-02)",
-      "type": "doctrine",
-      "label": "2026-07-02)"
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-write-via",
+      "label": "hub_physical_unit_placements",
+      "via": "hub-physical-identity"
     },
     {
       "from": "services/hub-operations.js",
-      "to": "impact:unknown",
+      "to": "db:hub_custody_events",
+      "type": "db-write-via",
+      "label": "hub_custody_events",
+      "via": "hub-physical-identity"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "db:incidents",
+      "type": "db-write-via",
+      "label": "incidents",
+      "via": "hub-physical-identity"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "db:outbox_events",
+      "type": "db-write-via",
+      "label": "outbox_events",
+      "via": "hub-physical-identity"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "doctrine:HUB-001 Physical Identity",
+      "type": "doctrine",
+      "label": "HUB-001 Physical Identity"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "doctrine:Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR",
+      "type": "doctrine",
+      "label": "Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "impact:logistics",
       "type": "impact",
-      "label": "unknown"
+      "label": "logistics"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "impact:incident-management",
+      "type": "impact",
+      "label": "incident-management"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "services/outbox-producer.js",
+      "type": "depends",
+      "label": "services/outbox-producer.js"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "services/incident-write-service.js",
+      "type": "depends",
+      "label": "services/incident-write-service.js"
+    },
+    {
+      "from": "HUB-001 internal logistics boundary",
+      "to": "services/hub-physical-identity.js",
+      "type": "uses",
+      "label": "HUB-001 internal logistics boundary"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:incidents",
+      "type": "db-read",
+      "label": "incidents"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:hub_physical_units",
+      "type": "db-read",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:hub_custody_events",
+      "type": "db-read",
+      "label": "hub_custody_events"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-write",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:hub_physical_units",
+      "type": "db-write",
+      "label": "hub_physical_units"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-write",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:hub_custody_events",
+      "type": "db-write",
+      "label": "hub_custody_events"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:incidents",
+      "type": "db-write-via",
+      "label": "incidents",
+      "via": "incident-write-service"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "db:outbox_events",
+      "type": "db-write-via",
+      "label": "outbox_events",
+      "via": "outbox-producer"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "doctrine:HUB-001 Physical Identity",
+      "type": "doctrine",
+      "label": "HUB-001 Physical Identity"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "doctrine:Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT",
+      "type": "doctrine",
+      "label": "Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "impact:market",
+      "type": "impact",
+      "label": "market"
+    },
+    {
+      "from": "services/hub-physical-identity.js",
+      "to": "impact:incident-management",
+      "type": "impact",
+      "label": "incident-management"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "services/incident-governance.js",
+      "type": "depends",
+      "label": "services/incident-governance.js"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "services/signal-service.js",
+      "type": "depends",
+      "label": "services/signal-service.js"
+    },
+    {
+      "from": "bootstrap/crons.js",
+      "to": "services/incident-escalation.js",
+      "type": "uses",
+      "label": "bootstrap/crons.js"
+    },
+    {
+      "from": "tests/unit/incident-escalation.test.js",
+      "to": "services/incident-escalation.js",
+      "type": "uses",
+      "label": "tests/unit/incident-escalation.test.js"
+    },
+    {
+      "from": "tests/integration/incident-f3-postgres.test.js",
+      "to": "services/incident-escalation.js",
+      "type": "uses",
+      "label": "tests/integration/incident-f3-postgres.test.js"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "db:incidents",
+      "type": "db-read",
+      "label": "incidents"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "db:incidents",
+      "type": "db-write",
+      "label": "incidents"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "db:signals",
+      "type": "db-write-via",
+      "label": "signals",
+      "via": "signal-service"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "doctrine:F3_INCIDENT_SLA_CONTRACT",
+      "type": "doctrine",
+      "label": "F3_INCIDENT_SLA_CONTRACT"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "doctrine:durable_operational_recipient",
+      "type": "doctrine",
+      "label": "durable_operational_recipient"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "doctrine:no_auto_resolution",
+      "type": "doctrine",
+      "label": "no_auto_resolution"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "impact:incident-management",
+      "type": "impact",
+      "label": "incident-management"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "impact:decision-signals",
+      "type": "impact",
+      "label": "decision-signals"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "impact:payments",
+      "type": "impact",
+      "label": "payments"
+    },
+    {
+      "from": "services/incident-write-service.js",
+      "to": "services/incident-governance.js",
+      "type": "uses",
+      "label": "services/incident-write-service.js"
+    },
+    {
+      "from": "services/incident-service.js",
+      "to": "services/incident-governance.js",
+      "type": "uses",
+      "label": "services/incident-service.js"
+    },
+    {
+      "from": "services/incident-governance.js",
+      "to": "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
+      "type": "doctrine",
+      "label": "F2_INCIDENT_GOVERNANCE_CONTRACT"
+    },
+    {
+      "from": "services/incident-governance.js",
+      "to": "impact:incident-management",
+      "type": "impact",
+      "label": "incident-management"
+    },
+    {
+      "from": "services/incident-governance.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/incident-governance.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/incident-governance.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
     },
     {
       "from": "services/incident-service.js",
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/incident-service.js",
+      "to": "services/incident-governance",
+      "type": "depends",
+      "label": "services/incident-governance"
     },
     {
       "from": "services/incident-service.js",
@@ -55739,9 +57462,21 @@
     },
     {
       "from": "services/incident-service.js",
+      "to": "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
+      "type": "doctrine",
+      "label": "F2_INCIDENT_GOVERNANCE_CONTRACT"
+    },
+    {
+      "from": "services/incident-service.js",
       "to": "impact:unknown",
       "type": "impact",
       "label": "unknown"
+    },
+    {
+      "from": "services/incident-write-service.js",
+      "to": "services/incident-governance",
+      "type": "depends",
+      "label": "services/incident-governance"
     },
     {
       "from": "services/scan-engine.js",
@@ -55769,6 +57504,12 @@
     },
     {
       "from": "services/incident-write-service.js",
+      "to": "db:scan_events",
+      "type": "db-read",
+      "label": "scan_events"
+    },
+    {
+      "from": "services/incident-write-service.js",
       "to": "db:incidents",
       "type": "db-write",
       "label": "incidents"
@@ -55784,6 +57525,18 @@
       "to": "doctrine:preserve_caller_transaction",
       "type": "doctrine",
       "label": "preserve_caller_transaction"
+    },
+    {
+      "from": "services/incident-write-service.js",
+      "to": "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
+      "type": "doctrine",
+      "label": "F2_INCIDENT_GOVERNANCE_CONTRACT"
+    },
+    {
+      "from": "services/incident-write-service.js",
+      "to": "doctrine:F3_PROOF_REVALIDATION_CONTRACT",
+      "type": "doctrine",
+      "label": "F3_PROOF_REVALIDATION_CONTRACT"
     },
     {
       "from": "services/incident-write-service.js",
@@ -60398,6 +62151,12 @@
     {
       "from": "services/outbox-producer.js",
       "to": "db:outbox_events",
+      "type": "db-read",
+      "label": "outbox_events"
+    },
+    {
+      "from": "services/outbox-producer.js",
+      "to": "db:outbox_events",
       "type": "db-write",
       "label": "outbox_events"
     },
@@ -60772,6 +62531,12 @@
     },
     {
       "from": "services/parcel-operations.js",
+      "to": "services/parcel-transition-guard.js",
+      "type": "depends",
+      "label": "services/parcel-transition-guard.js"
+    },
+    {
+      "from": "services/parcel-operations.js",
       "to": "services/refund-service.js",
       "type": "depends",
       "label": "services/refund-service.js"
@@ -60987,6 +62752,54 @@
     },
     {
       "from": "services/parcel-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
+    },
+    {
+      "from": "services/parcel-transition-guard.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/parcel-transition-guard.js",
+      "to": "services/incident-governance",
+      "type": "depends",
+      "label": "services/incident-governance"
+    },
+    {
+      "from": "services/parcel-operations.js#transitionParcelStatus",
+      "to": "services/parcel-transition-guard.js",
+      "type": "uses",
+      "label": "services/parcel-operations.js#transitionParcelStatus"
+    },
+    {
+      "from": "services/parcel-transition-guard.js",
+      "to": "db:incidents",
+      "type": "db-read",
+      "label": "incidents"
+    },
+    {
+      "from": "services/parcel-transition-guard.js",
+      "to": "db:parcels",
+      "type": "db-read",
+      "label": "parcels"
+    },
+    {
+      "from": "services/parcel-transition-guard.js",
+      "to": "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
+      "type": "doctrine",
+      "label": "F2_INCIDENT_GOVERNANCE_CONTRACT"
+    },
+    {
+      "from": "services/parcel-transition-guard.js",
+      "to": "impact:incident-management",
+      "type": "impact",
+      "label": "incident-management"
+    },
+    {
+      "from": "services/parcel-transition-guard.js",
       "to": "impact:logistics",
       "type": "impact",
       "label": "logistics"
@@ -65275,6 +67088,66 @@
       "label": "cancellation"
     },
     {
+      "from": "services/purchasing-canonical-money.js",
+      "to": "services/sourcing-canonical-unit-product-sku-resolution.js",
+      "type": "depends",
+      "label": "services/sourcing-canonical-unit-product-sku-resolution.js"
+    },
+    {
+      "from": "services/purchasing-canonical-money.js",
+      "to": "services/suppliers/supplier-order-identity.js",
+      "type": "depends",
+      "label": "services/suppliers/supplier-order-identity.js"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
+      "to": "services/purchasing-canonical-money.js",
+      "type": "uses",
+      "label": "services/purchasing-trigger-service.js"
+    },
+    {
+      "from": "routes/purchasing.js",
+      "to": "services/purchasing-canonical-money.js",
+      "type": "uses",
+      "label": "routes/purchasing.js"
+    },
+    {
+      "from": "services/purchasing-canonical-money.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/purchasing-canonical-money.js",
+      "to": "db:delegated_to_sourcing_resolver",
+      "type": "db-read",
+      "label": "delegated_to_sourcing_resolver"
+    },
+    {
+      "from": "services/purchasing-canonical-money.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
+    },
+    {
+      "from": "services/purchasing-canonical-money.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/purchasing-canonical-money.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/purchasing-canonical-money.js",
+      "to": "impact:finance",
+      "type": "impact",
+      "label": "finance"
+    },
+    {
       "from": "services/purchasing-receive-service.js",
       "to": "db",
       "type": "depends",
@@ -65345,6 +67218,24 @@
       "to": "services/suppliers/supplier-order-identity.js",
       "type": "depends",
       "label": "services/suppliers/supplier-order-identity.js"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
+      "to": "services/suppliers/canonical-unit-purchasing-gate.js",
+      "type": "depends",
+      "label": "services/suppliers/canonical-unit-purchasing-gate.js"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
+      "to": "services/suppliers/procurement-execution-boundary.js",
+      "type": "depends",
+      "label": "services/suppliers/procurement-execution-boundary.js"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
+      "to": "services/suppliers/execution-adapter-registry.js",
+      "type": "depends",
+      "label": "services/suppliers/execution-adapter-registry.js"
     },
     {
       "from": "services/purchasing-trigger-service.js",
@@ -65441,6 +67332,12 @@
       "to": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
       "type": "doctrine",
       "label": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
     },
     {
       "from": "services/purchasing-trigger-service.js",
@@ -67694,6 +69591,12 @@
     },
     {
       "from": "services/signal-service.js",
+      "to": "doctrine:preserve_caller_transaction",
+      "type": "doctrine",
+      "label": "preserve_caller_transaction"
+    },
+    {
+      "from": "services/signal-service.js",
       "to": "impact:decision-signals",
       "type": "impact",
       "label": "decision-signals"
@@ -67721,6 +69624,12 @@
       "to": "impact:market-authorization",
       "type": "impact",
       "label": "market-authorization"
+    },
+    {
+      "from": "services/signal-service.js",
+      "to": "impact:incident-management",
+      "type": "impact",
+      "label": "incident-management"
     },
     {
       "from": "services/simulator/cleanup.js",
@@ -68880,6 +70789,12 @@
       "label": "services/suppliers/connectors/aliexpress-connected-connector.js"
     },
     {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "services/suppliers/connectors/allegro-connector.js",
+      "type": "depends",
+      "label": "services/suppliers/connectors/allegro-connector.js"
+    },
+    {
       "from": "routes/sourcing-scanner.js",
       "to": "services/sourcing-import-dispatch.js",
       "type": "uses",
@@ -68892,10 +70807,22 @@
       "label": "services/sourcing-workspace.js"
     },
     {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "services/sourcing-import-dispatch.js",
+      "type": "uses",
+      "label": "services/sourcing-source-autopilot.js"
+    },
+    {
       "from": "services/sourcing-import-dispatch.js",
       "to": "doctrine:single_connector_dispatch_authority",
       "type": "doctrine",
       "label": "single_connector_dispatch_authority"
+    },
+    {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "doctrine:source_autopull_is_registry_metadata_not_provider_branching",
+      "type": "doctrine",
+      "label": "source_autopull_is_registry_metadata_not_provider_branching"
     },
     {
       "from": "services/sourcing-import-dispatch.js",
@@ -69506,6 +71433,156 @@
       "label": "supplier-import"
     },
     {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "services/sourcing-import-dispatch.js",
+      "type": "depends",
+      "label": "services/sourcing-import-dispatch.js"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "services/suppliers/catalog-import-orchestrator.js",
+      "type": "depends",
+      "label": "services/suppliers/catalog-import-orchestrator.js"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "services/sourcing-observation-shadow-service.js",
+      "type": "depends",
+      "label": "services/sourcing-observation-shadow-service.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/sourcing-source-autopilot.js",
+      "type": "uses",
+      "label": "services/sourcing-workspace.js"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "services/sourcing-source-autopilot.js",
+      "type": "uses",
+      "label": "scripts/sourcing-source-autopilot.js"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:sourcing_sources",
+      "type": "db-read",
+      "label": "sourcing_sources"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:sourcing_captures",
+      "type": "db-read",
+      "label": "sourcing_captures"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:sourcing_sources",
+      "type": "db-write",
+      "label": "sourcing_sources"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:sourcing_captures",
+      "type": "db-write",
+      "label": "sourcing_captures"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:supplier_catalog_imports",
+      "type": "db-write-via",
+      "label": "supplier_catalog_imports",
+      "via": "catalog-import-orchestrator"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-write-via",
+      "label": "sourcing_candidates",
+      "via": "catalog-import-orchestrator"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:sourcing_sources",
+      "type": "db-write-via",
+      "label": "sourcing_sources",
+      "via": "catalog-import-orchestrator"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:sourcing_source_provides",
+      "type": "db-write-via",
+      "label": "sourcing_source_provides",
+      "via": "catalog-import-orchestrator"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:sourcing_captures",
+      "type": "db-write-via",
+      "label": "sourcing_captures",
+      "via": "catalog-import-orchestrator"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:sourcing_observations",
+      "type": "db-write-via",
+      "label": "sourcing_observations",
+      "via": "catalog-import-orchestrator"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "doctrine:source_on_means_active_recurring_acquisition",
+      "type": "doctrine",
+      "label": "source_on_means_active_recurring_acquisition"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "doctrine:source_lifecycle_is_not_autopilot_authority",
+      "type": "doctrine",
+      "label": "source_lifecycle_is_not_autopilot_authority"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "doctrine:provider_agnostic_runner",
+      "type": "doctrine",
+      "label": "provider_agnostic_runner"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "doctrine:bounded_pull",
+      "type": "doctrine",
+      "label": "bounded_pull"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "doctrine:fail_closed_connector_readiness",
+      "type": "doctrine",
+      "label": "fail_closed_connector_readiness"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "impact:supplier-import",
+      "type": "impact",
+      "label": "supplier-import"
+    },
+    {
       "from": "services/sourcing-workspace.js",
       "to": "db.js",
       "type": "depends",
@@ -69534,6 +71611,12 @@
       "to": "services/sourcing-import-dispatch.js",
       "type": "depends",
       "label": "services/sourcing-import-dispatch.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/sourcing-source-autopilot.js",
+      "type": "depends",
+      "label": "services/sourcing-source-autopilot.js"
     },
     {
       "from": "services/sourcing-workspace.js",
@@ -69582,6 +71665,18 @@
       "to": "db:suppliers_stats",
       "type": "db-read",
       "label": "suppliers_stats"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:sourcing_sources",
+      "type": "db-read",
+      "label": "sourcing_sources"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:sourcing_captures",
+      "type": "db-read",
+      "label": "sourcing_captures"
     },
     {
       "from": "services/sourcing-workspace.js",
@@ -69655,6 +71750,20 @@
     },
     {
       "from": "services/sourcing-workspace.js",
+      "to": "db:sourcing_sources",
+      "type": "db-write-via",
+      "label": "sourcing_sources",
+      "via": "sourcing-source-autopilot"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "db:sourcing_captures",
+      "type": "db-write-via",
+      "label": "sourcing_captures",
+      "via": "sourcing-source-autopilot"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
       "to": "db:partners",
       "type": "db-write-via",
       "label": "partners",
@@ -69677,6 +71786,12 @@
       "to": "doctrine:sourcing_partners_only",
       "type": "doctrine",
       "label": "sourcing_partners_only"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "doctrine:source_autopilot_authority_delegated",
+      "type": "doctrine",
+      "label": "source_autopilot_authority_delegated"
     },
     {
       "from": "services/sourcing-workspace.js",
@@ -69901,6 +72016,204 @@
       "label": "catalog"
     },
     {
+      "from": "services/suppliers/allegro-fulfillment-adapter.js",
+      "to": "services/suppliers/connectors/allegro-connector.js",
+      "type": "depends",
+      "label": "services/suppliers/connectors/allegro-connector.js"
+    },
+    {
+      "from": "services/suppliers/allegro-fulfillment-adapter.js",
+      "to": "services/suppliers/supplier-fulfillment-readiness.js",
+      "type": "depends",
+      "label": "services/suppliers/supplier-fulfillment-readiness.js"
+    },
+    {
+      "from": "scripts/allegro-sandbox-check.js",
+      "to": "services/suppliers/allegro-fulfillment-adapter.js",
+      "type": "uses",
+      "label": "scripts/allegro-sandbox-check.js"
+    },
+    {
+      "from": "services/suppliers/allegro-fulfillment-adapter.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+    },
+    {
+      "from": "services/suppliers/allegro-fulfillment-adapter.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+    },
+    {
+      "from": "services/suppliers/allegro-fulfillment-adapter.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/allegro-fulfillment-adapter.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
+    },
+    {
+      "from": "services/suppliers/allegro-purchase-reconciliation.js",
+      "to": "services/suppliers/allegro-sandbox-client.js",
+      "type": "depends",
+      "label": "services/suppliers/allegro-sandbox-client.js"
+    },
+    {
+      "from": "scripts/allegro-sandbox-purchase-proof.js",
+      "to": "services/suppliers/allegro-purchase-reconciliation.js",
+      "type": "uses",
+      "label": "scripts/allegro-sandbox-purchase-proof.js"
+    },
+    {
+      "from": "services/suppliers/allegro-purchase-reconciliation.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+    },
+    {
+      "from": "services/suppliers/allegro-purchase-reconciliation.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/allegro-purchase-reconciliation.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "node:crypto",
+      "type": "depends",
+      "label": "node:crypto"
+    },
+    {
+      "from": "services/suppliers/connectors/allegro-connector.js",
+      "to": "services/suppliers/allegro-sandbox-client.js",
+      "type": "uses",
+      "label": "services/suppliers/connectors/allegro-connector.js"
+    },
+    {
+      "from": "services/suppliers/allegro-purchase-reconciliation.js",
+      "to": "services/suppliers/allegro-sandbox-client.js",
+      "type": "uses",
+      "label": "services/suppliers/allegro-purchase-reconciliation.js"
+    },
+    {
+      "from": "scripts/allegro-sandbox-check.js",
+      "to": "services/suppliers/allegro-sandbox-client.js",
+      "type": "uses",
+      "label": "scripts/allegro-sandbox-check.js"
+    },
+    {
+      "from": "scripts/allegro-shipping-rate-contract.js",
+      "to": "services/suppliers/allegro-sandbox-client.js",
+      "type": "uses",
+      "label": "scripts/allegro-shipping-rate-contract.js"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "db:supplier_oauth_connections",
+      "type": "db-read",
+      "label": "supplier_oauth_connections"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "db:supplier_oauth_connections",
+      "type": "db-write",
+      "label": "supplier_oauth_connections"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "impact:supplier-import",
+      "type": "impact",
+      "label": "supplier-import"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "impact:secrets",
+      "type": "impact",
+      "label": "secrets"
+    },
+    {
+      "from": "services/suppliers/allegro-shipping-capability-adapter.js",
+      "to": "services/suppliers/shipping-capability-contract.js",
+      "type": "depends",
+      "label": "services/suppliers/shipping-capability-contract.js"
+    },
+    {
+      "from": "scripts/allegro-shipping-capability-proof.js",
+      "to": "services/suppliers/allegro-shipping-capability-adapter.js",
+      "type": "uses",
+      "label": "scripts/allegro-shipping-capability-proof.js"
+    },
+    {
+      "from": "provider contract tests",
+      "to": "services/suppliers/allegro-shipping-capability-adapter.js",
+      "type": "uses",
+      "label": "provider contract tests"
+    },
+    {
+      "from": "services/suppliers/allegro-shipping-capability-adapter.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md"
+    },
+    {
+      "from": "services/suppliers/allegro-shipping-capability-adapter.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/allegro-shipping-capability-adapter.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
+    },
+    {
       "from": "purchasing cutover reports",
       "to": "services/suppliers/canonical-unit-cutover-comparison.js",
       "type": "uses",
@@ -69943,16 +72256,40 @@
       "label": "services/suppliers/supplier-fulfillment-adapter-contract.js"
     },
     {
-      "from": "future purchasing cutover composition root",
+      "from": "services/suppliers/canonical-unit-purchasing-gate.js",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "depends",
+      "label": "services/suppliers/provider-authority.js"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js (GAP-4A",
       "to": "services/suppliers/canonical-unit-purchasing-gate.js",
       "type": "uses",
-      "label": "future purchasing cutover composition root"
+      "label": "services/purchasing-trigger-service.js (GAP-4A"
+    },
+    {
+      "from": "evaluateCanonicalProcurementReadiness)",
+      "to": "services/suppliers/canonical-unit-purchasing-gate.js",
+      "type": "uses",
+      "label": "evaluateCanonicalProcurementReadiness)"
+    },
+    {
+      "from": "scripts/allegro-golden-prebuyer-proof.js (prepareCanonicalUnitPurchase)",
+      "to": "services/suppliers/canonical-unit-purchasing-gate.js",
+      "type": "uses",
+      "label": "scripts/allegro-golden-prebuyer-proof.js (prepareCanonicalUnitPurchase)"
     },
     {
       "from": "services/suppliers/canonical-unit-purchasing-gate.js",
       "to": "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
       "type": "doctrine",
       "label": "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
+    },
+    {
+      "from": "services/suppliers/canonical-unit-purchasing-gate.js",
+      "to": "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+      "type": "doctrine",
+      "label": "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
     },
     {
       "from": "services/suppliers/canonical-unit-purchasing-gate.js",
@@ -70339,6 +72676,48 @@
       "label": "supplier-import"
     },
     {
+      "from": "services/suppliers/connectors/allegro-connector.js",
+      "to": "services/suppliers/allegro-sandbox-client.js",
+      "type": "depends",
+      "label": "services/suppliers/allegro-sandbox-client.js"
+    },
+    {
+      "from": "services/suppliers/connectors/allegro-connector.js",
+      "to": "services/suppliers/normalized-product.js",
+      "type": "depends",
+      "label": "services/suppliers/normalized-product.js"
+    },
+    {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "services/suppliers/connectors/allegro-connector.js",
+      "type": "uses",
+      "label": "services/sourcing-import-dispatch.js"
+    },
+    {
+      "from": "services/suppliers/allegro-fulfillment-adapter.js",
+      "to": "services/suppliers/connectors/allegro-connector.js",
+      "type": "uses",
+      "label": "services/suppliers/allegro-fulfillment-adapter.js"
+    },
+    {
+      "from": "services/suppliers/connectors/allegro-connector.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/connectors/allegro-connector.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/connectors/allegro-connector.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
       "from": "services/suppliers/connectors/api-connector.base.js",
       "to": "services/suppliers/normalized-product.js",
       "type": "depends",
@@ -70603,6 +72982,36 @@
       "label": "product-discovery"
     },
     {
+      "from": "services/suppliers/execution-adapter-registry.js",
+      "to": "services/suppliers/allegro-fulfillment-adapter.js",
+      "type": "depends",
+      "label": "services/suppliers/allegro-fulfillment-adapter.js"
+    },
+    {
+      "from": "services/suppliers/execution-adapter-registry.js",
+      "to": "services/suppliers/aliexpress-fulfillment-adapter.js",
+      "type": "depends",
+      "label": "services/suppliers/aliexpress-fulfillment-adapter.js"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js (GAP-2)",
+      "to": "services/suppliers/execution-adapter-registry.js",
+      "type": "uses",
+      "label": "services/purchasing-trigger-service.js (GAP-2)"
+    },
+    {
+      "from": "services/suppliers/execution-adapter-registry.js",
+      "to": "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+      "type": "doctrine",
+      "label": "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+    },
+    {
+      "from": "services/suppliers/execution-adapter-registry.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
       "from": "services/suppliers/json-source-pipeline.js",
       "to": "services/suppliers/normalized-product.js",
       "type": "depends",
@@ -70831,6 +73240,42 @@
       "label": "product-discovery"
     },
     {
+      "from": "services/suppliers/procurement-execution-boundary.js",
+      "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "type": "depends",
+      "label": "services/suppliers/supplier-fulfillment-adapter-contract.js"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js (GAP-4B)",
+      "to": "services/suppliers/procurement-execution-boundary.js",
+      "type": "uses",
+      "label": "services/purchasing-trigger-service.js (GAP-4B)"
+    },
+    {
+      "from": "services/suppliers/procurement-execution-boundary.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
+    },
+    {
+      "from": "services/suppliers/procurement-execution-boundary.js",
+      "to": "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+      "type": "doctrine",
+      "label": "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+    },
+    {
+      "from": "services/suppliers/procurement-execution-boundary.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/procurement-execution-boundary.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
+    },
+    {
       "from": "services/suppliers/promotion-classifier.js",
       "to": "services/suppliers/pipeline-constants.js",
       "type": "depends",
@@ -70883,6 +73328,84 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
+    },
+    {
+      "from": "validators/index.js (GAP-1)",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "uses",
+      "label": "validators/index.js (GAP-1)"
+    },
+    {
+      "from": "future adapter resolution (GAP-2)",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "uses",
+      "label": "future adapter resolution (GAP-2)"
+    },
+    {
+      "from": "services/suppliers/provider-authority.js",
+      "to": "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+      "type": "doctrine",
+      "label": "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+    },
+    {
+      "from": "services/suppliers/provider-authority.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/provider-authority.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
+    },
+    {
+      "from": "services/suppliers/purchasing-validators.js",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "depends",
+      "label": "services/suppliers/provider-authority.js"
+    },
+    {
+      "from": "(see files.tests in features/purchasing.feature.js — not yet",
+      "to": "services/suppliers/purchasing-validators.js",
+      "type": "uses",
+      "label": "(see files.tests in features/purchasing.feature.js — not yet"
+    },
+    {
+      "from": "services/suppliers/purchasing-validators.js",
+      "to": "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+      "type": "doctrine",
+      "label": "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+    },
+    {
+      "from": "services/suppliers/purchasing-validators.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "provider shipping capability adapters and contract proofs",
+      "to": "services/suppliers/shipping-capability-contract.js",
+      "type": "uses",
+      "label": "provider shipping capability adapters and contract proofs"
+    },
+    {
+      "from": "services/suppliers/shipping-capability-contract.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md"
+    },
+    {
+      "from": "services/suppliers/shipping-capability-contract.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/suppliers/shipping-capability-contract.js",
+      "to": "impact:supplier-integration",
+      "type": "impact",
+      "label": "supplier-integration"
     },
     {
       "from": "services/suppliers/source-product-normalizer.js",
@@ -70949,6 +73472,12 @@
       "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
       "type": "uses",
       "label": "services/suppliers/supplier-fulfillment-readiness.js"
+    },
+    {
+      "from": "services/suppliers/procurement-execution-boundary.js (GAP-4B)",
+      "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "type": "uses",
+      "label": "services/suppliers/procurement-execution-boundary.js (GAP-4B)"
     },
     {
       "from": "services/suppliers/supplier-fulfillment-adapter-contract.js",
@@ -74252,30 +76781,35 @@
       "doctrines": [
         "idempotence_cron",
         "retention_snapshots",
-        "bounded_mobile_money_reconciliation"
+        "bounded_mobile_money_reconciliation",
+        "bounded_incident_sla_escalation"
       ],
       "impactAreas": [
         "cash-reminders",
         "inventory",
         "auth-security",
         "economic-engine",
-        "payments"
+        "payments",
+        "incident-management"
       ],
       "mustCheck": [
         "db:economic_snapshots",
         "db:pickup_print_tokens",
         "db:pickup_reveal_codes",
         "db:revoked_tokens",
+        "doctrine:bounded_incident_sla_escalation",
         "doctrine:bounded_mobile_money_reconciliation",
         "doctrine:idempotence_cron",
         "doctrine:retention_snapshots",
         "impact:auth-security",
         "impact:cash-reminders",
         "impact:economic-engine",
+        "impact:incident-management",
         "impact:inventory",
         "impact:payments",
         "server.js",
         "services/cash-reminder-service.js",
+        "services/incident-escalation.js",
         "services/inventory-service.js",
         "services/mobile-money-reconciliation.js",
         "utils/logger.js",
@@ -76864,7 +79398,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal avec deux intentions lisibles : demander ou être rappelé, toujours sur un propos connu.",
+      "purpose": "Rendre Physical Offer / Service dans l'unique shell #k-modal ; Service possède une surface dédiée et peut handoff vers WhatsApp après création de l'Inquiry.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [],
@@ -78512,7 +81046,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/discovery-inquiry.js",
-      "purpose": "Consommer demander/rappel depuis le détail Discovery et créer l'Inquiry canonique après identité Komerce.",
+      "purpose": "Consommer demander/rappel/WhatsApp depuis le détail Discovery et créer l'Inquiry canonique après identité Komerce.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [
@@ -79228,7 +81762,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/providers-services-api.js",
-      "purpose": "Frontière frontend des mutations providers-services ; le téléphone reste exclusivement dérivé de la session serveur.",
+      "purpose": "Frontière frontend des mutations providers-services ; le téléphone requester reste exclusivement dérivé de la session serveur et le handoff WhatsApp reste serveur-owned.",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [
@@ -79860,7 +82394,7 @@
       "directDependsOn": [
         "middleware/auth.js",
         "middleware/require-catalog-global-authority.js",
-        "services/catalog-workspace.js"
+        "services/catalog-workspace-live-composer.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -79892,6 +82426,7 @@
         "impact:catalog",
         "middleware/auth.js",
         "middleware/require-catalog-global-authority.js",
+        "services/catalog-workspace-live-composer.js",
         "services/catalog-workspace.js"
       ]
     },
@@ -81021,6 +83556,7 @@
         "global_sourcing_authority",
         "no_client_market_dimension",
         "no_browser_internal_ids",
+        "source_autopilot_is_explicit_operator_authority",
         "dashboard_observes_server_truth"
       ],
       "impactAreas": [
@@ -81035,6 +83571,7 @@
         "doctrine:global_sourcing_authority",
         "doctrine:no_browser_internal_ids",
         "doctrine:no_client_market_dimension",
+        "doctrine:source_autopilot_is_explicit_operator_authority",
         "impact:admin-dashboard",
         "impact:catalog",
         "impact:partners",
@@ -81999,7 +84536,6 @@
         "db.js",
         "services/catalog-product-detail.js",
         "services/catalog-public-view.js",
-        "services/catalog-market-exposure-service.js",
         "services/market-local-price-resolution-service.js"
       ],
       "directUsedBy": [
@@ -82012,13 +84548,15 @@
         "product_variants",
         "products",
         "product_market_exposure",
+        "product_market_price_drafts",
         "markets"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
-        "only_LOCAL_ACTIVE_is_buyer_effective"
+        "only_LOCAL_ACTIVE_is_buyer_effective",
+        "visible_means_sellable"
       ],
       "impactAreas": [
         "catalog",
@@ -82030,18 +84568,19 @@
         "bootstrap/api-routes.js",
         "db:markets",
         "db:product_market_exposure",
+        "db:product_market_price_drafts",
         "db:product_skus",
         "db:product_variants",
         "db:products",
         "doctrine:docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
         "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
+        "doctrine:visible_means_sellable",
         "impact:catalog",
         "impact:market-autonomy",
         "impact:modal",
         "impact:product-detail",
         "public/boutique/js/b-modal-product-detail-bootstrap.js",
         "routes/products.js",
-        "services/catalog-market-exposure-service.js",
         "services/catalog-product-detail.js",
         "services/catalog-public-view.js",
         "services/market-local-price-resolution-service.js"
@@ -82822,7 +85361,7 @@
         "middleware/auth.js",
         "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
-        "services/*"
+        "services/hub-operations.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -82837,8 +85376,8 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change",
-        "market_operator_scoping (GAP-1)"
+        "HUB-001 Physical Identity",
+        "Allocation & Custody; HUB-002 Operator Execution Cutover; market_operator_scoping"
       ],
       "impactAreas": [
         "logistics",
@@ -82850,8 +85389,8 @@
         "db:parcel_items",
         "db:parcels",
         "db:users",
-        "doctrine:market_operator_scoping (GAP-1)",
-        "doctrine:resolve_before_behavior_change",
+        "doctrine:Allocation & Custody; HUB-002 Operator Execution Cutover; market_operator_scoping",
+        "doctrine:HUB-001 Physical Identity",
         "impact:logistics",
         "impact:market",
         "middleware/auth.js",
@@ -85150,7 +87689,7 @@
         "services/providers-inquiry-service.js",
         "services/providers-interaction-policy.js",
         "middleware/auth-guest.js",
-        "db (résolution code marché)"
+        "db (résolution code marché + handoff WhatsApp)"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js",
@@ -85158,7 +87697,9 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "markets"
+        "markets",
+        "services",
+        "providers"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -85181,6 +87722,8 @@
         "bootstrap/api-routes.js",
         "db:inquiries",
         "db:markets",
+        "db:providers",
+        "db:services",
         "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
         "impact:boutique",
         "impact:discovery-rail",
@@ -85237,6 +87780,7 @@
         "routes/payments.js",
         "services/order-mutation-service.js",
         "services/purchasing-admin-service.js",
+        "services/purchasing-canonical-money.js",
         "services/purchasing-receive-service.js",
         "services/purchasing-trigger-service.js",
         "services/repair-ordered-without-purchase-orders.js",
@@ -85350,7 +87894,8 @@
       "directDependsOn": [
         "db.js",
         "middleware/auth.js",
-        "services/*"
+        "services/scan-operations.js",
+        "services/hub-operations.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -85367,7 +87912,8 @@
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "HUB-002 Operator Execution Cutover"
       ],
       "impactAreas": [
         "logistics"
@@ -85380,10 +87926,12 @@
         "db:purchase_orders",
         "db:scans",
         "db:users",
+        "doctrine:HUB-002 Operator Execution Cutover",
         "doctrine:resolve_before_behavior_change",
         "impact:logistics",
         "middleware/auth.js",
         "middleware/validate.js",
+        "services/hub-operations.js",
         "services/scan-operations.js"
       ]
     },
@@ -86947,6 +89495,70 @@
         "utils/rules.js"
       ]
     },
+    "services/catalog-live-flow.js": {
+      "role": "catalog-live-source-flow-projection",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/sourcing-source-autopilot.js",
+        "services/sourcing-import-dispatch.js",
+        "services/product-publication-guard.js",
+        "services/catalog-public-view.js"
+      ],
+      "directUsedBy": [
+        "services/catalog-workspace-live-composer.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "sourcing_candidates",
+        "products",
+        "catalog_media",
+        "product_market_exposure",
+        "product_market_price_drafts",
+        "product_skus",
+        "product_variants",
+        "markets"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "catalog_observes_sourcing_without_stealing_mutation_authority",
+        "dashboard_exposes_business_truth_not_backend_states",
+        "visible_means_sellable"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "boutique",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:catalog_media",
+        "db:markets",
+        "db:product_market_exposure",
+        "db:product_market_price_drafts",
+        "db:product_skus",
+        "db:product_variants",
+        "db:products",
+        "db:sourcing_candidates",
+        "doctrine:catalog_observes_sourcing_without_stealing_mutation_authority",
+        "doctrine:dashboard_exposes_business_truth_not_backend_states",
+        "doctrine:visible_means_sellable",
+        "impact:admin-dashboard",
+        "impact:boutique",
+        "impact:catalog",
+        "impact:sourcing",
+        "services/catalog-public-view.js",
+        "services/catalog-workspace-live-composer.js",
+        "services/product-publication-guard.js",
+        "services/sourcing-import-dispatch.js",
+        "services/sourcing-source-autopilot.js"
+      ]
+    },
     "services/catalog-market-exposure-service.js": {
       "role": "catalog-market-exposure-service",
       "domain": "catalog",
@@ -86990,8 +89602,8 @@
         "doctrine:writer_not_owner_boundary",
         "impact:catalog",
         "impact:market-delegation",
-        "routes/catalog-product-detail.js",
         "services/catalog-public-view.js",
+        "services/discovery-rail-composer.js",
         "services/market-delegation-catalog-service.js"
       ]
     },
@@ -87477,30 +90089,88 @@
       "ownedFiles": [],
       "dbRead": [
         "markets",
-        "product_market_exposure"
+        "product_market_exposure",
+        "product_market_price_drafts",
+        "product_skus",
+        "product_variants"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "docs/doctrine/DOCTRINE_CATALOGUE.md"
+        "docs/doctrine/DOCTRINE_CATALOGUE.md",
+        "only_LOCAL_ACTIVE_is_buyer_effective",
+        "visible_means_sellable"
       ],
       "impactAreas": [
         "catalog",
         "product-discovery",
-        "modal"
+        "modal",
+        "market-autonomy",
+        "checkout"
       ],
       "mustCheck": [
         "db:markets",
         "db:product_market_exposure",
+        "db:product_market_price_drafts",
+        "db:product_skus",
+        "db:product_variants",
         "doctrine:docs/doctrine/DOCTRINE_CATALOGUE.md",
+        "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
+        "doctrine:visible_means_sellable",
         "impact:catalog",
+        "impact:checkout",
+        "impact:market-autonomy",
         "impact:modal",
         "impact:product-discovery",
         "routes/catalog-product-detail.js",
         "routes/products.js",
+        "services/catalog-live-flow.js",
         "services/catalog-market-exposure-service.js",
         "services/catalog-product-read-cutover-trial.js",
         "services/discovery-rail-composer.js"
+      ]
+    },
+    "services/catalog-workspace-live-composer.js": {
+      "role": "canonical-catalog-workspace-live-composer",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/catalog-workspace.js",
+        "services/catalog-live-flow.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-catalog-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "delegated"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority",
+        "dashboard_exposes_business_truth"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "boutique",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:delegated",
+        "doctrine:catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority",
+        "doctrine:dashboard_exposes_business_truth",
+        "impact:admin-dashboard",
+        "impact:boutique",
+        "impact:catalog",
+        "impact:sourcing",
+        "routes/admin-catalog-workspace.js",
+        "services/catalog-live-flow.js",
+        "services/catalog-workspace.js"
       ]
     },
     "services/catalog-workspace.js": {
@@ -87555,6 +90225,7 @@
         "routes/admin-catalog-workspace.js",
         "services/boutique-taxonomy-admin.js",
         "services/catalog-approval.js",
+        "services/catalog-workspace-live-composer.js",
         "services/product-admin-service.js",
         "utils/rules.js"
       ]
@@ -89049,6 +91720,8 @@
       "directDependsOn": [
         "db",
         "services/local-stock-service.js",
+        "services/catalog-market-exposure-service.js",
+        "services/market-local-price-resolution-service.js",
         "services/providers-service.js",
         "services/catalog-public-view.js"
       ],
@@ -89063,25 +91736,33 @@
       "dbWriteVia": [],
       "doctrines": [
         "docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
-        "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md"
+        "docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md",
+        "only_LOCAL_ACTIVE_is_buyer_effective"
       ],
       "impactAreas": [
         "recommendations",
         "boutique",
         "discovery-rail",
-        "category-navigation"
+        "category-navigation",
+        "market-autonomy",
+        "pricing"
       ],
       "mustCheck": [
         "db:products",
         "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md",
         "doctrine:docs/doctrine/DOCTRINE_DISCOVERY_LOCALE_UNIFIEE.md",
+        "doctrine:only_LOCAL_ACTIVE_is_buyer_effective",
         "impact:boutique",
         "impact:category-navigation",
         "impact:discovery-rail",
+        "impact:market-autonomy",
+        "impact:pricing",
         "impact:recommendations",
+        "services/catalog-market-exposure-service.js",
         "services/catalog-public-view.js",
         "services/discovery-rail-service.js",
         "services/local-stock-service.js",
+        "services/market-local-price-resolution-service.js",
         "services/providers-service.js"
       ]
     },
@@ -89971,51 +92652,252 @@
     "services/hub-operations.js": {
       "role": "hub-operations",
       "domain": "logistics",
-      "criticality": "medium",
+      "criticality": "critical",
       "headerType": "full",
       "owner": null,
       "purpose": null,
       "directDependsOn": [
         "db",
-        "utils/parcelSync.js"
+        "services/hub-physical-identity.js"
       ],
       "directUsedBy": [
-        "routes/hub.js"
+        "routes/hub.js",
+        "routes/scans.js"
       ],
       "ownedFiles": [],
       "dbRead": [
         "business_rules",
+        "hub_physical_units",
         "parcel_items",
         "parcels",
         "products",
         "scan_events"
       ],
       "dbWrite": [
-        "parcels",
         "products",
         "scan_events"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "hub-physical-identity",
+          "tables": [
+            "hub_purchase_allocations",
+            "hub_physical_units",
+            "hub_physical_unit_placements",
+            "hub_custody_events",
+            "incidents",
+            "outbox_events"
+          ]
+        }
+      ],
       "doctrines": [
-        "resolve_before_behavior_change",
-        "DOCTRINE_DENSITE_VALEUR (V-4",
-        "2026-07-02)"
+        "HUB-001 Physical Identity",
+        "Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR"
       ],
       "impactAreas": [
-        "unknown"
+        "logistics",
+        "purchasing",
+        "incident-management"
       ],
       "mustCheck": [
         "db:business_rules",
+        "db:hub_custody_events",
+        "db:hub_physical_unit_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
+        "db:incidents",
+        "db:outbox_events",
         "db:parcel_items",
         "db:parcels",
         "db:products",
         "db:scan_events",
-        "doctrine:2026-07-02)",
-        "doctrine:DOCTRINE_DENSITE_VALEUR (V-4",
-        "doctrine:resolve_before_behavior_change",
-        "impact:unknown",
+        "doctrine:Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR",
+        "doctrine:HUB-001 Physical Identity",
+        "impact:incident-management",
+        "impact:logistics",
+        "impact:purchasing",
         "routes/hub.js",
+        "routes/scans.js",
+        "services/hub-physical-identity.js",
         "utils/parcelSync.js"
+      ]
+    },
+    "services/hub-physical-identity.js": {
+      "role": "hub-physical-identity",
+      "domain": "logistics",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/outbox-producer.js",
+        "services/incident-write-service.js"
+      ],
+      "directUsedBy": [
+        "HUB-001 internal logistics boundary"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "purchase_orders",
+        "orders",
+        "order_items",
+        "incidents",
+        "hub_purchase_allocations",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_custody_events"
+      ],
+      "dbWrite": [
+        "hub_purchase_allocations",
+        "hub_physical_units",
+        "hub_physical_unit_placements",
+        "hub_custody_events"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "incident-write-service",
+          "tables": [
+            "incidents"
+          ]
+        },
+        {
+          "via": "outbox-producer",
+          "tables": [
+            "outbox_events"
+          ]
+        }
+      ],
+      "doctrines": [
+        "HUB-001 Physical Identity",
+        "Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT"
+      ],
+      "impactAreas": [
+        "logistics",
+        "purchasing",
+        "market",
+        "incident-management"
+      ],
+      "mustCheck": [
+        "db:hub_custody_events",
+        "db:hub_physical_unit_placements",
+        "db:hub_physical_units",
+        "db:hub_purchase_allocations",
+        "db:incidents",
+        "db:order_items",
+        "db:orders",
+        "db:outbox_events",
+        "db:purchase_orders",
+        "doctrine:Allocation & Custody; F2_INCIDENT_GOVERNANCE_CONTRACT; F3_PROOF_REVALIDATION_CONTRACT",
+        "doctrine:HUB-001 Physical Identity",
+        "impact:incident-management",
+        "impact:logistics",
+        "impact:market",
+        "impact:purchasing",
+        "services/hub-operations.js",
+        "services/incident-write-service.js",
+        "services/outbox-producer.js"
+      ]
+    },
+    "services/incident-escalation.js": {
+      "role": "incident-sla-escalation",
+      "domain": "incident-management",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/incident-governance.js",
+        "services/signal-service.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/crons.js",
+        "tests/unit/incident-escalation.test.js",
+        "tests/integration/incident-f3-postgres.test.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "incidents",
+        "orders",
+        "parcels"
+      ],
+      "dbWrite": [
+        "incidents"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "signal-service",
+          "tables": [
+            "signals"
+          ]
+        }
+      ],
+      "doctrines": [
+        "F3_INCIDENT_SLA_CONTRACT",
+        "durable_operational_recipient",
+        "no_auto_resolution"
+      ],
+      "impactAreas": [
+        "incident-management",
+        "decision-signals",
+        "logistics",
+        "orders",
+        "purchasing",
+        "payments"
+      ],
+      "mustCheck": [
+        "bootstrap/crons.js",
+        "db:incidents",
+        "db:orders",
+        "db:parcels",
+        "db:signals",
+        "doctrine:F3_INCIDENT_SLA_CONTRACT",
+        "doctrine:durable_operational_recipient",
+        "doctrine:no_auto_resolution",
+        "impact:decision-signals",
+        "impact:incident-management",
+        "impact:logistics",
+        "impact:orders",
+        "impact:payments",
+        "impact:purchasing",
+        "services/incident-governance.js",
+        "services/signal-service.js"
+      ]
+    },
+    "services/incident-governance.js": {
+      "role": "incident-management-governance-mapping",
+      "domain": "incident-management",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "services/incident-write-service.js",
+        "services/incident-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "F2_INCIDENT_GOVERNANCE_CONTRACT"
+      ],
+      "impactAreas": [
+        "incident-management",
+        "logistics",
+        "orders",
+        "purchasing"
+      ],
+      "mustCheck": [
+        "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
+        "impact:incident-management",
+        "impact:logistics",
+        "impact:orders",
+        "impact:purchasing",
+        "services/incident-escalation.js",
+        "services/incident-service.js",
+        "services/incident-write-service.js"
       ]
     },
     "services/incident-service.js": {
@@ -90026,7 +92908,8 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "db"
+        "db",
+        "services/incident-governance"
       ],
       "directUsedBy": [],
       "ownedFiles": [],
@@ -90041,7 +92924,8 @@
       ],
       "dbWriteVia": [],
       "doctrines": [
-        "resolve_before_behavior_change"
+        "resolve_before_behavior_change",
+        "F2_INCIDENT_GOVERNANCE_CONTRACT"
       ],
       "impactAreas": [
         "unknown"
@@ -90051,8 +92935,10 @@
         "db:orders",
         "db:parcels",
         "db:scan_events",
+        "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
         "doctrine:resolve_before_behavior_change",
-        "impact:unknown"
+        "impact:unknown",
+        "services/incident-governance.js"
       ]
     },
     "services/incident-write-service.js": {
@@ -90062,7 +92948,9 @@
       "headerType": "full",
       "owner": null,
       "purpose": null,
-      "directDependsOn": [],
+      "directDependsOn": [
+        "services/incident-governance"
+      ],
       "directUsedBy": [
         "services/scan-engine.js",
         "services/reconciliation-service.js",
@@ -90070,7 +92958,8 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "incidents"
+        "incidents",
+        "scan_events"
       ],
       "dbWrite": [
         "incidents"
@@ -90078,7 +92967,9 @@
       "dbWriteVia": [],
       "doctrines": [
         "lifecycle_owner_boundary",
-        "preserve_caller_transaction"
+        "preserve_caller_transaction",
+        "F2_INCIDENT_GOVERNANCE_CONTRACT",
+        "F3_PROOF_REVALIDATION_CONTRACT"
       ],
       "impactAreas": [
         "incident-management",
@@ -90090,6 +92981,9 @@
       ],
       "mustCheck": [
         "db:incidents",
+        "db:scan_events",
+        "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
+        "doctrine:F3_PROOF_REVALIDATION_CONTRACT",
         "doctrine:lifecycle_owner_boundary",
         "doctrine:preserve_caller_transaction",
         "impact:dashboard",
@@ -90100,6 +92994,8 @@
         "impact:platform-ops",
         "routes/ops-api.js",
         "services/alert-engine.js",
+        "services/hub-physical-identity.js",
+        "services/incident-governance.js",
         "services/reconciliation-service.js",
         "services/scan-engine.js"
       ]
@@ -91246,6 +94142,7 @@
         "impact:shared-cart",
         "routes/catalog-product-detail.js",
         "routes/products.js",
+        "services/discovery-rail-composer.js",
         "services/market-local-price-activation-service.js",
         "services/order-checkout-service.js",
         "services/pricing-market-corridor.js",
@@ -92980,7 +95877,9 @@
         "Allocation & Custody)"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "outbox_events"
+      ],
       "dbWrite": [
         "outbox_events"
       ],
@@ -92996,7 +95895,8 @@
         "db:outbox_events",
         "doctrine:HUB-000 F0 (transactional outbox lite)",
         "impact:infrastructure",
-        "impact:logistics"
+        "impact:logistics",
+        "services/hub-physical-identity.js"
       ]
     },
     "services/outbox-worker.js": {
@@ -93230,6 +96130,7 @@
         "services/order-status-machine.js",
         "services/parcel-guards.js",
         "services/parcel-service.js",
+        "services/parcel-transition-guard.js",
         "services/refund-service.js",
         "utils/logger.js",
         "utils/reference.js",
@@ -93298,6 +96199,7 @@
         "services/order-status-machine.js",
         "services/parcel-guards.js",
         "services/parcel-service.js",
+        "services/parcel-transition-guard.js",
         "services/refund-service.js",
         "services/simulator/state-advancer.js",
         "utils/logger.js",
@@ -93378,6 +96280,43 @@
         "services/parcel-guards.js",
         "services/parcel-operations.js",
         "utils/parcels.js"
+      ]
+    },
+    "services/parcel-transition-guard.js": {
+      "role": "incident-management-transition-guard",
+      "domain": "incident-management",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/incident-governance"
+      ],
+      "directUsedBy": [
+        "services/parcel-operations.js#transitionParcelStatus"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "incidents",
+        "parcels"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "F2_INCIDENT_GOVERNANCE_CONTRACT"
+      ],
+      "impactAreas": [
+        "incident-management",
+        "logistics"
+      ],
+      "mustCheck": [
+        "db:incidents",
+        "db:parcels",
+        "doctrine:F2_INCIDENT_GOVERNANCE_CONTRACT",
+        "impact:incident-management",
+        "impact:logistics",
+        "services/parcel-operations.js"
       ]
     },
     "services/parcelOptimizationService.js": {
@@ -95607,6 +98546,7 @@
         "impact:catalog",
         "impact:product-discovery",
         "services/catalog-approval.js",
+        "services/catalog-live-flow.js",
         "services/product-admin-service.js",
         "utils/logger.js"
       ]
@@ -96046,6 +98986,49 @@
         "utils/logger.js"
       ]
     },
+    "services/purchasing-canonical-money.js": {
+      "role": "purchasing-canonical-supplier-money",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/sourcing-canonical-unit-product-sku-resolution.js",
+        "services/suppliers/supplier-order-identity.js"
+      ],
+      "directUsedBy": [
+        "services/purchasing-trigger-service.js",
+        "routes/purchasing.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "product_skus",
+        "delegated_to_sourcing_resolver"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "sourcing",
+        "finance"
+      ],
+      "mustCheck": [
+        "db:delegated_to_sourcing_resolver",
+        "db:product_skus",
+        "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
+        "impact:finance",
+        "impact:purchasing",
+        "impact:sourcing",
+        "routes/purchasing.js",
+        "services/purchasing-trigger-service.js",
+        "services/sourcing-canonical-unit-product-sku-resolution.js",
+        "services/suppliers/supplier-order-identity.js"
+      ]
+    },
     "services/purchasing-receive-service.js": {
       "role": "purchasing-receive-service",
       "domain": "purchasing",
@@ -96097,6 +99080,9 @@
         "db",
         "services/notification-service.js",
         "services/suppliers/supplier-order-identity.js",
+        "services/suppliers/canonical-unit-purchasing-gate.js",
+        "services/suppliers/procurement-execution-boundary.js",
+        "services/suppliers/execution-adapter-registry.js",
         "utils/logger.js"
       ],
       "directUsedBy": [
@@ -96122,7 +99108,8 @@
       "doctrines": [
         "resolve_before_behavior_change",
         "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
-        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
       ],
       "impactAreas": [
         "purchasing",
@@ -96138,6 +99125,7 @@
         "db:purchase_orders",
         "db:relais",
         "db:suppliers",
+        "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
         "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
         "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
         "doctrine:resolve_before_behavior_change",
@@ -96146,6 +99134,10 @@
         "routes/cash.js",
         "routes/purchasing.js",
         "services/notification-service.js",
+        "services/purchasing-canonical-money.js",
+        "services/suppliers/canonical-unit-purchasing-gate.js",
+        "services/suppliers/execution-adapter-registry.js",
+        "services/suppliers/procurement-execution-boundary.js",
         "services/suppliers/supplier-order-identity.js",
         "utils/logger.js"
       ]
@@ -97552,14 +100544,16 @@
       "dbWriteVia": [],
       "doctrines": [
         "resolve_before_behavior_change",
-        "market_scope_is_server_authority"
+        "market_scope_is_server_authority",
+        "preserve_caller_transaction"
       ],
       "impactAreas": [
         "decision-signals",
         "purchasing",
         "orders",
         "logistics",
-        "market-authorization"
+        "market-authorization",
+        "incident-management"
       ],
       "mustCheck": [
         "bootstrap/feature-wiring.js",
@@ -97569,14 +100563,17 @@
         "db:purchase_orders",
         "db:signals",
         "doctrine:market_scope_is_server_authority",
+        "doctrine:preserve_caller_transaction",
         "doctrine:resolve_before_behavior_change",
         "impact:decision-signals",
+        "impact:incident-management",
         "impact:logistics",
         "impact:market-authorization",
         "impact:orders",
         "impact:purchasing",
         "routes/signals.js",
         "services/action-center-workspace.js",
+        "services/incident-escalation.js",
         "services/signal-admin-service.js",
         "utils/logger.js"
       ]
@@ -98175,6 +101172,7 @@
         "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
         "impact:purchasing",
         "impact:sourcing",
+        "services/purchasing-canonical-money.js",
         "services/sourcing-canonical-unit-projection.js",
         "services/sourcing-catalog-product-linkage.js",
         "services/sourcing-golden-e2e-service.js",
@@ -98344,18 +101342,21 @@
         "services/suppliers/connectors/manual-connector.js",
         "services/suppliers/connectors/noon-connector.js",
         "services/suppliers/connectors/cj-connector.js",
-        "services/suppliers/connectors/aliexpress-connected-connector.js"
+        "services/suppliers/connectors/aliexpress-connected-connector.js",
+        "services/suppliers/connectors/allegro-connector.js"
       ],
       "directUsedBy": [
         "routes/sourcing-scanner.js",
-        "services/sourcing-workspace.js"
+        "services/sourcing-workspace.js",
+        "services/sourcing-source-autopilot.js"
       ],
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "single_connector_dispatch_authority"
+        "single_connector_dispatch_authority",
+        "source_autopull_is_registry_metadata_not_provider_branching"
       ],
       "impactAreas": [
         "sourcing",
@@ -98363,12 +101364,16 @@
       ],
       "mustCheck": [
         "doctrine:single_connector_dispatch_authority",
+        "doctrine:source_autopull_is_registry_metadata_not_provider_branching",
         "impact:sourcing",
         "impact:supplier-import",
         "routes/sourcing-scanner.js",
+        "services/catalog-live-flow.js",
+        "services/sourcing-source-autopilot.js",
         "services/sourcing-workspace.js",
         "services/suppliers/connectors/aliexpress-connected-connector.js",
         "services/suppliers/connectors/aliexpress-connector.js",
+        "services/suppliers/connectors/allegro-connector.js",
         "services/suppliers/connectors/cj-connector.js",
         "services/suppliers/connectors/csv-connector.js",
         "services/suppliers/connectors/manual-connector.js",
@@ -98560,6 +101565,7 @@
         "impact:supplier-import",
         "services/sourcing-observation-shadow-plan.js",
         "services/sourcing-shadow-resolution-service.js",
+        "services/sourcing-source-autopilot.js",
         "services/suppliers/catalog-import-orchestrator.js"
       ]
     },
@@ -98743,6 +101749,80 @@
         "services/sourcing-resolution-evidence.js"
       ]
     },
+    "services/sourcing-source-autopilot.js": {
+      "role": "sourcing-source-autopilot",
+      "domain": "sourcing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/sourcing-import-dispatch.js",
+        "services/suppliers/catalog-import-orchestrator.js",
+        "services/sourcing-observation-shadow-service.js"
+      ],
+      "directUsedBy": [
+        "services/sourcing-workspace.js",
+        "services/sourcing-source-autopilot.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "sourcing_sources",
+        "sourcing_captures"
+      ],
+      "dbWrite": [
+        "sourcing_sources",
+        "sourcing_captures"
+      ],
+      "dbWriteVia": [
+        {
+          "via": "catalog-import-orchestrator",
+          "tables": [
+            "supplier_catalog_imports",
+            "sourcing_candidates",
+            "sourcing_sources",
+            "sourcing_source_provides",
+            "sourcing_captures",
+            "sourcing_observations"
+          ]
+        }
+      ],
+      "doctrines": [
+        "source_on_means_active_recurring_acquisition",
+        "source_lifecycle_is_not_autopilot_authority",
+        "provider_agnostic_runner",
+        "bounded_pull",
+        "fail_closed_connector_readiness"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "catalog",
+        "supplier-import"
+      ],
+      "mustCheck": [
+        "db:sourcing_candidates",
+        "db:sourcing_captures",
+        "db:sourcing_observations",
+        "db:sourcing_source_provides",
+        "db:sourcing_sources",
+        "db:supplier_catalog_imports",
+        "doctrine:bounded_pull",
+        "doctrine:fail_closed_connector_readiness",
+        "doctrine:provider_agnostic_runner",
+        "doctrine:source_lifecycle_is_not_autopilot_authority",
+        "doctrine:source_on_means_active_recurring_acquisition",
+        "impact:catalog",
+        "impact:sourcing",
+        "impact:supplier-import",
+        "services/catalog-live-flow.js",
+        "services/sourcing-import-dispatch.js",
+        "services/sourcing-observation-shadow-service.js",
+        "services/sourcing-source-autopilot.js",
+        "services/sourcing-workspace.js",
+        "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
     "services/sourcing-workspace.js": {
       "role": "canonical-sourcing-workspace-service",
       "domain": "sourcing",
@@ -98756,6 +101836,7 @@
         "services/sourcing-mutations.js",
         "services/sourcing-candidate-actions.js",
         "services/sourcing-import-dispatch.js",
+        "services/sourcing-source-autopilot.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "services/partner-admin-service.js"
       ],
@@ -98768,7 +101849,9 @@
         "sourcing_candidates",
         "supplier_catalog_imports",
         "partners",
-        "suppliers_stats"
+        "suppliers_stats",
+        "sourcing_sources",
+        "sourcing_captures"
       ],
       "dbWrite": [],
       "dbWriteVia": [
@@ -98798,6 +101881,13 @@
           ]
         },
         {
+          "via": "sourcing-source-autopilot",
+          "tables": [
+            "sourcing_sources",
+            "sourcing_captures"
+          ]
+        },
+        {
           "via": "partner-admin-service",
           "tables": [
             "partners"
@@ -98808,6 +101898,7 @@
         "global_sourcing_authority",
         "browser_business_refs_only",
         "sourcing_partners_only",
+        "source_autopilot_authority_delegated",
         "workspace_orchestrates_not_reimplements"
       ],
       "impactAreas": [
@@ -98825,10 +101916,13 @@
         "db:products",
         "db:sourcing_candidate_events",
         "db:sourcing_candidates",
+        "db:sourcing_captures",
+        "db:sourcing_sources",
         "db:supplier_catalog_imports",
         "db:suppliers_stats",
         "doctrine:browser_business_refs_only",
         "doctrine:global_sourcing_authority",
+        "doctrine:source_autopilot_authority_delegated",
         "doctrine:sourcing_partners_only",
         "doctrine:workspace_orchestrates_not_reimplements",
         "impact:admin-dashboard",
@@ -98841,6 +101935,7 @@
         "services/sourcing-candidate-actions.js",
         "services/sourcing-import-dispatch.js",
         "services/sourcing-mutations.js",
+        "services/sourcing-source-autopilot.js",
         "services/suppliers/catalog-import-orchestrator.js"
       ]
     },
@@ -98918,7 +102013,8 @@
         "impact:purchasing",
         "impact:supplier-integration",
         "services/suppliers/aliexpress-purchase-preflight.js",
-        "services/suppliers/connectors/aliexpress-connected-connector.js"
+        "services/suppliers/connectors/aliexpress-connected-connector.js",
+        "services/suppliers/execution-adapter-registry.js"
       ]
     },
     "services/suppliers/aliexpress-oauth.js": {
@@ -98996,6 +102092,154 @@
         "services/suppliers/supplier-order-identity.js"
       ]
     },
+    "services/suppliers/allegro-fulfillment-adapter.js": {
+      "role": "allegro-sandbox-fulfillment-adapter",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/connectors/allegro-connector.js",
+        "services/suppliers/supplier-fulfillment-readiness.js"
+      ],
+      "directUsedBy": [
+        "scripts/allegro-sandbox-check.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "impact:purchasing",
+        "impact:supplier-integration",
+        "services/suppliers/connectors/allegro-connector.js",
+        "services/suppliers/execution-adapter-registry.js",
+        "services/suppliers/supplier-fulfillment-readiness.js"
+      ]
+    },
+    "services/suppliers/allegro-purchase-reconciliation.js": {
+      "role": "allegro-sandbox-purchase-reconciliation",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/allegro-sandbox-client.js"
+      ],
+      "directUsedBy": [
+        "scripts/allegro-sandbox-purchase-proof.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "impact:purchasing",
+        "impact:supplier-integration",
+        "services/suppliers/allegro-sandbox-client.js"
+      ]
+    },
+    "services/suppliers/allegro-sandbox-client.js": {
+      "role": "allegro-sandbox-client",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "node:crypto"
+      ],
+      "directUsedBy": [
+        "services/suppliers/connectors/allegro-connector.js",
+        "services/suppliers/allegro-purchase-reconciliation.js",
+        "scripts/allegro-sandbox-check.js",
+        "scripts/allegro-shipping-rate-contract.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "supplier_oauth_connections"
+      ],
+      "dbWrite": [
+        "supplier_oauth_connections"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "supplier-import",
+        "purchasing",
+        "secrets"
+      ],
+      "mustCheck": [
+        "db:supplier_oauth_connections",
+        "doctrine:docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md",
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "impact:catalog",
+        "impact:purchasing",
+        "impact:secrets",
+        "impact:supplier-import",
+        "services/suppliers/allegro-purchase-reconciliation.js",
+        "services/suppliers/connectors/allegro-connector.js"
+      ]
+    },
+    "services/suppliers/allegro-shipping-capability-adapter.js": {
+      "role": "allegro-shipping-capability-adapter",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/shipping-capability-contract.js"
+      ],
+      "directUsedBy": [
+        "scripts/allegro-shipping-capability-proof.js",
+        "provider contract tests"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md",
+        "impact:purchasing",
+        "impact:supplier-integration",
+        "services/suppliers/shipping-capability-contract.js"
+      ]
+    },
     "services/suppliers/canonical-unit-cutover-comparison.js": {
       "role": "canonical-unit-purchasing-cutover-comparison",
       "domain": "purchasing",
@@ -99034,17 +102278,21 @@
       "directDependsOn": [
         "services/sourcing-canonical-unit-product-sku-resolution.js",
         "services/suppliers/supplier-order-identity.js",
-        "services/suppliers/supplier-fulfillment-adapter-contract.js"
+        "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "services/suppliers/provider-authority.js"
       ],
       "directUsedBy": [
-        "future purchasing cutover composition root"
+        "services/purchasing-trigger-service.js (GAP-4A",
+        "evaluateCanonicalProcurementReadiness)",
+        "scripts/allegro-golden-prebuyer-proof.js (prepareCanonicalUnitPurchase)"
       ],
       "ownedFiles": [],
       "dbRead": [],
       "dbWrite": [],
       "dbWriteVia": [],
       "doctrines": [
-        "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md"
+        "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
       ],
       "impactAreas": [
         "purchasing",
@@ -99052,9 +102300,12 @@
       ],
       "mustCheck": [
         "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
+        "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
         "impact:purchasing",
         "impact:sourcing",
+        "services/purchasing-trigger-service.js",
         "services/sourcing-canonical-unit-product-sku-resolution.js",
+        "services/suppliers/provider-authority.js",
         "services/suppliers/supplier-fulfillment-adapter-contract.js",
         "services/suppliers/supplier-order-identity.js"
       ]
@@ -99149,6 +102400,7 @@
         "services/pricing-engine.js",
         "services/sourcing-candidate-import-service.js",
         "services/sourcing-observation-shadow-service.js",
+        "services/sourcing-source-autopilot.js",
         "services/sourcing-workspace.js",
         "services/supplier-catalog-scanner.js",
         "services/suppliers/normalized-product.js",
@@ -99332,6 +102584,42 @@
         "impact:supplier-import",
         "services/sourcing-import-dispatch.js",
         "services/suppliers/connectors/aliexpress-connected-connector.js",
+        "services/suppliers/normalized-product.js"
+      ]
+    },
+    "services/suppliers/connectors/allegro-connector.js": {
+      "role": "allegro-sandbox-source-connector",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/allegro-sandbox-client.js",
+        "services/suppliers/normalized-product.js"
+      ],
+      "directUsedBy": [
+        "services/sourcing-import-dispatch.js",
+        "services/suppliers/allegro-fulfillment-adapter.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "impact:catalog",
+        "impact:sourcing",
+        "services/sourcing-import-dispatch.js",
+        "services/suppliers/allegro-fulfillment-adapter.js",
+        "services/suppliers/allegro-sandbox-client.js",
         "services/suppliers/normalized-product.js"
       ]
     },
@@ -99557,6 +102845,38 @@
         "services/suppliers/connectors/api-connector.base.js"
       ]
     },
+    "services/suppliers/execution-adapter-registry.js": {
+      "role": "execution-adapter-registry",
+      "domain": "purchasing",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/allegro-fulfillment-adapter.js",
+        "services/suppliers/aliexpress-fulfillment-adapter.js"
+      ],
+      "directUsedBy": [
+        "services/purchasing-trigger-service.js (GAP-2)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing"
+      ],
+      "mustCheck": [
+        "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+        "impact:purchasing",
+        "services/purchasing-trigger-service.js",
+        "services/suppliers/aliexpress-fulfillment-adapter.js",
+        "services/suppliers/allegro-fulfillment-adapter.js"
+      ]
+    },
     "services/suppliers/json-source-pipeline.js": {
       "role": "json-source-pipeline",
       "domain": "catalog",
@@ -99678,6 +102998,7 @@
         "services/catalog-promotion.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "services/suppliers/connectors/aliexpress-connector.js",
+        "services/suppliers/connectors/allegro-connector.js",
         "services/suppliers/connectors/api-connector.base.js",
         "services/suppliers/connectors/cj-connector.js",
         "services/suppliers/connectors/csv-connector.js",
@@ -99725,6 +103046,40 @@
         "services/suppliers/source-product-normalizer.js"
       ]
     },
+    "services/suppliers/procurement-execution-boundary.js": {
+      "role": "procurement-execution-boundary",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/supplier-fulfillment-adapter-contract.js"
+      ],
+      "directUsedBy": [
+        "services/purchasing-trigger-service.js (GAP-4B)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md",
+        "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+        "impact:purchasing",
+        "impact:supplier-integration",
+        "services/purchasing-trigger-service.js",
+        "services/suppliers/supplier-fulfillment-adapter-contract.js"
+      ]
+    },
     "services/suppliers/promotion-classifier.js": {
       "role": "catalog-promotion-classifier",
       "domain": "catalog",
@@ -99763,6 +103118,95 @@
         "services/suppliers/media-normalizer.js",
         "services/suppliers/pipeline-constants.js",
         "services/suppliers/source-product-normalizer.js"
+      ]
+    },
+    "services/suppliers/provider-authority.js": {
+      "role": "provider-authority",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "validators/index.js (GAP-1)",
+        "future adapter resolution (GAP-2)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "mustCheck": [
+        "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+        "impact:purchasing",
+        "impact:supplier-integration",
+        "services/suppliers/canonical-unit-purchasing-gate.js",
+        "services/suppliers/purchasing-validators.js"
+      ]
+    },
+    "services/suppliers/purchasing-validators.js": {
+      "role": "purchasing-validators",
+      "domain": "purchasing",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/provider-authority.js"
+      ],
+      "directUsedBy": [
+        "(see files.tests in features/purchasing.feature.js — not yet"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing"
+      ],
+      "mustCheck": [
+        "doctrine:docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md",
+        "impact:purchasing",
+        "services/suppliers/provider-authority.js"
+      ]
+    },
+    "services/suppliers/shipping-capability-contract.js": {
+      "role": "shipping-capability-contract",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "provider shipping capability adapters and contract proofs"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "supplier-integration"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md",
+        "impact:purchasing",
+        "impact:supplier-integration",
+        "services/suppliers/allegro-shipping-capability-adapter.js"
       ]
     },
     "services/suppliers/source-product-normalizer.js": {
@@ -99816,7 +103260,8 @@
       "purpose": null,
       "directDependsOn": [],
       "directUsedBy": [
-        "services/suppliers/supplier-fulfillment-readiness.js"
+        "services/suppliers/supplier-fulfillment-readiness.js",
+        "services/suppliers/procurement-execution-boundary.js (GAP-4B)"
       ],
       "ownedFiles": [],
       "dbRead": [],
@@ -99834,6 +103279,7 @@
         "impact:purchasing",
         "impact:supplier-integration",
         "services/suppliers/canonical-unit-purchasing-gate.js",
+        "services/suppliers/procurement-execution-boundary.js",
         "services/suppliers/supplier-fulfillment-readiness.js"
       ]
     },
@@ -99873,6 +103319,7 @@
         "impact:catalog",
         "impact:purchasing",
         "impact:supplier-integration",
+        "services/suppliers/allegro-fulfillment-adapter.js",
         "services/suppliers/supplier-fulfillment-adapter-contract.js",
         "services/suppliers/supplier-order-identity.js"
       ]
@@ -99907,6 +103354,7 @@
         "impact:purchasing",
         "impact:supplier-integration",
         "services/catalog-promotion/sku.js",
+        "services/purchasing-canonical-money.js",
         "services/purchasing-trigger-service.js",
         "services/suppliers/aliexpress-purchase-preflight.js",
         "services/suppliers/canonical-unit-purchasing-gate.js",
@@ -101736,7 +105184,8 @@
     "services/pickup-secret-access-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders",
     "services/pickup-secret-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> orders",
     "services/product-admin-service.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> products",
-    "services/simulator/state-advancer.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> parcels"
+    "services/simulator/state-advancer.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> parcels",
+    "services/sourcing-source-autopilot.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_sources, sourcing_captures"
   ],
   "multiWriterTables": [
     {
@@ -101804,7 +105253,7 @@
     },
     {
       "table": "parcels",
-      "writerCount": 16,
+      "writerCount": 15,
       "writers": [
         "routes/admin-customs-shipments.js",
         "routes/admin/system.js",
@@ -101812,7 +105261,6 @@
         "routes/parcels.js",
         "routes/transitaire-api.js",
         "services/auto-parcel.js",
-        "services/hub-operations.js",
         "services/parcel-auto-create-service.js",
         "services/parcel-mutation-service.js",
         "services/parcel-operations.js",
@@ -102118,6 +105566,15 @@
       ]
     },
     {
+      "table": "incidents",
+      "writerCount": 3,
+      "writers": [
+        "services/incident-escalation.js",
+        "services/incident-service.js",
+        "services/incident-write-service.js"
+      ]
+    },
+    {
       "table": "order_item_real_cost_allocations",
       "writerCount": 3,
       "writers": [
@@ -102160,6 +105617,15 @@
         "routes/admin/delete-order-cascade.js",
         "routes/admin/system.js",
         "routes/admin/users.js"
+      ]
+    },
+    {
+      "table": "supplier_oauth_connections",
+      "writerCount": 3,
+      "writers": [
+        "routes/integrations-aliexpress.js",
+        "services/suppliers/aliexpress-oauth.js",
+        "services/suppliers/allegro-sandbox-client.js"
       ]
     },
     {
@@ -102274,14 +105740,6 @@
       "writers": [
         "routes/admin-finance-config.js",
         "services/pricing-rates.js"
-      ]
-    },
-    {
-      "table": "incidents",
-      "writerCount": 2,
-      "writers": [
-        "services/incident-service.js",
-        "services/incident-write-service.js"
       ]
     },
     {
@@ -102437,19 +105895,27 @@
       ]
     },
     {
+      "table": "sourcing_captures",
+      "writerCount": 2,
+      "writers": [
+        "services/sourcing-observation-shadow-service.js",
+        "services/sourcing-source-autopilot.js"
+      ]
+    },
+    {
+      "table": "sourcing_sources",
+      "writerCount": 2,
+      "writers": [
+        "services/sourcing-observation-shadow-service.js",
+        "services/sourcing-source-autopilot.js"
+      ]
+    },
+    {
       "table": "supplier_catalog_imports",
       "writerCount": 2,
       "writers": [
         "services/suppliers/catalog-import-json.js",
         "services/suppliers/catalog-import-orchestrator.js"
-      ]
-    },
-    {
-      "table": "supplier_oauth_connections",
-      "writerCount": 2,
-      "writers": [
-        "routes/integrations-aliexpress.js",
-        "services/suppliers/aliexpress-oauth.js"
       ]
     },
     {
@@ -103719,12 +107185,6 @@
       "label": "db.js"
     },
     {
-      "from": "routes/hub.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
-    },
-    {
       "from": "routes/inventory-api.js",
       "to": "db.js",
       "type": "depends",
@@ -104164,9 +107624,9 @@
     },
     {
       "from": "routes/providers-services.js",
-      "to": "db (résolution code marché)",
+      "to": "db (résolution code marché + handoff WhatsApp)",
       "type": "depends",
-      "label": "db (résolution code marché)"
+      "label": "db (résolution code marché + handoff WhatsApp)"
     },
     {
       "from": "routes/purchasing.js",
@@ -104209,12 +107669,6 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
-    },
-    {
-      "from": "routes/scans.js",
-      "to": "services/*",
-      "type": "depends",
-      "label": "services/*"
     },
     {
       "from": "public/boutique/js/b-group-view.js",
@@ -104437,6 +107891,12 @@
       "to": "services/catalog-enrichment.js",
       "type": "uses",
       "label": "scripts/showcase-v2-seed.js"
+    },
+    {
+      "from": "services/catalog-live-flow.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/catalog-market-exposure-service.js",
@@ -105045,10 +108505,46 @@
       "label": "db"
     },
     {
+      "from": "HUB-001 internal logistics boundary",
+      "to": "services/hub-physical-identity.js",
+      "type": "uses",
+      "label": "HUB-001 internal logistics boundary"
+    },
+    {
+      "from": "services/incident-escalation.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "tests/unit/incident-escalation.test.js",
+      "to": "services/incident-escalation.js",
+      "type": "uses",
+      "label": "tests/unit/incident-escalation.test.js"
+    },
+    {
+      "from": "tests/integration/incident-f3-postgres.test.js",
+      "to": "services/incident-escalation.js",
+      "type": "uses",
+      "label": "tests/integration/incident-f3-postgres.test.js"
+    },
+    {
       "from": "services/incident-service.js",
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/incident-service.js",
+      "to": "services/incident-governance",
+      "type": "depends",
+      "label": "services/incident-governance"
+    },
+    {
+      "from": "services/incident-write-service.js",
+      "to": "services/incident-governance",
+      "type": "depends",
+      "label": "services/incident-governance"
     },
     {
       "from": "services/inventory-service.js",
@@ -105379,6 +108875,24 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "services/parcel-transition-guard.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/parcel-transition-guard.js",
+      "to": "services/incident-governance",
+      "type": "depends",
+      "label": "services/incident-governance"
+    },
+    {
+      "from": "services/parcel-operations.js#transitionParcelStatus",
+      "to": "services/parcel-transition-guard.js",
+      "type": "uses",
+      "label": "services/parcel-operations.js#transitionParcelStatus"
     },
     {
       "from": "services/partner-admin-service.js",
@@ -106035,6 +109549,12 @@
       "label": "node:crypto"
     },
     {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "services/sourcing-workspace.js",
       "to": "db.js",
       "type": "depends",
@@ -106059,16 +109579,76 @@
       "label": "node:crypto"
     },
     {
+      "from": "scripts/allegro-sandbox-check.js",
+      "to": "services/suppliers/allegro-fulfillment-adapter.js",
+      "type": "uses",
+      "label": "scripts/allegro-sandbox-check.js"
+    },
+    {
+      "from": "scripts/allegro-sandbox-purchase-proof.js",
+      "to": "services/suppliers/allegro-purchase-reconciliation.js",
+      "type": "uses",
+      "label": "scripts/allegro-sandbox-purchase-proof.js"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/suppliers/allegro-sandbox-client.js",
+      "to": "node:crypto",
+      "type": "depends",
+      "label": "node:crypto"
+    },
+    {
+      "from": "scripts/allegro-sandbox-check.js",
+      "to": "services/suppliers/allegro-sandbox-client.js",
+      "type": "uses",
+      "label": "scripts/allegro-sandbox-check.js"
+    },
+    {
+      "from": "scripts/allegro-shipping-rate-contract.js",
+      "to": "services/suppliers/allegro-sandbox-client.js",
+      "type": "uses",
+      "label": "scripts/allegro-shipping-rate-contract.js"
+    },
+    {
+      "from": "scripts/allegro-shipping-capability-proof.js",
+      "to": "services/suppliers/allegro-shipping-capability-adapter.js",
+      "type": "uses",
+      "label": "scripts/allegro-shipping-capability-proof.js"
+    },
+    {
+      "from": "provider contract tests",
+      "to": "services/suppliers/allegro-shipping-capability-adapter.js",
+      "type": "uses",
+      "label": "provider contract tests"
+    },
+    {
       "from": "purchasing cutover reports",
       "to": "services/suppliers/canonical-unit-cutover-comparison.js",
       "type": "uses",
       "label": "purchasing cutover reports"
     },
     {
-      "from": "future purchasing cutover composition root",
+      "from": "services/purchasing-trigger-service.js (GAP-4A",
       "to": "services/suppliers/canonical-unit-purchasing-gate.js",
       "type": "uses",
-      "label": "future purchasing cutover composition root"
+      "label": "services/purchasing-trigger-service.js (GAP-4A"
+    },
+    {
+      "from": "evaluateCanonicalProcurementReadiness)",
+      "to": "services/suppliers/canonical-unit-purchasing-gate.js",
+      "type": "uses",
+      "label": "evaluateCanonicalProcurementReadiness)"
+    },
+    {
+      "from": "scripts/allegro-golden-prebuyer-proof.js (prepareCanonicalUnitPurchase)",
+      "to": "services/suppliers/canonical-unit-purchasing-gate.js",
+      "type": "uses",
+      "label": "scripts/allegro-golden-prebuyer-proof.js (prepareCanonicalUnitPurchase)"
     },
     {
       "from": "services/suppliers/catalog-import-json.js",
@@ -106155,6 +109735,12 @@
       "label": "scripts/dry-run-import.js (l'orchestrateur n'est PAS encore branché)"
     },
     {
+      "from": "services/purchasing-trigger-service.js (GAP-2)",
+      "to": "services/suppliers/execution-adapter-registry.js",
+      "type": "uses",
+      "label": "services/purchasing-trigger-service.js (GAP-2)"
+    },
+    {
       "from": "services/suppliers/json-source-pipeline.js",
       "to": "schemas/catalog/import-profile.v1.schema.json",
       "type": "depends",
@@ -106177,6 +109763,42 @@
       "to": "schemas/catalog/normalized-supplier-product.v2.schema.json",
       "type": "depends",
       "label": "schemas/catalog/normalized-supplier-product.v2.schema.json"
+    },
+    {
+      "from": "services/purchasing-trigger-service.js (GAP-4B)",
+      "to": "services/suppliers/procurement-execution-boundary.js",
+      "type": "uses",
+      "label": "services/purchasing-trigger-service.js (GAP-4B)"
+    },
+    {
+      "from": "validators/index.js (GAP-1)",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "uses",
+      "label": "validators/index.js (GAP-1)"
+    },
+    {
+      "from": "future adapter resolution (GAP-2)",
+      "to": "services/suppliers/provider-authority.js",
+      "type": "uses",
+      "label": "future adapter resolution (GAP-2)"
+    },
+    {
+      "from": "(see files.tests in features/purchasing.feature.js — not yet",
+      "to": "services/suppliers/purchasing-validators.js",
+      "type": "uses",
+      "label": "(see files.tests in features/purchasing.feature.js — not yet"
+    },
+    {
+      "from": "provider shipping capability adapters and contract proofs",
+      "to": "services/suppliers/shipping-capability-contract.js",
+      "type": "uses",
+      "label": "provider shipping capability adapters and contract proofs"
+    },
+    {
+      "from": "services/suppliers/procurement-execution-boundary.js (GAP-4B)",
+      "to": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+      "type": "uses",
+      "label": "services/suppliers/procurement-execution-boundary.js (GAP-4B)"
     },
     {
       "from": "internal purchasing callers",

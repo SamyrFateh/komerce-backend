@@ -51,6 +51,38 @@ const PROVIDERS = Object.freeze([
 
 const PROVIDER_SET = new Set(PROVIDERS);
 
+// GAP-4A — Canonical Procurement Readiness (docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md).
+//
+// Capability PROUVÉE, déclarée ici et nulle part ailleurs : ce provider
+// a-t-il une intégration distante réelle capable de vérifier la
+// disponibilité/le prix avant achat ? Ce n'est PAS dérivé de la présence
+// d'un adapter dans un registry d'exécution — l'absence d'adapter ne doit
+// jamais valoir implicitement absence de besoin de preflight (sinon un
+// adapter oublié au registre redevient silencieusement "pas nécessaire").
+// `true` = un connecteur live existe et a été exercé en Golden (Allegro
+// sandbox, AliExpress preflight). `false` = aucune intégration distante
+// n'a jamais existé pour ce provider (local/whatsapp/noon/amazon_uae
+// sont des flux humains ou jamais raccordés) — fait constaté, pas supposé.
+const REMOTE_PREFLIGHT_REQUIRED = Object.freeze({
+  allegro: true,
+  aliexpress: true,
+  noon: false,
+  amazon_uae: false,
+  local: false,
+  whatsapp: false,
+});
+
+const PREFLIGHT_REQUIREMENT = Object.freeze({
+  REQUIRED: 'REQUIRED',
+  NOT_REQUIRED: 'NOT_REQUIRED',
+  // Provider non supporté OU supporté mais sans capability déclarée ici.
+  // Ce dernier cas ne devrait jamais arriver (PROVIDERS et
+  // REMOTE_PREFLIGHT_REQUIRED doivent rester en bijection) mais reste
+  // fail-closed par construction si un provider est ajouté à PROVIDERS
+  // sans mise à jour symétrique de sa capability.
+  UNKNOWN: 'UNKNOWN',
+});
+
 function normalizeProviderCode(code) {
   return String(code || '').trim().toLowerCase();
 }
@@ -59,8 +91,21 @@ function isSupportedProvider(code) {
   return PROVIDER_SET.has(normalizeProviderCode(code));
 }
 
+function remotePreflightRequirement(code) {
+  const normalized = normalizeProviderCode(code);
+  if (!PROVIDER_SET.has(normalized)) return PREFLIGHT_REQUIREMENT.UNKNOWN;
+  if (!Object.prototype.hasOwnProperty.call(REMOTE_PREFLIGHT_REQUIRED, normalized)) {
+    return PREFLIGHT_REQUIREMENT.UNKNOWN;
+  }
+  return REMOTE_PREFLIGHT_REQUIRED[normalized]
+    ? PREFLIGHT_REQUIREMENT.REQUIRED
+    : PREFLIGHT_REQUIREMENT.NOT_REQUIRED;
+}
+
 module.exports = {
   PROVIDERS,
+  PREFLIGHT_REQUIREMENT,
   isSupportedProvider,
   normalizeProviderCode,
+  remotePreflightRequirement,
 };

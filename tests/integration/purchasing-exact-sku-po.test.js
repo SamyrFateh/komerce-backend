@@ -88,7 +88,15 @@ if (!hasIntegrationEnv) {
          (import_id, supplier_name, supplier_product_id, product_name,
           purchase_price, currency, state, product_id)
        VALUES ($1,$2,$3,$4,29.90,'PLN','imported_to_catalog',$5)`,
-      [catalogImport.id, `${TAG} AliExpress`, supplierProductRef, `${TAG} source product`, product.id]
+      // supplier_name doit être le littéral 'AliExpress' — c'est la clé de
+      // filtrage exacte attendue par resolveSupplierProductRef() dans
+      // services/suppliers/aliexpress-fulfillment-adapter.js (même
+      // convention que son propre test unitaire et que tous les autres
+      // fixtures du repo — cf. tests/unit/aliexpress-connector.test.js,
+      // scripts/aliexpress-prepayment-proof-core.js, etc.). Le TAG reste
+      // sur supplier_product_id/product_name, qui sont déjà uniques par
+      // run et suffisent à isoler cette fixture sans casser la résolution.
+      [catalogImport.id, 'AliExpress', supplierProductRef, `${TAG} source product`, product.id]
     );
 
     await db.query(
@@ -300,7 +308,53 @@ if (!hasIntegrationEnv) {
     it('rachète exactement le SKU vendu et snapshotte sa SOI + monnaie native canonique', async () => {
       const { order, orderItem, skuB, identityB, canonicalUnitId } = await seedFixture();
 
-      const result = await triggerPurchasing(order.id);
+      // aliexpress est REMOTE_PREFLIGHT_REQUIRED (provider-authority.js) : le
+      // gate GAP-4A appelle réellement adapter.evaluate(), qui exige de vraies
+      // credentials AliExpress sans injection. Cette preuve reste
+      // MODEL_SIMULATION_READY (elle ne teste pas la connectivité live
+      // AliExpress) : on injecte le même mock aliexpressConnected/
+      // aliexpressPreflight que le test unitaire de l'adapter démontre
+      // produire un verdict READY (tests/unit/aliexpress-fulfillment-adapter.test.js),
+      // via le seam de test déjà établi par l'adapter lui-même
+      // (`context.aliexpressConnected || connected`). Les valeurs de prix/
+      // devise de ce mock ne fuient jamais dans la PO : le gate persiste la
+      // monnaie de la Canonical Unit (29.90 PLN, seedée ci-dessus), jamais
+      // celle du preflight live.
+      const aliexpressContext = {
+        aliexpressConnected: {
+          fetchProducts: async () => ({
+            products: [{
+              raw_payload: { aliexpress: { detail: { ae_store_info: { store_country_code: 'CN' } } } },
+            }],
+          }),
+          invokeTop: async () => ({
+            result: {
+              success: true,
+              aeop_freight_calculate_result_for_buyer_dtolist: {
+                aeop_freight_calculate_result_for_buyer_d_t_o: [{ service_name: 'CAINIAO_FULFILLMENT_STD' }],
+              },
+            },
+          }),
+        },
+        aliexpressPreflight: {
+          METHODS: { FREIGHT: 'aliexpress.logistics.buyer.freight.get' },
+          resolveOrderableUnit: () => ({
+            supplier_sku: 'AE-BLACK-M',
+            raw_sku_id: '14:Black;5:M',
+            stock_available: 20,
+            unit_price: 29.9,
+            currency: 'PLN',
+          }),
+          buildFreightQuoteParams: () => ({
+            country_code: 'AE', send_goods_country_code: 'CN',
+            product_id: 1, product_num: 1, sku_id: '14:Black;5:M',
+          }),
+          summarizeFreightResponse: () => ({ success: true, has_options: true, error: null }),
+          classifyApiError: () => 'other',
+        },
+      };
+
+      const result = await triggerPurchasing(order.id, { context: aliexpressContext });
       expect(result.purchase_orders).toHaveLength(1);
       expect(result.purchase_orders[0].purchase_order_id).toBeTruthy();
 

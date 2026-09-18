@@ -1342,14 +1342,14 @@
         "category": "services",
         "declared": "services/suppliers/allegro-sandbox-client.js",
         "resolvedPath": "services/suppliers/allegro-sandbox-client.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
         "category": "services",
         "declared": "services/suppliers/connectors/allegro-connector.js",
         "resolvedPath": "services/suppliers/connectors/allegro-connector.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
@@ -1692,14 +1692,14 @@
         "category": "services",
         "declared": "services/catalog-live-flow.js",
         "resolvedPath": "services/catalog-live-flow.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
         "category": "services",
         "declared": "services/catalog-workspace-live-composer.js",
         "resolvedPath": "services/catalog-workspace-live-composer.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "catalog",
@@ -5878,21 +5878,21 @@
         "category": "services",
         "declared": "services/incident-governance.js",
         "resolvedPath": "services/incident-governance.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "incident-management",
         "category": "services",
         "declared": "services/incident-escalation.js",
         "resolvedPath": "services/incident-escalation.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "incident-management",
         "category": "services",
         "declared": "services/parcel-transition-guard.js",
         "resolvedPath": "services/parcel-transition-guard.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "incident-management",
@@ -8307,7 +8307,7 @@
         "category": "services",
         "declared": "services/hub-physical-identity.js",
         "resolvedPath": "services/hub-physical-identity.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "logistics",
@@ -11261,28 +11261,28 @@
         "category": "services",
         "declared": "services/suppliers/allegro-fulfillment-adapter.js",
         "resolvedPath": "services/suppliers/allegro-fulfillment-adapter.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
         "category": "services",
         "declared": "services/suppliers/allegro-purchase-reconciliation.js",
         "resolvedPath": "services/suppliers/allegro-purchase-reconciliation.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
         "category": "services",
         "declared": "services/suppliers/allegro-shipping-capability-adapter.js",
         "resolvedPath": "services/suppliers/allegro-shipping-capability-adapter.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
         "category": "services",
         "declared": "services/suppliers/shipping-capability-contract.js",
         "resolvedPath": "services/suppliers/shipping-capability-contract.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
@@ -11296,14 +11296,14 @@
         "category": "services",
         "declared": "services/suppliers/execution-adapter-registry.js",
         "resolvedPath": "services/suppliers/execution-adapter-registry.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
         "category": "services",
         "declared": "services/purchasing-canonical-money.js",
         "resolvedPath": "services/purchasing-canonical-money.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
@@ -11317,14 +11317,14 @@
         "category": "services",
         "declared": "services/suppliers/provider-authority.js",
         "resolvedPath": "services/suppliers/provider-authority.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
         "category": "services",
         "declared": "services/suppliers/purchasing-validators.js",
         "resolvedPath": "services/suppliers/purchasing-validators.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
@@ -11352,6 +11352,13 @@
         "category": "services",
         "declared": "services/suppliers/canonical-unit-purchasing-gate.js",
         "resolvedPath": "services/suppliers/canonical-unit-purchasing-gate.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/procurement-execution-boundary.js",
+        "resolvedPath": "services/suppliers/procurement-execution-boundary.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -11576,6 +11583,13 @@
         "category": "tests",
         "declared": "tests/unit/canonical-unit-purchasing-gate.test.js",
         "resolvedPath": "tests/unit/canonical-unit-purchasing-gate.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/procurement-execution-boundary.test.js",
+        "resolvedPath": "tests/unit/procurement-execution-boundary.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12472,7 +12486,7 @@
         "category": "services",
         "declared": "services/sourcing-source-autopilot.js",
         "resolvedPath": "services/sourcing-source-autopilot.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "sourcing",
@@ -35277,7 +35291,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1299
+        "filesObserved": 1301
       },
       "boutique": {
         "filesObserved": 217,
@@ -38139,8 +38153,8 @@
       "backend": {
         "manifestsDiscovered": 33,
         "manifestsConnected": 33,
-        "technicalNodesTotal": 482,
-        "technicalNodesOwned": 482,
+        "technicalNodesTotal": 500,
+        "technicalNodesOwned": 500,
         "technicalOrphans": 0
       },
       "dash": {

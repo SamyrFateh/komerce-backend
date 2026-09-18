@@ -7,7 +7,7 @@
  * @inputs        provider, supplier fulfillment adapter, supplier fulfillment verdict
  * @outputs       validated adapter shape and canonical verdict contract
  * @depends       none
- * @used-by       services/suppliers/supplier-fulfillment-readiness.js
+ * @used-by       services/suppliers/supplier-fulfillment-readiness.js, services/suppliers/procurement-execution-boundary.js (GAP-4B)
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -42,6 +42,25 @@ function validateAdapter(provider, adapter) {
   }
 
   return { ok: true, provider: expectedProvider, adapter };
+}
+
+/**
+ * GAP-4B — Procurement Execution Boundary. Un adapter n'est éligible à
+ * l'exécution automatique que s'il expose buildOrderPayload ET placeOrder
+ * SUR LE MÊME adapter (jamais l'un via un provider, l'autre via un autre).
+ * Réutilise validateAdapter pour le socle (provider match + evaluate) au
+ * lieu de réimplémenter cette vérification.
+ */
+function validateExecutionAdapter(provider, adapter) {
+  const base = validateAdapter(provider, adapter);
+  if (!base.ok) return base;
+  if (typeof base.adapter.buildOrderPayload !== 'function') {
+    return { ok: false, reason: `Adapter fulfillment ${base.provider} sans buildOrderPayload()` };
+  }
+  if (typeof base.adapter.placeOrder !== 'function') {
+    return { ok: false, reason: `Adapter fulfillment ${base.provider} sans placeOrder()` };
+  }
+  return { ok: true, provider: base.provider, adapter: base.adapter };
 }
 
 function validateVerdict(verdict, VERDICT) {
@@ -80,5 +99,6 @@ function validateVerdict(verdict, VERDICT) {
 module.exports = {
   normalizeProvider,
   validateAdapter,
+  validateExecutionAdapter,
   validateVerdict,
 };
