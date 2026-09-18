@@ -33,7 +33,7 @@ module.exports = {
 
   perimeter: {
     in: [
-      'connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress, Allegro Sandbox, eBay Sandbox P2 non enregistré runtime)',
+      'connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress, Allegro Sandbox, eBay Sandbox Browse enregistré dans le dispatch générique P3)',
       'contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait',
       'publication produit et déclenchement de l audit prix via economic-engine',
       'categories boutique admin',
