@@ -21,7 +21,6 @@ const { buildProof, assertThrough, summary } = require('./provider-contract-proo
 const TOKEN_URL = 'https://api.sandbox.ebay.com/identity/v1/oauth2/token';
 const BROWSE_BASE_URL = 'https://api.sandbox.ebay.com/buy/browse/v1';
 const APPLICATION_SCOPE = 'https://api.ebay.com/oauth/api_scope';
-const DEFAULT_MARKETPLACE = 'EBAY_US';
 const DEFAULT_LIMIT = 5;
 const MAX_LIMIT = 10;
 const ITEM_ID_RE = /^v1\|[^|\s]{1,100}\|[^|\s]{1,100}$/;
@@ -38,7 +37,8 @@ function normalizeEnvironment(value) {
 }
 
 function normalizeMarketplace(value) {
-  const marketplace = compact(value || DEFAULT_MARKETPLACE).toUpperCase();
+  const marketplace = compact(value).toUpperCase();
+  if (!marketplace) return null;
   if (!/^EBAY_[A-Z]{2,8}$/.test(marketplace)) throw new Error('EBAY_MARKETPLACE_INVALID');
   return marketplace;
 }
@@ -72,6 +72,7 @@ function configuration(env = process.env) {
     clientSecret,
     environment,
     marketplace,
+    marketplaceConfigured: Boolean(marketplace),
     itemId,
     query,
     limit,
@@ -220,7 +221,7 @@ async function runEbayBrowseReadOnlyProof({ env = process.env, fetchImpl = globa
   let exactItem = null;
   let exactItemError = null;
 
-  if (config.credentialsConfigured && config.sandboxSelected) {
+  if (config.credentialsConfigured && config.sandboxSelected && config.marketplaceConfigured) {
     try {
       tokenMeta = await requestApplicationToken({
         clientId: config.clientId,
@@ -293,7 +294,11 @@ async function runEbayBrowseReadOnlyProof({ env = process.env, fetchImpl = globa
             evidence: config.environment,
           },
           { id: 'APPLICATION_OAUTH_SCOPE', state: 'KNOWN', evidence: APPLICATION_SCOPE },
-          { id: 'MARKETPLACE_CONTEXT', state: 'KNOWN', evidence: config.marketplace },
+          {
+            id: 'MARKETPLACE_CONTEXT',
+            state: 'KNOWN',
+            evidence: config.marketplace || 'MISSING',
+          },
           {
             id: 'EXACT_ITEM_OR_SEARCH_QUERY',
             state: 'KNOWN',
@@ -355,6 +360,11 @@ async function runEbayBrowseReadOnlyProof({ env = process.env, fetchImpl = globa
           pass: config.sandboxSelected,
           evidence: config.environment,
         },
+        {
+          id: 'MARKETPLACE_CONFIGURED',
+          pass: config.marketplaceConfigured,
+          evidence: config.marketplace || 'MISSING',
+        },
       ],
       P1: [
         {
@@ -396,6 +406,7 @@ async function runEbayBrowseReadOnlyProof({ env = process.env, fetchImpl = globa
     diagnostics: Object.freeze({
       environment: config.environment,
       marketplace: config.marketplace,
+      marketplace_configured: config.marketplaceConfigured,
       credentials_configured: config.credentialsConfigured,
       sandbox_selected: config.sandboxSelected,
       discovery_target: config.itemId ? 'explicit_item_id' : (config.query ? 'bounded_search' : 'none'),
@@ -449,7 +460,6 @@ module.exports = {
   TOKEN_URL,
   BROWSE_BASE_URL,
   APPLICATION_SCOPE,
-  DEFAULT_MARKETPLACE,
   configuration,
   normalizeEnvironment,
   safeProviderError,
