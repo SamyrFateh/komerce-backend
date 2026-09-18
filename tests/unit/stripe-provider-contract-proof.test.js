@@ -53,9 +53,17 @@ describe('stripe-provider-contract-proof', () => {
     expect(classifyStripeKey('other')).toBe('UNKNOWN');
   });
 
-  test('derives canonical webhook URL', () => {
+  test('derives canonical webhook URL from explicit/public runtime context', () => {
+    expect(expectedWebhookUrl({ PUBLIC_BASE_URL: 'https://komerce.co/' }))
+      .toBe('https://komerce.co/api/payments/stripe/webhook');
     expect(expectedWebhookUrl({ KOMERCE_API_URL: 'https://komerce.co/' }))
       .toBe('https://komerce.co/api/payments/stripe/webhook');
+    expect(expectedWebhookUrl({ RAILWAY_PUBLIC_DOMAIN: 'komerce-backend-production.up.railway.app' }))
+      .toBe('https://komerce-backend-production.up.railway.app/api/payments/stripe/webhook');
+    expect(expectedWebhookUrl({
+      STRIPE_WEBHOOK_URL: 'https://custom.example/stripe',
+      PUBLIC_BASE_URL: 'https://ignored.example',
+    })).toBe('https://custom.example/stripe');
   });
 
   test('passes Conversation + P0 + P1 for complete read-only test-mode contract', async () => {
@@ -70,8 +78,9 @@ describe('stripe-provider-contract-proof', () => {
     const stripe = fakeStripe();
     stripe.webhookEndpoints.list.mockResolvedValueOnce({ data: [] });
     const result = await runStripeReadOnlyProof({ stripeClient: stripe, env: baseEnv() });
+    expect(result.diagnostics.exact_webhook_match_count).toBe(0);
     expect(() => assertThrough(result.proof, 'P0'))
-      .toThrow('PROVIDER_CONTRACT_BLOCKED_STRIPE_P0_WEBHOOK_EXACT_SINGLE_MATCH');
+      .toThrow(/PROVIDER_CONVERSATION_BLOCKED_STRIPE_/);
   });
 
   test('fails closed when webhook environment disagrees with key mode', async () => {
@@ -104,7 +113,7 @@ describe('stripe-provider-contract-proof', () => {
     const result = await runStripeReadOnlyProof({ stripeClient: stripe, env: baseEnv() });
     expect(result.diagnostics.api_version_known).toBe(false);
     expect(() => assertThrough(result.proof, 'P0'))
-      .toThrow('PROVIDER_CONTRACT_BLOCKED_STRIPE_P0_EFFECTIVE_API_VERSION_KNOWN');
+      .toThrow('PROVIDER_CONVERSATION_BLOCKED_STRIPE_REQUIRES_EFFECTIVE_API_VERSION');
   });
 
   test('never emits configured secrets', async () => {
