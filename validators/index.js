@@ -474,13 +474,11 @@ const pricing = {
   updateRates: { body: Joi.object({ eur_kmf: posNum.min(1).max(10000).required(), aed_kmf: posNum.min(1).max(10000).required() }) },
 };
 
-const PLATFORMS = ['noon', 'amazon_uae', 'aliexpress', 'whatsapp', 'manual', 'local', 'allegro'];
-const purchasing = {
-  createSupplier: { body: Joi.object({ name: safeStr(200).required(), platform: Joi.string().valid(...PLATFORMS).required(), contact_name: safeStr(100), contact_phone: phone, contact_email: email, api_key_enc: safeStr(500), api_secret_enc: safeStr(500), account_id: safeStr(100), auto_order: Joi.boolean().default(false), lead_time_days: Joi.number().integer().min(0).max(365).default(2), notes: safeStr(1000) }) },
-  mapProduct: { params: Joi.object({ id: uuid.required() }), body: Joi.object({ product_id: uuid.required(), supplier_sku: safeStr(200).required(), supplier_url: url, supplier_price_aed: posNum.required(), min_order_qty: posInt.default(1), priority: Joi.number().integer().min(1).max(100).default(1), notes: safeStr(1000) }) },
-  confirmOrder: { params: Joi.object({ order_id: uuid.required() }), body: Joi.object({ purchase_order_id: uuid.required(), supplier_order_id: safeStr(200), unit_price_aed: posNum, tracking_url: url, tracking_number: safeStr(100), notes: safeStr(1000) }) },
-  receive: { params: Joi.object({ id: uuid.required() }), body: Joi.object({ qty_recue: Joi.number().integer().min(0).max(10000) }) },
-};
+// Le bloc de validation purchasing (createSupplier, mapProduct, confirmOrder,
+// receive) a été déplacé vers services/suppliers/purchasing-validators.js
+// (GAP-1) : il importait provider-authority.js, une dépendance @domain
+// purchasing que ce barrel @domain infrastructure ne doit jamais porter
+// (OBSERVED-UNDECLARED-FEATURE-DEPENDENCY, verrouillé à zéro).
 
 const UNSOLD_STATUSES = ['sold_whatsapp', 'sold_reseller', 'donated', 'destroyed'];
 const UNSOLD_CHANNELS = ['whatsapp', 'reseller', 'both'];
@@ -510,7 +508,6 @@ module.exports = {
   hub,
   loyalty,
   pricing,
-  purchasing,
   unsold,
   finance,
 };

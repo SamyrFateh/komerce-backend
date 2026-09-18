@@ -453,7 +453,7 @@
         "status": "staging",
         "owner": "backend-core",
         "since": "2026-08",
-        "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle contextualisé de demande/rappel. La cible service_id XOR physical_offer_id porte toujours le propos connu ; le client choisit request ou callback. Aucun paiement, settlement, calendrier structuré, contact provider direct ou order Komerce n’est créé par cette interaction.",
+        "service": "Porter l’identité d’un provider tiers, ses services et offres physiques, leur exposabilité, leur nom public minimal, leurs médias publics optionnels et le cycle contextualisé de demande/rappel. La cible service_id XOR physical_offer_id porte toujours le propos connu ; le client choisit request ou callback. Pour un Service explicitement compatible WhatsApp, le serveur peut remettre un handoff de conversation après création de l Inquiry, sans publier le numéro dans le détail. Aucun paiement, settlement, calendrier structuré ou order Komerce n’est créé par cette interaction.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -661,7 +661,7 @@
         "status": "staging",
         "owner": "backend-core",
         "since": "2026-02",
-        "service": "Detecter et qualifier des signaux operationnels (cash, colis, incidents) a partir des donnees produites par plusieurs features, pour l'aide a la decision admin.",
+        "service": "Detecter et qualifier des signaux operationnels et economiques a partir des donnees canoniques, puis porter leur cycle de vie global ou Market ID sans muter la verite metier source.",
         "businessKind": "piloting-capability",
         "kindSource": "O2-baseline (mission O3 §2 / registry)",
         "governedBy": "docs/doctrine/PILOTING_CAPABILITY_DOCTRINE.md",
@@ -1312,6 +1312,13 @@
       {
         "feature": "catalog",
         "category": "scripts",
+        "declared": "scripts/allegro-sandbox-check.js",
+        "resolvedPath": "scripts/allegro-sandbox-check.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
         "declared": "scripts/cj-real-showcase-seed.js",
         "resolvedPath": "scripts/cj-real-showcase-seed.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -1322,6 +1329,27 @@
         "declared": "scripts/cj-full-catalog-sync.js",
         "resolvedPath": "scripts/cj-full-catalog-sync.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/aliexpress-500-catalog-sync.js",
+        "resolvedPath": "scripts/aliexpress-500-catalog-sync.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/suppliers/allegro-sandbox-client.js",
+        "resolvedPath": "services/suppliers/allegro-sandbox-client.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/suppliers/connectors/allegro-connector.js",
+        "resolvedPath": "services/suppliers/connectors/allegro-connector.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "catalog",
@@ -1515,6 +1543,27 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/suppliers/aliexpress-oauth.js",
+        "resolvedPath": "services/suppliers/aliexpress-oauth.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/suppliers/connectors/aliexpress-connected-connector.js",
+        "resolvedPath": "services/suppliers/connectors/aliexpress-connected-connector.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/suppliers/connectors/aliexpress-connector.js",
+        "resolvedPath": "services/suppliers/connectors/aliexpress-connector.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/suppliers/connectors/json-connector.js",
         "resolvedPath": "services/suppliers/connectors/json-connector.js",
         "status": "resolved-in-technical-graph"
@@ -1578,6 +1627,20 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/catalog-product-route-canary.js",
+        "resolvedPath": "services/catalog-product-route-canary.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-product-source-read-service.js",
+        "resolvedPath": "services/catalog-product-source-read-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/catalog-product-detail.js",
         "resolvedPath": "services/catalog-product-detail.js",
         "status": "resolved-in-technical-graph"
@@ -1623,6 +1686,20 @@
         "declared": "services/catalog-workspace.js",
         "resolvedPath": "services/catalog-workspace.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-live-flow.js",
+        "resolvedPath": "services/catalog-live-flow.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-workspace-live-composer.js",
+        "resolvedPath": "services/catalog-workspace-live-composer.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "catalog",
@@ -1766,6 +1843,13 @@
       },
       {
         "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/218_supplier_oauth_connections.sql",
+        "resolvedPath": "migrations/218_supplier_oauth_connections.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
         "category": "config",
         "declared": "config/import-profiles/komerce-test-dummyjson.v1.json",
         "resolvedPath": "config/import-profiles/komerce-test-dummyjson.v1.json",
@@ -1811,6 +1895,13 @@
         "category": "docs",
         "declared": "docs/cj-connector-validation.md",
         "resolvedPath": "docs/cj-connector-validation.md",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "docs",
+        "declared": "docs/allegro-sandbox.md",
+        "resolvedPath": "docs/allegro-sandbox.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -1888,6 +1979,13 @@
         "category": "routes",
         "declared": "routes/admin-catalog-workspace.js",
         "resolvedPath": "routes/admin-catalog-workspace.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "routes",
+        "declared": "routes/integrations-aliexpress.js",
+        "resolvedPath": "routes/integrations-aliexpress.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -2194,8 +2292,43 @@
       {
         "feature": "catalog",
         "category": "tests",
+        "declared": "tests/unit/allegro-sandbox-client.test.js",
+        "resolvedPath": "tests/unit/allegro-sandbox-client.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-connector.test.js",
+        "resolvedPath": "tests/unit/allegro-connector.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-sandbox-check.test.js",
+        "resolvedPath": "tests/unit/allegro-sandbox-check.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
         "declared": "tests/unit/admin-boutique-categories.test.js",
         "resolvedPath": "tests/unit/admin-boutique-categories.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-product-route-canary-http.test.js",
+        "resolvedPath": "tests/unit/catalog-product-route-canary-http.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-product-source-read-service.test.js",
+        "resolvedPath": "tests/unit/catalog-product-source-read-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -2259,6 +2392,27 @@
         "category": "tests",
         "declared": "tests/unit/cj-connector.test.js",
         "resolvedPath": "tests/unit/cj-connector.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-connector.test.js",
+        "resolvedPath": "tests/unit/aliexpress-connector.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-oauth.test.js",
+        "resolvedPath": "tests/unit/aliexpress-oauth.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-500-catalog-sync.test.js",
+        "resolvedPath": "tests/unit/aliexpress-500-catalog-sync.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -2413,6 +2567,13 @@
         "category": "tests",
         "declared": "tests/unit/products.test.js",
         "resolvedPath": "tests/unit/products.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/e2e-api/products.kmf-numeric.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/products.kmf-numeric.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -2588,6 +2749,13 @@
         "category": "tests",
         "declared": "tests/unit/catalog-workspace.test.js",
         "resolvedPath": "tests/unit/catalog-workspace.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-live-flow.test.js",
+        "resolvedPath": "tests/unit/catalog-live-flow.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -2787,6 +2955,13 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "customs",
+        "category": "tests",
+        "declared": "tests/e2e-api/customs.unsold-fabrics-numeric.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/customs.unsold-fabrics-numeric.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "dashboard",
         "category": "middleware",
         "declared": "middleware/require-dashboard-global-authority.js",
@@ -2917,6 +3092,13 @@
         "category": "services",
         "declared": "services/dashboard-operations.js",
         "resolvedPath": "services/dashboard-operations.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "dashboard",
+        "category": "services",
+        "declared": "services/dashboard-orders.js",
+        "resolvedPath": "services/dashboard-orders.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -4544,6 +4726,13 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "documents",
+        "category": "tests",
+        "declared": "tests/e2e-api/invoices-finance-config.kmf-numeric.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/invoices-finance-config.kmf-numeric.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "economic-engine",
         "category": "utils",
         "declared": "utils/eco-bridge.js",
@@ -4934,6 +5123,13 @@
         "declared": "routes/sourcing.js",
         "resolvedPath": "routes/sourcing.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/235_sourcing_pln_rate.sql",
+        "resolvedPath": "migrations/235_sourcing_pln_rate.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "economic-engine",
@@ -5679,6 +5875,27 @@
       },
       {
         "feature": "incident-management",
+        "category": "services",
+        "declared": "services/incident-governance.js",
+        "resolvedPath": "services/incident-governance.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "incident-management",
+        "category": "services",
+        "declared": "services/incident-escalation.js",
+        "resolvedPath": "services/incident-escalation.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "incident-management",
+        "category": "services",
+        "declared": "services/parcel-transition-guard.js",
+        "resolvedPath": "services/parcel-transition-guard.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "incident-management",
         "category": "tests",
         "declared": "tests/unit/incident-service.test.js",
         "resolvedPath": "tests/unit/incident-service.test.js",
@@ -5690,6 +5907,55 @@
         "declared": "tests/unit/incident-write-service.test.js",
         "resolvedPath": "tests/unit/incident-write-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "incident-management",
+        "category": "tests",
+        "declared": "tests/unit/incident-governance.test.js",
+        "resolvedPath": "tests/unit/incident-governance.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "incident-management",
+        "category": "tests",
+        "declared": "tests/unit/incident-escalation.test.js",
+        "resolvedPath": "tests/unit/incident-escalation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "incident-management",
+        "category": "tests",
+        "declared": "tests/unit/parcel-transition-guard.test.js",
+        "resolvedPath": "tests/unit/parcel-transition-guard.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "incident-management",
+        "category": "tests",
+        "declared": "tests/unit/parcel-operations-incident-governance.test.js",
+        "resolvedPath": "tests/unit/parcel-operations-incident-governance.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "incident-management",
+        "category": "tests",
+        "declared": "tests/integration/incident-f3-postgres.test.js",
+        "resolvedPath": "tests/integration/incident-f3-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "services",
+        "declared": "services/outbox-producer.js",
+        "resolvedPath": "services/outbox-producer.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "services",
+        "declared": "services/outbox-worker.js",
+        "resolvedPath": "services/outbox-worker.js",
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "infrastructure",
@@ -5885,6 +6151,13 @@
         "category": "migrations",
         "declared": "migrations/deploy-all.sql",
         "resolvedPath": "migrations/deploy-all.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "migrations",
+        "declared": "migrations/228_outbox_events_foundation.sql",
+        "resolvedPath": "migrations/228_outbox_events_foundation.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7666,6 +7939,20 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/integration/outbox-producer.test.js",
+        "resolvedPath": "tests/integration/outbox-producer.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/integration/outbox-worker.test.js",
+        "resolvedPath": "tests/integration/outbox-worker.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "inventory",
         "category": "services",
         "declared": "services/inventory-service.js",
@@ -7724,6 +8011,13 @@
       {
         "feature": "local-stock",
         "category": "services",
+        "declared": "services/local-stock-decision-projection.js",
+        "resolvedPath": "services/local-stock-decision-projection.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "local-stock",
+        "category": "services",
         "declared": "services/local-stock-checkout-preview.js",
         "resolvedPath": "services/local-stock-checkout-preview.js",
         "status": "resolved-in-technical-graph"
@@ -7740,6 +8034,13 @@
         "category": "tests",
         "declared": "tests/unit/local-stock-service.test.js",
         "resolvedPath": "tests/unit/local-stock-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "local-stock",
+        "category": "tests",
+        "declared": "tests/unit/local-stock-decision-projection.test.js",
+        "resolvedPath": "tests/unit/local-stock-decision-projection.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7786,6 +8087,13 @@
       },
       {
         "feature": "logistics",
+        "category": "migrations",
+        "declared": "migrations/233_hub_physical_identity_allocation_custody.sql",
+        "resolvedPath": "migrations/233_hub_physical_identity_allocation_custody.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
         "category": "docs",
         "declared": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
         "resolvedPath": "docs/doctrine/DOCTRINE_DENSITE_VALEUR.md",
@@ -7803,6 +8111,13 @@
         "category": "docs",
         "declared": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
         "resolvedPath": "docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "docs",
+        "declared": "docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md",
+        "resolvedPath": "docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7990,6 +8305,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/hub-physical-identity.js",
+        "resolvedPath": "services/hub-physical-identity.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/routing.js",
         "resolvedPath": "services/routing.js",
         "status": "resolved-in-technical-graph"
@@ -8153,6 +8475,13 @@
         "category": "tests",
         "declared": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
         "resolvedPath": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/integration/hub-physical-identity-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-physical-identity-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9852,6 +10181,27 @@
       {
         "feature": "orders",
         "category": "tests",
+        "declared": "tests/e2e-api/orders.total-kmf-numeric.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/orders.total-kmf-numeric.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/e2e-api/orders.remaining-kmf-numeric.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/orders.remaining-kmf-numeric.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/e2e-api/orders.line-prices-numeric.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/orders.line-prices-numeric.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
         "declared": "tests/unit/admin-order-refund.test.js",
         "resolvedPath": "tests/unit/admin-order-refund.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10685,13 +11035,6 @@
       {
         "feature": "platform-ops",
         "category": "tests",
-        "declared": "tests/unit/relais-idor-probe.test.js",
-        "resolvedPath": "tests/unit/relais-idor-probe.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "platform-ops",
-        "category": "tests",
         "declared": "tests/unit/validators.test.js",
         "resolvedPath": "tests/unit/validators.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10916,8 +11259,106 @@
       {
         "feature": "purchasing",
         "category": "services",
+        "declared": "services/suppliers/allegro-fulfillment-adapter.js",
+        "resolvedPath": "services/suppliers/allegro-fulfillment-adapter.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/allegro-purchase-reconciliation.js",
+        "resolvedPath": "services/suppliers/allegro-purchase-reconciliation.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/allegro-shipping-capability-adapter.js",
+        "resolvedPath": "services/suppliers/allegro-shipping-capability-adapter.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/shipping-capability-contract.js",
+        "resolvedPath": "services/suppliers/shipping-capability-contract.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
         "declared": "services/purchasing-trigger-service.js",
         "resolvedPath": "services/purchasing-trigger-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/purchasing-canonical-money.js",
+        "resolvedPath": "services/purchasing-canonical-money.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/supplier-order-identity.js",
+        "resolvedPath": "services/suppliers/supplier-order-identity.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/provider-authority.js",
+        "resolvedPath": "services/suppliers/provider-authority.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/purchasing-validators.js",
+        "resolvedPath": "services/suppliers/purchasing-validators.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/aliexpress-purchase-preflight.js",
+        "resolvedPath": "services/suppliers/aliexpress-purchase-preflight.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "resolvedPath": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/supplier-fulfillment-readiness.js",
+        "resolvedPath": "services/suppliers/supplier-fulfillment-readiness.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/canonical-unit-purchasing-gate.js",
+        "resolvedPath": "services/suppliers/canonical-unit-purchasing-gate.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/canonical-unit-cutover-comparison.js",
+        "resolvedPath": "services/suppliers/canonical-unit-cutover-comparison.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
+        "category": "services",
+        "declared": "services/suppliers/aliexpress-fulfillment-adapter.js",
+        "resolvedPath": "services/suppliers/aliexpress-fulfillment-adapter.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -10971,9 +11412,86 @@
       },
       {
         "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/225_purchase_orders_exact_supplier_identity.sql",
+        "resolvedPath": "migrations/225_purchase_orders_exact_supplier_identity.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/239_purchase_orders_canonical_supplier_money.sql",
+        "resolvedPath": "migrations/239_purchase_orders_canonical_supplier_money.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "scripts",
+        "declared": "scripts/allegro-sandbox-purchase-proof.js",
+        "resolvedPath": "scripts/allegro-sandbox-purchase-proof.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "scripts",
+        "declared": "scripts/allegro-shipping-capability-proof.js",
+        "resolvedPath": "scripts/allegro-shipping-capability-proof.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/allegro-fulfillment-adapter.test.js",
+        "resolvedPath": "tests/unit/allegro-fulfillment-adapter.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/allegro-purchase-reconciliation.test.js",
+        "resolvedPath": "tests/unit/allegro-purchase-reconciliation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/allegro-seller-order-read.test.js",
+        "resolvedPath": "tests/unit/allegro-seller-order-read.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/allegro-sandbox-purchase-proof.test.js",
+        "resolvedPath": "tests/unit/allegro-sandbox-purchase-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/allegro-shipping-capability-adapter.test.js",
+        "resolvedPath": "tests/unit/allegro-shipping-capability-adapter.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/allegro-shipping-capability-proof.test.js",
+        "resolvedPath": "tests/unit/allegro-shipping-capability-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
         "category": "tests",
         "declared": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
         "resolvedPath": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/purchasing-exact-sku-po.test.js",
+        "resolvedPath": "tests/integration/purchasing-exact-sku-po.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -11009,6 +11527,69 @@
         "category": "tests",
         "declared": "tests/unit/purchasing-trigger-service.test.js",
         "resolvedPath": "tests/unit/purchasing-trigger-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/purchasing-trigger-exact-sku.test.js",
+        "resolvedPath": "tests/unit/purchasing-trigger-exact-sku.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/purchasing-canonical-money.test.js",
+        "resolvedPath": "tests/unit/purchasing-canonical-money.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/supplier-order-identity.test.js",
+        "resolvedPath": "tests/unit/supplier-order-identity.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/provider-authority.test.js",
+        "resolvedPath": "tests/unit/provider-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/canonical-unit-purchasing-gate.test.js",
+        "resolvedPath": "tests/unit/canonical-unit-purchasing-gate.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/canonical-unit-cutover-comparison.test.js",
+        "resolvedPath": "tests/unit/canonical-unit-cutover-comparison.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-purchase-preflight.test.js",
+        "resolvedPath": "tests/unit/aliexpress-purchase-preflight.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
+        "resolvedPath": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/supplier-fulfillment-readiness.test.js",
+        "resolvedPath": "tests/unit/supplier-fulfillment-readiness.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -11135,6 +11716,13 @@
         "category": "tests",
         "declared": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
         "resolvedPath": "tests/e2e-api/refunds.no-double-application.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "refunds",
+        "category": "tests",
+        "declared": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/refunds.credits-cash-numeric.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -11657,9 +12245,191 @@
       },
       {
         "feature": "sourcing",
+        "category": "migrations",
+        "declared": "migrations/226_sourcing_observation_foundation.sql",
+        "resolvedPath": "migrations/226_sourcing_observation_foundation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "migrations",
+        "declared": "migrations/227_sourcing_resolution_foundation.sql",
+        "resolvedPath": "migrations/227_sourcing_resolution_foundation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "migrations",
+        "declared": "migrations/238_sourcing_source_autopilot.sql",
+        "resolvedPath": "migrations/238_sourcing_source_autopilot.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "scripts",
+        "declared": "scripts/sourcing-shadow-proof-staging.js",
+        "resolvedPath": "scripts/sourcing-shadow-proof-staging.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "scripts",
+        "declared": "scripts/sourcing-product-projection-trial-staging.js",
+        "resolvedPath": "scripts/sourcing-product-projection-trial-staging.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "scripts",
+        "declared": "scripts/sourcing-product-read-comparison-staging.js",
+        "resolvedPath": "scripts/sourcing-product-read-comparison-staging.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "scripts",
+        "declared": "scripts/catalog-product-read-cutover-trial-staging.js",
+        "resolvedPath": "scripts/catalog-product-read-cutover-trial-staging.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "scripts",
+        "declared": "scripts/sourcing-golden-e2e-staging.js",
+        "resolvedPath": "scripts/sourcing-golden-e2e-staging.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "scripts",
+        "declared": "scripts/sourcing-integrity-audit.js",
+        "resolvedPath": "scripts/sourcing-integrity-audit.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "scripts",
+        "declared": "scripts/sourcing-source-autopilot.js",
+        "resolvedPath": "scripts/sourcing-source-autopilot.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
         "category": "services",
         "declared": "services/sourcing-candidate-import-service.js",
         "resolvedPath": "services/sourcing-candidate-import-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-observation-shadow-plan.js",
+        "resolvedPath": "services/sourcing-observation-shadow-plan.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-observation-shadow-service.js",
+        "resolvedPath": "services/sourcing-observation-shadow-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-resolution-evidence.js",
+        "resolvedPath": "services/sourcing-resolution-evidence.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-shadow-resolution-service.js",
+        "resolvedPath": "services/sourcing-shadow-resolution-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-shadow-proof-service.js",
+        "resolvedPath": "services/sourcing-shadow-proof-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-golden-e2e-service.js",
+        "resolvedPath": "services/sourcing-golden-e2e-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-integrity-service.js",
+        "resolvedPath": "services/sourcing-integrity-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-canonical-product-projection.js",
+        "resolvedPath": "services/sourcing-canonical-product-projection.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-canonical-commercial-projection-core.js",
+        "resolvedPath": "services/sourcing-canonical-commercial-projection-core.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-canonical-offer-projection.js",
+        "resolvedPath": "services/sourcing-canonical-offer-projection.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-canonical-unit-projection.js",
+        "resolvedPath": "services/sourcing-canonical-unit-projection.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-canonical-unit-product-sku-resolution.js",
+        "resolvedPath": "services/sourcing-canonical-unit-product-sku-resolution.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-canonical-offer-unit-comparison.js",
+        "resolvedPath": "services/sourcing-canonical-offer-unit-comparison.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-catalog-product-linkage.js",
+        "resolvedPath": "services/sourcing-catalog-product-linkage.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-product-read-comparison.js",
+        "resolvedPath": "services/sourcing-product-read-comparison.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/catalog-product-read-cutover-trial.js",
+        "resolvedPath": "services/catalog-product-read-cutover-trial.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -11675,6 +12445,13 @@
         "declared": "services/sourcing-workspace.js",
         "resolvedPath": "services/sourcing-workspace.js",
         "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-source-autopilot.js",
+        "resolvedPath": "services/sourcing-source-autopilot.js",
+        "status": "resolved-on-disk-no-header"
       },
       {
         "feature": "sourcing",
@@ -11707,6 +12484,118 @@
       {
         "feature": "sourcing",
         "category": "tests",
+        "declared": "tests/unit/sourcing-observation-shadow-plan.test.js",
+        "resolvedPath": "tests/unit/sourcing-observation-shadow-plan.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-observation-shadow-service.test.js",
+        "resolvedPath": "tests/unit/sourcing-observation-shadow-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-resolution-evidence.test.js",
+        "resolvedPath": "tests/unit/sourcing-resolution-evidence.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-shadow-resolution-service.test.js",
+        "resolvedPath": "tests/unit/sourcing-shadow-resolution-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-shadow-proof-service.test.js",
+        "resolvedPath": "tests/unit/sourcing-shadow-proof-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-golden-e2e-service.test.js",
+        "resolvedPath": "tests/unit/sourcing-golden-e2e-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-integrity-audit.test.js",
+        "resolvedPath": "tests/unit/sourcing-integrity-audit.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-canonical-product-projection.test.js",
+        "resolvedPath": "tests/unit/sourcing-canonical-product-projection.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-canonical-offer-projection.test.js",
+        "resolvedPath": "tests/unit/sourcing-canonical-offer-projection.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-canonical-unit-projection.test.js",
+        "resolvedPath": "tests/unit/sourcing-canonical-unit-projection.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-canonical-unit-product-sku-resolution.test.js",
+        "resolvedPath": "tests/unit/sourcing-canonical-unit-product-sku-resolution.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-canonical-offer-unit-comparison.test.js",
+        "resolvedPath": "tests/unit/sourcing-canonical-offer-unit-comparison.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-catalog-product-linkage.test.js",
+        "resolvedPath": "tests/unit/sourcing-catalog-product-linkage.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/catalog-product-route-canary.test.js",
+        "resolvedPath": "tests/unit/catalog-product-route-canary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-product-read-comparison.test.js",
+        "resolvedPath": "tests/unit/sourcing-product-read-comparison.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/catalog-product-read-cutover-trial.test.js",
+        "resolvedPath": "tests/unit/catalog-product-read-cutover-trial.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
         "declared": "tests/unit/admin-sourcing-workspace-route.test.js",
         "resolvedPath": "tests/unit/admin-sourcing-workspace-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11721,6 +12610,13 @@
       {
         "feature": "sourcing",
         "category": "tests",
+        "declared": "tests/unit/sourcing-source-autopilot.test.js",
+        "resolvedPath": "tests/unit/sourcing-source-autopilot.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
         "declared": "tests/unit/sourcing-candidate-actions.test.js",
         "resolvedPath": "tests/unit/sourcing-candidate-actions.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11730,6 +12626,20 @@
         "category": "tests",
         "declared": "tests/unit/require-sourcing-global-authority.test.js",
         "resolvedPath": "tests/unit/require-sourcing-global-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-observation-foundation-migration.test.js",
+        "resolvedPath": "tests/unit/sourcing-observation-foundation-migration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-resolution-foundation-migration.test.js",
+        "resolvedPath": "tests/unit/sourcing-resolution-foundation-migration.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12490,6 +13400,13 @@
       },
       {
         "feature": "decision-signals",
+        "category": "migrations",
+        "declared": "migrations/222_decision_signals_market_scope.sql",
+        "resolvedPath": "migrations/222_decision_signals_market_scope.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "decision-signals",
         "category": "tests",
         "declared": "tests/unit/radar-queries.test.js",
         "resolvedPath": "tests/unit/radar-queries.test.js",
@@ -12577,6 +13494,13 @@
         "category": "tests",
         "declared": "tests/unit/action-center-migration-contract.test.js",
         "resolvedPath": "tests/unit/action-center-migration-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "decision-signals",
+        "category": "tests",
+        "declared": "tests/unit/decision-signals-market-scope-contract.test.js",
+        "resolvedPath": "tests/unit/decision-signals-market-scope-contract.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       }
     ],
@@ -16470,6 +17394,22 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/sources/:sourceRef/activate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/sources/{id}/activate",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/sources/:sourceRef/deactivate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/sources/{id}/deactivate",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "unsold-resolution",
         "entry": "GET /api/unsold",
         "method": "GET",
@@ -16634,6 +17574,38 @@
         "entry": "POST /api/admin/action-center/signals/:signalRef/resolve",
         "method": "POST",
         "path": "/api/admin/action-center/signals/{id}/resolve",
+        "routeFile": "routes/admin-action-center.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "decision-signals",
+        "entry": "GET /api/admin/action-center/market/:marketCode",
+        "method": "GET",
+        "path": "/api/admin/action-center/market/{id}",
+        "routeFile": "routes/admin-action-center.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "decision-signals",
+        "entry": "POST /api/admin/action-center/market/:marketCode/signals/:signalRef/acknowledge",
+        "method": "POST",
+        "path": "/api/admin/action-center/market/{id}/signals/{id}/acknowledge",
+        "routeFile": "routes/admin-action-center.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "decision-signals",
+        "entry": "POST /api/admin/action-center/market/:marketCode/signals/:signalRef/snooze",
+        "method": "POST",
+        "path": "/api/admin/action-center/market/{id}/signals/{id}/snooze",
+        "routeFile": "routes/admin-action-center.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "decision-signals",
+        "entry": "POST /api/admin/action-center/market/:marketCode/signals/:signalRef/resolve",
+        "method": "POST",
+        "path": "/api/admin/action-center/market/{id}/signals/{id}/resolve",
         "routeFile": "routes/admin-action-center.js",
         "status": "resolved-owned"
       }
@@ -16808,6 +17780,24 @@
         "status": "resolved"
       },
       {
+        "feature": "catalog",
+        "fn": "maybeApplyCatalogProductRouteCanary",
+        "file": "services/catalog-product-route-canary.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "catalog",
+        "fn": "readCatalogProductSource",
+        "file": "services/catalog-product-source-read-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "catalog",
+        "fn": "resolveCatalogProductReadMode",
+        "file": "services/catalog-product-source-read-service.js",
+        "status": "resolved"
+      },
+      {
         "feature": "economic-engine",
         "fn": "recommend",
         "file": "services/pricing-engine.js",
@@ -16881,6 +17871,18 @@
       },
       {
         "feature": "incident-management",
+        "fn": "resolvePhysicalProofIncident",
+        "file": "services/incident-write-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "incident-management",
+        "fn": "resolveUpstreamTruthIncident",
+        "file": "services/incident-write-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "incident-management",
         "fn": "detachUserFromIncidents",
         "file": "services/incident-write-service.js",
         "status": "resolved"
@@ -16889,6 +17891,18 @@
         "feature": "incident-management",
         "fn": "seedIncident",
         "file": "services/incident-write-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "incident-management",
+        "fn": "scanOverdueIncidents",
+        "file": "services/incident-escalation.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "incident-management",
+        "fn": "assertParcelTransitionAllowed",
+        "file": "services/parcel-transition-guard.js",
         "status": "resolved"
       },
       {
@@ -16955,6 +17969,12 @@
         "feature": "infrastructure",
         "fn": null,
         "file": "bootstrap/*",
+        "status": "resolved"
+      },
+      {
+        "feature": "local-stock",
+        "fn": "getDecisionAvailabilityEvidence",
+        "file": "services/local-stock-decision-projection.js",
         "status": "resolved"
       },
       {
@@ -17105,6 +18125,48 @@
         "feature": "logistics",
         "fn": "markBackorderReminderSent",
         "file": "services/parcel-mutation-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "resolvePurchaseSnapshot",
+        "file": "services/hub-physical-identity.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "snapshotPurchaseAllocation",
+        "file": "services/hub-physical-identity.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "createPhysicalUnit",
+        "file": "services/hub-physical-identity.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "receiveSupplierPackage",
+        "file": "services/hub-physical-identity.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "transitionPhysicalUnit",
+        "file": "services/hub-physical-identity.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "moveAllocationQuantity",
+        "file": "services/hub-physical-identity.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "logistics",
+        "fn": "recordPhysicalUnitOutcome",
+        "file": "services/hub-physical-identity.js",
         "status": "resolved"
       },
       {
@@ -17547,6 +18609,60 @@
       },
       {
         "feature": "purchasing",
+        "fn": "resolveCanonicalSupplierMoney",
+        "file": "services/purchasing-canonical-money.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
+        "fn": "resolveSupplierUnit",
+        "file": "services/suppliers/supplier-order-identity.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
+        "fn": "validateAdapter",
+        "file": "services/suppliers/supplier-fulfillment-adapter-contract.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
+        "fn": "evaluateSupplierFulfillmentReadiness",
+        "file": "services/suppliers/supplier-fulfillment-readiness.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
+        "fn": "normalizeCapability",
+        "file": "services/suppliers/shipping-capability-contract.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
+        "fn": "adaptShippingRate",
+        "file": "services/suppliers/allegro-shipping-capability-adapter.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
+        "fn": "prepareCanonicalUnitPurchase",
+        "file": "services/suppliers/canonical-unit-purchasing-gate.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
+        "fn": "compareLegacyCanonicalUnit",
+        "file": "services/suppliers/canonical-unit-cutover-comparison.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
+        "fn": "reconcile",
+        "file": "services/suppliers/allegro-purchase-reconciliation.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
         "fn": "repairOrderedWithoutPurchaseOrders",
         "file": "services/repair-ordered-without-purchase-orders.js",
         "status": "resolved"
@@ -17621,6 +18737,108 @@
         "feature": "sourcing",
         "fn": "archiveMissingCandidatesFromCatalogImport",
         "file": "services/sourcing-candidate-import-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "recordCatalogImportObservationsShadow",
+        "file": "services/sourcing-observation-shadow-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "resolveCaptureShadow",
+        "file": "services/sourcing-shadow-resolution-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "collectShadowProof",
+        "file": "services/sourcing-shadow-proof-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "collectGoldenE2E",
+        "file": "services/sourcing-golden-e2e-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "collectIntegrityAudit",
+        "file": "services/sourcing-integrity-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "buildHealthDashboard",
+        "file": "services/sourcing-integrity-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "buildFinalAuthoritySnapshot",
+        "file": "services/sourcing-integrity-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "collectCanonicalProductProjections",
+        "file": "services/sourcing-canonical-product-projection.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "collectCanonicalOfferProjectionById",
+        "file": "services/sourcing-canonical-offer-projection.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "collectCanonicalUnitProjectionById",
+        "file": "services/sourcing-canonical-unit-projection.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "resolveCanonicalUnitForProductSku",
+        "file": "services/sourcing-canonical-unit-product-sku-resolution.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "compareCanonicalOfferUnitWithLegacy",
+        "file": "services/sourcing-canonical-offer-unit-comparison.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "collectCanonicalProductProjectionById",
+        "file": "services/sourcing-canonical-product-projection.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "findCanonicalProductIdsForCatalogProduct",
+        "file": "services/sourcing-catalog-product-linkage.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "applyCanonicalSourceReadSeam",
+        "file": "services/catalog-product-read-cutover-trial.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "collectProductReadComparison",
+        "file": "services/sourcing-product-read-comparison.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "collectCatalogProductReadCutoverTrial",
+        "file": "services/catalog-product-read-cutover-trial.js",
         "status": "resolved"
       }
     ],
@@ -17753,6 +18971,12 @@
       },
       {
         "from": "catalog",
+        "to": "sourcing",
+        "raw": "sourcing (API internes findCanonicalProductIdsForCatalogProduct, collectCanonicalProductProjectionById et applyCanonicalSourceReadSeam)",
+        "resolved": true
+      },
+      {
+        "from": "catalog",
         "to": "notifications",
         "raw": "notifications (alert persistence via utils/alerts.js)",
         "resolved": true
@@ -17797,6 +19021,12 @@
         "from": "catalog",
         "to": "sourcing",
         "raw": "sourcing (persistence lifecycle sourcing_candidates et sourcing_candidate_events via sourcing-candidate-import-service ; catalog n execute plus de SQL direct sur ces tables)",
+        "resolved": true
+      },
+      {
+        "from": "catalog",
+        "to": "purchasing",
+        "raw": "purchasing (Supplier Order Identity canonique : catalog persiste et valide l’identité commandable via services/suppliers/supplier-order-identity.js ; aucun payload fournisseur n’est réinterprété par heuristique)",
         "resolved": true
       },
       {
@@ -17904,7 +19134,13 @@
       {
         "from": "dashboard",
         "to": "inventory",
-        "raw": "inventory (lecture stock)",
+        "raw": "inventory (lecture stock hub/transit)",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
+        "to": "local-stock",
+        "raw": "local-stock (lecture de disponibilité physique market-scoped via local-stock-service ; jamais products.stock)",
         "resolved": true
       },
       {
@@ -17964,7 +19200,7 @@
       {
         "from": "dashboard",
         "to": "decision-signals",
-        "raw": "decision-signals (services/radar-queries.js — routes/admin-radar.js)",
+        "raw": "decision-signals (services/radar-queries.js — routes/admin-radar.js ; Commerce réutilise son vocabulaire de projection sans persistance market implicite)",
         "resolved": true
       },
       {
@@ -18132,13 +19368,19 @@
       {
         "from": "incident-management",
         "to": "infrastructure",
-        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "raw": "infrastructure (DB/logger/bootstrap techniques)",
         "resolved": true
       },
       {
         "from": "incident-management",
         "to": "logistics",
-        "raw": "logistics (scan-engine écrit incidents — SQL inline)",
+        "raw": "logistics (producteur d’incidents physiques via incident-write-service ; consommateur du guard de transition F2/F3)",
+        "resolved": true
+      },
+      {
+        "from": "incident-management",
+        "to": "decision-signals",
+        "raw": "decision-signals (sink durable Action Center pour escalade SLA via signal-service)",
         "resolved": true
       },
       {
@@ -18294,7 +19536,7 @@
       {
         "from": "logistics",
         "to": "infrastructure",
-        "raw": "infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)",
+        "raw": "infrastructure (DB + transactional outbox F0 ; les constats physiques sont publiés via outbox-producer dans la transaction du fait)",
         "resolved": true
       },
       {
@@ -18306,7 +19548,7 @@
       {
         "from": "logistics",
         "to": "orders",
-        "raw": "orders (commande rattachee au colis)",
+        "raw": "orders (commande rattachée au colis ; HUB-001 ne lit que order_id/order_item_id/market_id/relais_id autoritatifs et ne les réassigne jamais)",
         "resolved": true
       },
       {
@@ -18348,7 +19590,7 @@
       {
         "from": "logistics",
         "to": "purchasing",
-        "raw": "purchasing (declenche verification/reapprovisionnement apres collecte cash relais — services/purchasing-trigger-service.js, O7.2 Cycle C)",
+        "raw": "purchasing (lecture seule de purchase_orders : HUB-001 snapshotte l identité d achat exacte déjà persistée ; aucune mutation/heuristique fournisseur)",
         "resolved": true
       },
       {
@@ -18360,7 +19602,7 @@
       {
         "from": "logistics",
         "to": "market",
-        "raw": "market (autorisation de lecture Hub terrain scopée côté serveur — routes/hub.js consomme middleware/require-market-scope.js ; jamais de market_id client)",
+        "raw": "market (autorisation de lecture Hub terrain scopée côté serveur — routes/hub.js consomme middleware/require-market-scope.js ; HUB-001 hérite orders.market_id, jamais de market_id client)",
         "resolved": true
       },
       {
@@ -18547,6 +19789,12 @@
         "from": "market-operator-dashboard",
         "to": "logistics",
         "raw": "logistics (Hub/Relais, expéditions, douane et primitives de suivi market-scoped)",
+        "resolved": true
+      },
+      {
+        "from": "market-operator-dashboard",
+        "to": "market-delegation",
+        "raw": "market-delegation (services/market-delegation-service.js + services/market-scope-projector.js — autorité canonique assignment/membership/capabilities et projectAssignment(), consommées par scripts/provision-market-operator.js pour ne plus jamais écrire operator_market_scopes directement)",
         "resolved": true
       },
       {
@@ -18923,8 +20171,14 @@
       },
       {
         "from": "purchasing",
+        "to": "sourcing",
+        "raw": "sourcing (resolveCanonicalUnitForProductSku — frontière canonique exacte, sans lecture directe des tables Resolution)",
+        "resolved": true
+      },
+      {
+        "from": "purchasing",
         "to": "catalog",
-        "raw": "catalog (dépendance data cross-feature observée et gouvernée par O5)",
+        "raw": "catalog (contrat V2 sellable_units + Supplier Order Identity fournie par les connecteurs, client Allegro Sandbox borné)",
         "resolved": true
       },
       {
@@ -18961,6 +20215,18 @@
         "from": "recommendations",
         "to": "catalog",
         "raw": "catalog (lecture produit)",
+        "resolved": true
+      },
+      {
+        "from": "recommendations",
+        "to": "catalog",
+        "raw": "catalog — getExposure() pour aligner les Product cards sur product_market_exposure du marché",
+        "resolved": true
+      },
+      {
+        "from": "recommendations",
+        "to": "market-autonomy",
+        "raw": "market-autonomy — resolveActiveProductMarketPricing() pour n’exposer qu’un prix LOCAL_ACTIVE buyer-effective",
         "resolved": true
       },
       {
@@ -19272,25 +20538,31 @@
       {
         "from": "decision-signals",
         "to": "auth",
-        "raw": "auth (FF-C1 2026-07-29 — garde de route et contexte d’identité ; preuve: routes/signals.js -> middleware/auth.js)",
+        "raw": "auth (garde de route et contexte d’identité)",
         "resolved": true
       },
       {
         "from": "decision-signals",
         "to": "infrastructure",
-        "raw": "infrastructure (2026-08-17 — accès DB et logger techniques ; preuve: services/radar-queries.js, services/signal-service.js, routes/signals.js -> db.js / utils/logger.js)",
+        "raw": "infrastructure (acces DB et transaction partagée)",
         "resolved": true
       },
       {
         "from": "decision-signals",
         "to": "logistics",
-        "raw": "logistics (FF-C1 2026-07-29 — lecture ou orchestration logistique ; preuve: services/radar-queries.js -> utils/parcels.js)",
+        "raw": "logistics (lecture ou orchestration logistique)",
         "resolved": true
       },
       {
         "from": "decision-signals",
         "to": "business-rules",
-        "raw": "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: services/radar-queries.js -> utils/rules.js)",
+        "raw": "business-rules (lecture du referentiel de regles metier)",
+        "resolved": true
+      },
+      {
+        "from": "decision-signals",
+        "to": "market-delegation",
+        "raw": "market-delegation (resolution serveur du Market ID, capability dashboard.market.read / decision_signal.manage et audit des mutations pays)",
         "resolved": true
       }
     ],
@@ -19985,6 +21257,14 @@
         "category": "css",
         "declared": "../css/discovery-desktop-v2.css",
         "resolvedPath": "public/boutique/css/discovery-desktop-v2.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "css",
+        "declared": "../css/service-detail.css",
+        "resolvedPath": "public/boutique/css/service-detail.css",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -22711,6 +23991,10 @@
               {
                 "sourceFileId": "routes/admin-catalog-workspace.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/integrations-aliexpress.js",
+                "targetFile": "middleware/auth.js"
               }
             ]
           }
@@ -22754,6 +24038,14 @@
                 "targetFile": "utils/rules.js"
               },
               {
+                "sourceFileId": "services/catalog-approval.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "services/catalog-workspace.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
                 "sourceFileId": "tests/unit/catalog-import-orchestrator.test.js",
                 "targetFile": "utils/rules.js"
               },
@@ -22767,6 +24059,10 @@
               },
               {
                 "sourceFileId": "tests/unit/catalog-enrichment-extended.test.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-approval.test.js",
                 "targetFile": "utils/rules.js"
               }
             ]
@@ -22830,11 +24126,23 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "scripts/allegro-sandbox-check.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "scripts/cj-real-showcase-seed.js",
                 "targetFile": "db.js"
               },
               {
                 "sourceFileId": "scripts/cj-full-catalog-sync.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/aliexpress-500-catalog-sync.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/allegro-sandbox-client.js",
                 "targetFile": "db.js"
               },
               {
@@ -22851,6 +24159,10 @@
               },
               {
                 "sourceFileId": "services/catalog-market-exposure-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/aliexpress-oauth.js",
                 "targetFile": "db.js"
               },
               {
@@ -22894,6 +24206,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/catalog-live-flow.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/products.js",
                 "targetFile": "db.js"
               },
@@ -22924,6 +24240,10 @@
               {
                 "sourceFileId": "routes/admin-catalog-workspace.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-sandbox-client.test.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/catalog-promotion.test.js",
@@ -22980,10 +24300,6 @@
               {
                 "sourceFileId": "tests/integration/catalog-import-json.integration.test.js",
                 "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/canonical-catalog-workspace-boundary.test.js",
-                "targetFile": "bootstrap/html-routes.js"
               }
             ]
           }
@@ -23457,6 +24773,30 @@
       },
       {
         "from": "catalog",
+        "to": "purchasing",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "scripts/allegro-sandbox-check.js",
+                "targetFile": "services/suppliers/allegro-fulfillment-adapter.js"
+              },
+              {
+                "sourceFileId": "services/catalog-promotion/sku.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-connector.test.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "catalog",
         "to": "shared-cart",
         "channels": [
           {
@@ -23539,6 +24879,34 @@
               {
                 "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
                 "targetFile": "services/sourcing-candidate-import-service.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
+                "targetFile": "services/sourcing-observation-shadow-service.js"
+              },
+              {
+                "sourceFileId": "services/catalog-product-source-read-service.js",
+                "targetFile": "services/sourcing-catalog-product-linkage.js"
+              },
+              {
+                "sourceFileId": "services/catalog-product-source-read-service.js",
+                "targetFile": "services/sourcing-canonical-product-projection.js"
+              },
+              {
+                "sourceFileId": "services/catalog-product-source-read-service.js",
+                "targetFile": "services/catalog-product-read-cutover-trial.js"
+              },
+              {
+                "sourceFileId": "services/catalog-live-flow.js",
+                "targetFile": "services/sourcing-source-autopilot.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-product-route-canary-http.test.js",
+                "targetFile": "services/sourcing-catalog-product-linkage.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-product-source-read-service.test.js",
+                "targetFile": "services/catalog-product-read-cutover-trial.js"
               }
             ]
           },
@@ -23978,6 +25346,10 @@
                 "targetFile": "services/economic-config.js"
               },
               {
+                "sourceFileId": "services/dashboard-commerce.js",
+                "targetFile": "services/pricing-market-corridor.js"
+              },
+              {
                 "sourceFileId": "routes/dashboard.js",
                 "targetFile": "routes/dashboard-finance.js"
               },
@@ -24121,6 +25493,10 @@
               },
               {
                 "sourceFileId": "services/dashboard-operations.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/dashboard-orders.js",
                 "targetFile": "db.js"
               },
               {
@@ -24402,6 +25778,22 @@
               {
                 "sourceFileId": "services/operations-workspace.js",
                 "targetFile": "services/inventory-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "dashboard",
+        "to": "local-stock",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/dashboard-commerce.js",
+                "targetFile": "services/local-stock-decision-projection.js"
               }
             ]
           }
@@ -24889,6 +26281,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "routes/admin-action-center.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/radar-queries.test.js",
                 "targetFile": "db.js"
               }
@@ -24907,6 +26303,22 @@
               {
                 "sourceFileId": "services/radar-queries.js",
                 "targetFile": "utils/parcels.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "decision-signals",
+        "to": "market-delegation",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-action-center.js",
+                "targetFile": "services/market-delegation-service.js"
               }
             ]
           }
@@ -25954,6 +27366,22 @@
       },
       {
         "from": "incident-management",
+        "to": "decision-signals",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/incident-escalation.js",
+                "targetFile": "services/signal-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "incident-management",
         "to": "infrastructure",
         "channels": [
           {
@@ -25964,11 +27392,23 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/incident-escalation.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/parcel-transition-guard.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/incident-service.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
               {
                 "sourceFileId": "tests/unit/incident-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-transition-guard.test.js",
                 "targetFile": "db.js"
               }
             ]
@@ -25980,6 +27420,19 @@
         "from": "incident-management",
         "to": "logistics",
         "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/unit/parcel-operations-incident-governance.test.js",
+                "targetFile": "services/parcel-guards.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-operations-incident-governance.test.js",
+                "targetFile": "services/parcel-operations.js"
+              }
+            ]
+          },
           {
             "channel": "data-read",
             "evidence": [
@@ -26122,6 +27575,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/admin/catalog-approval.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/integrations-aliexpress.js"
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
@@ -26323,6 +27780,22 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "infrastructure",
+        "to": "incident-management",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "bootstrap/crons.js",
+                "targetFile": "services/incident-escalation.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "infrastructure",
@@ -26978,6 +28451,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/local-stock-decision-projection.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/local-stock-checkout-preview.js",
                 "targetFile": "db.js"
               },
@@ -27209,7 +28686,15 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/parcel-operations.js",
+                "targetFile": "services/parcel-transition-guard.js"
+              },
+              {
                 "sourceFileId": "services/scan-engine.js",
+                "targetFile": "services/incident-write-service.js"
+              },
+              {
+                "sourceFileId": "services/hub-physical-identity.js",
                 "targetFile": "services/incident-write-service.js"
               }
             ]
@@ -27352,6 +28837,10 @@
               {
                 "sourceFileId": "services/hub-operations.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/hub-physical-identity.js",
+                "targetFile": "services/outbox-producer.js"
               },
               {
                 "sourceFileId": "services/routing.js",
@@ -28631,6 +30120,26 @@
         "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
+        "from": "market-operator-dashboard",
+        "to": "market-delegation",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "scripts/provision-market-operator.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
+                "sourceFileId": "scripts/provision-market-operator.js",
+                "targetFile": "services/market-scope-projector.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "notifications",
         "to": "auth",
         "channels": [
@@ -29493,6 +31002,10 @@
               },
               {
                 "sourceFileId": "tests/e2e-api/orders.single-collect.e2e.test.js",
+                "targetFile": "services/pickup-secret-service.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/orders.single-collect.e2e.test.js",
                 "targetFile": "routes/pickup-secret.js"
               },
               {
@@ -29622,6 +31135,10 @@
               {
                 "sourceFileId": "services/order-checkout-service.js",
                 "targetFile": "services/market-local-price-resolution-service.js"
+              },
+              {
+                "sourceFileId": "services/order-checkout-service.js",
+                "targetFile": "services/market-commercial-price-service.js"
               }
             ]
           }
@@ -31236,20 +32753,12 @@
                 "targetFile": "db.js"
               },
               {
-                "sourceFileId": "tests/integration/security-grid.test.js",
-                "targetFile": "server.js"
+                "sourceFileId": "tests/integration/relais-idor-probe.test.js",
+                "targetFile": "middleware/rate-limit.js"
               },
               {
                 "sourceFileId": "tests/integration/security-grid.test.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "tests/unit/relais-idor-probe.test.js",
                 "targetFile": "server.js"
-              },
-              {
-                "sourceFileId": "tests/unit/relais-idor-probe.test.js",
-                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/validators.test.js",
@@ -31296,14 +32805,6 @@
               },
               {
                 "sourceFileId": "tests/integration/relais-idor-probe.test.js",
-                "targetFile": "tests/integration/test-harness/seed-helpers.js"
-              },
-              {
-                "sourceFileId": "tests/integration/security-grid.test.js",
-                "targetFile": "tests/integration/test-harness/seed-helpers.js"
-              },
-              {
-                "sourceFileId": "tests/unit/relais-idor-probe.test.js",
                 "targetFile": "tests/integration/test-harness/seed-helpers.js"
               },
               {
@@ -31792,10 +33293,39 @@
         "to": "catalog",
         "channels": [
           {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/suppliers/allegro-fulfillment-adapter.js",
+                "targetFile": "services/suppliers/connectors/allegro-connector.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/allegro-purchase-reconciliation.js",
+                "targetFile": "services/suppliers/allegro-sandbox-client.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/aliexpress-fulfillment-adapter.js",
+                "targetFile": "services/suppliers/connectors/aliexpress-connected-connector.js"
+              },
+              {
+                "sourceFileId": "scripts/allegro-shipping-capability-proof.js",
+                "targetFile": "services/suppliers/allegro-sandbox-client.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-seller-order-read.test.js",
+                "targetFile": "services/suppliers/allegro-sandbox-client.js"
+              }
+            ]
+          },
+          {
             "channel": "data-read",
             "evidence": [
               {
                 "table": "products",
+                "mode": "R"
+              },
+              {
+                "table": "product_skus",
                 "mode": "R"
               }
             ]
@@ -31867,11 +33397,35 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "scripts/allegro-sandbox-purchase-proof.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/allegro-shipping-capability-proof.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-seller-order-read.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/purchasing-exact-sku-po.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/purchasing-route.test.js",
                 "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/purchasing-trigger-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/purchasing-trigger-exact-sku.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/purchasing-canonical-money.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -31950,6 +33504,10 @@
               {
                 "sourceFileId": "tests/unit/purchasing-trigger-service.test.js",
                 "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/purchasing-trigger-exact-sku.test.js",
+                "targetFile": "utils/alerts.js"
               }
             ]
           }
@@ -32002,6 +33560,34 @@
         "conformanceStatus": "DECLARED_AND_OBSERVED"
       },
       {
+        "from": "purchasing",
+        "to": "sourcing",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/purchasing-canonical-money.js",
+                "targetFile": "services/sourcing-canonical-unit-product-sku-resolution.js"
+              },
+              {
+                "sourceFileId": "services/suppliers/canonical-unit-purchasing-gate.js",
+                "targetFile": "services/sourcing-canonical-unit-product-sku-resolution.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-fulfillment-adapter.test.js",
+                "targetFile": "services/sourcing-canonical-unit-product-sku-resolution.js"
+              },
+              {
+                "sourceFileId": "tests/unit/purchasing-canonical-money.test.js",
+                "targetFile": "services/sourcing-canonical-unit-product-sku-resolution.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
         "from": "recommendations",
         "to": "catalog",
         "channels": [
@@ -32019,6 +33605,10 @@
               {
                 "sourceFileId": "scripts/discovery-cj-local-repair.js",
                 "targetFile": "scripts/cj-real-showcase-seed.js"
+              },
+              {
+                "sourceFileId": "services/discovery-rail-composer.js",
+                "targetFile": "services/catalog-market-exposure-service.js"
               },
               {
                 "sourceFileId": "services/discovery-rail-composer.js",
@@ -32124,6 +33714,22 @@
               {
                 "table": "markets",
                 "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "recommendations",
+        "to": "market-autonomy",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/discovery-rail-composer.js",
+                "targetFile": "services/market-local-price-resolution-service.js"
               }
             ]
           }
@@ -33003,6 +34609,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/catalog-product-read-cutover-trial.js",
+                "targetFile": "services/catalog-public-view.js"
+              },
+              {
                 "sourceFileId": "services/sourcing-candidate-actions.js",
                 "targetFile": "services/supplier-catalog-scanner.js"
               },
@@ -33027,6 +34637,14 @@
                 "targetFile": "services/suppliers/catalog-import-orchestrator.js"
               },
               {
+                "sourceFileId": "services/sourcing-source-autopilot.js",
+                "targetFile": "services/sourcing-import-dispatch.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-source-autopilot.js",
+                "targetFile": "services/suppliers/catalog-import-orchestrator.js"
+              },
+              {
                 "sourceFileId": "routes/sourcing-scanner.js",
                 "targetFile": "services/supplier-catalog-scanner.js"
               },
@@ -33045,12 +34663,28 @@
               {
                 "sourceFileId": "tests/unit/sourcing-scanner.test.js",
                 "targetFile": "services/suppliers/connectors/manual-connector.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sourcing-golden-e2e-service.test.js",
+                "targetFile": "services/catalog-promotion/sku.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sourcing-golden-e2e-service.test.js",
+                "targetFile": "services/catalog-candidate-product-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-product-route-canary.test.js",
+                "targetFile": "services/catalog-product-route-canary.js"
               }
             ]
           },
           {
             "channel": "data-read",
             "evidence": [
+              {
+                "table": "products",
+                "mode": "R"
+              },
               {
                 "table": "catalog_media",
                 "mode": "R"
@@ -33132,11 +34766,95 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "scripts/sourcing-shadow-proof-staging.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/sourcing-product-projection-trial-staging.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/sourcing-product-read-comparison-staging.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/catalog-product-read-cutover-trial-staging.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/sourcing-golden-e2e-staging.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/sourcing-integrity-audit.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/sourcing-source-autopilot.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-observation-shadow-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-shadow-resolution-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-shadow-proof-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-golden-e2e-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-integrity-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-canonical-product-projection.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-canonical-offer-projection.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-canonical-unit-projection.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-canonical-unit-product-sku-resolution.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-canonical-offer-unit-comparison.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-catalog-product-linkage.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-product-read-comparison.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/catalog-product-read-cutover-trial.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/sourcing-candidate-actions.js",
                 "targetFile": "db.js"
               },
               {
                 "sourceFileId": "services/sourcing-workspace.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-source-autopilot.js",
                 "targetFile": "db.js"
               },
               {
@@ -33146,11 +34864,35 @@
               {
                 "sourceFileId": "tests/unit/sourcing-scanner.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sourcing-observation-shadow-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sourcing-shadow-resolution-service.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "sourcing",
+        "to": "purchasing",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/unit/sourcing-golden-e2e-service.test.js",
+                "targetFile": "services/suppliers/canonical-unit-purchasing-gate.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "unsold-resolution",
@@ -33506,7 +35248,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1176
+        "filesObserved": 1296
       },
       "boutique": {
         "filesObserved": 217,
@@ -33541,8 +35283,8 @@
     ],
     "familySummary": {
       "PROJECTION": 0,
-      "COMPOSITION_ROOT_WIRING": 18,
-      "NON_RUNTIME_TEST": 6,
+      "COMPOSITION_ROOT_WIRING": 19,
+      "NON_RUNTIME_TEST": 7,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -33644,6 +35386,21 @@
       {
         "from": "infrastructure",
         "to": "documents",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-foundation",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "incident-management",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "technical-foundation",
@@ -33910,6 +35667,21 @@
         "policy": "non-runtime-evidence",
         "exceptionRequired": false,
         "exceptionReasons": []
+      },
+      {
+        "from": "sourcing",
+        "to": "purchasing",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       }
     ],
     "unclassified": [],
@@ -33919,8 +35691,8 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 10,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 1,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 2,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 3,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
@@ -34175,6 +35947,7 @@
         "purchasing",
         "recommendations",
         "shared-cart",
+        "sourcing",
         "unsold-resolution"
       ],
       "lifecycleOwner": "catalog",
@@ -34374,6 +36147,7 @@
       ],
       "readers": [
         "market-autonomy",
+        "purchasing",
         "sourcing"
       ],
       "lifecycleOwner": "catalog",
@@ -34498,6 +36272,19 @@
       "resolution": "single-writer"
     },
     "supplier_catalog_sync_checkpoints": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "single-writer"
+    },
+    "supplier_oauth_connections": {
       "writers": [
         {
           "feature": "catalog",
@@ -35359,6 +37146,32 @@
       "lifecycleOwner": "infrastructure",
       "resolution": "single-writer"
     },
+    "outbox_events": {
+      "writers": [
+        {
+          "feature": "infrastructure",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "infrastructure",
+      "resolution": "single-writer"
+    },
+    "physical_outcome_receipts": {
+      "writers": [
+        {
+          "feature": "infrastructure",
+          "mode": "W",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "infrastructure",
+      "resolution": "single-writer"
+    },
     "inventory_items": {
       "writers": [
         {
@@ -35430,6 +37243,58 @@
       "readers": [],
       "lifecycleOwner": "logistics",
       "resolution": "single-writer"
+    },
+    "hub_custody_events": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "hub_physical_unit_placements": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "hub_physical_units": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
+    },
+    "hub_purchase_allocations": {
+      "writers": [
+        {
+          "feature": "logistics",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "logistics",
+      "resolution": "declared-table-owner"
     },
     "parcel_events": {
       "writers": [
@@ -36061,6 +37926,136 @@
       "lifecycleOwner": "sourcing",
       "resolution": "declared-table-owner"
     },
+    "sourcing_sources": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
+    "sourcing_source_provides": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "W",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
+    "sourcing_captures": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
+    "sourcing_observations": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
+    "sourcing_observation_evidence": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
+    "sourcing_canonical_entities": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
+    "sourcing_canonical_entity_refs": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "W",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
+    "sourcing_match_proposals": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "W",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
+    "sourcing_resolution_decisions": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
+    "sourcing_resolution_bindings": {
+      "writers": [
+        {
+          "feature": "sourcing",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "sourcing",
+      "resolution": "declared-table-owner"
+    },
     "unsold_items": {
       "writers": [
         {
@@ -36115,8 +38110,8 @@
       "backend": {
         "manifestsDiscovered": 33,
         "manifestsConnected": 33,
-        "technicalNodesTotal": 449,
-        "technicalNodesOwned": 449,
+        "technicalNodesTotal": 482,
+        "technicalNodesOwned": 482,
         "technicalOrphans": 0
       },
       "dash": {
@@ -36262,6 +38257,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> incident-management",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"incident-management\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> local-stock",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"local-stock\""
       },
@@ -36344,6 +38344,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "refunds -> payments",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"payments\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "sourcing -> purchasing",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"sourcing\" vers \"purchasing\""
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -36614,12 +38619,12 @@
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + provider_name + image_ref + actions request/callback",
+        "ref": "providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + provider_name + image_ref + actions request/callback + whatsapp_available booléen",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id ; intent request|callback ; requester_note facultative",
+        "ref": "providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id ; intent request|callback ; requester_note facultative ; handoff=whatsapp facultatif pour service uniquement",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
@@ -36661,9 +38666,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 35,
+      "expectedTopology": 37,
       "generatorLimitations": 53,
-      "classifiedCandidates": 88
+      "classifiedCandidates": 90
     }
   }
 }

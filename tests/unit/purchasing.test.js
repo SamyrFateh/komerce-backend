@@ -46,8 +46,13 @@ const { triggerPurchasing } = require('../../services/purchasing-trigger-service
 const ORDER = { id: 'order-uuid', reference: 'KOM-001', relais_id: null, relais_name: null };
 const ITEM  = { product_id: 'prod-uuid', product_name: 'Widget A', quantity: 2, category: 'electronics', price_aed: 50 };
 
-const PS_MANUAL = {
-  id: 'ps-1', supplier_id: 's-1', auto_order: false, platform: 'manual',
+// PS_LOCAL exerce la branche d'exécution par défaut du trigger : un
+// supplier avec un vrai provider (local — fournisseur sans intégration
+// API tierce) qui n'est ni whatsapp ni auto_order-capable → triggerMode
+// dérive en 'manual'. `manual` n'est jamais une valeur de `platform` :
+// c'est un mode d'exécution, pas un provider (cf. provider-authority.js).
+const PS_LOCAL = {
+  id: 'ps-1', supplier_id: 's-1', auto_order: false, platform: 'local',
   supplier_name: 'ACME', supplier_price_aed: 10, supplier_sku: 'SKU1', supplier_url: null,
 };
 const PS_WHATSAPP = {
@@ -116,7 +121,7 @@ describe('triggerPurchasing', () => {
       .mockResolvedValueOnce({ rows: [ITEM] });
 
     const client = makeClient([
-      { rows: [PS_MANUAL] },
+      { rows: [PS_LOCAL] },
       { rows: [{ id: 'po-existing', status: 'confirmed' }] }, // existingPo
     ]);
     mockGetClient.mockResolvedValue(client);
@@ -134,7 +139,7 @@ describe('triggerPurchasing', () => {
       .mockResolvedValueOnce({ rows: [ITEM] });
 
     const client = makeClient([
-      { rows: [PS_MANUAL] },
+      { rows: [PS_LOCAL] },
       { rows: [] },                   // existingPo → rien
       { rows: [{ id: 'po-new' }] },  // INSERT purchase_orders
       { rows: [], rowCount: 1 },      // UPDATE status = notified
@@ -195,7 +200,7 @@ describe('triggerPurchasing', () => {
 
     const dbError = new Error('constraint_violation');
     const client = makeClient([
-      { rows: [PS_MANUAL] },
+      { rows: [PS_LOCAL] },
       { rows: [] },            // existingPo
       { error: dbError },      // INSERT purchase_orders → crash
       { rows: [], rowCount: 1 }, // INSERT alerts

@@ -24,10 +24,12 @@ const Joi = require('joi');
 const ROOT = path.join(__dirname, '..', '..');
 
 function extractPlatformsFromSource() {
-  const src = fs.readFileSync(path.join(ROOT, 'validators', 'index.js'), 'utf8');
-  const match = src.match(/const PLATFORMS\s*=\s*\[([^\]]+)\]/);
-  if (!match) throw new Error('PLATFORMS array not found');
-  return match[1].split(',').map(s => s.trim().replace(/['"]/g, '')).filter(Boolean);
+  // L'autorité canonique vit dans services/suppliers/provider-authority.js
+  // et est consommée par services/suppliers/purchasing-validators.js
+  // (@domain purchasing) — jamais par validators/index.js (@domain
+  // infrastructure), cf. GAP-1 v2. Ce test lit l'autorité directement.
+  const { PROVIDERS } = require('../../services/suppliers/provider-authority');
+  return [...PROVIDERS];
 }
 
 function extractPlatformsFromSchema(filePath) {
@@ -51,8 +53,12 @@ function extractPlatformsFromMigration() {
 
 let purchasingValidators;
 beforeAll(() => {
+  // Depuis GAP-1 (v2), la validation purchasing vit dans
+  // services/suppliers/purchasing-validators.js (@domain purchasing),
+  // pas dans le barrel infrastructure validators/index.js — cf.
+  // provider-authority.test.js pour la preuve de cette frontière.
   try {
-    purchasingValidators = require('../../validators/index').purchasing;
+    purchasingValidators = require('../../services/suppliers/purchasing-validators').purchasing;
   } catch { purchasingValidators = null; }
 });
 
