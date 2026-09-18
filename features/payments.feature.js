@@ -106,6 +106,7 @@ module.exports = {
       'css/mobile-money.css',
     ],
     tests: [
+      'tests/e2e-api/payments.stripe-pipeline-p3.e2e.test.js',
       'tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js',
       'tests/e2e-api/payments.paypal-amount-currency.e2e.test.js',
       'tests/unit/payment-cash-confirm.test.js',
