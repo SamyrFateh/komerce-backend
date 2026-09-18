@@ -22,8 +22,12 @@ function setup() {
     return { rows: [] };
   } }));
   const fetchImpl = jest.fn(async url => {
-    if (String(url).includes('/auth/')) {
+    const href = String(url);
+    if (href.includes('/auth/')) {
       return ok({ access_token: 'access-1', refresh_token: 'refresh-1', expires_in: 3600, token_type: 'bearer' });
+    }
+    if (href.includes('/order/checkout-forms?')) {
+      return ok({ checkoutForms: [{ id: checkoutId, status: 'READY_FOR_PROCESSING', lineItems: [] }] });
     }
     return ok({ id: checkoutId, status: 'READY_FOR_PROCESSING', lineItems: [] });
   });
@@ -39,6 +43,36 @@ test('seller order read is restricted to one exact sandbox checkout-form UUID', 
   expect(call[1].method).toBe('GET');
   expect(call[1].headers.Authorization).toBe('Bearer access-1');
   expect(call[1].redirect).toBe('error');
+});
+
+test('seller order discovery is bounded to paid orders after the PO timestamp', async () => {
+  const { client, fetchImpl } = setup();
+  await expect(client.listSellerOrders({
+    boughtAtGte: '2026-09-17T22:34:00.000Z',
+  })).resolves.toMatchObject({ checkoutForms: [{ id: checkoutId }] });
+
+  const call = fetchImpl.mock.calls.find(([url]) => String(url).includes('/order/checkout-forms?'));
+  expect(call).toBeDefined();
+  const url = new URL(call[0]);
+  expect(url.origin + url.pathname).toBe('https://api.allegro.pl.allegrosandbox.pl/order/checkout-forms');
+  expect(url.searchParams.get('status')).toBe('READY_FOR_PROCESSING');
+  expect(url.searchParams.get('limit')).toBe('20');
+  expect(url.searchParams.get('sort')).toBe('-lineItems.boughtAt');
+  expect(url.searchParams.get('lineItems.boughtAt.gte')).toBe('2026-09-17T22:34:00.000Z');
+  expect(call[1].method).toBe('GET');
+});
+
+test('seller order discovery rejects broad or malformed queries before OAuth/network', async () => {
+  for (const args of [
+    { status: 'BOUGHT' },
+    { limit: 0 },
+    { limit: 101 },
+    { boughtAtGte: 'not-a-date' },
+  ]) {
+    const { client, fetchImpl } = setup();
+    await expect(client.listSellerOrders(args)).rejects.toThrow('ALLEGRO_SELLER_ORDERS_');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  }
 });
 
 test.each([
