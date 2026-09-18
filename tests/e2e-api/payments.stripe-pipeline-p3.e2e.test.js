@@ -105,7 +105,7 @@ describeE2E('Stripe P3 — public intent API + DB persistence', ({ db }) => {
     expect(first.status).toBe(200);
     expect(first.body).toEqual({
       client_secret: 'pi_p3_exact_1_secret',
-      amount_eur: '49.90',
+      amount_eur: 49.9,
       amount_cents: 4990,
       order_reference: order.reference,
     });
