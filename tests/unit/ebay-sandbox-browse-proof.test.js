@@ -189,6 +189,19 @@ describe('ebay-sandbox-browse-proof', () => {
   });
 
 
+
+  test('blocks at P0 when marketplace is missing and never calls eBay', async () => {
+    const fetchImpl = jest.fn();
+    const result = await runEbayBrowseReadOnlyProof({
+      env: baseEnv({ EBAY_MARKETPLACE_ID: '' }),
+      fetchImpl,
+    });
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(() => assertThrough(result.proof, 'P0'))
+      .toThrow('PROVIDER_CONTRACT_BLOCKED_EBAY_P0_MARKETPLACE_CONFIGURED');
+  });
+
   test('blocks at P0 when Railway points to production credentials', async () => {
     const fetchImpl = jest.fn();
     const result = await runEbayBrowseReadOnlyProof({
