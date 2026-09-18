@@ -1,7 +1,7 @@
 /**
  * @komerce-arch
  * @role          provider-contract-proof
- * @domain        purchasing
+ * @domain        external-provider-contracts
  * @layer         script
  * @criticality   high
  * @inputs        normalized provider conversation plus contract checks grouped by proof stage
@@ -12,7 +12,7 @@
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md
- * @impact-areas  sourcing, purchasing, supplier-integration, tests
+ * @impact-areas  external-provider-contracts, sourcing, purchasing, payments, notifications, logistics, identity, media, ai, tests
  */
 'use strict';
 
