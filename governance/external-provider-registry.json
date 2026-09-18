@@ -45,7 +45,8 @@
         "api.sandbox.ebay.com"
       ],
       "markers": [
-        "EBAY_SANDBOX_",
+        "EBAY_CLIENT_ID",
+        "EBAY_ENV",
         "ebay-sandbox"
       ],
       "analysis_document": "docs/external-providers/suppliers/EBAY.md",
