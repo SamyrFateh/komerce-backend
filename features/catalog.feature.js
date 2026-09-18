@@ -82,6 +82,7 @@ module.exports = {
     ],
     scripts: [
       'scripts/allegro-sandbox-check.js',
+      'scripts/ebay-p3-pipeline-proof.js',
       'scripts/cj-real-showcase-seed.js',
       'scripts/cj-full-catalog-sync.js',
       'scripts/aliexpress-500-catalog-sync.js',
@@ -243,6 +244,7 @@ module.exports = {
       'tests/unit/allegro-sandbox-client.test.js',
       'tests/unit/allegro-connector.test.js',
       'tests/unit/ebay-connector.test.js',
+      'tests/unit/ebay-p3-pipeline-proof.test.js',
       'tests/unit/allegro-sandbox-check.test.js',
       'tests/unit/admin-boutique-categories.test.js',
       'tests/unit/catalog-product-route-canary-http.test.js',
