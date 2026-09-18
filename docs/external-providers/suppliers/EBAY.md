@@ -435,7 +435,60 @@ client credentials OAuth
 It never persists the OAuth token and never includes configured credentials or
 provider free-text error bodies in proof output.
 
-## 9. Minimal P1 probes
+## 9. Real Railway P0/P1 evidence — 2026-09-18
+
+The read-only proof was executed against the eBay variables already present on the
+Komerce Railway backend, copied into an isolated probe service by Railway
+reference variables. No credential value or OAuth token was emitted.
+
+Observed proof chain:
+
+```text
+P0
+  keyset present
+  EBAY_ENV = sandbox
+  explicit valid marketplace
+  → PASS
+  Railway deployment: 02f06423-a198-4f18-9403-92dd5fcb1439
+
+P1a
+  client_credentials OAuth
+  token accepted by api.sandbox.ebay.com
+  → PASS
+  Railway deployment: 92b36e47-82e1-458d-9dc9-f43bab701015
+
+P1b
+  bounded Browse search
+  q=iphone
+  limit=3
+  at least one exact REST itemId
+  → PASS
+  Railway deployment: 7b52c592-5d73-47c9-b10f-a14008437f93
+
+P1c / P1d
+  exact getItem(itemId)
+  exact itemId read-back
+  native price + currency observed
+  → PASS
+  Railway deployment: 5728b88f-5370-4e14-8dec-5e579fa160e2
+```
+
+Result:
+
+```text
+Conversation    PASS
+P0              PASS
+P1              PASS
+P2              NOT STARTED
+P3              NOT STARTED
+P4              FORBIDDEN
+```
+
+This proves the real Komerce Sandbox keyset can authenticate and read exact eBay
+Browse item truth. It does **not** prove seller fixture mutation, Order API
+entitlement, checkout, payment, or purchase execution.
+
+## 13. Minimal P1 probes
 
 Once credentials exist, execute the following independently of the Komerce pipeline.
 
