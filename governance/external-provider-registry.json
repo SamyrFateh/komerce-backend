@@ -33,6 +33,25 @@
       "highest_proof": "P4"
     },
     {
+      "id": "ebay",
+      "family": "supplier",
+      "expected_scope": "tooling",
+      "consumers": [
+        "catalog",
+        "sourcing",
+        "purchasing"
+      ],
+      "hosts": [
+        "api.sandbox.ebay.com"
+      ],
+      "markers": [
+        "EBAY_SANDBOX_",
+        "ebay-sandbox"
+      ],
+      "analysis_document": "docs/external-providers/suppliers/EBAY.md",
+      "highest_proof": "UNQUALIFIED"
+    },
+    {
       "id": "aliexpress",
       "family": "supplier",
       "expected_scope": "runtime",
