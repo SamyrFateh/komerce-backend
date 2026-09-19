@@ -64,7 +64,7 @@ function loadTestCoverageExemptions() {
     const map = new Map(); // fichier de production → Set(tests couvrants)
     for (const [file, entry] of Object.entries(raw)) {
       if (file.startsWith('_')) continue;
-      map.set(file, new Set(entry.coveredBy || []));
+      map.set(file, new Set(entry.files || []));
     }
     return map;
   } catch {

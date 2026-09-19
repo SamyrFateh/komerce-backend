@@ -6,6 +6,7 @@
     "governance/test-exemptions.json": { "kind": "object-keys" },
     "governance/migration-slot-exemptions.json": { "kind": "entry-file-lists" },
     "governance/migration-guard-exemptions.json": { "kind": "nested-file-lists", "groups": ["no_prefix"] },
+    "governance/feature-guard-test-coverage-exemptions.json": { "kind": "entry-file-lists" },
     "governance/feature-dependency-exceptions.json": { "kind": "array-fields", "fields": ["exceptions"] },
     "governance/ff-c2-support-exceptions.json": { "kind": "identity-array", "path": "exceptions", "identity": ["from", "to", "file", "target"] },
     "scripts/arch-debt-budget.json": { "kind": "arch-debt-budget" },
