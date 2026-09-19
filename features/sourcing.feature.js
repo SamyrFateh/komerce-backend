@@ -131,6 +131,7 @@ module.exports = {
     tests: [
       'tests/unit/sourcing-scanner.test.js',
       'tests/unit/sourcing-candidate-enrichment-mode.test.js',
+      'tests/integration/sourcing-candidate-arbitration-real-db.test.js',
       'tests/unit/supplier-targeted-refresh-staging.test.js',
       'tests/unit/sourcing-candidate-import-service.test.js',
       'tests/unit/sourcing-observation-shadow-plan.test.js',
