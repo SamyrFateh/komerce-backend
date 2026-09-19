@@ -42,13 +42,26 @@ function selectedFromPrerequisites(prerequisites) {
   };
 }
 
-function explicitPromotionPrice(argv) {
-  if (!Array.isArray(argv) || argv.length !== 1 || !String(argv[0]).startsWith('--price-kmf=')) {
-    throw new Error('Usage: node scripts/allegro-golden-prebuyer-proof.js --price-kmf=POSITIVE_NUMBER');
+function runConfig(argv) {
+  if (!Array.isArray(argv)) {
+    throw new Error('Usage: node scripts/allegro-golden-prebuyer-proof.js --price-kmf=POSITIVE_NUMBER [--seed-slot=1..3]');
   }
-  const value = Number(String(argv[0]).slice('--price-kmf='.length));
-  if (!Number.isFinite(value) || value <= 0) throw new Error('ALLEGRO_GOLDEN_PROMOTION_PRICE_INVALID');
-  return value;
+  const priceArgs = argv.filter(arg => String(arg).startsWith('--price-kmf='));
+  const slotArgs = argv.filter(arg => String(arg).startsWith('--seed-slot='));
+  if (priceArgs.length !== 1 || slotArgs.length > 1 || argv.length !== priceArgs.length + slotArgs.length) {
+    throw new Error('Usage: node scripts/allegro-golden-prebuyer-proof.js --price-kmf=POSITIVE_NUMBER [--seed-slot=1..3]');
+  }
+  const priceKmf = Number(String(priceArgs[0]).slice('--price-kmf='.length));
+  if (!Number.isFinite(priceKmf) || priceKmf <= 0) throw new Error('ALLEGRO_GOLDEN_PROMOTION_PRICE_INVALID');
+  const seedSlot = slotArgs.length ? Number.parseInt(String(slotArgs[0]).slice('--seed-slot='.length), 10) : 1;
+  if (!Number.isSafeInteger(seedSlot) || seedSlot < 1 || seedSlot > 3) {
+    throw new Error('ALLEGRO_GOLDEN_SEED_SLOT_INVALID');
+  }
+  return { priceKmf, seedSlot };
+}
+
+function explicitPromotionPrice(argv) {
+  return runConfig(argv).priceKmf;
 }
 
 async function prepareOfferIdsFromPrerequisites(ids, prerequisites, api = sandboxClient) {
@@ -137,13 +150,13 @@ async function run(argv, {
   activationAttempts,
   activationPollMs,
 } = {}) {
-  const priceKmf = explicitPromotionPrice(argv);
+  const { priceKmf, seedSlot } = runConfig(argv);
 
   // P4 composition starts only after the already-proven read-only P3 boundary.
   const p3 = await provePrerequisites(client);
-  const ids = await seedOfferIds(1, client, env);
-  if (ids.length !== 1) throw new Error('ALLEGRO_GOLDEN_ONE_OFFER_REQUIRED');
-  const offerId = connector.offerId(ids[0]);
+  const ids = await seedOfferIds(seedSlot, client, env);
+  if (ids.length !== seedSlot) throw new Error('ALLEGRO_GOLDEN_SEED_SLOT_NOT_AVAILABLE');
+  const offerId = connector.offerId(ids[seedSlot - 1]);
 
   const preparation = await prepareOfferIdsFromPrerequisites([offerId], p3.prerequisites, client);
   const activations = await activateOfferIds([offerId], client, {
@@ -195,6 +208,7 @@ async function run(argv, {
     environment: 'sandbox',
     phase: 'PRE_BUYER',
     offer_id: offerId,
+    seed_slot: seedSlot,
     promotion_price_kmf: priceKmf,
     p3_contract_proof: p3.contract_proof,
     preparation,
@@ -218,6 +232,7 @@ if (require.main === module) {
 
 module.exports = {
   selectedFromPrerequisites,
+  runConfig,
   explicitPromotionPrice,
   prepareOfferIdsFromPrerequisites,
   assertCandidateIdentity,
