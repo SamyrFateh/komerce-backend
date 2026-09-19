@@ -40,6 +40,7 @@ jest.mock('../../services/sourcing-observation-shadow-service', () => ({
 }));
 
 const autopilot = require('../../services/sourcing-source-autopilot');
+const oneShotRunner = require('../../scripts/sourcing-source-autopilot');
 
 function sourceRow(overrides = {}) {
   return {
@@ -166,4 +167,75 @@ test('activation refuse fail-closed si le runtime global est OFF', async () => {
     .rejects.toMatchObject({ status: 409, code: 'sourcing_autopilot_runtime_disabled' });
 
   expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('UPDATE sourcing_sources'))).toBe(false);
+});
+
+
+describe('sourcing source autopilot one-shot router', () => {
+  test('sans one-shot conserve le passage autopilot canonique et borné', async () => {
+    const runActiveSources = jest.fn().mockResolvedValue({ status: 'ok', results: [] });
+
+    await expect(oneShotRunner.runTask(
+      { KOMERCE_SOURCE_AUTOPILOT_BATCH_LIMIT: '75' },
+      { autopilot: { runActiveSources } }
+    )).resolves.toEqual({
+      task: { kind: 'autopilot' },
+      result: { status: 'ok', results: [] },
+    });
+
+    expect(runActiveSources).toHaveBeenCalledWith({
+      limit: 50,
+      reason: 'railway_cron',
+    });
+  });
+
+  test('route uniquement le dry-run AliExpress allowlisté', async () => {
+    const env = { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: 'aliexpress-golden-dry-run' };
+    const aliexpressGolden = { main: jest.fn().mockResolvedValue({ status: 'ok' }) };
+
+    await oneShotRunner.runTask(env, { aliexpressGolden });
+
+    expect(aliexpressGolden.main).toHaveBeenCalledWith(['--dry-run'], env);
+  });
+
+  test('route un import AliExpress vers un identifiant numérique exact', async () => {
+    const env = { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: 'aliexpress-golden-import:1005010358671233' };
+    const aliexpressGolden = { main: jest.fn().mockResolvedValue({ imported: true }) };
+
+    await oneShotRunner.runTask(env, { aliexpressGolden });
+
+    expect(aliexpressGolden.main).toHaveBeenCalledWith([
+      '--execute-import',
+      '--supplier-product-id=1005010358671233',
+    ], env);
+  });
+
+  test('route la preuve Allegro avec un prix positif explicite', async () => {
+    const env = { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: 'allegro-golden-prebuyer:12000' };
+    const allegroGolden = { run: jest.fn().mockResolvedValue({ status: 'PASS' }) };
+
+    await oneShotRunner.runTask(env, { allegroGolden });
+
+    expect(allegroGolden.run).toHaveBeenCalledWith(['--price-kmf=12000'], { env });
+  });
+
+  test.each([
+    'aliexpress-golden-import:not-an-id',
+    'aliexpress-golden-import:1234',
+    'allegro-golden-prebuyer:0',
+    'allegro-golden-prebuyer:-1',
+    'node scripts/anything.js',
+  ])('échoue fermé avant tout appel pour %s', async (value) => {
+    const aliexpressGolden = { main: jest.fn() };
+    const allegroGolden = { run: jest.fn() };
+
+    await expect(oneShotRunner.runTask(
+      { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: value },
+      { aliexpressGolden, allegroGolden }
+    )).rejects.toMatchObject({
+      code: 'source_autopilot_one_shot_not_allowlisted',
+    });
+
+    expect(aliexpressGolden.main).not.toHaveBeenCalled();
+    expect(allegroGolden.run).not.toHaveBeenCalled();
+  });
 });
