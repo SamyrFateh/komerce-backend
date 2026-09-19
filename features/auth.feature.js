@@ -78,6 +78,7 @@ module.exports = {
     ],
     boutique: [],
     tests: [
+      'tests/integration/auth-user-cache-real-db.test.js',
       'tests/unit/auth.test.js',
       'tests/unit/login-market-operator-contract.test.js',
       'tests/unit/auth-cookie.test.js',
