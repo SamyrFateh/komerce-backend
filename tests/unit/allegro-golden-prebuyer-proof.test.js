@@ -2,6 +2,7 @@
 
 const {
   selectedFromPrerequisites,
+  runConfig,
   explicitPromotionPrice,
   assertCandidateIdentity,
   run,
@@ -39,6 +40,13 @@ test('requires an explicit operator promotion price', () => {
   expect(() => explicitPromotionPrice([])).toThrow('Usage:');
   expect(() => explicitPromotionPrice(['--price-kmf=0'])).toThrow('ALLEGRO_GOLDEN_PROMOTION_PRICE_INVALID');
   expect(explicitPromotionPrice(['--price-kmf=12345'])).toBe(12345);
+});
+
+test('accepts only bounded deterministic Sandbox seed slots', () => {
+  expect(runConfig(['--price-kmf=12345'])).toEqual({ priceKmf: 12345, seedSlot: 1 });
+  expect(runConfig(['--price-kmf=12345', '--seed-slot=2'])).toEqual({ priceKmf: 12345, seedSlot: 2 });
+  expect(() => runConfig(['--price-kmf=12345', '--seed-slot=0'])).toThrow('ALLEGRO_GOLDEN_SEED_SLOT_INVALID');
+  expect(() => runConfig(['--price-kmf=12345', '--seed-slot=4'])).toThrow('ALLEGRO_GOLDEN_SEED_SLOT_INVALID');
 });
 
 test('candidate boundary requires exact Allegro unit identity', () => {
