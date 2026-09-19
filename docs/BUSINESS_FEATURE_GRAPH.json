@@ -1416,6 +1416,13 @@
       {
         "feature": "catalog",
         "category": "ci",
+        "declared": ".github/workflows/staging-storefront-e2e-audit.yml",
+        "resolvedPath": ".github/workflows/staging-storefront-e2e-audit.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
         "declared": ".github/workflows/staging-pdp-aliexpress-live-audit.yml",
         "resolvedPath": ".github/workflows/staging-pdp-aliexpress-live-audit.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -28012,6 +28019,10 @@
               {
                 "sourceFileId": "tests/unit/aliexpress-promote-source-only.test.js",
                 "targetFile": "services/sourcing-candidate-actions.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-import-orchestrator.test.js",
+                "targetFile": "services/sourcing-observation-shadow-service.js"
               }
             ]
           },

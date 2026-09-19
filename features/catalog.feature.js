@@ -86,6 +86,7 @@ module.exports = {
       '.github/workflows/staging-aliexpress-public-hero-pilot.yml',
       '.github/workflows/staging-aliexpress-refinery-audit.yml',
       '.github/workflows/staging-catalog-ops.yml',
+      '.github/workflows/staging-storefront-e2e-audit.yml',
       '.github/workflows/staging-pdp-aliexpress-live-audit.yml',
     ],
     utils: [

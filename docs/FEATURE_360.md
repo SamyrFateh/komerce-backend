@@ -417,9 +417,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 305 fichier(s) déclaré(s), boutique: 33 fichier(s)
+**Implementation** : 306 fichier(s) déclaré(s), boutique: 33 fichier(s)
   - boutique : 39
-  - ci : 14
+  - ci : 15
   - config : 1
   - dash : 4
   - docs : 12
