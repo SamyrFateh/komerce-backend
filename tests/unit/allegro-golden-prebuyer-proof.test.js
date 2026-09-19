@@ -47,6 +47,7 @@ test('accepts only bounded deterministic Sandbox seed slots', () => {
   expect(runConfig(['--price-kmf=12345', '--seed-slot=2'])).toEqual({ priceKmf: 12345, seedSlot: 2 });
   expect(() => runConfig(['--price-kmf=12345', '--seed-slot=0'])).toThrow('ALLEGRO_GOLDEN_SEED_SLOT_INVALID');
   expect(() => runConfig(['--price-kmf=12345', '--seed-slot=4'])).toThrow('ALLEGRO_GOLDEN_SEED_SLOT_INVALID');
+  expect(() => runConfig(['--price-kmf=12345', '--seed-slot=2x'])).toThrow('ALLEGRO_GOLDEN_SEED_SLOT_INVALID');
 });
 
 test('candidate boundary requires exact Allegro unit identity', () => {
