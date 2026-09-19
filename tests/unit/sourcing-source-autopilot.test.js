@@ -148,6 +148,35 @@ test('source ON exécute le pull borné via le registry sans branche fournisseur
   expect(lockClient.release).toHaveBeenCalledTimes(1);
 });
 
+test('shadow incomplet ne peut jamais etre annonce comme un autopilot ok', async () => {
+  mockSourceQueries();
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog.mockResolvedValue({
+    status: 200,
+    body: {
+      accepted: 1, created: 1, updated: 0, rejected: 0,
+      pipeline_status: 'PARTIAL_BLOCKED',
+      shadow_ingestion: { status: 'failed', code: 'SHADOW_OBSERVATION_FAILED' },
+    },
+  });
+
+  const result = await autopilot.runSourceOnce('api:cj', { reason: 'test' });
+
+  expect(result).toMatchObject({
+    status: 'partial', source_ref: 'api:cj', accepted: 1,
+    pipeline_status: 'PARTIAL_BLOCKED',
+  });
+  expect(mockQuery.mock.calls.some(([sql, params]) =>
+    String(sql).includes('INSERT INTO sourcing_captures') && params[2] === 'partial'
+  )).toBe(true);
+});
+
 test('activation modifie uniquement autopilot_enabled et peut rester sans premier run en test', async () => {
   mockSourceQueries();
 
