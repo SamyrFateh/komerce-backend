@@ -53,6 +53,7 @@ describe('PR enforcement scope — backend + migrations + Boutique + governance'
     'tests/parcelOptimization.test.js',
     'package.json',
     'package-lock.json',
+    'jest.config.js',
     'jest.unit.config.js',
   ])('classe %s dans le backend', file => {
     expect(isBackendFile(file)).toBe(true);
