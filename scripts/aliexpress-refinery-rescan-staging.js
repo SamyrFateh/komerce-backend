@@ -184,7 +184,6 @@ async function executeCanonicalImport(products) {
     supplier_name: SUPPLIER,
     source_type: 'api',
     supplier_id: 'aliexpress',
-    supplier_id: 'aliexpress',
     source_filename: 'aliexpress-refinery-rescan-staging',
     notes: 'Replay Normalized V2 des candidats AliExpress existants après correction de la Raffinerie. Aucun archivage, aucune promotion catalogue.',
     is_full_snapshot: false,
