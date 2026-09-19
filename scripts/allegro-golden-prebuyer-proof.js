@@ -53,10 +53,9 @@ function runConfig(argv) {
   }
   const priceKmf = Number(String(priceArgs[0]).slice('--price-kmf='.length));
   if (!Number.isFinite(priceKmf) || priceKmf <= 0) throw new Error('ALLEGRO_GOLDEN_PROMOTION_PRICE_INVALID');
-  const seedSlot = slotArgs.length ? Number.parseInt(String(slotArgs[0]).slice('--seed-slot='.length), 10) : 1;
-  if (!Number.isSafeInteger(seedSlot) || seedSlot < 1 || seedSlot > 3) {
-    throw new Error('ALLEGRO_GOLDEN_SEED_SLOT_INVALID');
-  }
+  const rawSeedSlot = slotArgs.length ? String(slotArgs[0]).slice('--seed-slot='.length) : '1';
+  if (!/^[1-3]$/.test(rawSeedSlot)) throw new Error('ALLEGRO_GOLDEN_SEED_SLOT_INVALID');
+  const seedSlot = Number(rawSeedSlot);
   return { priceKmf, seedSlot };
 }
 
