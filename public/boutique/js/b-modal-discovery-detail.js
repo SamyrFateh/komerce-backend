@@ -17,7 +17,7 @@ import { closeModal } from './b-modal.js';
 
 const SLOT_ID = 'k-modal-discovery-detail';
 const SERVICE_STYLE_ID = 'k-service-detail-style';
-const SERVICE_STYLE_HREF = '/boutique/css/dist/service-detail.css?v=20260917';
+const SERVICE_STYLE_HREF = '/boutique/css/dist/service-detail.css?v=20260919';
 const STORED_ACTIONS = Object.freeze(['request', 'quote', 'callback', 'call', 'whatsapp']);
 const INQUIRY_ACTIONS = Object.freeze(['request', 'callback']);
 let _installedSlot = null;
@@ -178,97 +178,47 @@ function buildServiceIdentity(detail) {
   return `<div class="k-service-detail-identity">${zone}${provider}</div>`;
 }
 
-function buildServiceHighlights(detail) {
-  const zoneLabel = detail.zone ? sanitize(detail.zone) : 'Votre zone';
-  const providerLabel = detail.provider_name ? sanitize(detail.provider_name) : 'Prestataire local';
-  return `
-    <div class="k-service-detail-highlights" aria-label="Repères du service">
-      <div class="k-service-detail-highlight">
-        <span class="k-service-detail-highlight-icon" aria-hidden="true">◷</span>
-        <span><strong>Disponible localement</strong><small>Demande transmise au prestataire</small></span>
-      </div>
-      <div class="k-service-detail-highlight">
-        <span class="k-service-detail-highlight-icon" aria-hidden="true">⌖</span>
-        <span><strong>Dans votre zone</strong><small>${zoneLabel}</small></span>
-      </div>
-      <div class="k-service-detail-highlight">
-        <span class="k-service-detail-highlight-icon" aria-hidden="true">✓</span>
-        <span><strong>Prestataire identifié</strong><small>${providerLabel}</small></span>
-      </div>
-    </div>`;
-}
-
-function buildServiceMediaTrust() {
-  return `
-    <div class="k-service-detail-media-trust" aria-label="Garanties de parcours Komerce">
-      <div><span aria-hidden="true">✓</span><strong>Service local</strong><small>proposé dans votre marché</small></div>
-      <div><span aria-hidden="true">#</span><strong>Référence Komerce</strong><small>créée avec votre demande</small></div>
-      <div><span aria-hidden="true">↗</span><strong>Échange direct</strong><small>avec le prestataire</small></div>
-    </div>`;
-}
-
-function buildServiceRequestGuide() {
-  return `
-    <section class="k-service-detail-request-guide" aria-labelledby="k-service-request-guide-title">
-      <h3 id="k-service-request-guide-title">Votre demande</h3>
-      <ul>
-        <li><span aria-hidden="true">✓</span>Expliquez simplement votre besoin</li>
-        <li><span aria-hidden="true">✓</span>Précisez le délai souhaité si nécessaire</li>
-        <li><span aria-hidden="true">✓</span>Le prestataire revient vers vous pour organiser la suite</li>
-      </ul>
-    </section>`;
-}
-
-function buildServiceHowItWorks() {
+// Le service n'expose qu'un seul parcours visible : contacter le prestataire.
+// Le canal WhatsApp, lorsqu'il existe, réutilise la même création d'Inquiry.
+function buildServiceHowItWorks(whatsappAvailable) {
   return `
     <section class="k-service-detail-how" aria-labelledby="k-service-how-title">
       <div class="k-service-detail-how-title"><span aria-hidden="true">i</span><strong id="k-service-how-title">Comment ça marche ?</strong></div>
       <ol>
-        <li><span>1</span>Faites votre demande</li>
-        <li><span>2</span>Komerce crée sa référence</li>
-        <li><span>3</span>Échangez avec le prestataire</li>
+        <li><span>1</span>Expliquez votre besoin</li>
+        <li><span>2</span>Komerce enregistre votre demande</li>
+        <li><span>3</span>${whatsappAvailable ? 'Discutez avec le prestataire' : 'Le prestataire vous répond'}</li>
       </ol>
     </section>`;
 }
 
-function buildServiceFallbackActions(ref, detail) {
+function buildServiceContact(ref, detail) {
+  const whatsappAvailable = detail.whatsapp_available === true;
   const actions = normalizeActions(detail);
-  return `
-    <div class="k-service-detail-conversion k-service-detail-fallback">
-      <div class="k-service-detail-action-bar" aria-label="Actions disponibles">
-        ${buildActionChooserHTML('service', ref, actions)}
-      </div>
-      <div class="k-service-detail-action-forms">
-        ${actions.map(action => buildContextFormHTML('service', ref, detail, action)).join('')}
-      </div>
-    </div>`;
-}
-
-function buildServiceWhatsappActions(ref, detail) {
-  const actions = normalizeActions(detail);
+  if (!whatsappAvailable && !actions.length) {
+    return '<p class="k-modal-discovery-no-action">Contact momentanément indisponible.</p>';
+  }
   return `
     <div class="k-service-detail-conversion">
-      <div class="k-service-detail-action-bar" aria-label="Actions disponibles">
-        ${actions.map((action) => {
-          const label = sanitize(actionLabelFor(action, 'service'));
-          return `<button class="k-discovery-cta k-modal-discovery-cta k-modal-discovery-action is-secondary" type="button"
-            data-discovery-select-action="${sanitize(action)}"
-            data-discovery-kind="service"
-            data-discovery-ref="${sanitize(ref)}"
-            aria-expanded="false">${label}</button>`;
-        }).join('')}
-        <button class="k-service-detail-whatsapp" type="button"
-          data-discovery-whatsapp
-          data-discovery-kind="service"
-          data-discovery-ref="${sanitize(ref)}">
-          <span class="k-service-detail-whatsapp-mark" aria-hidden="true">↗</span>
-          Discuter sur WhatsApp
-        </button>
-      </div>
-      <div class="k-service-detail-action-forms">
-        ${actions.map(action => buildContextFormHTML('service', ref, detail, action)).join('')}
-      </div>
-      <p class="k-service-detail-handoff-note">Komerce crée d’abord votre demande et sa référence, puis ouvre la conversation WhatsApp avec le prestataire.</p>
+      <label class="k-service-detail-note">
+        <span>Votre besoin <small>(facultatif)</small></span>
+        <textarea class="k-service-detail-note-input" rows="2" maxlength="600"
+          autocomplete="off" spellcheck="true"
+          data-discovery-service-note
+          placeholder="Ex. J’ai une fuite d’eau dans la cuisine"></textarea>
+      </label>
+      <button class="k-service-detail-contact" type="button"
+        data-discovery-service-contact
+        data-discovery-kind="service"
+        data-discovery-ref="${sanitize(ref)}"
+        ${whatsappAvailable ? 'data-discovery-handoff="whatsapp"' : ''}>
+        Contacter le prestataire <span aria-hidden="true">→</span>
+      </button>
+      <p class="k-service-detail-handoff-note">
+        ${whatsappAvailable
+          ? 'Votre demande est enregistrée avant l’ouverture de WhatsApp.'
+          : 'Komerce transmet votre demande au prestataire.'}
+      </p>
     </div>`;
 }
 
@@ -277,28 +227,22 @@ function buildServiceDetailHTML(ref, detail) {
   const image = buildImage(detail, true);
   const identity = buildServiceIdentity(detail);
   const description = buildDescription(detail);
-  const conversion = detail.whatsapp_available === true
-    ? buildServiceWhatsappActions(ref, detail)
-    : buildServiceFallbackActions(ref, detail);
+  const whatsappAvailable = detail.whatsapp_available === true;
 
   return `
     <article class="k-service-detail-shell">
       <div class="k-service-detail-left">
         <div class="k-service-detail-media">${image}</div>
-        ${buildServiceMediaTrust()}
       </div>
       <div class="k-service-detail-body">
         <div class="k-service-detail-heading-row">
           <span class="k-service-detail-eyebrow">Service local</span>
-          <span class="k-service-detail-availability"><span aria-hidden="true"></span>Disponible</span>
         </div>
         <h2 class="k-service-detail-title">${sanitize(detail.title)}</h2>
         ${identity}
         ${description}
-        ${buildServiceHighlights(detail)}
-        ${buildServiceRequestGuide()}
-        ${buildServiceHowItWorks()}
-        ${conversion}
+        ${buildServiceContact(ref, detail)}
+        ${buildServiceHowItWorks(whatsappAvailable)}
       </div>
     </article>`;
 }
@@ -396,17 +340,20 @@ function submitAction(button) {
   requestDiscovery(kind, ref, button, requestedWindow, action, requesterNote);
 }
 
-function submitWhatsapp(button) {
+function submitServiceContact(button) {
   const ref = button.dataset.discoveryRef;
   if (!ref) return;
+  const shell = button.closest('.k-service-detail-shell');
+  const requesterNote = shell?.querySelector('[data-discovery-service-note]')?.value?.trim() || null;
+  const handoff = button.dataset.discoveryHandoff === 'whatsapp' ? 'whatsapp' : null;
   closeModal({ skipHistoryBack: true });
-  requestDiscovery('service', ref, button, null, 'request', null, 'whatsapp');
+  requestDiscovery('service', ref, button, null, 'request', requesterNote, handoff);
 }
 
 function handleAction(event) {
-  const whatsapp = event.target.closest('[data-discovery-whatsapp][data-discovery-ref]');
-  if (whatsapp?.matches('button')) {
-    submitWhatsapp(whatsapp);
+  const serviceContact = event.target.closest('[data-discovery-service-contact][data-discovery-ref]');
+  if (serviceContact?.matches('button')) {
+    submitServiceContact(serviceContact);
     return;
   }
 
