@@ -26,6 +26,7 @@ const FEATURES_DIR = path.join(ROOT, 'features');
 const BASELINE_FILE = path.join(__dirname, 'feature-guard-baseline.json');
 const MIGRATION_SLOT_EXEMPTIONS_FILE = path.join(ROOT, 'governance', 'migration-slot-exemptions.json');
 const MIGRATION_GUARD_EXEMPTIONS_FILE = path.join(ROOT, 'governance', 'migration-guard-exemptions.json');
+const TEST_COVERAGE_EXEMPTIONS_FILE = path.join(ROOT, 'governance', 'feature-guard-test-coverage-exemptions.json');
 
 /**
  * Créneaux de migration exemptés (accidents historiques déjà appliqués en
@@ -47,6 +48,30 @@ function loadMigrationSlotExemptions() {
   }
 }
 const MIGRATION_SLOT_EXEMPTIONS = loadMigrationSlotExemptions();
+
+/**
+ * Fichiers exemptés du checker « Pas de test déclaré pour X » (couverture
+ * tests structurelle) parce qu'un test réel les couvre déjà — soit dans la
+ * même feature (l'heuristique de nom du checker a raté le rapprochement),
+ * soit dans une autre feature manifest légitimement (cf. governance/
+ * feature-guard-test-coverage-exemptions.json). Une exemption ne supprime
+ * pas la vérification pour tout le monde — elle ne couvre que le fichier
+ * exact listé.
+ */
+function loadTestCoverageExemptions() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(TEST_COVERAGE_EXEMPTIONS_FILE, 'utf8'));
+    const map = new Map(); // fichier de production → Set(tests couvrants)
+    for (const [file, entry] of Object.entries(raw)) {
+      if (file.startsWith('_')) continue;
+      map.set(file, new Set(entry.coveredBy || []));
+    }
+    return map;
+  } catch {
+    return new Map();
+  }
+}
+const TEST_COVERAGE_EXEMPTIONS = loadTestCoverageExemptions();
 
 /**
  * Exemptions supplémentaires : fichiers sans préfixe numérique connus,
@@ -322,7 +347,8 @@ function checkSlice(slice, allMigSlots) {
       // (ex. "_helpers.js" vs test "…-helpers.test.js").
       const base = testBaseKey(rel);
       const covered = [...tests].some(t => testBaseKey(t).includes(base));
-      if (!covered) {
+      const exempted = TEST_COVERAGE_EXEMPTIONS.get(rel);
+      if (!covered && !exempted) {
         warnings.push(`Pas de test déclaré pour ${rel} — ajouter dans files.tests ou créer le test`);
       }
     }
