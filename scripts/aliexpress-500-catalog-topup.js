@@ -141,6 +141,7 @@ async function importFetchedSubset({ syncKey, logicalPage, subset, spec }) {
     supplier_name: primary.SUPPLIER_NAME,
     source_type: 'api',
     supplier_id: 'aliexpress',
+    supplier_id: 'aliexpress',
     source_filename: topupSourceFilename(syncKey, logicalPage),
     notes: `AliExpress diversified top-up ${syncKey} — ${spec.category}/${spec.subcategory} — ${spec.keyword} — page ${logicalPage}`,
   };
