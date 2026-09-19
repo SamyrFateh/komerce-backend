@@ -56,6 +56,7 @@ module.exports = {
       'tests/unit/parcel-transition-guard.test.js',
       'tests/unit/parcel-operations-incident-governance.test.js',
       'tests/integration/incident-f3-postgres.test.js',
+      'tests/integration/parcel-transition-guard-real-db.test.js',
     ],
   },
 
