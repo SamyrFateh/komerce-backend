@@ -2590,7 +2590,7 @@
             ]
           },
           "ci": {
-            "count": 14,
+            "count": 15,
             "files": [
               {
                 "declared": ".github/workflows-disabled/README-CJ-SHOWCASE.md",
@@ -2660,6 +2660,11 @@
               {
                 "declared": ".github/workflows/staging-pdp-aliexpress-live-audit.yml",
                 "resolvedPath": ".github/workflows/staging-pdp-aliexpress-live-audit.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-storefront-e2e-audit.yml",
+                "resolvedPath": ".github/workflows/staging-storefront-e2e-audit.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -3980,7 +3985,7 @@
             ]
           }
         },
-        "totalFiles": 305,
+        "totalFiles": 306,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,

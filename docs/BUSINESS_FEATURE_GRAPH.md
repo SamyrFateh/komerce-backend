@@ -178,7 +178,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.
 
 - middleware: 1
-- ci: 14
+- ci: 15
 - utils: 1
 - scripts: 5
 - services: 53
@@ -2156,7 +2156,7 @@ Meta Graph monté : oui.
 | catalog | platform-ops | static-code | 76 | **DECLARED_AND_OBSERVED** |
 | catalog | purchasing | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | catalog | shared-cart | static-code, interface | 13 | **DECLARED_AND_OBSERVED** |
-| catalog | sourcing | static-code, data-read | 11 | **DECLARED_AND_OBSERVED** |
+| catalog | sourcing | static-code, data-read | 12 | **DECLARED_AND_OBSERVED** |
 | catalog | supplier-connectivity | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | customs | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | customs | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
