@@ -82,13 +82,21 @@ describe('shareByWeight', () => {
     expect(shareByWeight(1000, [])).toEqual([]);
   });
 
-  it('arrondit au KMF entier (Math.round)', () => {
+  it('conserve le total exact même quand la division ne tombe pas rond (méthode du plus grand reste)', () => {
+    // 1000 / 3 = 333.33... — un arrondi indépendant par entrée donnerait
+    // 333+333+333=999, perdant 1 KMF (bug historique corrigé). La méthode
+    // du plus grand reste distribue ce KMF à l'une des entrées : deux
+    // parts à 333, une à 334, mais la somme reste TOUJOURS exactement
+    // égale au total demandé.
     const result = shareByWeight(1000, [
       { id: 'a', weight: 1 },
       { id: 'b', weight: 1 },
       { id: 'c', weight: 1 },
     ]);
-    expect(result.every(r => r.share === 333)).toBe(true);
+    const sum = result.reduce((s, r) => s + r.share, 0);
+    expect(sum).toBe(1000);
+    expect(result.every(r => r.share === 333 || r.share === 334)).toBe(true);
+    expect(result.filter(r => r.share === 334)).toHaveLength(1);
   });
 });
 
