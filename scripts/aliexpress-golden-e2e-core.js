@@ -306,6 +306,7 @@ async function executeImport(supplierProductId, env = process.env) {
   const body = {
     supplier_name: SUPPLIER_NAME,
     source_type: 'api',
+    supplier_id: 'aliexpress',
     source_filename: `aliexpress-golden-e2e/${supplierProductId}.json`,
     notes: `Golden E2E staging — exact AliExpress product ${supplierProductId}`,
     is_full_snapshot: false,
