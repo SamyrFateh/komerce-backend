@@ -148,9 +148,9 @@ module.exports = {
 
   contract: {
     exposes: [
-      'GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + provider_name + image_ref + actions request/callback + whatsapp_available booléen',
-      'GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + provider_name + image_ref + actions request/callback',
-      'POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id ; intent request|callback ; requester_note facultative ; handoff=whatsapp facultatif pour service uniquement',
+      'GET /api/providers-services/services/:id', // ?market=CODE — lecture publique minimale + provider_name + image_ref + actions request/callback + whatsapp_available booléen
+      'GET /api/providers-services/physical-offers/:id', // ?market=CODE — lecture publique minimale + provider_name + image_ref + actions request/callback
+      'POST /api/providers-services/inquiries', // ?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id ; intent request|callback ; requester_note facultative ; handoff=whatsapp facultatif pour service uniquement
     ],
     consumes: [
       'auth — authenticateOrCreateGuest et session canonique côté serveur',

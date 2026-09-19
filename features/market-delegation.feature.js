@@ -225,38 +225,38 @@ module.exports = {
 
   contract: {
     exposes: [
-      'GET /api/market-delegation/markets/:marketCode/team — team.read',
-      'POST /api/market-delegation/markets/:marketCode/team/invitations — team.invite',
-      'POST /api/market-delegation/team/invitations/:token/accept — utilisateur authentifié correspondant à l’email invité',
-      'PUT /api/market-delegation/markets/:marketCode/team/:membershipId/capabilities — team.grant + team.revoke',
-      'DELETE /api/market-delegation/markets/:marketCode/team/:membershipId — team.revoke',
-      'DELETE /api/market-delegation/markets/:marketCode/team/invitations/:invitationId — team.revoke',
-      'GET /api/market-delegation/markets/:marketCode/cash-control-policy — finance.read',
-      'PUT /api/market-delegation/markets/:marketCode/cash-control-policy — cash_control.policy.manage',
-      'GET /api/market-delegation/markets/:marketCode/network/relais — network.read',
-      'POST /api/market-delegation/markets/:marketCode/network/relais — network.create',
-      'PUT /api/market-delegation/markets/:marketCode/network/relais/:relaisId — network.update',
-      'POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/suspend — network.suspend',
-      'POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/activate — network.update',
-      'GET /api/market-delegation/markets/:marketCode/network/providers — provider.manage',
-      'POST /api/market-delegation/markets/:marketCode/network/providers — provider.manage',
-      'PUT /api/market-delegation/markets/:marketCode/network/providers/:providerId — provider.manage',
-      'POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/suspend — provider.manage',
-      'POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/activate — provider.manage',
-      'GET /api/market-delegation/markets/:marketCode/catalog/exposure — catalog.expose',
-      'PUT /api/market-delegation/markets/:marketCode/catalog/exposure/:productId — catalog.expose',
-      'GET /api/market-delegation/markets/:marketCode/local-offer/services — local_offer.manage',
-      'PUT /api/market-delegation/markets/:marketCode/local-offer/services/:serviceId — local_offer.manage',
-      'GET /api/market-delegation/markets/:marketCode/local-offer/physical-offers — local_offer.manage',
-      'PUT /api/market-delegation/markets/:marketCode/local-offer/physical-offers/:physicalOfferId — local_offer.manage',
-      'GET /api/market-delegation/markets/:marketCode/client-cases/disputes — client.case.handle',
-      'PUT /api/market-delegation/markets/:marketCode/client-cases/disputes/:disputeId — client.case.handle',
-      'GET /api/market-delegation/markets/:marketCode/settlements — finance.read',
-      'POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/request — finance.act',
-      'POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/receive — settlement.receive',
-      'GET /api/market-delegation/markets/:marketCode/structure-events — pricing.read',
-      'POST /api/market-delegation/markets/:marketCode/structure-events — structure.event.record',
-      'GET /api/market-delegation/markets/:marketCode/performance — finance.read (lecture seule, projection du moteur économique)',
+      'GET /api/market-delegation/markets/:marketCode/team', // team.read
+      'POST /api/market-delegation/markets/:marketCode/team/invitations', // team.invite
+      'POST /api/market-delegation/team/invitations/:token/accept', // utilisateur authentifié correspondant à l’email invité
+      'PUT /api/market-delegation/markets/:marketCode/team/:membershipId/capabilities', // team.grant + team.revoke
+      'DELETE /api/market-delegation/markets/:marketCode/team/:membershipId', // team.revoke
+      'DELETE /api/market-delegation/markets/:marketCode/team/invitations/:invitationId', // team.revoke
+      'GET /api/market-delegation/markets/:marketCode/cash-control-policy', // finance.read
+      'PUT /api/market-delegation/markets/:marketCode/cash-control-policy', // cash_control.policy.manage
+      'GET /api/market-delegation/markets/:marketCode/network/relais', // network.read
+      'POST /api/market-delegation/markets/:marketCode/network/relais', // network.create
+      'PUT /api/market-delegation/markets/:marketCode/network/relais/:relaisId', // network.update
+      'POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/suspend', // network.suspend
+      'POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/activate', // network.update
+      'GET /api/market-delegation/markets/:marketCode/network/providers', // provider.manage
+      'POST /api/market-delegation/markets/:marketCode/network/providers', // provider.manage
+      'PUT /api/market-delegation/markets/:marketCode/network/providers/:providerId', // provider.manage
+      'POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/suspend', // provider.manage
+      'POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/activate', // provider.manage
+      'GET /api/market-delegation/markets/:marketCode/catalog/exposure', // catalog.expose
+      'PUT /api/market-delegation/markets/:marketCode/catalog/exposure/:productId', // catalog.expose
+      'GET /api/market-delegation/markets/:marketCode/local-offer/services', // local_offer.manage
+      'PUT /api/market-delegation/markets/:marketCode/local-offer/services/:serviceId', // local_offer.manage
+      'GET /api/market-delegation/markets/:marketCode/local-offer/physical-offers', // local_offer.manage
+      'PUT /api/market-delegation/markets/:marketCode/local-offer/physical-offers/:physicalOfferId', // local_offer.manage
+      'GET /api/market-delegation/markets/:marketCode/client-cases/disputes', // client.case.handle
+      'PUT /api/market-delegation/markets/:marketCode/client-cases/disputes/:disputeId', // client.case.handle
+      'GET /api/market-delegation/markets/:marketCode/settlements', // finance.read
+      'POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/request', // finance.act
+      'POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/receive', // settlement.receive
+      'GET /api/market-delegation/markets/:marketCode/structure-events', // pricing.read
+      'POST /api/market-delegation/markets/:marketCode/structure-events', // structure.event.record
+      'GET /api/market-delegation/markets/:marketCode/performance', // finance.read (lecture seule, projection du moteur économique)
     ],
     internalApi: [
       { fn: 'replaceCeiling', file: 'services/market-delegation-service.js' },

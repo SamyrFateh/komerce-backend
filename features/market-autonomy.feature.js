@@ -110,13 +110,13 @@ module.exports = {
   },
 
   contract: {
-    exposes: [
-      'GET /api/admin/workspaces/pricing/market/:marketCode/commercial-prices — lecture scopée',
-      'GET /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activation-preview — preview économique scopée',
-      'POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price — manager pays uniquement',
-      'POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activate — manager pays uniquement',
-      'POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/reset — manager pays uniquement',
-    ],
+    // market-autonomy ne possède aucun fichier de routes (files.routes est
+    // absent) — ces 5 endpoints étaient déclarés ici par erreur de
+    // documentation. Le vrai propriétaire structurel est economic-engine
+    // (routes/admin-pricing-workspace.js, dans ses files.routes), qui les
+    // déclare désormais. market-autonomy reste un CONSOMMATEUR de cette
+    // interface (cf. contract.consumes ci-dessous), pas son propriétaire.
+    exposes: [],
     consumes: [
       'market — référentiel markets, currency_parities et scope serveur operator_market_scopes',
       'economic-engine — CDR, politique marché et gate de couverture',
