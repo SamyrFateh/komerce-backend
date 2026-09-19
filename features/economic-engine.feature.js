@@ -234,6 +234,7 @@ module.exports = {
       'tests/unit/sourcing-route.test.js',
       'tests/unit/cost-allocation-allocate.test.js',
       'tests/unit/cost-allocation.test.js',
+      'tests/integration/cost-allocation-conservation-real-db.test.js',
       'tests/unit/transport-cost-allocation.test.js',
       'tests/unit/economic-engine-queries.test.js',
       'tests/unit/economic-config.test.js',
