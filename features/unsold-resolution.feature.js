@@ -49,6 +49,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/unsold.test.js',
+      'tests/e2e-api/unsold-resolution.pipeline-real-db.e2e.test.js',
     ],
   },
 
