@@ -572,6 +572,7 @@ module.exports = {
       'tests/test-dashboard.js',
       'tests/unit/admin-costing-full.test.js',
       'tests/unit/admin-dashboard-route.test.js',
+      'tests/integration/dashboard-orders-real-db.test.js',
       'tests/unit/admin-dashboard.test.js',
       'tests/unit/admin-demo-order-flow.test.js',
       'tests/unit/admin-facades-route.test.js',

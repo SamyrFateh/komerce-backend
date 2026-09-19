@@ -141,6 +141,7 @@ module.exports = {
       'tests/unit/sourcing-shadow-proof-service.test.js',
       'tests/unit/sourcing-golden-e2e-service.test.js',
       'tests/unit/sourcing-integrity-audit.test.js',
+      'tests/unit/sourcing-canonical-commercial-projection-core.test.js',
       'tests/unit/sourcing-canonical-product-projection.test.js',
       'tests/unit/sourcing-canonical-offer-projection.test.js',
       'tests/unit/sourcing-canonical-unit-projection.test.js',

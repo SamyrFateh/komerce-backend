@@ -80,6 +80,7 @@ module.exports = {
       'dashboards/canonical/js/team-invite.js',
     ],
     tests: [
+      'tests/integration/market-local-price-state-transition-real-db.test.js',
       'tests/unit/market-commercial-price-service.test.js',
       'tests/unit/market-local-price-resolution-service.test.js',
       'tests/unit/market-local-price-activation-service.test.js',
