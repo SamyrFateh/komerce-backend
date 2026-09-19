@@ -119,6 +119,7 @@ async function importFetchedSubset({ syncKey, category, page, subset }) {
     supplier_name: SUPPLIER_NAME,
     source_type: 'api',
     supplier_id: 'cj',
+    supplier_id: 'cj',
     source_filename: importSourceFilename(syncKey, category.category_id, page),
     notes: `CJ clean pool ${syncKey} — ${category.path} — page ${page}`,
   };
