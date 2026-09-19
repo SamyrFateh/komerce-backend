@@ -222,14 +222,37 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
+      - id: e2e_scope
+        name: Compute Feature-first E2E blast radius
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node scripts/e2e-impact-scope.js \
+            --base "$BASE_SHA" \
+            --head "$HEAD_SHA" \
+            --github-output "$GITHUB_OUTPUT"
       - name: Rebuild PostgreSQL from canonical schema-only snapshot
         run: |
           PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
           node scripts/ci-db-bootstrap.js
       - name: Integration DB proofs
         run: npm run test:integration
-      - name: Feature-first E2E API proofs
-        run: npm run test:e2e:features
+      - name: Feature-first E2E API proofs (targeted)
+        if: steps.e2e_scope.outputs.mode == 'targeted'
+        env:
+          E2E_FEATURES: ${{ steps.e2e_scope.outputs.features }}
+        run: |
+          echo "Targeted E2E features: $E2E_FEATURES"
+          node scripts/run-e2e-feature-tests.js --features="$E2E_FEATURES"
+      - name: Feature-first E2E API proofs (full)
+        if: steps.e2e_scope.outputs.mode == 'full'
+        run: |
+          echo "Full E2E required: ${{ steps.e2e_scope.outputs.reason }}"
+          npm run test:e2e:features
+      - name: Feature-first E2E API proofs (skip)
+        if: steps.e2e_scope.outputs.mode == 'skip'
+        run: echo "No E2E API runtime impact: ${{ steps.e2e_scope.outputs.reason }}"
 
   dashboard:
     name: Dashboard canonical gates
