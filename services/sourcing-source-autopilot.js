@@ -239,19 +239,22 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
     }
 
     const body = result.body || {};
-    if (body.shadow_ingestion?.status === 'failed') {
+    const partial = body.pipeline_status === 'PARTIAL_BLOCKED'
+      || body.shadow_ingestion?.status === 'failed'
+      || body.shadow_ingestion?.resolution?.status === 'failed';
+    if (partial) {
       await recordSyntheticCapture(sourceRef, 'partial', {
         autopilot: true,
         reason,
-        outcome: 'imported_shadow_failed',
+        outcome: 'imported_canonical_incomplete',
         accepted: body.accepted || 0,
         rejected: body.rejected || 0,
-        shadow_code: body.shadow_ingestion.code || null,
+        shadow_code: body.shadow_ingestion?.code || body.shadow_ingestion?.resolution?.code || null,
       });
     }
 
     return {
-      status: 'ok',
+      status: partial ? 'partial' : 'ok',
       source_ref: sourceRef,
       supplier_name: automation.supplier_name,
       accepted: body.accepted || 0,
@@ -259,6 +262,7 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
       updated: body.updated || 0,
       rejected: body.rejected || 0,
       shadow_status: body.shadow_ingestion?.status || null,
+      pipeline_status: body.pipeline_status || null,
     };
   } catch (err) {
     await recordSyntheticCapture(sourceRef, 'failed', {
