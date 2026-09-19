@@ -112,7 +112,19 @@ jobs:
         run: node scripts/run-staged-related-tests.js --files "$BACKEND_FILES"
       - name: Unit test coverage threshold
         if: needs.changes.outputs.backend == 'true'
-        run: npm run test:unit:coverage
+        run: |
+          # tests/unit/allegro-golden-preflight-contract.test.js (G-01/G-02)
+          # résout le vrai commit de baseline de docs/db/railway-live-schema.sql
+          # via `git log -1 -- <dump>` — sous le clone shallow (fetch-depth: 1)
+          # de ce job, cette résolution retombe sur HEAD lui-même (faux positif
+          # de baseline, incident #1594). npm run test:unit:coverage exécute la
+          # suite unit COMPLÈTE (contrairement à "Related unit tests" ci-dessus,
+          # scopé aux fichiers changés) et exécute donc ce test pour de vrai —
+          # on approfondit l'historique juste avant, uniquement pour cette
+          # étape, plutôt que de reperdre le shallow checkout rapide pour tout
+          # le job.
+          git fetch --unshallow origin || true
+          npm run test:unit:coverage
 
       - name: Golden CDR — présence du snapshot réel
         if: needs.changes.outputs.golden == 'true'
