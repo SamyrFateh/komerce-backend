@@ -339,6 +339,7 @@ async function importFetchedSubset({ syncKey, segment, logicalPage, subset }) {
   const body = {
     supplier_name: SUPPLIER_NAME,
     source_type: 'api',
+    supplier_id: 'aliexpress',
     source_filename: importSourceFilename(syncKey, segment.id, logicalPage),
     notes: `AliExpress text-search pool ${syncKey} — ${segment.category}/${segment.subcategory} — page ${logicalPage}`,
   };

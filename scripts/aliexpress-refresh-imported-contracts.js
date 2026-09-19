@@ -217,6 +217,7 @@ async function refreshBatch(batch, {
     importResult = await importer.importCatalog({
       supplier_name: SUPPLIER,
       source_type: 'api',
+      supplier_id: 'aliexpress',
       source_filename: `aliexpress-authoritative-refresh/${Date.now()}.json`,
       notes: 'Authoritative targeted refresh of already imported AliExpress contracts for Supplier Order Identity.',
       is_full_snapshot: false,
