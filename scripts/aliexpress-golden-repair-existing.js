@@ -111,7 +111,6 @@ async function main(argv = process.argv.slice(2), env = process.env) {
     supplier_name: 'AliExpress',
     source_type: 'api',
     supplier_id: 'aliexpress',
-    supplier_id: 'aliexpress',
     source_filename: `aliexpress-golden-repair/${id}.json`,
     notes: `Golden repair staging — exact AliExpress product ${id}`,
     is_full_snapshot: false,
