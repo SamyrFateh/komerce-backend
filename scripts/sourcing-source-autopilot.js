@@ -37,11 +37,13 @@ function parseOneShotTask(value) {
     };
   }
 
-  const allegroPrebuyer = raw.match(/^allegro-golden-prebuyer:([1-9][0-9]{0,8}(?:\.[0-9]{1,2})?)$/);
+  const allegroPrebuyer = raw.match(/^allegro-golden-prebuyer:([1-9][0-9]{0,8}(?:\.[0-9]{1,2})?)(?::([1-3]))?$/);
   if (allegroPrebuyer) {
+    const args = [`--price-kmf=${allegroPrebuyer[1]}`];
+    if (allegroPrebuyer[2]) args.push(`--seed-slot=${allegroPrebuyer[2]}`);
     return {
       kind: 'allegro-golden-prebuyer',
-      args: [`--price-kmf=${allegroPrebuyer[1]}`],
+      args,
     };
   }
 
