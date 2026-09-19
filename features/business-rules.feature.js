@@ -82,6 +82,7 @@ module.exports = {
     tests: [
       'tests/unit/rules-engine.test.js',
       'tests/unit/admin-rules.test.js',
+      'tests/integration/business-rules-cache-real-db.test.js',
     ],
   },
 
