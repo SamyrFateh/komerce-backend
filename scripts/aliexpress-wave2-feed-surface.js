@@ -82,6 +82,7 @@ async function importProducts(config, logicalPage, products, spec) {
     supplier_name: primary.SUPPLIER_NAME,
     source_type: 'api',
     supplier_id: 'aliexpress',
+    supplier_id: 'aliexpress',
     source_filename: `aliexpress-pool/${config.syncKey}/${wave2.WAVE_ID}/${SURFACE_ID}/page-${String(logicalPage).padStart(4, '0')}.json`,
     notes: `AliExpress ${wave2.WAVE_ID} ${SURFACE_ID} feed=${spec.feed} category=${spec.categoryId || 'all'} page=${spec.page}`,
     is_full_snapshot: false,
