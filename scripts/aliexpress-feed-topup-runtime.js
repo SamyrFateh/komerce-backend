@@ -69,6 +69,7 @@ async function importProducts(config, n, products, spec) {
     supplier_name: primary.SUPPLIER_NAME,
     source_type: 'api',
     supplier_id: 'aliexpress',
+    supplier_id: 'aliexpress',
     source_filename: `aliexpress-pool/${config.syncKey}/${SURFACE_ID}/page-${String(n).padStart(4, '0')}.json`,
     notes: `AliExpress ${SURFACE_ID} feed=${spec.feed} category=${spec.categoryId || 'all'} page=${spec.page}`,
   }, null, async () => ({ products, invalid: [], total: products.length }));
