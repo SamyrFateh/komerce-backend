@@ -178,7 +178,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Raffiner les donnees fournisseur en catalogue canonique, publier les unites vendables et exposer un contrat detail produit stable a la Boutique.
 
 - middleware: 1
-- ci: 5
+- ci: 14
 - utils: 1
 - scripts: 5
 - services: 53
@@ -189,7 +189,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 7
 - boutique: 39
 - dash: 4
-- tests: 145
+- tests: 147
 - tables owned (lifecycle): 16 — `products`, `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_enrichment_runs`, `catalog_media`, `product_skus`, `product_sku_media`, `product_variants`, `product_content_profile`, `product_content_sections`, `product_market_exposure`, `product_attributes`, `supplier_catalog_imports`, `supplier_catalog_sync_checkpoints`, `supplier_oauth_connections`
 - tables written: 16
 - interfaces exposed: 47
@@ -222,7 +222,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 24
 - migrations: 2
 - dash: 98
-- tests: 126
+- tests: 127
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 14
 - interfaces exposed: 89
@@ -428,7 +428,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 4
 - migrations: 1
 - dash: 8
-- tests: 5
+- tests: 6
 - tables owned (lifecycle): 2 — `product_market_price_drafts`, `product_market_price_draft_events`
 - tables written: 2
 - interfaces exposed: 0
@@ -646,7 +646,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - scripts: 7
 - services: 20
 - routes: 2
-- tests: 28
+- tests: 29
 - tables owned (lifecycle): 12 — `sourcing_candidates`, `sourcing_candidate_events`, `sourcing_sources`, `sourcing_source_provides`, `sourcing_captures`, `sourcing_observations`, `sourcing_observation_evidence`, `sourcing_canonical_entities`, `sourcing_canonical_entity_refs`, `sourcing_match_proposals`, `sourcing_resolution_decisions`, `sourcing_resolution_bindings`
 - tables written: 12
 - interfaces exposed: 25
@@ -2100,7 +2100,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1571 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1576 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 217 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2173,7 +2173,7 @@ Meta Graph monté : oui.
 | dashboard | documents | static-code, data-write, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | dashboard | economic-engine | static-code, data-read | 8 | **DECLARED_AND_OBSERVED** |
 | dashboard | incident-management | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
-| dashboard | infrastructure | static-code | 97 | **DECLARED_AND_OBSERVED** |
+| dashboard | infrastructure | static-code | 98 | **DECLARED_AND_OBSERVED** |
 | dashboard | inventory | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | local-stock | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | dashboard | logistics | static-code, data-read, data-write | 21 | **DECLARED_AND_OBSERVED** |
@@ -2285,7 +2285,7 @@ Meta Graph monté : oui.
 | market | infrastructure | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | market-autonomy | catalog | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | market-autonomy | economic-engine | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| market-autonomy | infrastructure | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| market-autonomy | infrastructure | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | market-autonomy | market | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | market-delegation | auth | static-code | 10 | **DECLARED_AND_OBSERVED** |
 | market-delegation | auth-identity | data-read | 1 | **DECLARED_AND_OBSERVED** |

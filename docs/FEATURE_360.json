@@ -2590,7 +2590,7 @@
             ]
           },
           "ci": {
-            "count": 5,
+            "count": 14,
             "files": [
               {
                 "declared": ".github/workflows-disabled/README-CJ-SHOWCASE.md",
@@ -2615,6 +2615,51 @@
               {
                 "declared": ".github/workflows/showcase-v2-staging-deploy.yml",
                 "resolvedPath": ".github/workflows/showcase-v2-staging-deploy.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-aliexpress-catalog-manual-pilot.yml",
+                "resolvedPath": ".github/workflows/staging-aliexpress-catalog-manual-pilot.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-aliexpress-catalog-pilot-audit.yml",
+                "resolvedPath": ".github/workflows/staging-aliexpress-catalog-pilot-audit.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-aliexpress-catalog-publish-pilot.yml",
+                "resolvedPath": ".github/workflows/staging-aliexpress-catalog-publish-pilot.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-aliexpress-enrich-fr-pilot.yml",
+                "resolvedPath": ".github/workflows/staging-aliexpress-enrich-fr-pilot.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-aliexpress-pool-integrity.yml",
+                "resolvedPath": ".github/workflows/staging-aliexpress-pool-integrity.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-aliexpress-public-hero-pilot.yml",
+                "resolvedPath": ".github/workflows/staging-aliexpress-public-hero-pilot.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-aliexpress-refinery-audit.yml",
+                "resolvedPath": ".github/workflows/staging-aliexpress-refinery-audit.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-catalog-ops.yml",
+                "resolvedPath": ".github/workflows/staging-catalog-ops.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-pdp-aliexpress-live-audit.yml",
+                "resolvedPath": ".github/workflows/staging-pdp-aliexpress-live-audit.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -3185,7 +3230,7 @@
             ]
           },
           "tests": {
-            "count": 145,
+            "count": 147,
             "files": [
               {
                 "declared": "tests/e2e-api/products.kmf-numeric.e2e.test.js",
@@ -3593,6 +3638,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/catalog-workspace-live-composer.test.js",
+                "resolvedPath": "tests/unit/catalog-workspace-live-composer.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/catalog-workspace.test.js",
                 "resolvedPath": "tests/unit/catalog-workspace.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3665,6 +3715,11 @@
               {
                 "declared": "tests/unit/golden-product-gpm1.test.js",
                 "resolvedPath": "tests/unit/golden-product-gpm1.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/integrations-aliexpress-route.test.js",
+                "resolvedPath": "tests/unit/integrations-aliexpress-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3925,7 +3980,7 @@
             ]
           }
         },
-        "totalFiles": 294,
+        "totalFiles": 305,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -6193,7 +6248,7 @@
             ]
           },
           "tests": {
-            "count": 126,
+            "count": 127,
             "files": [
               {
                 "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
@@ -6213,6 +6268,11 @@
               {
                 "declared": "tests/integration/dashboard-market-scope-isolation.test.js",
                 "resolvedPath": "tests/integration/dashboard-market-scope-isolation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/dashboard-orders-real-db.test.js",
+                "resolvedPath": "tests/integration/dashboard-orders-real-db.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6828,7 +6888,7 @@
             ]
           }
         },
-        "totalFiles": 275,
+        "totalFiles": 276,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -16752,8 +16812,13 @@
             ]
           },
           "tests": {
-            "count": 5,
+            "count": 6,
             "files": [
+              {
+                "declared": "tests/integration/market-local-price-state-transition-real-db.test.js",
+                "resolvedPath": "tests/integration/market-local-price-state-transition-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/unit/market-cash-control-ui.test.js",
                 "resolvedPath": "tests/unit/market-cash-control-ui.test.js",
@@ -16782,7 +16847,7 @@
             ]
           }
         },
-        "totalFiles": 18,
+        "totalFiles": 19,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -25840,7 +25905,7 @@
             ]
           },
           "tests": {
-            "count": 28,
+            "count": 29,
             "files": [
               {
                 "declared": "tests/integration/sourcing-candidate-arbitration-real-db.test.js",
@@ -25880,6 +25945,11 @@
               {
                 "declared": "tests/unit/sourcing-candidate-import-service.test.js",
                 "resolvedPath": "tests/unit/sourcing-candidate-import-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-canonical-commercial-projection-core.test.js",
+                "resolvedPath": "tests/unit/sourcing-canonical-commercial-projection-core.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -25985,7 +26055,7 @@
             ]
           }
         },
-        "totalFiles": 66,
+        "totalFiles": 67,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

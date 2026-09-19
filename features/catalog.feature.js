@@ -75,6 +75,18 @@ module.exports = {
       '.github/workflows-disabled/showcase-catalog-media-audit.yml',
       '.github/workflows-disabled/showcase-catalog-staging-deploy.yml',
       '.github/workflows-disabled/README-CJ-SHOWCASE.md',
+      // Rattachées (audit gouvernance 2026-09) — workflows ops staging
+      // déjà revus et gardés (KEEP) lors de l'audit CI initial, jamais
+      // déclarés dans aucun manifest feature jusqu'ici.
+      '.github/workflows/staging-aliexpress-catalog-manual-pilot.yml',
+      '.github/workflows/staging-aliexpress-catalog-pilot-audit.yml',
+      '.github/workflows/staging-aliexpress-catalog-publish-pilot.yml',
+      '.github/workflows/staging-aliexpress-enrich-fr-pilot.yml',
+      '.github/workflows/staging-aliexpress-pool-integrity.yml',
+      '.github/workflows/staging-aliexpress-public-hero-pilot.yml',
+      '.github/workflows/staging-aliexpress-refinery-audit.yml',
+      '.github/workflows/staging-catalog-ops.yml',
+      '.github/workflows/staging-pdp-aliexpress-live-audit.yml',
     ],
     utils: [
       'utils/categories-cache.js',
@@ -359,6 +371,8 @@ module.exports = {
       'tests/unit/catalog-sync-checkpoint.test.js',
       'tests/unit/json-connector.test.js',
       'tests/unit/catalog-approval.test.js',
+      'tests/unit/integrations-aliexpress-route.test.js',
+      'tests/unit/catalog-workspace-live-composer.test.js',
       'tests/unit/admin-catalog-approval-route.test.js',
       'tests/unit/catalog-enrichment-editorial-invariants.test.js',
       'tests/unit/catalog-enrichment-error-paths.test.js',

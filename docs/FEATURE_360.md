@@ -417,9 +417,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 294 fichier(s) déclaré(s), boutique: 33 fichier(s)
+**Implementation** : 305 fichier(s) déclaré(s), boutique: 33 fichier(s)
   - boutique : 39
-  - ci : 5
+  - ci : 14
   - config : 1
   - dash : 4
   - docs : 12
@@ -429,7 +429,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - schemas : 4
   - scripts : 5
   - services : 53
-  - tests : 145
+  - tests : 147
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="catalog"]_
@@ -544,13 +544,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 275 fichier(s) déclaré(s)
+**Implementation** : 276 fichier(s) déclaré(s)
   - dash : 98
   - middleware : 1
   - migrations : 2
   - routes : 24
   - services : 24
-  - tests : 126
+  - tests : 127
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 
@@ -1373,11 +1373,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "auth-identity" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market-delegation" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 18 fichier(s) déclaré(s)
+**Implementation** : 19 fichier(s) déclaré(s)
   - dash : 8
   - migrations : 1
   - services : 4
-  - tests : 5
+  - tests : 6
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market-autonomy"]_
 
@@ -2365,13 +2365,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 66 fichier(s) déclaré(s)
+**Implementation** : 67 fichier(s) déclaré(s)
   - middleware : 1
   - migrations : 8
   - routes : 2
   - scripts : 7
   - services : 20
-  - tests : 28
+  - tests : 29
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="sourcing"]_
 

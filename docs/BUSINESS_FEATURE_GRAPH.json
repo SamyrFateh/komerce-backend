@@ -1359,6 +1359,69 @@
       },
       {
         "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/staging-aliexpress-catalog-manual-pilot.yml",
+        "resolvedPath": ".github/workflows/staging-aliexpress-catalog-manual-pilot.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/staging-aliexpress-catalog-pilot-audit.yml",
+        "resolvedPath": ".github/workflows/staging-aliexpress-catalog-pilot-audit.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/staging-aliexpress-catalog-publish-pilot.yml",
+        "resolvedPath": ".github/workflows/staging-aliexpress-catalog-publish-pilot.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/staging-aliexpress-enrich-fr-pilot.yml",
+        "resolvedPath": ".github/workflows/staging-aliexpress-enrich-fr-pilot.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/staging-aliexpress-pool-integrity.yml",
+        "resolvedPath": ".github/workflows/staging-aliexpress-pool-integrity.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/staging-aliexpress-public-hero-pilot.yml",
+        "resolvedPath": ".github/workflows/staging-aliexpress-public-hero-pilot.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/staging-aliexpress-refinery-audit.yml",
+        "resolvedPath": ".github/workflows/staging-aliexpress-refinery-audit.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/staging-catalog-ops.yml",
+        "resolvedPath": ".github/workflows/staging-catalog-ops.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/staging-pdp-aliexpress-live-audit.yml",
+        "resolvedPath": ".github/workflows/staging-pdp-aliexpress-live-audit.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
         "category": "utils",
         "declared": "utils/categories-cache.js",
         "resolvedPath": "utils/categories-cache.js",
@@ -3147,6 +3210,20 @@
         "category": "tests",
         "declared": "tests/unit/catalog-approval.test.js",
         "resolvedPath": "tests/unit/catalog-approval.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/integrations-aliexpress-route.test.js",
+        "resolvedPath": "tests/unit/integrations-aliexpress-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-workspace-live-composer.test.js",
+        "resolvedPath": "tests/unit/catalog-workspace-live-composer.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5009,6 +5086,13 @@
         "category": "tests",
         "declared": "tests/unit/admin-dashboard-route.test.js",
         "resolvedPath": "tests/unit/admin-dashboard-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/integration/dashboard-orders-real-db.test.js",
+        "resolvedPath": "tests/integration/dashboard-orders-real-db.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10698,6 +10782,13 @@
       {
         "feature": "market-autonomy",
         "category": "tests",
+        "declared": "tests/integration/market-local-price-state-transition-real-db.test.js",
+        "resolvedPath": "tests/integration/market-local-price-state-transition-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "tests",
         "declared": "tests/unit/market-commercial-price-service.test.js",
         "resolvedPath": "tests/unit/market-commercial-price-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -14389,6 +14480,13 @@
         "category": "tests",
         "declared": "tests/unit/sourcing-integrity-audit.test.js",
         "resolvedPath": "tests/unit/sourcing-integrity-audit.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-canonical-commercial-projection-core.test.js",
+        "resolvedPath": "tests/unit/sourcing-canonical-commercial-projection-core.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -28775,6 +28873,10 @@
                 "targetFile": "bootstrap/html-routes.js"
               },
               {
+                "sourceFileId": "tests/integration/dashboard-orders-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/canonical-dashboard-boundary.test.js",
                 "targetFile": "bootstrap/html-routes.js"
               },
@@ -32900,6 +33002,10 @@
               },
               {
                 "sourceFileId": "services/market-local-price-state-transition.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/market-local-price-state-transition-real-db.test.js",
                 "targetFile": "db.js"
               }
             ]
@@ -38800,7 +38906,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1571
+        "filesObserved": 1576
       },
       "boutique": {
         "filesObserved": 217,
