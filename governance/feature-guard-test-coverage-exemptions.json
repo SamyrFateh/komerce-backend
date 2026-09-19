@@ -1,0 +1,75 @@
+{
+  "_comment": "Faux positifs du checker 'Couverture tests structurelle' de scripts/feature-guard.js (section 5 — 'Pas de test déclaré pour X'). Ce checker matche par sous-chaîne de nom de fichier (testBaseKey) : un test qui couvre réellement le fichier mais dont le nom ne partage pas ce radical, ou qui est légitimement déclaré dans une autre feature manifest, est signalé à tort.",
+  "_format": "{ \"chemin/du/fichier/de/production.js\": { \"coveredBy\": [\"tests/...\"], \"kind\": \"same-feature-naming-mismatch\" | \"cross-feature-shared-test\", \"justification\": \"...\" } }",
+  "_règle": "Une exemption ici documente qu'un test RÉEL couvre déjà le fichier (vérifié par grep require() explicite avant ajout, jamais supposé) — ce n'est jamais une autorisation de laisser un fichier réellement sans test. 'same-feature-naming-mismatch' : le test est déclaré dans LA MÊME feature que le fichier de production, l'heuristique de nom du checker a simplement raté le rapprochement. 'cross-feature-shared-test' : le test est déclaré dans une AUTRE feature manifest, légitimement (le déplacer casserait le contrôle 'aucun fichier possédé par 2 features' de feature-audit.js — un fichier de test ne peut être déclaré que dans un seul manifest). Ce fichier ne grandit pas au fil de l'eau : toute nouvelle entrée doit être vérifiée par grep réel avant ajout, jamais par supposition.",
+  "services/suppliers/connectors/aliexpress-connected-connector.js": {
+    "coveredBy": ["tests/unit/aliexpress-connector.test.js"],
+    "kind": "same-feature-naming-mismatch",
+    "justification": "Les deux sont déclarés dans catalog. testBaseKey('aliexpress-connected-connector') ne contient pas 'aliexpress-connector' à l'identique (radical différent malgré la couverture réelle par require())."
+  },
+  "services/cost-allocation/cost-types.js": {
+    "coveredBy": ["tests/unit/cost-allocation-helpers.test.js", "tests/unit/cost-allocation-variance.test.js"],
+    "kind": "same-feature-naming-mismatch",
+    "justification": "Les trois fichiers sont déclarés dans economic-engine. 'cost-types' n'apparaît pas comme radical dans les noms des tests qui le requièrent pourtant explicitement."
+  },
+  "services/capability-registry.js": {
+    "coveredBy": ["tests/unit/market-delegation-p0.test.js"],
+    "kind": "same-feature-naming-mismatch",
+    "justification": "Les deux sont déclarés dans market-delegation. 'capability-registry' n'apparaît pas dans le nom du test qui le requiert pourtant explicitement."
+  },
+  "services/market-delegation-service.js": {
+    "coveredBy": ["tests/unit/market-delegation-execution-capability.test.js", "tests/unit/market-delegation-team-service.test.js", "tests/unit/provision-market-operator.test.js"],
+    "kind": "same-feature-naming-mismatch",
+    "justification": "Les quatre fichiers sont déclarés dans market-delegation. Radical 'market-delegation-service' non retrouvé tel quel dans les noms des tests couvrants malgré des require() explicites."
+  },
+  "services/market-scope-projector.js": {
+    "coveredBy": ["tests/unit/market-delegation-runtime-bridge.test.js", "tests/unit/provision-market-operator.test.js"],
+    "kind": "same-feature-naming-mismatch",
+    "justification": "Les trois fichiers sont déclarés dans market-delegation. Même schéma : couverture réelle par require(), radical de nom différent."
+  },
+  "services/mobile-money/registry.js": {
+    "coveredBy": ["tests/unit/mobile-money-providers.test.js"],
+    "kind": "same-feature-naming-mismatch",
+    "justification": "Le fichier et son test couvrant sont tous deux déclarés dans payments (d'autres tests le couvrent aussi depuis market-delegation/purchasing, hors sujet ici puisque payments a déjà sa propre couverture déclarée)."
+  },
+  "services/mobile-money/orange-money-cm.js": {
+    "coveredBy": ["tests/unit/mobile-money-providers.test.js"],
+    "kind": "same-feature-naming-mismatch",
+    "justification": "Les deux sont déclarés dans payments. 'orange-money-cm' n'apparaît pas dans le nom du test générique 'mobile-money-providers' qui le requiert pourtant."
+  },
+  "services/mobile-money/mtn-momo-cg.js": {
+    "coveredBy": ["tests/unit/mobile-money-providers.test.js"],
+    "kind": "same-feature-naming-mismatch",
+    "justification": "Même schéma que orange-money-cm.js — les deux déclarés dans payments, radical de nom différent du test générique couvrant."
+  },
+  "services/mobile-money/kartapay-km.js": {
+    "coveredBy": ["tests/unit/mobile-money-providers.test.js"],
+    "kind": "same-feature-naming-mismatch",
+    "justification": "Même schéma — les deux déclarés dans payments, radical de nom différent du test générique couvrant."
+  },
+  "routes/payments-mobile-money.js": {
+    "coveredBy": ["tests/unit/kartapay-webhook.test.js"],
+    "kind": "same-feature-naming-mismatch",
+    "justification": "Les deux sont déclarés dans payments. 'payments-mobile-money' n'apparaît pas dans le nom du test 'kartapay-webhook' qui le requiert pourtant explicitement."
+  },
+  "services/suppliers/execution-adapter-registry.js": {
+    "coveredBy": ["tests/unit/procurement-execution-boundary.test.js", "tests/unit/purchasing-adapter-resolution.test.js"],
+    "kind": "same-feature-naming-mismatch",
+    "justification": "Les trois fichiers sont déclarés dans purchasing. Radical 'execution-adapter-registry' non retrouvé tel quel dans les noms des deux tests couvrants."
+  },
+  "services/suppliers/purchasing-validators.js": {
+    "coveredBy": ["tests/unit/provider-authority.test.js", "tests/unit/supplier-platform-allegro.test.js"],
+    "kind": "cross-feature-shared-test",
+    "justification": "Le fichier est déclaré dans purchasing ; ses deux seuls tests couvrants réels sont déclarés dans supplier-connectivity (aucun test équivalent n'existe dans purchasing). Les y redéclarer casserait le contrôle 'aucun fichier possédé par 2 features' de feature-audit.js."
+  },
+  "services/suppliers/aliexpress-fulfillment-adapter.js": {
+    "coveredBy": ["tests/unit/aliexpress-fulfillment-adapter.test.js", "tests/unit/supplier-fulfillment-adapter-contract.test.js"],
+    "kind": "cross-feature-shared-test",
+    "justification": "Le fichier est déclaré dans purchasing ; ses deux tests couvrants réels sont déclarés respectivement dans catalog et supplier-connectivity (aucun test équivalent n'existe dans purchasing). Même contrainte que purchasing-validators.js — redéclaration impossible sans casser le contrôle anti-doublon."
+  },
+  "services/sourcing-integrity-service.js": {
+    "coveredBy": ["tests/unit/sourcing-integrity-audit.test.js"],
+    "kind": "same-feature-naming-mismatch",
+    "justification": "Les deux sont déclarés dans sourcing. 'sourcing-integrity-service' n'apparaît pas tel quel dans le nom du test 'sourcing-integrity-audit' qui le requiert pourtant explicitement."
+  }
+}
