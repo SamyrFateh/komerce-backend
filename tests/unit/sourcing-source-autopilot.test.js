@@ -247,11 +247,22 @@ describe('sourcing source autopilot one-shot router', () => {
     expect(allegroGolden.run).toHaveBeenCalledWith(['--price-kmf=12000'], { env });
   });
 
+  test('route un slot Sandbox Allegro explicite et borné', async () => {
+    const env = { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: 'allegro-golden-prebuyer:12000:2' };
+    const allegroGolden = { run: jest.fn().mockResolvedValue({ status: 'PASS' }) };
+
+    await oneShotRunner.runTask(env, { allegroGolden });
+
+    expect(allegroGolden.run).toHaveBeenCalledWith(['--price-kmf=12000', '--seed-slot=2'], { env });
+  });
+
   test.each([
     'aliexpress-golden-import:not-an-id',
     'aliexpress-golden-import:1234',
     'allegro-golden-prebuyer:0',
     'allegro-golden-prebuyer:-1',
+    'allegro-golden-prebuyer:12000:0',
+    'allegro-golden-prebuyer:12000:4',
     'node scripts/anything.js',
   ])('échoue fermé avant tout appel pour %s', async (value) => {
     const aliexpressGolden = { main: jest.fn() };
