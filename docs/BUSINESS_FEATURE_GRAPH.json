@@ -933,6 +933,27 @@
       {
         "feature": "auth",
         "category": "tests",
+        "declared": "tests/integration/auth-user-cache-real-db.test.js",
+        "resolvedPath": "tests/integration/auth-user-cache-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth",
+        "category": "tests",
+        "declared": "tests/unit/auth.test.js",
+        "resolvedPath": "tests/unit/auth.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth",
+        "category": "tests",
+        "declared": "tests/unit/login-market-operator-contract.test.js",
+        "resolvedPath": "tests/unit/login-market-operator-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth",
+        "category": "tests",
         "declared": "tests/unit/auth-cookie.test.js",
         "resolvedPath": "tests/unit/auth-cookie.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -1288,6 +1309,13 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "business-rules",
+        "category": "tests",
+        "declared": "tests/integration/business-rules-cache-real-db.test.js",
+        "resolvedPath": "tests/integration/business-rules-cache-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "catalog",
         "category": "middleware",
         "declared": "middleware/require-catalog-global-authority.js",
@@ -1306,13 +1334,6 @@
         "category": "ci",
         "declared": ".github/workflows/cj-real-showcase-contract.yml",
         "resolvedPath": ".github/workflows/cj-real-showcase-contract.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "catalog",
-        "category": "ci",
-        "declared": ".github/workflows/catalog-prod-smoke.yml",
-        "resolvedPath": ".github/workflows/catalog-prod-smoke.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -1353,6 +1374,13 @@
       {
         "feature": "catalog",
         "category": "scripts",
+        "declared": "scripts/ebay-p3-pipeline-proof.js",
+        "resolvedPath": "scripts/ebay-p3-pipeline-proof.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
         "declared": "scripts/cj-real-showcase-seed.js",
         "resolvedPath": "scripts/cj-real-showcase-seed.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -1383,6 +1411,13 @@
         "category": "services",
         "declared": "services/suppliers/connectors/allegro-connector.js",
         "resolvedPath": "services/suppliers/connectors/allegro-connector.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/suppliers/connectors/ebay-connector.js",
+        "resolvedPath": "services/suppliers/connectors/ebay-connector.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -2326,6 +2361,13 @@
       {
         "feature": "catalog",
         "category": "tests",
+        "declared": "tests/integration/catalog-approval-queue-contract.test.js",
+        "resolvedPath": "tests/integration/catalog-approval-queue-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
         "declared": "tests/unit/allegro-sandbox-client.test.js",
         "resolvedPath": "tests/unit/allegro-sandbox-client.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -2335,6 +2377,104 @@
         "category": "tests",
         "declared": "tests/unit/allegro-connector.test.js",
         "resolvedPath": "tests/unit/allegro-connector.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-accept-language.test.js",
+        "resolvedPath": "tests/unit/allegro-accept-language.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-contract-only.test.js",
+        "resolvedPath": "tests/unit/allegro-contract-only.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-conversation-requiredness.test.js",
+        "resolvedPath": "tests/unit/allegro-conversation-requiredness.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-golden-customer-checkout-proof.test.js",
+        "resolvedPath": "tests/unit/allegro-golden-customer-checkout-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-golden-prebuyer-proof.test.js",
+        "resolvedPath": "tests/unit/allegro-golden-prebuyer-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-golden-preflight-contract.test.js",
+        "resolvedPath": "tests/unit/allegro-golden-preflight-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-offer-prerequisites-proof.test.js",
+        "resolvedPath": "tests/unit/allegro-offer-prerequisites-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-offer-prerequisites.test.js",
+        "resolvedPath": "tests/unit/allegro-offer-prerequisites.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-sandbox-safe-errors.test.js",
+        "resolvedPath": "tests/unit/allegro-sandbox-safe-errors.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-sandbox-shipping-rate-sanitization.test.js",
+        "resolvedPath": "tests/unit/allegro-sandbox-shipping-rate-sanitization.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-shipping-contract-client.test.js",
+        "resolvedPath": "tests/unit/allegro-shipping-contract-client.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/allegro-shipping-rate-contract.test.js",
+        "resolvedPath": "tests/unit/allegro-shipping-rate-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/ebay-connector.test.js",
+        "resolvedPath": "tests/unit/ebay-connector.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/ebay-p3-pipeline-proof.test.js",
+        "resolvedPath": "tests/unit/ebay-p3-pipeline-proof.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -2447,6 +2587,244 @@
         "category": "tests",
         "declared": "tests/unit/aliexpress-500-catalog-sync.test.js",
         "resolvedPath": "tests/unit/aliexpress-500-catalog-sync.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-500-catalog-topup.test.js",
+        "resolvedPath": "tests/unit/aliexpress-500-catalog-topup.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-feed-surface-proof.test.js",
+        "resolvedPath": "tests/unit/aliexpress-feed-surface-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-feed-topup-runtime.test.js",
+        "resolvedPath": "tests/unit/aliexpress-feed-topup-runtime.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-fulfillment-adapter.test.js",
+        "resolvedPath": "tests/unit/aliexpress-fulfillment-adapter.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-golden-e2e.test.js",
+        "resolvedPath": "tests/unit/aliexpress-golden-e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-golden-repair-existing.test.js",
+        "resolvedPath": "tests/unit/aliexpress-golden-repair-existing.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-golden-semantic.test.js",
+        "resolvedPath": "tests/unit/aliexpress-golden-semantic.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-native-sku-identity.test.js",
+        "resolvedPath": "tests/unit/aliexpress-native-sku-identity.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-promote-authority-regression.test.js",
+        "resolvedPath": "tests/unit/aliexpress-promote-authority-regression.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-promote-drafts-staging.test.js",
+        "resolvedPath": "tests/unit/aliexpress-promote-drafts-staging.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-promote-source-only.test.js",
+        "resolvedPath": "tests/unit/aliexpress-promote-source-only.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-refinery-audit-staging.test.js",
+        "resolvedPath": "tests/unit/aliexpress-refinery-audit-staging.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-refinery-rescan-staging.test.js",
+        "resolvedPath": "tests/unit/aliexpress-refinery-rescan-staging.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-refresh-imported-contracts.test.js",
+        "resolvedPath": "tests/unit/aliexpress-refresh-imported-contracts.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-wave2-completion-smoke.test.js",
+        "resolvedPath": "tests/unit/aliexpress-wave2-completion-smoke.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-wave2-completion.test.js",
+        "resolvedPath": "tests/unit/aliexpress-wave2-completion.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-wave2-feed-surface.test.js",
+        "resolvedPath": "tests/unit/aliexpress-wave2-feed-surface.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/aliexpress-wave2-sourcing.test.js",
+        "resolvedPath": "tests/unit/aliexpress-wave2-sourcing.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/cj-real-showcase-taxonomy-repair.test.js",
+        "resolvedPath": "tests/unit/cj-real-showcase-taxonomy-repair.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/promote-showcase-imagekit-staging.test.js",
+        "resolvedPath": "tests/unit/promote-showcase-imagekit-staging.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-catalog.test.js",
+        "resolvedPath": "tests/unit/showcase-catalog.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-curate-staging-500-hybrid.test.js",
+        "resolvedPath": "tests/unit/showcase-curate-staging-500-hybrid.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-curate-staging-500-primary.test.js",
+        "resolvedPath": "tests/unit/showcase-curate-staging-500-primary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-curate-staging-500.test.js",
+        "resolvedPath": "tests/unit/showcase-curate-staging-500.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-imagekit-v2.test.js",
+        "resolvedPath": "tests/unit/showcase-imagekit-v2.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-media-audit-retry.test.js",
+        "resolvedPath": "tests/unit/showcase-media-audit-retry.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-media-mirror.test.js",
+        "resolvedPath": "tests/unit/showcase-media-mirror.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-media-provider.test.js",
+        "resolvedPath": "tests/unit/showcase-media-provider.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-rebalance-staging-500.test.js",
+        "resolvedPath": "tests/unit/showcase-rebalance-staging-500.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-source-build.test.js",
+        "resolvedPath": "tests/unit/showcase-source-build.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-v2-media-realism.test.js",
+        "resolvedPath": "tests/unit/showcase-v2-media-realism.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-v2-plan.test.js",
+        "resolvedPath": "tests/unit/showcase-v2-plan.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-v2-reset.test.js",
+        "resolvedPath": "tests/unit/showcase-v2-reset.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/showcase-v2-source-build.test.js",
+        "resolvedPath": "tests/unit/showcase-v2-source-build.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -2774,6 +3152,153 @@
       {
         "feature": "catalog",
         "category": "tests",
+        "declared": "tests/unit/admin-catalog-approval-route.test.js",
+        "resolvedPath": "tests/unit/admin-catalog-approval-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-enrichment-editorial-invariants.test.js",
+        "resolvedPath": "tests/unit/catalog-enrichment-editorial-invariants.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-enrichment-error-paths.test.js",
+        "resolvedPath": "tests/unit/catalog-enrichment-error-paths.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-enrichment-uncovered.test.js",
+        "resolvedPath": "tests/unit/catalog-enrichment-uncovered.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-image-health-audit-contract.test.js",
+        "resolvedPath": "tests/unit/catalog-image-health-audit-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-import-eligibility-evidence.test.js",
+        "resolvedPath": "tests/unit/catalog-import-eligibility-evidence.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-product-detail-axis-display-name.test.js",
+        "resolvedPath": "tests/unit/catalog-product-detail-axis-display-name.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-promotion-supplier-order-identity-db.test.js",
+        "resolvedPath": "tests/unit/catalog-promotion-supplier-order-identity-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-promotion-supplier-order-identity.test.js",
+        "resolvedPath": "tests/unit/catalog-promotion-supplier-order-identity.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-promotion-v2-contract.test.js",
+        "resolvedPath": "tests/unit/catalog-promotion-v2-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/product-detail-content-schema.test.js",
+        "resolvedPath": "tests/unit/product-detail-content-schema.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/golden-product-content-e2e-seam.test.js",
+        "resolvedPath": "tests/unit/golden-product-content-e2e-seam.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/golden-product-gpm1.test.js",
+        "resolvedPath": "tests/unit/golden-product-gpm1.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/normalized-supplier-product-v2-content.test.js",
+        "resolvedPath": "tests/unit/normalized-supplier-product-v2-content.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/product-skus-supplier-order-identity-migration.test.js",
+        "resolvedPath": "tests/unit/product-skus-supplier-order-identity-migration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/retired-catalog-startup-migrations.test.js",
+        "resolvedPath": "tests/unit/retired-catalog-startup-migrations.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/supplier-catalog-scanner-audio-category.test.js",
+        "resolvedPath": "tests/unit/supplier-catalog-scanner-audio-category.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/supplier-catalog-scanner-refinery-regression.test.js",
+        "resolvedPath": "tests/unit/supplier-catalog-scanner-refinery-regression.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/staging-catalog-prune.test.js",
+        "resolvedPath": "tests/unit/staging-catalog-prune.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/l1-market-buyer-boundary.test.js",
+        "resolvedPath": "tests/unit/l1-market-buyer-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/isweep-services.test.js",
+        "resolvedPath": "tests/unit/isweep-services.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
         "declared": "tests/unit/admin-catalog-workspace-route.test.js",
         "resolvedPath": "tests/unit/admin-catalog-workspace-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -2986,6 +3511,20 @@
         "category": "tests",
         "declared": "tests/unit/customs-shipment-service.test.js",
         "resolvedPath": "tests/unit/customs-shipment-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "customs",
+        "category": "tests",
+        "declared": "tests/unit/customs-shipment-service-market-atomicity.test.js",
+        "resolvedPath": "tests/unit/customs-shipment-service-market-atomicity.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "customs",
+        "category": "tests",
+        "declared": "tests/integration/customs-shipments-contract.test.js",
+        "resolvedPath": "tests/integration/customs-shipments-contract.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -4041,6 +4580,419 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/integration/dashboard-admin-context-isolation.test.js",
+        "resolvedPath": "tests/integration/dashboard-admin-context-isolation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/integration/dashboard-global-authority-isolation.test.js",
+        "resolvedPath": "tests/integration/dashboard-global-authority-isolation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/integration/dashboard-market-scope-isolation.test.js",
+        "resolvedPath": "tests/integration/dashboard-market-scope-isolation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/integration/txg03-hub-dashboard.test.js",
+        "resolvedPath": "tests/integration/txg03-hub-dashboard.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/admin-dashboard-commerce-route.test.js",
+        "resolvedPath": "tests/unit/admin-dashboard-commerce-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/admin-dashboard-finance-route.test.js",
+        "resolvedPath": "tests/unit/admin-dashboard-finance-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/admin-dashboard-operations-route.test.js",
+        "resolvedPath": "tests/unit/admin-dashboard-operations-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/dashboard-market-scope-helpers.test.js",
+        "resolvedPath": "tests/unit/dashboard-market-scope-helpers.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/dashboard-contracts-0c.test.js",
+        "resolvedPath": "tests/unit/dashboard-contracts-0c.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/operations-workspace-state-source.test.js",
+        "resolvedPath": "tests/unit/operations-workspace-state-source.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/parcel-reference-dashboard-regression.test.js",
+        "resolvedPath": "tests/unit/parcel-reference-dashboard-regression.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/parcel-reference-order-360-regression.test.js",
+        "resolvedPath": "tests/unit/parcel-reference-order-360-regression.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/parcel-reference-runtime-contract.test.js",
+        "resolvedPath": "tests/unit/parcel-reference-runtime-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/market-catalog-decision.test.js",
+        "resolvedPath": "tests/unit/market-catalog-decision.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/pricing-structure-event-panel.test.js",
+        "resolvedPath": "tests/unit/pricing-structure-event-panel.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/pricing-workspace-decision.test.js",
+        "resolvedPath": "tests/unit/pricing-workspace-decision.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/pricing-workspace-presentation.test.js",
+        "resolvedPath": "tests/unit/pricing-workspace-presentation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/parcel-reference-action-center-regression.test.js",
+        "resolvedPath": "tests/unit/parcel-reference-action-center-regression.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/parcel-reference-signal-regression.test.js",
+        "resolvedPath": "tests/unit/parcel-reference-signal-regression.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/parcel-reference-signal-drift.todo.test.js",
+        "resolvedPath": "tests/unit/parcel-reference-signal-drift.todo.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/business-alignment-closure.test.js",
+        "resolvedPath": "tests/unit/business-alignment-closure.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-accounting-workspace-decision.test.js",
+        "resolvedPath": "tests/unit/canonical-accounting-workspace-decision.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-client-360-app.test.js",
+        "resolvedPath": "tests/unit/canonical-client-360-app.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-client-360-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-client-360-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-client-360.test.js",
+        "resolvedPath": "tests/unit/canonical-client-360.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-client-router-v4.test.js",
+        "resolvedPath": "tests/unit/canonical-client-router-v4.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-commerce.test.js",
+        "resolvedPath": "tests/unit/canonical-commerce.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-control-tower-cutover.test.js",
+        "resolvedPath": "tests/unit/canonical-control-tower-cutover.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-costing-cutover.test.js",
+        "resolvedPath": "tests/unit/canonical-costing-cutover.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-dashboard-drills-role-aware.test.js",
+        "resolvedPath": "tests/unit/canonical-dashboard-drills-role-aware.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-dashboard-drills.test.js",
+        "resolvedPath": "tests/unit/canonical-dashboard-drills.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-finance-coverage-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-finance-coverage-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-finance.test.js",
+        "resolvedPath": "tests/unit/canonical-finance.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-finish-polish-v1.test.js",
+        "resolvedPath": "tests/unit/canonical-finish-polish-v1.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-hybrid-shell-v4.test.js",
+        "resolvedPath": "tests/unit/canonical-hybrid-shell-v4.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-market-access.test.js",
+        "resolvedPath": "tests/unit/canonical-market-access.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-markets-decision.test.js",
+        "resolvedPath": "tests/unit/canonical-markets-decision.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-navigation-policy-v3.test.js",
+        "resolvedPath": "tests/unit/canonical-navigation-policy-v3.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-operations-workspace-app.test.js",
+        "resolvedPath": "tests/unit/canonical-operations-workspace-app.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-operations-workspace-decision.test.js",
+        "resolvedPath": "tests/unit/canonical-operations-workspace-decision.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-operations-workspace.test.js",
+        "resolvedPath": "tests/unit/canonical-operations-workspace.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-operations.test.js",
+        "resolvedPath": "tests/unit/canonical-operations.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-order-360-app.test.js",
+        "resolvedPath": "tests/unit/canonical-order-360-app.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-order-360-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-order-360-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-order-360.test.js",
+        "resolvedPath": "tests/unit/canonical-order-360.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-pilotage.test.js",
+        "resolvedPath": "tests/unit/canonical-pilotage.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-pricing-decision-chain.test.js",
+        "resolvedPath": "tests/unit/canonical-pricing-decision-chain.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-pricing-economic-cockpit.test.js",
+        "resolvedPath": "tests/unit/canonical-pricing-economic-cockpit.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-pricing-equilibrium-panel.test.js",
+        "resolvedPath": "tests/unit/canonical-pricing-equilibrium-panel.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-primitives-contract.test.js",
+        "resolvedPath": "tests/unit/canonical-primitives-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-product-360-app.test.js",
+        "resolvedPath": "tests/unit/canonical-product-360-app.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-product-360-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-product-360-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-product-360.test.js",
+        "resolvedPath": "tests/unit/canonical-product-360.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-shipping-customs-workspace-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-shipping-customs-workspace-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-shipping-customs-workspace-decision.test.js",
+        "resolvedPath": "tests/unit/canonical-shipping-customs-workspace-decision.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-sourcing-workspace-decision.test.js",
+        "resolvedPath": "tests/unit/canonical-sourcing-workspace-decision.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-standalone-shell-v4.test.js",
+        "resolvedPath": "tests/unit/canonical-standalone-shell-v4.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-theme-v2.test.js",
+        "resolvedPath": "tests/unit/canonical-theme-v2.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-visual-freeze.test.js",
+        "resolvedPath": "tests/unit/canonical-visual-freeze.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/test-dashboard.js",
         "resolvedPath": "tests/test-dashboard.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4734,6 +5686,13 @@
       {
         "feature": "documents",
         "category": "tests",
+        "declared": "tests/integration/admin-documents-contract.test.js",
+        "resolvedPath": "tests/integration/admin-documents-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "documents",
+        "category": "tests",
         "declared": "tests/unit/invoice-service.test.js",
         "resolvedPath": "tests/unit/invoice-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5406,6 +6365,76 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/integration/txg01-pricing-matrices.test.js",
+        "resolvedPath": "tests/integration/txg01-pricing-matrices.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/integration/txg02-pricing-strategy-service.test.js",
+        "resolvedPath": "tests/integration/txg02-pricing-strategy-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/admin-finance-config-relay-retired.test.js",
+        "resolvedPath": "tests/unit/admin-finance-config-relay-retired.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/admin-pricing-workspace-structure-events-route.test.js",
+        "resolvedPath": "tests/unit/admin-pricing-workspace-structure-events-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-cdr-currency-allocation.test.js",
+        "resolvedPath": "tests/unit/pricing-cdr-currency-allocation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-cdr-fx.test.js",
+        "resolvedPath": "tests/unit/pricing-cdr-fx.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-observed-cost-truth.test.js",
+        "resolvedPath": "tests/unit/pricing-observed-cost-truth.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-analysis-density.test.js",
+        "resolvedPath": "tests/unit/sourcing-analysis-density.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/relay-commission-allocation.test.js",
+        "resolvedPath": "tests/unit/relay-commission-allocation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/relay-commission.test.js",
+        "resolvedPath": "tests/unit/relay-commission.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/admin-cost-components.test.js",
         "resolvedPath": "tests/unit/admin-cost-components.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5728,6 +6757,13 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/integration/cost-allocation-conservation-real-db.test.js",
+        "resolvedPath": "tests/integration/cost-allocation-conservation-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/transport-cost-allocation.test.js",
         "resolvedPath": "tests/unit/transport-cost-allocation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5909,6 +6945,20 @@
       },
       {
         "feature": "external-provider-contracts",
+        "category": "scripts",
+        "declared": "scripts/stripe-provider-contract-proof.js",
+        "resolvedPath": "scripts/stripe-provider-contract-proof.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "category": "scripts",
+        "declared": "scripts/ebay-sandbox-browse-proof.js",
+        "resolvedPath": "scripts/ebay-sandbox-browse-proof.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "external-provider-contracts",
         "category": "config",
         "declared": "governance/external-provider-registry.json",
         "resolvedPath": "governance/external-provider-registry.json",
@@ -5926,6 +6976,20 @@
         "category": "tests",
         "declared": "tests/unit/external-provider-boundary-scan.test.js",
         "resolvedPath": "tests/unit/external-provider-boundary-scan.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "category": "tests",
+        "declared": "tests/unit/stripe-provider-contract-proof.test.js",
+        "resolvedPath": "tests/unit/stripe-provider-contract-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "category": "tests",
+        "declared": "tests/unit/ebay-sandbox-browse-proof.test.js",
+        "resolvedPath": "tests/unit/ebay-sandbox-browse-proof.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6010,6 +7074,13 @@
         "category": "tests",
         "declared": "tests/integration/incident-f3-postgres.test.js",
         "resolvedPath": "tests/integration/incident-f3-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "incident-management",
+        "category": "tests",
+        "declared": "tests/integration/parcel-transition-guard-real-db.test.js",
+        "resolvedPath": "tests/integration/parcel-transition-guard-real-db.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6834,13 +7905,6 @@
       {
         "feature": "infrastructure",
         "category": "scripts",
-        "declared": "scripts/test_e2e_full.sh",
-        "resolvedPath": "scripts/test_e2e_full.sh",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "scripts",
         "declared": "scripts/touched-files-feature-gate.js",
         "resolvedPath": "scripts/touched-files-feature-gate.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7296,13 +8360,6 @@
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows/railway-prod-unblock.yml",
-        "resolvedPath": ".github/workflows/railway-prod-unblock.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
         "declared": ".github/copilot-instructions.md",
         "resolvedPath": ".github/copilot-instructions.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7312,13 +8369,6 @@
         "category": "ci",
         "declared": ".github/pull_request_template.md",
         "resolvedPath": ".github/pull_request_template.md",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows/ci.yml",
-        "resolvedPath": ".github/workflows/ci.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7884,8 +8934,407 @@
       {
         "feature": "infrastructure",
         "category": "tests",
+        "declared": "tests/unit/require-non-production.test.js",
+        "resolvedPath": "tests/unit/require-non-production.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/ensure-staging-market-relays.test.js",
+        "resolvedPath": "tests/unit/ensure-staging-market-relays.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/relay-map-csp.test.js",
+        "resolvedPath": "tests/unit/relay-map-csp.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/r5-prod-guard.test.js",
+        "resolvedPath": "tests/unit/r5-prod-guard.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/validate.test.js",
+        "resolvedPath": "tests/unit/validate.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/agent-remediation-contract.test.js",
+        "resolvedPath": "tests/unit/agent-remediation-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/alerts-contract-check.test.js",
+        "resolvedPath": "tests/unit/alerts-contract-check.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/collision-count-wording-check.test.js",
+        "resolvedPath": "tests/unit/collision-count-wording-check.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/concept-impact-gate.test.js",
+        "resolvedPath": "tests/unit/concept-impact-gate.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/contract-check-runtime-scan.test.js",
+        "resolvedPath": "tests/unit/contract-check-runtime-scan.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/controlled-business-purge.test.js",
+        "resolvedPath": "tests/unit/controlled-business-purge.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/debt-zero-gate.test.js",
+        "resolvedPath": "tests/unit/debt-zero-gate.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/feature-360-internal-api-projection.test.js",
+        "resolvedPath": "tests/unit/feature-360-internal-api-projection.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/feature-dependency-data-channel.test.js",
+        "resolvedPath": "tests/unit/feature-dependency-data-channel.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/feature-dependency-disposition-composition.test.js",
+        "resolvedPath": "tests/unit/feature-dependency-disposition-composition.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/gen-boutique-360.p3b-ownership.test.js",
+        "resolvedPath": "tests/unit/gen-boutique-360.p3b-ownership.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/gen-dashboards-360-canonical.contract-status.test.js",
+        "resolvedPath": "tests/unit/gen-dashboards-360-canonical.contract-status.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/golden-cdr-preflight.test.js",
+        "resolvedPath": "tests/unit/golden-cdr-preflight.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/governance-derived-projection-preflight.test.js",
+        "resolvedPath": "tests/unit/governance-derived-projection-preflight.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/migration-collision-governance.test.js",
+        "resolvedPath": "tests/unit/migration-collision-governance.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/pr-enforcement-golden-scope.test.js",
+        "resolvedPath": "tests/unit/pr-enforcement-golden-scope.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/pr-enforcement-package-json-scope.test.js",
+        "resolvedPath": "tests/unit/pr-enforcement-package-json-scope.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/pr-enforcement-scope.test.js",
+        "resolvedPath": "tests/unit/pr-enforcement-scope.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/pr-enforcement-security360-scope.test.js",
+        "resolvedPath": "tests/unit/pr-enforcement-security360-scope.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/pr-enforcement-shallow-checkout.test.js",
+        "resolvedPath": "tests/unit/pr-enforcement-shallow-checkout.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/pr-enforcement-workflow-governance.test.js",
+        "resolvedPath": "tests/unit/pr-enforcement-workflow-governance.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/run-staged-related-tests.test.js",
+        "resolvedPath": "tests/unit/run-staged-related-tests.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/security-360-dispositions.test.js",
+        "resolvedPath": "tests/unit/security-360-dispositions.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/table-ownership.test.js",
+        "resolvedPath": "tests/unit/table-ownership.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/touched-tests-gate-coverage-thresholds.test.js",
+        "resolvedPath": "tests/unit/touched-tests-gate-coverage-thresholds.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/touched-tests-gate-css.test.js",
+        "resolvedPath": "tests/unit/touched-tests-gate-css.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/shadow-domains-boundary.test.js",
+        "resolvedPath": "tests/unit/shadow-domains-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/business-graph-determinism.test.js",
+        "resolvedPath": "tests/unit/business-graph-determinism.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/business-graph-warning-semantics.test.js",
+        "resolvedPath": "tests/unit/business-graph-warning-semantics.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/business-graph-warning-stream.test.js",
+        "resolvedPath": "tests/unit/business-graph-warning-stream.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/pr-enforcement-business-graph-runtime-scope.test.js",
+        "resolvedPath": "tests/unit/pr-enforcement-business-graph-runtime-scope.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/arch-drift-pending-migration.test.js",
+        "resolvedPath": "tests/unit/arch-drift-pending-migration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/bootstrap-api-routes.test.js",
+        "resolvedPath": "tests/unit/bootstrap-api-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/bootstrap-crons.test.js",
+        "resolvedPath": "tests/unit/bootstrap-crons.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/bootstrap-env.test.js",
+        "resolvedPath": "tests/unit/bootstrap-env.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/bootstrap-html-routes.test.js",
+        "resolvedPath": "tests/unit/bootstrap-html-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/bootstrap-security.test.js",
+        "resolvedPath": "tests/unit/bootstrap-security.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/bootstrap-server-lifecycle.test.js",
+        "resolvedPath": "tests/unit/bootstrap-server-lifecycle.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/bootstrap-startup-migrations.test.js",
+        "resolvedPath": "tests/unit/bootstrap-startup-migrations.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/check-currency-format.test.js",
+        "resolvedPath": "tests/unit/check-currency-format.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/check-currency-truncation.test.js",
+        "resolvedPath": "tests/unit/check-currency-truncation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/check-migration-immutability.test.js",
+        "resolvedPath": "tests/unit/check-migration-immutability.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/check-schema-freshness.test.js",
+        "resolvedPath": "tests/unit/check-schema-freshness.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/check-schema-resurrection.test.js",
+        "resolvedPath": "tests/unit/check-schema-resurrection.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/check-sku-coverage.test.js",
+        "resolvedPath": "tests/unit/check-sku-coverage.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/ci-migrate.test.js",
+        "resolvedPath": "tests/unit/ci-migrate.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/db-numeric-type-parser.test.js",
+        "resolvedPath": "tests/unit/db-numeric-type-parser.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/railway-migration-deploy-contract.test.js",
+        "resolvedPath": "tests/unit/railway-migration-deploy-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/schema-promote-columns.test.js",
+        "resolvedPath": "tests/unit/schema-promote-columns.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
         "declared": "tests/integration/groupe-paiement.manual.js",
         "resolvedPath": "tests/integration/groupe-paiement.manual.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/integration/o9-1-critical-runtime-proofs.test.js",
+        "resolvedPath": "tests/integration/o9-1-critical-runtime-proofs.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/integration/r6-crash-window.test.js",
+        "resolvedPath": "tests/integration/r6-crash-window.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/integration/txg04-system.test.js",
+        "resolvedPath": "tests/integration/txg04-system.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8556,6 +10005,27 @@
       {
         "feature": "logistics",
         "category": "tests",
+        "declared": "tests/integration/hub-physical-hardening-postgres.test.js",
+        "resolvedPath": "tests/integration/hub-physical-hardening-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/integration/hub-volume-photo-contract.test.js",
+        "resolvedPath": "tests/integration/hub-volume-photo-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/integration/txg05-parcel-items-product-id.test.js",
+        "resolvedPath": "tests/integration/txg05-parcel-items-product-id.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
         "declared": "tests/integration/test-harness/seed-helpers.js",
         "resolvedPath": "tests/integration/test-harness/seed-helpers.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -8565,6 +10035,34 @@
         "category": "tests",
         "declared": "tests/unit/auto-distribute-api.test.js",
         "resolvedPath": "tests/unit/auto-distribute-api.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-authority-gate.test.js",
+        "resolvedPath": "tests/unit/hub-authority-gate.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-operations-volume.test.js",
+        "resolvedPath": "tests/unit/hub-operations-volume.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/parcel-auto-create-cash-payment.test.js",
+        "resolvedPath": "tests/unit/parcel-auto-create-cash-payment.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/upload-hub.test.js",
+        "resolvedPath": "tests/unit/upload-hub.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8918,6 +10416,20 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "loyalty",
+        "category": "tests",
+        "declared": "tests/integration/post-o8-loyalty-real-db.test.js",
+        "resolvedPath": "tests/integration/post-o8-loyalty-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "loyalty",
+        "category": "tests",
+        "declared": "tests/unit/post-o8-loyalty-seams.test.js",
+        "resolvedPath": "tests/unit/post-o8-loyalty-seams.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "market",
         "category": "migrations",
         "declared": "migrations/135_markets_foundation.sql",
@@ -9069,6 +10581,27 @@
         "category": "tests",
         "declared": "tests/integration/market-open-congo.test.js",
         "resolvedPath": "tests/integration/market-open-congo.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/integration/f1-market-integrity-destructive.test.js",
+        "resolvedPath": "tests/integration/f1-market-integrity-destructive.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/f1-market-integrity-migration.test.js",
+        "resolvedPath": "tests/unit/f1-market-integrity-migration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market",
+        "category": "tests",
+        "declared": "tests/unit/market-operator-governance-gaps.test.js",
+        "resolvedPath": "tests/unit/market-operator-governance-gaps.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -9480,6 +11013,13 @@
       {
         "feature": "market-delegation",
         "category": "tests",
+        "declared": "tests/unit/provision-market-operator.test.js",
+        "resolvedPath": "tests/unit/provision-market-operator.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
         "declared": "tests/unit/market-delegation-p0.test.js",
         "resolvedPath": "tests/unit/market-delegation-p0.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9653,6 +11193,62 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/e2e-api/market-delegation.authority-team-network.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/market-delegation.authority-team-network.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/e2e-api/market-delegation.client-finance.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/market-delegation.client-finance.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/e2e-api/market-delegation.commerce-network.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/market-delegation.commerce-network.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/e2e-api/market-delegation.dashboard-reads.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/market-delegation.dashboard-reads.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/e2e-api/market-delegation.operations-read.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/market-delegation.operations-read.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/e2e-api/market-delegation.pricing.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/market-delegation.pricing.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/e2e-api/market-delegation.promotion-migrations.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/market-delegation.promotion-migrations.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/e2e-api/market-delegation.structure.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/market-delegation.structure.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "market-operator-dashboard",
         "category": "scripts",
         "declared": "scripts/provision-market-operator.js",
@@ -9685,6 +11281,34 @@
         "category": "tests",
         "declared": "tests/unit/seed-market-test-data.test.js",
         "resolvedPath": "tests/unit/seed-market-test-data.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "notifications",
+        "category": "tests",
+        "declared": "tests/unit/meta-whatsapp.test.js",
+        "resolvedPath": "tests/unit/meta-whatsapp.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "notifications",
+        "category": "tests",
+        "declared": "tests/unit/notification-api.test.js",
+        "resolvedPath": "tests/unit/notification-api.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "notifications",
+        "category": "tests",
+        "declared": "tests/unit/alerts.test.js",
+        "resolvedPath": "tests/unit/alerts.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "notifications",
+        "category": "tests",
+        "declared": "tests/unit/alert-engine.test.js",
+        "resolvedPath": "tests/unit/alert-engine.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10229,6 +11853,41 @@
       {
         "feature": "orders",
         "category": "tests",
+        "declared": "tests/unit/order-status-schema-canonical-closure.test.js",
+        "resolvedPath": "tests/unit/order-status-schema-canonical-closure.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/order-fulfillment-snapshot-migration.test.js",
+        "resolvedPath": "tests/unit/order-fulfillment-snapshot-migration.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/order-fulfillment-snapshot.test.js",
+        "resolvedPath": "tests/unit/order-fulfillment-snapshot.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/order-status-machine-mobile-money.test.js",
+        "resolvedPath": "tests/unit/order-status-machine-mobile-money.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/qr-collection-core-emission.test.js",
+        "resolvedPath": "tests/unit/qr-collection-core-emission.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
         "declared": "tests/e2e-api/orders.single-collect.e2e.test.js",
         "resolvedPath": "tests/e2e-api/orders.single-collect.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10273,6 +11932,13 @@
         "category": "tests",
         "declared": "tests/unit/admin-order-refund.test.js",
         "resolvedPath": "tests/unit/admin-order-refund.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "orders",
+        "category": "tests",
+        "declared": "tests/unit/admin-order-refund-payment-service.test.js",
+        "resolvedPath": "tests/unit/admin-order-refund-payment-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10515,6 +12181,13 @@
       },
       {
         "feature": "payments",
+        "category": "scripts",
+        "declared": "scripts/stripe-golden-p4.js",
+        "resolvedPath": "scripts/stripe-golden-p4.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
         "category": "services",
         "declared": "services/payment-status-validator.js",
         "resolvedPath": "services/payment-status-validator.js",
@@ -10553,13 +12226,6 @@
         "category": "services",
         "declared": "services/payment-stripe.js",
         "resolvedPath": "services/payment-stripe.js",
-        "status": "resolved-in-technical-graph"
-      },
-      {
-        "feature": "payments",
-        "category": "services",
-        "declared": "services/create-stripe-order-intent.js",
-        "resolvedPath": "services/create-stripe-order-intent.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -10747,6 +12413,55 @@
       {
         "feature": "payments",
         "category": "tests",
+        "declared": "tests/unit/stripe-golden-p4.test.js",
+        "resolvedPath": "tests/unit/stripe-golden-p4.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/isweep-transactional-flows.test.js",
+        "resolvedPath": "tests/unit/isweep-transactional-flows.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/payment-fx-authority.test.js",
+        "resolvedPath": "tests/unit/payment-fx-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/unit/paypal-webhook.test.js",
+        "resolvedPath": "tests/unit/paypal-webhook.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/integration/post-o8-payments-seams.test.js",
+        "resolvedPath": "tests/integration/post-o8-payments-seams.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/integration/stripe-payment-seams.test.js",
+        "resolvedPath": "tests/integration/stripe-payment-seams.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
+        "declared": "tests/e2e-api/payments.stripe-pipeline-p3.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/payments.stripe-pipeline-p3.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "payments",
+        "category": "tests",
         "declared": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
         "resolvedPath": "tests/e2e-api/payments.paypal-webhook-contract.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10840,13 +12555,6 @@
         "category": "tests",
         "declared": "tests/unit/confirm-pickup-cash-payment.test.js",
         "resolvedPath": "tests/unit/confirm-pickup-cash-payment.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "payments",
-        "category": "tests",
-        "declared": "tests/unit/create-stripe-order-intent.test.js",
-        "resolvedPath": "tests/unit/create-stripe-order-intent.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -11104,6 +12812,20 @@
       {
         "feature": "platform-ops",
         "category": "tests",
+        "declared": "tests/integration/alerts-contract-real-db.test.js",
+        "resolvedPath": "tests/integration/alerts-contract-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "tests",
+        "declared": "tests/integration/alerts-contract-red-proof.test.js",
+        "resolvedPath": "tests/integration/alerts-contract-red-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "tests",
         "declared": "tests/unit/validators.test.js",
         "resolvedPath": "tests/unit/validators.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11326,6 +13048,13 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "providers-services",
+        "category": "tests",
+        "declared": "tests/unit/manual-discovery-content.test.js",
+        "resolvedPath": "tests/unit/manual-discovery-content.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "purchasing",
         "category": "services",
         "declared": "services/suppliers/allegro-fulfillment-adapter.js",
@@ -11517,6 +13246,13 @@
       {
         "feature": "purchasing",
         "category": "tests",
+        "declared": "tests/unit/shipping-capability-contract.test.js",
+        "resolvedPath": "tests/unit/shipping-capability-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
         "declared": "tests/unit/allegro-purchase-reconciliation.test.js",
         "resolvedPath": "tests/unit/allegro-purchase-reconciliation.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11561,6 +13297,13 @@
         "category": "tests",
         "declared": "tests/integration/purchasing-exact-sku-po.test.js",
         "resolvedPath": "tests/integration/purchasing-exact-sku-po.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/purchasing-wa-url-w3-1.test.js",
+        "resolvedPath": "tests/integration/purchasing-wa-url-w3-1.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -11694,13 +13437,6 @@
         "category": "tests",
         "declared": "tests/unit/purchasing-admin-service.test.js",
         "resolvedPath": "tests/unit/purchasing-admin-service.test.js",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "recommendations",
-        "category": "ci",
-        "declared": ".github/workflows/discovery-cj-local-repair.yml",
-        "resolvedPath": ".github/workflows/discovery-cj-local-repair.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12100,6 +13836,34 @@
         "category": "migrations",
         "declared": "migrations/190_shared_cart_auto_close_backfill.sql",
         "resolvedPath": "migrations/190_shared_cart_auto_close_backfill.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "shared-cart",
+        "category": "tests",
+        "declared": "tests/e2e-api/shared-cart.claim-concurrent.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/shared-cart.claim-concurrent.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "shared-cart",
+        "category": "tests",
+        "declared": "tests/unit/shared-cart-v4-2-creation.test.js",
+        "resolvedPath": "tests/unit/shared-cart-v4-2-creation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "shared-cart",
+        "category": "tests",
+        "declared": "tests/unit/shares-snapshot-boundary.test.js",
+        "resolvedPath": "tests/unit/shares-snapshot-boundary.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "shared-cart",
+        "category": "tests",
+        "declared": "tests/unit/shares-token-entropy.test.js",
+        "resolvedPath": "tests/unit/shares-token-entropy.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12553,6 +14317,27 @@
       {
         "feature": "sourcing",
         "category": "tests",
+        "declared": "tests/unit/sourcing-candidate-enrichment-mode.test.js",
+        "resolvedPath": "tests/unit/sourcing-candidate-enrichment-mode.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/integration/sourcing-candidate-arbitration-real-db.test.js",
+        "resolvedPath": "tests/integration/sourcing-candidate-arbitration-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/supplier-targeted-refresh-staging.test.js",
+        "resolvedPath": "tests/unit/supplier-targeted-refresh-staging.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
         "declared": "tests/unit/sourcing-candidate-import-service.test.js",
         "resolvedPath": "tests/unit/sourcing-candidate-import-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12761,6 +14546,13 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "supplier-connectivity",
+        "category": "tests",
+        "declared": "tests/unit/supplier-platform-allegro.test.js",
+        "resolvedPath": "tests/unit/supplier-platform-allegro.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "unsold-resolution",
         "category": "routes",
         "declared": "routes/unsold.js",
@@ -12779,6 +14571,13 @@
         "category": "tests",
         "declared": "tests/unit/unsold.test.js",
         "resolvedPath": "tests/unit/unsold.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "unsold-resolution",
+        "category": "tests",
+        "declared": "tests/e2e-api/unsold-resolution.pipeline-real-db.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/unsold-resolution.pipeline-real-db.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12833,6 +14632,13 @@
       {
         "feature": "wallet",
         "category": "tests",
+        "declared": "tests/e2e-api/wallet.kmf-numeric.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/wallet.kmf-numeric.e2e.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "wallet",
+        "category": "tests",
         "declared": "tests/unit/wallet-service.test.js",
         "resolvedPath": "tests/unit/wallet-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12849,6 +14655,13 @@
         "category": "tests",
         "declared": "tests/unit/wallet-route.test.js",
         "resolvedPath": "tests/unit/wallet-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "wallet",
+        "category": "tests",
+        "declared": "tests/integration/wallet-refund-seams.test.js",
+        "resolvedPath": "tests/integration/wallet-refund-seams.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14152,6 +15965,134 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "catalog",
+        "entry": "GET /api/admin/workspaces/catalog",
+        "method": "GET",
+        "path": "/api/admin/workspaces/catalog",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/admin/workspaces/catalog/approval/:productRef/approve",
+        "method": "POST",
+        "path": "/api/admin/workspaces/catalog/approval/{id}/approve",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/admin/workspaces/catalog/approval/:productRef/override",
+        "method": "POST",
+        "path": "/api/admin/workspaces/catalog/approval/{id}/override",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/admin/workspaces/catalog/approval/:productRef/reject",
+        "method": "POST",
+        "path": "/api/admin/workspaces/catalog/approval/{id}/reject",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/admin/workspaces/catalog/categories",
+        "method": "POST",
+        "path": "/api/admin/workspaces/catalog/categories",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/admin/workspaces/catalog/categories/:key/deactivate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/catalog/categories/{id}/deactivate",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/admin/workspaces/catalog/categories/:key/subcategories",
+        "method": "POST",
+        "path": "/api/admin/workspaces/catalog/categories/{id}/subcategories",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/admin/workspaces/catalog/categories/:key/subcategories/:subKey/deactivate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/catalog/categories/{id}/subcategories/{id}/deactivate",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/admin/workspaces/catalog/categories/:key/subcategories/:subKey/update",
+        "method": "POST",
+        "path": "/api/admin/workspaces/catalog/categories/{id}/subcategories/{id}/update",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/admin/workspaces/catalog/categories/:key/update",
+        "method": "POST",
+        "path": "/api/admin/workspaces/catalog/categories/{id}/update",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/admin/workspaces/catalog/products",
+        "method": "POST",
+        "path": "/api/admin/workspaces/catalog/products",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/admin/workspaces/catalog/products/:productRef/deactivate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/catalog/products/{id}/deactivate",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/admin/workspaces/catalog/products/:productRef/update",
+        "method": "POST",
+        "path": "/api/admin/workspaces/catalog/products/{id}/update",
+        "routeFile": "routes/admin-catalog-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "POST /api/integrations/aliexpress/oauth/refresh",
+        "method": "POST",
+        "path": "/api/integrations/aliexpress/oauth/refresh",
+        "routeFile": "routes/integrations-aliexpress.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "GET /api/integrations/aliexpress/oauth/start",
+        "method": "GET",
+        "path": "/api/integrations/aliexpress/oauth/start",
+        "routeFile": "routes/integrations-aliexpress.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "catalog",
+        "entry": "GET /api/integrations/aliexpress/status",
+        "method": "GET",
+        "path": "/api/integrations/aliexpress/status",
+        "routeFile": "routes/integrations-aliexpress.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "customs",
         "entry": "GET /api/admin/customs-shipments",
         "method": "GET",
@@ -14813,6 +16754,214 @@
         "method": "POST",
         "path": "/api/relay/orders/{id}/incident",
         "routeFile": "routes/relay-dashboard.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "GET /api/admin/entities/clients/:clientPhone",
+        "method": "GET",
+        "path": "/api/admin/entities/clients/{id}",
+        "routeFile": "routes/admin-client-360.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "GET /api/admin/entities/orders/:orderReference",
+        "method": "GET",
+        "path": "/api/admin/entities/orders/{id}",
+        "routeFile": "routes/admin-order-360.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "GET /api/admin/entities/products/:productRef",
+        "method": "GET",
+        "path": "/api/admin/entities/products/{id}",
+        "routeFile": "routes/admin-product-360.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "GET /api/admin/users/:id/market-scopes",
+        "method": "GET",
+        "path": "/api/admin/users/{id}/market-scopes",
+        "routeFile": "routes/admin/users.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/users/:id/market-scopes",
+        "method": "POST",
+        "path": "/api/admin/users/{id}/market-scopes",
+        "routeFile": "routes/admin/users.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "DELETE /api/admin/users/:id/market-scopes/:marketCode",
+        "method": "DELETE",
+        "path": "/api/admin/users/{id}/market-scopes/{id}",
+        "routeFile": "routes/admin/users.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "GET /api/admin/users/markets",
+        "method": "GET",
+        "path": "/api/admin/users/markets",
+        "routeFile": "routes/admin/users.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "GET /api/admin/workspaces/accounting/market/:marketCode",
+        "method": "GET",
+        "path": "/api/admin/workspaces/accounting/market/{id}",
+        "routeFile": "routes/admin-finance-accounting-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/accounting/market/:marketCode/deposits",
+        "method": "POST",
+        "path": "/api/admin/workspaces/accounting/market/{id}/deposits",
+        "routeFile": "routes/admin-finance-accounting-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/accounting/market/:marketCode/deposits/:depositRef/dispute",
+        "method": "POST",
+        "path": "/api/admin/workspaces/accounting/market/{id}/deposits/{id}/dispute",
+        "routeFile": "routes/admin-finance-accounting-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/accounting/market/:marketCode/deposits/:depositRef/verify",
+        "method": "POST",
+        "path": "/api/admin/workspaces/accounting/market/{id}/deposits/{id}/verify",
+        "routeFile": "routes/admin-finance-accounting-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "GET /api/admin/workspaces/operations/market/:marketCode",
+        "method": "GET",
+        "path": "/api/admin/workspaces/operations/market/{id}",
+        "routeFile": "routes/admin-operations-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/distribution/run",
+        "method": "POST",
+        "path": "/api/admin/workspaces/operations/market/{id}/distribution/run",
+        "routeFile": "routes/admin-operations-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/inventory/items/:itemId/assign",
+        "method": "POST",
+        "path": "/api/admin/workspaces/operations/market/{id}/inventory/items/{id}/assign",
+        "routeFile": "routes/admin-operations-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/orders/:reference/confirm-cash",
+        "method": "POST",
+        "path": "/api/admin/workspaces/operations/market/{id}/orders/{id}/confirm-cash",
+        "routeFile": "routes/admin-operations-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/orders/:reference/mark-ordered",
+        "method": "POST",
+        "path": "/api/admin/workspaces/operations/market/{id}/orders/{id}/mark-ordered",
+        "routeFile": "routes/admin-operations-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/parcels/:reference/collect",
+        "method": "POST",
+        "path": "/api/admin/workspaces/operations/market/{id}/parcels/{id}/collect",
+        "routeFile": "routes/admin-operations-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/parcels/:reference/receive",
+        "method": "POST",
+        "path": "/api/admin/workspaces/operations/market/{id}/parcels/{id}/receive",
+        "routeFile": "routes/admin-operations-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/operations/market/:marketCode/parcels/:reference/ship",
+        "method": "POST",
+        "path": "/api/admin/workspaces/operations/market/{id}/parcels/{id}/ship",
+        "routeFile": "routes/admin-operations-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "GET /api/admin/workspaces/shipping-customs/market/:marketCode",
+        "method": "GET",
+        "path": "/api/admin/workspaces/shipping-customs/market/{id}",
+        "routeFile": "routes/admin-shipping-customs-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments",
+        "method": "POST",
+        "path": "/api/admin/workspaces/shipping-customs/market/{id}/customs/shipments",
+        "routeFile": "routes/admin-shipping-customs-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments/:reference/activate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/shipping-customs/market/{id}/customs/shipments/{id}/activate",
+        "routeFile": "routes/admin-shipping-customs-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments/:reference/deactivate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/shipping-customs/market/{id}/customs/shipments/{id}/deactivate",
+        "routeFile": "routes/admin-shipping-customs-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments/:reference/declare",
+        "method": "POST",
+        "path": "/api/admin/workspaces/shipping-customs/market/{id}/customs/shipments/{id}/declare",
+        "routeFile": "routes/admin-shipping-customs-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/shipping-customs/market/:marketCode/customs/shipments/:reference/update",
+        "method": "POST",
+        "path": "/api/admin/workspaces/shipping-customs/market/{id}/customs/shipments/{id}/update",
+        "routeFile": "routes/admin-shipping-customs-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "dashboard",
+        "entry": "POST /api/admin/workspaces/shipping-customs/market/:marketCode/parcels/:reference/confirm-transit",
+        "method": "POST",
+        "path": "/api/admin/workspaces/shipping-customs/market/{id}/parcels/{id}/confirm-transit",
+        "routeFile": "routes/admin-shipping-customs-workspace.js",
         "status": "resolved-owned"
       },
       {
@@ -15640,6 +17789,102 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/market/:marketCode/charges",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/market/{id}/charges",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/market/:marketCode/commercial-prices",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/market/{id}/commercial-prices",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/products/{id}/local-price",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activate",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/products/{id}/local-price/activate",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activation-preview",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/market/{id}/products/{id}/local-price/activation-preview",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/reset",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/products/{id}/local-price/reset",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/simulate-impact",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/simulate-impact",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/market/:marketCode/structure-events",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/market/{id}/structure-events",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/market/:marketCode/structure-events",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/market/{id}/structure-events",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/simulate-impact",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/simulate-impact",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/structure-events",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/structure-events",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/structure-events",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/structure-events",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "infrastructure",
         "entry": "GET /api/health",
         "method": "GET",
@@ -15733,6 +17978,22 @@
         "method": "GET",
         "path": "/api/hub/inventory/stats",
         "routeFile": "routes/inventory-api.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "local-stock",
+        "entry": "GET /api/local-stock/availability",
+        "method": "GET",
+        "path": "/api/local-stock/availability",
+        "routeFile": "routes/local-stock.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "local-stock",
+        "entry": "GET /api/local-stock/checkout-preview",
+        "method": "GET",
+        "path": "/api/local-stock/checkout-preview",
+        "routeFile": "routes/local-stock.js",
         "status": "resolved-owned"
       },
       {
@@ -16296,6 +18557,62 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "logistics",
+        "entry": "POST /api/hub/move",
+        "method": "POST",
+        "path": "/api/hub/move",
+        "routeFile": "routes/hub.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "logistics",
+        "entry": "POST /api/hub/outcome",
+        "method": "POST",
+        "path": "/api/hub/outcome",
+        "routeFile": "routes/hub.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "logistics",
+        "entry": "POST /api/hub/revalidate",
+        "method": "POST",
+        "path": "/api/hub/revalidate",
+        "routeFile": "routes/hub.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "logistics",
+        "entry": "POST /api/hub/transition",
+        "method": "POST",
+        "path": "/api/hub/transition",
+        "routeFile": "routes/hub.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "logistics",
+        "entry": "POST /api/hub/unit",
+        "method": "POST",
+        "path": "/api/hub/unit",
+        "routeFile": "routes/hub.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "logistics",
+        "entry": "GET /api/parcels",
+        "method": "GET",
+        "path": "/api/parcels",
+        "routeFile": "routes/parcels.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "logistics",
+        "entry": "POST /api/parcels",
+        "method": "POST",
+        "path": "/api/parcels",
+        "routeFile": "routes/parcels.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "loyalty",
         "entry": "GET /api/loyalty/tiers",
         "method": "GET",
@@ -16389,6 +18706,262 @@
         "method": "POST",
         "path": "/api/loyalty/recalculate-all",
         "routeFile": "routes/loyalty.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "GET /api/market-delegation/markets/:marketCode/team",
+        "method": "GET",
+        "path": "/api/market-delegation/markets/{id}/team",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "POST /api/market-delegation/markets/:marketCode/team/invitations",
+        "method": "POST",
+        "path": "/api/market-delegation/markets/{id}/team/invitations",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "POST /api/market-delegation/team/invitations/:token/accept",
+        "method": "POST",
+        "path": "/api/market-delegation/team/invitations/{id}/accept",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "PUT /api/market-delegation/markets/:marketCode/team/:membershipId/capabilities",
+        "method": "PUT",
+        "path": "/api/market-delegation/markets/{id}/team/{id}/capabilities",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "DELETE /api/market-delegation/markets/:marketCode/team/:membershipId",
+        "method": "DELETE",
+        "path": "/api/market-delegation/markets/{id}/team/{id}",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "DELETE /api/market-delegation/markets/:marketCode/team/invitations/:invitationId",
+        "method": "DELETE",
+        "path": "/api/market-delegation/markets/{id}/team/invitations/{id}",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "GET /api/market-delegation/markets/:marketCode/cash-control-policy",
+        "method": "GET",
+        "path": "/api/market-delegation/markets/{id}/cash-control-policy",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "PUT /api/market-delegation/markets/:marketCode/cash-control-policy",
+        "method": "PUT",
+        "path": "/api/market-delegation/markets/{id}/cash-control-policy",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "GET /api/market-delegation/markets/:marketCode/network/relais",
+        "method": "GET",
+        "path": "/api/market-delegation/markets/{id}/network/relais",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "POST /api/market-delegation/markets/:marketCode/network/relais",
+        "method": "POST",
+        "path": "/api/market-delegation/markets/{id}/network/relais",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "PUT /api/market-delegation/markets/:marketCode/network/relais/:relaisId",
+        "method": "PUT",
+        "path": "/api/market-delegation/markets/{id}/network/relais/{id}",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/suspend",
+        "method": "POST",
+        "path": "/api/market-delegation/markets/{id}/network/relais/{id}/suspend",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/activate",
+        "method": "POST",
+        "path": "/api/market-delegation/markets/{id}/network/relais/{id}/activate",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "GET /api/market-delegation/markets/:marketCode/network/providers",
+        "method": "GET",
+        "path": "/api/market-delegation/markets/{id}/network/providers",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "POST /api/market-delegation/markets/:marketCode/network/providers",
+        "method": "POST",
+        "path": "/api/market-delegation/markets/{id}/network/providers",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "PUT /api/market-delegation/markets/:marketCode/network/providers/:providerId",
+        "method": "PUT",
+        "path": "/api/market-delegation/markets/{id}/network/providers/{id}",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/suspend",
+        "method": "POST",
+        "path": "/api/market-delegation/markets/{id}/network/providers/{id}/suspend",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/activate",
+        "method": "POST",
+        "path": "/api/market-delegation/markets/{id}/network/providers/{id}/activate",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "GET /api/market-delegation/markets/:marketCode/catalog/exposure",
+        "method": "GET",
+        "path": "/api/market-delegation/markets/{id}/catalog/exposure",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "PUT /api/market-delegation/markets/:marketCode/catalog/exposure/:productId",
+        "method": "PUT",
+        "path": "/api/market-delegation/markets/{id}/catalog/exposure/{id}",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "GET /api/market-delegation/markets/:marketCode/local-offer/services",
+        "method": "GET",
+        "path": "/api/market-delegation/markets/{id}/local-offer/services",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "PUT /api/market-delegation/markets/:marketCode/local-offer/services/:serviceId",
+        "method": "PUT",
+        "path": "/api/market-delegation/markets/{id}/local-offer/services/{id}",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "GET /api/market-delegation/markets/:marketCode/local-offer/physical-offers",
+        "method": "GET",
+        "path": "/api/market-delegation/markets/{id}/local-offer/physical-offers",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "PUT /api/market-delegation/markets/:marketCode/local-offer/physical-offers/:physicalOfferId",
+        "method": "PUT",
+        "path": "/api/market-delegation/markets/{id}/local-offer/physical-offers/{id}",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "GET /api/market-delegation/markets/:marketCode/client-cases/disputes",
+        "method": "GET",
+        "path": "/api/market-delegation/markets/{id}/client-cases/disputes",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "PUT /api/market-delegation/markets/:marketCode/client-cases/disputes/:disputeId",
+        "method": "PUT",
+        "path": "/api/market-delegation/markets/{id}/client-cases/disputes/{id}",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "GET /api/market-delegation/markets/:marketCode/settlements",
+        "method": "GET",
+        "path": "/api/market-delegation/markets/{id}/settlements",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/request",
+        "method": "POST",
+        "path": "/api/market-delegation/markets/{id}/settlements/{id}/request",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/receive",
+        "method": "POST",
+        "path": "/api/market-delegation/markets/{id}/settlements/{id}/receive",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "GET /api/market-delegation/markets/:marketCode/structure-events",
+        "method": "GET",
+        "path": "/api/market-delegation/markets/{id}/structure-events",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "POST /api/market-delegation/markets/:marketCode/structure-events",
+        "method": "POST",
+        "path": "/api/market-delegation/markets/{id}/structure-events",
+        "routeFile": "routes/market-delegation-team.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
+        "entry": "GET /api/market-delegation/markets/:marketCode/performance",
+        "method": "GET",
+        "path": "/api/market-delegation/markets/{id}/performance",
+        "routeFile": "routes/market-delegation-team.js",
         "status": "resolved-owned"
       },
       {
@@ -17120,6 +19693,30 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "providers-services",
+        "entry": "GET /api/providers-services/services/:id",
+        "method": "GET",
+        "path": "/api/providers-services/services/{id}",
+        "routeFile": "routes/providers-services.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "providers-services",
+        "entry": "GET /api/providers-services/physical-offers/:id",
+        "method": "GET",
+        "path": "/api/providers-services/physical-offers/{id}",
+        "routeFile": "routes/providers-services.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "providers-services",
+        "entry": "POST /api/providers-services/inquiries",
+        "method": "POST",
+        "path": "/api/providers-services/inquiries",
+        "routeFile": "routes/providers-services.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "purchasing",
         "entry": "GET /api/purchasing",
         "method": "GET",
@@ -17197,6 +19794,38 @@
         "method": "DELETE",
         "path": "/api/purchasing/po/{id}",
         "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "recommendations",
+        "entry": "GET /api/boutique/suggestions",
+        "method": "GET",
+        "path": "/api/boutique/suggestions",
+        "routeFile": "routes/boutique-suggestions.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "settlement",
+        "entry": "GET /api/admin/market-settlements/markets/:marketCode/settlements",
+        "method": "GET",
+        "path": "/api/admin/market-settlements/markets/{id}/settlements",
+        "routeFile": "routes/admin-market-settlement.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "settlement",
+        "entry": "POST /api/admin/market-settlements/markets/:marketCode/settlements/ready",
+        "method": "POST",
+        "path": "/api/admin/market-settlements/markets/{id}/settlements/ready",
+        "routeFile": "routes/admin-market-settlement.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "settlement",
+        "entry": "POST /api/admin/market-settlements/settlements/:settlementId/paid",
+        "method": "POST",
+        "path": "/api/admin/market-settlements/settlements/{id}/paid",
+        "routeFile": "routes/admin-market-settlement.js",
         "status": "resolved-owned"
       },
       {
@@ -17961,6 +20590,18 @@
         "feature": "external-provider-contracts",
         "fn": "scanRepository",
         "file": "scripts/external-provider-boundary-scan.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "fn": "runStripeReadOnlyProof",
+        "file": "scripts/stripe-provider-contract-proof.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "fn": "runEbayBrowseReadOnlyProof",
+        "file": "scripts/ebay-sandbox-browse-proof.js",
         "status": "resolved"
       },
       {
@@ -23658,6 +26299,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "tests/integration/auth-user-cache-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/auth-route.test.js",
                 "targetFile": "db.js"
               },
@@ -24201,6 +26846,10 @@
               {
                 "sourceFileId": "routes/admin-rules.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/business-rules-cache-real-db.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -24302,6 +26951,14 @@
               {
                 "sourceFileId": "tests/unit/catalog-approval.test.js",
                 "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-enrichment-error-paths.test.js",
+                "targetFile": "utils/rules.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-enrichment-uncovered.test.js",
+                "targetFile": "utils/rules.js"
               }
             ]
           }
@@ -24342,6 +26999,10 @@
               {
                 "sourceFileId": "tests/unit/catalog-import-orchestrator-source-v2.test.js",
                 "targetFile": "services/pricing-engine.js"
+              },
+              {
+                "sourceFileId": "tests/unit/supplier-catalog-scanner-refinery-regression.test.js",
+                "targetFile": "services/pricing-engine.js"
               }
             ]
           }
@@ -24357,6 +27018,14 @@
             "evidence": [
               {
                 "sourceFileId": "scripts/allegro-sandbox-check.js",
+                "targetFile": "scripts/provider-contract-proof.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-conversation-requiredness.test.js",
+                "targetFile": "scripts/provider-contract-proof.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-shipping-rate-contract.test.js",
                 "targetFile": "scripts/provider-contract-proof.js"
               },
               {
@@ -24385,6 +27054,10 @@
               },
               {
                 "sourceFileId": "scripts/allegro-sandbox-check.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/ebay-p3-pipeline-proof.js",
                 "targetFile": "db.js"
               },
               {
@@ -24500,7 +27173,19 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "tests/integration/catalog-approval-queue-contract.test.js",
+                "targetFile": "server.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-approval-queue-contract.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/allegro-sandbox-client.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/showcase-v2-reset.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -24558,6 +27243,38 @@
               {
                 "sourceFileId": "tests/integration/catalog-import-json.integration.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-enrichment-error-paths.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-enrichment-error-paths.test.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-enrichment-uncovered.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-enrichment-uncovered.test.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-promotion-supplier-order-identity-db.test.js",
+                "targetFile": "tests/integration/test-harness/mock-db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/golden-product-content-e2e-seam.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/golden-product-gpm1.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/l1-market-buyer-boundary.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -24576,6 +27293,10 @@
                 "targetFile": "services/transport-rails.js"
               },
               {
+                "sourceFileId": "tests/integration/catalog-approval-queue-contract.test.js",
+                "targetFile": "tests/integration/test-harness/seed-helpers.js"
+              },
+              {
                 "sourceFileId": "tests/unit/catalog-product-detail.test.js",
                 "targetFile": "services/transport-rails.js"
               },
@@ -24590,6 +27311,14 @@
               {
                 "sourceFileId": "tests/integration/catalog-import-json.integration.test.js",
                 "targetFile": "tests/integration/test-harness/seed-helpers.js"
+              },
+              {
+                "sourceFileId": "tests/unit/golden-product-content-e2e-seam.test.js",
+                "targetFile": "services/transport-rails.js"
+              },
+              {
+                "sourceFileId": "tests/unit/golden-product-gpm1.test.js",
+                "targetFile": "services/transport-rails.js"
               }
             ]
           }
@@ -24609,6 +27338,10 @@
               },
               {
                 "sourceFileId": "routes/catalog-product-detail.js",
+                "targetFile": "services/market-local-price-resolution-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/l1-market-buyer-boundary.test.js",
                 "targetFile": "services/market-local-price-resolution-service.js"
               }
             ]
@@ -25039,6 +27772,26 @@
               {
                 "sourceFileId": "scripts/allegro-sandbox-check.js",
                 "targetFile": "services/suppliers/allegro-fulfillment-adapter.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-golden-preflight-contract.test.js",
+                "targetFile": "services/purchasing-trigger-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-golden-preflight-contract.test.js",
+                "targetFile": "services/suppliers/allegro-fulfillment-adapter.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-golden-preflight-contract.test.js",
+                "targetFile": "services/suppliers/allegro-purchase-reconciliation.js"
+              },
+              {
+                "sourceFileId": "tests/unit/aliexpress-fulfillment-adapter.test.js",
+                "targetFile": "services/suppliers/aliexpress-fulfillment-adapter.js"
+              },
+              {
+                "sourceFileId": "tests/unit/aliexpress-fulfillment-adapter.test.js",
+                "targetFile": "services/suppliers/supplier-fulfillment-readiness.js"
               }
             ]
           }
@@ -25157,6 +27910,10 @@
               {
                 "sourceFileId": "tests/unit/catalog-product-source-read-service.test.js",
                 "targetFile": "services/catalog-product-read-cutover-trial.js"
+              },
+              {
+                "sourceFileId": "tests/unit/aliexpress-promote-source-only.test.js",
+                "targetFile": "services/sourcing-candidate-actions.js"
               }
             ]
           },
@@ -25185,6 +27942,26 @@
               },
               {
                 "sourceFileId": "tests/unit/allegro-connector.test.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-golden-preflight-contract.test.js",
+                "targetFile": "services/suppliers/provider-authority.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-golden-preflight-contract.test.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "tests/unit/ebay-connector.test.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-promotion-supplier-order-identity-db.test.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-promotion-supplier-order-identity.test.js",
                 "targetFile": "services/suppliers/supplier-order-identity.js"
               }
             ]
@@ -25294,6 +28071,14 @@
               {
                 "sourceFileId": "routes/admin-customs-categories.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/customs-shipments-contract.test.js",
+                "targetFile": "server.js"
+              },
+              {
+                "sourceFileId": "tests/integration/customs-shipments-contract.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -25310,6 +28095,10 @@
               {
                 "sourceFileId": "services/customs-shipment-service.js",
                 "targetFile": "services/parcel-mutation-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/customs-shipments-contract.test.js",
+                "targetFile": "tests/integration/test-harness/seed-helpers.js"
               }
             ]
           },
@@ -25944,6 +28733,46 @@
               {
                 "sourceFileId": "routes/relay-dashboard.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "tests/integration/dashboard-admin-context-isolation.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/dashboard-global-authority-isolation.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/dashboard-market-scope-isolation.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-reference-dashboard-regression.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/canonical-client-360-boundary.test.js",
+                "targetFile": "bootstrap/html-routes.js"
+              },
+              {
+                "sourceFileId": "tests/unit/canonical-control-tower-cutover.test.js",
+                "targetFile": "bootstrap/html-routes.js"
+              },
+              {
+                "sourceFileId": "tests/unit/canonical-costing-cutover.test.js",
+                "targetFile": "bootstrap/html-routes.js"
+              },
+              {
+                "sourceFileId": "tests/unit/canonical-order-360-boundary.test.js",
+                "targetFile": "bootstrap/html-routes.js"
+              },
+              {
+                "sourceFileId": "tests/unit/canonical-product-360-boundary.test.js",
+                "targetFile": "bootstrap/html-routes.js"
+              },
+              {
+                "sourceFileId": "tests/unit/canonical-shipping-customs-workspace-boundary.test.js",
+                "targetFile": "bootstrap/html-routes.js"
               },
               {
                 "sourceFileId": "tests/unit/canonical-dashboard-boundary.test.js",
@@ -26761,6 +29590,14 @@
               {
                 "sourceFileId": "tests/unit/refund-receipt.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/admin-documents-contract.test.js",
+                "targetFile": "server.js"
+              },
+              {
+                "sourceFileId": "tests/integration/admin-documents-contract.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -26771,6 +29608,15 @@
         "from": "documents",
         "to": "logistics",
         "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/integration/admin-documents-contract.test.js",
+                "targetFile": "tests/integration/test-harness/seed-helpers.js"
+              }
+            ]
+          },
           {
             "channel": "data-read",
             "evidence": [
@@ -27300,6 +30146,22 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/txg02-pricing-strategy-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/admin-pricing-workspace-structure-events-route.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/relay-commission-allocation.test.js",
+                "targetFile": "tests/integration/test-harness/mock-db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/relay-commission-allocation.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/apply-pricing-updates.test.js",
                 "targetFile": "db.js"
               },
@@ -27369,6 +30231,10 @@
               },
               {
                 "sourceFileId": "tests/unit/cost-allocation.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/cost-allocation-conservation-real-db.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -27680,6 +30546,10 @@
               {
                 "sourceFileId": "tests/unit/parcel-transition-guard.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/parcel-transition-guard-real-db.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -27699,6 +30569,10 @@
               },
               {
                 "sourceFileId": "tests/unit/parcel-operations-incident-governance.test.js",
+                "targetFile": "services/parcel-operations.js"
+              },
+              {
+                "sourceFileId": "tests/integration/parcel-transition-guard-real-db.test.js",
                 "targetFile": "services/parcel-operations.js"
               }
             ]
@@ -28097,6 +30971,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/local-stock.js"
+              },
+              {
+                "sourceFileId": "tests/unit/shadow-domains-boundary.test.js",
+                "targetFile": "routes/local-stock.js"
               }
             ]
           }
@@ -28189,6 +31067,10 @@
               {
                 "sourceFileId": "server.js",
                 "targetFile": "services/parcel-security.js"
+              },
+              {
+                "sourceFileId": "tests/integration/o9-1-critical-runtime-proofs.test.js",
+                "targetFile": "tests/integration/test-harness/seed-helpers.js"
               },
               {
                 "sourceFileId": "tests/unit/order-parcel-link-rules.test.js",
@@ -28319,6 +31201,10 @@
                 "targetFile": "routes/hub-mark-ordered.js"
               },
               {
+                "sourceFileId": "tests/integration/o9-1-critical-runtime-proofs.test.js",
+                "targetFile": "services/cancel-order-purchase-orders.js"
+              },
+              {
                 "sourceFileId": "tests/unit/order-parcel-link-rules.test.js",
                 "targetFile": "services/order-status-machine.js"
               },
@@ -28361,6 +31247,14 @@
               {
                 "sourceFileId": "bootstrap/crons.js",
                 "targetFile": "services/mobile-money-reconciliation.js"
+              },
+              {
+                "sourceFileId": "tests/integration/o9-1-critical-runtime-proofs.test.js",
+                "targetFile": "services/payment-paypal.js"
+              },
+              {
+                "sourceFileId": "tests/integration/o9-1-critical-runtime-proofs.test.js",
+                "targetFile": "services/cash-operations.js"
               }
             ]
           }
@@ -28409,6 +31303,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/providers-services.js"
+              },
+              {
+                "sourceFileId": "tests/unit/shadow-domains-boundary.test.js",
+                "targetFile": "routes/providers-services.js"
               }
             ]
           }
@@ -28425,6 +31323,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/purchasing.js"
+              },
+              {
+                "sourceFileId": "tests/integration/o9-1-critical-runtime-proofs.test.js",
+                "targetFile": "services/purchasing-trigger-service.js"
               }
             ]
           }
@@ -28934,6 +31836,22 @@
       },
       {
         "from": "logistics",
+        "to": "dashboard",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/integration/txg05-parcel-items-product-id.test.js",
+                "targetFile": "routes/hub-dashboard.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "logistics",
         "to": "documents",
         "channels": [
           {
@@ -29269,8 +32187,32 @@
                 "targetFile": "validators/index.js"
               },
               {
+                "sourceFileId": "tests/integration/hub-volume-photo-contract.test.js",
+                "targetFile": "bootstrap/crons.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-volume-photo-contract.test.js",
+                "targetFile": "server.js"
+              },
+              {
+                "sourceFileId": "tests/integration/hub-volume-photo-contract.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/test-harness/seed-helpers.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/hub-operations-volume.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/parcel-auto-create-cash-payment.test.js",
+                "targetFile": "tests/integration/test-harness/mock-db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/upload-hub.test.js",
+                "targetFile": "middleware/upload.js"
               },
               {
                 "sourceFileId": "tests/unit/auto-parcel.test.js",
@@ -29758,11 +32700,31 @@
               {
                 "sourceFileId": "tests/unit/loyalty-service.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/post-o8-loyalty-real-db.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "loyalty",
+        "to": "logistics",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/integration/post-o8-loyalty-real-db.test.js",
+                "targetFile": "tests/integration/test-harness/seed-helpers.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "loyalty",
@@ -29803,6 +32765,22 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market",
+        "to": "dashboard",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/unit/market-operator-governance-gaps.test.js",
+                "targetFile": "services/hub-dashboard-queries.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "market",
@@ -30144,6 +33122,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/provision-market-operator.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/market-delegation-runtime-bridge.test.js",
                 "targetFile": "db.js"
               }
@@ -30205,6 +33187,22 @@
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
+        "to": "market-operator-dashboard",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/unit/provision-market-operator.test.js",
+                "targetFile": "scripts/provision-market-operator.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "market-delegation",
@@ -30481,6 +33479,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "tests/unit/alert-engine.test.js",
+                "targetFile": "db.js"
+              },
               {
                 "sourceFileId": "tests/notifications/notification-service-internals.test.js",
                 "targetFile": "db.js"
@@ -31117,12 +34119,20 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "tests/unit/qr-collection-core-emission.test.js",
+                "targetFile": "tests/integration/test-harness/mock-db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/admin-order-refund.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
               {
                 "sourceFileId": "tests/unit/admin-order-refund.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/admin-order-refund-payment-service.test.js",
+                "targetFile": "tests/integration/test-harness/mock-db.js"
               },
               {
                 "sourceFileId": "tests/integration/order-display-snapshot.test.js",
@@ -31883,6 +34893,10 @@
               {
                 "sourceFileId": "routes/payments-mobile-money.js",
                 "targetFile": "middleware/auth-guest.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/payments.stripe-pipeline-p3.e2e.test.js",
+                "targetFile": "utils/auth-session.js"
               }
             ]
           }
@@ -31957,6 +34971,14 @@
                 "targetFile": "services/invoice-service.js"
               },
               {
+                "sourceFileId": "tests/integration/post-o8-payments-seams.test.js",
+                "targetFile": "services/invoice-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/stripe-payment-seams.test.js",
+                "targetFile": "services/invoice-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/payment-paypal.test.js",
                 "targetFile": "services/documents/refund-receipt.js"
               },
@@ -32002,6 +35024,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "scripts/stripe-golden-p4.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/cash-reminder-service.js",
                 "targetFile": "db.js"
               },
@@ -32023,14 +35049,6 @@
               },
               {
                 "sourceFileId": "services/payment-stripe.js",
-                "targetFile": "utils/logger.js"
-              },
-              {
-                "sourceFileId": "services/create-stripe-order-intent.js",
-                "targetFile": "db.js"
-              },
-              {
-                "sourceFileId": "services/create-stripe-order-intent.js",
                 "targetFile": "utils/logger.js"
               },
               {
@@ -32136,6 +35154,26 @@
               {
                 "sourceFileId": "routes/payments-mobile-money.js",
                 "targetFile": "utils/logger.js"
+              },
+              {
+                "sourceFileId": "tests/unit/isweep-transactional-flows.test.js",
+                "targetFile": "tests/integration/test-harness/mock-db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/payment-fx-authority.test.js",
+                "targetFile": "utils/rates.js"
+              },
+              {
+                "sourceFileId": "tests/unit/paypal-webhook.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/post-o8-payments-seams.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/stripe-payment-seams.test.js",
+                "targetFile": "db.js"
               },
               {
                 "sourceFileId": "tests/unit/payment-cash-confirm.test.js",
@@ -32315,6 +35353,14 @@
               {
                 "sourceFileId": "routes/cash.js",
                 "targetFile": "services/loyalty-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/post-o8-payments-seams.test.js",
+                "targetFile": "services/loyalty-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/stripe-payment-seams.test.js",
+                "targetFile": "services/loyalty-service.js"
               }
             ]
           }
@@ -32417,6 +35463,18 @@
                 "targetFile": "services/notification-service.js"
               },
               {
+                "sourceFileId": "tests/integration/post-o8-payments-seams.test.js",
+                "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/stripe-payment-seams.test.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "tests/integration/stripe-payment-seams.test.js",
+                "targetFile": "services/notification-service.js"
+              },
+              {
                 "sourceFileId": "tests/unit/cash-reminder-service.test.js",
                 "targetFile": "services/notification-service.js"
               },
@@ -32481,10 +35539,6 @@
                 "targetFile": "services/order-mutation-service.js"
               },
               {
-                "sourceFileId": "services/create-stripe-order-intent.js",
-                "targetFile": "services/order-mutation-service.js"
-              },
-              {
                 "sourceFileId": "services/confirm-pickup-cash-payment.js",
                 "targetFile": "services/order-payment-confirmation.js"
               },
@@ -32503,6 +35557,10 @@
               {
                 "sourceFileId": "public/boutique/js/b-paypal.js",
                 "targetFile": "public/boutique/js/b-cart-core.js"
+              },
+              {
+                "sourceFileId": "tests/unit/paypal-webhook.test.js",
+                "targetFile": "services/order-payment-confirmation.js"
               },
               {
                 "sourceFileId": "tests/unit/payment-paypal.test.js",
@@ -32599,6 +35657,14 @@
               },
               {
                 "sourceFileId": "routes/payments.js",
+                "targetFile": "services/purchasing-trigger-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/isweep-transactional-flows.test.js",
+                "targetFile": "services/receive-purchase-order.js"
+              },
+              {
+                "sourceFileId": "tests/integration/post-o8-payments-seams.test.js",
                 "targetFile": "services/purchasing-trigger-service.js"
               },
               {
@@ -33031,6 +36097,14 @@
                 "targetFile": "server.js"
               },
               {
+                "sourceFileId": "tests/integration/alerts-contract-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/alerts-contract-red-proof.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/validators.test.js",
                 "targetFile": "validators/index.js"
               },
@@ -33159,6 +36233,14 @@
               {
                 "sourceFileId": "public/boutique/js/main.js",
                 "targetFile": "public/boutique/js/b-notifications.js"
+              },
+              {
+                "sourceFileId": "tests/integration/alerts-contract-real-db.test.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "tests/integration/alerts-contract-red-proof.test.js",
+                "targetFile": "utils/alerts.js"
               }
             ]
           }
@@ -33696,6 +36778,10 @@
               },
               {
                 "sourceFileId": "tests/integration/purchasing-exact-sku-po.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/purchasing-wa-url-w3-1.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -34464,6 +37550,10 @@
               {
                 "sourceFileId": "routes/shared-cart-saved.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/shared-cart.claim-concurrent.e2e.test.js",
+                "targetFile": "utils/auth-session.js"
               }
             ]
           }
@@ -34584,6 +37674,10 @@
                 "targetFile": "middleware/rate-limit.js"
               },
               {
+                "sourceFileId": "tests/unit/shared-cart-v4-2-creation.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/shared-cart-creation.test.js",
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
@@ -34666,6 +37760,10 @@
               {
                 "sourceFileId": "public/boutique/js/b-modal-cart.js",
                 "targetFile": "public/boutique/js/b-cart.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/shared-cart.claim-concurrent.e2e.test.js",
+                "targetFile": "routes/orders.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-share-cart.js",
@@ -35240,6 +38338,10 @@
                 "targetFile": "tests/integration/test-harness/mock-db.js"
               },
               {
+                "sourceFileId": "tests/integration/sourcing-candidate-arbitration-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/sourcing-observation-shadow-service.test.js",
                 "targetFile": "db.js"
               },
@@ -35286,6 +38388,10 @@
               {
                 "sourceFileId": "tests/unit/supplier-fulfillment-adapter-contract.test.js",
                 "targetFile": "services/suppliers/aliexpress-fulfillment-adapter.js"
+              },
+              {
+                "sourceFileId": "tests/unit/supplier-platform-allegro.test.js",
+                "targetFile": "services/suppliers/purchasing-validators.js"
               }
             ]
           }
@@ -35302,6 +38408,10 @@
               {
                 "sourceFileId": "routes/unsold.js",
                 "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "tests/e2e-api/unsold-resolution.pipeline-real-db.e2e.test.js",
+                "targetFile": "utils/auth-session.js"
               }
             ]
           }
@@ -35463,11 +38573,31 @@
               {
                 "sourceFileId": "tests/unit/wallet-route.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/wallet-refund-seams.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
         ],
         "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "wallet",
+        "to": "notifications",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/integration/wallet-refund-seams.test.js",
+                "targetFile": "utils/alerts.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
       },
       {
         "from": "wallet",
@@ -35483,6 +38613,10 @@
               {
                 "sourceFileId": "services/wallet-service.js",
                 "targetFile": "services/order-mutation-service.js"
+              },
+              {
+                "sourceFileId": "tests/integration/wallet-refund-seams.test.js",
+                "targetFile": "services/admin-order-refund.js"
               }
             ]
           },
@@ -35561,6 +38695,21 @@
           "raw": "CSS_BUNDLES_PATH"
         },
         {
+          "sourceFileId": "tests/integration/txg03-hub-dashboard.test.js",
+          "kind": "require",
+          "raw": "TARGET"
+        },
+        {
+          "sourceFileId": "tests/integration/txg01-pricing-matrices.test.js",
+          "kind": "require",
+          "raw": "TARGET"
+        },
+        {
+          "sourceFileId": "tests/integration/txg02-pricing-strategy-service.test.js",
+          "kind": "require",
+          "raw": "TARGET"
+        },
+        {
           "sourceFileId": "scripts/boutique-ownership-full-check.js",
           "kind": "require",
           "raw": "path.join(abs, f"
@@ -35634,6 +38783,11 @@
           "sourceFileId": "scripts/touched-files-feature-gate.js",
           "kind": "require",
           "raw": "path.join(abs, f"
+        },
+        {
+          "sourceFileId": "tests/integration/txg04-system.test.js",
+          "kind": "require",
+          "raw": "TARGET"
         }
       ],
       "boutique": [
@@ -35646,7 +38800,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1307
+        "filesObserved": 1571
       },
       "boutique": {
         "filesObserved": 217,
@@ -35682,7 +38836,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 19,
-      "NON_RUNTIME_TEST": 8,
+      "NON_RUNTIME_TEST": 13,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -35815,7 +38969,7 @@
         "from": "infrastructure",
         "to": "local-stock",
         "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "RUNTIME_ONLY",
+        "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "technical-foundation",
         "providerKind": "business-feature",
         "channels": [
@@ -35860,7 +39014,7 @@
         "from": "infrastructure",
         "to": "providers-services",
         "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "RUNTIME_ONLY",
+        "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "technical-foundation",
         "providerKind": "business-feature",
         "channels": [
@@ -35875,7 +39029,7 @@
         "from": "infrastructure",
         "to": "purchasing",
         "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "RUNTIME_ONLY",
+        "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "technical-foundation",
         "providerKind": "business-feature",
         "channels": [
@@ -35947,6 +39101,66 @@
         "exceptionReasons": []
       },
       {
+        "from": "logistics",
+        "to": "dashboard",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "loyalty",
+        "to": "logistics",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "market",
+        "to": "dashboard",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "market-delegation",
+        "to": "market-operator-dashboard",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "unclassified",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
         "from": "platform-ops",
         "to": "auth-passkey",
         "family": "COMPOSITION_ROOT_WIRING",
@@ -35965,7 +39179,7 @@
         "from": "platform-ops",
         "to": "notifications",
         "family": "COMPOSITION_ROOT_WIRING",
-        "evidenceRole": "RUNTIME_ONLY",
+        "evidenceRole": "RUNTIME_AND_TEST",
         "consumerKind": "technical-transversal",
         "providerKind": "business-transversal",
         "channels": [
@@ -36095,23 +39309,42 @@
         "policy": "non-runtime-evidence",
         "exceptionRequired": false,
         "exceptionReasons": []
+      },
+      {
+        "from": "wallet",
+        "to": "notifications",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "business-transversal",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "technical-primitive",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
       }
     ],
     "unclassified": [],
     "matrix": {
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|frontend-transversal|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 10,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 7,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
-      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 2,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-foundation|business-feature|business-file-import": 3,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-feature|business-file-import": 3,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|business-file-import": 2,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|unclassified|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-feature|business-file-import": 3,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-transversal|business-transversal|business-file-import": 1,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
-      "NON_RUNTIME_TEST|TEST_ONLY|integration-adapter|business-feature|business-file-import": 1
+      "NON_RUNTIME_TEST|TEST_ONLY|integration-adapter|business-feature|business-file-import": 1,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|technical-primitive": 1
     },
     "runtimeCycles": [],
     "exceptions": [],
@@ -38679,7 +41912,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> local-stock",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"local-stock\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"local-stock\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -38694,12 +41927,12 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> providers-services",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"providers-services\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"providers-services\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> purchasing",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"purchasing\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -38723,13 +41956,33 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "logistics -> dashboard",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"logistics\" vers \"dashboard\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "loyalty -> logistics",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"loyalty\" vers \"logistics\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "market -> dashboard",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"market\" vers \"dashboard\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "market-delegation -> market-operator-dashboard",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"market-delegation\" vers \"market-operator-dashboard\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> auth-passkey",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"auth-passkey\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "platform-ops -> notifications",
-        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"notifications\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"platform-ops\" vers \"notifications\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -38769,7 +42022,12 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "supplier-connectivity -> purchasing",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"supplier-connectivity\" vers \"purchasing\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"supplier-connectivity\" vers \"purchasing\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "wallet -> notifications",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"wallet\" vers \"notifications\""
       },
       {
         "type": "WRITER-NOT-OWNER",
@@ -38821,7 +42079,7 @@
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
-        "msg": "16 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | scripts/boutique-ownership-full-check.js: path.join(abs, f | scripts/contract-generate.js: ...) — limitation du modèle statique O5, jamais inventé"
+        "msg": "20 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/integration/txg01-pricing-matrices.test.js: TARGET) — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
@@ -38830,247 +42088,12 @@
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "local-stock / GET /api/local-stock/availability?product_id=X&market=CODE — projection Discovery minimale availability/exposable ; market CODE résolu serveur",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "local-stock / GET /api/local-stock/checkout-preview?relais_id=R&product_id=P&quantity=Q — projection checkout read-only, relais -> market_id résolu serveur, jamais une réservation",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
         "ref": "logistics / GET/POST /api/parcels",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
         "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-autonomy / GET /api/admin/workspaces/pricing/market/:marketCode/commercial-prices — lecture scopée",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-autonomy / GET /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activation-preview — preview économique scopée",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-autonomy / POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price — manager pays uniquement",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-autonomy / POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activate — manager pays uniquement",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-autonomy / POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/reset — manager pays uniquement",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / DELETE /api/market-delegation/markets/:marketCode/team/:membershipId — team.revoke",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / DELETE /api/market-delegation/markets/:marketCode/team/invitations/:invitationId — team.revoke",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/cash-control-policy — finance.read",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/catalog/exposure — catalog.expose",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/client-cases/disputes — client.case.handle",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/local-offer/physical-offers — local_offer.manage",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/local-offer/services — local_offer.manage",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/network/providers — provider.manage",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/network/relais — network.read",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/performance — finance.read (lecture seule, projection du moteur économique)",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/settlements — finance.read",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/structure-events — pricing.read",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / GET /api/market-delegation/markets/:marketCode/team — team.read",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/network/providers — provider.manage",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/activate — provider.manage",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/suspend — provider.manage",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/network/relais — network.create",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/activate — network.update",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/suspend — network.suspend",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/receive — settlement.receive",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/request — finance.act",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/structure-events — structure.event.record",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / POST /api/market-delegation/markets/:marketCode/team/invitations — team.invite",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / POST /api/market-delegation/team/invitations/:token/accept — utilisateur authentifié correspondant à l’email invité",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/cash-control-policy — cash_control.policy.manage",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/catalog/exposure/:productId — catalog.expose",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/client-cases/disputes/:disputeId — client.case.handle",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/local-offer/physical-offers/:physicalOfferId — local_offer.manage",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/local-offer/services/:serviceId — local_offer.manage",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/network/providers/:providerId — provider.manage",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/network/relais/:relaisId — network.update",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "market-delegation / PUT /api/market-delegation/markets/:marketCode/team/:membershipId/capabilities — team.grant + team.revoke",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
         "ref": "orders / GET/POST /api/orders",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/physical-offers/:id?market=CODE — lecture publique minimale + provider_name + image_ref + actions request/callback",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / GET /api/providers-services/services/:id?market=CODE — lecture publique minimale + provider_name + image_ref + actions request/callback + whatsapp_available booléen",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "providers-services / POST /api/providers-services/inquiries?market=CODE — identité Komerce obligatoire ; service_id XOR physical_offer_id ; intent request|callback ; requester_note facultative ; handoff=whatsapp facultatif pour service uniquement",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "recommendations / GET /api/boutique/suggestions — ranking produit historique",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "recommendations / GET /api/boutique/suggestions?surface=local&market=CODE — DiscoveryCard[] read-only, [] si activation ou données absentes",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "settlement / GET /api/admin/market-settlements/markets/:marketCode/settlements — admin/finance central",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "settlement / POST /api/admin/market-settlements/markets/:marketCode/settlements/ready — attestation centrale",
-        "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
-      },
-      {
-        "type": "EXPOSE-ENTRY-UNPARSED",
-        "ref": "settlement / POST /api/admin/market-settlements/settlements/:settlementId/paid — attestation centrale de paiement",
         "msg": "entrée contract.exposes non parseable (attendu \"METHOD /path\")"
       },
       {
@@ -39087,9 +42110,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 38,
-      "generatorLimitations": 53,
-      "classifiedCandidates": 91
+      "expectedTopology": 43,
+      "generatorLimitations": 6,
+      "classifiedCandidates": 49
     }
   }
 }

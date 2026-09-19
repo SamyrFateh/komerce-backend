@@ -20,12 +20,12 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1445,
-    "edges": 7226,
+    "graphNodes": 1447,
+    "edges": 7229,
     "dbTables": 173,
-    "doctrines": 483,
-    "impactAreas": 183,
-    "unresolvedCodeEdges": 710,
+    "doctrines": 484,
+    "impactAreas": 184,
+    "unresolvedCodeEdges": 711,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 73
   },
@@ -34,7 +34,7 @@
     "bootstrap": 2,
     "notification": 21,
     "auth": 14,
-    "catalog": 106,
+    "catalog": 107,
     "admin-dashboard": 22,
     "decision-signals": 12,
     "market-delegation": 25,
@@ -46,7 +46,7 @@
     "checkout": 3,
     "shared-cart": 25,
     "account": 2,
-    "payment": 26,
+    "payment": 25,
     "shared-cart-modal": 7,
     "recommendations": 6,
     "auth-passkey": 7,
@@ -115,9 +115,9 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 89,
+    "critical": 88,
     "medium": 129,
-    "high": 335,
+    "high": 336,
     "low": 53
   },
   "nodes": [
@@ -14308,49 +14308,6 @@
       "version": "2026-09"
     },
     {
-      "id": "services/create-stripe-order-intent.js",
-      "file": "services/create-stripe-order-intent.js",
-      "type": "file",
-      "headerType": "full",
-      "role": "payment-create-stripe-order-intent",
-      "domain": "payment",
-      "layer": "service",
-      "criticality": "critical",
-      "owner": null,
-      "purpose": null,
-      "inputs": [
-        "runtime_context",
-        "request_or_service_payload"
-      ],
-      "outputs": [
-        "response_or_domain_result",
-        "side_effects"
-      ],
-      "depends": [
-        "db",
-        "utils/logger.js"
-      ],
-      "usedBy": [],
-      "dbRead": [
-        "orders"
-      ],
-      "dbWrite": [
-        "orders"
-      ],
-      "dbWriteVia": [],
-      "dbTxn": [
-        "resolve_before_behavior_change"
-      ],
-      "doctrine": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "payment",
-        "checkout"
-      ],
-      "version": "2026-06"
-    },
-    {
       "id": "services/customs-analytics.js",
       "file": "services/customs-analytics.js",
       "type": "file",
@@ -24998,7 +24955,8 @@
         "services/suppliers/connectors/noon-connector.js",
         "services/suppliers/connectors/cj-connector.js",
         "services/suppliers/connectors/aliexpress-connected-connector.js",
-        "services/suppliers/connectors/allegro-connector.js"
+        "services/suppliers/connectors/allegro-connector.js",
+        "services/suppliers/connectors/ebay-connector.js"
       ],
       "usedBy": [
         "routes/sourcing-scanner.js",
@@ -26468,6 +26426,46 @@
         "product-discovery"
       ],
       "version": "2026-07"
+    },
+    {
+      "id": "services/suppliers/connectors/ebay-connector.js",
+      "file": "services/suppliers/connectors/ebay-connector.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "ebay-sandbox-browse-connector",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "eBay Sandbox Browse item/search responses"
+      ],
+      "outputs": [
+        "NormalizedSupplierProduct V2 with exact eBay REST item identity"
+      ],
+      "depends": [
+        "services/suppliers/normalized-product.js"
+      ],
+      "usedBy": [
+        "services/sourcing-import-dispatch.js",
+        "P2/P3 external-provider contract proofs"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "docs/external-providers/suppliers/EBAY.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "supplier-connectivity"
+      ],
+      "version": null
     },
     {
       "id": "services/suppliers/connectors/json-connector.js",
@@ -32163,6 +32161,11 @@
       "doctrine": "ING-I3)"
     },
     {
+      "id": "doctrine:docs/external-providers/suppliers/EBAY.md",
+      "type": "doctrine",
+      "doctrine": "docs/external-providers/suppliers/EBAY.md"
+    },
+    {
       "id": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4",
       "type": "doctrine",
       "doctrine": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md (ING-I1..I4"
@@ -33136,6 +33139,11 @@
       "id": "impact:secrets",
       "type": "impact-area",
       "area": "secrets"
+    },
+    {
+      "id": "impact:supplier-connectivity",
+      "type": "impact-area",
+      "area": "supplier-connectivity"
     },
     {
       "id": "impact:session",
@@ -53995,48 +54003,6 @@
       "label": "market-authorization"
     },
     {
-      "from": "services/create-stripe-order-intent.js",
-      "to": "db",
-      "type": "depends",
-      "label": "db"
-    },
-    {
-      "from": "services/create-stripe-order-intent.js",
-      "to": "utils/logger.js",
-      "type": "depends",
-      "label": "utils/logger.js"
-    },
-    {
-      "from": "services/create-stripe-order-intent.js",
-      "to": "db:orders",
-      "type": "db-read",
-      "label": "orders"
-    },
-    {
-      "from": "services/create-stripe-order-intent.js",
-      "to": "db:orders",
-      "type": "db-write",
-      "label": "orders"
-    },
-    {
-      "from": "services/create-stripe-order-intent.js",
-      "to": "doctrine:resolve_before_behavior_change",
-      "type": "doctrine",
-      "label": "resolve_before_behavior_change"
-    },
-    {
-      "from": "services/create-stripe-order-intent.js",
-      "to": "impact:payment",
-      "type": "impact",
-      "label": "payment"
-    },
-    {
-      "from": "services/create-stripe-order-intent.js",
-      "to": "impact:checkout",
-      "type": "impact",
-      "label": "checkout"
-    },
-    {
       "from": "services/customs-analytics.js",
       "to": "db.js",
       "type": "depends",
@@ -70898,6 +70864,12 @@
       "label": "services/suppliers/connectors/allegro-connector.js"
     },
     {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "services/suppliers/connectors/ebay-connector.js",
+      "type": "depends",
+      "label": "services/suppliers/connectors/ebay-connector.js"
+    },
+    {
       "from": "routes/sourcing-scanner.js",
       "to": "services/sourcing-import-dispatch.js",
       "type": "uses",
@@ -72993,6 +72965,60 @@
       "to": "impact:product-discovery",
       "type": "impact",
       "label": "product-discovery"
+    },
+    {
+      "from": "services/suppliers/connectors/ebay-connector.js",
+      "to": "services/suppliers/normalized-product.js",
+      "type": "depends",
+      "label": "services/suppliers/normalized-product.js"
+    },
+    {
+      "from": "services/sourcing-import-dispatch.js",
+      "to": "services/suppliers/connectors/ebay-connector.js",
+      "type": "uses",
+      "label": "services/sourcing-import-dispatch.js"
+    },
+    {
+      "from": "P2/P3 external-provider contract proofs",
+      "to": "services/suppliers/connectors/ebay-connector.js",
+      "type": "uses",
+      "label": "P2/P3 external-provider contract proofs"
+    },
+    {
+      "from": "services/suppliers/connectors/ebay-connector.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
+    },
+    {
+      "from": "services/suppliers/connectors/ebay-connector.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
+    },
+    {
+      "from": "services/suppliers/connectors/ebay-connector.js",
+      "to": "doctrine:docs/external-providers/suppliers/EBAY.md",
+      "type": "doctrine",
+      "label": "docs/external-providers/suppliers/EBAY.md"
+    },
+    {
+      "from": "services/suppliers/connectors/ebay-connector.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/connectors/ebay-connector.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/suppliers/connectors/ebay-connector.js",
+      "to": "impact:supplier-connectivity",
+      "type": "impact",
+      "label": "supplier-connectivity"
     },
     {
       "from": "services/suppliers/connectors/json-connector.js",
@@ -91029,41 +91055,6 @@
         "services/pricing-cdr.js"
       ]
     },
-    "services/create-stripe-order-intent.js": {
-      "role": "payment-create-stripe-order-intent",
-      "domain": "payment",
-      "criticality": "critical",
-      "headerType": "full",
-      "owner": null,
-      "purpose": null,
-      "directDependsOn": [
-        "db",
-        "utils/logger.js"
-      ],
-      "directUsedBy": [],
-      "ownedFiles": [],
-      "dbRead": [
-        "orders"
-      ],
-      "dbWrite": [
-        "orders"
-      ],
-      "dbWriteVia": [],
-      "doctrines": [
-        "resolve_before_behavior_change"
-      ],
-      "impactAreas": [
-        "payment",
-        "checkout"
-      ],
-      "mustCheck": [
-        "db:orders",
-        "doctrine:resolve_before_behavior_change",
-        "impact:checkout",
-        "impact:payment",
-        "utils/logger.js"
-      ]
-    },
     "services/customs-analytics.js": {
       "role": "customs-analytics",
       "domain": "customs",
@@ -101592,7 +101583,8 @@
         "services/suppliers/connectors/noon-connector.js",
         "services/suppliers/connectors/cj-connector.js",
         "services/suppliers/connectors/aliexpress-connected-connector.js",
-        "services/suppliers/connectors/allegro-connector.js"
+        "services/suppliers/connectors/allegro-connector.js",
+        "services/suppliers/connectors/ebay-connector.js"
       ],
       "directUsedBy": [
         "routes/sourcing-scanner.js",
@@ -101625,6 +101617,7 @@
         "services/suppliers/connectors/allegro-connector.js",
         "services/suppliers/connectors/cj-connector.js",
         "services/suppliers/connectors/csv-connector.js",
+        "services/suppliers/connectors/ebay-connector.js",
         "services/suppliers/connectors/manual-connector.js",
         "services/suppliers/connectors/noon-connector.js"
       ]
@@ -102993,6 +102986,45 @@
         "services/suppliers/normalized-product.js"
       ]
     },
+    "services/suppliers/connectors/ebay-connector.js": {
+      "role": "ebay-sandbox-browse-connector",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/suppliers/normalized-product.js"
+      ],
+      "directUsedBy": [
+        "services/sourcing-import-dispatch.js",
+        "P2/P3 external-provider contract proofs"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "docs/external-providers/suppliers/EBAY.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing",
+        "supplier-connectivity"
+      ],
+      "mustCheck": [
+        "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
+        "doctrine:docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md",
+        "doctrine:docs/external-providers/suppliers/EBAY.md",
+        "impact:catalog",
+        "impact:sourcing",
+        "impact:supplier-connectivity",
+        "services/sourcing-import-dispatch.js",
+        "services/suppliers/normalized-product.js"
+      ]
+    },
     "services/suppliers/connectors/json-connector.js": {
       "role": "json-connector",
       "domain": "catalog",
@@ -103258,6 +103290,7 @@
         "services/suppliers/connectors/api-connector.base.js",
         "services/suppliers/connectors/cj-connector.js",
         "services/suppliers/connectors/csv-connector.js",
+        "services/suppliers/connectors/ebay-connector.js",
         "services/suppliers/connectors/manual-connector.js",
         "services/suppliers/json-source-pipeline.js",
         "services/suppliers/source-product-normalizer.js"
@@ -104820,7 +104853,6 @@
         "services/catalog-approval.js",
         "services/catalog-enrichment.js",
         "services/confirm-pickup-cash-payment.js",
-        "services/create-stripe-order-intent.js",
         "services/dashboard-clients-queries.js",
         "services/dashboard-ops-queries.js",
         "services/documents/customs-invoice.js",
@@ -105494,7 +105526,7 @@
   "multiWriterTables": [
     {
       "table": "orders",
-      "writerCount": 31,
+      "writerCount": 30,
       "writers": [
         "routes/admin-customs-shipments.js",
         "routes/admin/delete-order-cascade.js",
@@ -105506,7 +105538,6 @@
         "routes/tracking.js",
         "services/admin-order-refund.js",
         "services/cash-reminder-service.js",
-        "services/create-stripe-order-intent.js",
         "services/customs-shipment-service.js",
         "services/inventory-service.js",
         "services/order-checkout-persistence.js",
@@ -108407,12 +108438,6 @@
       "label": "db.js"
     },
     {
-      "from": "services/create-stripe-order-intent.js",
-      "to": "db",
-      "type": "depends",
-      "label": "db"
-    },
-    {
       "from": "services/customs-analytics.js",
       "to": "db.js",
       "type": "depends",
@@ -110075,6 +110100,12 @@
       "label": "papaparse"
     },
     {
+      "from": "P2/P3 external-provider contract proofs",
+      "to": "services/suppliers/connectors/ebay-connector.js",
+      "type": "uses",
+      "label": "P2/P3 external-provider contract proofs"
+    },
+    {
       "from": "scripts/dry-run-import.js (l'orchestrateur n'est PAS encore branché)",
       "to": "services/suppliers/connectors/json-connector.js",
       "type": "uses",
@@ -110439,6 +110470,12 @@
       "to": "utils/logger.js",
       "type": "uses",
       "label": "services/collective-payment-orchestrator.js"
+    },
+    {
+      "from": "services/create-stripe-order-intent.js",
+      "to": "utils/logger.js",
+      "type": "uses",
+      "label": "services/create-stripe-order-intent.js"
     },
     {
       "from": "services/shared-cart-cash-service.js",

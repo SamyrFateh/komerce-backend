@@ -100,9 +100,9 @@ module.exports = {
 
   contract: {
     exposes: [
-      'GET /api/admin/market-settlements/markets/:marketCode/settlements — admin/finance central',
-      'POST /api/admin/market-settlements/markets/:marketCode/settlements/ready — attestation centrale',
-      'POST /api/admin/market-settlements/settlements/:settlementId/paid — attestation centrale de paiement',
+      'GET /api/admin/market-settlements/markets/:marketCode/settlements', // admin/finance central
+      'POST /api/admin/market-settlements/markets/:marketCode/settlements/ready', // attestation centrale
+      'POST /api/admin/market-settlements/settlements/:settlementId/paid', // attestation centrale de paiement
     ],
     internalApi: [
       'createReadySettlement()',

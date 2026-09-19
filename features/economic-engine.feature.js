@@ -461,6 +461,25 @@ module.exports = {
       'POST /api/pricing/strategy/competitors',
       'DELETE /api/pricing/strategy/competitors/:id',
       'GET /api/pricing/strategy/history',
+      // Rapatriées depuis le route-registry (audit 2026-09) — les 12
+      // routes réelles de routes/admin-pricing-workspace.js (fichier
+      // possédé par economic-engine, cf. files.routes), jamais toutes
+      // déclarées jusqu'ici. 5 d'entre elles (commercial-prices,
+      // local-price*) étaient déclarées par erreur dans market-autonomy,
+      // qui ne possède structurellement aucun fichier de routes —
+      // retirées de là, rattachées ici au véritable propriétaire.
+      'GET /api/admin/workspaces/pricing/market/:marketCode/charges',
+      'GET /api/admin/workspaces/pricing/market/:marketCode/commercial-prices',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activate',
+      'GET /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/activation-preview',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/products/:productRef/local-price/reset',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/simulate-impact',
+      'GET /api/admin/workspaces/pricing/market/:marketCode/structure-events',
+      'POST /api/admin/workspaces/pricing/market/:marketCode/structure-events',
+      'POST /api/admin/workspaces/pricing/simulate-impact',
+      'GET /api/admin/workspaces/pricing/structure-events',
+      'POST /api/admin/workspaces/pricing/structure-events',
     ],
     // O7.3 (provider economic-engine) : formalise les capacités cross-feature
     // explicites. Le moteur reste propriétaire de ses tables et les consumers

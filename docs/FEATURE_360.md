@@ -151,9 +151,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 24 fichier(s) déclaré(s)
+**Implementation** : 27 fichier(s) déclaré(s)
   - middleware : 7
-  - tests : 13
+  - tests : 16
   - utils : 4
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="auth"]_
@@ -317,9 +317,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 4 fichier(s) déclaré(s)
+**Implementation** : 5 fichier(s) déclaré(s)
   - routes : 1
-  - tests : 2
+  - tests : 3
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="business-rules"]_
@@ -332,7 +332,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Perimeter** :
 - _in_ :
-  - connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress, Allegro Sandbox)
+  - connecteurs fournisseurs (CSV, API, manuel, Noon, CJdropshipping, AliExpress, Allegro Sandbox, eBay Sandbox Browse enregistré dans le dispatch générique P3)
   - contrat source fournisseur versionne V1/V2 : brut integral + preservation explicite media, axes et unites vendables quand la source les connait
   - publication produit et déclenchement de l audit prix via economic-engine
   - categories boutique admin
@@ -390,7 +390,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `boutique_categories`, `boutique_subcategories`, `catalog_enrichment_runs`, `catalog_field_overrides`, `catalog_media`, `product_attributes`, `product_content_profile`, `product_content_sections`, `product_market_exposure`, `product_sku_media`, `product_skus`, `product_variants`, `products`, `supplier_catalog_imports`, `supplier_catalog_sync_checkpoints`, `supplier_oauth_connections`
 
-**Exposes** : 9 internal API(s), 31 HTTP interface(s)
+**Exposes** : 9 internal API(s), 47 HTTP interface(s)
   - `applyPrice` (services/catalog-product-mutation-service.js) — resolved
   - `bulkAssignSourcingRail` (services/catalog-product-mutation-service.js) — resolved
   - `createDraftFromSourcingCandidate` (services/product-admin-service.js) — resolved
@@ -417,9 +417,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 223 fichier(s) déclaré(s), boutique: 33 fichier(s)
+**Implementation** : 294 fichier(s) déclaré(s), boutique: 33 fichier(s)
   - boutique : 39
-  - ci : 6
+  - ci : 5
   - config : 1
   - dash : 4
   - docs : 12
@@ -427,9 +427,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - migrations : 17
   - routes : 7
   - schemas : 4
-  - scripts : 4
-  - services : 52
-  - tests : 75
+  - scripts : 5
+  - services : 53
+  - tests : 145
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="catalog"]_
@@ -471,12 +471,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 21 fichier(s) déclaré(s)
+**Implementation** : 23 fichier(s) déclaré(s)
   - dash : 2
   - migrations : 6
   - routes : 3
   - services : 3
-  - tests : 7
+  - tests : 9
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="customs"]_
 
@@ -529,7 +529,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Owns** : `order_incidents`, `partners`
 **Writes (not owner)** : `invoices` (writer-not-owner), `order_comments` (writer-not-owner), `order_items` (writer-not-owner), `order_status_history` (writer-not-owner), `orders` (writer-not-owner), `products` (writer-not-owner), `recipients` (writer-not-owner), `relais` (writer-not-owner), `scan_events` (writer-not-owner), `sms_log` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)
 
-**Exposes** : 0 internal API(s), 63 HTTP interface(s)
+**Exposes** : 0 internal API(s), 89 HTTP interface(s)
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 **Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
@@ -544,13 +544,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 216 fichier(s) déclaré(s)
+**Implementation** : 275 fichier(s) déclaré(s)
   - dash : 98
   - middleware : 1
   - migrations : 2
   - routes : 24
   - services : 24
-  - tests : 67
+  - tests : 126
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 
@@ -651,11 +651,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 37 fichier(s) déclaré(s)
+**Implementation** : 38 fichier(s) déclaré(s)
   - migrations : 7
   - routes : 3
   - services : 7
-  - tests : 15
+  - tests : 16
   - utils : 5
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="documents"]_
@@ -702,7 +702,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `charges`, `competitor_prices`, `cost_benchmarks`, `cost_component_events`, `cost_component_market_override_events`, `cost_component_market_overrides`, `cost_components`, `economic_risk_cost_events`, `economic_risk_watermark_events`, `economic_snapshots`, `economic_structure_cost_events`, `exchange_rates`, `finance_config`, `market_price_observation_events`, `market_price_observations`, `order_item_real_cost_allocations`, `price_history`, `pricing_category_dims`, `pricing_category_taxes`, `pricing_components`, `pricing_market_decision_policy_events`, `pricing_matrices_audit`, `pricing_maturity_disposition_events`, `pricing_strategies`, `pricing_strategy_history`, `risk_provisions`
 
-**Exposes** : 2 internal API(s), 94 HTTP interface(s)
+**Exposes** : 2 internal API(s), 106 HTTP interface(s)
   - `recommend` (services/pricing-engine.js) — resolved
   - `recordProductPriceChange` (services/economic-price-audit-service.js) — resolved
 
@@ -719,13 +719,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 161 fichier(s) déclaré(s)
+**Implementation** : 172 fichier(s) déclaré(s)
   - dash : 6
   - middleware : 1
   - migrations : 29
   - routes : 13
   - services : 39
-  - tests : 70
+  - tests : 81
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="economic-engine"]_
@@ -762,11 +762,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : _aucune_
 
-**Exposes** : 6 internal API(s), 0 HTTP interface(s)
+**Exposes** : 8 internal API(s), 0 HTTP interface(s)
   - `assertConversation` (scripts/provider-contract-proof.js) — resolved
   - `assertThrough` (scripts/provider-contract-proof.js) — resolved
   - `buildConversation` (scripts/provider-contract-proof.js) — resolved
   - `buildProof` (scripts/provider-contract-proof.js) — resolved
+  - `runEbayBrowseReadOnlyProof` (scripts/ebay-sandbox-browse-proof.js) — resolved
+  - `runStripeReadOnlyProof` (scripts/stripe-provider-contract-proof.js) — resolved
   - `scanRepository` (scripts/external-provider-boundary-scan.js) — resolved
   - `summary` (scripts/provider-contract-proof.js) — resolved
 
@@ -784,10 +786,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "infrastructure" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 5 fichier(s) déclaré(s)
+**Implementation** : 9 fichier(s) déclaré(s)
   - config : 1
-  - scripts : 2
-  - tests : 2
+  - scripts : 4
+  - tests : 4
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="external-provider-contracts"]_
 
@@ -855,9 +857,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 12 fichier(s) déclaré(s)
+**Implementation** : 13 fichier(s) déclaré(s)
   - services : 5
-  - tests : 7
+  - tests : 8
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="incident-management"]_
 
@@ -915,19 +917,19 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 287 fichier(s) déclaré(s)
+**Implementation** : 341 fichier(s) déclaré(s)
   - assets : 29
   - bootstrap : 9
-  - ci : 26
+  - ci : 24
   - config : 12
   - db : 16
   - docs : 60
   - middleware : 6
   - migrations : 9
   - routes : 1
-  - scripts : 91
+  - scripts : 90
   - services : 2
-  - tests : 21
+  - tests : 78
   - utils : 4
   - validators : 1
 
@@ -1059,7 +1061,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `local_stock`, `local_stock_allocations`
 
-**Exposes** : 6 internal API(s), 0 HTTP interface(s)
+**Exposes** : 6 internal API(s), 2 HTTP interface(s)
   - `allocateForOrderItem` (services/local-stock-service.js) — resolved
   - `consumeAllocationsForOrder` (services/local-stock-service.js) — resolved
   - `getDecisionAvailabilityEvidence` (services/local-stock-decision-projection.js) — resolved
@@ -1135,7 +1137,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `carriers`, `hub_custody_events`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `parcel_events`, `parcel_items`, `parcels`, `pickup_print_tokens`, `pickup_reveal_codes`, `pickup_verify_attempts`, `relais`, `scan_events`, `scans`, `shipments`
 
-**Exposes** : 27 internal API(s), 70 HTTP interface(s)
+**Exposes** : 27 internal API(s), 77 HTTP interface(s)
   - `addParcelItem` (services/parcel-item-mutation-service.js) — resolved
   - `appendParcelShipmentInfo` (services/parcel-mutation-service.js) — resolved
   - `assignParcelItem` (services/parcel-item-mutation-service.js) — resolved
@@ -1153,7 +1155,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Projections** : _aucune_
 
-**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
@@ -1161,7 +1163,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 105 fichier(s) déclaré(s)
+**Implementation** : 112 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 5
@@ -1169,7 +1171,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - migrations : 3
   - routes : 18
   - services : 25
-  - tests : 47
+  - tests : 54
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="logistics"]_
@@ -1206,7 +1208,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Projections** : _aucune_
 
-**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
@@ -1214,10 +1216,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 7 fichier(s) déclaré(s)
+**Implementation** : 9 fichier(s) déclaré(s)
   - routes : 2
   - services : 1
-  - tests : 4
+  - tests : 6
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="loyalty"]_
 
@@ -1294,7 +1296,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Projections** : _aucune_
 
-**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
@@ -1302,10 +1304,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 22 fichier(s) déclaré(s)
+**Implementation** : 25 fichier(s) déclaré(s)
   - migrations : 9
   - services : 3
-  - tests : 10
+  - tests : 13
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market"]_
 
@@ -1480,7 +1482,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `assignment_capability_ceiling`, `assignment_memberships`, `capability_registry`, `ceiling_template_capabilities`, `ceiling_templates`, `market_cash_control_policies`, `market_delegation_audit`, `market_operating_assignments`, `market_team_invitations`, `membership_capabilities`
 
-**Exposes** : 33 internal API(s), 0 HTTP interface(s)
+**Exposes** : 33 internal API(s), 32 HTTP interface(s)
   - `acceptInvitation` (services/market-delegation-team-service.js) — resolved
   - `addMembership` (services/market-delegation-service.js) — resolved
   - `attachMarketDelegatedRoleFor` (middleware/require-market-delegated-role.js) — resolved
@@ -1498,7 +1500,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Projections** : _aucune_
 
-**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
@@ -1506,12 +1508,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 65 fichier(s) déclaré(s)
+**Implementation** : 74 fichier(s) déclaré(s)
   - middleware : 2
   - migrations : 15
   - routes : 10
   - services : 13
-  - tests : 25
+  - tests : 34
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market-delegation"]_
 
@@ -1647,11 +1649,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 44 fichier(s) déclaré(s), boutique: 3 fichier(s)
+**Implementation** : 48 fichier(s) déclaré(s), boutique: 3 fichier(s)
   - migrations : 6
   - routes : 4
   - services : 13
-  - tests : 19
+  - tests : 23
   - utils : 2
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="notifications"]_
@@ -1721,11 +1723,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 74 fichier(s) déclaré(s), boutique: 17 fichier(s)
+**Implementation** : 80 fichier(s) déclaré(s), boutique: 17 fichier(s)
   - boutique : 3
   - routes : 12
   - services : 17
-  - tests : 41
+  - tests : 47
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="orders"]_
@@ -1782,12 +1784,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 58 fichier(s) déclaré(s), boutique: 6 fichier(s)
+**Implementation** : 64 fichier(s) déclaré(s), boutique: 6 fichier(s)
   - boutique : 4
   - migrations : 5
   - routes : 5
-  - services : 19
-  - tests : 25
+  - scripts : 1
+  - services : 18
+  - tests : 31
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="payments"]_
 
@@ -1868,12 +1871,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 39 fichier(s) déclaré(s), boutique: 26 fichier(s)
+**Implementation** : 41 fichier(s) déclaré(s), boutique: 26 fichier(s)
   - boutique : 6
   - compositionRoots : 3
   - routes : 5
   - services : 6
-  - tests : 19
+  - tests : 21
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="platform-ops"]_
 
@@ -1937,7 +1940,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `inquiries`, `physical_offers`, `providers`, `services`
 
-**Exposes** : 0 internal API(s), 0 HTTP interface(s)
+**Exposes** : 0 internal API(s), 3 HTTP interface(s)
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED)
 **Consumed by** : market-delegation (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED)
@@ -1952,14 +1955,14 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 19 fichier(s) déclaré(s), boutique: 4 fichier(s)
+**Implementation** : 20 fichier(s) déclaré(s), boutique: 4 fichier(s)
   - boutique : 2
   - ci : 1
   - migrations : 3
   - routes : 1
   - scripts : 2
   - services : 4
-  - tests : 6
+  - tests : 7
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="providers-services"]_
 
@@ -2040,12 +2043,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 53 fichier(s) déclaré(s)
+**Implementation** : 55 fichier(s) déclaré(s)
   - migrations : 2
   - routes : 1
   - scripts : 2
   - services : 21
-  - tests : 27
+  - tests : 29
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="purchasing"]_
 
@@ -2082,7 +2085,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : _aucune_
 
-**Exposes** : 0 internal API(s), 0 HTTP interface(s)
+**Exposes** : 0 internal API(s), 1 HTTP interface(s)
 
 **Consumes** : catalog (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED)
 **Consumed by** : infrastructure (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED)
@@ -2097,8 +2100,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 11 fichier(s) déclaré(s), boutique: 6 fichier(s)
-  - ci : 1
+**Implementation** : 10 fichier(s) déclaré(s), boutique: 6 fichier(s)
   - routes : 1
   - scripts : 1
   - services : 3
@@ -2189,7 +2191,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `market_settlement_events`, `market_settlements`
 
-**Exposes** : 5 internal API(s), 0 HTTP interface(s)
+**Exposes** : 5 internal API(s), 3 HTTP interface(s)
   - `confirmReceived()`  — documented-signature-no-file
   - `createReadySettlement()`  — documented-signature-no-file
   - `listForAssignment()`  — documented-signature-no-file
@@ -2268,13 +2270,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 58 fichier(s) déclaré(s), boutique: 18 fichier(s)
+**Implementation** : 62 fichier(s) déclaré(s), boutique: 18 fichier(s)
   - boutique : 10
   - dash : 1
   - migrations : 20
   - routes : 4
   - services : 9
-  - tests : 14
+  - tests : 18
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="shared-cart"]_
 
@@ -2363,13 +2365,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 63 fichier(s) déclaré(s)
+**Implementation** : 66 fichier(s) déclaré(s)
   - middleware : 1
   - migrations : 8
   - routes : 2
   - scripts : 7
   - services : 20
-  - tests : 25
+  - tests : 28
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="sourcing"]_
 
@@ -2432,9 +2434,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "external-provider-contracts" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 6 fichier(s) déclaré(s)
+**Implementation** : 7 fichier(s) déclaré(s)
   - services : 3
-  - tests : 3
+  - tests : 4
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="supplier-connectivity"]_
 
@@ -2476,10 +2478,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 3 fichier(s) déclaré(s)
+**Implementation** : 4 fichier(s) déclaré(s)
   - dash : 1
   - routes : 1
-  - tests : 1
+  - tests : 2
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="unsold-resolution"]_
 
@@ -2514,7 +2516,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Projections** : _aucune_
 
-**Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
+**Technical context** : 0 primitive dependencies, 1 test-only, 0 composition-root
 
 **Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
@@ -2522,12 +2524,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 10 fichier(s) déclaré(s), boutique: 3 fichier(s)
+**Implementation** : 12 fichier(s) déclaré(s), boutique: 3 fichier(s)
   - boutique : 2
   - migrations : 2
   - routes : 1
   - services : 1
-  - tests : 4
+  - tests : 6
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="wallet"]_
 

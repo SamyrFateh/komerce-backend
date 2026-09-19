@@ -13,12 +13,12 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1445
-- Edges: 7226
+- Graph nodes: 1447
+- Edges: 7229
 - DB tables: 173
-- Doctrines: 483
-- Impact areas: 183
-- Unresolved code edges: 710
+- Doctrines: 484
+- Impact areas: 184
+- Unresolved code edges: 711
 - Tables multi-écrivains directs (>=2): 73
 - Avertissements db-write / db-write-via en chevauchement: 8
 
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 21
 - business-rules: 1
-- catalog: 106
+- catalog: 107
 - checkout: 3
 - customs: 6
 - dashboard: 27
@@ -51,7 +51,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - notification: 21
 - operations: 11
 - orders: 30
-- payment: 26
+- payment: 25
 - providers-services: 7
 - purchasing: 22
 - recommendations: 6
@@ -151,7 +151,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/cash-operations.js — payment-cash-operations (payment, critical, full)
 - services/cash-reminder-service.js — payment-cash-reminder-service (payment, critical, full)
 - services/confirm-pickup-cash-payment.js — payment-confirm-pickup-cash-payment (payment, critical, full)
-- services/create-stripe-order-intent.js — payment-create-stripe-order-intent (payment, critical, full)
 - services/dispute-mutation-service.js — orders-dispute-mutation-boundary (orders, critical, full)
 - services/hub-operations.js — hub-operations (logistics, critical, full)
 - services/hub-physical-identity.js — hub-physical-identity (logistics, critical, full)
@@ -503,6 +502,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/suppliers/canonical-unit-cutover-comparison.js — canonical-unit-purchasing-cutover-comparison (purchasing, high, full)
 - services/suppliers/canonical-unit-purchasing-gate.js — canonical-unit-purchasing-hard-stop-gate (purchasing, high, full)
 - services/suppliers/connectors/allegro-connector.js — allegro-sandbox-source-connector (catalog, high, full)
+- services/suppliers/connectors/ebay-connector.js — ebay-sandbox-browse-connector (catalog, high, full)
 - services/suppliers/json-source-pipeline.js — json-source-pipeline (catalog, high, full)
 - services/suppliers/media-normalizer.js — catalog-media-normalizer (catalog, high, full)
 - services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
@@ -832,7 +832,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 
-- orders: 31 écrivains directs — routes/admin-customs-shipments.js, routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/orders/cancel.js, routes/orders/qr.js, routes/orders/status.js, routes/parcels.js, routes/tracking.js, services/admin-order-refund.js, services/cash-reminder-service.js, services/create-stripe-order-intent.js, services/customs-shipment-service.js, services/inventory-service.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-cost-snapshot.js, services/order-mutation-service.js, services/order-status-machine.js, services/parcel-auto-create-service.js, services/parcelOptimizationService.js, services/payment-cash-confirm.js, services/payment-paypal.js, services/payment-service.js, services/payment-stripe.js, services/pickup-secret-access-service.js, services/pickup-secret-service.js, services/purchasing-admin-service.js, services/qr-collection-core.js, services/routing.js, services/scan-operations.js, services/verify-qr-collection.js
+- orders: 30 écrivains directs — routes/admin-customs-shipments.js, routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/orders/cancel.js, routes/orders/qr.js, routes/orders/status.js, routes/parcels.js, routes/tracking.js, services/admin-order-refund.js, services/cash-reminder-service.js, services/customs-shipment-service.js, services/inventory-service.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-cost-snapshot.js, services/order-mutation-service.js, services/order-status-machine.js, services/parcel-auto-create-service.js, services/parcelOptimizationService.js, services/payment-cash-confirm.js, services/payment-paypal.js, services/payment-service.js, services/payment-stripe.js, services/pickup-secret-access-service.js, services/pickup-secret-service.js, services/purchasing-admin-service.js, services/qr-collection-core.js, services/routing.js, services/scan-operations.js, services/verify-qr-collection.js
 - alerts: 20 écrivains directs — services/admin-order-refund.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/notification-service.js, services/notifications/notification-service.js, services/order-payment-confirmation.js, services/payment-cash-confirm.js, services/payment-mobile-money.js, services/payment-paypal.js, services/payment-stripe.js, services/pickup-authorization-service.js, services/pickup-collection-service.js, services/pickup-exceptional-collection-service.js, services/product-publication-guard.js, services/purchasing-cancel-service.js, services/purchasing-trigger-service.js, services/repair-ordered-without-purchase-orders.js, services/scan-operations.js, utils/alerts.js, utils/parcelSync.js
 - parcels: 15 écrivains directs — routes/admin-customs-shipments.js, routes/admin/system.js, routes/carriers.js, routes/parcels.js, routes/transitaire-api.js, services/auto-parcel.js, services/parcel-auto-create-service.js, services/parcel-mutation-service.js, services/parcel-operations.js, services/parcel-security.js, services/parcelOptimizationService.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, utils/parcelSync.js
 - parcel_items: 10 écrivains directs — routes/admin/system.js, routes/parcels.js, services/auto-parcel.js, services/parcel-auto-create-service.js, services/parcel-item-mutation-service.js, services/parcel-operations.js, services/parcelOptimizationService.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js
@@ -1001,6 +1001,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: notification-service.js -> services/whatsapp-meta.js (notification-service.js)
 - uses: order-status-machine.js (consume à confirmed -> services/local-stock-service.js (order-status-machine.js (consume à confirmed)
 - uses: OTP routes -> utils/auth-session.js (OTP routes)
+- uses: P2/P3 external-provider contract proofs -> services/suppliers/connectors/ebay-connector.js (P2/P3 external-provider contract proofs)
 - uses: passkey management/enrollment -> middleware/require-recent-auth.js (passkey management/enrollment)
 - uses: passkey routes -> utils/auth-session.js (passkey routes)
 - uses: payment confirmation flows -> services/invoice-service.js (payment confirmation flows)
@@ -1025,7 +1026,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/b-service-worker-refresh.js -> browser-service-worker-api (browser-service-worker-api)
 - depends: public/boutique/js/b-store.js -> DOM (DOM)
 - depends: public/boutique/js/b-store.js -> localStorage (localStorage)
-- depends: public/boutique/js/b-store.js -> sessionStorage (sessionStorage)
 
 ## Files Still Without Headers Or Aggregation
 
