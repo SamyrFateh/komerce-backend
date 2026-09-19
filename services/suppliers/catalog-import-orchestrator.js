@@ -90,6 +90,13 @@ async function importCatalog(body, userId, dispatchToConnector) {
     return { status: 400, body: { error: 'source_type doit être csv, manual, api ou json' } };
   }
 
+  // Toute source API doit porter son identité canonique AVANT le dispatch et toute écriture.
+  // Certains runners injectent eux-mêmes le produit et contournent le dispatch API.
+  const supplierId = String(b.supplier_id || '').trim().toLowerCase();
+  if (sourceType === 'api' && !supplierId) {
+    return { status: 400, body: { code: 'API_SUPPLIER_ID_REQUIRED', error: 'supplier_id canonique requis pour une source API' } };
+  }
+
   // ING-6 — la source JSON emprunte un chemin transactionnel dédié.
   // PR 2 ne modifie pas encore ce rail ; il sera raccordé au writer shadow
   // après sa propre frontière V2.
@@ -158,7 +165,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
       importId,
       supplierName,
       sourceType,
-      supplierId: b.supplier_id || null,
+      supplierId: sourceType === 'api' ? supplierId : null,
       sourceFilename: b.source_filename || null,
       products,
     });
@@ -166,6 +173,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
     shadowIngestion = {
       status: 'failed',
       code: errShadow.code || 'SHADOW_OBSERVATION_FAILED',
+      reason: String(errShadow.message || 'Shadow ingestion failed').slice(0, 300),
     };
   }
 
@@ -233,9 +241,24 @@ async function importCatalog(body, userId, dispatchToConnector) {
     });
   }
 
+  // Un upsert candidat n'est pas une preuve de résolution canonique.
+  const shadowResolution = shadowIngestion?.resolution;
+  const canonicalResolved = shadowIngestion?.status === 'recorded'
+    && Boolean(shadowIngestion.capture_id)
+    && shadowResolution?.status === 'resolved'
+    && Number(shadowResolution.review_required || 0) === 0
+    && Number(shadowResolution.deferred_parent || 0) === 0;
+  const accepted = results.created + (results.updated || 0);
+  const pipelineStatus = sourceType === 'api'
+    ? (canonicalResolved && accepted === products.length && results.errors.length === 0
+      ? 'CANONICAL_RESOLVED' : 'PARTIAL_BLOCKED')
+    : 'CATALOG_IMPORT_RECORDED';
+
   return {
     status: 200,
     body: {
+      pipeline_status: pipelineStatus,
+      canonical_resolved: sourceType === 'api' ? canonicalResolved : null,
       import_id: importId,
       supplier_name: supplierName,
       source_type: sourceType,
@@ -244,7 +267,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
       updated: results.updated || 0,
       archived: results.archived || 0,
       errors: results.errors,
-      accepted: results.created + (results.updated || 0),
+      accepted,
       rejected: results.errors.length,
       reject_reasons: aggregateReasons(results.errors),
       unmapped_columns: connectorResult.unmapped_columns || [],

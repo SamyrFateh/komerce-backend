@@ -64,7 +64,7 @@ describe('sourcing shadow observation persistence', () => {
     });
 
     expect(out.status).toBe('recorded');
-    expect(out.resolution).toEqual({ status: 'failed', code: 'RESOLVER_TEST_FAILURE' });
+    expect(out.resolution).toEqual({ status: 'failed', code: 'RESOLVER_TEST_FAILURE', reason: 'resolver unavailable' });
     expect(client.query.mock.calls.some(([sql]) => sql === 'COMMIT')).toBe(true);
     expect(client.query.mock.calls.some(([sql]) => sql === 'ROLLBACK')).toBe(false);
   });

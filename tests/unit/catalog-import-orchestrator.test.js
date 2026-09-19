@@ -25,11 +25,13 @@ jest.mock('../../db');
 jest.mock('../../services/supplier-catalog-scanner');
 jest.mock('../../services/pricing-engine');
 jest.mock('../../services/catalog-eligibility');
+jest.mock('../../services/sourcing-observation-shadow-service');
 
 const db = require('../../db');
 const scanner = require('../../services/supplier-catalog-scanner');
 const pricingEngine = require('../../services/pricing-engine');
 const eligibility = require('../../services/catalog-eligibility');
+const shadow = require('../../services/sourcing-observation-shadow-service');
 
 const { importCatalog } = require('../../services/suppliers/catalog-import-orchestrator');
 
@@ -91,6 +93,75 @@ describe('importCatalog', () => {
     expect(result.status).toBe(400);
     expect(result.body.error).toMatch(/Aucun produit valide/);
     expect(result.body.invalid).toEqual([{ row: 1, error: 'champ manquant' }]);
+  });
+
+  test('source API sans identifiant fournisseur est refusee avant dispatch et avant toute ecriture', async () => {
+    jest.clearAllMocks();
+    const dispatch = jest.fn();
+    const result = await importCatalog({ supplier_name: 'AliExpress', source_type: 'api' }, 1, dispatch);
+    expect(result).toMatchObject({ status: 400, body: { code: 'API_SUPPLIER_ID_REQUIRED' } });
+    expect(dispatch).not.toHaveBeenCalled();
+    expect(db.query).not.toHaveBeenCalled();
+    expect(shadow.recordCatalogImportObservationsShadow).not.toHaveBeenCalled();
+  });
+
+  test('candidat accepte en staging mais echec shadow => preuve API partielle et cause conservee', async () => {
+    jest.clearAllMocks();
+    const dispatch = jest.fn().mockResolvedValue({
+      products: [{ supplier_product_id: '1005006471612403', product_name: 'Produit test' }], invalid: [],
+    });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-api-1' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) return Promise.resolve({
+        rows: [{ id: 'candidate-api-1', data_sources: {}, was_updated: false }],
+      });
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    scanner.scanCandidate.mockResolvedValue(makeScan());
+    shadow.recordCatalogImportObservationsShadow.mockRejectedValue(new Error('shadow cause for regression proof'));
+
+    const result = await importCatalog({
+      supplier_name: 'AliExpress', source_type: 'api', supplier_id: 'aliexpress',
+    }, 1, dispatch);
+
+    expect(result.status).toBe(200);
+    expect(result.body.accepted).toBe(1);
+    expect(result.body.pipeline_status).toBe('PARTIAL_BLOCKED');
+    expect(result.body.canonical_resolved).toBe(false);
+    expect(result.body.shadow_ingestion).toMatchObject({
+      status: 'failed', code: 'SHADOW_OBSERVATION_FAILED', reason: 'shadow cause for regression proof',
+    });
+    expect(shadow.recordCatalogImportObservationsShadow).toHaveBeenCalledWith(
+      expect.objectContaining({ supplierId: 'aliexpress', sourceType: 'api' })
+    );
+  });
+
+  test('API source n annonce une resolution canonique que si le shadow a resolu ses identites', async () => {
+    jest.clearAllMocks();
+    const dispatch = jest.fn().mockResolvedValue({
+      products: [{ supplier_product_id: '1005006471612404', product_name: 'Produit resolu' }], invalid: [],
+    });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-api-2' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) return Promise.resolve({
+        rows: [{ id: 'candidate-api-2', data_sources: {}, was_updated: false }],
+      });
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    scanner.scanCandidate.mockResolvedValue(makeScan());
+    shadow.recordCatalogImportObservationsShadow.mockResolvedValue({
+      status: 'recorded', capture_id: 'capture-api-2',
+      resolution: { status: 'resolved', review_required: 0, deferred_parent: 0 },
+    });
+
+    const result = await importCatalog({
+      supplier_name: 'AliExpress', source_type: 'api', supplier_id: 'aliexpress',
+    }, 1, dispatch);
+
+    expect(result.body.pipeline_status).toBe('CANONICAL_RESOLVED');
+    expect(result.body.canonical_resolved).toBe(true);
   });
 
   // ── ING-2 : seuil fichier malade (ING-I4) ────────────────────────────────
