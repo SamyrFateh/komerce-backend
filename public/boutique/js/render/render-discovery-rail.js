@@ -109,6 +109,8 @@ function renderCanonicalCard(card) {
   const context = card.providerName
     ? `${sanitize(card.providerName)}${card.zone ? ` · ${sanitize(card.zone)}` : ''}`
     : (card.description ? sanitize(card.description) : '');
+  const isIllustration = card.kind !== 'product' && /^\\[STAGING\\]/i.test(card.providerName || '');
+  const mediaCaption = isIllustration ? 'Photo illustrative · démo' : card.subtitle;
   const price = card.kind === 'product' && card.price != null
     ? `<span class="k-card-price k-discovery-canonical-price">${formatPrice(card.price)}</span>`
     : '<span class="k-discovery-canonical-price-placeholder" aria-hidden="true"></span>';
@@ -117,7 +119,7 @@ function renderCanonicalCard(card) {
     <article class="k-card k-discovery-canonical-card" data-discovery-kind="${card.kind}" data-discovery-ref="${sanitize(card.actionRef)}" role="listitem" tabindex="0" aria-label="Voir ${safeTitle}">
       <div class="k-card-img-wrap k-discovery-canonical-media">
         ${image}
-        ${card.subtitle ? `<span class="k-discovery-status">${sanitize(card.subtitle)}</span>` : ''}
+        ${mediaCaption ? `<span class="k-discovery-status">${sanitize(mediaCaption)}</span>` : ''}
       </div>
       <div class="k-card-info">
         <div class="k-card-name">${safeTitle}</div>
