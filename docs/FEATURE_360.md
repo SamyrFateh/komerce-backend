@@ -181,7 +181,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `otp_codes`, `revoked_tokens`, `user_pickup_authorizations`, `users`
 
-**Exposes** : 12 internal API(s), 22 HTTP interface(s)
+**Exposes** : 12 internal API(s), 25 HTTP interface(s)
   - `anonymizeUser` (services/user-mutation-service.js) — resolved
   - `createAdminUser` (services/user-mutation-service.js) — resolved
   - `deleteNonAdminUsers` (services/user-mutation-service.js) — resolved
@@ -207,12 +207,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 20 fichier(s) déclaré(s), boutique: 5 fichier(s)
+**Implementation** : 22 fichier(s) déclaré(s), boutique: 5 fichier(s)
   - boutique : 3
   - migrations : 2
-  - routes : 3
+  - routes : 4
   - services : 3
-  - tests : 8
+  - tests : 9
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="auth-identity"]_

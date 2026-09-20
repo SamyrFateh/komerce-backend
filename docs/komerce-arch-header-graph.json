@@ -13,21 +13,21 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 606,
-    "filesWithFullHeaders": 561,
+    "scannedCodeFiles": 607,
+    "filesWithFullHeaders": 562,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 606,
+    "filesWithAnyHeaders": 607,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1447,
-    "edges": 7229,
+    "graphNodes": 1448,
+    "edges": 7240,
     "dbTables": 173,
     "doctrines": 484,
     "impactAreas": 184,
     "unresolvedCodeEdges": 711,
     "dbWriteViaOverlapWarnings": 8,
-    "multiWriterTables": 73
+    "multiWriterTables": 74
   },
   "byDomain": {
     "infrastructure": 22,
@@ -60,7 +60,7 @@
     "business-rules": 1,
     "orders": 30,
     "documents": 15,
-    "auth-identity": 6,
+    "auth-identity": 7,
     "operations": 11,
     "inventory": 2,
     "local-stock": 4,
@@ -104,7 +104,7 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 127,
+    "route": 128,
     "entrypoint": 1,
     "service": 304,
     "external-adapter": 2,
@@ -117,7 +117,7 @@
   "byCriticality": {
     "critical": 88,
     "medium": 129,
-    "high": 336,
+    "high": 337,
     "low": 53
   },
   "nodes": [
@@ -7615,6 +7615,55 @@
         "account-security"
       ],
       "version": "2026-08"
+    },
+    {
+      "id": "routes/auth-step-up-otp.js",
+      "file": "routes/auth-step-up-otp.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "auth-step-up-otp-endpoints",
+      "domain": "auth-identity",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated_session"
+      ],
+      "outputs": [
+        "otp_code_via_whatsapp",
+        "kmrc_jwt_cookie"
+      ],
+      "depends": [
+        "services/notification-service.js",
+        "middleware/auth.js",
+        "utils/auth-session.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "dbRead": [
+        "users",
+        "otp_codes"
+      ],
+      "dbWrite": [
+        "otp_codes"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "otp_single_use",
+        "own_phone_only",
+        "test_mode_never_prod"
+      ],
+      "doctrine": [
+        "auth7_step_up_by_freshness_and_method",
+        "otp_une_fois"
+      ],
+      "impactAreas": [
+        "auth",
+        "account-security"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "routes/auth.js",
@@ -29281,6 +29330,11 @@
       "table": "incidents"
     },
     {
+      "id": "db:otp_codes",
+      "type": "db-table",
+      "table": "otp_codes"
+    },
+    {
       "id": "db:loyalty_tiers",
       "type": "db-table",
       "table": "loyalty_tiers"
@@ -29414,11 +29468,6 @@
       "id": "db:customs_history",
       "type": "db-table",
       "table": "customs_history"
-    },
-    {
-      "id": "db:otp_codes",
-      "type": "db-table",
-      "table": "otp_codes"
     },
     {
       "id": "db:parcel_events",
@@ -44117,6 +44166,72 @@
     },
     {
       "from": "routes/auth-passkey.js",
+      "to": "impact:account-security",
+      "type": "impact",
+      "label": "account-security"
+    },
+    {
+      "from": "routes/auth-step-up-otp.js",
+      "to": "services/notification-service.js",
+      "type": "depends",
+      "label": "services/notification-service.js"
+    },
+    {
+      "from": "routes/auth-step-up-otp.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/auth-step-up-otp.js",
+      "to": "utils/auth-session.js",
+      "type": "depends",
+      "label": "utils/auth-session.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/auth-step-up-otp.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "routes/auth-step-up-otp.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "routes/auth-step-up-otp.js",
+      "to": "db:otp_codes",
+      "type": "db-read",
+      "label": "otp_codes"
+    },
+    {
+      "from": "routes/auth-step-up-otp.js",
+      "to": "db:otp_codes",
+      "type": "db-write",
+      "label": "otp_codes"
+    },
+    {
+      "from": "routes/auth-step-up-otp.js",
+      "to": "doctrine:auth7_step_up_by_freshness_and_method",
+      "type": "doctrine",
+      "label": "auth7_step_up_by_freshness_and_method"
+    },
+    {
+      "from": "routes/auth-step-up-otp.js",
+      "to": "doctrine:otp_une_fois",
+      "type": "doctrine",
+      "label": "otp_une_fois"
+    },
+    {
+      "from": "routes/auth-step-up-otp.js",
+      "to": "impact:auth",
+      "type": "impact",
+      "label": "auth"
+    },
+    {
+      "from": "routes/auth-step-up-otp.js",
       "to": "impact:account-security",
       "type": "impact",
       "label": "account-security"
@@ -76901,6 +77016,7 @@
         "routes/admin/users.js",
         "routes/alerts.js",
         "routes/auth-passkey.js",
+        "routes/auth-step-up-otp.js",
         "routes/auth.js",
         "routes/auto-distribute-api.js",
         "routes/baskets.js",
@@ -77518,6 +77634,7 @@
         "routes/admin/users.js",
         "routes/alerts.js",
         "routes/auth-passkey.js",
+        "routes/auth-step-up-otp.js",
         "routes/auth.js",
         "routes/auto-distribute-api.js",
         "routes/baskets.js",
@@ -84535,6 +84652,51 @@
         "services/webauthn-management-service.js",
         "services/webauthn-service.js",
         "utils/auth-cookie.js"
+      ]
+    },
+    "routes/auth-step-up-otp.js": {
+      "role": "auth-step-up-otp-endpoints",
+      "domain": "auth-identity",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "services/notification-service.js",
+        "middleware/auth.js",
+        "utils/auth-session.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "users",
+        "otp_codes"
+      ],
+      "dbWrite": [
+        "otp_codes"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "auth7_step_up_by_freshness_and_method",
+        "otp_une_fois"
+      ],
+      "impactAreas": [
+        "auth",
+        "account-security"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:otp_codes",
+        "db:users",
+        "doctrine:auth7_step_up_by_freshness_and_method",
+        "doctrine:otp_une_fois",
+        "impact:account-security",
+        "impact:auth",
+        "middleware/auth.js",
+        "services/notification-service.js",
+        "utils/auth-session.js"
       ]
     },
     "routes/auth.js": {
@@ -94847,6 +95009,7 @@
         "impact:orders",
         "impact:otp",
         "impact:shared-cart",
+        "routes/auth-step-up-otp.js",
         "routes/orders.js",
         "routes/otp.js",
         "services/cash-reminder-service.js",
@@ -104284,6 +104447,7 @@
         "doctrine:auth8_session_hardening",
         "impact:account-security",
         "impact:auth",
+        "routes/auth-step-up-otp.js",
         "utils/auth-session-policy.js",
         "utils/auth-token-policy.js"
       ]
@@ -106107,6 +106271,14 @@
       "writers": [
         "routes/hub-dashboard.js",
         "routes/relay-dashboard.js"
+      ]
+    },
+    {
+      "table": "otp_codes",
+      "writerCount": 2,
+      "writers": [
+        "routes/auth-step-up-otp.js",
+        "routes/otp.js"
       ]
     },
     {

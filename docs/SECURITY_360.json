@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-16T00:16:48.765Z",
+  "generatedAt": "2026-09-20T07:19:48.458Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 646,
-    "protected": 591,
+    "total": 649,
+    "protected": 594,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2394,6 +2394,11 @@
       "roles": []
     },
     {
+      "key": "PUT /api/auth/me/password",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "DELETE /api/auth/me/pickup-authorization",
       "level": "PROTECTED",
       "roles": []
@@ -2481,6 +2486,16 @@
     {
       "key": "POST /api/auth/register",
       "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/step-up/otp/request",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/step-up/otp/verify",
+      "level": "PROTECTED",
       "roles": []
     },
     {
