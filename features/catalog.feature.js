@@ -43,6 +43,7 @@ module.exports = {
       'projection des rails de livraison deja commercialement exposes par logistics, sans inventer prix ni delai',
       'modal produit catalogue : un fetch Product Detail, un etat de selection SKU, deux compositions responsive mobile/desktop',
       'raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique',
+      'contrat de revue du texte incruste dans les medias fournisseur : preuve attachee a la source et variante, traduction FR revue sans dependance IA specifique (verification pure, sans publication automatique)',
       'projection live Sources -> Raffinerie -> Boutique dans le Workspace Catalogue : observation des sources, du pipeline et du buyer-effective sans reprendre l autorite de mutation Sourcing ni de pricing marche',
       'glossaire metier EN->FR (catalog_glossary)',
       'file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active',
@@ -104,6 +105,7 @@ module.exports = {
       'services/suppliers/connectors/allegro-connector.js',
       'services/suppliers/connectors/ebay-connector.js',
       'services/product-publication-guard.js',
+      'services/catalog-media-visual-fr-proof.js',
       'services/product-admin-service.js',
       'services/product-variant-service.js',
       'services/product-sku-service.js',
@@ -341,6 +343,7 @@ module.exports = {
       'tests/unit/product-stock-service.test.js',
       'tests/unit/product-price-audit.test.js',
       'tests/unit/product-publication-guard.test.js',
+      'tests/unit/catalog-media-visual-fr-proof.test.js',
       'tests/unit/products.test.js',
       // E2E fonctionnel — chantier currency debt (audit 09-2026), LOT 2.
       // products.price_kmf/cost_kmf/unsold_price_kmf (migration 215,
