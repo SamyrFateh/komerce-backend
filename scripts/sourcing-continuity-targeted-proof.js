@@ -63,8 +63,17 @@ function factDelta(before, after, fields, { sourceRef, unitRef = null } = {}) {
     { source_id: sourceRef, principal_ref: null, observation_id: 'before', observed_at: '1', normalized: before },
     { source_id: sourceRef, principal_ref: null, observation_id: 'after', observed_at: '2', normalized: after },
   ];
-  const result = observationDelta(rows, fields);
-  return { unit_ref: unitRef, ...result };
+  // Optional provider facts absent in BOTH snapshots are not evidence of
+  // deterioration; retain them explicitly as unreported, rather than turning
+  // an otherwise comparable unchanged exact refresh into UNKNOWN. A field
+  // present before but missing now remains UNKNOWN through observationDelta.
+  const comparable = fields.filter(field =>
+    before?.[field] !== undefined && before?.[field] !== null ||
+    after?.[field] !== undefined && after?.[field] !== null
+  );
+  const unreported = fields.filter(field => !comparable.includes(field));
+  const result = observationDelta(rows, comparable);
+  return { unit_ref: unitRef, ...result, unreported_fields: unreported };
 }
 
 function compareExactProduct(before, after, sourceRef) {
