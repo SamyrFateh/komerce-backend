@@ -61,8 +61,8 @@
         value: displayMetric(base, pendingPayments),
         tone: 'warning',
         icon: '¤',
-        href: '#finance-kpis',
-        actionLabel: 'Voir les KPI →',
+        href: pendingPayments.drill_to || '#finance-kpis',
+        actionLabel: 'Voir les commandes →',
       });
     }
     if (incompleteCosts && Number(incompleteCosts.value) > 0) {

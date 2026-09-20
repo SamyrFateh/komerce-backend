@@ -211,13 +211,28 @@
     const queuesGrid = doc.createElement('div');
     queuesGrid.className = 'kmc-decision-dashboard-grid-2';
 
+    function queueDescription(base_text, shown, total) {
+      if (total != null && shown != null && total > shown) {
+        return `${base_text} ${shown} sur ${total} affichée(s) — les plus anciennes en priorité.`;
+      }
+      return base_text;
+    }
+
     const pendingCash = workQueueItems((payload && payload.work_queues && payload.work_queues.pending_cash) || [], base);
-    const cashSection = cardSection(doc, 'Cash à confirmer', 'Commandes en attente de confirmation de paiement cash, les plus anciennes en premier.', 'orders-pending-cash');
+    const cashSection = cardSection(doc, 'Cash à confirmer', queueDescription(
+      'Commandes en attente de confirmation de paiement cash, les plus anciennes en premier.',
+      payload && payload.work_queues && payload.work_queues.pending_cash_shown,
+      payload && payload.work_queues && payload.work_queues.pending_cash_total,
+    ), 'orders-pending-cash');
     decisionUi.RankedList.render(cashSection.body, { items: pendingCash });
     queuesGrid.appendChild(cashSection.section);
 
     const readyForParcel = workQueueItems((payload && payload.work_queues && payload.work_queues.ready_for_parcel) || [], base);
-    const parcelSection = cardSection(doc, 'Colis à créer', 'Commandes payées prêtes à passer en logistique, les plus anciennes en premier.', 'orders-ready-for-parcel');
+    const parcelSection = cardSection(doc, 'Colis à créer', queueDescription(
+      'Commandes payées prêtes à passer en logistique, les plus anciennes en premier.',
+      payload && payload.work_queues && payload.work_queues.ready_for_parcel_shown,
+      payload && payload.work_queues && payload.work_queues.ready_for_parcel_total,
+    ), 'orders-ready-for-parcel');
     decisionUi.RankedList.render(parcelSection.body, { items: readyForParcel });
     queuesGrid.appendChild(parcelSection.section);
 

@@ -65,38 +65,64 @@ async function getPaymentMix(mid) {
 
 // File « cash à confirmer » — requête identique au contrat order-api-v2 /pending-cash.
 async function getPendingCash(mid, limit = 25) {
-  const { rows } = await db.query(
-    `SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.cash_ref_code, o.created_at
-       FROM orders o
-      WHERE ($1::uuid IS NULL OR o.market_id = $1)
-        AND o.payment_status = 'pending'
-        AND o.status NOT IN ('cancelled', 'collected', 'refunded')
-      ORDER BY o.created_at ASC
-      LIMIT $2`,
-    [mid, limit],
-  );
-  return rows.map(r => Object.freeze({
+  const [{ rows }, { rows: countRows }] = await Promise.all([
+    db.query(
+      `SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.cash_ref_code, o.created_at
+         FROM orders o
+        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+          AND o.payment_status = 'pending'
+          AND o.status NOT IN ('cancelled', 'collected', 'refunded')
+        ORDER BY o.created_at ASC
+        LIMIT $2`,
+      [mid, limit],
+    ),
+    db.query(
+      `SELECT COUNT(*)::int AS value
+         FROM orders o
+        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+          AND o.payment_status = 'pending'
+          AND o.status NOT IN ('cancelled', 'collected', 'refunded')`,
+      [mid],
+    ),
+  ]);
+  const items = rows.map(r => Object.freeze({
     id: r.id, reference: r.reference, status: r.status,
     total_kmf: r.total_kmf, payment_mode: r.payment_mode, cash_ref_code: r.cash_ref_code,
   }));
+  return Object.freeze({ items, count_total: Number(countRows[0]?.value) || 0 });
 }
 
 // File « colis à créer » — requête identique au contrat order-api-v2 /ready-for-parcel.
+// count_total est un COUNT(*) séparé, jamais rows.length : la liste est
+// plafonnée à `limit` pour rester une file de travail actionnable, mais le
+// KPI affiché doit refléter le vrai total, pas la troncature (doctrine
+// "éviter les incohérences entre les compteurs et leurs listes sous-jacentes").
 async function getReadyForParcel(mid, limit = 25) {
-  const { rows } = await db.query(
-    `SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.created_at
-       FROM orders o
-      WHERE ($1::uuid IS NULL OR o.market_id = $1)
-        AND o.payment_status = 'paid'
-        AND o.status IN ('confirmed', 'ordered')
-      ORDER BY o.created_at ASC
-      LIMIT $2`,
-    [mid, limit],
-  );
-  return rows.map(r => Object.freeze({
+  const [{ rows }, { rows: countRows }] = await Promise.all([
+    db.query(
+      `SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.created_at
+         FROM orders o
+        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+          AND o.payment_status = 'paid'
+          AND o.status IN ('confirmed', 'ordered')
+        ORDER BY o.created_at ASC
+        LIMIT $2`,
+      [mid, limit],
+    ),
+    db.query(
+      `SELECT COUNT(*)::int AS value
+         FROM orders o
+        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+          AND o.payment_status = 'paid'
+          AND o.status IN ('confirmed', 'ordered')`,
+      [mid],
+    ),
+  ]);
+  const items = rows.map(r => Object.freeze({
     id: r.id, reference: r.reference, status: r.status,
     total_kmf: r.total_kmf, payment_mode: r.payment_mode,
   }));
+  return Object.freeze({ items, count_total: Number(countRows[0]?.value) || 0 });
 }
 
 function kpi(key, label, value) {
@@ -126,21 +152,25 @@ async function buildOrders(options = {}) {
       total_orders: total,
       active_orders: active,
       cancelled: byStatus.cancelled || 0,
-      cash_to_confirm: pendingCash.length,
-      parcels_to_create: readyForParcel.length,
+      cash_to_confirm: pendingCash.count_total,
+      parcels_to_create: readyForParcel.count_total,
     }),
     kpis: Object.freeze([
       kpi('total_orders', 'Commandes', total),
       kpi('active_orders', 'Commandes actives', active),
-      kpi('cash_to_confirm', 'Cash à confirmer', pendingCash.length),
-      kpi('parcels_to_create', 'Colis à créer', readyForParcel.length),
+      kpi('cash_to_confirm', 'Cash à confirmer', pendingCash.count_total),
+      kpi('parcels_to_create', 'Colis à créer', readyForParcel.count_total),
       kpi('cancelled', 'Annulées', byStatus.cancelled || 0),
     ]),
     lifecycle: Object.freeze(lifecycle),
     payment_mix: Object.freeze(paymentMix),
     work_queues: Object.freeze({
-      pending_cash: Object.freeze(pendingCash),
-      ready_for_parcel: Object.freeze(readyForParcel),
+      pending_cash: pendingCash.items,
+      pending_cash_shown: pendingCash.items.length,
+      pending_cash_total: pendingCash.count_total,
+      ready_for_parcel: readyForParcel.items,
+      ready_for_parcel_shown: readyForParcel.items.length,
+      ready_for_parcel_total: readyForParcel.count_total,
     }),
     data_quality: Object.freeze({
       generated_at: new Date(options.now || Date.now()).toISOString(),

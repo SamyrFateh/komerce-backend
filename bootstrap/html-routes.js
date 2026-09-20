@@ -110,6 +110,7 @@ function mountHtmlRoutes(app, rootDir) {
   [
     '/admin',
     '/admin/commerce',
+    '/admin/orders',
     '/admin/operations',
     '/admin/finance',
     '/admin/workspaces/operations',
