@@ -62,6 +62,15 @@ test('manual and native-FR preparations are accepted structurally without AI, no
   }).blockers).toContain('FOREIGN_RAW_SOURCE_NOT_FRENCH');
 });
 
+test('visual evidence only exposes sanitized public vendor CDN URLs', () => {
+  expect(audit.publicSourceMediaUrl('https://ae01.alicdn.com/kf/thing.jpg?token=secret#fragment'))
+    .toBe('https://ae01.alicdn.com/kf/thing.jpg');
+  expect(audit.publicSourceMediaUrl('https://a.allegroimg.com/item/image.png')).toBe('https://a.allegroimg.com/item/image.png');
+  expect(audit.publicSourceMediaUrl('https://private.example.com/?token=secret')).toBe(null);
+  expect(audit.publicSourceMediaUrl('https://user:password@ae01.alicdn.com/p.png')).toBe(null);
+  expect(audit.publicSourceMediaUrl('http://ae01.alicdn.com/p.png')).toBe(null);
+});
+
 test('image media is never considered translated just because a URL or alt is present', () => {
   const target = audit.TARGETS[0];
   const report = audit.inspectCandidate(row(target, {
