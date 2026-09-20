@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-20T09:10:53.429Z",
+  "generatedAt": "2026-09-20T10:02:34.737Z",
   "summary": {
     "navItems": 13,
     "navMatrixEntries": 37,
-    "canonicalModules": 61,
-    "apiEdgesTraced": 65,
+    "canonicalModules": 62,
+    "apiEdgesTraced": 66,
     "surfaceWithoutModule": 0,
     "navHrefUnresolved": 0,
     "unprovenContracts": 0,
     "notFoundContracts": 0,
     "notFoundDynamic": 9,
-    "unresolvedFetches": 21,
+    "unresolvedFetches": 22,
     "legacyDependencies": 0,
     "clientMarketAuthoritySuspects": 0,
     "moduleFilesWithoutHeader": 0
@@ -669,6 +669,14 @@
     },
     {
       "module": "market-network.js",
+      "rawUrl": "url",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "market-settlement.js",
       "rawUrl": "url",
       "httpMethod": "?",
       "normalized": null,
@@ -1457,6 +1465,22 @@
       "fetchCount": 1
     },
     {
+      "file": "market-settlement.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "market-autonomy-settlement-delegation-ui",
+      "domain": "market-autonomy",
+      "layer": "ui-workspace",
+      "criticality": "high",
+      "doctrine": [
+        "ui_never_grants_more_than_server_actor_capabilities",
+        "server_scope_is_authority",
+        "monetary_snapshot_immutable"
+      ],
+      "exportsGlobals": [],
+      "fetchCount": 1
+    },
+    {
       "file": "market-team.js",
       "hasHeader": true,
       "isLite": false,
@@ -2081,6 +2105,7 @@
       "url (market-client-case.js)",
       "url (market-local-offer.js)",
       "url (market-network.js)",
+      "url (market-settlement.js)",
       "url (market-team.js)",
       "url (markets-decision-bootstrap.js)",
       "url (pricing-workspace.js)",
