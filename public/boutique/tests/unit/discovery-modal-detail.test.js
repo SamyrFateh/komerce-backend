@@ -223,11 +223,11 @@ test('le CSS servi masque la buybox et libère la largeur Discovery malgré la p
   const cssRoot = path.join(__dirname, '../../css');
   for (const file of ['modal-shell.css', 'dist/components.css']) {
     const css = fs.readFileSync(path.join(cssRoot, file), 'utf8');
-    expect(css).toMatch(/#k-modal\\.k-modal--discovery \\.k-modal-body \\{\\s*display: block;/);
-    expect(css).toMatch(/#k-modal\\.k-modal--discovery \\.k-modal-product-zone \\{\\s*display: block;/);
-    expect(css).toMatch(/#k-modal\\.k-modal--discovery \\.k-modal-buybox,/);
-    expect(css).toMatch(/#k-modal\\.k-modal--discovery \\.k-modal-actions \\{\\s*display: none;/);
-    expect(css).toMatch(/#k-modal\\.k-modal--discovery \\.k-modal-discovery-detail:not\\(\\[hidden\\]\\) \\{\\s*display: block;/);
+    expect(css).toMatch(/#k-modal\.k-modal--discovery \.k-modal-body \{\s*display: block;/);
+    expect(css).toMatch(/#k-modal\.k-modal--discovery \.k-modal-product-zone \{\s*display: block;/);
+    expect(css).toMatch(/#k-modal\.k-modal--discovery \.k-modal-buybox,/);
+    expect(css).toMatch(/#k-modal\.k-modal--discovery \.k-modal-actions \{\s*display: none;/);
+    expect(css).toMatch(/#k-modal\.k-modal--discovery \.k-modal-discovery-detail:not\(\[hidden\]\) \{\s*display: block;/);
   }
 });
 
