@@ -80,6 +80,17 @@ function observationDelta(rows = [], fields = []) {
     changes: [], unknown_fields: [], newly_observed_fields: [],
   };
 
+  // An Offer can have multiple observation sources. A cross-source pair
+  // is not a comparable supplier delta unless the provider contract proves it.
+  if (String(previous.source_id || '') !== String(latest.source_id || '') ||
+      String(previous.principal_ref || '') !== String(latest.principal_ref || '')) {
+    return {
+      status: 'UNKNOWN', reason: 'SOURCE_SCOPE_CHANGED',
+      previous_observed_at: previous.observed_at, observed_at: latest.observed_at,
+      changes: [], unknown_fields: [...fields], newly_observed_fields: [],
+    };
+  }
+
   const changes = [];
   const unknownFields = [];
   const newlyObserved = [];
