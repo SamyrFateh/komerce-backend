@@ -15,19 +15,6 @@ const TARGETS = Object.freeze([
   Object.freeze({ id: '9df9d206-7bf0-40b3-ae04-15f52dfb9506', supplier: 'Allegro Sandbox', supplierProductId: '7782236928' }),
 ]);
 
-function providerReadiness(env) {
-  const provider = String(env.CATALOG_ENRICH_PROVIDER || 'anthropic').toLowerCase().trim();
-  if (!['anthropic', 'openai'].includes(provider)) {
-    return { status: 'INVALID_PROVIDER_CONFIGURATION', provider };
-  }
-  return {
-    status: String(env[provider === 'anthropic' ? 'ANTHROPIC_API_KEY' : 'OPENAI_API_KEY'] || '').trim()
-      ? 'PROVIDER_KEY_PRESENT_NOT_YET_TESTED'
-      : 'PROVIDER_KEY_MISSING',
-    provider,
-  };
-}
-
 function inspectCandidate(row, product = null) {
   const source = row.normalized_source_contract || {};
   const axes = Array.isArray(source.option_axes) ? source.option_axes : [];
@@ -116,7 +103,7 @@ async function run({ env = process.env, executor = db } = {}) {
       mode: 'exact-cross-supplier-fr-readiness-readonly',
       environment: 'staging', writes: false, ai_call_invoked: false,
       purchase_invoked: false, publication_performed: false,
-      automatic_fr_runtime: providerReadiness(env),
+      editorial_contract: 'SOURCE_PRESERVED_PREPARATION_NOT_DEPENDENT_ON_DEDICATED_AI',
       cases: reports,
     };
   } catch (error) {
@@ -132,4 +119,4 @@ if (require.main === module) {
     .finally(() => db.pool.end());
 }
 
-module.exports = { TARGETS, providerReadiness, inspectCandidate, run };
+module.exports = { TARGETS, inspectCandidate, run };
