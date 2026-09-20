@@ -1395,6 +1395,35 @@
   display: block;
 }
 
+/* La modale Discovery réutilise le shell, pas les colonnes ni la buybox Produit.
+   Les sélecteurs ID ci-dessous prévalent sur les règles #k-modal .k-modal-*
+   du layout produit (sinon CTA Acheter / colonne panier restent visibles). */
+#k-modal.k-modal--discovery .k-modal-body {
+  display: block;
+  width: 100%;
+}
+#k-modal.k-modal--discovery .k-modal-main {
+  width: 100%;
+}
+#k-modal.k-modal--discovery .k-modal-product-zone {
+  display: block;
+  width: 100%;
+}
+#k-modal.k-modal--discovery .k-modal-img-wrap,
+#k-modal.k-modal--discovery .k-modal-right-rail,
+#k-modal.k-modal--discovery .k-modal-buybox,
+#k-modal.k-modal--discovery .k-modal-long-details,
+#k-modal.k-modal--discovery .k-modal-enriched-content,
+#k-modal.k-modal--discovery .k-modal-suggestions,
+#k-modal.k-modal--discovery .k-modal-cart-slot,
+#k-modal.k-modal--discovery .k-modal-actions {
+  display: none;
+}
+#k-modal.k-modal--discovery .k-modal-discovery-detail:not([hidden]) {
+  display: block;
+  width: 100%;
+}
+
 .k-modal-discovery-shell {
   width: min(100%, 860px);
   margin: 0 auto;
