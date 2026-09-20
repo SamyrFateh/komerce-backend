@@ -86,6 +86,7 @@ module.exports = {
   // Tour de controle (8)
   getCAEncaisse: controlTower.getCAEncaisse,
   getCmdsCreees: controlTower.getCmdsCreees,
+  getProduitsActifsVendus: controlTower.getProduitsActifsVendus,
   getCmdsActives: controlTower.getCmdsActives,
   getColisEnTransit: controlTower.getColisEnTransit,
   getAlertesCritiques: controlTower.getAlertesCritiques,

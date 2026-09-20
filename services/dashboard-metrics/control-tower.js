@@ -88,6 +88,41 @@ async function getCmdsCreees(filters = {}) {
   });
 }
 
+async function getProduitsActifsVendus(filters = {}) {
+  const { where, params } = buildFiltersClause(filters);
+  const sql = `
+    SELECT COUNT(DISTINCT oi.product_id)::int AS value
+    FROM order_items oi
+    JOIN orders o ON o.id = oi.order_id
+    WHERE ${where}
+      AND o.payment_status = 'paid'
+      AND o.status NOT IN ('cancelled', 'refunded')
+  `;
+  const r = await db.query(sql, params);
+  const value = Number(r.rows[0].value) || 0;
+
+  let delta = null;
+  const prev = buildPreviousPeriod(filters);
+  if (prev) {
+    const prevQuery = buildFiltersClause(prev);
+    const prevSql = `
+      SELECT COUNT(DISTINCT oi.product_id)::int AS value
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      WHERE ${prevQuery.where}
+        AND o.payment_status = 'paid'
+        AND o.status NOT IN ('cancelled', 'refunded')
+    `;
+    const prevR = await db.query(prevSql, prevQuery.params);
+    delta = computeDelta(value, Number(prevR.rows[0].value), 'periode precedente');
+  }
+
+  return makeKpi('produits_actifs_vendus', 'Produits actifs vendus', value, 'count', {
+    delta,
+    drillTo: '/admin/workspaces/catalog',
+  });
+}
+
 async function getCmdsActives(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
   const sql = `
@@ -285,6 +320,7 @@ async function getTauxCompletudeCouts(filters = {}) {
 module.exports = {
   getCAEncaisse,
   getCmdsCreees,
+  getProduitsActifsVendus,
   getCmdsActives,
   getColisEnTransit,
   getAlertesCritiques,

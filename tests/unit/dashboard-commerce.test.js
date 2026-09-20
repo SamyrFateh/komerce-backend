@@ -12,6 +12,7 @@ const mockMetrics = {
   getCAEncaisse: jest.fn(),
   getCmdsCreees: jest.fn(),
   getMargeConsolidee: jest.fn(),
+  getProduitsActifsVendus: jest.fn(),
 };
 jest.mock('../../services/dashboard-metrics', () => mockMetrics);
 
@@ -43,6 +44,7 @@ beforeEach(() => {
   mockMetrics.getCAEncaisse.mockResolvedValue(metric('ca_encaisse', 'CA encaissé', 120000, 'KMF'));
   mockMetrics.getCmdsCreees.mockResolvedValue(metric('cmds_creees', 'Commandes créées', 12));
   mockMetrics.getMargeConsolidee.mockResolvedValue(metric('marge_consolidee', 'Marge consolidée', 24500, 'KMF'));
+  mockMetrics.getProduitsActifsVendus.mockResolvedValue(metric('produits_actifs_vendus', 'Produits actifs vendus', 8));
   mockPricingMarketCorridor.buildMarketCorridor.mockResolvedValue({
     corridor: {
       local: {
@@ -123,7 +125,7 @@ describe('dashboard-commerce', () => {
     expect(JSON.stringify(result)).not.toContain('market-cm-id');
     expect(JSON.stringify(result)).not.toContain('product-cm-1');
 
-    for (const fn of [mockMetrics.getCAEncaisse, mockMetrics.getCmdsCreees, mockMetrics.getMargeConsolidee]) {
+    for (const fn of [mockMetrics.getCAEncaisse, mockMetrics.getCmdsCreees, mockMetrics.getMargeConsolidee, mockMetrics.getProduitsActifsVendus]) {
       expect(fn).toHaveBeenCalledWith(expect.objectContaining({
         market_id: 'market-cm-id',
         from: '2026-07-25T12:00:00.000Z',
@@ -140,10 +142,10 @@ describe('dashboard-commerce', () => {
     expect(mockLocalStockDecision.getDecisionAvailabilityEvidence).toHaveBeenCalledWith('product-cm-1', 'market-cm-id');
 
     expect(result.kpis.map(item => item.key)).toEqual([
-      'ca_encaisse', 'cmds_creees', 'panier_moyen', 'marge_consolidee',
+      'ca_encaisse', 'cmds_creees', 'panier_moyen', 'marge_consolidee', 'produits_actifs_vendus',
     ]);
     expect(result.kpis[2].drill_to).toBe('/admin/operations?payment_status=paid');
-    expect(result.kpis[3].unit).toBe('KMF');
+    expect(result.kpis[4].unit).toBe('count');
     expect(result.top_products[0]).toEqual({
       product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000,
     });

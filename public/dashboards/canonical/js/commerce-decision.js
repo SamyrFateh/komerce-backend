@@ -178,7 +178,7 @@
       'ca-encaisse': 'CA encaissé',
       commandes: 'Commandes créées',
       'panier-moyen': 'Panier moyen',
-      marge: 'Marge consolidée',
+      'produits-actifs-vendus': 'Produits actifs vendus',
     };
     const items = Object.entries(base.projectMetrics(payload)).map(([key, item]) => ({
       key,
