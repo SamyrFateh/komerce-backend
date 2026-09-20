@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 607
+- Scanned code files: 608
 - Files with full headers: 562
-- Files with lite headers: 45
-- Files with any headers: 607
+- Files with lite headers: 46
+- Files with any headers: 608
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1448
-- Edges: 7240
+- Graph nodes: 1449
+- Edges: 7244
 - DB tables: 173
 - Doctrines: 484
 - Impact areas: 184
-- Unresolved code edges: 711
+- Unresolved code edges: 712
 - Tables multi-écrivains directs (>=2): 74
 - Avertissements db-write / db-write-via en chevauchement: 8
 
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 21
 - business-rules: 1
-- catalog: 107
+- catalog: 108
 - checkout: 3
 - customs: 6
 - dashboard: 27
@@ -86,7 +86,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 128
 - route-manifest: 1
 - schema: 1
-- service: 304
+- service: 305
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -582,6 +582,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - public/boutique/js/taxonomy-no-hardcode.test.js -> owner public/boutique/js/b-catalog.js (catalog-taxonomy-no-hardcode-test)
 - public/boutique/js/view-models/product-card-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-model)
 - public/boutique/js/view-models/product-card-view-model.js -> owner public/boutique/js/b-catalog.js (catalog-product-card-view-model)
+- services/catalog-media-visual-fr-proof.js -> owner catalog (catalog-media-visual-fr-proof)
 - services/providers-inquiry-service.js -> owner services/providers-service.js (providers-services-contextual-inquiry)
 - services/providers-interaction-policy.js -> owner services/providers-service.js (providers-services-interaction-policy)
 

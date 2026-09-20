@@ -37,6 +37,20 @@ describe('dashboard-metrics/control-tower', () => {
     expect(result.delta).toMatchObject({ value: -50, direction: 'down' });
   });
 
+  it('getProduitsActifsVendus compte les produits distincts vendus sur commandes payées et drill vers le catalogue', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ value: '8' }] })
+      .mockResolvedValueOnce({ rows: [{ value: '5' }] });
+
+    const result = await control.getProduitsActifsVendus({ from: '2026-06-01T00:00:00.000Z', to: '2026-06-11T00:00:00.000Z' });
+
+    expect(result).toMatchObject({ key: 'produits_actifs_vendus', value: 8, unit: 'count', drill_to: '/admin/workspaces/catalog' });
+    expect(result.delta).toMatchObject({ value: 60, direction: 'up' });
+    expect(String(db.query.mock.calls[0][0])).toMatch(/COUNT\(DISTINCT oi\.product_id\)/);
+    expect(String(db.query.mock.calls[0][0])).toMatch(/payment_status = 'paid'/);
+    expect(String(db.query.mock.calls[0][0])).toMatch(/status NOT IN \('cancelled', 'refunded'\)/);
+  });
+
   it('getCmdsActives utilise la liste canonique des statuts actifs et drill vers Operations', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ value: '7' }] });
 

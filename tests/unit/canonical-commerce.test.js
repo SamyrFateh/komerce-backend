@@ -20,6 +20,7 @@ function payloadFixture() {
       { key: 'cmds_creees', value: 12, unit: 'count', data_quality: {} },
       { key: 'panier_moyen', value: 10000, unit: 'KMF', data_quality: {} },
       { key: 'marge_consolidee', value: 24500, unit: 'KMF', data_quality: {} },
+      { key: 'produits_actifs_vendus', value: 8, unit: 'count', data_quality: {} },
     ],
     top_products: [
       { product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000 },
@@ -124,7 +125,11 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
 
     expect(sources['commerce.metrics']['ca-encaisse'].value).toContain('KMF');
     expect(sources['commerce.metrics']['commandes'].value).toBe('12');
-    expect(sources['commerce.metrics'].marge.value).toContain('KMF');
+    expect(sources['commerce.metrics']['produits-actifs-vendus'].value).toBe('8');
+    // marge_consolidee reste dans le payload brut (le fallback historique de
+    // decisionItems en a besoin, cf. test plus bas), mais n'est plus une
+    // clé affichée dans la bande KPI — KPI_KEYS ne la mappe plus.
+    expect(sources['commerce.metrics'].marge).toBeUndefined();
     expect(sources['commerce.top-products'][0]).toEqual({
       produit: 'Téléphone',
       categorie: 'Électronique',
