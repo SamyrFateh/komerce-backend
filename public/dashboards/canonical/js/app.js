@@ -622,7 +622,6 @@
     return renderMarketSurfaceShell(root, user, adminContext, {
       surface: 'pricing-workspace',
       title: 'Workspace Pricing / Atelier des coûts',
-      requireMarket: true,
       atomicSwap: true,
       render: renderPricingWorkspace,
     });
