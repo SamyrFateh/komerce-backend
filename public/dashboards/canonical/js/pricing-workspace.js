@@ -115,8 +115,8 @@
     return node;
   }
 
-  function section(rootNode, ui, title, description) {
-    const block = ui.Section.create({ title, description });
+  function section(rootNode, ui, title, description, id) {
+    const block = ui.Section.create(id ? { id, title, description } : { title, description });
     rootNode.appendChild(block.element);
     return block.slot;
   }
@@ -390,7 +390,7 @@
   }
 
   function renderProducts(rootNode, ui, doc, payload, context) {
-    const slot = section(rootNode, ui, 'Décision produit', 'Le moteur calcule. L’opérateur choisit quand appliquer un prix. Product 360 reste le drill-down.');
+    const slot = section(rootNode, ui, 'Décision produit', 'Le moteur calcule. L’opérateur choisit quand appliquer un prix. Product 360 reste le drill-down.', 'pricing-products');
     const rows = payload.products || [];
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun produit à tarifer.'));
@@ -471,7 +471,7 @@
   }
 
   function renderStrategy(rootNode, ui, doc, context) {
-    const slot = section(rootNode, ui, 'Stratégie & concurrence', 'Comparaison CDR / concurrence / prix actuel. Les observations concurrentes sont adressées par une référence métier KPC.');
+    const slot = section(rootNode, ui, 'Stratégie & concurrence', 'Comparaison CDR / concurrence / prix actuel. Les observations concurrentes sont adressées par une référence métier KPC.', 'pricing-strategy');
     const host = doc.createElement('div');
     host.dataset.pricingStrategy = '';
     host.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Choisissez “Stratégie” sur un produit pour charger cette facette.'));
@@ -547,7 +547,8 @@
       'Atelier des coûts',
       marketMode
         ? 'Chaque ligne hérite du modèle central tant qu’aucune surcharge locale n’est définie. Reset restaure immédiatement l’héritage global.'
-        : 'Autorité centrale cost_components. Les marchés peuvent surcharger valeur et activation sans modifier cette base.'
+        : 'Autorité centrale cost_components. Les marchés peuvent surcharger valeur et activation sans modifier cette base.',
+      'pricing-costs'
     );
     const rows = payload.cost_components || [];
     const wrap = doc.createElement('div');
