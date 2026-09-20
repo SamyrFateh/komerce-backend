@@ -62,6 +62,28 @@ test('manual and native-FR preparations are accepted structurally without AI, no
   }).blockers).toContain('FOREIGN_RAW_SOURCE_NOT_FRENCH');
 });
 
+test('image media is never considered translated just because a URL or alt is present', () => {
+  const target = audit.TARGETS[0];
+  const report = audit.inspectCandidate(row(target, {
+    normalized_source_contract: {
+      source_locale: 'fr', description: 'Description française source',
+      option_axes: [], sellable_units: [{ option_values: {} }],
+      media: [{ supplier_media_id: 'source-photo', role: 'PRODUCT',
+        alt: 'French cable photo', option_values: {} }],
+    },
+  }), { content_source: 'manual', needs_review: false,
+    description: 'Description française vérifiée et rédigée par un humain.' });
+  expect(report.fr_format_precheck_pass).toBe(true);
+  expect(report.source.image_text_audit.status).toBe('NOT_INSPECTED');
+  expect(report.source.image_text_audit.media[0]).toMatchObject({
+    source_media_id: 'source-photo', text_presence: 'NOT_INSPECTED',
+    source_alt_present: true, french_translation_reviewed: false,
+    image_replacement_performed: false,
+  });
+  expect(report.visual_text_translation_proven).toBe(false);
+  expect(report.blockers).toContain('SOURCE_IMAGE_EMBEDDED_TEXT_NOT_AUDITED');
+});
+
 test('cross supplier run reads exactly two known cases in a SQL READ ONLY transaction', async () => {
   const rows = audit.TARGETS.map(t => row(t));
   const q = {
