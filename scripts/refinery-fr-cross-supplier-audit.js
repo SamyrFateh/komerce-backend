@@ -24,11 +24,28 @@ function inspectCandidate(row, product = null) {
   )));
   const sourceDescription = String(source.description || row.description || '').trim();
   const sourceLocale = String(source.source_locale || '').trim();
+  const sourceMedia = Array.isArray(source.media) ? source.media : [];
+  // alt / source_locale / image count never prove the language of text baked into pixels.
+  // The image may contain packaging text, a dimension diagram, warnings or variant-specific facts.
+  // Extracting text (manual or vision/OCR) and producing a reviewed FR transcription is
+  // a separate, source-linked editorial operation; no provider is required by this probe.
+  const imageTextAudit = sourceMedia.map((media, i) => ({
+    source_media_id: media?.supplier_media_id || null,
+    role: media?.role || 'PRODUCT',
+    option_values: media?.option_values || null,
+    source_alt_present: Boolean(String(media?.alt || '').trim()),
+    text_presence: 'NOT_INSPECTED',
+    source_text_transcribed: false,
+    french_translation_reviewed: false,
+    image_replacement_performed: false,
+    image_index: i,
+  }));
   const blockers = [];
   if (!sourceDescription) blockers.push('SOURCE_DESCRIPTION_MISSING');
   if (!sourceLocale) blockers.push('SOURCE_LOCALE_UNKNOWN');
   if (units.length === 0) blockers.push('SELLABLE_UNITS_MISSING');
   if (units.length !== uniqueCombos.size) blockers.push('VARIANT_COMBINATIONS_NOT_UNIQUE');
+  if (imageTextAudit.length) blockers.push('SOURCE_IMAGE_EMBEDDED_TEXT_NOT_AUDITED');
   if (!product) blockers.push('CATALOG_DRAFT_NOT_CREATED');
   else if (product.content_source === 'connector_raw' && !/^fr(?:[-_]|$)/i.test(sourceLocale)) {
     blockers.push('FOREIGN_RAW_SOURCE_NOT_FRENCH');
@@ -56,7 +73,14 @@ function inspectCandidate(row, product = null) {
       option_axes: axes.map(a => ({ key: a.key, values: Array.isArray(a.values) ? a.values : [] })),
       sellable_units: units.length,
       unique_variant_combinations: uniqueCombos.size,
-      media_count: Array.isArray(source.media) ? source.media.length : 0,
+      media_count: imageTextAudit.length,
+      image_text_audit: {
+        status: imageTextAudit.length ? 'NOT_INSPECTED' : 'NO_SOURCE_MEDIA',
+        media: imageTextAudit,
+        next_action: imageTextAudit.length
+          ? 'Inspect source image, transcribe embedded text if present, translate useful facts to FR, verify against source, preserve original media'
+          : 'No source image available for visual text review',
+      },
     },
     catalog: product ? {
       content_source: product.content_source,
@@ -70,6 +94,7 @@ function inspectCandidate(row, product = null) {
     fr_format_precheck_pass: Boolean(editorialOriginAllowed
       && String(product?.description || '').trim().length >= 20 && product?.needs_review === false),
     fr_semantic_fidelity_proven: false, // requires real source-to-client comparative review, never inferred from a status flag
+    visual_text_translation_proven: false, // media URLs/alt alone cannot prove embedded text was inspected
   };
 }
 
