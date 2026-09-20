@@ -15,6 +15,22 @@ const TARGETS = Object.freeze([
   Object.freeze({ id: '9df9d206-7bf0-40b3-ae04-15f52dfb9506', supplier: 'Allegro Sandbox', supplierProductId: '7782236928' }),
 ]);
 
+// Only return public, credential-free vendor CDN URLs for bounded human visual review.
+// Never emit signed query parameters, private endpoints, or API/media credentials.
+function publicSourceMediaUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    const host = url.hostname.toLowerCase();
+    if (url.protocol !== 'https:' || url.username || url.password) return null;
+    if (!['alicdn.com', 'allegroimg.com', 'allegrostatic.com'].some(
+      domain => host === domain || host.endsWith(`.${domain}`)
+    )) return null;
+    url.search = '';
+    url.hash = '';
+    return url.toString();
+  } catch (_) { return null; }
+}
+
 function inspectCandidate(row, product = null) {
   const source = row.normalized_source_contract || {};
   const axes = Array.isArray(source.option_axes) ? source.option_axes : [];
@@ -31,6 +47,7 @@ function inspectCandidate(row, product = null) {
   // a separate, source-linked editorial operation; no provider is required by this probe.
   const imageTextAudit = sourceMedia.map((media, i) => ({
     source_media_id: media?.supplier_media_id || null,
+    source_public_url: publicSourceMediaUrl(media?.url),
     role: media?.role || 'PRODUCT',
     option_values: media?.option_values || null,
     source_alt_present: Boolean(String(media?.alt || '').trim()),
@@ -151,4 +168,4 @@ if (require.main === module) {
     .finally(() => db.pool.end());
 }
 
-module.exports = { TARGETS, inspectCandidate, run };
+module.exports = { TARGETS, publicSourceMediaUrl, inspectCandidate, run };
