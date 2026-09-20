@@ -93,7 +93,7 @@ function callbackNotePlaceholderFor(detail = {}) {
 }
 
 function isIllustrativeDemo(detail) {
-  return /^\\[STAGING\\]/i.test(String(detail.provider_name || '').trim());
+  return String(detail.provider_name || '').trim().toUpperCase().startsWith('[STAGING]');
 }
 
 function buildImage(detail, service = false) {
