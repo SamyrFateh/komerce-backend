@@ -78,6 +78,7 @@ test('image media is never considered translated just because a URL or alt is pr
       source_locale: 'fr', description: 'Description française source',
       option_axes: [], sellable_units: [{ option_values: {} }],
       media: [{ supplier_media_id: 'source-photo', role: 'PRODUCT',
+        url: 'https://ae01.alicdn.com/kf/source-photo.jpg',
         alt: 'French cable photo', option_values: {} }],
     },
   }), { content_source: 'manual', needs_review: false,
