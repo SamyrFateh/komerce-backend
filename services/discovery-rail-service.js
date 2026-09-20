@@ -127,10 +127,11 @@ function cardKey(card) {
  */
 function isPublicDemoProviderCard(card) {
   if (card?.kind !== 'service' && card?.kind !== 'physical_offer') return false;
-  const provider = String(card.provider_name || '').trim();
-  const media = String(card.image_ref || '').trim();
-  return /^\\[STAGING\\]/i.test(provider)
-    || /^\\/boutique\\/categories\\/cat-[^/]+\\.(?:webp|png|jpe?g)(?:\\?.*)?$/i.test(media);
+  const provider = String(card.provider_name || '').trim().toUpperCase();
+  const media = String(card.image_ref || '').trim().split('?')[0].toLowerCase();
+  const placeholder = media.startsWith('/boutique/categories/cat-')
+    && ['.webp', '.png', '.jpg', '.jpeg'].some(extension => media.endsWith(extension));
+  return provider.startsWith('[STAGING]') || placeholder;
 }
 
 function isPublicRuntime() {
