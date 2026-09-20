@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 607,
+    "scannedCodeFiles": 608,
     "filesWithFullHeaders": 562,
-    "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 607,
+    "filesWithLiteHeaders": 46,
+    "filesWithAnyHeaders": 608,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1448,
-    "edges": 7240,
+    "graphNodes": 1449,
+    "edges": 7244,
     "dbTables": 173,
     "doctrines": 484,
     "impactAreas": 184,
-    "unresolvedCodeEdges": 711,
+    "unresolvedCodeEdges": 712,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 74
   },
@@ -34,7 +34,7 @@
     "bootstrap": 2,
     "notification": 21,
     "auth": 14,
-    "catalog": 107,
+    "catalog": 108,
     "admin-dashboard": 22,
     "decision-signals": 12,
     "market-delegation": 25,
@@ -106,7 +106,7 @@
     "schema": 1,
     "route": 128,
     "entrypoint": 1,
-    "service": 304,
+    "service": 305,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -118,7 +118,7 @@
     "critical": 88,
     "medium": 129,
     "high": 337,
-    "low": 53
+    "low": 54
   },
   "nodes": [
     {
@@ -13160,6 +13160,32 @@
       "version": "2026-09"
     },
     {
+      "id": "services/catalog-media-visual-fr-proof.js",
+      "file": "services/catalog-media-visual-fr-proof.js",
+      "type": "file-lite",
+      "headerType": "lite",
+      "role": "catalog-media-visual-fr-proof",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "low",
+      "owner": "catalog",
+      "purpose": "Pure provider-independent validation of reviewed source-image text and French customer presentation.",
+      "inputs": [],
+      "outputs": [],
+      "depends": [],
+      "usedBy": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "version": null
+    },
+    {
       "id": "services/catalog-overrides.js",
       "file": "services/catalog-overrides.js",
       "type": "file",
@@ -14881,6 +14907,7 @@
         "cash_collections",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
+        "order_items",
         "orders",
         "parcels",
         "scan_events",
@@ -52228,6 +52255,24 @@
       "label": "market-delegation"
     },
     {
+      "from": "services/catalog-media-visual-fr-proof.js",
+      "to": "catalog",
+      "type": "owned-by",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-media-visual-fr-proof.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-media-visual-fr-proof.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
       "from": "services/catalog-overrides.js",
       "to": "db.js",
       "type": "depends",
@@ -54981,6 +55026,12 @@
       "to": "db:order_item_real_cost_allocations",
       "type": "db-read",
       "label": "order_item_real_cost_allocations"
+    },
+    {
+      "from": "services/dashboard-metrics/control-tower.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
     },
     {
       "from": "services/dashboard-metrics/control-tower.js",
@@ -90036,6 +90087,30 @@
         "services/market-delegation-catalog-service.js"
       ]
     },
+    "services/catalog-media-visual-fr-proof.js": {
+      "role": "catalog-media-visual-fr-proof",
+      "domain": "catalog",
+      "criticality": "low",
+      "headerType": "lite",
+      "owner": "catalog",
+      "purpose": "Pure provider-independent validation of reviewed source-image text and French customer presentation.",
+      "directDependsOn": [],
+      "directUsedBy": [],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "mustCheck": [
+        "catalog",
+        "impact:catalog",
+        "impact:sourcing"
+      ]
+    },
     "services/catalog-overrides.js": {
       "role": "catalog-field-overrides",
       "domain": "catalog",
@@ -91731,6 +91806,7 @@
         "cash_collections",
         "order_item_cost_imputations",
         "order_item_real_cost_allocations",
+        "order_items",
         "orders",
         "parcels",
         "scan_events",
@@ -91749,6 +91825,7 @@
         "db:cash_collections",
         "db:order_item_cost_imputations",
         "db:order_item_real_cost_allocations",
+        "db:order_items",
         "db:orders",
         "db:parcels",
         "db:scan_events",
@@ -108416,6 +108493,12 @@
       "to": "défaut : pool module)",
       "type": "depends",
       "label": "défaut : pool module)"
+    },
+    {
+      "from": "services/catalog-media-visual-fr-proof.js",
+      "to": "catalog",
+      "type": "owned-by",
+      "label": "catalog"
     },
     {
       "from": "services/catalog-overrides.js",

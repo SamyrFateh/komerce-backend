@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, ./_helpers
  * @used-by       services/dashboard-metrics/index.js
- * @db-read       cash_collections, order_item_cost_imputations, order_item_real_cost_allocations, orders, parcels, scan_events, signals
+ * @db-read       cash_collections, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcels, scan_events, signals
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      server_market_scope_is_authority
