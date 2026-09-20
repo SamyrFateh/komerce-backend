@@ -180,8 +180,11 @@ test('staging opt-in seeds Golden + 24 produits CJ + providers in transaction', 
   expect(Object.values(STAGING_MEDIA)).toHaveLength(10);
   expect(new Set(Object.values(STAGING_MEDIA)).size).toBe(10);
   for (const media of Object.values(STAGING_MEDIA)) {
-    expect(media).toMatch(/^https:\/\/images\\.pexels\\.com\/photos\/\\d+\/pexels-photo-\\d+\\.jpeg\\?/);
-    expect(media).not.toMatch(/\/boutique\/categories\//);
+    const photo = new URL(media);
+    expect(photo.protocol).toBe('https:');
+    expect(photo.hostname).toBe('images.pexels.com');
+    expect(photo.pathname).toMatch(/^\/photos\/[0-9]+\/pexels-photo-[0-9]+\.jpeg$/);
+    expect(photo.pathname).not.toMatch(/\/boutique\/categories\//);
   }
   expect(PHYSICAL_OFFERS.every(x => !x.imageRef || Object.values(STAGING_MEDIA).includes(x.imageRef))).toBe(true);
   expect(SERVICES.every(x => Object.values(STAGING_MEDIA).includes(x.imageRef))).toBe(true);
