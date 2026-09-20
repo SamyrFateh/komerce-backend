@@ -46,6 +46,7 @@ function buildCanonicalOfferProjection(rows = [], refs = []) {
       ambiguity_preserved: !(first.principal_id || principals.length || externalRefs.length),
     },
     current_state: state,
+    last_observation_delta: core.observationDelta(rows, OFFER_STATE_FIELDS),
     observation_count: rows.length,
     observed_at: latest?.observed_at || null,
     freshness: { latest_observed_at: latest?.observed_at || null, stale: null },
