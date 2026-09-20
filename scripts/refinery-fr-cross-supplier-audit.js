@@ -33,8 +33,14 @@ function inspectCandidate(row, product = null) {
   else if (product.content_source === 'connector_raw' && !/^fr(?:[-_]|$)/i.test(sourceLocale)) {
     blockers.push('FOREIGN_RAW_SOURCE_NOT_FRENCH');
   }
-  if (product && product.content_source === 'ai_enriched'
-    && (!String(product.description || '').trim() || product.needs_review !== false)) {
+  const editorialOriginAllowed = product && (
+    product.content_source === 'manual'
+    || product.content_source === 'ai_enriched'
+    || (product.content_source === 'connector_raw' && /^fr(?:[-_]|$)/i.test(sourceLocale))
+  );
+  if (product && (!editorialOriginAllowed
+    || String(product.description || '').trim().length < 20
+    || product.needs_review !== false)) {
     blockers.push('FRENCH_EDITORIAL_REVIEW_REQUIRED');
   }
   return {
@@ -61,8 +67,9 @@ function inspectCandidate(row, product = null) {
       quality_validated: product.quality_validated,
     } : null,
     blockers,
-    fr_preparation_proven: Boolean(product?.content_source === 'ai_enriched'
-      && String(product?.description || '').trim() && product?.needs_review === false),
+    fr_format_precheck_pass: Boolean(editorialOriginAllowed
+      && String(product?.description || '').trim().length >= 20 && product?.needs_review === false),
+    fr_semantic_fidelity_proven: false, // requires real source-to-client comparative review, never inferred from a status flag
   };
 }
 
