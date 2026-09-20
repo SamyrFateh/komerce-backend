@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-17T06:28:32.585Z",
+  "generatedAt": "2026-09-20T07:08:15.977Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 624,
+  "count": 627,
   "routes": [
     {
       "method": "GET",
@@ -2712,6 +2712,16 @@
       ]
     },
     {
+      "method": "PUT",
+      "fullPath": "/api/auth/me/password",
+      "mountPrefix": "/api/auth",
+      "localPath": "/me/password",
+      "routeFile": "routes/auth.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "DELETE",
       "fullPath": "/api/auth/me/pickup-authorization",
       "mountPrefix": "/api/auth",
@@ -2867,6 +2877,26 @@
       "mountPrefix": "/api/auth",
       "localPath": "/register",
       "routeFile": "routes/auth.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/step-up/otp/request",
+      "mountPrefix": "/api/auth/step-up/otp",
+      "localPath": "/request",
+      "routeFile": "routes/auth-step-up-otp.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/auth/step-up/otp/verify",
+      "mountPrefix": "/api/auth/step-up/otp",
+      "localPath": "/verify",
+      "routeFile": "routes/auth-step-up-otp.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]

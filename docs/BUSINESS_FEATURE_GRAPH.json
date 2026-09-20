@@ -1086,6 +1086,13 @@
       },
       {
         "feature": "auth-identity",
+        "category": "routes",
+        "declared": "routes/auth-step-up-otp.js",
+        "resolvedPath": "routes/auth-step-up-otp.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "auth-identity",
         "category": "boutique",
         "declared": "js/b-identity.js",
         "resolvedPath": "public/boutique/js/b-identity.js",
@@ -1180,6 +1187,13 @@
         "category": "tests",
         "declared": "tests/unit/name-normalize.test.js",
         "resolvedPath": "tests/unit/name-normalize.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "auth-identity",
+        "category": "tests",
+        "declared": "tests/unit/auth-step-up-otp-route.test.js",
+        "resolvedPath": "tests/unit/auth-step-up-otp-route.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -15718,6 +15732,30 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "auth-identity",
+        "entry": "PUT /api/auth/me/password",
+        "method": "PUT",
+        "path": "/api/auth/me/password",
+        "routeFile": "routes/auth.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "auth-identity",
+        "entry": "POST /api/auth/step-up/otp/request",
+        "method": "POST",
+        "path": "/api/auth/step-up/otp/request",
+        "routeFile": "routes/auth-step-up-otp.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "auth-identity",
+        "entry": "POST /api/auth/step-up/otp/verify",
+        "method": "POST",
+        "path": "/api/auth/step-up/otp/verify",
+        "routeFile": "routes/auth-step-up-otp.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "auth-passkey",
         "entry": "POST /api/auth/passkey/register/options",
         "method": "POST",
@@ -18866,7 +18904,7 @@
         "entry": "GET /api/market-delegation/markets/:marketCode/cash-control-policy",
         "method": "GET",
         "path": "/api/market-delegation/markets/{id}/cash-control-policy",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-cash-control.js",
         "status": "resolved-owned"
       },
       {
@@ -18874,7 +18912,7 @@
         "entry": "PUT /api/market-delegation/markets/:marketCode/cash-control-policy",
         "method": "PUT",
         "path": "/api/market-delegation/markets/{id}/cash-control-policy",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-cash-control.js",
         "status": "resolved-owned"
       },
       {
@@ -18882,7 +18920,7 @@
         "entry": "GET /api/market-delegation/markets/:marketCode/network/relais",
         "method": "GET",
         "path": "/api/market-delegation/markets/{id}/network/relais",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-network.js",
         "status": "resolved-owned"
       },
       {
@@ -18890,7 +18928,7 @@
         "entry": "POST /api/market-delegation/markets/:marketCode/network/relais",
         "method": "POST",
         "path": "/api/market-delegation/markets/{id}/network/relais",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-network.js",
         "status": "resolved-owned"
       },
       {
@@ -18898,7 +18936,7 @@
         "entry": "PUT /api/market-delegation/markets/:marketCode/network/relais/:relaisId",
         "method": "PUT",
         "path": "/api/market-delegation/markets/{id}/network/relais/{id}",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-network.js",
         "status": "resolved-owned"
       },
       {
@@ -18906,7 +18944,7 @@
         "entry": "POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/suspend",
         "method": "POST",
         "path": "/api/market-delegation/markets/{id}/network/relais/{id}/suspend",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-network.js",
         "status": "resolved-owned"
       },
       {
@@ -18914,7 +18952,7 @@
         "entry": "POST /api/market-delegation/markets/:marketCode/network/relais/:relaisId/activate",
         "method": "POST",
         "path": "/api/market-delegation/markets/{id}/network/relais/{id}/activate",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-network.js",
         "status": "resolved-owned"
       },
       {
@@ -18922,7 +18960,7 @@
         "entry": "GET /api/market-delegation/markets/:marketCode/network/providers",
         "method": "GET",
         "path": "/api/market-delegation/markets/{id}/network/providers",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-provider.js",
         "status": "resolved-owned"
       },
       {
@@ -18930,7 +18968,7 @@
         "entry": "POST /api/market-delegation/markets/:marketCode/network/providers",
         "method": "POST",
         "path": "/api/market-delegation/markets/{id}/network/providers",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-provider.js",
         "status": "resolved-owned"
       },
       {
@@ -18938,7 +18976,7 @@
         "entry": "PUT /api/market-delegation/markets/:marketCode/network/providers/:providerId",
         "method": "PUT",
         "path": "/api/market-delegation/markets/{id}/network/providers/{id}",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-provider.js",
         "status": "resolved-owned"
       },
       {
@@ -18946,7 +18984,7 @@
         "entry": "POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/suspend",
         "method": "POST",
         "path": "/api/market-delegation/markets/{id}/network/providers/{id}/suspend",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-provider.js",
         "status": "resolved-owned"
       },
       {
@@ -18954,7 +18992,7 @@
         "entry": "POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/activate",
         "method": "POST",
         "path": "/api/market-delegation/markets/{id}/network/providers/{id}/activate",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-provider.js",
         "status": "resolved-owned"
       },
       {
@@ -18962,7 +19000,7 @@
         "entry": "GET /api/market-delegation/markets/:marketCode/catalog/exposure",
         "method": "GET",
         "path": "/api/market-delegation/markets/{id}/catalog/exposure",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-catalog.js",
         "status": "resolved-owned"
       },
       {
@@ -18970,7 +19008,7 @@
         "entry": "PUT /api/market-delegation/markets/:marketCode/catalog/exposure/:productId",
         "method": "PUT",
         "path": "/api/market-delegation/markets/{id}/catalog/exposure/{id}",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-catalog.js",
         "status": "resolved-owned"
       },
       {
@@ -18978,7 +19016,7 @@
         "entry": "GET /api/market-delegation/markets/:marketCode/local-offer/services",
         "method": "GET",
         "path": "/api/market-delegation/markets/{id}/local-offer/services",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-local-offer.js",
         "status": "resolved-owned"
       },
       {
@@ -18986,7 +19024,7 @@
         "entry": "PUT /api/market-delegation/markets/:marketCode/local-offer/services/:serviceId",
         "method": "PUT",
         "path": "/api/market-delegation/markets/{id}/local-offer/services/{id}",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-local-offer.js",
         "status": "resolved-owned"
       },
       {
@@ -18994,7 +19032,7 @@
         "entry": "GET /api/market-delegation/markets/:marketCode/local-offer/physical-offers",
         "method": "GET",
         "path": "/api/market-delegation/markets/{id}/local-offer/physical-offers",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-local-offer.js",
         "status": "resolved-owned"
       },
       {
@@ -19002,7 +19040,7 @@
         "entry": "PUT /api/market-delegation/markets/:marketCode/local-offer/physical-offers/:physicalOfferId",
         "method": "PUT",
         "path": "/api/market-delegation/markets/{id}/local-offer/physical-offers/{id}",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-local-offer.js",
         "status": "resolved-owned"
       },
       {
@@ -19010,7 +19048,7 @@
         "entry": "GET /api/market-delegation/markets/:marketCode/client-cases/disputes",
         "method": "GET",
         "path": "/api/market-delegation/markets/{id}/client-cases/disputes",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-client-case.js",
         "status": "resolved-owned"
       },
       {
@@ -19018,7 +19056,7 @@
         "entry": "PUT /api/market-delegation/markets/:marketCode/client-cases/disputes/:disputeId",
         "method": "PUT",
         "path": "/api/market-delegation/markets/{id}/client-cases/disputes/{id}",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-client-case.js",
         "status": "resolved-owned"
       },
       {
@@ -19026,7 +19064,7 @@
         "entry": "GET /api/market-delegation/markets/:marketCode/settlements",
         "method": "GET",
         "path": "/api/market-delegation/markets/{id}/settlements",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-settlement.js",
         "status": "resolved-owned"
       },
       {
@@ -19034,7 +19072,7 @@
         "entry": "POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/request",
         "method": "POST",
         "path": "/api/market-delegation/markets/{id}/settlements/{id}/request",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-settlement.js",
         "status": "resolved-owned"
       },
       {
@@ -19042,7 +19080,7 @@
         "entry": "POST /api/market-delegation/markets/:marketCode/settlements/:settlementId/receive",
         "method": "POST",
         "path": "/api/market-delegation/markets/{id}/settlements/{id}/receive",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-settlement.js",
         "status": "resolved-owned"
       },
       {
@@ -19050,7 +19088,7 @@
         "entry": "GET /api/market-delegation/markets/:marketCode/structure-events",
         "method": "GET",
         "path": "/api/market-delegation/markets/{id}/structure-events",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-structure-event.js",
         "status": "resolved-owned"
       },
       {
@@ -19058,7 +19096,7 @@
         "entry": "POST /api/market-delegation/markets/:marketCode/structure-events",
         "method": "POST",
         "path": "/api/market-delegation/markets/{id}/structure-events",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-structure-event.js",
         "status": "resolved-owned"
       },
       {
@@ -19066,7 +19104,7 @@
         "entry": "GET /api/market-delegation/markets/:marketCode/performance",
         "method": "GET",
         "path": "/api/market-delegation/markets/{id}/performance",
-        "routeFile": "routes/market-delegation-team.js",
+        "routeFile": "routes/market-delegation-performance.js",
         "status": "resolved-owned"
       },
       {
@@ -26480,6 +26518,18 @@
                 "targetFile": "utils/auth-session.js"
               },
               {
+                "sourceFileId": "routes/auth-step-up-otp.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
+                "sourceFileId": "routes/auth-step-up-otp.js",
+                "targetFile": "utils/auth-cookie.js"
+              },
+              {
+                "sourceFileId": "routes/auth-step-up-otp.js",
+                "targetFile": "utils/auth-session.js"
+              },
+              {
                 "sourceFileId": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
                 "targetFile": "utils/auth-session.js"
               }
@@ -26610,6 +26660,22 @@
                 "targetFile": "utils/phone.js"
               },
               {
+                "sourceFileId": "routes/auth-step-up-otp.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/auth-step-up-otp.js",
+                "targetFile": "middleware/validate.js"
+              },
+              {
+                "sourceFileId": "routes/auth-step-up-otp.js",
+                "targetFile": "validators/index.js"
+              },
+              {
+                "sourceFileId": "routes/auth-step-up-otp.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "tests/integration/admin-authz-probe.test.js",
                 "targetFile": "bootstrap/crons.js"
               },
@@ -26624,6 +26690,10 @@
               {
                 "sourceFileId": "tests/integration/otp-no-guest.test.js",
                 "targetFile": "server.js"
+              },
+              {
+                "sourceFileId": "tests/unit/auth-step-up-otp-route.test.js",
+                "targetFile": "db.js"
               }
             ]
           }
@@ -26704,6 +26774,14 @@
               },
               {
                 "sourceFileId": "routes/otp.js",
+                "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "routes/auth-step-up-otp.js",
+                "targetFile": "services/notification-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/auth-step-up-otp-route.test.js",
                 "targetFile": "services/notification-service.js"
               }
             ]
@@ -30764,6 +30842,10 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/otp.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/auth-step-up-otp.js"
               }
             ]
           }
@@ -38917,7 +38999,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1576
+        "filesObserved": 1578
       },
       "boutique": {
         "filesObserved": 217,
@@ -41874,8 +41956,8 @@
       "backend": {
         "manifestsDiscovered": 35,
         "manifestsConnected": 35,
-        "technicalNodesTotal": 501,
-        "technicalNodesOwned": 501,
+        "technicalNodesTotal": 502,
+        "technicalNodesOwned": 502,
         "technicalOrphans": 0
       },
       "dash": {
@@ -41999,7 +42081,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> auth-identity",
-        "msg": "dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"auth-identity\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"auth-identity\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",

@@ -335,6 +335,82 @@ describe('DELETE /api/auth/me/pickup-authorization', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
+// AUTH-7b — le mock authenticate par défaut pose déjà req.auth avec un
+// amr fort et frais ('passkey'), donc requireRecentAuth (réel, non mocké)
+// passe par défaut. Le step-up lui-même est testé dans
+// tests/unit/auth-step-up-otp-route.test.js et
+// tests/unit/require-recent-auth.test.js — ici, seule la logique propre
+// à cette route (vérification du mot de passe actuel + mise à jour) est
+// sous test.
+describe('PUT /api/auth/me/password', () => {
+  it('428 si la session n’a pas de preuve récente (méthode faible/ancienne)', async () => {
+    // Écrase req.auth pour simuler une session issue d'un simple login
+    // email+password (amr=['password'], jamais 'otp' ni 'passkey') — le
+    // scénario réel qu'AUTH-7b est censé bloquer.
+    const isolatedApp = express();
+    isolatedApp.use(express.json());
+    isolatedApp.use((req, _res, next) => {
+      req.user = { id: 'user-1' };
+      req.auth = { authTime: Math.floor(Date.now() / 1000), amr: ['password'] };
+      next();
+    });
+    jest.isolateModules(() => {
+      const router = require('../../routes/auth');
+      isolatedApp.use('/api/auth', router);
+    });
+    isolatedApp.use((err, req, res, _next) => res.status(500).json({ error: err.message }));
+
+    const res = await request(isolatedApp)
+      .put('/api/auth/me/password')
+      .send({ current_password: 'Ancien123!', new_password: 'Nouveau123!' });
+    expect(res.status).toBe(428);
+    expect(res.body.code).toBe('step_up_required');
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('401 si le compte n’a pas de mot de passe défini', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ password_hash: null }] });
+    const res = await request(app)
+      .put('/api/auth/me/password')
+      .send({ current_password: 'Ancien123!', new_password: 'Nouveau123!' });
+    expect(res.status).toBe(409);
+  });
+
+  it('401 si le mot de passe actuel est incorrect', async () => {
+    bcrypt.compare.mockResolvedValueOnce(false);
+    db.query.mockResolvedValueOnce({ rows: [{ password_hash: 'hash-actuel' }] });
+    const res = await request(app)
+      .put('/api/auth/me/password')
+      .send({ current_password: 'Mauvais!', new_password: 'Nouveau123!' });
+    expect(res.status).toBe(401);
+    expect(res.body.error).toMatch(/incorrect/i);
+  });
+
+  it('succès : vérifie le mot de passe actuel puis écrit le nouveau hash', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ password_hash: 'hash-actuel' }] })
+      .mockResolvedValueOnce({ rowCount: 1 });
+    const res = await request(app)
+      .put('/api/auth/me/password')
+      .send({ current_password: 'Ancien123!', new_password: 'Nouveau123!' });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ success: true, message: 'Mot de passe mis à jour.' });
+    expect(bcrypt.compare).toHaveBeenCalledWith('Ancien123!', 'hash-actuel');
+    expect(bcrypt.hash).toHaveBeenCalledWith('Nouveau123!', 12);
+    const updateCall = db.query.mock.calls.find(c => /UPDATE users SET password_hash/.test(c[0]));
+    expect(updateCall[1]).toEqual(['hashed-pw', 'user-1']);
+  });
+
+  it('erreur DB → next(err) → 500', async () => {
+    db.query.mockRejectedValueOnce(new Error('db down'));
+    const res = await request(app)
+      .put('/api/auth/me/password')
+      .send({ current_password: 'Ancien123!', new_password: 'Nouveau123!' });
+    expect(res.status).toBe(500);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
 describe('POST /api/auth/guest-checkout', () => {
   it('410 — route retirée', async () => {
     const res = await request(app).post('/api/auth/guest-checkout').send();

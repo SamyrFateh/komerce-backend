@@ -114,6 +114,18 @@ const auth = {
       new_password: safeStr(128).min(8).required(),
     }),
   },
+  stepUpOtpVerify: {
+    body: Joi.object({
+      code: Joi.string().trim().pattern(/^\d{6}$/).required()
+        .messages({ 'string.pattern.base': 'Code à 6 chiffres requis' }),
+    }),
+  },
+  changePassword: {
+    body: Joi.object({
+      current_password: safeStr(128).required(),
+      new_password:      safeStr(128).min(8).required(),
+    }),
+  },
 };
 
 // product_ref : KPR-XXXXXX — référence interne Komerce stable (RANK-02)

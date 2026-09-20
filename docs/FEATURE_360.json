@@ -1028,8 +1028,13 @@
             ]
           },
           "routes": {
-            "count": 3,
+            "count": 4,
             "files": [
+              {
+                "declared": "routes/auth-step-up-otp.js",
+                "resolvedPath": "routes/auth-step-up-otp.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "routes/auth.js",
                 "resolvedPath": "routes/auth.js",
@@ -1068,7 +1073,7 @@
             ]
           },
           "tests": {
-            "count": 8,
+            "count": 9,
             "files": [
               {
                 "declared": "tests/e2e-api/auth-identity.pickup-authorization-staging.e2e.test.js",
@@ -1083,6 +1088,11 @@
               {
                 "declared": "tests/integration/otp-no-guest.test.js",
                 "resolvedPath": "tests/integration/otp-no-guest.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/auth-step-up-otp-route.test.js",
+                "resolvedPath": "tests/unit/auth-step-up-otp-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -1123,7 +1133,7 @@
             ]
           }
         },
-        "totalFiles": 20,
+        "totalFiles": 22,
         "boutiqueManifest": "auth",
         "boutiqueFiles": {
           "count": 5,
@@ -1382,7 +1392,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 22
+          "count": 25
         }
       },
       "businessDependencies": [
