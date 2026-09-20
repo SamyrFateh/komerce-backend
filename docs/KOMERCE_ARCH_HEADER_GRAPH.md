@@ -6,20 +6,20 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 606
-- Files with full headers: 561
+- Scanned code files: 607
+- Files with full headers: 562
 - Files with lite headers: 45
-- Files with any headers: 606
+- Files with any headers: 607
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1447
-- Edges: 7229
+- Graph nodes: 1448
+- Edges: 7240
 - DB tables: 173
 - Doctrines: 484
 - Impact areas: 184
 - Unresolved code edges: 711
-- Tables multi-écrivains directs (>=2): 73
+- Tables multi-écrivains directs (>=2): 74
 - Avertissements db-write / db-write-via en chevauchement: 8
 
 ## Domains
@@ -27,7 +27,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - account: 2
 - admin-dashboard: 22
 - auth: 14
-- auth-identity: 6
+- auth-identity: 7
 - auth-passkey: 7
 - bootstrap: 2
 - boutique: 21
@@ -83,7 +83,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 22
 - presenter: 1
-- route: 127
+- route: 128
 - route-manifest: 1
 - schema: 1
 - service: 304
@@ -287,6 +287,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - routes/admin/system.js — dashboard-system (dashboard, high, full)
 - routes/admin/users.js — dashboard-users (dashboard, high, full)
 - routes/auth-passkey.js — auth-passkey-endpoints (auth-passkey, high, full)
+- routes/auth-step-up-otp.js — auth-step-up-otp-endpoints (auth-identity, high, full)
 - routes/auth.js — auth-auth (auth-identity, high, full)
 - routes/boutique-suggestions.js — boutique-suggestions-http-facade (recommendations, high, full)
 - routes/catalog-product-detail.js — catalog-product-detail-http (catalog, high, full)
@@ -885,13 +886,13 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - loyalty_rewards: 2 écrivains directs — routes/admin-loyalty.js, services/loyalty-service.js
 - market_delegation_audit: 2 écrivains directs — middleware/require-market-execution-capability.js, services/market-delegation-service.js
 - order_incidents: 2 écrivains directs — routes/hub-dashboard.js, routes/relay-dashboard.js
+- otp_codes: 2 écrivains directs — routes/auth-step-up-otp.js, routes/otp.js
 - outbox_events: 2 écrivains directs — services/outbox-producer.js, services/outbox-worker.js
 - parcel_events: 2 écrivains directs — services/parcel-security.js, utils/parcelSync.js
 - partners: 2 écrivains directs — routes/admin/system.js, services/partner-admin-service.js
 - paypal_events_processed: 2 écrivains directs — services/payment-paypal-events.js, services/payment-paypal.js
 - pickup_verify_attempts: 2 écrivains directs — routes/parcels.js, routes/tracking.js
 - product_market_price_draft_events: 2 écrivains directs — services/market-commercial-price-service.js, services/market-local-price-state-transition.js
-- product_market_price_drafts: 2 écrivains directs — services/market-commercial-price-service.js, services/market-local-price-state-transition.js
 
 ## DB Write / Write-Via Overlap Warnings
 

@@ -80,7 +80,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 35 | 35 | 501 | 501 | 0 |
+| backend | 35 | 35 | 502 | 502 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 105 | 105 | 0 |
 
@@ -132,14 +132,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 > Authentifier un utilisateur et gérer son identité active (OTP, login/register, magic-link, guest-checkout, profil) via les routes exposées.
 
 - services: 3
-- routes: 3
+- routes: 4
 - boutique: 3
 - utils: 1
 - migrations: 2
-- tests: 8
+- tests: 9
 - tables owned (lifecycle): 4 — `revoked_tokens`, `users`, `otp_codes`, `user_pickup_authorizations`
 - tables written: 4
-- interfaces exposed: 22
+- interfaces exposed: 25
 - internal APIs: 12
 - dependencies (consumes): 11 — orders, loyalty, logistics, catalog, platform-ops, infrastructure, auth, auth-passkey, notifications, wallet, documents
 - consumers: 19 — auth, auth-passkey, business-rules, catalog, dashboard, documents, economic-engine, logistics, loyalty, market-autonomy, market-delegation, notifications, orders, payments, platform-ops, providers-services, settlement, shared-cart, wallet
@@ -903,6 +903,9 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `GET /api/auth/me/pickup-authorization` | auth-identity | `routes/auth.js` (resolved-owned) |
 | `PUT /api/auth/me/pickup-authorization` | auth-identity | `routes/auth.js` (resolved-owned) |
 | `DELETE /api/auth/me/pickup-authorization` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `PUT /api/auth/me/password` | auth-identity | `routes/auth.js` (resolved-owned) |
+| `POST /api/auth/step-up/otp/request` | auth-identity | `routes/auth-step-up-otp.js` (resolved-owned) |
+| `POST /api/auth/step-up/otp/verify` | auth-identity | `routes/auth-step-up-otp.js` (resolved-owned) |
 | `POST /api/auth/passkey/register/options` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
 | `POST /api/auth/passkey/register/verify` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
 | `POST /api/auth/passkey/login/options` | auth-passkey | `routes/auth-passkey.js` (resolved-owned) |
@@ -1296,32 +1299,32 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `PUT /api/market-delegation/markets/{id}/team/{id}/capabilities` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
 | `DELETE /api/market-delegation/markets/{id}/team/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
 | `DELETE /api/market-delegation/markets/{id}/team/invitations/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/cash-control-policy` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/cash-control-policy` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/network/relais` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/network/relais` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/network/relais/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/network/relais/{id}/suspend` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/network/relais/{id}/activate` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/network/providers` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/network/providers` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/network/providers/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/network/providers/{id}/suspend` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/network/providers/{id}/activate` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/catalog/exposure` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/catalog/exposure/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/local-offer/services` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/local-offer/services/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/local-offer/physical-offers` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/local-offer/physical-offers/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/client-cases/disputes` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `PUT /api/market-delegation/markets/{id}/client-cases/disputes/{id}` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/settlements` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/settlements/{id}/request` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/settlements/{id}/receive` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/structure-events` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `POST /api/market-delegation/markets/{id}/structure-events` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
-| `GET /api/market-delegation/markets/{id}/performance` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/cash-control-policy` | market-delegation | `routes/market-delegation-cash-control.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/cash-control-policy` | market-delegation | `routes/market-delegation-cash-control.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/network/relais` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/relais` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/network/relais/{id}` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/relais/{id}/suspend` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/relais/{id}/activate` | market-delegation | `routes/market-delegation-network.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/network/providers` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/providers` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/network/providers/{id}` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/providers/{id}/suspend` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/network/providers/{id}/activate` | market-delegation | `routes/market-delegation-provider.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/catalog/exposure` | market-delegation | `routes/market-delegation-catalog.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/catalog/exposure/{id}` | market-delegation | `routes/market-delegation-catalog.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/local-offer/services` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/local-offer/services/{id}` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/local-offer/physical-offers` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/local-offer/physical-offers/{id}` | market-delegation | `routes/market-delegation-local-offer.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/client-cases/disputes` | market-delegation | `routes/market-delegation-client-case.js` (resolved-owned) |
+| `PUT /api/market-delegation/markets/{id}/client-cases/disputes/{id}` | market-delegation | `routes/market-delegation-client-case.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/settlements` | market-delegation | `routes/market-delegation-settlement.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/settlements/{id}/request` | market-delegation | `routes/market-delegation-settlement.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/settlements/{id}/receive` | market-delegation | `routes/market-delegation-settlement.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/structure-events` | market-delegation | `routes/market-delegation-structure-event.js` (resolved-owned) |
+| `POST /api/market-delegation/markets/{id}/structure-events` | market-delegation | `routes/market-delegation-structure-event.js` (resolved-owned) |
+| `GET /api/market-delegation/markets/{id}/performance` | market-delegation | `routes/market-delegation-performance.js` (resolved-owned) |
 | `GET /api/v2/notifications` | notifications | `routes/notification-api.js` (resolved-owned) |
 | `GET /api/v2/notifications/stats` | notifications | `routes/notification-api.js` (resolved-owned) |
 | `GET /api/auth/me/notifications` | notifications | `routes/client-notifications.js` (resolved-owned) |
@@ -2039,7 +2042,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 - **[DASH-MANIFEST-DUPLICATE-COPY]** legacy-control-tower — "public/features/legacy-control-tower.feature.js" est une copie déclarée de "public/dashboards/features/legacy-control-tower.feature.js" (APP_FEATURE_REGISTRY.md) — non chargée comme nœud séparé, résolue uniquement contre le canonique
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** dashboard -> loyalty — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "loyalty"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** dashboard -> platform — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "dashboard" vers "platform"
-- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> auth-identity — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "auth-identity"
+- **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> auth-identity — dépendance cross-feature observée (canal: static-code, 4 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "auth-identity"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> auth-passkey — dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "auth-passkey"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> business-rules — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "business-rules"
 - **[OBSERVED-UNDECLARED-FEATURE-DEPENDENCY]** infrastructure -> decision-signals — dépendance cross-feature observée (canal: static-code, 3 preuve(s)) sans contract.consumes déclaré chez "infrastructure" vers "decision-signals"
@@ -2100,7 +2103,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1576 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1578 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 217 fichier(s) observés, dont 12 sous manifest non-canonique (canonicalFeature=null)
 - dash : 82 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2125,14 +2128,14 @@ Meta Graph monté : oui.
 | auth | auth-identity | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | auth | infrastructure | static-code | 15 | **DECLARED_AND_OBSERVED** |
 | auth | notifications | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| auth-identity | auth | static-code | 9 | **DECLARED_AND_OBSERVED** |
+| auth-identity | auth | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | auth-identity | auth-passkey | static-code | 4 | **DECLARED_AND_OBSERVED** |
 | auth-identity | catalog | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | auth-identity | documents | interface, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| auth-identity | infrastructure | static-code | 15 | **DECLARED_AND_OBSERVED** |
+| auth-identity | infrastructure | static-code | 20 | **DECLARED_AND_OBSERVED** |
 | auth-identity | logistics | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | auth-identity | loyalty | data-read | 1 | **DECLARED_AND_OBSERVED** |
-| auth-identity | notifications | static-code | 3 | **DECLARED_AND_OBSERVED** |
+| auth-identity | notifications | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | auth-identity | orders | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | auth-identity | platform-ops | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | auth-identity | wallet | interface | 1 | **DECLARED_AND_OBSERVED** |
@@ -2221,7 +2224,7 @@ Meta Graph monté : oui.
 | incident-management | logistics | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | incident-management | orders | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | infrastructure | auth | static-code | 3 | **DECLARED_AND_OBSERVED** |
-| infrastructure | auth-identity | static-code | 3 | **OBSERVED_UNDECLARED** |
+| infrastructure | auth-identity | static-code | 4 | **OBSERVED_UNDECLARED** |
 | infrastructure | auth-passkey | static-code | 1 | **OBSERVED_UNDECLARED** |
 | infrastructure | business-rules | static-code | 3 | **OBSERVED_UNDECLARED** |
 | infrastructure | catalog | static-code | 6 | **DECLARED_AND_OBSERVED** |
