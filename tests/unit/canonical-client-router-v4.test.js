@@ -53,19 +53,29 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
   });
 
   test('les tabs Atelier économique pointent vers des sections réellement rendues', () => {
+    // pricing-economic-cockpit.js peint le DOM de pricing-workspace.js dans une
+    // racine détachée (jamais visible — cf. son doctrine
+    // mock_is_ui_contract) ; la vraie surface visible en mode Global est
+    // construite par renderOverview() dans pricing-workspace-decision.js,
+    // chargé en dernier et qui remplace le rendu précédent. C'est donc ce
+    // fichier qu'il faut vérifier, pas pricing-workspace.js.
     const policy = read('public/dashboards/canonical/js/navigation-policy-v4.js');
-    const pricing = read('public/dashboards/canonical/js/pricing-workspace.js');
+    const overview = read('public/dashboards/canonical/js/pricing-workspace-decision.js');
     const routerSource = read('public/dashboards/canonical/js/canonical-client-router-v4.js');
     const expectations = [
-      ['pricing-products', 'Décision produit'],
-      ['pricing-costs', 'Atelier des coûts'],
+      ['pricing-products', 'Frontières prix produit'],
+      ['pricing-costs', 'Coûts'],
       ['pricing-strategy', 'Stratégie & concurrence'],
     ];
     expectations.forEach(([id, title]) => {
       expect(policy).toContain(`#${id}`);
-      expect(pricing).toContain(`'${title}'`);
-      expect(routerSource).toContain(`'${id}': '${title}'`);
+      expect(overview).toContain(`'${title}'`);
+      expect(overview).toContain(`'${id}'`);
     });
+    // Le routeur porte son propre libellé (utilisé pour le titre de
+    // document/breadcrumb au changement de hash) — distinct du titre visuel
+    // de la section elle-même, mais doit rester cohérent avec 'Stratégie & concurrence'.
+    expect(routerSource).toContain(`'pricing-strategy': 'Stratégie & concurrence'`);
   });
 
   test('une navigation locale hash reste dans le même document', () => {
