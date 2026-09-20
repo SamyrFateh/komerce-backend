@@ -73,8 +73,8 @@
         value: displayMetric(base, incompleteCosts),
         tone: 'warning',
         icon: '!',
-        href: '#finance-costing',
-        actionLabel: 'Voir le costing →',
+        href: '#finance-incomplete-costs',
+        actionLabel: 'Voir les commandes →',
       });
     }
     if (variances.length > 0) {
@@ -190,16 +190,39 @@
   }
 
   function varianceItems(payload, base) {
-    return (Array.isArray(payload && payload.costing_orders) ? payload.costing_orders : []).map(row => {
-      const realMargin = row.consolidated_margin_kmf;
-      const incomplete = row.cost_status && row.cost_status !== 'actual';
-      return {
-        title: row.reference || 'Commande',
-        helper: `${base.COST_STATUS_LABELS[row.cost_status] || row.cost_status || 'Costing inconnu'} · vente ${base.formatKmf(row.sale_total_kmf)} · réel ${base.formatKmf(row.real_cost_kmf)} · marge ${base.formatKmf(realMargin)}`,
-        value: base.formatSignedKmf(row.variance_kmf),
-        tone: realMargin != null && Number(realMargin) < 0 ? 'critical' : (incomplete ? 'warning' : 'neutral'),
-      };
-    });
+    // Filtré sur variance_kmf !== 0 — exactement la même condition que le
+    // compte "Variances observées" du bandeau de décision (decisionItems
+    // ci-dessus). Avant : cette section montrait TOUTES les commandes
+    // costées, y compris celles à variance nulle — la liste ne
+    // correspondait pas au chiffre affiché sur la carte de décision.
+    return (Array.isArray(payload && payload.costing_orders) ? payload.costing_orders : [])
+      .filter(row => row && Number.isFinite(Number(row.variance_kmf)) && Number(row.variance_kmf) !== 0)
+      .map(row => {
+        const realMargin = row.consolidated_margin_kmf;
+        const incomplete = row.cost_status && row.cost_status !== 'actual';
+        return {
+          title: row.reference || 'Commande',
+          helper: `${base.COST_STATUS_LABELS[row.cost_status] || row.cost_status || 'Costing inconnu'} · vente ${base.formatKmf(row.sale_total_kmf)} · réel ${base.formatKmf(row.real_cost_kmf)} · marge ${base.formatKmf(realMargin)}`,
+          value: base.formatSignedKmf(row.variance_kmf),
+          tone: realMargin != null && Number(realMargin) < 0 ? 'critical' : (incomplete ? 'warning' : 'neutral'),
+        };
+      });
+  }
+
+  // Détail de "Coûts incomplets" (bandeau de décision) — jusqu'ici cette
+  // carte pointait vers #finance-costing, qui montre en réalité 5 métriques
+  // de qualité coût/marge agrégées (coût estimé, coût réel, marge estimée…)
+  // sans aucun rapport avec le NOMBRE de commandes à coût incomplet compté
+  // sur la carte. incomplete_cost_orders existe déjà dans le payload
+  // (services/dashboard-finance-canonical.js, même clause WHERE que le
+  // compte cmds_cout_incomplet) mais n'était affiché nulle part.
+  function incompleteCostOrderItems(payload, base) {
+    return (Array.isArray(payload && payload.incomplete_cost_orders) ? payload.incomplete_cost_orders : []).map(row => ({
+      title: row.reference || 'Commande',
+      helper: `${row.status || '—'} · paiement ${row.payment_status || '—'} · ${base.formatDate(row.created_at)}`,
+      value: base.formatKmf(row.total_kmf),
+      tone: 'warning',
+    }));
   }
 
   function paymentItems(payload, base) {
@@ -352,18 +375,29 @@
       dashboard.appendChild(section.section);
     }
 
-    const costing = costingItems(payload, base);
+    const incompleteCostOrders = incompleteCostOrderItems(payload, base);
     const variances = varianceItems(payload, base);
-    if (costing.length || variances.length) {
+    if (incompleteCostOrders.length || variances.length) {
       const grid = doc.createElement('div');
       grid.className = 'kmc-decision-dashboard-grid-2';
-      const truth = cardSection(doc, 'Vérité du costing', 'Couverture et qualité telles que fournies par les autorités métier.', 'finance-costing');
-      decisionUi.RankedList.render(truth.body, { items: costing });
-      grid.appendChild(truth.section);
-      const variance = cardSection(doc, 'Variances récentes', 'Écarts affichés sans qualifier un seuil « élevé » qui n’existe pas dans le contrat.', 'finance-variances');
+      const incompleteCount = kpi(payload, 'cmds_cout_incomplet');
+      const incompleteDescription = incompleteCount && Number(incompleteCount.value) > incompleteCostOrders.length
+        ? `${incompleteCostOrders.length} sur ${base.formatNumber(incompleteCount.value, 0)} affichée(s) — les plus anciennes en priorité.`
+        : 'Commandes dont le coût réel n’est pas encore complet — mêmes commandes que le bandeau de décision.';
+      const incompleteSection = cardSection(doc, 'Coûts incomplets', incompleteDescription, 'finance-incomplete-costs');
+      decisionUi.RankedList.render(incompleteSection.body, { items: incompleteCostOrders });
+      grid.appendChild(incompleteSection.section);
+      const variance = cardSection(doc, 'Variances récentes', 'Écarts non nuls — mêmes commandes que le bandeau de décision, sans seuil « élevé » inventé côté navigateur.', 'finance-variances');
       decisionUi.RankedList.render(variance.body, { items: variances });
       grid.appendChild(variance.section);
       dashboard.appendChild(grid);
+    }
+
+    const costing = costingItems(payload, base);
+    if (costing.length) {
+      const section = cardSection(doc, 'Vérité du costing', 'Couverture et qualité du calcul de marge telles que fournies par les autorités métier — pas une liste de commandes.', 'finance-costing-quality');
+      decisionUi.RankedList.render(section.body, { items: costing });
+      dashboard.appendChild(section.section);
     }
 
     const payments = paymentItems(payload, base);
@@ -382,7 +416,12 @@
 
     const refunds = refundItems(payload, base);
     if (refunds.length) {
-      const section = cardSection(doc, 'Remboursements récents', 'Remboursements finalisés de la période.', 'finance-refunds');
+      const refundCount = payload && payload.refunds && Number.isFinite(Number(payload.refunds.count))
+        ? Number(payload.refunds.count) : null;
+      const refundsDescription = refundCount != null && refundCount > refunds.length
+        ? `${refunds.length} sur ${base.formatNumber(refundCount, 0)} affiché(s) — les plus récents en priorité.`
+        : 'Remboursements finalisés de la période.';
+      const section = cardSection(doc, 'Remboursements récents', refundsDescription, 'finance-refunds');
       decisionUi.RankedList.render(section.body, { items: refunds });
       dashboard.appendChild(section.section);
     }
@@ -422,6 +461,7 @@
       projectCompletenessProgress: payload => completenessProgress(payload, base),
       projectTrendItems: payload => trendItems(payload, base),
       projectCostingItems: payload => costingItems(payload, base),
+      projectIncompleteCostOrderItems: payload => incompleteCostOrderItems(payload, base),
       projectVarianceItems: payload => varianceItems(payload, base),
       projectPaymentItems: payload => paymentItems(payload, base),
       projectRelayItems: payload => relayItems(payload, base),
@@ -441,6 +481,7 @@
     completenessProgress,
     trendItems,
     costingItems,
+    incompleteCostOrderItems,
     varianceItems,
     paymentItems,
     relayItems,
