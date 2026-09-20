@@ -17,6 +17,7 @@ const {
   MAX_EDITORIAL_CANDIDATES,
   isEnabled,
   parseEditorialCandidates,
+  isPublicDemoProviderCard,
   getDiscoveryRail,
 } = require('../../services/discovery-rail-service');
 
@@ -29,6 +30,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   delete process.env.DISCOVERY_RAIL_ENABLED;
   delete process.env.DISCOVERY_RAIL_CANDIDATES;
+  delete process.env.KOMERCE_ENV;
 });
 
 describe('discovery-rail-service — activation', () => {
@@ -130,6 +132,42 @@ describe('discovery-rail-service — politique éditoriale', () => {
     expect(cards[0].category_keys).toEqual(['Maison']);
     expect(cards[1].category_keys).toEqual(['Bricolage', 'Tech', 'Maison']);
     expect(cards[2].category_keys).toEqual(['Tech']);
+  });
+
+
+  it('ne publie jamais les prestataires STAGING ni leurs images de catégorie en production', async () => {
+    process.env.KOMERCE_ENV = 'production';
+    process.env.DISCOVERY_RAIL_ENABLED = 'true';
+    process.env.DISCOVERY_RAIL_CANDIDATES = [
+      `service:${SERVICE_ID}`,
+      `physical_offer:${OFFER_ID}`,
+      `product:${PRODUCT_ID}`,
+    ].join(',');
+    db.query.mockResolvedValue({ rows: [{ id: MARKET_ID }] });
+    composeDiscoveryRail.mockResolvedValue([
+      { kind: 'service', cta_action_ref: SERVICE_ID, title: 'Plomberie',
+        provider_name: '[STAGING] Dépannage Anjouan', image_ref: '/images/plomberie.webp' },
+      { kind: 'physical_offer', cta_action_ref: OFFER_ID, title: 'Ciment',
+        provider_name: 'Appro Local', image_ref: '/boutique/categories/cat-bricolage-v3.webp' },
+      { kind: 'product', cta_action_ref: PRODUCT_ID, title: 'Vrai produit', image_ref: '/images/produit.webp' },
+    ]);
+    const cards = await getDiscoveryRail({ marketCode: 'KM' });
+    expect(cards.map(card => card.kind)).toEqual(['product']);
+    expect(isPublicDemoProviderCard({ kind: 'service', provider_name: '[STAGING] Prestataire' })).toBe(true);
+    expect(isPublicDemoProviderCard({ kind: 'product', image_ref: '/boutique/categories/cat-bricolage-v3.webp' })).toBe(false);
+  });
+
+  it('conserve les données de test dans le rail staging uniquement', async () => {
+    process.env.KOMERCE_ENV = 'staging';
+    process.env.DISCOVERY_RAIL_ENABLED = 'true';
+    process.env.DISCOVERY_RAIL_CANDIDATES = `service:${SERVICE_ID}`;
+    db.query.mockResolvedValue({ rows: [{ id: MARKET_ID }] });
+    composeDiscoveryRail.mockResolvedValue([
+      { kind: 'service', cta_action_ref: SERVICE_ID, title: 'Plomberie',
+        provider_name: '[STAGING] Dépannage Anjouan', image_ref: '/boutique/categories/cat-bricolage-v3.webp' },
+    ]);
+    const cards = await getDiscoveryRail({ marketCode: 'KM' });
+    expect(cards).toHaveLength(1);
   });
 
   it('market inconnu -> [] sans composition', async () => {

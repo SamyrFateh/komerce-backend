@@ -586,6 +586,12 @@ function _installGridDelegation() {
     const card = e.target.closest('.k-card');
     if (!card) return;
 
+    // Les cartes du rail Discovery utilisent le shell visuel .k-card mais
+    // possèdent leur propre contrat d'ouverture (kind + ref). En particulier,
+    // leur CTA est placé dans .k-card-add : la délégation catalogue l'avalait
+    // avant que le parcours Service puisse s'ouvrir sur mobile.
+    if (card.matches('.k-discovery-canonical-card[data-discovery-kind][data-discovery-ref]')) return;
+
     // FAV ────────────────────────────────────────────────────────
     const favBtn = e.target.closest('.k-card-fav');
     if (favBtn) {

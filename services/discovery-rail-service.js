@@ -120,6 +120,25 @@ function cardKey(card) {
   return `${card.kind}:${card.cta_action_ref}`;
 }
 
+/**
+ * The staging seed deliberately uses synthetic providers and category photos.
+ * Neither is a real local offer, so neither can be exposed to public buyers.
+ * Keep staging usable for contract tests without mutating or deleting fixtures.
+ */
+function isPublicDemoProviderCard(card) {
+  if (card?.kind !== 'service' && card?.kind !== 'physical_offer') return false;
+  const provider = String(card.provider_name || '').trim().toUpperCase();
+  const media = String(card.image_ref || '').trim().split('?')[0].toLowerCase();
+  const placeholder = media.startsWith('/boutique/categories/cat-')
+    && ['.webp', '.png', '.jpg', '.jpeg'].some(extension => media.endsWith(extension));
+  return provider.startsWith('[STAGING]') || placeholder;
+}
+
+function isPublicRuntime() {
+  const env = String(process.env.KOMERCE_ENV || process.env.NODE_ENV || '').trim().toLowerCase();
+  return env === 'production' || env === 'prod';
+}
+
 function mergeCategoryKeys(card, candidate) {
   const source = Array.isArray(card?.category_keys) ? card.category_keys : [];
   const editorial = Array.isArray(candidate?.categoryKeys) ? candidate.categoryKeys : [];
@@ -154,6 +173,8 @@ async function getDiscoveryRail({ marketCode }) {
     .map(candidate => {
       const card = byKey.get(candidate.key);
       if (!card) return null;
+      // No [STAGING] providers or category-image stand-ins in public Discovery.
+      if (isPublicRuntime() && isPublicDemoProviderCard(card)) return null;
       return {
         ...card,
         category_keys: mergeCategoryKeys(card, candidate),
@@ -167,6 +188,8 @@ module.exports = {
   isEnabled,
   normalizeCategoryKeys,
   parseEditorialCandidates,
+  isPublicDemoProviderCard,
+  isPublicRuntime,
   resolveMarketId,
   getDiscoveryRail,
 };

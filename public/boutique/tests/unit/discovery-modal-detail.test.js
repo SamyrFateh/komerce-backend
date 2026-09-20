@@ -219,6 +219,18 @@ test('modal:closed purge le contenu Discovery sans toucher au shell', () => {
   expect(slot.innerHTML).toBe('');
 });
 
+test('le CSS servi masque la buybox et libère la largeur Discovery malgré la priorité des règles Produit', () => {
+  const cssRoot = path.join(__dirname, '../../css');
+  for (const file of ['modal-shell.css', 'dist/components.css']) {
+    const css = fs.readFileSync(path.join(cssRoot, file), 'utf8');
+    expect(css).toMatch(/#k-modal\.k-modal--discovery \.k-modal-body \{\s*display: block;/);
+    expect(css).toMatch(/#k-modal\.k-modal--discovery \.k-modal-product-zone \{\s*display: block;/);
+    expect(css).toMatch(/#k-modal\.k-modal--discovery \.k-modal-buybox,/);
+    expect(css).toMatch(/#k-modal\.k-modal--discovery \.k-modal-actions \{\s*display: none;/);
+    expect(css).toMatch(/#k-modal\.k-modal--discovery \.k-modal-discovery-detail:not\(\[hidden\]\) \{\s*display: block;/);
+  }
+});
+
 test('contrat Discovery : un seul shell et aucune mutation métier directe depuis le rail', () => {
   const root = path.join(__dirname, '../..');
   const rail = fs.readFileSync(path.join(root, 'js/discovery-rail.js'), 'utf8');
