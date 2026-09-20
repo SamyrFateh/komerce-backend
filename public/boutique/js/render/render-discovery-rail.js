@@ -109,7 +109,8 @@ function renderCanonicalCard(card) {
   const context = card.providerName
     ? `${sanitize(card.providerName)}${card.zone ? ` · ${sanitize(card.zone)}` : ''}`
     : (card.description ? sanitize(card.description) : '');
-  const isIllustration = card.kind !== 'product' && /^\\[STAGING\\]/i.test(card.providerName || '');
+  const isIllustration = card.kind !== 'product'
+    && String(card.providerName || '').trim().toUpperCase().startsWith('[STAGING]');
   const mediaCaption = isIllustration ? 'Photo illustrative · démo' : card.subtitle;
   const price = card.kind === 'product' && card.price != null
     ? `<span class="k-card-price k-discovery-canonical-price">${formatPrice(card.price)}</span>`
