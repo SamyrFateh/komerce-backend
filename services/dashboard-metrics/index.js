@@ -89,6 +89,7 @@ module.exports = {
   getCmdsActives: controlTower.getCmdsActives,
   getColisEnTransit: controlTower.getColisEnTransit,
   getAlertesCritiques: controlTower.getAlertesCritiques,
+  getPointsAttention: controlTower.getPointsAttention,
   getCmdsBloquees: controlTower.getCmdsBloquees,
   getTauxCompletudeScans: controlTower.getTauxCompletudeScans,
   getTauxCompletudeCouts: controlTower.getTauxCompletudeCouts,

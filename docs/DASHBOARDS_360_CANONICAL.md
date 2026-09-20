@@ -1,7 +1,7 @@
 # Dashboards 360 — Canonical (généré)
 
 > ⚠️ Fichier **généré** par `scripts/gen-dashboards-360-canonical.js`. Ne pas éditer à la main.
-> Régénéré le 2026-09-20T10:02:34.737Z.
+> Régénéré le 2026-09-20T12:31:26.880Z.
 > Contrepartie de `docs/DASHBOARDS_360.md` (Legacy 1). Les deux coexistent tant que le rollback `?legacy=1` existe (`bootstrap/html-routes.js`).
 > Chaîne de preuve : `navigation.js` (item × rôle) → `hrefFor()` → `app.js::surfaceForPath()` → module (`global.Komerce*`) → `fetch()` → `docs/contract/openapi.json`.
 
@@ -23,7 +23,7 @@
 ## 2. Signaux informatifs (non bloquants, jamais inventés)
 
 - 🟠 Endpoint dynamique absent du contrat (à vérifier à la main) : `GET* /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)`, `GET* /api/admin/workspaces/operations/market/{param}{param} (operations-workspace.js)`, `GET* /api/admin/workspaces/pricing/market/{param}/strategy (pricing-workspace.js)`, `GET* /api/admin/workspaces/shipping-customs/market/{param}{param} (shipping-customs-workspace.js)`, `POST /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)`, `POST /api/admin/workspaces/operations/market/{param}{param} (operations-workspace.js)`, `POST /api/admin/workspaces/shipping-customs/market/{param}{param} (shipping-customs-workspace.js)`, `POST /api/admin/workspaces/sourcing/sources/{param}/{param} (catalog-workspace.js)`, `POST /api/admin/workspaces/sourcing/suppliers/{param}/{param} (sourcing-workspace.js)`
-- ❓ `fetch()` non résolus statiquement : `ENDPOINT (catalog-control-tower.js)`, `config.chargesEndpoint (pricing-structure-event-panel.js)`, `config.submitEndpoint (pricing-structure-event-panel.js)`, `context.endpoint (action-center.js)`, `endpoint (operations.js)`, `endpoint (orders.js)`, `endpoint (pilotage.js)`, `endpoint(workspace, options.requestedMarket) (pricing-workspace-simulation.js)`, `path (action-center.js)`, `url (market-autonomy.js)`, `url (market-cash-control.js)`, `url (market-catalog.js)`, `url (market-client-case.js)`, `url (market-local-offer.js)`, `url (market-network.js)`, `url (market-settlement.js)`, `url (market-team.js)`, `url (markets-decision-bootstrap.js)`, `url (pricing-workspace.js)`, `url (settings-workspace.js)`, `url (standalone-shell-bootstrap-v4.js)`, `url (team-invite.js)`
+- ❓ `fetch()` non résolus statiquement : `ENDPOINT (catalog-control-tower.js)`, `config.chargesEndpoint (pricing-structure-event-panel.js)`, `config.submitEndpoint (pricing-structure-event-panel.js)`, `context.loadEndpoint (action-center.js)`, `endpoint (operations.js)`, `endpoint (orders.js)`, `endpoint (pilotage.js)`, `endpoint(workspace, options.requestedMarket) (pricing-workspace-simulation.js)`, `path (action-center.js)`, `url (market-autonomy.js)`, `url (market-cash-control.js)`, `url (market-catalog.js)`, `url (market-client-case.js)`, `url (market-local-offer.js)`, `url (market-network.js)`, `url (market-settlement.js)`, `url (market-team.js)`, `url (markets-decision-bootstrap.js)`, `url (pricing-workspace.js)`, `url (settings-workspace.js)`, `url (standalone-shell-bootstrap-v4.js)`, `url (team-invite.js)`
 
 ## 3. Matrice navigation × rôle × surface × module
 
@@ -73,7 +73,7 @@
 |---|---|---|---|
 | `action-center.js` | `GET` | `/api/admin/dashboard/context` | 🟢 prouvé |
 | `action-center.js` | `POST` | `path` | ❓ url non résolue |
-| `action-center.js` | `?` | `context.endpoint` | ❓ url non résolue |
+| `action-center.js` | `?` | `context.loadEndpoint` | ❓ url non résolue |
 | `app.js` | `GET` | `/api/admin/dashboard/context` | 🟢 prouvé |
 | `app.js` | `GET` | `/api/auth/me` | 🟢 prouvé |
 | `app.js` | `GET` | `/api/admin/dashboard/context` | 🟢 prouvé |

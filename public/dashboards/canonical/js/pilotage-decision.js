@@ -38,12 +38,6 @@
       .find(item => item && item.key === key) || null;
   }
 
-  function alertLevel(item) {
-    const raw = item && (item.level || item.severity);
-    if (raw === 'urgent') return 'critical';
-    return ['critical', 'warning', 'info'].includes(raw) ? raw : 'info';
-  }
-
   function incompleteCost(payload) {
     const blocks = Array.isArray(payload && payload.view_blocks) ? payload.view_blocks : [];
     for (const block of blocks) {
@@ -65,8 +59,7 @@
   function decisionItems(payload, base) {
     const items = [];
     const critical = metric(payload, 'alertes_critiques');
-    const warnings = (Array.isArray(payload && payload.system_alerts) ? payload.system_alerts : [])
-      .filter(item => alertLevel(item) === 'warning').length;
+    const attention = metric(payload, 'points_attention');
     const incomplete = incompleteCost(payload);
     const qualityWarnings = payload && payload.data_quality && Array.isArray(payload.data_quality.warnings)
       ? payload.data_quality.warnings.length : 0;
@@ -74,11 +67,12 @@
     if (critical) items.push({
       key: 'critical-open', label: 'Critiques ouvertes', helper: 'Nécessitent une action immédiate',
       value: display(base, critical), tone: Number(critical.value) > 0 ? 'critical' : 'positive', icon: '!',
-      href: '#pilotage-alerts', actionLabel: 'Voir les critiques →',
+      href: critical.drill_to || '#pilotage-alerts', actionLabel: 'Voir les critiques →',
     });
-    if (warnings) items.push({
+    if (attention && Number(attention.value) > 0) items.push({
       key: 'attention-open', label: 'Points d’attention', helper: 'À surveiller de près',
-      value: warnings, tone: 'warning', icon: '•', href: '#pilotage-alerts', actionLabel: 'Voir les signaux →',
+      value: display(base, attention), tone: 'warning', icon: '•',
+      href: attention.drill_to || '#pilotage-alerts', actionLabel: 'Voir les signaux →',
     });
     if (incomplete) items.push({
       key: 'costing-incomplete', label: 'Problèmes costing', helper: incomplete.label || 'Coûts incomplets',

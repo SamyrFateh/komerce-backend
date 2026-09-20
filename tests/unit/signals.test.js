@@ -105,10 +105,18 @@ describe('GET /api/admin/signals — liste avec filtres', () => {
     mockDbQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ count: '0' }] });
     await request(buildApp()).get('/api/admin/signals?severity=urgent&signal_type=sla_breach&owner_role=hub');
     const [sql, params] = mockDbQuery.mock.calls[0];
-    expect(sql).toContain('s.severity = $2');
+    expect(sql).toContain('s.severity = ANY($2::text[])');
     expect(sql).toContain('s.signal_type = $3');
     expect(sql).toContain('s.owner_role = $4');
-    expect(params).toEqual([null, 'urgent', 'sla_breach', 'hub', null, null, 50, 0]);
+    expect(params).toEqual([null, ['urgent'], 'sla_breach', 'hub', null, null, 50, 0]);
+  });
+
+  it('?severity=critical,urgent → liste de sévérités, correspondance exacte avec un KPI qui les agrège', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ count: '0' }] });
+    await request(buildApp()).get('/api/admin/signals?severity=critical,urgent');
+    const [sql, params] = mockDbQuery.mock.calls[0];
+    expect(sql).toContain('s.severity = ANY($2::text[])');
+    expect(params[1]).toEqual(['critical', 'urgent']);
   });
 
   it('?family=ops → mappe vers les signal_type connus (ANY)', async () => {
@@ -135,8 +143,8 @@ describe('GET /api/admin/signals — liste avec filtres', () => {
     await request(buildApp()).get(`/api/admin/signals?severity=${encodeURIComponent(malicious)}`);
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).not.toContain(malicious);
-    expect(sql).toContain('s.severity = $2');
-    expect(params).toEqual([null, malicious, null, null, null, null, 50, 0]);
+    expect(sql).toContain('s.severity = ANY($2::text[])');
+    expect(params).toEqual([null, [malicious], null, null, null, null, 50, 0]);
   });
 
   it('limit/offset par défaut = 50/0', async () => {

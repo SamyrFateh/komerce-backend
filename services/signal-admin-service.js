@@ -56,21 +56,28 @@ function executorOrDefault(executor) {
 
 async function listSignals(filters = {}) {
   const status = filters.status ? String(filters.status) : null;
-  const severity = filters.severity ? String(filters.severity) : null;
+  // Accepte une valeur unique ('critical') ou une liste séparée par virgules
+  // ('critical,urgent') — même patron ANY($n::text[]) déjà utilisé pour
+  // familyTypes/signal_type ci-dessous. Permet une correspondance exacte
+  // avec des KPI qui agrègent plusieurs sévérités (ex. alertes_critiques
+  // = critical + urgent, cf. services/dashboard-metrics/control-tower.js).
+  const severityList = filters.severity
+    ? String(filters.severity).split(',').map(s => s.trim()).filter(Boolean)
+    : null;
   const signalType = filters.signal_type ? String(filters.signal_type) : null;
   const ownerRole = filters.owner_role ? String(filters.owner_role) : null;
   const familyTypes = filters.family && FAMILY_TYPES[filters.family] ? FAMILY_TYPES[filters.family] : null;
   const marketId = exactMarketId(filters.market_id);
   const limit = normalizeLimit(filters.limit);
   const offset = normalizeOffset(filters.offset);
-  const filterParams = [status, severity, signalType, ownerRole, familyTypes, marketId];
+  const filterParams = [status, severityList, signalType, ownerRole, familyTypes, marketId];
 
   const { rows } = await db.query(
     `SELECT s.*
        FROM signals s
       WHERE
         (($1::text IS NULL AND s.status IN ('open','acknowledged')) OR s.status = $1)
-        AND ($2::text IS NULL OR s.severity = $2)
+        AND ($2::text[] IS NULL OR s.severity = ANY($2::text[]))
         AND ($3::text IS NULL OR s.signal_type = $3)
         AND ($4::text IS NULL OR s.owner_role = $4)
         AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))
@@ -92,7 +99,7 @@ async function listSignals(filters = {}) {
        FROM signals s
       WHERE
         (($1::text IS NULL AND s.status IN ('open','acknowledged')) OR s.status = $1)
-        AND ($2::text IS NULL OR s.severity = $2)
+        AND ($2::text[] IS NULL OR s.severity = ANY($2::text[]))
         AND ($3::text IS NULL OR s.signal_type = $3)
         AND ($4::text IS NULL OR s.owner_role = $4)
         AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))

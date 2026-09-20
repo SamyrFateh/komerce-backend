@@ -209,7 +209,7 @@ describe('GET /unified', () => {
   it('nominal → 200 avec kpis_global, view_blocks (3 vues), economic_flow, principles', async () => {
     const res = await request(app).get('/api/admin/dashboard/unified');
     expect(res.status).toBe(200);
-    expect(res.body.kpis_global).toHaveLength(5);
+    expect(res.body.kpis_global).toHaveLength(6);
     expect(res.body.view_blocks).toHaveLength(3);
     expect(res.body.economic_flow.stages.length).toBeGreaterThan(0);
     expect(res.body.principles.length).toBeGreaterThan(0);
