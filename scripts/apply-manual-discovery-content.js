@@ -67,9 +67,11 @@ function isValidLocalMediaReference(value) {
   const image = String(value || '').trim();
   if (!image || image.startsWith('//')) return false;
   if (!(image.startsWith('/') || image.startsWith('https://'))) return false;
-  return !/\\/boutique\\/categories\\/cat-[^/?]+\\.(?:webp|png|jpe?g)(?:\\?.*)?$/i.test(image);
+  const pathname = image.split('?')[0].toLowerCase();
+  const categoryImage = pathname.startsWith('/boutique/categories/cat-')
+    && ['.webp', '.png', '.jpg', '.jpeg'].some(extension => pathname.endsWith(extension));
+  return !categoryImage;
 }
-
 
 function isTruthy(value) {
   return ['1', 'true', 'yes'].includes(String(value || '').trim().toLowerCase());
