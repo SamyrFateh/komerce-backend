@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-20T10:02:34.737Z",
+  "generatedAt": "2026-09-20T12:31:26.880Z",
   "summary": {
     "navItems": 13,
     "navMatrixEntries": 37,
@@ -469,7 +469,7 @@
     },
     {
       "module": "action-center.js",
-      "rawUrl": "context.endpoint",
+      "rawUrl": "context.loadEndpoint",
       "httpMethod": "?",
       "normalized": null,
       "matchedRoute": null,
@@ -2093,7 +2093,7 @@
       "ENDPOINT (catalog-control-tower.js)",
       "config.chargesEndpoint (pricing-structure-event-panel.js)",
       "config.submitEndpoint (pricing-structure-event-panel.js)",
-      "context.endpoint (action-center.js)",
+      "context.loadEndpoint (action-center.js)",
       "endpoint (operations.js)",
       "endpoint (orders.js)",
       "endpoint (pilotage.js)",

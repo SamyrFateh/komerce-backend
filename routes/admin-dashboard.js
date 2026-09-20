@@ -298,7 +298,7 @@ router.get(
         ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts,
         coutReel, cmdsCoutIncomplet, coutMoyParCmd,
         cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans,
-        topAlerts,
+        topAlerts, pointsAttention,
       ] = await Promise.all([
         metrics.getCAEncaisse(filters),
         metrics.getCmdsActives(filters),
@@ -314,6 +314,7 @@ router.get(
         metrics.getRetardsCritiques(filters),
         metrics.getTauxCompletudeScans(filters),
         _fetchTopAlerts(10),
+        metrics.getPointsAttention(filters),
       ]);
 
       // Resume par vue (5 KPIs chacune) — ZERO await ici
@@ -362,7 +363,7 @@ router.get(
       ];
 
       res.json({
-        kpis_global: [ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts],
+        kpis_global: [ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts, pointsAttention],
         view_blocks,
         economic_flow,
         principles,
@@ -689,9 +690,9 @@ async function _fetchTopAlerts(limit = 5) {
            created_at
     FROM signals
     WHERE status IN ('open', 'acknowledged', 'snoozed')
-      AND severity IN ('critical', 'urgent')
+      AND severity IN ('critical', 'urgent', 'warning')
     ORDER BY
-      CASE severity WHEN 'critical' THEN 1 WHEN 'urgent' THEN 2 ELSE 3 END,
+      CASE severity WHEN 'critical' THEN 1 WHEN 'urgent' THEN 2 WHEN 'warning' THEN 3 ELSE 4 END,
       created_at DESC
     LIMIT $1
   `;

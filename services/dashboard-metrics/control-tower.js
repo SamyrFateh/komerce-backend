@@ -150,8 +150,48 @@ async function getAlertesCritiques(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('alertes_critiques', 'Alertes critiques', value, 'count', {
-    drillTo: '/admin/action-center?severity=critical',
+    drillTo: '/admin/action-center?severity=critical,urgent',
     warning: value > 10 ? 'Beaucoup de signaux non resolus' : null,
+  });
+}
+
+// Miroir exact de getAlertesCritiques, sévérité 'warning' au lieu de
+// 'critical'/'urgent'. Ajouté car "Points d'attention" côté Pilotage
+// comptait auparavant un sous-ensemble de system_alerts (limité à 5
+// lignes, lui-même filtré sur critical/urgent) — structurellement
+// incapable de contenir un item 'warning', donc toujours 0. Un vrai
+// COUNT(*) dédié, comme pour les critiques, plutôt qu'un comptage
+// approximatif reconstruit côté navigateur depuis une liste tronquée.
+async function getPointsAttention(filters = {}) {
+  const params = [];
+  const temporal = [];
+
+  if (filters.from) {
+    params.push(filters.from);
+    temporal.push(`s.created_at >= $${params.length}`);
+  }
+  if (filters.to) {
+    params.push(filters.to);
+    temporal.push(`s.created_at <= $${params.length}`);
+  }
+
+  const marketScope = buildSignalMarketClause(filters, 's', params.length + 1);
+  params.push(...marketScope.params);
+
+  const sql = `
+    SELECT COUNT(*)::int AS value
+    FROM signals s
+    WHERE s.severity = 'warning'
+      AND s.status IN ('open', 'acknowledged', 'snoozed')
+      ${temporal.length ? `AND ${temporal.join(' AND ')}` : ''}
+      AND ${marketScope.where}
+  `;
+
+  const r = await db.query(sql, params);
+  const value = Number(r.rows[0].value) || 0;
+
+  return makeKpi('points_attention', 'Points d’attention', value, 'count', {
+    drillTo: '/admin/action-center?severity=warning',
   });
 }
 
@@ -248,6 +288,7 @@ module.exports = {
   getCmdsActives,
   getColisEnTransit,
   getAlertesCritiques,
+  getPointsAttention,
   getCmdsBloquees,
   getTauxCompletudeScans,
   getTauxCompletudeCouts,
