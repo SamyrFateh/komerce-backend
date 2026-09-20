@@ -97,6 +97,19 @@ describe('renderDiscoveryRail', () => {
       .toContain('Ali Plomberie · Mutsamudu');
   });
 
+  it('une photo illustrative STAGING est explicitement étiquetée, jamais présentée comme photo du prestataire', () => {
+    const cards = [{
+      kind: 'service', title: 'Plomberie maison', cta_action_ref: 's-staging',
+      image_ref: 'https://images.pexels.com/photos/32588548/pexels-photo-32588548.jpeg',
+      provider_name: '[STAGING] Dépannage Anjouan', subtitle: 'Sur demande',
+    }];
+    renderDiscoveryRail(target(), cards);
+    expect(target().querySelector('.k-discovery-status')?.textContent)
+      .toBe('Photo illustrative · démo');
+    expect(target().querySelector('.k-discovery-canonical-img')?.getAttribute('src'))
+      .toBe(cards[0].image_ref);
+  });
+
   it('ignore un kind inconnu au lieu de créer une taxonomie implicite', () => {
     const cards = [
       { kind: 'marketplace_item', title: 'Inconnu', cta_action_ref: 'x-1', cta_label: 'Voir' },

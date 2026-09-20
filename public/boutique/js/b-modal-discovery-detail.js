@@ -92,11 +92,18 @@ function callbackNotePlaceholderFor(detail = {}) {
     : 'Ajoutez une précision pour le rappel…';
 }
 
+function isIllustrativeDemo(detail) {
+  return String(detail.provider_name || '').trim().toUpperCase().startsWith('[STAGING]');
+}
+
 function buildImage(detail, service = false) {
   const imageClass = service ? 'k-service-detail-img' : 'k-modal-discovery-img';
   const fallbackClass = service ? 'k-service-detail-media-fallback' : 'k-modal-discovery-media-fallback';
+  const alt = isIllustrativeDemo(detail)
+    ? `Photo illustrative de la prestation « ${detail.title} », non prise chez le prestataire`
+    : detail.title;
   return detail.image_ref
-    ? `<img class="${imageClass}" src="${sanitize(detail.image_ref)}" alt="${sanitize(detail.title)}" loading="lazy" decoding="async">`
+    ? `<img class="${imageClass}" src="${sanitize(detail.image_ref)}" alt="${sanitize(alt)}" loading="lazy" decoding="async">`
     : `<div class="${fallbackClass}" aria-hidden="true">K</div>`;
 }
 
@@ -228,6 +235,7 @@ function buildServiceDetailHTML(ref, detail) {
   const identity = buildServiceIdentity(detail);
   const description = buildDescription(detail);
   const whatsappAvailable = detail.whatsapp_available === true;
+  const illustrative = isIllustrativeDemo(detail);
 
   return `
     <article class="k-service-detail-shell">
@@ -236,7 +244,7 @@ function buildServiceDetailHTML(ref, detail) {
       </div>
       <div class="k-service-detail-body">
         <div class="k-service-detail-heading-row">
-          <span class="k-service-detail-eyebrow">Service local</span>
+          <span class="k-service-detail-eyebrow">Service local${illustrative ? ' · Photo illustrative (démo)' : ''}</span>
         </div>
         <h2 class="k-service-detail-title">${sanitize(detail.title)}</h2>
         ${identity}
@@ -259,7 +267,7 @@ function buildPhysicalOfferDetailHTML(ref, detail) {
       <div class="k-modal-discovery-body">
         <div class="k-modal-discovery-meta" aria-label="Type et disponibilité">
           <span class="k-modal-discovery-badge k-modal-discovery-kind">${sanitize(kindLabelFor('physical_offer'))}</span>
-          <span class="k-modal-discovery-badge">${sanitize(statusFor('physical_offer'))}</span>
+          <span class="k-modal-discovery-badge">${isIllustrativeDemo(detail) ? 'Photo illustrative · démo' : sanitize(statusFor('physical_offer'))}</span>
         </div>
         <h2 class="k-modal-discovery-title">${sanitize(detail.title)}</h2>
         ${provider}

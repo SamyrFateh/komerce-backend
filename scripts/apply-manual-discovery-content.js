@@ -61,6 +61,18 @@ const LOCAL_CONTENT_FIELDS = new Set([
 const LOCAL_STOCK_FIELDS = new Set(['location', 'qty_physical', 'expose']);
 const DISCOVERY_FIELDS = new Set(['categories', 'order']);
 
+// Un média de catégorie produit ne prouve jamais une prestation / offre locale.
+// Le contrôle éditorial du sujet photographié reste une validation humaine.
+function isValidLocalMediaReference(value) {
+  const image = String(value || '').trim();
+  if (!image || image.startsWith('//')) return false;
+  if (!(image.startsWith('/') || image.startsWith('https://'))) return false;
+  const pathname = image.split('?')[0].toLowerCase();
+  const categoryImage = pathname.startsWith('/boutique/categories/cat-')
+    && ['.webp', '.png', '.jpg', '.jpeg'].some(extension => pathname.endsWith(extension));
+  return !categoryImage;
+}
+
 function isTruthy(value) {
   return ['1', 'true', 'yes'].includes(String(value || '').trim().toLowerCase());
 }
@@ -222,6 +234,12 @@ function validateManifest(manifest) {
       if (!CONTENT_STATUSES.has(status)) errors.push(`${label}.status invalide`);
       if (own(entry, 'expose') && typeof entry.expose !== 'boolean') errors.push(`${label}.expose doit être booléen`);
       const discovery = validateDiscovery(entry.discovery, label, errors, orders);
+      if ((entry.expose === true || discovery) && !isValidLocalMediaReference(entry.image_ref)) {
+        errors.push(`${label}.image_ref doit désigner une photographie propre à l'offre (pas une image de catégorie)`);
+      }
+      if ((entry.expose === true || discovery) && (!entry.description || !String(entry.description).trim() || !entry.zone || !String(entry.zone).trim())) {
+        errors.push(`${label} exposé exige description et zone exploitables`);
+      }
       if (discovery && (entry.expose !== true || status !== 'active')) {
         errors.push(`${label} exposé dans Discovery doit être status=active et expose=true`);
       }
@@ -492,6 +510,7 @@ module.exports = {
   WRITE_FLAG,
   MAX_DISCOVERY_CANDIDATES,
   normalizeCategories,
+  isValidLocalMediaReference,
   validateManifest,
   candidateToken,
   buildCandidateString,

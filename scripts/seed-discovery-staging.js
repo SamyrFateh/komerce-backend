@@ -34,14 +34,22 @@ const FLAG = 'DISCOVERY_STAGING_SEED_ENABLED';
 const MARKET_CODE = 'KM';
 const LOCAL_STOCK_LOCATION = 'KM_MAIN';
 
-// Médias Boutique existants utilisés uniquement pour éprouver le pipeline
-// image_ref des objets provider. Les Products « Disponible maintenant » utilisent
-// désormais les vraies photos CJ du catalogue public, jamais ces placeholders.
+// Illustrations de prestations pour l'environnement STAGING seulement.
+// Ce ne sont pas des photos des prestataires : voir les crédits et la charte
+// de vérification visuelle dans docs/ops/DISCOVERY_STAGING_MEDIA_CURATION.md.
+// Un seul image_ref par fiche : ne jamais inventer des miniatures dupliquées.
+const pexelsPhoto = id => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=1200`;
 const STAGING_MEDIA = Object.freeze({
-  FOOD: '/boutique/categories/cat-maison-v3.webp',
-  BUILDING: '/boutique/categories/cat-bricolage-v3.webp',
-  AUTO: '/boutique/categories/cat-auto-v3.webp',
-  GENERAL: '/boutique/categories/cat-all-v3.webp',
+  SAMOUSSAS: pexelsPhoto(14883752),
+  SAMOUSSAS_PLATTER: pexelsPhoto(37068875),
+  CEMENT: pexelsPhoto(29519165),
+  MASONRY: pexelsPhoto(10383579),
+  PLUMBING: pexelsPhoto(32588548),
+  ELECTRICITY: pexelsPhoto(34054475),
+  MECHANIC: pexelsPhoto(11139242),
+  WINDOW_INSTALLATION: pexelsPhoto(5691503),
+  DELIVERY: pexelsPhoto(6169670),
+  AIR_CONDITIONING: pexelsPhoto(32588555),
 });
 
 // ── Product Komerce local canonique ──────────────────────────────────────
@@ -83,28 +91,28 @@ const PHYSICAL_OFFERS = Object.freeze([
     id: 'd15c1000-0000-4000-8000-000000000001', providerId: PROVIDERS[0].id,
     title: 'Samboussas au bœuf',
     description: 'Préparation locale pour commande familiale ou réception. Donnée de démonstration staging.',
-    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.FOOD,
+    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.SAMOUSSAS,
     actions: ['request', 'call', 'whatsapp'],
   },
   {
     id: 'd15c1000-0000-4000-8000-000000000002', providerId: PROVIDERS[0].id,
     title: 'Plateau de samboussas pour réception',
     description: 'Préparation sur demande pour événement. Donnée de démonstration staging.',
-    zone: 'Anjouan', imageRef: STAGING_MEDIA.FOOD,
+    zone: 'Anjouan', imageRef: STAGING_MEDIA.SAMOUSSAS_PLATTER,
     actions: ['quote', 'callback', 'whatsapp'],
   },
   {
     id: 'd15c1000-0000-4000-8000-000000000003', providerId: PROVIDERS[4].id,
     title: 'Ciment 32,5R disponible localement',
     description: 'Offre physique locale de test pour éprouver la découverte de matériaux sur place.',
-    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.BUILDING,
+    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.CEMENT,
     actions: ['request'],
   },
   {
     id: 'd15c1000-0000-4000-8000-000000000004', providerId: PROVIDERS[4].id,
     title: 'Pack d’eau 6 × 1,5 L',
     description: 'Offre locale de disponibilité immédiate utilisée uniquement en staging.',
-    zone: 'Anjouan', imageRef: STAGING_MEDIA.GENERAL,
+    zone: 'Anjouan', imageRef: null,
     actions: ['request'],
   },
 ]);
@@ -114,49 +122,49 @@ const SERVICES = Object.freeze([
     id: 'd15c2000-0000-4000-8000-000000000001', providerId: PROVIDERS[1].id,
     title: 'Maçonnerie et petits travaux',
     description: 'Demande de travaux de maçonnerie, réparation ou finition. Donnée staging.',
-    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.BUILDING,
+    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.MASONRY,
     actions: ['quote', 'callback', 'call'],
   },
   {
     id: 'd15c2000-0000-4000-8000-000000000002', providerId: PROVIDERS[2].id,
     title: 'Plomberie maison',
     description: 'Diagnostic, fuite, robinetterie et petits travaux de plomberie. Donnée staging.',
-    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.BUILDING,
+    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.PLUMBING,
     actions: ['callback', 'call', 'whatsapp'],
   },
   {
     id: 'd15c2000-0000-4000-8000-000000000003', providerId: PROVIDERS[2].id,
     title: 'Électricité bâtiment',
     description: 'Petite installation, diagnostic et dépannage électrique. Donnée staging.',
-    zone: 'Ouani', imageRef: STAGING_MEDIA.BUILDING,
+    zone: 'Ouani', imageRef: STAGING_MEDIA.ELECTRICITY,
     actions: ['callback', 'call'],
   },
   {
     id: 'd15c2000-0000-4000-8000-000000000004', providerId: PROVIDERS[3].id,
     title: 'Mécanique automobile',
     description: 'Diagnostic et petite réparation automobile. Donnée staging.',
-    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.AUTO,
+    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.MECHANIC,
     actions: ['quote', 'callback', 'call', 'whatsapp'],
   },
   {
     id: 'd15c2000-0000-4000-8000-000000000005', providerId: PROVIDERS[1].id,
     title: 'Menuiserie aluminium',
     description: 'Demande de fabrication ou réparation légère en aluminium. Donnée staging.',
-    zone: 'Anjouan', imageRef: STAGING_MEDIA.BUILDING,
+    zone: 'Anjouan', imageRef: STAGING_MEDIA.WINDOW_INSTALLATION,
     actions: ['quote', 'callback', 'call'],
   },
   {
     id: 'd15c2000-0000-4000-8000-000000000006', providerId: PROVIDERS[3].id,
     title: 'Livraison et petite manutention',
     description: 'Besoin ponctuel de transport ou manutention locale. Donnée staging.',
-    zone: 'Anjouan', imageRef: STAGING_MEDIA.GENERAL,
+    zone: 'Anjouan', imageRef: STAGING_MEDIA.DELIVERY,
     actions: ['request', 'call', 'whatsapp'],
   },
   {
     id: 'd15c2000-0000-4000-8000-000000000007', providerId: PROVIDERS[1].id,
     title: 'Installation climatiseur',
     description: 'Installation et mise en service de climatiseur. Donnée staging.',
-    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.BUILDING,
+    zone: 'Mutsamudu', imageRef: STAGING_MEDIA.AIR_CONDITIONING,
     actions: ['quote', 'callback', 'call'],
   },
 ]);

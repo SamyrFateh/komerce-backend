@@ -64,6 +64,25 @@ test('offre locale expose Demander + Être rappelé et garde le sujet connu', ()
   expect(slot.textContent).toContain('Ciment 42,5R — sac 50 kg · Bâtir Anjouan');
 });
 
+test('en staging la modale révèle le statut photo illustrative sans attribuer la photo au prestataire', () => {
+  renderDiscoveryModalDetail({
+    kind: 'service', ref: 's-staging',
+    detail: { title: 'Plomberie maison', provider_name: '[STAGING] Dépannage Anjouan',
+      image_ref: 'https://images.pexels.com/photos/32588548/pexels-photo-32588548.jpeg', actions: ['request'] },
+  });
+  const slot = document.getElementById('k-modal-discovery-detail');
+  expect(slot.textContent).toContain('Photo illustrative (démo)');
+  expect(slot.querySelector('img')?.getAttribute('alt')).toContain('non prise chez le prestataire');
+  expect(slot.textContent).not.toContain('Acheter maintenant');
+
+  renderDiscoveryModalDetail({
+    kind: 'physical_offer', ref: 'o-staging',
+    detail: { title: 'Samboussas', provider_name: '[STAGING] Saveurs', image_ref: '/samoussas.webp', actions: ['request'] },
+  });
+  expect(slot.textContent).toContain('Photo illustrative · démo');
+  expect(slot.textContent).not.toContain('Acheter maintenant');
+});
+
 test('service sans WhatsApp montre un seul bouton et transmet le besoin facultatif', () => {
   setupDiscoveryModalDetail();
   listeners['modal:discovery-opened']({
