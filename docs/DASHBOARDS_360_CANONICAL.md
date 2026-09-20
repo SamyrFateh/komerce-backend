@@ -1,29 +1,29 @@
 # Dashboards 360 — Canonical (généré)
 
 > ⚠️ Fichier **généré** par `scripts/gen-dashboards-360-canonical.js`. Ne pas éditer à la main.
-> Régénéré le 2026-09-14T12:42:57.240Z.
+> Régénéré le 2026-09-20T08:35:57.582Z.
 > Contrepartie de `docs/DASHBOARDS_360.md` (Legacy 1). Les deux coexistent tant que le rollback `?legacy=1` existe (`bootstrap/html-routes.js`).
 > Chaîne de preuve : `navigation.js` (item × rôle) → `hrefFor()` → `app.js::surfaceForPath()` → module (`global.Komerce*`) → `fetch()` → `docs/contract/openapi.json`.
 
 ## Synthèse
 
 - Items de navigation déclarés : **13** → **37** entrées (item × rôle visible)
-- Modules JS Canonical scannés : **51**
-- Arêtes API tracées (`fetch()` vers `/api/`) : **59**
+- Modules JS Canonical scannés : **59**
+- Arêtes API tracées (`fetch()` vers `/api/`) : **63**
 - 🔴 Surfaces de navigation sans module résolu : **0**
 - 🔴 Destination de navigation dont l'URL ne résout vers aucune surface connue (retombe sur Pilotage par défaut) : **0**
 - 🔴 Endpoints appelés mais absents du contrat OpenAPI (statiques) : **0**
-- 🟠 Endpoints appelés absents du contrat (URL dynamique — à vérifier à la main) : **8**
+- 🟠 Endpoints appelés absents du contrat (URL dynamique — à vérifier à la main) : **9**
 - ⚪ Endpoints appelés mais non prouvés par un test (`UNKNOWN` dans le contrat) : **0**
-- ❓ `fetch()` dont l'URL n'a pas pu être résolue statiquement : **16**
+- ❓ `fetch()` dont l'URL n'a pas pu être résolue statiquement : **19**
 - 🟣 Modules Canonical avec une dépendance textuelle vers Legacy 1 : **0**
 - 🟡 Modules avec un motif `market_id`/`marketId` construit côté navigateur (à vérifier — le serveur rejette déjà ceci sur Action Center, cf. `rejectBrowserAuthority`) : **0**
 - Modules sans header `@komerce-arch` : **0**
 
 ## 2. Signaux informatifs (non bloquants, jamais inventés)
 
-- 🟠 Endpoint dynamique absent du contrat (à vérifier à la main) : `GET* /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)`, `GET* /api/admin/workspaces/operations/market/{param}{param} (operations-workspace.js)`, `GET* /api/admin/workspaces/pricing/market/{param}/strategy (pricing-workspace.js)`, `GET* /api/admin/workspaces/shipping-customs/market/{param}{param} (shipping-customs-workspace.js)`, `POST /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)`, `POST /api/admin/workspaces/operations/market/{param}{param} (operations-workspace.js)`, `POST /api/admin/workspaces/shipping-customs/market/{param}{param} (shipping-customs-workspace.js)`, `POST /api/admin/workspaces/sourcing/suppliers/{param}/{param} (sourcing-workspace.js)`
-- ❓ `fetch()` non résolus statiquement : `config.chargesEndpoint (pricing-structure-event-panel.js)`, `config.submitEndpoint (pricing-structure-event-panel.js)`, `context.endpoint (action-center.js)`, `endpoint (operations.js)`, `endpoint (orders.js)`, `endpoint (pilotage.js)`, `endpoint(workspace, options.requestedMarket) (pricing-workspace-simulation.js)`, `path (action-center.js)`, `url (market-autonomy.js)`, `url (market-cash-control.js)`, `url (market-catalog.js)`, `url (market-team.js)`, `url (markets-decision-bootstrap.js)`, `url (pricing-workspace.js)`, `url (settings-workspace.js)`, `url (team-invite.js)`
+- 🟠 Endpoint dynamique absent du contrat (à vérifier à la main) : `GET* /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)`, `GET* /api/admin/workspaces/operations/market/{param}{param} (operations-workspace.js)`, `GET* /api/admin/workspaces/pricing/market/{param}/strategy (pricing-workspace.js)`, `GET* /api/admin/workspaces/shipping-customs/market/{param}{param} (shipping-customs-workspace.js)`, `POST /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)`, `POST /api/admin/workspaces/operations/market/{param}{param} (operations-workspace.js)`, `POST /api/admin/workspaces/shipping-customs/market/{param}{param} (shipping-customs-workspace.js)`, `POST /api/admin/workspaces/sourcing/sources/{param}/{param} (catalog-workspace.js)`, `POST /api/admin/workspaces/sourcing/suppliers/{param}/{param} (sourcing-workspace.js)`
+- ❓ `fetch()` non résolus statiquement : `ENDPOINT (catalog-control-tower.js)`, `config.chargesEndpoint (pricing-structure-event-panel.js)`, `config.submitEndpoint (pricing-structure-event-panel.js)`, `context.endpoint (action-center.js)`, `endpoint (operations.js)`, `endpoint (orders.js)`, `endpoint (pilotage.js)`, `endpoint(workspace, options.requestedMarket) (pricing-workspace-simulation.js)`, `path (action-center.js)`, `url (market-autonomy.js)`, `url (market-cash-control.js)`, `url (market-catalog.js)`, `url (market-network.js)`, `url (market-team.js)`, `url (markets-decision-bootstrap.js)`, `url (pricing-workspace.js)`, `url (settings-workspace.js)`, `url (standalone-shell-bootstrap-v4.js)`, `url (team-invite.js)`
 
 ## 3. Matrice navigation × rôle × surface × module
 
@@ -33,7 +33,7 @@
 | agent_relais | Comptabilité | `/admin/workspaces/accounting` | accounting-workspace | `finance-accounting-workspace-decision.js`, `finance-accounting-workspace.js` |
 | finance | Comptabilité | `/admin/workspaces/accounting` | accounting-workspace | `finance-accounting-workspace-decision.js`, `finance-accounting-workspace.js` |
 | market_operator | Comptabilité | `/admin/workspaces/accounting` | accounting-workspace | `finance-accounting-workspace-decision.js`, `finance-accounting-workspace.js` |
-| admin | Catalogue | `/admin/workspaces/catalog` | catalog-workspace | `catalog-workspace-decision.js`, `catalog-workspace.js` |
+| admin | Catalogue | `/admin/workspaces/catalog` | catalog-workspace | `catalog-control-tower.js`, `catalog-workspace-decision.js`, `catalog-workspace.js` |
 | market_operator | Catalogue | `/dashboards/canonical/market-catalog.html` | market-catalog | _(page HTML autonome — voir §5)_ |
 | admin | Commerce | `/admin/commerce` | commerce | `commerce-decision.js`, `commerce.js` |
 | market_operator | Commerce | `/admin/commerce` | commerce | `commerce-decision.js`, `commerce.js` |
@@ -77,6 +77,8 @@
 | `app.js` | `GET` | `/api/admin/dashboard/context` | 🟢 prouvé |
 | `app.js` | `GET` | `/api/auth/me` | 🟢 prouvé |
 | `app.js` | `GET` | `/api/admin/dashboard/context` | 🟢 prouvé |
+| `catalog-control-tower.js` | `?` | `ENDPOINT` | ❓ url non résolue |
+| `catalog-workspace.js` | `POST` | `/api/admin/workspaces/sourcing/sources/${encodeURIComponent(source.source_ref)}/${active ? 'deactivate' : 'activate'}` | 🟠 absent (dynamique) |
 | `catalog-workspace.js` | `POST` | `/api/admin/workspaces/catalog/approval/${encodeURIComponent(row.product_ref)}/approve` | 🟢 prouvé |
 | `catalog-workspace.js` | `POST` | `/api/admin/workspaces/catalog/approval/${encodeURIComponent(row.product_ref)}/override` | 🟢 prouvé |
 | `catalog-workspace.js` | `POST` | `/api/admin/workspaces/catalog/approval/${encodeURIComponent(row.product_ref)}/reject` | 🟢 prouvé |
@@ -94,6 +96,7 @@
 | `market-autonomy.js` | `?` | `url` | ❓ url non résolue |
 | `market-cash-control.js` | `?` | `url` | ❓ url non résolue |
 | `market-catalog.js` | `?` | `url` | ❓ url non résolue |
+| `market-network.js` | `?` | `url` | ❓ url non résolue |
 | `market-team.js` | `?` | `url` | ❓ url non résolue |
 | `markets-decision-bootstrap.js` | `?` | `url` | ❓ url non résolue |
 | `navigation.js` | `POST` | `/api/auth/logout` | 🟢 prouvé |
@@ -128,6 +131,7 @@
 | `sourcing-workspace.js` | `POST` | `/api/admin/workspaces/sourcing/suppliers/${encodeURIComponent(row.partner_ref)}/update` | 🟢 prouvé |
 | `sourcing-workspace.js` | `POST` | `/api/admin/workspaces/sourcing/suppliers/${encodeURIComponent(row.partner_ref)}/${row.is_active ? 'deactivate' : 'activate'}` | 🟠 absent (dynamique) |
 | `sourcing-workspace.js` | `GET` | `/api/admin/workspaces/sourcing` | 🟢 prouvé |
+| `standalone-shell-bootstrap-v4.js` | `?` | `url` | ❓ url non résolue |
 | `team-invite.js` | `?` | `url` | ❓ url non résolue |
 | `team-invite.js` | `GET` | `/api/auth/me` | 🟢 prouvé |
 

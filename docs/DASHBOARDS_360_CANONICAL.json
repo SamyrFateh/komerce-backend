@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-14T12:42:57.240Z",
+  "generatedAt": "2026-09-20T08:35:57.582Z",
   "summary": {
     "navItems": 13,
     "navMatrixEntries": 37,
-    "canonicalModules": 51,
-    "apiEdgesTraced": 59,
+    "canonicalModules": 59,
+    "apiEdgesTraced": 63,
     "surfaceWithoutModule": 0,
     "navHrefUnresolved": 0,
     "unprovenContracts": 0,
     "notFoundContracts": 0,
-    "notFoundDynamic": 8,
-    "unresolvedFetches": 16,
+    "notFoundDynamic": 9,
+    "unresolvedFetches": 19,
     "legacyDependencies": 0,
     "clientMarketAuthoritySuspects": 0,
     "moduleFilesWithoutHeader": 0
@@ -142,6 +142,7 @@
       "surfaceId": "catalog-workspace",
       "resolvedVia": "app-equality",
       "moduleFiles": [
+        "catalog-control-tower.js",
         "catalog-workspace-decision.js",
         "catalog-workspace.js"
       ]
@@ -499,6 +500,22 @@
       "contractStatus": "PROVEN"
     },
     {
+      "module": "catalog-control-tower.js",
+      "rawUrl": "ENDPOINT",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "catalog-workspace.js",
+      "rawUrl": "/api/admin/workspaces/sourcing/sources/${encodeURIComponent(source.source_ref)}/${active ? 'deactivate' : 'activate'}",
+      "httpMethod": "POST",
+      "normalized": "/api/admin/workspaces/sourcing/sources/{param}/{param}",
+      "matchedRoute": null,
+      "contractStatus": "NOT_FOUND_DYNAMIC"
+    },
+    {
       "module": "catalog-workspace.js",
       "rawUrl": "/api/admin/workspaces/catalog/approval/${encodeURIComponent(row.product_ref)}/approve",
       "httpMethod": "POST",
@@ -628,6 +645,14 @@
     },
     {
       "module": "market-catalog.js",
+      "rawUrl": "url",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "market-network.js",
       "rawUrl": "url",
       "httpMethod": "?",
       "normalized": null,
@@ -907,6 +932,14 @@
       "contractStatus": "PROVEN"
     },
     {
+      "module": "standalone-shell-bootstrap-v4.js",
+      "rawUrl": "url",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
       "module": "team-invite.js",
       "rawUrl": "url",
       "httpMethod": "?",
@@ -977,6 +1010,54 @@
       "fetchCount": 3
     },
     {
+      "file": "canonical-client-router-v4.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-admin-client-router-v4",
+      "domain": "admin-dashboard",
+      "layer": "ui-navigation",
+      "criticality": "high",
+      "doctrine": [
+        "single_shell_sidebar_n1_horizontal_n2_local_n3",
+        "intra_canonical_navigation_must_not_full_reload"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalClientRouter"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "canonical-finish-polish-v1.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-admin-finish-polish",
+      "domain": "admin-dashboard",
+      "layer": "ui-navigation",
+      "criticality": "low",
+      "doctrine": [
+        "presentation_only_finish_layer"
+      ],
+      "exportsGlobals": [],
+      "fetchCount": 0
+    },
+    {
+      "file": "catalog-control-tower.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-catalog-business-truth-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "one_shell_one_truth_no_duplicate_dashboard",
+        "visible_means_sellable"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalCatalogWorkspace"
+      ],
+      "fetchCount": 1
+    },
+    {
       "file": "catalog-workspace-decision.js",
       "hasHeader": true,
       "isLite": false,
@@ -1007,12 +1088,13 @@
         "canonical_admin_no_legacy_imports",
         "global_catalog_not_market_scoped",
         "product_360_explains",
-        "curated_catalog_not_crud"
+        "curated_catalog_not_crud",
+        "sourcing_keeps_source_mutation_authority"
       ],
       "exportsGlobals": [
         "KomerceCanonicalCatalogWorkspace"
       ],
-      "fetchCount": 8
+      "fetchCount": 9
     },
     {
       "file": "client-360.js",
@@ -1313,6 +1395,21 @@
       "fetchCount": 1
     },
     {
+      "file": "market-network.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "market-autonomy-network-delegation-ui",
+      "domain": "market-autonomy",
+      "layer": "ui-workspace",
+      "criticality": "medium",
+      "doctrine": [
+        "ui_never_grants_more_than_server_actor_capabilities",
+        "server_scope_is_authority"
+      ],
+      "exportsGlobals": [],
+      "fetchCount": 1
+    },
+    {
       "file": "market-team.js",
       "hasHeader": true,
       "isLite": false,
@@ -1360,6 +1457,57 @@
       "exportsGlobals": [
         "KomerceMarketsDecision"
       ],
+      "fetchCount": 0
+    },
+    {
+      "file": "navigation-policy-v3.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-admin-navigation-policy-v3",
+      "domain": "admin-dashboard",
+      "layer": "ui-navigation",
+      "criticality": "high",
+      "doctrine": [
+        "visible_destination_must_have_server_guard",
+        "n1_business_domains_only",
+        "n2_contextual_workspaces_only",
+        "market_id_is_transverse_context"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalNavigation"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "navigation-policy-v4.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-admin-navigation-policy-v4",
+      "domain": "admin-dashboard",
+      "layer": "ui-navigation",
+      "criticality": "high",
+      "doctrine": [
+        "single_shell_sidebar_n1_horizontal_n2_local_n3",
+        "visible_destination_must_have_server_guard",
+        "market_id_is_transverse_context"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalNavigation"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "navigation-shell-v4-sync.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-admin-navigation-shell-v4-sync",
+      "domain": "admin-dashboard",
+      "layer": "ui-navigation",
+      "criticality": "medium",
+      "doctrine": [
+        "single_shell_sidebar_n1_horizontal_n2_local_n3"
+      ],
+      "exportsGlobals": [],
       "fetchCount": 0
     },
     {
@@ -1793,7 +1941,8 @@
         "workspace_acts_dashboard_observes",
         "dashboard_no_business_recompute",
         "decision_first_dashboard_visuals",
-        "global_sourcing_not_market_scoped"
+        "global_sourcing_not_market_scoped",
+        "browser_never_recomputes_health_truth"
       ],
       "exportsGlobals": [
         "KomerceCanonicalSourcingWorkspace"
@@ -1818,6 +1967,23 @@
         "KomerceCanonicalSourcingWorkspace"
       ],
       "fetchCount": 11
+    },
+    {
+      "file": "standalone-shell-bootstrap-v4.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-standalone-shell-bootstrap-v4",
+      "domain": "admin-dashboard",
+      "layer": "ui-navigation",
+      "criticality": "high",
+      "doctrine": [
+        "single_shell_sidebar_n1_horizontal_n2_local_n3",
+        "visible_destination_must_have_server_guard"
+      ],
+      "exportsGlobals": [
+        "KomerceStandaloneShellBootstrapV4"
+      ],
+      "fetchCount": 1
     },
     {
       "file": "team-invite.js",
@@ -1849,9 +2015,11 @@
       "POST /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)",
       "POST /api/admin/workspaces/operations/market/{param}{param} (operations-workspace.js)",
       "POST /api/admin/workspaces/shipping-customs/market/{param}{param} (shipping-customs-workspace.js)",
+      "POST /api/admin/workspaces/sourcing/sources/{param}/{param} (catalog-workspace.js)",
       "POST /api/admin/workspaces/sourcing/suppliers/{param}/{param} (sourcing-workspace.js)"
     ],
     "unresolvedFetches": [
+      "ENDPOINT (catalog-control-tower.js)",
       "config.chargesEndpoint (pricing-structure-event-panel.js)",
       "config.submitEndpoint (pricing-structure-event-panel.js)",
       "context.endpoint (action-center.js)",
@@ -1863,10 +2031,12 @@
       "url (market-autonomy.js)",
       "url (market-cash-control.js)",
       "url (market-catalog.js)",
+      "url (market-network.js)",
       "url (market-team.js)",
       "url (markets-decision-bootstrap.js)",
       "url (pricing-workspace.js)",
       "url (settings-workspace.js)",
+      "url (standalone-shell-bootstrap-v4.js)",
       "url (team-invite.js)"
     ],
     "legacyDependencies": [],
