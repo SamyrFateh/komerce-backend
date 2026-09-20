@@ -1,6 +1,6 @@
 # Contrat de préparation française des textes figés dans les images
 
-> Statut : contrat cible à éprouver, **non implémenté comme garde de publication**.
+> Statut : le vérificateur pur de preuves média est implémenté (`services/catalog-media-visual-fr-proof.js`), **mais la persistance des décisions, la transcription réelle et le branchement obligatoire au garde de publication ne sont pas encore implémentés**.
 > Périmètre : toute image fournisseur de catalogue, quels que soient le fournisseur, la langue et la méthode de préparation. Aucune IA particulière n'est requise.
 
 ## Règle
@@ -22,4 +22,4 @@ Une fiche française ne prouve pas que ses images sont francisées. Une image pe
 - `FR_PRESENTATION_REVIEWED` : texte utile transcrit, traduit, rattaché à la bonne variante et présenté au client après validation.
 - `BLOCKED_UNREADABLE_OR_UNSUPPORTED` : texte essentiel illisible, contradiction produit/image ou méthode indisponible.
 
-Ces statuts ne sont **pas persistés ni appliqués par le garde catalogue existant**. L'audit `scripts/refinery-fr-cross-supplier-audit.js` se borne à mesurer les images sources présentes et à marquer honnêtement l'inspection comme non faite. Aucune déduction automatique à partir de l'URL ou du `alt`, aucun appel OCR/IA et aucune modification d'image.
+Ces statuts disposent maintenant d'un **vérificateur pur, sans dépendance à un fournisseur OCR/IA**, qui exige l'identité exacte de l'image d'origine, l'URL, l'association à la variante et une décision de revue datée et attribuée. Toute modification d'image ou de variante invalide une ancienne preuve. **Ils ne sont pas encore persistés ni appliqués par le garde catalogue existant.** L'audit `scripts/refinery-fr-cross-supplier-audit.js` se borne à mesurer les images sources présentes et à marquer honnêtement l'inspection comme non faite. Aucune déduction automatique à partir de l'URL ou du `alt`, aucun appel OCR/IA et aucune modification d'image.
