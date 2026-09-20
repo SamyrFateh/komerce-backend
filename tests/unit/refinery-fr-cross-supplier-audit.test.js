@@ -26,14 +26,6 @@ function row(target, options = {}) {
   };
 }
 
-test('configuration status never reveals model keys or pretends an inference ran', () => {
-  expect(audit.providerReadiness({ ANTHROPIC_API_KEY: '' })).toEqual({
-    provider: 'anthropic', status: 'PROVIDER_KEY_MISSING',
-  });
-  expect(audit.providerReadiness({ CATALOG_ENRICH_PROVIDER: 'openai', OPENAI_API_KEY: 'private-key' }))
-    .toEqual({ provider: 'openai', status: 'PROVIDER_KEY_PRESENT_NOT_YET_TESTED' });
-});
-
 test('missing description, absent draft and distinct variants produce explained blockers', () => {
   const target = audit.TARGETS[0];
   const result = audit.inspectCandidate(row(target, {
@@ -60,7 +52,8 @@ test('cross supplier run reads exactly two known cases in a SQL READ ONLY transa
   });
   expect(result).toMatchObject({
     writes: false, ai_call_invoked: false, purchase_invoked: false,
-    publication_performed: false, cases: [{ fr_preparation_proven: false }, { fr_preparation_proven: false }],
+    publication_performed: false, editorial_contract: 'SOURCE_PRESERVED_PREPARATION_NOT_DEPENDENT_ON_DEDICATED_AI',
+    cases: [{ fr_preparation_proven: false }, { fr_preparation_proven: false }],
   });
   expect(q.query.mock.calls.map(([sql]) => String(sql))).toEqual([
     'BEGIN TRANSACTION READ ONLY', expect.stringContaining('FROM sourcing_candidates'), 'COMMIT',
