@@ -76,3 +76,11 @@ test('canonical Offer projection exposes price drift but never changes a publish
   });
   expect(offer.authority).toBe('shadow_read_only');
 });
+
+test('two observations from different source instances never infer a supplier delta', () => {
+  const a = row('offer-1', '2026-09-20T10:00:00Z', { stock_available: 3 });
+  const b = { ...row('offer-1', '2026-09-20T10:01:00Z', { stock_available: 0 }), source_id: 'api:other-account' };
+  expect(observationDelta([a, b], ['stock_available'])).toMatchObject({
+    status: 'UNKNOWN', reason: 'SOURCE_SCOPE_CHANGED', changes: [],
+  });
+});
