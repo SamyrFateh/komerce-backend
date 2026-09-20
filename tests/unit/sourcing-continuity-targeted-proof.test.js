@@ -135,3 +135,20 @@ test('supplier API failure yields UNKNOWN, never product withdrawal', async () =
     supplier_error_code: 'SUPPLIER_TIMEOUT', removal_confirmed: false, writes: false,
   });
 });
+
+test('exact Allegro refresh unchanged with optional fields never supplied stays UNCHANGED', () => {
+  const d = compareExactProduct(product(3), product(3), 'api:allegro');
+  expect(d.status).toBe('UNCHANGED');
+  expect(d.offer.unreported_fields).toContain('availability');
+  expect(d.units[0].unreported_fields).toContain('availability');
+  expect(d.offer.compared_fields).toBeGreaterThan(0);
+});
+
+test('field known in baseline but dropped by supplier becomes UNKNOWN', () => {
+  const before = product(3, { supplier_delay_days: 3 });
+  const after = product(3);
+  const d = compareExactProduct(before, after, 'api:allegro');
+  expect(d.status).toBe('UNKNOWN');
+  expect(d.offer.unknown_fields).toContain('supplier_delay_days');
+  expect(d.offer.unreported_fields).not.toContain('supplier_delay_days');
+});
