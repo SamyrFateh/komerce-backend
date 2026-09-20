@@ -31,6 +31,9 @@ function parseOneShotTask(value) {
   if (raw === 'aliexpress-golden-commercial-audit') {
     return { kind: 'aliexpress-commercial-audit', args: [] };
   }
+  if (raw === 'refinery-fr-cross-supplier-audit') {
+    return { kind: 'refinery-fr-cross-supplier-audit', args: [] };
+  }
 
   const aliexpressImport = raw.match(/^aliexpress-golden-import:([0-9]{5,20})$/);
   if (aliexpressImport) {
@@ -64,6 +67,10 @@ async function runTask(env = process.env, dependencies = {}) {
   }
   if (task.kind === 'aliexpress-commercial-audit') {
     const audit = dependencies.aliexpressCommercialAudit || require('./aliexpress-golden-commercial-audit');
+    return { task, result: await audit.run({ env }) };
+  }
+  if (task.kind === 'refinery-fr-cross-supplier-audit') {
+    const audit = dependencies.refineryFrAudit || require('./refinery-fr-cross-supplier-audit');
     return { task, result: await audit.run({ env }) };
   }
 

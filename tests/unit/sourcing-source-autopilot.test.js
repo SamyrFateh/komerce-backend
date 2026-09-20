@@ -226,6 +226,14 @@ describe('sourcing source autopilot one-shot router', () => {
     expect(aliexpressGolden.main).toHaveBeenCalledWith(['--dry-run'], env);
   });
 
+  test('route uniquement la sonde de qualité FR multi-source sans mutation', async () => {
+    const env = { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: 'refinery-fr-cross-supplier-audit' };
+    const refineryFrAudit = { run: jest.fn().mockResolvedValue({ writes: false, ai_call_invoked: false }) };
+    const outcome = await oneShotRunner.runTask(env, { refineryFrAudit });
+    expect(refineryFrAudit.run).toHaveBeenCalledWith({ env });
+    expect(outcome.result).toMatchObject({ writes: false, ai_call_invoked: false });
+  });
+
   test('route la sonde commerciale AliExpress exacte sans import ni promotion', async () => {
     const env = { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: 'aliexpress-golden-commercial-audit' };
     const aliexpressCommercialAudit = { run: jest.fn().mockResolvedValue({ writes: false }) };
