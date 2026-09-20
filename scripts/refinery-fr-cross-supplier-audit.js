@@ -10,6 +10,7 @@
 'use strict';
 
 const db = require('../db');
+const visualFrProof = require('../services/catalog-media-visual-fr-proof');
 const TARGETS = Object.freeze([
   Object.freeze({ id: '3ae1db7b-856a-4ed9-9e68-6dbee7487cc2', supplier: 'AliExpress', supplierProductId: '1005012486042806' }),
   Object.freeze({ id: '9df9d206-7bf0-40b3-ae04-15f52dfb9506', supplier: 'Allegro Sandbox', supplierProductId: '7782236928' }),
@@ -92,6 +93,7 @@ function inspectCandidate(row, product = null) {
       unique_variant_combinations: uniqueCombos.size,
       media_count: imageTextAudit.length,
       image_text_audit: {
+        proof: visualFrProof.inspectMediaSet(sourceMedia, []),
         status: imageTextAudit.length ? 'NOT_INSPECTED' : 'NO_SOURCE_MEDIA',
         media: imageTextAudit,
         next_action: imageTextAudit.length
