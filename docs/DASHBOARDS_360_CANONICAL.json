@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-20T09:02:07.172Z",
+  "generatedAt": "2026-09-20T09:10:53.429Z",
   "summary": {
     "navItems": 13,
     "navMatrixEntries": 37,
-    "canonicalModules": 60,
-    "apiEdgesTraced": 64,
+    "canonicalModules": 61,
+    "apiEdgesTraced": 65,
     "surfaceWithoutModule": 0,
     "navHrefUnresolved": 0,
     "unprovenContracts": 0,
     "notFoundContracts": 0,
     "notFoundDynamic": 9,
-    "unresolvedFetches": 20,
+    "unresolvedFetches": 21,
     "legacyDependencies": 0,
     "clientMarketAuthoritySuspects": 0,
     "moduleFilesWithoutHeader": 0
@@ -645,6 +645,14 @@
     },
     {
       "module": "market-catalog.js",
+      "rawUrl": "url",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "market-client-case.js",
       "rawUrl": "url",
       "httpMethod": "?",
       "normalized": null,
@@ -1403,6 +1411,22 @@
       "fetchCount": 1
     },
     {
+      "file": "market-client-case.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "market-autonomy-client-case-delegation-ui",
+      "domain": "market-autonomy",
+      "layer": "ui-workspace",
+      "criticality": "high",
+      "doctrine": [
+        "ui_never_grants_more_than_server_actor_capabilities",
+        "server_scope_is_authority",
+        "refund_authority_never_delegated"
+      ],
+      "exportsGlobals": [],
+      "fetchCount": 1
+    },
+    {
       "file": "market-local-offer.js",
       "hasHeader": true,
       "isLite": false,
@@ -2054,6 +2078,7 @@
       "url (market-autonomy.js)",
       "url (market-cash-control.js)",
       "url (market-catalog.js)",
+      "url (market-client-case.js)",
       "url (market-local-offer.js)",
       "url (market-network.js)",
       "url (market-team.js)",
