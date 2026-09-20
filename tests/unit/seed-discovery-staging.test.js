@@ -172,9 +172,19 @@ test('staging opt-in seeds Golden + 24 produits CJ + providers in transaction', 
   expect(sql).toMatch(/actions_enabled/);
   expect(sql).toMatch(/commercial_exposure = 'ENABLED'/);
 
-  expect(PHYSICAL_OFFERS.every(x => x.imageRef && x.imageRef.startsWith('/boutique/'))).toBe(true);
-  expect(SERVICES.every(x => x.imageRef && x.imageRef.startsWith('/boutique/'))).toBe(true);
-  expect(Object.values(STAGING_MEDIA).every(x => x.endsWith('.webp'))).toBe(true);
+  // Le pack d'eau attend encore une vraie photographie adaptée et ne fait
+  // pas partie de la sélection Discovery. Toutes les autres offres ont une
+  // photo illustrative propre, distincte des images des catégories Produit.
+  expect(PHYSICAL_OFFERS.filter(x => x.imageRef)).toHaveLength(3);
+  expect(SERVICES.every(x => x.imageRef)).toBe(true);
+  expect(Object.values(STAGING_MEDIA)).toHaveLength(10);
+  expect(new Set(Object.values(STAGING_MEDIA)).size).toBe(10);
+  for (const media of Object.values(STAGING_MEDIA)) {
+    expect(media).toMatch(/^https:\/\/images\\.pexels\\.com\/photos\/\\d+\/pexels-photo-\\d+\\.jpeg\\?/);
+    expect(media).not.toMatch(/\/boutique\/categories\//);
+  }
+  expect(PHYSICAL_OFFERS.every(x => !x.imageRef || Object.values(STAGING_MEDIA).includes(x.imageRef))).toBe(true);
+  expect(SERVICES.every(x => Object.values(STAGING_MEDIA).includes(x.imageRef))).toBe(true);
 });
 
 test('le dataset staging éprouve réellement les combinaisons cumulatives', () => {
