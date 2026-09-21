@@ -191,6 +191,25 @@
     }));
   }
 
+  // Commandes prioritaires — cf. services/dashboard-orders.js#getPriorityOrders.
+  // Le "problème" vient du vocabulaire d'incident déjà validé côté relais/hub
+  // (order_incidents.type) ou du type de litige réel (disputes.type), jamais
+  // une catégorie recalculée côté navigateur.
+  function priorityOrderItems(payload, base) {
+    return (Array.isArray(payload && payload.priority_orders) ? payload.priority_orders : []).map(row => ({
+      title: row.reference || 'Commande',
+      helper: [
+        row.client_name,
+        row.relais_name,
+        `depuis ${base.formatNumber(row.since_days, 0)} j`,
+        row.problem,
+      ].filter(Boolean).join(' · '),
+      tone: 'critical',
+      href: row.reference ? `/admin/orders/${encodeURIComponent(row.reference)}` : undefined,
+      actionLabel: row.reference ? 'Ouvrir →' : undefined,
+    }));
+  }
+
   // 7. Empreinte de confiance — fraîcheur + scope, comme les autres dashboards.
   function trust(payload) {
     const quality = payload && payload.data_quality && typeof payload.data_quality === 'object' ? payload.data_quality : {};
@@ -267,6 +286,14 @@
     businessGrid.appendChild(slaSection.section);
 
     dashboard.appendChild(businessGrid);
+
+    // Bloc 2c — commandes prioritaires
+    const priorityItems = priorityOrderItems(payload, base);
+    if (priorityItems.length) {
+      const prioritySection = cardSection(doc, 'Commandes prioritaires', 'Les commandes qui nécessitent votre attention en priorité.', 'orders-priority');
+      decisionUi.RankedList.render(prioritySection.body, { items: priorityItems });
+      dashboard.appendChild(prioritySection.section);
+    }
 
     // Bloc 3 — funnel du cycle de vie
     const stages = lifecycleStages(payload, base);

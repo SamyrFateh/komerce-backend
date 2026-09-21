@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1449,
-    "edges": 7247,
+    "edges": 7249,
     "dbTables": 173,
     "doctrines": 484,
     "impactAreas": 184,
@@ -15207,7 +15207,9 @@
       "dbRead": [
         "orders",
         "order_incidents",
-        "disputes"
+        "disputes",
+        "relais",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -55560,6 +55562,18 @@
     },
     {
       "from": "services/dashboard-orders.js",
+      "to": "db:relais",
+      "type": "db-read",
+      "label": "relais"
+    },
+    {
+      "from": "services/dashboard-orders.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "services/dashboard-orders.js",
       "to": "doctrine:workspace_acts_dashboard_observes",
       "type": "doctrine",
       "label": "workspace_acts_dashboard_observes"
@@ -92126,7 +92140,9 @@
       "dbRead": [
         "orders",
         "order_incidents",
-        "disputes"
+        "disputes",
+        "relais",
+        "users"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -92144,6 +92160,8 @@
         "db:disputes",
         "db:order_incidents",
         "db:orders",
+        "db:relais",
+        "db:users",
         "doctrine:browser_never_recomputes_truth",
         "doctrine:client_market_id_never_authority",
         "doctrine:missing_data_never_means_zero",

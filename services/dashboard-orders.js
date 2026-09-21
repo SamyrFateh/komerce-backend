@@ -8,7 +8,7 @@
  * @outputs       canonical decision-first orders payload (files de travail, cycle de vie, mix paiement)
  * @depends       db, services/dashboard-operations.js (publicScope helper via re-export)
  * @used-by       routes/admin-dashboard.js, routes/admin-dashboard-market.js
- * @db-read       orders, order_incidents, disputes
+ * @db-read       orders, order_incidents, disputes, relais, users
  * @db-write      none
  * @db-txn        none
  * @doctrine      workspace_acts_dashboard_observes, browser_never_recomputes_truth, missing_data_never_means_zero, client_market_id_never_authority
@@ -156,6 +156,102 @@ const STALE_HOURS = 72;
  * notion aujourd'hui (vérifié). Documentée ici plutôt qu'inventée avec
  * un seuil arbitraire qui aurait l'air d'un engagement réel.
  */
+
+// Vocabulaire de type déjà établi et validé ailleurs dans le codebase
+// (routes/relay-dashboard.js, routes/hub-dashboard.js — validTypes) —
+// jamais une catégorisation inventée pour cette table.
+const INCIDENT_TYPE_LABEL = Object.freeze({
+  retard: 'Retard transport',
+  blocage: 'Blocage',
+  paiement: 'Paiement à régulariser',
+  stock: 'Pas d’allocation stock',
+  colis_endommage: 'Produit endommagé',
+  colis_perdu: 'Colis perdu',
+  client_absent: 'En attente client',
+  autre: 'Autre incident',
+});
+
+/**
+ * Commandes prioritaires — union des commandes déjà détectées par les 4
+ * signaux de décision (getDecisionSignals), avec le VRAI problème associé
+ * plutôt qu'une catégorie inventée : le type d'incident vient de
+ * order_incidents.type (vocabulaire déjà validé côté relais/hub), le type
+ * de litige de disputes.type, jamais une classification recalculée côté
+ * navigateur. Une commande peut apparaître pour plusieurs raisons à la
+ * fois ; seule la plus urgente est affichée en "problème" par ligne
+ * (ordre : incident > litige > paiement > retrait), le tri global reste
+ * par ancienneté décroissante.
+ */
+async function getPriorityOrders(mid, limit = 20) {
+  const { rows } = await db.query(
+    `WITH candidates AS (
+        SELECT o.id, o.reference, o.status, o.payment_mode, o.payment_status,
+               o.created_at, o.available_at, r.name AS relais_name,
+               u.full_name AS client_name,
+               oi.type AS incident_type, oi.description AS incident_description,
+               d.type AS dispute_type,
+               CASE
+                 WHEN oi.id IS NOT NULL THEN oi.created_at
+                 WHEN d.id IS NOT NULL THEN d.created_at
+                 WHEN o.payment_status = 'pending' THEN o.created_at
+                 WHEN o.status = 'available' THEN o.available_at
+               END AS since_at,
+               CASE
+                 WHEN oi.id IS NOT NULL THEN 1
+                 WHEN d.id IS NOT NULL THEN 2
+                 WHEN o.payment_status = 'pending' THEN 3
+                 WHEN o.status = 'available' THEN 4
+               END AS priority_rank
+          FROM orders o
+          LEFT JOIN relais r ON r.id = o.relais_id
+          LEFT JOIN users u ON u.id = o.user_id
+          LEFT JOIN LATERAL (
+            SELECT id, type, description, created_at FROM order_incidents
+             WHERE order_id = o.id AND status IN ('open', 'in_progress')
+             ORDER BY created_at DESC LIMIT 1
+          ) oi ON TRUE
+          LEFT JOIN LATERAL (
+            SELECT id, type, created_at FROM disputes
+             WHERE order_id = o.id AND status IN ('open', 'processing')
+             ORDER BY created_at DESC LIMIT 1
+          ) d ON TRUE
+         WHERE ($1::uuid IS NULL OR o.market_id = $1)
+           AND o.status NOT IN ('cancelled', 'refunded')
+           AND (
+             oi.id IS NOT NULL
+             OR d.id IS NOT NULL
+             OR (o.status NOT IN ('collected') AND o.payment_status = 'pending' AND o.created_at < NOW() - INTERVAL '72 hours')
+             OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '72 hours')
+           )
+     )
+     SELECT * FROM candidates
+     WHERE priority_rank IS NOT NULL
+     ORDER BY priority_rank ASC, since_at ASC
+     LIMIT $2`,
+    [mid, limit]
+  );
+
+  return rows.map(row => {
+    const problem = row.incident_type
+      ? (INCIDENT_TYPE_LABEL[row.incident_type] || row.incident_type)
+      : row.dispute_type
+        ? `Litige : ${row.dispute_type}`
+        : row.payment_status === 'pending'
+          ? 'Paiement non finalisé'
+          : 'Retrait relais en retard';
+    const days = Math.floor((Date.now() - new Date(row.since_at).getTime()) / 86400000);
+    return Object.freeze({
+      reference: row.reference,
+      client_name: row.client_name,
+      status: row.status,
+      payment_status: row.payment_status,
+      relais_name: row.relais_name,
+      since_days: days,
+      problem,
+    });
+  });
+}
+
 async function getDecisionSignals(mid) {
   const { rows: [totals] } = await db.query(
     `SELECT
@@ -240,13 +336,14 @@ async function buildOrders(options = {}) {
   const market = options.market || null;
   const mid = marketId(market);
 
-  const [byStatus, paymentMix, pendingCash, readyForParcel, signals, funnel] = await Promise.all([
+  const [byStatus, paymentMix, pendingCash, readyForParcel, signals, funnel, priorityOrders] = await Promise.all([
     getStatusCounts(mid),
     getPaymentMix(mid),
     getPendingCash(mid),
     getReadyForParcel(mid),
     getDecisionSignals(mid),
     getBusinessFunnel(mid),
+    getPriorityOrders(mid),
   ]);
 
   const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
@@ -266,6 +363,7 @@ async function buildOrders(options = {}) {
     }),
     signals,
     funnel,
+    priority_orders: Object.freeze(priorityOrders),
     kpis: Object.freeze([
       kpi('total_orders', 'Commandes', total),
       kpi('active_orders', 'Commandes actives', active),
