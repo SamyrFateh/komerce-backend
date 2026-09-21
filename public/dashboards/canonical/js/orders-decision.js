@@ -59,34 +59,94 @@
   // 1. Bandeau de décision — files bloquantes qui demandent une action aujourd'hui.
   function decisionItems(payload, base) {
     const items = [];
-    const cash = kpi(payload, 'cash_to_confirm');
-    const parcels = kpi(payload, 'parcels_to_create');
+    const signals = (payload && payload.signals) || {};
 
-    if (cash && Number(cash.value) > 0) {
+    if (signals.paiements_en_attente > 0) {
       items.push({
-        key: 'cash-to-confirm',
-        label: 'Cash à confirmer',
-        helper: 'Commandes payées cash en attente de confirmation',
-        value: base.formatNumber(cash.value, 0),
+        key: 'paiements-en-attente',
+        label: 'Paiements en attente',
+        helper: 'À relancer pour éviter l’annulation (cash non confirmé depuis +72h)',
+        value: base.formatNumber(signals.paiements_en_attente, 0),
         tone: 'warning',
         icon: '¤',
         href: '#orders-pending-cash',
-        actionLabel: 'Voir la file →',
+        actionLabel: 'Voir les paiements →',
       });
     }
-    if (parcels && Number(parcels.value) > 0) {
+    if (signals.commandes_bloquees > 0) {
       items.push({
-        key: 'parcels-to-create',
-        label: 'Colis à créer',
-        helper: 'Commandes payées, prêtes à passer en logistique',
-        value: base.formatNumber(parcels.value, 0),
+        key: 'commandes-bloquees',
+        label: 'Commandes bloquées',
+        helper: 'Nécessitent une action immédiate (incident ouvert)',
+        value: base.formatNumber(signals.commandes_bloquees, 0),
+        tone: 'critical',
+        icon: '!',
+      });
+    }
+    if (signals.retraits_en_retard > 0) {
+      items.push({
+        key: 'retraits-en-retard',
+        label: 'Retraits en retard',
+        helper: 'Disponibles en relais depuis plus de 72h',
+        value: base.formatNumber(signals.retraits_en_retard, 0),
+        tone: 'critical',
+        icon: '⏱',
+      });
+    }
+    if (signals.litiges_ouverts > 0) {
+      items.push({
+        key: 'litiges-ouverts',
+        label: 'Litiges ouverts',
+        helper: 'À traiter avec le client',
+        value: base.formatNumber(signals.litiges_ouverts, 0),
         tone: 'warning',
-        icon: '▣',
-        href: '#orders-ready-for-parcel',
-        actionLabel: 'Voir la file →',
+        icon: '⚖',
       });
     }
     return items.slice(0, 4);
+  }
+
+  // SLA & promesse client — cf. services/dashboard-orders.js#getDecisionSignals.
+  // "Commandes dans les temps (%)" du mock volontairement absent : suppose un
+  // délai de livraison CIBLE configuré par marché, qui n'existe dans aucune
+  // table du schéma aujourd'hui.
+  function slaItems(payload, base) {
+    const sla = (payload && payload.signals && payload.signals.sla) || {};
+    return [
+      {
+        key: 'delai-moyen',
+        title: 'Délai moyen de livraison',
+        subtitle: sla.delai_moyen_jours != null ? `${base.formatNumber(sla.delai_moyen_jours, 1)} jours` : '—',
+        tone: 'info',
+      },
+      {
+        key: 'sans-mouvement',
+        title: 'Commandes > 72h sans mouvement',
+        subtitle: base.formatNumber(sla.sans_mouvement_72h, 0),
+        tone: sla.sans_mouvement_72h > 0 ? 'warning' : 'info',
+      },
+      {
+        key: 'prets-aujourdhui',
+        title: 'Commandes prêtes aujourd’hui',
+        subtitle: base.formatNumber(sla.prets_aujourdhui, 0),
+        tone: 'info',
+      },
+    ];
+  }
+
+  // Funnel métier du mock (Créées -> Payées -> Expédiées -> Disponibles
+  // relais -> Retirées), additif au funnel technique déjà affiché
+  // ("Cycle de vie") — les deux servent des lecteurs différents, aucun ne
+  // remplace l'autre.
+  function businessFunnelStages(payload, base) {
+    const funnel = (payload && payload.funnel) || {};
+    return [
+      { label: 'Commandes créées', value: base.formatNumber(funnel.creees, 0) },
+      { label: 'Payées', value: base.formatNumber(funnel.payees, 0) },
+      { label: 'Expédiées', value: base.formatNumber(funnel.expediees, 0) },
+      { label: 'Disponibles relais', value: base.formatNumber(funnel.disponibles_relais, 0) },
+      { label: 'Retirées', value: base.formatNumber(funnel.retirees, 0) },
+    ];
   }
 
   // 2. KPI de tête — tels que fournis, sans recalcul.
@@ -190,6 +250,23 @@
     const kpisSection = cardSection(doc, 'État des commandes', 'Les KPI disponibles sont affichés tels que fournis par la source canonique.', 'orders-kpis');
     ui.MetricStrip.render(kpisSection.body, { items: metricItems(payload, base) });
     dashboard.appendChild(kpisSection.section);
+
+    // Bloc 2b — funnel métier + SLA (additif, cf. buildSignals côté serveur)
+    const businessGrid = doc.createElement('div');
+    businessGrid.className = 'kmc-decision-dashboard-grid-2';
+
+    const businessFunnel = businessFunnelStages(payload, base);
+    if (businessFunnel.some(stage => stage.value !== '—')) {
+      const funnelSection = cardSection(doc, 'Funnel de conversion', 'Du clic à la livraison : suivez chaque étape et identifiez les pertes.', 'orders-business-funnel');
+      decisionUi.Funnel.render(funnelSection.body, { stages: businessFunnel });
+      businessGrid.appendChild(funnelSection.section);
+    }
+
+    const slaSection = cardSection(doc, 'SLA & promesse client', 'Tenez vos engagements et offrez une expérience fiable.', 'orders-sla');
+    decisionUi.SummaryCards.render(slaSection.body, { items: slaItems(payload, base) });
+    businessGrid.appendChild(slaSection.section);
+
+    dashboard.appendChild(businessGrid);
 
     // Bloc 3 — funnel du cycle de vie
     const stages = lifecycleStages(payload, base);

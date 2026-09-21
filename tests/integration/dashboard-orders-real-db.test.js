@@ -200,4 +200,93 @@ if (!hasIntegrationEnv) {
       expect(afterStripe).toBe(beforeStripe + 1);
     });
   });
+
+  describe('signals + funnel additifs — couche de pilotage (cf. #05_Commandes.png)', () => {
+    it('7 — paiements_en_attente ne compte que le cash pending de plus de 72h, isole par delta', async () => {
+      const relais = await seedRelais(marketKM.id);
+      const before = await buildOrders({ market: marketKM });
+
+      const recentId = await seedOrder({ status: 'confirmed', paymentStatus: 'pending', paymentMode: 'cash_relais', marketId: marketKM.id, relaisId: relais });
+      const afterRecent = await buildOrders({ market: marketKM });
+      expect(afterRecent.signals.paiements_en_attente).toBe(before.signals.paiements_en_attente);
+
+      await db.query("UPDATE orders SET created_at = NOW() - INTERVAL '4 days' WHERE id = $1", [recentId]);
+      const afterOld = await buildOrders({ market: marketKM });
+      expect(afterOld.signals.paiements_en_attente).toBe(before.signals.paiements_en_attente + 1);
+    });
+
+    it('8 — retraits_en_retard compte les commandes available depuis plus de 72h', async () => {
+      const relais = await seedRelais(marketKM.id);
+      const id = await seedOrder({ status: 'available', paymentStatus: 'paid', paymentMode: 'cash_relais', marketId: marketKM.id, relaisId: relais });
+      await db.query("UPDATE orders SET available_at = NOW() - INTERVAL '5 days' WHERE id = $1", [id]);
+
+      const result = await buildOrders({ market: marketKM });
+      expect(result.signals.retraits_en_retard).toBeGreaterThanOrEqual(1);
+    });
+
+    it('9 — commandes_bloquees compte les incidents order_incidents ouverts, jamais les resolus', async () => {
+      const relais = await seedRelais(marketKM.id);
+      const before = await buildOrders({ market: marketKM });
+
+      const id = await seedOrder({ status: 'confirmed', paymentStatus: 'paid', paymentMode: 'cash_relais', marketId: marketKM.id, relaisId: relais });
+      const incidentRes = await db.query(
+        "INSERT INTO order_incidents (order_id, type, priority, status, description) VALUES ($1, 'blocage', 'high', 'open', 'test') RETURNING id",
+        [id]
+      );
+      const afterOpen = await buildOrders({ market: marketKM });
+      expect(afterOpen.signals.commandes_bloquees).toBe(before.signals.commandes_bloquees + 1);
+
+      await db.query("UPDATE order_incidents SET status = 'resolved' WHERE id = $1", [incidentRes.rows[0].id]);
+      const afterResolved = await buildOrders({ market: marketKM });
+      expect(afterResolved.signals.commandes_bloquees).toBe(before.signals.commandes_bloquees);
+    });
+
+    it('10 — litiges_ouverts compte les disputes open/processing de ce marche, jamais closed', async () => {
+      const relais = await seedRelais(marketKM.id);
+      const before = await buildOrders({ market: marketKM });
+
+      const id = await seedOrder({ status: 'collected', paymentStatus: 'paid', paymentMode: 'cash_relais', marketId: marketKM.id, relaisId: relais });
+      const disputeRes = await db.query(
+        "INSERT INTO disputes (order_id, type, status, description) VALUES ($1, 'produit_endommage', 'open', 'test') RETURNING id",
+        [id]
+      );
+      const afterOpen = await buildOrders({ market: marketKM });
+      expect(afterOpen.signals.litiges_ouverts).toBe(before.signals.litiges_ouverts + 1);
+
+      await db.query("UPDATE disputes SET status = 'closed' WHERE id = $1", [disputeRes.rows[0].id]);
+      const afterClosed = await buildOrders({ market: marketKM });
+      expect(afterClosed.signals.litiges_ouverts).toBe(before.signals.litiges_ouverts);
+    });
+
+    it('11 — funnel metier compte les commandes collectees dans expediees, disponibles_relais et retirees (cumulatif)', async () => {
+      const relais = await seedRelais(marketKM.id);
+      const before = await buildOrders({ market: marketKM });
+
+      await seedOrder({ status: 'collected', paymentStatus: 'paid', paymentMode: 'cash_relais', marketId: marketKM.id, relaisId: relais });
+
+      const after = await buildOrders({ market: marketKM });
+      expect(after.funnel.creees).toBe(before.funnel.creees + 1);
+      expect(after.funnel.payees).toBe(before.funnel.payees + 1);
+      expect(after.funnel.expediees).toBe(before.funnel.expediees + 1);
+      expect(after.funnel.disponibles_relais).toBe(before.funnel.disponibles_relais + 1);
+      expect(after.funnel.retirees).toBe(before.funnel.retirees + 1);
+    });
+
+    it('12 — funnel.perdues compte les commandes annulees ou remboursees, jamais dans creees', async () => {
+      const relais = await seedRelais(marketKM.id);
+      const before = await buildOrders({ market: marketKM });
+
+      await seedOrder({ status: 'cancelled', paymentStatus: 'pending', paymentMode: 'cash_relais', marketId: marketKM.id, relaisId: relais });
+
+      const after = await buildOrders({ market: marketKM });
+      expect(after.funnel.perdues).toBe(before.funnel.perdues + 1);
+      expect(after.funnel.creees).toBe(before.funnel.creees);
+    });
+
+    it('13 — le signal ne propose jamais commandes_dans_les_temps_pct — delai cible absent du schema, jamais invente', async () => {
+      const result = await buildOrders({ market: marketKM });
+      expect(result.signals.sla).not.toHaveProperty('commandes_dans_les_temps_pct');
+      expect(Object.keys(result.signals.sla)).toEqual(['delai_moyen_jours', 'sans_mouvement_72h', 'prets_aujourdhui']);
+    });
+  });
 }
