@@ -1,0 +1,121 @@
+name: Allegro LIVE stock delta Golden (manual test offer only)
+
+# No pull_request/push/schedule trigger: network access to the seller account
+# requires a deliberate operator workflow_dispatch on protected main.
+on:
+  workflow_dispatch:
+    inputs:
+      offer_id:
+        description: 'Exact numeric ID of a DEDICATED TEST-ONLY seller offer, never the Purchasing Golden offer'
+        required: true
+        type: string
+      test_only_offer_ack:
+        description: 'I confirm this is a separate TEST-ONLY offer; I can safely set its stock from 3 to 0 in seller UI during the run.'
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: isolated-allegro-live-stock-proof
+  cancel-in-progress: false
+
+jobs:
+  exact-read:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_sourcing_proof
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_sourcing_proof"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      GIT_BRANCH_PROOF_ONLY: main
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      KOMERCE_ALLOW_SOURCE_CONTINUITY_PROOF: '1'
+      KOMERCE_ALLOW_ALLEGRO_SANDBOX: '1'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_sourcing_proof
+      PGPASSWORD: komerce
+      JWT_SECRET: ci-ephemeral-isolated-proof-only
+      ADMIN_PASSWORD: ci-ephemeral-isolated-proof-only
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-ephemeral-isolated-proof-only
+      AUTHKEY_API_KEY: ci-ephemeral-isolated-proof-only
+      PAYPAL_CLIENT_ID: ci-ephemeral-isolated-proof-only
+      PAYPAL_CLIENT_SECRET: ci-ephemeral-isolated-proof-only
+      PAYPAL_WEBHOOK_ID: ci-ephemeral-isolated-proof-only
+      META_WA_APP_SECRET: ci-ephemeral-isolated-proof-only
+      OFFER_ID: ${{ inputs.offer_id }}
+      TEST_ONLY_OFFER_ACK: ${{ inputs.test_only_offer_ack }}
+      # Dedicated throwaway Sandbox app/account ONLY. Never copy a production
+      # or Railway refresh token: Allegro rotates it on the first read.
+      ALLEGRO_SANDBOX_CLIENT_ID: ${{ secrets.KOMERCE_ALLEGRO_PROOF_CLIENT_ID }}
+      ALLEGRO_SANDBOX_CLIENT_SECRET: ${{ secrets.KOMERCE_ALLEGRO_PROOF_CLIENT_SECRET }}
+      ALLEGRO_SANDBOX_REFRESH_TOKEN: ${{ secrets.KOMERCE_ALLEGRO_PROOF_REFRESH_TOKEN }}
+      ALLEGRO_SANDBOX_USER_AGENT: Komerce-Sourcing-Continuity-Golden/1
+    steps:
+      - name: Validate exact scope and dedicated credentials before executing code
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${OFFER_ID}" =~ ^[0-9]{1,30}$ ]] || { echo 'GOLDEN_EXACT_OFFER_ID_REQUIRED'; exit 1; }
+          [[ "${OFFER_ID}" != "7782182471" ]] || { echo 'STOCK_PROOF_PURCHASING_GOLDEN_OFFER_PROTECTED'; exit 1; }
+          [[ "${TEST_ONLY_OFFER_ACK}" == 'true' ]] || { echo 'STOCK_PROOF_TEST_ONLY_OFFER_ACK_REQUIRED'; exit 1; }
+          test -n "${ALLEGRO_SANDBOX_CLIENT_ID}" || { echo 'GOLDEN_DEDICATED_SANDBOX_CREDENTIALS_MISSING'; exit 1; }
+          test -n "${ALLEGRO_SANDBOX_CLIENT_SECRET}" || { echo 'GOLDEN_DEDICATED_SANDBOX_CREDENTIALS_MISSING'; exit 1; }
+          test -n "${ALLEGRO_SANDBOX_REFRESH_TOKEN}" || { echo 'GOLDEN_DEDICATED_SANDBOX_CREDENTIALS_MISSING'; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Create job-only token encryption key
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+      - name: Bootstrap isolated schema-only database (zero production data)
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -U komerce -d komerce_sourcing_proof -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /dev/null
+          node scripts/ci-db-bootstrap.js
+          # The schema-only snapshot can predate migration 238. CI reconciliation
+          # may baseline that migration by Git history despite the missing column.
+          # Reapply only the canonical idempotent migration on this disposable
+          # localhost database; never mutate Railway or change the generic runner.
+          psql -h 127.0.0.1 -U komerce -d komerce_sourcing_proof -v ON_ERROR_STOP=1 -f migrations/238_sourcing_source_autopilot.sql > /dev/null
+          # Fail before provider OAuth/GET if the single sourcing switch is
+          # absent or does not fail closed by default in this test database.
+          test "$(psql -h 127.0.0.1 -U komerce -d komerce_sourcing_proof -At -v ON_ERROR_STOP=1 -c "
+            SELECT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema = 'public' AND table_name = 'sourcing_sources'
+                AND column_name = 'autopilot_enabled'
+                AND data_type = 'boolean' AND is_nullable = 'NO'
+                AND column_default = 'false'
+            );
+          ")" = "t" || { echo 'GOLDEN_EPHEMERAL_SOURCE_SWITCH_SCHEMA_MISSING'; exit 1; }
+      - name: LIVE 3-to-0 stock delta proof (manual seller UI change, GET-only client)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/sourcing-continuity-allegro-stock-delta-proof.js --offer-id="$OFFER_ID" --test-only-offer-confirmed
