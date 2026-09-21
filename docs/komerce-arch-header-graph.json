@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1449,
-    "edges": 7245,
+    "edges": 7247,
     "dbTables": 173,
     "doctrines": 484,
     "impactAreas": 184,
@@ -15205,7 +15205,9 @@
         "routes/admin-dashboard-market.js"
       ],
       "dbRead": [
-        "orders"
+        "orders",
+        "order_incidents",
+        "disputes"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -55546,6 +55548,18 @@
     },
     {
       "from": "services/dashboard-orders.js",
+      "to": "db:order_incidents",
+      "type": "db-read",
+      "label": "order_incidents"
+    },
+    {
+      "from": "services/dashboard-orders.js",
+      "to": "db:disputes",
+      "type": "db-read",
+      "label": "disputes"
+    },
+    {
+      "from": "services/dashboard-orders.js",
       "to": "doctrine:workspace_acts_dashboard_observes",
       "type": "doctrine",
       "label": "workspace_acts_dashboard_observes"
@@ -92110,7 +92124,9 @@
       ],
       "ownedFiles": [],
       "dbRead": [
-        "orders"
+        "orders",
+        "order_incidents",
+        "disputes"
       ],
       "dbWrite": [],
       "dbWriteVia": [],
@@ -92125,6 +92141,8 @@
         "orders"
       ],
       "mustCheck": [
+        "db:disputes",
+        "db:order_incidents",
         "db:orders",
         "doctrine:browser_never_recomputes_truth",
         "doctrine:client_market_id_never_authority",
