@@ -289,4 +289,77 @@ if (!hasIntegrationEnv) {
       expect(Object.keys(result.signals.sla)).toEqual(['delai_moyen_jours', 'sans_mouvement_72h', 'prets_aujourdhui']);
     });
   });
+
+  describe('priority_orders — table priorisee, vrai vocabulaire incident/litige, jamais invente', () => {
+    it('14 — un incident ouvert (vocabulaire relais/hub deja valide) devient le probleme affiche', async () => {
+      const relais = await seedRelais(marketKM.id);
+      const id = await seedOrder({ status: 'confirmed', paymentStatus: 'pending', paymentMode: 'cash_relais', marketId: marketKM.id, relaisId: relais });
+      await db.query("UPDATE orders SET created_at = NOW() - INTERVAL '4 days' WHERE id = $1", [id]);
+      const { rows: [ref] } = await db.query('SELECT reference FROM orders WHERE id = $1', [id]);
+      await db.query(
+        "INSERT INTO order_incidents (order_id, type, priority, status, description) VALUES ($1, 'stock', 'high', 'open', 'test')",
+        [id]
+      );
+
+      const result = await buildOrders({ market: marketKM });
+      const row = result.priority_orders.find(o => o.reference === ref.reference);
+      expect(row).toBeDefined();
+      expect(row.problem).toBe('Pas d’allocation stock');
+    });
+
+    it('15 — un incident résolu ne fait plus apparaître la commande dans priority_orders', async () => {
+      const relais = await seedRelais(marketKM.id);
+      const id = await seedOrder({ status: 'confirmed', paymentStatus: 'paid', paymentMode: 'cash_relais', marketId: marketKM.id, relaisId: relais });
+      const { rows: [ref] } = await db.query('SELECT reference FROM orders WHERE id = $1', [id]);
+      const incidentRes = await db.query(
+        "INSERT INTO order_incidents (order_id, type, priority, status, description) VALUES ($1, 'blocage', 'high', 'open', 'test') RETURNING id",
+        [id]
+      );
+      const before = await buildOrders({ market: marketKM });
+      expect(before.priority_orders.some(o => o.reference === ref.reference)).toBe(true);
+
+      await db.query("UPDATE order_incidents SET status = 'resolved' WHERE id = $1", [incidentRes.rows[0].id]);
+      const after = await buildOrders({ market: marketKM });
+      expect(after.priority_orders.some(o => o.reference === ref.reference)).toBe(false);
+    });
+
+    it('16 — un litige sur une commande déjà retirée (collected) apparaît quand même — le statut ne doit jamais exclure un litige réel', async () => {
+      const relais = await seedRelais(marketKM.id);
+      const id = await seedOrder({ status: 'collected', paymentStatus: 'paid', paymentMode: 'cash_relais', marketId: marketKM.id, relaisId: relais });
+      const { rows: [ref] } = await db.query('SELECT reference FROM orders WHERE id = $1', [id]);
+      await db.query(
+        "INSERT INTO disputes (order_id, type, status, description) VALUES ($1, 'produit_endommage', 'open', 'test')",
+        [id]
+      );
+
+      const result = await buildOrders({ market: marketKM });
+      const row = result.priority_orders.find(o => o.reference === ref.reference);
+      expect(row).toBeDefined();
+      expect(row.problem).toBe('Litige : produit_endommage');
+    });
+
+    it('17 — priorité : un incident ouvert prime sur un paiement en attente sur la même commande', async () => {
+      const relais = await seedRelais(marketKM.id);
+      const id = await seedOrder({ status: 'confirmed', paymentStatus: 'pending', paymentMode: 'cash_relais', marketId: marketKM.id, relaisId: relais });
+      await db.query("UPDATE orders SET created_at = NOW() - INTERVAL '4 days' WHERE id = $1", [id]);
+      const { rows: [ref] } = await db.query('SELECT reference FROM orders WHERE id = $1', [id]);
+      await db.query(
+        "INSERT INTO order_incidents (order_id, type, priority, status, description) VALUES ($1, 'client_absent', 'normal', 'open', 'test')",
+        [id]
+      );
+
+      const result = await buildOrders({ market: marketKM });
+      const row = result.priority_orders.find(o => o.reference === ref.reference);
+      expect(row.problem).toBe('En attente client');
+    });
+
+    it('18 — priority_orders reste vide plutôt que de fabriquer une raison quand rien n’est détecté', async () => {
+      const relais = await seedRelais(marketKM.id);
+      await seedOrder({ status: 'confirmed', paymentStatus: 'paid', paymentMode: 'cash_relais', marketId: marketKM.id, relaisId: relais });
+      const { rows: [ref] } = await db.query("SELECT reference FROM orders WHERE relais_id = $1 ORDER BY created_at DESC LIMIT 1", [relais]);
+
+      const result = await buildOrders({ market: marketKM });
+      expect(result.priority_orders.some(o => o.reference === ref.reference)).toBe(false);
+    });
+  });
 }
