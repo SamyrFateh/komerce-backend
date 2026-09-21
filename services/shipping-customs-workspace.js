@@ -139,6 +139,62 @@ async function queryCustomsCandidates(marketId) {
   return rows;
 }
 
+const TRANSIT_LATE_DAYS = 14;
+
+/**
+ * Couche de pilotage additive — au-dessus des files d'exécution
+ * existantes (summary/transit/customs), jamais à leur place. Calcul
+ * pur en mémoire sur des lignes DÉJÀ récupérées par queryTransit/
+ * queryCustoms/queryCustomsCandidates : aucune nouvelle requête SQL,
+ * aucun recalcul métier serveur dupliqué (doctrine
+ * dashboard_no_business_recompute — la déclaration/le statut restent
+ * l'autorité de customs-shipment-service.js, cette fonction ne fait
+ * que lire et agréger ce qui existe déjà).
+ *
+ * Seuil de 14 jours repris tel quel du libellé déjà présent dans le
+ * mock validé ("Transit > 14 jours") — pas un chiffre inventé ici.
+ *
+ * Volontairement absent : aucun signal "documents expirants" ou
+ * "conformité documentaire" — customs_shipments ne trace aucun type
+ * de document ni date d'expiration (vérifié dans le schéma). C'est
+ * exactement ce que la copie déjà présente sur cette page annonce
+ * ("sans... conformité documentaire inventée") — cette fonction
+ * respecte cette même limite plutôt que de la contredire.
+ */
+function buildSignals(transit, shipments, candidates) {
+  const activeShipments = shipments.filter(row => row.is_active);
+
+  const transitPlus14j = transit.in_transit.filter(row => {
+    if (!row.shipped_at) return false;
+    const days = (Date.now() - new Date(row.shipped_at).getTime()) / 86400000;
+    return days > TRANSIT_LATE_DAYS;
+  }).length;
+
+  const coutsLogistiquesKmf = activeShipments.reduce((sum, row) => {
+    const freight = Number(row.freight_kmf) || 0;
+    const customs = Number(row.customs_paid_kmf) || 0;
+    return sum + freight + customs;
+  }, 0);
+
+  const delais = activeShipments
+    .filter(row => row.declared_at && row.shipment_date)
+    .map(row => (new Date(row.declared_at).getTime() - new Date(row.shipment_date).getTime()) / 86400000)
+    .filter(days => days >= 0);
+  const delaiMoyenJours = delais.length
+    ? Math.round((delais.reduce((sum, d) => sum + d, 0) / delais.length) * 10) / 10
+    : null;
+
+  return Object.freeze({
+    dossiers_a_traiter: activeShipments.filter(row => row.status === 'pending').length,
+    transit_plus_14j: transitPlus14j,
+    colis_sans_dossier: candidates.length,
+    couts_logistiques_kmf: Math.round(coutsLogistiquesKmf),
+    delai_moyen_jours: delaiMoyenJours,
+    expeditions_en_cours: transit.ready.length + transit.in_transit.length,
+    dossiers_douane_ouverts: activeShipments.length,
+  });
+}
+
 async function buildWorkspace({ market }) {
   const resolved = requireMarket(market);
   const [transit, history, shipments, candidates] = await Promise.all([
@@ -157,6 +213,7 @@ async function buildWorkspace({ market }) {
       customs_declared: shipments.filter(row => row.status === 'declared' && row.is_active).length,
       customs_candidates: candidates.length,
     },
+    signals: buildSignals(transit, shipments, candidates),
     transit: {
       ready: transit.ready,
       in_transit: transit.in_transit,
@@ -385,5 +442,6 @@ module.exports = {
     resolveShipment,
     sanitizeCreateBody,
     sanitizeUpdateBody,
+    buildSignals,
   },
 };
