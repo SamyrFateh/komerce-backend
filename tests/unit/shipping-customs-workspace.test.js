@@ -133,3 +133,63 @@ test('création douane délègue market_id au owner transactionnel sans mutation
     allocations: [],
   });
 });
+
+describe('buildSignals — couche de pilotage additive, calcul pur sur données déjà récupérées', () => {
+  const { buildSignals } = workspace._test;
+
+  test('calcule les 5 signaux à partir de transit/shipments/candidates déjà fournis', () => {
+    const now = Date.now();
+    const transit = {
+      ready: [{ reference: 'PCL-1' }],
+      in_transit: [
+        { reference: 'PCL-2', shipped_at: new Date(now - 20 * 86400000).toISOString() }, // 20j : en retard
+        { reference: 'PCL-3', shipped_at: new Date(now - 5 * 86400000).toISOString() },  // 5j : pas en retard
+      ],
+    };
+    const shipments = [
+      {
+        status: 'pending', is_active: true,
+        freight_kmf: '28000', customs_paid_kmf: '45000',
+        shipment_date: '2026-09-01', declared_at: null,
+      },
+      {
+        status: 'declared', is_active: true,
+        freight_kmf: '10000', customs_paid_kmf: '20000',
+        shipment_date: '2026-08-01', declared_at: '2026-08-11T00:00:00Z', // 10 jours
+      },
+      {
+        status: 'declared', is_active: false, // inactif : exclu des totaux
+        freight_kmf: '999999', customs_paid_kmf: '999999',
+        shipment_date: '2026-01-01', declared_at: '2026-01-02T00:00:00Z',
+      },
+    ];
+    const candidates = [{ reference: 'PCL-4' }];
+
+    const signals = buildSignals(transit, shipments, candidates);
+
+    expect(signals.dossiers_a_traiter).toBe(1);
+    expect(signals.transit_plus_14j).toBe(1);
+    expect(signals.colis_sans_dossier).toBe(1);
+    expect(signals.couts_logistiques_kmf).toBe(28000 + 45000 + 10000 + 20000); // le dossier inactif est exclu
+    expect(signals.delai_moyen_jours).toBe(10);
+    expect(signals.expeditions_en_cours).toBe(3);
+    expect(signals.dossiers_douane_ouverts).toBe(2);
+  });
+
+  test('délai moyen reste null si aucun dossier déclaré — jamais 0 par défaut trompeur', () => {
+    const signals = buildSignals({ ready: [], in_transit: [] }, [
+      { status: 'pending', is_active: true, freight_kmf: '1000', customs_paid_kmf: '0', shipment_date: '2026-09-01', declared_at: null },
+    ], []);
+    expect(signals.delai_moyen_jours).toBeNull();
+  });
+
+  test('ne propose jamais de signal "documents expirants" ou "conformité" — donnée absente du schéma, jamais inventée', () => {
+    const signals = buildSignals({ ready: [], in_transit: [] }, [], []);
+    expect(signals).not.toHaveProperty('documents_expirants');
+    expect(signals).not.toHaveProperty('conformite_documentaire');
+    expect(Object.keys(signals)).toEqual([
+      'dossiers_a_traiter', 'transit_plus_14j', 'colis_sans_dossier',
+      'couts_logistiques_kmf', 'delai_moyen_jours', 'expeditions_en_cours', 'dossiers_douane_ouverts',
+    ]);
+  });
+});
