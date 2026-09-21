@@ -91,6 +91,22 @@ jobs:
           set -euo pipefail
           psql -h 127.0.0.1 -U komerce -d komerce_sourcing_proof -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /dev/null
           node scripts/ci-db-bootstrap.js
+          # The schema-only snapshot can predate migration 238. CI reconciliation
+          # may baseline that migration by Git history despite the missing column.
+          # Reapply only the canonical idempotent migration on this disposable
+          # localhost database; never mutate Railway or change the generic runner.
+          psql -h 127.0.0.1 -U komerce -d komerce_sourcing_proof -v ON_ERROR_STOP=1 -f migrations/238_sourcing_source_autopilot.sql > /dev/null
+          # Fail before provider OAuth/GET if the single sourcing switch is
+          # absent or does not fail closed by default in this test database.
+          test "$(psql -h 127.0.0.1 -U komerce -d komerce_sourcing_proof -At -v ON_ERROR_STOP=1 -c "
+            SELECT EXISTS (
+              SELECT 1 FROM information_schema.columns
+              WHERE table_schema = 'public' AND table_name = 'sourcing_sources'
+                AND column_name = 'autopilot_enabled'
+                AND data_type = 'boolean' AND is_nullable = 'NO'
+                AND column_default = 'false'
+            );
+          ")" = "t" || { echo 'GOLDEN_EPHEMERAL_SOURCE_SWITCH_SCHEMA_MISSING'; exit 1; }
       - name: Real exact seller-offer proof (OFF then ON, no orders)
         shell: bash
         run: |
