@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1449,
-    "edges": 7244,
+    "edges": 7245,
     "dbTables": 173,
     "doctrines": 484,
     "impactAreas": 184,
@@ -18647,7 +18647,8 @@
         "products",
         "relais",
         "users",
-        "inventory_items"
+        "inventory_items",
+        "order_incidents"
       ],
       "dbWrite": [
         "order_comments"
@@ -60977,6 +60978,12 @@
     },
     {
       "from": "services/operations-workspace.js",
+      "to": "db:order_incidents",
+      "type": "db-read",
+      "label": "order_incidents"
+    },
+    {
+      "from": "services/operations-workspace.js",
       "to": "db:order_comments",
       "type": "db-write",
       "label": "order_comments"
@@ -95526,7 +95533,8 @@
         "products",
         "relais",
         "users",
-        "inventory_items"
+        "inventory_items",
+        "order_incidents"
       ],
       "dbWrite": [
         "order_comments"
@@ -95594,6 +95602,7 @@
         "db:incidents",
         "db:inventory_items",
         "db:order_comments",
+        "db:order_incidents",
         "db:order_items",
         "db:order_status_history",
         "db:orders",

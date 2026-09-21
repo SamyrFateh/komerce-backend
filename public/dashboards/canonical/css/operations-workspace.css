@@ -332,6 +332,18 @@
   }
 }
 
+.kmc-workspace-subsection {
+  margin-top: 22px;
+}
+
+.kmc-workspace-subsection-title {
+  margin: 0 0 10px;
+  color: var(--kmc-navy);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kmc-workspace-action,
   .kmc-workspace-table tbody tr,

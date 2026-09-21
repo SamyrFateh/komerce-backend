@@ -123,6 +123,100 @@
     ];
   }
 
+  /**
+   * Couche de pilotage additive — au-dessus des files d'exécution
+   * existantes (metricItems + renderOrderActionSection), jamais à leur
+   * place. Consomme payload.signals (services/operations-workspace.js#
+   * querySignals), jamais de recalcul métier côté navigateur
+   * (doctrine dashboard_no_business_recompute).
+   *
+   * Volontairement absent : aucun signal "stock sous seuil d'alerte" par
+   * hub/relais — cette notion n'existe dans aucune table du schéma
+   * aujourd'hui (vérifié). L'inventer aurait affiché un chiffre qui a
+   * l'air réel sans l'être.
+   */
+  function signalItems(signals = {}) {
+    return [
+      { key: 'collectes-retard', label: 'Collectes en retard', value: formatNumber(signals.collectes_en_retard), tone: signals.collectes_en_retard ? 'critical' : 'neutral' },
+      { key: 'cash-securiser', label: 'Cash à sécuriser', value: formatKmf(signals.cash_a_securiser && signals.cash_a_securiser.total_kmf), tone: (signals.cash_a_securiser && signals.cash_a_securiser.count) ? 'warning' : 'neutral' },
+      { key: 'incidents', label: 'Incidents ouverts', value: formatNumber(signals.incidents_ouverts), tone: signals.incidents_ouverts ? 'critical' : 'neutral' },
+      { key: 'relais-actifs', label: 'Relais actifs', value: formatNumber(signals.relais_actifs), tone: 'neutral' },
+    ];
+  }
+
+  const INCIDENT_TYPE_LABEL = Object.freeze({
+    retard: 'Retard',
+    blocage: 'Blocage',
+    paiement: 'Paiement',
+    stock: 'Stock',
+    colis_endommage: 'Colis endommagé',
+    colis_perdu: 'Colis perdu',
+    client_absent: 'Client absent',
+    autre: 'Autre',
+  });
+
+  const INCIDENT_PRIORITY_LABEL = Object.freeze({
+    urgent: 'Urgent',
+    high: 'Élevée',
+    normal: 'Normale',
+    low: 'Faible',
+  });
+
+  function renderSignals(rootNode, ui, doc, payload) {
+    const signals = payload.signals || {};
+    const slot = ui.Section.create({
+      id: 'operations-signals',
+      title: 'Signaux réseau',
+      description: 'Ce que le serveur observe déjà sur ce marché — sans score ni priorité inventés côté navigateur.',
+    });
+    rootNode.appendChild(slot.element);
+
+    const strip = doc.createElement('div');
+    strip.className = 'kmc-metric-strip';
+    strip.setAttribute('data-metric-strip', '');
+    signalItems(signals).forEach(item => {
+      const card = doc.createElement('article');
+      card.className = `kmc-metric-card is-${item.tone || 'neutral'}`;
+      if (item.key) card.setAttribute('data-metric-key', item.key);
+      card.appendChild(text(doc, 'span', 'kmc-metric-label', item.label));
+      card.appendChild(text(doc, 'strong', 'kmc-metric-value', item.value != null ? item.value : '—'));
+      strip.appendChild(card);
+    });
+    slot.slot.appendChild(strip);
+
+    const incidentsHost = doc.createElement('div');
+    incidentsHost.className = 'kmc-workspace-subsection';
+    incidentsHost.appendChild(text(doc, 'h3', 'kmc-workspace-subsection-title', 'Incidents ouverts'));
+    slot.slot.appendChild(incidentsHost);
+    ui.DataTable.render(incidentsHost, {
+      emptyText: 'Aucun incident ouvert sur ce marché.',
+      columns: [
+        { key: 'type', label: 'Type', format: value => INCIDENT_TYPE_LABEL[value] || value },
+        { key: 'relais_name', label: 'Relais' },
+        { key: 'priority', label: 'Priorité', format: value => INCIDENT_PRIORITY_LABEL[value] || value },
+        { key: 'created_at', label: 'Depuis', format: value => formatDate(value) },
+      ],
+      rows: signals.incidents || [],
+    });
+
+    const relaisHost = doc.createElement('div');
+    relaisHost.className = 'kmc-workspace-subsection';
+    relaisHost.appendChild(text(doc, 'h3', 'kmc-workspace-subsection-title', 'Relais à suivre'));
+    slot.slot.appendChild(relaisHost);
+    ui.DataTable.render(relaisHost, {
+      emptyText: 'Aucun relais actif sur ce marché.',
+      columns: [
+        { key: 'name', label: 'Relais' },
+        { key: 'island', label: 'Île / zone' },
+        { key: 'disponibles', label: 'Colis disponibles', align: 'right' },
+        { key: 'en_retard', label: 'Dont en retard (+72h)', align: 'right', format: value => (value ? String(value) : '—') },
+        { key: 'cash_pending_kmf', label: 'Cash en attente', align: 'right', format: value => formatKmf(value) },
+        { key: 'collectes_7j', label: 'Collectes (7j)', align: 'right' },
+      ],
+      rows: signals.par_relais || [],
+    });
+  }
+
   function setFeedback(rootNode, message, tone = 'neutral') {
     const target = rootNode.querySelector('[data-workspace-feedback]');
     if (!target) return;
@@ -233,6 +327,8 @@
     rootNode.className = 'kmc-operations-workspace';
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload));
+
+    renderSignals(rootNode, ui, doc, payload);
 
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-workspace-metrics';
