@@ -22,8 +22,8 @@ jest.mock('../../scripts/sourcing-continuity-allegro-isolated-proof', () => ({
   }),
   exactOne: jest.fn(res => res.products[0]),
   summarize: jest.fn((delta, id) => ({ exact_offer_id: id, comparison: delta.status,
-    stock_three_to_zero_proved: delta.offer.changes?.some(x =>
-      x.field === 'stock_available' && x.before === 3 && x.after === 0) || false })),
+    stock_three_to_one_proved: delta.offer.changes?.some(x =>
+      x.field === 'stock_available' && x.before === 3 && x.after === 1) || false })),
 }));
 const { assertStockProofArgs, stockTransitionProved, safeStockProofDiagnostic, main } =
   require('../../scripts/sourcing-continuity-allegro-stock-delta-proof');
@@ -33,7 +33,7 @@ const env = {
   DATABASE_URL: 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_sourcing_proof',
 };
 const offer = '1234567890';
-const changes = [{ field: 'stock_available', before: 3, after: 0 }];
+const changes = [{ field: 'stock_available', before: 3, after: 1 }];
 function result(status = 'CHANGED', offerFacts = changes, unitFacts = changes) {
   return {
     status, supplier_api_called: true, writes: false, catalog_mutated: false,
@@ -61,6 +61,13 @@ test('blocks purchasing Golden offer, missing human test-only acknowledgement, r
 
 test('requires the identical exact stock delta in offer and unit; no price drift or network ambiguity', () => {
   expect(stockTransitionProved(result(), offer)).toBe(true);
+  // An actual zero-stock observation is NOT equivalent to this 3 -> 1 proof.
+  expect(stockTransitionProved(result('CHANGED',
+    [{ field: 'stock_available', before: 3, after: 0 }],
+    [{ field: 'stock_available', before: 3, after: 0 }]), offer)).toBe(false);
+  expect(stockTransitionProved(result('CHANGED',
+    [{ field: 'stock_available', before: 3, after: 2 }],
+    [{ field: 'stock_available', before: 3, after: 2 }]), offer)).toBe(false);
   expect(stockTransitionProved(result('UNCHANGED'), offer)).toBe(false);
   expect(stockTransitionProved(result('CHANGED', changes, []), offer)).toBe(false);
   expect(stockTransitionProved(result('CHANGED',
@@ -71,7 +78,7 @@ test('requires the identical exact stock delta in offer and unit; no price drift
     .toBe(false);
 });
 
-test('OFF prevents any provider read; ON sees an actual 3-to-0 change during bounded exact refresh', async () => {
+test('OFF prevents any provider read; ON sees an actual 3-to-1 change during bounded exact refresh', async () => {
   const query = jest.fn(async () => ({ rows: [] }));
   const dispatchToConnector = jest.fn(async () => ({ products: [snapshot()], invalid: [] }));
   const probe = jest.fn()
@@ -87,7 +94,8 @@ test('OFF prevents any provider read; ON sees an actual 3-to-0 change during bou
   const r = await main({ argv: ['--offer-id=' + offer, '--test-only-offer-confirmed'],
     env, query, dispatchToConnector, probe, delay, log });
   expect(r).toMatchObject({ live_stock_delta_proved: true, comparison: 'CHANGED',
-    stock_three_to_zero_proved: true, provider_exact_reads: 1 });
+    stock_three_to_one_proved: true, stock_three_to_zero_proved: false,
+    observed_after: 1, provider_exact_reads: 1 });
   expect(delay).toHaveBeenCalledTimes(2);
   expect(delay).toHaveBeenCalledWith(45000);
   expect(dispatchToConnector).toHaveBeenCalledTimes(1);
@@ -97,6 +105,8 @@ test('OFF prevents any provider read; ON sees an actual 3-to-0 change during bou
   expect(probe).toHaveBeenCalledTimes(3);
   expect(query.mock.calls.filter(([sql]) => /^INSERT|^UPDATE/.test(String(sql).trim()))).toHaveLength(3);
   expect(log.mock.calls[0][0]).toContain('READY_FOR_MANUAL_SANDBOX_TEST_OFFER_STOCK_CHANGE');
+  expect(log.mock.calls[0][0]).toContain('stock 1');
+  expect(log.mock.calls[0][0]).not.toContain('stock 0');
 });
 
 test('aborts before invitation to modify the offer if observed baseline differs from three', async () => {

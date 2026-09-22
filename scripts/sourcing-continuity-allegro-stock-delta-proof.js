@@ -5,7 +5,7 @@
  * @domain        sourcing
  * @layer         tooling
  * @owner         scripts/sourcing-continuity-targeted-proof.js
- * @purpose       One controlled seller-UI stock change (3 -> 0) on a dedicated Sandbox test offer; read-only supplier client.
+ * @purpose       One controlled seller-UI stock change (3 -> 1) on a dedicated Sandbox test offer; read-only supplier client.
  * @impact-areas  sourcing, supplier-integration
  * @version       2026-09
  */
@@ -19,7 +19,7 @@ const { assertIsolatedContext, exactOne, summarize } = require('./sourcing-conti
 const SOURCE = 'api:allegro';
 const GOLDEN_PURCHASING_OFFER_ID = '7782182471';
 const EXPECTED_STOCK = 3;
-const TARGET_STOCK = 0;
+const TARGET_STOCK = 1;
 const MAX_RECHECKS = 4;
 const RECHECK_INTERVAL_MS = 45000;
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -141,7 +141,7 @@ async function main({ argv = process.argv.slice(2), env = process.env,
 
   stage = 'MANUAL_CHANGE_WAIT';
   log('READY_FOR_MANUAL_SANDBOX_TEST_OFFER_STOCK_CHANGE: baseline 3 observed. ' +
-    'Set ONLY this dedicated TEST offer to stock 0 in Allegro seller UI now. ' +
+    'Set ONLY this dedicated TEST offer to stock 1 in Allegro seller UI now. ' +
     'Four exact reads will occur at 45-second intervals; no supplier writes are performed by Komerce.');
   for (let i = 0; i < MAX_RECHECKS; i++) {
     await delay(RECHECK_INTERVAL_MS);
@@ -156,12 +156,14 @@ async function main({ argv = process.argv.slice(2), env = process.env,
       return {
         ...summarize(delta, offerId),
         live_stock_delta_proved: true,
+        stock_three_to_one_proved: true,
+        stock_three_to_zero_proved: false,
         expected_before: EXPECTED_STOCK,
         observed_after: TARGET_STOCK,
         provider_exact_reads: supplierCalls,
         seller_change_performed_by_operator: true,
-        note: 'Real 3-to-0 stock change observed in Allegro Sandbox for a separately attested test offer. ' +
-          'This does not demonstrate the production cron, public catalog propagation or purchasing preflight.',
+        note: 'Real 3-to-1 stock decrease observed in Allegro Sandbox for a separately attested test offer. ' +
+          'This is NOT a zero-stock or stockout proof and does not demonstrate the production cron, public catalog propagation or purchasing preflight.',
       };
     }
     if (delta?.status === 'CHANGED') throw new Error('STOCK_PROOF_UNEXPECTED_CHANGE_OR_PRICE_DRIFT');
