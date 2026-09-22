@@ -20,12 +20,12 @@
 
 ## État et limites de preuve
 
-L'opération est **DOCUMENTÉE / CODE TESTÉ HORS RÉSEAU** tant que la sonde n'est pas exécutée avec de vrais identifiants Sandbox dédiés. Le registre conserve `highest_proof=UNQUALIFIED` : le niveau historique d'un fournisseur ne peut pas être promu par la seule présence de code ou de tests simulés.
+**Observation réelle déclarée par l'opérateur le 22 septembre 2026 :** une sonde ponctuelle exécutée dans l'instance Railway existante avec ses variables MTN Sandbox préexistantes a rapporté `PASS` / `MTN_SANDBOX_COLLECTION_OAUTH_PROVED`. Source et limitations de provenance : [rapport expurgé Railway du 22 septembre 2026](../evidence/RAILWAY_SANDBOX_AUTH_2026-09-22.md). Cette observation concerne **uniquement l'authentification Collections Sandbox**, pas le contrat `RequestToPay` ni une preuve d'encaissement. Le registre conserve `highest_proof=UNQUALIFIED` au niveau du fournisseur global : un PASS d'authentification local ne qualifie pas toutes ses opérations.
 
 Un PASS ultérieur ne prouve **pas** la capacité RequestToPay, les montants et devises, le statut de transaction, les callbacks, une opération d'encaissement, ni les droits de production au Congo. Ces opérations nécessitent leurs propres contrats et preuves. Les scripts historiques `scripts/mtn-momo-sandbox-probe.js` initient une transaction de test et sont **exclus** de cette campagne read-only.
 
 ## Exécution manuelle
 
-Dans l'environnement GitHub `provider-contract-sandbox`, configurer les secrets **dédiés** `KOMERCE_MTN_PROOF_COLLECTION_SUBSCRIPTION_KEY`, `KOMERCE_MTN_PROOF_API_USER` et `KOMERCE_MTN_PROOF_API_KEY`. Ils ne doivent pas être remplacés par les secrets de production ou les credentials Railway.
+Dans l'environnement GitHub `provider-contract-sandbox`, configurer les secrets **dédiés** `KOMERCE_MTN_PROOF_COLLECTION_SUBSCRIPTION_KEY`, `KOMERCE_MTN_PROOF_API_USER` et `KOMERCE_MTN_PROOF_API_KEY`. La campagne GitHub exige ces secrets distincts. **Voie alternative observée le 22 septembre :** la sonde ponctuelle, exécutée *dans* l'instance Railway existante, peut réutiliser les variables Sandbox déjà présentes sans les copier vers GitHub ni modifier leur valeur. Les deux chemins ne sont pas interchangeables et leurs preuves doivent garder leur propre provenance.
 
 Sur `main`, lancer manuellement `External provider contract batch (read-only)` avec `mode=sandbox-read`, `providers=mtn-momo-cg`, `include_proven=false`. La sonde effectue au plus un POST d'authentification, sans abonnement nouveau, sans approbation sur téléphone, sans commande et sans message.
