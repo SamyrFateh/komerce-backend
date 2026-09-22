@@ -63,7 +63,7 @@ test('3 observed then 1: quantity 1 is only observed sufficient; quantity 2 is s
 
 test('UNKNOWN does not become zero, available, or a checkout decision', () => {
   for (const stock of [null, undefined, -1, 1.5]) {
-    const result = run([{ sku_id: 'sku-1', quantity: 1 }], report([snapshot(stock, 3)]));
+    const result = run([{ sku_id: 'sku-1', quantity: 1 }], report([snapshot(3, 3, { observed_supplier_stock: stock })]));
     expect(result).toMatchObject({ status: STATUS.UNKNOWN, commercial_readiness: 'NOT_EVALUATED' });
     expect(result.sku_evidence[0]).toMatchObject({ status: STATUS.UNKNOWN, reason: 'STOCK_UNKNOWN' });
   }
