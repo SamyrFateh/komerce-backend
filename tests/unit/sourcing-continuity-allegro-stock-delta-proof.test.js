@@ -25,7 +25,7 @@ jest.mock('../../scripts/sourcing-continuity-allegro-isolated-proof', () => ({
     stock_three_to_zero_proved: delta.offer.changes?.some(x =>
       x.field === 'stock_available' && x.before === 3 && x.after === 0) || false })),
 }));
-const { assertStockProofArgs, stockTransitionProved, main } =
+const { assertStockProofArgs, stockTransitionProved, safeStockProofDiagnostic, main } =
   require('../../scripts/sourcing-continuity-allegro-stock-delta-proof');
 
 const env = {
@@ -130,4 +130,43 @@ test('never counts four unchanged reads as successful stock-change proof', async
     env, query, dispatchToConnector, probe, delay, log: jest.fn() }))
     .rejects.toThrow('STOCK_PROOF_CHANGE_NOT_OBSERVED');
   expect(delay).toHaveBeenCalledTimes(4);
+});
+
+test('logs only a stable phase and allowlisted HTTP code, never provider diagnostic or OAuth material', () => {
+  const error = Object.assign(new Error('ALLEGRO_HTTP_400: invalid_grant secret=DO-NOT-LOG refresh_token=DO-NOT-LOG'),
+    { stockProofStage: 'BASELINE_PROVIDER_READ' });
+  const diagnostic = safeStockProofDiagnostic(error);
+  expect(diagnostic).toBe('STOCK_PROOF_FAILURE_STAGE_BASELINE_PROVIDER_READ_REASON_ALLEGRO_HTTP_400');
+  expect(diagnostic).not.toMatch(/DO-NOT-LOG|invalid_grant|refresh_token/i);
+  expect(safeStockProofDiagnostic({ message: 'unexpected SQL error with secret', stockProofStage: 'SOURCE_FIXTURE' }))
+    .toBe('STOCK_PROOF_FAILURE_STAGE_SOURCE_FIXTURE_REASON_PROVIDER_OR_RUNTIME_UNKNOWN');
+  expect(safeStockProofDiagnostic({ message: 'ALLEGRO_HTTP_401', stockProofStage: 'BASELINE_PROVIDER_READ' }))
+    .toBe('STOCK_PROOF_FAILURE_STAGE_BASELINE_PROVIDER_READ_REASON_ALLEGRO_HTTP_401');
+  expect(safeStockProofDiagnostic({ message: 'ALLEGRO_REFRESH_TOKEN_REQUIRED', stockProofStage: 'BASELINE_PROVIDER_READ' }))
+    .toBe('STOCK_PROOF_FAILURE_STAGE_BASELINE_PROVIDER_READ_REASON_ALLEGRO_REFRESH_TOKEN_REQUIRED');
+  expect(safeStockProofDiagnostic({ message: 'oauth_failure', stockProofStage: 'DO-NOT-LOG' }))
+    .toBe('STOCK_PROOF_FAILURE_STAGE_UNKNOWN_REASON_PROVIDER_OR_RUNTIME_UNKNOWN');
+});
+
+test('identifies the first supplier read as the failure stage without asking user to change stock', async () => {
+  const query = jest.fn(async () => ({ rows: [] }));
+  const dispatchToConnector = jest.fn(async () => {
+    throw new Error('ALLEGRO_HTTP_400: invalid_grant secret=DO-NOT-LOG');
+  });
+  const probe = jest.fn().mockResolvedValueOnce({
+    status: 'SKIPPED', reason: 'SOURCING_SWITCH_OFF',
+  });
+  const log = jest.fn();
+  let caught;
+  try {
+    await main({
+      argv: ['--offer-id=' + offer, '--test-only-offer-confirmed'],
+      env, query, dispatchToConnector, probe, delay: jest.fn(), log,
+    });
+  } catch (e) { caught = e; }
+  expect(caught).toBeDefined();
+  expect(safeStockProofDiagnostic(caught))
+    .toBe('STOCK_PROOF_FAILURE_STAGE_BASELINE_PROVIDER_READ_REASON_ALLEGRO_HTTP_400');
+  expect(log).not.toHaveBeenCalled();
+  expect(dispatchToConnector).toHaveBeenCalledTimes(1);
 });
