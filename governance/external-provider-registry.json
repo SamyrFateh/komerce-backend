@@ -208,7 +208,7 @@
         "META_WA_TOKEN",
         "PHONE_NUMBER_ID"
       ],
-      "analysis_document": null,
+      "analysis_document": "docs/external-providers/messaging/META_WHATSAPP.md",
       "highest_proof": "UNQUALIFIED"
     },
     {
