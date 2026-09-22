@@ -16,13 +16,23 @@ The probe creates one **EUR 1.00 Sandbox Order** with `PayPal-Request-Id`, then 
 
 Official PayPal documentation requires payer approval before server-side capture for the normal multi-step flow and documents `PayPal-Request-Id` as the idempotency key. This probe deliberately stops before payer approval and capture.
 
-Run only from a non-production runtime containing PayPal Sandbox credentials:
+Run from a non-production runtime containing PayPal Sandbox credentials:
 
 ```bash
 node scripts/paypal-sandbox-order-contract-proof.js
 ```
 
-Expected terminal output is one secret-free JSON object.
+**Exception strictement locale pour la preuve isolée Railway :** le service existant peut être déployé dans un environnement Railway appelé `production` alors que `PAYPAL_ENV=sandbox` et que ses identifiants pointent exclusivement vers le compte PayPal Sandbox. Le script refuse alors l'exécution **par défaut** (`RUNTIME_PRODUCTION_REFUSED`). Une autorisation explicite, limitée au **processus ponctuel**, est possible via `KOMERCE_PAYPAL_P1_ALLOW_PRODUCTION_RUNTIME_SANDBOX=1`. La sonde utilise malgré tout exclusivement `https://api-m.sandbox.paypal.com`; elle refuse `PAYPAL_ENV=production` avant tout appel, n'importe aucun module DB/commande du backend, et ne peut appeler ni capture ni remboursement. Ne pas enregistrer cet opt-in dans les variables Railway et ne jamais le réutiliser dans le serveur.
+
+Depuis un PowerShell déjà connecté à Railway CLI, lancer exactement **une fois** la commande suivante (il faut une instance déployée du commit contenant ce script) :
+
+```powershell
+railway ssh -p 1c5c37ab-557b-41b1-885a-8b3ead573795 -s komerce-backend -e production -- env KOMERCE_PAYPAL_P1_ALLOW_PRODUCTION_RUNTIME_SANDBOX=1 node scripts/paypal-sandbox-order-contract-proof.js
+```
+
+Cette commande ne modifie aucune variable Railway persistante. L'opt-in n'est transmis qu'au processus isolé. Si le runtime est déjà non-production, l'opt-in n'est pas nécessaire.
+
+Expected terminal output is one secret-free JSON object. Conserver le rapport réel avant toute autre opération ; l'échec n'autorise pas à créer une nouvelle Order à répétition.
 
 ## MTN MoMo Collections
 
