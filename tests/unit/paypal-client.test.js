@@ -506,7 +506,7 @@ describe('paypal-client — Lot A, branches manquantes', () => {
       expect(res).toBe(true);
     });
 
-    test('appel API PayPal échoue (réseau/HTTP) → catch → false', async () => {
+    test('appel API PayPal échoue (réseau/HTTP) → erreur typée rejouable, pas une signature invalide', async () => {
       mockOAuthOnce();
       global.fetch.mockImplementationOnce(async () => ({
         ok: false,
@@ -514,8 +514,8 @@ describe('paypal-client — Lot A, branches manquantes', () => {
         json: async () => ({}),
         text: async () => 'server error',
       }));
-      const res = await paypal.verifyWebhookSignature(fullHeaders, validBody);
-      expect(res).toBe(false);
+      await expect(paypal.verifyWebhookSignature(fullHeaders, validBody))
+        .rejects.toMatchObject({ code: 'paypal_webhook_verification_unavailable' });
     });
   });
 
