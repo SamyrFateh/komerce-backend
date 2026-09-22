@@ -92,7 +92,18 @@ jobs:
         run: |
           set -euo pipefail
           echo "ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-      # Cache files are AES-256-GCM encrypted for this dedicated Sandbox app.\n      # Only manual runs on main can use this secret-bound cache; no plaintext token is uploaded.\n      - name: Restore latest encrypted read-only Golden refresh token\n        uses: actions/cache/restore@v4\n        with:\n          path: ${{ runner.temp }}/komerce-allegro-golden-refresh-v1/vault.json\n          key: komerce-allegro-golden-refresh-v1-${{ github.run_id }}\n          restore-keys: |\n            komerce-allegro-golden-refresh-v1-\n      - name: Use restored refresh token when the cache is present\n        shell: bash\n        run: node scripts/allegro-golden-oauth-cache.js restore\n      - name: Bootstrap isolated schema-only database (zero production data)
+      # Only manual runs on main can use this app-bound ciphertext cache.
+      - name: Restore latest encrypted read-only Golden refresh token
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/komerce-allegro-golden-refresh-v1/vault.json
+          key: komerce-allegro-golden-refresh-v1-${{ github.run_id }}
+          restore-keys: |
+            komerce-allegro-golden-refresh-v1-
+      - name: Use restored refresh token when the cache is present
+        shell: bash
+        run: node scripts/allegro-golden-oauth-cache.js restore
+      - name: Bootstrap isolated schema-only database (zero production data)
         shell: bash
         run: |
           set -euo pipefail
@@ -115,6 +126,7 @@ jobs:
             );
           ")" = "t" || { echo 'GOLDEN_EPHEMERAL_SOURCE_SWITCH_SCHEMA_MISSING'; exit 1; }
       - name: LIVE 3-to-0 stock delta proof (manual seller UI change, GET-only client)
+        id: live_delta
         shell: bash
         run: |
           set -euo pipefail
