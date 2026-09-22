@@ -15,7 +15,7 @@
  */
 'use strict';
 
-const { parseArgs, selection, plan, safeProofResult, paypalSandboxRead, runBatch } =
+const { parseArgs, selection, plan, safeProofResult, paypalSandboxRead, cjCatalogRead, runBatch } =
   require('../../scripts/external-provider-batch-proof');
 
 const registry = { providers: [
@@ -107,4 +107,67 @@ test('sourced proof is narrowed to bounded P0/P1 codes (never raw diagnostics)',
     { id: 'P0', status: 'PASS', failed_checks: [] },
     { id: 'P1', status: 'BLOCKED', failed_checks: ['TOKEN_MISSING'] },
   ]);
+});
+
+
+test('CJ catalog read requires explicit live-read consent and a dedicated token', async () => {
+  const fetchImpl = jest.fn();
+  expect((await cjCatalogRead({}, fetchImpl)).reason_code)
+    .toBe('CJ_LIVE_CATALOG_READ_NOT_AUTHORIZED');
+  expect((await cjCatalogRead({ CJ_PROOF_ALLOW_CATALOG_READ: '1' }, fetchImpl)).reason_code)
+    .toBe('CJ_DEDICATED_READ_TOKEN_MISSING');
+  expect(fetchImpl).not.toHaveBeenCalled();
+});
+
+test('CJ probe only reads one catalogue item and exactly the same product id', async () => {
+  const calls = [];
+  const fetchImpl = jest.fn(async (url, init) => {
+    calls.push({ url, method: init.method });
+    if (url.includes('/product/listV2?')) return {
+      ok: true, json: async () => ({ result: true, data: {
+        content: [{ productList: [{ id: 'CJEXACT001', nameEn: 'Example' }] }],
+      } }),
+    };
+    return { ok: true, json: async () => ({ result: true,
+      data: { pid: 'CJEXACT001', nameEn: 'Example' } }) };
+  });
+  const proof = await cjCatalogRead({
+    CJ_PROOF_ALLOW_CATALOG_READ: '1', CJ_PROOF_ACCESS_TOKEN: 'private-cj-token',
+  }, fetchImpl);
+  expect(proof).toMatchObject({
+    operation: 'CJ_LIVE_CATALOG_BOUNDED_EXACT_READ', environment: 'LIVE_CATALOG_READ_ONLY',
+    status: 'PASS',
+  });
+  expect(calls).toEqual([
+    { url: 'https://developers.cjdropshipping.com/api2.0/v1/product/listV2?page=1&size=1',
+      method: 'GET' },
+    { url: 'https://developers.cjdropshipping.com/api2.0/v1/product/query?pid=CJEXACT001',
+      method: 'GET' },
+  ]);
+  expect(JSON.stringify(proof)).not.toMatch(/private-cj-token|CJEXACT001/);
+});
+
+test('CJ rejects a response whose detail identity does not match search identity', async () => {
+  const fetchImpl = jest.fn(async url => ({
+    ok: true,
+    json: async () => url.includes('listV2') ?
+      { result: true, data: { content: [{ productList: [{ id: 'REAL01' }] }] } } :
+      { result: true, data: { pid: 'OTHER02' } },
+  }));
+  const proof = await cjCatalogRead({
+    CJ_PROOF_ALLOW_CATALOG_READ: '1', CJ_PROOF_ACCESS_TOKEN: 'private',
+  }, fetchImpl);
+  expect(proof.status).toBe('BLOCKED');
+  expect(proof.reason_code).toBe('CJ_EXACT_PRODUCT_ID_NOT_CONFIRMED');
+  expect(fetchImpl).toHaveBeenCalledTimes(2);
+});
+
+test('CJ empty list and provider rejection stop without exact GET or false PASS', async () => {
+  const fetchImpl = jest.fn(async () => ({ ok: true, json: async () =>
+    ({ result: true, data: { content: [] } }) }));
+  const proof = await cjCatalogRead({
+    CJ_PROOF_ALLOW_CATALOG_READ: '1', CJ_PROOF_ACCESS_TOKEN: 'private',
+  }, fetchImpl);
+  expect(proof.reason_code).toBe('CJ_EXACT_PRODUCT_ID_NOT_OBSERVED');
+  expect(fetchImpl).toHaveBeenCalledTimes(1);
 });

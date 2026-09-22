@@ -13,6 +13,7 @@ Sondes autorisées dans ce premier lot :
 |---|---|---|
 | PayPal | OAuth Sandbox (POST d'authentification) puis GET exact du webhook configuré | Aucun createOrder/capture/refund; le succès prouve uniquement OAuth + lecture webhook. |
 | eBay | Réutilise la sonde Buy Browse Sandbox existante (OAuth, recherche bornée, lecture exacte) | Aucune offre publiée, aucun checkout; preuve limitée à P0/P1 Browse. |
+| CJdropshipping | Deux GET au maximum sur le catalogue réel CJ : liste bornée à 1, puis lecture du produit exact. | **CJ ne passe pas par une Sandbox dans ce contrat** : consentement explicite `allow_cj_live_read=true` et jeton dédié `KOMERCE_CJ_PROOF_ACCESS_TOKEN` nécessaires. Aucun renouvellement de jeton, import, achat ou mutation. Ne prouve ni stock en temps réel ni achat. |
 | Stripe | Réutilise la sonde existante avec une clé **test** (balance retrieve, PaymentIntent list limit=1, webhook list limit=100) | Aucun PaymentIntent créé, aucune capture; présence d'une configuration de webhook requise. |
 
 Tous les autres fournisseurs demeurent dans le rapport consolidé, mais leur sonde réseau ne sera autorisée qu'après revue séparée du contrat officiel, des prérequis business et du code d'appel existant. **Ne pas brancher** directement `scripts/paypal-sandbox-probe.js` ou `scripts/mtn-momo-sandbox-probe.js` : ils initient respectivement une commande et un RequestToPay de test.
@@ -23,16 +24,17 @@ GitHub Actions → **External provider contract batch (read-only)** → Run work
 
 1. D'abord lancer `mode=inventory`, `providers=all`. Télécharger l'artifact `provider-contract-inventory-<run_id>`.
 2. Configurer les identifiants **dédiés Sandbox/test**, séparés des tokens du backend et de Railway, dans l'environnement GitHub `provider-contract-sandbox`. Restreindre l'environnement à la branche `main` et, si souhaité, ajouter une approbation manuelle.
-3. Lancer `mode=sandbox-read`, `providers=all`, `include_proven=false`. Cette première campagne ne tente PayPal que si les identifiants dédiés existent; eBay/Stripe historiquement qualifiés restent non relancés. Lancer `providers=ebay,stripe`, `include_proven=true` **uniquement** pour une requalification explicitement nécessaire.
+3. Lancer `mode=sandbox-read`, `providers=all`, `include_proven=false`, **`allow_cj_live_read=false` par défaut**. Sans autorisation explicite, CJ reste BLOCKED et ne reçoit aucun appel. Cette campagne tente PayPal uniquement si ses identifiants dédiés existent; eBay/Stripe historiquement qualifiés restent non relancés. Pour CJ, configurer un jeton dédié et choisir explicitement `providers=cj`, `allow_cj_live_read=true` afin d'effectuer deux GET au plus sur son catalogue réel. Lancer `providers=ebay,stripe`, `include_proven=true` **uniquement** pour une requalification explicitement nécessaire.
 4. Télécharger `provider-contract-sandbox-read-<run_id>` (rétention 30 jours). Chaque artifact contient un seul `report.json` consolidé avec les résultats indépendants; le job n'imprime pas les réponses externes.
 
 Variables d'environnement GitHub pour les sondes opt-in :
+- Secret CJ : `KOMERCE_CJ_PROOF_ACCESS_TOKEN` (jeton dédié, révoquable et limité à la lecture du catalogue si les permissions fournisseur le permettent). Ne pas recopier le jeton du backend ou Railway. CJ n'est pas une Sandbox : l'opt-in explicite est obligatoire et l'opération est signalée `LIVE_CATALOG_READ_ONLY` dans les preuves.
 - Secrets PayPal : `KOMERCE_PAYPAL_PROOF_CLIENT_ID`, `KOMERCE_PAYPAL_PROOF_CLIENT_SECRET`, `KOMERCE_PAYPAL_PROOF_WEBHOOK_ID`.
 - Secrets eBay : `KOMERCE_EBAY_PROOF_CLIENT_ID`, `KOMERCE_EBAY_PROOF_CLIENT_SECRET` (Sandbox dédié).
 - Secrets Stripe : `KOMERCE_STRIPE_PROOF_TEST_SECRET_KEY`, `KOMERCE_STRIPE_PROOF_TEST_WEBHOOK_SECRET`.
 - Variables Stripe : `KOMERCE_STRIPE_PROOF_TEST_WEBHOOK_URL`, `KOMERCE_STRIPE_PROOF_TEST_API_VERSION` si nécessaire.
 
-Les clés absentes donnent `BLOCKED`, **jamais** des valeurs factices ni un PASS. Une clé Stripe Live est rejetée par le collecteur, indépendamment du nom du secret. Pour l'ensemble du lot, la durée du job est limitée à 7 minutes; les appels PayPal ont un timeout individuel de 7 s, et le client Stripe désactive les retries automatiques. Les opérations restent bornées, en lecture seule métier, et séquentielles.
+Les clés absentes, ou l'absence de consentement CJ, donnent `BLOCKED`, **jamais** des valeurs factices ni un PASS. Une clé Stripe Live est rejetée par le collecteur, indépendamment du nom du secret. Pour l'ensemble du lot, la durée du job est limitée à 7 minutes; les appels PayPal ont un timeout individuel de 7 s, et le client Stripe désactive les retries automatiques. Les opérations restent bornées, en lecture seule métier, et séquentielles.
 
 ## Sortie et suivi
 
