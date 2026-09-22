@@ -261,9 +261,13 @@ describeE2E('E2E-P0-PAYPAL — payments · contrat webhook PayPal', ({ db }) => 
       eventId, captureId: `CAP-${tag('t')}`, paypalOrderId: o.paypalOrderId, reference: o.reference,
     }));
 
-    // La route répond 200 avec une erreur portée, volontairement, pour ne pas
-    // déclencher la tempête de retry PayPal (commentaire de routes/payments-paypal.js).
-    expect(res.status).toBe(200);
+    // L'API PayPal indisponible n'est pas une signature invalide et ne peut
+    // pas acquitter une notification non traitée : PayPal doit pouvoir relivrer.
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({
+      received: false,
+      code: 'paypal_webhook_processing_unavailable',
+    });
 
     const state = await orderState(o.orderId);
     expect(state.payment_status).toBe('pending');
