@@ -1,0 +1,114 @@
+name: External provider contract batch (read-only)
+
+# Offline PR validation; real provider reads require an explicit manual run on main.
+on:
+  pull_request:
+    paths:
+      - 'scripts/external-provider-batch-proof.js'
+      - 'tests/unit/external-provider-batch-proof.test.js'
+      - 'features/external-provider-contracts.feature.js'
+      - '.github/workflows/external-provider-contract-batch.yml'
+      - 'docs/external-providers/EXTERNAL_PROVIDER_BATCH.md'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'inventory = no network; sandbox-read = allowlisted auth/GET probes'
+        type: choice
+        required: true
+        default: inventory
+        options:
+          - inventory
+          - sandbox-read
+      providers:
+        description: 'all or comma-separated registry provider IDs'
+        type: string
+        required: true
+        default: all
+      include_proven:
+        description: 'Recheck eBay/Stripe despite previously recorded proof (default off)'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-contract-batch-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  inventory:
+    if: github.event_name == 'pull_request' || inputs.mode == 'inventory'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Validate collector and its isolated unit tests
+        run: |
+          node --check scripts/external-provider-batch-proof.js
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx jest tests/unit/external-provider-batch-proof.test.js --runInBand --silent
+      - name: Inventory every registered provider without network or credentials
+        env:
+          BATCH_PROVIDERS: ${{ github.event_name == 'workflow_dispatch' && inputs.providers || 'all' }}
+        run: |
+          node scripts/external-provider-batch-proof.js --mode=inventory \
+            --providers="$BATCH_PROVIDERS" \
+            --out=artifacts/provider-contract-batch/report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: provider-contract-inventory-${{ github.run_id }}
+          path: artifacts/provider-contract-batch/report.json
+          retention-days: 30
+          if-no-files-found: error
+
+  sandbox-read:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'sandbox-read' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    environment: provider-contract-sandbox
+    env:
+      # Dedicated sandbox/test-only credentials; never live or Railway production keys.
+      PAYPAL_ENV: sandbox
+      PAYPAL_CLIENT_ID: ${{ secrets.KOMERCE_PAYPAL_PROOF_CLIENT_ID }}
+      PAYPAL_CLIENT_SECRET: ${{ secrets.KOMERCE_PAYPAL_PROOF_CLIENT_SECRET }}
+      PAYPAL_WEBHOOK_ID: ${{ secrets.KOMERCE_PAYPAL_PROOF_WEBHOOK_ID }}
+      EBAY_ENV: sandbox
+      EBAY_CLIENT_ID: ${{ secrets.KOMERCE_EBAY_PROOF_CLIENT_ID }}
+      EBAY_CLIENT_SECRET: ${{ secrets.KOMERCE_EBAY_PROOF_CLIENT_SECRET }}
+      EBAY_MARKETPLACE_ID: EBAY_US
+      EBAY_SEARCH_QUERY: komerce sandbox
+      STRIPE_SECRET_KEY: ${{ secrets.KOMERCE_STRIPE_PROOF_TEST_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.KOMERCE_STRIPE_PROOF_TEST_WEBHOOK_SECRET }}
+      STRIPE_WEBHOOK_URL: ${{ vars.KOMERCE_STRIPE_PROOF_TEST_WEBHOOK_URL }}
+      STRIPE_API_VERSION: ${{ vars.KOMERCE_STRIPE_PROOF_TEST_API_VERSION }}
+      BATCH_PROVIDERS: ${{ inputs.providers }}
+      BATCH_INCLUDE_PROVEN: ${{ inputs.include_proven }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Bounded, sequential allowlisted sandbox reads only
+        run: |
+          node scripts/external-provider-batch-proof.js --mode=sandbox-read \
+            --providers="$BATCH_PROVIDERS" --include-proven="$BATCH_INCLUDE_PROVEN" \
+            --out=artifacts/provider-contract-batch/report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: provider-contract-sandbox-read-${{ github.run_id }}
+          path: artifacts/provider-contract-batch/report.json
+          retention-days: 30
+          if-no-files-found: error
