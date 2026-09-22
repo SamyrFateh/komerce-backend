@@ -1,14 +1,9 @@
 name: External provider contract batch (read-only)
 
-# Offline PR validation; real provider reads require an explicit manual run on main.
+# Offline PR checks are owned by the mandatory PR-enforcement provider_contracts
+# job. This workflow is now manual-only; it must never make provider API calls
+# or duplicate dependency installation on pull_request events.
 on:
-  pull_request:
-    paths:
-      - 'scripts/external-provider-batch-proof.js'
-      - 'tests/unit/external-provider-batch-proof.test.js'
-      - 'features/external-provider-contracts.feature.js'
-      - '.github/workflows/external-provider-contract-batch.yml'
-      - 'docs/external-providers/EXTERNAL_PROVIDER_BATCH.md'
   workflow_dispatch:
     inputs:
       mode:

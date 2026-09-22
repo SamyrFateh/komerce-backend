@@ -43,6 +43,19 @@ function norm(file) {
   return String(file || '').replace(/\\/g, '/').replace(/^\.\//, '').trim();
 }
 
+// Strictly isolated tooling-only changes. Adding *any* runtime service,
+// manifest, migration, general test, package or CI enforcement file must
+// fall back to the existing full-domain checks. Never use a directory-wide
+// exemption for scripts/ or tests/.
+function isProviderProofOnlyFile(file) {
+  const f = norm(file);
+  return f === 'scripts/external-provider-batch-proof.js'
+    || f === 'tests/unit/external-provider-batch-proof.test.js'
+    || f === 'governance/external-provider-registry.json'
+    || f === '.github/workflows/external-provider-contract-batch.yml'
+    || /^docs\/external-providers\/[a-zA-Z0-9/_-]+\.md$/.test(f);
+}
+
 function isBackendFile(file) {
   const f = norm(file);
   return /^(?:server\.js|package(?:-lock)?\.json|jest\.config\.js|jest\.unit\.config\.js)$/i.test(f)
@@ -160,7 +173,11 @@ function isGovernanceFile(file) {
 
 function classify(files) {
   const changedFiles = [...new Set((files || []).map(norm).filter(Boolean))].sort();
-  const backendFiles = changedFiles.filter(isBackendFile);
+  const providerProofOnly = changedFiles.length > 0 && changedFiles.every(isProviderProofOnlyFile);
+  // The isolated probe unit test is not a backend business test *only when*
+  // the entire PR belongs to this strict tooling allowlist.
+  const backendFiles = changedFiles.filter(file =>
+    isBackendFile(file) && !(providerProofOnly && file === 'tests/unit/external-provider-batch-proof.test.js'));
   const goldenFiles = changedFiles.filter(isGoldenCdrFile);
   const migrationFiles = changedFiles.filter(isMigrationFile);
   const schemaDump = changedFiles.some(isLiveSchemaFile);
@@ -196,6 +213,7 @@ function classify(files) {
     boutiquePackage,
     governance: governanceFiles.length > 0,
     packageJsonGovernanceOnly: false,
+    providerProofOnly,
   };
 }
 
@@ -293,6 +311,7 @@ function appendGithubOutput(path, model) {
   if (!path) return;
   const lines = [
     `backend=${model.backend ? 'true' : 'false'}`,
+    `provider_proof_only=${model.providerProofOnly ? 'true' : 'false'}`,
     `backend_files=${model.backendFiles.join(',')}`,
     `golden=${model.golden ? 'true' : 'false'}`,
     `golden_files=${model.goldenFiles.join(',')}`,
@@ -339,6 +358,7 @@ module.exports = {
   GOVERNANCE_ONLY_PACKAGE_SCRIPTS,
   norm,
   isBackendFile,
+  isProviderProofOnlyFile,
   isMigrationFile,
   isLiveSchemaFile,
   isGoldenCdrFile,
