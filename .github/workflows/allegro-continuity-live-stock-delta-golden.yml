@@ -92,7 +92,7 @@ jobs:
         run: |
           set -euo pipefail
           echo "ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
-      - name: Bootstrap isolated schema-only database (zero production data)
+      # Cache files are AES-256-GCM encrypted for this dedicated Sandbox app.\n      # Only manual runs on main can use this secret-bound cache; no plaintext token is uploaded.\n      - name: Restore latest encrypted read-only Golden refresh token\n        uses: actions/cache/restore@v4\n        with:\n          path: ${{ runner.temp }}/komerce-allegro-golden-refresh-v1/vault.json\n          key: komerce-allegro-golden-refresh-v1-${{ github.run_id }}\n          restore-keys: |\n            komerce-allegro-golden-refresh-v1-\n      - name: Use restored refresh token when the cache is present\n        shell: bash\n        run: node scripts/allegro-golden-oauth-cache.js restore\n      - name: Bootstrap isolated schema-only database (zero production data)
         shell: bash
         run: |
           set -euo pipefail
@@ -119,3 +119,16 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/sourcing-continuity-allegro-stock-delta-proof.js --offer-id="$OFFER_ID" --test-only-offer-confirmed
+      # Even a failed stock proof may have already rotated OAuth in the disposable DB.
+      # Seal it BEFORE runner teardown, then save only ciphertext to the Actions cache.
+      - name: Seal rotated Golden refresh token from the ephemeral database
+        id: export_rotated
+        if: always() && (steps.live_delta.outcome == 'success' || steps.live_delta.outcome == 'failure')
+        shell: bash
+        run: node scripts/allegro-golden-oauth-cache.js save
+      - name: Preserve encrypted Golden refresh token for the next manual run
+        if: always() && steps.export_rotated.outputs.has_rotated_token == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/komerce-allegro-golden-refresh-v1/vault.json
+          key: komerce-allegro-golden-refresh-v1-${{ github.run_id }}
