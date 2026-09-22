@@ -15,7 +15,7 @@ La sonde d'authentification lit la configuration du compte **Sandbox** sans cré
 
 ## Observation du 22 septembre 2026
 
-La sonde lancée sur l'instance Railway existante avec ses **variables Sandbox préexistantes** a produit le code `PAYPAL_SANDBOX_OAUTH_AND_WEBHOOK_GET_PROVED` et `PASS`, selon le JSON expurgé rapporté par l'opérateur. Source complète et limitations de provenance : [preuve Railway Sandbox du 22 septembre 2026](../evidence/RAILWAY_SANDBOX_AUTH_2026-09-22.md).
+La sonde lancée sur l'instance Railway existante avec ses **variables Sandbox préexistantes** a produit le code `PAYPAL_SANDBOX_OAUTH_AND_WEBHOOK_GET_PROVED` et `PASS`, selon le JSON expurgé rapporté par l'opérateur. Source complète et limitations de provenance : [preuve Railway Sandbox du 22 septembre 2026](../../_archive/external-provider-proofs/RAILWAY_SANDBOX_AUTH_2026-09-22.md).
 
 Cette observation est un **résultat d'opération P0/P1 limité** à OAuth + lecture du webhook. Elle ne démontre ni réception réelle d'une notification, ni authenticité d'une notification entrante, ni paiement confirmé, ni comportement de l'adapter Komerce, ni droits du compte de production.
 
