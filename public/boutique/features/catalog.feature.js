@@ -145,6 +145,7 @@ module.exports = {
       '../tests/unit/product-image-loading-css-contract.test.js',
       '../tests/unit/responsive-desktop-matrix.test.js',
       '../tests/e2e/catalog-responsive-matrix.spec.js',
+      '../tests/e2e/discovery-isolated-visual.spec.js',
     ],
   },
 
