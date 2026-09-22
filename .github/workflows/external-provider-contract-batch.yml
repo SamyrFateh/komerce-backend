@@ -100,6 +100,10 @@ jobs:
       META_PROOF_PHONE_NUMBER_ID: ${{ secrets.KOMERCE_META_PROOF_PHONE_NUMBER_ID }}
       META_PROOF_GRAPH_VERSION: ${{ vars.KOMERCE_META_PROOF_GRAPH_VERSION }}
       META_PROOF_ALLOW_ACCOUNT_READ: ${{ inputs.allow_meta_account_read && '1' || '0' }}
+      MTN_PROOF_TARGET_ENVIRONMENT: sandbox
+      MTN_PROOF_COLLECTION_SUBSCRIPTION_KEY: ${{ secrets.KOMERCE_MTN_PROOF_COLLECTION_SUBSCRIPTION_KEY }}
+      MTN_PROOF_API_USER: ${{ secrets.KOMERCE_MTN_PROOF_API_USER }}
+      MTN_PROOF_API_KEY: ${{ secrets.KOMERCE_MTN_PROOF_API_KEY }}
       BATCH_PROVIDERS: ${{ inputs.providers }}
       BATCH_INCLUDE_PROVEN: ${{ inputs.include_proven }}
     steps:
