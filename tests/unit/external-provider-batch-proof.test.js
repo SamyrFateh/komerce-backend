@@ -15,7 +15,7 @@
  */
 'use strict';
 
-const { parseArgs, selection, plan, safeProofResult, paypalSandboxRead, cjCatalogRead, metaWhatsappPhoneRead, runBatch } =
+const { parseArgs, selection, plan, safeProofResult, paypalSandboxRead, cjCatalogRead, metaWhatsappPhoneRead, mtnSandboxOAuthRead, runBatch } =
   require('../../scripts/external-provider-batch-proof');
 
 const registry = { providers: [
@@ -227,4 +227,75 @@ test('Meta phone proof blocks mismatched identity, missing metadata and rejected
   const forbidden = await metaWhatsappPhoneRead(env, async () => ({ ok: false, status: 403 }));
   expect(forbidden.reason_code).toBe('META_PHONE_METADATA_HTTP_REJECTED');
   expect([mismatch, incomplete, forbidden].every(x => x.status === 'BLOCKED')).toBe(true);
+});
+
+
+test('MTN Collections Sandbox auth refuses missing target or credentials without network', async () => {
+  const fetchImpl = jest.fn();
+  const off = await mtnSandboxOAuthRead({}, fetchImpl);
+  expect(off).toMatchObject({
+    operation: 'MTN_COLLECTION_SANDBOX_OAUTH_ONLY',
+    environment: 'SANDBOX', status: 'BLOCKED', reason_code: 'MTN_SANDBOX_REQUIRED',
+  });
+  const missing = await mtnSandboxOAuthRead({
+    MTN_PROOF_TARGET_ENVIRONMENT: 'sandbox',
+  }, fetchImpl);
+  expect(missing.reason_code).toBe('MTN_DEDICATED_SANDBOX_CREDENTIALS_MISSING');
+  const prod = await mtnSandboxOAuthRead({
+    MTN_PROOF_TARGET_ENVIRONMENT: 'production',
+    MTN_PROOF_COLLECTION_SUBSCRIPTION_KEY: 'key',
+    MTN_PROOF_API_USER: 'user',
+    MTN_PROOF_API_KEY: 'secret',
+  }, fetchImpl);
+  expect(prod.reason_code).toBe('MTN_SANDBOX_REQUIRED');
+  expect(fetchImpl).not.toHaveBeenCalled();
+});
+
+test('MTN auth makes exactly one Sandbox token POST and never creates a RequestToPay', async () => {
+  const calls = [];
+  const fetchImpl = jest.fn(async (url, init) => {
+    calls.push({ url, method: init.method,
+      auth: init.headers.Authorization,
+      subscription: init.headers['Ocp-Apim-Subscription-Key'],
+    });
+    return {
+      ok: true,
+      json: async () => ({ access_token: 'private-mtn-token', token_type: 'access_token',
+        expires_in: 3600 }),
+    };
+  });
+  const proof = await mtnSandboxOAuthRead({
+    MTN_PROOF_TARGET_ENVIRONMENT: 'sandbox',
+    MTN_PROOF_COLLECTION_SUBSCRIPTION_KEY: 'private-subscription',
+    MTN_PROOF_API_USER: 'private-user',
+    MTN_PROOF_API_KEY: 'private-api-key',
+  }, fetchImpl);
+  expect(calls).toEqual([{
+    url: 'https://sandbox.momodeveloper.mtn.com/collection/token/',
+    method: 'POST', auth: 'Basic ' + Buffer.from('private-user:private-api-key').toString('base64'),
+    subscription: 'private-subscription',
+  }]);
+  expect(proof).toMatchObject({
+    status: 'PASS', operation: 'MTN_COLLECTION_SANDBOX_OAUTH_ONLY',
+    environment: 'SANDBOX', reason_code: 'MTN_SANDBOX_COLLECTION_OAUTH_ACCEPTED',
+  });
+  expect(JSON.stringify(proof)).not.toMatch(/private-|access_token|subscription|requesttopay/i);
+});
+
+test('MTN auth treats HTTP rejection and malformed token as BLOCKED, without retry', async () => {
+  const env = {
+    MTN_PROOF_TARGET_ENVIRONMENT: 'sandbox',
+    MTN_PROOF_COLLECTION_SUBSCRIPTION_KEY: 'private-sub',
+    MTN_PROOF_API_USER: 'private-user', MTN_PROOF_API_KEY: 'private-key',
+  };
+  const rejected = jest.fn(async () => ({ ok: false, status: 401 }));
+  expect((await mtnSandboxOAuthRead(env, rejected)).reason_code)
+    .toBe('MTN_SANDBOX_OAUTH_REJECTED');
+  expect(rejected).toHaveBeenCalledTimes(1);
+  const noToken = jest.fn(async () => ({
+    ok: true, json: async () => ({ expires_in: 3600 }),
+  }));
+  expect((await mtnSandboxOAuthRead(env, noToken)).reason_code)
+    .toBe('MTN_SANDBOX_OAUTH_RESPONSE_INCOMPLETE');
+  expect(noToken).toHaveBeenCalledTimes(1);
 });
