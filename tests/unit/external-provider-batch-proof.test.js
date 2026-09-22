@@ -15,7 +15,7 @@
  */
 'use strict';
 
-const { parseArgs, selection, plan, safeProofResult, paypalSandboxRead, cjCatalogRead, runBatch } =
+const { parseArgs, selection, plan, safeProofResult, paypalSandboxRead, cjCatalogRead, metaWhatsappPhoneRead, runBatch } =
   require('../../scripts/external-provider-batch-proof');
 
 const registry = { providers: [
@@ -170,4 +170,61 @@ test('CJ empty list and provider rejection stop without exact GET or false PASS'
   }, fetchImpl);
   expect(proof.reason_code).toBe('CJ_EXACT_PRODUCT_ID_NOT_OBSERVED');
   expect(fetchImpl).toHaveBeenCalledTimes(1);
+});
+
+
+test('Meta phone probe is gated by explicit consent and separate read credentials', async () => {
+  const fetchImpl = jest.fn();
+  expect((await metaWhatsappPhoneRead({}, fetchImpl)).reason_code)
+    .toBe('META_LIVE_ACCOUNT_READ_NOT_AUTHORIZED');
+  expect((await metaWhatsappPhoneRead({ META_PROOF_ALLOW_ACCOUNT_READ: '1' }, fetchImpl)).reason_code)
+    .toBe('META_DEDICATED_READ_CREDENTIALS_MISSING');
+  expect((await metaWhatsappPhoneRead({
+    META_PROOF_ALLOW_ACCOUNT_READ: '1', META_PROOF_READ_TOKEN: 'private',
+    META_PROOF_PHONE_NUMBER_ID: 'not-an-id',
+  }, fetchImpl)).reason_code).toBe('META_PHONE_ID_INVALID');
+  expect((await metaWhatsappPhoneRead({
+    META_PROOF_ALLOW_ACCOUNT_READ: '1', META_PROOF_READ_TOKEN: 'private',
+    META_PROOF_PHONE_NUMBER_ID: '1234567890123456', META_PROOF_GRAPH_VERSION: 'v23.0/evil',
+  }, fetchImpl)).reason_code).toBe('META_GRAPH_VERSION_INVALID');
+  expect(fetchImpl).not.toHaveBeenCalled();
+});
+
+test('Meta phone probe makes one exact GET and emits no business metadata or credentials', async () => {
+  const seen = [];
+  const fetchImpl = jest.fn(async (url, init) => {
+    seen.push({ url, method: init.method });
+    return { ok: true, json: async () =>
+      ({ id: '1234567890123456', verified_name: 'PRIVATE BRAND' }) };
+  });
+  const result = await metaWhatsappPhoneRead({
+    META_PROOF_ALLOW_ACCOUNT_READ: '1', META_PROOF_READ_TOKEN: 'private-read-token',
+    META_PROOF_PHONE_NUMBER_ID: '1234567890123456', META_PROOF_GRAPH_VERSION: 'v23.0',
+  }, fetchImpl);
+  expect(seen).toEqual([{
+    url: 'https://graph.facebook.com/v23.0/1234567890123456?fields=id,verified_name',
+    method: 'GET',
+  }]);
+  expect(result).toMatchObject({
+    status: 'PASS', operation: 'META_WHATSAPP_EXACT_PHONE_METADATA_READ',
+    environment: 'LIVE_ACCOUNT_READ_ONLY',
+    reason_code: 'META_EXACT_PHONE_METADATA_READ_PROVED',
+  });
+  expect(JSON.stringify(result)).not.toMatch(/private-read-token|PRIVATE BRAND|1234567890123456/);
+});
+
+test('Meta phone proof blocks mismatched identity, missing metadata and rejected Graph responses', async () => {
+  const env = {
+    META_PROOF_ALLOW_ACCOUNT_READ: '1', META_PROOF_READ_TOKEN: 'private',
+    META_PROOF_PHONE_NUMBER_ID: '1234567890123456',
+  };
+  const mismatch = await metaWhatsappPhoneRead(env, async () =>
+    ({ ok: true, json: async () => ({ id: '9999999999999999', verified_name: 'Other' }) }));
+  expect(mismatch.reason_code).toBe('META_EXACT_PHONE_ID_MISMATCH');
+  const incomplete = await metaWhatsappPhoneRead(env, async () =>
+    ({ ok: true, json: async () => ({ id: env.META_PROOF_PHONE_NUMBER_ID }) }));
+  expect(incomplete.reason_code).toBe('META_VERIFIED_NAME_NOT_OBSERVED');
+  const forbidden = await metaWhatsappPhoneRead(env, async () => ({ ok: false, status: 403 }));
+  expect(forbidden.reason_code).toBe('META_PHONE_METADATA_HTTP_REJECTED');
+  expect([mismatch, incomplete, forbidden].every(x => x.status === 'BLOCKED')).toBe(true);
 });
