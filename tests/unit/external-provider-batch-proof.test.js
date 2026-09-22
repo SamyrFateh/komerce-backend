@@ -86,6 +86,13 @@ test('PayPal rejects production/missing secrets and mismatch without exposing pa
   expect(proof.reason_code).toBe('PAYPAL_WEBHOOK_ID_MISMATCH');
 });
 
+test('empty or partial stage summaries never produce a false PASS', () => {
+  expect(safeProofResult({ conversation: { status: 'PASS' }, stages: [] }, 'TEST', 'READ').status).toBe('BLOCKED');
+  expect(safeProofResult({ conversation: { status: 'PASS' }, stages: [
+    { id: 'P0', status: 'PASS', failed_checks: [] },
+  ] }, 'TEST', 'READ').status).toBe('BLOCKED');
+});
+
 test('sourced proof is narrowed to bounded P0/P1 codes (never raw diagnostics)', () => {
   const proof = safeProofResult({
     conversation: { status: 'PASS' },
