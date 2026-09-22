@@ -287,8 +287,13 @@ async function verifyWebhookSignature(headers, rawBody) {
     });
     return result?.verification_status === 'SUCCESS';
   } catch (e) {
-    log.error({ err: e.message }, '[PAYPAL] verify: API call failed');
-    return false;
+    // Un refus cryptographique explicite renvoie false ci-dessus. Une panne
+    // réseau/OAuth/API ne permet PAS de conclure à une signature invalide :
+    // la route doit retourner un 503 pour permettre une nouvelle livraison.
+    log.error({ err: e.message }, '[PAYPAL] verify: API temporarily unavailable');
+    const unavailable = new Error('PayPal webhook verification temporarily unavailable');
+    unavailable.code = 'paypal_webhook_verification_unavailable';
+    throw unavailable;
   }
 }
 
