@@ -29,6 +29,11 @@ on:
         type: boolean
         required: true
         default: false
+      allow_meta_account_read:
+        description: 'Explicitly permit one GET of your live Meta WhatsApp phone metadata (default off)'
+        type: boolean
+        required: true
+        default: false
       include_proven:
         description: 'Recheck eBay/Stripe despite previously recorded proof (default off)'
         type: boolean
@@ -96,6 +101,10 @@ jobs:
       STRIPE_API_VERSION: ${{ vars.KOMERCE_STRIPE_PROOF_TEST_API_VERSION }}
       CJ_PROOF_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
       CJ_PROOF_ALLOW_CATALOG_READ: ${{ inputs.allow_cj_live_read && '1' || '0' }}
+      META_PROOF_READ_TOKEN: ${{ secrets.KOMERCE_META_PROOF_READ_TOKEN }}
+      META_PROOF_PHONE_NUMBER_ID: ${{ secrets.KOMERCE_META_PROOF_PHONE_NUMBER_ID }}
+      META_PROOF_GRAPH_VERSION: ${{ vars.KOMERCE_META_PROOF_GRAPH_VERSION }}
+      META_PROOF_ALLOW_ACCOUNT_READ: ${{ inputs.allow_meta_account_read && '1' || '0' }}
       BATCH_PROVIDERS: ${{ inputs.providers }}
       BATCH_INCLUDE_PROVEN: ${{ inputs.include_proven }}
     steps:
