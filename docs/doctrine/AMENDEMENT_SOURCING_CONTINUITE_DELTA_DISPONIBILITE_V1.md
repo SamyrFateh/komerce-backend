@@ -103,3 +103,23 @@ Ne pas créer un service Railway supplémentaire sans preuve du besoin : privil�
 - Le nombre d'unités réellement commandables pour la quantité demandée est vérifié au bon moment et revalidé avant achat.
 - Aucun scan ne déclenche directement publication, paiement, achat fournisseur, annulation ou remboursement.
 - Preuves séparées : audit de contrat, test unitaire delta, staging API, commande/paiement Golden, puis activation production.
+
+## 8. Raccordement shadow Observation → SKU catalogue (lecture seule)
+
+Le rapport de comparaison `collectCanonicalOfferUnitComparison` expose désormais
+`stock_observations` pour chaque SKU fournisseur rattaché à une Unit canonique unique.
+L'entrée reste `UNKNOWN` en cas de SOI/ref divergente, Source de la dernière observation
+non prouvée, changement de périmètre Source, unité inactive, absence de date ou quantité inconnue.
+Un zéro **explicitement** observé est distinct d'une quantité manquante.
+
+Une entrée `COMPARED` porte les deux quantités et `SAME_NUMBER` ou `DIFFERENT_NUMBER`,
+jamais une disponibilité commerciale. Le stock fournisseur peut différer du stock catalogue
+pour des raisons de réservation, commande ou latence. `freshness=UNVERIFIED`,
+`commercial_readiness=NOT_EVALUATED` et `authority=shadow_read_only` restent explicites.
+Aucune écriture `product_skus.stock`, aucune bascule d'autorité Catalog, aucune publication,
+aucun appel provider ou Purchasing, et aucun changement de checkout/paiement n'est effectué.
+
+**Gate suivant, séparé :** sur un SKU réel et lié sans ambiguïté, définir avec les owners
+Catalog/Orders/Payments un contrat de disponibilité pour la quantité agrégée et la fraîcheur
+requise avant l'engagement du client ; le preflight fournisseur reste obligatoire selon son
+contrat propre avant l'achat. Cette comparaison n'autorise **aucun** cutover vers ce gate.
