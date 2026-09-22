@@ -19,6 +19,19 @@ La sonde lancée sur l'instance Railway existante avec ses **variables Sandbox p
 
 Cette observation est un **résultat d'opération P0/P1 limité** à OAuth + lecture du webhook. Elle ne démontre ni réception réelle d'une notification, ni authenticité d'une notification entrante, ni paiement confirmé, ni comportement de l'adapter Komerce, ni droits du compte de production.
 
+## Contrat du listener — distinction succès / panne temporaire
+
+La documentation PayPal précise qu'une réponse HTTP 2xx acquitte la livraison et qu'une réponse non-2xx peut entraîner une nouvelle tentative. Le code de la route `POST /api/payments/paypal/webhook` doit donc respecter le contrat suivant :
+
+- JSON malformé / événement incomplet : HTTP 400 ; signature explicitement non valide : HTTP 401 ; aucun effet métier.
+- Vérification distante indisponible (OAuth, timeout ou API PayPal) et erreur inattendue du traitement métier : HTTP 503, corps expurgé `paypal_webhook_processing_unavailable` ; ne jamais répondre HTTP 200 en affirmant `received=true`.
+- Traitement réussi ou événement déjà traité : HTTP 200 ; l'idempotence de l'événement et de la commande reste nécessaire en cas de nouvelle livraison.
+- Une réponse 503 ne démontre pas à elle seule que l'état métier a été restauré. Les incidents de persistance/déduplication et les erreurs métier intentionnellement acquittées ont leur propre audit.
+
+Source officielle : https://developer.paypal.com/api/rest/webhooks ; vérification https://developer.paypal.com/api/rest/webhooks/rest/ .
+
+**Attention au simulateur PayPal :** les événements fictifs ne sont pas rattachés à l'application enregistrée et ne peuvent pas être vérifiés par l'API PayPal `verify-webhook-signature` ; un 401 sur cet événement simulé ne prouve pas que le listener rejette un événement Sandbox authentique. Source : https://developer.paypal.com/api/rest/webhooks/simulator/ .
+
 ## Prochaine preuve indépendante
 
 Lire et formaliser le contrat de livraison et de vérification de notification PayPal : origine, signature, ID d'événement, anti-rejeu, ordre d'arrivée et relecture serveur du statut de l'objet métier. Ne pas créer ni capturer de paiement pour tenter de démontrer ce contrat tant que les prérequis élémentaires ne sont pas caractérisés.
