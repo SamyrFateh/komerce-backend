@@ -24,6 +24,39 @@ const MAX_RECHECKS = 4;
 const RECHECK_INTERVAL_MS = 45000;
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Never emit provider bodies, OAuth tokens, SQL errors or raw exception text.
+// A stable phase and an allowlisted reason identify the failing contract.
+const SAFE_STAGES = new Set([
+  'INPUTS', 'CONNECTOR', 'SOURCE_FIXTURE', 'SWITCH_OFF', 'ENABLE_SOURCE',
+  'BASELINE_PROVIDER_READ', 'BASELINE_CONTRACT', 'BASELINE_FIXTURE',
+  'MANUAL_CHANGE_WAIT', 'SECOND_PROVIDER_READ', 'DELTA_VALIDATION',
+]);
+const SAFE_ERRORS = new Set([
+  'PROOF_EXACT_ALLEGRO_ID_REQUIRED', 'PROOF_ISOLATED_STAGING_REQUIRED',
+  'PROOF_EPHEMERAL_DB_REQUIRED', 'PROOF_DEDICATED_SANDBOX_CREDENTIALS_REQUIRED',
+  'PROOF_EXACT_PROVIDER_RESPONSE_UNKNOWN', 'PROOF_ALLEGRO_SANDBOX_IDENTITY_UNPROVEN',
+  'STOCK_PROOF_EXACT_TEST_OFFER_AND_ACK_REQUIRED',
+  'STOCK_PROOF_PURCHASING_GOLDEN_OFFER_PROTECTED',
+  'STOCK_PROOF_ALLEGRO_CONNECTOR_INACTIVE', 'STOCK_PROOF_NONEXACT_FETCH_REFUSED',
+  'STOCK_PROOF_SOURCE_OFF_FAILED', 'STOCK_PROOF_BASELINE_NOT_ACTIVE_THREE',
+  'STOCK_PROOF_EXACT_READ_UNKNOWN_OR_SWITCH_OFF',
+  'STOCK_PROOF_UNEXPECTED_CHANGE_OR_PRICE_DRIFT',
+  'STOCK_PROOF_CHANGE_NOT_OBSERVED',
+  'ALLEGRO_TRANSPORT_UNAVAILABLE', 'ALLEGRO_REFRESH_TOKEN_REQUIRED',
+  'ALLEGRO_REFRESH_TOKEN_UNREADABLE', 'ALLEGRO_INVALID_TOKEN_RESPONSE',
+  'ALLEGRO_INVALID_JSON',
+]);
+function safeStockProofDiagnostic(error) {
+  const stage = SAFE_STAGES.has(error?.stockProofStage) ? error.stockProofStage : 'UNKNOWN';
+  const raw = typeof error?.message === 'string' ? error.message : '';
+  let code = SAFE_ERRORS.has(raw) ? raw : 'PROVIDER_OR_RUNTIME_UNKNOWN';
+  // Do not print the provider diagnostic suffix: it can contain raw account
+  // details or request context. HTTP 400 alone does NOT prove an OAuth error.
+  const http = /^ALLEGRO_HTTP_(400|401|403|404|408|409|422|429|500|502|503|504)(?:$|[^0-9])/.exec(raw);
+  if (http) code = 'ALLEGRO_HTTP_' + http[1];
+  return 'STOCK_PROOF_FAILURE_STAGE_' + stage + '_REASON_' + code;
+}
+
 function assertStockProofArgs(argv, env) {
   if (argv.length !== 2 || !argv[0].startsWith('--offer-id=') ||
       argv[1] !== '--test-only-offer-confirmed') {
@@ -58,11 +91,15 @@ function stockTransitionProved(delta, offerId) {
 async function main({ argv = process.argv.slice(2), env = process.env,
   query = db.query.bind(db), dispatchToConnector = dispatch.dispatchToConnector,
   probe = run, delay = sleep, log = console.log } = {}) {
+  let stage = 'INPUTS';
+  try {
   const offerId = assertStockProofArgs(argv, env);
+  stage = 'CONNECTOR';
   const connector = dispatch.CONNECTORS.api.allegro;
   if (!connector?.active) throw new Error('STOCK_PROOF_ALLEGRO_CONNECTOR_INACTIVE');
 
   // The only writes below are fixtures in the throwaway 127.0.0.1 CI DB.
+  stage = 'SOURCE_FIXTURE';
   await query(`INSERT INTO sourcing_sources
       (source_id,adapter_type,acquisition,continuity,status,autopilot_enabled)
       VALUES ($1,'allegro','pull','recurring','active',false)`, [SOURCE]);
@@ -76,19 +113,25 @@ async function main({ argv = process.argv.slice(2), env = process.env,
     supplierCalls++;
     return dispatchToConnector(body);
   };
+  stage = 'SWITCH_OFF';
   const off = await probe(proofArgs, env, { query, dispatchToConnector: exactRead });
   if (off?.status !== 'SKIPPED' || off.reason !== 'SOURCING_SWITCH_OFF' ||
       supplierCalls !== 0) throw new Error('STOCK_PROOF_SOURCE_OFF_FAILED');
 
+  stage = 'ENABLE_SOURCE';
   await query('UPDATE sourcing_sources SET autopilot_enabled=true WHERE source_id=$1', [SOURCE]);
-  const before = exactOne(await exactRead({
+  stage = 'BASELINE_PROVIDER_READ';
+  const firstRead = await exactRead({
     source_type: 'api', supplier_id: 'allegro', product_ids: [offerId],
-  }), offerId);
+  });
+  stage = 'BASELINE_CONTRACT';
+  const before = exactOne(firstRead, offerId);
   if (before.stock_available !== EXPECTED_STOCK ||
       before.sellable_units[0].stock_available !== EXPECTED_STOCK ||
       before.sellable_units[0].is_active !== true) {
     throw new Error('STOCK_PROOF_BASELINE_NOT_ACTIVE_THREE');
   }
+  stage = 'BASELINE_FIXTURE';
   await query(`INSERT INTO sourcing_candidates
       (supplier_name,supplier_product_id,product_name,purchase_price,currency,
        state,normalized_source_contract)
@@ -96,12 +139,15 @@ async function main({ argv = process.argv.slice(2), env = process.env,
     ['Allegro Sandbox', offerId, before.product_name, before.purchase_price,
       before.currency, JSON.stringify(before)]);
 
+  stage = 'MANUAL_CHANGE_WAIT';
   log('READY_FOR_MANUAL_SANDBOX_TEST_OFFER_STOCK_CHANGE: baseline 3 observed. ' +
     'Set ONLY this dedicated TEST offer to stock 0 in Allegro seller UI now. ' +
     'Four exact reads will occur at 45-second intervals; no supplier writes are performed by Komerce.');
   for (let i = 0; i < MAX_RECHECKS; i++) {
     await delay(RECHECK_INTERVAL_MS);
+    stage = 'SECOND_PROVIDER_READ';
     const delta = await probe(proofArgs, env, { query, dispatchToConnector: exactRead });
+    stage = 'DELTA_VALIDATION';
     if (delta?.status === 'UNKNOWN' || delta?.status === 'SKIPPED' ||
         delta?.status === 'FIRST_OBSERVATION') {
       throw new Error('STOCK_PROOF_EXACT_READ_UNKNOWN_OR_SWITCH_OFF');
@@ -122,28 +168,18 @@ async function main({ argv = process.argv.slice(2), env = process.env,
     log('STOCK_PROOF_WAITING_FOR_EXACT_TEST_OFFER_CHANGE: ' + (i + 1) + '/' + MAX_RECHECKS);
   }
   throw new Error('STOCK_PROOF_CHANGE_NOT_OBSERVED');
+  } catch (error) {
+    if (error && typeof error === 'object') error.stockProofStage = stage;
+    throw error;
+  }
 }
 
 if (require.main === module) {
   main().then(result => process.stdout.write(JSON.stringify(result, null, 2) + '\n'))
     .catch(error => {
-      // Provider error details, credentials, raw seller offer payloads and DB
-      // diagnostics are intentionally never printed.
-      const allowed = new Set([
-        'PROOF_EXACT_ALLEGRO_ID_REQUIRED', 'PROOF_ISOLATED_STAGING_REQUIRED',
-        'PROOF_EPHEMERAL_DB_REQUIRED', 'PROOF_DEDICATED_SANDBOX_CREDENTIALS_REQUIRED',
-        'STOCK_PROOF_EXACT_TEST_OFFER_AND_ACK_REQUIRED',
-        'STOCK_PROOF_PURCHASING_GOLDEN_OFFER_PROTECTED',
-        'STOCK_PROOF_ALLEGRO_CONNECTOR_INACTIVE', 'STOCK_PROOF_NONEXACT_FETCH_REFUSED',
-        'STOCK_PROOF_SOURCE_OFF_FAILED', 'STOCK_PROOF_BASELINE_NOT_ACTIVE_THREE',
-        'STOCK_PROOF_EXACT_READ_UNKNOWN_OR_SWITCH_OFF',
-        'STOCK_PROOF_UNEXPECTED_CHANGE_OR_PRICE_DRIFT',
-        'STOCK_PROOF_CHANGE_NOT_OBSERVED',
-      ]);
-      process.stderr.write((allowed.has(error?.message) ? error.message :
-        'STOCK_PROOF_PROVIDER_OR_RUNTIME_FAILED') + '\n');
+      process.stderr.write(safeStockProofDiagnostic(error) + '\n');
       process.exitCode = 1;
     }).finally(() => db.pool.end().catch(() => {}));
 }
 
-module.exports = { assertStockProofArgs, stockTransitionProved, main };
+module.exports = { assertStockProofArgs, stockTransitionProved, safeStockProofDiagnostic, main };
