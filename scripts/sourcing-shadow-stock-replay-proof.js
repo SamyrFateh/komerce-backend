@@ -27,6 +27,33 @@ const SUPPLIER = 'Allegro Shadow Replay TEST ONLY';
 const DATABASE_URL = 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_sourcing_proof';
 const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
 
+// Bounded CI diagnostics. Never print raw exceptions or provider/DB payloads.
+let diagnosticStage = 'PRECHECK';
+function markStage(name) { diagnosticStage = name; }
+function safeFailureCode(err) {
+  const known = new Set([
+    'SHADOW_REPLAY_EPHEMERAL_CI_ONLY', 'SHADOW_REPLAY_STOCK_INVALID',
+    'SHADOW_REPLAY_CAPTURE_NOT_FULLY_RESOLVED', 'SHADOW_REPLAY_CAPTURE_ID_REUSED',
+    'SHADOW_REPLAY_OFFER_BINDING_MISSING', 'SHADOW_REPLAY_UNIT_BINDING_MISSING',
+    'SHADOW_REPLAY_IDENTITY_OR_SOURCE_SWITCH_FAILED', 'SHADOW_REPLAY_OFFER_DELTA_NOT_PROVED',
+    'SHADOW_REPLAY_UNIT_DELTA_NOT_PROVED', 'SHADOW_REPLAY_UNIT_PARENT_MISMATCH',
+  ]);
+  if (known.has(String(err?.message || ''))) return err.message;
+  return /^[0-9A-Z]{5}$/.test(String(err?.code || '')) ? 'DB_SQLSTATE_' + String(err.code) : 'UNEXPECTED';
+}
+function reportCapture(label, summary) {
+  const resolution = summary?.resolution;
+  const bounded = n => Number.isInteger(n) && n >= 0 && n <= 10 ? n : 'UNKNOWN';
+  const code = /^[A-Z][A-Z0-9_]{1,63}$/.test(String(resolution?.code || ''))
+    ? String(resolution.code) : 'NONE_OR_UNEXPECTED';
+  process.stdout.write('SHADOW_REPLAY_' + label + '_CAPTURE_' +
+    (summary?.status === 'recorded' ? 'RECORDED' : 'NOT_RECORDED') + '_RESOLUTION_' +
+    (resolution?.status === 'resolved' ? 'RESOLVED' : 'NOT_RESOLVED') +
+    '_REVIEW_' + bounded(resolution?.review_required) + '_DEFERRED_' +
+    bounded(resolution?.deferred_parent) + '_CODE_' + code + '\n');
+}
+
+
 function assertIsolated(env) {
   if (env.GITHUB_ACTIONS !== 'true' || env.GITHUB_REF !== 'refs/heads/main' ||
       env.KOMERCE_ENV !== 'staging' || env.NODE_ENV !== 'test' ||
@@ -119,6 +146,7 @@ async function main({
   collectUnit = unitProjection.collectCanonicalUnitProjectionById,
   delay = wait,
 } = {}) {
+  markStage('PRECHECK');
   assertIsolated(env);
   const sourceInstanceKey = SOURCE_KEY + env.GITHUB_RUN_ID;
   const sourceId = shadow.buildSourceDescriptor({
@@ -131,16 +159,23 @@ async function main({
   });
 
   // The only writes are shadow ingestion and resolution within disposable DB.
+  markStage('FIRST_CAPTURE_WRITE');
   const before = await record(context([snapshot(3)]));
+  reportCapture('FIRST', before);
+  markStage('FIRST_CAPTURE_CHECK');
   assertResolved(before, sourceId);
   // Ensure chronological order survives timestamps sorted by canonical projection.
   await delay(50);
+  markStage('SECOND_CAPTURE_WRITE');
   const after = await record(context([snapshot(1)]));
+  reportCapture('SECOND', after);
+  markStage('SECOND_CAPTURE_CHECK');
   assertResolved(after, sourceId);
   if (before.capture_id === after.capture_id) {
     throw new Error('SHADOW_REPLAY_CAPTURE_ID_REUSED');
   }
 
+  markStage('BINDINGS_READ');
   const [firstOffer, secondOffer, firstUnit, secondUnit, source] = await Promise.all([
     bindingFor(query, before.capture_id, 'offer', sourceId),
     bindingFor(query, after.capture_id, 'offer', sourceId),
@@ -148,6 +183,7 @@ async function main({
     bindingFor(query, after.capture_id, 'unit', sourceId),
     query('SELECT autopilot_enabled, status FROM sourcing_sources WHERE source_id=$1', [sourceId]),
   ]);
+  markStage('BINDINGS_CHECK');
   if (source.rows?.length !== 1 || source.rows[0].autopilot_enabled !== false ||
       firstOffer.canonical_entity_id !== secondOffer.canonical_entity_id ||
       firstUnit.canonical_entity_id !== secondUnit.canonical_entity_id ||
@@ -156,10 +192,12 @@ async function main({
     throw new Error('SHADOW_REPLAY_IDENTITY_OR_SOURCE_SWITCH_FAILED');
   }
 
+  markStage('PROJECTIONS_READ');
   const [offer, unit] = await Promise.all([
     collectOffer(firstOffer.canonical_entity_id, query),
     collectUnit(firstUnit.canonical_entity_id, query),
   ]);
+  markStage('PROJECTIONS_CHECK');
   assertStockDelta(offer, 'offer');
   assertStockDelta(unit, 'unit');
   if (unit.canonical_offer_id !== firstOffer.canonical_entity_id) {
@@ -188,12 +226,12 @@ async function main({
 if (require.main === module) {
   main()
     .then(result => process.stdout.write(JSON.stringify(result, null, 2) + '\n'))
-    .catch(() => {
+    .catch(err => {
       // No SQL payload, provider material or raw errors in CI logs.
-      process.stderr.write('SHADOW_REPLAY_PROOF_FAILED\n');
+      process.stderr.write('SHADOW_REPLAY_FAILURE_STAGE_' + diagnosticStage + '_REASON_' + safeFailureCode(err) + '\n');
       process.exitCode = 1;
     })
     .finally(() => db.pool.end().catch(() => {}));
 }
 
-module.exports = { DATABASE_URL, assertIsolated, snapshot, assertResolved, assertStockDelta, main };
+module.exports = { DATABASE_URL, assertIsolated, snapshot, assertResolved, assertStockDelta, safeFailureCode, reportCapture, main };
