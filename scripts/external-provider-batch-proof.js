@@ -23,6 +23,7 @@ const ROOT = path.resolve(__dirname, '..');
 const REGISTRY = path.join(ROOT, 'governance/external-provider-registry.json');
 const SAFE_PROBES = Object.freeze({
   paypal: 'PAYPAL_SANDBOX_OAUTH_AND_WEBHOOK_READ',
+  cj: 'CJ_LIVE_CATALOG_BOUNDED_EXACT_READ',
   ebay: 'EBAY_SANDBOX_BROWSE_READ',
   stripe: 'STRIPE_TEST_ACCOUNT_READ',
 });
@@ -158,9 +159,60 @@ async function paypalSandboxRead(env, fetchImpl = global.fetch) {
   }
 }
 
+async function cjCatalogRead(env, fetchImpl = global.fetch) {
+  const operation = SAFE_PROBES.cj;
+  const environment = 'LIVE_CATALOG_READ_ONLY';
+  const blocked = reason_code => ({
+    operation, environment, status: 'BLOCKED', reason_code, stages: [],
+  });
+  // CJ's catalogue endpoint is live, not a Sandbox. It requires a separate,
+  // explicit operator opt-in and a dedicated short-lived READ credential.
+  if (env.CJ_PROOF_ALLOW_CATALOG_READ !== '1') return blocked('CJ_LIVE_CATALOG_READ_NOT_AUTHORIZED');
+  if (!env.CJ_PROOF_ACCESS_TOKEN) return blocked('CJ_DEDICATED_READ_TOKEN_MISSING');
+  const base = 'https://developers.cjdropshipping.com/api2.0/v1';
+  const headers = { 'CJ-Access-Token': env.CJ_PROOF_ACCESS_TOKEN, Accept: 'application/json' };
+  try {
+    // 1 + 1 GET: never call token issuance, stock mutation, import, or order APIs.
+    const list = await fetchImpl(base + '/product/listV2?page=1&size=1', {
+      method: 'GET', headers, signal: AbortSignal.timeout(7000),
+    });
+    if (!list.ok) return blocked('CJ_PRODUCT_LIST_HTTP_REJECTED');
+    const body = await list.json();
+    if (body.result !== true || !Array.isArray(body.data?.content)) {
+      return blocked('CJ_PRODUCT_LIST_CONTRACT_MISMATCH');
+    }
+    const items = body.data.content.flatMap(group =>
+      Array.isArray(group?.productList) ? group.productList : []).slice(0, 1);
+    const productId = String(items[0]?.id || items[0]?.pid || '');
+    if (!productId || productId.length > 200 || !/^[A-Za-z0-9_-]+$/.test(productId)) {
+      return blocked('CJ_EXACT_PRODUCT_ID_NOT_OBSERVED');
+    }
+    const detail = await fetchImpl(base + '/product/query?pid=' + encodeURIComponent(productId), {
+      method: 'GET', headers, signal: AbortSignal.timeout(7000),
+    });
+    if (!detail.ok) return blocked('CJ_EXACT_PRODUCT_HTTP_REJECTED');
+    const exact = await detail.json();
+    if (exact.result !== true || !exact.data || typeof exact.data !== 'object' ||
+      String(exact.data.pid || exact.data.id || '') !== productId) {
+      return blocked('CJ_EXACT_PRODUCT_ID_NOT_CONFIRMED');
+    }
+    return {
+      operation, environment, status: 'PASS',
+      reason_code: 'CJ_LIST_AND_EXACT_PRODUCT_READ_PROVED',
+      stages: [
+        { id: 'P0', status: 'PASS', failed_checks: [] },
+        { id: 'P1', status: 'PASS', failed_checks: [] },
+      ],
+    };
+  } catch {
+    return blocked('CJ_NETWORK_OR_RESPONSE_ERROR');
+  }
+}
+
 async function runProbe(entry, env, deps = {}) {
   const id = entry.provider;
   if (id === 'paypal') return paypalSandboxRead(env, deps.fetchImpl);
+  if (id === 'cj') return cjCatalogRead(env, deps.fetchImpl);
   if (id === 'ebay') {
     if (env.EBAY_ENV !== 'sandbox') {
       return { operation: SAFE_PROBES.ebay, status: 'BLOCKED',
@@ -250,5 +302,5 @@ if (require.main === module) main().catch(() => {
 
 module.exports = {
   parseArgs, selection, plan, stageSummary, safeProofResult,
-  paypalSandboxRead, runProbe, runBatch,
+  paypalSandboxRead, cjCatalogRead, runProbe, runBatch,
 };

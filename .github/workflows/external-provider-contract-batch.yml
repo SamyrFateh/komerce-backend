@@ -24,6 +24,11 @@ on:
         type: string
         required: true
         default: all
+      allow_cj_live_read:
+        description: 'Explicitly permit up to two read-only GETs to the live CJ catalogue (default off)'
+        type: boolean
+        required: true
+        default: false
       include_proven:
         description: 'Recheck eBay/Stripe despite previously recorded proof (default off)'
         type: boolean
@@ -89,6 +94,8 @@ jobs:
       STRIPE_WEBHOOK_SECRET: ${{ secrets.KOMERCE_STRIPE_PROOF_TEST_WEBHOOK_SECRET }}
       STRIPE_WEBHOOK_URL: ${{ vars.KOMERCE_STRIPE_PROOF_TEST_WEBHOOK_URL }}
       STRIPE_API_VERSION: ${{ vars.KOMERCE_STRIPE_PROOF_TEST_API_VERSION }}
+      CJ_PROOF_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
+      CJ_PROOF_ALLOW_CATALOG_READ: ${{ inputs.allow_cj_live_read && '1' || '0' }}
       BATCH_PROVIDERS: ${{ inputs.providers }}
       BATCH_INCLUDE_PROVEN: ${{ inputs.include_proven }}
     steps:
