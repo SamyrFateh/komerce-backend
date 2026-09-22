@@ -63,7 +63,7 @@ function selection(registry, options) {
 
 function plan(provider, options, root = ROOT) {
   const declared = provider.highest_proof || 'UNQUALIFIED';
-  const proven = declared !== 'UNQUALIFIED';
+  const proven = ['P1', 'P2', 'P3', 'P4'].includes(declared);
   const analysis = provider.analysis_document || null;
   // Avoid treating arbitrary registry paths as evidence from outside the repository.
   const safeAnalysis = typeof analysis === 'string' &&
@@ -107,8 +107,7 @@ function stageSummary(report) {
 function safeProofResult(report, environment, operation) {
   let blocked = report.conversation?.status !== 'PASS';
   const stages = stageSummary(report);
-  blocked = blocked || stages.filter(s => s.id === 'P0' || s.id === 'P1')
-    .some(s => s.status !== 'PASS');
+  blocked = blocked || ['P0', 'P1'].some(id => !stages.some(s => s.id === id && s.status === 'PASS'));
   return {
     operation,
     status: blocked ? 'BLOCKED' : 'PASS',
