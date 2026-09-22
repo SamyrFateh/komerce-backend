@@ -1,0 +1,74 @@
+name: Sourcing shadow stock replay Golden (offline CI only)
+
+# Replays synthetic evidence from the proved 3->1 shape, NOT from a new Allegro
+# API request or the original live data. Never scheduled or triggered by push.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: isolated-sourcing-shadow-replay
+  cancel-in-progress: false
+
+jobs:
+  shadow-replay:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_sourcing_proof
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_sourcing_proof"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      KOMERCE_ALLOW_SHADOW_REPLAY_PROOF: '1'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_sourcing_proof
+      PGPASSWORD: komerce
+      JWT_SECRET: ci-ephemeral-isolated-proof-only
+      ADMIN_PASSWORD: ci-ephemeral-isolated-proof-only
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-ephemeral-isolated-proof-only
+      AUTHKEY_API_KEY: ci-ephemeral-isolated-proof-only
+      PAYPAL_CLIENT_ID: ci-ephemeral-isolated-proof-only
+      PAYPAL_CLIENT_SECRET: ci-ephemeral-isolated-proof-only
+      PAYPAL_WEBHOOK_ID: ci-ephemeral-isolated-proof-only
+      META_WA_APP_SECRET: ci-ephemeral-isolated-proof-only
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Bootstrap isolated schema-only database
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -U komerce -d komerce_sourcing_proof -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /dev/null
+          node scripts/ci-db-bootstrap.js
+          # Apply only to the disposable localhost DB; generic CI's schema
+          # snapshot can predate the source's OFF-by-default column.
+          psql -h 127.0.0.1 -U komerce -d komerce_sourcing_proof -v ON_ERROR_STOP=1 -f migrations/238_sourcing_source_autopilot.sql > /dev/null
+      - name: Persist and project synthetic 3-to-1 Offer and Unit observations (no provider GET)
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/sourcing-shadow-stock-replay-proof.js
