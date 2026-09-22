@@ -177,7 +177,7 @@ async function main({ argv = process.argv.slice(2), env = process.env,
 if (require.main === module) {
   main().then(result => process.stdout.write(JSON.stringify(result, null, 2) + '\n'))
     .catch(error => {
-      process.stderr.write(safeStockProofDiagnostic(error) + '\\n');
+      process.stderr.write(safeStockProofDiagnostic(error) + '\n');
       process.exitCode = 1;
     }).finally(() => db.pool.end().catch(() => {}));
 }
