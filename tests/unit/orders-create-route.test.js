@@ -140,7 +140,7 @@ function defaultMocks() {
   resolveFrozenClassification.mockResolvedValue({
     customs_category_key: 'vetements', sh_code: '6101', douane_pct: 20, tva_pct: 0, taxe_add_pct: 0, classification_defaulted: false,
   });
-  confirmPaymentCycle.mockResolvedValue({ stockBlocked: false });
+  confirmPaymentCycle.mockResolvedValue({ success: true, noop: false, stockBlocked: false });
   lockEstimatedCostsForOrder.mockResolvedValue(undefined);
   db.query.mockResolvedValue({ rows: [] });
 }
@@ -698,7 +698,7 @@ describe('orders/create — wallet', () => {
     // couvre tout le total ; total brut 10000*2 = 20000 + transport (§8)
     // 1kg*2*65 = 130 => 20130
     walletService.getBalanceInTx.mockResolvedValue(20130);
-    const refreshedOrder = { ...orderRow(), status: 'paid', confirmed_at: '2026-06-01T01:00:00Z' };
+    const refreshedOrder = { ...orderRow(), status: 'ordered', payment_status: 'paid', confirmed_at: '2026-06-01T01:00:00Z' };
     const client = makeClient([
       { rows: [RELAIS] },
       { rows: [{ id: 'recip-1' }] },
@@ -722,7 +722,8 @@ describe('orders/create — wallet', () => {
       orderId: 'order-1',
       source: 'wallet_full_payment',
     }));
-    expect(res.body.order.status).toBe('paid');
+    expect(res.body.order.status).toBe('ordered');
+    expect(res.body.order.payment_status).toBe('paid');
   });
 
   it('confirmPaymentCycle stockBlocked → rollback 409', async () => {
@@ -738,7 +739,7 @@ describe('orders/create — wallet', () => {
       { rows: [] },
     ]);
     db.getClient.mockResolvedValue(client);
-    confirmPaymentCycle.mockResolvedValue({ stockBlocked: true, insufficientItems: [{ product_id: 'prod-1' }] });
+    confirmPaymentCycle.mockResolvedValue({ success: true, noop: false, stockBlocked: true, insufficientItems: [{ product_id: 'prod-1' }] });
 
     const res = await request(app).post('/api/orders').send(validBody({ use_wallet: true }));
 
