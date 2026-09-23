@@ -2,8 +2,8 @@
   "generatedAt": "2026-09-20T07:19:48.458Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 649,
-    "protected": 594,
+    "total": 650,
+    "protected": 595,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2279,6 +2279,14 @@
     },
     {
       "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/activate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe",
       "level": "PROTECTED",
       "roles": [
         "admin",
