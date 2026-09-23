@@ -140,7 +140,8 @@
         "PAYPAL_ENV"
       ],
       "analysis_document": "docs/external-providers/payments/PAYPAL.md",
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "qualification_note": "Global level remains UNQUALIFIED. Reported P1 is limited to SANDBOX ORDER_CREATE_AND_EXACT_READBACK (CREATED, not captured or paid); operator-transcribed, not independently rechecked. Evidence: docs/_archive/external-provider-proofs/PAYPAL_SANDBOX_ORDER_P1_2026-09-23.md."
     },
     {
       "id": "mtn-momo-cg",
@@ -243,7 +244,8 @@
         "BREVO_KEY"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "qualification_note": "REST client implemented in utils/email.js and covered by tests/unit/email.test.js, but no application caller of sendOrderEmail established on 2026-09-23. Integration in an active order/notification flow and live delivery remain unproved."
     },
     {
       "id": "anthropic",
@@ -401,7 +403,8 @@
         "TWILIO_AUTH_TOKEN"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "qualification_note": "Declared configuration only: no active runtime API consumer established in the repository inventory; no provider proof."
     },
     {
       "id": "africas-talking",
@@ -415,7 +418,8 @@
         "AT_SENDER_ID"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "qualification_note": "Declared configuration only: no active runtime API consumer established in the repository inventory; no provider proof."
     }
   ]
 }

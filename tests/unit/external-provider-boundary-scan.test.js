@@ -99,3 +99,44 @@ describe('external-provider-boundary-scan', () => {
     })).toThrow('EXTERNAL_PROVIDER_REGISTRY_DUPLICATE_ID');
   });
 });
+
+
+describe('GAP-3 — provider registry reflects scoped evidence rather than assumed live capability', () => {
+  const root = path.resolve(__dirname, '../..');
+  const registry = JSON.parse(fs.readFileSync(
+    path.join(root, 'governance/external-provider-registry.json'), 'utf8'
+  ));
+  const provider = id => registry.providers.find(p => p.id === id);
+
+  test('PayPal retains global UNQUALIFIED and links only to the archived Sandbox P1 order readback', () => {
+    const paypal = provider('paypal');
+    const evidence = 'docs/_archive/external-provider-proofs/PAYPAL_SANDBOX_ORDER_P1_2026-09-23.md';
+    expect(paypal.highest_proof).toBe('UNQUALIFIED');
+    expect(paypal.qualification_note).toContain('SANDBOX ORDER_CREATE_AND_EXACT_READBACK');
+    expect(paypal.qualification_note).toContain(evidence);
+    const archive = fs.readFileSync(path.join(root, evidence), 'utf8');
+    expect(archive).toContain('readback_confirmed');
+    expect(archive).toContain('capture_attempted');
+    expect(archive).toContain('UNQUALIFIED');
+  });
+
+  test('Brevo implementation is recorded without asserting an active caller or delivery', () => {
+    const brevo = provider('brevo');
+    expect(brevo.consumers).toEqual(['notifications']);
+    expect(brevo.highest_proof).toBe('UNQUALIFIED');
+    expect(brevo.qualification_note).toContain('no application caller');
+    const source = fs.readFileSync(path.join(root, 'utils/email.js'), 'utf8');
+    expect(source).toContain('https://api.brevo.com/v3/smtp/email');
+    expect(source).toContain('module.exports = { sendOrderEmail, templates }');
+    const observed = scanRepository().observed_providers.find(p => p.id === 'brevo');
+    expect(observed.files).toContain('utils/email.js');
+  });
+
+  test.each(['twilio', 'africas-talking'])('%s remains config-only with no consumers', id => {
+    const entry = provider(id);
+    expect(entry.expected_scope).toBe('config-only');
+    expect(entry.consumers).toEqual([]);
+    expect(entry.highest_proof).toBe('UNQUALIFIED');
+    expect(entry.qualification_note).toContain('no active runtime API consumer');
+  });
+});

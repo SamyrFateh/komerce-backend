@@ -44,7 +44,7 @@ The scanner performs no network call and no mutation. It reports registered prov
 | Provider | Consumers | Evidence found | L0 status |
 |---|---|---|---|
 | **Stripe** | payment, orders/refunds | PaymentIntent create/retrieve, real TEST webhook delivery, exact fail-closed mapping, real API/DB pipeline, guarded P4 Golden, refunds, idempotence | **P4 PASS (payment, TEST)** — real provider success + signed webhook + canonical DB transition proved; refund P4 remains separate |
-| **PayPal** | payment | `paypal-client.js`, create/capture/refund flow, webhook events, sandbox probe | **IMPLEMENTED / REQUALIFY** |
+| **PayPal** | payment | `paypal-client.js`, create/capture/refund flow, webhook events; operator-reported Sandbox `ORDER_CREATE_AND_EXACT_READBACK` P1 evidence archived at `docs/_archive/external-provider-proofs/PAYPAL_SANDBOX_ORDER_P1_2026-09-23.md` | **UNQUALIFIED globally; reported P1 only for Sandbox order creation and exact readback (`CREATED`, not paid)** |
 | **MTN MoMo CG** | payment | provider adapter + sandbox probe + status normalization | **IMPLEMENTED / REQUALIFY** |
 | **Orange Money CM** | payment | provider adapter, OAuth, payment/status URLs fail-closed until merchant contract configured | **IMPLEMENTED / REQUALIFY** |
 | **KartaPay KM** | payment | staging/prod endpoint separation, webhook secret, status recheck, provider adapter | **IMPLEMENTED / REQUALIFY** |
@@ -57,7 +57,7 @@ Money providers are Wave A because an incorrect assumption can create customer f
 |---|---|---|---|
 | **Meta WhatsApp Business** | notifications, auth/OTP | Graph API message send + inbound webhook route/signature configuration | **IMPLEMENTED / REQUALIFY** |
 | **AuthKey WhatsApp** | notifications | outbound REST client + webhook verification + staging phone allowlist | **IMPLEMENTED / REQUALIFY** |
-| **Brevo** | notifications/email | REST v3 transactional email sender | **IMPLEMENTED / REQUALIFY** |
+| **Brevo** | notifications/email (client owned by notifications; active application caller not established) | `utils/email.js` REST v3 transactional email sender and unit tests; no call site of `sendOrderEmail` found outside its own tests as of 2026-09-23 | **CLIENT IMPLEMENTED / RUNTIME USE UNPROVED** |
 | Africa's Talking | none confirmed in runtime | env/docs references only in this L0 search | **CONFIG-ONLY / VERIFY** |
 | Twilio WhatsApp | none confirmed in runtime | env/docs references only in this L0 search | **CONFIG-ONLY / VERIFY** |
 
