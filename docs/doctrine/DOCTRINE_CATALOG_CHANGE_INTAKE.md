@@ -150,6 +150,43 @@ Après observation et résolution explicite de l'identité/provenance, les
 owners métier Catalog évaluent champ par champ l'application éventuelle
 sur le catalogue maître. Le transport et l'observation n'en décident jamais.
 
+## Preuve d'identité canonique du delta (lecture seule)
+
+Le service `services/sourcing-catalog-change-unit-resolution-proof.js` reçoit
+l'UUID d'une observation déjà persistée par le premier raccordement.
+Il **ne modifie ni observation, ni binding, ni entité canonique**. Il refuse
+les observations d'une source désactivée, les payloads incomplets ou incohérents,
+les faits `UNKNOWN`, les observations déjà liées à une autre entité et les
+événements qui ne sont pas un `UNIT_STOCK_DELTA` explicite.
+
+Pour retourner `EXACT_CANONICAL_UNIT`, les preuves préexistantes doivent
+former simultanément la même chaîne :
+
+1. `source_id` exact de la Capture, `product_ref` et `unit_ref` exacts
+   conservés dans le delta ; la référence source brute doit désigner ce
+   produit, sans alias ni fallback fournisseur inter-compte ;
+2. `product.source_ref` et `unit.source_ref` de la **même source**
+   déjà associés à des entités canoniques actives ;
+3. une relation active **Product → Offer → Unit** entre ces entités ;
+4. pour le Product et la Unit, au moins une observation source **complète
+   antérieure** possédant un binding actif vers l'entité correspondante.
+
+Le delta de stock n'est **jamais** passé au résolveur destiné à un produit
+complet V2 ; aucune liaison n'est créée à partir du seul delta.
+Zéro observé reste zéro, `UNKNOWN` n'est pas convertible en zéro.
+Si la chaîne est absente, inactive ou ambiguë, la sortie refuse la
+correspondance au lieu de choisir une unité par nom, ressemblance ou prix.
+
+Cette preuve ne démontre **pas** encore que la Unit canonique correspond
+de manière unique à un `product_skus.id`, ni la fraîcheur d'un événement,
+l'autorité de la source, les réservations/engagements en cours ou la
+décision métier sur le stock affichable. Même avec
+`status=EXACT_CANONICAL_UNIT`, les drapeaux `applicable=false`,
+`sku_resolution_evaluated=false`, `freshness_evaluated=false` et
+`application_status=NOT_EVALUATED` restent obligatoires.
+Aucune route publique, publication, commande, opération fournisseur ou
+mutation Catalog n'est ajoutée par ce seul contrôle.
+
 ## Conséquence architecture
 
 Provider / fichier / opérateur
