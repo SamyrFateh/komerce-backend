@@ -135,6 +135,7 @@ module.exports = {
       'tests/integration/sourcing-candidate-arbitration-real-db.test.js',
       'tests/unit/supplier-targeted-refresh-staging.test.js',
       'tests/unit/sourcing-candidate-import-service.test.js',
+      'tests/integration/sourcing-candidate-stock-zero-real-db.test.js',
       'tests/unit/sourcing-observation-shadow-plan.test.js',
       'tests/unit/sourcing-observation-shadow-service.test.js',
       'tests/unit/sourcing-resolution-evidence.test.js',
