@@ -4,6 +4,7 @@
  * @test-requires none
  */
 const {
+  CAPABILITIES,
   normalizeProviderCapabilityDescriptor,
 } = require('../../services/catalog-provider-capability-contract');
 
@@ -47,5 +48,42 @@ describe('catalog-provider-capability-contract', () => {
       provider: 'x', environment: 'test',
       capabilities: { magic_sync: { documented: true } },
     })).toThrow(/unknown capability/);
+  });
+});
+
+
+describe('GAP-4 — incoming catalog facts cannot grant outbound write or purchase authority', () => {
+  test('the intake capability descriptor contains only read/receive operations', () => {
+    expect(CAPABILITIES).toEqual([
+      'discovery', 'exact_read', 'change_feed', 'webhook',
+      'stock_read', 'price_read', 'offer_status_read', 'media_read',
+    ]);
+  });
+
+  test.each([
+    'stock_write', 'price_write', 'content_write', 'publication_write',
+    'atomic_reservation', 'purchase',
+  ])('refuses an outbound/execution capability: %s', capability => {
+    expect(() => normalizeProviderCapabilityDescriptor({
+      provider: 'allegro', environment: 'sandbox',
+      capabilities: {
+        [capability]: { documented: true, authorized: true, implemented: true, proved: true },
+      },
+    })).toThrow('unknown capability: ' + capability);
+  });
+
+  test('provider transport capability stays distinct from proof of a product fact', () => {
+    const result = normalizeProviderCapabilityDescriptor({
+      provider: 'allegro', environment: 'sandbox',
+      capabilities: { webhook: {
+        documented: true, authorized: null, implemented: false, proved: false,
+      } },
+    });
+    expect(result.capabilities.webhook).toMatchObject({
+      documented: true, authorized: null, implemented: false, proved: false,
+    });
+    expect(result.capabilities.stock_read).toMatchObject({
+      documented: null, authorized: null, implemented: false, proved: false,
+    });
   });
 });
