@@ -110,6 +110,26 @@ describe('supplier-catalog-scanner', () => {
     });
   });
 
+  describe('supplier stock normalization boundary', () => {
+    const product = {
+      supplier_name: 'Allegro Sandbox',
+      supplier_product_id: '123456789',
+      product_name: 'Test exact supplier offer',
+      supplier_category: 'phones',
+      purchase_price: 10,
+      currency: 'EUR',
+    };
+    it.each([
+      [0, 0],
+      [3, 3],
+      [null, null],
+      [undefined, null],
+    ])('preserves stock %s as %s without interpreting unknown as zero', async (value, expected) => {
+      const normalized = await normalizeCandidate({ ...product, stock_available: value }, { config });
+      expect(normalized.stock_available).toBe(expected);
+    });
+  });
+
   describe('normalizeCandidate', () => {
     it('normalise un produit fournisseur avec prix, categorie, poids et volume', async () => {
       const product = {
