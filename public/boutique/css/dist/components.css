@@ -4448,6 +4448,12 @@ body.spike-shell-vertical {
   }
 }
 
+/* Discovery (Service / Offre locale) is an inquiry, never a product cart.
+   The product topbar remains unchanged for normal catalogue products. */
+#k-modal.k-modal--discovery .k-modal-cart-btn {
+  display: none;
+}
+
 
 /* ── modal-media.css ─────────────────────────────────────── */
 ﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

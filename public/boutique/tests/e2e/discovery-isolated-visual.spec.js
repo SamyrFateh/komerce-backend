@@ -139,6 +139,8 @@ async function proveViewport(page, label, viewport) {
   await expect(detail.locator('[data-discovery-service-contact]')).toHaveCount(1);
   await requirePhotoLoaded(detail.locator('.k-service-detail-img'));
   await expect(modal.locator('.k-modal-buybox')).toBeHidden();
+  await expect(modal.locator('.k-modal-cart-btn')).toBeHidden();
+  await expect(modal.locator('.k-modal-close')).toBeVisible();
   await expect(modal.locator('.k-modal-actions')).toBeHidden();
   await expect(modal.locator('#k-buy-now-btn')).toBeHidden();
   await expect(detail).not.toContainText('Acheter maintenant');
@@ -155,6 +157,8 @@ async function proveViewport(page, label, viewport) {
   await expect(detail.locator('[data-discovery-select-action="request"]')).toBeVisible();
   await expect(modal.locator('.k-modal-actions')).toBeHidden();
   await expect(modal.locator('.k-modal-buybox')).toBeHidden();
+  await expect(modal.locator('.k-modal-cart-btn')).toBeHidden();
+  await expect(modal.locator('.k-modal-close')).toBeVisible();
   await modal.screenshot({ path: path.join(OUT, label + '-offer.png') });
 
   await page.locator('#k-modal-close').click();

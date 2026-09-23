@@ -1526,3 +1526,9 @@
     font-size: 26px;
   }
 }
+
+/* Discovery (Service / Offre locale) is an inquiry, never a product cart.
+   The product topbar remains unchanged for normal catalogue products. */
+#k-modal.k-modal--discovery .k-modal-cart-btn {
+  display: none;
+}
