@@ -83,6 +83,9 @@ async function resolveCheckoutItems({
   let sharedListOrganizerUserId = null;
   let hasSharedListItems = false;
   let hasPersonalItems = false;
+  // Same exact SKU may appear on several order lines: check the cumulative
+  // demand before persisting any order, never line-by-line only.
+  const requestedBySku = new Map();
 
   for (const item of items) {
     if (!item.product_id || typeof item.product_id !== 'string') {
@@ -127,7 +130,12 @@ async function resolveCheckoutItems({
         };
       }
 
-      if (resolvedSku.stock < qty) {
+      const skuKey = String(resolvedSku.id);
+      const totalSkuQuantity = (requestedBySku.get(skuKey) || 0) + qty;
+      if (!Number.isSafeInteger(totalSkuQuantity) || totalSkuQuantity < 1) {
+        return { ok: false, status: 400, body: { error: 'Quantité cumulée invalide pour ce SKU' } };
+      }
+      if (resolvedSku.stock < totalSkuQuantity) {
         return {
           ok: false, status: 409,
           body: {
@@ -136,6 +144,7 @@ async function resolveCheckoutItems({
           },
         };
       }
+      requestedBySku.set(skuKey, totalSkuQuantity);
 
       item.variant_combo = comboRaw;
       item._resolved_sku_id = resolvedSku.id;

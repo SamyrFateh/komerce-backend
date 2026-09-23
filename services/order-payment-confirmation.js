@@ -239,26 +239,50 @@ async function confirmPaymentCycle({ orderId, actor, source, dbClient, note }) {
     }
   }
 
-  // ── Chemin SKU : verrouillage + validation sur le SKU exact uniquement ──
+  // ── Chemin SKU : un verrou et un contrôle par SKU exact ──
+  // Plusieurs order_items peuvent désigner le même SKU. Une vérification
+  // ligne par ligne (2 <= 3 et 2 <= 3) accepterait à tort une demande de 4.
+  // Agréger avant tout décrément ; verrouiller les SKU dans un ordre stable
+  // pour limiter les risques de deadlock entre confirmations concurrentes.
+  const requiredBySku = new Map();
   for (const item of skuItems) {
+    const qty = Number(item.quantity);
+    if (!Number.isSafeInteger(qty) || qty < 1) {
+      throw new Error(`[confirmPaymentCycle] Quantité SKU invalide — order=${orderId}`);
+    }
+    const key = String(item.sku_id);
+    const previous = requiredBySku.get(key);
+    if (previous && String(previous.product_id) !== String(item.product_id)) {
+      throw new Error(`[confirmPaymentCycle] SKU référencé par plusieurs produits — order=${orderId}`);
+    }
+    const needed = (previous?.needed || 0) + qty;
+    if (!Number.isSafeInteger(needed)) {
+      throw new Error(`[confirmPaymentCycle] Quantité cumulée SKU invalide — order=${orderId}`);
+    }
+    requiredBySku.set(key, { ...item, needed });
+  }
+  for (const [skuId, demand] of [...requiredBySku.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))) {
     const { rows: [sku] } = await dbClient.query(
       `SELECT id, stock
          FROM product_skus
         WHERE id = $1 AND product_id = $2
         FOR UPDATE`,
-      [item.sku_id, item.product_id]
+      [skuId, demand.product_id]
     );
     if (!sku) {
       throw new Error(
-        `[confirmPaymentCycle] SKU introuvable (sku_id=${item.sku_id}, product_id=${item.product_id}) — order=${orderId}`
+        `[confirmPaymentCycle] SKU introuvable (sku_id=${skuId}, product_id=${demand.product_id}) — order=${orderId}`
       );
     }
-    if (sku.stock < item.quantity) {
+    if (!Number.isSafeInteger(Number(sku.stock)) || sku.stock === null ||
+        Number(sku.stock) < 0 || Number(sku.stock) < demand.needed) {
       insufficientItems.push({
-        product_id:   item.product_id,
-        product_name: item.product_name,
-        available:    sku.stock,
-        needed:       item.quantity,
+        product_id: demand.product_id,
+        product_name: demand.product_name,
+        sku_id: skuId,
+        available: sku.stock,
+        needed: demand.needed,
       });
     }
   }
