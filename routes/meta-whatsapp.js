@@ -99,7 +99,7 @@ function summarizeMetaWebhook(body) {
         if (messageIds.length >= 3) break;
         // Only provider-style opaque IDs, never phone numbers or free text.
         const id = item?.id;
-        if (typeof id === 'string' && /^wamid\\.[A-Za-z0-9_-]{8,100}$/.test(id) &&
+        if (typeof id === 'string' && /^wamid\.[A-Za-z0-9_-]{8,100}$/.test(id) &&
             !messageIds.includes(id)) {
           messageIds.push(id);
         }
