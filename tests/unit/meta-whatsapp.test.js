@@ -147,10 +147,10 @@ describe('meta-whatsapp — branches de repli (defaults)', () => {
       .set('X-Hub-Signature-256', goodSig)
       .send('');
     expect(res.status).toBe(200);
-    expect(mockLog.info).toHaveBeenCalledWith('[META-WA][WEBHOOK]', {
+    expect(mockLog.info).toHaveBeenCalledWith({
       event_type: 'unknown', entry_count: 0, message_count: 0,
       status_count: 0, statuses: [], wamids: [],
-    });
+    }, '[META-WA][WEBHOOK]');
   });
 });
 
@@ -200,10 +200,10 @@ describe('POST /webhook/meta-whatsapp (signature HMAC)', () => {
       .set('X-Hub-Signature-256', goodSig)
       .send(payload);
     expect(res.status).toBe(200);
-    expect(mockLog.info).toHaveBeenCalledWith('[META-WA][WEBHOOK]', {
+    expect(mockLog.info).toHaveBeenCalledWith({
       event_type: 'unknown', entry_count: 1, message_count: 0,
       status_count: 0, statuses: [], wamids: [],
-    });
+    }, '[META-WA][WEBHOOK]');
   });
 
   it('un message client signé ne révèle ni téléphone, ni nom, ni contenu dans les logs', async () => {
@@ -226,10 +226,10 @@ describe('POST /webhook/meta-whatsapp (signature HMAC)', () => {
       .set('X-Hub-Signature-256', sign(body))
       .send(body);
     expect(res.status).toBe(200);
-    expect(mockLog.info).toHaveBeenCalledWith('[META-WA][WEBHOOK]', {
+    expect(mockLog.info).toHaveBeenCalledWith({
       event_type: 'messages', entry_count: 1, message_count: 1,
       status_count: 0, statuses: [], wamids: ['wamid.HBgMQUJDREVGR0g'],
-    });
+    }, '[META-WA][WEBHOOK]');
     const emitted = JSON.stringify(mockLog.info.mock.calls);
     for (const secret of [phone, name, message, 'wa-account-private']) {
       expect(emitted).not.toContain(secret);
@@ -253,10 +253,10 @@ describe('POST /webhook/meta-whatsapp (signature HMAC)', () => {
       .set('X-Hub-Signature-256', sign(body))
       .send(body);
     expect(res.status).toBe(200);
-    expect(mockLog.info).toHaveBeenCalledWith('[META-WA][WEBHOOK]', {
+    expect(mockLog.info).toHaveBeenCalledWith({
       event_type: 'statuses', entry_count: 1, message_count: 0,
       status_count: 2, statuses: ['delivered'], wamids: ['wamid.HBgMQUJDREVGR0g'],
-    });
+    }, '[META-WA][WEBHOOK]');
     const emitted = JSON.stringify(mockLog.info.mock.calls);
     expect(emitted).not.toContain(phone);
     expect(emitted).not.toContain(privateText);
