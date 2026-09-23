@@ -20,11 +20,29 @@
 const clone = (value) => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 const present = (value) => value !== null && value !== undefined && value !== '';
 
+// PostgreSQL timestamps arrive as JS Date objects. String(Date) drops
+// milliseconds, so adjacent captures in the same second could otherwise
+// be reversed by their random observation UUID and regress current stock.
+function comparableTime(value) {
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.getTime() : null;
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}[T ]/.test(value)) {
+    const ms = Date.parse(value);
+    if (Number.isFinite(ms)) return ms;
+  }
+  return null;
+}
+
+function compareObservationOrder(a, b) {
+  const aTime = comparableTime(a?.observed_at);
+  const bTime = comparableTime(b?.observed_at);
+  const timeOrder = aTime !== null && bTime !== null
+    ? Math.sign(aTime - bTime)
+    : String(a?.observed_at ?? '').localeCompare(String(b?.observed_at ?? ''));
+  return timeOrder || String(a?.observation_id ?? '').localeCompare(String(b?.observation_id ?? ''));
+}
+
 function latestObservation(rows = []) {
-  return [...rows].sort((a, b) =>
-    String(a.observed_at).localeCompare(String(b.observed_at)) ||
-    String(a.observation_id).localeCompare(String(b.observation_id))
-  ).at(-1) || null;
+  return [...rows].sort(compareObservationOrder).at(-1) || null;
 }
 
 function currentState(rows, fields) {
@@ -52,7 +70,7 @@ function identityRefs(rows = [], fields = []) {
 
 function provenance(rows = []) {
   return [...rows]
-    .sort((a, b) => String(a.observed_at).localeCompare(String(b.observed_at)))
+    .sort(compareObservationOrder)
     .map((row) => ({
       observation_id: row.observation_id,
       source_id: row.source_id,
@@ -68,10 +86,7 @@ function provenance(rows = []) {
  * This is detection evidence, NOT a sellability or Purchasing verdict.
  */
 function observationDelta(rows = [], fields = []) {
-  const ordered = [...rows].sort((a, b) =>
-    String(a.observed_at).localeCompare(String(b.observed_at)) ||
-    String(a.observation_id).localeCompare(String(b.observation_id))
-  );
+  const ordered = [...rows].sort(compareObservationOrder);
   const latest = ordered.at(-1);
   const previous = ordered.at(-2);
   if (!latest) return { status: 'UNKNOWN', reason: 'NO_OBSERVATION', changes: [], unknown_fields: [...fields] };
