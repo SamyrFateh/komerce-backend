@@ -133,7 +133,7 @@ router.post('/webhook/meta-whatsapp', verifyMetaSignature, async (req, res) => {
   try {
     const body = req.body || {};
 
-    log.info('[META-WA][WEBHOOK]', summarizeMetaWebhook(body));
+    log.info(summarizeMetaWebhook(body), '[META-WA][WEBHOOK]');
 
     // Ici plus tard:
     // - status sent/delivered/read/failed
