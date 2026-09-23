@@ -363,8 +363,7 @@ function mountHtmlRoutes(app, rootDir) {
     if (req.path.startsWith('/api')) {
       return res.status(404).json({ error: 'Endpoint introuvable' });
     }
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.sendFile(path.join(publicDir, 'boutique', 'index.html'));
+    sendHtml(res, path.join(publicDir, 'boutique', 'index.html'));
   });
 }
 
