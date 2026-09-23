@@ -360,6 +360,81 @@ function _triggerGridEnterAnim() {
   }
 }
 
+/* ── ÉTAT VIDE DU CATALOGUE ──────────────────────────────────────────
+ * GAP-F3 (docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md) — une grille
+ * vide n'affichait rien : aucun message, aucune action. Trois raisons
+ * distinctes, trois textes distincts. Réutilise le patron visuel déjà
+ * établi par renderTrackNoOrders() (js/b-tracking.js, classes
+ * .k-track-error*, déjà chargées dans ce bundle CSS).
+ *
+ * « Être prévenu » n'est PAS un formulaire d'inscription fonctionnel :
+ * la doctrine de consentement (docs/doctrine/
+ * DOCTRINE_CONSENTEMENT_COMMUNICATION.md) n'est pas encore implémentée.
+ * Le seul canal honnête aujourd'hui est le lien WhatsApp déjà utilisé
+ * partout ailleurs dans la boutique (js/boutique.js, KOMERCE_WA_URL).
+ */
+const KOMERCE_WA_EMPTY_CATALOG_URL =
+  'https://wa.me/33699272526?text=' +
+  encodeURIComponent('Bonjour Komerce ! Le catalogue de mon marché est vide, prévenez-moi quand il ouvre 🙂');
+
+function _renderEmptyState({ icon, title, sub, actionLabel, actionHref, actionId }) {
+  const actionHtml = actionHref
+    ? `<a class="k-track-retry-btn" id="${actionId}" href="${actionHref}" target="_blank" rel="noopener">${actionLabel}</a>`
+    : `<button class="k-track-retry-btn" id="${actionId}" type="button">${actionLabel}</button>`;
+  return (
+    '<div class="k-track-error k-catalog-empty">' +
+      `<div class="k-track-error-icon">${icon}</div>` +
+      `<div class="k-track-error-title">${sanitize(title)}</div>` +
+      `<div class="k-track-error-sub">${sanitize(sub)}</div>` +
+      actionHtml +
+    '</div>'
+  );
+}
+
+function renderCatalogEmptyState() {
+  return _renderEmptyState({
+    icon: '🧺',
+    title: 'Le catalogue de votre marché arrive',
+    sub: 'Nous ajoutons les premiers produits. Écrivez-nous sur WhatsApp pour être prévenu dès l’ouverture.',
+    actionLabel: 'Être prévenu sur WhatsApp',
+    actionHref: KOMERCE_WA_EMPTY_CATALOG_URL,
+    actionId: 'k-catalog-empty-wa-btn',
+  });
+}
+
+function renderCategoryEmptyState() {
+  return _renderEmptyState({
+    icon: '🔍',
+    title: 'Aucun produit dans ce rayon pour l’instant',
+    sub: 'De nouveaux produits arrivent régulièrement. En attendant, découvrez tout le catalogue.',
+    actionLabel: 'Voir tout le catalogue',
+    actionHref: null,
+    actionId: 'k-catalog-empty-see-all-btn',
+  });
+}
+
+function renderSearchEmptyState(query) {
+  return _renderEmptyState({
+    icon: '🔎',
+    title: `Aucun résultat pour « ${query} »`,
+    sub: 'Vérifiez l’orthographe ou essayez un mot plus général.',
+    actionLabel: 'Réinitialiser la recherche',
+    actionHref: null,
+    actionId: 'k-catalog-empty-clear-search-btn',
+  });
+}
+
+function _bindEmptyStateActions(reason) {
+  if (reason === 'category') {
+    document.getElementById('k-catalog-empty-see-all-btn')
+      ?.addEventListener('click', () => setActiveCat('all'));
+  } else if (reason === 'search') {
+    document.getElementById('k-catalog-empty-clear-search-btn')
+      ?.addEventListener('click', () => setActiveCat(state.activeCat, state.activeSubcat));
+  }
+  // reason === 'catalog' : lien WhatsApp direct, aucun listener requis.
+}
+
 function renderGrid() {
   state.page = 0;
   const _isMobile = !isDesktop();
@@ -409,6 +484,25 @@ function renderGrid() {
   const _catCount = list.length;
   if (!_isMobile && state.activeSubcat) {
     list = list.filter(p => matchesSubcategory(state.activeCat, state.activeSubcat, p.subcategory));
+  }
+
+  const _searchQuery = (dom.searchInput && dom.searchInput.value.trim()) || '';
+  if (list.length === 0) {
+    dom.grid.classList.remove('k-grid-has-sections', 'k-grid-cat-pager');
+    destroyMobilePager();
+    let reason;
+    if (state.products.length === 0) {
+      dom.grid.innerHTML = renderCatalogEmptyState();
+      reason = 'catalog';
+    } else if (_searchQuery.length >= 2) {
+      dom.grid.innerHTML = renderSearchEmptyState(_searchQuery);
+      reason = 'search';
+    } else {
+      dom.grid.innerHTML = renderCategoryEmptyState();
+      reason = 'category';
+    }
+    _bindEmptyStateActions(reason);
+    return;
   }
 
   const useSections = state.activeCat === 'all' || _isMobile;
@@ -875,4 +969,5 @@ export {
   renderPromos, renderGrid, appendNextPage,
   setupCats, setupCatSwipeNav, centerActiveChip, setupSearch,
   loadProducts, _renderCard, updateHeroProductCount,
+  renderCatalogEmptyState, renderCategoryEmptyState, renderSearchEmptyState,
 };
