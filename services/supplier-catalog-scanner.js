@@ -240,7 +240,7 @@ async function normalizeCandidate(product, options = {}) {
     image_url: product.image_url || null,
     product_url: product.product_url || null,
     description: product.description || null,
-    stock_available: product.stock_available || null,
+    stock_available: product.stock_available ?? null,
     min_order_qty: product.min_order_qty || null,
     supplier_delay_days: product.supplier_delay_days || null,
     weight_kg: product.weight_kg || null,
