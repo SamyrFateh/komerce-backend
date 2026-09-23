@@ -111,12 +111,40 @@ La normalisation `Catalog Change Intake` reste indépendante de Sourcing :
 elle peut recevoir `PULL_EXACT`, `CHANGE_FEED`, `WEBHOOK`, `FILE`,
 `MANUAL` et `API_PUSH` sans imposer de passage par un moteur de découverte.
 
-Le **premier consommateur à raccorder dans un GAP ultérieur** pour archiver
-les faits externes est l'owner d'observations Sourcing, déjà propriétaire de
-`sourcing_captures`, `sourcing_observations`,
-`sourcing_observation_evidence` et de la provenance. Ce raccordement n'est
-pas implémenté par la PR initiale #1700 ni par ce recadrage : aucun nouvel
-owner, table parallèle, événement d'achat ou mutation de boutique ici.
+Le **premier raccordement implémenté** est une tranche volontairement réduite :
+`POST /api/admin/workspaces/sourcing/sources/:sourceRef/catalog-changes/observe`
+(route réservée à un opérateur authentifié avec autorité globale Sourcing)
+appelle `services/sourcing-catalog-change-observation.js`, qui valide l'enveloppe
+Catalog, puis crée dans une transaction **une Capture et une Observation
+immuable de grain `unit`** dans les tables Sourcing existantes.
+
+Cette tranche accepte uniquement une **unité fournisseur exacte** (`product_ref`
+et `unit_ref`) et son fait `stock_available` (`OBSERVED` y compris zéro,
+ou `UNKNOWN` sans valeur). Elle exige un `event_id` et une source API déjà
+enregistrée, active et exactement liée au provider + périmètre de compte.
+L'opérateur doit renseigner une source externe vérifiée ; cette route ne
+prouve **ni** l'identité/authenticité d'un webhook fournisseur **ni** le
+droit de lecture du compte chez ce fournisseur. `FILE`, `MANUAL`, le prix,
+le contenu, les changements mixtes et le retrait d'offre sont refusés ici
+explicitement, et restent valides comme **types d'enveloppes** pour les
+consommateurs ultérieurs.
+
+Un verrou transactionnel par source protège le rejeu du même `event_id` :
+même empreinte de l'enveloppe = capture existante sans nouvel insert ;
+contenu différent = conflit, sans remplacer l'observation initiale.
+`UNKNOWN` n'écrit **pas** de champ numérique stock ; `OBSERVED: 0`
+conserve exactement zéro. Les faits sont enregistrés comme un
+`CATALOG_CHANGE_DELTA` et non comme un nouveau produit V2 complet.
+La résolution de l'identité et toute application au catalogue sont
+expressément **non exécutées** dans cette tranche. La Capture porte
+`application_status=NOT_EVALUATED`. Aucune table parallèle, migration,
+publication, modification de SKU ni manipulation d'une commande engagée.
+
+Le premier consommateur est ainsi un **writer d'observations Sourcing**,
+pas un nouveau propriétaire du catalogue : la réception générique de
+l'enveloppe reste indépendante de Sourcing, qui archive ici seulement
+une observation de source. Un autre GAP devra prouver l'identité canonique
+de l'unité, sa fraîcheur et les règles du champ avant toute application.
 
 Après observation et résolution explicite de l'identité/provenance, les
 owners métier Catalog évaluent champ par champ l'application éventuelle

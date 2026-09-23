@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 48,
-    "total_routes": 592,
+    "total_routes": 593,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -7607,6 +7607,71 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rejeu identique : observation existante"
+          },
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Enveloppe invalide"
+          },
+          "403": {
+            "description": "Autorité globale Sourcing requise"
+          },
+          "409": {
+            "description": "Source incohérente ou événement déjà reçu avec une autre valeur"
+          },
+          "413": {
+            "description": "Enveloppe trop volumineuse"
+          },
+          "422": {
+            "description": "Identité exacte ou fait stock exigé"
           },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
