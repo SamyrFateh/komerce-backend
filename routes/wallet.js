@@ -142,6 +142,12 @@ router.post('/apply', async (req, res, next) => {
     });
   } catch (err) {
     await client.query('ROLLBACK');
+    if (err.statusCode === 409) {
+      return res.status(409).json({
+        error: err.message,
+        ...(err.items ? { items: err.items } : {}),
+      });
+    }
     next(err);
   } finally { client.release(); }
 });
