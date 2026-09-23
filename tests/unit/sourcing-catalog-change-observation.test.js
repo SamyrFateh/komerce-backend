@@ -111,7 +111,7 @@ test('event ID replay is idempotent only for an identical fact', async () => {
       return { rows: [{ source_id: 'api:cj', adapter_type: 'cj', status: 'active' }] };
     }
     if (String(sql).includes('INSERT INTO sourcing_captures')) {
-      firstDigest = JSON.parse(params[4]).fingerprint;
+      firstDigest = JSON.parse(params[3]).fingerprint;
     }
     if (String(sql).includes('FROM sourcing_captures')) {
       return { rows: firstDigest ? [{ capture_id: 'first-capture', fingerprint: firstDigest }] : [] };
