@@ -129,7 +129,7 @@ async function upsertCandidateFromCatalogImport(q, {
       importId, supplierName, product.supplier_product_id || null,
       product.product_name, product.supplier_category || null, product.purchase_price || null, product.currency || 'AED',
       product.image_url || null, product.product_url || null, product.description || null,
-      product.stock_available || null, product.min_order_qty || null, product.supplier_delay_days || null,
+      product.stock_available ?? null, product.min_order_qty || null, product.supplier_delay_days || null,
       product.weight_kg || null, product.dimensions?.l_cm || null, product.dimensions?.w_cm || null, product.dimensions?.h_cm || null,
       normalized.komerce_category, normalized.estimated_weight_kg, normalized.estimated_volume_m3,
       normalized.purchase_price_kmf, normalized.target_margin_pct,
