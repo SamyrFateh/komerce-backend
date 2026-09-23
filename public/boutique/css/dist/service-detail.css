@@ -262,17 +262,17 @@
 
   #k-modal.k-modal--service {
     width: min(1380px, calc(100vw - 112px));
-    height: min(840px, calc(100dvh - 84px));
+    height: auto;
     max-width: 1380px;
-    max-height: 840px;
-    min-height: 620px;
+    max-height: min(840px, calc(100dvh - 84px));
+    min-height: 0;
     margin: 0;
     border-radius: 20px;
     overflow: hidden;
     background: var(--white);
     box-shadow: 0 28px 80px rgba(0,0,0,.26);
     animation: none;
-    grid-template-rows: minmax(0, 1fr);
+    grid-template-rows: minmax(0, auto);
   }
 
   #k-modal.k-modal--service .k-modal-topbar {
@@ -308,7 +308,8 @@
   }
 
   #k-modal.k-modal--service .k-modal-scroll {
-    height: 100%;
+    height: auto;
+    max-height: min(840px, calc(100dvh - 84px));
     min-height: 0;
     padding: 0;
     overflow-y: auto;
@@ -318,12 +319,12 @@
 
   #k-modal.k-modal--service .k-modal-product-zone,
   #k-modal.k-modal--service .k-modal-discovery-detail:not([hidden]) {
-    min-height: 100%;
+    min-height: 0;
   }
 
   .k-service-detail-shell {
     width: 100%;
-    min-height: 100%;
+    min-height: 0;
     grid-template-columns: minmax(360px, .92fr) minmax(470px, 1.08fr);
     gap: clamp(34px, 4vw, 58px);
     align-items: start;
