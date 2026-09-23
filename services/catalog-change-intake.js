@@ -7,7 +7,7 @@
  * @inputs        catalog_change_envelope
  * @outputs       normalized_catalog_change
  * @depends       none
- * @used-by       provider adapters, file/manual importers, future catalog change application owner
+ * @used-by       tests/unit/catalog-change-intake.test.js (no runtime consumer yet)
  * @db-read       none
  * @db-write      none
  * @db-txn        none

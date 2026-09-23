@@ -66,24 +66,61 @@ Chaque intégration devra distinguer :
 3. IMPLEMENTED : notre adapter l'implémente ;
 4. PROVED : un test réel ou Sandbox a prouvé le comportement attendu.
 
-Capacités à inventorier indépendamment :
+Le contrat `services/catalog-provider-capability-contract.js` inventorie
+**uniquement les capacités d'observation/réception** utilisables pour alimenter
+une enveloppe de changement de catalogue :
 
-- discovery/list/search ;
-- exact read par product/offer/unit ;
-- stock exact ou disponibilité bornée à une quantité ;
-- prix ;
-- état offre / retrait ;
-- changement incrémental / event feed ;
-- webhook/callback ;
-- update stock ;
-- update prix ;
-- update contenu/média/attributs ;
-- activation/désactivation/publication ;
-- réservation atomique éventuelle ;
-- ordre/achat/fulfillment.
+- `discovery` : découverte/liste/recherche ;
+- `exact_read` : lecture exacte d'un produit, d'une offre ou d'une unité ;
+- `change_feed` et `webhook` : réception d'événements (mécanismes de transport) ;
+- `stock_read`, `price_read`, `offer_status_read`, `media_read` :
+  lecture des faits correspondants, au grain réellement fourni.
 
-Une capacité DOCUMENTED n'est jamais marquée opérationnelle tant que
-AUTHORIZED + IMPLEMENTED + PROVED ne sont pas acquis pour le compte concerné.
+La capacité DOCUMENTED n'est jamais marquée opérationnelle tant que
+AUTHORIZED + IMPLEMENTED + PROVED ne sont pas acquis pour l'opération, le
+compte et l'environnement concernés. L'absence d'une capacité est UNKNOWN,
+jamais implicitement false ni PASS.
+
+**Capacités hors contrat Intake** : écriture vers un fournisseur (stock, prix,
+contenu), réservation atomique et achat relèvent de contrats d'exécution
+fournisseur/Purchasing distincts ; publication et mutations du catalogue
+Komerce restent aux owners Catalog / Market Delegation. La réception d'un
+`API_PUSH` *vers Komerce* ne constitue ni une permission d'écriture chez le
+fournisseur, ni une permission de publier ou de modifier un prix engagé.
+
+### Correspondance avec les couches source Sourcing
+
+`sourcing_source_provides.layer` décrit le **grain observable** d'une source,
+pas sa capacité technique, sa permission ou sa preuve contractuelle :
+
+| Couche | Faits dont elle peut porter l'observation | Capacités de lecture à qualifier séparément |
+| --- | --- | --- |
+| `catalog` | identité et contenu produit, média au niveau produit | `discovery`, `exact_read`, `media_read` |
+| `offers` | prix et état d'une offre fournisseur, média au niveau offre | `exact_read`, `price_read`, `offer_status_read`, `media_read` |
+| `units` | stock/disponibilité, prix et état à l'unité vendable exacte | `exact_read`, `stock_read`, `price_read`, `offer_status_read` |
+
+`change_feed` et `webhook` désignent le mode de réception : ils ne
+déterminent **aucune couche** à eux seuls. Une couche déclarée n'accorde
+jamais la capacité correspondante sans preuve au bon grain. Le choix du grain
+effectif reste issu du contrat source et des faits observés, sans conversion
+automatique de cette table en `PROVED` ou en autorisation.
+
+### Premier consommateur de persistance, distinct de l'Intake
+
+La normalisation `Catalog Change Intake` reste indépendante de Sourcing :
+elle peut recevoir `PULL_EXACT`, `CHANGE_FEED`, `WEBHOOK`, `FILE`,
+`MANUAL` et `API_PUSH` sans imposer de passage par un moteur de découverte.
+
+Le **premier consommateur à raccorder dans un GAP ultérieur** pour archiver
+les faits externes est l'owner d'observations Sourcing, déjà propriétaire de
+`sourcing_captures`, `sourcing_observations`,
+`sourcing_observation_evidence` et de la provenance. Ce raccordement n'est
+pas implémenté par la PR initiale #1700 ni par ce recadrage : aucun nouvel
+owner, table parallèle, événement d'achat ou mutation de boutique ici.
+
+Après observation et résolution explicite de l'identité/provenance, les
+owners métier Catalog évaluent champ par champ l'application éventuelle
+sur le catalogue maître. Le transport et l'observation n'en décident jamais.
 
 ## Conséquence architecture
 

@@ -17,6 +17,8 @@
  */
 'use strict';
 
+// Capabilities of receiving/reading external catalog facts only.
+// Outbound supplier writes, purchasing and publication have separate owners.
 const CAPABILITIES = Object.freeze([
   'discovery',
   'exact_read',
@@ -26,12 +28,6 @@ const CAPABILITIES = Object.freeze([
   'price_read',
   'offer_status_read',
   'media_read',
-  'stock_write',
-  'price_write',
-  'content_write',
-  'publication_write',
-  'atomic_reservation',
-  'purchase',
 ]);
 
 function normalizeState(input = {}) {
