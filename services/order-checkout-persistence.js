@@ -258,6 +258,13 @@ async function completeWalletFullPayment(client, { order, user, relais }) {
     dbClient: client,
     note:    'Paiement intégral par wallet',
   });
+  // Ne jamais générer de code ni annoncer une commande payée si la machine
+  // a refusé la confirmation ou n'a effectué aucune transition.
+  if (!cycleResult.success || cycleResult.noop) {
+    return { ok: false, status: 409, body: {
+      error: cycleResult.error || 'Le statut de la commande ne permet pas la confirmation wallet',
+    } };
+  }
   if (cycleResult.stockBlocked) {
     return {
       ok: false, status: 409,
@@ -279,7 +286,15 @@ async function completeWalletFullPayment(client, { order, user, relais }) {
   const { rows: [refreshed] } = await client.query(
     'SELECT * FROM orders WHERE id = $1', [order.id]
   );
-  if (refreshed) Object.assign(order, refreshed);
+  // La transition peut être refusée par un garde financier distinct du
+  // statut logistique ; ne pas committer de débit si payment_status != paid.
+  if (!refreshed || refreshed.payment_status !== 'paid' ||
+      !['confirmed', 'ordered'].includes(refreshed.status)) {
+    return { ok: false, status: 409, body: {
+      error: 'La confirmation du paiement wallet n’a pas été persistée',
+    } };
+  }
+  Object.assign(order, refreshed);
 
   return { ok: true, walletPickupCode, order };
 }
