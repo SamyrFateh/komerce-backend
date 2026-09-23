@@ -114,6 +114,7 @@ module.exports = {
       'services/product-price-audit.js',
       'services/catalog-candidate-product-service.js',
       'services/catalog-product-mutation-service.js',
+      'services/catalog-change-intake.js',
       'services/catalog-promotion.js',
       'services/catalog-promotion/axes.js',
       'services/catalog-promotion/sku.js',
@@ -186,6 +187,7 @@ module.exports = {
     ],
     docs: [
       'docs/doctrine/DOCTRINE_CATALOGUE.md',
+      'docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md',
       'docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md',
       'docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md',
       'docs/specs/DECISION_MODELE_STOCK_SKU.md',
@@ -328,6 +330,7 @@ module.exports = {
       'tests/unit/cj-full-catalog-sync.test.js',
       'tests/unit/catalog-candidate-product-service.test.js',
       'tests/unit/catalog-product-mutation-service.test.js',
+      'tests/unit/catalog-change-intake.test.js',
       'tests/unit/catalog-promotion.test.js',
       'tests/unit/catalog-promotion-axes.test.js',
       'tests/unit/catalog-promotion-sku.test.js',
