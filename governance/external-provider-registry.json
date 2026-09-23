@@ -139,7 +139,7 @@
         "PAYPAL_CLIENT_ID",
         "PAYPAL_ENV"
       ],
-      "analysis_document": null,
+      "analysis_document": "docs/external-providers/payments/PAYPAL.md",
       "highest_proof": "UNQUALIFIED"
     },
     {
@@ -155,7 +155,7 @@
       "markers": [
         "MTN_MOMO_CG_"
       ],
-      "analysis_document": null,
+      "analysis_document": "docs/external-providers/payments/MTN_MOMO_CG.md",
       "highest_proof": "UNQUALIFIED"
     },
     {
@@ -208,7 +208,7 @@
         "META_WA_TOKEN",
         "PHONE_NUMBER_ID"
       ],
-      "analysis_document": null,
+      "analysis_document": "docs/external-providers/messaging/META_WHATSAPP.md",
       "highest_proof": "UNQUALIFIED"
     },
     {

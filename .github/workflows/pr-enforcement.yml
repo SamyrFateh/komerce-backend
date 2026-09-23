@@ -20,6 +20,7 @@ jobs:
     timeout-minutes: 8
     outputs:
       backend: ${{ steps.scope.outputs.backend }}
+      provider_proof_only: ${{ steps.scope.outputs.provider_proof_only }}
       backend_files: ${{ steps.scope.outputs.backend_files }}
       dashboard: ${{ steps.scope.outputs.dashboard }}
       dashboard_files: ${{ steps.scope.outputs.dashboard_files }}
@@ -133,6 +134,36 @@ jobs:
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 
+  provider_contracts:
+    name: Isolated provider contract proof gates
+    needs: changes
+    if: needs.changes.outputs.provider_proof_only == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install isolated test dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify collector code and unit contract
+        run: |
+          node --check scripts/external-provider-batch-proof.js
+          npx jest tests/unit/external-provider-batch-proof.test.js --runInBand --silent
+      - name: Produce offline inventory without provider API calls
+        run: |
+          node scripts/external-provider-batch-proof.js --mode=inventory \
+            --providers=all --out=artifacts/provider-contract-batch/report.json
+      - name: Prove targeted gates did not modify tracked sources
+        run: git diff --exit-code
+
   migrations:
     name: Migration and schema gates
     needs: changes
@@ -173,7 +204,9 @@ jobs:
   from_scratch:
     name: From-scratch DB + integration + E2E API
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.migrations == 'true' || needs.changes.outputs.governance == 'true'
+    # Provider-only probes have dedicated isolated tests; runtime, manifest or
+    # migration changes still reach the complete DB/integration/E2E gates.
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.migrations == 'true' || (needs.changes.outputs.governance == 'true' && needs.changes.outputs.provider_proof_only != 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 35
     services:
@@ -392,7 +425,7 @@ jobs:
   verdict:
     name: Required verdict
     if: always()
-    needs: [changes, backend, migrations, from_scratch, dashboard, boutique, governance]
+    needs: [changes, provider_contracts, backend, migrations, from_scratch, dashboard, boutique, governance]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -400,6 +433,7 @@ jobs:
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
+          PROVIDER_CONTRACTS_RESULT: ${{ needs.provider_contracts.result }}
           MIGRATIONS_RESULT: ${{ needs.migrations.result }}
           FROM_SCRATCH_RESULT: ${{ needs.from_scratch.result }}
           DASHBOARD_RESULT: ${{ needs.dashboard.result }}
@@ -408,13 +442,14 @@ jobs:
         run: |
           echo "changes=$CHANGES_RESULT"
           echo "backend=$BACKEND_RESULT"
+          echo "provider_contracts=$PROVIDER_CONTRACTS_RESULT"
           echo "migrations=$MIGRATIONS_RESULT"
           echo "from_scratch=$FROM_SCRATCH_RESULT"
           echo "dashboard=$DASHBOARD_RESULT"
           echo "boutique=$BOUTIQUE_RESULT"
           echo "governance=$GOVERNANCE_RESULT"
           test "$CHANGES_RESULT" = "success"
-          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$FROM_SCRATCH_RESULT" "$DASHBOARD_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do
+          for result in "$PROVIDER_CONTRACTS_RESULT" "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$FROM_SCRATCH_RESULT" "$DASHBOARD_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do
             if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
               echo "Scoped enforcement failed: $result"
               exit 1

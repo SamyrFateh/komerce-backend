@@ -1,14 +1,9 @@
 name: External provider contract batch (read-only)
 
-# Offline PR validation; real provider reads require an explicit manual run on main.
+# Offline PR checks are owned by the mandatory PR-enforcement provider_contracts
+# job. This workflow is now manual-only; it must never make provider API calls
+# or duplicate dependency installation on pull_request events.
 on:
-  pull_request:
-    paths:
-      - 'scripts/external-provider-batch-proof.js'
-      - 'tests/unit/external-provider-batch-proof.test.js'
-      - 'features/external-provider-contracts.feature.js'
-      - '.github/workflows/external-provider-contract-batch.yml'
-      - 'docs/external-providers/EXTERNAL_PROVIDER_BATCH.md'
   workflow_dispatch:
     inputs:
       mode:
@@ -26,6 +21,11 @@ on:
         default: all
       allow_cj_live_read:
         description: 'Explicitly permit up to two read-only GETs to the live CJ catalogue (default off)'
+        type: boolean
+        required: true
+        default: false
+      allow_meta_account_read:
+        description: 'Explicitly permit one GET of your live Meta WhatsApp phone metadata (default off)'
         type: boolean
         required: true
         default: false
@@ -96,6 +96,14 @@ jobs:
       STRIPE_API_VERSION: ${{ vars.KOMERCE_STRIPE_PROOF_TEST_API_VERSION }}
       CJ_PROOF_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
       CJ_PROOF_ALLOW_CATALOG_READ: ${{ inputs.allow_cj_live_read && '1' || '0' }}
+      META_PROOF_READ_TOKEN: ${{ secrets.KOMERCE_META_PROOF_READ_TOKEN }}
+      META_PROOF_PHONE_NUMBER_ID: ${{ secrets.KOMERCE_META_PROOF_PHONE_NUMBER_ID }}
+      META_PROOF_GRAPH_VERSION: ${{ vars.KOMERCE_META_PROOF_GRAPH_VERSION }}
+      META_PROOF_ALLOW_ACCOUNT_READ: ${{ inputs.allow_meta_account_read && '1' || '0' }}
+      MTN_PROOF_TARGET_ENVIRONMENT: sandbox
+      MTN_PROOF_COLLECTION_SUBSCRIPTION_KEY: ${{ secrets.KOMERCE_MTN_PROOF_COLLECTION_SUBSCRIPTION_KEY }}
+      MTN_PROOF_API_USER: ${{ secrets.KOMERCE_MTN_PROOF_API_USER }}
+      MTN_PROOF_API_KEY: ${{ secrets.KOMERCE_MTN_PROOF_API_KEY }}
       BATCH_PROVIDERS: ${{ inputs.providers }}
       BATCH_INCLUDE_PROVEN: ${{ inputs.include_proven }}
     steps:

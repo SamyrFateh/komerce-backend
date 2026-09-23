@@ -24,6 +24,8 @@ const REGISTRY = path.join(ROOT, 'governance/external-provider-registry.json');
 const SAFE_PROBES = Object.freeze({
   paypal: 'PAYPAL_SANDBOX_OAUTH_AND_WEBHOOK_READ',
   cj: 'CJ_LIVE_CATALOG_BOUNDED_EXACT_READ',
+  'meta-whatsapp': 'META_WHATSAPP_EXACT_PHONE_METADATA_READ',
+  'mtn-momo-cg': 'MTN_COLLECTION_SANDBOX_OAUTH_ONLY',
   ebay: 'EBAY_SANDBOX_BROWSE_READ',
   stripe: 'STRIPE_TEST_ACCOUNT_READ',
 });
@@ -209,10 +211,109 @@ async function cjCatalogRead(env, fetchImpl = global.fetch) {
   }
 }
 
+async function metaWhatsappPhoneRead(env, fetchImpl = global.fetch) {
+  const operation = SAFE_PROBES['meta-whatsapp'];
+  const environment = 'LIVE_ACCOUNT_READ_ONLY';
+  const blocked = reason_code => ({
+    operation, environment, status: 'BLOCKED', reason_code, stages: [],
+  });
+  // This provider has no isolated Sandbox guarantee. Never reuse the runtime
+  // messaging token: a separate read credential and explicit opt-in are required.
+  if (env.META_PROOF_ALLOW_ACCOUNT_READ !== '1') {
+    return blocked('META_LIVE_ACCOUNT_READ_NOT_AUTHORIZED');
+  }
+  const token = env.META_PROOF_READ_TOKEN;
+  const phoneId = String(env.META_PROOF_PHONE_NUMBER_ID || '');
+  if (!token || !phoneId) return blocked('META_DEDICATED_READ_CREDENTIALS_MISSING');
+  if (!/^[0-9]{8,25}$/.test(phoneId)) return blocked('META_PHONE_ID_INVALID');
+  const version = String(env.META_PROOF_GRAPH_VERSION || 'v23.0');
+  if (!/^v[1-9][0-9]?\.0$/.test(version)) return blocked('META_GRAPH_VERSION_INVALID');
+
+  try {
+    // Exactly one GET; no /messages, /register, message history or customer data.
+    // Never include business metadata, phone ID or Graph error body in the report.
+    const response = await fetchImpl(
+      'https://graph.facebook.com/' + version + '/' + phoneId + '?fields=id,verified_name',
+      {
+        method: 'GET',
+        headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
+        signal: AbortSignal.timeout(7000),
+      },
+    );
+    if (!response.ok) return blocked('META_PHONE_METADATA_HTTP_REJECTED');
+    const body = await response.json();
+    if (String(body?.id || '') !== phoneId) return blocked('META_EXACT_PHONE_ID_MISMATCH');
+    if (typeof body?.verified_name !== 'string' || !body.verified_name.trim()) {
+      return blocked('META_VERIFIED_NAME_NOT_OBSERVED');
+    }
+    return {
+      operation, environment, status: 'PASS',
+      reason_code: 'META_EXACT_PHONE_METADATA_READ_PROVED',
+      stages: [
+        { id: 'P0', status: 'PASS', failed_checks: [] },
+        { id: 'P1', status: 'PASS', failed_checks: [] },
+      ],
+    };
+  } catch {
+    return blocked('META_PHONE_METADATA_READ_FAILED');
+  }
+}
+
+async function mtnSandboxOAuthRead(env, fetchImpl = global.fetch) {
+  const operation = SAFE_PROBES['mtn-momo-cg'];
+  const environment = 'SANDBOX';
+  const blocked = reason_code => ({
+    operation, environment, status: 'BLOCKED', reason_code, stages: [],
+  });
+  // Authentication-only probe: one token request, never RequestToPay,
+  // payment reconciliation, API-user provisioning, DB or customer messaging.
+  if (env.MTN_PROOF_TARGET_ENVIRONMENT !== 'sandbox') {
+    return blocked('MTN_SANDBOX_REQUIRED');
+  }
+  const key = env.MTN_PROOF_COLLECTION_SUBSCRIPTION_KEY;
+  const user = env.MTN_PROOF_API_USER;
+  const secret = env.MTN_PROOF_API_KEY;
+  if (!key || !user || !secret) return blocked('MTN_DEDICATED_SANDBOX_CREDENTIALS_MISSING');
+  const auth = Buffer.from(user + ':' + secret).toString('base64');
+  try {
+    const response = await fetchImpl(
+      'https://sandbox.momodeveloper.mtn.com/collection/token/',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'Basic ' + auth,
+          'Ocp-Apim-Subscription-Key': key,
+          Accept: 'application/json',
+        },
+        signal: AbortSignal.timeout(7000),
+      },
+    );
+    if (!response.ok) return blocked('MTN_SANDBOX_OAUTH_REJECTED');
+    const body = await response.json();
+    const ttl = Number(body?.expires_in);
+    if (typeof body?.access_token !== 'string' || !body.access_token ||
+      !Number.isFinite(ttl) || ttl <= 0) {
+      return blocked('MTN_SANDBOX_OAUTH_RESPONSE_INCOMPLETE');
+    }
+    return {
+      operation, environment, status: 'PASS',
+      reason_code: 'MTN_SANDBOX_COLLECTION_OAUTH_ACCEPTED',
+      stages: [
+        { id: 'P0', status: 'PASS', failed_checks: [] },
+        { id: 'P1', status: 'PASS', failed_checks: [] },
+      ],
+    };
+  } catch {
+    return blocked('MTN_SANDBOX_OAUTH_NETWORK_OR_RESPONSE_ERROR');
+  }
+}
+
 async function runProbe(entry, env, deps = {}) {
   const id = entry.provider;
   if (id === 'paypal') return paypalSandboxRead(env, deps.fetchImpl);
   if (id === 'cj') return cjCatalogRead(env, deps.fetchImpl);
+  if (id === 'meta-whatsapp') return metaWhatsappPhoneRead(env, deps.fetchImpl);
+  if (id === 'mtn-momo-cg') return mtnSandboxOAuthRead(env, deps.fetchImpl);
   if (id === 'ebay') {
     if (env.EBAY_ENV !== 'sandbox') {
       return { operation: SAFE_PROBES.ebay, status: 'BLOCKED',
@@ -302,5 +403,5 @@ if (require.main === module) main().catch(() => {
 
 module.exports = {
   parseArgs, selection, plan, stageSummary, safeProofResult,
-  paypalSandboxRead, cjCatalogRead, runProbe, runBatch,
+  paypalSandboxRead, cjCatalogRead, metaWhatsappPhoneRead, mtnSandboxOAuthRead, runProbe, runBatch,
 };
