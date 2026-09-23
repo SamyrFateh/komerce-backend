@@ -182,6 +182,28 @@ function appendNextPage() {
   if (spinner) spinner.classList.remove('show');
 }
 
+/* ── HERO PRODUCT COUNT ─────────────────────────────────────────────
+ * Le compteur du bandeau hero ("N produits") vient exclusivement du
+ * catalogue réellement chargé — jamais une valeur écrite en dur dans
+ * le HTML. Absent ou zéro → l'élément reste masqué plutôt que
+ * d'afficher un compte trompeur. Cf. GAP-F1,
+ * docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md.
+ */
+function updateHeroProductCount(count) {
+  const el  = document.getElementById('k-hero-count');
+  const sep = document.getElementById('k-hero-count-sep');
+  if (!el) return;
+  if (!Number.isFinite(count) || count <= 0) {
+    el.hidden = true;
+    el.textContent = '';
+    if (sep) sep.hidden = true;
+    return;
+  }
+  el.textContent = `${count} produit${count > 1 ? 's' : ''}`;
+  el.hidden = false;
+  if (sep) sep.hidden = false;
+}
+
 /* ── LOAD PRODUCTS ──────────────────────────────────────────────── */
 
 async function loadProducts() {
@@ -207,6 +229,8 @@ async function loadProducts() {
   // Synchroniser state avec le store centralisé
   state.products = getAllProducts();
   state.filtered  = [...state.products];
+
+  updateHeroProductCount(state.products.length);
 
   // Re-sync le rail de chips avec l'ordre DB : le schema async peut s'être résolu
   // après le premier renderCategoryRail() synchrone du boot (race condition).
@@ -850,5 +874,5 @@ function renderSearchDropdown(results) {
 export {
   renderPromos, renderGrid, appendNextPage,
   setupCats, setupCatSwipeNav, centerActiveChip, setupSearch,
-  loadProducts, _renderCard,
+  loadProducts, _renderCard, updateHeroProductCount,
 };

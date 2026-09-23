@@ -2666,27 +2666,6 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     color: var(--hero-text-faint);
   }
 
-  /* ── Badge flottant "Livraison express" en overlay sur l'image ── */
-  html.k-home-premium-v1 .k-hero-media::after {
-    content: '● Livraison express disponible';
-    position: absolute;
-    top: 10px;
-    right: 12px;
-    background: rgba(255,255,255,.92);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    border: 1px solid rgba(42,122,62,.18);
-    border-radius: 20px;
-    padding: 5px 10px;
-    font-family: var(--font);
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--green-dark-text);
-    letter-spacing: .01em;
-    pointer-events: none;
-    z-index: 3;
-  }
-
   /* ── Sticky bar enfant de #k-hero-fixed-wrap ──
      #k-hero-fixed-wrap est overflow:visible → les chips ne sont plus clippées.
      top = header premium (72px) au lieu de 68px base. */
