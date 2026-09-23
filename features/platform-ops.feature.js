@@ -36,6 +36,9 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
+    middleware: [
+      'middleware/internal-static-guard.js',
+    ],
     compositionRoots: [
       'public/boutique/js/main.js',
       'public/boutique/js/boutique.js',
@@ -68,6 +71,7 @@ module.exports = {
       'index.html',
     ],
       tests: [
+      'tests/unit/internal-static-guard.test.js',
       'tests/integration/api.test.js',
       'tests/integration/isweep-invariants.test.js',
       'tests/integration/isweep-services.test.js',
