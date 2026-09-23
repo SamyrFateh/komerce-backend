@@ -37,7 +37,13 @@ function ok(extra = {}) {
 
 async function main({ env = process.env, fetchImpl = global.fetch, now = Date.now } = {}) {
   const runtime = String(env.KOMERCE_ENV || env.NODE_ENV || '').trim().toLowerCase();
-  if (runtime === 'production') return fail('RUNTIME_PRODUCTION_REFUSED');
+  // The Railway deployment may be named `production` while its PAYPAL_ENV is
+  // deliberately sandbox. Permit a one-off probe there only with an explicit
+  // per-process operator opt-in; this flag never enables live PayPal endpoints.
+  if (runtime === 'production'
+      && env.KOMERCE_PAYPAL_P1_ALLOW_PRODUCTION_RUNTIME_SANDBOX !== '1') {
+    return fail('RUNTIME_PRODUCTION_REFUSED');
+  }
   if (String(env.PAYPAL_ENV || '').trim().toLowerCase() !== 'sandbox') {
     return fail('PAYPAL_SANDBOX_REQUIRED');
   }

@@ -19,6 +19,12 @@ La sonde lancée sur l'instance Railway existante avec ses **variables Sandbox p
 
 Cette observation est un **résultat d'opération P0/P1 limité** à OAuth + lecture du webhook. Elle ne démontre ni réception réelle d'une notification, ni authenticité d'une notification entrante, ni paiement confirmé, ni comportement de l'adapter Komerce, ni droits du compte de production.
 
+## Observation indépendante du 23 septembre 2026 : création et relecture d'une Order Sandbox
+
+L'opérateur a exécuté `scripts/paypal-sandbox-order-contract-proof.js` dans l'instance Railway existante. La sortie JSON expurgée signale `PASS`, création HTTP **201**, relecture HTTP **200**, état fournisseur **CREATED** et `readback_confirmed=true` pour une Order PayPal Sandbox de **1,00 EUR**. La vérification de l'ID, de la référence, du montant et de la devise est effectuée dans le code de la sonde avant émission du PASS. Voir [la preuve opérateur archivée, avec ses limites de provenance](../../_archive/external-provider-proofs/PAYPAL_SANDBOX_ORDER_P1_2026-09-23.md).
+
+**Périmètre : P1 de création et de relecture exacte d'une Order, sans capture.** La sortie indique `capture_attempted=false` ; elle ne prouve ni approbation, ni encaissement, ni livraison de webhook, ni idempotence expérimentale d'un rejeu. Le registre fournisseur global conserve `UNQUALIFIED`. Cette observation est indépendante de la preuve OAuth/webhook du 22 septembre et du rapport GitHub Actions antérieur à 0 PASS.
+
 ## Contrat du listener — distinction succès / panne temporaire
 
 La documentation PayPal précise qu'une réponse HTTP 2xx acquitte la livraison et qu'une réponse non-2xx peut entraîner une nouvelle tentative. Le code de la route `POST /api/payments/paypal/webhook` doit donc respecter le contrat suivant :
