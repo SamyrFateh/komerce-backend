@@ -38,6 +38,7 @@ module.exports = {
   files: {
     middleware: [
       'middleware/internal-static-guard.js',
+      'middleware/versioned-asset-cache.js',
     ],
     compositionRoots: [
       'public/boutique/js/main.js',
@@ -71,6 +72,7 @@ module.exports = {
       'index.html',
     ],
       tests: [
+      'tests/unit/versioned-asset-cache.test.js',
       'tests/unit/internal-static-guard.test.js',
       'tests/integration/api.test.js',
       'tests/integration/isweep-invariants.test.js',

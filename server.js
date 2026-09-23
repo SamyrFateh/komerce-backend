@@ -150,15 +150,13 @@ app.get('/*.html', (req, res, next) => {
 const { internalStaticGuard } = require('./middleware/internal-static-guard');
 app.use(internalStaticGuard);
 
+// GAP-F4 (docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md) — cf.
+// middleware/versioned-asset-cache.js pour le détail et les tests.
+const { markVersionedRequest, staticSetHeaders } = require('./middleware/versioned-asset-cache');
+app.use(markVersionedRequest);
+
 app.use(express.static(path.join(__dirname, 'public'), {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html')) {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-    }
-  }
+  setHeaders: staticSetHeaders,
 }));
 
 // ── Routes API ────────────────────────────────────────────────────────────
