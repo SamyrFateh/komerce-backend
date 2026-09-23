@@ -38,7 +38,7 @@
      Ne jamais remettre en inline, ne jamais ajouter defer/async, ne jamais
      déplacer après les <link rel=stylesheet>. Cf. js/anti-fouc.js. -->
 <script src="/boutique/js/anti-fouc.js"></script>
-<link rel="stylesheet" href="/boutique/css/dist/base.css?v=232">
+<link rel="stylesheet" href="/boutique/css/dist/base.css?v=233">
 <link rel="stylesheet" href="/boutique/css/dist/components.css?v=637">
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=153">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
@@ -184,7 +184,7 @@
           <button class="k-hero-cta-ghost k-header-nav-btn" data-tab="track">📦 Suivre ma commande</button>
         </div>
         <div class="k-hero-trust">
-          <span>450+ produits</span><span class="k-trust-sep">·</span><span>Paiement cash</span><span class="k-trust-sep">·</span><span>Retrait relais</span>
+          <span id="k-hero-count" class="k-hero-count" hidden></span><span id="k-hero-count-sep" class="k-trust-sep" hidden>·</span><span>Paiement cash</span><span class="k-trust-sep">·</span><span>Retrait relais</span>
         </div>
       </div>
       <div class="k-hero-bubble" aria-hidden="true">👀</div>

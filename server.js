@@ -145,6 +145,11 @@ app.get('/*.html', (req, res, next) => {
   });
 });
 
+// GAP-F2 (docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md) — cf.
+// middleware/internal-static-guard.js pour le détail et les tests.
+const { internalStaticGuard } = require('./middleware/internal-static-guard');
+app.use(internalStaticGuard);
+
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) {
