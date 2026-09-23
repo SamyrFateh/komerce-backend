@@ -713,7 +713,7 @@ describe('orders/create — wallet', () => {
       { rows: [refreshedOrder] }, // SELECT orders refresh post confirmPaymentCycle
     ]);
     db.getClient.mockResolvedValue(client);
-    confirmPaymentCycle.mockResolvedValue({ stockBlocked: false });
+    confirmPaymentCycle.mockResolvedValue({ success: true, noop: false, stockBlocked: false });
 
     const res = await request(app).post('/api/orders').send(validBody({ use_wallet: true }));
 
