@@ -457,7 +457,7 @@ describe('applyToOrder()', () => {
       user: { id: 'user-1', role: 'user' },
       relais: { id: 'relay-server' },
     });
-    expect(mockQuery.mock.calls.some(([sql]) => /UPDATE\\s+orders\\s+SET\\s+payment_status/i.test(sql))).toBe(false);
+    expect(mockQuery.mock.calls.some(([sql]) => /UPDATE\s+orders\s+SET\s+payment_status/i.test(sql))).toBe(false);
   });
 
   test('full coverage rejects stockBlocked with typed 409 for caller rollback', async () => {
