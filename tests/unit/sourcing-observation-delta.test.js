@@ -25,6 +25,29 @@ test('detects exact stock transition 3 -> 0 without treating zero as missing', (
   });
 });
 
+test('PostgreSQL Date observations within one second retain millisecond order, not random UUID order', () => {
+  const earlier = {
+    ...row('unit-1', new Date('2026-09-22T15:20:15.120Z'), { stock_available: 3 }),
+    observation_id: 'z-earlier',
+  };
+  const later = {
+    ...row('unit-1', new Date('2026-09-22T15:20:15.135Z'), { stock_available: 1 }),
+    observation_id: 'a-later',
+  };
+  // String(Date) would lose .120/.135 and sort by UUID, yielding the WRONG
+  // latest stock of 3 and a false 1->3 delta in a real PostgreSQL capture.
+  expect(String(earlier.observed_at)).toBe(String(later.observed_at));
+  const unit = buildCanonicalUnitProjection([later, earlier]);
+  expect(unit.current_state.stock_available).toBe(1);
+  expect(unit.last_observation_delta).toMatchObject({
+    status: 'CHANGED', changes: [expect.objectContaining({
+      field: 'stock_available', before: 3, after: 1,
+    })],
+  });
+  expect(unit.provenance.map(x => x.observation_id)).toEqual(['z-earlier', 'a-later']);
+  expect(unit.authority).toBe('shadow_read_only');
+});
+
 test('missing or null new supplier fact means unknown, never withdrawal or zero', () => {
   const before = row('unit-1', '2026-09-20T10:00:00Z', { stock_available: 3 });
   for (const after of [{}, { stock_available: null }]) {
