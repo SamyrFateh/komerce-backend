@@ -71,6 +71,53 @@ function verifyMetaSignature(req, res, next) {
   return next();
 }
 
+/**
+ * Log metadata only. Never copy arbitrary webhook keys or values into logs:
+ * Meta payloads contain customer numbers, profile names and message content.
+ * This is an observational summary, not a delivery-status consumer (GAP-5).
+ */
+function summarizeMetaWebhook(body) {
+  const entries = Array.isArray(body?.entry) ? body.entry : [];
+  const counts = { messages: 0, statuses: 0 };
+  const statusNames = new Set();
+  const messageIds = [];
+  const ALLOWED_STATUS = new Set(['sent', 'delivered', 'read', 'failed']);
+
+  // Input is signed but still untrusted. Bound inspection and log output.
+  for (const entry of entries.slice(0, 100)) {
+    const changes = Array.isArray(entry?.changes) ? entry.changes : [];
+    for (const change of changes.slice(0, 100)) {
+      const value = change?.value;
+      const messages = Array.isArray(value?.messages) ? value.messages : [];
+      const statuses = Array.isArray(value?.statuses) ? value.statuses : [];
+      counts.messages += messages.length;
+      counts.statuses += statuses.length;
+      for (const status of statuses.slice(0, 100)) {
+        if (ALLOWED_STATUS.has(status?.status)) statusNames.add(status.status);
+      }
+      for (const item of [...statuses.slice(0, 3), ...messages.slice(0, 3)]) {
+        if (messageIds.length >= 3) break;
+        // Only provider-style opaque IDs, never phone numbers or free text.
+        const id = item?.id;
+        if (typeof id === 'string' && /^wamid\\.[A-Za-z0-9_-]{8,100}$/.test(id) &&
+            !messageIds.includes(id)) {
+          messageIds.push(id);
+        }
+      }
+    }
+  }
+
+  return {
+    event_type: counts.messages && counts.statuses ? 'mixed'
+      : counts.messages ? 'messages' : counts.statuses ? 'statuses' : 'unknown',
+    entry_count: Math.min(entries.length, 1000),
+    message_count: Math.min(counts.messages, 1000),
+    status_count: Math.min(counts.statuses, 1000),
+    statuses: [...statusNames],
+    wamids: messageIds,
+  };
+}
+
 router.get('/webhook/meta-whatsapp', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
@@ -86,7 +133,7 @@ router.post('/webhook/meta-whatsapp', verifyMetaSignature, async (req, res) => {
   try {
     const body = req.body || {};
 
-    log.info('[META-WA][WEBHOOK]', JSON.stringify(body));
+    log.info('[META-WA][WEBHOOK]', summarizeMetaWebhook(body));
 
     // Ici plus tard:
     // - status sent/delivered/read/failed
@@ -101,3 +148,4 @@ router.post('/webhook/meta-whatsapp', verifyMetaSignature, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.summarizeMetaWebhook = summarizeMetaWebhook;
