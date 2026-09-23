@@ -139,7 +139,7 @@
         "PAYPAL_CLIENT_ID",
         "PAYPAL_ENV"
       ],
-      "analysis_document": null,
+      "analysis_document": "docs/external-providers/payments/PAYPAL.md",
       "highest_proof": "UNQUALIFIED"
     },
     {

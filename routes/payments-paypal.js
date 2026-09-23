@@ -153,8 +153,10 @@ router.post('/webhook', async (req, res) => {
   } catch (err) {
     log.error({ err: err.message, event_id: event.id, event_type: event.event_type },
       '[PAYPAL-WEBHOOK] handler error');
-    // 200 pour éviter le retry PayPal — l'event n'est pas marqué processed → rejouable
-    return res.json({ received: true, error: err.message });
+    // Un 2xx acquitterait l'événement côté PayPal sans garantie de traitement.
+    // Répondre 503 pour une nouvelle livraison en cas de panne temporaire ;
+    // ne jamais exposer le détail de l'erreur interne à l'émetteur.
+    return res.status(503).json({ received: false, code: 'paypal_webhook_processing_unavailable' });
   }
 });
 

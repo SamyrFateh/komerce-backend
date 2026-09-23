@@ -74,8 +74,64 @@ function matchingRefs(unit, sku, provider) {
   });
 }
 
+/**
+ * Read-only comparison of TWO differently-owned stock numbers.
+ * The shadow observation is not a reservation, a catalog stock write,
+ * a freshness verdict or permission to sell. Never turn UNKNOWN into zero.
+ */
+function nonnegativeStockNumber(value) {
+  if (typeof value === 'number') return Number.isSafeInteger(value) && value >= 0 ? value : null;
+  if (typeof value === 'string' && /^(0|[1-9][0-9]*)$/.test(value)) {
+    const parsed = Number(value);
+    return Number.isSafeInteger(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function compareShadowStockToCatalog({ unit, sku, matchedRefs = [], identityProved = false }) {
+  const base = {
+    product_sku_id: sku.id,
+    canonical_unit_id: unit.canonical_unit_id,
+    authority: 'shadow_read_only',
+    freshness: 'UNVERIFIED',
+    commercial_readiness: 'NOT_EVALUATED',
+    status: 'UNKNOWN',
+  };
+  if (!identityProved) return { ...base, reason: 'IDENTITY_NOT_PROVEN' };
+  if (sku.is_active === false || unit.current_state?.is_active === false ||
+      ['removed', 'deleted', 'inactive'].includes(String(unit.current_state?.availability || '').toLowerCase())) {
+    return { ...base, reason: 'INACTIVE_UNIT' };
+  }
+
+  // The canonical Unit can contain observations from several Sources.
+  // Only compare the latest observation when its Source owns the exact
+  // provider-scoped ref matched to this legacy SKU.
+  const latest = unit.provenance?.at(-1);
+  if (!unit.observed_at || !latest?.source_id ||
+      String(latest.observed_at) !== String(unit.observed_at) ||
+      !matchedRefs.some((ref) => String(ref.namespace) === String(latest.source_id)) ||
+      unit.last_observation_delta?.reason === 'SOURCE_SCOPE_CHANGED') {
+    return { ...base, reason: 'SOURCE_SCOPE_UNPROVEN' };
+  }
+  const observed = nonnegativeStockNumber(unit.current_state?.stock_available);
+  if (observed === null) return { ...base, reason: 'SUPPLIER_STOCK_UNKNOWN' };
+  const catalog = nonnegativeStockNumber(sku.stock);
+  if (catalog === null) return { ...base, reason: 'CATALOG_STOCK_UNKNOWN' };
+
+  return {
+    ...base,
+    status: 'COMPARED',
+    reason: null,
+    observed_supplier_stock: observed,
+    catalog_sku_stock: catalog,
+    observed_at: unit.observed_at,
+    number_comparison: observed === catalog ? 'SAME_NUMBER' : 'DIFFERENT_NUMBER',
+  };
+}
+
 function compareCanonicalOfferUnitWithLegacy({ offers = [], units = [], legacySkus = [] } = {}) {
   const parity = [];
+  const stockObservations = [];
   const ambiguities = [];
   const missingIdentities = [];
 
@@ -99,14 +155,22 @@ function compareCanonicalOfferUnitWithLegacy({ offers = [], units = [], legacySk
     } else {
       const unit = matches[0];
       const refs = matchingRefs(unit, sku, provider);
+      const supplierUnitRefEqual = !sku.supplier_unit_ref ||
+        refs.some((ref) => String(ref.value) === String(sku.supplier_unit_ref));
+      const supplierOrderIdentityEqual =
+        stable(sku.supplier_order_identity || null) === stable(unit.current_state?.supplier_order_identity || null);
       parity.push({
         product_sku_id: sku.id,
         canonical_unit_id: unit.canonical_unit_id,
         provider,
         matched_ref_keys: refs.map((ref) => `${ref.namespace}|${ref.kind}|${ref.value}`).sort(),
-        supplier_unit_ref_equal: !sku.supplier_unit_ref || refs.some((ref) => String(ref.value) === String(sku.supplier_unit_ref)),
-        supplier_order_identity_equal: stable(sku.supplier_order_identity || null) === stable(unit.current_state?.supplier_order_identity || null),
+        supplier_unit_ref_equal: supplierUnitRefEqual,
+        supplier_order_identity_equal: supplierOrderIdentityEqual,
       });
+      stockObservations.push(compareShadowStockToCatalog({
+        unit, sku, matchedRefs: refs,
+        identityProved: supplierUnitRefEqual && supplierOrderIdentityEqual,
+      }));
     }
   }
 
@@ -127,6 +191,7 @@ function compareCanonicalOfferUnitWithLegacy({ offers = [], units = [], legacySk
     offers: { projected: offers.length },
     units: { projected: units.length, legacy: legacySkus.length },
     parity,
+    stock_observations: stockObservations,
     ambiguities,
     missing_identities: missingIdentities,
     hard_failures: hardFailures,
@@ -174,6 +239,7 @@ async function collectCanonicalOfferUnitComparison(
 
 module.exports = {
   compareCanonicalOfferUnitWithLegacy,
+  compareShadowStockToCatalog,
   collectCanonicalOfferUnitComparison,
   _providerFromNamespace: providerFromNamespace,
 };
