@@ -34,6 +34,8 @@ Cette commande ne modifie aucune variable Railway persistante. L'opt-in n'est tr
 
 Expected terminal output is one secret-free JSON object. Conserver le rapport réel avant toute autre opération ; l'échec n'autorise pas à créer une nouvelle Order à répétition.
 
+**Résultat réel rapporté le 23 septembre 2026 :** le probe PayPal a obtenu une création HTTP 201 et une relecture exacte HTTP 200 avec état `CREATED`, `PASS` et `capture_attempted=false`. [Rapport expurgé archivé](../../_archive/external-provider-proofs/PAYPAL_SANDBOX_ORDER_P1_2026-09-23.md). **Ne pas relancer automatiquement cette opération** : la preuve P1 create/readback est acquise pour cette exécution et n'autorise pas la capture.
+
 ## MTN MoMo Collections
 
 The bounded P1 operation is:
