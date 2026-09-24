@@ -137,6 +137,54 @@ if (!isolated) {
     }
   }
 
+  test('BLOCKED : une preuve synthétique injectée hors CI isolée est refusée avant toute lecture DB', async () => {
+    const original = process.env.KOMERCE_DISABLE_CRONS;
+    const identityFn = jest.fn(async () => {
+      throw new Error('identity must never be called outside isolated proof tests');
+    });
+    const query = jest.fn(async () => {
+      throw new Error('DB must never be queried on blocked synthetic proof');
+    });
+    try {
+      process.env.KOMERCE_DISABLE_CRONS = 'false';
+      const verdict = await decideStockSyncApplication(randomUUID(), {
+        query, identityFn,
+        authorityFn: PROVED_AUTHORITY,
+        reconciliationFn: PROVED_RECONCILIATION,
+      });
+      expect(verdict).toMatchObject({
+        decision: DECISION.BLOCKED,
+        reason: REASON.SYNTHETIC_PROOF_NOT_ALLOWED,
+      });
+      expect(identityFn).not.toHaveBeenCalled();
+      expect(query).not.toHaveBeenCalled();
+    } finally {
+      if (original === undefined) delete process.env.KOMERCE_DISABLE_CRONS;
+      else process.env.KOMERCE_DISABLE_CRONS = original;
+    }
+  });
+
+  test('REVIEW_REQUIRED : preuve stock_read pour une AUTRE source/SKU est refusée', async () => {
+    await withTx(async (client, q) => {
+      const { sourceRef, provider, sku } = await seedResolvedSkuLineage(q, { initialStock: 3 });
+      const delta = await observeStock(client, {
+        sourceRef, provider, eventId: 'e-wrong-authority', observedAt: new Date().toISOString(), value: 8,
+      });
+      const wrongAuthority = async (ctx) => ({
+        proved: true, operation: 'stock_read',
+        source_id: 'api:other-account', product_sku_id: ctx.product_sku_id,
+      });
+      const verdict = await decideStockSyncApplication(delta.observation_id, {
+        query: q, authorityFn: wrongAuthority,
+      });
+      expect(verdict).toMatchObject({
+        decision: DECISION.REVIEW_REQUIRED,
+        reason: REASON.STOCK_AUTHORITY_NOT_PROVEN,
+        product_sku_id: sku.id,
+      });
+    });
+  });
+
   test('REVIEW_REQUIRED : identité exacte sans preuve stock_read ne devient jamais APPLY', async () => {
     await withTx(async (client, q) => {
       const { sourceRef, provider, sku } = await seedResolvedSkuLineage(q, { initialStock: 3 });
