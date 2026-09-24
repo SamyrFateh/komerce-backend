@@ -225,8 +225,11 @@ async function applyProductMediaSync(observationId, { pool = db, authorityFn } =
       observedAt: verdict.observed_at, appliedValue: images,
     });
 
-    const { rows: [proof] } = await q('SELECT images AS value FROM products WHERE id = $1', [verdict.catalog_product_id]);
-    if (!proof || JSON.stringify(proof.value) !== JSON.stringify(images)) {
+    const { rows: [proof] } = await q(
+      'SELECT images AS value, image_url FROM products WHERE id = $1', [verdict.catalog_product_id]
+    );
+    if (!proof || JSON.stringify(proof.value) !== JSON.stringify(images)
+        || proof.image_url !== primary) {
       throw new FieldSyncApplicationError(500, {
         ...verdict, decision: DECISION.BLOCKED, reason: 'READ_AFTER_WRITE_MISMATCH',
       });
@@ -272,6 +275,15 @@ async function applyPurchasePriceSync(observationId, { pool = db, authorityFn } 
     const verdict = await decidePurchasePriceSync(observationId, { query: q, ...(authorityFn ? { authorityFn } : {}) });
     if (verdict.decision !== DECISION.APPLY) {
       if (verdict.decision === DECISION.NO_CHANGE && verdict.reason === REASON.TARGET_EQUALS_CURRENT_VALUE) {
+        // Advance the observation watermark even when the tracked supplier
+        // price is unchanged. Otherwise an older conflicting observation can
+        // later be applied after this newer equal-value observation.
+        await upsertSyncState(q, {
+          subjectType: 'product', subjectId: verdict.catalog_product_id, fieldName: 'purchase_price',
+          sourceId: verdict.source_id, observationId: verdict.observation_id,
+          eventId: verdict.event_id, observedAt: verdict.observed_at,
+          appliedValue: verdict.current_value,
+        });
         const { rows: [unchanged] } = await q(
           "SELECT applied_value FROM catalog_field_sync_state " +
           "WHERE subject_type='product' AND subject_id=$1 AND field_name='purchase_price'",
