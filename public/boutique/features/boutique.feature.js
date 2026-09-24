@@ -29,11 +29,19 @@ module.exports = {
   },
 
   files: {
+    js: [
+      // GAP-F4 étape 2 (docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md) —
+      // bascule components.css de preload vers stylesheet une fois chargé ;
+      // script externe requis par la CSP du site (scriptSrcAttr: 'none',
+      // bootstrap/security.js interdit un onload= inline).
+      '../js/preload-css-swap.js',
+    ],
     dist: [
       '../css/dist/base.css',
       '../css/dist/desktop.css',
     ],
     tests: [
+      '../tests/unit/critical-css-loading.test.js',
       '../tests/e2e/modal.spec.js',
       '../tests/e2e/cart.spec.js',
       '../tests/e2e/checkout.spec.js',
