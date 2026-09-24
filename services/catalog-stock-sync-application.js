@@ -54,17 +54,15 @@ class StockSyncApplicationError extends Error {
 /**
  * Applique — ou refuse explicitement d'appliquer — une observation de stock
  * fournisseur déjà persistée. Idempotent : un rejeu de la même observation
- * lève StockSyncApplicationError(status=200, decision=NO_CHANGE) plutôt que
- * de produire un second effet — jamais une erreur serveur.
+ * retourne un résultat NO_CHANGE, sans produire de second effet.
  *
  * @param {string} observationId
  * @param {object} deps  { pool } — injectable pour test (Pool ou objet avec getClient()).
  * @returns {{ verdict: object, product_sku_id: string, stock_before: number|null, stock_after: number, read_after_write_verified: boolean }}
- *   uniquement quand la décision réévaluée sous verrou est APPLY.
- * @throws {StockSyncApplicationError} pour tout verdict autre qu'APPLY —
+ *   pour APPLY et NO_CHANGE (retour explicite et idempotent).
+ * @throws {StockSyncApplicationError} pour les verdicts STALE/BLOCKED/
+ *   REVIEW_REQUIRED ou pour un échec de preuve de lecture après écriture.
  *   err.status porte le code HTTP suggéré, err.verdict le verdict complet.
- *   Même convention que CatalogChangeObservationError (sourcing-catalog-
- *   change-observation.js) : l'appelant HTTP la relaie via son catch générique.
  */
 async function applyStockSyncDecision(observationId, { pool = db } = {}) {
   const client = await pool.getClient();
@@ -126,9 +124,30 @@ async function applyStockSyncDecision(observationId, { pool = db } = {}) {
         [verdict.product_sku_id, verdict.source_id, verdict.observation_id,
           verdict.event_id, verdict.observed_at, verdict.current_stock]
       );
+      const { rows: [unchanged] } = await q(
+        'SELECT stock FROM product_skus WHERE id = $1', [verdict.product_sku_id]
+      );
+      if (!unchanged || unchanged.stock !== verdict.current_stock) {
+        throw new StockSyncApplicationError(500, {
+          ...verdict, decision: DECISION.BLOCKED, reason: 'NO_CHANGE_READBACK_MISMATCH',
+        });
+      }
       await client.query('COMMIT');
       begun = false;
-      throw new StockSyncApplicationError(200, verdict);
+      return {
+        verdict, product_sku_id: verdict.product_sku_id,
+        stock_before: verdict.current_stock, stock_after: unchanged.stock,
+        applied: false, read_after_write_verified: true,
+      };
+    }
+
+    if (verdict.decision === DECISION.NO_CHANGE) {
+      await client.query('COMMIT');
+      begun = false;
+      return {
+        verdict, product_sku_id: verdict.product_sku_id,
+        applied: false, read_after_write_verified: false,
+      };
     }
 
     if (verdict.decision !== DECISION.APPLY) {
@@ -174,12 +193,17 @@ async function applyStockSyncDecision(observationId, { pool = db } = {}) {
       'SELECT stock FROM product_skus WHERE id = $1', [verdict.product_sku_id]
     );
 
+    if (!proof || proof.stock !== verdict.target_stock_value) {
+      throw new StockSyncApplicationError(500, {
+        ...verdict, decision: DECISION.BLOCKED, reason: 'READ_AFTER_WRITE_MISMATCH',
+      });
+    }
     await client.query('COMMIT');
     begun = false;
     return {
       verdict, product_sku_id: verdict.product_sku_id,
       stock_before: verdict.current_stock, stock_after: proof.stock,
-      read_after_write_verified: proof.stock === verdict.target_stock_value,
+      applied: true, read_after_write_verified: true,
     };
   } catch (err) {
     if (begun) await client.query('ROLLBACK').catch(() => {});
