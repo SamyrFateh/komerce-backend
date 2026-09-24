@@ -71,8 +71,9 @@ function normalizeFact(name, fact) {
       throw new TypeError('stock_available must be an integer >= 0');
     }
   }
-  if (name === 'purchase_price' && (!(typeof fact.value === 'number') || !(fact.value > 0))) {
-    throw new TypeError('purchase_price must be > 0');
+  if (name === 'purchase_price'
+      && (typeof fact.value !== 'number' || !Number.isFinite(fact.value) || fact.value <= 0)) {
+    throw new TypeError('purchase_price must be a finite number > 0');
   }
   return Object.freeze({ status, value: fact.value });
 }
