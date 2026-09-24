@@ -173,6 +173,48 @@ if (!isolated) {
     expect(state.last_observation_id).toBe(delta.observation_id);
   });
 
+  test('lecture après écriture incohérente : rollback du stock ET du watermark', async () => {
+    const { sourceRef, provider, sku } = await seedResolvedSkuLineage({ initialStock: 3 });
+    const delta = await observeStock({
+      sourceRef, provider, eventId: 'readback-mismatch',
+      observedAt: new Date().toISOString(), value: 8,
+    });
+    // Injectable readback fault: all real PostgreSQL queries execute unchanged,
+    // except the final verification read which returns an inconsistent value.
+    const injectedPool = {
+      getClient: async () => {
+        const client = await db.getClient();
+        const originalQuery = client.query.bind(client);
+        let stockUpdated = false;
+        return {
+          query: async (sql, params) => {
+            const result = await originalQuery(sql, params);
+            if (String(sql).includes('UPDATE product_skus SET stock = $1')) {
+              stockUpdated = true;
+            }
+            if (stockUpdated && String(sql).trim() ===
+                'SELECT stock FROM product_skus WHERE id = $1') {
+              return { rows: [{ stock: -1 }] };
+            }
+            return result;
+          },
+          release: () => client.release(),
+        };
+      },
+    };
+    await expect(applyStockSyncDecision(delta.observation_id, { pool: injectedPool }))
+      .rejects.toMatchObject({
+        status: 500,
+        verdict: expect.objectContaining({ reason: 'READ_AFTER_WRITE_MISMATCH' }),
+      });
+    expect((await db.query('SELECT stock FROM product_skus WHERE id=$1', [sku.id])).rows[0].stock)
+      .toBe(3);
+    expect((await db.query(
+      'SELECT COUNT(*)::int AS total FROM catalog_stock_sync_state WHERE product_sku_id=$1',
+      [sku.id]
+    )).rows[0].total).toBe(0);
+  });
+
   test('rejeu de la même observation : pas de second effet, retourne NO_CHANGE', async () => {
     const { sourceRef, provider, sku } = await seedResolvedSkuLineage({ initialStock: 3 });
     const delta = await observeStock({
