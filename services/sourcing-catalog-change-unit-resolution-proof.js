@@ -41,6 +41,18 @@ const blocked = (status, observationId) => ({
 // This function only reads. A unique external reference is NOT sufficient by
 // itself: the product AND unit must still have active source-scoped resolution
 // bindings from prior full observations and the canonical hierarchy must agree.
+//
+// MISSION 2 (KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE) — généralisé
+// à tout fait du contrat Catalog Change Intake, pas seulement
+// stock_available. Les contrôles STRUCTURELS (grain, change_kind,
+// application_status, observation_kind, cohérence product_ref/unit_ref
+// entre normalized et raw_fragment, cohérence event_id) sont communs à
+// tout fait et inchangés dans leur exigence. Les contrôles D'INTÉGRITÉ DE
+// VALEUR (entier >= 0, égalité value/normalized) restent EXACTEMENT ceux
+// d'origine pour stock_available (aucun changement de comportement pour
+// Mission 1) ; un fait différent applique un contrôle générique
+// (statut valide, valeur cohérente entre raw_fragment et normalized) sans
+// prétendre à une sémantique numérique qui ne lui appartient pas.
 async function proveExactCanonicalUnitForStockDelta(observationId, query = db.query.bind(db)) {
   if (typeof observationId !== 'string' || !UUID.test(observationId)) {
     return blocked(STATUS.INVALID_OBSERVATION_ID, null);
@@ -63,11 +75,14 @@ async function proveExactCanonicalUnitForStockDelta(observationId, query = db.qu
   const row = rows[0];
   if (row.source_status !== 'active') return blocked(STATUS.SOURCE_UNAVAILABLE, observationId);
   if (row.existing_binding) return blocked(STATUS.ALREADY_BOUND, observationId);
-  const fact = row.field_provenance?.stock_available;
+
+  const factName = row.normalized?.fact_name || 'stock_available';
+  const fact = row.field_provenance?.[factName];
   const rawFact = row.raw_fragment?.fact;
-  const stock = row.normalized?.stock_available;
   const productRef = row.normalized?.product_ref;
   const unitRef = row.normalized?.unit_ref;
+
+  // Contrôles structurels — communs à tout fait, inchangés.
   if (row.grain !== 'unit' || row.parent_observation_id !== null ||
       row.stats?.change_kind !== 'UNIT_STOCK_DELTA' ||
       row.stats?.application_status !== 'NOT_EVALUATED' ||
@@ -78,10 +93,28 @@ async function proveExactCanonicalUnitForStockDelta(observationId, query = db.qu
       row.raw_fragment?.product_ref !== productRef ||
       row.raw_fragment?.source_ref !== productRef ||
       !row.stats?.event_id || row.stats.event_id !== fact?.event_id ||
-      fact?.status !== 'OBSERVED' || rawFact?.status !== 'OBSERVED' ||
-      rawFact?.value !== stock || !Number.isSafeInteger(stock) || stock < 0 ||
-      !row.source_id || fact.provider !== row.source_id.split(':')[1]) {
+      !row.source_id || !fact || fact.provider !== row.source_id.split(':')[1]) {
     return blocked(STATUS.NOT_EXACT_STOCK_DELTA, observationId);
+  }
+
+  // Contrôle d'intégrité de valeur — EXACT à l'original pour stock_available
+  // (aucun changement Mission 1) ; générique pour les autres faits.
+  let stock;
+  if (factName === 'stock_available') {
+    stock = row.normalized?.stock_available;
+    if (fact?.status !== 'OBSERVED' || rawFact?.status !== 'OBSERVED' ||
+        rawFact?.value !== stock || !Number.isSafeInteger(stock) || stock < 0) {
+      return blocked(STATUS.NOT_EXACT_STOCK_DELTA, observationId);
+    }
+  } else {
+    const normalizedValue = row.normalized?.[factName];
+    if (fact.status !== rawFact?.status) {
+      return blocked(STATUS.NOT_EXACT_STOCK_DELTA, observationId);
+    }
+    if (fact.status === 'OBSERVED'
+        && JSON.stringify(rawFact.value) !== JSON.stringify(normalizedValue)) {
+      return blocked(STATUS.NOT_EXACT_STOCK_DELTA, observationId);
+    }
   }
 
   const { rows: matches } = await query(`

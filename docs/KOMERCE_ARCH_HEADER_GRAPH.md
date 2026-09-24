@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 619
-- Files with full headers: 572
+- Scanned code files: 621
+- Files with full headers: 574
 - Files with lite headers: 47
-- Files with any headers: 619
+- Files with any headers: 621
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1467
-- Edges: 7346
-- DB tables: 174
+- Graph nodes: 1474
+- Edges: 7375
+- DB tables: 179
 - Doctrines: 489
 - Impact areas: 185
-- Unresolved code edges: 734
+- Unresolved code edges: 738
 - Tables multi-écrivains directs (>=2): 76
 - Avertissements db-write / db-write-via en chevauchement: 8
 
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 22
 - business-rules: 1
-- catalog: 112
+- catalog: 114
 - checkout: 3
 - customs: 6
 - dashboard: 27
@@ -87,7 +87,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 128
 - route-manifest: 1
 - schema: 1
-- service: 313
+- service: 315
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -151,6 +151,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/cash-confirmation-control-service.js — cash-confirmation-control-service (payment, critical, full)
 - services/cash-operations.js — payment-cash-operations (payment, critical, full)
 - services/cash-reminder-service.js — payment-cash-reminder-service (payment, critical, full)
+- services/catalog-field-sync-application.js — catalog-field-sync-application (catalog, critical, full)
+- services/catalog-field-sync-decision.js — catalog-field-sync-decision (catalog, critical, full)
 - services/catalog-stock-sync-application.js — catalog-stock-sync-application (catalog, critical, full)
 - services/catalog-stock-sync-decision.js — catalog-stock-sync-decision (catalog, critical, full)
 - services/confirm-pickup-cash-payment.js — payment-confirm-pickup-cash-payment (payment, critical, full)
@@ -649,6 +651,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/catalog-enrichment.js -> catalog_enrichment_runs
 - WRITE services/catalog-overrides.js -> catalog_field_overrides
 - WRITE services/product-admin-service.js -> catalog_field_overrides
+- WRITE services/catalog-field-sync-application.js -> catalog_field_sync_state
 - WRITE services/catalog-promotion.js -> catalog_media
 - WRITE services/catalog-stock-sync-application.js -> catalog_stock_sync_state
 - WRITE bootstrap/startup-migrations.js -> charges
@@ -667,6 +670,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/customs-shipment-service.js -> customs_shipment_parcels
 - WRITE routes/admin-customs-shipments.js -> customs_shipments
 - WRITE services/customs-shipment-service.js -> customs_shipments
+- WRITE services/catalog-field-sync-application.js -> description
 - WRITE routes/admin/delete-order-cascade.js -> disputes
 - WRITE services/dispute-mutation-service.js -> disputes
 - WRITE services/pricing-risk-period.js -> economic_risk_cost_events
@@ -688,6 +692,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/hub-physical-identity.js -> hub_physical_unit_placements
 - WRITE services/hub-physical-identity.js -> hub_physical_units
 - WRITE services/hub-physical-identity.js -> hub_purchase_allocations
+- WRITE services/catalog-field-sync-application.js -> image_url uniquement)
+- WRITE services/catalog-field-sync-application.js -> images
 - WRITE services/incident-escalation.js -> incidents
 - WRITE services/incident-service.js -> incidents
 - WRITE services/incident-write-service.js -> incidents
@@ -714,10 +720,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/market-settlement-service.js -> market_settlements
 - WRITE services/market-delegation-team-service.js -> market_team_invitations
 - WRITE services/market-delegation-service.js -> membership_capabilities
-- WRITE services/payment-mobile-money.js -> mobile_money_transactions
-- WRITE services/notification-service.js -> notification_log
-- WRITE services/notifications/internals.js -> notification_log
-- WRITE services/notifications/loyalty.js -> notification_log
 
 ## DB Write-Via Edges (délégation déclarée)
 
