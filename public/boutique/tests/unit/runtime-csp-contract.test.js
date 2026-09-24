@@ -16,7 +16,14 @@ const catalogFeature = fs.readFileSync(path.join(ROOT, 'features/catalog.feature
 
 describe('Boutique runtime CSP contract', () => {
   test('market hydration is same-origin external JS, never inline executable script', () => {
-    expect(index).toContain('<script src="/boutique/js/market-hydration.js"></script>');
+    // GAP-F4 (docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md) — le script est
+    // désormais chargé avec `defer` (non bloquant pour le parsing HTML) ; la
+    // propriété CSP réellement protégée par ce test est que le script reste
+    // externe et same-origin, jamais un bloc <script> inline exécutable —
+    // `defer` ne change rien à cette garantie. On matche donc l'attribut src
+    // exact plutôt que la balise entière, pour ne pas verrouiller un détail
+    // de chargement sans rapport avec le CSP.
+    expect(index).toMatch(/<script[^>]*\ssrc="\/boutique\/js\/market-hydration\.js"[^>]*><\/script>/);
     expect(index).not.toMatch(/<script>\s*\/\* H2 — hydratation/);
     expect(hydration).toContain('hydrateMarketLiterals');
     expect(hydration).toContain('window.KomerceMarket');
