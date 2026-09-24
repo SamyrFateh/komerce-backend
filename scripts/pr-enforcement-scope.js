@@ -56,6 +56,13 @@ function isProviderProofOnlyFile(file) {
     || /^docs\/external-providers\/[a-zA-Z0-9/_-]+\.md$/.test(f);
 }
 
+// This manual, CI-local CJ report script is not loaded by the running backend.
+// Only an exact one-file PR qualifies; any mixed/runtime/CI change loses the
+// shortcut and goes through the normal from-scratch gates.
+function isCjPilotProofOnlyFile(file) {
+  return norm(file) === 'scripts/cj-three-real-staging-pilot.js';
+}
+
 function isBackendFile(file) {
   const f = norm(file);
   return /^(?:server\.js|package(?:-lock)?\.json|jest\.config\.js|jest\.unit\.config\.js)$/i.test(f)
@@ -174,6 +181,7 @@ function isGovernanceFile(file) {
 function classify(files) {
   const changedFiles = [...new Set((files || []).map(norm).filter(Boolean))].sort();
   const providerProofOnly = changedFiles.length > 0 && changedFiles.every(isProviderProofOnlyFile);
+  const cjPilotProofOnly = changedFiles.length > 0 && changedFiles.every(isCjPilotProofOnlyFile);
   // The isolated probe unit test is not a backend business test *only when*
   // the entire PR belongs to this strict tooling allowlist.
   const backendFiles = changedFiles.filter(file =>
@@ -214,6 +222,7 @@ function classify(files) {
     governance: governanceFiles.length > 0,
     packageJsonGovernanceOnly: false,
     providerProofOnly,
+    cjPilotProofOnly,
   };
 }
 
@@ -312,6 +321,7 @@ function appendGithubOutput(path, model) {
   const lines = [
     `backend=${model.backend ? 'true' : 'false'}`,
     `provider_proof_only=${model.providerProofOnly ? 'true' : 'false'}`,
+    `cj_pilot_proof_only=${model.cjPilotProofOnly ? 'true' : 'false'}`,
     `backend_files=${model.backendFiles.join(',')}`,
     `golden=${model.golden ? 'true' : 'false'}`,
     `golden_files=${model.goldenFiles.join(',')}`,
@@ -359,6 +369,7 @@ module.exports = {
   norm,
   isBackendFile,
   isProviderProofOnlyFile,
+  isCjPilotProofOnlyFile,
   isMigrationFile,
   isLiveSchemaFile,
   isGoldenCdrFile,

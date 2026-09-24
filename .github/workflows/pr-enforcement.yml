@@ -21,6 +21,7 @@ jobs:
     outputs:
       backend: ${{ steps.scope.outputs.backend }}
       provider_proof_only: ${{ steps.scope.outputs.provider_proof_only }}
+      cj_pilot_proof_only: ${{ steps.scope.outputs.cj_pilot_proof_only }}
       backend_files: ${{ steps.scope.outputs.backend_files }}
       dashboard: ${{ steps.scope.outputs.dashboard }}
       dashboard_files: ${{ steps.scope.outputs.dashboard_files }}
@@ -55,6 +56,9 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node scripts/pr-enforcement-scope.js --base "$BASE_SHA" --head "$HEAD_SHA" --github-output "$GITHUB_OUTPUT"
+      - name: CJ pilot report syntax — targeted proof-only check
+        if: steps.scope.outputs.cj_pilot_proof_only == 'true'
+        run: node --check scripts/cj-three-real-staging-pilot.js
       - name: Feature card schema — zero debt
         run: node scripts/feature-schema-check.js --strict --full
       - name: Docs history — zero debt
@@ -206,7 +210,9 @@ jobs:
     needs: changes
     # Provider-only probes have dedicated isolated tests; runtime, manifest or
     # migration changes still reach the complete DB/integration/E2E gates.
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.migrations == 'true' || (needs.changes.outputs.governance == 'true' && needs.changes.outputs.provider_proof_only != 'true')
+    # CI-local CJ pilot report-only edits have a targeted syntax + governance
+    # gate; mixed or runtime changes still require full from-scratch tests.
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.migrations == 'true' || (needs.changes.outputs.governance == 'true' && needs.changes.outputs.provider_proof_only != 'true' && needs.changes.outputs.cj_pilot_proof_only != 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 35
     services:
