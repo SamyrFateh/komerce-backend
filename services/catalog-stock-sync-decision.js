@@ -81,6 +81,7 @@ const REASON = Object.freeze({
   REPLAY_SAME_OBSERVATION: 'REPLAY_SAME_OBSERVATION',
   OLDER_OR_EQUAL_TO_APPLIED: 'OLDER_OR_EQUAL_TO_APPLIED',
   SKU_TOUCHED_AFTER_OBSERVATION: 'SKU_TOUCHED_AFTER_OBSERVATION',
+  FUTURE_OBSERVATION: 'FUTURE_OBSERVATION',
   UNRECONCILED_KOMERCE_COMMITMENT: 'UNRECONCILED_KOMERCE_COMMITMENT',
   TARGET_EQUALS_CURRENT_STOCK: 'TARGET_EQUALS_CURRENT_STOCK',
   IDENTITY_PROVEN_AND_FRESH: 'IDENTITY_PROVEN_AND_FRESH',
@@ -132,6 +133,16 @@ async function decideStockSyncApplication(observationId, {
     });
   }
   const observedAt = envelopeRow.observed_at;
+  // A supplier timestamp is not an authorization to supersede local stock.
+  // In particular, a timestamp in the future can make an earlier local
+  // payment/adjustment appear older than an event which has not happened.
+  const observedMillis = new Date(observedAt).getTime();
+  if (!Number.isFinite(observedMillis) || observedMillis > Date.now()) {
+    return verdict(DECISION.BLOCKED, REASON.FUTURE_OBSERVATION, {
+      observation_id: observationId, product_sku_id: productSkuId,
+      source_id: sourceId, observed_at: observedAt,
+    });
+  }
 
   const { rows: [priorSync] } = await query(
     'SELECT last_observation_id, last_observed_at, applied_stock_value ' +
