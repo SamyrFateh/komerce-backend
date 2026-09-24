@@ -192,7 +192,7 @@ object: catalog_field_sync_state
 kind: table
 migration: 242
 section: ### 4.5 Paniers et catalogue
-role: Généralise catalog_stock_sync_state (migration 241) à tout champ du contrat Catalog Change Intake au-delà du stock (Mission 2, KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE). État courant (non-journal) de la dernière observation effectivement APPLIQUÉE, par (subject_type, subject_id, field_name). Alimentée exclusivement par services/catalog-field-sync-application.js. N'écrit jamais products.cost_kmf (alimente le moteur économique actif, services/pricing-output.js) ni offer_status/is_active/option_axes/sellable_units (lié à la publication, services/catalog-promotion/*) — decision-only pour ces champs, cette table n'en porte donc jamais de ligne applied.
+role: Généralise catalog_stock_sync_state (migration 241) à tout champ du contrat Catalog Change Intake au-delà du stock (Mission 2, KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE). État courant (non-journal) de la dernière observation effectivement APPLIQUÉE, par (subject_type, subject_id, field_name). Les champs texte/médias sont suivis au grain product ; `purchase_price` est suivi au grain sku sous la forme native `{amount,currency}`, les deux faits devant provenir de la même capture, sans conversion implicite. Alimentée exclusivement par services/catalog-field-sync-application.js. N'écrit jamais products.cost_kmf (alimente le moteur économique actif, services/pricing-output.js) ni offer_status/is_active/option_axes/sellable_units (lié à la publication, services/catalog-promotion/*) — decision-only pour ces champs, cette table n'en porte donc jamais de ligne applied.
 -->
 
 
