@@ -179,6 +179,15 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `product_attributes` | Attributs structurés clé/label/valeur. kind=HIGHLIGHT alimente content.highlights, kind=SPECIFICATION alimente content.specifications (group/key/label/value/unit). UNIQUE(product_id, kind, group_key, attribute_key) pour idempotence. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
 | `product_market_exposure` | Exposition commerciale d'un produit du catalogue global sur un Market ID donné (partenaire pays, capability catalog.expose). Le catalogue (products) reste unique ; cette table n'est qu'une projection d'exposition, même patron que commercial_exposure sur physical_offers/services. Absence de ligne = DISABLED (fail-closed). Écrite exclusivement via services/catalog-market-exposure-service.js (catalog, lifecycle owner) ; market-delegation délègue, jamais de SQL direct. **Migration 202 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
 
+<!-- schema-pending
+object: catalog_stock_sync_state
+kind: table
+migration: 241
+section: ### 4.5 Paniers et catalogue
+role: État courant (non-journal) de la dernière observation de stock fournisseur effectivement APPLIQUÉE par product_skus.id (Mission 1, KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE, docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md). Alimentée exclusivement par services/catalog-stock-sync-application.js — jamais par order-payment-confirmation.js ni order-status-machine.js, qui continuent d'écrire product_skus.stock uniquement via product-stock-service.js#adjustStock (mouvement relatif). Une observation plus récente REMPLACE la ligne existante en une transaction verrouillée (FOR UPDATE sur product_skus), jamais un second insert à réconcilier.
+-->
+
+
 
 
 

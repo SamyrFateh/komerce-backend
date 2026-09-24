@@ -216,6 +216,56 @@ restent inchangés. Un futur owner Catalog devra vérifier ces conditions et
 décider champ par champ du traitement du fait ; le service d'identité n'a
 aucune API de mutation.
 
+## Mission 1 — statut de revue du synchroniseur de stock
+
+Le décideur `services/catalog-stock-sync-decision.js` et l'application
+`services/catalog-stock-sync-application.js` sont **expérimentaux et non
+raccordés à une route ou à un déclenchement automatique**. Ils ne sont pas
+autorisés à piloter le stock boutique en production avant validation des
+invariants suivants :
+
+- une preuve effective, propre au fournisseur, compte, environnement, unité
+  et opération `stock_read` (autorisation, implémentation et preuve, et non
+  seule présence de la source dans Sourcing) ;
+- une règle de réconciliation démontrée entre stock absolu fournisseur,
+  mouvements relatifs issus des paiements/annulations, engagements non encore
+  notifiés au fournisseur et quantité vendable Komerce. L'état
+  `purchase_orders.status='confirmed'` ne prouve pas, à lui seul, que
+  l'observation externe tient compte de cet engagement ;
+- une stratégie de fraîcheur tenant compte de l'ordre des transactions
+  locales réellement validées et des snapshots externes : comparer
+  `product_skus.updated_at` au `observed_at` émis par la source n'est
+  pas une preuve générale de réconciliation.
+
+Le décideur refuse désormais un `observed_at` **situé dans le futur**
+(`BLOCKED/FUTURE_OBSERVATION`). Cela élimine un contournement temporel
+simple mais ne résout pas les trois conditions métier ci-dessus.
+
+Un `NO_CHANGE` idempotent est un résultat normal, pas une exception
+transport avec code HTTP 200. Une relecture incohérente après écriture
+doit provoquer un rollback, jamais un commit avec
+`read_after_write_verified=false`.
+
+L'existence de tests synthétiques ou d'une CI verte ne vaut pas preuve
+d'aptitude à une application automatique en production. Le premier
+raccordement opérationnel reste subordonné à une revue indépendante de
+l'autorité de la source et du modèle de réconciliation des engagements.
+
+**Barrière d'exécution actuelle :** aucun résolveur d'autorité de stock
+provider-scoped ni aucune réconciliation du snapshot avec les mouvements
+Komerce ne sont encore implémentés en runtime. Sans eux, le décideur
+retourne `REVIEW_REQUIRED/STOCK_AUTHORITY_NOT_PROVEN` et aucune écriture
+de stock n'est permise. Les callbacks de preuves synthétiques ne sont
+acceptés que dans la base PostgreSQL CI isolée
+(`GITHUB_ACTIONS=true`, `NODE_ENV=test`, crons désactivés et URL de
+`komerce_test` exacte) ; fournir ces callbacks en dehors de ce cadre
+retourne `BLOCKED/SYNTHETIC_PROOF_NOT_ALLOWED`. La PR démontre un
+**prototype de décideur et d'applicateur**, pas encore une synchronisation
+de stock fournisseur opérationnelle. Une future tranche doit prouver la
+provenance et la fraîcheur réelle des lectures externes, les engagements
+liés au snapshot, puis raccorder un owner Catalog explicite à cette autorité
+avant toute activation ou écriture de stock en production.
+
 ## Conséquence architecture
 
 Provider / fichier / opérateur
