@@ -3,6 +3,7 @@
  * @role          preload-css-swap
  * @domain        boutique
  * @layer         bootstrap
+ * @owner         public/boutique/index.html
  * @purpose       Bascule <link id="k-components-preload" rel="preload" as="style">
  *                en <link rel="stylesheet"> une fois le fichier téléchargé,
  *                sans jamais bloquer le premier affichage sur components.css

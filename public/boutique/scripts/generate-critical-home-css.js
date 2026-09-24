@@ -3,6 +3,7 @@
  * @role          critical-home-css-generator
  * @domain        boutique
  * @layer         build-tool
+ * @owner         public/boutique/css/critical-home.css
  * @purpose       Régénère css/critical-home.css à partir d'une mesure de
  *                couverture CSS réelle (Chrome DevTools Coverage via
  *                Playwright) sur la page d'accueil, mobile et desktop.

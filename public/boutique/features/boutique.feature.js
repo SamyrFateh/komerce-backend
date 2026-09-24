@@ -36,6 +36,15 @@ module.exports = {
       // bootstrap/security.js interdit un onload= inline).
       '../js/preload-css-swap.js',
     ],
+    css: [
+      // Miroir GÉNÉRÉ (cf. son en-tête @provenance et
+      // scripts/generate-critical-home-css.js) : duplique verbatim des
+      // règles déjà présentes dans leurs fichiers propriétaires sémantiques
+      // (categories.css, products.css…) pour un chargement précoce, sans
+      // introduire de décision de style indépendante — appartient au
+      // domaine transverse boutique plutôt qu'à une seule feature métier.
+      '../css/critical-home.css',
+    ],
     dist: [
       '../css/dist/base.css',
       '../css/dist/desktop.css',

@@ -8,6 +8,7 @@
  * @role          critical-home-css-snapshot
  * @domain        boutique
  * @layer         css
+ * @owner         public/boutique/scripts/generate-critical-home-css.js
  * @purpose       Sous-ensemble de components.css réellement utilisé pour
  *                afficher l'accueil (mesuré par couverture CSS réelle du
  *                navigateur), chargé de façon bloquante avant components.css
