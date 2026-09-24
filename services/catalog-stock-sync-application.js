@@ -64,7 +64,11 @@ class StockSyncApplicationError extends Error {
  *   REVIEW_REQUIRED ou pour un échec de preuve de lecture après écriture.
  *   err.status porte le code HTTP suggéré, err.verdict le verdict complet.
  */
-async function applyStockSyncDecision(observationId, { pool = db } = {}) {
+async function applyStockSyncDecision(observationId, {
+  pool = db,
+  authorityFn,
+  reconciliationFn,
+} = {}) {
   const client = await pool.getClient();
   let begun = false;
   try {
@@ -75,7 +79,7 @@ async function applyStockSyncDecision(observationId, { pool = db } = {}) {
     // Première évaluation hors verrou, seulement pour connaître le SKU visé
     // (nécessaire pour poser le verrou). Ne fonde AUCUNE décision : la seule
     // décision qui compte est la réévaluation ci-dessous, sous verrou.
-    const preview = await decideStockSyncApplication(observationId, { query: q });
+    const preview = await decideStockSyncApplication(observationId, { query: q, authorityFn, reconciliationFn });
     if (!preview.product_sku_id) {
       // Identité jamais prouvée : rien à verrouiller, rien à réévaluer.
       throw new StockSyncApplicationError(422, preview);
@@ -94,7 +98,7 @@ async function applyStockSyncDecision(observationId, { pool = db } = {}) {
     // Réévaluation SOUS VERROU — la seule qui autorise l'écriture. Toute
     // commande payée, annulation ou synchronisation concurrente sur ce SKU
     // entre la preview ci-dessus et cet instant est maintenant visible.
-    const verdict = await decideStockSyncApplication(observationId, { query: q });
+    const verdict = await decideStockSyncApplication(observationId, { query: q, authorityFn, reconciliationFn });
 
     // Bug trouvé en testant (pas en relisant le code) : NO_CHANGE par
     // TARGET_EQUALS_CURRENT_STOCK ne devait PAS rester sans trace. Sans
