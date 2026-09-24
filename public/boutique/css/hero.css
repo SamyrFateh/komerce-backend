@@ -23,6 +23,7 @@
   object-position: 50% 0%;
   display: block;
 }
+.k-hero-copy-mobile { display: none; }
 .k-hero-mini-slogan {
   display: flex;
   position: absolute;
