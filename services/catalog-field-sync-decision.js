@@ -92,6 +92,7 @@ const REASON = Object.freeze({
   IDENTITY_NOT_PROVEN: 'IDENTITY_NOT_PROVEN',
   FACT_NOT_PRESENT: 'FACT_NOT_PRESENT',
   INVALID_FIELD_VALUE: 'INVALID_FIELD_VALUE',
+  PRICE_CURRENCY_NOT_PROVEN: 'PRICE_CURRENCY_NOT_PROVEN',
   FUTURE_OBSERVATION: 'FUTURE_OBSERVATION',
   REPLAY_SAME_OBSERVATION: 'REPLAY_SAME_OBSERVATION',
   OLDER_OR_EQUAL_TO_APPLIED: 'OLDER_OR_EQUAL_TO_APPLIED',
@@ -124,7 +125,7 @@ async function proveIdentityAndFact(observationId, fieldName, query, identityFn)
     }) };
   }
   const { rows: [row] } = await query(`
-    SELECT o.observed_at, o.normalized, c.stats->>'event_id' AS event_id
+    SELECT o.capture_id, o.observed_at, o.normalized, c.stats->>'event_id' AS event_id
       FROM sourcing_observations o
       JOIN sourcing_captures c ON c.capture_id = o.capture_id
      WHERE o.observation_id = $1::uuid
@@ -149,7 +150,7 @@ async function proveIdentityAndFact(observationId, fieldName, query, identityFn)
     }) };
   }
   return {
-    ok: true, identity, observedAt: row.observed_at, eventId: row.event_id,
+    ok: true, identity, captureId: row.capture_id, observedAt: row.observed_at, eventId: row.event_id,
     observedValue: normalized[fieldName],
   };
 }
@@ -356,8 +357,9 @@ async function decidePurchasePriceSync(observationId, {
   }
   const proof = await proveIdentityAndFact(observationId, 'purchase_price', query, identityFn);
   if (!proof.ok) return proof.verdict;
-  const { identity, observedAt, eventId, observedValue } = proof;
+  const { identity, captureId, observedAt, eventId, observedValue } = proof;
   const productId = identity.catalog_product_id;
+  const skuId = identity.product_sku_id;
 
   const common = {
     observation_id: observationId, catalog_product_id: productId,
@@ -365,14 +367,32 @@ async function decidePurchasePriceSync(observationId, {
     observed_at: observedAt, event_id: eventId, field_name: 'purchase_price',
   };
 
-  const fresh = await checkFreshness(query, 'product', productId, 'purchase_price', observationId, observedAt);
+  // A supplier price is meaningful only with an explicit currency observed
+  // in the SAME immutable capture. Never silently assume KMF/EUR or carry
+  // over the currency of a previous supplier snapshot.
+  const { rows: currencyRows } = await query(
+    "SELECT normalized->>'currency' AS currency, " +
+    "field_provenance->'currency'->>'status' AS currency_status " +
+    "FROM sourcing_observations " +
+    "WHERE capture_id = $1 AND normalized->>'fact_name' = 'currency' LIMIT 2",
+    [captureId]
+  );
+  const currency = currencyRows[0]?.currency;
+  if (currencyRows.length !== 1 || currencyRows[0].currency_status !== 'OBSERVED'
+      || !/^[A-Z]{3}$/.test(currency || '')) {
+    return verdict(DECISION.REVIEW_REQUIRED, REASON.PRICE_CURRENCY_NOT_PROVEN, common);
+  }
+  const supplierPrice = Object.freeze({ amount: observedValue, currency });
+
+  const fresh = await checkFreshness(query, 'sku', skuId, 'purchase_price', observationId, observedAt);
   if (fresh) return verdict(fresh.decision, fresh.reason, { ...common, ...fresh });
 
-  const authority = await authorityFn({ ...common, observed_value: observedValue });
+  const authority = await authorityFn({ ...common, observed_value: supplierPrice });
   const authorityMatches = authority && authority.proved === true
     && authority.operation === 'purchase_price_write'
     && authority.source_id === identity.source_id
-    && authority.catalog_product_id === productId;
+    && authority.catalog_product_id === productId
+    && authority.product_sku_id === skuId;
   if (!authorityMatches) {
     return verdict(DECISION.REVIEW_REQUIRED, REASON.FIELD_AUTHORITY_NOT_PROVEN, {
       ...common, authority_reason: authority?.reason || 'MISSING_PROOF',
@@ -381,11 +401,11 @@ async function decidePurchasePriceSync(observationId, {
 
   const { rows: [tracked] } = await query(
     'SELECT applied_value FROM catalog_field_sync_state ' +
-    "WHERE subject_type = 'product' AND subject_id = $1 AND field_name = 'purchase_price'",
-    [productId]
+    "WHERE subject_type = 'sku' AND subject_id = $1 AND field_name = 'purchase_price'",
+    [skuId]
   );
   const currentTracked = tracked ? JSON.stringify(tracked.applied_value) : null;
-  const targetTracked = JSON.stringify(observedValue);
+  const targetTracked = JSON.stringify(supplierPrice);
   if (currentTracked === targetTracked) {
     return verdict(DECISION.NO_CHANGE, REASON.TARGET_EQUALS_CURRENT_VALUE, {
       ...common, current_value: tracked ? tracked.applied_value : null,
@@ -393,8 +413,8 @@ async function decidePurchasePriceSync(observationId, {
   }
 
   return verdict(DECISION.APPLY, REASON.IDENTITY_PROVEN_AND_FRESH, {
-    ...common, target_value: observedValue, current_value: tracked ? tracked.applied_value : null,
-    subject_type: 'product', subject_id: productId,
+    ...common, target_value: supplierPrice, current_value: tracked ? tracked.applied_value : null,
+    subject_type: 'sku', subject_id: skuId,
   });
 }
 
