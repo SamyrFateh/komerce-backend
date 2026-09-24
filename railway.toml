@@ -1,9 +1,9 @@
-# Temporary Railway worker branch ONLY. Never merge this file into main.
-# No pre-deploy migration, no backend server, no database.
+# Temporary Railway worker branch ONLY. Never merge into main.
+# No migration, backend server, DB, or permanent cron.
 [build]
 installCommand = "npm ci --omit=dev"
-watchPatterns = ["scripts/cj-three-readonly-railway-once.js", "services/suppliers/connectors/cj-connector.js", "railway.toml", "package.json", "package-lock.json"]
+watchPatterns = ["railway.toml"]
 
 [deploy]
-startCommand = "node scripts/cj-three-readonly-railway-once.js"
+startCommand = "node -e 'const cj=require(\"./services/suppliers/connectors/cj-connector\"); const env=process.env; (async()=>{ if(env.KOMERCE_CJ_READONLY_ONCE!==\"1\"||env.DATABASE_URL||env.DATABASE_PUBLIC_URL||env.PGHOST||env.PGUSER||env.RAILWAY_DATABASE_URL) throw Error(\"READONLY_GUARD\"); if(!env.CJ_API_KEY&&!env.CJ_ACCESS_TOKEN) throw Error(\"CJ_CREDENTIAL_MISSING\"); const list=await cj.fetchProducts({keyword:\"phone stand\",page:1,size:12,env}); const ids=[...new Set((list.products||[]).map(p=>String(p.supplier_product_id||\"\").trim()).filter(id=>/^[A-Za-z0-9_-]{1,100}$/.test(id)))].slice(0,3); if(ids.length!==3) throw Error(\"CJ_FEWER_THAN_THREE\"); const detail=await cj.fetchProducts({productIds:ids,detailRetries:0,detailDelayMs:1100,env}); if(detail.products.length!==3||detail.invalid.length) throw Error(\"CJ_DETAIL_INCOMPLETE\"); const byId=new Map(detail.products.map(p=>[p.supplier_product_id,p])); const offers=ids.map(id=>byId.get(id)); if(offers.some(p=>!p)) throw Error(\"CJ_ID_MISMATCH\"); console.log(\"CJ_THREE_READONLY \"+JSON.stringify({status:\"PASS\",db_access:false,published:0,offers:offers.map(p=>({id:p.supplier_product_id,name:String(p.product_name||\"\").slice(0,120),price:p.purchase_price,currency:p.currency,media_count:p.media?.length||0,unit_count:p.sellable_units?.length||0,stock:p.stock_available??null}))})); })().catch(e=>{console.error(\"CJ_THREE_READONLY \"+JSON.stringify({status:\"BLOCKED\",reason:/^(CJ_|READONLY_)/.test(String(e.message))?e.message:\"CJ_PROVIDER_REQUEST_FAILED\"}));process.exitCode=1;});'"
 restartPolicyType = "NEVER"
