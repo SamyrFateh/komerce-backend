@@ -24,6 +24,15 @@
  */
 const BUNDLES = [
   {
+    // GAP-F4 étape 2 (docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md) — sous-
+    // ensemble de components.css mesuré par couverture réelle (cf.
+    // scripts/generate-critical-home-css.js), chargé de façon bloquante en
+    // <head> pour ne pas attendre tout components.css (chargé ensuite en
+    // preload non bloquant) avant le premier affichage.
+    out: 'critical-home.css',
+    files: ['critical-home'],
+  },
+  {
     out: 'base.css',
     files: ['tokens', 'reset', 'layout', 'hero', 'hero-ultra-mobile', 'mobile-shell-convergence'],
   },
