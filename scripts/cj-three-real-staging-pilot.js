@@ -177,7 +177,7 @@ async function quoteVerifiedCjVariant(inventorySnapshots, accessToken) {
     && stock.cj_warehouse_quantity >= 1);
   if (!cn) {
     return { status: 'SKIPPED_NO_VERIFIED_CJ_CN_STOCK', pid: QUOTE_PID,
-      vid: QUOTE_VID, destination_quotes: [] };
+      vid: QUOTE_VID, destination_quotes: [], quotation_calls: 0 };
   }
   const destination_quotes = [];
   for (const country of QUOTE_DESTINATIONS) {
@@ -356,9 +356,9 @@ async function run() {
       'Pipeline: ' + report.pipeline_status +
       '; shadow: ' + report.shadow_status +
       '; canonical resolved: ' + report.canonical_resolved + '.\n\n' +
-      'Inventory by exact PID: ' + inventorySnapshots.size + '/3. This is a time-bound provider snapshot; no stock persistence or fulfilment approval.\\n\\n' +
+      'Inventory by exact PID: ' + inventorySnapshots.size + '/3. This is a time-bound provider snapshot; no stock persistence or fulfilment approval.\n\n' +
       'CJ country-level route quotes (non-mutating POST): ' + routeQuote.quotation_calls +
-      '; not a checkout, booking or final last-mile quote.\\n\\n' +
+      '; not a checkout, booking or final last-mile quote.\n\n' +
       'No production DB, no publication, no order, no active stock mutation.\n');
   }
 
