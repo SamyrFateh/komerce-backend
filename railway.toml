@@ -1,37 +1,9 @@
-# ============================================================
-# KOMERCE — Configuration Railway
-# Filtre les déploiements pour éviter les builds inutiles
-# sur commits docs-only ou auto-cartography
-# ============================================================
-
+# Temporary Railway worker branch ONLY. Never merge this file into main.
+# No pre-deploy migration, no backend server, no database.
 [build]
 installCommand = "npm ci --omit=dev"
-
-# Railway ne déploiera QUE si un fichier matchant ces patterns change.
-# Les commits qui ne touchent que docs/, .github/ ou autres surfaces hors
-# runtime peuvent ainsi être ignorés. `watchPatterns` appartient au bloc
-# build dans le schéma Railway actuel.
-watchPatterns = [
-  "routes/**",
-  "services/**",
-  "middleware/**",
-  "utils/**",
-  "validators/**",
-  "db/**",
-  "boutique/**",
-  "public/boutique/**",
-  "dashboard-app/**",
-  "public/dashboards/**",
-  "bootstrap/**",
-  "migrations/**",
-  "scripts/**",
-  "server.js",
-  "db.js",
-  "package.json",
-  "package-lock.json",
-  "railway.toml"
-]
+watchPatterns = ["scripts/cj-three-readonly-railway-once.js", "services/suppliers/connectors/cj-connector.js", "railway.toml", "package.json", "package-lock.json"]
 
 [deploy]
-preDeployCommand = ["node scripts/migrate.js"]
-startCommand = "node server.js"
+startCommand = "node scripts/cj-three-readonly-railway-once.js"
+restartPolicyType = "NEVER"
