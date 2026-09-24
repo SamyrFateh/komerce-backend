@@ -1190,3 +1190,16 @@ body:has(#k-page-scroll.k-pager-active) {
 @media (min-width: 900px) {
   #k-header-spacer { height: 0; }
 }
+
+/* KOMERCE HERO PREVIEW — cart avatar remains owned by layout.css.
+   Shrink only the illustration on mobile; preserve the 42px button,
+   live badge and existing empty/full-cart animations. */
+@media (max-width: 899px) {
+  .k-header .k-cart-btn.k-header-action .k-cart-avatar,
+  .k-header .k-cart-btn.is-empty .k-cart-avatar,
+  .k-header .k-cart-btn.hidden .k-cart-avatar,
+  .k-cart-btn.k-header-action.is-empty .k-cart-avatar,
+  .k-cart-btn.k-header-action.hidden .k-cart-avatar {
+    width: 21px;
+  }
+}
