@@ -10,9 +10,11 @@ const path = require('path');
 
 const cssPath = path.resolve(__dirname, '../../css/hero-ultra-mobile.css');
 const heroCssPath = path.resolve(__dirname, '../../css/hero.css');
+const layoutCssPath = path.resolve(__dirname, '../../css/layout.css');
 const heroBootstrapPath = path.resolve(__dirname, '../../js/hero-bootstrap.js');
 const css = fs.readFileSync(cssPath, 'utf8');
 const heroCss = fs.readFileSync(heroCssPath, 'utf8');
+const layoutCss = fs.readFileSync(layoutCssPath, 'utf8');
 const heroBootstrap = fs.readFileSync(heroBootstrapPath, 'utf8');
 
 describe('hero ultra mobile contract', () => {
@@ -46,7 +48,8 @@ describe('hero ultra mobile contract', () => {
   });
 
   test('préserve le panier réel et son avatar mobile réduit', () => {
-    expect(css).toContain('width: 21px;');
+    expect(layoutCss).toContain('width: 21px;');
+    expect(css).not.toContain('.k-header .k-cart-btn.k-header-action .k-cart-avatar');
     expect(css).toContain('inset: 0 24px 0 auto;');
     expect(css).toContain('width: 143px;');
     expect(css).not.toContain('.k-cart-btn { width:');
