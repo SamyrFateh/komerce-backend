@@ -91,6 +91,7 @@ const DECISION = Object.freeze({
 const REASON = Object.freeze({
   IDENTITY_NOT_PROVEN: 'IDENTITY_NOT_PROVEN',
   FACT_NOT_PRESENT: 'FACT_NOT_PRESENT',
+  INVALID_FIELD_VALUE: 'INVALID_FIELD_VALUE',
   FUTURE_OBSERVATION: 'FUTURE_OBSERVATION',
   REPLAY_SAME_OBSERVATION: 'REPLAY_SAME_OBSERVATION',
   OLDER_OR_EQUAL_TO_APPLIED: 'OLDER_OR_EQUAL_TO_APPLIED',
@@ -186,8 +187,9 @@ async function decideProductTextFieldSync(observationId, factName, column, {
   // un nom de colonne en paramètre lié) — jamais dérivé de l'observation ni
   // d'une entrée utilisateur, toujours passé littéralement par les
   // appelants de ce fichier ; liste blanche explicite par discipline.
-  if (!['name', 'description'].includes(column)) {
-    throw new TypeError(`decideProductTextFieldSync: colonne non autorisée: ${column}`);
+  if (!((factName === 'title' && column === 'name')
+      || (factName === 'description' && column === 'description'))) {
+    throw new TypeError('decideProductTextFieldSync: champ/colonne non concordants');
   }
   if (!isolatedFieldSyncProofTest() && authorityFn !== DEFAULT_UNPROVEN_AUTHORITY) {
     return verdict(DECISION.BLOCKED, REASON.SYNTHETIC_PROOF_NOT_ALLOWED, { observation_id: observationId });
@@ -196,6 +198,12 @@ async function decideProductTextFieldSync(observationId, factName, column, {
   if (!proof.ok) return proof.verdict;
   const { identity, observedAt, eventId, observedValue } = proof;
   const productId = identity.catalog_product_id;
+  if (typeof observedValue !== 'string' || !observedValue.trim()) {
+    return verdict(DECISION.BLOCKED, REASON.INVALID_FIELD_VALUE, {
+      observation_id: observationId, catalog_product_id: productId, field_name: factName,
+    });
+  }
+
 
   const common = {
     observation_id: observationId, catalog_product_id: productId,
@@ -268,6 +276,16 @@ async function decideProductMediaSync(observationId, {
   if (!proof.ok) return proof.verdict;
   const { identity, observedAt, eventId, observedValue } = proof;
   const productId = identity.catalog_product_id;
+  // An empty/invalid media list cannot silently clear images or leave the
+  // old image_url paired with an empty list. Explicit removals are a separate
+  // publication decision; they are never inferred from an OBSERVED payload.
+  if (!Array.isArray(observedValue) || observedValue.length === 0
+      || observedValue.some((url) => typeof url !== 'string'
+        || !/^https:\/\//i.test(url) || url.length > 2048)) {
+    return verdict(DECISION.BLOCKED, REASON.INVALID_FIELD_VALUE, {
+      observation_id: observationId, catalog_product_id: productId, field_name: 'media',
+    });
+  }
 
   const common = {
     observation_id: observationId, catalog_product_id: productId,
