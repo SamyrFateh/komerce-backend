@@ -56,7 +56,21 @@ function publicVerdict(row) {
     currency: row.currency || null,
     media_count: Array.isArray(snap.media) ? snap.media.length : 0,
     sellable_unit_count: Array.isArray(snap.sellable_units) ? snap.sellable_units.length : 0,
+    // Read only the persisted facts needed to explain WATCH. No raw CJ
+    // payload, API credential, price recommendation or invented stock.
+    stock_known: row.stock_available != null,
+    unit_stock_known_count: Array.isArray(snap.sellable_units)
+      ? snap.sellable_units.filter(unit => unit.stock_available != null).length : 0,
+    purchase_price_kmf_known: row.purchase_price_kmf != null && Number(row.purchase_price_kmf) > 0,
+    category_source: row.data_sources?.category || null,
+    weight_source: row.data_sources?.weight || null,
+    volume_source: row.data_sources?.volume || null,
     refinery_decision: row.scan_result?.sourcing_decision || null,
+    decision_reason: typeof row.scan_result?.reason === 'string'
+      ? row.scan_result.reason.replace(/[\\r\\n\\t]/g, ' ').slice(0, 240) : null,
+    economic_health: row.scan_result?.economic_test_health_status || null,
+    pricing_health: row.scan_result?.health_status || null,
+    market_confidence: row.scan_result?.market_confidence || null,
     rejected_reason: row.rejected_reason || null,
   };
 }
@@ -121,7 +135,7 @@ async function run() {
   const importId = importResult.body?.import_id || null;
   const { rows: candidates } = importId
     ? await db.query(
-      'SELECT id, supplier_product_id, state, product_id, purchase_price, currency, scan_result, rejected_reason, normalized_source_contract ' +
+      'SELECT id, supplier_product_id, state, product_id, purchase_price, currency, stock_available, purchase_price_kmf, data_sources, scan_result, rejected_reason, normalized_source_contract ' +
       'FROM sourcing_candidates WHERE import_id = $1 ORDER BY supplier_product_id ASC',
       [importId]
     ) : { rows: [] };
