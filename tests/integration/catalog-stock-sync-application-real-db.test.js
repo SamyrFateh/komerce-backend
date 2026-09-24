@@ -156,7 +156,7 @@ if (!isolated) {
   test('APPLY écrit la valeur exacte et le prouve par lecture après écriture', async () => {
     const { sourceRef, provider, sku } = await seedResolvedSkuLineage({ initialStock: 3 });
     const delta = await observeStock({
-      sourceRef, provider, eventId: 'w1', observedAt: new Date(Date.now() + 60_000).toISOString(), value: 8,
+      sourceRef, provider, eventId: 'w1', observedAt: new Date().toISOString(), value: 8,
     });
     const result = await applyStockSyncDecision(delta.observation_id);
     expect(result.verdict.decision).toBe(DECISION.APPLY);
@@ -176,7 +176,7 @@ if (!isolated) {
   test('rejeu de la même observation : pas de second effet, retourne NO_CHANGE', async () => {
     const { sourceRef, provider, sku } = await seedResolvedSkuLineage({ initialStock: 3 });
     const delta = await observeStock({
-      sourceRef, provider, eventId: 'w2', observedAt: new Date(Date.now() + 60_000).toISOString(), value: 5,
+      sourceRef, provider, eventId: 'w2', observedAt: new Date().toISOString(), value: 5,
     });
     const first = await applyStockSyncDecision(delta.observation_id);
     expect(first.stock_after).toBe(5);
@@ -194,10 +194,10 @@ if (!isolated) {
   test('événement ancien après une application plus récente : STALE, écriture refusée', async () => {
     const { sourceRef, provider, sku } = await seedResolvedSkuLineage({ initialStock: 3 });
     const older = await observeStock({
-      sourceRef, provider, eventId: 'w-old', observedAt: new Date(Date.now() + 30_000).toISOString(), value: 1,
+      sourceRef, provider, eventId: 'w-old', observedAt: new Date(Date.now() - 30_000).toISOString(), value: 1,
     });
     const newer = await observeStock({
-      sourceRef, provider, eventId: 'w-new', observedAt: new Date(Date.now() + 120_000).toISOString(), value: 9,
+      sourceRef, provider, eventId: 'w-new', observedAt: new Date().toISOString(), value: 9,
     });
     await applyStockSyncDecision(newer.observation_id);
     const { rows: [afterNewer] } = await db.query('SELECT stock FROM product_skus WHERE id=$1', [sku.id]);
@@ -213,7 +213,7 @@ if (!isolated) {
   test('commande confirmée pendant la fenêtre entre décision et application : REVIEW_REQUIRED réévalué sous verrou', async () => {
     const { sourceRef, provider, sku } = await seedResolvedSkuLineage({ initialStock: 3 });
     const delta = await observeStock({
-      sourceRef, provider, eventId: 'w3', observedAt: new Date(Date.now() + 60_000).toISOString(), value: 6,
+      sourceRef, provider, eventId: 'w3', observedAt: new Date().toISOString(), value: 6,
     });
     const { rows: [market] } = await db.query("SELECT id FROM markets WHERE code='KM' LIMIT 1");
     const { rows: [relais] } = await db.query(
@@ -248,7 +248,7 @@ if (!isolated) {
   test('annulation (adjustStock increment) après une application : un rejeu ultérieur ne recouvre jamais ce mouvement local', async () => {
     const { sourceRef, provider, sku, catalogProduct } = await seedResolvedSkuLineage({ initialStock: 5 });
     const delta = await observeStock({
-      sourceRef, provider, eventId: 'w4', observedAt: new Date(Date.now() + 60_000).toISOString(), value: 5,
+      sourceRef, provider, eventId: 'w4', observedAt: new Date().toISOString(), value: 5,
     });
     expect(await applyStockSyncDecision(delta.observation_id))
       .toMatchObject({ applied: false, verdict: expect.objectContaining({ decision: DECISION.NO_CHANGE }) });
