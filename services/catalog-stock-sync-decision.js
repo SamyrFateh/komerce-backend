@@ -176,7 +176,12 @@ async function decideStockSyncApplication(observationId, {
     ...common,
     stock_available_observed: observedStock,
   });
-  if (!authority || authority.proved !== true) {
+  const authorityMatches = authority
+    && authority.proved === true
+    && authority.operation === 'stock_read'
+    && authority.source_id === sourceId
+    && authority.product_sku_id === productSkuId;
+  if (!authorityMatches) {
     return verdict(DECISION.REVIEW_REQUIRED, REASON.STOCK_AUTHORITY_NOT_PROVEN, {
       ...common,
       authority_reason: authority?.reason || 'MISSING_PROOF',
@@ -213,7 +218,11 @@ async function decideStockSyncApplication(observationId, {
       stock_available_observed: observedStock,
       commitments,
     });
-    if (!reconciliation || reconciliation.proved !== true) {
+    const reconciliationMatches = reconciliation
+      && reconciliation.proved === true
+      && reconciliation.observation_id === observationId
+      && reconciliation.product_sku_id === productSkuId;
+    if (!reconciliationMatches) {
       return verdict(DECISION.REVIEW_REQUIRED, REASON.STOCK_RECONCILIATION_NOT_PROVEN, {
         ...common,
         commitment_count_at_least: commitments.length,
