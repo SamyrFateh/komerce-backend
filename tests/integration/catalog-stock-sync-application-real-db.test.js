@@ -173,7 +173,7 @@ if (!isolated) {
     expect(state.last_observation_id).toBe(delta.observation_id);
   });
 
-  test('rejeu de la même observation : pas de second effet, lève NO_CHANGE', async () => {
+  test('rejeu de la même observation : pas de second effet, retourne NO_CHANGE', async () => {
     const { sourceRef, provider, sku } = await seedResolvedSkuLineage({ initialStock: 3 });
     const delta = await observeStock({
       sourceRef, provider, eventId: 'w2', observedAt: new Date(Date.now() + 60_000).toISOString(), value: 5,
@@ -181,11 +181,11 @@ if (!isolated) {
     const first = await applyStockSyncDecision(delta.observation_id);
     expect(first.stock_after).toBe(5);
 
-    await expect(applyStockSyncDecision(delta.observation_id))
-      .rejects.toMatchObject({
-        name: 'StockSyncApplicationError',
-        verdict: expect.objectContaining({ decision: DECISION.NO_CHANGE }),
-      });
+    const replay = await applyStockSyncDecision(delta.observation_id);
+    expect(replay).toMatchObject({
+      applied: false,
+      verdict: expect.objectContaining({ decision: DECISION.NO_CHANGE }),
+    });
 
     const { rows: [row] } = await db.query('SELECT stock FROM product_skus WHERE id=$1', [sku.id]);
     expect(row.stock).toBe(5); // toujours 5, jamais un second mouvement
@@ -250,8 +250,8 @@ if (!isolated) {
     const delta = await observeStock({
       sourceRef, provider, eventId: 'w4', observedAt: new Date(Date.now() + 60_000).toISOString(), value: 5,
     });
-    await expect(applyStockSyncDecision(delta.observation_id))
-      .rejects.toMatchObject({ verdict: expect.objectContaining({ decision: DECISION.NO_CHANGE }) });
+    expect(await applyStockSyncDecision(delta.observation_id))
+      .toMatchObject({ applied: false, verdict: expect.objectContaining({ decision: DECISION.NO_CHANGE }) });
 
     const { adjustStock } = require('../../services/product-stock-service');
     const client = await db.getClient();
@@ -264,8 +264,8 @@ if (!isolated) {
     const { rows: [afterCancel] } = await db.query('SELECT stock FROM product_skus WHERE id=$1', [sku.id]);
     expect(afterCancel.stock).toBe(7);
 
-    await expect(applyStockSyncDecision(delta.observation_id))
-      .rejects.toMatchObject({ verdict: expect.objectContaining({ decision: DECISION.NO_CHANGE }) });
+    expect(await applyStockSyncDecision(delta.observation_id))
+      .toMatchObject({ applied: false, verdict: expect.objectContaining({ decision: DECISION.NO_CHANGE }) });
     const { rows: [final] } = await db.query('SELECT stock FROM product_skus WHERE id=$1', [sku.id]);
     expect(final.stock).toBe(7); // jamais écrasé par le sync
   });
