@@ -27,6 +27,11 @@ if (!isolated) {
 
   jest.setTimeout(30000);
 
+  // Preuves synthétiques explicites : elles n'existent que dans cette base
+  // jetable. Le runtime réel doit fournir ses propres preuves provider-scoped.
+  const PROVED_AUTHORITY = async () => ({ proved: true, proof_ref: 'itest-stock-read-proof' });
+  const PROVED_RECONCILIATION = async () => ({ proved: true, proof_ref: 'itest-snapshot-reconciliation' });
+
   /**
    * Reconstruit exactement la chaîne complète (source -> produit catalogue
    * -> candidate -> capture -> observations product/offer/unit -> entités
@@ -132,13 +137,29 @@ if (!isolated) {
     }
   }
 
+  test('REVIEW_REQUIRED : identité exacte sans preuve stock_read ne devient jamais APPLY', async () => {
+    await withTx(async (client, q) => {
+      const { sourceRef, provider, sku } = await seedResolvedSkuLineage(q, { initialStock: 3 });
+      const delta = await observeStock(client, {
+        sourceRef, provider, eventId: 'e-no-authority', observedAt: new Date().toISOString(), value: 7,
+      });
+      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
+      expect(verdict).toMatchObject({
+        decision: DECISION.REVIEW_REQUIRED,
+        reason: REASON.STOCK_AUTHORITY_NOT_PROVEN,
+        product_sku_id: sku.id,
+      });
+      expect((await q('SELECT stock FROM product_skus WHERE id=$1', [sku.id])).rows[0].stock).toBe(3);
+    });
+  });
+
   test('APPLY : identité prouvée, fraîche, aucun engagement non réconcilié, valeur différente', async () => {
     await withTx(async (client, q) => {
       const { sourceRef, provider, sku } = await seedResolvedSkuLineage(q, { initialStock: 3 });
       const delta = await observeStock(client, {
         sourceRef, provider, eventId: 'e1', observedAt: new Date().toISOString(), value: 7,
       });
-      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
+      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q, authorityFn: PROVED_AUTHORITY, reconciliationFn: PROVED_RECONCILIATION });
       expect(verdict).toMatchObject({
         decision: DECISION.APPLY, reason: REASON.IDENTITY_PROVEN_AND_FRESH,
         product_sku_id: sku.id, target_stock_value: 7, current_stock: 3,
@@ -154,7 +175,7 @@ if (!isolated) {
         sourceRef, provider, eventId: 'e-future',
         observedAt: new Date(Date.now() + 60_000).toISOString(), value: 12,
       });
-      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
+      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q, authorityFn: PROVED_AUTHORITY, reconciliationFn: PROVED_RECONCILIATION });
       expect(verdict).toMatchObject({
         decision: DECISION.BLOCKED, reason: REASON.FUTURE_OBSERVATION,
         product_sku_id: sku.id,
@@ -173,7 +194,7 @@ if (!isolated) {
       const delta = await observeStock(client, {
         sourceRef, provider, eventId: 'e-noproof', observedAt: new Date().toISOString(), value: 5,
       });
-      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
+      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q, authorityFn: PROVED_AUTHORITY, reconciliationFn: PROVED_RECONCILIATION });
       expect(verdict.decision).toBe(DECISION.BLOCKED);
       expect(verdict.reason).toBe(REASON.IDENTITY_NOT_PROVEN);
     });
@@ -191,7 +212,7 @@ if (!isolated) {
         "VALUES ($1,$2,$3,'e2',$4,9)",
         [sku.id, sourceRef, delta.observation_id, new Date().toISOString()]
       );
-      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
+      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q, authorityFn: PROVED_AUTHORITY, reconciliationFn: PROVED_RECONCILIATION });
       expect(verdict).toMatchObject({
         decision: DECISION.NO_CHANGE, reason: REASON.REPLAY_SAME_OBSERVATION,
       });
@@ -204,7 +225,7 @@ if (!isolated) {
       const delta = await observeStock(client, {
         sourceRef, provider, eventId: 'e3', observedAt: new Date().toISOString(), value: 4,
       });
-      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
+      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q, authorityFn: PROVED_AUTHORITY, reconciliationFn: PROVED_RECONCILIATION });
       expect(verdict).toMatchObject({
         decision: DECISION.NO_CHANGE, reason: REASON.TARGET_EQUALS_CURRENT_STOCK,
         current_stock: 4,
@@ -225,7 +246,7 @@ if (!isolated) {
         "VALUES ($1,$2,$3,'e-newer',$4,9)",
         [sku.id, sourceRef, randomUUID(), new Date().toISOString()]
       );
-      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
+      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q, authorityFn: PROVED_AUTHORITY, reconciliationFn: PROVED_RECONCILIATION });
       expect(verdict.decision).toBe(DECISION.STALE);
       expect(verdict.reason).toBe(REASON.OLDER_OR_EQUAL_TO_APPLIED);
       const { rows: [after] } = await q('SELECT stock FROM product_skus WHERE id=$1', [sku.id]);
@@ -263,7 +284,7 @@ if (!isolated) {
         "VALUES ($1,$2,$3,'synthetic-sku',1,'pending','auto')",
         [order.id, supplierId, sku.id]
       );
-      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
+      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q, authorityFn: PROVED_AUTHORITY, reconciliationFn: PROVED_RECONCILIATION });
       expect(verdict).toMatchObject({
         decision: DECISION.REVIEW_REQUIRED, reason: REASON.UNRECONCILED_KOMERCE_COMMITMENT,
         product_sku_id: sku.id,
@@ -272,7 +293,7 @@ if (!isolated) {
     });
   });
 
-  test('APPLY malgré un engagement Komerce déjà CONFIRMED — le fournisseur en est déjà informé', async () => {
+  test('APPLY avec engagement CONFIRMED seulement si le snapshot est explicitement réconcilié', async () => {
     await withTx(async (client, q) => {
       const { sourceRef, provider, sku } = await seedResolvedSkuLineage(q, { initialStock: 3 });
       const delta = await observeStock(client, {
@@ -288,7 +309,7 @@ if (!isolated) {
         "VALUES ($1,$2,$3,'synthetic-sku',1,'confirmed','auto')",
         [order.id, supplierId, sku.id]
       );
-      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
+      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q, authorityFn: PROVED_AUTHORITY, reconciliationFn: PROVED_RECONCILIATION });
       expect(verdict.decision).toBe(DECISION.APPLY);
     });
   });
