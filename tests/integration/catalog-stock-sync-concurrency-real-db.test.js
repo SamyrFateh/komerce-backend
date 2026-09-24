@@ -30,8 +30,8 @@ if (!isolated) {
   jest.setTimeout(30000);
 
   const proofDeps = {
-    authorityFn: async () => ({ proved: true, proof_ref: 'itest-stock-read-proof' }),
-    reconciliationFn: async () => ({ proved: true, proof_ref: 'itest-snapshot-reconciliation' }),
+    authorityFn: async (ctx) => ({ proved: true, proof_ref: 'itest-stock-read-proof', operation: 'stock_read', source_id: ctx.source_id, product_sku_id: ctx.product_sku_id }),
+    reconciliationFn: async (ctx) => ({ proved: true, proof_ref: 'itest-snapshot-reconciliation', observation_id: ctx.observation_id, product_sku_id: ctx.product_sku_id }),
   };
 
   async function seedResolvedSkuLineage({ initialStock = 5 } = {}) {
