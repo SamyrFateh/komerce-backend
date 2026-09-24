@@ -121,6 +121,13 @@ async function applyProductTextFieldSync(observationId, factName, column, { pool
           read_after_write_verified: true,
         };
       }
+      if (verdict.decision === DECISION.NO_CHANGE) {
+        await client.query('COMMIT'); begun = false;
+        return {
+          verdict, catalog_product_id: verdict.catalog_product_id, applied: false,
+          read_after_write_verified: false,
+        };
+      }
       throw new FieldSyncApplicationError(statusFor(verdict.decision), verdict);
     }
 
@@ -202,6 +209,13 @@ async function applyProductMediaSync(observationId, { pool = db, authorityFn } =
           verdict, catalog_product_id: verdict.catalog_product_id, applied: false,
           value_before: unchanged.value, value_after: unchanged.value,
           read_after_write_verified: true,
+        };
+      }
+      if (verdict.decision === DECISION.NO_CHANGE) {
+        await client.query('COMMIT'); begun = false;
+        return {
+          verdict, catalog_product_id: verdict.catalog_product_id, applied: false,
+          read_after_write_verified: false,
         };
       }
       throw new FieldSyncApplicationError(statusFor(verdict.decision), verdict);
@@ -299,6 +313,14 @@ async function applyPurchasePriceSync(observationId, { pool = db, authorityFn } 
           verdict, catalog_product_id: verdict.catalog_product_id, applied: false,
           value_before: unchanged.applied_value, value_after: unchanged.applied_value,
           read_after_write_verified: true,
+        };
+      }
+      if (verdict.decision === DECISION.NO_CHANGE) {
+        await client.query('COMMIT'); begun = false;
+        return {
+          verdict, catalog_product_id: verdict.catalog_product_id,
+          product_sku_id: verdict.product_sku_id, applied: false,
+          read_after_write_verified: false,
         };
       }
       throw new FieldSyncApplicationError(statusFor(verdict.decision), verdict);
