@@ -39,6 +39,10 @@ describe('hero ultra mobile contract', () => {
 
   test('garde le slogan visible mais compact dans la réserve gauche', () => {
     expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
+    // Match premium-theme specificity so the compact mobile font size really wins.
+    expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium {');
+    expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {');
+    expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {');
     expect(css).toContain('inset: 0 auto 0 0;');
     expect(css).toContain('width: 44%;');
     expect(css).toContain('padding: 2px 0 0 0;');
