@@ -67,7 +67,7 @@ function publicVerdict(row) {
     volume_source: row.data_sources?.volume || null,
     refinery_decision: row.scan_result?.sourcing_decision || null,
     decision_reason: typeof row.scan_result?.reason === 'string'
-      ? row.scan_result.reason.replace(/[\\r\\n\\t]/g, ' ').slice(0, 240) : null,
+      ? row.scan_result.reason.replace(/[\r\n\t]/g, ' ').slice(0, 240) : null,
     economic_health: row.scan_result?.economic_test_health_status || null,
     pricing_health: row.scan_result?.health_status || null,
     market_confidence: row.scan_result?.market_confidence || null,
