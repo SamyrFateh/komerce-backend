@@ -25,7 +25,7 @@ D'après `docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md` §"provider / platfo
 | `title` | `decideProductTextFieldSync` | `applyProductTextFieldSync` | `products.name`, protégé par `catalog_field_overrides` | `implemented` + `proved` en CI isolée uniquement. `authorized` = **false** pour tous — même garde fail-closed (`FIELD_AUTHORITY_NOT_PROVEN`). |
 | `description` | `decideProductTextFieldSync` | `applyProductTextFieldSync` | `products.description`, protégé par `catalog_field_overrides` | Idem `title`. |
 | `media` | `decideProductMediaSync` | `applyProductMediaSync` | `products.images`/`image_url`, protégé par lecture de `catalog_field_overrides` (aucune écriture d'override dédiée à ce jour) | Idem. |
-| `purchase_price` / `currency` | `decidePurchasePriceSync` | `applyPurchasePriceSync` | **`catalog_field_sync_state` uniquement** — jamais `products.cost_kmf` (moteur économique actif, `services/pricing-output.js`) | Idem, **plus** une frontière structurelle additionnelle : même avec une autorité prouvée demain, ce chemin ne peut techniquement pas toucher le prix de vente — il faudrait un chantier séparé et délibéré pour connecter `catalog_field_sync_state` au moteur économique. |
+| `purchase_price` / `currency` | `decidePurchasePriceSync` | `applyPurchasePriceSync` | **`catalog_field_sync_state` au grain `sku` uniquement**, couple `{amount,currency}` issu de la même capture et lié au SKU exact — jamais `products.cost_kmf` (moteur économique actif, `services/pricing-output.js`) | Idem, **plus** une frontière structurelle additionnelle : même avec une autorité prouvée demain, ce chemin ne peut techniquement pas toucher le prix de vente — il faudrait un chantier séparé et délibéré pour connecter `catalog_field_sync_state` au moteur économique. |
 | `offer_status` | `decideOfferLifecycleFieldSync` | **Aucune** | — | *Decision-only.* Ne retourne jamais `APPLY`. Toujours `REVIEW_REQUIRED` (`PUBLICATION_LINKED_DECISION_ONLY`) une fois l'identité prouvée — la mutation vit dans `services/catalog-promotion/*`, jamais invoqué par ce moteur. |
 | `is_active` | `decideOfferLifecycleFieldSync` | **Aucune** | — | Idem `offer_status`. |
 | `option_axes` | `decideOfferLifecycleFieldSync` | **Aucune** | — | Idem — risque explicite de recyclage d'identité SKU déjà utilisé par une commande (brief §2.2), jamais couru puisqu'aucune écriture n'existe. |
@@ -40,7 +40,7 @@ D'après `docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md` §"provider / platfo
 - **Overrides manuels** : `title`/`description` réutilisent `catalog_field_overrides` existant sans le modifier ; `media` en réutilise la lecture. Une correction manuelle bloque inconditionnellement, quelle que soit la fraîcheur de l'observation.
 - **Idempotence** : rejeu de la même observation → `NO_CHANGE`, jamais un second effet (prouvé pour title/description/media/purchase_price).
 - **Conflits** : un sujet touché après l'observation (`updated_at` du produit) → `REVIEW_REQUIRED`, jamais un écrasement silencieux d'un mouvement local plus récent.
-- **Lecture après écriture** : chaque écriture réelle (title/description/media) et chaque enregistrement de suivi (purchase_price) est relu dans la même transaction avant COMMIT.
+- **Lecture après écriture** : chaque écriture réelle (title/description/media, y compris l'image primaire) et chaque enregistrement de suivi (purchase_price) est relu dans la même transaction ; toute divergence provoque un rollback avant COMMIT. `NO_CHANGE` est retourné comme résultat idempotent, et non une exception HTTP 200.
 
 ## Ce qui reste, sans le déclarer "terminé"
 
@@ -52,3 +52,10 @@ D'après `docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md` §"provider / platfo
 - `attributes` n'a aucun décideur de champ à ce jour.
 - Aucun essai réel auprès d'un provider n'a été tenté dans cette passe — uniquement des
   données synthétiques sur base PostgreSQL isolée, comme l'exige le brief.
+
+## Garde-fous ajoutés pendant la revue de la PR
+
+- Texte : concordance obligatoire `title→products.name` et `description→products.description`; rejet des valeurs absentes ou non textuelles.
+- Médias : liste HTTPS non vide exigée (l'absence de médias n'est pas une demande de suppression) ; vérification des images et de l'image principale avant COMMIT.
+- Prix : montant strictement positif et fini, accompagné d'une devise ISO à trois lettres explicitement observée dans la même capture ; un prix seul retourne `REVIEW_REQUIRED/PRICE_CURRENCY_NOT_PROVEN`. La valeur suivie est `{amount,currency}` pour un **SKU exact**, jamais un prix produit partagé entre variantes ni un prix de vente appliqué.
+- Tous les champs restent bloqués pour les fournisseurs réels tant qu'aucune preuve de capacité autorisée au bon périmètre n'existe. L'absence de route/cron et de preuve live interdit de qualifier ce moteur d'opérationnel en production.
