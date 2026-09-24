@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 619,
-    "filesWithFullHeaders": 572,
+    "scannedCodeFiles": 621,
+    "filesWithFullHeaders": 574,
     "filesWithLiteHeaders": 47,
-    "filesWithAnyHeaders": 619,
+    "filesWithAnyHeaders": 621,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1467,
-    "edges": 7346,
-    "dbTables": 174,
+    "graphNodes": 1474,
+    "edges": 7375,
+    "dbTables": 179,
     "doctrines": 489,
     "impactAreas": 185,
-    "unresolvedCodeEdges": 734,
+    "unresolvedCodeEdges": 738,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 76
   },
@@ -35,7 +35,7 @@
     "notification": 21,
     "auth": 14,
     "platform-ops": 2,
-    "catalog": 112,
+    "catalog": 114,
     "admin-dashboard": 22,
     "decision-signals": 12,
     "market-delegation": 25,
@@ -107,7 +107,7 @@
     "schema": 1,
     "route": 128,
     "entrypoint": 1,
-    "service": 313,
+    "service": 315,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -116,7 +116,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 90,
+    "critical": 92,
     "medium": 131,
     "high": 343,
     "low": 55
@@ -13181,6 +13181,103 @@
       "version": "2026-08"
     },
     {
+      "id": "services/catalog-field-sync-application.js",
+      "file": "services/catalog-field-sync-application.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-field-sync-application",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "immutable_catalog_change_observation_id",
+        "field_name"
+      ],
+      "outputs": [
+        "applied_field_value_or_explicit_blocker",
+        "read_after_write_proof"
+      ],
+      "depends": [
+        "db.js",
+        "services/catalog-field-sync-decision.js"
+      ],
+      "usedBy": [
+        "tests/integration/catalog-field-sync-application-real-db.test.js"
+      ],
+      "dbRead": [
+        "products",
+        "catalog_field_overrides",
+        "catalog_field_sync_state"
+      ],
+      "dbWrite": [
+        "products (name",
+        "description",
+        "images",
+        "image_url uniquement)",
+        "catalog_field_sync_state"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "owned (BEGIN/COMMIT/ROLLBACK ; verrou FOR UPDATE sur la ligne products ciblée)"
+      ],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/catalog-field-sync-decision.js",
+      "file": "services/catalog-field-sync-decision.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-field-sync-decision",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "immutable_catalog_change_observation_id",
+        "field_name"
+      ],
+      "outputs": [
+        "explicit_auditable_field_application_decision"
+      ],
+      "depends": [
+        "db.js",
+        "services/sourcing-catalog-change-sku-identity-proof.js"
+      ],
+      "usedBy": [
+        "services/catalog-field-sync-application.js",
+        "tests/integration/catalog-field-sync-decision-real-db.test.js"
+      ],
+      "dbRead": [
+        "catalog_field_sync_state",
+        "catalog_field_overrides",
+        "products",
+        "product_skus",
+        "sourcing_captures",
+        "sourcing_observations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "services/catalog-live-flow.js",
       "file": "services/catalog-live-flow.js",
       "type": "file",
@@ -25199,7 +25296,7 @@
         "registered_source_ref"
       ],
       "outputs": [
-        "immutable_source_capture_and_exact_unit_stock_observation"
+        "immutable_source_capture_and_exact_unit_catalog_observation"
       ],
       "depends": [
         "db.js",
@@ -25208,7 +25305,9 @@
         "services/sourcing-observation-shadow-service.js"
       ],
       "usedBy": [
-        "routes/admin-sourcing-workspace.js"
+        "routes/admin-sourcing-workspace.js",
+        "services/catalog-stock-sync-decision.js",
+        "services/catalog-field-sync-decision.js"
       ],
       "dbRead": [
         "sourcing_sources",
@@ -30073,6 +30172,41 @@
       "table": "catalog_enrichment_runs"
     },
     {
+      "id": "db:catalog_field_sync_state",
+      "type": "db-table",
+      "table": "catalog_field_sync_state"
+    },
+    {
+      "id": "db:products (name",
+      "type": "db-table",
+      "table": "products (name"
+    },
+    {
+      "id": "db:description",
+      "type": "db-table",
+      "table": "description"
+    },
+    {
+      "id": "db:images",
+      "type": "db-table",
+      "table": "images"
+    },
+    {
+      "id": "db:image_url uniquement)",
+      "type": "db-table",
+      "table": "image_url uniquement)"
+    },
+    {
+      "id": "db:sourcing_captures",
+      "type": "db-table",
+      "table": "sourcing_captures"
+    },
+    {
+      "id": "db:sourcing_observations",
+      "type": "db-table",
+      "table": "sourcing_observations"
+    },
+    {
       "id": "db:product_attributes",
       "type": "db-table",
       "table": "product_attributes"
@@ -30101,16 +30235,6 @@
       "id": "db:sourcing_resolution_bindings",
       "type": "db-table",
       "table": "sourcing_resolution_bindings"
-    },
-    {
-      "id": "db:sourcing_observations",
-      "type": "db-table",
-      "table": "sourcing_observations"
-    },
-    {
-      "id": "db:sourcing_captures",
-      "type": "db-table",
-      "table": "sourcing_captures"
     },
     {
       "id": "db:catalog_stock_sync_state",
@@ -52634,6 +52758,168 @@
       "label": "sourcing"
     },
     {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "services/catalog-field-sync-decision.js",
+      "type": "depends",
+      "label": "services/catalog-field-sync-decision.js"
+    },
+    {
+      "from": "tests/integration/catalog-field-sync-application-real-db.test.js",
+      "to": "services/catalog-field-sync-application.js",
+      "type": "uses",
+      "label": "tests/integration/catalog-field-sync-application-real-db.test.js"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "db:catalog_field_overrides",
+      "type": "db-read",
+      "label": "catalog_field_overrides"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "db:catalog_field_sync_state",
+      "type": "db-read",
+      "label": "catalog_field_sync_state"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "db:products (name",
+      "type": "db-write",
+      "label": "products (name"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "db:description",
+      "type": "db-write",
+      "label": "description"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "db:images",
+      "type": "db-write",
+      "label": "images"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "db:image_url uniquement)",
+      "type": "db-write",
+      "label": "image_url uniquement)"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "db:catalog_field_sync_state",
+      "type": "db-write",
+      "label": "catalog_field_sync_state"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "services/sourcing-catalog-change-sku-identity-proof.js",
+      "type": "depends",
+      "label": "services/sourcing-catalog-change-sku-identity-proof.js"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "services/catalog-field-sync-decision.js",
+      "type": "uses",
+      "label": "services/catalog-field-sync-application.js"
+    },
+    {
+      "from": "tests/integration/catalog-field-sync-decision-real-db.test.js",
+      "to": "services/catalog-field-sync-decision.js",
+      "type": "uses",
+      "label": "tests/integration/catalog-field-sync-decision-real-db.test.js"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "db:catalog_field_sync_state",
+      "type": "db-read",
+      "label": "catalog_field_sync_state"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "db:catalog_field_overrides",
+      "type": "db-read",
+      "label": "catalog_field_overrides"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "db:sourcing_captures",
+      "type": "db-read",
+      "label": "sourcing_captures"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "db:sourcing_observations",
+      "type": "db-read",
+      "label": "sourcing_observations"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
       "from": "services/catalog-live-flow.js",
       "to": "db.js",
       "type": "depends",
@@ -71677,6 +71963,18 @@
       "to": "services/sourcing-catalog-change-observation.js",
       "type": "uses",
       "label": "routes/admin-sourcing-workspace.js"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "services/sourcing-catalog-change-observation.js",
+      "type": "uses",
+      "label": "services/catalog-stock-sync-decision.js"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "services/sourcing-catalog-change-observation.js",
+      "type": "uses",
+      "label": "services/catalog-field-sync-decision.js"
     },
     {
       "from": "services/sourcing-catalog-change-observation.js",
@@ -91184,6 +91482,103 @@
         "utils/rules.js"
       ]
     },
+    "services/catalog-field-sync-application.js": {
+      "role": "catalog-field-sync-application",
+      "domain": "catalog",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/catalog-field-sync-decision.js"
+      ],
+      "directUsedBy": [
+        "tests/integration/catalog-field-sync-application-real-db.test.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "products",
+        "catalog_field_overrides",
+        "catalog_field_sync_state"
+      ],
+      "dbWrite": [
+        "products (name",
+        "description",
+        "images",
+        "image_url uniquement)",
+        "catalog_field_sync_state"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "mustCheck": [
+        "db:catalog_field_overrides",
+        "db:catalog_field_sync_state",
+        "db:description",
+        "db:image_url uniquement)",
+        "db:images",
+        "db:products",
+        "db:products (name",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+        "impact:catalog",
+        "impact:sourcing",
+        "services/catalog-field-sync-decision.js"
+      ]
+    },
+    "services/catalog-field-sync-decision.js": {
+      "role": "catalog-field-sync-decision",
+      "domain": "catalog",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/sourcing-catalog-change-sku-identity-proof.js"
+      ],
+      "directUsedBy": [
+        "services/catalog-field-sync-application.js",
+        "tests/integration/catalog-field-sync-decision-real-db.test.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "catalog_field_sync_state",
+        "catalog_field_overrides",
+        "products",
+        "product_skus",
+        "sourcing_captures",
+        "sourcing_observations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "sourcing"
+      ],
+      "mustCheck": [
+        "db:catalog_field_overrides",
+        "db:catalog_field_sync_state",
+        "db:product_skus",
+        "db:products",
+        "db:sourcing_captures",
+        "db:sourcing_observations",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+        "impact:catalog",
+        "impact:sourcing",
+        "services/catalog-field-sync-application.js",
+        "services/sourcing-catalog-change-observation.js",
+        "services/sourcing-catalog-change-sku-identity-proof.js"
+      ]
+    },
     "services/catalog-live-flow.js": {
       "role": "catalog-live-source-flow-projection",
       "domain": "catalog",
@@ -91969,6 +92364,7 @@
         "impact:orders",
         "impact:purchasing",
         "services/catalog-stock-sync-application.js",
+        "services/sourcing-catalog-change-observation.js",
         "services/sourcing-catalog-change-sku-identity-proof.js"
       ]
     },
@@ -103070,7 +103466,9 @@
         "services/sourcing-observation-shadow-service.js"
       ],
       "directUsedBy": [
-        "routes/admin-sourcing-workspace.js"
+        "routes/admin-sourcing-workspace.js",
+        "services/catalog-stock-sync-decision.js",
+        "services/catalog-field-sync-decision.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -103100,6 +103498,8 @@
         "impact:sourcing",
         "routes/admin-sourcing-workspace.js",
         "services/catalog-change-intake.js",
+        "services/catalog-field-sync-decision.js",
+        "services/catalog-stock-sync-decision.js",
         "services/sourcing-observation-shadow-service.js"
       ]
     },
@@ -103148,6 +103548,7 @@
         "doctrine:docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
         "impact:catalog",
         "impact:sourcing",
+        "services/catalog-field-sync-decision.js",
         "services/catalog-stock-sync-decision.js",
         "services/sourcing-catalog-change-unit-resolution-proof.js"
       ]
@@ -110023,6 +110424,30 @@
       "to": "services/catalog-enrichment.js",
       "type": "uses",
       "label": "scripts/showcase-v2-seed.js"
+    },
+    {
+      "from": "services/catalog-field-sync-application.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "tests/integration/catalog-field-sync-application-real-db.test.js",
+      "to": "services/catalog-field-sync-application.js",
+      "type": "uses",
+      "label": "tests/integration/catalog-field-sync-application-real-db.test.js"
+    },
+    {
+      "from": "services/catalog-field-sync-decision.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "tests/integration/catalog-field-sync-decision-real-db.test.js",
+      "to": "services/catalog-field-sync-decision.js",
+      "type": "uses",
+      "label": "tests/integration/catalog-field-sync-decision-real-db.test.js"
     },
     {
       "from": "services/catalog-live-flow.js",
