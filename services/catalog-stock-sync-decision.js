@@ -82,6 +82,8 @@ const REASON = Object.freeze({
   OLDER_OR_EQUAL_TO_APPLIED: 'OLDER_OR_EQUAL_TO_APPLIED',
   SKU_TOUCHED_AFTER_OBSERVATION: 'SKU_TOUCHED_AFTER_OBSERVATION',
   FUTURE_OBSERVATION: 'FUTURE_OBSERVATION',
+  STOCK_AUTHORITY_NOT_PROVEN: 'STOCK_AUTHORITY_NOT_PROVEN',
+  STOCK_RECONCILIATION_NOT_PROVEN: 'STOCK_RECONCILIATION_NOT_PROVEN',
   UNRECONCILED_KOMERCE_COMMITMENT: 'UNRECONCILED_KOMERCE_COMMITMENT',
   TARGET_EQUALS_CURRENT_STOCK: 'TARGET_EQUALS_CURRENT_STOCK',
   IDENTITY_PROVEN_AND_FRESH: 'IDENTITY_PROVEN_AND_FRESH',
@@ -105,6 +107,8 @@ function verdict(decision, reason, extra = {}) {
 async function decideStockSyncApplication(observationId, {
   query = db.query.bind(db),
   identityFn = skuProof.proveExactCatalogSkuForStockDelta,
+  authorityFn = async () => ({ proved: false, reason: 'NO_RUNTIME_STOCK_AUTHORITY_PROOF' }),
+  reconciliationFn = async () => ({ proved: false, reason: 'NO_RUNTIME_RECONCILIATION_PROOF' }),
 } = {}) {
   const identity = await identityFn(observationId, query);
   if (identity.status !== skuProof.STATUS.EXACT_CATALOG_SKU_IDENTITY) {
@@ -164,6 +168,21 @@ async function decideStockSyncApplication(observationId, {
     });
   }
 
+  // L'identité d'une source ne vaut jamais autorité sur le champ stock.
+  // Le runtime doit fournir une preuve scoped (provider + account/environment
+  // + opération stock_read + unité) issue du contrat provider réellement
+  // AUTHORIZED + IMPLEMENTED + PROVED. Par défaut, on échoue fermé.
+  const authority = await authorityFn({
+    ...common,
+    stock_available_observed: observedStock,
+  });
+  if (!authority || authority.proved !== true) {
+    return verdict(DECISION.REVIEW_REQUIRED, REASON.STOCK_AUTHORITY_NOT_PROVEN, {
+      ...common,
+      authority_reason: authority?.reason || 'MISSING_PROOF',
+    });
+  }
+
   // Réconciliation : un engagement Komerce non confirmé côté fournisseur
   // rend l'observation ambiguë — on ne sait pas si elle en tient déjà
   // compte. pending/notified = même frontière que purchasing-cancel-
@@ -177,6 +196,30 @@ async function decideStockSyncApplication(observationId, {
     return verdict(DECISION.REVIEW_REQUIRED, REASON.UNRECONCILED_KOMERCE_COMMITMENT, {
       ...common, unreconciled_purchase_order_count_at_least: unreconciled.length,
     });
+  }
+
+  // Un PO confirmé signifie que Purchasing a avancé ; il ne prouve pas que
+  // CE snapshot fournisseur intègre déjà l'engagement. Toute présence d'un
+  // engagement historique/actif exige donc une preuve explicite de
+  // réconciliation avant qu'une valeur absolue externe puisse remplacer la
+  // quantité vendable Komerce.
+  const { rows: commitments } = await query(
+    "SELECT id, status FROM purchase_orders WHERE product_sku_id = $1 LIMIT 5",
+    [productSkuId]
+  );
+  if (commitments.length) {
+    const reconciliation = await reconciliationFn({
+      ...common,
+      stock_available_observed: observedStock,
+      commitments,
+    });
+    if (!reconciliation || reconciliation.proved !== true) {
+      return verdict(DECISION.REVIEW_REQUIRED, REASON.STOCK_RECONCILIATION_NOT_PROVEN, {
+        ...common,
+        commitment_count_at_least: commitments.length,
+        reconciliation_reason: reconciliation?.reason || 'MISSING_PROOF',
+      });
+    }
   }
 
   const { rows: [sku] } = await query(
