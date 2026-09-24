@@ -11,6 +11,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const path = require('node:path');
 const db = require('../db');
 const cj = require('../services/suppliers/connectors/cj-connector');
 const orchestrator = require('../services/suppliers/catalog-import-orchestrator');
@@ -45,6 +46,36 @@ async function assertIsolatedDatabase() {
   }
 }
 
+// A schema-only CI snapshot cannot carry the production reference rows.
+// Restore the existing, versioned customs-category reference seed ONLY in the
+// disposable, positively identified CI database, before requesting CJ data.
+// This is a historical CI pricing reference, NOT verified live country tax
+// rates or evidence of a sellable category / current market price.
+async function ensureIsolatedCiCategories() {
+  const { rows: [before] } = await db.query(
+    'SELECT count(*)::int AS count FROM customs_categories WHERE is_active = TRUE'
+  );
+  let referenceSource = 'preexisting_ci_reference';
+  if (before.count === 0) {
+    const seed = fs.readFileSync(
+      path.join(__dirname, '../migrations/036b_seed_customs_categories.sql'), 'utf8'
+    );
+    await db.query(seed);
+    referenceSource = 'migrations/036b_seed_customs_categories.sql:ci_reference_only';
+  }
+  const { rows } = await db.query(
+    'SELECT key FROM customs_categories WHERE is_active = TRUE ORDER BY key'
+  );
+  const keys = rows.map(row => row.key);
+  if (!keys.includes('phones') || !keys.includes('electro')) {
+    throw new Error('REFUS: CI_CANONICAL_CATEGORIES_MISSING');
+  }
+  console.log('CJ_CI_REFERENCE_CATEGORIES ' + JSON.stringify({
+    count: keys.length, phones: true, electro: true, reference_source: referenceSource,
+  }));
+  return referenceSource;
+}
+
 function publicVerdict(row) {
   const snap = row.normalized_source_contract || {};
   return {
@@ -54,6 +85,11 @@ function publicVerdict(row) {
     catalog_product_id: row.product_id || null,
     purchase_price: row.purchase_price == null ? null : Number(row.purchase_price),
     currency: row.currency || null,
+    // Normalized CJ provenance only; category is a provisional pricing profile,
+    // not a binding customs classification or a storefront approval.
+    supplier_category: typeof row.supplier_category === 'string'
+      ? row.supplier_category.replace(/[\r\n\t]/g, ' ').slice(0, 120) : null,
+    komerce_category: row.komerce_category || null,
     media_count: Array.isArray(snap.media) ? snap.media.length : 0,
     sellable_unit_count: Array.isArray(snap.sellable_units) ? snap.sellable_units.length : 0,
     // Read only the persisted facts needed to explain WATCH. No raw CJ
@@ -77,6 +113,7 @@ function publicVerdict(row) {
 
 async function run() {
   await assertIsolatedDatabase();
+  const ciReferenceSource = await ensureIsolatedCiCategories();
   const accessToken = process.env.CJ_ACCESS_TOKEN;
   if (!accessToken) throw new Error('REFUS: DEDICATED_CJ_READ_TOKEN_MISSING');
 
@@ -135,13 +172,15 @@ async function run() {
   const importId = importResult.body?.import_id || null;
   const { rows: candidates } = importId
     ? await db.query(
-      'SELECT id, supplier_product_id, state, product_id, purchase_price, currency, stock_available, purchase_price_kmf, data_sources, scan_result, rejected_reason, normalized_source_contract ' +
+      'SELECT id, supplier_product_id, supplier_category, komerce_category, state, product_id, purchase_price, currency, stock_available, purchase_price_kmf, data_sources, scan_result, rejected_reason, normalized_source_contract ' +
       'FROM sourcing_candidates WHERE import_id = $1 ORDER BY supplier_product_id ASC',
       [importId]
     ) : { rows: [] };
   const report = {
     environment: 'isolated_github_actions_postgresql',
     supplier: 'CJdropshipping',
+    ci_reference_source: ciReferenceSource,
+    ci_category_decision_authority: 'PROVISIONAL_TEST_ONLY_NOT_CUSTOMS_OR_MARKET_VALIDATION',
     actual_source_reads: 1 + exactIds.length,
     exact_ids: exactIds,
     imported_candidates: candidates.length,
