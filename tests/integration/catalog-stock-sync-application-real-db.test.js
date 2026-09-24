@@ -30,6 +30,13 @@ if (!isolated) {
 
   jest.setTimeout(30000);
 
+  const PROVED_AUTHORITY = async () => ({ proved: true, proof_ref: 'itest-stock-read-proof' });
+  const PROVED_RECONCILIATION = async () => ({ proved: true, proof_ref: 'itest-snapshot-reconciliation' });
+  const proofDeps = {
+    authorityFn: PROVED_AUTHORITY,
+    reconciliationFn: PROVED_RECONCILIATION,
+  };
+
   const cleanupProductIds = [];
   const cleanupSourceIds = [];
 
@@ -153,12 +160,28 @@ if (!isolated) {
     });
   }
 
+  test('sans preuve d’autorité explicite, aucune écriture absolue n’est autorisée', async () => {
+    const { sourceRef, provider, sku } = await seedResolvedSkuLineage({ initialStock: 3 });
+    const delta = await observeStock({
+      sourceRef, provider, eventId: 'w-no-authority', observedAt: new Date().toISOString(), value: 8,
+    });
+    await expect(applyStockSyncDecision(delta.observation_id))
+      .rejects.toMatchObject({
+        status: 409,
+        verdict: expect.objectContaining({
+          decision: DECISION.REVIEW_REQUIRED,
+          reason: 'STOCK_AUTHORITY_NOT_PROVEN',
+        }),
+      });
+    expect((await db.query('SELECT stock FROM product_skus WHERE id=$1', [sku.id])).rows[0].stock).toBe(3);
+  });
+
   test('APPLY écrit la valeur exacte et le prouve par lecture après écriture', async () => {
     const { sourceRef, provider, sku } = await seedResolvedSkuLineage({ initialStock: 3 });
     const delta = await observeStock({
       sourceRef, provider, eventId: 'w1', observedAt: new Date().toISOString(), value: 8,
     });
-    const result = await applyStockSyncDecision(delta.observation_id);
+    const result = await applyStockSyncDecision(delta.observation_id, proofDeps);
     expect(result.verdict.decision).toBe(DECISION.APPLY);
     expect(result.stock_before).toBe(3);
     expect(result.stock_after).toBe(8);
@@ -202,7 +225,7 @@ if (!isolated) {
         };
       },
     };
-    await expect(applyStockSyncDecision(delta.observation_id, { pool: injectedPool }))
+    await expect(applyStockSyncDecision(delta.observation_id, { pool: injectedPool, ...proofDeps }))
       .rejects.toMatchObject({
         status: 500,
         verdict: expect.objectContaining({ reason: 'READ_AFTER_WRITE_MISMATCH' }),
@@ -220,10 +243,10 @@ if (!isolated) {
     const delta = await observeStock({
       sourceRef, provider, eventId: 'w2', observedAt: new Date().toISOString(), value: 5,
     });
-    const first = await applyStockSyncDecision(delta.observation_id);
+    const first = await applyStockSyncDecision(delta.observation_id, proofDeps);
     expect(first.stock_after).toBe(5);
 
-    const replay = await applyStockSyncDecision(delta.observation_id);
+    const replay = await applyStockSyncDecision(delta.observation_id, proofDeps);
     expect(replay).toMatchObject({
       applied: false,
       verdict: expect.objectContaining({ decision: DECISION.NO_CHANGE }),
@@ -241,11 +264,11 @@ if (!isolated) {
     const newer = await observeStock({
       sourceRef, provider, eventId: 'w-new', observedAt: new Date().toISOString(), value: 9,
     });
-    await applyStockSyncDecision(newer.observation_id);
+    await applyStockSyncDecision(newer.observation_id, proofDeps);
     const { rows: [afterNewer] } = await db.query('SELECT stock FROM product_skus WHERE id=$1', [sku.id]);
     expect(afterNewer.stock).toBe(9);
 
-    await expect(applyStockSyncDecision(older.observation_id))
+    await expect(applyStockSyncDecision(older.observation_id, proofDeps))
       .rejects.toMatchObject({ verdict: expect.objectContaining({ decision: DECISION.STALE }) });
 
     const { rows: [afterOld] } = await db.query('SELECT stock FROM product_skus WHERE id=$1', [sku.id]);
@@ -273,7 +296,7 @@ if (!isolated) {
       "VALUES ($1,$2,$3,'synthetic-sku',1,'pending','auto')",
       [order.id, supplier.id, sku.id]);
 
-    await expect(applyStockSyncDecision(delta.observation_id))
+    await expect(applyStockSyncDecision(delta.observation_id, proofDeps))
       .rejects.toMatchObject({
         status: 409,
         verdict: expect.objectContaining({ decision: DECISION.REVIEW_REQUIRED }),
@@ -292,7 +315,7 @@ if (!isolated) {
     const delta = await observeStock({
       sourceRef, provider, eventId: 'w4', observedAt: new Date().toISOString(), value: 5,
     });
-    expect(await applyStockSyncDecision(delta.observation_id))
+    expect(await applyStockSyncDecision(delta.observation_id, proofDeps))
       .toMatchObject({ applied: false, verdict: expect.objectContaining({ decision: DECISION.NO_CHANGE }) });
 
     const { adjustStock } = require('../../services/product-stock-service');
@@ -306,7 +329,7 @@ if (!isolated) {
     const { rows: [afterCancel] } = await db.query('SELECT stock FROM product_skus WHERE id=$1', [sku.id]);
     expect(afterCancel.stock).toBe(7);
 
-    expect(await applyStockSyncDecision(delta.observation_id))
+    expect(await applyStockSyncDecision(delta.observation_id, proofDeps))
       .toMatchObject({ applied: false, verdict: expect.objectContaining({ decision: DECISION.NO_CHANGE }) });
     const { rows: [final] } = await db.query('SELECT stock FROM product_skus WHERE id=$1', [sku.id]);
     expect(final.stock).toBe(7); // jamais écrasé par le sync
