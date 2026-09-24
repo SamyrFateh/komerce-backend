@@ -25,22 +25,34 @@
     margin-bottom: 0;
   }
 
+  /* Approved 390px screenshot crop: visual-preview asset, mobile only. */
   .k-hero-media .k-hero-figures {
-    background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');
-    /* Ne plus pousser une image agrandie contre le bord haut du conteneur :
-       .k-hero-media est volontairement overflow:hidden pour le rayon de carte.
-       À 100% + top 0%, les coiffures restent entièrement dans la boîte,
-       sans perdre le téléphone ni réagrandir le masthead. */
-    background-size: auto 100%;
-    background-position: 70% 0%;
+    inset: 0 24px 0 auto;
+    width: 143px;
+    height: 100%;
+    background-image: url('/images/komerce-hero-relais-approved-preview.png');
+    background-size: contain;
+    background-position: center bottom;
     -webkit-mask-image: none;
     mask-image: none;
   }
 
+  /* Shrink only the header cart illustration; preserve its hit target. */
+  .k-header .k-cart-btn.k-header-action .k-cart-avatar,
+  .k-header .k-cart-btn.is-empty .k-cart-avatar,
+  .k-header .k-cart-btn.hidden .k-cart-avatar,
+  .k-cart-btn.k-header-action.is-empty .k-cart-avatar,
+  .k-cart-btn.k-header-action.hidden .k-cart-avatar {
+    width: 21px;
+  }
+
+  .k-hero-copy-mobile { display: inline; }
+  .k-hero-copy-desktop { display: none; }
+
   .k-hero-media .k-hero-mini-slogan--premium {
     inset: 0 auto 0 0;
-    width: 35%;
-    padding: 2px 0 0 9px;
+    width: 44%;
+    padding: 2px 0 0 0;
     align-items: flex-start;
     justify-content: flex-start;
     text-align: left;
