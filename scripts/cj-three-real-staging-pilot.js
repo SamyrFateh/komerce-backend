@@ -277,8 +277,8 @@ async function run() {
       'Pipeline: ' + report.pipeline_status +
       '; shadow: ' + report.shadow_status +
       '; canonical resolved: ' + report.canonical_resolved + '.\n\n' +
-      'Inventory by exact PID: ' + inventorySnapshots.size + '/3. This is a time-bound provider snapshot; no stock persistence or fulfilment approval.\\n\\n' +
-      'No production DB, no publication, no order, no active stock mutation.\\n');
+      'Inventory by exact PID: ' + inventorySnapshots.size + '/3. This is a time-bound provider snapshot; no stock persistence or fulfilment approval.\n\n' +
+      'No production DB, no publication, no order, no active stock mutation.\n');
   }
 
   if (importResult.status !== 200
