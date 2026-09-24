@@ -187,6 +187,35 @@ décision métier sur le stock affichable. Même avec
 Aucune route publique, publication, commande, opération fournisseur ou
 mutation Catalog n'est ajoutée par ce seul contrôle.
 
+## Preuve d'identité exacte du SKU (lecture seule)
+
+`services/sourcing-catalog-change-sku-identity-proof.js` poursuit la preuve
+d'identité de la Canonical Unit d'un delta de stock, **sans la modifier**.
+Le statut `EXACT_CATALOG_SKU_IDENTITY` n'est émis que si une seule unité
+`product_skus` active, provenant d'une promotion fournisseur explicite,
+correspond simultanément au `supplier_unit_ref` exact, au provider de sa
+`supplier_order_identity`, au produit catalogue issu d'un import de cette
+**même source**, et au Canonical Product déjà résolu par un binding actif.
+Ce produit doit utiliser `inventory_model='SKU'`.
+
+Un produit catalogue importé depuis plusieurs Source IDs rend la propriété
+du SKU ambiguë : même fournisseur, autre compte/tenant, autre fournisseur
+ou unité portant accidentellement la même référence textuelle ne doivent
+jamais attribuer le stock au premier candidat trouvé. Absence de
+correspondance, plusieurs SKU, source concurrente, SKU inactif ou modèle
+d'inventaire legacy bloquent explicitement la preuve. Les correspondances
+approximatives par titre, variant_combo et prix sont interdites.
+
+La sortie reste **uniquement un constat d'identité** avec
+`application_status='NOT_EVALUATED'` et `applicable=false` : ni la
+fraîcheur du fait, ni son autorité contractuelle chez le fournisseur, ni les
+réservations et engagements Komerce, ni la cohérence exhaustive de la
+Supplier Order Identity ne sont prouvées par cette lecture. Le stock affiché
+du SKU, les commandes existantes, la visibilité boutique et les captures
+restent inchangés. Un futur owner Catalog devra vérifier ces conditions et
+décider champ par champ du traitement du fait ; le service d'identité n'a
+aucune API de mutation.
+
 ## Conséquence architecture
 
 Provider / fichier / opérateur
