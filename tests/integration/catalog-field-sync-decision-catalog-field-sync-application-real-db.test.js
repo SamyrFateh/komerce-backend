@@ -109,13 +109,13 @@ if (!isolated) {
     return { provider, sourceRef, catalogProduct, sku };
   }
 
-  async function observeFact(q, { sourceRef, provider, eventId, observedAt, factName, fact }) {
+  async function observeFact(q, { sourceRef, provider, eventId, observedAt, factName, fact, currency }) {
     return persistCatalogChange(q, {
       sourceRef, envelope: {
         source: { provider, account_scope: 'default', source_ref: 'product-1' },
         method: 'PULL_EXACT', event_id: eventId, observed_at: observedAt,
         subject: { product_ref: 'product-1', unit_ref: 'unit-1' },
-        facts: { [factName]: fact },
+        facts: { [factName]: fact, ...(currency ? { currency: { status: 'OBSERVED', value: currency } } : {}) },
       },
     });
   }
@@ -142,6 +142,7 @@ if (!isolated) {
     return async (ctx) => ({
       proved: true, operation: `${ctx.field_name}_${operationSuffix}`,
       source_id: ctx.source_id, catalog_product_id: ctx.catalog_product_id,
+      product_sku_id: ctx.product_sku_id,
     });
   }
 
@@ -380,25 +381,43 @@ if (!isolated) {
   });
 
   describe('purchase_price — décision et application, jamais products.cost_kmf', () => {
+    test('REVIEW_REQUIRED : un prix fournisseur sans devise explicite du même snapshot est refusé', async () => {
+      await withTx(async (client, q) => {
+        const { sourceRef, provider } = await seedResolvedSkuLineage(q);
+        const obs = await observeFact(client, {
+          sourceRef, provider, eventId: 'p-no-currency', observedAt: new Date().toISOString(),
+          factName: 'purchase_price', fact: { status: 'OBSERVED', value: 7000 },
+        });
+        const verdict = await decidePurchasePriceSync(obs.observation_ids.purchase_price, {
+          query: q, authorityFn: syntheticAuthority('write'),
+        });
+        expect(verdict).toMatchObject({
+          decision: DECISION.REVIEW_REQUIRED, reason: REASON.PRICE_CURRENCY_NOT_PROVEN,
+        });
+      });
+    });
+
+
     test('APPLY écrit catalog_field_sync_state, JAMAIS products.cost_kmf', async () => {
-      const { sourceRef, provider, catalogProduct } = await seedResolvedSkuLineage(db.query.bind(db), { costKmf: 5000 });
+      const { sourceRef, provider, catalogProduct, sku } = await seedResolvedSkuLineage(db.query.bind(db), { costKmf: 5000 });
       try {
         const obs = await observeFact(db, {
           sourceRef, provider, eventId: 'w-p1', observedAt: new Date().toISOString(),
           factName: 'purchase_price', fact: { status: 'OBSERVED', value: 7000 },
+          currency: 'EUR',
         });
         const result = await applyPurchasePriceSync(obs.observation_ids.purchase_price, { authorityFn: syntheticAuthority('write') });
-        expect(result.value_after).toBe(7000);
+        expect(result.value_after).toEqual({ amount: 7000, currency: 'EUR' });
         const { rows: [row] } = await db.query('SELECT cost_kmf FROM products WHERE id=$1', [catalogProduct.id]);
         // cost_kmf reste EXACTEMENT sa valeur d'origine — jamais touché,
         // même si un prix fournisseur différent a été observé et appliqué
         // dans la table de suivi. C'est le point central de cette politique.
         expect(Number(row.cost_kmf)).toBe(5000);
         const { rows: [tracked] } = await db.query(
-          "SELECT applied_value FROM catalog_field_sync_state WHERE subject_id=$1 AND field_name='purchase_price'",
-          [catalogProduct.id]
+          "SELECT applied_value FROM catalog_field_sync_state WHERE subject_type='sku' AND subject_id=$1 AND field_name='purchase_price'",
+          [sku.id]
         );
-        expect(tracked.applied_value).toBe(7000);
+        expect(tracked.applied_value).toEqual({ amount: 7000, currency: 'EUR' });
       } finally {
         await db.query('DELETE FROM catalog_field_sync_state WHERE subject_id=$1', [catalogProduct.id]);
         await db.query('DELETE FROM product_skus WHERE product_id=$1', [catalogProduct.id]);
