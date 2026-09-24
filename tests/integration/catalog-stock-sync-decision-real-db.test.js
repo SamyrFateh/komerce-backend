@@ -136,7 +136,7 @@ if (!isolated) {
     await withTx(async (client, q) => {
       const { sourceRef, provider, sku } = await seedResolvedSkuLineage(q, { initialStock: 3 });
       const delta = await observeStock(client, {
-        sourceRef, provider, eventId: 'e1', observedAt: new Date(Date.now() + 60_000).toISOString(), value: 7,
+        sourceRef, provider, eventId: 'e1', observedAt: new Date().toISOString(), value: 7,
       });
       const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
       expect(verdict).toMatchObject({
@@ -147,6 +147,23 @@ if (!isolated) {
     });
   });
 
+  test('BLOCKED : une observation future ne contourne pas un mouvement de stock local', async () => {
+    await withTx(async (client, q) => {
+      const { sourceRef, provider, sku } = await seedResolvedSkuLineage(q, { initialStock: 3 });
+      const delta = await observeStock(client, {
+        sourceRef, provider, eventId: 'e-future',
+        observedAt: new Date(Date.now() + 60_000).toISOString(), value: 12,
+      });
+      const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
+      expect(verdict).toMatchObject({
+        decision: DECISION.BLOCKED, reason: REASON.FUTURE_OBSERVATION,
+        product_sku_id: sku.id,
+      });
+      expect((await q('SELECT stock FROM product_skus WHERE id=$1', [sku.id])).rows[0].stock)
+        .toBe(3);
+    });
+  });
+
   test('BLOCKED : identité non prouvée (pas de chaîne source_ref) ne devient jamais implicitement APPLY', async () => {
     await withTx(async (client, q) => {
       const provider = 'noproof' + randomUUID().replace(/-/g, '').slice(0, 8);
@@ -154,7 +171,7 @@ if (!isolated) {
       await q("INSERT INTO sourcing_sources (source_id,adapter_type,acquisition,continuity,status) " +
         "VALUES ($1,$2,'pull','recurring','active')", [sourceRef, provider]);
       const delta = await observeStock(client, {
-        sourceRef, provider, eventId: 'e-noproof', observedAt: new Date(Date.now() + 60_000).toISOString(), value: 5,
+        sourceRef, provider, eventId: 'e-noproof', observedAt: new Date().toISOString(), value: 5,
       });
       const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
       expect(verdict.decision).toBe(DECISION.BLOCKED);
@@ -166,7 +183,7 @@ if (!isolated) {
     await withTx(async (client, q) => {
       const { sourceRef, provider, sku } = await seedResolvedSkuLineage(q, { initialStock: 3 });
       const delta = await observeStock(client, {
-        sourceRef, provider, eventId: 'e2', observedAt: new Date(Date.now() + 60_000).toISOString(), value: 9,
+        sourceRef, provider, eventId: 'e2', observedAt: new Date().toISOString(), value: 9,
       });
       await q(
         "INSERT INTO catalog_stock_sync_state " +
@@ -185,7 +202,7 @@ if (!isolated) {
     await withTx(async (client, q) => {
       const { sourceRef, provider, sku } = await seedResolvedSkuLineage(q, { initialStock: 4 });
       const delta = await observeStock(client, {
-        sourceRef, provider, eventId: 'e3', observedAt: new Date(Date.now() + 60_000).toISOString(), value: 4,
+        sourceRef, provider, eventId: 'e3', observedAt: new Date().toISOString(), value: 4,
       });
       const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
       expect(verdict).toMatchObject({
@@ -199,14 +216,14 @@ if (!isolated) {
     await withTx(async (client, q) => {
       const { sourceRef, provider, sku } = await seedResolvedSkuLineage(q, { initialStock: 3 });
       const delta = await observeStock(client, {
-        sourceRef, provider, eventId: 'e-old', observedAt: new Date(Date.now() + 30_000).toISOString(), value: 1,
+        sourceRef, provider, eventId: 'e-old', observedAt: new Date(Date.now() - 30_000).toISOString(), value: 1,
       });
       // Une observation PLUS RÉCENTE a déjà été appliquée (state en avance).
       await q(
         "INSERT INTO catalog_stock_sync_state " +
         "(product_sku_id,source_id,last_observation_id,last_event_id,last_observed_at,applied_stock_value) " +
         "VALUES ($1,$2,$3,'e-newer',$4,9)",
-        [sku.id, sourceRef, randomUUID(), new Date(Date.now() + 120_000).toISOString()]
+        [sku.id, sourceRef, randomUUID(), new Date().toISOString()]
       );
       const verdict = await decideStockSyncApplication(delta.observation_id, { query: q });
       expect(verdict.decision).toBe(DECISION.STALE);
@@ -234,7 +251,7 @@ if (!isolated) {
       const { sourceRef, provider, sku } =
         await seedResolvedSkuLineage(q, { initialStock: 3 });
       const delta = await observeStock(client, {
-        sourceRef, provider, eventId: 'e4', observedAt: new Date(Date.now() + 60_000).toISOString(), value: 6,
+        sourceRef, provider, eventId: 'e4', observedAt: new Date().toISOString(), value: 6,
       });
       const { marketId, relaisId, supplierId } = await seedRelaisAndSupplier(q);
       const { rows: [order] } = await q(
@@ -259,7 +276,7 @@ if (!isolated) {
     await withTx(async (client, q) => {
       const { sourceRef, provider, sku } = await seedResolvedSkuLineage(q, { initialStock: 3 });
       const delta = await observeStock(client, {
-        sourceRef, provider, eventId: 'e5', observedAt: new Date(Date.now() + 60_000).toISOString(), value: 6,
+        sourceRef, provider, eventId: 'e5', observedAt: new Date().toISOString(), value: 6,
       });
       const { marketId, relaisId, supplierId } = await seedRelaisAndSupplier(q);
       const { rows: [order] } = await q(
@@ -279,7 +296,7 @@ if (!isolated) {
   test('BLOCKED reste BLOCKED même en présence d\'un event_id identique à une capture existante (rejeu à l\'observation)', async () => {
     await withTx(async (client, q) => {
       const { sourceRef, provider, sku } = await seedResolvedSkuLineage(q, { initialStock: 3 });
-      const sharedObservedAt = new Date(Date.now() + 60_000).toISOString();
+      const sharedObservedAt = new Date().toISOString();
       const first = await observeStock(client, {
         sourceRef, provider, eventId: 'e-dup', observedAt: sharedObservedAt, value: 5,
       });
