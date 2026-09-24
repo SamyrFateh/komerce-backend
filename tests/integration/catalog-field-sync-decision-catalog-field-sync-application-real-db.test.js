@@ -226,6 +226,50 @@ if (!isolated) {
       }
     });
 
+    test('une relecture de titre incohérente provoque un ROLLBACK réel', async () => {
+      const { sourceRef, provider, catalogProduct } = await seedResolvedSkuLineage(db.query.bind(db));
+      try {
+        const obs = await observeFact(db, {
+          sourceRef, provider, eventId: 'w-t-readback', observedAt: new Date().toISOString(),
+          factName: 'title', fact: { status: 'OBSERVED', value: 'Titre non commit' },
+        });
+        const originalQuery = db.query.bind(db);
+        const injectedPool = {
+          getClient: async () => {
+            const client = await db.getClient();
+            let wrote = false;
+            return {
+              query: async (sql, params) => {
+                const result = await client.query(sql, params);
+                if (String(sql).includes('UPDATE products SET name = $1')) wrote = true;
+                if (wrote && String(sql).trim() === 'SELECT name AS value FROM products WHERE id = $1') {
+                  return { rows: [{ value: 'MISMATCH' }] };
+                }
+                return result;
+              },
+              release: () => client.release(),
+            };
+          },
+        };
+        await expect(applyProductTextFieldSync(
+          obs.observation_ids.title, 'title', 'name',
+          { pool: injectedPool, authorityFn: syntheticAuthority('write') }
+        )).rejects.toMatchObject({
+          status: 500, verdict: expect.objectContaining({ reason: 'READ_AFTER_WRITE_MISMATCH' }),
+        });
+        expect((await originalQuery('SELECT name FROM products WHERE id=$1', [catalogProduct.id])).rows[0].name)
+          .not.toBe('Titre non commit');
+        expect((await originalQuery('SELECT COUNT(*)::int AS n FROM catalog_field_sync_state WHERE subject_id=$1',
+          [catalogProduct.id])).rows[0].n).toBe(0);
+      } finally {
+        await db.query('DELETE FROM catalog_field_sync_state WHERE subject_id=$1', [catalogProduct.id]);
+        await db.query('DELETE FROM product_skus WHERE product_id=$1', [catalogProduct.id]);
+        await db.query('DELETE FROM sourcing_candidates WHERE product_id=$1', [catalogProduct.id]);
+        await db.query('DELETE FROM products WHERE id=$1', [catalogProduct.id]);
+        await db.query('DELETE FROM sourcing_sources WHERE source_id=$1', [sourceRef]).catch(() => {});
+      }
+    });
+
     test('un override créé APRÈS la décision initiale mais AVANT l’écriture bloque sous verrou (réévaluation)', async () => {
       const { sourceRef, provider, catalogProduct } = await seedResolvedSkuLineage(db.query.bind(db));
       try {
@@ -267,8 +311,11 @@ if (!isolated) {
           factName: 'title', fact: { status: 'OBSERVED', value: 'Titre une seule fois' },
         });
         await applyProductTextFieldSync(obs.observation_ids.title, 'title', 'name', { authorityFn: syntheticAuthority('write') });
-        await expect(applyProductTextFieldSync(obs.observation_ids.title, 'title', 'name'))
-          .rejects.toMatchObject({ verdict: expect.objectContaining({ decision: DECISION.NO_CHANGE }) });
+        const replay = await applyProductTextFieldSync(obs.observation_ids.title, 'title', 'name');
+        expect(replay).toMatchObject({
+          applied: false, read_after_write_verified: false,
+          verdict: expect.objectContaining({ decision: DECISION.NO_CHANGE }),
+        });
         const { rows: [row] } = await db.query('SELECT name FROM products WHERE id=$1', [catalogProduct.id]);
         expect(row.name).toBe('Titre une seule fois');
       } finally {
