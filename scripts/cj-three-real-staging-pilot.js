@@ -35,7 +35,12 @@ async function assertIsolatedDatabase() {
   const { rows: [target] } = await db.query(
     'SELECT current_database() AS name, inet_server_addr()::text AS host'
   );
-  if (target?.name !== 'komerce_cj_three_pilot' || target?.host !== '127.0.0.1') {
+  // The CI runner connects to 127.0.0.1:5432, which Docker forwards into
+  // the ephemeral PostgreSQL container. inet_server_addr() reports the
+  // container-side bridge address, not the runner's 127.0.0.1. Keep the
+  // exact localhost DATABASE_URL, CI-only runtime and database-name gates;
+  // require a TCP server address without incorrectly equating the two ends.
+  if (target?.name !== 'komerce_cj_three_pilot' || !target?.host) {
     throw new Error('REFUS: DATABASE_TARGET_NOT_LOCAL_CI');
   }
 }
