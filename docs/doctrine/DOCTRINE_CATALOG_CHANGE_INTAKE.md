@@ -251,6 +251,21 @@ d'aptitude à une application automatique en production. Le premier
 raccordement opérationnel reste subordonné à une revue indépendante de
 l'autorité de la source et du modèle de réconciliation des engagements.
 
+**Barrière d'exécution actuelle :** aucun résolveur d'autorité de stock
+provider-scoped ni aucune réconciliation du snapshot avec les mouvements
+Komerce ne sont encore implémentés en runtime. Sans eux, le décideur
+retourne `REVIEW_REQUIRED/STOCK_AUTHORITY_NOT_PROVEN` et aucune écriture
+de stock n'est permise. Les callbacks de preuves synthétiques ne sont
+acceptés que dans la base PostgreSQL CI isolée
+(`GITHUB_ACTIONS=true`, `NODE_ENV=test`, crons désactivés et URL de
+`komerce_test` exacte) ; fournir ces callbacks en dehors de ce cadre
+retourne `BLOCKED/SYNTHETIC_PROOF_NOT_ALLOWED`. La PR démontre un
+**prototype de décideur et d'applicateur**, pas encore une synchronisation
+de stock fournisseur opérationnelle. Une future tranche doit prouver la
+provenance et la fraîcheur réelle des lectures externes, les engagements
+liés au snapshot, puis raccorder un owner Catalog explicite à cette autorité
+avant toute activation ou écriture de stock en production.
+
 ## Conséquence architecture
 
 Provider / fichier / opérateur
