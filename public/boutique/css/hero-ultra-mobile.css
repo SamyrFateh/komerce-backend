@@ -37,14 +37,6 @@
     mask-image: none;
   }
 
-  /* Shrink only the header cart illustration; preserve its hit target. */
-  .k-header .k-cart-btn.k-header-action .k-cart-avatar,
-  .k-header .k-cart-btn.is-empty .k-cart-avatar,
-  .k-header .k-cart-btn.hidden .k-cart-avatar,
-  .k-cart-btn.k-header-action.is-empty .k-cart-avatar,
-  .k-cart-btn.k-header-action.hidden .k-cart-avatar {
-    width: 21px;
-  }
 
   .k-hero-copy-mobile { display: inline; }
   .k-hero-copy-desktop { display: none; }
