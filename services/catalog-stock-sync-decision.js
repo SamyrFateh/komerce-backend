@@ -66,6 +66,17 @@
 const db = require('../db');
 const skuProof = require('./sourcing-catalog-change-sku-identity-proof');
 
+// Synthetic proof callbacks are permitted only for disposable PostgreSQL CI
+// integration tests. There is no provider-scoped runtime proof resolver yet.
+// A caller must never authorize a production stock write by supplying a
+// function that simply returns { proved: true }.
+function isolatedStockSyncProofTest() {
+  return process.env.GITHUB_ACTIONS === 'true'
+    && process.env.NODE_ENV === 'test'
+    && process.env.KOMERCE_DISABLE_CRONS === 'true'
+    && process.env.DATABASE_URL === 'postgresql://komerce:komerce@localhost:5432/komerce_test';
+}
+
 const DECISION = Object.freeze({
   APPLY: 'APPLY',
   NO_CHANGE: 'NO_CHANGE',
@@ -84,6 +95,7 @@ const REASON = Object.freeze({
   FUTURE_OBSERVATION: 'FUTURE_OBSERVATION',
   STOCK_AUTHORITY_NOT_PROVEN: 'STOCK_AUTHORITY_NOT_PROVEN',
   STOCK_RECONCILIATION_NOT_PROVEN: 'STOCK_RECONCILIATION_NOT_PROVEN',
+  SYNTHETIC_PROOF_NOT_ALLOWED: 'SYNTHETIC_PROOF_NOT_ALLOWED',
   UNRECONCILED_KOMERCE_COMMITMENT: 'UNRECONCILED_KOMERCE_COMMITMENT',
   TARGET_EQUALS_CURRENT_STOCK: 'TARGET_EQUALS_CURRENT_STOCK',
   IDENTITY_PROVEN_AND_FRESH: 'IDENTITY_PROVEN_AND_FRESH',
@@ -104,12 +116,24 @@ function verdict(decision, reason, extra = {}) {
  * @param {string} observationId
  * @param {object} deps  { query, canonicalIdentityFn } — injectables pour test.
  */
+const DEFAULT_UNPROVEN_AUTHORITY = async () =>
+  ({ proved: false, reason: 'NO_RUNTIME_STOCK_AUTHORITY_PROOF' });
+const DEFAULT_UNPROVEN_RECONCILIATION = async () =>
+  ({ proved: false, reason: 'NO_RUNTIME_RECONCILIATION_PROOF' });
+
 async function decideStockSyncApplication(observationId, {
   query = db.query.bind(db),
   identityFn = skuProof.proveExactCatalogSkuForStockDelta,
-  authorityFn = async () => ({ proved: false, reason: 'NO_RUNTIME_STOCK_AUTHORITY_PROOF' }),
-  reconciliationFn = async () => ({ proved: false, reason: 'NO_RUNTIME_RECONCILIATION_PROOF' }),
+  authorityFn = DEFAULT_UNPROVEN_AUTHORITY,
+  reconciliationFn = DEFAULT_UNPROVEN_RECONCILIATION,
 } = {}) {
+  if (!isolatedStockSyncProofTest()
+      && (authorityFn !== DEFAULT_UNPROVEN_AUTHORITY
+        || reconciliationFn !== DEFAULT_UNPROVEN_RECONCILIATION)) {
+    return verdict(DECISION.BLOCKED, REASON.SYNTHETIC_PROOF_NOT_ALLOWED, {
+      observation_id: observationId,
+    });
+  }
   const identity = await identityFn(observationId, query);
   if (identity.status !== skuProof.STATUS.EXACT_CATALOG_SKU_IDENTITY) {
     return verdict(DECISION.BLOCKED, REASON.IDENTITY_NOT_PROVEN, {
