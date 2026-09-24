@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 617
-- Files with full headers: 570
+- Scanned code files: 619
+- Files with full headers: 572
 - Files with lite headers: 47
-- Files with any headers: 617
+- Files with any headers: 619
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1464
-- Edges: 7315
-- DB tables: 173
+- Graph nodes: 1467
+- Edges: 7346
+- DB tables: 174
 - Doctrines: 489
 - Impact areas: 185
-- Unresolved code edges: 727
+- Unresolved code edges: 734
 - Tables multi-écrivains directs (>=2): 76
 - Avertissements db-write / db-write-via en chevauchement: 8
 
@@ -32,7 +32,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 22
 - business-rules: 1
-- catalog: 110
+- catalog: 112
 - checkout: 3
 - customs: 6
 - dashboard: 27
@@ -87,7 +87,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 128
 - route-manifest: 1
 - schema: 1
-- service: 311
+- service: 313
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -151,6 +151,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/cash-confirmation-control-service.js — cash-confirmation-control-service (payment, critical, full)
 - services/cash-operations.js — payment-cash-operations (payment, critical, full)
 - services/cash-reminder-service.js — payment-cash-reminder-service (payment, critical, full)
+- services/catalog-stock-sync-application.js — catalog-stock-sync-application (catalog, critical, full)
+- services/catalog-stock-sync-decision.js — catalog-stock-sync-decision (catalog, critical, full)
 - services/confirm-pickup-cash-payment.js — payment-confirm-pickup-cash-payment (payment, critical, full)
 - services/dispute-mutation-service.js — orders-dispute-mutation-boundary (orders, critical, full)
 - services/hub-operations.js — hub-operations (logistics, critical, full)
@@ -648,6 +650,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/catalog-overrides.js -> catalog_field_overrides
 - WRITE services/product-admin-service.js -> catalog_field_overrides
 - WRITE services/catalog-promotion.js -> catalog_media
+- WRITE services/catalog-stock-sync-application.js -> catalog_stock_sync_state
 - WRITE bootstrap/startup-migrations.js -> charges
 - WRITE services/economic-engine-queries.js -> charges
 - WRITE routes/client-notifications.js -> client_notifications
@@ -715,7 +718,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/notification-service.js -> notification_log
 - WRITE services/notifications/internals.js -> notification_log
 - WRITE services/notifications/loyalty.js -> notification_log
-- WRITE services/notifications/misc.js -> notification_log
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -865,6 +867,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - baskets: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
 - cash_confirmation_controls: 4 écrivains directs — services/cash-confirmation-control-service.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
 - order_comments: 4 écrivains directs — routes/hub-dashboard.js, routes/hub-mark-ordered.js, routes/relay-dashboard.js, services/operations-workspace.js
+- product_skus: 4 écrivains directs — services/catalog-promotion.js, services/catalog-stock-sync-application.js, services/product-sku-service.js, services/product-stock-service.js
 - product_variants: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/product-stock-service.js, services/product-variant-service.js
 - sourcing_candidates: 4 écrivains directs — routes/sourcing-scanner.js, services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js, services/suppliers/catalog-import-json.js
 - wallet_transactions: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
@@ -873,7 +876,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - incidents: 3 écrivains directs — services/incident-escalation.js, services/incident-service.js, services/incident-write-service.js
 - order_item_real_cost_allocations: 3 écrivains directs — services/cost-allocation/allocate.js, services/cost-allocation/index.js, services/transport-cost-allocation.js
 - price_history: 3 écrivains directs — services/economic-price-audit-service.js, services/pricing-apply.js, services/pricing-strategy-service.js
-- product_skus: 3 écrivains directs — services/catalog-promotion.js, services/product-sku-service.js, services/product-stock-service.js
 - relais: 3 écrivains directs — routes/admin/system.js, services/relais-mutation-service.js, services/routing.js
 - sms_log: 3 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js
 - sourcing_captures: 3 écrivains directs — services/sourcing-catalog-change-observation.js, services/sourcing-observation-shadow-service.js, services/sourcing-source-autopilot.js

@@ -8,7 +8,7 @@
  * @outputs       explicit_auditable_stock_application_decision
  * @depends       db.js, services/sourcing-catalog-change-sku-identity-proof.js
  * @used-by       services/catalog-stock-sync-application.js, tests/unit/catalog-stock-sync-decision.test.js, tests/integration/catalog-stock-sync-decision-real-db.test.js
- * @db-read       catalog_stock_sync_state, purchase_orders, product_skus
+ * @db-read       catalog_stock_sync_state, purchase_orders, product_skus, sourcing_captures, sourcing_observations
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md, docs/specs/DECISION_MODELE_STOCK_SKU.md, docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md

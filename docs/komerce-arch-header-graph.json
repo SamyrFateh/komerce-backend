@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 617,
-    "filesWithFullHeaders": 570,
+    "scannedCodeFiles": 619,
+    "filesWithFullHeaders": 572,
     "filesWithLiteHeaders": 47,
-    "filesWithAnyHeaders": 617,
+    "filesWithAnyHeaders": 619,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1464,
-    "edges": 7315,
-    "dbTables": 173,
+    "graphNodes": 1467,
+    "edges": 7346,
+    "dbTables": 174,
     "doctrines": 489,
     "impactAreas": 185,
-    "unresolvedCodeEdges": 727,
+    "unresolvedCodeEdges": 734,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 76
   },
@@ -35,7 +35,7 @@
     "notification": 21,
     "auth": 14,
     "platform-ops": 2,
-    "catalog": 110,
+    "catalog": 112,
     "admin-dashboard": 22,
     "decision-signals": 12,
     "market-delegation": 25,
@@ -107,7 +107,7 @@
     "schema": 1,
     "route": 128,
     "entrypoint": 1,
-    "service": 311,
+    "service": 313,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -116,7 +116,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 88,
+    "critical": 90,
     "medium": 131,
     "high": 343,
     "low": 55
@@ -13888,6 +13888,105 @@
         "checkout"
       ],
       "version": "2026-09-business-truth"
+    },
+    {
+      "id": "services/catalog-stock-sync-application.js",
+      "file": "services/catalog-stock-sync-application.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-stock-sync-application",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "immutable_stock_delta_observation_id"
+      ],
+      "outputs": [
+        "applied_stock_value_or_explicit_blocker",
+        "read_after_write_proof"
+      ],
+      "depends": [
+        "db.js",
+        "services/catalog-stock-sync-decision.js"
+      ],
+      "usedBy": [
+        "routes/admin-sourcing-workspace.js (à raccorder)",
+        "tests/integration/catalog-stock-sync-application-real-db.test.js",
+        "tests/integration/catalog-stock-sync-concurrency-real-db.test.js"
+      ],
+      "dbRead": [
+        "product_skus",
+        "catalog_stock_sync_state"
+      ],
+      "dbWrite": [
+        "product_skus",
+        "catalog_stock_sync_state"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "owned (BEGIN/COMMIT/ROLLBACK ; verrou FOR UPDATE sur la ligne product_skus ciblée)"
+      ],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+        "docs/specs/DECISION_MODELE_STOCK_SKU.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "orders",
+        "purchasing"
+      ],
+      "version": "2026-09"
+    },
+    {
+      "id": "services/catalog-stock-sync-decision.js",
+      "file": "services/catalog-stock-sync-decision.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-stock-sync-decision",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "immutable_stock_delta_observation_id"
+      ],
+      "outputs": [
+        "explicit_auditable_stock_application_decision"
+      ],
+      "depends": [
+        "db.js",
+        "services/sourcing-catalog-change-sku-identity-proof.js"
+      ],
+      "usedBy": [
+        "services/catalog-stock-sync-application.js",
+        "tests/unit/catalog-stock-sync-decision.test.js",
+        "tests/integration/catalog-stock-sync-decision-real-db.test.js"
+      ],
+      "dbRead": [
+        "catalog_stock_sync_state",
+        "purchase_orders",
+        "product_skus",
+        "sourcing_captures",
+        "sourcing_observations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+        "docs/specs/DECISION_MODELE_STOCK_SKU.md",
+        "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "orders",
+        "purchasing",
+        "local-stock"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "services/catalog-workspace-live-composer.js",
@@ -30014,6 +30113,11 @@
       "table": "sourcing_captures"
     },
     {
+      "id": "db:catalog_stock_sync_state",
+      "type": "db-table",
+      "table": "catalog_stock_sync_state"
+    },
+    {
       "id": "db:delegated",
       "type": "db-table",
       "table": "delegated"
@@ -31649,6 +31753,11 @@
       "doctrine": "§DOCTRINE ZÉRO HEURISTIQUE; docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md"
     },
     {
+      "id": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
+      "type": "doctrine",
+      "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
+    },
+    {
       "id": "doctrine:catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority",
       "type": "doctrine",
       "doctrine": "catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority"
@@ -31832,11 +31941,6 @@
       "id": "doctrine:invoice_displays_actual_payment_currency",
       "type": "doctrine",
       "doctrine": "invoice_displays_actual_payment_currency"
-    },
-    {
-      "id": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
-      "type": "doctrine",
-      "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
     },
     {
       "id": "doctrine:local_stock_is_physical_availability_authority",
@@ -53560,6 +53664,192 @@
       "to": "impact:checkout",
       "type": "impact",
       "label": "checkout"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "services/catalog-stock-sync-decision.js",
+      "type": "depends",
+      "label": "services/catalog-stock-sync-decision.js"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js (à raccorder)",
+      "to": "services/catalog-stock-sync-application.js",
+      "type": "uses",
+      "label": "routes/admin-sourcing-workspace.js (à raccorder)"
+    },
+    {
+      "from": "tests/integration/catalog-stock-sync-application-real-db.test.js",
+      "to": "services/catalog-stock-sync-application.js",
+      "type": "uses",
+      "label": "tests/integration/catalog-stock-sync-application-real-db.test.js"
+    },
+    {
+      "from": "tests/integration/catalog-stock-sync-concurrency-real-db.test.js",
+      "to": "services/catalog-stock-sync-application.js",
+      "type": "uses",
+      "label": "tests/integration/catalog-stock-sync-concurrency-real-db.test.js"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "db:catalog_stock_sync_state",
+      "type": "db-read",
+      "label": "catalog_stock_sync_state"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "db:product_skus",
+      "type": "db-write",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "db:catalog_stock_sync_state",
+      "type": "db-write",
+      "label": "catalog_stock_sync_state"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
+      "type": "doctrine",
+      "label": "docs/specs/DECISION_MODELE_STOCK_SKU.md"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "services/sourcing-catalog-change-sku-identity-proof.js",
+      "type": "depends",
+      "label": "services/sourcing-catalog-change-sku-identity-proof.js"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "services/catalog-stock-sync-decision.js",
+      "type": "uses",
+      "label": "services/catalog-stock-sync-application.js"
+    },
+    {
+      "from": "tests/unit/catalog-stock-sync-decision.test.js",
+      "to": "services/catalog-stock-sync-decision.js",
+      "type": "uses",
+      "label": "tests/unit/catalog-stock-sync-decision.test.js"
+    },
+    {
+      "from": "tests/integration/catalog-stock-sync-decision-real-db.test.js",
+      "to": "services/catalog-stock-sync-decision.js",
+      "type": "uses",
+      "label": "tests/integration/catalog-stock-sync-decision-real-db.test.js"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "db:catalog_stock_sync_state",
+      "type": "db-read",
+      "label": "catalog_stock_sync_state"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "db:product_skus",
+      "type": "db-read",
+      "label": "product_skus"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "db:sourcing_captures",
+      "type": "db-read",
+      "label": "sourcing_captures"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "db:sourcing_observations",
+      "type": "db-read",
+      "label": "sourcing_observations"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
+      "type": "doctrine",
+      "label": "docs/specs/DECISION_MODELE_STOCK_SKU.md"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "impact:local-stock",
+      "type": "impact",
+      "label": "local-stock"
     },
     {
       "from": "services/catalog-workspace-live-composer.js",
@@ -91582,6 +91872,106 @@
         "services/discovery-rail-composer.js"
       ]
     },
+    "services/catalog-stock-sync-application.js": {
+      "role": "catalog-stock-sync-application",
+      "domain": "catalog",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/catalog-stock-sync-decision.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-sourcing-workspace.js (à raccorder)",
+        "tests/integration/catalog-stock-sync-application-real-db.test.js",
+        "tests/integration/catalog-stock-sync-concurrency-real-db.test.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "product_skus",
+        "catalog_stock_sync_state"
+      ],
+      "dbWrite": [
+        "product_skus",
+        "catalog_stock_sync_state"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+        "docs/specs/DECISION_MODELE_STOCK_SKU.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "orders",
+        "purchasing"
+      ],
+      "mustCheck": [
+        "db:catalog_stock_sync_state",
+        "db:product_skus",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+        "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
+        "impact:catalog",
+        "impact:orders",
+        "impact:purchasing",
+        "services/catalog-stock-sync-decision.js"
+      ]
+    },
+    "services/catalog-stock-sync-decision.js": {
+      "role": "catalog-stock-sync-decision",
+      "domain": "catalog",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/sourcing-catalog-change-sku-identity-proof.js"
+      ],
+      "directUsedBy": [
+        "services/catalog-stock-sync-application.js",
+        "tests/unit/catalog-stock-sync-decision.test.js",
+        "tests/integration/catalog-stock-sync-decision-real-db.test.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "catalog_stock_sync_state",
+        "purchase_orders",
+        "product_skus",
+        "sourcing_captures",
+        "sourcing_observations"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+        "docs/specs/DECISION_MODELE_STOCK_SKU.md",
+        "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
+      ],
+      "impactAreas": [
+        "catalog",
+        "orders",
+        "purchasing",
+        "local-stock"
+      ],
+      "mustCheck": [
+        "db:catalog_stock_sync_state",
+        "db:product_skus",
+        "db:purchase_orders",
+        "db:sourcing_captures",
+        "db:sourcing_observations",
+        "doctrine:docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+        "doctrine:docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md",
+        "doctrine:docs/specs/DECISION_MODELE_STOCK_SKU.md",
+        "impact:catalog",
+        "impact:local-stock",
+        "impact:orders",
+        "impact:purchasing",
+        "services/catalog-stock-sync-application.js",
+        "services/sourcing-catalog-change-sku-identity-proof.js"
+      ]
+    },
     "services/catalog-workspace-live-composer.js": {
       "role": "canonical-catalog-workspace-live-composer",
       "domain": "catalog",
@@ -102758,6 +103148,7 @@
         "doctrine:docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
         "impact:catalog",
         "impact:sourcing",
+        "services/catalog-stock-sync-decision.js",
         "services/sourcing-catalog-change-unit-resolution-proof.js"
       ]
     },
@@ -107220,6 +107611,16 @@
       ]
     },
     {
+      "table": "product_skus",
+      "writerCount": 4,
+      "writers": [
+        "services/catalog-promotion.js",
+        "services/catalog-stock-sync-application.js",
+        "services/product-sku-service.js",
+        "services/product-stock-service.js"
+      ]
+    },
+    {
       "table": "product_variants",
       "writerCount": 4,
       "writers": [
@@ -107293,15 +107694,6 @@
         "services/economic-price-audit-service.js",
         "services/pricing-apply.js",
         "services/pricing-strategy-service.js"
-      ]
-    },
-    {
-      "table": "product_skus",
-      "writerCount": 3,
-      "writers": [
-        "services/catalog-promotion.js",
-        "services/product-sku-service.js",
-        "services/product-stock-service.js"
       ]
     },
     {
@@ -109751,6 +110143,48 @@
       "to": "services/catalog-provider-capability-contract.js",
       "type": "uses",
       "label": "catalog diagnostics"
+    },
+    {
+      "from": "services/catalog-stock-sync-application.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js (à raccorder)",
+      "to": "services/catalog-stock-sync-application.js",
+      "type": "uses",
+      "label": "routes/admin-sourcing-workspace.js (à raccorder)"
+    },
+    {
+      "from": "tests/integration/catalog-stock-sync-application-real-db.test.js",
+      "to": "services/catalog-stock-sync-application.js",
+      "type": "uses",
+      "label": "tests/integration/catalog-stock-sync-application-real-db.test.js"
+    },
+    {
+      "from": "tests/integration/catalog-stock-sync-concurrency-real-db.test.js",
+      "to": "services/catalog-stock-sync-application.js",
+      "type": "uses",
+      "label": "tests/integration/catalog-stock-sync-concurrency-real-db.test.js"
+    },
+    {
+      "from": "services/catalog-stock-sync-decision.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "tests/unit/catalog-stock-sync-decision.test.js",
+      "to": "services/catalog-stock-sync-decision.js",
+      "type": "uses",
+      "label": "tests/unit/catalog-stock-sync-decision.test.js"
+    },
+    {
+      "from": "tests/integration/catalog-stock-sync-decision-real-db.test.js",
+      "to": "services/catalog-stock-sync-decision.js",
+      "type": "uses",
+      "label": "tests/integration/catalog-stock-sync-decision-real-db.test.js"
     },
     {
       "from": "services/catalog-workspace.js",
