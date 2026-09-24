@@ -49,7 +49,7 @@ class FieldSyncApplicationError extends Error {
 function statusFor(decision) {
   if (decision === DECISION.BLOCKED) return 422;
   if (decision === DECISION.REVIEW_REQUIRED) return 409;
-  return 200; // NO_CHANGE / STALE : rien à écrire, pas une erreur serveur
+  return 409; // STALE is a conflict; NO_CHANGE returns normally
 }
 
 async function upsertSyncState(q, { subjectType, subjectId, fieldName, sourceId, observationId, eventId, observedAt, appliedValue }) {
@@ -106,8 +106,20 @@ async function applyProductTextFieldSync(observationId, factName, column, { pool
           sourceId: verdict.source_id, observationId: verdict.observation_id, eventId: verdict.event_id,
           observedAt: verdict.observed_at, appliedValue: verdict.current_value,
         });
+        const { rows: [unchanged] } = await q(
+          `SELECT ${column} AS value FROM products WHERE id = $1`, [verdict.catalog_product_id]
+        );
+        if (!unchanged || unchanged.value !== verdict.current_value) {
+          throw new FieldSyncApplicationError(500, {
+            ...verdict, decision: DECISION.BLOCKED, reason: 'NO_CHANGE_READBACK_MISMATCH',
+          });
+        }
         await client.query('COMMIT'); begun = false;
-        throw new FieldSyncApplicationError(200, verdict);
+        return {
+          verdict, catalog_product_id: verdict.catalog_product_id, applied: false,
+          value_before: unchanged.value, value_after: unchanged.value,
+          read_after_write_verified: true,
+        };
       }
       throw new FieldSyncApplicationError(statusFor(verdict.decision), verdict);
     }
@@ -130,12 +142,17 @@ async function applyProductTextFieldSync(observationId, factName, column, { pool
     const { rows: [proof] } = await q(
       `SELECT ${column} AS value FROM products WHERE id = $1`, [verdict.catalog_product_id]
     );
+    if (!proof || proof.value !== verdict.target_value) {
+      throw new FieldSyncApplicationError(500, {
+        ...verdict, decision: DECISION.BLOCKED, reason: 'READ_AFTER_WRITE_MISMATCH',
+      });
+    }
     await client.query('COMMIT');
     begun = false;
     return {
-      verdict, catalog_product_id: verdict.catalog_product_id,
+      verdict, catalog_product_id: verdict.catalog_product_id, applied: true,
       value_before: verdict.current_value, value_after: proof.value,
-      read_after_write_verified: proof.value === verdict.target_value,
+      read_after_write_verified: true,
     };
   } catch (err) {
     if (begun) await client.query('ROLLBACK').catch(() => {});
@@ -172,8 +189,20 @@ async function applyProductMediaSync(observationId, { pool = db, authorityFn } =
           sourceId: verdict.source_id, observationId: verdict.observation_id, eventId: verdict.event_id,
           observedAt: verdict.observed_at, appliedValue: verdict.current_value,
         });
+        const { rows: [unchanged] } = await q(
+          'SELECT images AS value FROM products WHERE id = $1', [verdict.catalog_product_id]
+        );
+        if (!unchanged || JSON.stringify(unchanged.value) !== JSON.stringify(verdict.current_value)) {
+          throw new FieldSyncApplicationError(500, {
+            ...verdict, decision: DECISION.BLOCKED, reason: 'NO_CHANGE_READBACK_MISMATCH',
+          });
+        }
         await client.query('COMMIT'); begun = false;
-        throw new FieldSyncApplicationError(200, verdict);
+        return {
+          verdict, catalog_product_id: verdict.catalog_product_id, applied: false,
+          value_before: unchanged.value, value_after: unchanged.value,
+          read_after_write_verified: true,
+        };
       }
       throw new FieldSyncApplicationError(statusFor(verdict.decision), verdict);
     }
@@ -197,12 +226,17 @@ async function applyProductMediaSync(observationId, { pool = db, authorityFn } =
     });
 
     const { rows: [proof] } = await q('SELECT images AS value FROM products WHERE id = $1', [verdict.catalog_product_id]);
+    if (!proof || JSON.stringify(proof.value) !== JSON.stringify(images)) {
+      throw new FieldSyncApplicationError(500, {
+        ...verdict, decision: DECISION.BLOCKED, reason: 'READ_AFTER_WRITE_MISMATCH',
+      });
+    }
     await client.query('COMMIT');
     begun = false;
     return {
-      verdict, catalog_product_id: verdict.catalog_product_id,
+      verdict, catalog_product_id: verdict.catalog_product_id, applied: true,
       value_before: verdict.current_value, value_after: proof.value,
-      read_after_write_verified: JSON.stringify(proof.value) === JSON.stringify(images),
+      read_after_write_verified: true,
     };
   } catch (err) {
     if (begun) await client.query('ROLLBACK').catch(() => {});
@@ -238,8 +272,22 @@ async function applyPurchasePriceSync(observationId, { pool = db, authorityFn } 
     const verdict = await decidePurchasePriceSync(observationId, { query: q, ...(authorityFn ? { authorityFn } : {}) });
     if (verdict.decision !== DECISION.APPLY) {
       if (verdict.decision === DECISION.NO_CHANGE && verdict.reason === REASON.TARGET_EQUALS_CURRENT_VALUE) {
+        const { rows: [unchanged] } = await q(
+          "SELECT applied_value FROM catalog_field_sync_state " +
+          "WHERE subject_type='product' AND subject_id=$1 AND field_name='purchase_price'",
+          [verdict.catalog_product_id]
+        );
+        if (!unchanged || JSON.stringify(unchanged.applied_value) !== JSON.stringify(verdict.current_value)) {
+          throw new FieldSyncApplicationError(500, {
+            ...verdict, decision: DECISION.BLOCKED, reason: 'NO_CHANGE_READBACK_MISMATCH',
+          });
+        }
         await client.query('COMMIT'); begun = false;
-        throw new FieldSyncApplicationError(200, verdict);
+        return {
+          verdict, catalog_product_id: verdict.catalog_product_id, applied: false,
+          value_before: unchanged.applied_value, value_after: unchanged.applied_value,
+          read_after_write_verified: true,
+        };
       }
       throw new FieldSyncApplicationError(statusFor(verdict.decision), verdict);
     }
@@ -255,12 +303,17 @@ async function applyPurchasePriceSync(observationId, { pool = db, authorityFn } 
       "WHERE subject_type='product' AND subject_id=$1 AND field_name='purchase_price'",
       [verdict.catalog_product_id]
     );
+    if (!proof || JSON.stringify(proof.applied_value) !== JSON.stringify(verdict.target_value)) {
+      throw new FieldSyncApplicationError(500, {
+        ...verdict, decision: DECISION.BLOCKED, reason: 'READ_AFTER_WRITE_MISMATCH',
+      });
+    }
     await client.query('COMMIT');
     begun = false;
     return {
-      verdict, catalog_product_id: verdict.catalog_product_id,
+      verdict, catalog_product_id: verdict.catalog_product_id, applied: true,
       value_before: verdict.current_value, value_after: proof.applied_value,
-      read_after_write_verified: JSON.stringify(proof.applied_value) === JSON.stringify(verdict.target_value),
+      read_after_write_verified: true,
     };
   } catch (err) {
     if (begun) await client.query('ROLLBACK').catch(() => {});
