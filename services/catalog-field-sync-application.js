@@ -262,14 +262,14 @@ async function applyPurchasePriceSync(observationId, { pool = db, authorityFn } 
     const q = client.query.bind(client);
 
     const preview = await decidePurchasePriceSync(observationId, { query: q, ...(authorityFn ? { authorityFn } : {}) });
-    if (!preview.catalog_product_id) throw new FieldSyncApplicationError(statusFor(preview.decision), preview);
+    if (!preview.product_sku_id) throw new FieldSyncApplicationError(statusFor(preview.decision), preview);
 
     // Verrou sur la ligne de suivi elle-même (pas products : ce champ
     // n'écrit jamais products, donc rien à y verrouiller pour CETTE
     // écriture précise — le verrou protège la réévaluation, pas cost_kmf).
     await q(
       "SELECT pg_advisory_xact_lock(hashtext('komerce:catalog-field-sync:purchase_price'), hashtext($1))",
-      [preview.catalog_product_id]
+      [preview.product_sku_id]
     );
 
     const verdict = await decidePurchasePriceSync(observationId, { query: q, ...(authorityFn ? { authorityFn } : {}) });
@@ -279,15 +279,15 @@ async function applyPurchasePriceSync(observationId, { pool = db, authorityFn } 
         // price is unchanged. Otherwise an older conflicting observation can
         // later be applied after this newer equal-value observation.
         await upsertSyncState(q, {
-          subjectType: 'product', subjectId: verdict.catalog_product_id, fieldName: 'purchase_price',
+          subjectType: 'sku', subjectId: verdict.product_sku_id, fieldName: 'purchase_price',
           sourceId: verdict.source_id, observationId: verdict.observation_id,
           eventId: verdict.event_id, observedAt: verdict.observed_at,
           appliedValue: verdict.current_value,
         });
         const { rows: [unchanged] } = await q(
           "SELECT applied_value FROM catalog_field_sync_state " +
-          "WHERE subject_type='product' AND subject_id=$1 AND field_name='purchase_price'",
-          [verdict.catalog_product_id]
+          "WHERE subject_type='sku' AND subject_id=$1 AND field_name='purchase_price'",
+          [verdict.product_sku_id]
         );
         if (!unchanged || JSON.stringify(unchanged.applied_value) !== JSON.stringify(verdict.current_value)) {
           throw new FieldSyncApplicationError(500, {
@@ -305,15 +305,15 @@ async function applyPurchasePriceSync(observationId, { pool = db, authorityFn } 
     }
 
     await upsertSyncState(q, {
-      subjectType: 'product', subjectId: verdict.catalog_product_id, fieldName: 'purchase_price',
+      subjectType: 'sku', subjectId: verdict.product_sku_id, fieldName: 'purchase_price',
       sourceId: verdict.source_id, observationId: verdict.observation_id, eventId: verdict.event_id,
       observedAt: verdict.observed_at, appliedValue: verdict.target_value,
     });
 
     const { rows: [proof] } = await q(
       "SELECT applied_value FROM catalog_field_sync_state " +
-      "WHERE subject_type='product' AND subject_id=$1 AND field_name='purchase_price'",
-      [verdict.catalog_product_id]
+      "WHERE subject_type='sku' AND subject_id=$1 AND field_name='purchase_price'",
+      [verdict.product_sku_id]
     );
     if (!proof || JSON.stringify(proof.applied_value) !== JSON.stringify(verdict.target_value)) {
       throw new FieldSyncApplicationError(500, {
