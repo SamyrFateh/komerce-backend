@@ -217,13 +217,13 @@ if (!isolated) {
       ]);
 
       const fulfilled = results.filter((r) => r.status === 'fulfilled');
-      const rejected = results.filter((r) => r.status === 'rejected');
-      // L'une des deux écrit réellement (APPLY), l'autre trouve le travail
-      // déjà fait sous verrou (NO_CHANGE) — jamais les deux en APPLY, jamais
-      // les deux en échec.
-      expect(fulfilled.length).toBe(1);
-      expect(rejected.length).toBe(1);
-      expect(rejected[0].reason.verdict.decision).toBe(DECISION.NO_CHANGE);
+      // Une seule écriture réelle ; le rejeu concurrent reste un résultat
+      // idempotent NO_CHANGE, jamais une exception de succès déguisée.
+      expect(fulfilled.length).toBe(2);
+      expect(fulfilled.map((r) => r.value.verdict.decision).sort())
+        .toEqual([DECISION.APPLY, DECISION.NO_CHANGE].sort());
+      expect(fulfilled.filter((r) => r.value.applied === true)).toHaveLength(1);
+      expect(fulfilled.filter((r) => r.value.applied === false)).toHaveLength(1);
 
       const { rows: [finalRow] } = await db.query(
         'SELECT stock FROM product_skus WHERE id=$1', [sku.id]);
