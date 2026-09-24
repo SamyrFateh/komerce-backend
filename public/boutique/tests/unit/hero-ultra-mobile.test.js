@@ -24,25 +24,33 @@ describe('hero ultra mobile contract', () => {
   });
 
   test('garde les coiffures dans le crop sans réagrandir la scène', () => {
-    expect(css).toContain("background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');");
-    expect(css).toContain('background-size: auto 100%;');
-    expect(css).toContain('background-position: 70% 0%;');
+    expect(css).toContain("background-image: url('/images/komerce-hero-relais-approved-preview.png');");
+    expect(css).toContain('background-size: contain;');
+    expect(css).toContain('background-position: center bottom;');
     expect(css).not.toContain('background-size: auto 118%;');
     expect(css).not.toContain('background-position: 70% 92%;');
     expect(css).toContain('-webkit-mask-image: none;');
     expect(css).toContain('mask-image: none;');
-    expect(css).not.toContain('display: none;');
+    expect(css).not.toContain('.k-hero-figures { display: none;');
   });
 
   test('garde le slogan visible mais compact dans la réserve gauche', () => {
     expect(css).toContain('.k-hero-media .k-hero-mini-slogan--premium');
     expect(css).toContain('inset: 0 auto 0 0;');
-    expect(css).toContain('width: 35%;');
-    expect(css).toContain('padding: 2px 0 0 9px;');
+    expect(css).toContain('width: 44%;');
+    expect(css).toContain('padding: 2px 0 0 0;');
     expect(css).toContain('text-align: left;');
     expect(css).toContain('font-size: clamp(10px, 2.8vw, 12px);');
     expect(heroCss).toContain('.k-hero-mini-slogan {\n  display: flex;');
     expect(heroCss).not.toContain('Slogan mobile : supprimé (H0)');
+  });
+
+  test('préserve le panier réel et son avatar mobile réduit', () => {
+    expect(css).toContain('width: 21px;');
+    expect(css).toContain('inset: 0 24px 0 auto;');
+    expect(css).toContain('width: 143px;');
+    expect(css).not.toContain('.k-cart-btn { width:');
+    expect(heroCss).toContain('.k-hero-copy-mobile { display: none; }');
   });
 
   test('ne réintroduit aucun symbole lunaire', () => {
