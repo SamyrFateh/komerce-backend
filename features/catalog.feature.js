@@ -101,6 +101,11 @@ module.exports = {
       'scripts/aliexpress-500-catalog-sync.js',
     ],
     services: [
+      // MISSION 1 (KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE) — décideur
+      // et écriture contrôlée de synchronisation de stock fournisseur, cf.
+      // docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md.
+      'services/catalog-stock-sync-decision.js',
+      'services/catalog-stock-sync-application.js',
       'services/suppliers/allegro-sandbox-client.js',
       'services/suppliers/connectors/allegro-connector.js',
       'services/suppliers/connectors/ebay-connector.js',
@@ -165,6 +170,7 @@ module.exports = {
       'schemas/catalog/import-profile.v1.schema.json',
     ],
     migrations: [
+      'migrations/241_catalog_stock_sync_state.sql',
       'migrations/098_catalog_refinery_foundation.sql',
       'migrations/100_catalog_enrichment_runs.sql',
       'migrations/101_variant_images.sql',
@@ -258,6 +264,9 @@ module.exports = {
       'dashboards/admin/js/views/CatalogApprovalView.js',
     ],
     tests: [
+      'tests/integration/catalog-stock-sync-decision-real-db.test.js',
+      'tests/integration/catalog-stock-sync-application-real-db.test.js',
+      'tests/integration/catalog-stock-sync-concurrency-real-db.test.js',
       'tests/integration/catalog-approval-queue-contract.test.js',
       'tests/unit/allegro-sandbox-client.test.js',
       'tests/unit/allegro-connector.test.js',
