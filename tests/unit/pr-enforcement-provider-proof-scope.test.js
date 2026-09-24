@@ -16,6 +16,7 @@ const path = require('node:path');
 const {
   classify,
   isProviderProofOnlyFile,
+  isCjPilotProofOnlyFile,
   isBackendFile,
 } = require('../../scripts/pr-enforcement-scope');
 
@@ -95,6 +96,41 @@ describe('strict external-provider proof-only CI scope', () => {
   });
 });
 
+
+describe('strict CJ isolated pilot proof-only CI scope', () => {
+  const pilot = 'scripts/cj-three-real-staging-pilot.js';
+  test('exact isolated pilot file stays under targeted syntax and governance gates', () => {
+    const m = classify([pilot]);
+    expect(isCjPilotProofOnlyFile(pilot)).toBe(true);
+    expect(m.cjPilotProofOnly).toBe(true);
+    expect(m.governance).toBe(true);
+    expect(m.backend).toBe(false);
+    expect(m.migrations).toBe(false);
+    expect(m.providerProofOnly).toBe(false);
+  });
+  test('any additional file revokes exemption, including shared importer, test or CI files', () => {
+    for (const file of [
+      'services/suppliers/catalog-import-orchestrator.js',
+      'tests/unit/cj-connector.test.js',
+      'scripts/pr-enforcement-scope.js',
+      '.github/workflows/pr-enforcement.yml',
+      '.github/workflows/cj-three-real-staging-refinery-pilot.yml',
+      'migrations/245_example.sql',
+      'docs/README.md',
+    ]) {
+      expect(classify([pilot, file]).cjPilotProofOnly).toBe(false);
+    }
+    expect(classify([]).cjPilotProofOnly).toBe(false);
+    expect(classify(['scripts/other-proof.js']).cjPilotProofOnly).toBe(false);
+  });
+  test('mandatory workflow retains the full gates for anything outside the exact pilot scope', () => {
+    const workflow = fs.readFileSync(path.join(__dirname, '../../.github/workflows/pr-enforcement.yml'), 'utf8');
+    expect(workflow).toContain("if: steps.scope.outputs.cj_pilot_proof_only == 'true'");
+    expect(workflow).toContain('node --check scripts/cj-three-real-staging-pilot.js');
+    expect(workflow).toContain("needs.changes.outputs.cj_pilot_proof_only != 'true'");
+    expect(workflow).toContain("needs.changes.outputs.backend == 'true' || needs.changes.outputs.migrations == 'true'");
+  });
+});
 
 test('mandatory PR workflow requires focused gate; standalone batch remains manual only', () => {
   const workflow = fs.readFileSync(path.join(__dirname, '../../.github/workflows/pr-enforcement.yml'), 'utf8');
