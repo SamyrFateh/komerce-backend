@@ -1884,6 +1884,19 @@ body:has(#k-page-scroll.k-pager-active) {
   #k-header-spacer { height: 0; }
 }
 
+/* KOMERCE HERO PREVIEW — cart avatar remains owned by layout.css.
+   Shrink only the illustration on mobile; preserve the 42px button,
+   live badge and existing empty/full-cart animations. */
+@media (max-width: 899px) {
+  .k-header .k-cart-btn.k-header-action .k-cart-avatar,
+  .k-header .k-cart-btn.is-empty .k-cart-avatar,
+  .k-header .k-cart-btn.hidden .k-cart-avatar,
+  .k-cart-btn.k-header-action.is-empty .k-cart-avatar,
+  .k-cart-btn.k-header-action.hidden .k-cart-avatar {
+    width: 21px;
+  }
+}
+
 
 /* ── hero.css ────────────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════
@@ -2876,14 +2889,6 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     mask-image: none;
   }
 
-  /* Shrink only the header cart illustration; preserve its hit target. */
-  .k-header .k-cart-btn.k-header-action .k-cart-avatar,
-  .k-header .k-cart-btn.is-empty .k-cart-avatar,
-  .k-header .k-cart-btn.hidden .k-cart-avatar,
-  .k-cart-btn.k-header-action.is-empty .k-cart-avatar,
-  .k-cart-btn.k-header-action.hidden .k-cart-avatar {
-    width: 21px;
-  }
 
   .k-hero-copy-mobile { display: inline; }
   .k-hero-copy-desktop { display: none; }
