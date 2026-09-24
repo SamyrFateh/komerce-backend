@@ -29,6 +29,11 @@ if (!isolated) {
 
   jest.setTimeout(30000);
 
+  const proofDeps = {
+    authorityFn: async () => ({ proved: true, proof_ref: 'itest-stock-read-proof' }),
+    reconciliationFn: async () => ({ proved: true, proof_ref: 'itest-snapshot-reconciliation' }),
+  };
+
   async function seedResolvedSkuLineage({ initialStock = 5 } = {}) {
     const q = db.query.bind(db);
     const provider = 'cc' + randomUUID().replace(/-/g, '').slice(0, 12);
@@ -166,7 +171,7 @@ if (!isolated) {
       // seulement le résultat final.
       const orderPromise = delayedOrderPaymentDecrement(seed, { quantity: 2, delayMs: 300 });
       const syncPromise = new Promise((resolve) => setTimeout(resolve, 30))
-        .then(() => applyStockSyncDecision(delta.observation_id).catch((e) => e));
+        .then(() => applyStockSyncDecision(delta.observation_id, proofDeps).catch((e) => e));
 
       const [, syncOutcome] = await Promise.all([orderPromise, syncPromise]);
 
@@ -212,8 +217,8 @@ if (!isolated) {
       });
 
       const results = await Promise.allSettled([
-        applyStockSyncDecision(delta.observation_id),
-        applyStockSyncDecision(delta.observation_id),
+        applyStockSyncDecision(delta.observation_id, proofDeps),
+        applyStockSyncDecision(delta.observation_id, proofDeps),
       ]);
 
       const fulfilled = results.filter((r) => r.status === 'fulfilled');
