@@ -25,17 +25,18 @@
     margin-bottom: 0;
   }
 
-  /* Place the relay scene in the real visual gap between brand copy and
-     header actions. The previous -3px / 62% move was too small to read on
-     device: lift it clearly while keeping the source heads inside frame. */
+  /* Composition mobile : l'acte de remise doit rester lisible avant tout.
+     Le calque reste centré dans l'espace libre, sans translation verticale
+     négative qui couperait les têtes ; un léger dézoom garde ensemble les
+     trois visages, le colis, les mains et le téléphone. */
   .k-hero-media .k-hero-figures {
-    inset: -10px auto auto 56%;
+    inset: 0 auto auto 56%;
     transform: translateX(-50%);
     width: 143px;
     height: 100%;
     background-image: url('/images/komerce-hero-relais-3x.webp');
-    background-size: auto 96%;
-    background-position: center top;
+    background-size: auto 91%;
+    background-position: center center;
     -webkit-mask-image: none;
     mask-image: none;
   }
