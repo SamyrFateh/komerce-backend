@@ -40,9 +40,9 @@ describe('real supplier 1000 staging stress tooling', () => {
     )).toThrow(/KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_PROMOTION/);
 
     expect(() => stress.assertRuntime(
-      { operation: 'enrich-fr' },
+      { operation: 'prepare-fr' },
       { KOMERCE_ENV: 'staging', NODE_ENV: 'test', DATABASE_URL: 'x' }
-    )).toThrow(/KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_ENRICH/);
+    )).toThrow(/KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_FR_PREP/);
   });
 
   test('promotes only refinery-approved V2 rows with explicit economic reference authority', () => {
@@ -64,6 +64,11 @@ describe('real supplier 1000 staging stress tooling', () => {
         recommended_price_authority: 'MARKET_PRICE',
       },
     }))).toMatchObject({ status: 'blocked' });
+  });
+
+  test('prepare-fr is a bounded no-AI operation', () => {
+    expect(stress.parseArgs(['--operation=prepare-fr', '--limit=974', '--concurrency=5']))
+      .toMatchObject({ operation: 'prepare-fr', limit: 974, concurrency: 5 });
   });
 
   test('round-robin selection prevents one supplier from swallowing the stress sample', () => {
