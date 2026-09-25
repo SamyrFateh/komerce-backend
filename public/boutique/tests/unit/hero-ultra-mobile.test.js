@@ -56,14 +56,14 @@ describe('hero ultra mobile contract', () => {
     expect(heroCss).not.toContain('Slogan mobile : supprimé (H0)');
   });
 
-  test('charge un WebP réel en 447x172 pour un affichage 3x', () => {
+  test('charge un WebP réel en 498x183 pour un affichage mobile net', () => {
     const art = fs.readFileSync(artPath);
     expect(art.subarray(0, 4).toString('ascii')).toBe('RIFF');
     expect(art.subarray(8, 12).toString('ascii')).toBe('WEBP');
-    expect(art.subarray(12, 16).toString('ascii')).toBe('VP8X');
-    expect(1 + art.readUIntLE(24, 3)).toBe(498);
-    expect(1 + art.readUIntLE(27, 3)).toBe(183);
-    expect(css).toContain("background-image: url('/images/komerce-hero-handoff-v1.webp');");
+    expect(art.subarray(12, 16).toString('ascii')).toBe('VP8 ');
+    expect(art.readUInt16LE(26) & 0x3fff).toBe(498);
+    expect(art.readUInt16LE(28) & 0x3fff).toBe(183);
+    expect(css).toContain("background-image: url('/images/komerce-hero-handoff-v2.webp');");
   });
 
   test('préserve le panier réel et son avatar mobile réduit', () => {
