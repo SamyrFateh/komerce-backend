@@ -1884,6 +1884,19 @@ body:has(#k-page-scroll.k-pager-active) {
   #k-header-spacer { height: 0; }
 }
 
+/* KOMERCE HERO PREVIEW — cart avatar remains owned by layout.css.
+   Shrink only the illustration on mobile; preserve the 42px button,
+   live badge and existing empty/full-cart animations. */
+@media (max-width: 899px) {
+  .k-header .k-cart-btn.k-header-action .k-cart-avatar,
+  .k-header .k-cart-btn.is-empty .k-cart-avatar,
+  .k-header .k-cart-btn.hidden .k-cart-avatar,
+  .k-cart-btn.k-header-action.is-empty .k-cart-avatar,
+  .k-cart-btn.k-header-action.hidden .k-cart-avatar {
+    width: 21px;
+  }
+}
+
 
 /* ── hero.css ────────────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════
@@ -1911,6 +1924,7 @@ body:has(#k-page-scroll.k-pager-active) {
   object-position: 50% 0%;
   display: block;
 }
+.k-hero-copy-mobile { display: none; }
 .k-hero-mini-slogan {
   display: flex;
   position: absolute;
@@ -2863,33 +2877,37 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     margin-bottom: 0;
   }
 
+  /* Mobile relay scene, 447x172 source for 3x display (143px wide); screenshot-approved composition. */
   .k-hero-media .k-hero-figures {
-    background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');
-    /* Ne plus pousser une image agrandie contre le bord haut du conteneur :
-       .k-hero-media est volontairement overflow:hidden pour le rayon de carte.
-       À 100% + top 0%, les coiffures restent entièrement dans la boîte,
-       sans perdre le téléphone ni réagrandir le masthead. */
-    background-size: auto 100%;
-    background-position: 70% 0%;
+    inset: 0 40px 0 auto;
+    width: 143px;
+    height: 100%;
+    background-image: url('/images/komerce-hero-relais-3x.webp');
+    background-size: contain;
+    background-position: center bottom;
     -webkit-mask-image: none;
     mask-image: none;
   }
 
-  .k-hero-media .k-hero-mini-slogan--premium {
+
+  .k-hero-copy-mobile { display: inline; }
+  .k-hero-copy-desktop { display: none; }
+
+  html .k-hero-media .k-hero-mini-slogan--premium {
     inset: 0 auto 0 0;
-    width: 35%;
-    padding: 2px 0 0 9px;
+    width: 44%;
+    padding: 2px 0 0 0;
     align-items: flex-start;
     justify-content: flex-start;
     text-align: left;
   }
 
-  .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {
+  html .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {
     font-size: clamp(10px, 2.7vw, 12px);
     line-height: 1.01;
   }
 
-  .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {
+  html .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {
     margin-top: 1px;
     font-size: clamp(10px, 2.8vw, 12px);
     line-height: 1.01;
