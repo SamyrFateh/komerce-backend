@@ -31,8 +31,8 @@
     width: 143px;
     height: 100%;
     background-image: url('/images/komerce-hero-relais-3x.webp');
-    background-size: contain;
-    background-position: center 92%;
+    background-size: auto 96%;
+    background-position: center top;
     -webkit-mask-image: none;
     mask-image: none;
   }
