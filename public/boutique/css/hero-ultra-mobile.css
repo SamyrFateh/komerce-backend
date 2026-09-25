@@ -19,20 +19,25 @@
  * Le hero reste stable pendant le scroll des pages catégories.
  */
 @media (max-width: 899px) {
+  .k-hero {
+    overflow: visible;
+  }
+
   .k-hero .k-hero-inner .k-hero-media {
     height: clamp(50px, 14vw, 58px);
     margin-top: 0;
     margin-bottom: 0;
+    overflow: visible;
   }
 
   /* Composition mobile : nos deux personnages historiques portent seuls
      l'acte de remise. Le téléphone, le colis et les mains forment le centre
      narratif ; aucun troisième personnage ne dilue la lecture. */
   .k-hero-media .k-hero-figures {
-    inset: 0 auto auto 64%;
+    inset: -10px auto auto 68%;
     transform: translateX(-50%);
-    width: 158px;
-    height: 100%;
+    width: 185px;
+    height: calc(100% + 10px);
     background-image: url('/images/komerce-hero-handoff-v2.webp');
     background-size: auto 100%;
     background-position: center center;
