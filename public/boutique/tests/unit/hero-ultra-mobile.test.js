@@ -12,11 +12,13 @@ const cssPath = path.resolve(__dirname, '../../css/hero-ultra-mobile.css');
 const heroCssPath = path.resolve(__dirname, '../../css/hero.css');
 const layoutCssPath = path.resolve(__dirname, '../../css/layout.css');
 const heroBootstrapPath = path.resolve(__dirname, '../../js/hero-bootstrap.js');
-const artPath = path.resolve(__dirname, '../../../images/komerce-hero-relais-3x.webp');
+const artPath = path.resolve(__dirname, '../../../images/komerce-hero-handoff-v1.webp');
+const indexPath = path.resolve(__dirname, '../../index.html');
 const css = fs.readFileSync(cssPath, 'utf8');
 const heroCss = fs.readFileSync(heroCssPath, 'utf8');
 const layoutCss = fs.readFileSync(layoutCssPath, 'utf8');
 const heroBootstrap = fs.readFileSync(heroBootstrapPath, 'utf8');
+const indexHtml = fs.readFileSync(indexPath, 'utf8');
 
 describe('hero ultra mobile contract', () => {
   test('reste strictement mobile et tend le masthead sans réduire le header tactile', () => {
@@ -27,8 +29,8 @@ describe('hero ultra mobile contract', () => {
   });
 
   test('garde les coiffures dans le crop sans réagrandir la scène', () => {
-    expect(css).toContain("background-image: url('/images/komerce-hero-relais-3x.webp');");
-    expect(css).toContain('background-size: auto 91%;');
+    expect(css).toContain("background-image: url('/images/komerce-hero-handoff-v1.webp');");
+    expect(css).toContain('background-size: auto 100%;');
     expect(css).toContain('background-position: center center;');
     expect(css).not.toContain('background-size: auto 118%;');
     expect(css).not.toContain('background-position: 70% 92%;');
@@ -47,7 +49,9 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('width: 44%;');
     expect(css).toContain('padding: 2px 0 0 0;');
     expect(css).toContain('text-align: left;');
-    expect(css).toContain('font-size: clamp(10px, 2.8vw, 12px);');
+    expect(css).toContain('font-size: clamp(8.5px, 2.35vw, 10px);');
+    expect(indexHtml).toContain('Commandez en ligne.');
+    expect(indexHtml).toContain('Venez chercher au relais près de chez vous.');
     expect(heroCss).toContain('.k-hero-mini-slogan {\n  display: flex;');
     expect(heroCss).not.toContain('Slogan mobile : supprimé (H0)');
   });
@@ -59,7 +63,7 @@ describe('hero ultra mobile contract', () => {
     expect(art.subarray(12, 16).toString('ascii')).toBe('VP8X');
     expect(1 + art.readUIntLE(24, 3)).toBe(447);
     expect(1 + art.readUIntLE(27, 3)).toBe(172);
-    expect(css).toContain("background-image: url('/images/komerce-hero-relais-3x.webp');");
+    expect(css).toContain("background-image: url('/images/komerce-hero-handoff-v1.webp');");
   });
 
   test('préserve le panier réel et son avatar mobile réduit', () => {

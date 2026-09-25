@@ -25,17 +25,16 @@
     margin-bottom: 0;
   }
 
-  /* Composition mobile : l'acte de remise doit rester lisible avant tout.
-     Le calque reste centré dans l'espace libre, sans translation verticale
-     négative qui couperait les têtes ; un léger dézoom garde ensemble les
-     trois visages, le colis, les mains et le téléphone. */
+  /* Composition mobile : nos deux personnages historiques portent seuls
+     l'acte de remise. Le téléphone, le colis et les mains forment le centre
+     narratif ; aucun troisième personnage ne dilue la lecture. */
   .k-hero-media .k-hero-figures {
     inset: 0 auto auto 56%;
     transform: translateX(-50%);
     width: 143px;
     height: 100%;
-    background-image: url('/images/komerce-hero-relais-3x.webp');
-    background-size: auto 91%;
+    background-image: url('/images/komerce-hero-handoff-v1.webp');
+    background-size: auto 100%;
     background-position: center center;
     -webkit-mask-image: none;
     mask-image: none;
@@ -61,7 +60,7 @@
 
   html .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {
     margin-top: 1px;
-    font-size: clamp(10px, 2.8vw, 12px);
-    line-height: 1.01;
+    font-size: clamp(8.5px, 2.35vw, 10px);
+    line-height: .98;
   }
 }
