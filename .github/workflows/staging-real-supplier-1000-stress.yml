@@ -191,11 +191,11 @@ jobs:
         shell: bash
         env:
           KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_ENRICH: '1'
-          CATALOG_ENRICH_PROVIDER: openai
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CATALOG_ENRICH_PROVIDER: anthropic
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
-          test -n "${OPENAI_API_KEY:-}" || { echo '::error::OPENAI_API_KEY manquant'; exit 1; }
+          test -n "${ANTHROPIC_API_KEY:-}" || { echo '::error::ANTHROPIC_API_KEY manquant'; exit 1; }
           output="$(timeout 3000s node scripts/real-supplier-1000-stress-staging.js --operation=enrich-fr --limit=${{ steps.op.outputs.limit }} --concurrency=5)"
           printf '%s\n' "$output"
           compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-12000)"

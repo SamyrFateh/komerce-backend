@@ -204,59 +204,55 @@ describe('enrichAndApply — échecs (§8)', () => {
   });
 });
 
-describe('transport IA multi-provider', () => {
+describe('transport IA Anthropic-only', () => {
   const savedProvider = process.env.CATALOG_ENRICH_PROVIDER;
   const savedModel = process.env.CATALOG_ENRICH_MODEL;
-  const savedOpenAIKey = process.env.OPENAI_API_KEY;
+  const savedAnthropicKey = process.env.ANTHROPIC_API_KEY;
 
   afterEach(() => {
     if (savedProvider === undefined) delete process.env.CATALOG_ENRICH_PROVIDER;
     else process.env.CATALOG_ENRICH_PROVIDER = savedProvider;
     if (savedModel === undefined) delete process.env.CATALOG_ENRICH_MODEL;
     else process.env.CATALOG_ENRICH_MODEL = savedModel;
-    if (savedOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
-    else process.env.OPENAI_API_KEY = savedOpenAIKey;
+    if (savedAnthropicKey === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = savedAnthropicKey;
     jest.restoreAllMocks();
   });
 
-  test('provider OpenAI est sélectionnable explicitement', () => {
+  test('Anthropic est le seul provider catalogue accepté', () => {
+    delete process.env.CATALOG_ENRICH_PROVIDER;
+    expect(enrichment.resolveProvider()).toBe('anthropic');
+
+    process.env.CATALOG_ENRICH_PROVIDER = 'anthropic';
+    expect(enrichment.resolveProvider()).toBe('anthropic');
+
     process.env.CATALOG_ENRICH_PROVIDER = 'openai';
-    expect(enrichment.resolveProvider()).toBe('openai');
+    expect(() => enrichment.resolveProvider()).toThrow(/Anthropic uniquement/);
   });
 
-  test('Luna utilise Responses API + Structured Outputs et remonte les tokens', async () => {
-    process.env.OPENAI_API_KEY = 'test-openai-key';
-    process.env.CATALOG_ENRICH_MODEL = 'gpt-5.6-luna';
+  test('Claude Messages API remonte texte et tokens', async () => {
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+    process.env.CATALOG_ENRICH_MODEL = 'claude-haiku-4-5';
     const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
       text: async () => JSON.stringify({
-        status: 'completed',
-        model: 'gpt-5.6-luna',
-        output: [{
-          type: 'message',
-          content: [{ type: 'output_text', text: JSON.stringify(GOOD_OUTPUT) }],
-        }],
+        model: 'claude-haiku-4-5',
+        content: [{ type: 'text', text: JSON.stringify(GOOD_OUTPUT) }],
         usage: { input_tokens: 812, output_tokens: 146 },
       }),
     });
 
-    const result = await enrichment._callOpenAIModel('SYSTEME', '{"name_source":"Power Bank"}');
+    const result = await enrichment._callAnthropicModel('SYSTEME', '{"name_source":"Power Bank"}');
 
-    expect(result).toMatchObject({ model: 'gpt-5.6-luna', inputTokens: 812, outputTokens: 146 });
+    expect(result).toMatchObject({ model: 'claude-haiku-4-5', inputTokens: 812, outputTokens: 146 });
     expect(JSON.parse(result.text)).toMatchObject({ name_fr: GOOD_OUTPUT.name_fr });
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [url, options] = fetchSpy.mock.calls[0];
-    expect(url).toBe('https://api.openai.com/v1/responses');
-    expect(options.headers.authorization).toBe('Bearer test-openai-key');
+    expect(url).toBe('https://api.anthropic.com/v1/messages');
+    expect(options.headers['x-api-key']).toBe('test-anthropic-key');
     const body = JSON.parse(options.body);
-    expect(body.model).toBe('gpt-5.6-luna');
-    expect(body.store).toBe(false);
-    expect(body.text.format).toMatchObject({ type: 'json_schema', strict: true });
-    expect(body.text.format.schema.required).toEqual(expect.arrayContaining(['name_fr', 'description_fr', 'confidence']));
-    expect(body.text.format.schema.properties.fragility).toEqual({
-      type: ['string', 'null'],
-      enum: [...prompt.ALLOWED_FRAGILITIES, null],
-    });
+    expect(body.model).toBe('claude-haiku-4-5');
+    expect(body.system).toBe('SYSTEME');
   });
 });
