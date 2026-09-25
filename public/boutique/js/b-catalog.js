@@ -502,6 +502,12 @@ function renderGrid() {
       reason = 'category';
     }
     _bindEmptyStateActions(reason);
+    // Empty/search states share the same fixed viewport below the masthead.
+    // No category pager or end-bounce listeners are attached to this screen.
+    if (_isMobile && !isVerticalShell() && dom.pageScroll) {
+      dom.pageScroll.classList.add('k-pager-active');
+      _recalcPagerVars();
+    }
     return;
   }
 
@@ -971,3 +977,4 @@ export {
   loadProducts, _renderCard, updateHeroProductCount,
   renderCatalogEmptyState, renderCategoryEmptyState, renderSearchEmptyState,
 };
+

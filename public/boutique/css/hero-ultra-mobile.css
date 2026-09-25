@@ -25,9 +25,11 @@
     margin-bottom: 0;
   }
 
-  /* Mobile relay scene, 447x172 source for 3x display (143px wide); screenshot-approved composition. */
+  /* Position the scene itself: background percentages only move within the
+     remaining 4% of height. Keep the heads inside the source's top margin. */
   .k-hero-media .k-hero-figures {
-    inset: 0 52px 0 auto;
+    inset: -3px auto auto 62%;
+    transform: translateX(-50%);
     width: 143px;
     height: 100%;
     background-image: url('/images/komerce-hero-relais-3x.webp');

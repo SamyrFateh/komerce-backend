@@ -6,6 +6,8 @@
  * @test-requires none
  */
 
+const { versions } = require('../../.cache-buster-state.json');
+
 const {
   ensureDiscoveryDesktopV2Stylesheet,
 } = require('../../js/discovery-desktop-style.js');
@@ -30,7 +32,7 @@ describe('discovery desktop V2 stylesheet loader', () => {
     expect(first.tagName).toBe('LINK');
     expect(first.rel).toBe('stylesheet');
     expect(first.media).toBe('(min-width: 900px)');
-    expect(first.getAttribute('href')).toBe('/boutique/css/dist/discovery-desktop-v2.css?v=6');
+    expect(first.getAttribute('href')).toBe(`/boutique/css/dist/discovery-desktop-v2.css?v=${versions['discovery-desktop-v2.css']}`);
     expect(document.querySelectorAll('#k-discovery-desktop-v2-style')).toHaveLength(1);
   });
 

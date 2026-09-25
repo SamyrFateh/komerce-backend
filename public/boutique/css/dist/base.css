@@ -720,6 +720,23 @@ body {
 }
 
 /* ── HEADER ─────────────────────────────────────────────────── */
+@media (max-width: 899px) {
+  #k-hero-fixed-wrap {
+    background-color: var(--white);
+  }
+
+  /* Empty states scroll inside the same viewport as populated categories. */
+  #k-page-scroll.k-pager-active:has(.k-catalog-empty) {
+    overflow-y: auto;
+  }
+
+  #k-page-scroll.k-pager-active:has(.k-catalog-empty) #k-catalog-section {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+}
+
 .k-header {
   position: fixed; /* PATCH header-fixed — sticky ne survit pas à body:overflow:hidden (pager actif) */
   top: 0;
@@ -2011,7 +2028,10 @@ body:has(#k-page-scroll.k-pager-active) {
   .k-hero-figures {
     background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');
     background-size: auto 92%;
-    background-position: 70% 12%;
+    /* GAP-F5 — recentré la scène de remise : 70%→58% (décalage gauche pour
+       mieux centrer l'échange colis), 12%→4% (remonte les personnages pour
+       que le comptoir et les gestes soient visibles sans couper les têtes). */
+    background-position: 58% 4%;
   }
 }
 
@@ -2877,9 +2897,11 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     margin-bottom: 0;
   }
 
-  /* Mobile relay scene, 447x172 source for 3x display (143px wide); screenshot-approved composition. */
+  /* Position the scene itself: background percentages only move within the
+     remaining 4% of height. Keep the heads inside the source's top margin. */
   .k-hero-media .k-hero-figures {
-    inset: 0 52px 0 auto;
+    inset: -3px auto auto 62%;
+    transform: translateX(-50%);
     width: 143px;
     height: 100%;
     background-image: url('/images/komerce-hero-relais-3x.webp');
