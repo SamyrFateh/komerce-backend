@@ -128,6 +128,13 @@
 }
 .k-hero-cats-sticky::after { content: ''; display: block; }
 
+@media (max-width: 899px) {
+  /* Respiration mobile : abaisse le rail sans agrandir la scène. */
+  .k-hero-cats-sticky {
+    padding-top: 8px;
+  }
+}
+
 /* Temporary validation shell: sticky category navigation remains owned here. */
 body.spike-shell-vertical .k-hero-cats-sticky {
   position: sticky;

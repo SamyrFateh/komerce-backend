@@ -52,6 +52,8 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('padding: 2px 0 0 0;');
     expect(css).toContain('text-align: left;');
     expect(css).toContain('font-size: clamp(10px, 2.7vw, 12px);');
+    expect(heroCss).toContain('.k-hero-cats-sticky {');
+    expect(heroCss).toContain('padding-top: 8px;');
     expect(indexHtml).toContain('Commandez en ligne.');
     expect(indexHtml).toContain('Retirez près de chez vous.');
     expect(heroCss).toContain('.k-hero-mini-slogan {\n  display: flex;');
@@ -71,9 +73,9 @@ describe('hero ultra mobile contract', () => {
   test('préserve le panier réel et son avatar mobile réduit', () => {
     expect(layoutCss).toContain('width: 21px;');
     expect(css).not.toContain('.k-header .k-cart-btn.k-header-action .k-cart-avatar');
-    expect(css).toContain('inset: -8px auto auto 68%;');
+    expect(css).toContain('inset: -6px auto auto 68%;');
     expect(css).toContain('width: 185px;');
-    expect(css).toContain('height: calc(100% + 8px);');
+    expect(css).toContain('height: calc(100% + 6px);');
     expect(css).not.toContain('.k-cart-btn { width:');
     expect(heroCss).toContain('.k-hero-copy-mobile { display: none; }');
   });
