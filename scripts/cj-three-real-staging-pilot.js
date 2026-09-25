@@ -29,7 +29,7 @@ const EXACT_PIDS = Object.freeze([
 ]);
 const STOCK_PATH = '/product/stock/getInventoryByPid';
 const QUOTE_PATH = '/logistic/freightCalculate'; // Quote only: NEVER createOrder
-const QUOTE_DESTINATIONS = Object.freeze(['KM', 'CM', 'CG']);
+const QUOTE_DESTINATIONS = Object.freeze(['AE', 'TZ', 'FR']);
 const QUOTE_PID = '7C59DE5B-A511-4920-88A8-C808B21476EE';
 const QUOTE_VID = '095126FF-FE54-4291-A4A5-648448FFB912';
 
@@ -330,6 +330,8 @@ async function run() {
     source_read_scope: 'THREE_EXACT_PRODUCT_DETAILS_AND_THREE_STOCK_BY_PID',
     inventory_authority: 'READ_ONLY_SNAPSHOT_NOT_CHECKOUT_OR_FULFILMENT_APPROVAL',
     route_quote: routeQuote,
+    route_quote_purpose: 'HUB_COUNTRY_DISCOVERY_AFTER_FINAL_MARKETS_RETURNED_NO_ROUTE',
+    candidate_hubs: ['AE','TZ','FR'],
     quote_authority: 'COUNTRY_LEVEL_INDICATIVE_ONLY_NOT_ADDRESS_RELAY_OR_CHECKOUT_PROOF',
     exact_ids: exactIds,
     imported_candidates: candidates.length,
@@ -357,7 +359,7 @@ async function run() {
       '; shadow: ' + report.shadow_status +
       '; canonical resolved: ' + report.canonical_resolved + '.\n\n' +
       'Inventory by exact PID: ' + inventorySnapshots.size + '/3. This is a time-bound provider snapshot; no stock persistence or fulfilment approval.\n\n' +
-      'CJ country-level route quotes (non-mutating POST): ' + routeQuote.quotation_calls +
+      'CJ hub-country route quotes AE/TZ/FR (non-mutating POST): ' + routeQuote.quotation_calls +
       '; not a checkout, booking or final last-mile quote.\n\n' +
       'No production DB, no publication, no order, no active stock mutation.\n');
   }
