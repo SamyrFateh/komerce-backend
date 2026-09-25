@@ -29,7 +29,7 @@ const EXACT_PIDS = Object.freeze([
 ]);
 const STOCK_PATH = '/product/stock/getInventoryByPid';
 const QUOTE_PATH = '/logistic/freightCalculate'; // Quote only: NEVER createOrder
-const QUOTE_DESTINATIONS = Object.freeze(['KM', 'CM', 'CG']);
+const QUOTE_DESTINATIONS = Object.freeze(['AE', 'TZ', 'FR']);
 const QUOTE_PID = '7C59DE5B-A511-4920-88A8-C808B21476EE';
 const QUOTE_VID = '095126FF-FE54-4291-A4A5-648448FFB912';
 
