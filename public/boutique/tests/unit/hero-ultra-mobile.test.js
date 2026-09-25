@@ -65,7 +65,7 @@ describe('hero ultra mobile contract', () => {
   test('préserve le panier réel et son avatar mobile réduit', () => {
     expect(layoutCss).toContain('width: 21px;');
     expect(css).not.toContain('.k-header .k-cart-btn.k-header-action .k-cart-avatar');
-    expect(css).toContain('inset: 0 24px 0 auto;');
+    expect(css).toContain('inset: 0 40px 0 auto;');
     expect(css).toContain('width: 143px;');
     expect(css).not.toContain('.k-cart-btn { width:');
     expect(heroCss).toContain('.k-hero-copy-mobile { display: none; }');
