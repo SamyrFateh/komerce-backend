@@ -5,7 +5,7 @@
  * @domain        catalog
  * @layer         tooling
  * @criticality   high
- * @inputs        DATABASE_URL, ANTHROPIC_API_KEY or OPENAI_API_KEY (selon CATALOG_ENRICH_PROVIDER)
+ * @inputs        DATABASE_URL, ANTHROPIC_API_KEY
  * @outputs       products.name (FR), products.description (FR), content_source → ai_enriched
  * @depends       db.js, services/catalog-enrichment.js
  * @used-by       one-shot rattrapage Lot 1 (drafts AliExpress connector_raw source_locale=en)
