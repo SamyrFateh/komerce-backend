@@ -1,0 +1,248 @@
+name: Staging real suppliers 1000-product stress
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Bounded staging stress operation'
+        required: true
+        type: choice
+        default: audit
+        options:
+          - audit
+          - fill-pools
+          - refinery-audit
+          - promote
+          - enrich-fr
+      limit:
+        description: 'Maximum rows for refinery/promote/enrichment'
+        required: false
+        default: '1000'
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: komerce-staging-real-supplier-1000-stress
+  cancel-in-progress: false
+
+jobs:
+  stress:
+    name: Real suppliers — 1000 staging stress
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       (github.event.issue.title == '[staging-op] real-supplier-1000-audit' ||
+        github.event.issue.title == '[staging-op] real-supplier-1000-fill' ||
+        github.event.issue.title == '[staging-op] real-supplier-1000-refinery-audit' ||
+        github.event.issue.title == '[staging-op] real-supplier-1000-promote' ||
+        github.event.issue.title == '[staging-op] real-supplier-1000-enrich-fr'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      KOMERCE_ENV: staging
+      NODE_ENV: test
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+
+    steps:
+      - name: Resolve bounded operation
+        id: op
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_TITLE: ${{ github.event.issue.title || '' }}
+          DISPATCH_OPERATION: ${{ inputs.operation || '' }}
+          DISPATCH_LIMIT: ${{ inputs.limit || '1000' }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = 'workflow_dispatch' ]; then
+            operation="$DISPATCH_OPERATION"
+            limit="$DISPATCH_LIMIT"
+          else
+            limit='1000'
+            case "$ISSUE_TITLE" in
+              '[staging-op] real-supplier-1000-audit') operation='audit' ;;
+              '[staging-op] real-supplier-1000-fill') operation='fill-pools' ;;
+              '[staging-op] real-supplier-1000-refinery-audit') operation='refinery-audit' ;;
+              '[staging-op] real-supplier-1000-promote') operation='promote' ;;
+              '[staging-op] real-supplier-1000-enrich-fr') operation='enrich-fr' ;;
+              *) echo '::error::Opération non autorisée'; exit 1 ;;
+            esac
+          fi
+          case "$operation" in
+            audit|fill-pools|refinery-audit|promote|enrich-fr) ;;
+            *) echo '::error::Opération non autorisée'; exit 1 ;;
+          esac
+          if ! [[ "$limit" =~ ^[0-9]+$ ]] || [ "$limit" -lt 1 ] || [ "$limit" -gt 1000 ]; then
+            echo '::error::limit doit être 1..1000'
+            exit 1
+          fi
+          echo "operation=$operation" >> "$GITHUB_OUTPUT"
+          echo "limit=$limit" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout protected main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require staging database
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_DATABASE_URL manquant'; exit 1; }
+          test "${KOMERCE_ENV}" = 'staging'
+          test "${NODE_ENV}" = 'test'
+
+      - name: Baseline audit
+        id: before
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 180s node scripts/real-supplier-1000-stress-staging.js --operation=audit)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-10000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Calculate CJ top-up target
+        id: plan
+        if: steps.op.outputs.operation == 'fill-pools'
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE' >> "$GITHUB_OUTPUT"
+          const stress = require('./scripts/real-supplier-1000-stress-staging');
+          const db = require('./db');
+          (async () => {
+            const a = await stress.audit();
+            const ali = Number(a.suppliers.AliExpress?.clean_total || 0);
+            const cj = Number(a.suppliers.CJdropshipping?.clean_total || 0);
+            const total = ali + cj;
+            const desired = total >= 1000 ? cj : Math.min(1000, Math.max(cj, 1000 - ali));
+            console.log('ali=' + ali);
+            console.log('cj=' + cj);
+            console.log('total=' + total);
+            console.log('cj_target=' + desired);
+            console.log('needs_cj=' + (desired > cj ? 'true' : 'false'));
+          })().catch(e => { console.error(e); process.exitCode=1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Top up real CJ pool to reach combined 1000
+        id: fill_cj
+        if: steps.op.outputs.operation == 'fill-pools' && steps.plan.outputs.needs_cj == 'true'
+        shell: bash
+        env:
+          CJ_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
+          KOMERCE_ALLOW_CJ_FULL_SYNC: '1'
+          KOMERCE_CJ_SYNC_MAX_CLEAN_PRODUCTS: ${{ steps.plan.outputs.cj_target }}
+          KOMERCE_CJ_SYNC_MAX_API_CALLS: '500'
+        run: |
+          set -euo pipefail
+          test -n "${CJ_ACCESS_TOKEN:-}" || { echo '::error::KOMERCE_CJ_PROOF_ACCESS_TOKEN manquant'; exit 1; }
+          output="$(timeout 2700s node scripts/cj-full-catalog-sync.js)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-10000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Run read-only 1000-product refinery audit
+        id: refinery
+        if: steps.op.outputs.operation == 'refinery-audit'
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 1200s node scripts/real-supplier-1000-stress-staging.js --operation=refinery-audit --limit=${{ steps.op.outputs.limit }})"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-10000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Promote refinery-approved rows to inactive drafts only
+        id: promote
+        if: steps.op.outputs.operation == 'promote'
+        shell: bash
+        env:
+          KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_PROMOTION: '1'
+        run: |
+          set -euo pipefail
+          output="$(timeout 2400s node scripts/real-supplier-1000-stress-staging.js --operation=promote --limit=${{ steps.op.outputs.limit }})"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-10000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Enrich inactive supplier drafts in French
+        id: enrich
+        if: steps.op.outputs.operation == 'enrich-fr'
+        shell: bash
+        env:
+          KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_ENRICH: '1'
+          CATALOG_ENRICH_PROVIDER: openai
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "${OPENAI_API_KEY:-}" || { echo '::error::OPENAI_API_KEY manquant'; exit 1; }
+          output="$(timeout 3000s node scripts/real-supplier-1000-stress-staging.js --operation=enrich-fr --limit=${{ steps.op.outputs.limit }} --concurrency=5)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-12000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Final audit
+        id: after
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 180s node scripts/real-supplier-1000-stress-staging.js --operation=audit)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-10000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
+      - name: Write operation summary
+        if: always()
+        shell: bash
+        env:
+          OP: ${{ steps.op.outputs.operation }}
+          BEFORE: ${{ steps.before.outputs.summary }}
+          FILL: ${{ steps.fill_cj.outputs.summary }}
+          REFINERY: ${{ steps.refinery.outputs.summary }}
+          PROMOTE: ${{ steps.promote.outputs.summary }}
+          ENRICH: ${{ steps.enrich.outputs.summary }}
+          AFTER: ${{ steps.after.outputs.summary }}
+        run: |
+          {
+            echo '## Real supplier 1000-product staging stress'
+            echo
+            echo "- operation: ${OP:-unknown}"
+            echo "- target: 1000 real supplier candidates across AliExpress + CJ"
+            echo "- publication/exposure: forbidden by this workflow"
+            if [ -n "${BEFORE:-}" ]; then echo "- before: `${BEFORE}`"; fi
+            if [ -n "${FILL:-}" ]; then echo "- fill: `${FILL}`"; fi
+            if [ -n "${REFINERY:-}" ]; then echo "- refinery: `${REFINERY}`"; fi
+            if [ -n "${PROMOTE:-}" ]; then echo "- promote: `${PROMOTE}`"; fi
+            if [ -n "${ENRICH:-}" ]; then echo "- enrich: `${ENRICH}`"; fi
+            if [ -n "${AFTER:-}" ]; then echo "- after: `${AFTER}`"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Close successful command issue
+        if: success() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          OP: ${{ steps.op.outputs.operation }}
+          AFTER: ${{ steps.after.outputs.summary }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "Staging real-supplier stress operation `$OP` completed successfully.\n\nFinal audit: `$AFTER`"
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
