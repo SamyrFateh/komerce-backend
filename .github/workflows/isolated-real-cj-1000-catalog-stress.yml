@@ -44,8 +44,6 @@ jobs:
       KOMERCE_DISABLE_CRONS: 'true'
       DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress
       CJ_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
-      CATALOG_ENRICH_PROVIDER: anthropic
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
     steps:
       - name: Checkout protected main only
@@ -63,7 +61,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Assert disposable DB and required provider secrets
+      - name: Assert disposable DB and CJ source credential
         shell: bash
         run: |
           set -euo pipefail
@@ -71,7 +69,6 @@ jobs:
           test "$KOMERCE_ENV" = 'staging'
           test "$NODE_ENV" = 'test'
           test -n "${CJ_ACCESS_TOKEN:-}" || { echo '::error::KOMERCE_CJ_PROOF_ACCESS_TOKEN manquant'; exit 1; }
-          test -n "${ANTHROPIC_API_KEY:-}" || { echo '::error::ANTHROPIC_API_KEY manquant'; exit 1; }
 
       - name: Rebuild disposable PostgreSQL from canonical schema
         shell: bash
@@ -165,14 +162,14 @@ jobs:
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
 
-      - name: Stress French conversion on all eligible inactive drafts
-        id: enrich
+      - name: Prepare French E2E content deterministically — zero AI API calls
+        id: frprep
         shell: bash
         env:
-          KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_ENRICH: '1'
+          KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_FR_PREP: '1'
         run: |
           set -euo pipefail
-          output="$(timeout 3600s node scripts/real-supplier-1000-stress-staging.js --operation=enrich-fr --limit=1000 --concurrency=5)"
+          output="$(timeout 1800s node scripts/real-supplier-1000-stress-staging.js --operation=prepare-fr --limit=1000 --concurrency=5)"
           printf '%s\n' "$output"
           compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-16000)"
           {
@@ -219,7 +216,7 @@ jobs:
             fs.writeFileSync('artifacts/real-catalog-1000/catalog.json', JSON.stringify(report, null, 2));
             fs.writeFileSync('artifacts/real-catalog-1000/summary.json', JSON.stringify({
               product_count: rows.length,
-              ai_enriched: rows.filter(r => r.content_source === 'ai_enriched').length,
+              manual_fr: rows.filter(r => r.content_source === 'manual').length,
               needs_review: rows.filter(r => r.needs_review === true).length,
               active_products: rows.filter(r => r.is_active === true).length,
               categories: rows.reduce((m,r) => { const k=r.category || '<missing>'; m[k]=(m[k]||0)+1; return m; }, {}),
@@ -269,18 +266,19 @@ jobs:
           FILL: ${{ steps.fill.outputs.summary }}
           REFINERY: ${{ steps.refinery.outputs.summary }}
           PROMOTE: ${{ steps.promote.outputs.summary }}
-          ENRICH: ${{ steps.enrich.outputs.summary }}
+          FR_PREP: ${{ steps.frprep.outputs.summary }}
         run: |
           {
             echo '## Isolated real CJ 1000-product catalog stress'
             echo
             echo '- database: disposable PostgreSQL 16 on localhost'
             echo '- production/staging Railway DB: not accessed'
-            echo '- publication/exposure/order: forbidden'
+            echo '- publication/exposure/order: forbidden
+            echo '- AI API calls: 0''
             if [ -n "${FILL:-}" ]; then echo "- fill: `${FILL}`"; fi
             if [ -n "${REFINERY:-}" ]; then echo "- refinery: `${REFINERY}`"; fi
             if [ -n "${PROMOTE:-}" ]; then echo "- promotion: `${PROMOTE}`"; fi
-            if [ -n "${ENRICH:-}" ]; then echo "- FR: `${ENRICH}`"; fi
+            if [ -n "${FR_PREP:-}" ]; then echo "- FR deterministic (0 AI API): `${FR_PREP}`"; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Close successful command issue
