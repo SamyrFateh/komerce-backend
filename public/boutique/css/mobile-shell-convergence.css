@@ -11,11 +11,11 @@
 
 @media (max-width: 899px) {
   .k-header {
-    background: rgba(255,255,255,.96);
+    background: rgba(255,255,255,.76);
     border-bottom: 0;
     box-shadow: none;
-    backdrop-filter: blur(14px) saturate(140%);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(2px) saturate(115%);
+    -webkit-backdrop-filter: blur(2px) saturate(115%);
   }
 
   /* La recherche mobile est un outil global : au repos, une simple loupe dans

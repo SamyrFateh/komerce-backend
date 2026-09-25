@@ -15,8 +15,9 @@ describe('mobile shell convergence', () => {
   test('reste strictement mobile et ouvre header + bottom-nav', () => {
     expect(css).toContain('@media (max-width: 899px)');
     expect(css).not.toContain('@media (min-width: 900px)');
-    expect(css).toMatch(/\.k-header\s*\{[^}]*background:\s*rgba\(255,255,255,\.96\)[^}]*border-bottom:\s*0[^}]*box-shadow:\s*none/s);
+    expect(css).toMatch(/\.k-header\s*\{[^}]*background:\s*rgba\(255,255,255,\.76\)[^}]*border-bottom:\s*0[^}]*box-shadow:\s*none/s);
     expect(css).toMatch(/\.k-bnav\s*\{[^}]*background:\s*rgba\(255,255,255,\.96\)[^}]*border-top:\s*0/s);
+    expect(css).toMatch(/\.k-header\s*\{[^}]*backdrop-filter:\s*blur\(2px\) saturate\(115%\)/s);
   });
 
   test('garde une loupe globale compacte et transforme le focus en vrai état du header', () => {
