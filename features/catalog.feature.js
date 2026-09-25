@@ -82,7 +82,6 @@ module.exports = {
       '.github/workflows/staging-aliexpress-catalog-manual-pilot.yml',
       '.github/workflows/staging-aliexpress-catalog-pilot-audit.yml',
       '.github/workflows/staging-aliexpress-catalog-publish-pilot.yml',
-      '.github/workflows/staging-aliexpress-enrich-fr-pilot.yml',
       '.github/workflows/staging-aliexpress-pool-integrity.yml',
       '.github/workflows/staging-aliexpress-public-hero-pilot.yml',
       '.github/workflows/staging-aliexpress-refinery-audit.yml',
@@ -102,6 +101,7 @@ module.exports = {
       'scripts/cj-full-catalog-sync.js',
       'scripts/aliexpress-500-catalog-sync.js',
       'scripts/real-supplier-1000-stress-staging.js',
+      'scripts/catalog-fr-deterministic-e2e-fixture.js',
       'scripts/cj-broad-catalog-stress-fill.js',
     ],
     services: [
