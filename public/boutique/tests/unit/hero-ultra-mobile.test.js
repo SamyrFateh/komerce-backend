@@ -52,8 +52,8 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('padding: 2px 0 0 0;');
     expect(css).toContain('text-align: left;');
     expect(css).toContain('font-size: clamp(10px, 2.7vw, 12px);');
-    expect(css).toContain('.k-hero-cats-sticky {');
-    expect(css).toContain('padding-top: 8px;');
+    expect(heroCss).toContain('.k-hero-cats-sticky {');
+    expect(heroCss).toContain('padding-top: 8px;');
     expect(indexHtml).toContain('Commandez en ligne.');
     expect(indexHtml).toContain('Retirez près de chez vous.');
     expect(heroCss).toContain('.k-hero-mini-slogan {\n  display: flex;');
