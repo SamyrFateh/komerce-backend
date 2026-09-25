@@ -69,9 +69,4 @@
     line-height: 1.01;
   }
 
-  /* Laisse respirer la scène sans augmenter sa hauteur :
-     on décale uniquement le rail catégories vers le bas. */
-  .k-hero-cats-sticky {
-    padding-top: 8px;
-  }
 }
