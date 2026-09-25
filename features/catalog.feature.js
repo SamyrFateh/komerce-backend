@@ -102,6 +102,7 @@ module.exports = {
       'scripts/cj-full-catalog-sync.js',
       'scripts/aliexpress-500-catalog-sync.js',
       'scripts/real-supplier-1000-stress-staging.js',
+      'scripts/cj-broad-catalog-stress-fill.js',
     ],
     services: [
       // MISSION 1 (KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE) — décideur
@@ -382,6 +383,7 @@ module.exports = {
       'tests/unit/supplier-catalog-scanner.test.js',
       'tests/unit/catalog-import-orchestrator.test.js',
       'tests/unit/real-supplier-1000-stress-staging.test.js',
+      'tests/unit/cj-broad-catalog-stress-fill.test.js',
       'tests/unit/catalog-import-orchestrator-source-v2.test.js',
       'tests/unit/catalog-eligibility.test.js',
       'tests/unit/scan-engine-content-verification.test.js',
