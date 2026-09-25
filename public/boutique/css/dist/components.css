@@ -1420,6 +1420,21 @@ body.spike-shell-vertical .k-sec-grid {
   gap: 9px;
 }
 
+/* Empty catalogue/search messages occupy the whole product grid. */
+.k-grid > .k-catalog-empty {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 28px 20px 36px;
+}
+
+.k-catalog-empty .k-track-retry-btn {
+  max-width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
 /* ── CARTE ───────────────────────────────────────────────────── */
 .k-card {
   background: var(--sand);
