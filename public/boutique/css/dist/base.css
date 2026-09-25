@@ -2981,16 +2981,6 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     box-shadow: none;
   }
 
-  .k-search::before {
-    content: '';
-    position: absolute;
-    inset: 3px;
-    border-radius: 50%;
-    background: var(--surface-white-96);
-    border: 1px solid var(--border-text-08);
-    pointer-events: none;
-  }
-
   .k-search input {
     position: absolute;
     inset: 0;
@@ -3004,10 +2994,11 @@ body.spike-shell-vertical .k-hero-cats-sticky {
 
   .k-search .k-search-icon {
     left: 50%;
-    width: 15px;
-    height: 15px;
+    width: 18px;
+    height: 18px;
     transform: translate(-50%, -50%);
     color: var(--ocean-dark-deep);
+    opacity: .82;
   }
 
   .k-header .k-cart-btn.k-header-action {
@@ -3035,10 +3026,6 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-  }
-
-  .k-search:focus-within::before {
-    display: none;
   }
 
   .k-search:focus-within {
