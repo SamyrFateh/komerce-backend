@@ -1,0 +1,286 @@
+name: Isolated real CJ 1000-product catalog stress
+
+on:
+  workflow_dispatch:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: komerce-isolated-real-cj-1000-catalog-stress
+  cancel-in-progress: false
+
+jobs:
+  stress:
+    name: Isolated CJ 1000 — refinery + FR
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.title == '[isolated-op] real-cj-1000-catalog-stress')
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_real_catalog_stress
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_real_catalog_stress"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress
+      CJ_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
+      CATALOG_ENRICH_PROVIDER: openai
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Checkout protected main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Assert disposable DB and required provider secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress'
+          test "$KOMERCE_ENV" = 'staging'
+          test "$NODE_ENV" = 'test'
+          test -n "${CJ_ACCESS_TOKEN:-}" || { echo '::error::KOMERCE_CJ_PROOF_ACCESS_TOKEN manquant'; exit 1; }
+          test -n "${OPENAI_API_KEY:-}" || { echo '::error::OPENAI_API_KEY manquant'; exit 1; }
+
+      - name: Rebuild disposable PostgreSQL from canonical schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -f docs/db/railway-live-schema.sql
+          node scripts/ci-db-bootstrap.js
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -f migrations/036b_seed_customs_categories.sql
+
+      - name: Fill 1000 real CJ products through canonical import + refinery
+        id: fill
+        shell: bash
+        env:
+          KOMERCE_ALLOW_CJ_FULL_SYNC: '1'
+          KOMERCE_CJ_SYNC_MAX_CLEAN_PRODUCTS: '1000'
+          KOMERCE_CJ_SYNC_MAX_API_CALLS: '500'
+          KOMERCE_CJ_SYNC_PAGE_SIZE: '100'
+        run: |
+          set -euo pipefail
+          output="$(timeout 3600s node scripts/cj-full-catalog-sync.js)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-12000)"
+          {
+            echo 'summary<<EOF'
+            echo "$compact"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Assert the real supplier target
+        id: audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(node scripts/real-supplier-1000-stress-staging.js --operation=audit)"
+          printf '%s\n' "$output"
+          node <<'NODE'
+          const db = require('./db');
+          (async () => {
+            const { rows: [r] } = await db.query(`
+              SELECT COUNT(*)::int AS n
+                FROM sourcing_candidates
+               WHERE supplier_name='CJdropshipping'
+                 AND state IN ('scanned','imported_to_catalog')
+                 AND supplier_product_id IS NOT NULL
+                 AND COALESCE(product_name,'') <> ''
+                 AND image_url ~ '^https://'
+                 AND purchase_price > 0
+                 AND COALESCE(normalized_source_contract->>'schema_version','')='2'
+            `);
+            if (Number(r?.n || 0) < 1000) throw new Error('REAL_CJ_TARGET_NOT_REACHED:' + Number(r?.n || 0) + '/1000');
+            console.log('REAL_CJ_TARGET_REACHED=' + r.n);
+          })().catch(e => { console.error(e); process.exitCode=1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Stress the Raffinerie on all 1000 real products
+        id: refinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 1800s node scripts/real-supplier-1000-stress-staging.js --operation=refinery-audit --limit=1000)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-12000)"
+          {
+            echo 'summary<<EOF'
+            echo "$compact"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Promote only refinery-approved rows to inactive drafts
+        id: promote
+        shell: bash
+        env:
+          KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_PROMOTION: '1'
+        run: |
+          set -euo pipefail
+          output="$(timeout 3000s node scripts/real-supplier-1000-stress-staging.js --operation=promote --limit=1000)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-12000)"
+          {
+            echo 'summary<<EOF'
+            echo "$compact"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Stress French conversion on all eligible inactive drafts
+        id: enrich
+        shell: bash
+        env:
+          KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_ENRICH: '1'
+        run: |
+          set -euo pipefail
+          output="$(timeout 3600s node scripts/real-supplier-1000-stress-staging.js --operation=enrich-fr --limit=1000 --concurrency=5)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-16000)"
+          {
+            echo 'summary<<EOF'
+            echo "$compact"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Export E2E catalog candidate artifact
+        id: export
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/real-catalog-1000
+          node <<'NODE'
+          const fs = require('fs');
+          const db = require('./db');
+          (async () => {
+            const { rows } = await db.query(`
+              SELECT p.product_ref, p.name, p.description, p.category, p.subcategory,
+                     p.price_kmf, p.image_url, p.images, p.content_source,
+                     p.enrichment_confidence, p.needs_review, p.lifecycle_status, p.is_active,
+                     sc.supplier_name, sc.supplier_product_id,
+                     sc.scan_result->>'sourcing_decision' AS sourcing_decision,
+                     COUNT(DISTINCT ps.id) FILTER (WHERE ps.is_active=TRUE)::int AS active_skus,
+                     COUNT(DISTINCT cm.id) FILTER (WHERE cm.is_active=TRUE)::int AS active_media
+                FROM sourcing_candidates sc
+                JOIN products p ON p.id=sc.product_id
+                LEFT JOIN product_skus ps ON ps.product_id=p.id
+                LEFT JOIN catalog_media cm ON cm.product_id=p.id
+               WHERE sc.supplier_name='CJdropshipping'
+                 AND sc.state='imported_to_catalog'
+               GROUP BY p.id, sc.id
+               ORDER BY p.product_ref
+            `);
+            const report = {
+              schema_version: 1,
+              authority: 'ISOLATED_REAL_SUPPLIER_STRESS_NOT_MARKET_PUBLICATION',
+              supplier: 'CJdropshipping',
+              generated_at: new Date().toISOString(),
+              product_count: rows.length,
+              products: rows,
+            };
+            fs.writeFileSync('artifacts/real-catalog-1000/catalog.json', JSON.stringify(report, null, 2));
+            fs.writeFileSync('artifacts/real-catalog-1000/summary.json', JSON.stringify({
+              product_count: rows.length,
+              ai_enriched: rows.filter(r => r.content_source === 'ai_enriched').length,
+              needs_review: rows.filter(r => r.needs_review === true).length,
+              active_products: rows.filter(r => r.is_active === true).length,
+              categories: rows.reduce((m,r) => { const k=r.category || '<missing>'; m[k]=(m[k]||0)+1; return m; }, {}),
+              decisions: rows.reduce((m,r) => { const k=r.sourcing_decision || '<missing>'; m[k]=(m[k]||0)+1; return m; }, {}),
+            }, null, 2));
+            console.log('EXPORTED_E2E_CANDIDATES=' + rows.length);
+          })().catch(e => { console.error(e); process.exitCode=1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Upload real catalog artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-cj-1000-catalog-stress
+          path: artifacts/real-catalog-1000/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Final safety audit
+        id: safety
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const db = require('./db');
+          (async () => {
+            const { rows: [r] } = await db.query(`
+              SELECT COUNT(*) FILTER (WHERE p.is_active=TRUE)::int AS active,
+                     COUNT(DISTINCT pme.product_id)::int AS exposed,
+                     COUNT(*) FILTER (WHERE p.lifecycle_status IS DISTINCT FROM 'candidate')::int AS wrong_lifecycle
+                FROM sourcing_candidates sc
+                JOIN products p ON p.id=sc.product_id
+                LEFT JOIN product_market_exposure pme ON pme.product_id=p.id
+               WHERE sc.supplier_name='CJdropshipping'
+                 AND sc.state='imported_to_catalog'
+            `);
+            console.log(JSON.stringify(r));
+            if (Number(r.active)||Number(r.exposed)||Number(r.wrong_lifecycle)) {
+              throw new Error('SAFETY_AUDIT_FAILED:' + JSON.stringify(r));
+            }
+          })().catch(e => { console.error(e); process.exitCode=1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Write stress summary
+        if: always()
+        shell: bash
+        env:
+          FILL: ${{ steps.fill.outputs.summary }}
+          REFINERY: ${{ steps.refinery.outputs.summary }}
+          PROMOTE: ${{ steps.promote.outputs.summary }}
+          ENRICH: ${{ steps.enrich.outputs.summary }}
+        run: |
+          {
+            echo '## Isolated real CJ 1000-product catalog stress'
+            echo
+            echo '- database: disposable PostgreSQL 16 on localhost'
+            echo '- production/staging Railway DB: not accessed'
+            echo '- publication/exposure/order: forbidden'
+            if [ -n "${FILL:-}" ]; then echo "- fill: `${FILL}`"; fi
+            if [ -n "${REFINERY:-}" ]; then echo "- refinery: `${REFINERY}`"; fi
+            if [ -n "${PROMOTE:-}" ]; then echo "- promotion: `${PROMOTE}`"; fi
+            if [ -n "${ENRICH:-}" ]; then echo "- FR: `${ENRICH}`"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Close successful command issue
+        if: success() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body 'Isolated real CJ 1000-product stress completed successfully. No Railway DB was accessed. Artifact: real-cj-1000-catalog-stress.'
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
