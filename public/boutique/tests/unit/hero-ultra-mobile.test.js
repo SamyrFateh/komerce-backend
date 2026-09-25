@@ -71,9 +71,9 @@ describe('hero ultra mobile contract', () => {
   test('préserve le panier réel et son avatar mobile réduit', () => {
     expect(layoutCss).toContain('width: 21px;');
     expect(css).not.toContain('.k-header .k-cart-btn.k-header-action .k-cart-avatar');
-    expect(css).toContain('inset: -14px auto auto 68%;');
+    expect(css).toContain('inset: -12px auto auto 68%;');
     expect(css).toContain('width: 185px;');
-    expect(css).toContain('height: calc(100% + 14px);');
+    expect(css).toContain('height: calc(100% + 12px);');
     expect(css).not.toContain('.k-cart-btn { width:');
     expect(heroCss).toContain('.k-hero-copy-mobile { display: none; }');
   });
