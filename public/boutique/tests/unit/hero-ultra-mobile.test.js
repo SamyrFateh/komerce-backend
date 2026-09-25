@@ -28,8 +28,8 @@ describe('hero ultra mobile contract', () => {
 
   test('garde les coiffures dans le crop sans réagrandir la scène', () => {
     expect(css).toContain("background-image: url('/images/komerce-hero-relais-3x.webp');");
-    expect(css).toContain('background-size: contain;');
-    expect(css).toContain('background-position: center 92%;');
+    expect(css).toContain('background-size: auto 96%;');
+    expect(css).toContain('background-position: center top;');
     expect(css).not.toContain('background-size: auto 118%;');
     expect(css).not.toContain('background-position: 70% 92%;');
     expect(css).toContain('-webkit-mask-image: none;');
