@@ -13,9 +13,9 @@ on:
           - fill-pools
           - refinery-audit
           - promote
-          - enrich-fr
+          - prepare-fr
       limit:
-        description: 'Maximum rows for refinery/promote/enrichment'
+        description: 'Maximum rows for refinery/promote/free FR preparation'
         required: false
         default: '1000'
   issues:
@@ -40,7 +40,7 @@ jobs:
         github.event.issue.title == '[staging-op] real-supplier-1000-fill' ||
         github.event.issue.title == '[staging-op] real-supplier-1000-refinery-audit' ||
         github.event.issue.title == '[staging-op] real-supplier-1000-promote' ||
-        github.event.issue.title == '[staging-op] real-supplier-1000-enrich-fr'))
+        github.event.issue.title == '[staging-op] real-supplier-1000-prepare-fr'))
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -69,12 +69,12 @@ jobs:
               '[staging-op] real-supplier-1000-fill') operation='fill-pools' ;;
               '[staging-op] real-supplier-1000-refinery-audit') operation='refinery-audit' ;;
               '[staging-op] real-supplier-1000-promote') operation='promote' ;;
-              '[staging-op] real-supplier-1000-enrich-fr') operation='enrich-fr' ;;
+              '[staging-op] real-supplier-1000-prepare-fr') operation='prepare-fr' ;;
               *) echo '::error::Opération non autorisée'; exit 1 ;;
             esac
           fi
           case "$operation" in
-            audit|fill-pools|refinery-audit|promote|enrich-fr) ;;
+            audit|fill-pools|refinery-audit|promote|prepare-fr) ;;
             *) echo '::error::Opération non autorisée'; exit 1 ;;
           esac
           if ! [[ "$limit" =~ ^[0-9]+$ ]] || [ "$limit" -lt 1 ] || [ "$limit" -gt 1000 ]; then
@@ -185,18 +185,15 @@ jobs:
           compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-10000)"
           echo "summary=$compact" >> "$GITHUB_OUTPUT"
 
-      - name: Enrich inactive supplier drafts in French
-        id: enrich
-        if: steps.op.outputs.operation == 'enrich-fr'
+      - name: Prepare inactive supplier drafts in French for free — zero AI API calls
+        id: frprep
+        if: steps.op.outputs.operation == 'prepare-fr'
         shell: bash
         env:
-          KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_ENRICH: '1'
-          CATALOG_ENRICH_PROVIDER: anthropic
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_FR_PREP: '1'
         run: |
           set -euo pipefail
-          test -n "${ANTHROPIC_API_KEY:-}" || { echo '::error::ANTHROPIC_API_KEY manquant'; exit 1; }
-          output="$(timeout 3000s node scripts/real-supplier-1000-stress-staging.js --operation=enrich-fr --limit=${{ steps.op.outputs.limit }} --concurrency=5)"
+          output="$(timeout 1800s node scripts/real-supplier-1000-stress-staging.js --operation=prepare-fr --limit=${{ steps.op.outputs.limit }})"
           printf '%s\n' "$output"
           compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-12000)"
           echo "summary=$compact" >> "$GITHUB_OUTPUT"
@@ -221,7 +218,7 @@ jobs:
           FILL: ${{ steps.fill_cj.outputs.summary }}
           REFINERY: ${{ steps.refinery.outputs.summary }}
           PROMOTE: ${{ steps.promote.outputs.summary }}
-          ENRICH: ${{ steps.enrich.outputs.summary }}
+          FR_PREP: ${{ steps.frprep.outputs.summary }}
           AFTER: ${{ steps.after.outputs.summary }}
         run: |
           {
@@ -234,7 +231,7 @@ jobs:
             if [ -n "${FILL:-}" ]; then echo "- fill: `${FILL}`"; fi
             if [ -n "${REFINERY:-}" ]; then echo "- refinery: `${REFINERY}`"; fi
             if [ -n "${PROMOTE:-}" ]; then echo "- promote: `${PROMOTE}`"; fi
-            if [ -n "${ENRICH:-}" ]; then echo "- enrich: `${ENRICH}`"; fi
+            if [ -n "${FR_PREP:-}" ]; then echo "- FR free / 0 AI API: `${FR_PREP}`"; fi
             if [ -n "${AFTER:-}" ]; then echo "- after: `${AFTER}`"; fi
           } >> "$GITHUB_STEP_SUMMARY"
 

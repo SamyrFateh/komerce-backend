@@ -11,9 +11,9 @@
 
 > **Le catalogue ne se saisit pas à l'aveugle, il se raffine. La donnée fournisseur
 > entre telle quelle et reste immuable. Komerce la normalise, prépare un contenu
-> client en français par une voie autorisée — source native FR, rédaction/traduction
-> humaine ou assistance IA — puis l'humain valide la première publication. L'IA
-> améliore quand elle est utile ; elle n'est jamais un prérequis de publication.**
+> client en français par une voie autorisée — source native FR ou préparation
+> manuelle/assistée hors runtime — puis l'humain valide la première publication.
+> Le pipeline canonique ne dépend d'aucune API IA payante.**
 
 Le CRUD vide n'est pas le modèle principal : le catalogue part d'une source, même
 lorsque cette source est saisie via le connecteur `manual`. En revanche, l'admin
@@ -22,9 +22,10 @@ peut **rédiger, traduire et corriger** le contenu client avant publication. Cet
 source et le `raw_payload`.
 
 Budget d'effort cible : garder la préparation et la validation aussi légères que
-possible. Une fiche déjà propre en français ne doit déclencher aucun appel IA
-inutile. Une fiche étrangère ou médiocre peut être préparée manuellement ou avec
-une assistance IA, puis validée humainement.
+possible. Une fiche déjà propre en français ne déclenche aucun appel externe.
+Une fiche étrangère peut être préparée par règles locales, par l'opérateur ou avec
+l'aide d'un assistant IA hors runtime, puis enregistrée comme préparation manuelle
+tracée. Cette aide ne crée aucune dépendance API du catalogue.
 
 ### 1.1 Catalogue distant unique — une vérité produit, N projections marché
 
@@ -85,7 +86,7 @@ alors que le catalogue distant reste global et simplement projeté selon le marc
 ```txt
  ①connecteur → ②normalisation → ③éligibilité → ④pricing/rails → ⑤préparation FR → ⑥APPROBATION → publié
    source brute     cat. Komerce,   « ce que        sourcing_         native FR /         décision
-   multi-langue     KMF, poids,     Komerce peut    decision,         manuel / IA          humaine
+   multi-langue     KMF, poids,     Komerce peut    decision,         manuel / offline     humaine
                     volume          recevoir »      densité, marge    facultative          initiale
 ```
 
@@ -132,16 +133,18 @@ Trois voies sont autorisées :
    `content_source='manual'`, tandis que `name_source`, `description_source` et
    `source_locale` restent inchangés. Les corrections champ par champ restent
    tracées dans `catalog_field_overrides`.
-3. **Assistance IA facultative** — une IA peut proposer traduction, reformulation,
-   catégorie, attributs ou précautions. Le résultat est tracé
-   `content_source='ai_enriched'`, avec `enrichment_version`, confiance et
-   `needs_review` selon les règles du service.
+3. **Assistance IA hors runtime facultative** — un assistant peut aider l'opérateur
+   à préparer un lot, mais le résultat est importé comme décision éditoriale tracée
+   `content_source='manual'`. Le catalogue ne fait aucun appel à une API IA
+   payante dans son pipeline canonique. Le statut historique `ai_enriched` reste
+   lisible pour compatibilité des anciennes données mais n'est plus la voie par défaut.
 
 Une source étrangère brute (`connector_raw` non française) **ne peut jamais être
 publiée telle quelle**. Elle doit d'abord passer par la voie humaine ou IA.
 
-L'absence de crédit, de clé API ou l'indisponibilité d'un fournisseur IA ne doit
-jamais bloquer une fiche native FR ou une fiche préparée manuellement.
+Aucune clé API ni crédit IA ne doit être nécessaire pour importer, préparer ou
+tester le catalogue. Une indisponibilité de fournisseur IA ne peut donc pas bloquer
+le pipeline canonique.
 
 Garde-fous communs :
 - **Glossaire métier en DB** (`catalog_glossary`) : référence terminologique pour
@@ -202,19 +205,20 @@ L'approbation (étage ⑥) reste l'autorité de publication :
   raffinerie propose, le cap arbitre — un produit qui entre en pousse un autre
   vers la sortie (classement par densité de valeur, V-2).
 
-## 8. L'IA sous gouvernance — assistance optionnelle
+## 8. L'IA hors runtime — aide opérateur, pas dépendance
 
-L'enrichissement IA reste un composant gouverné lorsqu'il est utilisé : prompt
-versionné dans le dépôt, sortie contrainte par schéma, échecs tracés, coût par
-produit suivi. Un changement de prompt = une PR = les gates.
+Le pipeline canonique Catalogue n'appelle aucun fournisseur LLM payant. Il doit
+rester entièrement exécutable avec les données fournisseur, les règles locales,
+les overrides et la validation humaine.
 
-Mais le composant IA est **optionnel et remplaçable**. Komerce doit rester capable
-d'importer, préparer, valider et publier un catalogue sans dépendre d'OpenAI,
-Anthropic ou de tout autre fournisseur LLM.
+Un assistant IA peut néanmoins être utilisé par l'opérateur pour préparer ou
+revoir un lot hors runtime. Dans ce cas, le résultat relu est importé comme
+préparation `manual` et reste traçable par overrides. Il n'existe alors ni secret
+LLM requis par le catalogue, ni coût API par produit, ni dépendance de disponibilité
+d'un fournisseur IA.
 
-L'utilisation ponctuelle d'un assistant externe pour aider l'opérateur à préparer
-un lot de fiches n'introduit pas de dépendance runtime : une fois relu et intégré
-au workflow éditorial, ce contenu relève de la voie humaine `manual`.
+Les anciens composants `ai_enriched` restent compatibles avec l'historique mais
+ne constituent plus la voie canonique de préparation.
 
 ## 9. Clés business_rules
 
@@ -231,7 +235,7 @@ au workflow éditorial, ce contenu relève de la voie humaine `manual`.
 |---|---|---|
 | K-1 | Colonnes source + marquage : `name_source`, `description_source`, `source_locale`, `content_source`, `enrichment_version`, table `catalog_glossary`, table `catalog_exclusions` | aucune |
 | K-2 | Étage ③ dans le scanner : matching exclusions sur donnée source, décisions `excluded`/`restricted` avec raison | K-1 |
-| K-3 | Préparation éditoriale FR : voie native FR + voie manuelle ; service IA conservé comme assistance facultative | K-1 |
+| K-3 | Préparation éditoriale FR : voie native FR + voie manuelle/assistée hors runtime ; zéro API IA requise | K-1 |
 | K-4 | File d'approbation admin : fiche préparée → approve / reject / edit / override en 1 écran ; provenance et overrides tracés | K-3 |
 | K-5 | Auto-publication bornée des mises à jour + retraitement en masse optionnel selon la provenance du contenu | K-4 + terrain |
 | K-M | Projection marché du catalogue distant : composition des overlays propriétaires (pricing/logistics/payments/recommendations) sans duplication de produit | autorités marché correspondantes |
