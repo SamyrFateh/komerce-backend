@@ -28,6 +28,10 @@ const EXACT_PIDS = Object.freeze([
   '7C59DE5B-A511-4920-88A8-C808B21476EE',
 ]);
 const STOCK_PATH = '/product/stock/getInventoryByPid';
+const QUOTE_PATH = '/logistic/freightCalculate'; // Quote only: NEVER createOrder
+const QUOTE_DESTINATIONS = Object.freeze(['KM', 'CM', 'CG']);
+const QUOTE_PID = '7C59DE5B-A511-4920-88A8-C808B21476EE';
+const QUOTE_VID = '095126FF-FE54-4291-A4A5-648448FFB912';
 
 function safeId(value) {
   const id = String(value || '').trim();
@@ -160,6 +164,78 @@ async function readThreeInventorySnapshots(products, accessToken) {
   return snapshots;
 }
 
+// One explicit stocked CJ variant is enough for a first country-level route
+// check. The other ten factory-only variants are not assumed ready to ship.
+// freightCalculate uses POST for a non-mutating *estimate*, not for an order.
+// No address, warehouse selection, booking, reservation or checkout is sent.
+async function quoteVerifiedCjVariant(inventorySnapshots, accessToken) {
+  const unit = inventorySnapshots.get(QUOTE_PID)?.units
+    ?.find(item => item.vid === QUOTE_VID);
+  const cn = unit?.country_stock?.find(stock => stock.country_code === 'CN'
+    && stock.verified_warehouse === true
+    && stock.cj_warehouse_quantity !== null
+    && stock.cj_warehouse_quantity >= 1);
+  if (!cn) {
+    return { status: 'SKIPPED_NO_VERIFIED_CJ_CN_STOCK', pid: QUOTE_PID,
+      vid: QUOTE_VID, destination_quotes: [], quotation_calls: 0 };
+  }
+  const destination_quotes = [];
+  for (const country of QUOTE_DESTINATIONS) {
+    await sleep(1200);
+    const url = cj.BASE_URL + QUOTE_PATH;
+    let response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json',
+          'CJ-Access-Token': accessToken },
+        body: JSON.stringify({
+          startCountryCode: 'CN', endCountryCode: country,
+          products: [{ quantity: 1, vid: QUOTE_VID }],
+        }),
+        signal: AbortSignal.timeout(20000),
+      });
+    } catch (_error) {
+      destination_quotes.push({ country, status: 'QUOTE_TRANSPORT_ERROR', routes: [] });
+      continue;
+    }
+    if (!response.ok) {
+      destination_quotes.push({ country, status: 'QUOTE_HTTP_' + response.status, routes: [] });
+      if (response.status === 429 || response.status === 401 || response.status === 403) break;
+      continue;
+    }
+    let body;
+    try {
+      body = await response.json();
+    } catch (_error) {
+      destination_quotes.push({ country, status: 'QUOTE_INVALID_JSON', routes: [] });
+      continue;
+    }
+    if (body?.result !== true || !Array.isArray(body.data)) {
+      destination_quotes.push({ country, status: 'QUOTE_NOT_CONFIRMED', routes: [] });
+      continue;
+    }
+    const routes = body.data.slice(0, 20).map(route => ({
+      carrier: typeof route?.logisticName === 'string'
+        ? route.logisticName.replace(/[\r\n\t]/g, ' ').slice(0, 80) : null,
+      provider_shipping_usd: Number.isFinite(Number(route?.logisticPrice))
+        && route.logisticPrice != null && Number(route.logisticPrice) >= 0
+        ? Number(route.logisticPrice) : null,
+      supplier_estimate_days: typeof route?.logisticAging === 'string'
+        ? route.logisticAging.replace(/[\r\n\t]/g, ' ').slice(0, 40) : null,
+    })).filter(route => route.carrier);
+    destination_quotes.push({
+      country, status: routes.length ? 'COUNTRY_LEVEL_ROUTES_RETURNED'
+        : 'NO_COUNTRY_LEVEL_ROUTE_RETURNED', routes,
+    });
+  }
+  return { status: 'QUOTED_ONLY_NOT_ORDERABILITY_PROOF', pid: QUOTE_PID,
+    vid: QUOTE_VID, origin_country: 'CN', checked_at: new Date().toISOString(),
+    destination_quotes, quotation_calls: destination_quotes.length,
+    limitations: 'No recipient postal address, final warehouse/storage ID, customs, relay or last-mile proof',
+  };
+}
+
 function publicVerdict(row) {
   const snap = row.normalized_source_contract || {};
   return {
@@ -225,6 +301,7 @@ async function run() {
   const three = exactIds.map(id => byId.get(id));
   if (three.some(p => !p)) throw new Error('CJ_DETAIL_IDENTITY_MISMATCH');
   const inventorySnapshots = await readThreeInventorySnapshots(three, accessToken);
+  const routeQuote = await quoteVerifiedCjVariant(inventorySnapshots, accessToken);
 
   const importResult = await orchestrator.importCatalog({
     supplier_name: cj.SUPPLIER_NAME,
@@ -252,6 +329,8 @@ async function run() {
     actual_source_reads: exactIds.length * 2,
     source_read_scope: 'THREE_EXACT_PRODUCT_DETAILS_AND_THREE_STOCK_BY_PID',
     inventory_authority: 'READ_ONLY_SNAPSHOT_NOT_CHECKOUT_OR_FULFILMENT_APPROVAL',
+    route_quote: routeQuote,
+    quote_authority: 'COUNTRY_LEVEL_INDICATIVE_ONLY_NOT_ADDRESS_RELAY_OR_CHECKOUT_PROOF',
     exact_ids: exactIds,
     imported_candidates: candidates.length,
     published_products: candidates.filter(x => Boolean(x.product_id)).length,
@@ -278,6 +357,8 @@ async function run() {
       '; shadow: ' + report.shadow_status +
       '; canonical resolved: ' + report.canonical_resolved + '.\n\n' +
       'Inventory by exact PID: ' + inventorySnapshots.size + '/3. This is a time-bound provider snapshot; no stock persistence or fulfilment approval.\n\n' +
+      'CJ country-level route quotes (non-mutating POST): ' + routeQuote.quotation_calls +
+      '; not a checkout, booking or final last-mile quote.\n\n' +
       'No production DB, no publication, no order, no active stock mutation.\n');
   }
 
