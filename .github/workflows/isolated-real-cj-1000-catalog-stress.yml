@@ -273,8 +273,8 @@ jobs:
             echo
             echo '- database: disposable PostgreSQL 16 on localhost'
             echo '- production/staging Railway DB: not accessed'
-            echo '- publication/exposure/order: forbidden
-            echo '- AI API calls: 0''
+            echo '- publication/exposure/order: forbidden'
+            echo '- AI API calls: 0'
             if [ -n "${FILL:-}" ]; then echo "- fill: `${FILL}`"; fi
             if [ -n "${REFINERY:-}" ]; then echo "- refinery: `${REFINERY}`"; fi
             if [ -n "${PROMOTE:-}" ]; then echo "- promotion: `${PROMOTE}`"; fi
