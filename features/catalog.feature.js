@@ -89,6 +89,7 @@ module.exports = {
       '.github/workflows/staging-catalog-ops.yml',
       '.github/workflows/staging-storefront-e2e-audit.yml',
       '.github/workflows/staging-pdp-aliexpress-live-audit.yml',
+      '.github/workflows/staging-real-supplier-1000-stress.yml',
     ],
     utils: [
       'utils/categories-cache.js',
@@ -99,6 +100,7 @@ module.exports = {
       'scripts/cj-real-showcase-seed.js',
       'scripts/cj-full-catalog-sync.js',
       'scripts/aliexpress-500-catalog-sync.js',
+      'scripts/real-supplier-1000-stress-staging.js',
     ],
     services: [
       // MISSION 1 (KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE) — décideur
@@ -378,6 +380,7 @@ module.exports = {
       'tests/unit/modal-mobile-canonical.test.js',
       'tests/unit/supplier-catalog-scanner.test.js',
       'tests/unit/catalog-import-orchestrator.test.js',
+      'tests/unit/real-supplier-1000-stress-staging.test.js',
       'tests/unit/catalog-import-orchestrator-source-v2.test.js',
       'tests/unit/catalog-eligibility.test.js',
       'tests/unit/scan-engine-content-verification.test.js',
