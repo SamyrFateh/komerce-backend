@@ -65,7 +65,7 @@ describe('hero ultra mobile contract', () => {
   test('préserve le panier réel et son avatar mobile réduit', () => {
     expect(layoutCss).toContain('width: 21px;');
     expect(css).not.toContain('.k-header .k-cart-btn.k-header-action .k-cart-avatar');
-    expect(css).toContain('inset: 0 52px 0 auto;');
+    expect(css).toContain('inset: -3px auto auto 62%;');
     expect(css).toContain('width: 143px;');
     expect(css).not.toContain('.k-cart-btn { width:');
     expect(heroCss).toContain('.k-hero-copy-mobile { display: none; }');
@@ -91,3 +91,4 @@ describe('hero ultra mobile contract', () => {
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 });
+
