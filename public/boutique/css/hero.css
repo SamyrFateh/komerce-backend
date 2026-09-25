@@ -110,7 +110,10 @@
   .k-hero-figures {
     background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');
     background-size: auto 92%;
-    background-position: 70% 12%;
+    /* GAP-F5 — recentré la scène de remise : 70%→58% (décalage gauche pour
+       mieux centrer l'échange colis), 12%→4% (remonte les personnages pour
+       que le comptoir et les gestes soient visibles sans couper les têtes). */
+    background-position: 58% 4%;
   }
 }
 
