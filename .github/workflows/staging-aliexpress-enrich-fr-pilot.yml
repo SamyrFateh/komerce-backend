@@ -24,8 +24,8 @@ jobs:
       KOMERCE_ENV: staging
       NODE_ENV: test
       DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-      CATALOG_ENRICH_PROVIDER: openai
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      CATALOG_ENRICH_PROVIDER: anthropic
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
     steps:
       - name: Checkout main only
@@ -48,7 +48,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_DATABASE_URL manquant'; exit 1; }
-          test -n "${OPENAI_API_KEY:-}" || { echo '::error::OPENAI_API_KEY manquant'; exit 1; }
+          test -n "${ANTHROPIC_API_KEY:-}" || { echo '::error::ANTHROPIC_API_KEY manquant'; exit 1; }
 
       - name: Execute bounded French enrichment pilot
         id: enrich
