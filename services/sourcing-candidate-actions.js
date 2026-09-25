@@ -23,7 +23,6 @@
 const db = require('../db');
 const scanner = require('./supplier-catalog-scanner');
 const pricingEngine = require('./pricing-engine');
-const catalogEnrichment = require('./catalog-enrichment');
 const { createDraftProductFromSourcingCandidate } = require('./catalog-candidate-product-service');
 const { promoteCatalog } = require('./catalog-promotion');
 
@@ -186,12 +185,12 @@ function requireExplicitPromotionPrice(body = {}) {
 
 function resolveEnrichmentMode(body = {}) {
   const mode = body.enrichment_mode == null
-    ? 'auto'
+    ? 'source_only'
     : String(body.enrichment_mode).trim().toLowerCase();
-  if (!['auto', 'source_only'].includes(mode)) {
+  if (mode !== 'source_only') {
     throw new SourcingCandidateActionError(
       400,
-      'enrichment_mode doit être auto ou source_only',
+      'enrichment_mode doit être source_only — aucune API IA n\'est appelée par la promotion catalogue',
       'candidate_enrichment_mode_invalid'
     );
   }
@@ -270,13 +269,11 @@ async function promoteCandidate(id, body = {}, actorId = null) {
     client.release();
   }
 
-  const enrichment = enrichmentMode === 'source_only'
-    ? {
-        status: 'source_only',
-        mode: 'source_only',
-        reason: 'explicit_source_only',
-      }
-    : await catalogEnrichment.enrichAndApply(productId);
+  const enrichment = {
+    status: 'source_only',
+    mode: 'source_only',
+    reason: body.enrichment_mode == null ? 'default_source_only_no_ai' : 'explicit_source_only',
+  };
 
   return {
     product_id: productId,
@@ -285,11 +282,7 @@ async function promoteCandidate(id, body = {}, actorId = null) {
     enrichment,
     enrichment_mode: enrichmentMode,
     price_decision: 'EXPLICIT_HUMAN_INPUT',
-    message: enrichment.status === 'ok'
-      ? 'Produit créé en mode inactif, fiche FR générée. Approuvez-la quand prête.'
-      : enrichment.status === 'source_only'
-        ? 'Produit créé en mode inactif — donnée source conservée, préparation éditoriale à faire avant publication.'
-        : 'Produit créé en mode inactif — fiche à relire (needs_review). Activez-le manuellement quand prêt.',
+    message: 'Produit créé en mode inactif — donnée source conservée, préparation éditoriale FR séparée et sans API IA avant publication.',
   };
 }
 
