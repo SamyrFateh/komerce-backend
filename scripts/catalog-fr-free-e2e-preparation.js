@@ -42,18 +42,24 @@ const CATEGORY_DESCRIPTIONS = Object.freeze({
 function parseArgs(argv = process.argv.slice(2)) {
   let limit = MAX_LIMIT;
   let output = null;
+  let suppliers = [...SUPPLIERS];
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--limit') limit = Number.parseInt(argv[++i], 10);
     else if (arg.startsWith('--limit=')) limit = Number.parseInt(arg.split('=', 2)[1], 10);
     else if (arg === '--output') output = String(argv[++i] || '').trim();
     else if (arg.startsWith('--output=')) output = String(arg.split('=', 2)[1] || '').trim();
+    else if (arg === '--supplier') suppliers = [String(argv[++i] || '').trim()];
+    else if (arg.startsWith('--supplier=')) suppliers = [String(arg.split('=', 2)[1] || '').trim()];
     else throw new Error(`Argument inconnu: ${arg}`);
   }
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
     throw new Error(`--limit doit être 1..${MAX_LIMIT}`);
   }
-  return { limit, output: output ? path.resolve(output) : null };
+  if (!suppliers.length || suppliers.some((s) => !SUPPLIERS.includes(s))) {
+    throw new Error(`--supplier doit être ${SUPPLIERS.join(' ou ')}`);
+  }
+  return { limit, output: output ? path.resolve(output) : null, suppliers };
 }
 
 function assertRuntime(env = process.env) {
@@ -92,7 +98,7 @@ function prepareFrenchFields(row) {
   };
 }
 
-async function loadDrafts(limit) {
+async function loadDrafts(limit, suppliers = SUPPLIERS) {
   const { rows } = await db.query(
     `SELECT p.id, p.product_ref, p.name, p.name_source, p.description_source,
             p.source_locale, p.category, p.subcategory, p.content_source,
@@ -109,7 +115,7 @@ async function loadDrafts(limit) {
         AND lower(p.source_locale) NOT LIKE 'fr%'
       ORDER BY p.product_ref
       LIMIT $2`,
-    [SUPPLIERS, limit]
+    [suppliers, limit]
   );
   return rows;
 }
@@ -144,7 +150,7 @@ async function applyPreparedDraft(row) {
 
 async function run(options = parseArgs()) {
   assertRuntime();
-  const drafts = await loadDrafts(options.limit);
+  const drafts = await loadDrafts(options.limit, options.suppliers || SUPPLIERS);
   const prepared = [];
   const errors = [];
 
