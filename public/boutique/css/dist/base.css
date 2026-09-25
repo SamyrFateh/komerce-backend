@@ -2897,10 +2897,11 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     margin-bottom: 0;
   }
 
-  /* Position the scene itself: background percentages only move within the
-     remaining 4% of height. Keep the heads inside the source's top margin. */
+  /* Place the relay scene in the real visual gap between brand copy and
+     header actions. The previous -3px / 62% move was too small to read on
+     device: lift it clearly while keeping the source heads inside frame. */
   .k-hero-media .k-hero-figures {
-    inset: -3px auto auto 62%;
+    inset: -10px auto auto 56%;
     transform: translateX(-50%);
     width: 143px;
     height: 100%;
