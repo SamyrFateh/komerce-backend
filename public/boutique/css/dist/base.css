@@ -2046,6 +2046,13 @@ body:has(#k-page-scroll.k-pager-active) {
 }
 .k-hero-cats-sticky::after { content: ''; display: block; }
 
+@media (max-width: 899px) {
+  /* Respiration mobile : abaisse le rail sans agrandir la scène. */
+  .k-hero-cats-sticky {
+    padding-top: 8px;
+  }
+}
+
 /* Temporary validation shell: sticky category navigation remains owned here. */
 body.spike-shell-vertical .k-hero-cats-sticky {
   position: sticky;
@@ -2906,10 +2913,10 @@ body.spike-shell-vertical .k-hero-cats-sticky {
      l'acte de remise. Le téléphone, le colis et les mains forment le centre
      narratif ; aucun troisième personnage ne dilue la lecture. */
   .k-hero-media .k-hero-figures {
-    inset: -8px auto auto 68%;
+    inset: -6px auto auto 68%;
     transform: translateX(-50%);
     width: 185px;
-    height: calc(100% + 8px);
+    height: calc(100% + 6px);
     background-image: url('/images/komerce-hero-handoff-v2.webp');
     background-size: auto 100%;
     background-position: center center;
@@ -2940,6 +2947,7 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     font-size: clamp(10px, 2.7vw, 12px);
     line-height: 1.01;
   }
+
 }
 
 
