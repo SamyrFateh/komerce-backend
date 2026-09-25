@@ -44,8 +44,6 @@ jobs:
       KOMERCE_DISABLE_CRONS: 'true'
       DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress
       CJ_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
-      CATALOG_ENRICH_PROVIDER: anthropic
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
     steps:
       - name: Checkout protected main only
@@ -63,7 +61,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Assert disposable DB and required provider secrets
+      - name: Assert disposable DB and CJ source credential
         shell: bash
         run: |
           set -euo pipefail
@@ -71,7 +69,6 @@ jobs:
           test "$KOMERCE_ENV" = 'staging'
           test "$NODE_ENV" = 'test'
           test -n "${CJ_ACCESS_TOKEN:-}" || { echo '::error::KOMERCE_CJ_PROOF_ACCESS_TOKEN manquant'; exit 1; }
-          test -n "${ANTHROPIC_API_KEY:-}" || { echo '::error::ANTHROPIC_API_KEY manquant'; exit 1; }
 
       - name: Rebuild disposable PostgreSQL from canonical schema
         shell: bash
@@ -165,14 +162,58 @@ jobs:
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
 
-      - name: Stress French conversion on all eligible inactive drafts
-        id: enrich
+      - name: Save pre-FR checkpoint so validated sourcing/refinery work is reusable
         shell: bash
-        env:
-          KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_ENRICH: '1'
         run: |
           set -euo pipefail
-          output="$(timeout 3600s node scripts/real-supplier-1000-stress-staging.js --operation=enrich-fr --limit=1000 --concurrency=5)"
+          mkdir -p artifacts/pre-fr-checkpoint
+          PGPASSWORD=komerce pg_dump -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -Fc             -f artifacts/pre-fr-checkpoint/komerce-real-catalog-pre-fr.dump
+          node <<'NODE'
+          const fs = require('fs');
+          const db = require('./db');
+          (async () => {
+            const { rows } = await db.query(`
+              SELECT p.product_ref, p.name_source, p.description_source, p.source_locale,
+                     p.category, p.subcategory, p.image_url,
+                     sc.supplier_name, sc.supplier_product_id,
+                     sc.scan_result->>'sourcing_decision' AS sourcing_decision
+                FROM sourcing_candidates sc
+                JOIN products p ON p.id=sc.product_id
+               WHERE sc.state='imported_to_catalog'
+                 AND p.lifecycle_status='candidate'
+                 AND p.is_active=FALSE
+               ORDER BY p.product_ref
+            `);
+            fs.writeFileSync(
+              'artifacts/pre-fr-checkpoint/french-workpack-source.json',
+              JSON.stringify({
+                schema_version: 1,
+                authority: 'SOURCE_WORKPACK_FOR_OFFLINE_AI_OR_MANUAL_FR_PREPARATION',
+                api_calls_required: 0,
+                products: rows,
+              }, null, 2)
+            );
+            console.log('PRE_FR_CHECKPOINT_PRODUCTS=' + rows.length);
+          })().catch(e => { console.error(e); process.exitCode=1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Upload pre-FR reusable checkpoint
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-cj-1000-pre-fr-checkpoint
+          path: artifacts/pre-fr-checkpoint/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Prepare French E2E content for free — zero AI API calls
+        id: frprep
+        shell: bash
+        env:
+          KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_FR_PREP: '1'
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/real-catalog-1000
+          output="$(timeout 1800s node scripts/catalog-fr-free-e2e-preparation.js --limit=1000 --output=artifacts/real-catalog-1000/french-preparation.json)"
           printf '%s\n' "$output"
           compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-16000)"
           {
@@ -219,7 +260,7 @@ jobs:
             fs.writeFileSync('artifacts/real-catalog-1000/catalog.json', JSON.stringify(report, null, 2));
             fs.writeFileSync('artifacts/real-catalog-1000/summary.json', JSON.stringify({
               product_count: rows.length,
-              ai_enriched: rows.filter(r => r.content_source === 'ai_enriched').length,
+              manual_fr: rows.filter(r => r.content_source === 'manual').length,
               needs_review: rows.filter(r => r.needs_review === true).length,
               active_products: rows.filter(r => r.is_active === true).length,
               categories: rows.reduce((m,r) => { const k=r.category || '<missing>'; m[k]=(m[k]||0)+1; return m; }, {}),
@@ -269,7 +310,7 @@ jobs:
           FILL: ${{ steps.fill.outputs.summary }}
           REFINERY: ${{ steps.refinery.outputs.summary }}
           PROMOTE: ${{ steps.promote.outputs.summary }}
-          ENRICH: ${{ steps.enrich.outputs.summary }}
+          FR_PREP: ${{ steps.frprep.outputs.summary }}
         run: |
           {
             echo '## Isolated real CJ 1000-product catalog stress'
@@ -277,10 +318,11 @@ jobs:
             echo '- database: disposable PostgreSQL 16 on localhost'
             echo '- production/staging Railway DB: not accessed'
             echo '- publication/exposure/order: forbidden'
+            echo '- paid AI/API calls: 0'
             if [ -n "${FILL:-}" ]; then echo "- fill: `${FILL}`"; fi
             if [ -n "${REFINERY:-}" ]; then echo "- refinery: `${REFINERY}`"; fi
             if [ -n "${PROMOTE:-}" ]; then echo "- promotion: `${PROMOTE}`"; fi
-            if [ -n "${ENRICH:-}" ]; then echo "- FR: `${ENRICH}`"; fi
+            if [ -n "${FR_PREP:-}" ]; then echo "- FR free / 0 AI API: `${FR_PREP}`"; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Close successful command issue

@@ -71,8 +71,8 @@ jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({
   importCatalog: (...args) => mockImportCatalog(...args),
 }));
 
-// K-3 — l'étage ⑤ est testé dans catalog-enrichment.test.js ; ici on vérifie
-// seulement le câblage (appelé avec le bon productId, résultat exposé).
+// Legacy catalog-enrichment stays isolated tooling. Promotion must not call it
+// implicitly: the canonical path is source_only + separate traced FR preparation.
 const mockEnrichAndApply = jest.fn();
 jest.mock('../../services/catalog-enrichment', () => ({
   enrichAndApply: (...args) => mockEnrichAndApply(...args),
@@ -319,7 +319,7 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
     expect(client.release).toHaveBeenCalled();
   });
 
-  it('persiste la donnée source à l\'import (DOCTRINE_CATALOGUE §7) et câble l\'étage ⑤', async () => {
+  it('persiste la donnée source et reste source_only sans appel IA implicite', async () => {
     const client = makeClient([
       { rows: [{ state: 'scanned', scan_result: {}, product_name: 'Power Bank EN', description: 'desc EN', komerce_category: 'tech', purchase_price_kmf: 1000, normalized_source_contract: null }] },
       { rows: [{ id: 'prod-2' }] },
@@ -327,8 +327,6 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
       { rows: [] },
     ]);
     mockGetClient.mockResolvedValue(client);
-    mockEnrichAndApply.mockResolvedValue({ status: 'low_confidence', confidence: 0.6, needsReview: true });
-
     const res = await request(app)
       .post('/api/admin/sourcing/candidates/c1/import-product')
       .send({ price_kmf: 5000 });
@@ -338,9 +336,13 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
     expect(insertCall.sql).toContain('name_source');
     expect(insertCall.sql).toContain("'connector_raw'");
     expect(insertCall.params).toEqual(expect.arrayContaining(['Power Bank EN', 'desc EN', 'en']));
-    // câblage étage ⑤ : appelé avec le produit créé, résultat exposé au client, APRÈS le commit
-    expect(mockEnrichAndApply).toHaveBeenCalledWith('prod-2');
-    expect(res.body.enrichment).toEqual(expect.objectContaining({ status: 'low_confidence' }));
+    // Aucune API IA implicite : la promotion conserve la source, la préparation FR est séparée.
+    expect(mockEnrichAndApply).not.toHaveBeenCalled();
+    expect(res.body.enrichment).toEqual(expect.objectContaining({
+      status: 'source_only',
+      mode: 'source_only',
+    }));
+    expect(res.body.enrichment_mode).toBe('source_only');
   });
 
   it('PDC-8 Lot 6 : normalized_source_contract V2 présent → promotion appelée dans la même transaction', async () => {

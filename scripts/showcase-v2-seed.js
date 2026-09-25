@@ -27,8 +27,8 @@ const manualConnector = require('../services/suppliers/connectors/manual-connect
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const { validateForPromotion, promoteCatalog } = require('../services/catalog-promotion');
 const { upsertProductSku, auditProductSkuReadiness } = require('../services/product-admin-service');
-const catalogEnrichment = require('../services/catalog-enrichment');
 const catalogEnrichmentPrompt = require('../services/prompts/catalog-enrichment.prompt');
+const catalogOverrides = require('../services/catalog-overrides');
 const { approveProduct } = require('../services/catalog-approval');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -57,22 +57,6 @@ function isFrenchLocale(locale) {
   return value === 'fr' || value.startsWith('fr-');
 }
 
-function resolveEnrichmentProvider() {
-  const configured = String(process.env.CATALOG_ENRICH_PROVIDER || '').trim().toLowerCase();
-  if (configured && configured !== 'anthropic') {
-    throw new Error(`CATALOG_ENRICH_PROVIDER non supporté: ${configured} — le catalogue utilise Anthropic uniquement`);
-  }
-  return process.env.ANTHROPIC_API_KEY ? 'anthropic' : null;
-}
-
-function enrichmentKeyName(provider) {
-  return provider === 'anthropic' ? 'ANTHROPIC_API_KEY' : null;
-}
-
-function hasEnrichmentCredentials(provider = resolveEnrichmentProvider()) {
-  const keyName = enrichmentKeyName(provider);
-  return Boolean(keyName && process.env[keyName]);
-}
 
 function assertStaging() {
   if (process.env.NODE_ENV === 'production' || process.env.KOMERCE_ENV === 'production') {
@@ -82,7 +66,6 @@ function assertStaging() {
     throw new Error('KOMERCE_ALLOW_SHOWCASE_SEED=1 requis');
   }
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL requis');
-  resolveEnrichmentProvider(); // valide une configuration explicite éventuelle, sans l'imposer
   resolveMediaProvider();
 }
 
@@ -432,33 +415,26 @@ async function prepareProduct(product, slot, candidate) {
   }
 }
 
-async function enrichProductInFrench(productId, productRef) {
-  const result = await catalogEnrichment.enrichAndApply(productId);
-  if (result.status !== 'ok' || result.needsReview === true) {
-    throw new Error(`Enrichissement FR ${productRef} refusé: status=${result.status} ${result.error || ''}`.trim());
-  }
-  const { rows: [row] } = await db.query(
-    `SELECT name, description, name_source, description_source, source_locale,
-            content_source, enrichment_version, enrichment_confidence, needs_review
-       FROM products WHERE id=$1`,
-    [productId],
-  );
-  if (!row || row.content_source !== 'ai_enriched' || Number(row.enrichment_version) !== Number(catalogEnrichmentPrompt.PROMPT_VERSION) || row.needs_review) {
-    throw new Error(`Invariant enrichissement FR cassé ${productRef}: ${JSON.stringify(row || null)}`);
-  }
-  return row;
-}
-
 async function prepareEditorialContent(productId, product) {
   if (isFrenchLocale(product.source_locale)) {
     return { mode: 'source_fr', provider: null };
   }
-  const provider = resolveEnrichmentProvider();
-  if (!provider || !hasEnrichmentCredentials(provider)) {
-    throw new Error(`Préparation FR requise ${product.product_ref}: source=${product.source_locale || 'inconnue'}, aucune assistance IA configurée. Traduire/corriger manuellement ou configurer un provider IA.`);
+
+  const name = String(product.name || product.source_title || 'Sélection Komerce').trim();
+  const description = String(product.description || `${name}. Produit préparé pour les parcours de test Komerce.`).trim();
+  const result = await catalogOverrides.upsertOverrides(
+    db,
+    productId,
+    { name, description },
+    {
+      reason: 'Showcase V2 — préparation FR locale/curatée, sans API IA payante',
+      setBy: null,
+    }
+  );
+  if (result.product?.content_source !== 'manual' || result.product?.needs_review === true) {
+    throw new Error(`Préparation FR manuelle refusée ${product.product_ref}`);
   }
-  await enrichProductInFrench(productId, product.product_ref);
-  return { mode: 'ai_enriched', provider };
+  return { mode: 'manual', provider: null };
 }
 
 async function approvePreparedProduct(productId, productRef) {
@@ -677,6 +653,4 @@ module.exports = {
   resumeProductProblems,
   isResumeProductComplete,
   isFrenchLocale,
-  resolveEnrichmentProvider,
-  hasEnrichmentCredentials,
 };

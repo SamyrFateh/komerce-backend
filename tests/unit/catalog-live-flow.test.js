@@ -69,6 +69,8 @@ test.each([
   [{ state: 'scanned' }, 'qualified'],
   [{ state: 'imported_to_catalog', product_ref: 'KPR-1', content_source: 'connector_raw', needs_review: false }, 'curation'],
   [{ state: 'imported_to_catalog', product_ref: 'KPR-1', content_source: 'ai_enriched', needs_review: false }, 'fr_ready'],
+  [{ state: 'imported_to_catalog', product_ref: 'KPR-2', content_source: 'manual', needs_review: false }, 'fr_ready'],
+  [{ state: 'imported_to_catalog', product_ref: 'KPR-3', content_source: 'connector_raw', source_locale: 'fr', needs_review: false }, 'fr_ready'],
   [{ product_ref: 'KPR-1', product_is_active: true }, 'catalog'],
 ])('conserve les états techniques pour le drill-down sans en faire le vocabulaire principal', (row, expected) => {
   expect(liveFlow._test.stageFromRow(row)).toBe(expected);

@@ -250,7 +250,7 @@
     {
       "id": "anthropic",
       "family": "ai",
-      "expected_scope": "runtime",
+      "expected_scope": "tooling",
       "consumers": [
         "catalog"
       ],
@@ -262,7 +262,8 @@
         "ANTHROPIC_URL"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "qualification_note": "No canonical catalog runtime, promotion or staging stress flow calls Anthropic. Historical enrichment service is non-canonical tooling only."
     },
     {
       "id": "openai",

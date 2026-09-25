@@ -6,12 +6,12 @@
  * @layer         tooling
  * @criticality   high
  * @inputs        staging DB, existing AliExpress/CJ NormalizedSupplierProduct V2 candidates
- * @outputs       audit/refinery stress summaries, inactive drafts, optional FR enrichment
+ * @outputs       audit/refinery stress summaries, inactive drafts, free FR E2E preparation
  * @depends       db.js, services/supplier-catalog-scanner.js, services/catalog-eligibility.js,
- *                services/sourcing-candidate-actions.js, services/catalog-enrichment.js
+ *                services/sourcing-candidate-actions.js, scripts/catalog-fr-free-e2e-preparation.js
  * @used-by       bounded staging operator workflow
  * @db-read       sourcing_candidates, products, product_skus, product_market_exposure
- * @db-write-via  sourcing-candidate-actions, catalog-enrichment (promote/enrich operations only)
+ * @db-write-via  sourcing-candidate-actions, catalog-overrides (promotion + traced FR preparation only)
  * @db-txn        canonical owners
  * @doctrine      supplier_agnostic_core, inactive_drafts_only, no_auto_publish, staging_only
  * @impact-areas  sourcing, catalog, staging
@@ -24,14 +24,14 @@ const pricingEngine = require('../services/pricing-engine');
 const scanner = require('../services/supplier-catalog-scanner');
 const eligibility = require('../services/catalog-eligibility');
 const { promoteCandidate } = require('../services/sourcing-candidate-actions');
-const catalogEnrichment = require('../services/catalog-enrichment');
+const freeFrenchPreparation = require('./catalog-fr-free-e2e-preparation');
 
 const SUPPLIERS = Object.freeze(['AliExpress', 'CJdropshipping']);
 const TARGET_PER_SUPPLIER = 500;
 const TARGET_TOTAL = 1000;
 const MAX_LIMIT = 1000;
 const PROMOTION_FLAG = 'KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_PROMOTION';
-const ENRICH_FLAG = 'KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_ENRICH';
+const FR_PREP_FLAG = 'KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_FR_PREP';
 const ALLOWED_DECISIONS = new Set(['TEST', 'PRIORITY']);
 const EXPECTED_PRICE_AUTHORITY = 'ECONOMIC_REFERENCE_NOT_MARKET_DECISION';
 
@@ -57,8 +57,8 @@ function parseArgs(argv = process.argv.slice(2)) {
     else if (arg.startsWith('--concurrency=')) concurrency = Number.parseInt(arg.split('=', 2)[1], 10);
     else throw new Error(`Argument inconnu: ${arg}`);
   }
-  if (!['audit', 'refinery-audit', 'promote', 'enrich-fr'].includes(operation)) {
-    throw new Error('operation doit être audit, refinery-audit, promote ou enrich-fr');
+  if (!['audit', 'refinery-audit', 'promote', 'prepare-fr'].includes(operation)) {
+    throw new Error('operation doit être audit, refinery-audit, promote ou prepare-fr');
   }
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
     throw new Error(`--limit doit être 1..${MAX_LIMIT}`);
@@ -77,8 +77,8 @@ function assertRuntime(args, env = process.env) {
   if (args.operation === 'promote' && !isTruthy(env[PROMOTION_FLAG])) {
     throw new Error(`REFUS: ${PROMOTION_FLAG}=1 requis`);
   }
-  if (args.operation === 'enrich-fr' && !isTruthy(env[ENRICH_FLAG])) {
-    throw new Error(`REFUS: ${ENRICH_FLAG}=1 requis`);
+  if (args.operation === 'prepare-fr' && !isTruthy(env[FR_PREP_FLAG])) {
+    throw new Error(`REFUS: ${FR_PREP_FLAG}=1 requis`);
   }
 }
 
@@ -351,109 +351,17 @@ async function promote(limit) {
   return result;
 }
 
-async function loadEnrichmentDrafts(limit) {
-  const { rows } = await db.query(`
-    WITH eligible AS (
-      SELECT DISTINCT p.id, p.product_ref, p.name, p.source_locale, p.content_source,
-             sc.supplier_name, p.created_at,
-             row_number() OVER (PARTITION BY sc.supplier_name ORDER BY p.created_at, p.id) AS supplier_rank
-        FROM sourcing_candidates sc
-        JOIN products p ON p.id = sc.product_id
-       WHERE sc.supplier_name = ANY($1::text[])
-         AND sc.state='imported_to_catalog'
-         AND p.lifecycle_status='candidate'
-         AND p.is_active=FALSE
-         AND p.content_source='connector_raw'
-         AND p.source_locale IS NOT NULL
-         AND lower(p.source_locale) NOT LIKE 'fr%'
-    )
-    SELECT * FROM eligible
-     ORDER BY supplier_rank, supplier_name
-     LIMIT $2
-  `, [SUPPLIERS, limit]);
-  return rows;
-}
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function enrichFr(limit, concurrency) {
-  const drafts = await loadEnrichmentDrafts(limit);
-  const results = [];
-  for (let i = 0; i < drafts.length; i += concurrency) {
-    const batch = drafts.slice(i, i + concurrency);
-    // eslint-disable-next-line no-await-in-loop
-    const out = await Promise.all(batch.map(async d => {
-      try {
-        const result = await catalogEnrichment.enrichAndApply(d.id);
-        return {
-          supplier: d.supplier_name,
-          product_ref: d.product_ref,
-          status: result.status || 'failed',
-          confidence: result.confidence ?? null,
-          needs_review: result.needsReview ?? result.needs_review ?? null,
-          error: result.error || null,
-        };
-      } catch (error) {
-        return {
-          supplier: d.supplier_name,
-          product_ref: d.product_ref,
-          status: 'error',
-          confidence: null,
-          needs_review: null,
-          error: String(error.message || error).slice(0, 240),
-        };
-      }
-    }));
-    results.push(...out);
-    if (i + concurrency < drafts.length) {
-      // eslint-disable-next-line no-await-in-loop
-      await sleep(1000);
-    }
-  }
-
-  const successStatuses = new Set(['ok', 'low_confidence']);
-  const success = results.filter(r => successStatuses.has(r.status));
-  const failed = results.filter(r => !successStatuses.has(r.status));
-  const bySupplier = {};
-  const reviewBySupplier = {};
-  for (const r of success) {
-    bump(bySupplier, r.supplier);
-    if (r.needs_review) bump(reviewBySupplier, r.supplier);
-  }
-
-  const ids = drafts.map(d => d.id);
-  let persisted = { ai_enriched: 0, still_connector_raw: 0, active: 0 };
-  if (ids.length) {
-    const { rows: [row] } = await db.query(`
-      SELECT COUNT(*) FILTER (WHERE content_source='ai_enriched')::int AS ai_enriched,
-             COUNT(*) FILTER (WHERE content_source='connector_raw')::int AS still_connector_raw,
-             COUNT(*) FILTER (WHERE is_active=TRUE)::int AS active
-        FROM products WHERE id = ANY($1::uuid[])
-    `, [ids]);
-    persisted = {
-      ai_enriched: Number(row?.ai_enriched || 0),
-      still_connector_raw: Number(row?.still_connector_raw || 0),
-      active: Number(row?.active || 0),
-    };
-  }
-  if (persisted.active !== 0) throw new Error('REFUS: enrichissement a activé un produit');
-  const result = {
-    selected: drafts.length,
-    success: success.length,
-    failed: failed.length,
-    success_by_supplier: bySupplier,
-    needs_review_by_supplier: reviewBySupplier,
-    persisted,
-    failures: failed.slice(0, 30),
+async function prepareFr(limit) {
+  const result = await freeFrenchPreparation.run({ limit, output: null });
+  return {
+    selected: result.summary.selected,
+    success: result.summary.prepared,
+    failed: result.summary.failed,
+    api_calls: result.summary.api_calls,
+    paid_ai_dependency: result.summary.paid_ai_dependency,
+    preparation_version: result.summary.preparation_version,
+    authority: result.summary.authority,
   };
-  if (failed.length) {
-    const error = new Error(`FRENCH_ENRICHMENT_STRESS_INCOMPLETE:${failed.length}/${drafts.length}`);
-    error.result = result;
-    throw error;
-  }
-  return result;
 }
 
 async function main() {
@@ -463,7 +371,7 @@ async function main() {
   if (args.operation === 'audit') result = await audit();
   else if (args.operation === 'refinery-audit') result = await refineryAudit(args.limit);
   else if (args.operation === 'promote') result = await promote(args.limit);
-  else result = await enrichFr(args.limit, args.concurrency);
+  else result = await prepareFr(args.limit);
   console.log(`[real-supplier-1000-stress] ${args.operation.toUpperCase()} ${JSON.stringify(result)}`);
   return result;
 }
@@ -493,6 +401,6 @@ module.exports = {
   audit,
   refineryAudit,
   promote,
-  enrichFr,
+  prepareFr,
   main,
 };
