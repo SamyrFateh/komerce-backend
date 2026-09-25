@@ -68,6 +68,33 @@ function extractCritical(cssText, ranges) {
   return criticalRoot.toString();
 }
 
+const ALWAYS_CRITICAL_SELECTORS = new Set([
+  '.k-grid > .k-catalog-empty',
+  '.k-catalog-empty .k-track-retry-btn',
+  '#k-catalog-section:has(.k-catalog-empty) #k-scroll-sentinel',
+  '#k-catalog-section:has(.k-catalog-empty) .k-load-more-spinner',
+  '.k-track-error',
+  '.k-track-error-icon',
+  '.k-track-error-title',
+  '.k-track-error-sub',
+  '.k-track-retry-btn',
+  '.k-track-retry-btn:hover',
+  '.k-track-retry-btn:active',
+  '.k-track-retry-btn:disabled',
+]);
+
+function extractAlwaysCritical(cssText) {
+  const root = postcss.parse(cssText);
+  const out = postcss.root();
+  root.walkRules((rule) => {
+    const selectors = Array.isArray(rule.selectors) ? rule.selectors : [];
+    if (selectors.some((selector) => ALWAYS_CRITICAL_SELECTORS.has(selector.trim()))) {
+      out.append(rule.clone());
+    }
+  });
+  return out.toString();
+}
+
 async function measureOnePage(browser, viewport, isMobile) {
   const ctx = await browser.newContext({ viewport, isMobile });
   const page = await ctx.newPage();
@@ -101,7 +128,9 @@ async function measureOnePage(browser, viewport, isMobile) {
   }
 
   const merged = mergeRanges([...mobile.ranges, ...desktop.ranges]);
-  const critical = extractCritical(mobile.text, merged);
+  const measuredCritical = extractCritical(mobile.text, merged);
+  const alwaysCritical = extractAlwaysCritical(mobile.text);
+  const critical = measuredCritical + '\n\n/* ── EMPTY CATALOGUE — always critical ── */\n' + alwaysCritical;
 
   const openBraces = (critical.match(/{/g) || []).length;
   const closeBraces = (critical.match(/}/g) || []).length;
