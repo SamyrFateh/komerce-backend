@@ -30,7 +30,7 @@ describe('hero ultra mobile contract', () => {
 
   test('garde les coiffures dans le crop sans réagrandir la scène', () => {
     expect(css).toContain("background-image: url('/images/komerce-hero-handoff-v1.webp');");
-    expect(css).toContain('background-size: auto 108%;');
+    expect(css).toContain('background-size: auto 145%;');
     expect(css).toContain('background-position: center top;');
     expect(css).not.toContain('background-size: auto 118%;');
     expect(css).not.toContain('background-position: 70% 92%;');
@@ -46,7 +46,7 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {');
     expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {');
     expect(css).toContain('inset: 0 auto 0 0;');
-    expect(css).toContain('width: 44%;');
+    expect(css).toContain('width: 38%;');
     expect(css).toContain('padding: 2px 0 0 0;');
     expect(css).toContain('text-align: left;');
     expect(css).toContain('font-size: clamp(10px, 2.7vw, 12px);');
@@ -69,8 +69,8 @@ describe('hero ultra mobile contract', () => {
   test('préserve le panier réel et son avatar mobile réduit', () => {
     expect(layoutCss).toContain('width: 21px;');
     expect(css).not.toContain('.k-header .k-cart-btn.k-header-action .k-cart-avatar');
-    expect(css).toContain('inset: 0 auto auto 57%;');
-    expect(css).toContain('width: 158px;');
+    expect(css).toContain('inset: 0 auto auto 65%;');
+    expect(css).toContain('width: clamp(190px, 54vw, 218px);');
     expect(css).not.toContain('.k-cart-btn { width:');
     expect(heroCss).toContain('.k-hero-copy-mobile { display: none; }');
   });
