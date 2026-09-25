@@ -82,7 +82,6 @@ module.exports = {
       '.github/workflows/staging-aliexpress-catalog-manual-pilot.yml',
       '.github/workflows/staging-aliexpress-catalog-pilot-audit.yml',
       '.github/workflows/staging-aliexpress-catalog-publish-pilot.yml',
-      '.github/workflows/staging-aliexpress-enrich-fr-pilot.yml',
       '.github/workflows/staging-aliexpress-pool-integrity.yml',
       '.github/workflows/staging-aliexpress-public-hero-pilot.yml',
       '.github/workflows/staging-aliexpress-refinery-audit.yml',
@@ -102,6 +101,7 @@ module.exports = {
       'scripts/cj-full-catalog-sync.js',
       'scripts/aliexpress-500-catalog-sync.js',
       'scripts/real-supplier-1000-stress-staging.js',
+      'scripts/catalog-fr-free-e2e-preparation.js',
       'scripts/cj-broad-catalog-stress-fill.js',
     ],
     services: [
@@ -383,6 +383,7 @@ module.exports = {
       'tests/unit/supplier-catalog-scanner.test.js',
       'tests/unit/catalog-import-orchestrator.test.js',
       'tests/unit/real-supplier-1000-stress-staging.test.js',
+      'tests/unit/catalog-fr-free-e2e-preparation.test.js',
       'tests/unit/cj-broad-catalog-stress-fill.test.js',
       'tests/unit/catalog-import-orchestrator-source-v2.test.js',
       'tests/unit/catalog-eligibility.test.js',
