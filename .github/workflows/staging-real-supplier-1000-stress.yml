@@ -46,7 +46,7 @@ jobs:
     env:
       KOMERCE_ENV: staging
       NODE_ENV: test
-      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.RAILWAY_STAGING_DATABASE_URL }}
 
     steps:
       - name: Resolve bounded operation
@@ -103,7 +103,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_DATABASE_URL manquant'; exit 1; }
+          test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_STAGING_DATABASE_URL manquant — aucun write autorisé sur le Railway production-only'; exit 1; }
           test "${KOMERCE_ENV}" = 'staging'
           test "${NODE_ENV}" = 'test'
 
@@ -123,7 +123,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node <<'NODE' >> "$GITHUB_OUTPUT"
+          node <<'NODE'
+          const fs = require('fs');
           const stress = require('./scripts/real-supplier-1000-stress-staging');
           const db = require('./db');
           (async () => {
@@ -132,11 +133,14 @@ jobs:
             const cj = Number(a.suppliers.CJdropshipping?.clean_total || 0);
             const total = ali + cj;
             const desired = total >= 1000 ? cj : Math.min(1000, Math.max(cj, 1000 - ali));
-            console.log('ali=' + ali);
-            console.log('cj=' + cj);
-            console.log('total=' + total);
-            console.log('cj_target=' + desired);
-            console.log('needs_cj=' + (desired > cj ? 'true' : 'false'));
+            const lines = [
+              'ali=' + ali,
+              'cj=' + cj,
+              'total=' + total,
+              'cj_target=' + desired,
+              'needs_cj=' + (desired > cj ? 'true' : 'false'),
+            ];
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, lines.join('\n') + '\n');
           })().catch(e => { console.error(e); process.exitCode=1; }).finally(() => db.pool.end());
           NODE
 
