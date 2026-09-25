@@ -6,12 +6,13 @@
  * @layer         tooling
  * @criticality   high
  * @inputs        staging DB, existing AliExpress/CJ NormalizedSupplierProduct V2 candidates
- * @outputs       audit/refinery stress summaries, inactive drafts, optional FR enrichment
+ * @outputs       audit/refinery stress summaries, inactive drafts, deterministic FR E2E preparation
  * @depends       db.js, services/supplier-catalog-scanner.js, services/catalog-eligibility.js,
- *                services/sourcing-candidate-actions.js, services/catalog-enrichment.js
+ *                services/sourcing-candidate-actions.js, services/catalog-overrides.js,
+ *                scripts/catalog-fr-deterministic-e2e-fixture.js
  * @used-by       bounded staging operator workflow
  * @db-read       sourcing_candidates, products, product_skus, product_market_exposure
- * @db-write-via  sourcing-candidate-actions, catalog-enrichment (promote/enrich operations only)
+ * @db-write-via  sourcing-candidate-actions, catalog-overrides (promote/manual-FR operations only)
  * @db-txn        canonical owners
  * @doctrine      supplier_agnostic_core, inactive_drafts_only, no_auto_publish, staging_only
  * @impact-areas  sourcing, catalog, staging
@@ -24,14 +25,15 @@ const pricingEngine = require('../services/pricing-engine');
 const scanner = require('../services/supplier-catalog-scanner');
 const eligibility = require('../services/catalog-eligibility');
 const { promoteCandidate } = require('../services/sourcing-candidate-actions');
-const catalogEnrichment = require('../services/catalog-enrichment');
+const catalogOverrides = require('../services/catalog-overrides');
+const { prepareFrenchFields } = require('./catalog-fr-deterministic-e2e-fixture');
 
 const SUPPLIERS = Object.freeze(['AliExpress', 'CJdropshipping']);
 const TARGET_PER_SUPPLIER = 500;
 const TARGET_TOTAL = 1000;
 const MAX_LIMIT = 1000;
 const PROMOTION_FLAG = 'KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_PROMOTION';
-const ENRICH_FLAG = 'KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_ENRICH';
+const FR_PREP_FLAG = 'KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_FR_PREP';
 const ALLOWED_DECISIONS = new Set(['TEST', 'PRIORITY']);
 const EXPECTED_PRICE_AUTHORITY = 'ECONOMIC_REFERENCE_NOT_MARKET_DECISION';
 
@@ -57,8 +59,8 @@ function parseArgs(argv = process.argv.slice(2)) {
     else if (arg.startsWith('--concurrency=')) concurrency = Number.parseInt(arg.split('=', 2)[1], 10);
     else throw new Error(`Argument inconnu: ${arg}`);
   }
-  if (!['audit', 'refinery-audit', 'promote', 'enrich-fr'].includes(operation)) {
-    throw new Error('operation doit être audit, refinery-audit, promote ou enrich-fr');
+  if (!['audit', 'refinery-audit', 'promote', 'prepare-fr'].includes(operation)) {
+    throw new Error('operation doit être audit, refinery-audit, promote ou prepare-fr');
   }
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
     throw new Error(`--limit doit être 1..${MAX_LIMIT}`);
@@ -77,8 +79,8 @@ function assertRuntime(args, env = process.env) {
   if (args.operation === 'promote' && !isTruthy(env[PROMOTION_FLAG])) {
     throw new Error(`REFUS: ${PROMOTION_FLAG}=1 requis`);
   }
-  if (args.operation === 'enrich-fr' && !isTruthy(env[ENRICH_FLAG])) {
-    throw new Error(`REFUS: ${ENRICH_FLAG}=1 requis`);
+  if (args.operation === 'prepare-fr' && !isTruthy(env[FR_PREP_FLAG])) {
+    throw new Error(`REFUS: ${FR_PREP_FLAG}=1 requis`);
   }
 }
 
@@ -354,7 +356,8 @@ async function promote(limit) {
 async function loadEnrichmentDrafts(limit) {
   const { rows } = await db.query(`
     WITH eligible AS (
-      SELECT DISTINCT p.id, p.product_ref, p.name, p.source_locale, p.content_source,
+      SELECT DISTINCT p.id, p.product_ref, p.name, p.name_source, p.description_source,
+             p.source_locale, p.category, p.subcategory, p.content_source,
              sc.supplier_name, p.created_at,
              row_number() OVER (PARTITION BY sc.supplier_name ORDER BY p.created_at, p.id) AS supplier_rank
         FROM sourcing_candidates sc
@@ -378,78 +381,83 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function enrichFr(limit, concurrency) {
+async function prepareFr(limit, concurrency) {
   const drafts = await loadEnrichmentDrafts(limit);
   const results = [];
   for (let i = 0; i < drafts.length; i += concurrency) {
     const batch = drafts.slice(i, i + concurrency);
+    // Deterministic staging preparation only: zero external AI/API calls.
+    // Source lineage remains immutable; client-facing fields are traced overrides.
     // eslint-disable-next-line no-await-in-loop
     const out = await Promise.all(batch.map(async d => {
       try {
-        const result = await catalogEnrichment.enrichAndApply(d.id);
+        const prepared = prepareFrenchFields(d);
+        const applied = await catalogOverrides.upsertOverrides(
+          db,
+          d.id,
+          { name: prepared.name_fr, description: prepared.description_fr },
+          {
+            reason: 'Préparation FR déterministe pour fixture E2E staging — aucune API IA',
+            setBy: null,
+          }
+        );
         return {
           supplier: d.supplier_name,
           product_ref: d.product_ref,
-          status: result.status || 'failed',
-          confidence: result.confidence ?? null,
-          needs_review: result.needsReview ?? result.needs_review ?? null,
-          error: result.error || null,
+          status: applied.product?.content_source === 'manual' ? 'manual_fr_ready' : 'not_marked_manual',
+          content_source: applied.product?.content_source || null,
+          needs_review: applied.product?.needs_review ?? null,
+          method: prepared.method,
+          error: null,
         };
       } catch (error) {
         return {
           supplier: d.supplier_name,
           product_ref: d.product_ref,
           status: 'error',
-          confidence: null,
+          content_source: null,
           needs_review: null,
+          method: null,
           error: String(error.message || error).slice(0, 240),
         };
       }
     }));
     results.push(...out);
-    if (i + concurrency < drafts.length) {
-      // eslint-disable-next-line no-await-in-loop
-      await sleep(1000);
-    }
   }
 
-  const successStatuses = new Set(['ok', 'low_confidence']);
-  const success = results.filter(r => successStatuses.has(r.status));
-  const failed = results.filter(r => !successStatuses.has(r.status));
+  const success = results.filter(r => r.status === 'manual_fr_ready');
+  const failed = results.filter(r => r.status !== 'manual_fr_ready');
   const bySupplier = {};
-  const reviewBySupplier = {};
-  for (const r of success) {
-    bump(bySupplier, r.supplier);
-    if (r.needs_review) bump(reviewBySupplier, r.supplier);
-  }
+  for (const r of success) bump(bySupplier, r.supplier);
 
   const ids = drafts.map(d => d.id);
-  let persisted = { ai_enriched: 0, still_connector_raw: 0, active: 0 };
+  let persisted = { manual: 0, still_connector_raw: 0, active: 0 };
   if (ids.length) {
     const { rows: [row] } = await db.query(`
-      SELECT COUNT(*) FILTER (WHERE content_source='ai_enriched')::int AS ai_enriched,
+      SELECT COUNT(*) FILTER (WHERE content_source='manual')::int AS manual,
              COUNT(*) FILTER (WHERE content_source='connector_raw')::int AS still_connector_raw,
              COUNT(*) FILTER (WHERE is_active=TRUE)::int AS active
         FROM products WHERE id = ANY($1::uuid[])
     `, [ids]);
     persisted = {
-      ai_enriched: Number(row?.ai_enriched || 0),
+      manual: Number(row?.manual || 0),
       still_connector_raw: Number(row?.still_connector_raw || 0),
       active: Number(row?.active || 0),
     };
   }
-  if (persisted.active !== 0) throw new Error('REFUS: enrichissement a activé un produit');
+  if (persisted.active !== 0) throw new Error('REFUS: préparation FR a activé un produit');
   const result = {
     selected: drafts.length,
     success: success.length,
     failed: failed.length,
     success_by_supplier: bySupplier,
-    needs_review_by_supplier: reviewBySupplier,
+    api_calls: 0,
+    method: 'DETERMINISTIC_MANUAL_FR_E2E_FIXTURE',
     persisted,
     failures: failed.slice(0, 30),
   };
   if (failed.length) {
-    const error = new Error(`FRENCH_ENRICHMENT_STRESS_INCOMPLETE:${failed.length}/${drafts.length}`);
+    const error = new Error(`FRENCH_PREPARATION_STRESS_INCOMPLETE:${failed.length}/${drafts.length}`);
     error.result = result;
     throw error;
   }
@@ -463,7 +471,7 @@ async function main() {
   if (args.operation === 'audit') result = await audit();
   else if (args.operation === 'refinery-audit') result = await refineryAudit(args.limit);
   else if (args.operation === 'promote') result = await promote(args.limit);
-  else result = await enrichFr(args.limit, args.concurrency);
+  else result = await prepareFr(args.limit, args.concurrency);
   console.log(`[real-supplier-1000-stress] ${args.operation.toUpperCase()} ${JSON.stringify(result)}`);
   return result;
 }
@@ -493,6 +501,6 @@ module.exports = {
   audit,
   refineryAudit,
   promote,
-  enrichFr,
+  prepareFr,
   main,
 };
