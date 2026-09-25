@@ -128,4 +128,12 @@ describe('css/critical-home.css — intégrité structurelle', () => {
     expect(css).toMatch(/@provenance/);
     expect(css).toMatch(/@regenerate/);
   });
+
+  test("l'état catalogue vide est critique dès le premier rendu", () => {
+    expect(css).toContain('.k-grid > .k-catalog-empty');
+    expect(css).toContain('.k-track-error {');
+    expect(css).toContain('.k-track-error-title {');
+    expect(css).toContain('.k-track-error-sub {');
+    expect(css).toContain('.k-track-retry-btn {');
+  });
 });
