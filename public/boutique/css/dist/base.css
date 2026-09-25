@@ -2046,6 +2046,13 @@ body:has(#k-page-scroll.k-pager-active) {
 }
 .k-hero-cats-sticky::after { content: ''; display: block; }
 
+@media (max-width: 899px) {
+  /* Respiration mobile : abaisse le rail sans agrandir la scène. */
+  .k-hero-cats-sticky {
+    padding-top: 8px;
+  }
+}
+
 /* Temporary validation shell: sticky category navigation remains owned here. */
 body.spike-shell-vertical .k-hero-cats-sticky {
   position: sticky;
@@ -2941,11 +2948,6 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     line-height: 1.01;
   }
 
-  /* Laisse respirer la scène sans augmenter sa hauteur :
-     on décale uniquement le rail catégories vers le bas. */
-  .k-hero-cats-sticky {
-    padding-top: 8px;
-  }
 }
 
 
