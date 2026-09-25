@@ -2879,7 +2879,7 @@ body.spike-shell-vertical .k-hero-cats-sticky {
 
   /* Mobile relay scene, 447x172 source for 3x display (143px wide); screenshot-approved composition. */
   .k-hero-media .k-hero-figures {
-    inset: 0 24px 0 auto;
+    inset: 0 40px 0 auto;
     width: 143px;
     height: 100%;
     background-image: url('/images/komerce-hero-relais-3x.webp');
