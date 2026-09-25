@@ -21,8 +21,8 @@ describe('mobile shell convergence', () => {
 
   test('garde une loupe globale compacte et transforme le focus en vrai état du header', () => {
     expect(css).toMatch(/\.k-search\s*\{[^}]*flex:\s*0 0 34px[^}]*width:\s*34px[^}]*height:\s*34px[^}]*margin-left:\s*auto[^}]*background:\s*transparent[^}]*border:\s*0/s);
-    expect(css).toMatch(/\.k-search::before\s*\{[^}]*inset:\s*3px[^}]*border-radius:\s*50%[^}]*background:\s*var\(--surface-white-96\)[^}]*border:\s*1px solid var\(--border-text-08\)/s);
-    expect(css).toMatch(/\.k-search \.k-search-icon\s*\{[^}]*width:\s*15px[^}]*height:\s*15px/s);
+    expect(css).not.toContain('.k-search::before');
+    expect(css).toMatch(/\.k-search \.k-search-icon\s*\{[^}]*width:\s*18px[^}]*height:\s*18px[^}]*opacity:\s*\.82/s);
     expect(css).toMatch(/\.k-header \.k-cart-avatar\s*\{[^}]*width:\s*32px[^}]*height:\s*32px/s);
     expect(css).toMatch(/\.k-header-inner\s*\{[^}]*gap:\s*5px/s);
     expect(css).toMatch(/\.k-header\s*\{[^}]*padding-right:\s*18px/s);
