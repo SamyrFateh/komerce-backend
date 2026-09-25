@@ -111,7 +111,7 @@
     z-index: 190;
     border-radius: 17px;
     background: var(--white);
-    border-color: rgba(42,122,62,.28);
+    border: 1px solid rgba(42,122,62,.28);
     box-shadow: 0 0 0 3px rgba(100,175,90,.06);
   }
 
