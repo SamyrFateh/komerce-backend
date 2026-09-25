@@ -653,6 +653,4 @@ module.exports = {
   resumeProductProblems,
   isResumeProductComplete,
   isFrenchLocale,
-  resolveEnrichmentProvider,
-  hasEnrichmentCredentials,
 };
