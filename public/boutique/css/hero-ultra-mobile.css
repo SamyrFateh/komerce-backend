@@ -29,13 +29,13 @@
      l'acte de remise. Le téléphone, le colis et les mains forment le centre
      narratif ; aucun troisième personnage ne dilue la lecture. */
   .k-hero-media .k-hero-figures {
-    inset: 0 auto auto 56%;
+    inset: 0 auto auto 57%;
     transform: translateX(-50%);
-    width: 143px;
+    width: 158px;
     height: 100%;
     background-image: url('/images/komerce-hero-handoff-v1.webp');
-    background-size: auto 100%;
-    background-position: center center;
+    background-size: auto 108%;
+    background-position: center top;
     -webkit-mask-image: none;
     mask-image: none;
   }
@@ -60,7 +60,7 @@
 
   html .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {
     margin-top: 1px;
-    font-size: clamp(8.5px, 2.35vw, 10px);
-    line-height: .98;
+    font-size: clamp(10px, 2.7vw, 12px);
+    line-height: 1.01;
   }
 }
