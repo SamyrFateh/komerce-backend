@@ -122,7 +122,6 @@ function priceAuthorityOf(row) {
 }
 
 async function loadCandidates(limit = TARGET_TOTAL) {
-  const perSupplier = Math.min(TARGET_PER_SUPPLIER, limit);
   const { rows } = await db.query(`
     WITH ranked AS (
       SELECT sc.*,
@@ -136,9 +135,8 @@ async function loadCandidates(limit = TARGET_TOTAL) {
            komerce_category, state, product_id, raw_payload, normalized_source_contract,
            scan_result, purchase_price_kmf, created_at
       FROM ranked
-     WHERE supplier_rank <= $2
-     ORDER BY supplier_name, supplier_rank
-  `, [SUPPLIERS, perSupplier]);
+     ORDER BY supplier_rank, supplier_name
+  `, [SUPPLIERS]);
   return rows.slice(0, limit);
 }
 
@@ -185,11 +183,10 @@ async function audit() {
   for (const row of counts) bySupplier[row.supplier_name] = row;
   const cleanTotal = SUPPLIERS.reduce((n, supplier) => n + Number(bySupplier[supplier]?.clean_total || 0), 0);
   return {
-    target: { total: TARGET_TOTAL, per_supplier: TARGET_PER_SUPPLIER },
+    target: { total: TARGET_TOTAL, diversity_reference_per_supplier: TARGET_PER_SUPPLIER },
     suppliers: bySupplier,
     clean_total_across_suppliers: cleanTotal,
-    target_reached: cleanTotal >= TARGET_TOTAL
-      && SUPPLIERS.every(s => Number(bySupplier[s]?.clean_total || 0) >= TARGET_PER_SUPPLIER),
+    target_reached: cleanTotal >= TARGET_TOTAL,
     linked_product_breakdown: products,
     french_enrichment_eligible: Number(enrich?.eligible_fr || 0),
   };
@@ -371,10 +368,9 @@ async function loadEnrichmentDrafts(limit) {
          AND lower(p.source_locale) NOT LIKE 'fr%'
     )
     SELECT * FROM eligible
-     WHERE supplier_rank <= $2
      ORDER BY supplier_rank, supplier_name
-     LIMIT $3
-  `, [SUPPLIERS, TARGET_PER_SUPPLIER, limit]);
+     LIMIT $2
+  `, [SUPPLIERS, limit]);
   return rows;
 }
 

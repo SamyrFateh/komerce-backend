@@ -90,6 +90,7 @@ module.exports = {
       '.github/workflows/staging-storefront-e2e-audit.yml',
       '.github/workflows/staging-pdp-aliexpress-live-audit.yml',
       '.github/workflows/staging-real-supplier-1000-stress.yml',
+      '.github/workflows/isolated-real-cj-1000-catalog-stress.yml',
     ],
     utils: [
       'utils/categories-cache.js',
