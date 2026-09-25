@@ -59,21 +59,14 @@ function isFrenchLocale(locale) {
 
 function resolveEnrichmentProvider() {
   const configured = String(process.env.CATALOG_ENRICH_PROVIDER || '').trim().toLowerCase();
-  if (configured) {
-    if (!['anthropic', 'openai'].includes(configured)) {
-      throw new Error(`CATALOG_ENRICH_PROVIDER invalide: ${configured}`);
-    }
-    return configured;
+  if (configured && configured !== 'anthropic') {
+    throw new Error(`CATALOG_ENRICH_PROVIDER non supporté: ${configured} — le catalogue utilise Anthropic uniquement`);
   }
-  if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
-  if (process.env.OPENAI_API_KEY) return 'openai';
-  return null;
+  return process.env.ANTHROPIC_API_KEY ? 'anthropic' : null;
 }
 
 function enrichmentKeyName(provider) {
-  if (provider === 'openai') return 'OPENAI_API_KEY';
-  if (provider === 'anthropic') return 'ANTHROPIC_API_KEY';
-  return null;
+  return provider === 'anthropic' ? 'ANTHROPIC_API_KEY' : null;
 }
 
 function hasEnrichmentCredentials(provider = resolveEnrichmentProvider()) {
