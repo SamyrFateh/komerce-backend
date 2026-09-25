@@ -267,7 +267,7 @@
     {
       "id": "openai",
       "family": "ai",
-      "expected_scope": "runtime",
+      "expected_scope": "tooling",
       "consumers": [
         "catalog"
       ],
@@ -279,7 +279,8 @@
         "OPENAI_URL"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "qualification_note": "OpenAI is not a catalog runtime/enrichment dependency. Remaining use is limited to optional Showcase media-realism tooling."
     },
     {
       "id": "imagekit",
