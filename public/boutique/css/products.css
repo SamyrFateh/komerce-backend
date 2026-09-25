@@ -35,6 +35,14 @@ body.spike-shell-vertical .k-sec-grid {
   flex-shrink: 0;
 }
 
+/* Empty catalogue/search: infinite-scroll has nothing to paginate.
+   Hide both observer sentinel and spinner so the bottom of the empty state
+   never looks like a pending network request. */
+#k-catalog-section:has(.k-catalog-empty) #k-scroll-sentinel,
+#k-catalog-section:has(.k-catalog-empty) .k-load-more-spinner {
+  display: none;
+}
+
 /* ── CARTE ───────────────────────────────────────────────────── */
 .k-card {
   background: var(--sand);
