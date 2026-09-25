@@ -16,4 +16,10 @@ describe('products — hiérarchie des surfaces', () => {
     expect(css).toMatch(/\.k-card\s*\{[^}]*background:\s*var\(--sand\)/s);
     expect(css).toMatch(/@media \(min-width: 900px\)[\s\S]*?\.k-card\s*\{[^}]*background:\s*var\(--sand\)/);
   });
+
+  it('masque le sentinel et le spinner de pagination quand le catalogue est vide', () => {
+    expect(css).toContain('#k-catalog-section:has(.k-catalog-empty) #k-scroll-sentinel');
+    expect(css).toContain('#k-catalog-section:has(.k-catalog-empty) .k-load-more-spinner');
+    expect(css).toMatch(/#k-catalog-section:has\(\.k-catalog-empty\)[\s\S]*?display:\s*none;/);
+  });
 });
