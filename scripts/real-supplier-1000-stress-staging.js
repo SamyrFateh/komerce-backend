@@ -337,7 +337,7 @@ async function promote(limit) {
   }
   const supplierCounts = {};
   for (const p of promoted) bump(supplierCounts, p.supplier);
-  return {
+  const result = {
     requested_limit: limit,
     selected: selected.length,
     promoted: promoted.length,
@@ -346,6 +346,12 @@ async function promote(limit) {
     failures: failures.slice(0, 20),
     guard,
   };
+  if (failures.length) {
+    const error = new Error(`PROMOTION_STRESS_INCOMPLETE:${failures.length}/${selected.length}`);
+    error.result = result;
+    throw error;
+  }
+  return result;
 }
 
 async function loadEnrichmentDrafts(limit) {
@@ -437,7 +443,7 @@ async function enrichFr(limit, concurrency) {
     };
   }
   if (persisted.active !== 0) throw new Error('REFUS: enrichissement a activé un produit');
-  return {
+  const result = {
     selected: drafts.length,
     success: success.length,
     failed: failed.length,
@@ -446,6 +452,12 @@ async function enrichFr(limit, concurrency) {
     persisted,
     failures: failed.slice(0, 30),
   };
+  if (failed.length) {
+    const error = new Error(`FRENCH_ENRICHMENT_STRESS_INCOMPLETE:${failed.length}/${drafts.length}`);
+    error.result = result;
+    throw error;
+  }
+  return result;
 }
 
 async function main() {
@@ -464,6 +476,9 @@ if (require.main === module) {
   main()
     .then(() => process.exit(0))
     .catch(error => {
+      if (error?.result) {
+        console.error('[real-supplier-1000-stress] PARTIAL ' + JSON.stringify(error.result));
+      }
       console.error(`[real-supplier-1000-stress] FAILED: ${error.stack || error.message || error}`);
       process.exit(1);
     })
