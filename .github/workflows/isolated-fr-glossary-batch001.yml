@@ -1,0 +1,170 @@
+name: Isolated FR glossary batch 001 proof
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Run carrying the terminology-enriched checkpoint'
+        required: false
+        default: '36243147075'
+      checkpoint_name:
+        description: 'Terminology-enriched checkpoint artifact'
+        required: false
+        default: 'cj-fr-quality-termium-checkpoint'
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: isolated-fr-glossary-batch001
+  cancel-in-progress: false
+
+jobs:
+  proof:
+    name: Curated glossary → batch 001 workpack
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.title == '[isolated-op] fr-glossary-batch001')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_real_catalog_stress
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_real_catalog_stress"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      CI: '1'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress
+      PGPASSWORD: komerce
+
+    steps:
+      - name: Checkout protected main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download terminology-enriched checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.checkpoint_name || 'cj-fr-quality-termium-checkpoint' }}
+          path: checkpoint
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.source_run_id || '36243147075' }}
+          github-token: ${{ github.token }}
+
+      - name: Restore checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          dump_file="$(find checkpoint -type f -name '*.dump' | head -1)"
+          test -n "$dump_file" || { echo '::error::Checkpoint sans dump PostgreSQL'; exit 1; }
+          pg_restore --clean --if-exists --no-owner --no-privileges             -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress "$dump_file"
+
+      - name: Apply only curated glossary batch 001
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress             -v ON_ERROR_STOP=1 -f migrations/244_catalog_glossary_batch001.sql
+
+          psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -Atqc             "SELECT 'active_glossary=' || count(*) FROM catalog_glossary WHERE is_active=TRUE;"
+
+      - name: Export batch 001 with curated + TERMIUM hints
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/catalog-fr-quality-workpack.js             --limit=40             --batch-size=40             --output-dir=artifacts/cj-fr-quality-batch001-curated
+
+      - name: Verify curated hints are actually present
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const p = JSON.parse(fs.readFileSync('artifacts/cj-fr-quality-batch001-curated/batch-001.json', 'utf8'));
+          const products = p.products || [];
+          const withCurated = products.filter(x => (x.terminology_hints?.curated || []).length > 0);
+          const curatedHits = products.reduce((n, x) => n + (x.terminology_hints?.curated || []).length, 0);
+          const externalHits = products.reduce((n, x) => n + (x.terminology_hints?.references || []).length, 0);
+          const summary = {
+            products: products.length,
+            products_with_curated_glossary: withCurated.length,
+            curated_hits: curatedHits,
+            external_reference_hits: externalHits,
+          };
+          console.log(JSON.stringify(summary));
+          if (products.length !== 40) throw new Error('EXPECTED_40_PRODUCTS');
+          if (withCurated.length === 0) throw new Error('CURATED_GLOSSARY_NOT_INJECTED');
+          NODE
+
+      - name: Final safety audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const db = require('./db');
+          (async () => {
+            const { rows: [r] } = await db.query(`
+              SELECT COUNT(*) FILTER (WHERE p.is_active=TRUE)::int AS active,
+                     COUNT(DISTINCT pme.product_id)::int AS exposed,
+                     COUNT(*) FILTER (WHERE p.lifecycle_status IS DISTINCT FROM 'candidate')::int AS wrong_lifecycle
+                FROM sourcing_candidates sc
+                JOIN products p ON p.id=sc.product_id
+                LEFT JOIN product_market_exposure pme ON pme.product_id=p.id
+               WHERE sc.supplier_name='CJdropshipping'
+                 AND sc.state='imported_to_catalog'
+            `);
+            console.log(JSON.stringify(r));
+            if (Number(r.active)||Number(r.exposed)||Number(r.wrong_lifecycle)) {
+              throw new Error('SAFETY_AUDIT_FAILED:' + JSON.stringify(r));
+            }
+          })().catch(e => { console.error(e); process.exitCode=1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Upload curated batch 001 workpack
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-fr-quality-batch001-curated
+          path: artifacts/cj-fr-quality-batch001-curated/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Close successful command issue
+        if: success() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY"             --body 'Batch 001 glossary proof completed on terminology-enriched disposable checkpoint. Artifact: cj-fr-quality-batch001-curated.'
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
