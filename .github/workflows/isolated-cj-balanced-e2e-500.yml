@@ -1,0 +1,303 @@
+name: Isolated CJ balanced E2E 500
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: isolated-cj-balanced-e2e-500
+  cancel-in-progress: false
+
+jobs:
+  balanced-catalog:
+    name: CJ 500 balanced — real supplier E2E catalog
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.title == '[isolated-op] cj-balanced-e2e-500')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_real_catalog_stress
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_real_catalog_stress"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      CI: '1'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress
+      PGPASSWORD: komerce
+      CJ_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
+      KOMERCE_ALLOW_CJ_BALANCED_E2E_500: '1'
+
+    steps:
+      - name: Checkout protected main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Assert isolated runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$KOMERCE_ENV" = staging
+          test "$NODE_ENV" = test
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress'
+          test -n "${CJ_ACCESS_TOKEN:-}" || { echo '::error::KOMERCE_CJ_PROOF_ACCESS_TOKEN manquant'; exit 1; }
+
+      - name: Rebuild disposable PostgreSQL from canonical schema
+        shell: bash
+        run: |
+          set -euo pipefail
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress \
+            -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /dev/null
+
+          resolution_tables="$(PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -Atqc "SELECT count(*) FROM (VALUES ('sourcing_commercial_principals'), ('sourcing_source_principal_refs'), ('sourcing_canonical_entities'), ('sourcing_canonical_entity_refs'), ('sourcing_match_proposals'), ('sourcing_resolution_decisions'), ('sourcing_resolution_bindings'), ('sourcing_identity_constraints'), ('sourcing_merge_policies')) AS t(name) WHERE to_regclass('public.' || t.name) IS NOT NULL")"
+          if [ "$resolution_tables" != "9" ]; then
+            PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress \
+              -v ON_ERROR_STOP=1 -f migrations/227_sourcing_resolution_foundation.sql > /dev/null
+          fi
+
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress \
+            -v ON_ERROR_STOP=1 -f migrations/238_sourcing_source_autopilot.sql > /dev/null
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress \
+            -v ON_ERROR_STOP=1 -f migrations/036b_seed_customs_categories.sql > /dev/null
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress \
+            -v ON_ERROR_STOP=1 -f migrations/245_products_boutique_taxonomy.sql > /dev/null
+          PGPASSWORD=komerce psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress \
+            -v ON_ERROR_STOP=1 -f migrations/244_catalog_glossary_batch001.sql > /dev/null
+
+      - name: Pull exactly 500 balanced real CJ products
+        id: sync
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/cj-balanced-e2e-500
+          output="$(timeout 6600s node scripts/cj-500-e2e-catalog-sync.js)"
+          printf '%s\n' "$output"
+          summary="$(printf '%s\n' "$output" | sed -n 's/^\[cj-balanced-500\] \({.*}\)$/\1/p' | tail -1)"
+          test -n "$summary" || { echo '::error::CJ balanced summary absent'; exit 1; }
+          printf '%s\n' "$summary" > artifacts/cj-balanced-e2e-500/sourcing-summary.json
+          echo "summary=$summary" >> "$GITHUB_OUTPUT"
+
+      - name: Assert exact balanced sourcing population
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const db=require('./db');
+          const {BALANCED_E2E_500_PLAN}=require('./services/suppliers/e2e-catalog-500-plan');
+          (async()=>{
+            const {rows}=await db.query(
+              `SELECT sc.raw_payload->'discovery'->>'segment_id' AS segment_id,
+                      sc.raw_payload->'discovery'->>'target_category' AS category,
+                      sc.raw_payload->'discovery'->>'target_subcategory' AS subcategory,
+                      COUNT(*)::int AS n
+                 FROM sourcing_candidates sc
+                WHERE sc.supplier_name='CJdropshipping'
+                  AND sc.state IN ('scanned','imported_to_catalog')
+                  AND sc.raw_payload->'discovery'->>'campaign'='cj-balanced-e2e-500-v1'
+                GROUP BY 1,2,3
+                ORDER BY 1`
+            );
+            const got=new Map(rows.map(r=>[r.segment_id,Number(r.n)]));
+            for(const segment of BALANCED_E2E_500_PLAN){
+              if(got.get(segment.id)!==segment.target){
+                throw new Error(`SEGMENT_MISMATCH:${segment.id}=${got.get(segment.id)||0}/${segment.target}`);
+              }
+            }
+            const total=rows.reduce((n,r)=>n+Number(r.n),0);
+            if(total!==500) throw new Error(`BALANCED_TOTAL_MISMATCH:${total}/500`);
+            console.log('BALANCED_CJ_EXACT=500');
+          })().finally(()=>db.pool.end());
+          NODE
+
+      - name: Stress Raffinerie on the balanced 500
+        id: refinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 1800s node scripts/real-supplier-1000-stress-staging.js --operation=refinery-audit --limit=500)"
+          printf '%s\n' "$output"
+          summary="$(printf '%s\n' "$output" | sed -n 's/^\[real-supplier-1000-stress\] REFINERY-AUDIT \({.*}\)$/\1/p' | tail -1)"
+          test -n "$summary" || { echo '::error::Refinery summary absent'; exit 1; }
+          printf '%s\n' "$summary" > artifacts/cj-balanced-e2e-500/refinery-summary.json
+          echo "summary=$summary" >> "$GITHUB_OUTPUT"
+
+      - name: Promote refinery-approved CJ rows to inactive drafts
+        id: promote
+        env:
+          KOMERCE_ALLOW_REAL_SUPPLIER_STRESS_PROMOTION: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 3000s node scripts/real-supplier-1000-stress-staging.js --operation=promote --limit=500)"
+          printf '%s\n' "$output"
+          summary="$(printf '%s\n' "$output" | sed -n 's/^\[real-supplier-1000-stress\] PROMOTE \({.*}\)$/\1/p' | tail -1)"
+          test -n "$summary" || { echo '::error::Promotion summary absent'; exit 1; }
+          printf '%s\n' "$summary" > artifacts/cj-balanced-e2e-500/promotion-summary.json
+          echo "summary=$summary" >> "$GITHUB_OUTPUT"
+
+      - name: Assert 500 promoted drafts carry boutique taxonomy
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const db=require('./db');
+          (async()=>{
+            const {rows}=await db.query(
+              `SELECT p.id,p.product_ref,p.category,
+                      p.boutique_category_key,p.boutique_subcategory_key,
+                      p.is_active,p.lifecycle_status,
+                      sc.supplier_product_id,
+                      sc.raw_payload->'discovery'->>'segment_id' AS segment_id
+                 FROM sourcing_candidates sc
+                 JOIN products p ON p.id=sc.product_id
+                WHERE sc.supplier_name='CJdropshipping'
+                  AND sc.state='imported_to_catalog'
+                  AND sc.raw_payload->'discovery'->>'campaign'='cj-balanced-e2e-500-v1'
+                ORDER BY p.product_ref`
+            );
+            if(rows.length!==500) throw new Error(`PROMOTED_TOTAL_MISMATCH:${rows.length}/500`);
+            const bad=rows.filter(r=>!r.boutique_category_key||!r.boutique_subcategory_key||r.is_active!==false||r.lifecycle_status!=='candidate');
+            if(bad.length) throw new Error(`PROMOTED_TAXONOMY_OR_STATE_INVALID:${bad.length}`);
+            const byUniverse={};
+            const bySubcategory={};
+            for(const row of rows){
+              byUniverse[row.boutique_category_key]=(byUniverse[row.boutique_category_key]||0)+1;
+              const key=`${row.boutique_category_key} / ${row.boutique_subcategory_key}`;
+              bySubcategory[key]=(bySubcategory[key]||0)+1;
+            }
+            fs.writeFileSync('artifacts/cj-balanced-e2e-500/taxonomy-summary.json',JSON.stringify({
+              total:rows.length,by_universe:byUniverse,by_subcategory:bySubcategory
+            },null,2)+'\n');
+            console.log('PROMOTED_BALANCED_CJ_EXACT=500');
+          })().finally(()=>db.pool.end());
+          NODE
+
+      - name: Prepare free French E2E content
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 1800s node scripts/catalog-fr-free-e2e-preparation.js \
+            --limit=500 \
+            --supplier=CJdropshipping \
+            --output=artifacts/cj-balanced-e2e-500/french-preparation.json
+
+      - name: Final acceptance 500 of 500
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 1800s node scripts/catalog-refinery-final-acceptance.js \
+            --mode=final \
+            --expected=500 \
+            --output=artifacts/cj-balanced-e2e-500/final-acceptance.json
+
+      - name: Export reusable balanced E2E catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const db=require('./db');
+          (async()=>{
+            const {rows}=await db.query(
+              `SELECT p.id,p.product_ref,p.name,p.description,p.category,p.subcategory,
+                      p.boutique_category_key,p.boutique_subcategory_key,
+                      p.price_kmf,p.is_active,p.lifecycle_status,p.needs_review,
+                      sc.supplier_product_id,sc.stock_available,
+                      sc.raw_payload->'discovery' AS discovery,
+                      COUNT(DISTINCT cm.id)::int AS media_count,
+                      COUNT(DISTINCT ps.id)::int AS sku_count
+                 FROM sourcing_candidates sc
+                 JOIN products p ON p.id=sc.product_id
+                 LEFT JOIN catalog_media cm ON cm.product_id=p.id
+                 LEFT JOIN product_skus ps ON ps.product_id=p.id
+                WHERE sc.supplier_name='CJdropshipping'
+                  AND sc.state='imported_to_catalog'
+                  AND sc.raw_payload->'discovery'->>'campaign'='cj-balanced-e2e-500-v1'
+                GROUP BY p.id,sc.supplier_product_id,sc.stock_available,sc.raw_payload
+                ORDER BY p.boutique_category_key,p.boutique_subcategory_key,p.product_ref`
+            );
+            fs.writeFileSync('artifacts/cj-balanced-e2e-500/catalog.json',JSON.stringify({
+              schema_version:1,
+              supplier:'CJdropshipping',
+              product_count:rows.length,
+              purpose:'E2E_BALANCED_CATALOG',
+              production_publication:false,
+              market_exposure:false,
+              products:rows
+            },null,2)+'\n');
+          })().finally(()=>db.pool.end());
+          NODE
+          PGPASSWORD=komerce pg_dump -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -Fc \
+            -f artifacts/cj-balanced-e2e-500/komerce-cj-balanced-e2e-500.dump
+
+      - name: Upload balanced catalog artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-balanced-e2e-500
+          path: artifacts/cj-balanced-e2e-500/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Write campaign summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## CJ balanced E2E 500'
+            echo
+            echo '- supplier: CJdropshipping real API'
+            echo '- target: 500'
+            echo '- universes: 6'
+            echo '- subcategories: 21'
+            echo '- source DB: disposable PostgreSQL localhost only'
+            echo '- production publication: forbidden'
+            echo '- market exposure: none'
+            echo '- supplier stock + commandable SOI: required'
+            echo '- boutique taxonomy separated from customs classification'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Close successful command issue
+        if: success() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --body 'CJ balanced E2E 500 completed successfully: 500 real supplier products, 6 universes, 21 subcategories, final acceptance 500/500. Artifact: cj-balanced-e2e-500.'
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
