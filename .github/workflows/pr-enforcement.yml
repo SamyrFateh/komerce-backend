@@ -313,7 +313,7 @@ jobs:
           cache-dependency-path: public/boutique/package-lock.json
 
       - name: Install Boutique test dependencies
-        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true' || needs.changes.outputs.boutique_package == 'true'
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true' || needs.changes.outputs.boutique_package == 'true' || needs.changes.outputs.boutique_css == 'true'
         run: npm --prefix public/boutique ci
       - name: JS quality
         if: needs.changes.outputs.boutique_js == 'true'
@@ -346,7 +346,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: node scripts/arch-doctrine-sanitize-check.js --diff="$BASE_SHA"
       - name: Related Boutique unit tests
-        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true'
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true' || needs.changes.outputs.boutique_css == 'true'
         env:
           BOUTIQUE_TEST_FILES: ${{ needs.changes.outputs.boutique_test_files }}
         run: node scripts/run-staged-related-tests.js --files "$BOUTIQUE_TEST_FILES"

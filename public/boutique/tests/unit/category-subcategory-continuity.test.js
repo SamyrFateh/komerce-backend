@@ -57,8 +57,10 @@ describe('continuité catégories et sous-catégories desktop', () => {
   });
 
   test('harmonise le rail mobile sans capsule ni hausse de hauteur', () => {
+    // Hauteur alignée sur 56px depuis 9cb6cf8f5 ("tighten mobile category
+    // shelf", 03/09/2026) — changement volontaire, jamais répercuté ici.
     expect(cutout).toContain('@media (max-width: 899px)');
-    expect(cutout).toContain('height: 60px;');
+    expect(cutout).toContain('height: 56px;');
     expect(cutout).toContain('--k-optical-scale: .94;');
     expect(cutout).toContain('saturate(var(--k-optical-saturation))');
     expect(cutout).not.toContain('sepia(.04)');

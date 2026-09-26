@@ -70,7 +70,7 @@ function isSchemaOrMigrationChange(file) {
 }
 
 function isBoutiqueSource(file) {
-  return /^public\/boutique\/js\/.+\.(?:js|cjs|mjs|ts)$/i.test(file);
+  return /^public\/boutique\/(?:js\/.+\.(?:js|cjs|mjs|ts)|css\/(?!dist\/).+\.css)$/i.test(file);
 }
 
 function isRootUnitTest(file) {
@@ -111,12 +111,22 @@ function contentReferencesSource(testContent, sourceRelPath) {
 
   const significantDirs = parts.slice(0, -1).filter(seg => seg && !GENERIC_PATH_SEGMENTS.has(seg.toLowerCase()));
   if (significantDirs.length === 0) return true;
-  return significantDirs.every(dir => testContent.includes(dir));
+  // Un path.join multi-arguments epelle chaque segment ancetre litteralement
+  // (cas ci-dessus) : on exige alors qu'ils apparaissent tous. Mais un
+  // parcours relatif a __dirname (path.resolve(__dirname, '../../css')) n'
+  // epelle jamais que le dernier segment - exiger tous les ancetres y
+  // renverrait toujours false et manquerait ce couplage reel (incident
+  // 2026-09, tests de doctrine CSS Boutique). On retient le couplage si tous
+  // les segments apparaissent, ou a defaut si le seul segment immediat
+  // (dernier avant le nom de fichier) apparait.
+  if (significantDirs.every(dir => testContent.includes(dir))) return true;
+  const immediateDir = significantDirs[significantDirs.length - 1];
+  return testContent.includes(immediateDir);
 }
 
-function contentRelatedTests(files, tracked) {
+function contentRelatedTests(files, tracked, isUnitTest) {
   if (files.length === 0) return [];
-  const candidates = tracked.filter(isRootUnitTest);
+  const candidates = tracked.filter(isUnitTest);
   const matches = [];
   for (const testFile of candidates) {
     const abs = path.resolve(ROOT, testFile);
@@ -189,10 +199,12 @@ function directStagedTests(workspace, files) {
 function runWorkspace(workspace, files, tracked) {
   const sources = workspaceSourceFiles(files, workspace.isSource);
   const directTests = directStagedTests(workspace, files);
-  // Le fallback textuel doit rester dans la frontière du workspace. Sans ce
-  // scope, un fichier Boutique peut faire sélectionner un test racine et
-  // exiger le Jest backend dans un job qui n'installe que le workspace Boutique.
-  const contentMatches = workspace.contentAware ? contentRelatedTests(sources, tracked) : [];
+  // Le fallback textuel doit rester dans la frontière du workspace : les
+  // candidats sont filtrés par workspace.isUnitTest (isRootUnitTest côté
+  // backend, isBoutiqueUnitTest côté Boutique), donc un fichier Boutique ne
+  // peut plus faire sélectionner un test racine et exiger le Jest backend
+  // dans un job qui n'installe que le workspace Boutique.
+  const contentMatches = workspace.contentAware ? contentRelatedTests(sources, tracked, workspace.isUnitTest) : [];
   if (sources.length === 0 && directTests.length === 0 && contentMatches.length === 0) return { ran: false, tests: 0 };
 
   jestInvocation(workspace.cwd);
@@ -250,7 +262,7 @@ function main() {
       config: null,
       isSource: isBoutiqueSource,
       isUnitTest: isBoutiqueUnitTest,
-      contentAware: false,
+      contentAware: true,
     },
   ];
 
