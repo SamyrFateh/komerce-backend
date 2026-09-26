@@ -47,7 +47,6 @@ const mockScrollPageToElement = jest.fn();
 const mockDestroyMobilePager = jest.fn();
 const mockSetupMobilePager = jest.fn();
 const mockRecalcPagerVars = jest.fn();
-const mockSetupSectionAutoAdvance = jest.fn();
 const mockScrollPagerToCat = jest.fn();
 const mockSetupInfiniteLoop = jest.fn();
 const mockRenderFlatSubcat = jest.fn(() => '<article class="k-card" data-id="flat"></article>');
@@ -117,7 +116,6 @@ jest.mock('../../js/b-subcat.js', () => ({
 jest.mock('../../js/b-pager.js', () => ({
   _setupMobilePager: mockSetupMobilePager,
   _recalcPagerVars: mockRecalcPagerVars,
-  _setupSectionAutoAdvance: mockSetupSectionAutoAdvance,
   _setupHorizontalWrap: jest.fn(),
   _syncChipToScroll: jest.fn(),
   _onPagerScroll: jest.fn(),

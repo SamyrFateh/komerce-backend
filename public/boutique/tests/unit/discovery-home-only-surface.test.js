@@ -7,9 +7,12 @@ function source(relativePath) {
   return fs.readFileSync(path.join(__dirname, '..', '..', relativePath), 'utf8');
 }
 
-describe('Disponible ici — accueil + entrée mobile par bump', () => {
+// « Disponible ici » est une surface d'accueil (Tout) uniquement, sur mobile
+// comme sur desktop. Le bump vertical (passage automatique à la catégorie
+// suivante en bas de page) a été supprimé : aucune catégorie ne projette plus
+// de rail local, quelle que soit la façon d'y entrer.
+describe('Disponible ici — accueil Tout uniquement', () => {
   const discovery = source('js/discovery-rail.js');
-  const bounce = source('js/b-pager-end-bounce.js');
 
   test('Tout conserve le rail natif mobile', () => {
     expect(discovery).toContain(
@@ -18,19 +21,16 @@ describe('Disponible ici — accueil + entrée mobile par bump', () => {
     expect(discovery).toContain("shell.dataset.discoveryEntry = 'home';");
   });
 
-  test('le bump vertical porte explicitement son contexte vers Discovery', () => {
-    expect(bounce).toContain("const PAGER_BUMP_EVENT = 'komerce:pager-bump';");
-    expect(bounce).toContain('emitPagerBump(page, nextPage);');
-    expect(discovery).toContain("window.addEventListener(PAGER_BUMP_EVENT, handlePagerBump);");
-    expect(discovery).toContain('mountMobileBumpRail(category);');
-    expect(discovery).toContain('cardsForCategory(_lastCards, category)');
+  test('mobile : une catégorie est toujours une surface catalogue pure', () => {
+    expect(discovery).toContain("if (category !== 'all') {");
+    expect(discovery).toContain('removeMobileShells();');
+    expect(discovery).not.toMatch(/bump|Bump|PAGER_BUMP/);
+    expect(fs.existsSync(path.join(__dirname, '..', '..', 'js', 'b-pager-end-bounce.js'))).toBe(false);
   });
 
-  test('tap ou swipe horizontal retire la projection de bump', () => {
+  test('tap ou swipe horizontal retire tout rail hérité de Tout', () => {
     expect(discovery).toContain("bus.on('chip:center', handlePagerCategoryCentered);");
-    expect(discovery).toContain('if (_pendingBumpCategory === category) {');
-    expect(discovery).toContain('_activeMobileBumpCategory = null;');
-    expect(discovery).toContain('removeMobileBumpShells();');
+    expect(discovery).toContain('removeMobileShells();');
   });
 
   test('desktop reste strictement Tout uniquement', () => {
