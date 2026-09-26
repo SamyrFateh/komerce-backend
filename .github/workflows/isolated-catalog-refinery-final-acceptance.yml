@@ -1,0 +1,185 @@
+name: Isolated catalog Raffinerie final acceptance
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'preflight = structural Raffinerie→catalog; final = publication-review readiness'
+        required: false
+        default: 'preflight'
+      source_run_id:
+        description: 'Run carrying the reusable checkpoint'
+        required: false
+        default: '36249230661'
+      checkpoint_name:
+        description: 'Checkpoint artifact name'
+        required: false
+        default: 'cj-fr-cold-start-memory-checkpoint'
+      expected:
+        description: 'Expected inactive CJ catalog candidates'
+        required: false
+        default: '974'
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: isolated-catalog-refinery-final-acceptance
+  cancel-in-progress: false
+
+jobs:
+  acceptance:
+    name: Raffinerie → catalog acceptance
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       (github.event.issue.title == '[isolated-op] catalog-refinery-final-preflight' ||
+        github.event.issue.title == '[isolated-op] catalog-refinery-final-acceptance'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_real_catalog_stress
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_real_catalog_stress"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      CI: '1'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress
+      PGPASSWORD: komerce
+
+    steps:
+      - name: Checkout protected main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve acceptance inputs
+        id: cfg
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_MODE: ${{ inputs.mode || 'preflight' }}
+          INPUT_RUN_ID: ${{ inputs.source_run_id || '36249230661' }}
+          INPUT_CHECKPOINT: ${{ inputs.checkpoint_name || 'cj-fr-cold-start-memory-checkpoint' }}
+          INPUT_EXPECTED: ${{ inputs.expected || '974' }}
+        run: |
+          set -euo pipefail
+          mode="$INPUT_MODE"
+          run_id="$INPUT_RUN_ID"
+          checkpoint="$INPUT_CHECKPOINT"
+          expected="$INPUT_EXPECTED"
+
+          if [ "$EVENT_NAME" = 'issues' ]; then
+            run_id='36249230661'
+            checkpoint='cj-fr-cold-start-memory-checkpoint'
+            expected='974'
+            if [ "${{ github.event.issue.title }}" = '[isolated-op] catalog-refinery-final-acceptance' ]; then
+              mode='final'
+            else
+              mode='preflight'
+            fi
+          fi
+
+          if [ "$mode" != 'preflight' ] && [ "$mode" != 'final' ]; then
+            echo "::error::mode invalide: $mode"
+            exit 1
+          fi
+
+          {
+            echo "mode=$mode"
+            echo "run_id=$run_id"
+            echo "checkpoint=$checkpoint"
+            echo "expected=$expected"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download reusable checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.cfg.outputs.checkpoint }}
+          path: checkpoint
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.cfg.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Restore disposable checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          dump_file="$(find checkpoint -type f -name '*.dump' | head -1)"
+          test -n "$dump_file" || { echo '::error::Checkpoint sans dump PostgreSQL'; exit 1; }
+          pg_restore --clean --if-exists --no-owner --no-privileges             -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress "$dump_file"
+
+          psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress             -v ON_ERROR_STOP=1 -f migrations/244_catalog_glossary_batch001.sql
+
+      - name: Run definitive acceptance gate
+        id: acceptance
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/catalog-refinery-final-acceptance
+          mode="${{ steps.cfg.outputs.mode }}"
+          expected="${{ steps.cfg.outputs.expected }}"
+          node scripts/catalog-refinery-final-acceptance.js             --mode="$mode"             --expected="$expected"             --output=artifacts/catalog-refinery-final-acceptance/report.json
+
+      - name: Upload acceptance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-refinery-final-acceptance
+          path: artifacts/catalog-refinery-final-acceptance/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Write acceptance summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## Raffinerie → Catalogue acceptance'
+            echo
+            echo "- mode: \`${{ steps.cfg.outputs.mode }}\`"
+            echo "- expected candidates: \`${{ steps.cfg.outputs.expected }}\`"
+            echo '- source DB: disposable PostgreSQL localhost only'
+            echo '- publication/exposure/order/payment: forbidden'
+            echo '- preflight proves structural catalog entry; final additionally requires editorial + publication guard readiness'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Close successful command issue
+        if: success() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY"             --body 'Raffinerie→Catalogue structural preflight accepted on 974 inactive CJ candidates. Acceptance report artifact uploaded.'
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
