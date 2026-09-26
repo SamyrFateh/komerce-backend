@@ -37,7 +37,14 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     for (const capability of ['local_offer.manage', 'client.case.handle', 'catalog.expose', 'finance.act', 'settlement.receive', 'structure.event.record']) {
       expect(CAPABILITIES.find(row => row.capability === capability)?.status).toBe('LIVE');
     }
-    expect(CAPABILITIES.find(row => row.capability === 'market_config.update')?.status).toBe('MISSING');
+    // GAP 2 (P0b) : aucun champ marché délégable ne subsiste hors code/currency/
+    // minor_unit (central) et is_active (même autorité que market.create). Statut
+    // fermé volontairement en CENTRAL_HELD, pas laissé en MISSING (qui impliquerait
+    // encore un backlog de construction).
+    expect(CAPABILITIES.find(row => row.capability === 'market_config.update')).toMatchObject({
+      delegation_mode: 'CENTRAL_ONLY',
+      status: 'CENTRAL_HELD',
+    });
   });
 
   test('GROUP is structurally outside market delegation', () => {
