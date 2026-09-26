@@ -16,6 +16,7 @@ const {
   renderCatalogEmptyState,
   renderCategoryEmptyState,
   renderSearchEmptyState,
+  renderCatalogLoadErrorState,
 } = require('../../js/b-catalog.js');
 
 describe('renderCatalogEmptyState — catalogue global vide', () => {
@@ -106,5 +107,31 @@ describe('Les trois variantes restent visuellement et textuellement distinctes',
     expect(catalog).not.toBe(category);
     expect(catalog).not.toBe(search);
     expect(category).not.toBe(search);
+  });
+});
+
+describe('P-05 — renderCatalogLoadErrorState', () => {
+  test('coupure réseau (TypeError) → message hors ligne + Réessayer', () => {
+    const html = renderCatalogLoadErrorState(Object.assign(new TypeError('Failed to fetch')));
+    expect(html).toContain('Pas de connexion internet');
+    expect(html).toContain('id="k-catalog-retry-btn"');
+    expect(html).toContain('Réessayer');
+  });
+  test('429 / 503 → catalogue indisponible + forte affluence', () => {
+    for (const status of [429, 503]) {
+      const html = renderCatalogLoadErrorState(Object.assign(new Error('x'), { status }));
+      expect(html).toContain('Le catalogue ne répond pas pour le moment');
+      expect(html).toContain('Beaucoup de visites');
+    }
+  });
+  test('500 → catalogue indisponible, sans mention d\'affluence ni de réseau', () => {
+    const html = renderCatalogLoadErrorState(Object.assign(new Error('x'), { status: 500 }));
+    expect(html).toContain('Le catalogue ne répond pas pour le moment');
+    expect(html).not.toContain('Beaucoup de visites');
+    expect(html).not.toContain('Pas de connexion');
+  });
+  test('le bouton Réessayer est un <button>, pas un lien', () => {
+    const html = renderCatalogLoadErrorState(new Error('x'));
+    expect(html).toMatch(/<button class="k-track-retry-btn" id="k-catalog-retry-btn" type="button">Réessayer<\/button>/);
   });
 });
