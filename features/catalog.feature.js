@@ -468,6 +468,7 @@ module.exports = {
       'catalog_exclusions: R',
       'catalog_field_overrides: RW',
       'catalog_glossary: R',
+      'catalog_terminology_reference: RW',
       'catalog_enrichment_runs: W',
       'catalog_media: RW!',
       'order_items: R',
