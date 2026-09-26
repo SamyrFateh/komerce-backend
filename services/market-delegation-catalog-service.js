@@ -8,7 +8,7 @@
  * @outputs       product exposure read model, auditable exposure mutations
  * @depends       services/market-delegation-team-service.js, services/market-delegation-service.js, services/catalog-market-exposure-service.js, services/catalog-approval.js
  * @used-by       routes/market-delegation-catalog.js
- * @db-read       none
+ * @db-read       products
  * @db-write      none
  * @db-write-via:catalog-market-exposure-service product_market_exposure
  * @db-write-via:catalog-approval products
