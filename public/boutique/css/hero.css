@@ -129,9 +129,10 @@
 .k-hero-cats-sticky::after { content: ''; display: block; }
 
 @media (max-width: 899px) {
-  /* Respiration mobile : abaisse le rail sans agrandir la scène. */
+  /* Respiration mobile réduite : l'espace est rendu à la scène de remise
+     (hero-ultra-mobile.css, bande slogan + scène complète). */
   .k-hero-cats-sticky {
-    padding-top: 28px;
+    padding-top: 8px;
   }
 }
 
