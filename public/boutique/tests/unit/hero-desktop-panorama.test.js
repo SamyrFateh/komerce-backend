@@ -42,10 +42,13 @@ describe('hero composition en calques (H1)', () => {
   test('aligne le hero desktop sur la promesse et la scène mobile sans supprimer les CTA', () => {
     expect(hero).toContain('height: clamp(190px, 14vw, 208px);');
     expect(hero).toContain("background-image: url('/images/komerce-hero-handoff-v3.webp');");
-    expect(hero).toContain('background-size: auto 100%;');
-    expect(hero).toContain('background-position: 74% center;');
-    expect(hero).toContain('width: 42%;');
-    expect(hero).toContain('max-width: 580px;');
+    // Scène dimensionnée à l'image (ratio natif) pour porter des coins arrondis.
+    expect(hero).toMatch(/@media \(min-width: 900px\) \{\s*\.k-hero-figures \{[^}]*aspect-ratio: 2022 \/ 778;[^}]*border-radius: 16px;/s);
+    expect(hero).toMatch(/@media \(min-width: 1200px\) \{\s*\.k-hero-figures \{ right: 16%; \}/);
+    // Colonne texte à 45 % : à 42 %, « Suivre ma commande » passait à la ligne à 1024 px.
+    expect(hero).toContain('width: 45%;');
+    expect(hero).toContain('max-width: 620px;');
+    expect(hero).not.toContain('width: 42%;');
     expect(hero).toContain('font-style: normal;');
     expect(index).toContain('<span class="k-hero-copy-desktop">Commandez en ligne.</span>');
     expect(index).toContain('<span class="k-hero-copy-desktop">Retirez près de chez vous.</span>');
@@ -81,13 +84,24 @@ describe('hero composition en calques (H1)', () => {
   });
 
   test('superpose le texte sur un panorama ouvert sans recreer un split 50/50', () => {
+    // Les 5 propriétés du panorama ouvert sont réparties entre la règle
+    // principale et des règles d'une ligne (état réel du CSS) : on vérifie
+    // l'invariant, pas l'ordre d'écriture.
     expect(hero).toMatch(
-      /html\.k-home-premium-v1 \.k-hero-media\s*\{[^}]*grid-template-columns:\s*1fr[^}]*border:\s*0[^}]*border-radius:\s*0[^}]*box-shadow:\s*none[^}]*background:\s*transparent/s
+      /html\.k-home-premium-v1 \.k-hero-media\s*\{[^}]*grid-template-columns:\s*1fr[^}]*border:\s*0[^}]*background:\s*transparent/s
     );
+    expect(hero).toContain('.k-hero-media { box-shadow: none; }');
+    expect(hero).toContain('.k-hero-media { border-radius: 0; }');
     expect(hero).toMatch(
       /html\.k-home-premium-v1 \.k-hero\s*\{[^}]*var\(--ocean-bg-08\)[^}]*var\(--coral-focus-08\)[^}]*var\(--white\)/s
     );
     expect(hero).not.toMatch(/grid-template-columns:\s*1fr 1fr/);
+  });
+
+  test('900–1199 px : CTA et ligne de confiance sur une ligne, CTA jamais cachés', () => {
+    expect(hero).toMatch(/@media \(min-width: 900px\) and \(max-width: 1199px\) \{[^@]*\.k-hero-cta-row,[^{]*\.k-hero-trust \{\s*flex-wrap: nowrap;/s);
+    expect(hero).not.toMatch(/\.k-hero-cta-row,\s*html\.k-home-premium-v1 \.k-hero-trust \{\s*flex-wrap: wrap;/);
+    expect(hero).not.toMatch(/\.k-hero-cta-ghost \{[^}]*display:\s*none/);
   });
 
   test('ne double pas la reserve du header sticky sur desktop', () => {

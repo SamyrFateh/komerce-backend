@@ -96,13 +96,29 @@
   mask-image: none;
 }
 /* Desktop : même scène de remise v3 que mobile, avec marge haute native.
-   Le texte reste à gauche ; la scène s'installe à droite sans zoom ni coupe. */
+   Le calque est dimensionné exactement à l'image (ratio natif 2022×778) pour
+   porter des coins arrondis comme sur mobile, au lieu d'un rectangle à bords
+   nets posé sur le fond crème. Collé à droite de 900 à 1199 px (la colonne
+   texte n'y laisse pas assez de place pour le décaler sans chevauchement). */
 @media (min-width: 900px) {
   .k-hero-figures {
     background-image: url('/images/komerce-hero-handoff-v3.webp');
-    background-size: auto 100%;
-    background-position: 74% center;
+    top: 0;
+    bottom: auto;
+    left: auto;
+    right: 0;
+    height: 100%;
+    width: auto;
+    aspect-ratio: 2022 / 778;
+    background-size: cover;
+    background-position: center;
+    border-radius: 16px;
   }
+}
+/* ≥ 1200 px : la scène se décale vers le centre comme prévu par la
+   composition desktop (≈ l'ancien 74 %), en gardant de l'air à droite. */
+@media (min-width: 1200px) {
+  .k-hero-figures { right: 16%; }
 }
 /* Mobile : dérivé art-directed du même master. Les coiffures restent
    entièrement dans le cadre ; le bas des torses absorbe la coupe. */
@@ -654,8 +670,8 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     grid-column: 1;
     grid-row: 1;
     align-self: stretch;
-    width: 42%;
-    max-width: 580px;
+    width: 45%;
+    max-width: 620px;
     padding: 0 clamp(22px, 2.6vw, 40px);
     background: transparent;
     position: relative;
@@ -811,10 +827,21 @@ body.spike-shell-vertical .k-hero-cats-sticky {
   }
 }
 
+/* 900–1199 px : les deux CTA et la ligne de confiance tiennent sur une ligne
+   (le retour à la ligne rognait « Suivre ma commande » par le bas du hero et
+   masquait la ligne de confiance). CTA légèrement compactés, jamais cachés. */
 @media (min-width: 900px) and (max-width: 1199px) {
   html.k-home-premium-v1 .k-hero-cta-row,
   html.k-home-premium-v1 .k-hero-trust {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+  }
+  html.k-home-premium-v1 .k-hero-cta-primary {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  html.k-home-premium-v1 .k-hero-cta-ghost {
+    font-size: 12px;
+    padding: 7px 9px;
   }
 }
 /* ══ FIN HERO DESKTOP PANORAMIQUE ═════════════════════════════ */
