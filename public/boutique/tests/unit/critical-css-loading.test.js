@@ -70,6 +70,59 @@ describe('preload-css-swap.js — bascule le <link> preload en stylesheet', () =
   });
 });
 
+describe('preload-css-swap.js — course "déjà chargé" (cache chaud)', () => {
+  function loadScript() {
+    // eslint-disable-next-line no-eval
+    eval(require('fs').readFileSync(require('path').join(__dirname, '../../js/preload-css-swap.js'), 'utf8'));
+  }
+  function preloadLink() {
+    document.querySelectorAll('link#k-components-preload').forEach((el) => el.remove());
+    const link = document.createElement('link');
+    link.id = 'k-components-preload';
+    link.rel = 'preload';
+    link.href = 'http://localhost/boutique/css/dist/components.css?v=1';
+    document.head.appendChild(link);
+    return link;
+  }
+  const realPerf = window.performance.getEntriesByName;
+  afterEach(() => { window.performance.getEntriesByName = realPerf; });
+
+  test("un preload n'a jamais de .sheet : le fichier déjà chargé est détecté via Resource Timing", () => {
+    const link = preloadLink();
+    window.performance.getEntriesByName = () => [{ responseEnd: 12.5 }];
+    loadScript();
+    expect(link.rel).toBe('stylesheet');
+  });
+
+  test("'load' manqué et fichier pas encore chargé : bascule au plus tard au load de la fenêtre", () => {
+    const link = preloadLink();
+    window.performance.getEntriesByName = () => [];
+    loadScript();
+    expect(link.rel).toBe('preload');
+    window.dispatchEvent(new Event('load'));
+    expect(link.rel).toBe('stylesheet');
+  });
+
+  test('DOMContentLoaded bascule si le fichier est chargé entre-temps', () => {
+    const link = preloadLink();
+    let loaded = false;
+    window.performance.getEntriesByName = () => (loaded ? [{ responseEnd: 3 }] : []);
+    loadScript();
+    expect(link.rel).toBe('preload');
+    loaded = true;
+    document.dispatchEvent(new Event('DOMContentLoaded'));
+    expect(link.rel).toBe('stylesheet');
+  });
+
+  test('Resource Timing indisponible : aucune exception, le filet window.load reste actif', () => {
+    const link = preloadLink();
+    window.performance.getEntriesByName = () => { throw new Error('indisponible'); };
+    expect(() => loadScript()).not.toThrow();
+    window.dispatchEvent(new Event('load'));
+    expect(link.rel).toBe('stylesheet');
+  });
+});
+
 describe('index.html — structure du chargement CSS critique', () => {
   const html = fs.readFileSync(path.join(__dirname, '../../index.html'), 'utf8');
 
