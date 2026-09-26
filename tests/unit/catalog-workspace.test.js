@@ -76,6 +76,13 @@ test('projection Catalogue ne sort que les identités métier et expose le cap d
   expect(JSON.stringify(payload)).not.toContain('internal-uuid');
   expect(payload.summary.categories).toBe(1);
   expect(mockGetRuleNumber).toHaveBeenCalledWith('CATALOG_CAP_MVP', 120);
+  expect(payload.approval_page).toEqual({
+    total: 1,
+    limit: 50,
+    offset: 0,
+    has_previous: false,
+    has_next: false,
+  });
   expect(payload.curation).toEqual({
     catalog_cap_mvp: 120,
     published_products: 1,
@@ -134,4 +141,19 @@ test('approval résout la référence avant délégation au moteur de validation
   });
   await workspace.approveCandidate('KPR-000002', { id: 'central-admin' });
   expect(mockApprove).toHaveBeenCalledWith(expect.anything(), 'candidate-internal-id', { id: 'central-admin' });
+});
+
+test('file de curation accepte offset/limit bornés pour parcourir un gros vivier', async () => {
+  const payload = await workspace.buildWorkspace({ approval_limit: '75', approval_offset: '150' });
+  expect(payload.approval_page).toEqual({
+    total: 1,
+    limit: 75,
+    offset: 150,
+    has_previous: true,
+    has_next: false,
+  });
+  const approvalCall = mockQuery.mock.calls.find(([sql]) =>
+    String(sql).includes("WHERE lifecycle_status = 'candidate'") && String(sql).includes('OFFSET $2')
+  );
+  expect(approvalCall[1]).toEqual([75, 150]);
 });
