@@ -28,6 +28,7 @@ const {
   DESCRIPTION_MIN,
   DESCRIPTION_MAX,
 } = require('../services/catalog-fr-quality');
+const { loadTerminologyHints } = require('../services/catalog-terminology-memory');
 
 const SUPPLIER = 'CJdropshipping';
 const DEFAULT_LIMIT = 1000;
@@ -146,6 +147,13 @@ function reviewContract() {
   };
 }
 
+async function attachTerminologyHints(q, entry) {
+  return {
+    ...entry,
+    terminology_hints: await loadTerminologyHints(q, entry.source),
+  };
+}
+
 function translationContract() {
   return {
     language: 'fr-FR',
@@ -220,7 +228,11 @@ function writeBatches(entries, outputDir, batchSize) {
 async function run(options = parseArgs()) {
   assertDisposableRuntime();
   const rows = await loadRows(options.limit);
-  const entries = rows.map(buildEntry);
+  const entries = [];
+  for (const row of rows) {
+    // eslint-disable-next-line no-await-in-loop
+    entries.push(await attachTerminologyHints(db, buildEntry(row)));
+  }
   const manifest = writeBatches(entries, options.outputDir, options.batchSize);
   console.log(`[catalog-fr-quality-workpack] ${JSON.stringify({
     products: manifest.total_products,
@@ -250,6 +262,7 @@ module.exports = {
   parseArgs,
   assertDisposableRuntime,
   buildEntry,
+  attachTerminologyHints,
   translationContract,
   reviewContract,
   writeBatches,
