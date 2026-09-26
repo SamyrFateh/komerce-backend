@@ -140,3 +140,23 @@ Clos pour le périmètre indiscutable :
 - Quantité physique active plafonnée à la quantité achetée sous verrou DB ; custody append-only ; identités ambiguës mises en quarantaine au lieu d'être devinées.
 - Outcomes physiques irréversibles publient l'événement F0 dans la même transaction, sans refund/reorder implicite.
 - Verdict HUB-001 reste **PENDING** jusqu'à PR enforcement + preuve PostgreSQL adversariale entièrement verts.
+
+## MARKET-DELEGATION-P0B — Cohérence capability ↔ route (pricing / market_config / clients) — OUVERT — 2026-09-26
+
+Contexte : un audit humain (compte manager réel vs code/tests) sur l'autonomie marché a confirmé que la feature `market-delegation` fonctionne pour Réseau, Provider, Catalogue, Offre locale, Litiges (`client.case.handle`), Règlements et Hub/Relais (bridge `execution.*`), mais a relevé trois gaps P0. Vérification code faite dans cette session, avec preuve fichier/ligne — aucune correction encore appliquée.
+
+**Gap 1 — pricing.* est LIVE dans le registre mais aucune route ne le consomme.**
+- `config/market-delegation-capabilities.js` déclare `pricing.decide`, `pricing.activate`, `pricing.policy.set`, `pricing.cost_component.update/reset`, `market.observation.record` en `class: DELEGATION`, `status: LIVE`.
+- `routes/admin-pricing-workspace.js` (lignes ~187-188) protège l'atelier prix avec `attachMarketDelegatedRoleFor(['admin','market_operator'])` + `requireRole(['admin','market_operator'])` — jamais une capability précise.
+- `middleware/require-market-delegated-role.js` → `attachMarketDelegatedRoleFor` projette `market_operator` dès qu'une membership active quelconque existe dans `operator_market_scopes`, sans lire `membership_capabilities`.
+- Conséquence reproductible : attribuer/retirer `pricing.decide` (ou les autres capabilities pricing) à un membre d'équipe via l'écran Équipe n'a aucun effet sur l'atelier prix. C'est un bypass rôle → capability, interdit par la doctrine de la carte `market-delegation` (LOT 1A) mais non appliqué ici.
+- Fix prévu (non fait) : remplacer ce garde par un middleware capability-based réutilisant `resolveAuthorization()` (`services/market-delegation-service.js`, déjà utilisé par le bridge EXECUTION dans `middleware/require-market-execution-capability.js`), avec un mapping explicite endpoint → capability (decide/activate/policy.set/cost_component.update/cost_component.reset/observation.record). `routes/pricing.js` (moteur global admin-only, hors marché) est hors périmètre.
+- La carte `features/market-delegation.feature.js` ne liste pas `routes/admin-pricing-workspace.js` dans `files.routes` : à ajouter dans la même PR que le fix (règle AGENTS §2.7).
+
+**Gap 2 — `market_config.update` est `status: 'MISSING'` dans le registre, confirmé : aucune route/service ne le consomme.** Config marché non modifiable hors migration. Nécessite : whitelist explicite des champs locaux (à établir depuis le schéma réel `markets`, ne rien inventer) vs champs structurels réservés au central (identité, code marché, devise, fiscalité, secrets, comptes de règlement).
+
+**Gap 3 — `client.read` est `LIVE` et délégable mais l'écran Clients reste admin-only.** À raccorder avec projection scoped au marché (pas d'exposition de l'API admin globale telle quelle).
+
+**Prochaine action décidée** : traiter le Gap 1 en premier (c'est celui explicitement priorisé), plan d'attaque déjà annoncé à l'utilisateur, en attente de son feu vert pour écrire le middleware capability-based, mettre à jour la carte, et les tests unitaires + E2E (cas allow/deny/collaborateur/viewer/cross-market/retrait/ajout) sur `admin-pricing-workspace.js`. Gaps 2 et 3 restent en lots séparés après le Gap 1.
+
+Aucun code de production, migration ou test n'a encore été modifié pour ce chantier — seule cette consignation existe à ce stade.
