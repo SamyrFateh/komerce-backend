@@ -390,9 +390,33 @@
     slot.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Entrée : sources automatiques / manuel → préparation FR → validation humaine → sélection publiée. Product 360 reste le drill-down explicatif.'));
   }
 
+  function sourcingDecisionLabel(value) {
+    return ({
+      PRIORITY: 'Prioritaire',
+      TEST: 'À tester',
+      WATCH: 'À surveiller',
+      AVOID: 'À éviter',
+      LOSS: 'Perte',
+      UNKNOWN: 'Non évalué',
+    })[String(value || 'UNKNOWN').toUpperCase()] || String(value || 'Non évalué');
+  }
+
+  function sourcingDecisionTone(value) {
+    return ({
+      PRIORITY: 'is-positive',
+      TEST: 'is-positive',
+      WATCH: 'is-warning',
+      AVOID: 'is-critical',
+      LOSS: 'is-critical',
+      UNKNOWN: 'is-neutral',
+    })[String(value || 'UNKNOWN').toUpperCase()] || 'is-neutral';
+  }
+
   function renderApproval(rootNode, ui, doc, payload, context) {
-    const slot = createSection(rootNode, ui, 'File de curation', 'Aucun candidat ne rejoint la sélection publiée sans décision humaine. La provenance reste visible au moment de décider.');
+    const slot = createSection(rootNode, ui, 'File de curation', 'Le scanner sourcing priorise la revue ; seule une décision humaine ajoute, corrige ou écarte un produit.');
     const rows = payload.approval || [];
+    const breakdown = payload.approval_breakdown || {};
+    const strategy = payload.approval_strategy || {};
     const page = payload.approval_page || {
       total: rows.length,
       limit: context.approvalLimit,
@@ -404,9 +428,21 @@
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun candidat en attente de curation.'));
       return;
     }
+    const summary = doc.createElement('div');
+    summary.className = 'kmc-workspace-section-actions';
+    ['PRIORITY', 'TEST', 'WATCH', 'AVOID', 'LOSS', 'UNKNOWN'].forEach(key => {
+      const count = Number(breakdown[key]) || 0;
+      if (!count && key !== 'UNKNOWN') return;
+      summary.appendChild(text(doc, 'span', `kmc-workspace-feedback ${sourcingDecisionTone(key)}`, `${sourcingDecisionLabel(key)} · ${formatNumber(count)}`));
+    });
+    slot.appendChild(summary);
+    if (strategy.value_density_used === false) {
+      slot.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Classement indicatif : signal sourcing + confiance + stock. Densité de valeur non utilisée tant qu’elle n’est pas calibrée.'));
+    }
+
     const table = doc.createElement('table');
     table.className = 'kmc-workspace-table';
-    table.innerHTML = '<thead><tr><th>Référence</th><th>Produit</th><th>Catégorie</th><th>Réf. KMF</th><th>Confiance</th><th>Provenance</th><th></th></tr></thead>';
+    table.innerHTML = '<thead><tr><th>Référence</th><th>Produit</th><th>Catégorie</th><th>Réf. KMF</th><th>Signal sourcing</th><th>Pourquoi</th><th>Provenance</th><th></th></tr></thead>';
     const tbody = doc.createElement('tbody');
     rows.forEach(row => {
       const tr = doc.createElement('tr');
@@ -414,8 +450,22 @@
       tr.appendChild(td(doc, row.name));
       tr.appendChild(td(doc, row.category));
       tr.appendChild(td(doc, formatKmf(row.price_kmf)));
-      tr.appendChild(td(doc, confidence(row.enrichment_confidence)));
-      tr.appendChild(td(doc, formatSource(row.content_source)));
+
+      const signalCell = doc.createElement('td');
+      signalCell.appendChild(text(doc, 'strong', sourcingDecisionTone(row.sourcing_decision), sourcingDecisionLabel(row.sourcing_decision)));
+      const signalMeta = [
+        row.sourcing_confidence ? `confiance ${row.sourcing_confidence}` : null,
+        row.economic_health_status ? `santé ${row.economic_health_status}` : null,
+        row.supplier_stock == null ? null : `stock fournisseur ${formatNumber(row.supplier_stock)}`,
+      ].filter(Boolean).join(' · ');
+      if (signalMeta) signalCell.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', signalMeta));
+      tr.appendChild(signalCell);
+
+      const reasonCell = doc.createElement('td');
+      reasonCell.appendChild(text(doc, 'span', '', row.sourcing_reason || 'Aucune raison sourcing persistée.'));
+      tr.appendChild(reasonCell);
+
+      tr.appendChild(td(doc, `${formatSource(row.content_source)}${row.supplier_name ? ` · ${row.supplier_name}` : ''}`));
       const actions = doc.createElement('td');
 
       const approve = makeButton(doc, 'Ajouter à la sélection', 'approve');
