@@ -6,14 +6,15 @@
  * @criticality   high
  * @inputs        authenticated market operator, market code, product exposure decision
  * @outputs       product exposure read model, auditable exposure mutations
- * @depends       services/market-delegation-team-service.js, services/market-delegation-service.js, services/catalog-market-exposure-service.js
+ * @depends       services/market-delegation-team-service.js, services/market-delegation-service.js, services/catalog-market-exposure-service.js, services/catalog-approval.js
  * @used-by       routes/market-delegation-catalog.js
  * @db-read       none
  * @db-write      none
  * @db-write-via:catalog-market-exposure-service product_market_exposure
+ * @db-write-via:catalog-approval products
  * @db-write-via:market-delegation-service market_delegation_audit
  * @db-txn        caller-owned
- * @doctrine      catalog_authority_is_capability_based, client_market_id_never_authority, writer_not_owner_boundary, catalog_stays_unique_exposure_is_projection
+ * @doctrine      catalog_authority_is_capability_based, client_market_id_never_authority, writer_not_owner_boundary, market_validation_may_delegate_first_publication_to_catalog_owner, catalog_stays_unique_exposure_is_projection
  * @impact-areas  market, delegation, catalog
  * @version       2026-09
  */
