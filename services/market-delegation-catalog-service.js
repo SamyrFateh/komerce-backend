@@ -22,6 +22,7 @@
 const { audit } = require('./market-delegation-service');
 const { resolveActiveAssignmentByMarketCode, resolveAuthorization } = require('./market-delegation-team-service');
 const exposureService = require('./catalog-market-exposure-service');
+const catalogApproval = require('./catalog-approval');
 
 function requireExecutor(executor) {
   if (!executor || typeof executor.query !== 'function') {
@@ -39,6 +40,14 @@ function delegationError(code, message, status = 403) {
 
 async function listExposure(executor, { marketId }) {
   return exposureService.listExposureForMarket(marketId, requireExecutor(executor));
+}
+
+async function listReviewQueue(executor, { marketId, limit = 100 }) {
+  return exposureService.listReviewCandidatesForMarket(
+    marketId,
+    requireExecutor(executor),
+    { limit }
+  );
 }
 
 function summarizeExposure(rows) {
@@ -101,10 +110,113 @@ async function setExposure(executor, { marketCode, actorUserId, correlationId = 
   return after;
 }
 
+
+/**
+ * Validation simple d'un produit pour un marché.
+ *
+ * Le Responsable pays ne manipule jamais la Raffinerie : le read-model ne lui
+ * propose que des candidats déjà prêts côté catalog. Sa validation humaine
+ * déclenche, si nécessaire, la première publication globale via l'autorité
+ * catalog, puis enregistre l'exposition ENABLED pour son marché dans la même
+ * transaction appelante.
+ */
+async function validateForMarket(executor, {
+  marketCode,
+  actorUserId,
+  correlationId = null,
+  productId,
+}) {
+  const db = requireExecutor(executor);
+  const authz = await resolveAuthorization(db, {
+    userId: actorUserId,
+    marketCode,
+    requiredCapability: 'catalog.expose',
+  });
+
+  const { rows: [product] } = await db.query(
+    `SELECT id, product_ref, lifecycle_status, is_active
+       FROM products
+      WHERE id=$1
+      LIMIT 1`,
+    [productId]
+  );
+  if (!product) {
+    throw delegationError('CATALOG_PRODUCT_NOT_FOUND', 'Produit introuvable.', 404);
+  }
+
+  let globalPublicationTriggered = false;
+  if (product.is_active !== true) {
+    if (product.lifecycle_status !== 'candidate') {
+      throw delegationError(
+        'CATALOG_PRODUCT_NOT_READY',
+        'Ce produit n’est pas disponible pour validation.',
+        409
+      );
+    }
+
+    // Preserve the exact same serialization boundary as catalog-approval when
+    // the caller owns the transaction.
+    await db.query("SELECT pg_advisory_xact_lock(hashtext('komerce:catalog:first-publication'))");
+    const published = await catalogApproval.approveProduct(
+      db,
+      productId,
+      { id: actorUserId }
+    );
+
+    if (published.status !== 200) {
+      const code = published.body?.code || 'CATALOG_PRODUCT_NOT_READY';
+      const message = code === 'catalog_cap_reached'
+        ? 'Le catalogue a atteint sa capacité actuelle.'
+        : 'Ce produit n’est pas encore prêt à être proposé.';
+      throw delegationError(
+        code === 'catalog_cap_reached' ? 'CATALOG_CAP_REACHED' : 'CATALOG_PRODUCT_NOT_READY',
+        message,
+        published.status || 409
+      );
+    }
+    globalPublicationTriggered = true;
+  }
+
+  const before = await exposureService.getExposure(productId, authz.market_id, db);
+  const after = await exposureService.setExposure(
+    productId,
+    authz.market_id,
+    exposureService.EXPOSURE.ENABLED,
+    actorUserId,
+    db
+  );
+
+  await audit(db, {
+    actorUserId,
+    assignmentId: authz.assignment_id,
+    membershipId: authz.membership_id,
+    capability: 'catalog.expose',
+    action: 'CATALOG_PRODUCT_VALIDATED_FOR_MARKET',
+    before: {
+      commercial_exposure: before,
+      lifecycle_status: product.lifecycle_status,
+      is_active: Boolean(product.is_active),
+    },
+    after: {
+      ...after,
+      global_publication_triggered: globalPublicationTriggered,
+    },
+    correlationId,
+  });
+
+  return {
+    ...after,
+    product_ref: product.product_ref,
+    global_publication_triggered: globalPublicationTriggered,
+  };
+}
+
 module.exports = {
   resolveActiveAssignmentByMarketCode,
   resolveAuthorization,
   listExposure,
+  listReviewQueue,
   summarizeExposure,
   setExposure,
+  validateForMarket,
 };
