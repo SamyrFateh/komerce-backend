@@ -142,6 +142,7 @@ function translationContract() {
       'Ne pas traduire les marques et références techniques.',
       'Ne pas décider la publication, le prix, le stock, la disponibilité ni l’exposition marché.',
       'Ne pas modifier category/subcategory dans ce pass; signaler seulement une anomalie en note si nécessaire.',
+      'Faire un second passage de contrôle source→FR avant de mettre review_status=PASS.',
     ],
     expected_output_shape: {
       translations: [
@@ -150,6 +151,8 @@ function translationContract() {
           source_hash: '<copier exactement>',
           title_fr: 'Titre français naturel',
           description_fr: 'Description française factuelle',
+          review_status: 'PASS après un second passage de contrôle source→FR',
+          review_note: 'optionnel; expliquer toute ambiguïté ou correction',
           note: 'optionnel, uniquement si ambiguïté source ou anomalie taxonomique',
         },
       ],
