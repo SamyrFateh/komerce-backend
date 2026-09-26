@@ -418,7 +418,10 @@ const KNOWN_RESPONSES = {
   // montage unique) — aucun n'appelle la route via supertest/request(app) →
   // 'route-read', champs lus directement dans les handlers routes/*.js.
   '/api/market-delegation/markets/{marketCode}/catalog/exposure': {
-    get: { fields: ['market','assignment_id','actor_capabilities','summary','exposure'], source: 'route-read' }
+    get: { fields: ['market','assignment_id','actor_capabilities','summary','review_queue','exposure'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate': {
+    post: { fields: ['success','validation'], source: 'route-read' }
   },
   '/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}': {
     put: { fields: ['success','exposure'], source: 'route-read' }
