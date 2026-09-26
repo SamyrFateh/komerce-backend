@@ -94,6 +94,7 @@ module.exports = {
       '.github/workflows/isolated-cj-refinery-continuation.yml',
       '.github/workflows/isolated-cj-fr-quality-workpack.yml',
       '.github/workflows/isolated-catalog-termium-memory.yml',
+      '.github/workflows/isolated-fr-glossary-batch001.yml',
     ],
     utils: [
       'utils/categories-cache.js',
