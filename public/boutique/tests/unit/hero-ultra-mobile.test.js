@@ -30,10 +30,10 @@ describe('hero ultra mobile contract', () => {
     expect(css).not.toContain('@media (min-width: 900px)');
   });
 
-  test('garde les coiffures dans le crop sans réagrandir la scène', () => {
+  test('réagence la scène sous le slogan sans réagrandir le Hero', () => {
     expect(css).toContain("background-image: url('/images/komerce-hero-handoff-v2.webp');");
-    expect(css).toContain('background-size: auto 92%;');
-    expect(css).toContain('background-position: center bottom;');
+    expect(css).toContain('background-size: auto 93%;');
+    expect(css).toContain('background-position: center top;');
     expect(css).not.toContain('background-size: auto 118%;');
     expect(css).not.toContain('background-position: 70% 92%;');
     expect(css).toContain('-webkit-mask-image: none;');
@@ -47,9 +47,9 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium {');
     expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {');
     expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {');
-    expect(css).toContain('inset: 0 auto 0 0;');
-    expect(css).toContain('width: 44%;');
-    expect(css).toContain('padding: 2px 0 0 0;');
+    expect(css).toContain('inset: 0 auto auto 0;');
+    expect(css).toContain('width: 50%;');
+    expect(css).toContain('padding: 0;');
     expect(css).toContain('text-align: left;');
     expect(css).toContain('font-size: clamp(10px, 2.7vw, 12px);');
     expect(heroCss).toContain('.k-hero-cats-sticky {');
@@ -73,8 +73,8 @@ describe('hero ultra mobile contract', () => {
   test('préserve le panier réel et son avatar mobile réduit', () => {
     expect(layoutCss).toContain('width: 21px;');
     expect(css).not.toContain('.k-header .k-cart-btn.k-header-action .k-cart-avatar');
-    expect(css).toContain('inset: 0 auto auto 68%;');
-    expect(css).toContain('width: 185px;');
+    expect(css).toContain('inset: 14px auto auto 62%;');
+    expect(css).toContain('width: 198px;');
     expect(css).toContain('height: 100%;');
     expect(css).not.toContain('.k-cart-btn { width:');
     expect(heroCss).toContain('.k-hero-copy-mobile { display: none; }');
