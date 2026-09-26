@@ -58,8 +58,31 @@ beforeEach(() => {
     if (text.includes('FROM products p') && text.includes('ORDER BY p.updated_at')) {
       return { rows: [{ product_ref: 'KPR-000001', name: 'Produit', category: 'Maison', price_kmf: '5000', stock: 3, is_active: true, is_available: true }] };
     }
-    if (text.includes("WHERE lifecycle_status = 'candidate'") && text.includes('content_source')) {
-      return { rows: [{ product_ref: 'KPR-000002', name: 'Candidat', category: 'Maison', price_kmf: '4000', stock: 2, content_source: 'ai_enriched', needs_review: true, enrichment_confidence: '0.6' }] };
+    if (text.includes('GROUP BY 1') && text.includes('sourcing_decision')) {
+      return { rows: [
+        { sourcing_decision: 'TEST', count: 1 },
+        { sourcing_decision: 'SOMETHING_NEW', count: 2 },
+      ] };
+    }
+    if (text.includes("p.lifecycle_status = 'candidate'") && text.includes('LEFT JOIN LATERAL')) {
+      return { rows: [{
+        product_ref: 'KPR-000002',
+        name: 'Candidat',
+        category: 'Maison',
+        price_kmf: '4000',
+        stock: 2,
+        content_source: 'ai_enriched',
+        needs_review: true,
+        enrichment_confidence: '0.6',
+        supplier_name: 'CJdropshipping',
+        supplier_product_id: 'CJ-2',
+        supplier_stock: 12,
+        sourcing_confidence: 'high',
+        sourcing_decision: 'TEST',
+        sourcing_reason: 'Référence économique contributive à tester.',
+        economic_health_status: 'healthy',
+        economic_test_margin_pct: '31.5',
+      }] };
     }
     if (text.includes('WHERE product_ref = $1')) {
       return { rows: [{ id: 'internal-uuid-product', product_ref: 'KPR-000001', lifecycle_status: 'active', is_active: true }] };
@@ -73,6 +96,26 @@ test('projection Catalogue ne sort que les identités métier et expose le cap d
   expect(payload.scope).toEqual({ mode: 'global_catalog', label: 'Catalogue commun Komerce' });
   expect(payload.products[0].product_ref).toBe('KPR-000001');
   expect(payload.approval[0].product_ref).toBe('KPR-000002');
+  expect(payload.approval[0]).toEqual(expect.objectContaining({
+    sourcing_decision: 'TEST',
+    sourcing_confidence: 'high',
+    supplier_name: 'CJdropshipping',
+    supplier_stock: 12,
+    economic_health_status: 'healthy',
+    economic_test_margin_pct: 31.5,
+  }));
+  expect(payload.approval_breakdown).toEqual({
+    PRIORITY: 0,
+    TEST: 1,
+    WATCH: 0,
+    AVOID: 0,
+    LOSS: 0,
+    UNKNOWN: 2,
+  });
+  expect(payload.approval_strategy).toEqual(expect.objectContaining({
+    authority: 'human_approval',
+    value_density_used: false,
+  }));
   expect(JSON.stringify(payload)).not.toContain('internal-uuid');
   expect(payload.summary.categories).toBe(1);
   expect(mockGetRuleNumber).toHaveBeenCalledWith('CATALOG_CAP_MVP', 120);
@@ -156,4 +199,18 @@ test('file de curation accepte offset/limit bornés pour parcourir un gros vivie
     String(sql).includes("WHERE lifecycle_status = 'candidate'") && String(sql).includes('OFFSET $2')
   );
   expect(approvalCall[1]).toEqual([75, 150]);
+});
+
+
+test('ordre de curation privilégie le signal sourcing sans densité de valeur', async () => {
+  await workspace.buildWorkspace({ approval_limit: '50', approval_offset: '0' });
+  const approvalCall = mockQuery.mock.calls.find(([sql]) =>
+    String(sql).includes('LEFT JOIN LATERAL') &&
+    String(sql).includes("WHEN 'PRIORITY' THEN 0") &&
+    String(sql).includes("WHEN 'TEST' THEN 1")
+  );
+  expect(approvalCall).toBeTruthy();
+  expect(String(approvalCall[0])).not.toContain('margin_kmf_per_dm3');
+  expect(String(approvalCall[0])).toContain("candidate.state = 'imported_to_catalog'");
+  expect(approvalCall[1]).toEqual([50, 0]);
 });
