@@ -196,7 +196,7 @@ function classify(files) {
   const boutiqueHtml = changedFiles.some(isBoutiqueHtml);
   const boutiqueUnit = changedFiles.some(isBoutiqueUnitTest);
   const boutiquePackage = changedFiles.some(isBoutiquePackageFile);
-  const boutiqueTestFiles = boutiqueFiles.filter(file => isBoutiqueJsSource(file) || isBoutiqueUnitTest(file));
+  const boutiqueTestFiles = boutiqueFiles.filter(file => isBoutiqueJsSource(file) || isBoutiqueUnitTest(file) || isBoutiqueCssSource(file));
   const governanceFiles = changedFiles.filter(isGovernanceFile);
 
   return {

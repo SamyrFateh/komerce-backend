@@ -240,7 +240,7 @@ describe('PR enforcement scope — backend + migrations + Boutique + governance'
     expect(result.migrationFiles).toEqual([]);
   });
 
-  test('un CSS Boutique source déclenche seulement la branche CSS', () => {
+  test('un CSS Boutique source déclenche la branche CSS et alimente désormais related-tests (incident 2026-09)', () => {
     const result = classify(['public/boutique/css/layout.css']);
     expect(result.boutique).toBe(true);
     expect(result.boutiqueCss).toBe(true);
@@ -249,7 +249,11 @@ describe('PR enforcement scope — backend + migrations + Boutique + governance'
     expect(result.boutiqueUnit).toBe(false);
     expect(result.backend).toBe(false);
     expect(result.governance).toBe(false);
-    expect(result.boutiqueTestFiles).toEqual([]);
+    // Avant fix : boutiqueTestFiles excluait le CSS, donc le --files transmis
+    // à run-staged-related-tests.js en CI restait vide sur une PR CSS-only —
+    // l'étape "Related Boutique unit tests" tournait pour rien, même une fois
+    // le script lui-même capable de reconnaître le CSS comme source.
+    expect(result.boutiqueTestFiles).toEqual(['public/boutique/css/layout.css']);
   });
 
   test('un JS + test Boutique déclenchent related-tests sans embarquer css/dist', () => {
