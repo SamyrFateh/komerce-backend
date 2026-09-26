@@ -23,6 +23,7 @@ const aliexpressConnector = require('../services/suppliers/connectors/aliexpress
 const aliexpressBaseConnector = require('../services/suppliers/connectors/aliexpress-connector');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const checkpoints = require('../services/suppliers/catalog-sync-checkpoint');
+const { ALIEXPRESS_500_PLAN } = require('../services/suppliers/e2e-catalog-500-plan');
 
 const SUPPLIER_NAME = 'AliExpress';
 const DEFAULT_SYNC_KEY = 'aliexpress-instock-500-text-v1';
@@ -41,34 +42,9 @@ const RUN_LOCK_KEY = 'aliexpress-500-catalog-sync';
 
 // 500 slots, aligned with the current Komerce showcase taxonomy. Search terms are
 // intentionally commercial/plain-English rather than fixture/image-search wording.
-const SEARCH_PLAN = Object.freeze([
-  { id: 'mode-femme', category: 'Mode & Beauté', subcategory: 'Femme', target: 35, queries: ['women dress', 'women clothing'] },
-  { id: 'mode-homme', category: 'Mode & Beauté', subcategory: 'Homme', target: 25, queries: ['men shirt', 'men clothing'] },
-  { id: 'mode-enfant', category: 'Mode & Beauté', subcategory: 'Enfant', target: 25, queries: ['kids clothing', 'kids shoes'] },
-  { id: 'beaute', category: 'Mode & Beauté', subcategory: 'Beauté', target: 45, queries: ['cosmetics makeup', 'skin care', 'beauty tools'] },
+const SEARCH_PLAN = ALIEXPRESS_500_PLAN;
 
-  { id: 'maison-confort', category: 'Maison', subcategory: 'Confort', target: 25, queries: ['home appliance', 'household appliance'] },
-  { id: 'maison-cuisine', category: 'Maison', subcategory: 'Cuisine', target: 25, queries: ['kitchenware', 'kitchen utensil'] },
-  { id: 'maison-deco', category: 'Maison', subcategory: 'Déco', target: 20, queries: ['home decor', 'table lamp'] },
-  { id: 'maison-enfants', category: 'Maison', subcategory: 'Enfants', target: 20, queries: ['school supplies', 'school bag'] },
 
-  { id: 'tech-phones', category: 'Tech', subcategory: 'Phones', target: 30, queries: ['android smartphone', 'mobile phone'] },
-  { id: 'tech-audio', category: 'Tech', subcategory: 'Audio', target: 30, queries: ['wireless headphones', 'bluetooth speaker'] },
-  { id: 'tech-montres', category: 'Tech', subcategory: 'Montres', target: 30, queries: ['smartwatch', 'wrist watch'] },
-
-  { id: 'bricolage-outillage', category: 'Bricolage', subcategory: 'Outillage', target: 25, queries: ['power tools', 'hand tools'] },
-  { id: 'bricolage-electricite', category: 'Bricolage', subcategory: 'Electricité', target: 25, queries: ['electrical connectors', 'extension cable'] },
-  { id: 'bricolage-securite', category: 'Bricolage', subcategory: 'Sécurité', target: 20, queries: ['padlock', 'door lock'] },
-
-  { id: 'creation-ceremonie', category: 'Créations personnelles', subcategory: 'Cérémonie', target: 20, queries: ['evening dress', 'formal suit'] },
-  { id: 'creation-cadeau', category: 'Créations personnelles', subcategory: 'Cadeau', target: 20, queries: ['gift box', 'personalized gift'] },
-  { id: 'creation-impression', category: 'Créations personnelles', subcategory: 'Impression', target: 15, queries: ['printed mug', 'custom stationery'] },
-
-  { id: 'auto-filtres', category: 'Auto', subcategory: 'Filtres', target: 20, queries: ['car oil filter', 'car air filter'] },
-  { id: 'auto-freinage', category: 'Auto', subcategory: 'Freinage', target: 15, queries: ['brake pads', 'brake disc'] },
-  { id: 'auto-eclairage', category: 'Auto', subcategory: 'Éclairage', target: 15, queries: ['car led headlight', 'car tail light'] },
-  { id: 'auto-moto', category: 'Auto', subcategory: 'Moto', target: 15, queries: ['motorcycle accessories', 'motorcycle phone holder'] },
-]);
 
 function intEnv(name, fallback, min, max, env = process.env) {
   const raw = env[name];
