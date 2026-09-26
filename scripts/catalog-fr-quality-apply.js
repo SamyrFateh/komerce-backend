@@ -6,12 +6,12 @@
  * @layer         tooling
  * @criticality   high
  * @inputs        offline AI-assisted French translation JSON, disposable catalog checkpoint
- * @outputs       traced manual overrides + French quality audit report
+ * @outputs       atomic traced manual overrides + French review-candidate audit report
  * @depends       db.js, services/catalog-overrides.js, services/catalog-fr-quality.js
  * @used-by       operator-assisted FR Quality Pass
  * @db-read       sourcing_candidates, products
  * @db-write-via  catalog-overrides
- * @db-txn        one product override sequence
+ * @db-txn        one all-or-nothing transaction for the submitted batch
  * @doctrine      source_truth_preserved, offline_ai_assistance, no_runtime_llm_dependency, no_publication
  * @impact-areas  catalog, product-detail, staging
  * @version       2026-09-v1
@@ -25,6 +25,7 @@ const catalogOverrides = require('../services/catalog-overrides');
 const {
   sourceDocumentFromRow,
   sourceFingerprint,
+  proposalFingerprint,
   evaluateFrenchCopy,
   normalizeSpace,
 } = require('../services/catalog-fr-quality');
@@ -34,6 +35,7 @@ const DEFAULT_REPORT = path.resolve('artifacts/catalog-fr-quality-apply-report.j
 
 function parseArgs(argv = process.argv.slice(2)) {
   let input = null;
+  let review = null;
   let execute = false;
   let output = DEFAULT_REPORT;
 
@@ -41,6 +43,8 @@ function parseArgs(argv = process.argv.slice(2)) {
     const arg = argv[i];
     if (arg === '--input') input = path.resolve(String(argv[++i] || '').trim());
     else if (arg.startsWith('--input=')) input = path.resolve(String(arg.split('=', 2)[1] || '').trim());
+    else if (arg === '--review') review = path.resolve(String(argv[++i] || '').trim());
+    else if (arg.startsWith('--review=')) review = path.resolve(String(arg.split('=', 2)[1] || '').trim());
     else if (arg === '--output') output = path.resolve(String(argv[++i] || '').trim());
     else if (arg.startsWith('--output=')) output = path.resolve(String(arg.split('=', 2)[1] || '').trim());
     else if (arg === '--execute') execute = true;
@@ -49,7 +53,9 @@ function parseArgs(argv = process.argv.slice(2)) {
   }
 
   if (!input) throw new Error('--input requis');
-  return { input, execute, output };
+  if (!review) throw new Error('--review requis');
+  if (path.resolve(input) === path.resolve(review)) throw new Error('--review doit être un artifact séparé de --input');
+  return { input, review, execute, output };
 }
 
 function assertDisposableRuntime(env = process.env) {
@@ -74,6 +80,43 @@ function translationRowsFromPayload(payload, fileName) {
     _file: fileName,
     _index: index,
   }));
+}
+
+function reviewRowsFromPayload(payload, fileName) {
+  const rows = Array.isArray(payload) ? payload : payload?.reviews;
+  if (!Array.isArray(rows)) {
+    throw new Error(`${fileName}: tableau reviews requis`);
+  }
+  return rows.map((row, index) => ({
+    ...row,
+    _file: fileName,
+    _index: index,
+  }));
+}
+
+function loadReviews(inputPath) {
+  const stat = fs.statSync(inputPath);
+  const files = stat.isDirectory()
+    ? fs.readdirSync(inputPath)
+      .filter(name => name.endsWith('.json') && name !== 'manifest.json')
+      .sort()
+      .map(name => path.join(inputPath, name))
+    : [inputPath];
+
+  const rows = [];
+  for (const file of files) {
+    const payload = JSON.parse(fs.readFileSync(file, 'utf8'));
+    rows.push(...reviewRowsFromPayload(payload, path.basename(file)));
+  }
+
+  const seen = new Set();
+  for (const row of rows) {
+    const ref = String(row.product_ref || '').trim();
+    if (!ref) throw new Error(`${row._file}[${row._index}]: product_ref requis dans review`);
+    if (seen.has(ref)) throw new Error(`product_ref dupliqué dans les reviews: ${ref}`);
+    seen.add(ref);
+  }
+  return rows;
 }
 
 function loadTranslations(inputPath) {
@@ -134,7 +177,7 @@ async function loadCurrentRows(productRefs) {
   return rows;
 }
 
-function evaluateRow(sourceRow, translation) {
+function evaluateRow(sourceRow, translation, review) {
   const source = sourceDocumentFromRow(sourceRow);
   const actualHash = sourceFingerprint(source);
   const proposedHash = String(translation.source_hash || '').trim();
@@ -143,12 +186,17 @@ function evaluateRow(sourceRow, translation) {
   if (!proposedHash) blocking.push('source_hash_missing');
   else if (proposedHash !== actualHash) blocking.push('source_hash_mismatch');
 
-  if (String(translation.review_status || '').trim().toUpperCase() !== 'PASS') {
-    blocking.push('offline_review_missing_or_failed');
-  }
-
   if (sourceRow.lifecycle_status !== 'candidate' || sourceRow.is_active === true) {
     blocking.push('product_not_inactive_candidate');
+  }
+
+  if (!catalogOverrides.isPipelineSourced(sourceRow)) {
+    blocking.push('product_without_pipeline_source_lineage');
+  }
+
+  const sourceLocale = String(source.source_locale || '').trim().toLowerCase().replace('_', '-');
+  if (!sourceLocale || sourceLocale === 'fr' || sourceLocale.startsWith('fr-')) {
+    blocking.push('fr_quality_pass_requires_foreign_source');
   }
 
   const proposal = {
@@ -157,6 +205,23 @@ function evaluateRow(sourceRow, translation) {
   };
   const quality = evaluateFrenchCopy(source, proposal);
   blocking.push(...quality.blocking);
+
+  const expectedOutputHash = proposalFingerprint({
+    source_hash: actualHash,
+    title_fr: proposal.title_fr,
+    description_fr: proposal.description_fr,
+  });
+
+  if (!review) {
+    blocking.push('offline_review_missing');
+  } else {
+    if (String(review.source_hash || '').trim() !== actualHash) blocking.push('review_source_hash_mismatch');
+    if (String(review.output_hash || '').trim() !== expectedOutputHash) blocking.push('review_output_hash_mismatch');
+    if (String(review.review_status || '').trim().toUpperCase() !== 'PASS') blocking.push('offline_review_failed');
+    if (!['assistant_second_pass', 'human'].includes(String(review.reviewer_mode || '').trim())) {
+      blocking.push('reviewer_mode_invalid');
+    }
+  }
 
   return {
     ok: blocking.length === 0,
@@ -167,13 +232,15 @@ function evaluateRow(sourceRow, translation) {
     warnings: quality.warnings,
     diagnostics: quality.diagnostics,
     note: translation.note ? String(translation.note).slice(0, 500) : null,
-    review_note: translation.review_note ? String(translation.review_note).slice(0, 500) : null,
+    output_hash: expectedOutputHash,
+    review_note: review?.review_note ? String(review.review_note).slice(0, 500) : null,
+    reviewer_mode: review?.reviewer_mode || null,
   };
 }
 
-async function applyAccepted(sourceRow, verdict) {
+async function applyAccepted(q, sourceRow, verdict) {
   const result = await catalogOverrides.upsertOverrides(
-    db,
+    q,
     sourceRow.product_id,
     {
       name: verdict.proposal.title_fr,
@@ -186,24 +253,25 @@ async function applyAccepted(sourceRow, verdict) {
   );
 
   if (!result.product) throw new Error(`FR_QUALITY_APPLY_NO_PRODUCT:${sourceRow.product_ref}`);
-  if (result.product.is_active === true || result.product.lifecycle_status !== 'candidate') {
+  const finalized = await catalogOverrides.finalizeReviewedManualPreparation(q, sourceRow.product_id);
+  if (finalized.is_active === true || finalized.lifecycle_status !== 'candidate') {
     throw new Error(`FR_QUALITY_SAFETY_LIFECYCLE:${sourceRow.product_ref}`);
   }
-  if (result.product.content_source !== 'manual' || result.product.needs_review !== false) {
+  if (finalized.content_source !== 'manual' || finalized.needs_review !== false) {
     throw new Error(`FR_QUALITY_MANUAL_PREPARATION_INCOMPLETE:${sourceRow.product_ref}`);
   }
 
   return {
     product_ref: sourceRow.product_ref,
-    content_source: result.product.content_source,
-    needs_review: result.product.needs_review,
-    lifecycle_status: result.product.lifecycle_status,
-    is_active: result.product.is_active,
+    content_source: finalized.content_source,
+    needs_review: finalized.needs_review,
+    lifecycle_status: finalized.lifecycle_status,
+    is_active: finalized.is_active,
   };
 }
 
-async function finalSafetyAudit() {
-  const { rows: [row] } = await db.query(
+async function finalSafetyAudit(q = db) {
+  const { rows: [row] } = await q.query(
     `SELECT COUNT(*) FILTER (WHERE p.is_active=TRUE)::int AS active,
             COUNT(DISTINCT pme.product_id)::int AS exposed,
             COUNT(*) FILTER (WHERE p.lifecycle_status IS DISTINCT FROM 'candidate')::int AS wrong_lifecycle
@@ -224,6 +292,8 @@ async function finalSafetyAudit() {
 async function run(options = parseArgs()) {
   assertDisposableRuntime();
   const translations = loadTranslations(options.input);
+  const reviews = loadReviews(options.review);
+  const reviewByRef = new Map(reviews.map(row => [String(row.product_ref).trim(), row]));
   const refs = translations.map(row => String(row.product_ref).trim());
   const current = await loadCurrentRows(refs);
   const byRef = new Map(current.map(row => [row.product_ref, row]));
@@ -240,16 +310,35 @@ async function run(options = parseArgs()) {
       continue;
     }
 
-    const verdict = evaluateRow(sourceRow, translation);
+    const verdict = evaluateRow(sourceRow, translation, reviewByRef.get(ref));
     if (!verdict.ok) {
       rejected.push(verdict);
       continue;
     }
     accepted.push(verdict);
+  }
 
-    if (options.execute) {
-      // eslint-disable-next-line no-await-in-loop
-      applied.push(await applyAccepted(sourceRow, verdict));
+  let applyError = null;
+  if (options.execute && rejected.length === 0) {
+    const client = await db.getClient();
+    try {
+      await client.query('BEGIN');
+      for (const verdict of accepted) {
+        const sourceRow = byRef.get(verdict.product_ref);
+        // eslint-disable-next-line no-await-in-loop
+        applied.push(await applyAccepted(client, sourceRow, verdict));
+      }
+      const txSafety = await finalSafetyAudit(client);
+      if (txSafety.active || txSafety.exposed || txSafety.wrong_lifecycle) {
+        throw new Error(`FR_QUALITY_SAFETY_AUDIT_FAILED:${JSON.stringify(txSafety)}`);
+      }
+      await client.query('COMMIT');
+    } catch (error) {
+      applyError = String(error.message || error).slice(0, 500);
+      await client.query('ROLLBACK').catch(() => {});
+      applied.length = 0;
+    } finally {
+      client.release();
     }
   }
 
@@ -261,23 +350,27 @@ async function run(options = parseArgs()) {
   const summary = {
     mode: options.execute ? 'execute' : 'dry-run',
     submitted: translations.length,
+    reviews: reviews.length,
     found: current.length,
     accepted: accepted.length,
     rejected: rejected.length,
     applied: applied.length,
+    transaction_status: applyError ? 'ROLLED_BACK' : (options.execute && rejected.length === 0 ? 'COMMITTED' : 'NOT_STARTED'),
     api_calls: 0,
     paid_ai_dependency: false,
+    editorial_status: 'READY_FOR_HUMAN_PUBLICATION_REVIEW',
     safety,
   };
 
   const report = {
-    schema_version: 1,
+    schema_version: 2,
     generated_at: new Date().toISOString(),
-    authority: 'OFFLINE_AI_ASSISTED_MANUAL_COPY_WITH_STATIC_SOURCE_GATES',
+    authority: 'OFFLINE_AI_ASSISTED_COPY_READY_FOR_HUMAN_PUBLICATION_REVIEW',
     summary,
     accepted,
     rejected,
     applied,
+    apply_error: applyError,
   };
 
   fs.mkdirSync(path.dirname(options.output), { recursive: true });
@@ -286,6 +379,11 @@ async function run(options = parseArgs()) {
 
   if (rejected.length) {
     const error = new Error(`FR_QUALITY_REJECTED:${rejected.length}/${translations.length}`);
+    error.report = report;
+    throw error;
+  }
+  if (applyError) {
+    const error = new Error(`FR_QUALITY_APPLY_ROLLED_BACK:${applyError}`);
     error.report = report;
     throw error;
   }
@@ -307,8 +405,11 @@ module.exports = {
   parseArgs,
   assertDisposableRuntime,
   translationRowsFromPayload,
+  reviewRowsFromPayload,
   loadTranslations,
+  loadReviews,
   evaluateRow,
+  applyAccepted,
   finalSafetyAudit,
   run,
 };
