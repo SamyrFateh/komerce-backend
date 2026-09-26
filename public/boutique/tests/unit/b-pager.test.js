@@ -9,7 +9,7 @@
  * - swipe horizontal explicite entre catégories ;
  * - toute entrée horizontale repart en haut pour exposer `Disponible ici` ;
  * - un ghost droite inerte de Tout pour la continuité dernière catégorie → Tout ;
- * - bump automatique au premier relâchement vertical en bas ;
+ * - le scroll vertical ne change jamais de catégorie (bump supprimé) ;
  * - mémoire verticale locale conservée pour les remplacements DOM, jamais comme
  *   position d'entrée lors d'un changement horizontal ;
  * - cage mobile nettoyable sans effet desktop.
@@ -73,7 +73,7 @@ afterEach(() => {
 
 test('conserve le contrat d exports attendu par les appelants historiques', () => {
   [
-    '_setupMobilePager', '_recalcPagerVars', '_setupSectionAutoAdvance',
+    '_setupMobilePager', '_recalcPagerVars',
     '_setupHorizontalWrap', '_syncChipToScroll', '_onPagerScroll',
     '_scrollPagerToCat', '_scrollPagerToGhost', '_reshuffleToutInDOM',
     '_setupInfiniteLoop', '_setupPagerDots', 'destroyMobilePager',
@@ -142,22 +142,12 @@ test('le ghost représente toujours Tout en haut, jamais son ancien scroll verti
   expect(grid.querySelector('[data-ghost="right"]').scrollTop).toBe(0);
 });
 
-test('câble un unique bump automatique et retire les anciens listeners legacy', () => {
+test('aucun passage de catégorie au scroll vertical : pas de bump installé', () => {
+  expect(pager._setupSectionAutoAdvance).toBeUndefined();
   const grid = makeGrid(['all', 'Mode']);
+  pager._setupInfiniteLoop();
   const page = grid.querySelector('[data-cat="Mode"]');
-  page._bounceH = jest.fn();
-  page.addEventListener('scroll', page._bounceH);
-  page._bounceTouchEnd = jest.fn();
-  page.addEventListener('touchend', page._bounceTouchEnd);
-
-  pager._setupSectionAutoAdvance();
-
-  expect(page._bounceH).toBeNull();
-  expect(page._bounceTouchEnd).toBeNull();
-  expect(page._bounceTimer).toBeUndefined();
-  expect(page._pagerEndBounce).toBeDefined();
-  expect(typeof page._pagerEndBounce.onScroll).toBe('function');
-  expect(typeof page._pagerEndBounce.onTouchEnd).toBe('function');
+  expect(page._pagerEndBounce).toBeUndefined();
 });
 
 test('tap catégorie navigue horizontalement et repart en haut de la page cible', () => {
