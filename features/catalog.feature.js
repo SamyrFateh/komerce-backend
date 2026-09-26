@@ -46,6 +46,7 @@ module.exports = {
       'contrat de revue du texte incruste dans les medias fournisseur : preuve attachee a la source et variante, traduction FR revue sans dependance IA specifique (verification pure, sans publication automatique)',
       'projection live Sources -> Raffinerie -> Boutique dans le Workspace Catalogue : observation des sources, du pipeline et du buyer-effective sans reprendre l autorite de mutation Sourcing ni de pricing marche',
       'glossaire metier EN->FR (catalog_glossary)',
+      'mémoire terminologique externe sourcée et filtrée par corpus (catalog_terminology_reference), avec priorité au glossaire Komerce',
       'file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active',
       'bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée',
       'pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique',
@@ -92,6 +93,7 @@ module.exports = {
       '.github/workflows/isolated-real-cj-1000-catalog-stress.yml',
       '.github/workflows/isolated-cj-refinery-continuation.yml',
       '.github/workflows/isolated-cj-fr-quality-workpack.yml',
+      '.github/workflows/isolated-catalog-termium-memory.yml',
     ],
     utils: [
       'utils/categories-cache.js',
@@ -108,6 +110,7 @@ module.exports = {
       'scripts/cj-refinery-commandability-continuation.js',
       'scripts/catalog-fr-quality-workpack.js',
       'scripts/catalog-fr-quality-apply.js',
+      'scripts/catalog-termium-import.js',
     ],
     services: [
       // MISSION 1 (KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE) — décideur
@@ -126,6 +129,7 @@ module.exports = {
       'services/product-publication-guard.js',
       'services/catalog-media-visual-fr-proof.js',
       'services/catalog-fr-quality.js',
+      'services/catalog-terminology-memory.js',
       'services/product-admin-service.js',
       'services/product-variant-service.js',
       'services/product-sku-service.js',
@@ -395,6 +399,8 @@ module.exports = {
       'tests/unit/catalog-fr-quality.test.js',
       'tests/unit/catalog-fr-quality-workpack.test.js',
       'tests/unit/catalog-fr-quality-apply.test.js',
+      'tests/unit/catalog-terminology-memory.test.js',
+      'tests/unit/catalog-termium-import.test.js',
       'tests/unit/catalog-import-orchestrator-source-v2.test.js',
       'tests/unit/catalog-eligibility.test.js',
       'tests/unit/scan-engine-content-verification.test.js',
