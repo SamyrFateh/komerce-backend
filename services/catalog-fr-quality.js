@@ -79,8 +79,18 @@ function sourceDocumentFromRow(row = {}) {
   };
 }
 
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.keys(value).sort().map(key => [key, stableValue(value[key])])
+    );
+  }
+  return value;
+}
+
 function sourceFingerprint(source) {
-  const stable = JSON.stringify(source, Object.keys(source).sort());
+  const stable = JSON.stringify(stableValue(source));
   return crypto.createHash('sha256').update(stable).digest('hex');
 }
 
@@ -179,6 +189,7 @@ module.exports = {
   normalizeSpace,
   sourceDocumentFromRow,
   sourceFingerprint,
+  _stableValue: stableValue,
   technicalTokens,
   englishResidues,
   looksFrench,
