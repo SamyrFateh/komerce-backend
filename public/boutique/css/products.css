@@ -191,6 +191,9 @@ body.spike-shell-vertical .k-sec-grid {
   align-items: center;
   justify-content: center;
 }
+/* G-07 — zone tactile 40×40 sans changer le visuel 30×30 */
+.k-card-add-trigger { position: relative; }
+.k-card-add-trigger::after { content: ''; position: absolute; inset: -5px; }
 .k-card-add:active {
   transform: scale(.90);
   background: var(--action-commerce-hover);

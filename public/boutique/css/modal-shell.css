@@ -432,6 +432,9 @@
     justify-content: center; gap: 0; font-size: 13px;
     background: transparent; border: none; box-shadow: none;
   }
+  /* G-07 — zone tactile 40×40 sans changer le visuel 28×28 */
+  #k-modal-nav .k-modal-nav-btn { position: relative; }
+  #k-modal-nav .k-modal-nav-btn::after { content: ''; position: absolute; inset: -6px; }
   #k-modal-nav .k-modal-nav-counter { font-size: 10.5px; min-width: 42px; padding: 0 2px; text-align: center; }
 
   /* Retour / fermeture : même langage visuel, cible tactile 40px,

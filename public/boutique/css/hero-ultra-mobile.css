@@ -88,3 +88,10 @@
   }
 
 }
+
+/* G-06 — Mobile en paysage à faible hauteur : la scène et le slogan cèdent
+   la place au catalogue ; le rail de rayons reste. Le JS du pager mesure
+   #k-hero-fixed-wrap dynamiquement : aucun ajustement JS requis. */
+@media (max-width: 899px) and (orientation: landscape) and (max-height: 500px) {
+  .k-hero { display: none; }
+}
