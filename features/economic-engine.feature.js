@@ -244,6 +244,7 @@ module.exports = {
       'tests/unit/pricing-apply.test.js',
       'tests/unit/admin-pricing-workspace-route.test.js',
       'tests/unit/admin-pricing-workspace-market-route.test.js',
+      'tests/unit/admin-pricing-workspace-capability-mapping.test.js',
       'tests/unit/cost-component-market-service.test.js',
       'tests/unit/pricing-cost-explainability.test.js',
       'tests/unit/pricing-workspace.test.js',
