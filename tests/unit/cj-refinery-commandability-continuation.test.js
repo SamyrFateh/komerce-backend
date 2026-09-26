@@ -28,7 +28,9 @@ const continuation = require('../../scripts/cj-refinery-commandability-continuat
 describe('CJ Raffinerie commandability continuation', () => {
   test('reste borné à 1000 et chunks de 20', () => {
     expect(continuation.parseArgs(['--limit=974', '--chunk=20']))
-      .toMatchObject({ limit: 974, chunk: 20 });
+      .toMatchObject({ limit: 974, chunk: 20, auditOnly: false });
+    expect(continuation.parseArgs(['--audit-only']))
+      .toMatchObject({ auditOnly: true });
     expect(() => continuation.parseArgs(['--limit=1001'])).toThrow(/1 et 1000/);
     expect(() => continuation.parseArgs(['--chunk=21'])).toThrow(/1 et 20/);
   });
@@ -57,6 +59,14 @@ describe('CJ Raffinerie commandability continuation', () => {
       KOMERCE_ENV: 'staging',
       NODE_ENV: 'test',
     })).not.toThrow();
+
+    const noCj = { ...base };
+    delete noCj.CJ_ACCESS_TOKEN;
+    expect(() => continuation.assertDisposableRuntime({
+      ...noCj,
+      KOMERCE_ENV: 'staging',
+      NODE_ENV: 'test',
+    }, { requireCj: false })).not.toThrow();
   });
 
   test('reconnaît quota et auth sans masquer les autres erreurs', () => {

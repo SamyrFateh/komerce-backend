@@ -17,6 +17,11 @@ on:
         description: 'Maximum CJ TEST drafts to hydrate'
         required: false
         default: '974'
+      audit_only:
+        description: 'Read readiness from checkpoint only; zero CJ calls and zero catalog writes'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -84,7 +89,9 @@ jobs:
           test "$DATABASE_URL" = 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress'
           test "$NODE_ENV" = 'test'
           test "$KOMERCE_ENV" = 'staging'
-          test -n "${CJ_ACCESS_TOKEN:-}" || { echo '::error::KOMERCE_CJ_PROOF_ACCESS_TOKEN manquant'; exit 1; }
+          if [ "${{ inputs.audit_only || false }}" != 'true' ]; then
+            test -n "${CJ_ACCESS_TOKEN:-}" || { echo '::error::KOMERCE_CJ_PROOF_ACCESS_TOKEN manquant'; exit 1; }
+          fi
 
       - name: Download reusable Raffinerie checkpoint
         uses: actions/download-artifact@v4
@@ -107,6 +114,7 @@ jobs:
           psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -Atqc             "SELECT 'cj_candidates=' || count(*) FROM sourcing_candidates WHERE supplier_name='CJdropshipping';"
 
       - name: Ensure free French staging preparation is applied
+        if: ${{ inputs.audit_only != true }}
         run: node scripts/catalog-fr-free-e2e-preparation.js --limit=1000
 
       - name: Continue Raffinerie with exact CJ detail, SKU and Supplier Order Identity
@@ -121,7 +129,11 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/cj-refinery-continuation
           limit="${{ inputs.limit || '974' }}"
-          output="$(timeout 2520s node scripts/cj-refinery-commandability-continuation.js             --limit="$limit" --chunk=20             --output=artifacts/cj-refinery-continuation/readiness.json)"
+          extra_args=()
+          if [ "${{ inputs.audit_only || false }}" = 'true' ]; then
+            extra_args+=(--audit-only)
+          fi
+          output="$(timeout 2520s node scripts/cj-refinery-commandability-continuation.js             --limit="$limit" --chunk=20             --output=artifacts/cj-refinery-continuation/readiness.json             "${extra_args[@]}")"
           printf '%s\n' "$output"
           compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-18000)"
           {
@@ -194,7 +206,8 @@ jobs:
             echo '## CJ Raffinerie continuation'
             echo
             echo '- database: disposable PostgreSQL 16 localhost'
-            echo '- exact CJ detail: enabled'
+            echo "- audit only: ${{ inputs.audit_only || false }}"
+            echo '- exact CJ detail: enabled when audit_only=false'
             echo '- publication/exposure/order/payment: forbidden'
             echo '- objective: exact variants/SKU + Supplier Order Identity + media + readiness'
             if [ -n "${CONTINUE_SUMMARY:-}" ]; then echo "- result: `$CONTINUE_SUMMARY`"; fi
