@@ -133,8 +133,9 @@ async function queryProducts({ search = null, category = null, status = null, li
   return rows.map(publicProduct);
 }
 
-async function queryApprovalQueue(limit = 50) {
+async function queryApprovalQueue({ limit = 50, offset = 0 } = {}) {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+  const safeOffset = Math.max(Number.parseInt(offset, 10) || 0, 0);
   const { rows } = await db.query(`
     SELECT product_ref, name, description, category, fragility, emoji,
            price_kmf, stock, content_source, needs_review,
@@ -143,9 +144,9 @@ async function queryApprovalQueue(limit = 50) {
      WHERE lifecycle_status = 'candidate'
        AND is_active = FALSE
        AND content_source IN ('connector_raw', 'ai_enriched', 'manual')
-     ORDER BY needs_review DESC, enrichment_confidence ASC NULLS FIRST
-     LIMIT $1
-  `, [safeLimit]);
+     ORDER BY needs_review ASC, enrichment_confidence DESC NULLS LAST, created_at ASC
+     LIMIT $1 OFFSET $2
+  `, [safeLimit, safeOffset]);
   return rows.map(row => ({
     product_ref: row.product_ref,
     name: row.name,
@@ -163,6 +164,8 @@ async function queryApprovalQueue(limit = 50) {
 }
 
 async function buildWorkspace(query = {}) {
+  const approvalLimit = Math.min(Math.max(Number(query.approval_limit) || 50, 1), 100);
+  const approvalOffset = Math.max(Number.parseInt(query.approval_offset, 10) || 0, 0);
   const [summary, catalogCap, categories, products, approval] = await Promise.all([
     querySummary(),
     queryCatalogCap(),
@@ -171,8 +174,9 @@ async function buildWorkspace(query = {}) {
     // Ne jamais paginer tous les candidats puis filtrer côté client : avec un
     // gros backlog de curation, des produits publiés disparaîtraient du top 200.
     queryProducts({ ...query, status: 'active' }),
-    queryApprovalQueue(query.approval_limit),
+    queryApprovalQueue({ limit: approvalLimit, offset: approvalOffset }),
   ]);
+  const approvalTotal = Number(summary.approval_pending) || 0;
   return {
     scope: { mode: 'global_catalog', label: 'Catalogue commun Komerce' },
     summary: { ...summary, categories: categories.filter(row => row.is_active).length },
@@ -180,6 +184,13 @@ async function buildWorkspace(query = {}) {
     categories,
     products,
     approval,
+    approval_page: {
+      total: approvalTotal,
+      limit: approvalLimit,
+      offset: approvalOffset,
+      has_previous: approvalOffset > 0,
+      has_next: approvalOffset + approval.length < approvalTotal,
+    },
   };
 }
 
