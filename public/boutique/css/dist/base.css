@@ -2047,9 +2047,10 @@ body:has(#k-page-scroll.k-pager-active) {
 .k-hero-cats-sticky::after { content: ''; display: block; }
 
 @media (max-width: 899px) {
-  /* Respiration mobile : abaisse le rail sans agrandir la scène. */
+  /* Respiration mobile réduite : l'espace est rendu à la scène de remise
+     (hero-ultra-mobile.css, bande slogan + scène complète). */
   .k-hero-cats-sticky {
-    padding-top: 28px;
+    padding-top: 8px;
   }
 }
 
@@ -2902,8 +2903,12 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     overflow: visible;
   }
 
+  /* Deux bandes : slogan centré en haut, scène de remise complète dessous.
+     Le hero grandit juste assez pour que le colis K, le téléphone et le
+     décor relais restent lisibles ; la respiration du rail est rendue à
+     la scène (padding-top rail réduit ci-dessous). */
   .k-hero .k-hero-inner .k-hero-media {
-    height: clamp(70px, 18.5vw, 78px);
+    height: clamp(128px, 35vw, 142px);
     margin-top: 0;
     margin-bottom: 0;
     overflow: visible;
@@ -2913,42 +2918,50 @@ body.spike-shell-vertical .k-hero-cats-sticky {
      l'acte de remise. Le téléphone, le colis et les mains forment le centre
      narratif ; aucun troisième personnage ne dilue la lecture. */
   .k-hero-media .k-hero-figures {
-    /* Réagencement validé : le slogan occupe la bande haute ; la scène
-       descend sous lui et se décale vers la gauche. Le calque garde la
-       même échelle verticale : on réorganise, on ne grossit pas le Hero. */
-    inset: 18px auto auto 54%;
+    /* Scène entière sous le slogan, centrée ; ratio du master respecté
+       (498×183) pour ne jamais rogner le colis ni le pin relais. */
+    inset: 44px auto auto 50%;
     transform: translateX(-50%);
-    width: 238px;
-    height: calc(100% + 8px);
+    height: calc(100% - 46px);
+    width: auto;
+    aspect-ratio: 498 / 183;
+    max-width: calc(100% - 8px);
+    border-radius: 16px;
     background-image: url('/images/komerce-hero-handoff-v2.webp');
-    background-size: auto 100%;
-    background-position: center top;
-    -webkit-mask-image: none;
-    mask-image: none;
+    background-size: cover;
+    background-position: center center;
+    /* Bords fondus : la scène se fond dans le fond sable, pas de cadre dur. */
+    -webkit-mask-image: linear-gradient(to right, transparent 0, black 7%, black 93%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, black 7%, black 93%, transparent 100%);
   }
 
 
   .k-hero-copy-mobile { display: inline; }
   .k-hero-copy-desktop { display: none; }
 
+  /* Slogan centré en bande haute, au-dessus de la scène, jamais recouvert. */
   html .k-hero-media .k-hero-mini-slogan--premium {
-    inset: 0 auto auto 28%;
-    width: 62%;
-    padding: 0;
-    align-items: flex-start;
+    inset: 4px 0 auto 0;
+    width: 100%;
+    padding: 0 12px;
+    align-items: center;
     justify-content: flex-start;
-    text-align: left;
+    text-align: center;
   }
 
   html .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {
-    font-size: clamp(10px, 2.7vw, 12px);
-    line-height: 1.01;
+    font-size: clamp(14px, 3.9vw, 16px);
+    line-height: 1.1;
+    letter-spacing: .005em;
+    text-align: center;
   }
 
   html .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {
-    margin-top: 1px;
-    font-size: clamp(10px, 2.7vw, 12px);
-    line-height: 1.01;
+    margin-top: 2px;
+    font-size: clamp(14px, 3.9vw, 16px);
+    line-height: 1.1;
+    letter-spacing: .005em;
+    text-align: center;
   }
 
 }
