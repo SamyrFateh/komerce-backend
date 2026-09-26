@@ -164,14 +164,22 @@ async function loadPending(limit) {
         AND p.lifecycle_status='candidate'
         AND p.is_active=FALSE
         AND UPPER(COALESCE(sc.scan_result->>'sourcing_decision','')) = ANY($2::text[])
-        AND NOT EXISTS (
-          SELECT 1
-            FROM product_skus ps
-           WHERE ps.product_id=sc.product_id
-             AND ps.source='SUPPLIER'
-             AND ps.is_active=TRUE
-             AND ps.supplier_unit_ref IS NOT NULL
-             AND ps.supplier_order_identity IS NOT NULL
+        AND (
+          NOT EXISTS (
+            SELECT 1
+              FROM product_skus ps
+             WHERE ps.product_id=sc.product_id
+               AND ps.source='SUPPLIER'
+               AND ps.is_active=TRUE
+          )
+          OR EXISTS (
+            SELECT 1
+              FROM product_skus ps
+             WHERE ps.product_id=sc.product_id
+               AND ps.source='SUPPLIER'
+               AND ps.is_active=TRUE
+               AND (ps.supplier_unit_ref IS NULL OR ps.supplier_order_identity IS NULL)
+          )
         )
       ORDER BY p.product_ref
       LIMIT $3`,
@@ -277,12 +285,11 @@ async function collectReadiness() {
         AND sc.product_id IS NOT NULL
         AND p.lifecycle_status='candidate'
         AND p.is_active=FALSE
-        AND UPPER(COALESCE(sc.scan_result->>'sourcing_decision','')) = ANY($2::text[])
       GROUP BY p.id, p.product_ref, p.name, p.description, p.category, p.subcategory,
                p.price_kmf, p.stock, p.content_source, p.needs_review, p.source_locale,
                p.lifecycle_status, p.is_active, sc.supplier_product_id, sc.scan_result
       ORDER BY p.product_ref`,
-    [SUPPLIER, [...ALLOWED_DECISIONS]]
+    [SUPPLIER]
   );
 
   const products = rows.map(row => {
@@ -499,6 +506,11 @@ async function run(options = parseArgs(), env = process.env) {
   }
 
   console.log(`[cj-refinery-continuation] FINAL ${JSON.stringify(summary)}`);
+  if (promotionErrors.length) {
+    const error = new Error(`CJ_REFINERY_PROMOTION_ERRORS:${promotionErrors.length}`);
+    error.report = report;
+    throw error;
+  }
   return report;
 }
 
