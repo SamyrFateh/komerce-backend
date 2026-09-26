@@ -111,5 +111,10 @@ describe('hero ultra mobile contract', () => {
     expect(css).not.toContain('!important');
     expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
+
+  test('G-06 : en paysage bas, la scène cède la place au catalogue', () => {
+    expect(css).toContain('@media (max-width: 899px) and (orientation: landscape) and (max-height: 500px)');
+    expect(css).toMatch(/orientation: landscape\) and \(max-height: 500px\) \{\s*\.k-hero \{ display: none; \}/);
+  });
 });
 

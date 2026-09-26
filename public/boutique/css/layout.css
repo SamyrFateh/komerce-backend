@@ -1220,3 +1220,22 @@ body:has(#k-page-scroll.k-pager-active) {
     width: 21px;
   }
 }
+
+/* G-05 — 900–1279 px : les 4 boutons de navigation passent en icône seule
+   (aria-label déjà présent) pour supprimer le débordement horizontal.
+   Scopé .k-header-actions : ne touche pas le CTA « Suivre ma commande »
+   qui porte aussi .k-header-nav-btn. */
+@media (min-width: 900px) and (max-width: 1279px) {
+  .k-header-actions .k-header-nav-btn {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  .k-header-actions .k-header-nav-btn > span:not(.k-komerce-nav-icon, .k-header-group-badge),
+  .k-header-actions .k-header-nav-btn .k-komerce-nav-label {
+    display: none;
+  }
+}
