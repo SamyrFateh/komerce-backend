@@ -167,7 +167,13 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
 | `catalog_glossary` | Glossaire EN→FR autoritaire Komerce (doctrine catalogue §4). `term_fr='='` signifie ne pas traduire. Mémoire des corrections validées : une décision Komerce gagne toujours sur une référence externe. Migration 098, confirmée live. |
-| `catalog_terminology_reference` | Mémoire terminologique externe sourcée EN→FR (TERMIUM Plus en premier), multi-contextes et multi-traductions. Import filtré par corpus réel, provenance/licence conservées. Référence uniquement : n'écrase jamais `catalog_glossary`. Migration 243. |
+<!-- schema-pending
+object: catalog_terminology_reference
+kind: table
+migration: 243
+section: ## 4. Tables par domaine
+role: Mémoire terminologique externe sourcée EN→FR (TERMIUM Plus en premier), multi-contextes et multi-traductions. Import filtré par corpus réel, provenance/licence conservées. Référence uniquement : n'écrase jamais catalog_glossary.
+-->
 | `catalog_exclusions` | Éligibilité « ce que Komerce peut recevoir » (doctrine catalogue §3). Deux couches : `absolute` (douane/loi, définitif) et `restricted` (contrainte transport, ex. batteries lithium = maritime uniquement). Matching mots-clés sur la donnée source EN, étage ③ de la raffinerie. Migration 098, confirmée live. |
 | `catalog_field_overrides` | Retouches manuelles par champ, réappliquées après chaque re-raffinage (doctrine catalogue §5 — rejouabilité). UNIQUE(product_id, field_name) : dernier override par champ gagne. Le CRUD admin édite cette table, jamais la fiche générée. FK `products` ON DELETE CASCADE. Migration 098, confirmée live. |
 | `catalog_global_access_grants` | Grants explicites autorisant les surfaces Catalogue globales ; vérité d’autorisation résolue côté serveur. Vérifiée live Railway. |
