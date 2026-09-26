@@ -66,7 +66,7 @@ describe('CJ balanced E2E 500', () => {
     })).toThrow(/KOMERCE_ALLOW_CJ_BALANCED_E2E_500=1/);
   });
 
-  test('un produit E2E doit avoir média, stock réel et unité fournisseur commandable', () => {
+  test('la découverte exige média, prix et stock réels ; la commandabilité est hydratée ensuite', () => {
     const clean = {
       schema_version: '2',
       supplier_product_id: 'cj-p-1',
@@ -92,14 +92,8 @@ describe('CJ balanced E2E 500', () => {
     expect(sync.basicCleanProduct(clean)).toBe(true);
     expect(sync.basicCleanProduct({ ...clean, stock_available: 0 })).toBe(false);
     expect(sync.basicCleanProduct({ ...clean, media: [] })).toBe(false);
-    expect(sync.basicCleanProduct({
-      ...clean,
-      sellable_units: [{ ...clean.sellable_units[0], supplier_order_identity: null }],
-    })).toBe(false);
-    expect(sync.basicCleanProduct({
-      ...clean,
-      sellable_units: [{ ...clean.sellable_units[0], stock_available: 0 }],
-    })).toBe(false);
+    expect(sync.basicCleanProduct({ ...clean, sellable_units: null })).toBe(true);
+    expect(sync.basicCleanProduct({ ...clean, sellable_units: [] })).toBe(true);
   });
 
   test('la provenance discovery porte la taxonomie boutique sans toucher la catégorie douanière', () => {

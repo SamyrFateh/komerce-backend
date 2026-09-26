@@ -29,7 +29,10 @@ const SYNC_KEY = 'cj-balanced-e2e-500-v1';
 const TARGET = 500;
 const PAGE_SIZE = 20;
 const MAX_SEARCH_PAGES_PER_QUERY = 6;
+const SEARCH_MIN_INTERVAL_MS = 1100;
+const SEARCH_RETRIES = 4;
 const RUNTIME_FLAG = 'KOMERCE_ALLOW_CJ_BALANCED_E2E_500';
+let lastSearchAt = 0;
 
 function runtimeEnvironment(env = process.env) {
   return String(env.KOMERCE_ENV || env.NODE_ENV || '').trim().toLowerCase();
@@ -59,21 +62,6 @@ function positiveStock(value) {
   return Number.isFinite(n) && n > 0;
 }
 
-function hasCommandableUnit(product = {}) {
-  return Array.isArray(product.sellable_units)
-    && product.sellable_units.some((unit) =>
-      unit?.is_active === true
-      && positiveStock(unit.stock_available)
-      && Number(unit.purchase_price) > 0
-      && String(unit.supplier_sku || '').trim()
-      && String(unit.supplier_unit_ref || '').trim()
-      && unit.supplier_order_identity?.provider === PROVIDER_ID
-      && Number(unit.supplier_order_identity?.version) >= 1
-      && unit.supplier_order_identity?.payload
-      && typeof unit.supplier_order_identity.payload === 'object'
-    );
-}
-
 function basicCleanProduct(product = {}) {
   return Boolean(
     String(product.supplier_product_id || '').trim()
@@ -83,7 +71,6 @@ function basicCleanProduct(product = {}) {
     && positiveStock(product.stock_available)
     && Array.isArray(product.media)
     && product.media.some((item) => /^https:\/\//i.test(String(item?.url || '')))
-    && hasCommandableUnit(product)
     && String(product.schema_version || '') === '2'
   );
 }
@@ -144,17 +131,8 @@ async function segmentCount(segmentId) {
         AND sc.purchase_price > 0
         AND COALESCE(sc.normalized_source_contract->>'schema_version','')='2'
         AND (sc.normalized_source_contract->>'stock_available') ~ '^[0-9]+([.][0-9]+)?$'
-        AND (sc.normalized_source_contract->>'stock_available')::numeric > 0
-        AND EXISTS (
-          SELECT 1
-          FROM jsonb_array_elements(COALESCE(sc.normalized_source_contract->'sellable_units','[]'::jsonb)) u
-          WHERE COALESCE((u->>'is_active')::boolean,FALSE)=TRUE
-            AND COALESCE((u->>'stock_available')::numeric,0)>0
-            AND NULLIF(BTRIM(u->>'supplier_sku'),'') IS NOT NULL
-            AND NULLIF(BTRIM(u->>'supplier_unit_ref'),'') IS NOT NULL
-            AND u->'supplier_order_identity'->>'provider'=$4
-        )`,
-    [SUPPLIER_NAME, SYNC_KEY, segmentId, PROVIDER_ID]
+        AND (sc.normalized_source_contract->>'stock_available')::numeric > 0`,
+    [SUPPLIER_NAME, SYNC_KEY, segmentId]
   );
   return Number(row?.n || 0);
 }
@@ -193,23 +171,50 @@ async function importSubset(segment, logicalPage, subset) {
   return result.body;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms) || 0)));
+}
+
+function isRateLimitError(error) {
+  return Number(error?.status) === 429
+    || /429|too many requests|qps|rate.?limit|insufficient api points/i.test(String(error?.message || error || ''));
+}
+
+async function waitForSearchSlot() {
+  if (lastSearchAt) {
+    const elapsed = Date.now() - lastSearchAt;
+    if (elapsed < SEARCH_MIN_INTERVAL_MS) await sleep(SEARCH_MIN_INTERVAL_MS - elapsed);
+  }
+  lastSearchAt = Date.now();
+}
+
 async function fetchSearchPage(segment, logicalPage) {
   const { keyword, queryPage } = logicalSearchPage(segment, logicalPage);
-  const fetched = await cj.fetchProducts({
-    keyword,
-    page: queryPage,
-    size: PAGE_SIZE,
-    includeCommandableUnits: true,
-    startWarehouseInventory: 1,
-  });
+  let fetched = null;
+  for (let attempt = 1; attempt <= SEARCH_RETRIES; attempt += 1) {
+    await waitForSearchSlot();
+    try {
+      fetched = await cj.fetchProducts({
+        keyword,
+        page: queryPage,
+        size: PAGE_SIZE,
+        includeCommandableUnits: false,
+        startWarehouseInventory: 1,
+      });
+      break;
+    } catch (error) {
+      if (!isRateLimitError(error) || attempt >= SEARCH_RETRIES) throw error;
+      console.warn(`[cj-balanced-500] throttle segment=${segment.id} queryPage=${queryPage} retry=${attempt + 1}/${SEARCH_RETRIES}`);
+    }
+  }
   return {
     keyword,
     queryPage,
-    requestId: fetched.request_id || null,
-    products: (fetched.products || []).map((product) =>
+    requestId: fetched?.request_id || null,
+    products: (fetched?.products || []).map((product) =>
       withDiscoveryProvenance(product, { segment, keyword, queryPage })
     ),
-    invalid: fetched.invalid || [],
+    invalid: fetched?.invalid || [],
   };
 }
 
@@ -288,7 +293,8 @@ async function run() {
     universes: byUniverse,
     segments: results,
     real_supplier_only: true,
-    commandable_units_required: true,
+    commandable_units_required_at_discovery: false,
+    commandable_units_phase: 'exact-detail-continuation',
     auto_publish: false,
     market_exposure_created: false,
   };
@@ -315,11 +321,12 @@ module.exports = {
   TARGET,
   PAGE_SIZE,
   MAX_SEARCH_PAGES_PER_QUERY,
+  SEARCH_MIN_INTERVAL_MS,
+  SEARCH_RETRIES,
   RUNTIME_FLAG,
   runtimeEnvironment,
   assertRuntime,
   positiveStock,
-  hasCommandableUnit,
   basicCleanProduct,
   withDiscoveryProvenance,
   logicalSearchPage,
