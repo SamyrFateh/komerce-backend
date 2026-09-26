@@ -85,6 +85,10 @@ if (!hasIntegrationEnv) {
       allowedMarkets: ['CM'],
       defaultMarket: 'CM',
       capabilities: ['pilotage.read', 'dashboard.market.read'],
+      // adminCountry n'a qu'un operator_market_scopes legacy — aucune
+      // assignment_membership DELEGATION réelle sur CM, donc projection vide
+      // (jamais une erreur : cf. NO_DELEGATED_CAPABILITY_CODES).
+      delegatedCapabilities: { CM: [] },
     });
   });
 

@@ -14,6 +14,15 @@ jest.mock('../../middleware/require-dashboard-global-authority', () => ({
   hasDashboardGlobalAuthority: (...args) => mockHasGlobal(...args),
 }));
 
+// LOT A (A1) : resolveDashboardAdminContext appelle désormais
+// resolveAuthorization pour projeter delegatedCapabilities en mode market.
+// On le mocke ici — la couverture de resolveAuthorization lui-même vit dans
+// tests/unit/market-delegation-service*.test.js, pas ici.
+const mockResolveAuthorization = jest.fn();
+jest.mock('../../services/market-delegation-service', () => ({
+  resolveAuthorization: (...args) => mockResolveAuthorization(...args),
+}));
+
 const {
   resolveDashboardAdminContext,
   DashboardAccessDeniedError,
@@ -21,6 +30,7 @@ const {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockResolveAuthorization.mockResolvedValue({ capabilities: [] });
 });
 
 describe('dashboard-admin-context', () => {
@@ -38,6 +48,7 @@ describe('dashboard-admin-context', () => {
         allowedMarkets: ['CG', 'CM', 'KM'],
         defaultMarket: null,
         capabilities: ['pilotage.read', 'dashboard.market.read', 'dashboard.global.read'],
+        delegatedCapabilities: {},
       },
     });
     expect(String(mockQuery.mock.calls[0][0])).toContain('WHERE is_active = TRUE');
@@ -55,6 +66,7 @@ describe('dashboard-admin-context', () => {
       allowedMarkets: ['CM', 'CG'],
       defaultMarket: 'CM',
       capabilities: ['pilotage.read', 'dashboard.market.read'],
+      delegatedCapabilities: { CM: [], CG: [] },
     });
     const [sql, params] = mockQuery.mock.calls[0];
     expect(sql).toContain('operator_market_scopes');
@@ -81,5 +93,6 @@ describe('dashboard-admin-context', () => {
     expect(serialized).not.toContain('market_id');
     expect(serialized).not.toContain('operator_market_scopes');
     expect(context.access.allowedMarkets).toEqual(['CM']);
+    expect(context.access.delegatedCapabilities).toEqual({ CM: [] });
   });
 });
