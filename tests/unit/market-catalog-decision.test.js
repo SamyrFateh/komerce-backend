@@ -16,6 +16,7 @@ describe('Catalogue pays decision-first', () => {
   const payload = {
     summary: {
       catalog_products: 10,
+      incoming_products: 6,
       exposed_products: 4,
       hidden_products: 6,
       undecided_products: 3,
@@ -33,15 +34,16 @@ describe('Catalogue pays decision-first', () => {
 
   test('projette les vraies décisions pays sans transformer tous les produits masqués en problème', () => {
     expect(projection.decisionItems(payload)).toEqual([
-      expect.objectContaining({ key: 'undecided', label: 'Sans décision pays', tone: 'warning', value: '3' }),
+      expect.objectContaining({ key: 'incoming', label: 'Nouveaux produits à valider', tone: 'warning', value: '6' }),
+      expect.objectContaining({ key: 'undecided', label: 'Produits publiés sans décision pays', tone: 'warning', value: '3' }),
       expect.objectContaining({ key: 'exposed-review', label: 'Exposés à relire', tone: 'warning', value: '1' }),
     ]);
   });
 
   test('les KPI viennent du résumé serveur', () => {
     const metrics = projection.metricItems(payload);
-    expect(metrics.map(item => item.key)).toEqual(['catalog', 'enabled', 'hidden', 'coverage', 'decided']);
-    expect(metrics.find(item => item.key === 'catalog').value).toBe('10');
+    expect(metrics.map(item => item.key)).toEqual(['incoming', 'enabled', 'hidden', 'coverage', 'decided']);
+    expect(metrics.find(item => item.key === 'incoming').value).toBe('6');
     expect(metrics.find(item => item.key === 'enabled').value).toBe('4');
     expect(metrics.find(item => item.key === 'coverage').value).toBe('40 %');
     expect(metrics.find(item => item.key === 'decided').value).toBe('7');
@@ -66,6 +68,17 @@ describe('Catalogue pays decision-first', () => {
     expect(rows.map(row => row.priority)).toEqual(['À relire', 'À décider']);
   });
 
+  test('le dashboard pays masque toute la complexité interne de préparation catalogue', () => {
+    const source = read('public/dashboards/canonical/js/market-catalog.js');
+    expect(source).not.toMatch(/Raffinerie/i);
+    expect(source).not.toMatch(/TERMIUM/i);
+    expect(source).not.toMatch(/source_hash/i);
+    expect(source).not.toMatch(/supplier_order_identity/i);
+    expect(source).not.toMatch(/content_source/i);
+    expect(source).toContain('Valider pour ce marché');
+    expect(source).toContain('Ne pas retenir');
+  });
+
   test('la page charge les primitives partagées et ne recalcule plus le résumé à partir du tableau', () => {
     const html = read('public/dashboards/canonical/market-catalog.html');
     const source = read('public/dashboards/canonical/js/market-catalog.js');
@@ -76,6 +89,9 @@ describe('Catalogue pays decision-first', () => {
     expect(source).toContain('projection.metricItems(payload)');
     expect(decisionSource).toContain('payload.summary || {}');
     expect(source).not.toMatch(/rows\.filter\([^\n]+commercial_exposure/);
+    expect(source).toContain('Valider pour ce marché');
+    expect(source).toContain('Ne pas retenir');
+    expect(source).toContain('renderIncomingProducts(payload, marketCode)');
     expect(source).toContain('Garder masqué');
     expect(source).not.toMatch(/[?&]market_id=|body\.market_id|body\.marketId/);
   });
