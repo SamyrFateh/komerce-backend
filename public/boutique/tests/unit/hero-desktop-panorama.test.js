@@ -18,6 +18,7 @@ const hero = fs.readFileSync(path.resolve(__dirname, '../../css/hero.css'), 'utf
 const layout = fs.readFileSync(path.resolve(__dirname, '../../css/layout.css'), 'utf8');
 const categories = fs.readFileSync(path.resolve(__dirname, '../../css/categories.css'), 'utf8');
 const index = fs.readFileSync(path.resolve(__dirname, '../../index.html'), 'utf8');
+const desktopArtPath = path.resolve(__dirname, '../../../images/komerce-hero-handoff-v3.webp');
 
 describe('hero composition en calques (H1)', () => {
   test('le calque personnages est un div avec background-image, pas un <img>', () => {
@@ -25,11 +26,10 @@ describe('hero composition en calques (H1)', () => {
     expect(index).not.toMatch(/<img[^>]+class="k-hero-img"/);
   });
 
-  test('le preload cible le WebP canonique unique', () => {
+  test('le preload desktop cible le même master handoff v3 que le mobile', () => {
     expect(index).toMatch(
-      /<link rel="preload" as="image" href="\/images\/komerce_hero_catalog_canonical_v4\.webp" type="image\/webp"/
+      /<link rel="preload" as="image" href="\/images\/komerce-hero-handoff-v3\.webp" type="image\/webp" media="\(min-width: 900px\)"/
     );
-    // Plus de preload des anciens webp
     expect(index).not.toMatch(/preload.*komerce_hero_desktop_panorama/);
     expect(index).not.toMatch(/preload.*komerce_hero_final_1080/);
   });
@@ -39,19 +39,29 @@ describe('hero composition en calques (H1)', () => {
     expect(hero).not.toContain('.k-hero-moon');
   });
 
-  test('réduit fortement le panorama desktop sans supprimer les CTA', () => {
+  test('aligne le hero desktop sur la promesse et la scène mobile sans supprimer les CTA', () => {
     expect(hero).toContain('height: clamp(190px, 14vw, 208px);');
-    expect(hero).toContain('background-size: auto 108%;');
-    expect(hero).toContain('background-position: 80% 0%;');
-    expect(hero).toContain('min-height: 40px;');
-    expect(index).toContain('Vos envies,');
-    expect(index).toContain('à portée de main.');
+    expect(hero).toContain("background-image: url('/images/komerce-hero-handoff-v3.webp');");
+    expect(hero).toContain('background-size: auto 100%;');
+    expect(hero).toContain('background-position: 74% center;');
+    expect(hero).toContain('width: 42%;');
+    expect(hero).toContain('max-width: 580px;');
+    expect(hero).toContain('font-style: normal;');
+    expect(index).toContain('<span class="k-hero-copy-desktop">Commandez en ligne.</span>');
+    expect(index).toContain('<span class="k-hero-copy-desktop">Retirez près de chez vous.</span>');
+    expect(index).not.toContain('Vos envies,');
+    expect(index).not.toContain('à portée de main.');
     expect(index).not.toContain('La lune,');
     expect(index).toContain('Découvrir le catalogue →');
     expect(index).toContain('Suivre ma commande');
   });
 
-  test('le CSS porte deux cadrages independants par breakpoint', () => {
+  test('le master desktop v3 est complet et le CSS garde deux cadrages independants par breakpoint', () => {
+    const art = fs.readFileSync(desktopArtPath);
+    expect(art.subarray(0, 4).toString('ascii')).toBe('RIFF');
+    expect(art.subarray(8, 12).toString('ascii')).toBe('WEBP');
+    expect(art.length).toBe(art.readUInt32LE(4) + 8);
+
     // Desktop
     expect(hero).toMatch(
       /@media\s*\(min-width:\s*900px\)\s*\{[^}]*\.k-hero-figures\s*\{[^}]*background-size/s
