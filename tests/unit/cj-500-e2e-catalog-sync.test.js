@@ -147,6 +147,11 @@ describe('CJ balanced E2E 500', () => {
     expect(segment.queries.length).toBeGreaterThanOrEqual(6);
   });
 
+  test('tous les segments disposent d une couverture de recherche robuste sans changer les cibles', () => {
+    expect(BALANCED_E2E_500_PLAN.every((segment) => segment.queries.length >= 5)).toBe(true);
+    expect(planTotal(BALANCED_E2E_500_PLAN)).toBe(500);
+  });
+
   test('alterne les mots-clés d’un segment pour diversifier les résultats CJ', () => {
     const segment = BALANCED_E2E_500_PLAN.find((row) => row.id === 'tech-phones');
     expect(sync.logicalSearchPage(segment, 1)).toEqual({ keyword: 'android smartphone', queryPage: 1 });
