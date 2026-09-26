@@ -143,6 +143,10 @@ function evaluateRow(sourceRow, translation) {
   if (!proposedHash) blocking.push('source_hash_missing');
   else if (proposedHash !== actualHash) blocking.push('source_hash_mismatch');
 
+  if (String(translation.review_status || '').trim().toUpperCase() !== 'PASS') {
+    blocking.push('offline_review_missing_or_failed');
+  }
+
   if (sourceRow.lifecycle_status !== 'candidate' || sourceRow.is_active === true) {
     blocking.push('product_not_inactive_candidate');
   }
@@ -163,6 +167,7 @@ function evaluateRow(sourceRow, translation) {
     warnings: quality.warnings,
     diagnostics: quality.diagnostics,
     note: translation.note ? String(translation.note).slice(0, 500) : null,
+    review_note: translation.review_note ? String(translation.review_note).slice(0, 500) : null,
   };
 }
 
