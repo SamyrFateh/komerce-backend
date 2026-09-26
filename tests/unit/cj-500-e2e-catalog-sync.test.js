@@ -133,6 +133,20 @@ describe('CJ balanced E2E 500', () => {
     expect(segment.queries.length).toBeGreaterThanOrEqual(5);
   });
 
+  test('le segment enfant dispose de requêtes de repli sans relâcher sa cible', () => {
+    const segment = BALANCED_E2E_500_PLAN.find((row) => row.id === 'mode-enfant');
+    expect(segment.target).toBe(21);
+    expect(segment.queries).toEqual(expect.arrayContaining([
+      'kids clothing',
+      'kids shoes',
+      'children clothing',
+      'boys clothing',
+      'girls clothing',
+      'kids sneakers',
+    ]));
+    expect(segment.queries.length).toBeGreaterThanOrEqual(6);
+  });
+
   test('alterne les mots-clés d’un segment pour diversifier les résultats CJ', () => {
     const segment = BALANCED_E2E_500_PLAN.find((row) => row.id === 'tech-phones');
     expect(sync.logicalSearchPage(segment, 1)).toEqual({ keyword: 'android smartphone', queryPage: 1 });
