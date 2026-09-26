@@ -25186,7 +25186,62 @@
                       "type": "string",
                       "x-observed": true
                     },
+                    "review_queue": {
+                      "type": "string",
+                      "x-observed": true
+                    },
                     "exposure": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate": {
+      "post": {
+        "summary": "POST /api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate",
+        "x-route-file": "routes/market-delegation-catalog.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "validation": {
                       "type": "string",
                       "x-observed": true
                     }
