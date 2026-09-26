@@ -153,6 +153,7 @@ module.exports = {
 
   docs: [
     'RAPPORT_HERO_DESKTOP.md',
+    'public/boutique/docs/HERO_HANDOFF_V3_ASSET.md',
     'docs/BOUTIQUE_CATEGORY_NAVIGATION_REDESIGN.md',
     'docs/BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md',
     'docs/MOBILE_BOUTIQUE_FIXES.md',
