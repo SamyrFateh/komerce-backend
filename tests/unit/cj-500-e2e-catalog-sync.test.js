@@ -152,6 +152,16 @@ describe('CJ balanced E2E 500', () => {
     expect(planTotal(BALANCED_E2E_500_PLAN)).toBe(500);
   });
 
+  test('les deux derniers segments courts disposent d une réserve de requêtes suffisante', () => {
+    const audio = BALANCED_E2E_500_PLAN.find((row) => row.id === 'tech-audio');
+    const braking = BALANCED_E2E_500_PLAN.find((row) => row.id === 'auto-freinage');
+
+    expect(audio.target).toBe(28);
+    expect(braking.target).toBe(21);
+    expect(audio.queries.length).toBeGreaterThanOrEqual(10);
+    expect(braking.queries.length).toBeGreaterThanOrEqual(10);
+  });
+
   test('la découverte garde une profondeur de rattrapage suffisante avant de déclarer un shortfall', () => {
     expect(sync.MAX_SEARCH_PAGES_PER_QUERY).toBeGreaterThanOrEqual(12);
   });
