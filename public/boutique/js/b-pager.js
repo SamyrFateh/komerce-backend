@@ -181,6 +181,9 @@ function _resetPageToTop(page, grid) {
   }
 }
 
+// Atterrissage attendu après un recul (consommé par _setupScrollSync).
+let _pendingLanding = null;
+
 function _placePageAtBottom(page) {
   if (!page) return;
   const cat = page.dataset.cat;
@@ -269,7 +272,16 @@ function _setupScrollSync(grid) {
 
       const cat = page.dataset.cat;
       if (cat && idx !== lastIdx) {
-        _resetPageToTop(page, grid);
+        // Un recul (onRetreat) annonce son atterrissage « en bas » : le scroll
+        // smooth dure plus longtemps que la fenêtre _isProgrammaticScroll, donc
+        // l'arrivée passe ici — on honore la position attendue au lieu de
+        // remettre le rayon en haut comme pour un swipe horizontal.
+        if (_pendingLanding && _pendingLanding.cat === cat) {
+          _placePageAtBottom(page);
+        } else {
+          _resetPageToTop(page, grid);
+        }
+        _pendingLanding = null;
         lastIdx = idx;
         _syncChip(cat);
       }
@@ -421,6 +433,7 @@ function _setupSectionAutoAdvance() {
       const currentIndex = realPages.indexOf(currentPage);
       if (currentIndex <= 0) return;
 
+      _pendingLanding = { cat: prevPage.dataset.cat || 'all' };
       _placePageAtBottom(prevPage);
       _syncChip(prevPage.dataset.cat || 'all');
       _scrollToIndex(grid, currentIndex - 1, 'smooth');
