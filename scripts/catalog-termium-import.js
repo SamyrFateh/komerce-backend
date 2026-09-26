@@ -110,18 +110,24 @@ function loadCorpus(corpusDir) {
   const files = listFilesRecursive(corpusDir, '.json')
     .filter(file => /^batch-\d+\.json$/i.test(path.basename(file)));
   const ngrams = new Set();
+  const productNgrams = [];
   let productCount = 0;
 
   for (const file of files) {
     const payload = JSON.parse(fs.readFileSync(file, 'utf8'));
     for (const product of payload.products || []) {
       productCount += 1;
-      for (const ngram of candidateNgrams(product.source || {}, 7)) ngrams.add(ngram);
+      const grams = new Set(candidateNgrams(product.source || {}, 7));
+      for (const ngram of grams) ngrams.add(ngram);
+      productNgrams.push({
+        product_ref: product.product_ref || null,
+        ngrams: grams,
+      });
     }
   }
 
   if (!productCount) throw new Error('CORPUS_EMPTY: aucun produit trouvé dans les batch-*.json');
-  return { ngrams, productCount, files: files.length };
+  return { ngrams, productNgrams, productCount, files: files.length };
 }
 
 function datasetDomainFromPath(file) {
@@ -294,6 +300,15 @@ async function run(options = parseArgs()) {
   const collected = collectRelevantReferences(options.csvDir, corpus.ngrams);
 
   const termKeys = new Set(collected.references.map(ref => ref.term_en_normalized));
+  const productsWithReference = corpus.productNgrams.filter(product =>
+    [...termKeys].some(term => product.ngrams.has(term))
+  ).length;
+  const translationsByTerm = new Map();
+  for (const ref of collected.references) {
+    if (!translationsByTerm.has(ref.term_en_normalized)) translationsByTerm.set(ref.term_en_normalized, new Set());
+    translationsByTerm.get(ref.term_en_normalized).add(ref.term_fr_normalized);
+  }
+  const ambiguousTerms = [...translationsByTerm.values()].filter(values => values.size > 1).length;
   const summary = {
     mode: options.execute ? 'execute' : 'dry-run',
     corpus_products: corpus.productCount,
@@ -302,6 +317,11 @@ async function run(options = parseArgs()) {
     ...collected.stats,
     unique_references: collected.references.length,
     unique_english_terms: termKeys.size,
+    ambiguous_english_terms: ambiguousTerms,
+    products_with_reference: productsWithReference,
+    product_coverage_pct: corpus.productCount
+      ? Number(((productsWithReference / corpus.productCount) * 100).toFixed(2))
+      : 0,
     attribution: ATTRIBUTION,
     source_license: LICENSE,
     source_data_date: SOURCE_DATA_DATE,
