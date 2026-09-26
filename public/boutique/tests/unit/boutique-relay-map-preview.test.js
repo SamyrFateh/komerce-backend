@@ -54,7 +54,7 @@ jest.mock('../../js/b-tracking.js', () => ({
   formatOrderDate: mockNoop, renderTrackViewSearchMode: mockNoop,
 }));
 jest.mock('../../js/b-pager.js', () => ({
-  _setupMobilePager: mockNoop, _setupSectionAutoAdvance: mockNoop,
+  _setupMobilePager: mockNoop,
   _setupHorizontalWrap: mockNoop, _syncChipToScroll: mockNoop, _onPagerScroll: mockNoop,
 }));
 jest.mock('../../js/b-scroll-owner.js', () => ({ installScrollOwner: mockNoop, scrollPageToElement: mockNoop }));

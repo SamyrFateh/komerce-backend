@@ -57,7 +57,6 @@ import {
 import {
   _setupMobilePager,
   _recalcPagerVars,
-  _setupSectionAutoAdvance,
   _setupHorizontalWrap,
   _syncChipToScroll,
   _onPagerScroll,
@@ -590,7 +589,6 @@ function renderGrid() {
         _recalcPagerVars();        // mesure APRÈS que le DOM (hero fixe + chips) soit stabilisé
         _setupInfiniteLoop();      // ghost loop : clone Tout à la fin — DOIT être avant _setupMobilePager
         _setupMobilePager();       // listeners scroll/touch — DOM ghost déjà stabilisé
-        _setupSectionAutoAdvance(); // bounce bas → catégorie suivante
         if (state.activeCat !== 'all') {
           setTimeout(function() { _scrollPagerToCat(state.activeCat, 'instant'); }, 80);
         }
