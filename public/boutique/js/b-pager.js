@@ -181,6 +181,13 @@ function _resetPageToTop(page, grid) {
   }
 }
 
+function _placePageAtBottom(page) {
+  if (!page) return;
+  const cat = page.dataset.cat;
+  page.scrollTop = Math.max(0, page.scrollHeight - page.clientHeight);
+  if (cat) _pageScrollByCat.set(cat, page.scrollTop);
+}
+
 function _teardownPageScrollMemory(grid, persist = true) {
   _getPages(grid).forEach((page) => {
     const cat = page.dataset.cat;
@@ -404,6 +411,19 @@ function _setupSectionAutoAdvance() {
       const ghost = grid.querySelector(':scope > .k-cat-section[data-ghost="right"]');
       const ghostIndex = _getPagerPages(grid).indexOf(ghost);
       _scrollToIndex(grid, ghostIndex >= 0 ? ghostIndex : 0, 'smooth');
+    },
+    // Recul symétrique : tirer vers le bas depuis le haut d'un rayon ramène au
+    // rayon précédent, posé sur sa FIN (on reprend là où on l'avait quitté).
+    onRetreat: (currentPage, prevPage) => {
+      const grid = _getGrid();
+      if (!grid) return;
+      const realPages = _getPages(grid);
+      const currentIndex = realPages.indexOf(currentPage);
+      if (currentIndex <= 0) return;
+
+      _placePageAtBottom(prevPage);
+      _syncChip(prevPage.dataset.cat || 'all');
+      _scrollToIndex(grid, currentIndex - 1, 'smooth');
     },
   });
 }

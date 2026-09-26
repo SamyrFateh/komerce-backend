@@ -45,9 +45,14 @@ test('le bump publie from/to avant le changement de page', () => {
     onAdvance: () => order.push('advance'),
   });
 
+  // Passage volontaire : la page est déjà en bas, l'utilisateur tire vers le
+  // haut (arriver en bas par un simple scroll ne change plus de rayon).
   current.scrollTop = 600;
-  current.dispatchEvent(new Event('scroll'));
-  jest.advanceTimersByTime(160);
+  const touch = (type, y) => { const e = new Event(type); Object.defineProperty(e, type === 'touchend' ? 'changedTouches' : 'touches', { value: [{ clientX: 100, clientY: y }] }); return e; };
+  current.dispatchEvent(touch('touchstart', 200));
+  current.dispatchEvent(touch('touchmove', 130));
+  current.dispatchEvent(touch('touchend', 130));
+  jest.advanceTimersByTime(40);
 
   expect(details).toEqual([{ from: 'Tech', to: 'Maison' }]);
   expect(order).toEqual(['event', 'advance']);

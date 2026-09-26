@@ -4,22 +4,30 @@
  * @domain        catalog
  * @layer         ui-state
  * @owner         public/boutique/js/b-pager-end-bounce.js
- * @purpose       Avancer automatiquement vers la catégorie suivante après une arrivée verticale volontaire en bas de page.
+ * @purpose       Passage de rayon volontaire et réversible : tirer depuis le bas avance, tirer depuis le haut recule.
  * @impact-areas  mobile-navigation, category-navigation, scroll-ownership, discovery-rail
  * @version       2026-09
  */
 'use strict';
 
-// Le relâchement du premier geste vertical déclenche le passage presque
-// immédiatement. Le petit délai laisse Samsung Browser terminer son touchend
-// sans réintroduire un état intermédiaire visible ou un second geste.
+// Passage de rayon VOLONTAIRE et RÉVERSIBLE (mobile uniquement).
+//
+// Avant : arriver à moins de 32 px du bas par un simple scroll basculait au
+// rayon suivant après 160 ms — on quittait le rayon sans avoir vu la dernière
+// rangée, et rien ne permettait de revenir en remontant.
+//
+// Maintenant :
+//  - AVANCER : le geste doit COMMENCER alors que la page est déjà en bas, puis
+//    tirer vers le haut d'au moins PULL_PX. Arriver en bas ne fait rien.
+//  - RECULER : le geste doit COMMENCER alors que la page est tout en haut, puis
+//    tirer vers le bas d'au moins PULL_PX → rayon précédent, posé sur sa fin.
+//    Le premier rayon ne recule pas (il n'a pas de précédent).
+// Une page trop courte pour défiler est à la fois « en haut » et « en bas » :
+// les deux gestes y fonctionnent, chacun dans son sens.
 const BOTTOM_TOLERANCE_PX = 32;
-const TOUCH_BOTTOM_TOLERANCE_PX = 64;
-const DOWN_EPSILON_PX = 2;
-const UP_CANCEL_PX = 8;
-const VERTICAL_INTENT_PX = 8;
+const EDGE_START_TOLERANCE_PX = 4;
+const PULL_PX = 56;
 const VERTICAL_DOMINANCE = 1.25;
-const AUTO_ADVANCE_DELAY_MS = 160;
 const TOUCH_ADVANCE_DELAY_MS = 40;
 const PAGER_BUMP_EVENT = 'komerce:pager-bump';
 
@@ -29,16 +37,25 @@ function isAtBottom(page, tolerance = BOTTOM_TOLERANCE_PX) {
     || page.scrollTop + page.clientHeight >= page.scrollHeight - tolerance;
 }
 
+function isAtTop(page, tolerance = EDGE_START_TOLERANCE_PX) {
+  if (!page) return false;
+  return page.scrollTop <= tolerance;
+}
+
 function distanceFromBottom(page) {
   if (!page) return Infinity;
   return page.scrollHeight - page.clientHeight - page.scrollTop;
 }
 
 function resetGesture(runtime) {
-  runtime.verticalIntent = false;
-  runtime.horizontalIntent = false;
+  runtime.tracking = false;
   runtime.startX = 0;
   runtime.startY = 0;
+  runtime.pullUp = 0;
+  runtime.pullDown = 0;
+  runtime.horizontal = 0;
+  runtime.startedAtBottom = false;
+  runtime.startedAtTop = false;
 }
 
 function cancelAdvance(page, runtime) {
@@ -54,26 +71,6 @@ function emitPagerBump(page, nextPage) {
       to: nextPage?.dataset?.cat || 'all',
     },
   }));
-}
-
-function scheduleAdvance(page, nextPage, runtime, isBlocked, onAdvance, delay) {
-  clearTimeout(runtime.advanceTimer);
-  runtime.advanceTimer = setTimeout(() => {
-    runtime.advanceTimer = null;
-    if (
-      isBlocked?.()
-      || runtime.horizontalIntent
-      || !runtime.movingDown
-      || !isAtBottom(page, TOUCH_BOTTOM_TOLERANCE_PX)
-    ) return;
-
-    runtime.movingDown = false;
-    // Le bump est une entrée métier distincte d'un tap/swipe horizontal.
-    // L'événement part AVANT onAdvance afin que les surfaces de tête de page
-    // (notamment Disponible ici) puissent être montées avant le repositionnement.
-    emitPagerBump(page, nextPage);
-    onAdvance(page, nextPage);
-  }, delay);
 }
 
 function touchPoint(event) {
@@ -95,100 +92,83 @@ function teardownPagerEndBounce(pages) {
   });
 }
 
-function setupPagerEndBounce({ pages, isBlocked, onAdvance }) {
+function setupPagerEndBounce({ pages, isBlocked, onAdvance, onRetreat }) {
   const realPages = Array.from(pages || []);
   teardownPagerEndBounce(realPages);
   if (realPages.length < 2 || typeof onAdvance !== 'function') return 0;
 
   realPages.forEach((page, pageIndex) => {
     const nextPage = realPages[(pageIndex + 1) % realPages.length];
-    const runtime = {
-      advanceTimer: null,
-      lastScrollTop: page.scrollTop,
-      movingDown: false,
-      verticalIntent: false,
-      horizontalIntent: false,
-      startX: 0,
-      startY: 0,
-      onScroll: null,
-      onTouchStart: null,
-      onTouchMove: null,
-      onTouchEnd: null,
-      onTouchCancel: null,
+    const prevPage = pageIndex > 0 ? realPages[pageIndex - 1] : null;
+    const runtime = { advanceTimer: null };
+    resetGesture(runtime);
+
+    const schedule = (fire) => {
+      clearTimeout(runtime.advanceTimer);
+      runtime.advanceTimer = setTimeout(() => {
+        runtime.advanceTimer = null;
+        if (isBlocked?.()) return;
+        fire();
+      }, TOUCH_ADVANCE_DELAY_MS);
     };
 
+    // Le scroll n'avance plus jamais seul ; il annule seulement un passage en
+    // attente si la page a quitté le bord d'où le geste est parti.
     runtime.onScroll = () => {
-      if (isBlocked?.()) {
-        cancelAdvance(page, runtime);
-        return;
-      }
-      const currentTop = page.scrollTop;
-      if (currentTop > runtime.lastScrollTop + DOWN_EPSILON_PX) {
-        runtime.movingDown = true;
-      } else if (currentTop < runtime.lastScrollTop - UP_CANCEL_PX) {
-        runtime.movingDown = false;
-      }
-      runtime.lastScrollTop = currentTop;
-
-      if (runtime.movingDown && isAtBottom(page) && !runtime.horizontalIntent) {
-        scheduleAdvance(
-          page,
-          nextPage,
-          runtime,
-          isBlocked,
-          onAdvance,
-          AUTO_ADVANCE_DELAY_MS
-        );
-      } else if (!isAtBottom(page)) {
-        cancelAdvance(page, runtime);
-      }
+      if (!runtime.advanceTimer) return;
+      if (isBlocked?.()) { cancelAdvance(page, runtime); return; }
+      if (runtime.pendingDirection === 'next' && !isAtBottom(page)) cancelAdvance(page, runtime);
+      if (runtime.pendingDirection === 'prev' && !isAtTop(page, BOTTOM_TOLERANCE_PX)) cancelAdvance(page, runtime);
     };
 
     runtime.onTouchStart = (event) => {
-      const point = touchPoint(event);
       cancelAdvance(page, runtime);
       resetGesture(runtime);
+      const point = event.touches?.[0] || null;
       if (!point || isBlocked?.()) return;
+      runtime.tracking = true;
       runtime.startX = point.clientX;
       runtime.startY = point.clientY;
+      runtime.startedAtBottom = isAtBottom(page, EDGE_START_TOLERANCE_PX);
+      runtime.startedAtTop = isAtTop(page);
     };
 
     runtime.onTouchMove = (event) => {
-      if (isBlocked?.()) return;
+      if (!runtime.tracking || isBlocked?.()) return;
       const point = touchPoint(event);
       if (!point) return;
-
-      const pullUp = runtime.startY - point.clientY;
-      const horizontalTravel = Math.abs(runtime.startX - point.clientX);
-      runtime.verticalIntent = pullUp >= VERTICAL_INTENT_PX
-        && pullUp > horizontalTravel * VERTICAL_DOMINANCE;
-      runtime.horizontalIntent = horizontalTravel > Math.abs(pullUp)
-        && horizontalTravel >= VERTICAL_INTENT_PX;
-
-      if (runtime.horizontalIntent) cancelAdvance(page, runtime);
+      runtime.pullUp = runtime.startY - point.clientY;
+      runtime.pullDown = point.clientY - runtime.startY;
+      runtime.horizontal = Math.abs(runtime.startX - point.clientX);
     };
 
     runtime.onTouchEnd = () => {
-      if (
-        !isBlocked?.()
-        && runtime.verticalIntent
-        && !runtime.horizontalIntent
-        && isAtBottom(page, TOUCH_BOTTOM_TOLERANCE_PX)
-      ) {
-        runtime.movingDown = true;
-        scheduleAdvance(
-          page,
-          nextPage,
-          runtime,
-          isBlocked,
-          onAdvance,
-          TOUCH_ADVANCE_DELAY_MS
-        );
+      if (!runtime.tracking || isBlocked?.()) { resetGesture(runtime); return; }
+      const { pullUp, pullDown, horizontal, startedAtBottom, startedAtTop } = runtime;
+      resetGesture(runtime);
+
+      if (startedAtBottom && pullUp >= PULL_PX && pullUp > horizontal * VERTICAL_DOMINANCE
+          && isAtBottom(page)) {
+        runtime.pendingDirection = 'next';
+        schedule(() => {
+          // Le bump est une entrée métier distincte d'un tap/swipe horizontal.
+          // L'événement part AVANT onAdvance afin que les surfaces de tête de
+          // page (notamment Disponible ici) soient montées avant le repositionnement.
+          emitPagerBump(page, nextPage);
+          onAdvance(page, nextPage);
+        });
+        return;
+      }
+
+      if (prevPage && typeof onRetreat === 'function'
+          && startedAtTop && pullDown >= PULL_PX && pullDown > horizontal * VERTICAL_DOMINANCE
+          && isAtTop(page, BOTTOM_TOLERANCE_PX)) {
+        runtime.pendingDirection = 'prev';
+        schedule(() => onRetreat(page, prevPage));
       }
     };
 
     runtime.onTouchCancel = () => {
-      runtime.movingDown = false;
       cancelAdvance(page, runtime);
       resetGesture(runtime);
     };
@@ -206,8 +186,10 @@ function setupPagerEndBounce({ pages, isBlocked, onAdvance }) {
 
 export {
   PAGER_BUMP_EVENT,
+  PULL_PX,
   setupPagerEndBounce,
   teardownPagerEndBounce,
   isAtBottom,
+  isAtTop,
   distanceFromBottom,
 };
