@@ -2013,13 +2013,13 @@ body:has(#k-page-scroll.k-pager-active) {
   -webkit-mask-image: none;
   mask-image: none;
 }
-/* Desktop : les deux visages, le téléphone et le doigt forment un cluster. */
+/* Desktop : même scène de remise v3 que mobile, avec marge haute native.
+   Le texte reste à gauche ; la scène s'installe à droite sans zoom ni coupe. */
 @media (min-width: 900px) {
   .k-hero-figures {
-    /* Le master tient presque entièrement dans la carte : les coiffures,
-       le téléphone et les deux gestes restent visibles sans agrandir le hero. */
-    background-size: auto 108%;
-    background-position: 80% 0%;
+    background-image: url('/images/komerce-hero-handoff-v3.webp');
+    background-size: auto 100%;
+    background-position: 74% center;
   }
 }
 /* Mobile : dérivé art-directed du même master. Les coiffures restent
@@ -2572,8 +2572,8 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     grid-column: 1;
     grid-row: 1;
     align-self: stretch;
-    width: 45%;
-    max-width: 620px;
+    width: 42%;
+    max-width: 580px;
     padding: 0 clamp(22px, 2.6vw, 40px);
     background: transparent;
     position: relative;
@@ -2616,19 +2616,19 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     font-size: clamp(28px, 2.2vw, 40px);
     font-weight: 800;
     line-height: 1.02;
-    color: var(--green-dark-text);
+    color: var(--text);
     letter-spacing: -.02em;
   }
 
-  /* Titre display — line 2 (italic coral) */
+  /* Titre display — même promesse que mobile. */
   html.k-home-premium-v1 .k-hero-mini-slogan--premium .k-line-2 {
     display: block;
     font-family: var(--font-display);
     font-size: clamp(28px, 2.2vw, 40px);
     font-weight: 800;
-    font-style: italic;
+    font-style: normal;
     line-height: 1.02;
-    color: var(--coral);
+    color: var(--green-dark-text);
     letter-spacing: -.02em;
     margin-bottom: 8px;
   }
