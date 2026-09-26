@@ -41,6 +41,31 @@ const MARKETING_NOISE = [
 
 const TECH_TOKEN_RE = /\b\d+(?:[.,]\d+)?\s?(?:mah|wh|w|kw|v|a|hz|khz|mhz|ghz|gb|tb|mb|mm|cm|m|kg|g|mg|ml|l|inch|inches|mp|°c)\b/gi;
 
+const FRENCH_MARKERS = new Set([
+  'avec', 'pour', 'sans', 'dans', 'une', 'des', 'les', 'aux', 'sur', 'entre',
+  'grâce', 'permet', 'permettant', 'adapté', 'adaptée', 'convient', 'utilisation',
+  'recharge', 'charge', 'téléphone', 'produit', 'réglable', 'léger', 'légère',
+  'résistant', 'résistante', 'comprend', 'offre', 'maintient', 'conçu', 'conçue',
+]);
+const SPANISH_MARKERS = new Set([
+  'con', 'para', 'sin', 'una', 'unos', 'unas', 'los', 'las', 'del', 'el', 'esta',
+  'este', 'permite', 'incluye', 'integrado', 'integrada', 'producto', 'carga',
+  'telefono', 'teléfono', 'ajustable', 'ligero', 'ligera', 'resistente',
+]);
+const ENGLISH_MARKERS = new Set([
+  'with', 'for', 'without', 'from', 'this', 'that', 'the', 'and', 'use', 'uses',
+  'includes', 'integrated', 'product', 'charging', 'phone', 'adjustable', 'lightweight',
+  'designed', 'provides', 'keeps', 'made',
+]);
+
+const CONTROLLED_CLAIM_PATTERNS = [
+  /\bbluetooth\s*v?\d+(?:\.\d+)?\b/gi,
+  /\bip(?:x?\d{1,2}|\d{2})\b/gi,
+  /\b(?:gps|nfc)\b/gi,
+  /\busb(?:\s*[- ]?\s*(?:a|b|c)|\s*\d+(?:\.\d+)?)\b/gi,
+  /\bwi-?fi\s*\d+\b/gi,
+];
+
 function normalizeSpace(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
@@ -94,6 +119,14 @@ function sourceFingerprint(source) {
   return crypto.createHash('sha256').update(stable).digest('hex');
 }
 
+function proposalFingerprint({ source_hash: sourceHash, title_fr: titleFr, description_fr: descriptionFr } = {}) {
+  return crypto.createHash('sha256').update(JSON.stringify({
+    source_hash: String(sourceHash || '').trim(),
+    title_fr: normalizeSpace(titleFr),
+    description_fr: normalizeSpace(descriptionFr),
+  })).digest('hex');
+}
+
 function technicalTokens(value) {
   const text = normalizeSpace(value).toLowerCase().replace(/,/g, '.');
   const tokens = new Set();
@@ -111,6 +144,8 @@ function sourceText(source = {}) {
     compactJson(source.highlights),
     compactJson(source.specifications),
     compactJson(source.materials),
+    compactJson(source.care),
+    compactJson(source.warnings),
     compactJson(source.option_axes),
   ].filter(Boolean).join(' ');
 }
@@ -121,15 +156,40 @@ function englishResidues(value) {
   return [...new Set(words.filter(word => ENGLISH_RESIDUE_WORDS.has(word)))];
 }
 
+function languageScores(value) {
+  const text = normalizeSpace(value).toLowerCase();
+  const words = text.match(/[a-zàâçéèêëîïôùûüÿœñáíóú]+/giu) || [];
+  const score = (set) => words.reduce((total, word) => total + (set.has(word) ? 1 : 0), 0);
+  return {
+    french: score(FRENCH_MARKERS) + (/[àâçéèêëîïôùûüÿœ]/i.test(text) ? 1 : 0),
+    spanish: score(SPANISH_MARKERS) + (/[ñáíóú]/i.test(text) ? 1 : 0),
+    english: score(ENGLISH_MARKERS),
+  };
+}
+
 function looksFrench(value) {
-  const text = ` ${normalizeSpace(value).toLowerCase()} `;
-  if (!text.trim()) return false;
-  const markers = [
-    ' avec ', ' pour ', ' une ', ' un ', ' des ', ' les ', ' dans ', ' sans ',
-    ' sur ', ' et ', ' de ', ' du ', ' la ', ' le ', ' à ', ' au ', ' aux ',
-  ];
-  return markers.filter(marker => text.includes(marker)).length >= 2
-    || /[àâçéèêëîïôùûüÿœ]/i.test(text);
+  const scores = languageScores(value);
+  return scores.french >= 3
+    && scores.french >= scores.spanish + 1
+    && scores.french >= scores.english + 1;
+}
+
+function controlledClaims(value) {
+  const text = normalizeSpace(value).toLowerCase();
+  const claims = new Set();
+  for (const pattern of CONTROLLED_CLAIM_PATTERNS) {
+    pattern.lastIndex = 0;
+    for (const match of text.matchAll(pattern)) {
+      claims.add(match[0].replace(/\s+/g, '').replace(/_/g, '-'));
+    }
+  }
+  return [...claims].sort();
+}
+
+function criticalTechnicalTokens(value) {
+  return technicalTokens(value).filter(token =>
+    /(?:mah|wh|w|kw|v|a|gb|tb|mb)$/i.test(token)
+  );
 }
 
 function evaluateFrenchCopy(source, proposal = {}) {
@@ -153,10 +213,28 @@ function evaluateFrenchCopy(source, proposal = {}) {
   if (titleEnglish.length >= 1) blocking.push('english_residue_in_title');
   if (descriptionEnglish.length >= 3) blocking.push('english_residue_in_description');
 
-  const srcTech = new Set(technicalTokens(sourceText(source)));
-  const outTech = technicalTokens(`${title} ${description}`);
+  const sourceFullText = sourceText(source);
+  const outputFullText = `${title} ${description}`;
+  const srcTech = new Set(technicalTokens(sourceFullText));
+  const outTech = technicalTokens(outputFullText);
   const invented = outTech.filter(token => !srcTech.has(token));
   if (invented.length) blocking.push('invented_technical_token');
+
+  const srcControlled = new Set(controlledClaims(sourceFullText));
+  const outControlled = controlledClaims(outputFullText);
+  const inventedControlled = outControlled.filter(claim => !srcControlled.has(claim));
+  if (inventedControlled.length) blocking.push('invented_controlled_claim');
+
+  const sourceCritical = new Set([
+    ...criticalTechnicalTokens(sourceFullText),
+    ...srcControlled,
+  ]);
+  const outputClaims = new Set([
+    ...criticalTechnicalTokens(outputFullText),
+    ...outControlled,
+  ]);
+  const omittedCritical = [...sourceCritical].filter(token => !outputClaims.has(token));
+  if (omittedCritical.length) blocking.push('critical_source_claim_omitted');
 
   const omitted = [...srcTech].filter(token => !outTech.includes(token));
   if (omitted.length) warnings.push('source_technical_tokens_omitted');
@@ -178,6 +256,11 @@ function evaluateFrenchCopy(source, proposal = {}) {
       output_technical_tokens: outTech,
       invented_technical_tokens: invented,
       omitted_source_technical_tokens: omitted,
+      source_controlled_claims: [...srcControlled],
+      output_controlled_claims: outControlled,
+      invented_controlled_claims: inventedControlled,
+      omitted_critical_source_claims: omittedCritical,
+      language_scores: languageScores(`${title}. ${description}`),
     },
   };
 }
@@ -189,9 +272,13 @@ module.exports = {
   normalizeSpace,
   sourceDocumentFromRow,
   sourceFingerprint,
+  proposalFingerprint,
   _stableValue: stableValue,
   technicalTokens,
   englishResidues,
+  languageScores,
   looksFrench,
+  controlledClaims,
+  criticalTechnicalTokens,
   evaluateFrenchCopy,
 };

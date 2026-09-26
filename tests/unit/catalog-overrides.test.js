@@ -20,6 +20,7 @@ const {
   isPipelineSourced,
   upsertOverride,
   upsertOverrides,
+  finalizeReviewedManualPreparation,
   _manualPreparationComplete,
 } = require('../../services/catalog-overrides');
 
@@ -183,5 +184,33 @@ describe('upsertOverrides (batch)', () => {
     const { overridden } = await upsertOverrides(q, PRODUCT_ID, {});
     expect(overridden).toEqual([]);
     expect(calls).toHaveLength(0);
+  });
+});
+
+
+describe('finalizeReviewedManualPreparation', () => {
+  it('finalise une fiche pipeline inactive comme manual revue sans toucher au lignage source', async () => {
+    const source = {
+      id: PRODUCT_ID,
+      lifecycle_status: 'candidate',
+      is_active: false,
+      content_source: 'ai_enriched',
+      needs_review: true,
+      name_source: 'Wireless headphones',
+      description_source: 'Bluetooth headphones for daily use',
+      source_locale: 'en',
+    };
+    const { q } = mockDb({ product: source });
+    const product = await finalizeReviewedManualPreparation(q, PRODUCT_ID);
+    expect(product.content_source).toBe('manual');
+    expect(product.needs_review).toBe(false);
+    expect(product.name_source).toBe('Wireless headphones');
+    expect(product.description_source).toBe('Bluetooth headphones for daily use');
+  });
+
+  it('fail-closed si aucune ligne candidate pipeline n’est finalisable', async () => {
+    const q = { query: jest.fn(async () => ({ rows: [] })) };
+    await expect(finalizeReviewedManualPreparation(q, PRODUCT_ID))
+      .rejects.toMatchObject({ code: 'REVIEWED_MANUAL_PREPARATION_NOT_APPLICABLE' });
   });
 });

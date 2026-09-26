@@ -126,6 +126,26 @@ function buildEntry(row) {
   };
 }
 
+function reviewContract() {
+  return {
+    separate_artifact_required: true,
+    rule: 'Le second passage de contrôle doit produire un artifact distinct de la traduction et être lié au hash de la source ET au hash exact de la sortie FR.',
+    reviewer_modes: ['assistant_second_pass', 'human'],
+    expected_output_shape: {
+      reviews: [
+        {
+          product_ref: 'KPR-...',
+          source_hash: '<copier exactement le source_hash du workpack>',
+          output_hash: '<hash calculé par le pipeline sur title_fr + description_fr + source_hash>',
+          review_status: 'PASS',
+          reviewer_mode: 'assistant_second_pass',
+          review_note: 'contrôle fidélité source→FR; ambiguïtés ou corrections éventuelles',
+        },
+      ],
+    },
+  };
+}
+
 function translationContract() {
   return {
     language: 'fr-FR',
@@ -136,13 +156,15 @@ function translationContract() {
       'Traduire et réécrire en français naturel de boutique, pas mot à mot.',
       'Ne jamais inventer une caractéristique, une matière, une compatibilité, une capacité ou une performance absente de source.',
       'Conserver fidèlement les marques, références, modèles, mesures, capacités et unités techniques présentes.',
+      'Ne pas convertir les unités dans ce pass : conserver valeur + unité de la source pour éviter toute dérive silencieuse.',
+      'Préserver explicitement les capacités batterie, puissances, tensions, versions Bluetooth/USB, indices IP et mentions GPS/NFC lorsqu’elles existent dans la source.',
       'Supprimer le bruit fournisseur et marketing: hot sale, best seller, high quality, new arrival, factory direct.',
       'Un titre doit identifier le produit clairement et rester <= 80 caractères.',
       'La description doit être utile au client, factuelle, lisible et rester dans les limites indiquées.',
       'Ne pas traduire les marques et références techniques.',
       'Ne pas décider la publication, le prix, le stock, la disponibilité ni l’exposition marché.',
       'Ne pas modifier category/subcategory dans ce pass; signaler seulement une anomalie en note si nécessaire.',
-      'Faire un second passage de contrôle source→FR avant de mettre review_status=PASS.',
+      'Le second passage de contrôle source→FR doit être produit dans un artifact de review séparé ; la traduction elle-même ne peut pas s’auto-déclarer revue.',
     ],
     expected_output_shape: {
       translations: [
@@ -151,8 +173,6 @@ function translationContract() {
           source_hash: '<copier exactement>',
           title_fr: 'Titre français naturel',
           description_fr: 'Description française factuelle',
-          review_status: 'PASS après un second passage de contrôle source→FR',
-          review_note: 'optionnel; expliquer toute ambiguïté ou correction',
           note: 'optionnel, uniquement si ambiguïté source ou anomalie taxonomique',
         },
       ],
@@ -190,6 +210,7 @@ function writeBatches(entries, outputDir, batchSize) {
     api_calls: 0,
     paid_ai_dependency: false,
     translation_contract: translationContract(),
+    review_contract: reviewContract(),
     batches,
   };
   fs.writeFileSync(path.join(outputDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n', 'utf8');
@@ -230,6 +251,7 @@ module.exports = {
   assertDisposableRuntime,
   buildEntry,
   translationContract,
+  reviewContract,
   writeBatches,
   run,
 };

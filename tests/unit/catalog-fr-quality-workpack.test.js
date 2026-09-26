@@ -52,11 +52,14 @@ describe('catalog FR quality workpack', () => {
     expect(entry.current_output.title_fr).toBe('Wireless Phone Stand');
   });
 
-  test('translation contract explicitly forbids invention and runtime AI', () => {
+  test('translation contract forbids invention and review is a separate artifact', () => {
     const contract = workpack.translationContract();
+    const review = workpack.reviewContract();
     expect(contract.title_max_chars).toBe(80);
     expect(contract.rules.join(' ')).toMatch(/jamais inventer/i);
-    expect(contract.expected_output_shape.translations[0].review_status).toMatch(/PASS/);
+    expect(contract.expected_output_shape.translations[0].review_status).toBeUndefined();
+    expect(review.separate_artifact_required).toBe(true);
+    expect(review.expected_output_shape.reviews[0].review_status).toBe('PASS');
   });
 
   test('splits the workpack into bounded batches plus manifest', () => {

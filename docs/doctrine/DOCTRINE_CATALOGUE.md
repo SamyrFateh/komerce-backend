@@ -155,18 +155,25 @@ Pass** source→français, distinct du simple stress technique :
 
 1. export d'un workpack borné depuis les faits source canoniques ;
 2. traduction/réécriture française naturelle hors runtime ;
-3. second passage de contrôle source→FR pour détecter invention, omission critique
-   ou résidu anglais ;
+3. second passage de contrôle source→FR dans un **artifact distinct** de la
+   proposition ; cette revue est liée au hash source et au hash exact de la sortie
+   française, afin qu'une traduction ne puisse pas s'auto-déclarer revue ;
 4. vérification d'un hash de source avant application afin de refuser une traduction
    préparée sur une version devenue obsolète ;
-5. application uniquement via overrides tracés `manual` ;
-6. contrôles statiques : longueur, langue, bruit fournisseur, valeurs techniques
-   inventées, lifecycle inactif ;
-7. **aucune publication automatique** : l'approbation humaine de première
-   publication reste l'étage ⑥.
+5. préflight de tout le lot avant la première écriture ; un produit hors régime
+   pipeline, une source FR ou un état lifecycle incompatible bloque avant mutation ;
+6. application du lot dans une transaction **all-or-nothing**, uniquement via
+   overrides tracés `manual` ; un échec technique provoque un rollback total ;
+7. contrôles statiques : longueur, discrimination FR/EN/ES, bruit fournisseur,
+   valeurs techniques inventées, claims contrôlés (Bluetooth/USB/IP/GPS/NFC),
+   omissions de caractéristiques critiques et lifecycle inactif ;
+8. le résultat est **READY_FOR_HUMAN_PUBLICATION_REVIEW**, jamais "READY publié" :
+   l'approbation humaine de première publication reste l'étage ⑥.
 
 Le FR Quality Pass ne possède ni le pricing, ni le stock, ni la taxonomie, ni
-l'exposition marché. Une anomalie de catégorie/sous-catégorie peut être signalée
+l'exposition marché. Il ne constitue pas non plus une preuve autonome de qualité
+humaine : les gates et la seconde revue réduisent les faux positifs, puis l'étage ⑥
+reste l'autorité finale de publication. Une anomalie de catégorie/sous-catégorie peut être signalée
 dans le workpack mais doit être corrigée par l'autorité Catalogue dédiée, jamais
 inventée par la traduction.
 

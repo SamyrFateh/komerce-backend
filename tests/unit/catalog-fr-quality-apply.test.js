@@ -8,14 +8,20 @@
 
 jest.mock('../../db', () => ({
   query: jest.fn(),
+  getClient: jest.fn(),
   pool: { end: jest.fn() },
 }));
 jest.mock('../../services/catalog-overrides', () => ({
   upsertOverrides: jest.fn(),
+  finalizeReviewedManualPreparation: jest.fn(),
+  isPipelineSourced: jest.fn((product) => Boolean(
+    product && ['connector_raw', 'ai_enriched', 'manual'].includes(product.content_source)
+      && (product.name_source || product.description_source)
+  )),
 }));
 
 const apply = require('../../scripts/catalog-fr-quality-apply');
-const { sourceDocumentFromRow, sourceFingerprint } = require('../../services/catalog-fr-quality');
+const { sourceDocumentFromRow, sourceFingerprint, proposalFingerprint } = require('../../services/catalog-fr-quality');
 
 describe('catalog FR quality apply', () => {
   const sourceRow = {
@@ -52,36 +58,75 @@ describe('catalog FR quality apply', () => {
       source_hash: sourceFingerprint(source),
       title_fr: 'Support de charge sans fil 15 W pour iPhone',
       description_fr: 'Support réglable pour charger un iPhone sans fil avec une puissance de charge de 15 W. Il maintient le téléphone posé pendant la recharge.',
-      review_status: 'PASS',
       ...overrides,
     };
   }
 
-  test('accepts a reviewed, source-bound natural French proposal', () => {
-    const verdict = apply.evaluateRow(sourceRow, validTranslation());
+  function validReview(translation = validTranslation(), overrides = {}) {
+    const source = sourceDocumentFromRow(sourceRow);
+    const sourceHash = sourceFingerprint(source);
+    return {
+      product_ref: sourceRow.product_ref,
+      source_hash: sourceHash,
+      output_hash: proposalFingerprint({
+        source_hash: sourceHash,
+        title_fr: translation.title_fr,
+        description_fr: translation.description_fr,
+      }),
+      review_status: 'PASS',
+      reviewer_mode: 'assistant_second_pass',
+      ...overrides,
+    };
+  }
+
+  test('accepts only a separately reviewed, source-bound natural French proposal', () => {
+    const translation = validTranslation();
+    const verdict = apply.evaluateRow(sourceRow, translation, validReview(translation));
     expect(verdict.ok).toBe(true);
     expect(verdict.blocking).toEqual([]);
   });
 
   test('rejects stale source hash', () => {
-    const verdict = apply.evaluateRow(sourceRow, validTranslation({ source_hash: '0'.repeat(64) }));
+    const translation = validTranslation({ source_hash: '0'.repeat(64) });
+    const verdict = apply.evaluateRow(sourceRow, translation, validReview());
     expect(verdict.ok).toBe(false);
     expect(verdict.blocking).toContain('source_hash_mismatch');
   });
 
-  test('requires the second offline review pass', () => {
-    const verdict = apply.evaluateRow(sourceRow, validTranslation({ review_status: 'PENDING' }));
+  test('requires a distinct second-pass review bound to exact output hash', () => {
+    const translation = validTranslation();
+    const noReview = apply.evaluateRow(sourceRow, translation, null);
+    expect(noReview.ok).toBe(false);
+    expect(noReview.blocking).toContain('offline_review_missing');
+
+    const stale = apply.evaluateRow(sourceRow, translation, validReview(translation, { output_hash: 'f'.repeat(64) }));
+    expect(stale.ok).toBe(false);
+    expect(stale.blocking).toContain('review_output_hash_mismatch');
+  });
+
+  test('preflight rejects unsupported source state before any write', () => {
+    const legacy = { ...sourceRow, content_source: null, name_source: null, description_source: null };
+    const translation = validTranslation();
+    const verdict = apply.evaluateRow(legacy, translation, validReview(translation));
     expect(verdict.ok).toBe(false);
-    expect(verdict.blocking).toContain('offline_review_missing_or_failed');
+    expect(verdict.blocking).toContain('product_without_pipeline_source_lineage');
   });
 
   test('never accepts active/non-candidate product', () => {
+    const translation = validTranslation();
     const verdict = apply.evaluateRow(
       { ...sourceRow, is_active: true, lifecycle_status: 'active' },
-      validTranslation()
+      translation,
+      validReview(translation)
     );
     expect(verdict.ok).toBe(false);
     expect(verdict.blocking).toContain('product_not_inactive_candidate');
+  });
+
+  test('parseArgs requires a separate review artifact', () => {
+    expect(() => apply.parseArgs(['--input=a.json'])).toThrow(/--review requis/);
+    expect(() => apply.parseArgs(['--input=a.json', '--review=a.json'])).toThrow(/artifact séparé/);
+    expect(apply.parseArgs(['--input=a.json', '--review=b.json'])).toMatchObject({ execute: false });
   });
 
   test('refuses non disposable runtime', () => {
