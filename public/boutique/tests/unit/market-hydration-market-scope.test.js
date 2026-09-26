@@ -36,6 +36,14 @@ function bootPreview(code = 'CM') {
       search: `?market=${code}`,
     },
     fetch: nativeFetch,
+    // window.K (client legacy komerce-api.js) n'existe pas dans ce double :
+    // installRelayPreviewRequestScope() le détecte (retourne false) et
+    // reprogramme une retry via setTimeout + DOMContentLoaded — exactement
+    // le chemin réel pris quand market-hydration.js charge avant
+    // komerce-api.js dans le vrai navigateur (voir commentaire source).
+    // addEventListener doit donc exister sur ce double au même titre que
+    // setTimeout ci-dessous.
+    addEventListener: jest.fn(),
     KomerceMarket: {
       getPreviewOverride: () => code,
       getByCode: requested => requested === code ? market : undefined,
@@ -49,6 +57,11 @@ function bootPreview(code = 'CM') {
     URL,
     URLSearchParams,
     console,
+    // Le module reprogramme installRelayPreviewRequestScope() via
+    // setTimeout tant que window.K n'est pas prêt (voir addEventListener
+    // ci-dessus) ; ce bac à sable minimal ne fournit pas les timers globaux
+    // du navigateur/Node par défaut, donc il faut les exposer explicitement.
+    setTimeout,
   });
 
   return { window, nativeFetch };

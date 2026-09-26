@@ -35,6 +35,8 @@ const libraryRemoveCssPath = path.resolve(__dirname, '../../css/shared-list-libr
 const libraryRemoveCss = fs.readFileSync(libraryRemoveCssPath, 'utf8');
 const libraryLayoutCssPath = path.resolve(__dirname, '../../css/shared-list-lists-tab.css');
 const libraryLayoutCss = fs.readFileSync(libraryLayoutCssPath, 'utf8');
+const desktopPolishCssPath = path.resolve(__dirname, '../../css/side-cart-desktop-polish.css');
+const desktopPolishCss = fs.readFileSync(desktopPolishCssPath, 'utf8');
 
 function compact(value) {
   return String(value).replace(/\s+/g, ' ').trim();
@@ -148,15 +150,33 @@ describe('bibliothèque de listes — ownership responsive unique', () => {
 });
 
 describe('liste partageable — navigation desktop unifiée', () => {
-  it('distingue sobrement Panier et Liste par l’état actif et un séparateur central', () => {
+  it("distingue sobrement Panier et Liste par l'état actif", () => {
     expect(tabsCss).toMatch(
       /\.k-cart-tab--active\s*\{[^}]*color:\s*var\(--text\)[^}]*font-weight:\s*800/s
     );
+  });
+
+  it('le séparateur central et le fond sand-97 hérités de shared-list-side-cart.css sont neutralisés par side-cart-desktop-polish.css (B-DESKTOP "moins de cadres")', () => {
+    // shared-list-side-cart.css (bundle components.css, chargé en premier)
+    // pose encore cette géométrie historique, mais side-cart-desktop-polish.css
+    // (bundle desktop.css, chargé après dans index.html) réécrit
+    // #k-cart-surface-switch.k-cart-tabs avec la même spécificité et gagne la
+    // cascade : fond blanc au lieu de sand-97, et le séparateur ::after passe
+    // en display:none. C'est un choix de design assumé (cf. son en-tête
+    // "Aligne le side-cart desktop sur le langage mobile épuré : moins de
+    // cadres"), pas une régression — mais shared-list-side-cart.css garde
+    // une géométrie de séparateur qui ne s'affiche donc plus jamais sur
+    // desktop. On verrouille ici le comportement réellement rendu plutôt que
+    // la source non gagnante, pour ne pas re-casser ce test au prochain
+    // renommage de fichier sans changer le rendu.
     expect(tabsCss).toMatch(
-      /@media \(min-width: 900px\)[\s\S]*?#k-cart-surface-switch\.k-cart-tabs\s*\{[^}]*background:\s*var\(--surface-sand-97\)/
+      /@media \(min-width: 900px\)[\s\S]*?#k-cart-surface-switch\.k-cart-tabs::after\s*\{[^}]*top:\s*14px[^}]*bottom:\s*14px[^}]*left:\s*50%[^}]*width:\s*1px[^}]*background:\s*var\(--stone-border\)/s
     );
-    expect(tabsCss).toMatch(
-      /#k-cart-surface-switch\.k-cart-tabs::after\s*\{[^}]*top:\s*14px[^}]*bottom:\s*14px[^}]*left:\s*50%[^}]*width:\s*1px[^}]*background:\s*var\(--stone-border\)/s
+    expect(desktopPolishCss).toMatch(
+      /@media \(min-width: 900px\)[\s\S]*?#k-cart-surface-switch\.k-cart-tabs\s*\{[^}]*background:\s*var\(--white\)/s
+    );
+    expect(desktopPolishCss).toMatch(
+      /#k-cart-surface-switch\.k-cart-tabs::after\s*\{\s*display:\s*none;\s*\}/
     );
   });
 
