@@ -88,11 +88,23 @@ Canonical n’expose pas le hard-delete de sous-catégorie.
   "summary": {},
   "categories": [],
   "products": [],
-  "approval": []
+  "approval": [],
+  "approval_page": {
+    "total": 974,
+    "limit": 50,
+    "offset": 0,
+    "has_previous": false,
+    "has_next": true
+  }
 }
 ```
 
 Aucun UUID produit, catégorie ou marché n’est exposé dans cette projection.
+
+La file humaine est paginée par `approval_limit` (1–100, défaut 50) et
+`approval_offset` (défaut 0). La pagination ne change jamais l'autorité :
+chaque première publication reste une décision humaine individuelle et le cap
+`CATALOG_CAP_MVP` continue d'être imposé côté serveur.
 
 ### Summary
 

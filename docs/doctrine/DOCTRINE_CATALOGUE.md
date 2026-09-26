@@ -227,6 +227,62 @@ L'approbation (étage ⑥) reste l'autorité de publication :
   prévue par le garde de publication.
 - Une IA peut proposer ; elle ne possède jamais l'autorité de publication.
 
+## 6.1 Gate de sortie Raffinerie → Catalogue
+
+Une référence n'est considérée comme **entrée correctement dans le catalogue**
+que lorsque les invariants structurels suivants sont vrais simultanément :
+
+- le candidat Sourcing est lié à un produit catalogue unique ;
+- le contrat fournisseur normalisé V2 et la vérité source sont conservés ;
+- au moins un média catalogue actif existe ;
+- la structure SKU fournisseur existe ;
+- chaque SKU fournisseur possède son `supplier_unit_ref` et sa
+  `supplier_order_identity` ;
+- une catégorie catalogue est présente ;
+- le produit reste `lifecycle_status='candidate'` et `is_active=false` ;
+- il est visible dans la file humaine d'approbation ;
+- aucune exposition marché `ENABLED` n'existe avant la première publication
+  globale.
+
+Ce gate structurel est indépendant de la préparation éditoriale. Il doit être
+prouvé avant de traiter la traduction comme dernier travail de contenu.
+
+Le gate final **READY_FOR_HUMAN_PUBLICATION_REVIEW** ajoute ensuite :
+
+- contenu français préparé et relu (`content_source='manual'` ou équivalent
+  historiquement accepté, `needs_review=false`) ;
+- au moins un SKU fournisseur actif et commandable ;
+- `product-publication-guard` = PASS.
+
+Le gate final simule la publication mais **ne publie rien**. La mutation de
+première publication reste exclusivement humaine, conformément au §6.
+
+## 6.2 Une même grammaire de décision, deux autorités différentes
+
+Les dashboards Catalogue global et Marché utilisent le même langage visuel
+(`prêt` / `à vérifier` / `bloqué`) mais ne répondent pas à la même question.
+
+**Catalogue global** :
+
+> « Ce produit mérite-t-il d'exister chez Komerce ? »
+
+Le collègue voit au premier niveau : contenu FR, catégorie, médias, SKU/identité
+fournisseur, stock, prix et résultat du garde de publication. Les détails de
+Raffinerie (hashes, TERMIUM, payloads, diagnostics) restent disponibles en
+drill-down mais ne polluent pas la décision principale.
+
+**Marché** :
+
+> « Ce produit global déjà validé peut-il être vendu sur CE marché maintenant ? »
+
+Le responsable pays ne refait jamais la validation globale. Il décide seulement
+les vérités de son périmètre : prix local, exposition, disponibilité/restrictions
+locales, logistique et paiement.
+
+Règle fail-closed commune : **pas de décision explicite = pas d'exposition**.
+La publication globale d'un produit ne le rend jamais automatiquement visible
+dans un marché.
+
 ## 7. Ce que la doctrine interdit
 
 - Ne jamais créer une copie du catalogue distant par marché.

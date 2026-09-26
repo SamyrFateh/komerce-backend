@@ -393,6 +393,13 @@
   function renderApproval(rootNode, ui, doc, payload, context) {
     const slot = createSection(rootNode, ui, 'File de curation', 'Aucun candidat ne rejoint la sélection publiée sans décision humaine. La provenance reste visible au moment de décider.');
     const rows = payload.approval || [];
+    const page = payload.approval_page || {
+      total: rows.length,
+      limit: context.approvalLimit,
+      offset: context.approvalOffset,
+      has_previous: context.approvalOffset > 0,
+      has_next: false,
+    };
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun candidat en attente de curation.'));
       return;
@@ -462,6 +469,31 @@
     wrap.className = 'kmc-workspace-table-wrap';
     wrap.appendChild(table);
     slot.appendChild(wrap);
+
+    const pager = doc.createElement('div');
+    pager.className = 'kmc-workspace-section-actions';
+    const start = page.total ? page.offset + 1 : 0;
+    const end = Math.min(page.offset + rows.length, page.total);
+    pager.appendChild(text(doc, 'span', 'kmc-workspace-subtitle', `${start}–${end} sur ${formatNumber(page.total)} candidat(s)`));
+
+    if (page.has_previous) {
+      const previous = makeButton(doc, '← Précédents', 'approval-previous', true);
+      previous.addEventListener('click', async () => {
+        context.approvalOffset = Math.max(0, page.offset - page.limit);
+        await context.reload();
+      });
+      pager.appendChild(previous);
+    }
+
+    if (page.has_next) {
+      const next = makeButton(doc, 'Suivants →', 'approval-next', true);
+      next.addEventListener('click', async () => {
+        context.approvalOffset = page.offset + page.limit;
+        await context.reload();
+      });
+      pager.appendChild(next);
+    }
+    slot.appendChild(pager);
   }
 
   function renderProducts(rootNode, ui, doc, payload, context) {
@@ -626,10 +658,16 @@
       prompt: options.prompt || (typeof window !== 'undefined' ? window.prompt.bind(window) : () => null),
       reload: null,
       liveTimer: null,
+      approvalLimit: 50,
+      approvalOffset: 0,
     };
     context.reload = async () => {
       try {
-        const payload = await jsonRequest(fetchFn, ENDPOINT);
+        const params = new URLSearchParams({
+          approval_limit: String(context.approvalLimit),
+          approval_offset: String(context.approvalOffset),
+        });
+        const payload = await jsonRequest(fetchFn, `${ENDPOINT}?${params.toString()}`);
         renderPayload(rootNode, ui, doc, payload, context);
         return payload;
       } catch (error) {
