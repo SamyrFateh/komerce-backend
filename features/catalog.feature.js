@@ -236,6 +236,7 @@ module.exports = {
       'docs/cj-real-showcase-runbook.md',
       'docs/cj-real-showcase-63-checklist.md',
       'docs/cj-real-showcase-63-scope.md',
+      'docs/catalog/MARKET_PRODUCT_VALIDATION.md',
     ],
     routes: [
       'routes/products.js',

@@ -71,6 +71,7 @@ module.exports = {
       'un relais reste rattaché à son marché d’origine ; toute tentative de lecture/écriture cross-market échoue en 404, sans confirmer l’existence de la ressource sur un autre marché',
       'un provider reste rattaché à son marché d’origine ; provider.manage ne permet jamais une réassignation cross-market et les mutations passent par providers-services, lifecycle owner',
       'LOT 4 (écriture) : décision d’exposition produit x marché — capability catalog.expose, upsert auditable sur product_market_exposure (catalog, lifecycle owner), jamais de SQL direct',
+      'LOT 4B (validation simple marché) : un candidat catalogue déjà préparé et publiable peut être validé par le Responsable pays ; market-delegation délègue la première publication à catalog-approval puis active l’exposition du marché dans la même transaction, sans reprendre l’autorité lifecycle de products',
       'LOT 4 (cutover lecture) : catalog.expose LIVE — migration 206 (snapshot, catalog) préserve exactement la visibilité storefront existante au moment du cutover ; migration 207 (activation, market-delegation) ouvre le droit d’agir sans jamais toucher l’exposition elle-même ; séparation stricte entre les deux, vérifiée par test',
       'LOT 7 (structure-event) : structure.event.record — un opérateur pays enregistre un fait MARKET_DIRECT de charge structurelle pour son propre marché via le writer canonique economic-engine (recordStructureCostEvent), jamais un GROUP, jamais un market_id choisi, jamais de SQL direct sur economic_structure_cost_events',
       'migration 210 : promotion LIVE de structure.event.record backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers ; ne crée jamais d’événement économique',
@@ -92,7 +93,7 @@ module.exports = {
       'providers/relais comme principaux locaux secondaires : jamais des assignments concurrents ; leur gestion locale reste déléguable sans transformer leur identité en user_role',
       'lecture publique du réseau relais (GET /api/relais) et son cycle de vie technique hors délégation : feature logistics, propriétaire de la table relais',
       'routage inter-îles KM (island/island_code consommés par services/routing.js) : hors périmètre, couplage géographique pré-existant non résolu par cette feature',
-      'catalogue global (products) : feature catalog, jamais modifié par cette feature — product_market_exposure n’est qu’une projection',
+      'catalogue global (products) : feature catalog reste lifecycle owner ; market-delegation n’écrit jamais products directement et ne peut déclencher une première publication qu’en déléguant à catalog-approval lors d’une validation humaine marché ; product_market_exposure reste la projection pays',
       'câblage du chemin de lecture storefront (catalog-public-view.js / catalog-product-detail.js) : feature catalog, propriétaire de publicCatalogVisibilitySql() et de la logique de résolution marché ; market-delegation ne fait qu’autoriser/auditer la décision d’exposition qui alimente cette lecture',
       'calcul automatique commission/revenue_share et payout bancaire/Mobile Money : hors LOT 6 ; la feature settlement ne fait qu’attester/tracer le cycle sans inventer de formule ni déclencher de transfert',
       'vérité d’encaissement et état de double confirmation : feature payments',
@@ -243,7 +244,8 @@ module.exports = {
       'PUT /api/market-delegation/markets/:marketCode/network/providers/:providerId', // provider.manage
       'POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/suspend', // provider.manage
       'POST /api/market-delegation/markets/:marketCode/network/providers/:providerId/activate', // provider.manage
-      'GET /api/market-delegation/markets/:marketCode/catalog/exposure', // catalog.expose
+      'GET /api/market-delegation/markets/:marketCode/catalog/exposure', // catalog.read
+      'POST /api/market-delegation/markets/:marketCode/catalog/review/:productId/validate', // catalog.expose -> catalog first-publication delegated to owner if needed
       'PUT /api/market-delegation/markets/:marketCode/catalog/exposure/:productId', // catalog.expose
       'GET /api/market-delegation/markets/:marketCode/local-offer/services', // local_offer.manage
       'PUT /api/market-delegation/markets/:marketCode/local-offer/services/:serviceId', // local_offer.manage

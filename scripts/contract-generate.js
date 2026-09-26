@@ -261,6 +261,7 @@ const ROUTE_SCHEMA_MAP = [
   // (toutes montées dans bootstrap/api-routes.js), appelées par market-team.js,
   // market-catalog.js, market-cash-control.js, team-invite.js côté Canonical.
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure', method: 'get', schema: null },
+  { prefix: '/api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate', method: 'post', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}', method: 'put', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/team', method: 'get', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/team/invitations', method: 'post', schema: null },
@@ -417,7 +418,10 @@ const KNOWN_RESPONSES = {
   // montage unique) — aucun n'appelle la route via supertest/request(app) →
   // 'route-read', champs lus directement dans les handlers routes/*.js.
   '/api/market-delegation/markets/{marketCode}/catalog/exposure': {
-    get: { fields: ['market','assignment_id','actor_capabilities','summary','exposure'], source: 'route-read' }
+    get: { fields: ['market','assignment_id','actor_capabilities','summary','review_queue','exposure'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate': {
+    post: { fields: ['success','validation'], source: 'route-read' }
   },
   '/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}': {
     put: { fields: ['success','exposure'], source: 'route-read' }

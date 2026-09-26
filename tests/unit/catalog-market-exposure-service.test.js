@@ -71,6 +71,62 @@ describe('catalog-market-exposure-service (catalog write boundary)', () => {
     expect(params).toEqual(['mkt-cm']);
   });
 
+  test('listReviewCandidatesForMarket ne montre que les candidats déjà publiables et sans décision marché', async () => {
+    const db = executor();
+    db.query.mockResolvedValueOnce({
+      rows: [
+        {
+          id: 'p-ready',
+          product_ref: 'KPR-READY',
+          name: 'Chemise Oxford homme',
+          description: 'Chemise en coton à manches longues pour un usage quotidien.',
+          category: 'Mode',
+          subcategory: 'Chemises',
+          price_kmf: 14900,
+          stock: 12,
+          content_source: 'manual',
+          source_locale: 'en',
+          lifecycle_status: 'candidate',
+          is_active: false,
+          is_available: false,
+          active_media: 3,
+        },
+        {
+          id: 'p-blocked',
+          product_ref: 'KPR-BLOCKED',
+          name: 'Produit sans prix',
+          description: 'Description suffisamment longue mais prix absent.',
+          category: 'Maison',
+          price_kmf: 0,
+          stock: 2,
+          content_source: 'manual',
+          source_locale: 'en',
+          lifecycle_status: 'candidate',
+          is_active: false,
+          is_available: false,
+          active_media: 1,
+        },
+      ],
+    });
+
+    const result = await exposureService.listReviewCandidatesForMarket('mkt-cm', db, { limit: 100 });
+    expect(result.total).toBe(1);
+    expect(result.items).toEqual([
+      expect.objectContaining({
+        product_id: 'p-ready',
+        product_ref: 'KPR-READY',
+        product_name: 'Chemise Oxford homme',
+        media_count: 3,
+      }),
+    ]);
+
+    const [sql, params] = db.query.mock.calls[0];
+    expect(sql).toMatch(/p\.content_source = 'manual'/);
+    expect(sql).toMatch(/p\.needs_review = FALSE/);
+    expect(sql).toMatch(/pme\.product_id IS NULL/);
+    expect(params).toEqual(['mkt-cm']);
+  });
+
   test('le module n’écrit jamais dans products — le catalogue reste unique et intact', () => {
     const fs = require('fs');
     const path = require('path');
