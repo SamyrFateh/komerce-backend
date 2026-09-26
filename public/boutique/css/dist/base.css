@@ -2908,7 +2908,7 @@ body.spike-shell-vertical .k-hero-cats-sticky {
      décor relais restent lisibles ; la respiration du rail est rendue à
      la scène (padding-top rail réduit ci-dessous). */
   .k-hero .k-hero-inner .k-hero-media {
-    height: clamp(128px, 35vw, 142px);
+    height: clamp(120px, 33vw, 134px);
     margin-top: 0;
     margin-bottom: 0;
     overflow: visible;
@@ -2918,21 +2918,24 @@ body.spike-shell-vertical .k-hero-cats-sticky {
      l'acte de remise. Le téléphone, le colis et les mains forment le centre
      narratif ; aucun troisième personnage ne dilue la lecture. */
   .k-hero-media .k-hero-figures {
-    /* Scène entière sous le slogan, centrée ; ratio du master respecté
-       (498×183) pour ne jamais rogner le colis ni le pin relais. */
-    inset: 44px auto auto 50%;
+    /* Master handoff v3 (marge haute intégrée : les coiffures ne touchent
+       plus le bord). Ratio natif 2022×778 respecté, ni zoom ni fondu
+       latéral ; la scène entière tient sous le slogan. */
+    inset: 26px auto auto 50%;
     transform: translateX(-50%);
-    height: calc(100% - 46px);
+    height: calc(100% - 28px);
     width: auto;
-    aspect-ratio: 498 / 183;
+    aspect-ratio: 2022 / 778;
     max-width: calc(100% - 8px);
     border-radius: 16px;
-    background-image: url('/images/komerce-hero-handoff-v2.webp');
-    background-size: cover;
+    background-image: url('/images/komerce-hero-handoff-v3-mobile.webp');
+    background-size: contain;
     background-position: center center;
-    /* Bords fondus : la scène se fond dans le fond sable, pas de cadre dur. */
-    -webkit-mask-image: linear-gradient(to right, transparent 0, black 7%, black 93%, transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0, black 7%, black 93%, transparent 100%);
+    /* Seule la marge haute VIDE du master (0–11 %, aucun cheveu avant
+       13,5 %) est fondue : elle se glisse sous le slogan sans bord dur.
+       Aucun fondu latéral, aucune coupe des têtes. */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 11%);
+    mask-image: linear-gradient(to bottom, transparent 0, black 11%);
   }
 
 
@@ -2941,7 +2944,7 @@ body.spike-shell-vertical .k-hero-cats-sticky {
 
   /* Slogan centré en bande haute, au-dessus de la scène, jamais recouvert. */
   html .k-hero-media .k-hero-mini-slogan--premium {
-    inset: 4px 0 auto 0;
+    inset: 1px 0 auto 0;
     width: 100%;
     padding: 0 12px;
     align-items: center;
@@ -2951,15 +2954,15 @@ body.spike-shell-vertical .k-hero-cats-sticky {
 
   html .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {
     font-size: clamp(14px, 3.9vw, 16px);
-    line-height: 1.1;
+    line-height: 1.04;
     letter-spacing: .005em;
     text-align: center;
   }
 
   html .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {
-    margin-top: 2px;
+    margin-top: 0;
     font-size: clamp(14px, 3.9vw, 16px);
-    line-height: 1.1;
+    line-height: 1.04;
     letter-spacing: .005em;
     text-align: center;
   }

@@ -12,7 +12,8 @@ const cssPath = path.resolve(__dirname, '../../css/hero-ultra-mobile.css');
 const heroCssPath = path.resolve(__dirname, '../../css/hero.css');
 const layoutCssPath = path.resolve(__dirname, '../../css/layout.css');
 const heroBootstrapPath = path.resolve(__dirname, '../../js/hero-bootstrap.js');
-const artPath = path.resolve(__dirname, '../../../images/komerce-hero-handoff-v2.webp');
+const artPath = path.resolve(__dirname, '../../../images/komerce-hero-handoff-v3-mobile.webp');
+const masterPath = path.resolve(__dirname, '../../../images/komerce-hero-handoff-v3.webp');
 const indexPath = path.resolve(__dirname, '../../index.html');
 const css = fs.readFileSync(cssPath, 'utf8');
 const heroCss = fs.readFileSync(heroCssPath, 'utf8');
@@ -23,24 +24,26 @@ const indexHtml = fs.readFileSync(indexPath, 'utf8');
 describe('hero ultra mobile contract', () => {
   test('reste strictement mobile : deux bandes, slogan puis scène complète', () => {
     expect(css).toContain('@media (max-width: 899px)');
-    expect(css).toContain('height: clamp(128px, 35vw, 142px);');
+    expect(css).toContain('height: clamp(120px, 33vw, 134px);');
     expect(css).toContain('.k-hero {\n    overflow: visible;');
     expect(css).toContain('margin-bottom: 0;\n    overflow: visible;');
     expect(css).toContain('l\'espace auparavant perdu en padding du rail est réalloué à la scène');
     expect(css).not.toContain('@media (min-width: 900px)');
   });
 
-  test('scène de remise entière sous le slogan, ratio du master respecté, bords fondus', () => {
-    expect(css).toContain("background-image: url('/images/komerce-hero-handoff-v2.webp');");
-    expect(css).toContain('aspect-ratio: 498 / 183;');
-    expect(css).toContain('background-size: cover;');
+  test('scène v3 entière sous le slogan : ratio natif, sans zoom ni fondu latéral', () => {
+    expect(css).toContain("background-image: url('/images/komerce-hero-handoff-v3-mobile.webp');");
+    expect(css).toContain('aspect-ratio: 2022 / 778;');
+    expect(css).toContain('background-size: contain;');
+    expect(css).not.toContain('background-size: cover;');
     expect(css).toContain('background-position: center center;');
-    expect(css).toContain('inset: 44px auto auto 50%;');
-    expect(css).toContain('height: calc(100% - 46px);');
+    expect(css).toContain('inset: 26px auto auto 50%;');
+    expect(css).toContain('height: calc(100% - 28px);');
     expect(css).not.toContain('background-size: auto 118%;');
     expect(css).not.toContain('background-position: 70% 92%;');
-    expect(css).toContain('-webkit-mask-image: linear-gradient(to right, transparent 0, black 7%, black 93%, transparent 100%);');
-    expect(css).toContain('mask-image: linear-gradient(to right, transparent 0, black 7%, black 93%, transparent 100%);');
+    // Seule la marge haute vide du master est fondue (cheveux à 13,5 %) ; aucun fondu latéral.
+    expect(css).toContain('mask-image: linear-gradient(to bottom, transparent 0, black 11%);');
+    expect(css).not.toContain('linear-gradient(to right');
     expect(css).not.toContain('.k-hero-figures { display: none;');
   });
 
@@ -50,7 +53,7 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium {');
     expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {');
     expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {');
-    expect(css).toContain('inset: 4px 0 auto 0;');
+    expect(css).toContain('inset: 1px 0 auto 0;');
     expect(css).toContain('width: 100%;');
     expect(css).toContain('text-align: center;');
     expect(css).toContain('font-size: clamp(14px, 3.9vw, 16px);');
@@ -64,14 +67,20 @@ describe('hero ultra mobile contract', () => {
     expect(heroCss).not.toContain('Slogan mobile : supprimé (H0)');
   });
 
-  test('charge un WebP réel en 498x183 pour un affichage mobile net', () => {
-    const art = fs.readFileSync(artPath);
-    expect(art.subarray(0, 4).toString('ascii')).toBe('RIFF');
-    expect(art.subarray(8, 12).toString('ascii')).toBe('WEBP');
-    expect(art.subarray(12, 16).toString('ascii')).toBe('VP8 ');
-    expect(art.readUInt16LE(26) & 0x3fff).toBe(498);
-    expect(art.readUInt16LE(28) & 0x3fff).toBe(183);
-    expect(css).toContain("background-image: url('/images/komerce-hero-handoff-v2.webp');");
+  test('charge un WebP v3 complet : dérivé mobile 1011x389, master 2022x778, marge haute', () => {
+    for (const [file, w, h] of [[artPath, 1011, 389], [masterPath, 2022, 778]]) {
+      const art = fs.readFileSync(file);
+      expect(art.subarray(0, 4).toString('ascii')).toBe('RIFF');
+      expect(art.subarray(8, 12).toString('ascii')).toBe('WEBP');
+      // Fichier complet : taille réelle = taille RIFF déclarée (la v3 tronquée de #1769 échouait ici).
+      expect(art.length).toBe(art.readUInt32LE(4) + 8);
+      const chunk = art.subarray(12, 16).toString('ascii');
+      if (chunk === 'VP8 ') {
+        expect(art.readUInt16LE(26) & 0x3fff).toBe(w);
+        expect(art.readUInt16LE(28) & 0x3fff).toBe(h);
+      }
+    }
+    expect(css).toContain("background-image: url('/images/komerce-hero-handoff-v3-mobile.webp');");
   });
 
   test('préserve le panier réel et son avatar mobile réduit', () => {
