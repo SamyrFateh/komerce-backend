@@ -107,6 +107,7 @@ module.exports = {
       '../../images/komerce_hero_catalog_canonical_v5_mobile.webp',
       '../../images/komerce-hero-handoff-v2.webp',
       '../../images/komerce-hero-handoff-v3.webp',
+      '../../images/komerce-hero-handoff-v3-mobile.webp',
       '../categories/cat-all-v3.webp',
       '../categories/cat-soldes-v3.webp',
       '../categories/cat-mode-v3.webp',
