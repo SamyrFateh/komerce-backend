@@ -48,6 +48,7 @@ module.exports = {
       'glossaire metier EN->FR (catalog_glossary)',
       'mémoire terminologique externe sourcée et filtrée par corpus (catalog_terminology_reference), avec priorité au glossaire Komerce',
       'challenge FR cold-start permanent : 100 produits CJ jamais vus, source exacte, enrichissement TERMIUM incrémental, aucune dépendance IA runtime et seconde revue obligatoire',
+      'campagne FR Quality branchée : traductions + reviews hashées → dry-run → application atomique en overrides manuels sur drafts inactifs → readiness → checkpoint, jamais de publication automatique',
       'file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active',
       'bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée',
       'pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique',
@@ -97,6 +98,7 @@ module.exports = {
       '.github/workflows/isolated-catalog-termium-memory.yml',
       '.github/workflows/isolated-fr-glossary-batch001.yml',
       '.github/workflows/isolated-cj-fr-cold-start-challenge.yml',
+      '.github/workflows/isolated-catalog-fr-quality-campaign.yml',
     ],
     utils: [
       'utils/categories-cache.js',
@@ -115,6 +117,7 @@ module.exports = {
       'scripts/catalog-fr-quality-apply.js',
       'scripts/catalog-termium-import.js',
       'scripts/cj-fr-cold-start-challenge.js',
+      'scripts/catalog-fr-quality-campaign-audit.js',
     ],
     services: [
       // MISSION 1 (KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE) — décideur
@@ -406,6 +409,7 @@ module.exports = {
       'tests/unit/catalog-terminology-memory.test.js',
       'tests/unit/catalog-termium-import.test.js',
       'tests/unit/cj-fr-cold-start-challenge.test.js',
+      'tests/unit/catalog-fr-quality-campaign-audit.test.js',
       'tests/unit/catalog-import-orchestrator-source-v2.test.js',
       'tests/unit/catalog-eligibility.test.js',
       'tests/unit/scan-engine-content-verification.test.js',
