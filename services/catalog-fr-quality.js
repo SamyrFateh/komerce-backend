@@ -24,9 +24,9 @@ const DESCRIPTION_MIN = 60;
 const DESCRIPTION_MAX = 1200;
 
 const ENGLISH_RESIDUE_WORDS = new Set([
-  'adjustable', 'anti-slip', 'best', 'breathable', 'charger', 'charging', 'comfortable',
-  'compatible', 'durable', 'fashion', 'foldable', 'holder', 'lightweight', 'portable',
-  'premium', 'professional', 'rechargeable', 'replacement', 'shockproof', 'smart',
+  'adjustable', 'anti-slip', 'best', 'breathable', 'charging', 'comfortable',
+  'fashion', 'foldable', 'holder', 'lightweight',
+  'professional', 'rechargeable', 'replacement', 'shockproof', 'smart',
   'stand', 'storage', 'supporting', 'universal', 'waterproof', 'wireless',
 ]);
 
