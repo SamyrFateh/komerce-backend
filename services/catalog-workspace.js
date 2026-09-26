@@ -133,18 +133,61 @@ async function queryProducts({ search = null, category = null, status = null, li
   return rows.map(publicProduct);
 }
 
+function sourcingDecisionOrderSql(alias = 'sc') {
+  return `CASE UPPER(COALESCE(${alias}.scan_result->>'sourcing_decision','UNKNOWN'))
+    WHEN 'PRIORITY' THEN 0
+    WHEN 'TEST' THEN 1
+    WHEN 'WATCH' THEN 2
+    WHEN 'AVOID' THEN 3
+    WHEN 'LOSS' THEN 4
+    ELSE 5
+  END`;
+}
+
 async function queryApprovalQueue({ limit = 50, offset = 0 } = {}) {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const safeOffset = Math.max(Number.parseInt(offset, 10) || 0, 0);
+  const decisionOrder = sourcingDecisionOrderSql('sc');
   const { rows } = await db.query(`
-    SELECT product_ref, name, description, category, fragility, emoji,
-           price_kmf, stock, content_source, needs_review,
-           enrichment_confidence, created_at
-      FROM products
-     WHERE lifecycle_status = 'candidate'
-       AND is_active = FALSE
-       AND content_source IN ('connector_raw', 'ai_enriched', 'manual')
-     ORDER BY needs_review ASC, enrichment_confidence DESC NULLS LAST, created_at ASC
+    SELECT p.product_ref, p.name, p.description, p.category, p.fragility, p.emoji,
+           p.price_kmf, p.stock, p.content_source, p.needs_review,
+           p.enrichment_confidence, p.created_at,
+           sc.supplier_name,
+           sc.supplier_product_id,
+           sc.stock_available AS supplier_stock,
+           sc.confidence AS sourcing_confidence,
+           UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) AS sourcing_decision,
+           COALESCE(sc.scan_result->>'reason','') AS sourcing_reason,
+           NULLIF(sc.scan_result->>'economic_test_health_status','') AS economic_health_status,
+           NULLIF(sc.scan_result->>'economic_test_margin_pct','')::numeric AS economic_test_margin_pct
+      FROM products p
+      LEFT JOIN LATERAL (
+        SELECT candidate.supplier_name,
+               candidate.supplier_product_id,
+               candidate.stock_available,
+               candidate.confidence,
+               candidate.scan_result,
+               candidate.updated_at,
+               candidate.created_at
+          FROM sourcing_candidates candidate
+         WHERE candidate.product_id = p.id
+           AND candidate.state = 'imported_to_catalog'
+         ORDER BY candidate.updated_at DESC NULLS LAST, candidate.created_at DESC
+         LIMIT 1
+      ) sc ON TRUE
+     WHERE p.lifecycle_status = 'candidate'
+       AND p.is_active = FALSE
+       AND p.content_source IN ('connector_raw', 'ai_enriched', 'manual')
+     ORDER BY p.needs_review ASC,
+              ${decisionOrder} ASC,
+              CASE LOWER(COALESCE(sc.confidence,'low'))
+                WHEN 'high' THEN 0
+                WHEN 'medium' THEN 1
+                ELSE 2
+              END ASC,
+              (COALESCE(sc.stock_available, p.stock, 0) > 0) DESC,
+              p.enrichment_confidence DESC NULLS LAST,
+              p.created_at ASC
      LIMIT $1 OFFSET $2
   `, [safeLimit, safeOffset]);
   return rows.map(row => ({
@@ -159,14 +202,50 @@ async function queryApprovalQueue({ limit = 50, offset = 0 } = {}) {
     content_source: row.content_source,
     needs_review: Boolean(row.needs_review),
     enrichment_confidence: row.enrichment_confidence == null ? null : Number(row.enrichment_confidence),
+    supplier_name: row.supplier_name || null,
+    supplier_product_id: row.supplier_product_id || null,
+    supplier_stock: row.supplier_stock == null ? null : Number(row.supplier_stock),
+    sourcing_confidence: row.sourcing_confidence || 'low',
+    sourcing_decision: row.sourcing_decision || 'UNKNOWN',
+    sourcing_reason: row.sourcing_reason || null,
+    economic_health_status: row.economic_health_status || null,
+    economic_test_margin_pct: row.economic_test_margin_pct == null ? null : Number(row.economic_test_margin_pct),
     created_at: row.created_at,
   }));
+}
+
+async function queryApprovalBreakdown() {
+  const { rows } = await db.query(`
+    SELECT UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) AS sourcing_decision,
+           COUNT(*)::int AS count
+      FROM products p
+      LEFT JOIN LATERAL (
+        SELECT candidate.scan_result
+          FROM sourcing_candidates candidate
+         WHERE candidate.product_id = p.id
+           AND candidate.state = 'imported_to_catalog'
+         ORDER BY candidate.updated_at DESC NULLS LAST, candidate.created_at DESC
+         LIMIT 1
+      ) sc ON TRUE
+     WHERE p.lifecycle_status = 'candidate'
+       AND p.is_active = FALSE
+       AND p.content_source IN ('connector_raw', 'ai_enriched', 'manual')
+     GROUP BY 1
+  `);
+  const result = { PRIORITY: 0, TEST: 0, WATCH: 0, AVOID: 0, LOSS: 0, UNKNOWN: 0 };
+  for (const row of rows) {
+    const key = Object.prototype.hasOwnProperty.call(result, row.sourcing_decision)
+      ? row.sourcing_decision
+      : 'UNKNOWN';
+    result[key] += Number(row.count) || 0;
+  }
+  return result;
 }
 
 async function buildWorkspace(query = {}) {
   const approvalLimit = Math.min(Math.max(Number(query.approval_limit) || 50, 1), 100);
   const approvalOffset = Math.max(Number.parseInt(query.approval_offset, 10) || 0, 0);
-  const [summary, catalogCap, categories, products, approval] = await Promise.all([
+  const [summary, catalogCap, categories, products, approval, approvalBreakdown] = await Promise.all([
     querySummary(),
     queryCatalogCap(),
     taxonomy.listCategories(),
@@ -175,6 +254,7 @@ async function buildWorkspace(query = {}) {
     // gros backlog de curation, des produits publiés disparaîtraient du top 200.
     queryProducts({ ...query, status: 'active' }),
     queryApprovalQueue({ limit: approvalLimit, offset: approvalOffset }),
+    queryApprovalBreakdown(),
   ]);
   const approvalTotal = Number(summary.approval_pending) || 0;
   return {
@@ -184,6 +264,13 @@ async function buildWorkspace(query = {}) {
     categories,
     products,
     approval,
+    approval_breakdown: approvalBreakdown,
+    approval_strategy: {
+      authority: 'human_approval',
+      ordering: ['PRIORITY', 'TEST', 'WATCH', 'AVOID', 'LOSS', 'UNKNOWN'],
+      value_density_used: false,
+      note: 'Le signal sourcing priorise la revue ; il ne publie ni ne rejette automatiquement.',
+    },
     approval_page: {
       total: approvalTotal,
       limit: approvalLimit,
@@ -289,6 +376,8 @@ module.exports = {
     publicProduct,
     queryProducts,
     queryApprovalQueue,
+    queryApprovalBreakdown,
+    sourcingDecisionOrderSql,
     queryCatalogCap,
     buildCurationState,
     resolveProduct,
