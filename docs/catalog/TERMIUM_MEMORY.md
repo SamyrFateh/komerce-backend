@@ -89,3 +89,44 @@ The terminology importer:
 
 A recurring correction discovered during FR review should be promoted explicitly
 to `catalog_glossary` only after Komerce validates that decision.
+
+
+## Cold-start translation challenge
+
+The terminology memory is not considered sufficient merely because it covers the
+current 974-product corpus. A permanent cold-start challenge verifies the
+fallback behavior on supplier products that were never present in the reference
+checkpoint.
+
+The challenge:
+
+1. restores the terminology-enriched disposable checkpoint;
+2. applies the currently curated Komerce glossary;
+3. discovers 100 CJ product IDs that do not exist in that checkpoint;
+4. fetches exact read-only product detail for those IDs;
+5. builds source-faithful translation workpacks without importing/publishing the
+   products;
+6. incrementally matches the new corpus against the official TERMIUM datasets;
+7. attaches both curated Komerce terms and external TERMIUM references;
+8. requires offline French translation and a separate source→FR second-pass
+   review to complete the proof.
+
+The important invariant is **not** “every word already exists in the glossary”.
+It is:
+
+- every unseen product remains translation-processable from its original source;
+- a missing glossary/TERMIUM hit is never treated as permission to invent;
+- unresolved ambiguity is surfaced explicitly for review;
+- validated recurrent decisions can then be promoted into `catalog_glossary`.
+
+The source phase is accepted only when all selected supplier IDs are unseen,
+all translation inputs are complete and hashed, and the catalog safety audit
+remains at zero active/exposed/wrong-lifecycle products.
+
+The completed editorial challenge additionally requires:
+
+- 100/100 translation proposals produced;
+- 100/100 separate second-pass reviews;
+- zero critical invented claims;
+- zero silent critical omissions;
+- no publication/exposure/order/payment side effect.
