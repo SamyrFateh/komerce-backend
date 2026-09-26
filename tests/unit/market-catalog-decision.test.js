@@ -68,6 +68,17 @@ describe('Catalogue pays decision-first', () => {
     expect(rows.map(row => row.priority)).toEqual(['À relire', 'À décider']);
   });
 
+  test('le dashboard pays masque toute la complexité interne de préparation catalogue', () => {
+    const source = read('public/dashboards/canonical/js/market-catalog.js');
+    expect(source).not.toMatch(/Raffinerie/i);
+    expect(source).not.toMatch(/TERMIUM/i);
+    expect(source).not.toMatch(/source_hash/i);
+    expect(source).not.toMatch(/supplier_order_identity/i);
+    expect(source).not.toMatch(/content_source/i);
+    expect(source).toContain('Valider pour ce marché');
+    expect(source).toContain('Ne pas retenir');
+  });
+
   test('la page charge les primitives partagées et ne recalcule plus le résumé à partir du tableau', () => {
     const html = read('public/dashboards/canonical/market-catalog.html');
     const source = read('public/dashboards/canonical/js/market-catalog.js');
