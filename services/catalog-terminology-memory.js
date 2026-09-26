@@ -90,14 +90,14 @@ async function loadTerminologyHints(q, source, { maxReferences = 80 } = {}) {
   const candidates = candidateNgrams(source);
   if (!candidates.length) return { curated: [], references: [] };
 
-  const { rows: curatedRows } = await q.query(
+  const candidateSet = new Set(candidates);
+  const { rows: allCuratedRows } = await q.query(
     `SELECT term_source, term_fr, note
        FROM catalog_glossary
       WHERE is_active=TRUE
-        AND lower(term_source) = ANY($1::text[])
-      ORDER BY length(term_source) DESC, term_source`,
-    [candidates]
+      ORDER BY length(term_source) DESC, term_source`
   );
+  const curatedRows = allCuratedRows.filter(row => candidateSet.has(normalizeTerm(row.term_source)));
 
   const { rows: referenceRows } = await q.query(
     `SELECT source, source_record_id, dataset_domain,
