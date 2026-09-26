@@ -28,7 +28,7 @@
      décor relais restent lisibles ; la respiration du rail est rendue à
      la scène (padding-top rail réduit ci-dessous). */
   .k-hero .k-hero-inner .k-hero-media {
-    height: clamp(128px, 35vw, 142px);
+    height: clamp(120px, 33vw, 134px);
     margin-top: 0;
     margin-bottom: 0;
     overflow: visible;
@@ -40,9 +40,9 @@
   .k-hero-media .k-hero-figures {
     /* Scène entière sous le slogan, centrée ; ratio du master respecté
        (498×183) pour ne jamais rogner le colis ni le pin relais. */
-    inset: 44px auto auto 50%;
+    inset: 36px auto auto 50%;
     transform: translateX(-50%);
-    height: calc(100% - 46px);
+    height: calc(100% - 38px);
     width: auto;
     aspect-ratio: 498 / 183;
     max-width: calc(100% - 8px);
@@ -61,7 +61,7 @@
 
   /* Slogan centré en bande haute, au-dessus de la scène, jamais recouvert. */
   html .k-hero-media .k-hero-mini-slogan--premium {
-    inset: 4px 0 auto 0;
+    inset: 1px 0 auto 0;
     width: 100%;
     padding: 0 12px;
     align-items: center;
@@ -71,15 +71,15 @@
 
   html .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {
     font-size: clamp(14px, 3.9vw, 16px);
-    line-height: 1.1;
+    line-height: 1.04;
     letter-spacing: .005em;
     text-align: center;
   }
 
   html .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {
-    margin-top: 2px;
+    margin-top: 0;
     font-size: clamp(14px, 3.9vw, 16px);
-    line-height: 1.1;
+    line-height: 1.04;
     letter-spacing: .005em;
     text-align: center;
   }

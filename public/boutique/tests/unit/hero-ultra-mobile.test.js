@@ -23,7 +23,7 @@ const indexHtml = fs.readFileSync(indexPath, 'utf8');
 describe('hero ultra mobile contract', () => {
   test('reste strictement mobile : deux bandes, slogan puis scène complète', () => {
     expect(css).toContain('@media (max-width: 899px)');
-    expect(css).toContain('height: clamp(128px, 35vw, 142px);');
+    expect(css).toContain('height: clamp(120px, 33vw, 134px);');
     expect(css).toContain('.k-hero {\n    overflow: visible;');
     expect(css).toContain('margin-bottom: 0;\n    overflow: visible;');
     expect(css).toContain('l\'espace auparavant perdu en padding du rail est réalloué à la scène');
@@ -35,8 +35,8 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('aspect-ratio: 498 / 183;');
     expect(css).toContain('background-size: cover;');
     expect(css).toContain('background-position: center center;');
-    expect(css).toContain('inset: 44px auto auto 50%;');
-    expect(css).toContain('height: calc(100% - 46px);');
+    expect(css).toContain('inset: 36px auto auto 50%;');
+    expect(css).toContain('height: calc(100% - 38px);');
     expect(css).not.toContain('background-size: auto 118%;');
     expect(css).not.toContain('background-position: 70% 92%;');
     expect(css).toContain('-webkit-mask-image: linear-gradient(to right, transparent 0, black 7%, black 93%, transparent 100%);');
@@ -50,7 +50,7 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium {');
     expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {');
     expect(css).toContain('html .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {');
-    expect(css).toContain('inset: 4px 0 auto 0;');
+    expect(css).toContain('inset: 1px 0 auto 0;');
     expect(css).toContain('width: 100%;');
     expect(css).toContain('text-align: center;');
     expect(css).toContain('font-size: clamp(14px, 3.9vw, 16px);');
