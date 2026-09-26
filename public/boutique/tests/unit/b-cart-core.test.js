@@ -161,7 +161,7 @@ describe('updateCartBadge', () => {
     const badge = document.querySelector('.k-cart-badge');
     expect(btn.classList.contains('is-empty')).toBe(true);
     expect(btn.classList.contains('has-items')).toBe(false);
-    expect(img.src).toContain('/images/avatar_seule.png');
+    expect(img.src).toContain('/images/avatar_seule.webp');
     expect(badge.classList.contains('show')).toBe(false);
     expect(badge.textContent).toBe('');
   });
@@ -174,7 +174,7 @@ describe('updateCartBadge', () => {
     const img = document.querySelector('.k-cart-avatar');
     const badge = document.querySelector('.k-cart-badge');
     expect(btn.classList.contains('has-items')).toBe(true);
-    expect(img.src).toContain('/images/avatar_panier.png');
+    expect(img.src).toContain('/images/avatar_panier.webp');
     expect(badge.classList.contains('show')).toBe(true);
     expect(badge.textContent).toBe('3');
   });

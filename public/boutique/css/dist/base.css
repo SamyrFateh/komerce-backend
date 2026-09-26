@@ -1936,6 +1936,13 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 }
 
+/* P-01 — >= 1200 px : le bloc d'actions garde la largeur de ses boutons ;
+   c'est la recherche (flex: 0 1 430px) qui absorbe l'écart. Supprime le
+   débordement résiduel 1200-1260 px sans breakpoint supplémentaire. */
+@media (min-width: 1200px) {
+  .k-header-actions { flex: 0 0 auto; }
+}
+
 
 /* ── hero.css ────────────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════

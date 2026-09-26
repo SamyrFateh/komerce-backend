@@ -190,7 +190,7 @@ describe('b-modal-cart', () => {
       expect(dom.modalQtyVal.textContent).toBe('1');
       expect(dom.addCartBtn.classList.contains('in-cart')).toBe(false);
       expect(dom.addCartBtn.textContent).toContain('Ajouter');
-      expect(dom.addCartBtn.querySelector('img').src).toContain('/images/panier_tresse.png');
+      expect(dom.addCartBtn.querySelector('img').src).toContain('/images/panier_tresse.webp');
       expect(actions.dataset.inventoryModel).toBe('LEGACY_VARIANTS');
       expect(actions.classList.contains('k-modal-actions--filled')).toBe(false);
       expect(dom.qtyMinus.disabled).toBe(true);
