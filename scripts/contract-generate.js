@@ -261,6 +261,7 @@ const ROUTE_SCHEMA_MAP = [
   // (toutes montées dans bootstrap/api-routes.js), appelées par market-team.js,
   // market-catalog.js, market-cash-control.js, team-invite.js côté Canonical.
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure', method: 'get', schema: null },
+  { prefix: '/api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate', method: 'post', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}', method: 'put', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/team', method: 'get', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/team/invitations', method: 'post', schema: null },
