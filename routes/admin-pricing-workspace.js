@@ -23,10 +23,10 @@ const db = require('../db');
 const router = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
+const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const {
   attachAuthorizedMarkets,
   requireMarketScope,
-  requireMarketScopeRole,
   resolveMarketScopeRole,
 } = require('../middleware/require-market-scope');
 const { hasPricingGlobalAuthority, requirePricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
@@ -130,27 +130,32 @@ async function marketAccessProjection(req) {
   };
 }
 
-function requireMarketPricingManager(req, res, next) {
-  if (req.pricingGlobalAuthority) return next();
-  if (!req.user || req.user.role !== 'market_operator') {
-    return res.status(403).json({
-      error: 'Accès refusé — manager marché requis',
-      code: 'pricing_market_manager_required',
-    });
-  }
-  const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
-  return requireMarketScopeRole('manager')(() => targetMarketId)(req, res, next);
+// L'autorité Pricing centrale d'un admin (déjà vérifiée par
+// requireMarketPricingAccess → req.pricingGlobalAuthority) reste prioritaire
+// et court-circuite la vérification de capability marché : un market_operator
+// n'emprunte jamais cette branche, donc aucun bypass n'est ouvert pour lui.
+// En dessous de ce bypass, la seule autorité est la capability exacte du
+// membre — jamais `req.user.role === 'market_operator'` seul : c'était le
+// bypass rôle→capability documenté dans MARKET-DELEGATION-P0B (Gap 1).
+// Réservé aux actions où l'autorité centrale a toujours eu un sens (coûts,
+// politique de décision, faits de structure) — cf. requireMarketPricingManager
+// ci-avant, remplacé ici à l'identique côté bypass central.
+function requirePricingCapability(capability) {
+  const capabilityGuard = requireMarketDelegatedCapability(capability);
+  return (req, res, next) => {
+    if (req.pricingGlobalAuthority) return next();
+    return capabilityGuard(req, res, next);
+  };
 }
 
-function requireCountryStrategyManager(req, res, next) {
-  if (!req.user || req.user.role !== 'market_operator') {
-    return res.status(403).json({
-      error: 'La stratégie commerciale locale appartient au responsable du marché.',
-      code: 'market_local_strategy_manager_required',
-    });
-  }
-  const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
-  return requireMarketScopeRole('manager')(() => targetMarketId)(req, res, next);
+// La stratégie commerciale locale (observations, brouillon/activation/reset de
+// prix local) n'a JAMAIS admis l'autorité Pricing centrale — c'était le
+// comportement exact de requireCountryStrategyManager (doctrine
+// `country_manager_owns_local_strategy`, cf. en-tête du fichier) et il n'y a
+// aucune raison de l'élargir en migrant vers les capabilities : pas de bypass
+// pricingGlobalAuthority ici, seule la capability du membre marché compte.
+function requireLocalStrategyCapability(capability) {
+  return requireMarketDelegatedCapability(capability);
 }
 
 function sendAction(res, action, result, status = 200) {
@@ -245,7 +250,7 @@ router.get('/market/:marketCode/decision-policy/history', async (req, res, next)
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/decision-policy', requireMarketPricingManager, async (req, res, next) => {
+router.post('/market/:marketCode/decision-policy', requirePricingCapability('pricing.policy.set'), async (req, res, next) => {
   try {
     sendAction(
       res,
@@ -286,7 +291,7 @@ router.get('/market/:marketCode/corridor', async (req, res, next) => {
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/price-observations', requireCountryStrategyManager, async (req, res, next) => {
+router.post('/market/:marketCode/price-observations', requireLocalStrategyCapability('market.observation.record'), async (req, res, next) => {
   try {
     sendAction(res, 'record_market_price_observation', await pricingMarketCorridor.recordMarketObservation({
       market: req.workspaceMarket,
@@ -297,7 +302,7 @@ router.post('/market/:marketCode/price-observations', requireCountryStrategyMana
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/price-observations/:observationRef/deactivate', requireCountryStrategyManager, async (req, res, next) => {
+router.post('/market/:marketCode/price-observations/:observationRef/deactivate', requireLocalStrategyCapability('market.observation.record'), async (req, res, next) => {
   try {
     sendAction(res, 'deactivate_market_price_observation', await pricingMarketCorridor.deactivateMarketObservation({
       market: req.workspaceMarket,
@@ -318,7 +323,7 @@ router.get('/market/:marketCode/products/:productRef/local-price/activation-prev
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/products/:productRef/local-price', requireCountryStrategyManager, async (req, res, next) => {
+router.post('/market/:marketCode/products/:productRef/local-price', requireLocalStrategyCapability('pricing.decide'), async (req, res, next) => {
   try {
     sendAction(res, 'set_market_local_price_draft', await marketCommercialPrice.setMarketPriceDraft({
       market: req.workspaceMarket,
@@ -331,7 +336,7 @@ router.post('/market/:marketCode/products/:productRef/local-price', requireCount
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/products/:productRef/local-price/activate', requireCountryStrategyManager, async (req, res, next) => {
+router.post('/market/:marketCode/products/:productRef/local-price/activate', requireLocalStrategyCapability('pricing.activate'), async (req, res, next) => {
   try {
     sendAction(res, 'activate_market_local_price', await marketLocalPriceActivation.activateLocalPrice({
       market: req.workspaceMarket,
@@ -343,7 +348,7 @@ router.post('/market/:marketCode/products/:productRef/local-price/activate', req
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/products/:productRef/local-price/reset', requireCountryStrategyManager, async (req, res, next) => {
+router.post('/market/:marketCode/products/:productRef/local-price/reset', requireLocalStrategyCapability('pricing.decide'), async (req, res, next) => {
   try {
     sendAction(res, 'reset_market_local_price_draft', await marketCommercialPrice.resetMarketPriceDraft({
       market: req.workspaceMarket,
@@ -355,7 +360,7 @@ router.post('/market/:marketCode/products/:productRef/local-price/reset', requir
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/cost-components/:key/update', requireMarketPricingManager, async (req, res, next) => {
+router.post('/market/:marketCode/cost-components/:key/update', requirePricingCapability('pricing.cost_component.update'), async (req, res, next) => {
   try {
     sendAction(res, 'update_market_cost_component', await workspace.updateMarketCostComponent(
       req.workspaceMarket,
@@ -366,7 +371,7 @@ router.post('/market/:marketCode/cost-components/:key/update', requireMarketPric
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/cost-components/:key/toggle', requireMarketPricingManager, async (req, res, next) => {
+router.post('/market/:marketCode/cost-components/:key/toggle', requirePricingCapability('pricing.cost_component.update'), async (req, res, next) => {
   try {
     sendAction(res, 'toggle_market_cost_component', await workspace.toggleMarketCostComponent(
       req.workspaceMarket,
@@ -376,7 +381,7 @@ router.post('/market/:marketCode/cost-components/:key/toggle', requireMarketPric
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/cost-components/:key/reset', requireMarketPricingManager, async (req, res, next) => {
+router.post('/market/:marketCode/cost-components/:key/reset', requirePricingCapability('pricing.cost_component.reset'), async (req, res, next) => {
   try {
     sendAction(res, 'reset_market_cost_component', await workspace.resetMarketCostComponent(
       req.workspaceMarket,
@@ -418,7 +423,7 @@ router.get('/market/:marketCode/structure-events', async (req, res, next) => {
   } catch (error) { handleStructureEventError(error, res, next); }
 });
 
-router.post('/market/:marketCode/structure-events', requireMarketPricingManager, async (req, res, next) => {
+router.post('/market/:marketCode/structure-events', requirePricingCapability('structure.event.record'), async (req, res, next) => {
   try {
     const body = req.body || {};
     const event = await pricingPeriodStructure.recordStructureCostEvent(

@@ -125,6 +125,7 @@ module.exports = {
     middleware: [
       'middleware/require-market-delegated-role.js',
       'middleware/require-market-execution-capability.js',
+      'middleware/require-market-delegated-capability.js',
     ],
     services: [
       'services/capability-registry.js',

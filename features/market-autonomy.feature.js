@@ -106,7 +106,10 @@ module.exports = {
     authedRoutesDetected: 0,
     totalRoutes: 0,
     note: 'La feature compose ses actions dans Pricing Canonical après résolution market scope serveur. ' +
-      'Preview est lisible dans le scope ; décision, reset et activation exigent market_operator + scope manager. ' +
+      'Preview est lisible dans le scope ; décision, reset et activation exigent la capability delegation exacte ' +
+      '(pricing.decide / pricing.activate / pricing.policy.set / pricing.cost_component.update / pricing.cost_component.reset / ' +
+      'market.observation.record / structure.event.record), vérifiée via requireMarketDelegatedCapability — plus un simple rôle ' +
+      'market_operator + scope manager (MARKET-DELEGATION-P0B, Gap 1). ' +
       'La surface équipe consomme uniquement les routes market-delegation protégées et ne traite jamais un market_id navigateur comme autorité.',
   },
 
