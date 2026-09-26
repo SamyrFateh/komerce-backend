@@ -104,7 +104,11 @@ jobs:
           batch_size="${{ inputs.batch_size || '40' }}"
           output="$(node scripts/catalog-fr-quality-workpack.js             --limit=1000             --batch-size="$batch_size"             --output-dir=artifacts/catalog-fr-quality-workpack)"
           printf '%s\n' "$output"
-          echo "summary=$output" >> "$GITHUB_OUTPUT"
+          {
+            echo 'summary<<EOF'
+            printf '%s\n' "$output"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Upload FR quality workpack
         uses: actions/upload-artifact@v4
