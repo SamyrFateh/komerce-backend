@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * @komerce-arch
  * @role          supplier-discovery-segment-plan
@@ -17,6 +15,8 @@
  * @impact-areas  sourcing, catalog, boutique-e2e
  * @version       2026-09-v1
  */
+
+'use strict';
 
 const SEGMENTS = Object.freeze([
   { id: 'mode-femme', category: 'Mode & Beauté', subcategory: 'Femme', queries: ['women dress', 'women clothing'] },
