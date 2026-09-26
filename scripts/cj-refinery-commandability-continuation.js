@@ -56,6 +56,7 @@ function parseArgs(argv = process.argv.slice(2)) {
   let limit = DEFAULT_LIMIT;
   let chunk = DEFAULT_CHUNK;
   let output = null;
+  let auditOnly = false;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -65,6 +66,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     else if (arg.startsWith('--chunk=')) chunk = intValue(arg.split('=', 2)[1], DEFAULT_CHUNK, 1, MAX_CHUNK, '--chunk');
     else if (arg === '--output') output = String(argv[++i] || '').trim();
     else if (arg.startsWith('--output=')) output = String(arg.split('=', 2)[1] || '').trim();
+    else if (arg === '--audit-only') auditOnly = true;
     else throw new Error(`Argument inconnu: ${arg}`);
   }
 
@@ -72,15 +74,16 @@ function parseArgs(argv = process.argv.slice(2)) {
     limit,
     chunk,
     output: output ? path.resolve(output) : null,
+    auditOnly,
   };
 }
 
-function assertDisposableRuntime(env = process.env) {
+function assertDisposableRuntime(env = process.env, { requireCj = true } = {}) {
   if (String(env.KOMERCE_ENV || '').trim().toLowerCase() !== 'staging' || env.NODE_ENV !== 'test') {
     throw new Error('REFUS: KOMERCE_ENV=staging et NODE_ENV=test requis');
   }
   if (!isTruthy(env[FLAG])) throw new Error(`REFUS: ${FLAG}=1 requis`);
-  if (!env.CJ_ACCESS_TOKEN && !env.CJ_API_KEY) {
+  if (requireCj && !env.CJ_ACCESS_TOKEN && !env.CJ_API_KEY) {
     throw new Error('CJ_ACCESS_TOKEN ou CJ_API_KEY requis');
   }
   if (!env.DATABASE_URL) throw new Error('DATABASE_URL requis');
@@ -266,34 +269,44 @@ async function replayPromotion(row) {
 
 async function collectReadiness() {
   const { rows } = await db.query(
-    `SELECT p.id AS product_id, p.product_ref, p.name, p.description, p.category, p.subcategory,
-            p.price_kmf, p.stock, p.content_source, p.needs_review, p.source_locale,
-            p.lifecycle_status, p.is_active,
-            sc.supplier_product_id,
-            UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) AS sourcing_decision,
-            COUNT(DISTINCT cm.id) FILTER (WHERE cm.is_active=TRUE)::int AS active_media,
-            COUNT(DISTINCT ps.id) FILTER (
-              WHERE ps.source='SUPPLIER' AND ps.is_active=TRUE
-            )::int AS active_supplier_skus,
-            COUNT(DISTINCT ps.id) FILTER (
-              WHERE ps.source='SUPPLIER'
-                AND ps.is_active=TRUE
-                AND ps.supplier_unit_ref IS NOT NULL
-                AND ps.supplier_order_identity IS NOT NULL
-            )::int AS complete_soi_skus
-       FROM sourcing_candidates sc
-       JOIN products p ON p.id=sc.product_id
-       LEFT JOIN catalog_media cm ON cm.product_id=p.id
-       LEFT JOIN product_skus ps ON ps.product_id=p.id
-      WHERE sc.supplier_name=$1
-        AND sc.state='imported_to_catalog'
-        AND sc.product_id IS NOT NULL
-        AND p.lifecycle_status='candidate'
-        AND p.is_active=FALSE
-      GROUP BY p.id, p.product_ref, p.name, p.description, p.category, p.subcategory,
-               p.price_kmf, p.stock, p.content_source, p.needs_review, p.source_locale,
-               p.lifecycle_status, p.is_active, sc.supplier_product_id, sc.scan_result
-      ORDER BY p.product_ref`,
+    `WITH media AS (
+         SELECT product_id,
+                COUNT(*) FILTER (WHERE is_active=TRUE)::int AS active_media
+           FROM catalog_media
+          GROUP BY product_id
+       ),
+       sku AS (
+         SELECT product_id,
+                COUNT(*) FILTER (
+                  WHERE source='SUPPLIER' AND is_active=TRUE
+                )::int AS active_supplier_skus,
+                COUNT(*) FILTER (
+                  WHERE source='SUPPLIER'
+                    AND is_active=TRUE
+                    AND supplier_unit_ref IS NOT NULL
+                    AND supplier_order_identity IS NOT NULL
+                )::int AS complete_soi_skus
+           FROM product_skus
+          GROUP BY product_id
+       )
+       SELECT p.id AS product_id, p.product_ref, p.name, p.description, p.category, p.subcategory,
+              p.price_kmf, p.stock, p.content_source, p.needs_review, p.source_locale,
+              p.lifecycle_status, p.is_active,
+              sc.supplier_product_id,
+              UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) AS sourcing_decision,
+              COALESCE(media.active_media,0)::int AS active_media,
+              COALESCE(sku.active_supplier_skus,0)::int AS active_supplier_skus,
+              COALESCE(sku.complete_soi_skus,0)::int AS complete_soi_skus
+         FROM sourcing_candidates sc
+         JOIN products p ON p.id=sc.product_id
+         LEFT JOIN media ON media.product_id=p.id
+         LEFT JOIN sku ON sku.product_id=p.id
+        WHERE sc.supplier_name=$1
+          AND sc.state='imported_to_catalog'
+          AND sc.product_id IS NOT NULL
+          AND p.lifecycle_status='candidate'
+          AND p.is_active=FALSE
+        ORDER BY p.product_ref`,
     [SUPPLIER]
   );
 
@@ -357,7 +370,7 @@ async function finalSafetyAudit() {
 }
 
 async function run(options = parseArgs(), env = process.env) {
-  assertDisposableRuntime(env);
+  assertDisposableRuntime(env, { requireCj: !options.auditOnly });
 
   const delayMs = intValue(
     env.KOMERCE_CJ_REFINERY_DETAIL_DELAY_MS,
@@ -381,8 +394,7 @@ async function run(options = parseArgs(), env = process.env) {
     'KOMERCE_CJ_REFINERY_MAX_QUOTA_WAITS'
   );
 
-  const pending = await loadPending(options.limit);
-  const accessToken = await cjConnector.getAccessToken({ env });
+  const pending = options.auditOnly ? [] : await loadPending(options.limit);
   const detailErrors = [];
   const promotionErrors = [];
   let detailCalls = 0;
@@ -391,82 +403,86 @@ async function run(options = parseArgs(), env = process.env) {
   let promoted = 0;
   let pausedReason = null;
 
-  console.log(`[cj-refinery-continuation] pending=${pending.length} limit=${options.limit} chunk=${options.chunk}`);
+  if (options.auditOnly) {
+    console.log('[cj-refinery-continuation] audit_only=true — aucun appel CJ, aucun replay');
+  } else {
+    const accessToken = await cjConnector.getAccessToken({ env });
+    console.log(`[cj-refinery-continuation] pending=${pending.length} limit=${options.limit} chunk=${options.chunk}`);
 
-  for (let offset = 0; offset < pending.length; offset += options.chunk) {
-    const slice = pending.slice(offset, offset + options.chunk);
-    const normalizedProducts = [];
+    for (let offset = 0; offset < pending.length; offset += options.chunk) {
+      const slice = pending.slice(offset, offset + options.chunk);
+      const normalizedProducts = [];
 
-    for (let index = 0; index < slice.length; index += 1) {
-      const candidate = slice[index];
-      if (index > 0 || offset > 0) {
-        // eslint-disable-next-line no-await-in-loop
-        await sleep(delayMs);
+      for (let index = 0; index < slice.length; index += 1) {
+        const candidate = slice[index];
+        if (index > 0 || offset > 0) {
+          // eslint-disable-next-line no-await-in-loop
+          await sleep(delayMs);
+        }
+
+        while (true) {
+          try {
+            // eslint-disable-next-line no-await-in-loop
+            const detail = await cjConnector.fetchProductDetail(candidate.supplier_product_id, { env, accessToken });
+            detailCalls += 1;
+            const normalized = cjConnector.normalizeCjProduct(detail.product);
+            if (String(normalized.supplier_product_id || '') !== String(candidate.supplier_product_id)) {
+              throw new Error(`CJ_DETAIL_ID_MISMATCH expected=${candidate.supplier_product_id} actual=${normalized.supplier_product_id}`);
+            }
+            normalizedProducts.push(normalized);
+            break;
+          } catch (error) {
+            detailCalls += 1;
+            if (isAuthError(error)) throw error;
+            if (isQuotaError(error)) {
+              if (quotaWaits >= maxQuotaWaits) {
+                pausedReason = 'quota-paused';
+                break;
+              }
+              quotaWaits += 1;
+              console.log(`[cj-refinery-continuation] quota_wait=${quotaWaits} wait_ms=${quotaWaitMs} pid=${candidate.supplier_product_id}`);
+              // eslint-disable-next-line no-await-in-loop
+              await sleep(quotaWaitMs);
+              continue;
+            }
+            detailErrors.push({
+              supplier_product_id: candidate.supplier_product_id,
+              error: String(error.message || error).slice(0, 300),
+            });
+            break;
+          }
+        }
+
+        if (pausedReason) break;
       }
 
-      while (true) {
-        try {
+      if (normalizedProducts.length) {
+        const chunkNo = Math.floor(offset / options.chunk) + 1;
+        // eslint-disable-next-line no-await-in-loop
+        const importedResult = await importExactChunk(normalizedProducts, chunkNo);
+        imported += Number(importedResult.accepted || 0);
+
+        const ids = normalizedProducts.map(product => product.supplier_product_id);
+        // eslint-disable-next-line no-await-in-loop
+        const rows = await loadImportedRows(ids);
+        for (const row of rows) {
           // eslint-disable-next-line no-await-in-loop
-          const detail = await cjConnector.fetchProductDetail(candidate.supplier_product_id, { env, accessToken });
-          detailCalls += 1;
-          const normalized = cjConnector.normalizeCjProduct(detail.product);
-          if (String(normalized.supplier_product_id || '') !== String(candidate.supplier_product_id)) {
-            throw new Error(`CJ_DETAIL_ID_MISMATCH expected=${candidate.supplier_product_id} actual=${normalized.supplier_product_id}`);
+          const result = await replayPromotion(row);
+          if (result.status === 'promoted') {
+            promoted += 1;
+          } else if (result.status === 'error') {
+            promotionErrors.push({
+              supplier_product_id: row.supplier_product_id,
+              error: result.reason,
+            });
           }
-          normalizedProducts.push(normalized);
-          break;
-        } catch (error) {
-          detailCalls += 1;
-          if (isAuthError(error)) throw error;
-          if (isQuotaError(error)) {
-            if (quotaWaits >= maxQuotaWaits) {
-              pausedReason = 'quota-paused';
-              break;
-            }
-            quotaWaits += 1;
-            console.log(`[cj-refinery-continuation] quota_wait=${quotaWaits} wait_ms=${quotaWaitMs} pid=${candidate.supplier_product_id}`);
-            // eslint-disable-next-line no-await-in-loop
-            await sleep(quotaWaitMs);
-            continue;
-          }
-          detailErrors.push({
-            supplier_product_id: candidate.supplier_product_id,
-            error: String(error.message || error).slice(0, 300),
-          });
-          break;
         }
+        console.log(`[cj-refinery-continuation] chunk=${chunkNo} exact=${normalizedProducts.length} imported=${imported} promoted=${promoted}`);
       }
 
       if (pausedReason) break;
     }
-
-    if (normalizedProducts.length) {
-      const chunkNo = Math.floor(offset / options.chunk) + 1;
-      // eslint-disable-next-line no-await-in-loop
-      const importedResult = await importExactChunk(normalizedProducts, chunkNo);
-      imported += Number(importedResult.accepted || 0);
-
-      const ids = normalizedProducts.map(product => product.supplier_product_id);
-      // eslint-disable-next-line no-await-in-loop
-      const rows = await loadImportedRows(ids);
-      for (const row of rows) {
-        // eslint-disable-next-line no-await-in-loop
-        const result = await replayPromotion(row);
-        if (result.status === 'promoted') {
-          promoted += 1;
-        } else if (result.status === 'error') {
-          promotionErrors.push({
-            supplier_product_id: row.supplier_product_id,
-            error: result.reason,
-          });
-        }
-      }
-      console.log(`[cj-refinery-continuation] chunk=${chunkNo} exact=${normalizedProducts.length} imported=${imported} promoted=${promoted}`);
-    }
-
-    if (pausedReason) break;
   }
-
   const readiness = await collectReadiness();
   const safety = await finalSafetyAudit();
   if (safety.active || safety.exposed || safety.wrong_lifecycle) {
@@ -474,6 +490,7 @@ async function run(options = parseArgs(), env = process.env) {
   }
 
   const summary = {
+    audit_only: Boolean(options.auditOnly),
     selected_pending: pending.length,
     detail_calls: detailCalls,
     detail_errors: detailErrors.length,
