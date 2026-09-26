@@ -156,8 +156,23 @@ function stemsMatch(sourceFile, testFile) {
     || sourceStem.includes(candidate);
 }
 
+/**
+ * Détermine si le lot de fichiers touchés apporte un signal test pour cette
+ * source. Vérifie d'abord stemsMatch (rapide, pas d'accès disque), puis
+ * retombe sur le matching par contenu (realConsumers) pour les tests
+ * touchés du même workspace nommés par comportement — sinon un fichier
+ * touché avec un test réel mais au nom différent du stem serait à tort
+ * déclaré « aucun test touché » avant même d'atteindre la mesure de
+ * couverture (même angle mort que measureCoverage avant son correctif).
+ */
 function hasMatchingTest(sourceFile, allTouched) {
-  return allTouched.some(file => isTestFile(file) && stemsMatch(sourceFile, file));
+  if (allTouched.some(file => isTestFile(file) && stemsMatch(sourceFile, file))) return true;
+
+  const workspace = workspaceFor(sourceFile);
+  const candidateAbsPaths = allTouched
+    .filter(file => isTestFile(file) && belongsToWorkspace(file, workspace) && /\.(test|spec)\.(js|mjs|ts)$/.test(file))
+    .map(file => path.join(ROOT, file));
+  return realConsumers(sourceFile, candidateAbsPaths).length > 0;
 }
 
 function workspaceFor(sourceFile) {
@@ -220,16 +235,44 @@ function jestBinary(workspace) {
  * catalog-import-eligibility-evidence.test.js pour catalog-import-orchestrator.js,
  * ou tests nommés par comportement plutôt que par module — cf. incident
  * coverage-thresholds.json du 2026-09-26).
+ *
+ * Comparaison sur le stem exact du basename de chaque littéral require()/from,
+ * pas sur un regex substring : évite le faux positif où le stem d'une source
+ * (ex. « main ») apparaît comme suffixe du nom d'une autre source
+ * (« domain.js » contient littéralement « main.js »).
  */
-function realConsumers(sourceFile, candidateTestFiles) {
-  const basename = path.basename(sourceFile);
-  const stem = basename.replace(/\.(js|mjs|ts)$/, '');
-  const escStem = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const nameRe = `(?:${escStem})(?:\\.(?:js|mjs|ts))?`;
-  const requireRe = new RegExp(`require\\([^)]*${nameRe}['"]\\)`);
-  const importRe = new RegExp(`from\\s+['"][^'"]*${nameRe}['"]`);
-  const mockRe = new RegExp(`jest\\.(mock|doMock)\\([^)]*${nameRe}['"]`);
+function stripCommentsAndStrings(raw) {
+  return raw
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .map(line => line.replace(/^\s*\*.*$/, '').replace(/\/\/.*$/, ''))
+    .join('\n');
+}
 
+function literalStem(literal) {
+  return literal.split('/').pop().replace(/\.(js|mjs|ts)$/, '');
+}
+
+function extractLiterals(content, callRe) {
+  const literals = [];
+  let match;
+  while ((match = callRe.exec(content))) literals.push(match[1]);
+  return literals;
+}
+
+function testConsumesSourceContent(strippedContent, sourceStem) {
+  const requireLiterals = extractLiterals(strippedContent, /require\(\s*['"]([^'"]+)['"]\s*\)/g);
+  const importLiterals = extractLiterals(strippedContent, /from\s+['"]([^'"]+)['"]/g);
+  const consumed = [...requireLiterals, ...importLiterals].some(literal => literalStem(literal) === sourceStem);
+  if (!consumed) return false;
+
+  const mockLiterals = extractLiterals(strippedContent, /jest\.(?:mock|doMock)\(\s*['"]([^'"]+)['"]/g);
+  const fullyMocked = mockLiterals.some(literal => literalStem(literal) === sourceStem);
+  return !fullyMocked;
+}
+
+function realConsumers(sourceFile, candidateTestFiles) {
+  const stem = path.basename(sourceFile).replace(/\.(js|mjs|ts)$/, '');
   return candidateTestFiles.filter(testFile => {
     let raw;
     try {
@@ -237,14 +280,7 @@ function realConsumers(sourceFile, candidateTestFiles) {
     } catch {
       return false;
     }
-    const stripped = raw
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .split('\n')
-      .map(line => line.replace(/^\s*\*.*$/, '').replace(/\/\/.*$/, ''))
-      .join('\n');
-    const consumesReal = requireRe.test(stripped) || importRe.test(stripped);
-    if (!consumesReal) return false;
-    return !mockRe.test(stripped);
+    return testConsumesSourceContent(stripCommentsAndStrings(raw), stem);
   });
 }
 
