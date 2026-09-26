@@ -64,12 +64,19 @@ async function listCapabilities(executor, { className = null } = {}) {
   return rows;
 }
 
+// Dénominateur = capabilities MARKET réellement DELEGABLE (cf.
+// config/market-delegation-capabilities.js::autonomyDenominator). Une
+// capability DELEGATION dont le delegation_mode a été fermé en CENTRAL_ONLY
+// (ex. market_config.update) documente une non-délégation volontaire et ne
+// doit pas faire baisser le taux d'autonomie marché.
 async function autonomyRate(executor) {
   const { rows } = await requireExecutor(executor).query(
     `SELECT COUNT(*) FILTER (WHERE status = 'LIVE')::int AS live,
             COUNT(*)::int AS total
        FROM capability_registry
-      WHERE class = 'DELEGATION'`
+      WHERE class = 'DELEGATION'
+        AND authority_scope = 'MARKET'
+        AND delegation_mode = 'DELEGABLE'`
   );
   const live = Number(rows[0]?.live || 0);
   const total = Number(rows[0]?.total || 0);
