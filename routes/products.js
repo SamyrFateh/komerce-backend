@@ -89,11 +89,11 @@ router.get('/', async (req, res, next) => {
     const conditions = [publicCatalogVisibilitySql('p', marketCodeParamIndex ? { marketCodeParamIndex } : {})];
 
     if (category) {
-      conditions.push(`COALESCE(p.boutique_category_key, p.category) = ${pi++}`);
+      conditions.push(`COALESCE(p.boutique_category_key, p.category) = $${pi++}`);
       params.push(category);
     }
     if (subcategory) {
-      conditions.push(`COALESCE(p.boutique_subcategory_key, p.subcategory) = ${pi++}`);
+      conditions.push(`COALESCE(p.boutique_subcategory_key, p.subcategory) = $${pi++}`);
       params.push(subcategory);
     }
     if (search) {
@@ -177,7 +177,7 @@ router.get('/subcategories', async (req, res, next) => {
     const params = [];
     let pi = 1;
     if (category) {
-      conditions.push(`COALESCE(p.boutique_category_key, p.category) = ${pi++}`);
+      conditions.push(`COALESCE(p.boutique_category_key, p.category) = $${pi++}`);
       params.push(category);
     }
     const { rows } = await db.query(
