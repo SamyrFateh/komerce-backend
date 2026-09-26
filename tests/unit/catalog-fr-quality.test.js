@@ -10,7 +10,9 @@ const {
   sourceFingerprint,
   technicalTokens,
   englishResidues,
+  languageScores,
   looksFrench,
+  controlledClaims,
   evaluateFrenchCopy,
 } = require('../../services/catalog-fr-quality');
 
@@ -70,8 +72,34 @@ describe('catalog FR quality contract', () => {
     ]));
   });
 
-  test('French detection requires actual French signals', () => {
-    expect(looksFrench('Wireless charger stand premium product')).toBe(false);
-    expect(looksFrench('Support de charge pour téléphone avec base réglable')).toBe(true);
+  test('French detection rejects Spanish and English-with-accent false positives', () => {
+    expect(looksFrench('Wireless charger stand premium product café')).toBe(false);
+    expect(looksFrench('Producto con la base ajustable para el teléfono y carga integrada')).toBe(false);
+    expect(looksFrench('Support de charge pour téléphone avec une base réglable et sans câble')).toBe(true);
+    expect(languageScores('Producto con la base para el teléfono').spanish).toBeGreaterThan(0);
+  });
+
+  test('blocks invented controlled claims such as Bluetooth, GPS and IP ratings', () => {
+    const result = evaluateFrenchCopy(source, {
+      title_fr: 'Support de charge sans fil 15 W pour iPhone',
+      description_fr: 'Support réglable pour charger un iPhone sans fil avec une puissance de 15 W, Bluetooth 5.3, GPS intégré et protection IP68.',
+    });
+    expect(result.ok).toBe(false);
+    expect(result.blocking).toContain('invented_controlled_claim');
+    expect(controlledClaims('Bluetooth 5.3 GPS IP68')).toEqual(expect.arrayContaining(['bluetooth5.3', 'gps', 'ip68']));
+  });
+
+  test('blocks omission of critical source claims', () => {
+    const batterySource = {
+      ...source,
+      title: 'Mini écouteurs 190mAh Bluetooth 5.3',
+      description: 'Battery capacity 190mAh with Bluetooth 5.3.',
+    };
+    const result = evaluateFrenchCopy(batterySource, {
+      title_fr: 'Mini écouteurs compacts',
+      description_fr: 'Écouteurs compacts pour une utilisation quotidienne avec un format léger et une prise en main simple.',
+    });
+    expect(result.ok).toBe(false);
+    expect(result.blocking).toContain('critical_source_claim_omitted');
   });
 });
