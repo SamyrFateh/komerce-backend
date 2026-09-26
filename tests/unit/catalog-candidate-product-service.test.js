@@ -19,6 +19,12 @@ describe('catalog-candidate-product-service', () => {
       purchase_price_kmf: 1200,
       estimated_weight_kg: 0.4,
       description: 'Raw supplier description',
+      raw_payload: {
+        discovery: {
+          target_category: 'Mode & Beauté',
+          target_subcategory: 'Femme',
+        },
+      },
     };
 
     await expect(createDraftProductFromSourcingCandidate(q, {
@@ -32,6 +38,8 @@ describe('catalog-candidate-product-service', () => {
     expect(q.query.mock.calls[0][1]).toEqual([
       'Chemise',
       'mode',
+      'Mode & Beauté',
+      'Femme',
       1200,
       2500,
       0.4,
@@ -54,6 +62,8 @@ describe('catalog-candidate-product-service', () => {
     expect(q.query.mock.calls[0][1]).toEqual([
       'Produit brut',
       'autre',
+      null,
+      null,
       0,
       900,
       null,
@@ -63,3 +73,32 @@ describe('catalog-candidate-product-service', () => {
     ]);
   });
 });
+
+
+  it('does not confuse customs category with boutique taxonomy', async () => {
+    const q = {
+      query: jest.fn().mockResolvedValue({ rows: [{ id: 'product-3' }] }),
+    };
+
+    await createDraftProductFromSourcingCandidate(q, {
+      candidate: {
+        product_name: 'Casque',
+        komerce_category: 'electro',
+        raw_payload: {
+          discovery: {
+            target_category: 'Tech',
+            target_subcategory: 'Audio',
+          },
+        },
+      },
+      initialPrice: 12000,
+    });
+
+    const sql = q.query.mock.calls[0][0];
+    const params = q.query.mock.calls[0][1];
+    expect(sql).toContain('boutique_category_key');
+    expect(sql).toContain('boutique_subcategory_key');
+    expect(params[1]).toBe('electro');
+    expect(params[2]).toBe('Tech');
+    expect(params[3]).toBe('Audio');
+  });

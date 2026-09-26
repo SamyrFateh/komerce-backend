@@ -7,6 +7,21 @@
 
 ---
 
+
+## Classification économique vs taxonomie boutique
+
+`products.category` conserve sa responsabilité historique de **classification économique/douanière**. Elle alimente notamment le pricing et le gel douanier des lignes de commande.
+
+La navigation marchande est une responsabilité différente :
+
+- `products.boutique_category_key` = univers boutique canonique ;
+- `products.boutique_subcategory_key` = sous-catégorie boutique canonique ;
+- les lectures publiques utilisent ces champs lorsqu'ils existent, avec fallback historique sur `category/subcategory` pour les anciens produits ;
+- un connecteur fournisseur ne doit jamais écraser la classification douanière pour fabriquer une catégorie d'affichage ;
+- le provenance discovery (`target_category`, `target_subcategory`) peut alimenter la taxonomie boutique lors de la promotion, sans modifier la classification économique.
+
+Cette séparation est obligatoire pour tout nouveau peuplement fournisseur destiné aux tests E2E.
+
 ## 1. Phrase de vérité
 
 > **Le catalogue ne se saisit pas à l'aveugle, il se raffine. La donnée fournisseur

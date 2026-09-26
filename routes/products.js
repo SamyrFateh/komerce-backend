@@ -89,11 +89,11 @@ router.get('/', async (req, res, next) => {
     const conditions = [publicCatalogVisibilitySql('p', marketCodeParamIndex ? { marketCodeParamIndex } : {})];
 
     if (category) {
-      conditions.push(`p.category = $${pi++}`);
+      conditions.push(`COALESCE(p.boutique_category_key, p.category) = $${pi++}`);
       params.push(category);
     }
     if (subcategory) {
-      conditions.push(`p.subcategory = $${pi++}`);
+      conditions.push(`COALESCE(p.boutique_subcategory_key, p.subcategory) = $${pi++}`);
       params.push(subcategory);
     }
     if (search) {
@@ -152,12 +152,14 @@ router.get('/', async (req, res, next) => {
 router.get('/categories', async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT p.category, COUNT(*) AS count,
-              array_agg(DISTINCT p.subcategory) FILTER (WHERE p.subcategory IS NOT NULL) AS subcategories
+      `SELECT COALESCE(p.boutique_category_key, p.category) AS category,
+              COUNT(*) AS count,
+              array_agg(DISTINCT COALESCE(p.boutique_subcategory_key, p.subcategory))
+                FILTER (WHERE COALESCE(p.boutique_subcategory_key, p.subcategory) IS NOT NULL) AS subcategories
          FROM products p
         WHERE ${publicCatalogVisibilitySql('p')}
-        GROUP BY p.category
-        ORDER BY p.category`
+        GROUP BY COALESCE(p.boutique_category_key, p.category)
+        ORDER BY COALESCE(p.boutique_category_key, p.category)`
     );
     res.json(rows);
   } catch (err) {
@@ -168,19 +170,25 @@ router.get('/categories', async (req, res, next) => {
 router.get('/subcategories', async (req, res, next) => {
   try {
     const { category } = req.query;
-    const conditions = [publicCatalogVisibilitySql('p'), 'p.subcategory IS NOT NULL'];
+    const conditions = [
+      publicCatalogVisibilitySql('p'),
+      'COALESCE(p.boutique_subcategory_key, p.subcategory) IS NOT NULL',
+    ];
     const params = [];
     let pi = 1;
     if (category) {
-      conditions.push(`p.category = $${pi++}`);
+      conditions.push(`COALESCE(p.boutique_category_key, p.category) = $${pi++}`);
       params.push(category);
     }
     const { rows } = await db.query(
-      `SELECT p.category, p.subcategory, COUNT(*) AS count
+      `SELECT COALESCE(p.boutique_category_key, p.category) AS category,
+              COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory,
+              COUNT(*) AS count
          FROM products p
         WHERE ${conditions.join(' AND ')}
-        GROUP BY p.category, p.subcategory
-        ORDER BY p.category, p.subcategory`,
+        GROUP BY COALESCE(p.boutique_category_key, p.category),
+                 COALESCE(p.boutique_subcategory_key, p.subcategory)
+        ORDER BY category, subcategory`,
       params
     );
     res.json(rows);
