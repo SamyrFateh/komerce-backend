@@ -30,7 +30,7 @@ const SEGMENTS = Object.freeze([
   { id: 'maison-enfants', category: 'Maison', subcategory: 'Enfants', queries: ['school supplies', 'school bag', 'kids backpack', 'pencil case', 'lunch bag'] },
 
   { id: 'tech-phones', category: 'Tech', subcategory: 'Phones', queries: ['android smartphone', 'mobile phone', 'phone case', 'phone charger', 'usb c cable'] },
-  { id: 'tech-audio', category: 'Tech', subcategory: 'Audio', queries: ['wireless headphones', 'bluetooth speaker', 'wireless earbuds', 'headset', 'portable speaker'] },
+  { id: 'tech-audio', category: 'Tech', subcategory: 'Audio', queries: ['wireless headphones', 'bluetooth speaker', 'wireless earbuds', 'headset', 'portable speaker', 'earphones', 'gaming headset', 'mini speaker', 'audio receiver', 'lavalier microphone'] },
   { id: 'tech-montres', category: 'Tech', subcategory: 'Montres', queries: ['smartwatch', 'wrist watch', 'digital watch', 'sports watch', 'watch band'] },
 
   { id: 'bricolage-outillage', category: 'Bricolage', subcategory: 'Outillage', queries: ['power tools', 'hand tools', 'screwdriver set', 'drill bits', 'tool kit'] },
@@ -42,7 +42,7 @@ const SEGMENTS = Object.freeze([
   { id: 'creation-impression', category: 'Créations personnelles', subcategory: 'Impression', queries: ['printed mug', 'custom stationery', 'sublimation blank', 'custom sticker', 'printable tote bag'] },
 
   { id: 'auto-filtres', category: 'Auto', subcategory: 'Filtres', queries: ['car oil filter', 'car air filter', 'cabin air filter', 'fuel filter', 'motorcycle air filter'] },
-  { id: 'auto-freinage', category: 'Auto', subcategory: 'Freinage', queries: ['brake pads', 'brake disc', 'brake rotor', 'brake caliper', 'motorcycle brake pads'] },
+  { id: 'auto-freinage', category: 'Auto', subcategory: 'Freinage', queries: ['brake pads', 'brake disc', 'brake rotor', 'brake caliper', 'motorcycle brake pads', 'brake lever', 'brake hose', 'brake master cylinder', 'brake fluid reservoir', 'motorcycle brake disc'] },
   { id: 'auto-eclairage', category: 'Auto', subcategory: 'Éclairage', queries: ['car led headlight', 'car tail light', 'fog light', 'turn signal light', 'interior car light'] },
   { id: 'auto-moto', category: 'Auto', subcategory: 'Moto', queries: ['motorcycle accessories', 'motorcycle phone holder', 'motorcycle mirror', 'motorcycle gloves', 'motorcycle bag'] },
 ]);
