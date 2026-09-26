@@ -135,7 +135,7 @@ async function validateForMarket(executor, {
   });
 
   const { rows: [product] } = await db.query(
-    `SELECT id, product_ref, lifecycle_status, is_active
+    `SELECT id, product_ref, lifecycle_status, is_active, content_source, needs_review
        FROM products
       WHERE id=$1
       LIMIT 1`,
@@ -147,7 +147,11 @@ async function validateForMarket(executor, {
 
   let globalPublicationTriggered = false;
   if (product.is_active !== true) {
-    if (product.lifecycle_status !== 'candidate') {
+    if (
+      product.lifecycle_status !== 'candidate'
+      || product.content_source !== 'manual'
+      || product.needs_review !== false
+    ) {
       throw delegationError(
         'CATALOG_PRODUCT_NOT_READY',
         'Ce produit n’est pas disponible pour validation.',
