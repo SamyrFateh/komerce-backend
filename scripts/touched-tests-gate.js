@@ -212,14 +212,59 @@ function jestBinary(workspace) {
 }
 
 /**
- * Mesure la source avec les tests touchés qui lui correspondent et les tests
- * existants dont le stem correspond. Les tests d'un autre workspace ne sont
- * jamais mélangés à la commande.
+ * Un test « consomme » réellement une source s'il la require()/import() ET
+ * ne la jest.mock()/doMock() pas intégralement dans le même fichier (un mock
+ * intégral renvoie un faux module — ça ne prouve aucune exécution du code
+ * réel). Complète stemsMatch, qui rate tout test dont le nom de fichier ne
+ * partage pas la racine du nom du fichier source (ex. tests/unit/
+ * catalog-import-eligibility-evidence.test.js pour catalog-import-orchestrator.js,
+ * ou tests nommés par comportement plutôt que par module — cf. incident
+ * coverage-thresholds.json du 2026-09-26).
+ */
+function realConsumers(sourceFile, candidateTestFiles) {
+  const basename = path.basename(sourceFile);
+  const stem = basename.replace(/\.(js|mjs|ts)$/, '');
+  const escStem = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const nameRe = `(?:${escStem})(?:\\.(?:js|mjs|ts))?`;
+  const requireRe = new RegExp(`require\\([^)]*${nameRe}['"]\\)`);
+  const importRe = new RegExp(`from\\s+['"][^'"]*${nameRe}['"]`);
+  const mockRe = new RegExp(`jest\\.(mock|doMock)\\([^)]*${nameRe}['"]`);
+
+  return candidateTestFiles.filter(testFile => {
+    let raw;
+    try {
+      raw = fs.readFileSync(testFile, 'utf8');
+    } catch {
+      return false;
+    }
+    const stripped = raw
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .split('\n')
+      .map(line => line.replace(/^\s*\*.*$/, '').replace(/\/\/.*$/, ''))
+      .join('\n');
+    const consumesReal = requireRe.test(stripped) || importRe.test(stripped);
+    if (!consumesReal) return false;
+    return !mockRe.test(stripped);
+  });
+}
+
+/**
+ * Mesure la source avec les tests touchés qui lui correspondent, les tests
+ * existants dont le stem correspond, et tout autre test qui la require()/
+ * importe réellement sans la mocker intégralement (realConsumers, ci-dessus
+ * — filet de rattrapage pour les tests nommés par comportement). Les tests
+ * d'un autre workspace ne sont jamais mélangés à la commande.
  */
 function measureCoverage(sourceFile, allTouchedTestFiles) {
   const workspace = workspaceFor(sourceFile);
-  const trackedMatches = listTrackedTests(workspace)
-    .filter(testFile => stemsMatch(sourceFile, testFile));
+  const allTracked = listTrackedTests(workspace);
+  const stemMatches = allTracked.filter(testFile => stemsMatch(sourceFile, testFile));
+  const contentMatches = realConsumers(
+    sourceFile,
+    allTracked.filter(testFile => /\.(test|spec)\.(js|mjs|ts)$/.test(testFile))
+      .map(testFile => path.join(ROOT, testFile))
+  ).map(absPath => path.relative(ROOT, absPath).split(path.sep).join('/'));
+  const trackedMatches = Array.from(new Set([...stemMatches, ...contentMatches]));
   const touchedMatches = allTouchedTestFiles
     .filter(testFile => belongsToWorkspace(testFile, workspace))
     .filter(testFile => stemsMatch(sourceFile, testFile));
