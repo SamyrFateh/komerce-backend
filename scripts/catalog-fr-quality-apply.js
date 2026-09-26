@@ -6,12 +6,12 @@
  * @layer         tooling
  * @criticality   high
  * @inputs        offline AI-assisted French translation JSON, disposable catalog checkpoint
- * @outputs       traced manual overrides + French quality audit report
+ * @outputs       atomic traced manual overrides + French review-candidate audit report
  * @depends       db.js, services/catalog-overrides.js, services/catalog-fr-quality.js
  * @used-by       operator-assisted FR Quality Pass
  * @db-read       sourcing_candidates, products
  * @db-write-via  catalog-overrides
- * @db-txn        one product override sequence
+ * @db-txn        one all-or-nothing transaction for the submitted batch
  * @doctrine      source_truth_preserved, offline_ai_assistance, no_runtime_llm_dependency, no_publication
  * @impact-areas  catalog, product-detail, staging
  * @version       2026-09-v1
