@@ -45,7 +45,7 @@ describe('catalog FR quality contract', () => {
   });
 
   test('detects obvious English residues but not normal French', () => {
-    expect(englishResidues('Support wireless portable')).toEqual(expect.arrayContaining(['portable', 'wireless']));
+    expect(englishResidues('Support wireless foldable')).toEqual(expect.arrayContaining(['wireless', 'foldable']));
     expect(englishResidues('Support de charge compact pour téléphone')).toEqual([]);
   });
 
