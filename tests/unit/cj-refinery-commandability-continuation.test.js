@@ -59,10 +59,12 @@ describe('CJ Raffinerie commandability continuation', () => {
     })).not.toThrow();
   });
 
-  test('reconnaît les erreurs quota CJ sans masquer les autres erreurs', () => {
+  test('reconnaît quota et auth sans masquer les autres erreurs', () => {
     expect(continuation.isQuotaError(Object.assign(new Error('x'), { status: 429 }))).toBe(true);
     expect(continuation.isQuotaError(new Error('insufficient api points 16900500'))).toBe(true);
     expect(continuation.isQuotaError(new Error('product not found'))).toBe(false);
+    expect(continuation.isAuthError(Object.assign(new Error('expired token'), { status: 401 }))).toBe(true);
+    expect(continuation.isAuthError(new Error('product not found'))).toBe(false);
   });
 
   test('READY exige média, SKU fournisseur actif et Supplier Order Identity complète', () => {
