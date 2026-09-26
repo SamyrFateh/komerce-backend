@@ -123,6 +123,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const marketDelegationProviderRouter = require('../routes/market-delegation-provider');
   const marketDelegationCatalogRouter = require('../routes/market-delegation-catalog');
   const marketDelegationLocalOfferRouter = require('../routes/market-delegation-local-offer');
+  const marketDelegationClientRouter = require('../routes/market-delegation-client');
   const marketDelegationClientCaseRouter = require('../routes/market-delegation-client-case');
   const marketDelegationSettlementRouter = require('../routes/market-delegation-settlement');
   const marketDelegationStructureEventRouter = require('../routes/market-delegation-structure-event');
@@ -246,6 +247,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/market-delegation', marketDelegationProviderRouter);
   app.use('/api/market-delegation', marketDelegationCatalogRouter);
   app.use('/api/market-delegation', marketDelegationLocalOfferRouter);
+  app.use('/api/market-delegation', marketDelegationClientRouter);
   app.use('/api/market-delegation', marketDelegationClientCaseRouter);
   app.use('/api/market-delegation', marketDelegationSettlementRouter);
   app.use('/api/market-delegation', marketDelegationStructureEventRouter);
