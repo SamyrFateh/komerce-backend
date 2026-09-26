@@ -2916,12 +2916,12 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     /* Réagencement validé : le slogan occupe la bande haute ; la scène
        descend sous lui et se décale vers la gauche. Le calque garde la
        même échelle verticale : on réorganise, on ne grossit pas le Hero. */
-    inset: 16px auto auto 63%;
+    inset: 14px auto auto 62%;
     transform: translateX(-50%);
-    width: 205px;
+    width: 198px;
     height: 100%;
     background-image: url('/images/komerce-hero-handoff-v2.webp');
-    background-size: auto 92%;
+    background-size: auto 93%;
     background-position: center top;
     -webkit-mask-image: none;
     mask-image: none;
@@ -2933,7 +2933,7 @@ body.spike-shell-vertical .k-hero-cats-sticky {
 
   html .k-hero-media .k-hero-mini-slogan--premium {
     inset: 0 auto auto 0;
-    width: 48%;
+    width: 50%;
     padding: 0;
     align-items: flex-start;
     justify-content: flex-start;
