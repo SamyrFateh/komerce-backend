@@ -182,8 +182,15 @@ tester le catalogue. Une indisponibilité de fournisseur IA ne peut donc pas blo
 le pipeline canonique.
 
 Garde-fous communs :
-- **Glossaire métier en DB** (`catalog_glossary`) : référence terminologique pour
-  les traductions humaines comme pour l'IA ;
+- **Glossaire métier en DB** (`catalog_glossary`) : autorité terminologique Komerce
+  pour les traductions humaines comme pour l'IA ;
+- **Mémoire terminologique externe sourcée** (`catalog_terminology_reference`) :
+  références EN→FR importées depuis des banques ouvertes reconnues (TERMIUM Plus
+  en premier), conservant domaine, provenance et licence. Cette mémoire propose
+  des candidats contextuels mais ne remplace jamais `catalog_glossary` ; en cas
+  de conflit, la décision Komerce validée gagne ;
+- les imports externes sont **filtrés par le corpus réellement rencontré** : on
+  n'alourdit pas la base avec des millions de termes inutiles ;
 - **Marquage d'origine** : `content_source` (`ai_enriched` / `manual` /
   `connector_raw`) décrit la provenance de la présentation client ;
 - **Overrides** : les corrections humaines d'une fiche issue du pipeline restent
