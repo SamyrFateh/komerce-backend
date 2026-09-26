@@ -220,7 +220,7 @@ async function loadProducts() {
     if (cached) {
       products = setProducts(JSON.parse(cached).filter(p => p.is_available !== false));
     } else {
-      showToast('Pas de connexion', 'error');
+      _showCatalogLoadError(e);
       return;
     }
   }
@@ -388,6 +388,46 @@ function _renderEmptyState({ icon, title, sub, actionLabel, actionHref, actionId
       actionHtml +
     '</div>'
   );
+}
+
+// G-L2 — Échec du chargement du catalogue sans cache (première visite) :
+// état explicite + « Réessayer » au lieu d'un toast éphémère et d'une grille
+// vide. Message juste selon la cause : réseau coupé vs serveur indisponible.
+function renderCatalogLoadErrorState(err) {
+  const offline = (typeof navigator !== 'undefined' && navigator.onLine === false)
+    || (err && err.name === 'TypeError');
+  const busy = !!err && (err.status === 429 || err.status === 503);
+  return _renderEmptyState({
+    icon: offline ? '📶' : '⏳',
+    title: offline ? 'Pas de connexion internet' : 'Le catalogue ne répond pas pour le moment',
+    sub: offline
+      ? 'Vérifiez votre réseau, puis réessayez.'
+      : (busy ? 'Beaucoup de visites en ce moment. Réessayez dans quelques instants.'
+              : 'Réessayez dans quelques instants.'),
+    actionLabel: 'Réessayer',
+    actionId: 'k-catalog-retry-btn',
+  });
+}
+
+function _showCatalogLoadError(err) {
+  if (!dom.grid) return;
+  // Même mise en page que les états vides de renderGrid() : sur mobile,
+  // l'écran se place sous le bloc fixe (header + hero + rail), pager arrêté.
+  dom.grid.classList.remove('k-grid-has-sections', 'k-grid-cat-pager');
+  destroyMobilePager();
+  dom.grid.innerHTML = renderCatalogLoadErrorState(err);
+  if (!isDesktop() && !isVerticalShell() && dom.pageScroll) {
+    dom.pageScroll.classList.add('k-pager-active');
+    _recalcPagerVars();
+  }
+  const retry = () => {
+    window.removeEventListener('online', retry);
+    const btn = document.getElementById('k-catalog-retry-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Chargement…'; }
+    loadProducts();
+  };
+  document.getElementById('k-catalog-retry-btn')?.addEventListener('click', retry, { once: true });
+  window.addEventListener('online', retry, { once: true });
 }
 
 function renderCatalogEmptyState() {
@@ -973,6 +1013,6 @@ export {
   renderPromos, renderGrid, appendNextPage,
   setupCats, setupCatSwipeNav, centerActiveChip, setupSearch,
   loadProducts, _renderCard, updateHeroProductCount,
-  renderCatalogEmptyState, renderCategoryEmptyState, renderSearchEmptyState,
+  renderCatalogEmptyState, renderCategoryEmptyState, renderSearchEmptyState, renderCatalogLoadErrorState,
 };
 
