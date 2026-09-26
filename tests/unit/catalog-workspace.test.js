@@ -196,7 +196,7 @@ test('file de curation accepte offset/limit bornés pour parcourir un gros vivie
     has_next: false,
   });
   const approvalCall = mockQuery.mock.calls.find(([sql]) =>
-    String(sql).includes("WHERE lifecycle_status = 'candidate'") && String(sql).includes('OFFSET $2')
+    String(sql).includes("p.lifecycle_status = 'candidate'") && String(sql).includes('OFFSET $2')
   );
   expect(approvalCall[1]).toEqual([75, 150]);
 });
