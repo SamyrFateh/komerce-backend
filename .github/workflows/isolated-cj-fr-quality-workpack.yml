@@ -1,0 +1,166 @@
+name: Isolated CJ FR quality workpack
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Workflow run carrying the reusable CJ checkpoint'
+        required: false
+        default: '36225161597'
+      checkpoint_name:
+        description: 'Checkpoint artifact name'
+        required: false
+        default: 'real-cj-refinery-continuation-checkpoint'
+      batch_size:
+        description: 'Products per translation batch'
+        required: false
+        default: '40'
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: isolated-cj-fr-quality-workpack
+  cancel-in-progress: false
+
+jobs:
+  export-workpack:
+    name: Source EN → offline FR workpack
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.title == '[isolated-op] cj-fr-quality-workpack')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_real_catalog_stress
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_real_catalog_stress"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      CI: '1'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress
+
+    steps:
+      - name: Checkout protected main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download reusable CJ checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.checkpoint_name || 'real-cj-refinery-continuation-checkpoint' }}
+          path: checkpoint
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.source_run_id || '36225161597' }}
+          github-token: ${{ github.token }}
+
+      - name: Restore disposable checkpoint
+        shell: bash
+        env:
+          PGPASSWORD: komerce
+        run: |
+          set -euo pipefail
+          dump_file="$(find checkpoint -type f -name '*.dump' | head -1)"
+          test -n "$dump_file" || { echo '::error::Checkpoint sans dump PostgreSQL'; exit 1; }
+          pg_restore --clean --if-exists --no-owner --no-privileges             -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress "$dump_file"
+          psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -Atqc             "SELECT 'cj_drafts=' || count(*) FROM sourcing_candidates sc JOIN products p ON p.id=sc.product_id WHERE sc.supplier_name='CJdropshipping' AND sc.state='imported_to_catalog' AND p.lifecycle_status='candidate' AND p.is_active=FALSE;"
+
+      - name: Export source-faithful FR quality workpack
+        id: export
+        shell: bash
+        run: |
+          set -euo pipefail
+          batch_size="${{ inputs.batch_size || '40' }}"
+          output="$(node scripts/catalog-fr-quality-workpack.js             --limit=1000             --batch-size="$batch_size"             --output-dir=artifacts/catalog-fr-quality-workpack)"
+          printf '%s\n' "$output"
+          echo "summary=$output" >> "$GITHUB_OUTPUT"
+
+      - name: Upload FR quality workpack
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-fr-quality-workpack
+          path: artifacts/catalog-fr-quality-workpack/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Final safety audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const db = require('./db');
+          (async () => {
+            const { rows: [r] } = await db.query(`
+              SELECT COUNT(*) FILTER (WHERE p.is_active=TRUE)::int AS active,
+                     COUNT(DISTINCT pme.product_id)::int AS exposed,
+                     COUNT(*) FILTER (WHERE p.lifecycle_status IS DISTINCT FROM 'candidate')::int AS wrong_lifecycle
+                FROM sourcing_candidates sc
+                JOIN products p ON p.id=sc.product_id
+                LEFT JOIN product_market_exposure pme ON pme.product_id=p.id
+               WHERE sc.supplier_name='CJdropshipping'
+                 AND sc.state='imported_to_catalog'
+            `);
+            console.log(JSON.stringify(r));
+            if (Number(r.active)||Number(r.exposed)||Number(r.wrong_lifecycle)) {
+              throw new Error('SAFETY_AUDIT_FAILED:' + JSON.stringify(r));
+            }
+          })().catch(e => { console.error(e); process.exitCode=1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Write workpack summary
+        if: always()
+        shell: bash
+        env:
+          EXPORT_SUMMARY: ${{ steps.export.outputs.summary }}
+        run: |
+          {
+            echo '## FR Quality Pass workpack'
+            echo
+            echo '- source: reusable CJ Raffinerie checkpoint'
+            echo '- API IA runtime: 0'
+            echo '- translation: offline/operator-assisted'
+            echo '- publication/exposure/order/payment: forbidden'
+            if [ -n "${EXPORT_SUMMARY:-}" ]; then echo "- export: `$EXPORT_SUMMARY`"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Close successful command issue
+        if: success() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY"             --body 'FR Quality Pass workpack exported. Artifact: cj-fr-quality-workpack. Zero runtime AI API calls.'
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed

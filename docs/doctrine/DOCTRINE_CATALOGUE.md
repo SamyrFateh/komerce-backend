@@ -142,6 +142,34 @@ Trois voies sont autorisées :
 Une source étrangère brute (`connector_raw` non française) **ne peut jamais être
 publiée telle quelle**. Elle doit d'abord passer par la voie humaine ou IA.
 
+### 4.1 Deux niveaux à ne jamais confondre : fixture E2E et qualité éditoriale
+
+La préparation déterministe locale utilisée pour charger rapidement un catalogue
+de test en staging peut nettoyer un titre, raccourcir du bruit fournisseur et
+fabriquer une description minimale. Elle est utile pour **éprouver le pipeline**,
+mais elle ne constitue pas une traduction sémantique ni une validation éditoriale.
+Son autorité doit rester explicitement de type fixture E2E.
+
+Pour devenir **READY éditorial**, une source étrangère doit passer un **FR Quality
+Pass** source→français, distinct du simple stress technique :
+
+1. export d'un workpack borné depuis les faits source canoniques ;
+2. traduction/réécriture française naturelle hors runtime ;
+3. second passage de contrôle source→FR pour détecter invention, omission critique
+   ou résidu anglais ;
+4. vérification d'un hash de source avant application afin de refuser une traduction
+   préparée sur une version devenue obsolète ;
+5. application uniquement via overrides tracés `manual` ;
+6. contrôles statiques : longueur, langue, bruit fournisseur, valeurs techniques
+   inventées, lifecycle inactif ;
+7. **aucune publication automatique** : l'approbation humaine de première
+   publication reste l'étage ⑥.
+
+Le FR Quality Pass ne possède ni le pricing, ni le stock, ni la taxonomie, ni
+l'exposition marché. Une anomalie de catégorie/sous-catégorie peut être signalée
+dans le workpack mais doit être corrigée par l'autorité Catalogue dédiée, jamais
+inventée par la traduction.
+
 Aucune clé API ni crédit IA ne doit être nécessaire pour importer, préparer ou
 tester le catalogue. Une indisponibilité de fournisseur IA ne peut donc pas bloquer
 le pipeline canonique.
@@ -235,7 +263,7 @@ ne constituent plus la voie canonique de préparation.
 |---|---|---|
 | K-1 | Colonnes source + marquage : `name_source`, `description_source`, `source_locale`, `content_source`, `enrichment_version`, table `catalog_glossary`, table `catalog_exclusions` | aucune |
 | K-2 | Étage ③ dans le scanner : matching exclusions sur donnée source, décisions `excluded`/`restricted` avec raison | K-1 |
-| K-3 | Préparation éditoriale FR : voie native FR + voie manuelle/assistée hors runtime ; zéro API IA requise | K-1 |
+| K-3 | Préparation éditoriale FR : voie native FR + voie manuelle/assistée hors runtime ; zéro API IA requise ; distinction obligatoire fixture E2E / FR Quality Pass source→FR | K-1 |
 | K-4 | File d'approbation admin : fiche préparée → approve / reject / edit / override en 1 écran ; provenance et overrides tracés | K-3 |
 | K-5 | Auto-publication bornée des mises à jour + retraitement en masse optionnel selon la provenance du contenu | K-4 + terrain |
 | K-M | Projection marché du catalogue distant : composition des overlays propriétaires (pricing/logistics/payments/recommendations) sans duplication de produit | autorités marché correspondantes |
