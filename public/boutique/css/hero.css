@@ -95,14 +95,30 @@
   -webkit-mask-image: none;
   mask-image: none;
 }
-/* Desktop : les deux visages, le téléphone et le doigt forment un cluster. */
+/* Desktop : même scène de remise v3 que mobile, avec marge haute native.
+   Le calque est dimensionné exactement à l'image (ratio natif 2022×778) pour
+   porter des coins arrondis comme sur mobile, au lieu d'un rectangle à bords
+   nets posé sur le fond crème. Collé à droite de 900 à 1199 px (la colonne
+   texte n'y laisse pas assez de place pour le décaler sans chevauchement). */
 @media (min-width: 900px) {
   .k-hero-figures {
-    /* Le master tient presque entièrement dans la carte : les coiffures,
-       le téléphone et les deux gestes restent visibles sans agrandir le hero. */
-    background-size: auto 108%;
-    background-position: 80% 0%;
+    background-image: url('/images/komerce-hero-handoff-v3.webp');
+    top: 0;
+    bottom: auto;
+    left: auto;
+    right: 0;
+    height: 100%;
+    width: auto;
+    aspect-ratio: 2022 / 778;
+    background-size: cover;
+    background-position: center;
+    border-radius: 16px;
   }
+}
+/* ≥ 1200 px : la scène se décale vers le centre comme prévu par la
+   composition desktop (≈ l'ancien 74 %), en gardant de l'air à droite. */
+@media (min-width: 1200px) {
+  .k-hero-figures { right: 16%; }
 }
 /* Mobile : dérivé art-directed du même master. Les coiffures restent
    entièrement dans le cadre ; le bas des torses absorbe la coupe. */
@@ -698,19 +714,19 @@ body.spike-shell-vertical .k-hero-cats-sticky {
     font-size: clamp(28px, 2.2vw, 40px);
     font-weight: 800;
     line-height: 1.02;
-    color: var(--green-dark-text);
+    color: var(--text);
     letter-spacing: -.02em;
   }
 
-  /* Titre display — line 2 (italic coral) */
+  /* Titre display — même promesse que mobile. */
   html.k-home-premium-v1 .k-hero-mini-slogan--premium .k-line-2 {
     display: block;
     font-family: var(--font-display);
     font-size: clamp(28px, 2.2vw, 40px);
     font-weight: 800;
-    font-style: italic;
+    font-style: normal;
     line-height: 1.02;
-    color: var(--coral);
+    color: var(--green-dark-text);
     letter-spacing: -.02em;
     margin-bottom: 8px;
   }
@@ -811,10 +827,21 @@ body.spike-shell-vertical .k-hero-cats-sticky {
   }
 }
 
+/* 900–1199 px : les deux CTA et la ligne de confiance tiennent sur une ligne
+   (le retour à la ligne rognait « Suivre ma commande » par le bas du hero et
+   masquait la ligne de confiance). CTA légèrement compactés, jamais cachés. */
 @media (min-width: 900px) and (max-width: 1199px) {
   html.k-home-premium-v1 .k-hero-cta-row,
   html.k-home-premium-v1 .k-hero-trust {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+  }
+  html.k-home-premium-v1 .k-hero-cta-primary {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  html.k-home-premium-v1 .k-hero-cta-ghost {
+    font-size: 12px;
+    padding: 7px 9px;
   }
 }
 /* ══ FIN HERO DESKTOP PANORAMIQUE ═════════════════════════════ */
