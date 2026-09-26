@@ -37,10 +37,10 @@
     /* Réagencement validé : le slogan occupe la bande haute ; la scène
        descend sous lui et se décale vers la gauche. Le calque garde la
        même échelle verticale : on réorganise, on ne grossit pas le Hero. */
-    inset: 16px auto auto 59%;
+    inset: 20px auto auto 55%;
     transform: translateX(-50%);
-    width: 208px;
-    height: calc(100% + 9px);
+    width: 220px;
+    height: calc(100% + 14px);
     background-image: url('/images/komerce-hero-handoff-v2.webp');
     background-size: auto 100%;
     background-position: center top;
@@ -53,8 +53,8 @@
   .k-hero-copy-desktop { display: none; }
 
   html .k-hero-media .k-hero-mini-slogan--premium {
-    inset: 0 auto auto 0;
-    width: 50%;
+    inset: -4px auto auto 0;
+    width: 56%;
     padding: 0;
     align-items: flex-start;
     justify-content: flex-start;
