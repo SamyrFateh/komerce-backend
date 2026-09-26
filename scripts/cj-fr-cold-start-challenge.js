@@ -224,45 +224,48 @@ async function hydrateExactProducts(candidates, seen, target, {
 } = {}) {
   const exact = [];
   const errors = [];
+  const accessToken = await cjConnector.getAccessToken({ env });
 
-  for (let offset = 0; offset < candidates.length && exact.length < target; offset += DETAIL_CHUNK) {
-    const ids = candidates.slice(offset, offset + DETAIL_CHUNK)
-      .map(product => product.supplier_product_id)
-      .filter(Boolean);
+  for (let index = 0; index < candidates.length && exact.length < target; index += 1) {
+    const candidate = candidates[index];
+    const id = String(candidate?.supplier_product_id || '').trim();
+    if (!id || seen.has(id)) continue;
 
-    if (!ids.length) continue;
-    if (offset > 0 && delayMs > 0) {
+    if (state.detailCalls > 0 && delayMs > 0) {
       // eslint-disable-next-line no-await-in-loop
       await sleep(delayMs);
     }
 
-    // fetchProducts(productIds) uses the exact /product/query endpoint and
-    // preserves commandable/source detail without importing anything.
-    // eslint-disable-next-line no-await-in-loop
-    const result = await withQuotaRetry(
-      () => cjConnector.fetchProducts({
-        productIds: ids,
-        env,
-        delayMs,
-        retries: 2,
-      }),
-      { label: `detail-${offset / DETAIL_CHUNK + 1}`, state }
-    );
-    state.detailBatches += 1;
+    try {
+      // Exact /product/query read. We deliberately do not import the product.
+      // eslint-disable-next-line no-await-in-loop
+      const detail = await withQuotaRetry(
+        () => cjConnector.fetchProductDetail(id, { env, accessToken }),
+        { label: `detail-${id}`, state }
+      );
+      state.detailCalls += 1;
+      const product = cjConnector.normalizeCjProduct(detail.product);
+      const normalizedId = String(product?.supplier_product_id || '').trim();
 
-    for (const invalid of result.invalid || []) {
-      errors.push(invalid);
-    }
-
-    for (const product of result.products || []) {
-      const id = String(product?.supplier_product_id || '').trim();
-      if (!id || seen.has(id)) {
-        errors.push({ supplier_product_id: id || null, error: 'SEEN_OR_MISSING_ID_AFTER_DETAIL' });
+      if (normalizedId !== id) {
+        errors.push({
+          supplier_product_id: id,
+          error: `DETAIL_ID_MISMATCH actual=${normalizedId || '<missing>'}`,
+        });
         continue;
       }
-      if (exact.some(item => item.supplier_product_id === id)) continue;
+      if (!String(product.product_name || '').trim()) {
+        errors.push({ supplier_product_id: id, error: 'DETAIL_TITLE_MISSING' });
+        continue;
+      }
+      if (exact.some(item => item.supplier_product_id === normalizedId)) continue;
       exact.push(product);
-      if (exact.length >= target) break;
+    } catch (error) {
+      state.detailCalls += 1;
+      errors.push({
+        supplier_product_id: id,
+        error: String(error?.message || error).slice(0, 300),
+      });
     }
   }
 
@@ -445,7 +448,7 @@ async function discover(options, env = process.env) {
 
   const state = {
     listCalls: 0,
-    detailBatches: 0,
+    detailCalls: 0,
     quotaWaits: 0,
   };
   const seen = await loadSeenIds();
@@ -491,7 +494,7 @@ async function discover(options, env = process.env) {
     unseen_products: entries.filter(entry => entry.unseen_against_checkpoint).length,
     distinct_supplier_categories: new Set(entries.map(entry => categoryBucket(entry.source))).size,
     list_calls: state.listCalls,
-    detail_batches: state.detailBatches,
+    detail_calls: state.detailCalls,
     quota_waits: state.quotaWaits,
     detail_errors: exact.errors.length,
     pages_scanned: pool.pages_scanned,
