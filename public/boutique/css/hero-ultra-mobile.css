@@ -53,7 +53,7 @@
   .k-hero-copy-desktop { display: none; }
 
   html .k-hero-media .k-hero-mini-slogan--premium {
-    inset: 0 auto auto 28%;
+    inset: -2px auto auto 28%;
     width: 62%;
     padding: 0;
     align-items: flex-start;
