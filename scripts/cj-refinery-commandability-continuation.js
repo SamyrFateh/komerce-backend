@@ -99,6 +99,11 @@ function isQuotaError(error) {
     );
 }
 
+function isAuthError(error) {
+  return [401, 403].includes(Number(error?.status))
+    || /access.?token|unauthori[sz]ed|forbidden|authentication/i.test(String(error?.message || error || ''));
+}
+
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -412,6 +417,7 @@ async function run(options = parseArgs(), env = process.env) {
           break;
         } catch (error) {
           detailCalls += 1;
+          if (isAuthError(error)) throw error;
           if (isQuotaError(error)) {
             if (quotaWaits >= maxQuotaWaits) {
               pausedReason = 'quota-paused';
@@ -534,6 +540,7 @@ module.exports = {
   parseArgs,
   assertDisposableRuntime,
   isQuotaError,
+  isAuthError,
   decisionOf,
   classifyReadiness,
   loadPending,
