@@ -106,6 +106,23 @@ La file humaine est paginée par `approval_limit` (1–100, défaut 50) et
 chaque première publication reste une décision humaine individuelle et le cap
 `CATALOG_CAP_MVP` continue d'être imposé côté serveur.
 
+### Priorisation de la curation
+
+La pagination est ordonnée par le dernier signal sourcing persisté du candidat
+importé : `PRIORITY → TEST → WATCH → AVOID → LOSS → UNKNOWN`, puis par confiance
+sourcing, disponibilité fournisseur et qualité éditoriale.
+
+Ce classement est **informatif** :
+
+- il n'approuve ni ne rejette jamais automatiquement ;
+- il conserve la raison du scanner dans la projection ;
+- la densité de valeur n'entre pas dans cet ordre tant que sa calibration réelle
+  n'est pas disponible ;
+- l'autorité de première publication reste `human_approval`.
+
+La projection expose également `approval_breakdown` afin de rendre visible la
+répartition complète du backlog par signal sourcing.
+
 ### Summary
 
 - `total_products`
