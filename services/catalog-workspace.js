@@ -8,7 +8,7 @@
  * @outputs       catalog_work_queue, delegated_catalog_mutations
  * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/boutique-taxonomy-admin.js
  * @used-by       routes/admin-catalog-workspace.js
- * @db-read       products, boutique_categories, boutique_subcategories
+ * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories
  * @db-write      none
  * @db-write-via  product-admin-service, catalog-approval, boutique-taxonomy-admin
  * @db-txn        delegated_to_domain_authority
