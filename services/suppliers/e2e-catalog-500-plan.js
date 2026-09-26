@@ -20,7 +20,7 @@
 
 const SEGMENTS = Object.freeze([
   { id: 'mode-femme', category: 'Mode & Beauté', subcategory: 'Femme', queries: ['women dress', 'women clothing'] },
-  { id: 'mode-homme', category: 'Mode & Beauté', subcategory: 'Homme', queries: ['men shirt', 'men clothing'] },
+  { id: 'mode-homme', category: 'Mode & Beauté', subcategory: 'Homme', queries: ['men shirt', 'men clothing', 'men t-shirt', 'men pants', 'men shoes'] },
   { id: 'mode-enfant', category: 'Mode & Beauté', subcategory: 'Enfant', queries: ['kids clothing', 'kids shoes'] },
   { id: 'beaute', category: 'Mode & Beauté', subcategory: 'Beauté', queries: ['cosmetics makeup', 'skin care', 'beauty tools'] },
 
