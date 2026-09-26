@@ -389,7 +389,17 @@ function main() {
   }
 
   let fails = 0;
-  let warns = 0;
+  // `blockingWarns` : la preuve A (test touché) existe mais la règle de
+  // complétion au contact (--strict) ne peut pas être vérifiée pour le
+  // cliquet configuré — ça reste bloquant en strict (cf.
+  // touched-tests-gate-coverage-thresholds.test.js).
+  let blockingWarns = 0;
+  // `advisoryWarns` : preuve B (exemption) ou C (## Tests du body PR).
+  // Ce sont des preuves de rang égal à la preuve A selon la doctrine
+  // documentée en tête de fichier — --strict ne renforce que la preuve A
+  // (complétion au contact), il ne doit donc jamais transformer une preuve
+  // B/C valide en échec.
+  let advisoryWarns = 0;
   const uncovered = [];
   const incomplete = [];
 
@@ -419,7 +429,7 @@ function main() {
 
       if (coverage === null) {
         console.log(`  ${ICON.WARN} ${C.dim}${file}${C.r}  ${C.ylw}test touché — couverture non mesurable isolément pour le cliquet configuré${C.r}`);
-        warns++;
+        blockingWarns++;
         continue;
       }
 
@@ -436,13 +446,13 @@ function main() {
 
     if (exemptions[file]) {
       console.log(`  ${ICON.WARN} ${C.dim}${file}${C.r}  ${C.ylw}exempté : ${exemptions[file]}${C.r}`);
-      warns++;
+      advisoryWarns++;
       continue;
     }
 
     if (hasPrTests) {
       console.log(`  ${ICON.WARN} ${C.dim}${file}${C.r}  ${C.ylw}justifié par section ## Tests du body PR${C.r}`);
-      warns++;
+      advisoryWarns++;
       continue;
     }
 
@@ -452,14 +462,20 @@ function main() {
   }
 
   console.log();
+  const warns = blockingWarns + advisoryWarns;
 
   if (fails === 0 && warns === 0) {
     console.log(`${C.grn}${C.bld}✔ Tous les fichiers applicatifs ont un signal test conforme.${C.r}\n`);
     process.exit(0);
   }
 
+  if (fails === 0 && blockingWarns === 0) {
+    console.log(`${C.ylw}▲ ${advisoryWarns} fichier(s) couvert(s) par exemption ou justification ## Tests (preuves B/C, non affectées par --strict).${C.r}\n`);
+    process.exit(0);
+  }
+
   if (warns > 0 && fails === 0) {
-    console.log(`${C.ylw}▲ ${warns} fichier(s) couvert(s) par exemption, justification ou mesure impossible.${C.r}\n`);
+    console.log(`${C.ylw}▲ ${blockingWarns} fichier(s) avec couverture non mesurable pour un cliquet configuré, ${advisoryWarns} par exemption/justification.${C.r}\n`);
     process.exit(STRICT ? 1 : 0);
   }
 
