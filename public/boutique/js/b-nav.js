@@ -276,26 +276,55 @@ export function activateNavTab(tab) {
   });
 }
 
+// G-03 — Onglets dans l'historique : retour Android = onglet précédent,
+// jamais sortie du site. Une seule entrée d'historique pour tout le séjour
+// hors Boutique (push depuis Boutique, replace entre onglets).
+const HISTORY_TABS = new Set(['track', 'shares', 'fav', 'komerce']);
+let _currentTab = 'shop';
+
+function showTab(tab, opts) {
+  _currentTab = tab;
+  if (tab === 'komerce') {
+    // Neutraliser d'abord la vue précédente : openMonKomerce() affiche
+    // ensuite son propre écran explicatif avant toute identification.
+    activateNavTab(null);
+    switchView('shop');
+    openMonKomerce(opts);
+    return;
+  }
+  activateNavTab(tab);
+  if (tab === 'fav')    { renderFavView(); switchView('fav'); return; }
+  if (tab === 'track')  { renderTrackView(); switchView('track'); return; }
+  if (tab === 'shares') { renderListsView(); switchView('track'); return; }
+  switchView('shop');
+}
+
 export function setupBnav() {
   const allNavBtns = document.querySelectorAll('.k-bnav-item, .k-header-nav-btn');
   allNavBtns.forEach(item => {
     item.addEventListener('click', () => {
       const tab = item.dataset.tab;
-      if (tab === 'komerce') {
-        // Neutraliser d'abord la vue précédente : openMonKomerce() affiche
-        // ensuite son propre écran explicatif avant toute identification.
-        activateNavTab(null);
-        switchView('shop');
-        openMonKomerce();
+      if (tab === 'cart') { activateNavTab(tab); openCart(); return; }
+      const inTabEntry = !!(history.state && history.state.kTab);
+      if (HISTORY_TABS.has(tab)) {
+        if (inTabEntry) history.replaceState({ kTab: tab }, '');
+        else history.pushState({ kTab: tab }, '');
+        showTab(tab);
         return;
       }
-      activateNavTab(tab);
-      if (tab === 'cart')  { openCart(); return; }
-      if (tab === 'fav')   { renderFavView(); switchView('fav'); return; }
-      if (tab === 'track')  { renderTrackView(); switchView('track'); return; }
-      if (tab === 'shares') { renderListsView(); switchView('track'); return; }
-      switchView('shop');
+      // Retour à la Boutique depuis un onglet : consommer l'entrée d'onglet
+      // pour qu'un retour ultérieur ne revienne pas sur un onglet quitté.
+      showTab('shop');
+      if (inTabEntry) history.back();
     });
+  });
+
+  window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.kModal) return;             // géré par b-modal-core.js
+    if (dom.modalOverlay && dom.modalOverlay.classList.contains('open')) return; // idem
+    const target = (event.state && event.state.kTab) || 'shop';
+    if (target === _currentTab) return;                        // idempotent
+    showTab(target);
   });
 }
 
@@ -347,7 +376,14 @@ function handleTabDeepLink() {
   try {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (!tab || tab === 'shop') return;
+    if (!tab || tab === 'shop') {
+      // G-04 — rechargement sur un onglet (pas de ?tab= dans l'URL) : restaurer
+      // l'onglet actif depuis l'entrée d'historique plutôt que de retomber sur
+      // la Boutique.
+      const kept = history.state && history.state.kTab;
+      if (kept && HISTORY_TABS.has(kept)) showTab(kept);
+      return;
+    }
 
     // 'wallet' : redirection temporaire (Lot 4 §6) — l'ancien onglet wallet
     // autonome a disparu, tout lien ?tab=wallet encore actif ouvre désormais
@@ -364,18 +400,10 @@ function handleTabDeepLink() {
     params.delete('tab');
     const qs = params.toString();
     const clean = window.location.pathname + (qs ? '?' + qs : '');
-    window.history.replaceState({}, '', clean);
+    window.history.replaceState({ kTab: resolvedTab }, '', clean);
 
-    // Activer l'onglet
-    activateNavTab(resolvedTab);
-
-    if (resolvedTab === 'fav')     { renderFavView(); switchView('fav'); }
-    if (resolvedTab === 'track')   { renderTrackView(); switchView('track'); }
-    // PROMPT_FINAL_IMPLEMENTATION_LISTE_PARTAGEABLE_SIDE_CART_V2_D — ?tab=group
-    // legacy : ouvre directement le sous-onglet Listes de l'onglet Suivi
-    // (voir l'historique de l'événement nav:goto-group plus haut, même logique).
-    if (resolvedTab === 'shares')  { renderListsView(); switchView('track'); }
-    if (resolvedTab === 'komerce') { openMonKomerce(tab === 'wallet' ? { focus: 'wallet' } : {}); }
+    // Activer l'onglet (même chemin que le clic bottom-nav / le retour Android)
+    showTab(resolvedTab, resolvedTab === 'komerce' && tab === 'wallet' ? { focus: 'wallet' } : undefined);
   } catch (_) {}
 }
 
