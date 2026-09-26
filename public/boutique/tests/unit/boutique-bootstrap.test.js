@@ -95,7 +95,7 @@ jest.mock('../../js/b-tracking.js', () => ({
   formatOrderDate: jest.fn(), renderTrackViewSearchMode: jest.fn(),
 }));
 jest.mock('../../js/b-pager.js', () => ({
-  _setupMobilePager: jest.fn(), _setupSectionAutoAdvance: jest.fn(),
+  _setupMobilePager: jest.fn(),
   _setupHorizontalWrap: jest.fn(), _syncChipToScroll: jest.fn(), _onPagerScroll: jest.fn(),
 }));
 jest.mock('../../js/b-scroll-owner.js', () => ({

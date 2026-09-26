@@ -88,7 +88,7 @@ import {
   getStatusDisplay, formatOrderDate, renderTrackViewSearchMode,
 }                              from './b-tracking.js';
 import {
-  _setupMobilePager, _setupSectionAutoAdvance,
+  _setupMobilePager,
   _setupHorizontalWrap, _syncChipToScroll, _onPagerScroll,
 }                              from './b-pager.js';
 import { installScrollOwner, scrollPageToElement } from './b-scroll-owner.js';

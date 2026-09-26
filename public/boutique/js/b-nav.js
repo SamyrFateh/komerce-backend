@@ -233,7 +233,7 @@ export function switchView(tab) {
   if (tab === 'shop') {
     // Recréer le DOM catalogue une fois la vue Boutique redevenue visible.
     // renderGrid() remontera ensuite le pager mobile via b-catalog.js :
-    // _recalcPagerVars → _setupInfiniteLoop → _setupMobilePager → _setupSectionAutoAdvance.
+    // _recalcPagerVars → _setupInfiniteLoop → _setupMobilePager.
     requestAnimationFrame(function() {
       renderGrid();
       requestAnimationFrame(function() {
