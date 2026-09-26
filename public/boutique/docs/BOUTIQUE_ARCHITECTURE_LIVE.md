@@ -10,54 +10,55 @@
 
 ## 1. Inventaire CSS
 
-46 fichier(s) source sur disque, 0 orphelin(s), 0 source(s) bundle manquante(s).
+47 fichier(s) source sur disque, 0 orphelin(s), 0 source(s) bundle manquante(s).
 
 | Fichier | Lignes | Bundle(s) |
 |---|---:|---|
 | `boutique-desktop.css` | 1319 | desktop.css |
-| `cart.css` | 2141 | components.css |
+| `cart.css` | 2145 | components.css |
 | `categories.css` | 983 | components.css |
 | `category-cutout-navigation.css` | 408 | components.css |
 | `category-cutout-navigation-desktop.css` | 649 | desktop.css |
 | `checkout-desktop-v2.css` | 83 | checkout-desktop-v2.css |
 | `checkout-vertical-rail.css` | 1281 | components.css |
-| `discovery-desktop-v2.css` | 153 | discovery-desktop-v2.css |
-| `discovery-rail.css` | 369 | components.css |
-| `hero.css` | 969 | base.css |
+| `critical-home.css` | 1580 | critical-home.css |
+| `discovery-desktop-v2.css` | 165 | discovery-desktop-v2.css |
+| `discovery-rail.css` | 282 | components.css |
+| `hero.css` | 980 | base.css |
 | `hero-cart-proxy.css` | 22 | components.css |
-| `hero-ultra-mobile.css` | 60 | base.css |
+| `hero-ultra-mobile.css` | 98 | base.css |
 | `identity.css` | 346 | components.css |
 | `interactions.css` | 443 | components.css |
 | `komerce.css` | 330 | components.css |
-| `layout.css` | 1193 | base.css |
+| `layout.css` | 1252 | base.css |
 | `mobile-cart-convergence.css` | 109 | components.css |
 | `mobile-catalog-convergence.css` | 83 | components.css |
-| `mobile-money.css` | 64 | components.css |
-| `mobile-shell-convergence.css` | 128 | base.css |
+| `mobile-money.css` | 97 | components.css |
+| `mobile-shell-convergence.css` | 147 | base.css |
 | `modal-cart-sku-guard.css` | 20 | components.css |
 | `modal-desktop-density.css` | 50 | components.css |
 | `modal-enriched-content.css` | 223 | components.css |
 | `modal-media.css` | 429 | components.css |
 | `modal-mobile-canonical.css` | 831 | components.css |
-| `modal-mobile-suggestion-actions.css` | 62 | components.css |
+| `modal-mobile-suggestion-actions.css` | 68 | components.css |
 | `modal-product.css` | 1510 | components.css |
 | `modal-product-lot4-hybrid.css` | 651 | components.css |
 | `modal-product-polish.css` | 419 | components.css |
-| `modal-shell.css` | 1500 | components.css |
+| `modal-shell.css` | 1538 | components.css |
 | `modal-suggestion-card-polish.css` | 26 | components.css |
 | `modal-suggestion-filter.css` | 22 | components.css |
 | `notifications.css` | 64 | components.css |
 | `paypal.css` | 102 | components.css |
 | `product-image-loading.css` | 64 | components.css |
-| `products.css` | 991 | components.css |
+| `products.css` | 1010 | components.css |
 | `reset.css` | 85 | base.css |
 | `responsive-desktop-matrix.css` | 140 | desktop.css |
+| `service-detail.css` | 392 | service-detail.css |
 | `shared-list-library-remove.css` | 42 | components.css |
 | `shared-list-lists-tab.css` | 278 | components.css |
 | `shared-list-side-cart.css` | 935 | components.css |
 | `shared-list-side-cart-responsive.css` | 91 | components.css |
 | `side-cart-desktop-polish.css` | 262 | desktop.css |
-| `spike-vertical-shell.css` | 89 | components.css |
 | `tokens.css` | 599 | base.css |
 | `wallet.css` | 191 | components.css |
 
@@ -66,9 +67,11 @@
 Cascade réelle des bundles livrés :
 
 ```
- 1. /boutique/css/dist/base.css?v=232
- 2. /boutique/css/dist/components.css?v=635
- 3. /boutique/css/dist/desktop.css?v=153
+ 1. /boutique/css/dist/base.css?v=265
+ 2. /boutique/css/dist/critical-home.css?v=5
+ 3. /boutique/css/dist/components.css?v=644
+ 4. /boutique/css/dist/components.css?v=644
+ 5. /boutique/css/dist/desktop.css?v=153
 ```
 
 ## 3. Cartographie des sélecteurs critiques
@@ -80,15 +83,15 @@ Cascade réelle des bundles livrés :
 | `.k-hero-cats-sticky` ⚠️ | `categories.css` (0/2)<br>`hero.css` (8/1) |
 | `#k-subcats-wrap` ⚠️ | `boutique-desktop.css` (12/30)<br>`categories.css` (7/0)<br>`responsive-desktop-matrix.css` (0/2) |
 | `.k-subchip` ⚠️ | `boutique-desktop.css` (19/12)<br>`categories.css` (6/0) |
-| `.k-grid` ⚠️ | `cart.css` (2/0)<br>`layout.css` (0/1)<br>`products.css` (10/3)<br>`responsive-desktop-matrix.css` (0/2) |
-| `.k-sec-grid` ⚠️ | `categories.css` (1/0)<br>`products.css` (4/3)<br>`responsive-desktop-matrix.css` (0/2) |
+| `.k-grid` ⚠️ | `cart.css` (2/0)<br>`layout.css` (0/1)<br>`products.css` (11/3)<br>`responsive-desktop-matrix.css` (0/2) |
+| `.k-sec-grid` ⚠️ | `categories.css` (1/0)<br>`products.css` (3/3)<br>`responsive-desktop-matrix.css` (0/2) |
 | `.k-card` ⚠️ | `boutique-desktop.css` (0/2)<br>`categories.css` (9/0)<br>`products.css` (8/16) |
 | `.k-card-add` ⚠️ | `cart.css` (0/2)<br>`products.css` (10/3) |
 | `.k-card-fav` ⚠️ | `cart.css` (0/1)<br>`products.css` (4/3) |
 | `.k-side-cart` ⚠️ | `boutique-desktop.css` (0/7)<br>`layout.css` (2/0)<br>`responsive-desktop-matrix.css` (0/2) |
 | `#k-desktop-catalog-wrap` | `layout.css` (1/6) |
-| `.k-header` ⚠️ | `layout.css` (9/7)<br>`mobile-shell-convergence.css` (3/0) |
-| `.k-hero-media` ⚠️ | `hero.css` (2/8)<br>`hero-ultra-mobile.css` (5/0)<br>`mobile-catalog-convergence.css` (1/0) |
+| `.k-header` ⚠️ | `layout.css` (10/7)<br>`mobile-shell-convergence.css` (6/0) |
+| `.k-hero-media` ⚠️ | `hero.css` (2/7)<br>`hero-ultra-mobile.css` (5/0)<br>`mobile-catalog-convergence.css` (1/0) |
 | `.k-modal` ⚠️ | `modal-product.css` (0/1)<br>`modal-shell.css` (9/3) |
 
 > ⚠️ = plusieurs fichiers touchent le sélecteur ; confronter au contrat d’ownership avant modification.
