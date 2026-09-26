@@ -28,7 +28,7 @@ const PROVIDER_ID = cj.PROVIDER_ID;
 const SYNC_KEY = 'cj-balanced-e2e-500-v1';
 const TARGET = 500;
 const PAGE_SIZE = 20;
-const MAX_SEARCH_PAGES_PER_QUERY = 6;
+const MAX_SEARCH_PAGES_PER_QUERY = 12;
 const SEARCH_MIN_INTERVAL_MS = 1100;
 const SEARCH_RETRIES = 4;
 const RUNTIME_FLAG = 'KOMERCE_ALLOW_CJ_BALANCED_E2E_500';
@@ -222,7 +222,6 @@ async function runSegment(segment, seenIds) {
   let accepted = await segmentCount(segment.id);
   const maxLogicalPages = segment.queries.length * MAX_SEARCH_PAGES_PER_QUERY;
   let pages = 0;
-  let consecutiveEmpty = 0;
 
   for (let logicalPage = 1; logicalPage <= maxLogicalPages && accepted < segment.target; logicalPage += 1) {
     // eslint-disable-next-line no-await-in-loop
@@ -234,13 +233,9 @@ async function runSegment(segment, seenIds) {
       .slice(0, remaining);
 
     if (!fresh.length) {
-      consecutiveEmpty += 1;
       console.log(`[cj-balanced-500] segment=${segment.id} page=${logicalPage} keyword="${page.keyword}" clean=0 invalid=${page.invalid.length}`);
-      if (consecutiveEmpty >= Math.max(4, segment.queries.length * 2)) break;
       continue;
     }
-
-    consecutiveEmpty = 0;
     // eslint-disable-next-line no-await-in-loop
     const imported = await importSubset(segment, logicalPage, fresh);
     for (const product of fresh) seenIds.add(product.supplier_product_id);
@@ -273,9 +268,14 @@ async function run() {
     // eslint-disable-next-line no-await-in-loop
     const result = await runSegment(segment, seenIds);
     results.push(result);
-    if (!result.complete) {
-      throw new Error(`CJ_BALANCED_SEGMENT_SHORTFALL:${segment.id}=${result.accepted}/${segment.target}`);
-    }
+  }
+
+  const shortfalls = results.filter((result) => !result.complete);
+  if (shortfalls.length) {
+    const detail = shortfalls
+      .map((result) => `${result.id}=${result.accepted}/${result.target}`)
+      .join(',');
+    throw new Error(`CJ_BALANCED_SEGMENT_SHORTFALLS:${detail}`);
   }
 
   const total = await totalCount();
