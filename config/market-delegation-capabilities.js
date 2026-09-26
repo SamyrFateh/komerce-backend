@@ -55,10 +55,23 @@ const CAPABILITIES = Object.freeze([
   delegation_mode: delegationMode, requires_audit: requiresAudit, status,
 })));
 
-function autonomyStats(rows = CAPABILITIES) {
-  const delegation = rows.filter(row => row.class === 'DELEGATION');
-  const live = delegation.filter(row => row.status === 'LIVE');
-  return { live: live.length, total: delegation.length, rate: delegation.length ? live.length / delegation.length : 0 };
+// Le KPI d'autonomie ne mesure que les capabilities MARKET réellement
+// DELEGABLE : une capability `class = DELEGATION` mais `delegation_mode =
+// CENTRAL_ONLY` (ex. market_config.update, cf. migration 246) documente une
+// non-délégation volontaire et ne doit pas faire baisser le taux — elle
+// n'appartient tout simplement pas au dénominateur.
+function autonomyDenominator(rows = CAPABILITIES) {
+  return rows.filter(row => (
+    row.class === 'DELEGATION'
+    && row.authority_scope === 'MARKET'
+    && row.delegation_mode === 'DELEGABLE'
+  ));
 }
 
-module.exports = { CAPABILITIES, autonomyStats };
+function autonomyStats(rows = CAPABILITIES) {
+  const delegable = autonomyDenominator(rows);
+  const live = delegable.filter(row => row.status === 'LIVE');
+  return { live: live.length, total: delegable.length, rate: delegable.length ? live.length / delegable.length : 0 };
+}
+
+module.exports = { CAPABILITIES, autonomyStats, autonomyDenominator };

@@ -703,7 +703,7 @@
     if (global.KomerceCanonicalNavigation) {
       const navEl = global.document.getElementById('canonical-admin-navigation');
       if (navEl && navEl.parentNode) navEl.parentNode.removeChild(navEl);
-      global.KomerceCanonicalNavigation.mount({ user, surface });
+      global.KomerceCanonicalNavigation.mount({ user, surface, adminContext });
     }
 
     // Landing intelligente : si la surface courante appartient à un domaine

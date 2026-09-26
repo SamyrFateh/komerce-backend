@@ -45,7 +45,7 @@ function context(mode = 'global') {
 
 test('endpointForContext choisit global ou route marché sans market_id navigateur', () => {
   expect(index.endpointForContext({}, context('global'))).toBe('/api/admin/entities/clients');
-  expect(index.endpointForContext({}, context('market'), 'KM')).toBe('/api/admin/entities/clients/market/KM');
+  expect(index.endpointForContext({}, context('market'), 'KM')).toBe('/api/market-delegation/markets/KM/clients');
   expect(() => index.endpointForContext({}, null)).toThrow('canonical_client_index_admin_context_contract_missing');
 });
 

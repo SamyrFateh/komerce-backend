@@ -24,7 +24,13 @@
   if (root) root.KomerceCanonicalClientIndex = api;
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createCanonicalClientIndex() {
   const GLOBAL_ENDPOINT = '/api/admin/entities/clients';
-  const MARKET_ENDPOINT_PREFIX = '/api/admin/entities/clients/market/';
+  // GAP 3 / LOT A (A3) : le endpoint marché legacy (/api/admin/entities/clients/market/:code,
+  // gated requireAdmin) est remplacé par le endpoint DELEGATION
+  // (/api/market-delegation/markets/:marketCode/clients, gated
+  // requireMarketDelegatedCapability('client.read')) — capability is the
+  // authority, not role.
+  const MARKET_ENDPOINT_PREFIX = '/api/market-delegation/markets/';
+  const MARKET_ENDPOINT_SUFFIX = '/clients';
   const SORT_OPTIONS = Object.freeze([
     Object.freeze({ value: 'recent', label: 'Plus récents' }),
     Object.freeze({ value: 'ltv', label: 'Valeur client' }),
@@ -38,7 +44,7 @@
     const view = contextContract.resolveMarketView(adminContext, requestedMarket);
     return view.mode === 'global'
       ? GLOBAL_ENDPOINT
-      : MARKET_ENDPOINT_PREFIX + encodeURIComponent(view.marketCode);
+      : MARKET_ENDPOINT_PREFIX + encodeURIComponent(view.marketCode) + MARKET_ENDPOINT_SUFFIX;
   }
 
   function buildQueryUrl(endpoint, state = {}) {

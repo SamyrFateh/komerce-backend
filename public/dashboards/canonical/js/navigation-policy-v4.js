@@ -46,7 +46,12 @@
     orders: Object.freeze([
       Object.freeze({ id: 'commerce', label: 'Vue d’ensemble', href: '/admin/commerce', roles: ['admin', 'market_operator'] }),
       Object.freeze({ id: 'orders-overview', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'] }),
-      Object.freeze({ id: 'clients', label: 'Clients', href: '/admin/clients', roles: ['admin'] }),
+      // GAP 3 / LOT A (A2) : 'client.read' est une capability DELEGATION
+      // (cf. config/market-delegation-capabilities.js) — un market_operator
+      // qui la détient sur son marché doit voir la tab, un admin (global ou
+      // scoped) la voit toujours (tabCapabilityGranted ne filtre qu'en mode
+      // market avec adminContext résolu).
+      Object.freeze({ id: 'clients', label: 'Clients', href: '/admin/clients', roles: ['admin', 'market_operator'], capability: 'client.read' }),
     ]),
     markets: Object.freeze([
       Object.freeze({ id: 'market-access', label: 'Accès pays', href: '/dashboards/canonical/access.html', roles: ['admin'] }),
@@ -142,10 +147,28 @@
     return base.SURFACE_TO_DOMAIN?.[surface] || 'dashboard';
   }
 
-  function localTabsFor(domainId, user) {
+  // Une tab déclarant `capability` (ex. 'clients' → 'client.read') n'est
+  // visible en mode market que si le marché courant (adminContext.access.
+  // defaultMarket) porte réellement cette capability dans
+  // adminContext.access.delegatedCapabilities — capability is the authority,
+  // not role (cf. doctrine dashboard-admin-context.js). Un rôle sans
+  // adminContext résolu (pages qui ne le passent pas encore, ou mode global
+  // où la capability DELEGATION ne s'applique pas) garde le comportement
+  // role-only historique plutôt que de masquer la tab par défaut.
+  function tabCapabilityGranted(tab, adminContext) {
+    if (!tab.capability) return true;
+    if (!adminContext || adminContext.access?.mode !== 'market') return true;
+    const market = adminContext.access.defaultMarket;
+    const granted = adminContext.access.delegatedCapabilities?.[market] || [];
+    return granted.includes(tab.capability);
+  }
+
+  function localTabsFor(domainId, user, adminContext) {
     const role = roleOf(user);
     const local = LOCAL_TABS[domainId];
-    if (local) return local.filter(tab => tab.roles.includes(role));
+    if (local) {
+      return local.filter(tab => tab.roles.includes(role) && tabCapabilityGranted(tab, adminContext));
+    }
 
     const domain = (base.visibleDomainsFor?.(user) || []).find(row => row.id === domainId);
     if (!domain || !Array.isArray(domain.spaces)) return [];
@@ -183,8 +206,8 @@
     return path;
   }
 
-  function createTabs(doc, domainId, surface, user) {
-    const tabs = localTabsFor(domainId, user);
+  function createTabs(doc, domainId, surface, user, adminContext) {
+    const tabs = localTabsFor(domainId, user, adminContext);
     if (tabs.length < 2) return null;
 
     const nav = createNode(doc, 'nav', 'kmc-admin-domain-tabs');
@@ -302,6 +325,12 @@
     dedupeShell(doc, header);
 
     const user = options.user || global.KOMERCE_CANONICAL_AUTH_USER || global.KOMERCE_AUTH_USER || null;
+    // GAP 3 / LOT A (A2) : les tabs N2 gérées par capability DELEGATION
+    // (ex. 'clients') ont besoin du adminContext résolu serveur — jamais
+    // fourni par défaut avant cette lot, donc les tabs restaient
+    // role-only. global.KOMERCE_CANONICAL_ADMIN_CONTEXT couvre les appels
+    // historiques de mount() qui ne passent pas encore adminContext en options.
+    const adminContext = options.adminContext || global.KOMERCE_CANONICAL_ADMIN_CONTEXT || null;
     const surface = currentSurface(options);
     const domainId = currentDomain(surface);
 
@@ -312,7 +341,7 @@
 
     decoratePrimaryLinks(header);
     removeLegacySecondary(header);
-    const tabs = createTabs(doc, domainId, surface, user);
+    const tabs = createTabs(doc, domainId, surface, user, adminContext);
     const topbar = createTopbar(doc, header);
     placeChrome(doc, header, tabs, topbar);
     observeSurfaceAnchors(doc, domainId);
