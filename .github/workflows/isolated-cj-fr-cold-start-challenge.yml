@@ -1,0 +1,265 @@
+name: Isolated CJ FR cold-start challenge
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Run carrying the terminology-enriched checkpoint'
+        required: false
+        default: '36243147075'
+      checkpoint_name:
+        description: 'Terminology-enriched checkpoint artifact'
+        required: false
+        default: 'cj-fr-quality-termium-checkpoint'
+      target:
+        description: 'Number of never-seen CJ products'
+        required: false
+        default: '100'
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: isolated-cj-fr-cold-start-challenge
+  cancel-in-progress: false
+
+jobs:
+  cold-start:
+    name: 100 unseen CJ → TERMIUM incremental memory → FR workpack
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.title == '[isolated-op] cj-fr-cold-start-challenge')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_real_catalog_stress
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_real_catalog_stress"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      CI: '1'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress
+      PGPASSWORD: komerce
+      CJ_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
+
+    steps:
+      - name: Checkout protected main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Assert isolated runtime and CJ credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress'
+          test "$NODE_ENV" = 'test'
+          test "$KOMERCE_ENV" = 'staging'
+          test -n "$CJ_ACCESS_TOKEN" || { echo '::error::KOMERCE_CJ_PROOF_ACCESS_TOKEN manquant'; exit 1; }
+
+      - name: Download terminology-enriched checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.checkpoint_name || 'cj-fr-quality-termium-checkpoint' }}
+          path: checkpoint
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.source_run_id || '36243147075' }}
+          github-token: ${{ github.token }}
+
+      - name: Restore checkpoint and curated batch-001 glossary
+        shell: bash
+        run: |
+          set -euo pipefail
+          dump_file="$(find checkpoint -type f -name '*.dump' | head -1)"
+          test -n "$dump_file" || { echo '::error::Checkpoint sans dump PostgreSQL'; exit 1; }
+          pg_restore --clean --if-exists --no-owner --no-privileges             -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress "$dump_file"
+          psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress             -v ON_ERROR_STOP=1 -f migrations/244_catalog_glossary_batch001.sql
+
+      - name: Discover 100 exact CJ products never seen by checkpoint
+        shell: bash
+        env:
+          KOMERCE_ALLOW_CJ_FR_COLD_START_CHALLENGE: '1'
+        run: |
+          set -euo pipefail
+          target="${{ inputs.target || '100' }}"
+          node scripts/cj-fr-cold-start-challenge.js             --mode=discover             --target="$target"             --max-pages=30             --raw-dir=artifacts/cj-fr-cold-start/raw
+
+      - name: Download official TERMIUM subject datasets for incremental lookup
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p termium/zips termium/raw
+
+          download_domain() {
+            local slug="$1"
+            local url="$2"
+            echo "Downloading TERMIUM domain: $slug"
+            curl --fail --location --retry 3 --retry-delay 2 "$url" -o "termium/zips/$slug.zip"
+            mkdir -p "termium/raw/$slug"
+            unzip -q -o "termium/zips/$slug.zip" -d "termium/raw/$slug"
+          }
+
+          download_domain arts-recreation-sports             'https://donnees-data.tpsgc-pwgsc.gc.ca/bt1/tp-tp/domaine-ArtsLoisirsSports-subject-ArtsRecreationSports.zip'
+          download_domain construction             'https://donnees-data.tpsgc-pwgsc.gc.ca/bt1/tp-tp/domaine-subject-construction.zip'
+          download_domain electricity             'https://donnees-data.tpsgc-pwgsc.gc.ca/bt1/tp-tp/domaine-electricite-subject_electricity.zip'
+          download_domain electronics-informatics             'https://donnees-data.tpsgc-pwgsc.gc.ca/bt1/tp-tp/domaine-ElectroniqueInformatique-subject-ElectronicsInformatics.zip'
+          download_domain home-economics-accommodation             'https://donnees-data.tpsgc-pwgsc.gc.ca/bt1/tp-tp/domaine-EconomieDomHotellerie-subject-HomeEconomicsAccommodationSc.zip'
+          download_domain industries             'https://donnees-data.tpsgc-pwgsc.gc.ca/bt1/tp-tp/domaine-subject-industries.zip'
+          download_domain math-physics-natural-sciences             'https://donnees-data.tpsgc-pwgsc.gc.ca/bt1/tp-tp/domaine-Math_Physique_ScNaturelles-Subject-Math_Physics_NaturalSc.zip'
+          download_domain mechanics-heat             'https://donnees-data.tpsgc-pwgsc.gc.ca/bt1/tp-tp/domaine-MecaniqueEtChaleur-subject-MechanicsAndHeat.zip'
+          download_domain metallurgy             'https://donnees-data.tpsgc-pwgsc.gc.ca/bt1/tp-tp/domaine-metallurgie-sbject-metallurgy.zip'
+          download_domain telecommunications             'https://donnees-data.tpsgc-pwgsc.gc.ca/bt1/tp-tp/domaine-TelecommunicationsPostes-subject-TelecommunicationsPostalService.zip'
+          download_domain transport-materials-handling             'https://donnees-data.tpsgc-pwgsc.gc.ca/bt1/tp-tp/domaine-TransportManutention-subject-TransportationMaterialsHandling.zip'
+
+          test "$(find termium/raw -type f -name '*.csv' | wc -l)" -gt 0
+
+      - name: Increment TERMIUM memory only for the unseen 100-product corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/cj-fr-cold-start/termium
+          node scripts/catalog-termium-import.js             --csv-dir=termium/raw             --corpus-dir=artifacts/cj-fr-cold-start/raw             --execute             --output=artifacts/cj-fr-cold-start/termium/relevant-references.json             --report=artifacts/cj-fr-cold-start/termium/report.json
+
+      - name: Enrich cold-start workpack with curated + TERMIUM memory
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="${{ inputs.target || '100' }}"
+          node scripts/cj-fr-cold-start-challenge.js             --mode=enrich             --target="$target"             --raw-dir=artifacts/cj-fr-cold-start/raw             --output-dir=artifacts/cj-fr-cold-start/enriched
+
+      - name: Verify cold-start input contract
+        shell: bash
+        env:
+          TARGET: ${{ inputs.target || '100' }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('fs');
+          const raw = JSON.parse(fs.readFileSync(
+            'artifacts/cj-fr-cold-start/raw/manifest.json', 'utf8'
+          ));
+          const enriched = JSON.parse(fs.readFileSync(
+            'artifacts/cj-fr-cold-start/enriched/manifest.json', 'utf8'
+          ));
+          const target = Number(process.env.TARGET || 100);
+          const proof = {
+            target,
+            raw_products: raw.total_products,
+            unseen_products: raw.discovery?.unseen_products,
+            distinct_supplier_categories: raw.discovery?.distinct_supplier_categories,
+            translation_inputs_ready: enriched.coverage?.translation_inputs_ready,
+            products_with_curated_glossary: enriched.coverage?.products_with_curated_glossary,
+            products_with_external_reference: enriched.coverage?.products_with_external_reference,
+            products_without_any_terminology_hint: enriched.coverage?.products_without_any_terminology_hint,
+            unique_external_english_terms: enriched.coverage?.unique_external_english_terms,
+            ambiguous_external_terms: enriched.coverage?.ambiguous_external_terms,
+          };
+          console.log(JSON.stringify(proof));
+          if (proof.raw_products !== target) throw new Error('COLD_START_WRONG_PRODUCT_COUNT');
+          if (proof.unseen_products !== target) throw new Error('COLD_START_NOT_100_PERCENT_UNSEEN');
+          if (proof.translation_inputs_ready !== target) throw new Error('COLD_START_INPUTS_NOT_READY');
+          NODE
+
+      - name: Save reusable post-challenge terminology checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/cj-fr-cold-start/checkpoint
+          pg_dump -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress -Fc             -f artifacts/cj-fr-cold-start/checkpoint/komerce-fr-cold-start-memory.dump
+
+      - name: Final safety audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const db = require('./db');
+          (async () => {
+            const { rows: [r] } = await db.query(`
+              SELECT COUNT(*) FILTER (WHERE p.is_active=TRUE)::int AS active,
+                     COUNT(DISTINCT pme.product_id)::int AS exposed,
+                     COUNT(*) FILTER (WHERE p.lifecycle_status IS DISTINCT FROM 'candidate')::int AS wrong_lifecycle
+                FROM sourcing_candidates sc
+                JOIN products p ON p.id=sc.product_id
+                LEFT JOIN product_market_exposure pme ON pme.product_id=p.id
+               WHERE sc.supplier_name='CJdropshipping'
+                 AND sc.state='imported_to_catalog'
+            `);
+            console.log(JSON.stringify(r));
+            if (Number(r.active)||Number(r.exposed)||Number(r.wrong_lifecycle)) {
+              throw new Error('SAFETY_AUDIT_FAILED:' + JSON.stringify(r));
+            }
+          })().catch(e => { console.error(e); process.exitCode=1; }).finally(() => db.pool.end());
+          NODE
+
+      - name: Upload raw unseen source workpack
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-fr-cold-start-raw-100
+          path: artifacts/cj-fr-cold-start/raw/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload incremental TERMIUM evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-fr-cold-start-termium
+          path: artifacts/cj-fr-cold-start/termium/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload translation-ready cold-start workpack
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-fr-cold-start-enriched-100
+          path: artifacts/cj-fr-cold-start/enriched/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload post-challenge terminology checkpoint
+        uses: actions/upload-artifact@v4
+        with:
+          name: cj-fr-cold-start-memory-checkpoint
+          path: artifacts/cj-fr-cold-start/checkpoint/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Close successful command issue
+        if: success() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY"             --body 'Cold-start source phase passed: 100 unseen CJ products, incremental TERMIUM lookup, translation-ready workpack and reusable memory checkpoint uploaded. Offline translation + separate second-pass review remain required to complete the challenge.'
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
