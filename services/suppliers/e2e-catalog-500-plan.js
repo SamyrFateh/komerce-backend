@@ -19,32 +19,32 @@
 'use strict';
 
 const SEGMENTS = Object.freeze([
-  { id: 'mode-femme', category: 'Mode & Beauté', subcategory: 'Femme', queries: ['women dress', 'women clothing'] },
+  { id: 'mode-femme', category: 'Mode & Beauté', subcategory: 'Femme', queries: ['women dress', 'women clothing', 'women tops', 'women shoes', 'women pants'] },
   { id: 'mode-homme', category: 'Mode & Beauté', subcategory: 'Homme', queries: ['men shirt', 'men clothing', 'men t-shirt', 'men pants', 'men shoes'] },
   { id: 'mode-enfant', category: 'Mode & Beauté', subcategory: 'Enfant', queries: ['kids clothing', 'kids shoes', 'children clothing', 'boys clothing', 'girls clothing', 'kids sneakers'] },
-  { id: 'beaute', category: 'Mode & Beauté', subcategory: 'Beauté', queries: ['cosmetics makeup', 'skin care', 'beauty tools'] },
+  { id: 'beaute', category: 'Mode & Beauté', subcategory: 'Beauté', queries: ['cosmetics makeup', 'skin care', 'beauty tools', 'makeup brush', 'hair care'] },
 
-  { id: 'maison-confort', category: 'Maison', subcategory: 'Confort', queries: ['home appliance', 'household appliance'] },
-  { id: 'maison-cuisine', category: 'Maison', subcategory: 'Cuisine', queries: ['kitchenware', 'kitchen utensil'] },
-  { id: 'maison-deco', category: 'Maison', subcategory: 'Déco', queries: ['home decor', 'table lamp'] },
-  { id: 'maison-enfants', category: 'Maison', subcategory: 'Enfants', queries: ['school supplies', 'school bag'] },
+  { id: 'maison-confort', category: 'Maison', subcategory: 'Confort', queries: ['home appliance', 'household appliance', 'home storage', 'home organizer', 'bedroom accessories'] },
+  { id: 'maison-cuisine', category: 'Maison', subcategory: 'Cuisine', queries: ['kitchenware', 'kitchen utensil', 'cooking tools', 'food storage', 'kitchen gadget'] },
+  { id: 'maison-deco', category: 'Maison', subcategory: 'Déco', queries: ['home decor', 'table lamp', 'wall decor', 'decorative light', 'home ornament'] },
+  { id: 'maison-enfants', category: 'Maison', subcategory: 'Enfants', queries: ['school supplies', 'school bag', 'kids backpack', 'pencil case', 'lunch bag'] },
 
-  { id: 'tech-phones', category: 'Tech', subcategory: 'Phones', queries: ['android smartphone', 'mobile phone'] },
-  { id: 'tech-audio', category: 'Tech', subcategory: 'Audio', queries: ['wireless headphones', 'bluetooth speaker'] },
-  { id: 'tech-montres', category: 'Tech', subcategory: 'Montres', queries: ['smartwatch', 'wrist watch'] },
+  { id: 'tech-phones', category: 'Tech', subcategory: 'Phones', queries: ['android smartphone', 'mobile phone', 'phone case', 'phone charger', 'usb c cable'] },
+  { id: 'tech-audio', category: 'Tech', subcategory: 'Audio', queries: ['wireless headphones', 'bluetooth speaker', 'wireless earbuds', 'headset', 'portable speaker'] },
+  { id: 'tech-montres', category: 'Tech', subcategory: 'Montres', queries: ['smartwatch', 'wrist watch', 'digital watch', 'sports watch', 'watch band'] },
 
-  { id: 'bricolage-outillage', category: 'Bricolage', subcategory: 'Outillage', queries: ['power tools', 'hand tools'] },
-  { id: 'bricolage-electricite', category: 'Bricolage', subcategory: 'Electricité', queries: ['electrical connectors', 'extension cable'] },
-  { id: 'bricolage-securite', category: 'Bricolage', subcategory: 'Sécurité', queries: ['padlock', 'door lock'] },
+  { id: 'bricolage-outillage', category: 'Bricolage', subcategory: 'Outillage', queries: ['power tools', 'hand tools', 'screwdriver set', 'drill bits', 'tool kit'] },
+  { id: 'bricolage-electricite', category: 'Bricolage', subcategory: 'Electricité', queries: ['electrical connectors', 'extension cable', 'power strip', 'wire connector', 'electrical cable'] },
+  { id: 'bricolage-securite', category: 'Bricolage', subcategory: 'Sécurité', queries: ['padlock', 'door lock', 'cabinet lock', 'security alarm', 'door sensor'] },
 
-  { id: 'creation-ceremonie', category: 'Créations personnelles', subcategory: 'Cérémonie', queries: ['evening dress', 'formal suit'] },
-  { id: 'creation-cadeau', category: 'Créations personnelles', subcategory: 'Cadeau', queries: ['gift box', 'personalized gift'] },
-  { id: 'creation-impression', category: 'Créations personnelles', subcategory: 'Impression', queries: ['printed mug', 'custom stationery'] },
+  { id: 'creation-ceremonie', category: 'Créations personnelles', subcategory: 'Cérémonie', queries: ['evening dress', 'formal suit', 'wedding accessories', 'party decoration', 'formal dress'] },
+  { id: 'creation-cadeau', category: 'Créations personnelles', subcategory: 'Cadeau', queries: ['gift box', 'personalized gift', 'gift bag', 'photo gift', 'keepsake gift'] },
+  { id: 'creation-impression', category: 'Créations personnelles', subcategory: 'Impression', queries: ['printed mug', 'custom stationery', 'sublimation blank', 'custom sticker', 'printable tote bag'] },
 
-  { id: 'auto-filtres', category: 'Auto', subcategory: 'Filtres', queries: ['car oil filter', 'car air filter'] },
-  { id: 'auto-freinage', category: 'Auto', subcategory: 'Freinage', queries: ['brake pads', 'brake disc'] },
-  { id: 'auto-eclairage', category: 'Auto', subcategory: 'Éclairage', queries: ['car led headlight', 'car tail light'] },
-  { id: 'auto-moto', category: 'Auto', subcategory: 'Moto', queries: ['motorcycle accessories', 'motorcycle phone holder'] },
+  { id: 'auto-filtres', category: 'Auto', subcategory: 'Filtres', queries: ['car oil filter', 'car air filter', 'cabin air filter', 'fuel filter', 'motorcycle air filter'] },
+  { id: 'auto-freinage', category: 'Auto', subcategory: 'Freinage', queries: ['brake pads', 'brake disc', 'brake rotor', 'brake caliper', 'motorcycle brake pads'] },
+  { id: 'auto-eclairage', category: 'Auto', subcategory: 'Éclairage', queries: ['car led headlight', 'car tail light', 'fog light', 'turn signal light', 'interior car light'] },
+  { id: 'auto-moto', category: 'Auto', subcategory: 'Moto', queries: ['motorcycle accessories', 'motorcycle phone holder', 'motorcycle mirror', 'motorcycle gloves', 'motorcycle bag'] },
 ]);
 
 const ALIEXPRESS_500_TARGETS = Object.freeze({
