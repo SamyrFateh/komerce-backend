@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        product_id, market_id, exposure decision
  * @outputs       product_market_exposure read model
- * @depends       none (executor fourni par l'appelant, défaut : pool module)
+ * @depends       services/product-publication-guard.js
  * @used-by       services/market-delegation-catalog-service.js, services/catalog-public-view.js
- * @db-read       product_market_exposure, products, markets
+ * @db-read       product_market_exposure, products, markets, catalog_media
  * @db-write      product_market_exposure
  * @db-txn        caller_transaction_preserved
  * @doctrine      writer_not_owner_boundary, catalog_stays_unique_exposure_is_projection, missing_exposure_is_disabled
