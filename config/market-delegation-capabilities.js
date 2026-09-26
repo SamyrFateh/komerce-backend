@@ -26,7 +26,12 @@ const CAPABILITIES = Object.freeze([
   ['network.suspend','DELEGATION','network','MARKET','DELEGABLE',true,'LIVE'],
   ['provider.manage','DELEGATION','network','MARKET','DELEGABLE',true,'LIVE'],
   ['market_config.read','DELEGATION','market-config','MARKET','DELEGABLE',false,'LIVE'],
-  ['market_config.update','DELEGATION','market-config','MARKET','DELEGABLE',true,'MISSING'],
+  // Audit schéma (migration 135_markets_foundation.sql, jamais altérée) : hors
+  // code/currency/minor_unit (réservés central) et is_active (même autorité que
+  // market.create, doit rester central), il ne reste aucun champ de configuration
+  // marché à déléguer. CENTRAL_ONLY/CENTRAL_HELD documente ce constat au lieu de
+  // laisser un MISSING qui suggérerait un backlog de construction restant.
+  ['market_config.update','DELEGATION','market-config','MARKET','CENTRAL_ONLY',true,'CENTRAL_HELD'],
   ['finance.read','DELEGATION','finance','MARKET','DELEGABLE',false,'LIVE'],
   ['finance.act','DELEGATION','finance','MARKET','DELEGABLE',true,'LIVE'],
   ['settlement.receive','DELEGATION','finance','MARKET','DELEGABLE',true,'LIVE'],
