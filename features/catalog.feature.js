@@ -90,6 +90,7 @@ module.exports = {
       '.github/workflows/staging-pdp-aliexpress-live-audit.yml',
       '.github/workflows/staging-real-supplier-1000-stress.yml',
       '.github/workflows/isolated-real-cj-1000-catalog-stress.yml',
+      '.github/workflows/isolated-cj-refinery-continuation.yml',
     ],
     utils: [
       'utils/categories-cache.js',
@@ -103,6 +104,7 @@ module.exports = {
       'scripts/real-supplier-1000-stress-staging.js',
       'scripts/catalog-fr-free-e2e-preparation.js',
       'scripts/cj-broad-catalog-stress-fill.js',
+      'scripts/cj-refinery-commandability-continuation.js',
     ],
     services: [
       // MISSION 1 (KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE) — décideur
@@ -385,6 +387,7 @@ module.exports = {
       'tests/unit/real-supplier-1000-stress-staging.test.js',
       'tests/unit/catalog-fr-free-e2e-preparation.test.js',
       'tests/unit/cj-broad-catalog-stress-fill.test.js',
+      'tests/unit/cj-refinery-commandability-continuation.test.js',
       'tests/unit/catalog-import-orchestrator-source-v2.test.js',
       'tests/unit/catalog-eligibility.test.js',
       'tests/unit/scan-engine-content-verification.test.js',
