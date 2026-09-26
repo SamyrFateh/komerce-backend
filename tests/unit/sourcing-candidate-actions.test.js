@@ -94,7 +94,7 @@ describe('catalog candidate draft source locale', () => {
       initialPrice: 2500,
     })).resolves.toBe('product-1');
 
-    expect(q.query.mock.calls[0][1][7]).toBe('pl-PL');
+    expect(q.query.mock.calls[0][1][9]).toBe('pl-PL');
     expect(candidateProductService.sourceLocaleFromCandidate(candidate)).toBe('pl-PL');
     expect(candidateProductService.sourceLocaleFromCandidate({})).toBe('en');
   });
