@@ -53,4 +53,8 @@ describe('header compact desktop (G-05, 900–1199px)', () => {
     expect(g05Start).toBeGreaterThan(-1);
     expect(css.slice(g05Start)).not.toContain('!important');
   });
+
+  test('P-01 : >= 1200 px, le bloc d\'actions ne se comprime pas sous ses boutons', () => {
+    expect(css).toMatch(/@media \(min-width: 1200px\) \{\s*\.k-header-actions \{ flex: 0 0 auto; \}/);
+  });
 });

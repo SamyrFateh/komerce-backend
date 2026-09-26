@@ -116,5 +116,12 @@ describe('hero ultra mobile contract', () => {
     expect(css).toContain('@media (max-width: 899px) and (orientation: landscape) and (max-height: 500px)');
     expect(css).toMatch(/orientation: landscape\) and \(max-height: 500px\) \{\s*\.k-hero \{ display: none; \}/);
   });
+
+  test('P-04 : l\'image mobile de la scène est préchargée, uniquement sous 900 px', () => {
+    expect(indexHtml).toMatch(/<link rel="preload" as="image" href="\/images\/komerce-hero-handoff-v3-mobile\.webp" type="image\/webp" media="\(max-width: 899px\)" fetchpriority="high">/);
+    // aucun préchargement d'image sans media (ce serait téléchargé sur tous les écrans)
+    const imgPreloads = indexHtml.match(/<link rel="preload" as="image"[^>]*>/g) || [];
+    imgPreloads.forEach((tag) => expect(tag).toMatch(/media="/));
+  });
 });
 
