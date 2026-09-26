@@ -56,6 +56,48 @@ describe('market-delegation catalog service — capabilities et audit', () => {
     expect(result.commercial_exposure).toBe('DISABLED');
   });
 
+  test('valider pour le marché publie via l’autorité catalog puis active uniquement l’exposition du marché', async () => {
+    const catalogApproval = require('../../services/catalog-approval');
+    const approveSpy = jest.spyOn(catalogApproval, 'approveProduct')
+      .mockResolvedValue({ status: 200, body: { id: 'p1', is_active: true, lifecycle_status: 'active' } });
+
+    const db = executor();
+    mockAuthz(db);
+    db.query.mockResolvedValueOnce({
+      rows: [{ id: 'p1', product_ref: 'KPR-1', lifecycle_status: 'candidate', is_active: false, content_source: 'manual', needs_review: false }],
+    });
+    db.query.mockResolvedValueOnce({ rows: [] }); // advisory lock
+    db.query.mockResolvedValueOnce({ rows: [] }); // getExposure before
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'p1' }] }); // productExists
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        id: 'e1',
+        product_id: 'p1',
+        market_id: 'mkt-cm',
+        commercial_exposure: 'ENABLED',
+      }],
+    });
+    db.query.mockImplementationOnce(async (sql, params) => {
+      expect(sql).toMatch(/INSERT INTO market_delegation_audit/);
+      expect(params[4]).toBe('CATALOG_PRODUCT_VALIDATED_FOR_MARKET');
+      return { rows: [] };
+    });
+
+    const result = await catalog.validateForMarket(db, {
+      marketCode: 'CM',
+      actorUserId: 'u1',
+      productId: 'p1',
+    });
+
+    expect(approveSpy).toHaveBeenCalledWith(db, 'p1', { id: 'u1' });
+    expect(result).toMatchObject({
+      product_ref: 'KPR-1',
+      commercial_exposure: 'ENABLED',
+      global_publication_triggered: true,
+    });
+    approveSpy.mockRestore();
+  });
+
   test('capability absente → 403, aucune écriture tentée', async () => {
     const db = executor();
     mockAuthz(db, { capabilities: [] });

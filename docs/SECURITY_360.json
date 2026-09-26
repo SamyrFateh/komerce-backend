@@ -2,8 +2,8 @@
   "generatedAt": "2026-09-20T07:19:48.458Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 650,
-    "protected": 595,
+    "total": 651,
+    "protected": 596,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3260,6 +3260,11 @@
     },
     {
       "key": "GET /api/market-delegation/markets/{marketCode}/catalog/exposure",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate",
       "level": "PROTECTED",
       "roles": []
     },

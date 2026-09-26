@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        product_id, market_id, exposure decision
  * @outputs       product_market_exposure read model
- * @depends       none (executor fourni par l'appelant, défaut : pool module)
+ * @depends       services/product-publication-guard.js
  * @used-by       services/market-delegation-catalog-service.js, services/catalog-public-view.js
- * @db-read       product_market_exposure, products, markets
+ * @db-read       product_market_exposure, products, markets, catalog_media
  * @db-write      product_market_exposure
  * @db-txn        caller_transaction_preserved
  * @doctrine      writer_not_owner_boundary, catalog_stays_unique_exposure_is_projection, missing_exposure_is_disabled
@@ -18,6 +18,7 @@
 'use strict';
 
 const db = require('../db');
+const { validatePublicationUpdate } = require('./product-publication-guard');
 
 const EXPOSURE = Object.freeze({ ENABLED: 'ENABLED', DISABLED: 'DISABLED' });
 
@@ -82,6 +83,69 @@ async function listExposureForMarket(marketId, executor = db) {
     [marketId]
   );
   return rows;
+}
+
+
+/**
+ * File simple des produits prêts à être décidés par un marché.
+ *
+ * La complexité de Raffinerie reste côté serveur : seuls les candidats déjà
+ * préparés en français et qui passeraient le guard de première publication
+ * sont proposés au Responsable pays. Une décision déjà enregistrée pour ce
+ * marché retire le produit de cette file.
+ *
+ * @param {string} marketId
+ * @param {object} [executor]
+ * @param {object} [options]
+ * @returns {Promise<{total:number,items:object[]}>}
+ */
+async function listReviewCandidatesForMarket(marketId, executor = db, { limit = 100 } = {}) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 100, 1), 200);
+  const { rows } = await executor.query(
+    `SELECT p.*,
+            (
+              SELECT COUNT(*)::int
+                FROM catalog_media cm
+               WHERE cm.product_id = p.id
+                 AND cm.is_active = TRUE
+            ) AS active_media
+       FROM products p
+       LEFT JOIN product_market_exposure pme
+         ON pme.product_id = p.id
+        AND pme.market_id = $1
+      WHERE p.lifecycle_status = 'candidate'
+        AND p.is_active = FALSE
+        AND p.content_source = 'manual'
+        AND p.needs_review = FALSE
+        AND pme.product_id IS NULL
+      ORDER BY p.updated_at DESC NULLS LAST, p.created_at DESC`,
+    [marketId]
+  );
+
+  const ready = rows.filter(row => validatePublicationUpdate({
+    before: row,
+    patch: { is_active: true },
+    context: { catalogMediaCount: Number(row.active_media || 0) },
+  }).ok);
+
+  return {
+    total: ready.length,
+    items: ready.slice(0, safeLimit).map(row => ({
+      product_id: row.id,
+      product_ref: row.product_ref,
+      product_name: row.name,
+      description: row.description || null,
+      sku: row.sku || null,
+      category: row.category || null,
+      subcategory: row.subcategory || null,
+      image_url: row.image_url || null,
+      price_kmf: row.price_kmf == null ? null : Number(row.price_kmf),
+      stock: row.stock == null ? null : Number(row.stock),
+      is_available: Boolean(row.is_available),
+      media_count: Number(row.active_media || 0),
+      updated_at: row.updated_at || null,
+    })),
+  };
 }
 
 /**
@@ -160,6 +224,7 @@ module.exports = {
   EXPOSURE,
   getExposure,
   listExposureForMarket,
+  listReviewCandidatesForMarket,
   productExists,
   setExposure,
   isProductExposedForMarketCode,
