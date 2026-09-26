@@ -106,6 +106,7 @@ module.exports = {
       '../../images/komerce_hero_catalog_canonical_v4.webp',
       '../../images/komerce_hero_catalog_canonical_v5_mobile.webp',
       '../../images/komerce-hero-handoff-v2.webp',
+      '../../images/komerce-hero-handoff-v3.webp',
       '../categories/cat-all-v3.webp',
       '../categories/cat-soldes-v3.webp',
       '../categories/cat-mode-v3.webp',
@@ -152,6 +153,7 @@ module.exports = {
 
   docs: [
     'RAPPORT_HERO_DESKTOP.md',
+    'public/boutique/docs/HERO_HANDOFF_V3_ASSET.md',
     'docs/BOUTIQUE_CATEGORY_NAVIGATION_REDESIGN.md',
     'docs/BOUTIQUE_PRODUCT_DISPLAY_CONTRACT.md',
     'docs/MOBILE_BOUTIQUE_FIXES.md',
