@@ -77,6 +77,28 @@ describe('CJ Raffinerie commandability continuation', () => {
     expect(continuation.isAuthError(new Error('product not found'))).toBe(false);
   });
 
+
+  test('préserve la provenance discovery lors du rechargement exact CJ', () => {
+    const normalized = {
+      supplier_product_id: 'cj-1',
+      raw_payload: { source: 'cj_api_v2', cj: { pid: 'cj-1' } },
+    };
+    const candidate = {
+      raw_payload: {
+        discovery: {
+          campaign: 'cj-balanced-e2e-500-v1',
+          segment_id: 'tech-audio',
+          target_category: 'Tech',
+          target_subcategory: 'Audio',
+        },
+      },
+    };
+
+    const out = continuation.preserveDiscoveryProvenance(normalized, candidate);
+    expect(out.raw_payload.cj).toEqual({ pid: 'cj-1' });
+    expect(out.raw_payload.discovery).toEqual(candidate.raw_payload.discovery);
+  });
+
   test('READY exige média, SKU fournisseur actif et Supplier Order Identity complète', () => {
     const base = {
       sourcing_decision: 'TEST',

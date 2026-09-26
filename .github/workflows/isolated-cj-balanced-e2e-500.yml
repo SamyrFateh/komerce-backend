@@ -214,6 +214,35 @@ jobs:
             --supplier=CJdropshipping \
             --output=artifacts/cj-balanced-e2e-500/french-preparation.json
 
+      - name: Continue exact CJ detail to SKU and Supplier Order Identity
+        env:
+          KOMERCE_ALLOW_CJ_REFINERY_CONTINUATION: '1'
+          KOMERCE_CJ_REFINERY_DETAIL_DELAY_MS: '1100'
+          KOMERCE_CJ_REFINERY_QUOTA_WAIT_MS: '60000'
+          KOMERCE_CJ_REFINERY_MAX_QUOTA_WAITS: '15'
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 4200s node scripts/cj-refinery-commandability-continuation.js \
+            --limit=500 \
+            --chunk=20 \
+            --output=artifacts/cj-balanced-e2e-500/commandability.json
+
+      - name: Assert exact commandability 500 of 500
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const report=JSON.parse(fs.readFileSync('artifacts/cj-balanced-e2e-500/commandability.json','utf8'));
+          const readiness=report?.summary?.readiness || {};
+          if(Number(readiness.total)!==500) throw new Error(`COMMANDABILITY_TOTAL_MISMATCH:${readiness.total}/500`);
+          if(Number(readiness.ready)!==500) throw new Error(`COMMANDABILITY_READY_MISMATCH:${readiness.ready}/500 reasons=${JSON.stringify(readiness.reasons||{})}`);
+          if(Number(readiness.with_active_supplier_sku)!==500) throw new Error(`ACTIVE_SUPPLIER_SKU_MISMATCH:${readiness.with_active_supplier_sku}/500`);
+          if(Number(readiness.with_complete_soi)!==500) throw new Error(`SUPPLIER_ORDER_IDENTITY_MISMATCH:${readiness.with_complete_soi}/500`);
+          console.log('CJ_COMMANDABILITY_EXACT=500');
+          NODE
+
       - name: Final acceptance 500 of 500
         shell: bash
         run: |
@@ -286,7 +315,8 @@ jobs:
             echo '- source DB: disposable PostgreSQL localhost only'
             echo '- production publication: forbidden'
             echo '- market exposure: none'
-            echo '- supplier stock + commandable SOI: required'
+            echo '- supplier stock: required at discovery'
+            echo '- exact SKU + Supplier Order Identity: required after CJ detail continuation'
             echo '- boutique taxonomy separated from customs classification'
           } >> "$GITHUB_STEP_SUMMARY"
 

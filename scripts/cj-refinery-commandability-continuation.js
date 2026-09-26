@@ -163,6 +163,7 @@ async function loadPending(limit) {
             sc.product_id,
             sc.supplier_product_id,
             sc.scan_result,
+            sc.raw_payload,
             p.product_ref
        FROM sourcing_candidates sc
        JOIN products p ON p.id=sc.product_id
@@ -194,6 +195,18 @@ async function loadPending(limit) {
     [SUPPLIER, [...ALLOWED_DECISIONS], limit]
   );
   return rows;
+}
+
+function preserveDiscoveryProvenance(normalized, candidate = {}) {
+  const discovery = candidate?.raw_payload?.discovery;
+  if (!discovery || typeof discovery !== 'object' || Array.isArray(discovery)) return normalized;
+  return {
+    ...normalized,
+    raw_payload: {
+      ...(normalized?.raw_payload || {}),
+      discovery: { ...discovery },
+    },
+  };
 }
 
 async function importExactChunk(products, chunkNo) {
@@ -425,7 +438,10 @@ async function run(options = parseArgs(), env = process.env) {
             // eslint-disable-next-line no-await-in-loop
             const detail = await cjConnector.fetchProductDetail(candidate.supplier_product_id, { env, accessToken });
             detailCalls += 1;
-            const normalized = cjConnector.normalizeCjProduct(detail.product);
+            const normalized = preserveDiscoveryProvenance(
+              cjConnector.normalizeCjProduct(detail.product),
+              candidate
+            );
             if (String(normalized.supplier_product_id || '') !== String(candidate.supplier_product_id)) {
               throw new Error(`CJ_DETAIL_ID_MISMATCH expected=${candidate.supplier_product_id} actual=${normalized.supplier_product_id}`);
             }
@@ -560,6 +576,7 @@ module.exports = {
   isAuthError,
   decisionOf,
   classifyReadiness,
+  preserveDiscoveryProvenance,
   loadPending,
   collectReadiness,
   finalSafetyAudit,
