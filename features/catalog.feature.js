@@ -101,6 +101,7 @@ module.exports = {
       '.github/workflows/isolated-cj-fr-cold-start-challenge.yml',
       '.github/workflows/isolated-catalog-fr-quality-campaign.yml',
       '.github/workflows/isolated-catalog-refinery-final-acceptance.yml',
+      '.github/workflows/isolated-cj-balanced-e2e-500.yml',
     ],
     utils: [
       'utils/categories-cache.js',
@@ -121,6 +122,7 @@ module.exports = {
       'scripts/cj-fr-cold-start-challenge.js',
       'scripts/catalog-fr-quality-campaign-audit.js',
       'scripts/catalog-refinery-final-acceptance.js',
+      'scripts/cj-500-e2e-catalog-sync.js',
     ],
     services: [
       // MISSION 1 (KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE) — décideur
@@ -174,6 +176,7 @@ module.exports = {
       'services/suppliers/connectors/json-connector.js',
       'services/suppliers/cj-catalog-index.js',
       'services/suppliers/catalog-sync-checkpoint.js',
+      'services/suppliers/e2e-catalog-500-plan.js',
       'services/supplier-catalog-scanner.js',
       'services/suppliers/catalog-import-orchestrator.js',
       'services/sourcing-import-dispatch.js',
@@ -415,6 +418,7 @@ module.exports = {
       'tests/unit/cj-fr-cold-start-challenge.test.js',
       'tests/unit/catalog-fr-quality-campaign-audit.test.js',
       'tests/unit/catalog-refinery-final-acceptance.test.js',
+      'tests/unit/cj-500-e2e-catalog-sync.test.js',
       'tests/unit/catalog-import-orchestrator-source-v2.test.js',
       'tests/unit/catalog-eligibility.test.js',
       'tests/unit/scan-engine-content-verification.test.js',
