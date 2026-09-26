@@ -91,6 +91,7 @@ module.exports = {
       '.github/workflows/staging-real-supplier-1000-stress.yml',
       '.github/workflows/isolated-real-cj-1000-catalog-stress.yml',
       '.github/workflows/isolated-cj-refinery-continuation.yml',
+      '.github/workflows/isolated-cj-fr-quality-workpack.yml',
     ],
     utils: [
       'utils/categories-cache.js',
@@ -105,6 +106,8 @@ module.exports = {
       'scripts/catalog-fr-free-e2e-preparation.js',
       'scripts/cj-broad-catalog-stress-fill.js',
       'scripts/cj-refinery-commandability-continuation.js',
+      'scripts/catalog-fr-quality-workpack.js',
+      'scripts/catalog-fr-quality-apply.js',
     ],
     services: [
       // MISSION 1 (KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE) — décideur
@@ -122,6 +125,7 @@ module.exports = {
       'services/suppliers/connectors/ebay-connector.js',
       'services/product-publication-guard.js',
       'services/catalog-media-visual-fr-proof.js',
+      'services/catalog-fr-quality.js',
       'services/product-admin-service.js',
       'services/product-variant-service.js',
       'services/product-sku-service.js',
@@ -388,6 +392,9 @@ module.exports = {
       'tests/unit/catalog-fr-free-e2e-preparation.test.js',
       'tests/unit/cj-broad-catalog-stress-fill.test.js',
       'tests/unit/cj-refinery-commandability-continuation.test.js',
+      'tests/unit/catalog-fr-quality.test.js',
+      'tests/unit/catalog-fr-quality-workpack.test.js',
+      'tests/unit/catalog-fr-quality-apply.test.js',
       'tests/unit/catalog-import-orchestrator-source-v2.test.js',
       'tests/unit/catalog-eligibility.test.js',
       'tests/unit/scan-engine-content-verification.test.js',
