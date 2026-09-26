@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 621,
-    "filesWithFullHeaders": 574,
-    "filesWithLiteHeaders": 47,
-    "filesWithAnyHeaders": 621,
+    "scannedCodeFiles": 624,
+    "filesWithFullHeaders": 579,
+    "filesWithLiteHeaders": 45,
+    "filesWithAnyHeaders": 624,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1474,
-    "edges": 7375,
-    "dbTables": 179,
-    "doctrines": 489,
-    "impactAreas": 185,
-    "unresolvedCodeEdges": 738,
+    "graphNodes": 1491,
+    "edges": 7432,
+    "dbTables": 181,
+    "doctrines": 499,
+    "impactAreas": 187,
+    "unresolvedCodeEdges": 746,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 76
   },
@@ -35,10 +35,10 @@
     "notification": 21,
     "auth": 14,
     "platform-ops": 2,
-    "catalog": 114,
+    "catalog": 115,
     "admin-dashboard": 22,
     "decision-signals": 12,
-    "market-delegation": 25,
+    "market-delegation": 27,
     "market": 3,
     "economic-engine": 56,
     "sourcing": 27,
@@ -79,7 +79,7 @@
     "cron": 1,
     "composition-root": 1,
     "manual-test": 1,
-    "middleware": 24,
+    "middleware": 25,
     "ui-bootstrap": 4,
     "ui-component": 40,
     "ui-enhancer": 3,
@@ -89,9 +89,9 @@
     "ui-boundary": 2,
     "view-model": 7,
     "ui-controller": 3,
-    "ui-state": 2,
+    "ui-state": 1,
     "util-ui": 1,
-    "ui-infrastructure": 2,
+    "ui-infrastructure": 1,
     "state": 1,
     "util": 31,
     "domain-helper": 1,
@@ -105,9 +105,9 @@
     "ui-behavior": 1,
     "state-store": 1,
     "schema": 1,
-    "route": 128,
+    "route": 129,
     "entrypoint": 1,
-    "service": 315,
+    "service": 318,
     "external-adapter": 2,
     "machine": 1,
     "utility": 1,
@@ -117,9 +117,9 @@
   },
   "byCriticality": {
     "critical": 92,
-    "medium": 131,
-    "high": 343,
-    "low": 55
+    "medium": 133,
+    "high": 346,
+    "low": 53
   },
   "nodes": [
     {
@@ -1041,6 +1041,58 @@
         "authorization"
       ],
       "version": "2026-08"
+    },
+    {
+      "id": "middleware/require-market-delegated-capability.js",
+      "file": "middleware/require-market-delegated-capability.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegated-capability-bridge",
+      "domain": "market-delegation",
+      "layer": "middleware",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "canonical marketCode",
+        "exact DELEGATION capability"
+      ],
+      "outputs": [
+        "403 on missing/outside-ceiling capability",
+        "request-local authz proof otherwise"
+      ],
+      "depends": [
+        "db.js",
+        "services/market-delegation-service.js"
+      ],
+      "usedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "dbRead": [
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
+      ],
+      "dbWrite": [
+        "market_delegation_audit"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "capability_is_the_authority_not_role",
+        "audit_before_domain_mutation",
+        "users_role_never_mutated",
+        "market_scope_is_server_resolved"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "pricing",
+        "authorization"
+      ],
+      "version": "2026-09"
     },
     {
       "id": "middleware/require-market-delegated-role.js",
@@ -3306,34 +3358,6 @@
       "version": "2026-08"
     },
     {
-      "id": "public/boutique/js/b-pager-end-bounce.js",
-      "file": "public/boutique/js/b-pager-end-bounce.js",
-      "type": "file-lite",
-      "headerType": "lite",
-      "role": "mobile-pager-end-bounce",
-      "domain": "catalog",
-      "layer": "ui-state",
-      "criticality": "low",
-      "owner": "public/boutique/js/b-pager-end-bounce.js",
-      "purpose": "Avancer automatiquement vers la catégorie suivante après une arrivée verticale volontaire en bas de page.",
-      "inputs": [],
-      "outputs": [],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
-      "doctrine": [],
-      "impactAreas": [
-        "mobile-navigation",
-        "category-navigation",
-        "scroll-ownership",
-        "discovery-rail"
-      ],
-      "version": "2026-09"
-    },
-    {
       "id": "public/boutique/js/b-pager.js",
       "file": "public/boutique/js/b-pager.js",
       "type": "file",
@@ -3357,7 +3381,6 @@
       ],
       "depends": [
         "b-bus.js",
-        "b-pager-end-bounce.js",
         "b-scroll-owner.js",
         "b-store.js"
       ],
@@ -4448,7 +4471,7 @@
       "layer": "ui-component",
       "criticality": "low",
       "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Monter « Disponible ici » sur Tout et, sur mobile, à l'entrée d'une catégorie par bump vertical uniquement.",
+      "purpose": "Monter « Disponible ici » sur l'accueil Tout uniquement (mobile et desktop).",
       "inputs": [],
       "outputs": [],
       "depends": [],
@@ -5367,33 +5390,6 @@
         "admin-category-config"
       ],
       "version": "2026-06"
-    },
-    {
-      "id": "public/boutique/js/spike-vertical-shell.js",
-      "file": "public/boutique/js/spike-vertical-shell.js",
-      "type": "file-lite",
-      "headerType": "lite",
-      "role": "catalog-spike-vertical-shell",
-      "domain": "catalog",
-      "layer": "ui-infrastructure",
-      "criticality": "low",
-      "owner": "public/boutique/js/spike-vertical-shell.js",
-      "purpose": "SPIKE Phase 2 (branche isolee, jamais merge) — shell vertical mobile derriere ?shell=vertical, no-op par defaut.",
-      "inputs": [],
-      "outputs": [],
-      "depends": [],
-      "usedBy": [],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "dbTxn": [],
-      "doctrine": [],
-      "impactAreas": [
-        "mobile-navigation",
-        "scroll-ownership",
-        "category-navigation"
-      ],
-      "version": "2026-09"
     },
     {
       "id": "public/boutique/js/taxonomy-no-hardcode.test.js",
@@ -9414,6 +9410,69 @@
       "version": "2026-09"
     },
     {
+      "id": "routes/market-delegation-client.js",
+      "file": "routes/market-delegation-client.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "market-delegation-client-api",
+      "domain": "market-delegation",
+      "layer": "route",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "authenticated user",
+        "canonical market code",
+        "client_search",
+        "client_sort",
+        "pagination",
+        "client_phone"
+      ],
+      "outputs": [
+        "market-scoped client index projection",
+        "market-scoped client 360 projection"
+      ],
+      "depends": [
+        "middleware/auth.js",
+        "middleware/require-market-delegated-capability.js",
+        "services/client-index.js",
+        "services/client-360.js"
+      ],
+      "usedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard (canonical Clients screen)"
+      ],
+      "dbRead": [
+        "orders",
+        "users",
+        "recipients",
+        "markets (via client-index.js / client-360.js — no query reimplemented here)"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "dbTxn": [],
+      "doctrine": [
+        "capability_is_the_authority_not_role",
+        "market_scope_is_server_resolved",
+        "client_market_id_never_authority",
+        "client_account_facets_global_only",
+        "client_index_finds_client_360"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "admin-dashboard",
+        "clients"
+      ],
+      "version": "2026-09"
+    },
+    {
       "id": "routes/market-delegation-local-offer.js",
       "file": "routes/market-delegation-local-offer.js",
       "type": "file",
@@ -13278,6 +13337,48 @@
       "version": "2026-09"
     },
     {
+      "id": "services/catalog-fr-quality.js",
+      "file": "services/catalog-fr-quality.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-french-quality-contract",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "canonical source text",
+        "offline French translation proposal"
+      ],
+      "outputs": [
+        "source fingerprint",
+        "static French editorial quality verdict"
+      ],
+      "depends": [
+        "node:crypto"
+      ],
+      "usedBy": [
+        "scripts/catalog-fr-quality-workpack.js",
+        "scripts/catalog-fr-quality-apply.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "source_truth_preserved",
+        "offline_ai_assistance",
+        "no_runtime_llm_dependency"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-detail",
+        "staging"
+      ],
+      "version": "2026-09-v1"
+    },
+    {
       "id": "services/catalog-live-flow.js",
       "file": "services/catalog-live-flow.js",
       "type": "file",
@@ -13357,8 +13458,7 @@
         "product_market_exposure read model"
       ],
       "depends": [
-        "none (executor fourni par l'appelant",
-        "défaut : pool module)"
+        "services/product-publication-guard.js"
       ],
       "usedBy": [
         "services/market-delegation-catalog-service.js",
@@ -13367,7 +13467,8 @@
       "dbRead": [
         "product_market_exposure",
         "products",
-        "markets"
+        "markets",
+        "catalog_media"
       ],
       "dbWrite": [
         "product_market_exposure"
@@ -13441,7 +13542,8 @@
       ],
       "usedBy": [
         "services/product-admin-service.js",
-        "services/catalog-approval.js"
+        "services/catalog-approval.js",
+        "scripts/catalog-fr-quality-apply.js"
       ],
       "dbRead": [
         "catalog_field_overrides",
@@ -14086,6 +14188,48 @@
       "version": "2026-09"
     },
     {
+      "id": "services/catalog-terminology-memory.js",
+      "file": "services/catalog-terminology-memory.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "catalog-terminology-memory",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "source text",
+        "catalog_glossary",
+        "catalog_terminology_reference"
+      ],
+      "outputs": [
+        "curated glossary hits + sourced external terminology candidates"
+      ],
+      "depends": [],
+      "usedBy": [
+        "scripts/catalog-fr-quality-workpack.js",
+        "scripts/catalog-termium-import.js"
+      ],
+      "dbRead": [
+        "catalog_glossary",
+        "catalog_terminology_reference"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "curated_glossary_over_external_reference",
+        "source_provenance_required"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-detail",
+        "staging"
+      ],
+      "version": "2026-09-v1"
+    },
+    {
       "id": "services/catalog-workspace-live-composer.js",
       "file": "services/catalog-workspace-live-composer.js",
       "type": "file",
@@ -14163,6 +14307,7 @@
       ],
       "dbRead": [
         "products",
+        "sourcing_candidates",
         "boutique_categories",
         "boutique_subcategories"
       ],
@@ -17373,18 +17518,27 @@
       "depends": [
         "services/market-delegation-team-service.js",
         "services/market-delegation-service.js",
-        "services/catalog-market-exposure-service.js"
+        "services/catalog-market-exposure-service.js",
+        "services/catalog-approval.js"
       ],
       "usedBy": [
         "routes/market-delegation-catalog.js"
       ],
-      "dbRead": [],
+      "dbRead": [
+        "products"
+      ],
       "dbWrite": [],
       "dbWriteVia": [
         {
           "via": "catalog-market-exposure-service",
           "tables": [
             "product_market_exposure"
+          ]
+        },
+        {
+          "via": "catalog-approval",
+          "tables": [
+            "products"
           ]
         },
         {
@@ -17401,6 +17555,7 @@
         "catalog_authority_is_capability_based",
         "client_market_id_never_authority",
         "writer_not_owner_boundary",
+        "market_validation_may_delegate_first_publication_to_catalog_owner",
         "catalog_stays_unique_exposure_is_projection"
       ],
       "impactAreas": [
@@ -27205,6 +27360,42 @@
       "version": "2026-06"
     },
     {
+      "id": "services/suppliers/e2e-catalog-500-plan.js",
+      "file": "services/suppliers/e2e-catalog-500-plan.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "supplier-discovery-segment-plan",
+      "domain": "catalog",
+      "layer": "service",
+      "criticality": "medium",
+      "owner": null,
+      "purpose": null,
+      "inputs": [],
+      "outputs": [
+        "provider-independent discovery segments + target profiles"
+      ],
+      "depends": [],
+      "usedBy": [
+        "scripts/aliexpress-500-catalog-sync.js",
+        "scripts/cj-500-e2e-catalog-sync.js",
+        "services/supplier-catalog-scanner.js"
+      ],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "supplier_independent_discovery_segments",
+        "boutique_taxonomy_is_not_customs_classification"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "catalog",
+        "boutique-e2e"
+      ],
+      "version": "2026-09-v1"
+    },
+    {
       "id": "services/suppliers/execution-adapter-registry.js",
       "file": "services/suppliers/execution-adapter-registry.js",
       "type": "file",
@@ -29657,14 +29848,9 @@
       "table": "decision_signal_global_access_grants"
     },
     {
-      "id": "db:operator_market_scopes",
+      "id": "db:markets",
       "type": "db-table",
-      "table": "operator_market_scopes"
-    },
-    {
-      "id": "db:assignment_memberships",
-      "type": "db-table",
-      "table": "assignment_memberships"
+      "table": "markets"
     },
     {
       "id": "db:market_operating_assignments",
@@ -29672,9 +29858,9 @@
       "table": "market_operating_assignments"
     },
     {
-      "id": "db:markets",
+      "id": "db:assignment_memberships",
       "type": "db-table",
-      "table": "markets"
+      "table": "assignment_memberships"
     },
     {
       "id": "db:membership_capabilities",
@@ -29690,6 +29876,11 @@
       "id": "db:market_delegation_audit",
       "type": "db-table",
       "table": "market_delegation_audit"
+    },
+    {
+      "id": "db:operator_market_scopes",
+      "type": "db-table",
+      "table": "operator_market_scopes"
     },
     {
       "id": "db:pricing_global_access_grants",
@@ -29987,6 +30178,11 @@
       "table": "market_cash_control_policies"
     },
     {
+      "id": "db:markets (via client-index.js / client-360.js — no query reimplemented here)",
+      "type": "db-table",
+      "table": "markets (via client-index.js / client-360.js — no query reimplemented here)"
+    },
+    {
       "id": "db:services",
       "type": "db-table",
       "table": "services"
@@ -30240,6 +30436,11 @@
       "id": "db:catalog_stock_sync_state",
       "type": "db-table",
       "table": "catalog_stock_sync_state"
+    },
+    {
+      "id": "db:catalog_terminology_reference",
+      "type": "db-table",
+      "table": "catalog_terminology_reference"
     },
     {
       "id": "db:delegated",
@@ -30597,6 +30798,26 @@
       "doctrine": "admin_role_never_implies_action_center_authority"
     },
     {
+      "id": "doctrine:capability_is_the_authority_not_role",
+      "type": "doctrine",
+      "doctrine": "capability_is_the_authority_not_role"
+    },
+    {
+      "id": "doctrine:audit_before_domain_mutation",
+      "type": "doctrine",
+      "doctrine": "audit_before_domain_mutation"
+    },
+    {
+      "id": "doctrine:users_role_never_mutated",
+      "type": "doctrine",
+      "doctrine": "users_role_never_mutated"
+    },
+    {
+      "id": "doctrine:market_scope_is_server_resolved",
+      "type": "doctrine",
+      "doctrine": "market_scope_is_server_resolved"
+    },
+    {
       "id": "doctrine:users_role_is_not_market_authority",
       "type": "doctrine",
       "doctrine": "users_role_is_not_market_authority"
@@ -30615,16 +30836,6 @@
       "id": "doctrine:execution_is_explicit_capability",
       "type": "doctrine",
       "doctrine": "execution_is_explicit_capability"
-    },
-    {
-      "id": "doctrine:audit_before_domain_mutation",
-      "type": "doctrine",
-      "doctrine": "audit_before_domain_mutation"
-    },
-    {
-      "id": "doctrine:users_role_never_mutated",
-      "type": "doctrine",
-      "doctrine": "users_role_never_mutated"
     },
     {
       "id": "doctrine:native_terrain_roles_keep_native_boundary",
@@ -31482,6 +31693,11 @@
       "doctrine": "refund_authority_never_delegated"
     },
     {
+      "id": "doctrine:client_account_facets_global_only",
+      "type": "doctrine",
+      "doctrine": "client_account_facets_global_only"
+    },
+    {
       "id": "doctrine:capabilities_authorize_local_offer_exposure",
       "type": "doctrine",
       "doctrine": "capabilities_authorize_local_offer_exposure"
@@ -31777,6 +31993,21 @@
       "doctrine": "docs/doctrine/DOCTRINE_CATALOGUE.md"
     },
     {
+      "id": "doctrine:source_truth_preserved",
+      "type": "doctrine",
+      "doctrine": "source_truth_preserved"
+    },
+    {
+      "id": "doctrine:offline_ai_assistance",
+      "type": "doctrine",
+      "doctrine": "offline_ai_assistance"
+    },
+    {
+      "id": "doctrine:no_runtime_llm_dependency",
+      "type": "doctrine",
+      "doctrine": "no_runtime_llm_dependency"
+    },
+    {
       "id": "doctrine:catalog_observes_sourcing_without_stealing_mutation_authority",
       "type": "doctrine",
       "doctrine": "catalog_observes_sourcing_without_stealing_mutation_authority"
@@ -31882,6 +32113,16 @@
       "doctrine": "docs/doctrine/DOCTRINE_FULFILLMENT_MIXTE.md"
     },
     {
+      "id": "doctrine:curated_glossary_over_external_reference",
+      "type": "doctrine",
+      "doctrine": "curated_glossary_over_external_reference"
+    },
+    {
+      "id": "doctrine:source_provenance_required",
+      "type": "doctrine",
+      "doctrine": "source_provenance_required"
+    },
+    {
       "id": "doctrine:catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority",
       "type": "doctrine",
       "doctrine": "catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority"
@@ -31905,11 +32146,6 @@
       "id": "doctrine:curated_catalog_cap_from_business_rules",
       "type": "doctrine",
       "doctrine": "curated_catalog_cap_from_business_rules"
-    },
-    {
-      "id": "doctrine:client_account_facets_global_only",
-      "type": "doctrine",
-      "doctrine": "client_account_facets_global_only"
     },
     {
       "id": "doctrine:dashboard_no_business_recompute",
@@ -32115,6 +32351,11 @@
       "id": "doctrine:catalog_authority_is_capability_based",
       "type": "doctrine",
       "doctrine": "catalog_authority_is_capability_based"
+    },
+    {
+      "id": "doctrine:market_validation_may_delegate_first_publication_to_catalog_owner",
+      "type": "doctrine",
+      "doctrine": "market_validation_may_delegate_first_publication_to_catalog_owner"
     },
     {
       "id": "doctrine:client_case_authority_is_capability_based",
@@ -32852,6 +33093,16 @@
       "doctrine": "ING-I9 proposé)"
     },
     {
+      "id": "doctrine:supplier_independent_discovery_segments",
+      "type": "doctrine",
+      "doctrine": "supplier_independent_discovery_segments"
+    },
+    {
+      "id": "doctrine:boutique_taxonomy_is_not_customs_classification",
+      "type": "doctrine",
+      "doctrine": "boutique_taxonomy_is_not_customs_classification"
+    },
+    {
       "id": "doctrine:docs/doctrine/CHANTIERS_INGESTION_CATALOGUE.md (ING-6 proposé)",
       "type": "doctrine",
       "doctrine": "docs/doctrine/CHANTIERS_INGESTION_CATALOGUE.md (ING-6 proposé)"
@@ -33052,6 +33303,11 @@
       "area": "decision-signals"
     },
     {
+      "id": "impact:pricing",
+      "type": "impact-area",
+      "area": "pricing"
+    },
+    {
       "id": "impact:operations",
       "type": "impact-area",
       "area": "operations"
@@ -33070,11 +33326,6 @@
       "id": "impact:simulator",
       "type": "impact-area",
       "area": "simulator"
-    },
-    {
-      "id": "impact:pricing",
-      "type": "impact-area",
-      "area": "pricing"
     },
     {
       "id": "impact:account-security",
@@ -33727,6 +33978,11 @@
       "area": "cash-reconciliation"
     },
     {
+      "id": "impact:staging",
+      "type": "impact-area",
+      "area": "staging"
+    },
+    {
       "id": "impact:supplier-connectivity",
       "type": "impact-area",
       "area": "supplier-connectivity"
@@ -33825,6 +34081,11 @@
       "id": "impact:secrets",
       "type": "impact-area",
       "area": "secrets"
+    },
+    {
+      "id": "impact:boutique-e2e",
+      "type": "impact-area",
+      "area": "boutique-e2e"
     },
     {
       "id": "impact:session",
@@ -35409,6 +35670,102 @@
     },
     {
       "from": "middleware/require-decision-signal-global-authority.js",
+      "to": "impact:authorization",
+      "type": "impact",
+      "label": "authorization"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "services/market-delegation-service.js",
+      "type": "depends",
+      "label": "services/market-delegation-service.js"
+    },
+    {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "middleware/require-market-delegated-capability.js",
+      "type": "uses",
+      "label": "routes/admin-pricing-workspace.js"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "db:market_operating_assignments",
+      "type": "db-read",
+      "label": "market_operating_assignments"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "db:assignment_memberships",
+      "type": "db-read",
+      "label": "assignment_memberships"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "db:membership_capabilities",
+      "type": "db-read",
+      "label": "membership_capabilities"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "db:assignment_capability_ceiling",
+      "type": "db-read",
+      "label": "assignment_capability_ceiling"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write",
+      "label": "market_delegation_audit"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "doctrine:capability_is_the_authority_not_role",
+      "type": "doctrine",
+      "label": "capability_is_the_authority_not_role"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "doctrine:audit_before_domain_mutation",
+      "type": "doctrine",
+      "label": "audit_before_domain_mutation"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "doctrine:users_role_never_mutated",
+      "type": "doctrine",
+      "label": "users_role_never_mutated"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "doctrine:market_scope_is_server_resolved",
+      "type": "doctrine",
+      "label": "market_scope_is_server_resolved"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
       "to": "impact:authorization",
       "type": "impact",
       "label": "authorization"
@@ -38660,46 +39017,10 @@
       "label": "boutique-shell"
     },
     {
-      "from": "public/boutique/js/b-pager-end-bounce.js",
-      "to": "public/boutique/js/b-pager-end-bounce.js",
-      "type": "owned-by",
-      "label": "public/boutique/js/b-pager-end-bounce.js"
-    },
-    {
-      "from": "public/boutique/js/b-pager-end-bounce.js",
-      "to": "impact:mobile-navigation",
-      "type": "impact",
-      "label": "mobile-navigation"
-    },
-    {
-      "from": "public/boutique/js/b-pager-end-bounce.js",
-      "to": "impact:category-navigation",
-      "type": "impact",
-      "label": "category-navigation"
-    },
-    {
-      "from": "public/boutique/js/b-pager-end-bounce.js",
-      "to": "impact:scroll-ownership",
-      "type": "impact",
-      "label": "scroll-ownership"
-    },
-    {
-      "from": "public/boutique/js/b-pager-end-bounce.js",
-      "to": "impact:discovery-rail",
-      "type": "impact",
-      "label": "discovery-rail"
-    },
-    {
       "from": "public/boutique/js/b-pager.js",
       "to": "public/boutique/js/b-bus.js",
       "type": "depends",
       "label": "b-bus.js"
-    },
-    {
-      "from": "public/boutique/js/b-pager.js",
-      "to": "public/boutique/js/b-pager-end-bounce.js",
-      "type": "depends",
-      "label": "b-pager-end-bounce.js"
     },
     {
       "from": "public/boutique/js/b-pager.js",
@@ -41292,30 +41613,6 @@
       "to": "impact:admin-category-config",
       "type": "impact",
       "label": "admin-category-config"
-    },
-    {
-      "from": "public/boutique/js/spike-vertical-shell.js",
-      "to": "public/boutique/js/spike-vertical-shell.js",
-      "type": "owned-by",
-      "label": "public/boutique/js/spike-vertical-shell.js"
-    },
-    {
-      "from": "public/boutique/js/spike-vertical-shell.js",
-      "to": "impact:mobile-navigation",
-      "type": "impact",
-      "label": "mobile-navigation"
-    },
-    {
-      "from": "public/boutique/js/spike-vertical-shell.js",
-      "to": "impact:scroll-ownership",
-      "type": "impact",
-      "label": "scroll-ownership"
-    },
-    {
-      "from": "public/boutique/js/spike-vertical-shell.js",
-      "to": "impact:category-navigation",
-      "type": "impact",
-      "label": "category-navigation"
     },
     {
       "from": "public/boutique/js/taxonomy-no-hardcode.test.js",
@@ -47201,6 +47498,121 @@
       "label": "orders"
     },
     {
+      "from": "routes/market-delegation-client.js",
+      "to": "middleware/auth.js",
+      "type": "depends",
+      "label": "middleware/auth.js"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "middleware/require-market-delegated-capability.js",
+      "type": "depends",
+      "label": "middleware/require-market-delegated-capability.js"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "services/client-index.js",
+      "type": "depends",
+      "label": "services/client-index.js"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "services/client-360.js",
+      "type": "depends",
+      "label": "services/client-360.js"
+    },
+    {
+      "from": "bootstrap/api-routes.js",
+      "to": "routes/market-delegation-client.js",
+      "type": "uses",
+      "label": "bootstrap/api-routes.js"
+    },
+    {
+      "from": "market operator dashboard (canonical Clients screen)",
+      "to": "routes/market-delegation-client.js",
+      "type": "uses",
+      "label": "market operator dashboard (canonical Clients screen)"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "db:users",
+      "type": "db-read",
+      "label": "users"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "db:recipients",
+      "type": "db-read",
+      "label": "recipients"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "db:markets (via client-index.js / client-360.js — no query reimplemented here)",
+      "type": "db-read",
+      "label": "markets (via client-index.js / client-360.js — no query reimplemented here)"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "db:market_delegation_audit",
+      "type": "db-write-via",
+      "label": "market_delegation_audit",
+      "via": "market-delegation-service"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "doctrine:capability_is_the_authority_not_role",
+      "type": "doctrine",
+      "label": "capability_is_the_authority_not_role"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "doctrine:market_scope_is_server_resolved",
+      "type": "doctrine",
+      "label": "market_scope_is_server_resolved"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "doctrine:client_market_id_never_authority",
+      "type": "doctrine",
+      "label": "client_market_id_never_authority"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "doctrine:client_account_facets_global_only",
+      "type": "doctrine",
+      "label": "client_account_facets_global_only"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "doctrine:client_index_finds_client_360",
+      "type": "doctrine",
+      "label": "client_index_finds_client_360"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "impact:market-delegation",
+      "type": "impact",
+      "label": "market-delegation"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
+      "from": "routes/market-delegation-client.js",
+      "to": "impact:clients",
+      "type": "impact",
+      "label": "clients"
+    },
+    {
       "from": "routes/market-delegation-local-offer.js",
       "to": "middleware/auth.js",
       "type": "depends",
@@ -52920,6 +53332,60 @@
       "label": "sourcing"
     },
     {
+      "from": "services/catalog-fr-quality.js",
+      "to": "node:crypto",
+      "type": "depends",
+      "label": "node:crypto"
+    },
+    {
+      "from": "scripts/catalog-fr-quality-workpack.js",
+      "to": "services/catalog-fr-quality.js",
+      "type": "uses",
+      "label": "scripts/catalog-fr-quality-workpack.js"
+    },
+    {
+      "from": "scripts/catalog-fr-quality-apply.js",
+      "to": "services/catalog-fr-quality.js",
+      "type": "uses",
+      "label": "scripts/catalog-fr-quality-apply.js"
+    },
+    {
+      "from": "services/catalog-fr-quality.js",
+      "to": "doctrine:source_truth_preserved",
+      "type": "doctrine",
+      "label": "source_truth_preserved"
+    },
+    {
+      "from": "services/catalog-fr-quality.js",
+      "to": "doctrine:offline_ai_assistance",
+      "type": "doctrine",
+      "label": "offline_ai_assistance"
+    },
+    {
+      "from": "services/catalog-fr-quality.js",
+      "to": "doctrine:no_runtime_llm_dependency",
+      "type": "doctrine",
+      "label": "no_runtime_llm_dependency"
+    },
+    {
+      "from": "services/catalog-fr-quality.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-fr-quality.js",
+      "to": "impact:product-detail",
+      "type": "impact",
+      "label": "product-detail"
+    },
+    {
+      "from": "services/catalog-fr-quality.js",
+      "to": "impact:staging",
+      "type": "impact",
+      "label": "staging"
+    },
+    {
       "from": "services/catalog-live-flow.js",
       "to": "db.js",
       "type": "depends",
@@ -53047,15 +53513,9 @@
     },
     {
       "from": "services/catalog-market-exposure-service.js",
-      "to": "none (executor fourni par l'appelant",
+      "to": "services/product-publication-guard.js",
       "type": "depends",
-      "label": "none (executor fourni par l'appelant"
-    },
-    {
-      "from": "services/catalog-market-exposure-service.js",
-      "to": "défaut : pool module)",
-      "type": "depends",
-      "label": "défaut : pool module)"
+      "label": "services/product-publication-guard.js"
     },
     {
       "from": "services/market-delegation-catalog-service.js",
@@ -53086,6 +53546,12 @@
       "to": "db:markets",
       "type": "db-read",
       "label": "markets"
+    },
+    {
+      "from": "services/catalog-market-exposure-service.js",
+      "to": "db:catalog_media",
+      "type": "db-read",
+      "label": "catalog_media"
     },
     {
       "from": "services/catalog-market-exposure-service.js",
@@ -53164,6 +53630,12 @@
       "to": "services/catalog-overrides.js",
       "type": "uses",
       "label": "services/catalog-approval.js"
+    },
+    {
+      "from": "scripts/catalog-fr-quality-apply.js",
+      "to": "services/catalog-overrides.js",
+      "type": "uses",
+      "label": "scripts/catalog-fr-quality-apply.js"
     },
     {
       "from": "services/catalog-overrides.js",
@@ -54138,6 +54610,60 @@
       "label": "local-stock"
     },
     {
+      "from": "scripts/catalog-fr-quality-workpack.js",
+      "to": "services/catalog-terminology-memory.js",
+      "type": "uses",
+      "label": "scripts/catalog-fr-quality-workpack.js"
+    },
+    {
+      "from": "scripts/catalog-termium-import.js",
+      "to": "services/catalog-terminology-memory.js",
+      "type": "uses",
+      "label": "scripts/catalog-termium-import.js"
+    },
+    {
+      "from": "services/catalog-terminology-memory.js",
+      "to": "db:catalog_glossary",
+      "type": "db-read",
+      "label": "catalog_glossary"
+    },
+    {
+      "from": "services/catalog-terminology-memory.js",
+      "to": "db:catalog_terminology_reference",
+      "type": "db-read",
+      "label": "catalog_terminology_reference"
+    },
+    {
+      "from": "services/catalog-terminology-memory.js",
+      "to": "doctrine:curated_glossary_over_external_reference",
+      "type": "doctrine",
+      "label": "curated_glossary_over_external_reference"
+    },
+    {
+      "from": "services/catalog-terminology-memory.js",
+      "to": "doctrine:source_provenance_required",
+      "type": "doctrine",
+      "label": "source_provenance_required"
+    },
+    {
+      "from": "services/catalog-terminology-memory.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/catalog-terminology-memory.js",
+      "to": "impact:product-detail",
+      "type": "impact",
+      "label": "product-detail"
+    },
+    {
+      "from": "services/catalog-terminology-memory.js",
+      "to": "impact:staging",
+      "type": "impact",
+      "label": "staging"
+    },
+    {
       "from": "services/catalog-workspace-live-composer.js",
       "to": "services/catalog-workspace.js",
       "type": "depends",
@@ -54238,6 +54764,12 @@
       "to": "db:products",
       "type": "db-read",
       "label": "products"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-read",
+      "label": "sourcing_candidates"
     },
     {
       "from": "services/catalog-workspace.js",
@@ -59606,6 +60138,12 @@
       "label": "services/catalog-market-exposure-service.js"
     },
     {
+      "from": "services/market-delegation-catalog-service.js",
+      "to": "services/catalog-approval.js",
+      "type": "depends",
+      "label": "services/catalog-approval.js"
+    },
+    {
       "from": "routes/market-delegation-catalog.js",
       "to": "services/market-delegation-catalog-service.js",
       "type": "uses",
@@ -59613,10 +60151,23 @@
     },
     {
       "from": "services/market-delegation-catalog-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/market-delegation-catalog-service.js",
       "to": "db:product_market_exposure",
       "type": "db-write-via",
       "label": "product_market_exposure",
       "via": "catalog-market-exposure-service"
+    },
+    {
+      "from": "services/market-delegation-catalog-service.js",
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "catalog-approval"
     },
     {
       "from": "services/market-delegation-catalog-service.js",
@@ -59642,6 +60193,12 @@
       "to": "doctrine:writer_not_owner_boundary",
       "type": "doctrine",
       "label": "writer_not_owner_boundary"
+    },
+    {
+      "from": "services/market-delegation-catalog-service.js",
+      "to": "doctrine:market_validation_may_delegate_first_publication_to_catalog_owner",
+      "type": "doctrine",
+      "label": "market_validation_may_delegate_first_publication_to_catalog_owner"
     },
     {
       "from": "services/market-delegation-catalog-service.js",
@@ -74686,6 +75243,54 @@
       "label": "product-discovery"
     },
     {
+      "from": "scripts/aliexpress-500-catalog-sync.js",
+      "to": "services/suppliers/e2e-catalog-500-plan.js",
+      "type": "uses",
+      "label": "scripts/aliexpress-500-catalog-sync.js"
+    },
+    {
+      "from": "scripts/cj-500-e2e-catalog-sync.js",
+      "to": "services/suppliers/e2e-catalog-500-plan.js",
+      "type": "uses",
+      "label": "scripts/cj-500-e2e-catalog-sync.js"
+    },
+    {
+      "from": "services/supplier-catalog-scanner.js",
+      "to": "services/suppliers/e2e-catalog-500-plan.js",
+      "type": "uses",
+      "label": "services/supplier-catalog-scanner.js"
+    },
+    {
+      "from": "services/suppliers/e2e-catalog-500-plan.js",
+      "to": "doctrine:supplier_independent_discovery_segments",
+      "type": "doctrine",
+      "label": "supplier_independent_discovery_segments"
+    },
+    {
+      "from": "services/suppliers/e2e-catalog-500-plan.js",
+      "to": "doctrine:boutique_taxonomy_is_not_customs_classification",
+      "type": "doctrine",
+      "label": "boutique_taxonomy_is_not_customs_classification"
+    },
+    {
+      "from": "services/suppliers/e2e-catalog-500-plan.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/suppliers/e2e-catalog-500-plan.js",
+      "to": "impact:catalog",
+      "type": "impact",
+      "label": "catalog"
+    },
+    {
+      "from": "services/suppliers/e2e-catalog-500-plan.js",
+      "to": "impact:boutique-e2e",
+      "type": "impact",
+      "label": "boutique-e2e"
+    },
+    {
       "from": "services/suppliers/execution-adapter-registry.js",
       "to": "services/suppliers/allegro-fulfillment-adapter.js",
       "type": "depends",
@@ -78493,6 +79098,7 @@
         "routes/market-delegation-cash-control.js",
         "routes/market-delegation-catalog.js",
         "routes/market-delegation-client-case.js",
+        "routes/market-delegation-client.js",
         "routes/market-delegation-local-offer.js",
         "routes/market-delegation-network.js",
         "routes/market-delegation-performance.js",
@@ -79108,6 +79714,7 @@
         "routes/market-delegation-cash-control.js",
         "routes/market-delegation-catalog.js",
         "routes/market-delegation-client-case.js",
+        "routes/market-delegation-client.js",
         "routes/market-delegation-local-offer.js",
         "routes/market-delegation-network.js",
         "routes/market-delegation-performance.js",
@@ -79429,6 +80036,62 @@
         "impact:authorization",
         "impact:decision-signals",
         "routes/admin-action-center.js"
+      ]
+    },
+    "middleware/require-market-delegated-capability.js": {
+      "role": "market-delegated-capability-bridge",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/market-delegation-service.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-pricing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "markets",
+        "market_operating_assignments",
+        "assignment_memberships",
+        "membership_capabilities",
+        "assignment_capability_ceiling"
+      ],
+      "dbWrite": [
+        "market_delegation_audit"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "capability_is_the_authority_not_role",
+        "audit_before_domain_mutation",
+        "users_role_never_mutated",
+        "market_scope_is_server_resolved"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "pricing",
+        "authorization"
+      ],
+      "mustCheck": [
+        "db:assignment_capability_ceiling",
+        "db:assignment_memberships",
+        "db:market_delegation_audit",
+        "db:market_operating_assignments",
+        "db:markets",
+        "db:membership_capabilities",
+        "doctrine:audit_before_domain_mutation",
+        "doctrine:capability_is_the_authority_not_role",
+        "doctrine:market_scope_is_server_resolved",
+        "doctrine:users_role_never_mutated",
+        "impact:authorization",
+        "impact:market-delegation",
+        "impact:pricing",
+        "routes/admin-pricing-workspace.js",
+        "routes/market-delegation-client.js",
+        "services/market-delegation-service.js"
       ]
     },
     "middleware/require-market-delegated-role.js": {
@@ -81769,37 +82432,6 @@
         "routes/client-notifications.js"
       ]
     },
-    "public/boutique/js/b-pager-end-bounce.js": {
-      "role": "mobile-pager-end-bounce",
-      "domain": "catalog",
-      "criticality": "low",
-      "headerType": "lite",
-      "owner": "public/boutique/js/b-pager-end-bounce.js",
-      "purpose": "Avancer automatiquement vers la catégorie suivante après une arrivée verticale volontaire en bas de page.",
-      "directDependsOn": [],
-      "directUsedBy": [],
-      "ownedFiles": [
-        "public/boutique/js/b-pager-end-bounce.js"
-      ],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "doctrines": [],
-      "impactAreas": [
-        "mobile-navigation",
-        "category-navigation",
-        "scroll-ownership",
-        "discovery-rail"
-      ],
-      "mustCheck": [
-        "impact:category-navigation",
-        "impact:discovery-rail",
-        "impact:mobile-navigation",
-        "impact:scroll-ownership",
-        "public/boutique/js/b-pager-end-bounce.js",
-        "public/boutique/js/b-pager.js"
-      ]
-    },
     "public/boutique/js/b-pager.js": {
       "role": "mobile-category-pager",
       "domain": "catalog",
@@ -81809,7 +82441,6 @@
       "purpose": null,
       "directDependsOn": [
         "public/boutique/js/b-bus.js",
-        "public/boutique/js/b-pager-end-bounce.js",
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-store.js"
       ],
@@ -81849,7 +82480,6 @@
         "public/boutique/js/b-bus.js",
         "public/boutique/js/b-catalog.js",
         "public/boutique/js/b-nav.js",
-        "public/boutique/js/b-pager-end-bounce.js",
         "public/boutique/js/b-scroll-owner.js",
         "public/boutique/js/b-store.js",
         "public/boutique/js/b-subcat.js",
@@ -82966,7 +83596,7 @@
       "criticality": "low",
       "headerType": "lite",
       "owner": "public/boutique/js/discovery-rail.js",
-      "purpose": "Monter « Disponible ici » sur Tout et, sur mobile, à l'entrée d'une catégorie par bump vertical uniquement.",
+      "purpose": "Monter « Disponible ici » sur l'accueil Tout uniquement (mobile et desktop).",
       "directDependsOn": [],
       "directUsedBy": [],
       "ownedFiles": [
@@ -83891,34 +84521,6 @@
         "public/boutique/js/controllers/home-controller.js",
         "public/boutique/js/product-store.js",
         "public/boutique/js/render/render-home-sections.js"
-      ]
-    },
-    "public/boutique/js/spike-vertical-shell.js": {
-      "role": "catalog-spike-vertical-shell",
-      "domain": "catalog",
-      "criticality": "low",
-      "headerType": "lite",
-      "owner": "public/boutique/js/spike-vertical-shell.js",
-      "purpose": "SPIKE Phase 2 (branche isolee, jamais merge) — shell vertical mobile derriere ?shell=vertical, no-op par defaut.",
-      "directDependsOn": [],
-      "directUsedBy": [],
-      "ownedFiles": [
-        "public/boutique/js/spike-vertical-shell.js"
-      ],
-      "dbRead": [],
-      "dbWrite": [],
-      "dbWriteVia": [],
-      "doctrines": [],
-      "impactAreas": [
-        "mobile-navigation",
-        "scroll-ownership",
-        "category-navigation"
-      ],
-      "mustCheck": [
-        "impact:category-navigation",
-        "impact:mobile-navigation",
-        "impact:scroll-ownership",
-        "public/boutique/js/spike-vertical-shell.js"
       ]
     },
     "public/boutique/js/taxonomy-no-hardcode.test.js": {
@@ -85203,6 +85805,7 @@
         "impact:market-authorization",
         "impact:pricing",
         "middleware/auth.js",
+        "middleware/require-market-delegated-capability.js",
         "middleware/require-market-delegated-role.js",
         "middleware/require-market-scope.js",
         "middleware/require-pricing-global-authority.js",
@@ -87786,6 +88389,72 @@
         "impact:orders",
         "middleware/auth.js",
         "services/market-delegation-client-case-service.js"
+      ]
+    },
+    "routes/market-delegation-client.js": {
+      "role": "market-delegation-client-api",
+      "domain": "market-delegation",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "middleware/auth.js",
+        "middleware/require-market-delegated-capability.js",
+        "services/client-index.js",
+        "services/client-360.js"
+      ],
+      "directUsedBy": [
+        "bootstrap/api-routes.js",
+        "market operator dashboard (canonical Clients screen)"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "orders",
+        "users",
+        "recipients",
+        "markets (via client-index.js / client-360.js — no query reimplemented here)"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [
+        {
+          "via": "market-delegation-service",
+          "tables": [
+            "market_delegation_audit"
+          ]
+        }
+      ],
+      "doctrines": [
+        "capability_is_the_authority_not_role",
+        "market_scope_is_server_resolved",
+        "client_market_id_never_authority",
+        "client_account_facets_global_only",
+        "client_index_finds_client_360"
+      ],
+      "impactAreas": [
+        "market-delegation",
+        "admin-dashboard",
+        "clients"
+      ],
+      "mustCheck": [
+        "bootstrap/api-routes.js",
+        "db:market_delegation_audit",
+        "db:markets (via client-index.js / client-360.js — no query reimplemented here)",
+        "db:orders",
+        "db:recipients",
+        "db:users",
+        "doctrine:capability_is_the_authority_not_role",
+        "doctrine:client_account_facets_global_only",
+        "doctrine:client_index_finds_client_360",
+        "doctrine:client_market_id_never_authority",
+        "doctrine:market_scope_is_server_resolved",
+        "impact:admin-dashboard",
+        "impact:clients",
+        "impact:market-delegation",
+        "middleware/auth.js",
+        "middleware/require-market-delegated-capability.js",
+        "services/client-360.js",
+        "services/client-index.js"
       ]
     },
     "routes/market-delegation-local-offer.js": {
@@ -91328,6 +91997,7 @@
         "routes/admin/catalog-approval.js",
         "services/catalog-overrides.js",
         "services/catalog-workspace.js",
+        "services/market-delegation-catalog-service.js",
         "services/product-publication-guard.js",
         "utils/alerts.js",
         "utils/logger.js",
@@ -91579,6 +92249,43 @@
         "services/sourcing-catalog-change-sku-identity-proof.js"
       ]
     },
+    "services/catalog-fr-quality.js": {
+      "role": "catalog-french-quality-contract",
+      "domain": "catalog",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "node:crypto"
+      ],
+      "directUsedBy": [
+        "scripts/catalog-fr-quality-workpack.js",
+        "scripts/catalog-fr-quality-apply.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "source_truth_preserved",
+        "offline_ai_assistance",
+        "no_runtime_llm_dependency"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-detail",
+        "staging"
+      ],
+      "mustCheck": [
+        "doctrine:no_runtime_llm_dependency",
+        "doctrine:offline_ai_assistance",
+        "doctrine:source_truth_preserved",
+        "impact:catalog",
+        "impact:product-detail",
+        "impact:staging"
+      ]
+    },
     "services/catalog-live-flow.js": {
       "role": "catalog-live-source-flow-projection",
       "domain": "catalog",
@@ -91651,8 +92358,7 @@
       "owner": null,
       "purpose": null,
       "directDependsOn": [
-        "none (executor fourni par l'appelant",
-        "défaut : pool module)"
+        "services/product-publication-guard.js"
       ],
       "directUsedBy": [
         "services/market-delegation-catalog-service.js",
@@ -91662,7 +92368,8 @@
       "dbRead": [
         "product_market_exposure",
         "products",
-        "markets"
+        "markets",
+        "catalog_media"
       ],
       "dbWrite": [
         "product_market_exposure"
@@ -91678,6 +92385,7 @@
         "market-delegation"
       ],
       "mustCheck": [
+        "db:catalog_media",
         "db:markets",
         "db:product_market_exposure",
         "db:products",
@@ -91688,7 +92396,8 @@
         "impact:market-delegation",
         "services/catalog-public-view.js",
         "services/discovery-rail-composer.js",
-        "services/market-delegation-catalog-service.js"
+        "services/market-delegation-catalog-service.js",
+        "services/product-publication-guard.js"
       ]
     },
     "services/catalog-media-visual-fr-proof.js": {
@@ -91728,7 +92437,8 @@
       ],
       "directUsedBy": [
         "services/product-admin-service.js",
-        "services/catalog-approval.js"
+        "services/catalog-approval.js",
+        "scripts/catalog-fr-quality-apply.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -92368,6 +93078,44 @@
         "services/sourcing-catalog-change-sku-identity-proof.js"
       ]
     },
+    "services/catalog-terminology-memory.js": {
+      "role": "catalog-terminology-memory",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "scripts/catalog-fr-quality-workpack.js",
+        "scripts/catalog-termium-import.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "catalog_glossary",
+        "catalog_terminology_reference"
+      ],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "curated_glossary_over_external_reference",
+        "source_provenance_required"
+      ],
+      "impactAreas": [
+        "catalog",
+        "product-detail",
+        "staging"
+      ],
+      "mustCheck": [
+        "db:catalog_glossary",
+        "db:catalog_terminology_reference",
+        "doctrine:curated_glossary_over_external_reference",
+        "doctrine:source_provenance_required",
+        "impact:catalog",
+        "impact:product-detail",
+        "impact:staging"
+      ]
+    },
     "services/catalog-workspace-live-composer.js": {
       "role": "canonical-catalog-workspace-live-composer",
       "domain": "catalog",
@@ -92431,6 +93179,7 @@
       "ownedFiles": [],
       "dbRead": [
         "products",
+        "sourcing_candidates",
         "boutique_categories",
         "boutique_subcategories"
       ],
@@ -92452,6 +93201,7 @@
         "db:boutique_categories",
         "db:boutique_subcategories",
         "db:products",
+        "db:sourcing_candidates",
         "doctrine:curated_catalog_cap_from_business_rules",
         "doctrine:global_catalog_not_market_scoped",
         "doctrine:product_ref_is_public_identity",
@@ -92533,7 +93283,8 @@
         "impact:market-authorization",
         "impact:notifications",
         "impact:shared-cart",
-        "routes/admin-client-360.js"
+        "routes/admin-client-360.js",
+        "routes/market-delegation-client.js"
       ]
     },
     "services/client-index.js": {
@@ -92581,7 +93332,8 @@
         "impact:clients",
         "impact:commerce",
         "impact:market-authorization",
-        "routes/admin-client-index.js"
+        "routes/admin-client-index.js",
+        "routes/market-delegation-client.js"
       ]
     },
     "services/client-notification-service.js": {
@@ -95650,19 +96402,28 @@
       "directDependsOn": [
         "services/market-delegation-team-service.js",
         "services/market-delegation-service.js",
-        "services/catalog-market-exposure-service.js"
+        "services/catalog-market-exposure-service.js",
+        "services/catalog-approval.js"
       ],
       "directUsedBy": [
         "routes/market-delegation-catalog.js"
       ],
       "ownedFiles": [],
-      "dbRead": [],
+      "dbRead": [
+        "products"
+      ],
       "dbWrite": [],
       "dbWriteVia": [
         {
           "via": "catalog-market-exposure-service",
           "tables": [
             "product_market_exposure"
+          ]
+        },
+        {
+          "via": "catalog-approval",
+          "tables": [
+            "products"
           ]
         },
         {
@@ -95676,6 +96437,7 @@
         "catalog_authority_is_capability_based",
         "client_market_id_never_authority",
         "writer_not_owner_boundary",
+        "market_validation_may_delegate_first_publication_to_catalog_owner",
         "catalog_stays_unique_exposure_is_projection"
       ],
       "impactAreas": [
@@ -95686,14 +96448,17 @@
       "mustCheck": [
         "db:market_delegation_audit",
         "db:product_market_exposure",
+        "db:products",
         "doctrine:catalog_authority_is_capability_based",
         "doctrine:catalog_stays_unique_exposure_is_projection",
         "doctrine:client_market_id_never_authority",
+        "doctrine:market_validation_may_delegate_first_publication_to_catalog_owner",
         "doctrine:writer_not_owner_boundary",
         "impact:catalog",
         "impact:delegation",
         "impact:market",
         "routes/market-delegation-catalog.js",
+        "services/catalog-approval.js",
         "services/catalog-market-exposure-service.js",
         "services/market-delegation-service.js",
         "services/market-delegation-team-service.js"
@@ -96031,6 +96796,7 @@
         "impact:authorization",
         "impact:delegation",
         "impact:market",
+        "middleware/require-market-delegated-capability.js",
         "middleware/require-market-execution-capability.js",
         "routes/admin-action-center.js",
         "routes/admin-market-settlement.js",
@@ -100764,6 +101530,7 @@
         "impact:product-discovery",
         "services/catalog-approval.js",
         "services/catalog-live-flow.js",
+        "services/catalog-market-exposure-service.js",
         "services/product-admin-service.js",
         "utils/logger.js"
       ]
@@ -104372,6 +105139,7 @@
         "services/pricing-engine.js",
         "services/sourcing-candidate-actions.js",
         "services/suppliers/catalog-import-orchestrator.js",
+        "services/suppliers/e2e-catalog-500-plan.js",
         "utils/rates.js"
       ]
     },
@@ -105288,6 +106056,41 @@
         "routes/sourcing-scanner.js",
         "services/sourcing-import-dispatch.js",
         "services/suppliers/connectors/api-connector.base.js"
+      ]
+    },
+    "services/suppliers/e2e-catalog-500-plan.js": {
+      "role": "supplier-discovery-segment-plan",
+      "domain": "catalog",
+      "criticality": "medium",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [],
+      "directUsedBy": [
+        "scripts/aliexpress-500-catalog-sync.js",
+        "scripts/cj-500-e2e-catalog-sync.js",
+        "services/supplier-catalog-scanner.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [],
+      "dbWrite": [],
+      "dbWriteVia": [],
+      "doctrines": [
+        "supplier_independent_discovery_segments",
+        "boutique_taxonomy_is_not_customs_classification"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "catalog",
+        "boutique-e2e"
+      ],
+      "mustCheck": [
+        "doctrine:boutique_taxonomy_is_not_customs_classification",
+        "doctrine:supplier_independent_discovery_segments",
+        "impact:boutique-e2e",
+        "impact:catalog",
+        "impact:sourcing",
+        "services/supplier-catalog-scanner.js"
       ]
     },
     "services/suppliers/execution-adapter-registry.js": {
@@ -108080,6 +108883,15 @@
       ]
     },
     {
+      "table": "market_delegation_audit",
+      "writerCount": 3,
+      "writers": [
+        "middleware/require-market-delegated-capability.js",
+        "middleware/require-market-execution-capability.js",
+        "services/market-delegation-service.js"
+      ]
+    },
+    {
       "table": "order_item_real_cost_allocations",
       "writerCount": 3,
       "writers": [
@@ -108261,14 +109073,6 @@
       "writers": [
         "routes/admin-loyalty.js",
         "services/loyalty-service.js"
-      ]
-    },
-    {
-      "table": "market_delegation_audit",
-      "writerCount": 2,
-      "writers": [
-        "middleware/require-market-execution-capability.js",
-        "services/market-delegation-service.js"
       ]
     },
     {
@@ -108549,6 +109353,12 @@
     },
     {
       "from": "middleware/require-decision-signal-global-authority.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "middleware/require-market-delegated-capability.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -109784,6 +110594,12 @@
       "label": "market operator dashboard"
     },
     {
+      "from": "market operator dashboard (canonical Clients screen)",
+      "to": "routes/market-delegation-client.js",
+      "type": "uses",
+      "label": "market operator dashboard (canonical Clients screen)"
+    },
+    {
       "from": "market operator dashboard",
       "to": "routes/market-delegation-local-offer.js",
       "type": "uses",
@@ -110450,22 +111266,28 @@
       "label": "tests/integration/catalog-field-sync-decision-real-db.test.js"
     },
     {
+      "from": "services/catalog-fr-quality.js",
+      "to": "node:crypto",
+      "type": "depends",
+      "label": "node:crypto"
+    },
+    {
+      "from": "scripts/catalog-fr-quality-workpack.js",
+      "to": "services/catalog-fr-quality.js",
+      "type": "uses",
+      "label": "scripts/catalog-fr-quality-workpack.js"
+    },
+    {
+      "from": "scripts/catalog-fr-quality-apply.js",
+      "to": "services/catalog-fr-quality.js",
+      "type": "uses",
+      "label": "scripts/catalog-fr-quality-apply.js"
+    },
+    {
       "from": "services/catalog-live-flow.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
-    },
-    {
-      "from": "services/catalog-market-exposure-service.js",
-      "to": "none (executor fourni par l'appelant",
-      "type": "depends",
-      "label": "none (executor fourni par l'appelant"
-    },
-    {
-      "from": "services/catalog-market-exposure-service.js",
-      "to": "défaut : pool module)",
-      "type": "depends",
-      "label": "défaut : pool module)"
     },
     {
       "from": "services/catalog-media-visual-fr-proof.js",
@@ -110478,6 +111300,12 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "scripts/catalog-fr-quality-apply.js",
+      "to": "services/catalog-overrides.js",
+      "type": "uses",
+      "label": "scripts/catalog-fr-quality-apply.js"
     },
     {
       "from": "services/catalog-product-detail.js",
@@ -110610,6 +111438,18 @@
       "to": "services/catalog-stock-sync-decision.js",
       "type": "uses",
       "label": "tests/integration/catalog-stock-sync-decision-real-db.test.js"
+    },
+    {
+      "from": "scripts/catalog-fr-quality-workpack.js",
+      "to": "services/catalog-terminology-memory.js",
+      "type": "uses",
+      "label": "scripts/catalog-fr-quality-workpack.js"
+    },
+    {
+      "from": "scripts/catalog-termium-import.js",
+      "to": "services/catalog-terminology-memory.js",
+      "type": "uses",
+      "label": "scripts/catalog-termium-import.js"
     },
     {
       "from": "services/catalog-workspace.js",
@@ -112446,6 +113286,18 @@
       "to": "services/suppliers/connectors/json-connector.js",
       "type": "uses",
       "label": "scripts/dry-run-import.js (l'orchestrateur n'est PAS encore branché)"
+    },
+    {
+      "from": "scripts/aliexpress-500-catalog-sync.js",
+      "to": "services/suppliers/e2e-catalog-500-plan.js",
+      "type": "uses",
+      "label": "scripts/aliexpress-500-catalog-sync.js"
+    },
+    {
+      "from": "scripts/cj-500-e2e-catalog-sync.js",
+      "to": "services/suppliers/e2e-catalog-500-plan.js",
+      "type": "uses",
+      "label": "scripts/cj-500-e2e-catalog-sync.js"
     },
     {
       "from": "services/purchasing-trigger-service.js (GAP-2",

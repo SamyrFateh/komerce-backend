@@ -1395,13 +1395,6 @@
       {
         "feature": "catalog",
         "category": "ci",
-        "declared": ".github/workflows/staging-aliexpress-enrich-fr-pilot.yml",
-        "resolvedPath": ".github/workflows/staging-aliexpress-enrich-fr-pilot.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "catalog",
-        "category": "ci",
         "declared": ".github/workflows/staging-aliexpress-pool-integrity.yml",
         "resolvedPath": ".github/workflows/staging-aliexpress-pool-integrity.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -1439,6 +1432,76 @@
         "category": "ci",
         "declared": ".github/workflows/staging-pdp-aliexpress-live-audit.yml",
         "resolvedPath": ".github/workflows/staging-pdp-aliexpress-live-audit.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/staging-real-supplier-1000-stress.yml",
+        "resolvedPath": ".github/workflows/staging-real-supplier-1000-stress.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/isolated-real-cj-1000-catalog-stress.yml",
+        "resolvedPath": ".github/workflows/isolated-real-cj-1000-catalog-stress.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/isolated-cj-refinery-continuation.yml",
+        "resolvedPath": ".github/workflows/isolated-cj-refinery-continuation.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/isolated-cj-fr-quality-workpack.yml",
+        "resolvedPath": ".github/workflows/isolated-cj-fr-quality-workpack.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/isolated-catalog-termium-memory.yml",
+        "resolvedPath": ".github/workflows/isolated-catalog-termium-memory.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/isolated-fr-glossary-batch001.yml",
+        "resolvedPath": ".github/workflows/isolated-fr-glossary-batch001.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/isolated-cj-fr-cold-start-challenge.yml",
+        "resolvedPath": ".github/workflows/isolated-cj-fr-cold-start-challenge.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/isolated-catalog-fr-quality-campaign.yml",
+        "resolvedPath": ".github/workflows/isolated-catalog-fr-quality-campaign.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/isolated-catalog-refinery-final-acceptance.yml",
+        "resolvedPath": ".github/workflows/isolated-catalog-refinery-final-acceptance.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "ci",
+        "declared": ".github/workflows/isolated-cj-balanced-e2e-500.yml",
+        "resolvedPath": ".github/workflows/isolated-cj-balanced-e2e-500.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -1485,6 +1548,111 @@
       },
       {
         "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/real-supplier-1000-stress-staging.js",
+        "resolvedPath": "scripts/real-supplier-1000-stress-staging.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/catalog-fr-free-e2e-preparation.js",
+        "resolvedPath": "scripts/catalog-fr-free-e2e-preparation.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/cj-broad-catalog-stress-fill.js",
+        "resolvedPath": "scripts/cj-broad-catalog-stress-fill.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/cj-refinery-commandability-continuation.js",
+        "resolvedPath": "scripts/cj-refinery-commandability-continuation.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/catalog-fr-quality-workpack.js",
+        "resolvedPath": "scripts/catalog-fr-quality-workpack.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/catalog-fr-quality-apply.js",
+        "resolvedPath": "scripts/catalog-fr-quality-apply.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/catalog-termium-import.js",
+        "resolvedPath": "scripts/catalog-termium-import.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/cj-fr-cold-start-challenge.js",
+        "resolvedPath": "scripts/cj-fr-cold-start-challenge.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/catalog-fr-quality-campaign-audit.js",
+        "resolvedPath": "scripts/catalog-fr-quality-campaign-audit.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/catalog-refinery-final-acceptance.js",
+        "resolvedPath": "scripts/catalog-refinery-final-acceptance.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
+        "declared": "scripts/cj-500-e2e-catalog-sync.js",
+        "resolvedPath": "scripts/cj-500-e2e-catalog-sync.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-stock-sync-decision.js",
+        "resolvedPath": "services/catalog-stock-sync-decision.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-stock-sync-application.js",
+        "resolvedPath": "services/catalog-stock-sync-application.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-field-sync-decision.js",
+        "resolvedPath": "services/catalog-field-sync-decision.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-field-sync-application.js",
+        "resolvedPath": "services/catalog-field-sync-application.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
         "category": "services",
         "declared": "services/suppliers/allegro-sandbox-client.js",
         "resolvedPath": "services/suppliers/allegro-sandbox-client.js",
@@ -1509,6 +1677,27 @@
         "category": "services",
         "declared": "services/product-publication-guard.js",
         "resolvedPath": "services/product-publication-guard.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-media-visual-fr-proof.js",
+        "resolvedPath": "services/catalog-media-visual-fr-proof.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-fr-quality.js",
+        "resolvedPath": "services/catalog-fr-quality.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-terminology-memory.js",
+        "resolvedPath": "services/catalog-terminology-memory.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -1565,6 +1754,20 @@
         "category": "services",
         "declared": "services/catalog-product-mutation-service.js",
         "resolvedPath": "services/catalog-product-mutation-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-change-intake.js",
+        "resolvedPath": "services/catalog-change-intake.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
+        "declared": "services/catalog-provider-capability-contract.js",
+        "resolvedPath": "services/catalog-provider-capability-contract.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -1738,6 +1941,13 @@
       {
         "feature": "catalog",
         "category": "services",
+        "declared": "services/suppliers/e2e-catalog-500-plan.js",
+        "resolvedPath": "services/suppliers/e2e-catalog-500-plan.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "catalog",
+        "category": "services",
         "declared": "services/supplier-catalog-scanner.js",
         "resolvedPath": "services/supplier-catalog-scanner.js",
         "status": "resolved-in-technical-graph"
@@ -1885,6 +2095,20 @@
       {
         "feature": "catalog",
         "category": "migrations",
+        "declared": "migrations/242_catalog_field_sync_state.sql",
+        "resolvedPath": "migrations/242_catalog_field_sync_state.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/241_catalog_stock_sync_state.sql",
+        "resolvedPath": "migrations/241_catalog_stock_sync_state.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "migrations",
         "declared": "migrations/098_catalog_refinery_foundation.sql",
         "resolvedPath": "migrations/098_catalog_refinery_foundation.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -2018,6 +2242,13 @@
       {
         "feature": "catalog",
         "category": "docs",
+        "declared": "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+        "resolvedPath": "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "docs",
         "declared": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
         "resolvedPath": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -2090,6 +2321,13 @@
         "category": "docs",
         "declared": "docs/cj-real-showcase-63-scope.md",
         "resolvedPath": "docs/cj-real-showcase-63-scope.md",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "docs",
+        "declared": "docs/catalog/MARKET_PRODUCT_VALIDATION.md",
+        "resolvedPath": "docs/catalog/MARKET_PRODUCT_VALIDATION.md",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -2440,6 +2678,34 @@
         "category": "dash",
         "declared": "dashboards/admin/js/views/CatalogApprovalView.js",
         "resolvedPath": "public/dashboards/admin/js/views/CatalogApprovalView.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/integration/catalog-field-sync-decision-catalog-field-sync-application-real-db.test.js",
+        "resolvedPath": "tests/integration/catalog-field-sync-decision-catalog-field-sync-application-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/integration/catalog-stock-sync-decision-real-db.test.js",
+        "resolvedPath": "tests/integration/catalog-stock-sync-decision-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/integration/catalog-stock-sync-application-real-db.test.js",
+        "resolvedPath": "tests/integration/catalog-stock-sync-application-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/integration/catalog-stock-sync-concurrency-real-db.test.js",
+        "resolvedPath": "tests/integration/catalog-stock-sync-concurrency-real-db.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -2956,6 +3222,20 @@
       {
         "feature": "catalog",
         "category": "tests",
+        "declared": "tests/unit/catalog-change-intake.test.js",
+        "resolvedPath": "tests/unit/catalog-change-intake.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-provider-capability-contract.test.js",
+        "resolvedPath": "tests/unit/catalog-provider-capability-contract.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
         "declared": "tests/unit/catalog-promotion.test.js",
         "resolvedPath": "tests/unit/catalog-promotion.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3061,6 +3341,13 @@
       {
         "feature": "catalog",
         "category": "tests",
+        "declared": "tests/unit/catalog-media-visual-fr-proof.test.js",
+        "resolvedPath": "tests/unit/catalog-media-visual-fr-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
         "declared": "tests/unit/products.test.js",
         "resolvedPath": "tests/unit/products.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3105,6 +3392,97 @@
         "category": "tests",
         "declared": "tests/unit/catalog-import-orchestrator.test.js",
         "resolvedPath": "tests/unit/catalog-import-orchestrator.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/real-supplier-1000-stress-staging.test.js",
+        "resolvedPath": "tests/unit/real-supplier-1000-stress-staging.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-fr-free-e2e-preparation.test.js",
+        "resolvedPath": "tests/unit/catalog-fr-free-e2e-preparation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/cj-broad-catalog-stress-fill.test.js",
+        "resolvedPath": "tests/unit/cj-broad-catalog-stress-fill.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/cj-refinery-commandability-continuation.test.js",
+        "resolvedPath": "tests/unit/cj-refinery-commandability-continuation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-fr-quality.test.js",
+        "resolvedPath": "tests/unit/catalog-fr-quality.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-fr-quality-workpack.test.js",
+        "resolvedPath": "tests/unit/catalog-fr-quality-workpack.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-fr-quality-apply.test.js",
+        "resolvedPath": "tests/unit/catalog-fr-quality-apply.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-terminology-memory.test.js",
+        "resolvedPath": "tests/unit/catalog-terminology-memory.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-termium-import.test.js",
+        "resolvedPath": "tests/unit/catalog-termium-import.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/cj-fr-cold-start-challenge.test.js",
+        "resolvedPath": "tests/unit/cj-fr-cold-start-challenge.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-fr-quality-campaign-audit.test.js",
+        "resolvedPath": "tests/unit/catalog-fr-quality-campaign-audit.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-refinery-final-acceptance.test.js",
+        "resolvedPath": "tests/unit/catalog-refinery-final-acceptance.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/cj-500-e2e-catalog-sync.test.js",
+        "resolvedPath": "tests/unit/cj-500-e2e-catalog-sync.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -6932,6 +7310,13 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/unit/admin-pricing-workspace-capability-mapping.test.js",
+        "resolvedPath": "tests/unit/admin-pricing-workspace-capability-mapping.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/cost-component-market-service.test.js",
         "resolvedPath": "tests/unit/cost-component-market-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7051,6 +7436,13 @@
       {
         "feature": "external-provider-contracts",
         "category": "scripts",
+        "declared": "scripts/external-provider-batch-proof.js",
+        "resolvedPath": "scripts/external-provider-batch-proof.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "category": "scripts",
         "declared": "scripts/stripe-provider-contract-proof.js",
         "resolvedPath": "scripts/stripe-provider-contract-proof.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7081,6 +7473,13 @@
         "category": "tests",
         "declared": "tests/unit/external-provider-boundary-scan.test.js",
         "resolvedPath": "tests/unit/external-provider-boundary-scan.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "category": "tests",
+        "declared": "tests/unit/external-provider-batch-proof.test.js",
+        "resolvedPath": "tests/unit/external-provider-batch-proof.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8619,8 +9018,8 @@
       {
         "feature": "infrastructure",
         "category": "ci",
-        "declared": ".github/workflows-disabled/pr-governance.yml",
-        "resolvedPath": ".github/workflows-disabled/pr-governance.yml",
+        "declared": ".github/workflows/pr-governance.yml",
+        "resolvedPath": ".github/workflows/pr-governance.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8668,8 +9067,22 @@
       {
         "feature": "infrastructure",
         "category": "assets",
+        "declared": "public/images/avatar_panier.webp",
+        "resolvedPath": "public/images/avatar_panier.webp",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "assets",
         "declared": "public/images/avatar_seule.png",
         "resolvedPath": "public/images/avatar_seule.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "assets",
+        "declared": "public/images/avatar_seule.webp",
+        "resolvedPath": "public/images/avatar_seule.webp",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8822,8 +9235,22 @@
       {
         "feature": "infrastructure",
         "category": "assets",
+        "declared": "public/images/panier_tresse.webp",
+        "resolvedPath": "public/images/panier_tresse.webp",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "assets",
         "declared": "public/images/panier_tresse_vert.png",
         "resolvedPath": "public/images/panier_tresse_vert.png",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "assets",
+        "declared": "public/images/panier_tresse_vert.webp",
+        "resolvedPath": "public/images/panier_tresse_vert.webp",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10963,6 +11390,13 @@
       },
       {
         "feature": "market-delegation",
+        "category": "middleware",
+        "declared": "middleware/require-market-delegated-capability.js",
+        "resolvedPath": "middleware/require-market-delegated-capability.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
         "category": "services",
         "declared": "services/capability-registry.js",
         "resolvedPath": "services/capability-registry.js",
@@ -11092,6 +11526,13 @@
         "category": "routes",
         "declared": "routes/market-delegation-local-offer.js",
         "resolvedPath": "routes/market-delegation-local-offer.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "routes",
+        "declared": "routes/market-delegation-client.js",
+        "resolvedPath": "routes/market-delegation-client.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -11232,6 +11673,13 @@
         "category": "tests",
         "declared": "tests/unit/market-delegation-local-offer-routes.test.js",
         "resolvedPath": "tests/unit/market-delegation-local-offer-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-delegation-client-routes.test.js",
+        "resolvedPath": "tests/unit/market-delegation-client-routes.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12741,6 +13189,20 @@
       },
       {
         "feature": "platform-ops",
+        "category": "middleware",
+        "declared": "middleware/internal-static-guard.js",
+        "resolvedPath": "middleware/internal-static-guard.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "middleware",
+        "declared": "middleware/versioned-asset-cache.js",
+        "resolvedPath": "middleware/versioned-asset-cache.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "platform-ops",
         "category": "compositionRoots",
         "declared": "public/boutique/js/main.js",
         "resolvedPath": "public/boutique/js/main.js",
@@ -12878,6 +13340,20 @@
         "declared": "index.html",
         "resolvedPath": "public/boutique/index.html",
         "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "tests",
+        "declared": "tests/unit/versioned-asset-cache.test.js",
+        "resolvedPath": "tests/unit/versioned-asset-cache.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "platform-ops",
+        "category": "tests",
+        "declared": "tests/unit/internal-static-guard.test.js",
+        "resolvedPath": "tests/unit/internal-static-guard.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
         "feature": "platform-ops",
@@ -14289,6 +14765,27 @@
       {
         "feature": "sourcing",
         "category": "services",
+        "declared": "services/sourcing-catalog-change-observation.js",
+        "resolvedPath": "services/sourcing-catalog-change-observation.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-catalog-change-unit-resolution-proof.js",
+        "resolvedPath": "services/sourcing-catalog-change-unit-resolution-proof.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-catalog-change-sku-identity-proof.js",
+        "resolvedPath": "services/sourcing-catalog-change-sku-identity-proof.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
         "declared": "services/sourcing-resolution-evidence.js",
         "resolvedPath": "services/sourcing-resolution-evidence.js",
         "status": "resolved-in-technical-graph"
@@ -14361,6 +14858,13 @@
         "category": "services",
         "declared": "services/sourcing-canonical-offer-unit-comparison.js",
         "resolvedPath": "services/sourcing-canonical-offer-unit-comparison.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-shadow-quantity-trial.js",
+        "resolvedPath": "services/sourcing-shadow-quantity-trial.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -14457,6 +14961,13 @@
       {
         "feature": "sourcing",
         "category": "tests",
+        "declared": "tests/integration/sourcing-candidate-stock-zero-real-db.test.js",
+        "resolvedPath": "tests/integration/sourcing-candidate-stock-zero-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
         "declared": "tests/unit/sourcing-observation-shadow-plan.test.js",
         "resolvedPath": "tests/unit/sourcing-observation-shadow-plan.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -14466,6 +14977,48 @@
         "category": "tests",
         "declared": "tests/unit/sourcing-observation-shadow-service.test.js",
         "resolvedPath": "tests/unit/sourcing-observation-shadow-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-catalog-change-observation.test.js",
+        "resolvedPath": "tests/unit/sourcing-catalog-change-observation.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-catalog-change-unit-resolution-proof.test.js",
+        "resolvedPath": "tests/unit/sourcing-catalog-change-unit-resolution-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-catalog-change-sku-identity-proof.test.js",
+        "resolvedPath": "tests/unit/sourcing-catalog-change-sku-identity-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/integration/catalog-change-unit-resolution-proof-real-db.test.js",
+        "resolvedPath": "tests/integration/catalog-change-unit-resolution-proof-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/integration/catalog-change-sku-identity-proof-real-db.test.js",
+        "resolvedPath": "tests/integration/catalog-change-sku-identity-proof-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/integration/catalog-change-unit-stock-observation-real-db.test.js",
+        "resolvedPath": "tests/integration/catalog-change-unit-stock-observation-real-db.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14543,6 +15096,13 @@
         "category": "tests",
         "declared": "tests/unit/sourcing-canonical-offer-unit-comparison.test.js",
         "resolvedPath": "tests/unit/sourcing-canonical-offer-unit-comparison.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-shadow-quantity-trial.test.js",
+        "resolvedPath": "tests/unit/sourcing-shadow-quantity-trial.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -19005,6 +19565,14 @@
       },
       {
         "feature": "market-delegation",
+        "entry": "POST /api/market-delegation/markets/:marketCode/catalog/review/:productId/validate",
+        "method": "POST",
+        "path": "/api/market-delegation/markets/{id}/catalog/review/{id}/validate",
+        "routeFile": "routes/market-delegation-catalog.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-delegation",
         "entry": "PUT /api/market-delegation/markets/:marketCode/catalog/exposure/:productId",
         "method": "PUT",
         "path": "/api/market-delegation/markets/{id}/catalog/exposure/{id}",
@@ -20205,6 +20773,14 @@
       },
       {
         "feature": "sourcing",
+        "entry": "POST /api/admin/workspaces/sourcing/sources/:sourceRef/catalog-changes/observe",
+        "method": "POST",
+        "path": "/api/admin/workspaces/sourcing/sources/{id}/catalog-changes/observe",
+        "routeFile": "routes/admin-sourcing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "sourcing",
         "entry": "POST /api/admin/workspaces/sourcing/products/:productRef/update",
         "method": "POST",
         "path": "/api/admin/workspaces/sourcing/products/{id}/update",
@@ -20733,6 +21309,12 @@
         "feature": "external-provider-contracts",
         "fn": "scanRepository",
         "file": "scripts/external-provider-boundary-scan.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "fn": "runBatch",
+        "file": "scripts/external-provider-batch-proof.js",
         "status": "resolved"
       },
       {
@@ -21669,6 +22251,24 @@
         "feature": "sourcing",
         "fn": "recordCatalogImportObservationsShadow",
         "file": "services/sourcing-observation-shadow-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "recordUnitStockChange",
+        "file": "services/sourcing-catalog-change-observation.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "proveExactCanonicalUnitForStockDelta",
+        "file": "services/sourcing-catalog-change-unit-resolution-proof.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "sourcing",
+        "fn": "proveExactCatalogSkuForStockDelta",
+        "file": "services/sourcing-catalog-change-sku-identity-proof.js",
         "status": "resolved"
       },
       {
@@ -22754,6 +23354,12 @@
         "resolved": true
       },
       {
+        "from": "market-delegation",
+        "to": "dashboard",
+        "raw": "dashboard",
+        "resolved": true
+      },
+      {
         "from": "market-operator-dashboard",
         "to": "market",
         "raw": "market (operator_market_scopes, markets, Currency Boundary)",
@@ -23836,6 +24442,22 @@
       },
       {
         "boutiqueManifest": "boutique",
+        "category": "js",
+        "declared": "../js/preload-css-swap.js",
+        "resolvedPath": "public/boutique/js/preload-css-swap.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "css",
+        "declared": "../css/critical-home.css",
+        "resolvedPath": "public/boutique/css/critical-home.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
         "category": "dist",
         "declared": "../css/dist/base.css",
         "resolvedPath": "public/boutique/css/dist/base.css",
@@ -23847,6 +24469,14 @@
         "category": "dist",
         "declared": "../css/dist/desktop.css",
         "resolvedPath": "public/boutique/css/dist/desktop.css",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "boutique",
+        "category": "tests",
+        "declared": "../tests/unit/critical-css-loading.test.js",
+        "resolvedPath": "public/boutique/tests/unit/critical-css-loading.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -24023,22 +24653,6 @@
         "category": "js",
         "declared": "../js/b-pager.js",
         "resolvedPath": "public/boutique/js/b-pager.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "catalog",
-        "category": "js",
-        "declared": "../js/b-pager-end-bounce.js",
-        "resolvedPath": "public/boutique/js/b-pager-end-bounce.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "catalog",
-        "category": "js",
-        "declared": "../js/spike-vertical-shell.js",
-        "resolvedPath": "public/boutique/js/spike-vertical-shell.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -24293,14 +24907,6 @@
       {
         "boutiqueManifest": "catalog",
         "category": "css",
-        "declared": "../css/spike-vertical-shell.css",
-        "resolvedPath": "public/boutique/css/spike-vertical-shell.css",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "catalog",
-        "category": "css",
         "declared": "../css/category-cutout-navigation.css",
         "resolvedPath": "public/boutique/css/category-cutout-navigation.css",
         "exists": true,
@@ -24453,14 +25059,6 @@
       {
         "boutiqueManifest": "catalog",
         "category": "tests",
-        "declared": "../tests/unit/discovery-bump-entry.test.js",
-        "resolvedPath": "public/boutique/tests/unit/discovery-bump-entry.test.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "catalog",
-        "category": "tests",
         "declared": "../tests/unit/discovery-desktop-style.test.js",
         "resolvedPath": "public/boutique/tests/unit/discovery-desktop-style.test.js",
         "exists": true,
@@ -24471,14 +25069,6 @@
         "category": "tests",
         "declared": "../tests/unit/discovery-desktop-v2-css.test.js",
         "resolvedPath": "public/boutique/tests/unit/discovery-desktop-v2-css.test.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "catalog",
-        "category": "tests",
-        "declared": "../tests/unit/spike-vertical-shell.test.js",
-        "resolvedPath": "public/boutique/tests/unit/spike-vertical-shell.test.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -24565,22 +25155,6 @@
       {
         "boutiqueManifest": "catalog",
         "category": "tests",
-        "declared": "../tests/unit/b-pager-end-bounce.test.js",
-        "resolvedPath": "public/boutique/tests/unit/b-pager-end-bounce.test.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "catalog",
-        "category": "tests",
-        "declared": "../tests/unit/pager-bump-entry-context.test.js",
-        "resolvedPath": "public/boutique/tests/unit/pager-bump-entry-context.test.js",
-        "exists": true,
-        "status": "resolved-on-disk"
-      },
-      {
-        "boutiqueManifest": "catalog",
-        "category": "tests",
         "declared": "../tests/unit/category-cutout-navigation.test.js",
         "resolvedPath": "public/boutique/tests/unit/category-cutout-navigation.test.js",
         "exists": true,
@@ -24631,6 +25205,14 @@
         "category": "tests",
         "declared": "../tests/e2e/catalog-responsive-matrix.spec.js",
         "resolvedPath": "public/boutique/tests/e2e/catalog-responsive-matrix.spec.js",
+        "exists": true,
+        "status": "resolved-on-disk"
+      },
+      {
+        "boutiqueManifest": "catalog",
+        "category": "tests",
+        "declared": "../tests/e2e/discovery-isolated-visual.spec.js",
+        "resolvedPath": "public/boutique/tests/e2e/discovery-isolated-visual.spec.js",
         "exists": true,
         "status": "resolved-on-disk"
       },
@@ -27156,6 +27738,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "scripts/real-supplier-1000-stress-staging.js",
+                "targetFile": "services/pricing-engine.js"
+              },
+              {
                 "sourceFileId": "services/product-price-audit.js",
                 "targetFile": "services/economic-price-audit-service.js"
               },
@@ -27253,6 +27839,66 @@
               },
               {
                 "sourceFileId": "scripts/aliexpress-500-catalog-sync.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/real-supplier-1000-stress-staging.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/catalog-fr-free-e2e-preparation.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/cj-broad-catalog-stress-fill.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/cj-refinery-commandability-continuation.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/catalog-fr-quality-workpack.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/catalog-fr-quality-apply.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/catalog-termium-import.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/cj-fr-cold-start-challenge.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/catalog-fr-quality-campaign-audit.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/catalog-refinery-final-acceptance.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "scripts/cj-500-e2e-catalog-sync.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/catalog-stock-sync-decision.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/catalog-stock-sync-application.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/catalog-field-sync-decision.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/catalog-field-sync-application.js",
                 "targetFile": "db.js"
               },
               {
@@ -27356,6 +28002,22 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "tests/integration/catalog-field-sync-decision-catalog-field-sync-application-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-stock-sync-decision-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-stock-sync-application-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-stock-sync-concurrency-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/catalog-approval-queue-contract.test.js",
                 "targetFile": "server.js"
               },
@@ -27389,6 +28051,10 @@
               },
               {
                 "sourceFileId": "tests/unit/catalog-import-orchestrator.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-fr-quality-campaign-audit.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -27853,14 +28519,6 @@
                 "targetFile": "public/boutique/js/b-store.js"
               },
               {
-                "sourceFileId": "public/boutique/tests/unit/discovery-bump-entry.test.js",
-                "targetFile": "public/boutique/js/b-bus.js"
-              },
-              {
-                "sourceFileId": "public/boutique/tests/unit/discovery-bump-entry.test.js",
-                "targetFile": "public/boutique/js/b-store.js"
-              },
-              {
                 "sourceFileId": "public/boutique/tests/unit/home-controller-discovery-anchor.test.js",
                 "targetFile": "public/boutique/js/b-store.js"
               },
@@ -28063,6 +28721,18 @@
                 "targetFile": "services/sourcing-candidate-actions.js"
               },
               {
+                "sourceFileId": "scripts/real-supplier-1000-stress-staging.js",
+                "targetFile": "services/sourcing-candidate-actions.js"
+              },
+              {
+                "sourceFileId": "services/catalog-stock-sync-decision.js",
+                "targetFile": "services/sourcing-catalog-change-sku-identity-proof.js"
+              },
+              {
+                "sourceFileId": "services/catalog-field-sync-decision.js",
+                "targetFile": "services/sourcing-catalog-change-sku-identity-proof.js"
+              },
+              {
                 "sourceFileId": "services/suppliers/catalog-import-orchestrator.js",
                 "targetFile": "services/sourcing-candidate-import-service.js"
               },
@@ -28085,6 +28755,22 @@
               {
                 "sourceFileId": "services/catalog-live-flow.js",
                 "targetFile": "services/sourcing-source-autopilot.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-field-sync-decision-catalog-field-sync-application-real-db.test.js",
+                "targetFile": "services/sourcing-catalog-change-observation.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-stock-sync-decision-real-db.test.js",
+                "targetFile": "services/sourcing-catalog-change-observation.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-stock-sync-application-real-db.test.js",
+                "targetFile": "services/sourcing-catalog-change-observation.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-stock-sync-concurrency-real-db.test.js",
+                "targetFile": "services/sourcing-catalog-change-observation.js"
               },
               {
                 "sourceFileId": "tests/unit/catalog-product-route-canary-http.test.js",
@@ -30608,6 +31294,10 @@
               {
                 "sourceFileId": "routes/admin-pricing-workspace.js",
                 "targetFile": "middleware/require-market-delegated-role.js"
+              },
+              {
+                "sourceFileId": "routes/admin-pricing-workspace.js",
+                "targetFile": "middleware/require-market-delegated-capability.js"
               }
             ]
           }
@@ -31329,6 +32019,10 @@
               },
               {
                 "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/market-delegation-client.js"
+              },
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/market-delegation-client-case.js"
               },
               {
@@ -31482,6 +32176,14 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/simulator.js"
+              },
+              {
+                "sourceFileId": "server.js",
+                "targetFile": "middleware/internal-static-guard.js"
+              },
+              {
+                "sourceFileId": "server.js",
+                "targetFile": "middleware/versioned-asset-cache.js"
               }
             ]
           }
@@ -33167,6 +33869,10 @@
                 "targetFile": "middleware/auth.js"
               },
               {
+                "sourceFileId": "routes/market-delegation-client.js",
+                "targetFile": "middleware/auth.js"
+              },
+              {
                 "sourceFileId": "routes/market-delegation-client-case.js",
                 "targetFile": "middleware/auth.js"
               },
@@ -33213,6 +33919,14 @@
               {
                 "sourceFileId": "services/market-delegation-catalog-service.js",
                 "targetFile": "services/catalog-market-exposure-service.js"
+              },
+              {
+                "sourceFileId": "services/market-delegation-catalog-service.js",
+                "targetFile": "services/catalog-approval.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-delegation-catalog-service.test.js",
+                "targetFile": "services/catalog-approval.js"
               }
             ]
           },
@@ -33222,6 +33936,26 @@
               {
                 "table": "product_market_exposure",
                 "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-delegation",
+        "to": "dashboard",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/market-delegation-client.js",
+                "targetFile": "services/client-index.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-client.js",
+                "targetFile": "services/client-360.js"
               }
             ]
           }
@@ -33281,6 +34015,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "middleware/require-market-delegated-capability.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "routes/market-delegation-team.js",
                 "targetFile": "db.js"
               },
@@ -33303,6 +34041,10 @@
               {
                 "sourceFileId": "routes/market-delegation-local-offer.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "routes/market-delegation-client.js",
+                "targetFile": "utils/logger.js"
               },
               {
                 "sourceFileId": "routes/market-delegation-client-case.js",
@@ -34005,6 +34747,10 @@
               {
                 "sourceFileId": "services/order-payment-confirmation.js",
                 "targetFile": "services/product-admin-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/order-checkout-item-resolution.test.js",
+                "targetFile": "services/product-sku-service.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-cart.js",
@@ -36078,10 +36824,6 @@
               {
                 "sourceFileId": "public/boutique/js/boutique.js",
                 "targetFile": "public/boutique/js/b-pager.js"
-              },
-              {
-                "sourceFileId": "public/boutique/js/boutique.js",
-                "targetFile": "public/boutique/js/spike-vertical-shell.js"
               },
               {
                 "sourceFileId": "public/boutique/js/b-nav.js",
@@ -38280,16 +39022,16 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/sourcing-catalog-change-observation.js",
+                "targetFile": "services/catalog-change-intake.js"
+              },
+              {
                 "sourceFileId": "services/catalog-product-read-cutover-trial.js",
                 "targetFile": "services/catalog-public-view.js"
               },
               {
                 "sourceFileId": "services/sourcing-candidate-actions.js",
                 "targetFile": "services/supplier-catalog-scanner.js"
-              },
-              {
-                "sourceFileId": "services/sourcing-candidate-actions.js",
-                "targetFile": "services/catalog-enrichment.js"
               },
               {
                 "sourceFileId": "services/sourcing-candidate-actions.js",
@@ -38469,6 +39211,18 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/sourcing-catalog-change-observation.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-catalog-change-unit-resolution-proof.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-catalog-change-sku-identity-proof.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/sourcing-shadow-resolution-service.js",
                 "targetFile": "db.js"
               },
@@ -38541,7 +39295,27 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/integration/sourcing-candidate-stock-zero-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/sourcing-observation-shadow-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sourcing-catalog-change-observation.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-change-unit-resolution-proof-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-change-sku-identity-proof-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/catalog-change-unit-stock-observation-real-db.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -38807,11 +39581,15 @@
             "evidence": [
               {
                 "sourceFileId": "services/wallet-service.js",
-                "targetFile": "services/payment-service.js"
+                "targetFile": "services/order-mutation-service.js"
               },
               {
                 "sourceFileId": "services/wallet-service.js",
-                "targetFile": "services/order-mutation-service.js"
+                "targetFile": "services/order-checkout-persistence.js"
+              },
+              {
+                "sourceFileId": "tests/unit/wallet-service.test.js",
+                "targetFile": "services/order-checkout-persistence.js"
               },
               {
                 "sourceFileId": "tests/integration/wallet-refund-seams.test.js",
@@ -38909,6 +39687,11 @@
           "raw": "TARGET"
         },
         {
+          "sourceFileId": "tests/unit/admin-pricing-workspace-capability-mapping.test.js",
+          "kind": "require",
+          "raw": "Pricing|LocalStrategy"
+        },
+        {
           "sourceFileId": "scripts/boutique-ownership-full-check.js",
           "kind": "require",
           "raw": "path.join(abs, f"
@@ -38999,11 +39782,11 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1578
+        "filesObserved": 1641
       },
       "boutique": {
-        "filesObserved": 217,
-        "nonCanonicalManifestFiles": 12
+        "filesObserved": 214,
+        "nonCanonicalManifestFiles": 15
       },
       "dash": {
         "filesObserved": 82,
@@ -39953,6 +40736,19 @@
       ],
       "lifecycleOwner": null,
       "resolution": "no-declared-writer"
+    },
+    "catalog_terminology_reference": {
+      "writers": [
+        {
+          "feature": "catalog",
+          "mode": "RW",
+          "declaredOwner": false,
+          "technical": false
+        }
+      ],
+      "readers": [],
+      "lifecycleOwner": "catalog",
+      "resolution": "single-writer"
     },
     "catalog_enrichment_runs": {
       "writers": [
@@ -41956,8 +42752,8 @@
       "backend": {
         "manifestsDiscovered": 35,
         "manifestsConnected": 35,
-        "technicalNodesTotal": 502,
-        "technicalNodesOwned": 502,
+        "technicalNodesTotal": 520,
+        "technicalNodesOwned": 520,
         "technicalOrphans": 0
       },
       "dash": {
@@ -41971,8 +42767,8 @@
       "boutique": {
         "manifestsDiscovered": 16,
         "manifestsConnected": 16,
-        "technicalNodesTotal": 105,
-        "technicalNodesOwned": 105,
+        "technicalNodesTotal": 104,
+        "technicalNodesOwned": 104,
         "technicalOrphans": 0
       }
     },
@@ -42121,7 +42917,7 @@
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> market-delegation",
-        "msg": "dépendance cross-feature observée (canal: static-code, 10 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"market-delegation\""
+        "msg": "dépendance cross-feature observée (canal: static-code, 11 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"market-delegation\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -42278,7 +43074,7 @@
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
-        "msg": "20 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/integration/txg01-pricing-matrices.test.js: TARGET) — limitation du modèle statique O5, jamais inventé"
+        "msg": "21 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/integration/txg01-pricing-matrices.test.js: TARGET) — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
