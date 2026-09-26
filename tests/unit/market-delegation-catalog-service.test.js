@@ -64,7 +64,7 @@ describe('market-delegation catalog service — capabilities et audit', () => {
     const db = executor();
     mockAuthz(db);
     db.query.mockResolvedValueOnce({
-      rows: [{ id: 'p1', product_ref: 'KPR-1', lifecycle_status: 'candidate', is_active: false }],
+      rows: [{ id: 'p1', product_ref: 'KPR-1', lifecycle_status: 'candidate', is_active: false, content_source: 'manual', needs_review: false }],
     });
     db.query.mockResolvedValueOnce({ rows: [] }); // advisory lock
     db.query.mockResolvedValueOnce({ rows: [] }); // getExposure before
