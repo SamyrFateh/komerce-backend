@@ -23,7 +23,7 @@ const aliexpressConnector = require('../services/suppliers/connectors/aliexpress
 const aliexpressBaseConnector = require('../services/suppliers/connectors/aliexpress-connector');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const checkpoints = require('../services/suppliers/catalog-sync-checkpoint');
-const semantic = require('./aliexpress-golden-semantic');
+const semantic = require('../services/suppliers/discovery-semantic-relevance');
 
 const WAVE_ID = 'wave2-500-v1';
 const WAVE_TARGET = 500;
