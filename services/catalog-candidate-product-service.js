@@ -8,7 +8,7 @@
  * @outputs       product_id
  * @depends       none
  * @used-by       routes/sourcing-scanner.js
- * @db-read       none
+ * @db-read       boutique_categories, boutique_subcategories
  * @db-write      products
  * @db-txn        caller_owned
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md §7
