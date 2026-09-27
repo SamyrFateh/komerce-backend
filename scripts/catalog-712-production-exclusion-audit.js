@@ -7,7 +7,7 @@
  * @criticality   medium
  * @inputs        isolated source DATABASE_URL + KOMERCE_CATALOG_DEST_DATABASE_URL
  * @outputs       read-only diagnosis of destination EXCLUDED identities from certified 712 set
- * @depends       db.js, pg
+ * @depends       db.js, pg, scripts/catalog-e2e-712-identities.js
  * @used-by       ali-e2e-200-worker catalog-712-production-exclusion-audit mode
  * @db-read       source:sourcing_candidates; destination:sourcing_candidates
  * @db-write      none
@@ -20,11 +20,10 @@
 
 const {Pool}=require('pg');
 const db=require('../db');
-const {NEW_UNIQUE_IDS}=require('./cj-reconcile-current-new-12-promote');
+const {resolveExpectedCjIds,TOTAL_TARGET}=require('./catalog-e2e-712-identities');
 
 const DEST_ENV='KOMERCE_CATALOG_DEST_DATABASE_URL';
 const ALI_WAVE='incremental-e2e-200-v1';
-const CJ_CAMPAIGN='cj-balanced-e2e-500-v1';
 
 function hostOf(url){try{return new URL(String(url||'')).hostname.toLowerCase()}catch{return null}}
 function assertRuntime(env=process.env){
@@ -34,7 +33,8 @@ function assertRuntime(env=process.env){
   if(!dest||/ali-e2e-200-postgres/i.test(dest)) throw new Error('DEST_DB_INVALID');
   return {source_host:source,dest_host:dest};
 }
-async function expectedIdentities(){
+async function expectedIdentities(env=process.env){
+  const expectedCj=await resolveExpectedCjIds({env,executor:db});
   const {rows}=await db.query(
     `SELECT supplier_name,supplier_product_id
        FROM sourcing_candidates
@@ -45,21 +45,18 @@ async function expectedIdentities(){
       ) OR (
         supplier_name='CJdropshipping'
         AND state='imported_to_catalog'
-        AND (
-          raw_payload #>> '{discovery,campaign}'=$2
-          OR supplier_product_id=ANY($3::text[])
-        )
+        AND supplier_product_id=ANY($2::text[])
       )
       ORDER BY supplier_name,supplier_product_id`,
-    [ALI_WAVE,CJ_CAMPAIGN,NEW_UNIQUE_IDS]
+    [ALI_WAVE,expectedCj.all]
   );
   const keys=rows.map(r=>`${r.supplier_name}\u0000${r.supplier_product_id}`);
-  if(rows.length!==712||new Set(keys).size!==712) throw new Error(`SOURCE_712_IDENTITIES_INVALID:${rows.length}/${new Set(keys).size}`);
+  if(rows.length!==TOTAL_TARGET||new Set(keys).size!==TOTAL_TARGET) throw new Error(`SOURCE_712_IDENTITIES_INVALID:${rows.length}/${new Set(keys).size}`);
   return rows;
 }
 async function run(env=process.env){
   const runtime=assertRuntime(env);
-  const expected=await expectedIdentities();
+  const expected=await expectedIdentities(env);
   const bySupplier=new Map();
   for(const row of expected){
     if(!bySupplier.has(row.supplier_name)) bySupplier.set(row.supplier_name,[]);
@@ -120,4 +117,4 @@ if(require.main===module){
     process.exit(1);
   }).finally(()=>db.pool.end());
 }
-module.exports={DEST_ENV,ALI_WAVE,CJ_CAMPAIGN,assertRuntime,expectedIdentities,run};
+module.exports={DEST_ENV,ALI_WAVE,assertRuntime,expectedIdentities,run};

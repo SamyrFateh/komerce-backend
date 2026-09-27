@@ -14,6 +14,14 @@ const CAPABILITIES = Object.freeze([
   ['decision_signal.manage','DELEGATION','pilotage','MARKET','DELEGABLE',true,'LIVE'],
   ['operations.read','DELEGATION','operations','MARKET','DELEGABLE',false,'LIVE'],
   ['hub.supervise','DELEGATION','operations','MARKET','DELEGABLE',false,'LIVE'],
+  // Lecture transit/douane (admin-shipping-customs-workspace.js) : jusqu'ici
+  // gardée par rôle + operator_market_scopes hérités, jamais par une
+  // capability exacte — même gap que operations.read avant LOT B, jamais
+  // corrigé faute de capability dédiée. Les gestes transit/douane restent
+  // hors périmètre (requireTransitAction/requireCustomsAction, non délégués
+  // ici) ; seule la lecture du Workspace est concernée. Universelle comme
+  // catalog.read/operations.read : viewer ou manager, lit son marché.
+  ['logistics.read','DELEGATION','operations','MARKET','DELEGABLE',false,'LIVE'],
   ['client.read','DELEGATION','client','MARKET','DELEGABLE',false,'LIVE'],
   ['client.case.handle','DELEGATION','client','MARKET','DELEGABLE',true,'LIVE'],
   ['team.read','DELEGATION','team','MARKET','DELEGABLE',false,'LIVE'],

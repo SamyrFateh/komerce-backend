@@ -23,6 +23,7 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
+const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const workspace = require('../services/finance-accounting-workspace');
 const log = require('../utils/logger').child({ module: 'admin-finance-accounting-workspace' });
 
@@ -33,6 +34,22 @@ const MARKET_CODE = /^[A-Z]{2}$/;
 const requireWorkspaceReadRole = requireRole(['admin', 'finance', 'agent_relais', 'market_operator']);
 const requireDepositAction = requireRole(['admin', 'agent_relais']);
 const requireVerificationAction = requireRole(['admin']);
+
+// MARKET-DELEGATION LOT B (audit finance.read) : GET /market/:marketCode était
+// gardé par le rôle + operator_market_scopes hérités, jamais par la capability
+// exacte — révoquer finance.read seule ne retirait rien tant que
+// operator_market_scopes restait actif. Les rôles natifs (admin/finance/
+// agent_relais) gardent leur accès inchangé ; seul market_operator doit
+// désormais prouver finance.read (requires_audit=false au registre, déjà
+// consommée côté service par market-delegation-settlement-service.js).
+const NATIVE_WORKSPACE_ROLES = new Set(['admin', 'finance', 'agent_relais']);
+function requireWorkspaceReadCapability() {
+  const capabilityGuard = requireMarketDelegatedCapability('finance.read', { audit: false });
+  return (req, res, next) => {
+    if (req.user && NATIVE_WORKSPACE_ROLES.has(req.user.role)) return next();
+    return capabilityGuard(req, res, next);
+  };
+}
 
 function rejectClientMarketAuthority(req, res, next) {
   const query = req.query || {};
@@ -135,7 +152,7 @@ router.use(
   requireWorkspaceMarketAccess
 );
 
-router.get('/market/:marketCode', async (req, res, next) => {
+router.get('/market/:marketCode', requireWorkspaceReadCapability(), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     const payload = await workspace.buildWorkspace({
