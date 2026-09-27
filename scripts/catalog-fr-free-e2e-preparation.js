@@ -72,8 +72,12 @@ function assertRuntime(env = process.env) {
 function compactTitle(value) {
   let title = polishName(value);
   title = title
+    .replace(/https?:\/\/\S+|www\.\S+/gi, ' ')
+    .replace(/(?:^|\s)file\s*:\s*\S+/gi, ' ')
+    .replace(/\b\S+\.(?:jpe?g|png|webp|gif|tiff?)\b/gi, ' ')
     .replace(/\b(?:new|hot sale|best seller|bestseller|high quality|premium|latest|popular)\b/gi, ' ')
     .replace(/\b(?:2024|2025|2026)\b/g, ' ')
+    .replace(/\b[A-Z][A-Z0-9]{1,8}\b/g, (token) => token.charAt(0) + token.slice(1).toLowerCase())
     .replace(/\s+/g, ' ')
     .replace(/\s+([,.;:])/g, '$1')
     .replace(/^[\s,.;:—-]+|[\s,.;:—-]+$/g, '')
