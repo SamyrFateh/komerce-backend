@@ -459,6 +459,7 @@ module.exports = {
       'tests/unit/retired-catalog-startup-migrations.test.js',
       'tests/unit/supplier-catalog-scanner-audio-category.test.js',
       'tests/unit/supplier-catalog-scanner-refinery-regression.test.js',
+      'tests/unit/aliexpress-incremental-e2e-200-taxonomy-repair.test.js',
       'tests/unit/staging-catalog-prune.test.js',
       'tests/unit/l1-market-buyer-boundary.test.js',
       'tests/unit/isweep-services.test.js',
