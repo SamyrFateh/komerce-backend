@@ -21,6 +21,15 @@ describe('AliExpress incremental +200 Railway worker launcher', () => {
     ]);
   });
 
+  test('audits the existing CJ 500 locally without any provider sourcing call', () => {
+    expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-700-local-audit' }))
+      .toBe('catalog-700-local-audit');
+    expect(worker.commandPlan('catalog-700-local-audit')).toEqual([
+      ['scripts/real-supplier-1000-stress-staging.js', '--operation=supplier-slice-audit', '--supplier=CJdropshipping', '--limit=500'],
+    ]);
+    expect(worker.commandPlan('catalog-700-local-audit').flat().join(' ')).not.toMatch(/cj-500-e2e-catalog-sync|cj-refinery-commandability|fetchProducts/);
+  });
+
   test('builds the unified 700 dataset in one explicit fail-closed plan', () => {
     expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-700-build' }))
       .toBe('catalog-700-build');
