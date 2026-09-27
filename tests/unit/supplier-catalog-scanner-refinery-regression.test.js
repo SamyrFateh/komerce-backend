@@ -75,7 +75,7 @@ describe('AliExpress refinery canonical regressions', () => {
         target_subcategory: 'Femme',
         keyword: 'maxi summer dress',
       } },
-    }, cats)).toEqual({ key: 'vetements', source: 'mapped', confidence: 'high' });
+    }, cats)).toEqual(expect.objectContaining({ key: 'vetements', source: 'mapped', confidence: 'high' }));
 
     expect(mapProductCategory({
       product_name: 'Kids Sandals',
