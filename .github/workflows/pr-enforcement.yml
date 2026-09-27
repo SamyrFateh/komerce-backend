@@ -291,7 +291,8 @@ jobs:
           npm run test:e2e:features
       - name: Feature-first E2E API proofs (skip)
         if: steps.e2e_scope.outputs.mode == 'skip'
-        run: echo "No E2E API runtime impact: ${{ steps.e2e_scope.outputs.reason }}"
+        run: |
+          echo "No E2E API runtime impact: ${{ steps.e2e_scope.outputs.reason }}"
 
   dashboard:
     name: Dashboard canonical gates
