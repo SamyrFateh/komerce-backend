@@ -1,4 +1,21 @@
 #!/usr/bin/env node
+/**
+ * @komerce-arch
+ * @role          aliexpress-incremental-e2e-200
+ * @domain        catalog
+ * @layer         tooling
+ * @criticality   high
+ * @inputs        isolated staging DB, AliExpress incremental discovery wave
+ * @outputs       scoped refinery, promotion, French preparation and 200/200 readiness proof
+ * @depends       db.js, services/supplier-catalog-scanner.js, services/catalog-eligibility.js, services/sourcing-candidate-actions.js, scripts/catalog-fr-free-e2e-preparation.js, services/product-publication-guard.js
+ * @used-by       operator-run isolated incremental supplier campaign
+ * @db-read       sourcing_candidates, products, catalog_media, product_skus, product_market_exposure
+ * @db-write-via  services/sourcing-candidate-actions.js, services/catalog-overrides.js
+ * @db-txn        canonical owners
+ * @doctrine      incremental_import_must_not_break_existing_catalog, no_auto_publish, no_market_exposure
+ * @impact-areas  catalog, sourcing, supplier-import, refinery, staging
+ * @version       2026-09-v1
+ */
 'use strict';
 
 const fs = require('fs');
