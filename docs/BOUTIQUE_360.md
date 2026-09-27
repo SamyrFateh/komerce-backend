@@ -1,13 +1,13 @@
 # Boutique 360 — carte d'architecture front (générée)
 
 > ⚠️ Généré par `scripts/gen-boutique-360.js`. Ne pas éditer à la main.
-> Régénéré le 2026-09-06T12:06:00.855Z.
+> Régénéré le 2026-09-26T22:57:52.648Z.
 > Couplage par **bus d'événements**. Couture backend par **endpoints → contrat OpenAPI**.
 
 ## Synthèse
 
-- Modules JS : **103** (103 headés) · Événements bus : **24** · Bundles CSS : **5**
-- Endpoints appelés : **62** — 🔴 0 hors contrat · ⚪ 43 non prouvés · 🔵 22 dynamiques
+- Modules JS : **103** (103 headés) · Événements bus : **24** · Bundles CSS : **7**
+- Endpoints appelés : **65** — 🔴 0 hors contrat · ⚪ 44 non prouvés · 🔵 24 dynamiques
 - Santé bus : 0 émission(s) orpheline(s), 0 écouteur(s) orphelin(s), 0 non déclaré(s)
 
 ## 1. Couture API → backend (résolue au contrat OpenAPI)
@@ -51,20 +51,23 @@
 | `/api/parcels/optimize` | komerce-api | ⚪ non prouvé |
 | `/api/parcels/{id}` | komerce-api | 🔵 dynamique |
 | `/api/parcels/{id}/items` | komerce-api | 🔵 dynamique |
+| `/api/payments/mobile-money/availability` | b-mobile-money | 🔵 dynamique |
+| `/api/payments/mobile-money/initiate` | b-mobile-money | ⚪ non prouvé |
+| `/api/payments/mobile-money/transactions/{id}/refresh` | b-mobile-money | 🔵 dynamique |
 | `/api/payments/paypal/capture/{id}` | b-paypal | 🔵 dynamique |
 | `/api/payments/paypal/create-order` | b-paypal | ⚪ non prouvé |
 | `/api/payments/stripe/intent` | b-checkout | ⚪ non prouvé |
 | `/api/products` | komerce-api | ⚪ non prouvé |
 | `/api/products/{id}` | komerce-api | 🔵 dynamique |
-| `/api/products/{id}/detail` | b-modal-product-detail-bootstrap | 🔵 dynamique |
+| `/api/products/{id}/detail{id}` | b-modal-product-detail-bootstrap | 🔵 dynamique |
 | `/api/providers-services/inquiries` | providers-services-api | 🔵 dynamique |
 | `/api/providers-services/physical-offers/{id}` | discovery-api | 🔵 dynamique |
 | `/api/providers-services/services/{id}` | discovery-api | 🔵 dynamique |
 | `/api/public/config` | b-checkout, b-paypal, b-utils | ⚪ non prouvé |
 | `/api/purchasing/suppliers` | komerce-api | ⚪ non prouvé |
 | `/api/purchasing/suppliers/{id}` | komerce-api | 🔵 dynamique |
-| `/api/relais` | b-checkout | ⚪ non prouvé |
-| `/api/relais/public` | b-nav | ⚪ non prouvé |
+| `/api/relais` | b-checkout, market-hydration | ⚪ non prouvé |
+| `/api/relais/public` | b-nav, market-hydration | ⚪ non prouvé |
 | `/api/scans` | komerce-api | ⚪ non prouvé |
 | `/api/shared-carts/from-cart-items` | b-share-cart | ⚪ non prouvé |
 | `/api/shared-carts/library` | group-api | ⚪ non prouvé |
@@ -94,12 +97,12 @@
 | `favorites:view-refresh` | b-catalog | b-favs | 🟢 sain |
 | `komerce:show` | b-komerce | b-nav | 🟢 sain |
 | `modal:close` | b-cart, b-checkout | b-modal-core | 🟢 sain |
-| `modal:closed` | b-modal-core | b-modal-discovery-detail, b-modal-product-detail-bootstrap, group-side-cart, local-stock-badge-mount, spike-vertical-shell | 🟢 sain (propriétaire: modal-product) |
+| `modal:closed` | b-modal-core | b-modal-discovery-detail, b-modal-product-detail-bootstrap, discovery-rail, group-side-cart, local-stock-badge-mount | 🟠 consommateur non déclaré : discovery-rail |
 | `modal:composition-synced` | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers, b-modal-suggestions | 🟢 sain (propriétaire: modal-product) |
 | `modal:detail-ready` | b-modal-product-detail-bootstrap | b-modal-cart, b-modal-suggestions, local-stock-badge-mount | 🟢 sain |
 | `modal:discovery-opened` | b-modal-core | b-modal-discovery-detail | 🟢 sain (propriétaire: catalog) |
 | `modal:open` | b-cart, b-checkout, b-modal-nav, b-modal-suggestions, group-side-cart | b-modal-core, b-product-open-contract | 🟢 sain |
-| `modal:opened` | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pdp-curation-suggestions, boutique, spike-vertical-shell | 🟢 sain (propriétaire: modal-product) |
+| `modal:opened` | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pdp-curation-suggestions, boutique | 🟢 sain (propriétaire: modal-product) |
 | `modal:suggestions-rendered` | b-modal-suggestions | b-pdp-curation-suggestions | 🟢 sain |
 | `nav:goto-komerce-wallet` | b-checkout | b-nav | 🟢 sain |
 | `nav:goto-track` | b-checkout, b-notifications | b-nav | 🟢 sain |
@@ -165,12 +168,11 @@ graph LR
   b_modal_core["b-modal-core"] -->|modal:opened| b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"]
   b_modal_core["b-modal-core"] -->|modal:opened| b_pdp_curation_suggestions["b-pdp-curation-suggestions"]
   b_modal_core["b-modal-core"] -->|modal:opened| boutique["boutique"]
-  b_modal_core["b-modal-core"] -->|modal:opened| spike_vertical_shell["spike-vertical-shell"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_modal_discovery_detail["b-modal-discovery-detail"]
   b_modal_core["b-modal-core"] -->|modal:closed| b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"]
+  b_modal_core["b-modal-core"] -->|modal:closed| discovery_rail["discovery-rail"]
   b_modal_core["b-modal-core"] -->|modal:closed| group_side_cart["group-side-cart"]
   b_modal_core["b-modal-core"] -->|modal:closed| local_stock_badge_mount["local-stock-badge-mount"]
-  b_modal_core["b-modal-core"] -->|modal:closed| spike_vertical_shell["spike-vertical-shell"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:composition-synced| b_modal_core["b-modal-core"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:composition-synced| b_modal_desktop_enhancers["b-modal-desktop-enhancers"]
   b_modal_product_detail_bootstrap["b-modal-product-detail-bootstrap"] -->|modal:composition-synced| b_modal_suggestions["b-modal-suggestions"]
@@ -188,9 +190,9 @@ graph LR
 
 | Événement | Propriétaire | Producteur(s) | Consommateurs | Payload | Verdict |
 |---|---|---|---|---|---|
-| `modal:opened` | modal-product | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pdp-curation-suggestions, boutique, spike-vertical-shell | value | 🟢 propriété saine |
+| `modal:opened` | modal-product | b-modal-core | b-modal-desktop-enhancers, b-modal-product-detail-bootstrap, b-pdp-curation-suggestions, boutique | value | 🟢 propriété saine |
 | `modal:discovery-opened` | catalog | b-modal-core | b-modal-discovery-detail | value | 🟢 propriété saine |
-| `modal:closed` | modal-product | b-modal-core | b-modal-discovery-detail, b-modal-product-detail-bootstrap, group-side-cart, local-stock-badge-mount, spike-vertical-shell | none | 🟢 propriété saine |
+| `modal:closed` | modal-product | b-modal-core | b-modal-discovery-detail, b-modal-product-detail-bootstrap, discovery-rail, group-side-cart, local-stock-badge-mount | none | 🟠 consommateur non déclaré : discovery-rail |
 | `modal:composition-synced` | modal-product | b-modal-product-detail-bootstrap | b-modal-core, b-modal-desktop-enhancers, b-modal-suggestions | none | 🟢 propriété saine |
 | `discovery:request` | catalog | discovery-actions | discovery-inquiry | value | 🟢 propriété saine |
 
@@ -198,11 +200,13 @@ graph LR
 
 | Bundle | Sources |
 |---|---|
+| `css/dist/critical-home.css` | `critical-home` |
 | `css/dist/base.css` | `tokens`, `reset`, `layout`, `hero`, `hero-ultra-mobile`, `mobile-shell-convergence` |
-| `css/dist/components.css` | `categories`, `category-cutout-navigation`, `products`, `product-image-loading`, `discovery-rail`, `spike-vertical-shell`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-desktop-density`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `modal-product-polish`, `modal-suggestion-filter`, `modal-suggestion-card-polish`, `hero-cart-proxy`, `shared-list-side-cart`, `shared-list-side-cart-responsive`, `shared-list-library-remove`, `shared-list-lists-tab`, `identity`, `paypal`, `wallet`, `komerce`, `notifications`, `checkout-vertical-rail`, `mobile-catalog-convergence`, `mobile-cart-convergence` |
-| `css/dist/desktop.css` | `boutique-desktop`, `side-cart-desktop-polish`, `category-cutout-navigation-desktop` |
+| `css/dist/components.css` | `categories`, `category-cutout-navigation`, `products`, `product-image-loading`, `discovery-rail`, `modal-shell`, `modal-media`, `modal-product`, `modal-product-lot4-hybrid`, `modal-desktop-density`, `modal-mobile-canonical`, `modal-enriched-content`, `modal-cart-sku-guard`, `cart`, `interactions`, `modal-mobile-suggestion-actions`, `modal-product-polish`, `modal-suggestion-filter`, `modal-suggestion-card-polish`, `hero-cart-proxy`, `shared-list-side-cart`, `shared-list-side-cart-responsive`, `shared-list-library-remove`, `shared-list-lists-tab`, `identity`, `paypal`, `mobile-money`, `wallet`, `komerce`, `notifications`, `checkout-vertical-rail`, `mobile-catalog-convergence`, `mobile-cart-convergence` |
+| `css/dist/desktop.css` | `boutique-desktop`, `side-cart-desktop-polish`, `category-cutout-navigation-desktop`, `responsive-desktop-matrix` |
 | `css/dist/checkout-desktop-v2.css` | `checkout-desktop-v2` |
 | `css/dist/discovery-desktop-v2.css` | `discovery-desktop-v2` |
+| `css/dist/service-detail.css` | `service-detail` |
 
 ---
 *Carte vérifiée en pre-commit par `boutique:360:check` (cliquet bus + endpoints hors contrat).*

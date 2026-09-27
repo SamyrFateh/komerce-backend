@@ -13,13 +13,6 @@
   padding: 4px 12px 12px;
 }
 
-/* Temporary validation shell: section product grid remains owned by products.css. */
-body.spike-shell-vertical .k-sec-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 9px;
-}
-
 /* Empty catalogue/search messages occupy the whole product grid. */
 .k-grid > .k-catalog-empty {
   grid-column: 1 / -1;

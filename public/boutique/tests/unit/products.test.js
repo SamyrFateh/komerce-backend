@@ -22,4 +22,8 @@ describe('products — hiérarchie des surfaces', () => {
     expect(css).toContain('#k-catalog-section:has(.k-catalog-empty) .k-load-more-spinner');
     expect(css).toMatch(/#k-catalog-section:has\(\.k-catalog-empty\)[\s\S]*?display:\s*none;/);
   });
+
+  it('ne contient plus d\'override du spike Phase 2 (shell vertical)', () => {
+    expect(css).not.toMatch(/\.spike-shell-vertical/);
+  });
 });

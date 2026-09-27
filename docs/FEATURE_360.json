@@ -55,7 +55,7 @@
     "healthy": 35,
     "attention": 4,
     "blocked": 0,
-    "businessDependencies": 283,
+    "businessDependencies": 284,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
@@ -2347,8 +2347,13 @@
           "projection des rails de livraison deja commercialement exposes par logistics, sans inventer prix ni delai",
           "modal produit catalogue : un fetch Product Detail, un etat de selection SKU, deux compositions responsive mobile/desktop",
           "raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique",
+          "contrat de revue du texte incruste dans les medias fournisseur : preuve attachee a la source et variante, traduction FR revue sans dependance IA specifique (verification pure, sans publication automatique)",
           "projection live Sources -> Raffinerie -> Boutique dans le Workspace Catalogue : observation des sources, du pipeline et du buyer-effective sans reprendre l autorite de mutation Sourcing ni de pricing marche",
           "glossaire metier EN->FR (catalog_glossary)",
+          "mémoire terminologique externe sourcée et filtrée par corpus (catalog_terminology_reference), avec priorité au glossaire Komerce",
+          "challenge FR cold-start permanent : 100 produits CJ jamais vus, source exacte, enrichissement TERMIUM incrémental, aucune dépendance IA runtime et seconde revue obligatoire",
+          "campagne FR Quality branchée : traductions + reviews hashées → dry-run → application atomique en overrides manuels sur drafts inactifs → readiness → checkpoint, jamais de publication automatique",
+          "gate final Raffinerie→Catalogue : 974 candidats attendus, vérité source V2, médias, SKU/SOI complets, catégorie, file humaine, zéro exposition marché avant publication ; mode final exige en plus contenu FR revu + publication guard PASS",
           "file d approbation admin (etage 6) : approve/reject/override en un ecran, seul point de validation humaine avant lifecycle_status=active",
           "bootstrap visuel CJ borné : 63 produits réels, médias fournisseur liés au lignage, exécution one-shot gardée",
           "pool CJ de Raffinerie borné à 1000 références propres maximum, dédupliqué et reprenable, sans publication automatique",
@@ -2600,7 +2605,7 @@
             ]
           },
           "ci": {
-            "count": 15,
+            "count": 24,
             "files": [
               {
                 "declared": ".github/workflows-disabled/README-CJ-SHOWCASE.md",
@@ -2623,6 +2628,51 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": ".github/workflows/isolated-catalog-fr-quality-campaign.yml",
+                "resolvedPath": ".github/workflows/isolated-catalog-fr-quality-campaign.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/isolated-catalog-refinery-final-acceptance.yml",
+                "resolvedPath": ".github/workflows/isolated-catalog-refinery-final-acceptance.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/isolated-catalog-termium-memory.yml",
+                "resolvedPath": ".github/workflows/isolated-catalog-termium-memory.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/isolated-cj-balanced-e2e-500.yml",
+                "resolvedPath": ".github/workflows/isolated-cj-balanced-e2e-500.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/isolated-cj-fr-cold-start-challenge.yml",
+                "resolvedPath": ".github/workflows/isolated-cj-fr-cold-start-challenge.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/isolated-cj-fr-quality-workpack.yml",
+                "resolvedPath": ".github/workflows/isolated-cj-fr-quality-workpack.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/isolated-cj-refinery-continuation.yml",
+                "resolvedPath": ".github/workflows/isolated-cj-refinery-continuation.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/isolated-fr-glossary-batch001.yml",
+                "resolvedPath": ".github/workflows/isolated-fr-glossary-batch001.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/isolated-real-cj-1000-catalog-stress.yml",
+                "resolvedPath": ".github/workflows/isolated-real-cj-1000-catalog-stress.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": ".github/workflows/showcase-v2-staging-deploy.yml",
                 "resolvedPath": ".github/workflows/showcase-v2-staging-deploy.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -2640,11 +2690,6 @@
               {
                 "declared": ".github/workflows/staging-aliexpress-catalog-publish-pilot.yml",
                 "resolvedPath": ".github/workflows/staging-aliexpress-catalog-publish-pilot.yml",
-                "status": "resolved-on-disk-out-of-arch-scan-scope"
-              },
-              {
-                "declared": ".github/workflows/staging-aliexpress-enrich-fr-pilot.yml",
-                "resolvedPath": ".github/workflows/staging-aliexpress-enrich-fr-pilot.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -2670,6 +2715,11 @@
               {
                 "declared": ".github/workflows/staging-pdp-aliexpress-live-audit.yml",
                 "resolvedPath": ".github/workflows/staging-pdp-aliexpress-live-audit.yml",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": ".github/workflows/staging-real-supplier-1000-stress.yml",
+                "resolvedPath": ".github/workflows/staging-real-supplier-1000-stress.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -2715,7 +2765,7 @@
             ]
           },
           "docs": {
-            "count": 12,
+            "count": 14,
             "files": [
               {
                 "declared": "docs/CJ_CONNECTOR.md",
@@ -2725,6 +2775,11 @@
               {
                 "declared": "docs/allegro-sandbox.md",
                 "resolvedPath": "docs/allegro-sandbox.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "docs/catalog/MARKET_PRODUCT_VALIDATION.md",
+                "resolvedPath": "docs/catalog/MARKET_PRODUCT_VALIDATION.md",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -2763,6 +2818,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+                "resolvedPath": "docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
                 "resolvedPath": "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -2790,7 +2850,7 @@
             ]
           },
           "migrations": {
-            "count": 17,
+            "count": 19,
             "files": [
               {
                 "declared": "migrations/098_catalog_refinery_foundation.sql",
@@ -2876,6 +2936,16 @@
                 "declared": "migrations/218_supplier_oauth_connections.sql",
                 "resolvedPath": "migrations/218_supplier_oauth_connections.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/241_catalog_stock_sync_state.sql",
+                "resolvedPath": "migrations/241_catalog_stock_sync_state.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/242_catalog_field_sync_state.sql",
+                "resolvedPath": "migrations/242_catalog_field_sync_state.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -2945,7 +3015,7 @@
             ]
           },
           "scripts": {
-            "count": 5,
+            "count": 16,
             "files": [
               {
                 "declared": "scripts/aliexpress-500-catalog-sync.js",
@@ -2955,6 +3025,51 @@
               {
                 "declared": "scripts/allegro-sandbox-check.js",
                 "resolvedPath": "scripts/allegro-sandbox-check.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/catalog-fr-free-e2e-preparation.js",
+                "resolvedPath": "scripts/catalog-fr-free-e2e-preparation.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/catalog-fr-quality-apply.js",
+                "resolvedPath": "scripts/catalog-fr-quality-apply.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/catalog-fr-quality-campaign-audit.js",
+                "resolvedPath": "scripts/catalog-fr-quality-campaign-audit.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/catalog-fr-quality-workpack.js",
+                "resolvedPath": "scripts/catalog-fr-quality-workpack.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/catalog-refinery-final-acceptance.js",
+                "resolvedPath": "scripts/catalog-refinery-final-acceptance.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/catalog-termium-import.js",
+                "resolvedPath": "scripts/catalog-termium-import.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/cj-500-e2e-catalog-sync.js",
+                "resolvedPath": "scripts/cj-500-e2e-catalog-sync.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/cj-broad-catalog-stress-fill.js",
+                "resolvedPath": "scripts/cj-broad-catalog-stress-fill.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/cj-fr-cold-start-challenge.js",
+                "resolvedPath": "scripts/cj-fr-cold-start-challenge.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -2968,14 +3083,24 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "scripts/cj-refinery-commandability-continuation.js",
+                "resolvedPath": "scripts/cj-refinery-commandability-continuation.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "scripts/ebay-p3-pipeline-proof.js",
                 "resolvedPath": "scripts/ebay-p3-pipeline-proof.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/real-supplier-1000-stress-staging.js",
+                "resolvedPath": "scripts/real-supplier-1000-stress-staging.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "services": {
-            "count": 53,
+            "count": 63,
             "files": [
               {
                 "declared": "services/boutique-taxonomy-admin.js",
@@ -2993,6 +3118,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/catalog-change-intake.js",
+                "resolvedPath": "services/catalog-change-intake.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/catalog-eligibility.js",
                 "resolvedPath": "services/catalog-eligibility.js",
                 "status": "resolved-in-technical-graph"
@@ -3003,6 +3133,21 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/catalog-field-sync-application.js",
+                "resolvedPath": "services/catalog-field-sync-application.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-field-sync-decision.js",
+                "resolvedPath": "services/catalog-field-sync-decision.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-fr-quality.js",
+                "resolvedPath": "services/catalog-fr-quality.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/catalog-live-flow.js",
                 "resolvedPath": "services/catalog-live-flow.js",
                 "status": "resolved-in-technical-graph"
@@ -3010,6 +3155,11 @@
               {
                 "declared": "services/catalog-market-exposure-service.js",
                 "resolvedPath": "services/catalog-market-exposure-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-media-visual-fr-proof.js",
+                "resolvedPath": "services/catalog-media-visual-fr-proof.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -3063,8 +3213,28 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/catalog-provider-capability-contract.js",
+                "resolvedPath": "services/catalog-provider-capability-contract.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/catalog-public-view.js",
                 "resolvedPath": "services/catalog-public-view.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-stock-sync-application.js",
+                "resolvedPath": "services/catalog-stock-sync-application.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-stock-sync-decision.js",
+                "resolvedPath": "services/catalog-stock-sync-decision.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/catalog-terminology-memory.js",
+                "resolvedPath": "services/catalog-terminology-memory.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -3213,6 +3383,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/suppliers/e2e-catalog-500-plan.js",
+                "resolvedPath": "services/suppliers/e2e-catalog-500-plan.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/suppliers/json-source-pipeline.js",
                 "resolvedPath": "services/suppliers/json-source-pipeline.js",
                 "status": "resolved-in-technical-graph"
@@ -3245,7 +3420,7 @@
             ]
           },
           "tests": {
-            "count": 147,
+            "count": 167,
             "files": [
               {
                 "declared": "tests/e2e-api/products.kmf-numeric.e2e.test.js",
@@ -3258,8 +3433,28 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/integration/catalog-field-sync-decision-catalog-field-sync-application-real-db.test.js",
+                "resolvedPath": "tests/integration/catalog-field-sync-decision-catalog-field-sync-application-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/integration/catalog-import-json.integration.test.js",
                 "resolvedPath": "tests/integration/catalog-import-json.integration.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/catalog-stock-sync-application-real-db.test.js",
+                "resolvedPath": "tests/integration/catalog-stock-sync-application-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/catalog-stock-sync-concurrency-real-db.test.js",
+                "resolvedPath": "tests/integration/catalog-stock-sync-concurrency-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/catalog-stock-sync-decision-real-db.test.js",
+                "resolvedPath": "tests/integration/catalog-stock-sync-decision-real-db.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3488,6 +3683,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/catalog-change-intake.test.js",
+                "resolvedPath": "tests/unit/catalog-change-intake.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/catalog-eligibility.test.js",
                 "resolvedPath": "tests/unit/catalog-eligibility.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3523,6 +3723,31 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/catalog-fr-free-e2e-preparation.test.js",
+                "resolvedPath": "tests/unit/catalog-fr-free-e2e-preparation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-fr-quality-apply.test.js",
+                "resolvedPath": "tests/unit/catalog-fr-quality-apply.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-fr-quality-campaign-audit.test.js",
+                "resolvedPath": "tests/unit/catalog-fr-quality-campaign-audit.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-fr-quality-workpack.test.js",
+                "resolvedPath": "tests/unit/catalog-fr-quality-workpack.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-fr-quality.test.js",
+                "resolvedPath": "tests/unit/catalog-fr-quality.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/catalog-image-health-audit-contract.test.js",
                 "resolvedPath": "tests/unit/catalog-image-health-audit-contract.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3555,6 +3780,11 @@
               {
                 "declared": "tests/unit/catalog-market-exposure-snapshot.test.js",
                 "resolvedPath": "tests/unit/catalog-market-exposure-snapshot.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-media-visual-fr-proof.test.js",
+                "resolvedPath": "tests/unit/catalog-media-visual-fr-proof.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3633,6 +3863,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/catalog-provider-capability-contract.test.js",
+                "resolvedPath": "tests/unit/catalog-provider-capability-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/catalog-public-exposure-gate.test.js",
                 "resolvedPath": "tests/unit/catalog-public-exposure-gate.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3643,8 +3878,23 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/catalog-refinery-final-acceptance.test.js",
+                "resolvedPath": "tests/unit/catalog-refinery-final-acceptance.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/catalog-sync-checkpoint.test.js",
                 "resolvedPath": "tests/unit/catalog-sync-checkpoint.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-terminology-memory.test.js",
+                "resolvedPath": "tests/unit/catalog-terminology-memory.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/catalog-termium-import.test.js",
+                "resolvedPath": "tests/unit/catalog-termium-import.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3673,6 +3923,16 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/cj-500-e2e-catalog-sync.test.js",
+                "resolvedPath": "tests/unit/cj-500-e2e-catalog-sync.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cj-broad-catalog-stress-fill.test.js",
+                "resolvedPath": "tests/unit/cj-broad-catalog-stress-fill.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/cj-catalog-index.test.js",
                 "resolvedPath": "tests/unit/cj-catalog-index.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3688,6 +3948,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/cj-fr-cold-start-challenge.test.js",
+                "resolvedPath": "tests/unit/cj-fr-cold-start-challenge.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/cj-full-catalog-sync.test.js",
                 "resolvedPath": "tests/unit/cj-full-catalog-sync.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3700,6 +3965,11 @@
               {
                 "declared": "tests/unit/cj-real-showcase-taxonomy-repair.test.js",
                 "resolvedPath": "tests/unit/cj-real-showcase-taxonomy-repair.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/cj-refinery-commandability-continuation.test.js",
+                "resolvedPath": "tests/unit/cj-refinery-commandability-continuation.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -3863,6 +4133,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/real-supplier-1000-stress-staging.test.js",
+                "resolvedPath": "tests/unit/real-supplier-1000-stress-staging.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/require-catalog-global-authority.test.js",
                 "resolvedPath": "tests/unit/require-catalog-global-authority.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3995,7 +4270,7 @@
             ]
           }
         },
-        "totalFiles": 306,
+        "totalFiles": 360,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -4257,6 +4532,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "catalog_terminology_reference",
+            "resolution": "single-writer"
+          },
+          {
             "table": "product_attributes",
             "resolution": "single-writer"
           },
@@ -4328,6 +4607,12 @@
           },
           {
             "table": "catalog_media",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_terminology_reference",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -4445,6 +4730,10 @@
             "resolution": "declared-table-owner"
           },
           {
+            "table": "catalog_terminology_reference",
+            "resolution": "single-writer"
+          },
+          {
             "table": "product_attributes",
             "resolution": "single-writer"
           },
@@ -4516,6 +4805,12 @@
           },
           {
             "table": "catalog_media",
+            "mode": "RW",
+            "lifecycleOwner": "catalog",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "catalog_terminology_reference",
             "mode": "RW",
             "lifecycleOwner": "catalog",
             "ownershipStatus": "owner"
@@ -7422,6 +7717,13 @@
           ]
         },
         {
+          "consumer": "market-delegation",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "sourcing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -8961,7 +9263,7 @@
             ]
           },
           "tests": {
-            "count": 81,
+            "count": 82,
             "files": [
               {
                 "declared": "tests/integration/cost-allocation-conservation-real-db.test.js",
@@ -9016,6 +9318,11 @@
               {
                 "declared": "tests/unit/admin-pricing-matrices.test.js",
                 "resolvedPath": "tests/unit/admin-pricing-matrices.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-pricing-workspace-capability-mapping.test.js",
+                "resolvedPath": "tests/unit/admin-pricing-workspace-capability-mapping.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -9391,7 +9698,7 @@
             ]
           }
         },
-        "totalFiles": 172,
+        "totalFiles": 173,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -10403,11 +10710,16 @@
             ]
           },
           "scripts": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "scripts/ebay-sandbox-browse-proof.js",
                 "resolvedPath": "scripts/ebay-sandbox-browse-proof.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/external-provider-batch-proof.js",
+                "resolvedPath": "scripts/external-provider-batch-proof.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -10428,11 +10740,16 @@
             ]
           },
           "tests": {
-            "count": 4,
+            "count": 5,
             "files": [
               {
                 "declared": "tests/unit/ebay-sandbox-browse-proof.test.js",
                 "resolvedPath": "tests/unit/ebay-sandbox-browse-proof.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/external-provider-batch-proof.test.js",
+                "resolvedPath": "tests/unit/external-provider-batch-proof.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -10453,7 +10770,7 @@
             ]
           }
         },
-        "totalFiles": 9,
+        "totalFiles": 11,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -10490,6 +10807,11 @@
           {
             "fn": "buildProof",
             "file": "scripts/provider-contract-proof.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "runBatch",
+            "file": "scripts/external-provider-batch-proof.js",
             "status": "resolved"
           },
           {
@@ -11011,7 +11333,7 @@
       "implementation": {
         "byCategory": {
           "assets": {
-            "count": 29,
+            "count": 33,
             "files": [
               {
                 "declared": "public/images/Komerce_Kero_Desktop_2.png",
@@ -11044,8 +11366,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "public/images/avatar_panier.webp",
+                "resolvedPath": "public/images/avatar_panier.webp",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "public/images/avatar_seule.png",
                 "resolvedPath": "public/images/avatar_seule.png",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "public/images/avatar_seule.webp",
+                "resolvedPath": "public/images/avatar_seule.webp",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -11154,8 +11486,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "public/images/panier_tresse.webp",
+                "resolvedPath": "public/images/panier_tresse.webp",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "public/images/panier_tresse_vert.png",
                 "resolvedPath": "public/images/panier_tresse_vert.png",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "public/images/panier_tresse_vert.webp",
+                "resolvedPath": "public/images/panier_tresse_vert.webp",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -11309,13 +11651,13 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": ".github/workflows-disabled/pr-governance.yml",
-                "resolvedPath": ".github/workflows-disabled/pr-governance.yml",
+                "declared": ".github/workflows/pr-enforcement.yml",
+                "resolvedPath": ".github/workflows/pr-enforcement.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
-                "declared": ".github/workflows/pr-enforcement.yml",
-                "resolvedPath": ".github/workflows/pr-enforcement.yml",
+                "declared": ".github/workflows/pr-governance.yml",
+                "resolvedPath": ".github/workflows/pr-governance.yml",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -12786,7 +13128,7 @@
             ]
           }
         },
-        "totalFiles": 341,
+        "totalFiles": 345,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -17137,6 +17479,7 @@
           "un relais reste rattaché à son marché d’origine ; toute tentative de lecture/écriture cross-market échoue en 404, sans confirmer l’existence de la ressource sur un autre marché",
           "un provider reste rattaché à son marché d’origine ; provider.manage ne permet jamais une réassignation cross-market et les mutations passent par providers-services, lifecycle owner",
           "LOT 4 (écriture) : décision d’exposition produit x marché — capability catalog.expose, upsert auditable sur product_market_exposure (catalog, lifecycle owner), jamais de SQL direct",
+          "LOT 4B (validation simple marché) : un candidat catalogue déjà préparé et publiable peut être validé par le Responsable pays ; market-delegation délègue la première publication à catalog-approval puis active l’exposition du marché dans la même transaction, sans reprendre l’autorité lifecycle de products",
           "LOT 4 (cutover lecture) : catalog.expose LIVE — migration 206 (snapshot, catalog) préserve exactement la visibilité storefront existante au moment du cutover ; migration 207 (activation, market-delegation) ouvre le droit d’agir sans jamais toucher l’exposition elle-même ; séparation stricte entre les deux, vérifiée par test",
           "LOT 7 (structure-event) : structure.event.record — un opérateur pays enregistre un fait MARKET_DIRECT de charge structurelle pour son propre marché via le writer canonique economic-engine (recordStructureCostEvent), jamais un GROUP, jamais un market_id choisi, jamais de SQL direct sur economic_structure_cost_events",
           "migration 210 : promotion LIVE de structure.event.record backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers ; ne crée jamais d’événement économique",
@@ -17158,7 +17501,7 @@
           "providers/relais comme principaux locaux secondaires : jamais des assignments concurrents ; leur gestion locale reste déléguable sans transformer leur identité en user_role",
           "lecture publique du réseau relais (GET /api/relais) et son cycle de vie technique hors délégation : feature logistics, propriétaire de la table relais",
           "routage inter-îles KM (island/island_code consommés par services/routing.js) : hors périmètre, couplage géographique pré-existant non résolu par cette feature",
-          "catalogue global (products) : feature catalog, jamais modifié par cette feature — product_market_exposure n’est qu’une projection",
+          "catalogue global (products) : feature catalog reste lifecycle owner ; market-delegation n’écrit jamais products directement et ne peut déclencher une première publication qu’en déléguant à catalog-approval lors d’une validation humaine marché ; product_market_exposure reste la projection pays",
           "câblage du chemin de lecture storefront (catalog-public-view.js / catalog-product-detail.js) : feature catalog, propriétaire de publicCatalogVisibilitySql() et de la logique de résolution marché ; market-delegation ne fait qu’autoriser/auditer la décision d’exposition qui alimente cette lecture",
           "calcul automatique commission/revenue_share et payout bancaire/Mobile Money : hors LOT 6 ; la feature settlement ne fait qu’attester/tracer le cycle sans inventer de formule ni déclencher de transfert",
           "vérité d’encaissement et état de double confirmation : feature payments",
@@ -17330,8 +17673,13 @@
       "implementation": {
         "byCategory": {
           "middleware": {
-            "count": 2,
+            "count": 3,
             "files": [
+              {
+                "declared": "middleware/require-market-delegated-capability.js",
+                "resolvedPath": "middleware/require-market-delegated-capability.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "middleware/require-market-delegated-role.js",
                 "resolvedPath": "middleware/require-market-delegated-role.js",
@@ -17425,7 +17773,7 @@
             ]
           },
           "routes": {
-            "count": 10,
+            "count": 11,
             "files": [
               {
                 "declared": "routes/market-delegation-cash-control.js",
@@ -17440,6 +17788,11 @@
               {
                 "declared": "routes/market-delegation-client-case.js",
                 "resolvedPath": "routes/market-delegation-client-case.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "routes/market-delegation-client.js",
+                "resolvedPath": "routes/market-delegation-client.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -17550,7 +17903,7 @@
             ]
           },
           "tests": {
-            "count": 34,
+            "count": 35,
             "files": [
               {
                 "declared": "tests/e2e-api/market-delegation.authority-team-network.e2e.test.js",
@@ -17625,6 +17978,11 @@
               {
                 "declared": "tests/unit/market-delegation-client-case-service.test.js",
                 "resolvedPath": "tests/unit/market-delegation-client-case-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/market-delegation-client-routes.test.js",
+                "resolvedPath": "tests/unit/market-delegation-client-routes.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -17725,7 +18083,7 @@
             ]
           }
         },
-        "totalFiles": 74,
+        "totalFiles": 77,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -18205,7 +18563,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 32
+          "count": 33
         }
       },
       "businessDependencies": [
@@ -18229,6 +18587,13 @@
           "channels": [
             "static-code",
             "data-read"
+          ]
+        },
+        {
+          "provider": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
           ]
         },
         {
@@ -21799,6 +22164,21 @@
               }
             ]
           },
+          "middleware": {
+            "count": 2,
+            "files": [
+              {
+                "declared": "middleware/internal-static-guard.js",
+                "resolvedPath": "middleware/internal-static-guard.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "middleware/versioned-asset-cache.js",
+                "resolvedPath": "middleware/versioned-asset-cache.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
           "routes": {
             "count": 5,
             "files": [
@@ -21865,7 +22245,7 @@
             ]
           },
           "tests": {
-            "count": 21,
+            "count": 23,
             "files": [
               {
                 "declared": "tests/integration/alerts-contract-real-db.test.js",
@@ -21915,6 +22295,11 @@
               {
                 "declared": "tests/unit/health.test.js",
                 "resolvedPath": "tests/unit/health.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/internal-static-guard.test.js",
+                "resolvedPath": "tests/unit/internal-static-guard.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -21971,11 +22356,16 @@
                 "declared": "tests/unit/validators.test.js",
                 "resolvedPath": "tests/unit/validators.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/versioned-asset-cache.test.js",
+                "resolvedPath": "tests/unit/versioned-asset-cache.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           }
         },
-        "totalFiles": 41,
+        "totalFiles": 45,
         "boutiqueManifest": "platform-ops",
         "boutiqueFiles": {
           "count": 26,
@@ -25815,7 +26205,7 @@
             ]
           },
           "services": {
-            "count": 20,
+            "count": 24,
             "files": [
               {
                 "declared": "services/catalog-product-read-cutover-trial.js",
@@ -25863,6 +26253,21 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/sourcing-catalog-change-observation.js",
+                "resolvedPath": "services/sourcing-catalog-change-observation.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-catalog-change-sku-identity-proof.js",
+                "resolvedPath": "services/sourcing-catalog-change-sku-identity-proof.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/sourcing-catalog-change-unit-resolution-proof.js",
+                "resolvedPath": "services/sourcing-catalog-change-unit-resolution-proof.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/sourcing-catalog-product-linkage.js",
                 "resolvedPath": "services/sourcing-catalog-product-linkage.js",
                 "status": "resolved-in-technical-graph"
@@ -25903,6 +26308,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/sourcing-shadow-quantity-trial.js",
+                "resolvedPath": "services/sourcing-shadow-quantity-trial.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/sourcing-shadow-resolution-service.js",
                 "resolvedPath": "services/sourcing-shadow-resolution-service.js",
                 "status": "resolved-in-technical-graph"
@@ -25920,11 +26330,31 @@
             ]
           },
           "tests": {
-            "count": 29,
+            "count": 37,
             "files": [
+              {
+                "declared": "tests/integration/catalog-change-sku-identity-proof-real-db.test.js",
+                "resolvedPath": "tests/integration/catalog-change-sku-identity-proof-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/catalog-change-unit-resolution-proof-real-db.test.js",
+                "resolvedPath": "tests/integration/catalog-change-unit-resolution-proof-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/catalog-change-unit-stock-observation-real-db.test.js",
+                "resolvedPath": "tests/integration/catalog-change-unit-stock-observation-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
               {
                 "declared": "tests/integration/sourcing-candidate-arbitration-real-db.test.js",
                 "resolvedPath": "tests/integration/sourcing-candidate-arbitration-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/sourcing-candidate-stock-zero-real-db.test.js",
+                "resolvedPath": "tests/integration/sourcing-candidate-stock-zero-real-db.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -25993,6 +26423,21 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/sourcing-catalog-change-observation.test.js",
+                "resolvedPath": "tests/unit/sourcing-catalog-change-observation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-catalog-change-sku-identity-proof.test.js",
+                "resolvedPath": "tests/unit/sourcing-catalog-change-sku-identity-proof.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-catalog-change-unit-resolution-proof.test.js",
+                "resolvedPath": "tests/unit/sourcing-catalog-change-unit-resolution-proof.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/sourcing-catalog-product-linkage.test.js",
                 "resolvedPath": "tests/unit/sourcing-catalog-product-linkage.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -26048,6 +26493,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/sourcing-shadow-quantity-trial.test.js",
+                "resolvedPath": "tests/unit/sourcing-shadow-quantity-trial.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/sourcing-shadow-resolution-service.test.js",
                 "resolvedPath": "tests/unit/sourcing-shadow-resolution-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -26070,7 +26520,7 @@
             ]
           }
         },
-        "totalFiles": 67,
+        "totalFiles": 79,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -26459,8 +26909,23 @@
             "status": "resolved"
           },
           {
+            "fn": "proveExactCanonicalUnitForStockDelta",
+            "file": "services/sourcing-catalog-change-unit-resolution-proof.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "proveExactCatalogSkuForStockDelta",
+            "file": "services/sourcing-catalog-change-sku-identity-proof.js",
+            "status": "resolved"
+          },
+          {
             "fn": "recordCatalogImportObservationsShadow",
             "file": "services/sourcing-observation-shadow-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "recordUnitStockChange",
+            "file": "services/sourcing-catalog-change-observation.js",
             "status": "resolved"
           },
           {
@@ -26480,7 +26945,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 25
+          "count": 26
         }
       },
       "businessDependencies": [

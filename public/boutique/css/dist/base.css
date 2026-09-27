@@ -2099,13 +2099,6 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 }
 
-/* Temporary validation shell: sticky category navigation remains owned here. */
-body.spike-shell-vertical .k-hero-cats-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 500;
-}
-
 /* ── EVENT BANNER ─────────────────────────────────────────────── */
 .k-event-banner {
   display: flex; align-items: center; gap: 12px;

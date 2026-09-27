@@ -1,22 +1,22 @@
 {
-  "generatedAt": "2026-09-06T12:06:00.855Z",
+  "generatedAt": "2026-09-26T22:57:52.648Z",
   "summary": {
     "modules": 103,
     "withHeader": 103,
     "events": 24,
     "declaredActive": 41,
     "declaredDead": 9,
-    "cssBundles": 5,
-    "endpoints": 62,
+    "cssBundles": 7,
+    "endpoints": 65,
     "orphanEmit": 0,
     "orphanListen": 0,
     "undeclared": 0,
     "notFoundEndpoints": 0,
-    "unprovenEndpoints": 43,
-    "dynamicEndpoints": 22,
+    "unprovenEndpoints": 44,
+    "dynamicEndpoints": 24,
     "ownedEvents": 5,
     "ownershipRed": 0,
-    "ownershipOrange": 0
+    "ownershipOrange": 1
   },
   "modules": [
     {
@@ -415,7 +415,6 @@
         "render-home-sections",
         "home-controller",
         "b-scroll-owner",
-        "spike-vertical-shell",
         "product-store"
       ],
       "bodyClasses": [],
@@ -482,7 +481,8 @@
         "b-phone.js",
         "routes/local-stock.js",
         "routes/orders.js",
-        "routes/payments.js"
+        "routes/payments.js",
+        "routes/payments-mobile-money.js"
       ],
       "usedBy": [
         "boutique.js",
@@ -503,6 +503,7 @@
         "b-utils",
         "b-cart-core",
         "b-paypal",
+        "b-mobile-money",
         "b-cart",
         "b-scroll-owner",
         "b-identity",
@@ -839,6 +840,34 @@
         "b-cart-core",
         "b-utils",
         "b-bus"
+      ],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
+      "file": "public/boutique/js/b-mobile-money.js",
+      "id": "b-mobile-money",
+      "hasHeader": true,
+      "role": "boutique-mobile-money-client",
+      "domain": "payment",
+      "layer": "ui-boundary",
+      "criticality": "critical",
+      "doctrine": [
+        "provider_availability_server_authoritative",
+        "no_silent_fallback",
+        "bounded_polling"
+      ],
+      "depends": [
+        "b-utils.js",
+        "routes/payments-mobile-money.js"
+      ],
+      "usedBy": [
+        "b-checkout.js"
+      ],
+      "emits": [],
+      "listens": [],
+      "imports": [
+        "b-utils"
       ],
       "bodyClasses": [],
       "emitCalls": []
@@ -1204,14 +1233,16 @@
       "criticality": "high",
       "doctrine": [
         "docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md",
-        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md"
+        "docs/boutique/BOUTIQUE_MODAL_ARCHITECTURE.md",
+        "market_display_matches_buyer_price"
       ],
       "depends": [
         "b-bus.js",
         "b-store.js",
         "b-modal-mobile-product.js",
         "b-modal-desktop-product.js",
-        "view-models/modal-selection-model.js"
+        "view-models/modal-selection-model.js",
+        "market-context.js"
       ],
       "usedBy": [
         "main.js"
@@ -1505,23 +1536,6 @@
       ]
     },
     {
-      "file": "public/boutique/js/b-pager-end-bounce.js",
-      "id": "b-pager-end-bounce",
-      "hasHeader": true,
-      "role": "mobile-pager-end-bounce",
-      "domain": "catalog",
-      "layer": "ui-state",
-      "criticality": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "emits": [],
-      "listens": [],
-      "imports": [],
-      "bodyClasses": [],
-      "emitCalls": []
-    },
-    {
       "file": "public/boutique/js/b-pager.js",
       "id": "b-pager",
       "hasHeader": true,
@@ -1537,7 +1551,6 @@
       ],
       "depends": [
         "b-bus.js",
-        "b-pager-end-bounce.js",
         "b-scroll-owner.js",
         "b-store.js"
       ],
@@ -1554,8 +1567,7 @@
       "imports": [
         "b-bus",
         "b-store",
-        "b-scroll-owner",
-        "b-pager-end-bounce"
+        "b-scroll-owner"
       ],
       "bodyClasses": [],
       "emitCalls": [
@@ -2125,7 +2137,6 @@
         "b-tracking",
         "b-pager",
         "b-scroll-owner",
-        "spike-vertical-shell",
         "b-share-cart"
       ],
       "bodyClasses": [
@@ -2343,7 +2354,8 @@
       "emits": [],
       "listens": [
         "chip:center",
-        "catalog:cat-changed"
+        "catalog:cat-changed",
+        "modal:closed"
       ],
       "imports": [
         "b-bus",
@@ -2351,7 +2363,6 @@
         "b-modal",
         "b-cart",
         "b-pager",
-        "b-pager-end-bounce",
         "discovery-api",
         "render-discovery-rail",
         "discovery-desktop-style"
@@ -2832,6 +2843,23 @@
       "emitCalls": []
     },
     {
+      "file": "public/boutique/js/preload-css-swap.js",
+      "id": "preload-css-swap",
+      "hasHeader": true,
+      "role": "preload-css-swap",
+      "domain": "boutique",
+      "layer": "bootstrap",
+      "criticality": null,
+      "doctrine": [],
+      "depends": [],
+      "usedBy": [],
+      "emits": [],
+      "listens": [],
+      "imports": [],
+      "bodyClasses": [],
+      "emitCalls": []
+    },
+    {
       "file": "public/boutique/js/product-image-loading-ux.js",
       "id": "product-image-loading-ux",
       "hasHeader": true,
@@ -2859,11 +2887,14 @@
       "doctrine": [
         "product_source_unique",
         "catalogue_cache_fallback",
-        "produit_reference_stable"
+        "produit_reference_stable",
+        "market_cache_isolation"
       ],
       "depends": [
         "localStorage",
-        "shop-schema.js"
+        "shop-schema.js",
+        "market-context.js",
+        "komerce-api.js"
       ],
       "usedBy": [
         "b-catalog.js",
@@ -3037,28 +3068,6 @@
       "listens": [],
       "imports": [],
       "bodyClasses": [],
-      "emitCalls": []
-    },
-    {
-      "file": "public/boutique/js/spike-vertical-shell.js",
-      "id": "spike-vertical-shell",
-      "hasHeader": true,
-      "role": "catalog-spike-vertical-shell",
-      "domain": "catalog",
-      "layer": "ui-infrastructure",
-      "criticality": null,
-      "doctrine": [],
-      "depends": [],
-      "usedBy": [],
-      "emits": [],
-      "listens": [
-        "modal:opened",
-        "modal:closed"
-      ],
-      "imports": [],
-      "bodyClasses": [
-        "spike-shell-vertical"
-      ],
       "emitCalls": []
     },
     {
@@ -3402,8 +3411,7 @@
         "b-modal-desktop-enhancers",
         "b-modal-product-detail-bootstrap",
         "b-pdp-curation-suggestions",
-        "boutique",
-        "spike-vertical-shell"
+        "boutique"
       ]
     },
     "modal:closed": {
@@ -3413,9 +3421,9 @@
       "listeners": [
         "b-modal-discovery-detail",
         "b-modal-product-detail-bootstrap",
+        "discovery-rail",
         "group-side-cart",
-        "local-stock-badge-mount",
-        "spike-vertical-shell"
+        "local-stock-badge-mount"
       ]
     },
     "modal:composition-synced": {
@@ -3455,6 +3463,12 @@
   },
   "bundles": [
     {
+      "out": "critical-home.css",
+      "files": [
+        "critical-home"
+      ]
+    },
+    {
       "out": "base.css",
       "files": [
         "tokens",
@@ -3473,7 +3487,6 @@
         "products",
         "product-image-loading",
         "discovery-rail",
-        "spike-vertical-shell",
         "modal-shell",
         "modal-media",
         "modal-product",
@@ -3495,6 +3508,7 @@
         "shared-list-lists-tab",
         "identity",
         "paypal",
+        "mobile-money",
         "wallet",
         "komerce",
         "notifications",
@@ -3508,7 +3522,8 @@
       "files": [
         "boutique-desktop",
         "side-cart-desktop-polish",
-        "category-cutout-navigation-desktop"
+        "category-cutout-navigation-desktop",
+        "responsive-desktop-matrix"
       ]
     },
     {
@@ -3521,6 +3536,12 @@
       "out": "discovery-desktop-v2.css",
       "files": [
         "discovery-desktop-v2"
+      ]
+    },
+    {
+      "out": "service-detail.css",
+      "files": [
+        "service-detail"
       ]
     }
   ],
@@ -3564,6 +3585,13 @@
       "module": "b-checkout",
       "route": "/api/wallet",
       "raw": "/api/wallet",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-checkout",
+      "route": "/api/orders",
+      "raw": "/api/orders",
       "dynamic": false,
       "contractStatus": "UNKNOWN"
     },
@@ -3680,6 +3708,27 @@
       "contractStatus": "UNKNOWN"
     },
     {
+      "module": "b-mobile-money",
+      "route": "/api/payments/mobile-money/availability",
+      "raw": "/api/payments/mobile-money/availability?relais_id=${encodeURIComponent(relayId)}",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
+      "module": "b-mobile-money",
+      "route": "/api/payments/mobile-money/initiate",
+      "raw": "/api/payments/mobile-money/initiate",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "b-mobile-money",
+      "route": "/api/payments/mobile-money/transactions/{id}/refresh",
+      "raw": "/api/payments/mobile-money/transactions/${encodeURIComponent(transactionId)}/refresh",
+      "dynamic": true,
+      "contractStatus": "DYNAMIC"
+    },
+    {
       "module": "b-modal-core",
       "route": "/api/boutique/suggestions",
       "raw": "/api/boutique/suggestions?",
@@ -3688,8 +3737,8 @@
     },
     {
       "module": "b-modal-product-detail-bootstrap",
-      "route": "/api/products/{id}/detail",
-      "raw": "/api/products/${productId}/detail",
+      "route": "/api/products/{id}/detail{id}",
+      "raw": "/api/products/${productId}/detail${marketQuery}",
       "dynamic": true,
       "contractStatus": "DYNAMIC"
     },
@@ -4177,6 +4226,20 @@
       "contractStatus": "DYNAMIC"
     },
     {
+      "module": "market-hydration",
+      "route": "/api/relais",
+      "raw": "/api/relais",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "market-hydration",
+      "route": "/api/relais/public",
+      "raw": "/api/relais/public",
+      "dynamic": false,
+      "contractStatus": "UNKNOWN"
+    },
+    {
       "module": "providers-services-api",
       "route": "/api/providers-services/inquiries",
       "raw": "/api/providers-services/inquiries?market=${encodeURIComponent(market)}",
@@ -4279,8 +4342,7 @@
         "boutique",
         "b-pdp-curation-suggestions",
         "b-pager",
-        "b-modal-desktop-enhancers",
-        "spike-vertical-shell"
+        "b-modal-desktop-enhancers"
       ],
       "modal:discovery-opened": [
         "b-modal-discovery-detail"
@@ -4290,8 +4352,7 @@
         "b-modal-discovery-detail",
         "b-pager",
         "group-side-cart",
-        "local-stock-badge-mount",
-        "spike-vertical-shell"
+        "local-stock-badge-mount"
       ],
       "modal:composition-synced": [
         "b-modal-desktop-enhancers",
@@ -4356,6 +4417,7 @@
       "/api/orders",
       "/api/parcels",
       "/api/parcels/optimize",
+      "/api/payments/mobile-money/initiate",
       "/api/payments/paypal/create-order",
       "/api/payments/stripe/intent",
       "/api/products",
@@ -4384,9 +4446,11 @@
       "/api/parcels/bootstrap/{id}",
       "/api/parcels/{id}",
       "/api/parcels/{id}/items",
+      "/api/payments/mobile-money/availability",
+      "/api/payments/mobile-money/transactions/{id}/refresh",
       "/api/payments/paypal/capture/{id}",
       "/api/products/{id}",
-      "/api/products/{id}/detail",
+      "/api/products/{id}/detail{id}",
       "/api/providers-services/inquiries",
       "/api/providers-services/physical-offers/{id}",
       "/api/providers-services/services/{id}",
@@ -4397,7 +4461,9 @@
       "/api/shares"
     ],
     "ownershipRed": [],
-    "ownershipOrange": []
+    "ownershipOrange": [
+      "modal:closed"
+    ]
   },
   "ownership": {
     "modal:opened": {
@@ -4413,15 +4479,13 @@
         "boutique",
         "b-pdp-curation-suggestions",
         "b-pager",
-        "b-modal-desktop-enhancers",
-        "spike-vertical-shell"
+        "b-modal-desktop-enhancers"
       ],
       "actualConsumers": [
         "b-modal-desktop-enhancers",
         "b-modal-product-detail-bootstrap",
         "b-pdp-curation-suggestions",
-        "boutique",
-        "spike-vertical-shell"
+        "boutique"
       ],
       "consumerUndeclared": [],
       "payload": "value",
@@ -4458,17 +4522,18 @@
         "b-modal-discovery-detail",
         "b-pager",
         "group-side-cart",
-        "local-stock-badge-mount",
-        "spike-vertical-shell"
+        "local-stock-badge-mount"
       ],
       "actualConsumers": [
         "b-modal-discovery-detail",
         "b-modal-product-detail-bootstrap",
+        "discovery-rail",
         "group-side-cart",
-        "local-stock-badge-mount",
-        "spike-vertical-shell"
+        "local-stock-badge-mount"
       ],
-      "consumerUndeclared": [],
+      "consumerUndeclared": [
+        "discovery-rail"
+      ],
       "payload": "none",
       "payloadMismatches": []
     },
@@ -4523,8 +4588,8 @@
       "msg": "propriété saine"
     },
     "modal:closed": {
-      "level": "green",
-      "msg": "propriété saine"
+      "level": "orange",
+      "msg": "consommateur non déclaré : discovery-rail"
     },
     "modal:composition-synced": {
       "level": "green",
@@ -4582,9 +4647,6 @@
       ],
       "k-view-": [
         "b-nav"
-      ],
-      "spike-shell-vertical": [
-        "spike-vertical-shell"
       ]
     }
   },
@@ -4626,12 +4688,15 @@
     "/api/parcels/optimize",
     "/api/parcels/{id}",
     "/api/parcels/{id}/items",
+    "/api/payments/mobile-money/availability",
+    "/api/payments/mobile-money/initiate",
+    "/api/payments/mobile-money/transactions/{id}/refresh",
     "/api/payments/paypal/capture/{id}",
     "/api/payments/paypal/create-order",
     "/api/payments/stripe/intent",
     "/api/products",
     "/api/products/{id}",
-    "/api/products/{id}/detail",
+    "/api/products/{id}/detail{id}",
     "/api/providers-services/inquiries",
     "/api/providers-services/physical-offers/{id}",
     "/api/providers-services/services/{id}",

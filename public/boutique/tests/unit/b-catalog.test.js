@@ -520,3 +520,17 @@ describe('b-catalog — chargement produits', () => {
     expect(mockShowToast).toHaveBeenCalledWith('1 produit obsolète retiré du panier', 'info');
   });
 });
+
+describe('b-catalog — spike vertical-shell retiré', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(
+    path.join(__dirname, '../../js/b-catalog.js'),
+    'utf8'
+  );
+
+  test('ne câble plus le spike Phase 2 (shell vertical)', () => {
+    expect(source).not.toMatch(/spike-vertical-shell/);
+    expect(source).not.toMatch(/spike-shell-vertical/);
+  });
+});

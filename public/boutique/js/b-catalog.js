@@ -80,9 +80,6 @@ import {
   renderSubcatRail     as _renderSubcatRail,
 } from './controllers/home-controller.js';
 import { isDesktop, clearInlinePagerStyles, ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
-// SPIKE Phase 2 (branche isolée) — no-op sauf ?shell=vertical. Ne change jamais
-// le comportement par défaut (pager Temu). Voir spike-vertical-shell.js.
-import { isVerticalShell, installVerticalNavigation } from './spike-vertical-shell.js';
 import {
   setProducts, getAllProducts, getPromoProducts, writeCache,
 }                             from './product-store.js';
@@ -416,7 +413,7 @@ function _showCatalogLoadError(err) {
   dom.grid.classList.remove('k-grid-has-sections', 'k-grid-cat-pager');
   destroyMobilePager();
   dom.grid.innerHTML = renderCatalogLoadErrorState(err);
-  if (!isDesktop() && !isVerticalShell() && dom.pageScroll) {
+  if (!isDesktop() && dom.pageScroll) {
     dom.pageScroll.classList.add('k-pager-active');
     _recalcPagerVars();
   }
@@ -543,7 +540,7 @@ function renderGrid() {
     _bindEmptyStateActions(reason);
     // Empty/search states share the same fixed viewport below the masthead.
     // No category pager or end-bounce listeners are attached to this screen.
-    if (_isMobile && !isVerticalShell() && dom.pageScroll) {
+    if (_isMobile && dom.pageScroll) {
       dom.pageScroll.classList.add('k-pager-active');
       _recalcPagerVars();
     }
@@ -599,25 +596,7 @@ function renderGrid() {
     });
     _triggerGridEnterAnim();
     _bindGridEvents();
-    if (_isMobile && isVerticalShell()) {
-      // ── SPIKE Phase 2 — shell vertical natif ──────────────────────────
-      // On NE monte PAS le pager : pas de k-pager-active, pas de cage fixed,
-      // pas de ghost loop, pas de bounce. Les .k-cat-section rendues par
-      // render-home-sections deviennent des sections verticales dans le flux
-      // document. getMobileScrollContainer() retourne null → tous les modules
-      // (modal, cart, nav) utilisent window nativement, SANS modification.
-      dom.grid.classList.add('k-grid-vertical-sections');
-      requestAnimationFrame(function() {
-        installVerticalNavigation();
-        if (state.activeCat !== 'all') {
-          const section = document.querySelector('.k-cat-section[data-cat="' + state.activeCat + '"]');
-          if (section) {
-            const y = section.getBoundingClientRect().top + window.scrollY - 100;
-            window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
-          }
-        }
-      });
-    } else if (_isMobile) {
+    if (_isMobile) {
       let _ps = dom.pageScroll;
       // Poser --pager-top/--pager-h AVANT k-pager-active (variables CSS requises
       // par le position:fixed du pager). On appelle uniquement _recalcPagerVars()

@@ -118,4 +118,8 @@ describe('hero composition en calques (H1)', () => {
       /html\.k-home-premium-v1 \.k-cats::before\s*\{[^}]*content:\s*none/s
     );
   });
+
+  test('ne contient plus d\'override du spike Phase 2 (shell vertical)', () => {
+    expect(hero).not.toMatch(/\.spike-shell-vertical/);
+  });
 });
