@@ -92,12 +92,20 @@ function convertToKMF(amount, currency, finance) {
  * La configuration vient exclusivement des catégories actives chargées par
  * pricingEngine.loadGlobalConfig().
  */
-function mapCategory(supplierCat, komerceCats) {
-  return classifySupplierProduct({ supplier_category: supplierCat }, komerceCats);
+function mapCategory(supplierCat, komerceCats, boutiqueCustomsAffinities = []) {
+  return classifySupplierProduct(
+    { supplier_category: supplierCat },
+    komerceCats,
+    { boutique_customs_affinities: boutiqueCustomsAffinities }
+  );
 }
 
-function mapProductCategory(product, komerceCats) {
-  return classifySupplierProduct(product, komerceCats);
+function mapProductCategory(product, komerceCats, boutiqueCustomsAffinities = []) {
+  return classifySupplierProduct(
+    product,
+    komerceCats,
+    { boutique_customs_affinities: boutiqueCustomsAffinities }
+  );
 }
 
 function estimateWeight(suppliedWeight, categoryKey, komerceCats) {
@@ -147,7 +155,7 @@ async function normalizeCandidate(product, options = {}) {
   const config = options.config || (await pricingEngine.loadGlobalConfig());
   const komerceCats = Object.values(config.categories || {});
   const dataSources = {};
-  const catMap = mapProductCategory(product, komerceCats);
+  const catMap = mapProductCategory(product, komerceCats, config.boutique_customs_affinities || []);
   const komerceCategory = catMap.key;
   dataSources.category = catMap.source;
   const purchasePriceKmf = convertToKMF(product.purchase_price, product.currency, config.finance);

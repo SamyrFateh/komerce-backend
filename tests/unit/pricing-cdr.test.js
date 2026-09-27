@@ -40,6 +40,7 @@ describe('pricing-cdr', () => {
       .mockResolvedValueOnce({ rows: [{ key: 'food', douane_pct: 5 }] })
       .mockResolvedValueOnce({ rows: [{ rate_pct: 2 }] })
       .mockResolvedValueOnce({ rows: [{ amount_kmf: 1000, recurrence_period: 'monthly' }] })
+      .mockResolvedValueOnce({ rows: [{ category_key: 'Maison', subcategory_key: 'Cuisine', customs_category_key: 'materiels' }] })
       .mockResolvedValueOnce({ rows: [{ category: 'all', cost_family: 'freight' }] });
 
     const cfg = await loadGlobalConfig();
@@ -48,6 +49,9 @@ describe('pricing-cdr', () => {
     expect(cfg.components).toEqual([{ key: 'freight', category: 'freight', family: 'landed_relay' }]);
     expect(cfg.categories.food).toEqual({ key: 'food', douane_pct: 5 });
     expect(cfg.provisions).toEqual([{ rate_pct: 2 }]);
+    expect(cfg.boutique_customs_affinities).toEqual([
+      { category_key: 'Maison', subcategory_key: 'Cuisine', customs_category_key: 'materiels' },
+    ]);
     expect(cfg.cost_benchmarks).toEqual([{ category: 'all', cost_family: 'freight' }]);
   });
 
@@ -56,6 +60,7 @@ describe('pricing-cdr', () => {
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ key: 'stripe_fee', category: 'paiement', default_value: 2, is_active: true }] })
       .mockResolvedValueOnce({ rows: [{}] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })

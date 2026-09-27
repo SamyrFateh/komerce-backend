@@ -4,7 +4,7 @@
  * @domain        catalog
  * @layer         service
  * @criticality   high
- * @inputs        category_key, subcategory_key, taxonomy_payload
+ * @inputs        category_key, subcategory_key, taxonomy_payload, optional customs_category_key affinity
  * @outputs       category_config, subcategory_config, taxonomy_mutation_result
  * @depends       db.js, utils/categories-cache.js
  * @used-by       routes/admin-boutique-categories.js, services/catalog-workspace.js
@@ -12,7 +12,7 @@
  * @db-write      boutique_categories, boutique_subcategories
  * @db-txn        none
  * @doctrine      taxonomy_source_db, single_taxonomy_mutation_authority
- * @impact-areas  catalog, boutique-admin, category-navigation
+ * @impact-areas  catalog, boutique-admin, category-navigation, customs-classification
  * @version       2026-08
  */
 
@@ -129,12 +129,12 @@ async function createSubcategory(categoryKey, payload = {}, q = db) {
   try {
     const { rows: [row] } = await q.query(
       `INSERT INTO boutique_subcategories
-        (category_key, key, label, short_label, icon, display_order, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
+        (category_key, key, label, short_label, icon, display_order, is_active, customs_category_key)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
        RETURNING *`,
       [categoryKey, payload.key, payload.label, payload.short_label || payload.label,
        payload.icon || '✨', payload.display_order !== undefined ? payload.display_order : 99,
-       payload.is_active !== false]
+       payload.is_active !== false, payload.customs_category_key || null]
     );
     invalidateCategoriesCache();
     return row;
@@ -145,7 +145,7 @@ async function createSubcategory(categoryKey, payload = {}, q = db) {
 }
 
 async function updateSubcategory(categoryKey, subcategoryKey, payload = {}, q = db) {
-  const allowed = ['label','short_label','icon','display_order','is_active'];
+  const allowed = ['label','short_label','icon','display_order','is_active','customs_category_key'];
   const fields = allowed.filter(field => payload[field] !== undefined);
   if (!fields.length) throw new TaxonomyAdminError(400, 'Aucun champ à mettre à jour');
   const values = fields.map(field => payload[field]);

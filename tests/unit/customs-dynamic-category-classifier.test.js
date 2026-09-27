@@ -122,6 +122,58 @@ describe('dynamic customs supplier category classifier', () => {
     ]));
   });
 
+  test('falls back to active boutique subcategory affinity when lexical match is unresolved', () => {
+    const categories = [
+      { key: 'materiels', label: 'Matériels', classification_terms: { wrench: 10 }, is_active: true },
+      { key: 'electro', label: 'Électro', classification_terms: { speaker: 10 }, is_active: true },
+    ];
+    const result = classifySupplierProduct({
+      product_name: 'Generic replacement component',
+      raw_payload: {
+        discovery: {
+          target_category: 'Auto',
+          target_subcategory: 'Freinage',
+        },
+      },
+    }, categories, {
+      boutique_customs_affinities: [
+        { category_key: 'Auto', subcategory_key: 'Freinage', customs_category_key: 'materiels' },
+      ],
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      key: 'materiels',
+      source: 'boutique_affinity',
+      confidence: 'medium',
+      reason: 'boutique_subcategory_affinity',
+    }));
+  });
+
+  test('supplier lexical identity still outranks a conflicting boutique affinity', () => {
+    const categories = [
+      { key: 'materiels', label: 'Matériels', classification_terms: { wrench: 10 }, is_active: true },
+      { key: 'electro', label: 'Électro', classification_terms: { speaker: 10 }, is_active: true },
+    ];
+    const result = classifySupplierProduct({
+      product_name: 'Bluetooth Speaker Portable Speaker',
+      raw_payload: {
+        discovery: {
+          target_category: 'Auto',
+          target_subcategory: 'Freinage',
+        },
+      },
+    }, categories, {
+      boutique_customs_affinities: [
+        { category_key: 'Auto', subcategory_key: 'Freinage', customs_category_key: 'materiels' },
+      ],
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      key: 'electro',
+      source: 'mapped',
+    }));
+  });
+
   test('uses discovery intent only as a secondary signal', () => {
     const signals = supplierSignals({
       product_name: 'Real Product',

@@ -222,6 +222,7 @@ module.exports = {
   invariants: [
     'la declaration est instrumentee, jamais optimisee pour reduire un cout',
     'la classification fournisseur ne connaît aucune clé de catégorie métier en dur : elle score uniquement les customs_categories actives et leur classification_terms configuré',
+    'si le produit réel ne permet pas un classement suffisamment fiable, une affinité administrable portée par la sous-catégorie boutique peut fournir la catégorie douanière active la plus proche ; cette affinité ne prime jamais un match fournisseur medium/high',
   ],
 
 };
