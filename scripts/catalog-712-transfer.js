@@ -7,7 +7,7 @@
  * @criticality   high
  * @inputs        isolated E2E DATABASE_URL, KOMERCE_CATALOG_DEST_DATABASE_URL
  * @outputs       portable 712 bundle + canonical destination import subprocess
- * @depends       db.js, scripts/catalog-712-transfer-import.js, scripts/cj-reconcile-current-new-12-promote.js
+ * @depends       db.js, scripts/catalog-712-transfer-import.js, scripts/catalog-e2e-712-identities.js
  * @used-by       ali-e2e-200-worker catalog-712-production-import mode
  * @db-read       sourcing_candidates, products
  * @db-write      none
@@ -23,13 +23,12 @@ const path=require('path');
 const zlib=require('zlib');
 const {spawnSync}=require('child_process');
 const db=require('../db');
-const {NEW_UNIQUE_IDS}=require('./cj-reconcile-current-new-12-promote');
+const {buildExpectedCjIds,CJ_TARGET,ALI_TARGET,TOTAL_TARGET,DATASET_ID}=require('./catalog-e2e-712-identities');
 
 const FLAG='KOMERCE_ALLOW_CATALOG_712_PRODUCTION_IMPORT';
 const DEST_ENV='KOMERCE_CATALOG_DEST_DATABASE_URL';
 const BUNDLE_PATH=path.resolve('/tmp/catalog-712-transfer.json.gz');
 const ALI_WAVE='incremental-e2e-200-v1';
-const CJ_CAMPAIGN='cj-balanced-e2e-500-v1';
 
 function truthy(v){return ['1','true','yes'].includes(String(v||'').trim().toLowerCase());}
 function hostOf(url){try{return new URL(String(url||'')).hostname.toLowerCase()}catch{return null}}
@@ -43,7 +42,8 @@ function assertRuntime(env=process.env){
   if(sourceHost===destHost) throw new Error('SOURCE_DEST_DB_IDENTICAL');
   return {source_host:sourceHost,dest_host:destHost};
 }
-async function loadBundle(){
+async function loadBundle(env=process.env){
+  const expectedCj=buildExpectedCjIds(env);
   const {rows}=await db.query(
     `SELECT sc.supplier_name,sc.supplier_product_id,sc.raw_payload,sc.normalized_source_contract,
             sc.scan_result,sc.komerce_category,sc.state,sc.product_id,
@@ -59,19 +59,16 @@ async function loadBundle(){
            AND UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) IN ('TEST','PRIORITY'))
           OR
           (sc.supplier_name='CJdropshipping'
-           AND (
-             sc.raw_payload #>> '{discovery,campaign}'=$2
-             OR sc.supplier_product_id = ANY($3::text[])
-           )
+           AND sc.supplier_product_id = ANY($2::text[])
            AND UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) IN ('TEST','PRIORITY'))
         )
       ORDER BY sc.supplier_name,sc.supplier_product_id`,
-    [ALI_WAVE,CJ_CAMPAIGN,NEW_UNIQUE_IDS]
+    [ALI_WAVE,expectedCj.all]
   );
   const identities=rows.map(r=>`${r.supplier_name}\u0000${r.supplier_product_id}`);
   const ali=rows.filter(r=>r.supplier_name==='AliExpress').length;
   const cj=rows.filter(r=>r.supplier_name==='CJdropshipping').length;
-  if(rows.length!==712||ali!==200||cj!==512||new Set(identities).size!==712){
+  if(rows.length!==TOTAL_TARGET||ali!==ALI_TARGET||cj!==CJ_TARGET||new Set(identities).size!==TOTAL_TARGET){
     throw new Error(`SOURCE_712_BUNDLE_INVALID total=${rows.length} ali=${ali} cj=${cj} distinct=${new Set(identities).size}`);
   }
   for(const row of rows){
@@ -87,7 +84,7 @@ async function loadBundle(){
   }
   return {
     schema_version:1,
-    dataset_id:'catalog-e2e-712-v1',
+    dataset_id:DATASET_ID,
     exported_at:new Date().toISOString(),
     total:rows.length,
     products:rows.map(row=>({
@@ -112,7 +109,7 @@ async function loadBundle(){
 }
 async function run(env=process.env){
   const runtime=assertRuntime(env);
-  const bundle=await loadBundle();
+  const bundle=await loadBundle(env);
   fs.writeFileSync(BUNDLE_PATH,zlib.gzipSync(Buffer.from(JSON.stringify(bundle))));
   console.log(`[catalog-712-transfer] EXPORT ${JSON.stringify({runtime,total:bundle.total,bundle_path:BUNDLE_PATH,provider_api_calls:0})}`);
 
@@ -138,4 +135,4 @@ if(require.main===module){
     process.exit(1);
   }).finally(()=>db.pool.end());
 }
-module.exports={FLAG,DEST_ENV,BUNDLE_PATH,ALI_WAVE,CJ_CAMPAIGN,assertRuntime,loadBundle,run};
+module.exports={FLAG,DEST_ENV,BUNDLE_PATH,ALI_WAVE,assertRuntime,loadBundle,run};
