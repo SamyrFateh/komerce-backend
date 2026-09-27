@@ -55,6 +55,7 @@ describe('catalog-fr-free-e2e-preparation', () => {
     const out = prep.prepareFrenchFields({
       name_source: 'Wireless Phone Charger 2026 Best Seller',
       category: 'phones',
+      category_label: 'Téléphonie et accessoires',
     });
 
     expect(out.name).toContain('sans fil');
@@ -62,10 +63,21 @@ describe('catalog-fr-free-e2e-preparation', () => {
     expect(out.name).toContain('chargeur');
     expect(out.name).not.toMatch(/best seller|2026/i);
     expect(out.name.length).toBeLessThanOrEqual(80);
+    expect(out.description).toMatch(/Téléphonie et accessoires/);
     expect(out.description).toMatch(/parcours de test Komerce/i);
     expect(out.preparation_version).toBe(prep.PREPARATION_VERSION);
   });
 
+
+  test('does not require hardcoded category keys for French preparation', () => {
+    const out = prep.prepareFrenchFields({
+      name_source: 'Solar Lantern',
+      category: 'future_dynamic_key',
+      category_label: 'Énergie solaire',
+    });
+    expect(out.description).toMatch(/Énergie solaire/);
+    expect(out.description).not.toMatch(/future_dynamic_key/);
+  });
 
   test('scrubs source-noise patterns rejected by the publication guard', () => {
     const urlNoise = prep.compactTitle('Wireless Speaker https://supplier.example/image.webp NEW 2026');

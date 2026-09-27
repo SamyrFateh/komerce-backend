@@ -14,6 +14,8 @@ const {
   inactiveReason,
   formatTopTimestamp,
   buildTopRequest,
+  invokeTop,
+  requestTimeoutMs,
   extractProductId,
   normalizeDsProduct,
   flattenFeedProducts,
@@ -167,6 +169,33 @@ describe('aliexpress-connector', () => {
     expect(query.toString()).not.toContain('app-secret');
   });
 
+  test('borne la durée des appels Open Platform et remonte un timeout explicite', async () => {
+    expect(requestTimeoutMs(credentials)).toBe(30000);
+    expect(requestTimeoutMs({ ...credentials, ALIEXPRESS_API_TIMEOUT_MS: '5' })).toBe(100);
+    expect(requestTimeoutMs({ ...credentials, ALIEXPRESS_API_TIMEOUT_MS: '999999' })).toBe(120000);
+
+    const fetchImpl = jest.fn((_url, init) => new Promise((_resolve, reject) => {
+      init.signal.addEventListener('abort', () => {
+        const error = new Error('aborted');
+        error.name = 'AbortError';
+        reject(error);
+      }, { once: true });
+    }));
+
+    await expect(invokeTop(
+      'aliexpress.ds.text.search',
+      { keyword: 'linen women blouse' },
+      {
+        fetchImpl,
+        env: { ...credentials, ALIEXPRESS_API_TIMEOUT_MS: '100' },
+        now: new Date('2026-09-27T12:00:00.000Z'),
+      }
+    )).rejects.toThrow(/timeout après 100ms/);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl.mock.calls[0][1].signal).toBeDefined();
+  });
+
   test('extrait un product id depuis un id brut ou une URL AliExpress', () => {
     expect(extractProductId('4000102715995')).toBe('4000102715995');
     expect(extractProductId('https://www.aliexpress.com/item/4000102715995.html?spm=abc'))
@@ -229,11 +258,13 @@ describe('aliexpress-connector', () => {
           key: 'electronique',
           default_weight_kg: 1,
           default_margin_pct: 35,
+          classification_terms: { speaker: 10, electronics: 8, audio: 8 },
         },
         autre: {
           key: 'autre',
           default_weight_kg: 0.5,
           default_margin_pct: 40,
+          classification_terms: {},
         },
       },
     };

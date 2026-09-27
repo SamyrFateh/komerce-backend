@@ -52,12 +52,23 @@ describe('CJ Raffinerie commandability continuation', () => {
       KOMERCE_ENV: 'staging',
       NODE_ENV: 'test',
       DATABASE_URL: 'postgresql://prod.example.com/prod',
-    })).toThrow(/base jetable/);
+    })).toThrow(/base E2E isolée/);
 
     expect(() => continuation.assertDisposableRuntime({
       ...base,
       KOMERCE_ENV: 'staging',
       NODE_ENV: 'test',
+    })).not.toThrow();
+
+    expect(() => continuation.assertDisposableRuntime({
+      KOMERCE_ALLOW_CJ_REFINERY_CONTINUATION: '1',
+      CJ_ACCESS_TOKEN: 'test',
+      KOMERCE_ENV: 'staging',
+      NODE_ENV: 'test',
+      KOMERCE_DISABLE_CRONS: 'true',
+      KOMERCE_ALLOW_RAILWAY_ISOLATED_E2E: '1',
+      KOMERCE_E2E_DATASET_ID: 'catalog-e2e-700-v1',
+      DATABASE_URL: 'postgresql://u:p@catalog700.railway.internal:5432/railway',
     })).not.toThrow();
 
     const noCj = { ...base };

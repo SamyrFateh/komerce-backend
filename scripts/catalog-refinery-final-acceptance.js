@@ -21,6 +21,7 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('../db');
+const e2eRuntime = require('../services/suppliers/e2e-isolated-runtime');
 const { validatePublicationUpdate } = require('../services/product-publication-guard');
 
 const SUPPLIER = 'CJdropshipping';
@@ -62,12 +63,7 @@ function assertDisposableRuntime(env = process.env) {
   if (String(env.KOMERCE_ENV || '').trim().toLowerCase() !== 'staging' || env.NODE_ENV !== 'test') {
     throw new Error('REFUS: KOMERCE_ENV=staging et NODE_ENV=test requis');
   }
-  if (!env.DATABASE_URL) throw new Error('DATABASE_URL requis');
-  const url = new URL(env.DATABASE_URL);
-  const dbName = String(url.pathname || '').replace(/^\//, '');
-  if (!['127.0.0.1', 'localhost'].includes(url.hostname) || dbName !== 'komerce_real_catalog_stress') {
-    throw new Error('REFUS: base jetable localhost komerce_real_catalog_stress requise');
-  }
+  e2eRuntime.assertIsolatedE2eRuntime(env);
 }
 
 async function loadRows() {

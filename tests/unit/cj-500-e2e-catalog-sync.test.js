@@ -41,7 +41,7 @@ describe('CJ balanced E2E 500', () => {
     });
   });
 
-  test('refuse production et toute DB autre que le checkpoint jetable localhost', () => {
+  test('refuse production et Railway sans contrat isolé explicite', () => {
     expect(() => sync.assertRuntime({
       KOMERCE_ENV: 'production',
       NODE_ENV: 'test',
@@ -55,8 +55,8 @@ describe('CJ balanced E2E 500', () => {
       NODE_ENV: 'test',
       KOMERCE_ALLOW_CJ_BALANCED_E2E_500: '1',
       CJ_ACCESS_TOKEN: 'x',
-      DATABASE_URL: 'postgresql://x:x@railway.internal:5432/production',
-    })).toThrow(/base jetable localhost/);
+      DATABASE_URL: 'postgresql://x:x@catalog700.railway.internal:5432/railway',
+    })).toThrow(/base E2E isolée/);
 
     expect(() => sync.assertRuntime({
       KOMERCE_ENV: 'staging',
@@ -64,6 +64,19 @@ describe('CJ balanced E2E 500', () => {
       CJ_ACCESS_TOKEN: 'x',
       DATABASE_URL: 'postgresql://x:x@127.0.0.1:5432/komerce_real_catalog_stress',
     })).toThrow(/KOMERCE_ALLOW_CJ_BALANCED_E2E_500=1/);
+  });
+
+  test('autorise le dataset Railway 700 uniquement avec toutes les preuves d isolation', () => {
+    expect(() => sync.assertRuntime({
+      KOMERCE_ENV: 'staging',
+      NODE_ENV: 'test',
+      KOMERCE_DISABLE_CRONS: 'true',
+      KOMERCE_ALLOW_RAILWAY_ISOLATED_E2E: '1',
+      KOMERCE_E2E_DATASET_ID: 'catalog-e2e-700-v1',
+      KOMERCE_ALLOW_CJ_BALANCED_E2E_500: '1',
+      CJ_ACCESS_TOKEN: 'x',
+      DATABASE_URL: 'postgresql://x:x@catalog700.railway.internal:5432/railway',
+    })).not.toThrow();
   });
 
   test('la découverte exige média, prix et stock réels ; la commandabilité est hydratée ensuite', () => {
@@ -96,10 +109,34 @@ describe('CJ balanced E2E 500', () => {
     expect(sync.basicCleanProduct({ ...clean, sellable_units: [] })).toBe(true);
   });
 
-  test('la provenance discovery porte la taxonomie boutique sans toucher la catégorie douanière', () => {
+  test('rejette un résultat fournisseur techniquement propre mais hors requête', () => {
+    const result = sync.semanticRelevance({
+      product_name: 'Motorcycle Handlebar Rear View Mirror',
+      supplier_category: 'Motorcycle Parts',
+      image_url: 'https://example.test/mirror.jpg',
+      purchase_price: 8,
+      stock_available: 9,
+      media: [{ url: 'https://example.test/mirror.jpg' }],
+      schema_version: '2',
+    }, 'women dress');
+    expect(result.relevant).toBe(false);
+  });
+
+  test('accepte une variation morphologique pertinente de la requête', () => {
+    const result = sync.semanticRelevance({
+      product_name: "Women's Summer Dresses Casual Beach",
+      supplier_category: 'Apparel',
+    }, 'women dress');
+    expect(result.relevant).toBe(true);
+    expect(result.gate_version).toMatch(/supplier-discovery-semantic/);
+  });
+
+  test('la provenance discovery porte la preuve sémantique et la taxonomie boutique sans toucher la catégorie douanière', () => {
     const segment = BALANCED_E2E_500_PLAN.find((row) => row.id === 'tech-audio');
     const product = {
       supplier_product_id: 'cj-p-2',
+      product_name: 'Wireless Bluetooth Headphones',
+      supplier_category: 'Consumer Electronics',
       raw_payload: { source: 'cj_api_v2', cj: { pid: 'cj-p-2' } },
     };
     const out = sync.withDiscoveryProvenance(product, {
@@ -116,6 +153,7 @@ describe('CJ balanced E2E 500', () => {
       target_subcategory: 'Audio',
       keyword: 'wireless headphones',
       query_page: 2,
+      semantic_relevance: expect.objectContaining({ relevant: true }),
     });
     expect(out).not.toHaveProperty('komerce_category');
   });
