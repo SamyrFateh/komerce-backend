@@ -96,10 +96,34 @@ describe('CJ balanced E2E 500', () => {
     expect(sync.basicCleanProduct({ ...clean, sellable_units: [] })).toBe(true);
   });
 
-  test('la provenance discovery porte la taxonomie boutique sans toucher la catégorie douanière', () => {
+  test('rejette un résultat fournisseur techniquement propre mais hors requête', () => {
+    const result = sync.semanticRelevance({
+      product_name: 'Motorcycle Handlebar Rear View Mirror',
+      supplier_category: 'Motorcycle Parts',
+      image_url: 'https://example.test/mirror.jpg',
+      purchase_price: 8,
+      stock_available: 9,
+      media: [{ url: 'https://example.test/mirror.jpg' }],
+      schema_version: '2',
+    }, 'women dress');
+    expect(result.relevant).toBe(false);
+  });
+
+  test('accepte une variation morphologique pertinente de la requête', () => {
+    const result = sync.semanticRelevance({
+      product_name: "Women's Summer Dresses Casual Beach",
+      supplier_category: 'Apparel',
+    }, 'women dress');
+    expect(result.relevant).toBe(true);
+    expect(result.gate_version).toMatch(/supplier-discovery-semantic/);
+  });
+
+  test('la provenance discovery porte la preuve sémantique et la taxonomie boutique sans toucher la catégorie douanière', () => {
     const segment = BALANCED_E2E_500_PLAN.find((row) => row.id === 'tech-audio');
     const product = {
       supplier_product_id: 'cj-p-2',
+      product_name: 'Wireless Bluetooth Headphones',
+      supplier_category: 'Consumer Electronics',
       raw_payload: { source: 'cj_api_v2', cj: { pid: 'cj-p-2' } },
     };
     const out = sync.withDiscoveryProvenance(product, {
@@ -116,6 +140,7 @@ describe('CJ balanced E2E 500', () => {
       target_subcategory: 'Audio',
       keyword: 'wireless headphones',
       query_page: 2,
+      semantic_relevance: expect.objectContaining({ relevant: true }),
     });
     expect(out).not.toHaveProperty('komerce_category');
   });

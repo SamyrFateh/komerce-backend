@@ -23,7 +23,7 @@ const catalogImportOrchestrator = require('../services/suppliers/catalog-import-
 const scanner = require('../services/supplier-catalog-scanner');
 const pool = require('./aliexpress-500-catalog-sync');
 const golden = require('./aliexpress-golden-e2e-core');
-const semantic = require('./aliexpress-golden-semantic');
+const semantic = require('../services/suppliers/discovery-semantic-relevance');
 
 function parseSupplierProductId(argv = process.argv.slice(2)) {
   const arg = argv.find((item) => item.startsWith('--supplier-product-id='));
