@@ -56,7 +56,8 @@ async function loadBundle(env=process.env){
         AND (
           (sc.supplier_name='AliExpress'
            AND sc.raw_payload #>> '{discovery,wave}'=$1
-           AND UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) IN ('TEST','PRIORITY'))
+           AND UPPER(COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN')) IN ('TEST','PRIORITY')
+           AND sc.komerce_category IS NOT NULL)
           OR
           (sc.supplier_name='CJdropshipping'
            AND sc.supplier_product_id = ANY($2::text[])
