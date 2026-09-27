@@ -38,11 +38,32 @@ describe('catalog E2E taxonomy bootstrap', () => {
     })).toMatchObject({ mode: 'railway-isolated' });
   });
 
+  test('audit treats a pre-migration database without customs_category_key as affinity-not-ready', async () => {
+    const err = new Error('column does not exist');
+    err.code = '42703';
+    mockQuery
+      .mockRejectedValueOnce(err)
+      .mockResolvedValueOnce({
+        rows: bootstrap.expectedPairs().map(p => ({
+          category: p.category,
+          subcategory: p.subcategory,
+          customs_category_key: null,
+        })),
+      });
+
+    const out = await bootstrap.audit();
+    expect(out.active_pairs_found).toBe(21);
+    expect(out.affinity_pairs_found).toBe(0);
+    expect(out.missing_affinity).toHaveLength(21);
+    expect(out.ready).toBe(false);
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+  });
+
   test('audit reports missing active canonical pairs without mutating', async () => {
     mockQuery.mockResolvedValueOnce({
       rows: [
-        { category: 'Mode & Beauté', subcategory: 'Femme' },
-        { category: 'Tech', subcategory: 'Audio' },
+        { category: 'Mode & Beauté', subcategory: 'Femme', customs_category_key: 'vetements' },
+        { category: 'Tech', subcategory: 'Audio', customs_category_key: 'electro' },
       ],
     });
     const out = await bootstrap.audit();
@@ -56,13 +77,15 @@ describe('catalog E2E taxonomy bootstrap', () => {
   test('audit passes when all canonical pairs are active', async () => {
     const pairs = bootstrap.expectedPairs();
     mockQuery.mockResolvedValueOnce({
-      rows: pairs.map(p => ({ category: p.category, subcategory: p.subcategory })),
+      rows: pairs.map(p => ({ category: p.category, subcategory: p.subcategory, customs_category_key: 'materiels' })),
     });
     const out = await bootstrap.audit();
     expect(out).toMatchObject({
       expected_pairs: 21,
       active_pairs_found: 21,
+      affinity_pairs_found: 21,
       missing: [],
+      missing_affinity: [],
       ready: true,
     });
   });

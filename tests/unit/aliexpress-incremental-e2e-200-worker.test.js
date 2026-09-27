@@ -30,6 +30,25 @@ describe('AliExpress incremental +200 Railway worker launcher', () => {
     expect(worker.commandPlan('catalog-700-local-audit').flat().join(' ')).not.toMatch(/cj-500-e2e-catalog-sync|cj-refinery-commandability|fetchProducts/);
   });
 
+  test('transfers the certified 712 dataset to the real catalog without provider calls', () => {
+    expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-712-production-import' }))
+      .toBe('catalog-712-production-import');
+    expect(worker.commandPlan('catalog-712-production-import')).toEqual([
+      ['scripts/catalog-712-transfer.js'],
+    ]);
+  });
+
+  test('resolves historical CJ WATCH rows locally then gates 712', () => {
+    expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-712-resolve-watch' }))
+      .toBe('catalog-712-resolve-watch');
+    expect(worker.commandPlan('catalog-712-resolve-watch')).toEqual([
+      ['scripts/catalog-e2e-taxonomy-bootstrap.js'],
+      ['scripts/catalog-cj-certified-500-resolve-watch.js'],
+      ['scripts/catalog-e2e-712-acceptance.js', '--output=artifacts/catalog-e2e-712/final-acceptance.json'],
+    ]);
+    expect(worker.commandPlan('catalog-712-resolve-watch').flat().join(' ')).not.toMatch(/fetchProductDetail|cj-500-e2e-catalog-sync/);
+  });
+
   test('audits historical CJ WATCH rows without supplier calls', () => {
     expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-712-watch-audit' }))
       .toBe('catalog-712-watch-audit');

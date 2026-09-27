@@ -379,7 +379,7 @@ describe('POST /api/admin/boutique-categories/:key/subcategories — création',
     expect(res.body).toEqual({ id: 'sc1', key: 'iphone' });
     expect(mockInvalidateCategoriesCache).toHaveBeenCalledTimes(1);
     const [, params] = mockDbQuery.mock.calls[1];
-    expect(params).toEqual(['phones', 'iphone', 'iPhone', 'iPhone', '✨', 99, true]);
+    expect(params).toEqual(['phones', 'iphone', 'iPhone', 'iPhone', '✨', 99, true, null]);
   });
 
   it('clé en doublon (contrainte unique, code 23505) → 409', async () => {
@@ -429,6 +429,17 @@ describe('PUT /api/admin/boutique-categories/:key/subcategories/:subKey — modi
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain('WHERE category_key = $2 AND key = $3');
     expect(params).toEqual(['iPhone 15', 'phones', 'iphone']);
+  });
+
+  it('customs_category_key est administrable sur une sous-catégorie', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1', customs_category_key: 'phones' }] });
+    const res = await request(buildApp())
+      .put('/api/admin/boutique-categories/phones/subcategories/iphone')
+      .send({ customs_category_key: 'phones' });
+    expect(res.status).toBe(200);
+    const [sql, params] = mockDbQuery.mock.calls[0];
+    expect(sql).toContain('customs_category_key = $1');
+    expect(params).toEqual(['phones', 'phones', 'iphone']);
   });
 
   it('champ "key" non whitelisté → ignoré dans l\'UPDATE', async () => {
