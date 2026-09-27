@@ -92,7 +92,7 @@ describe('catalog 712 certified transfer', () => {
   });
 
   test('falls back to persisted certified-run provenance when the legacy snapshot env is absent', async () => {
-    const historical=Array.from({length:500},(_,i)=>({supplier_product_id:`cj-old-${i+1}`}));
+    const historical=Array.from({length:500},(_,i)=>({supplier_product_id:`cj-old-${i+1}`,certified_product_ref:`KPR-${String(i+1).padStart(6,'0')}`}));
     db.query
       .mockResolvedValueOnce({rows:historical})
       .mockResolvedValueOnce({rows:[]});
@@ -103,6 +103,8 @@ describe('catalog 712 certified transfer', () => {
     expect(provenanceSql).toMatch(/certified_run_id/);
     expect(provenanceSql).toMatch(/certified-artifact\+exact-product-query/);
     expect(provenanceSql).toMatch(/historical_final_acceptance_500_of_500/);
+    expect(provenanceSql).toMatch(/DISTINCT ON/);
+    expect(provenanceSql).toMatch(/certified_product_ref/);
     expect(provenanceParams).toEqual(['36299995007','github-actions-run-36299995007']);
 
     const [selectionSql, selectionParams]=db.query.mock.calls[1];
