@@ -285,10 +285,10 @@ async function importJsonCatalog(body, userId) {
     ).length;
     const sourceCertificationAccounting = reconcileSourcingCounts({
       inputTotal: statistics.total,
-      certified: statistics.ready,
       quarantined: statistics.quarantined,
       rejected: Math.max(0, statistics.rejected - duplicateRejected),
       duplicates: duplicateRejected,
+      otherTerminal: statistics.ready,
     });
     if (!sourceCertificationAccounting.balanced) {
       const err = new Error(
@@ -340,6 +340,8 @@ async function importJsonCatalog(body, userId) {
         statistics,
         source_certification: {
           certification_version: SOURCING_CERTIFICATION_VERSION,
+          stage: 'INGESTION_CLASSIFICATION',
+          ready_for_scan: statistics.ready,
           ...sourceCertificationAccounting,
         },
       },
