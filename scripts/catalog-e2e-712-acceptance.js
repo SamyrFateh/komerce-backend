@@ -7,7 +7,7 @@
  * @criticality   high
  * @inputs        isolated dataset containing 200 AliExpress + 500 certified CJ + 12 reconciled CJ
  * @outputs       definitive 712-product E2E catalog acceptance
- * @depends       db.js, services/suppliers/e2e-isolated-runtime.js, services/product-publication-guard.js, scripts/catalog-cj-certified-500-materialize.js, scripts/aliexpress-incremental-e2e-200.js, scripts/cj-reconcile-current-new-12-promote.js
+ * @depends       db.js, services/suppliers/e2e-isolated-runtime.js, services/catalog-certification.js, utils/certification-accounting.js, scripts/catalog-cj-certified-500-materialize.js, scripts/aliexpress-incremental-e2e-200.js, scripts/cj-reconcile-current-new-12-promote.js
  * @used-by       Railway isolated catalog E2E worker
  * @db-read       sourcing_candidates, products, catalog_media, product_skus, product_market_exposure, boutique_categories, boutique_subcategories
  * @db-write      none
@@ -22,7 +22,11 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../db');
 const e2eRuntime = require('../services/suppliers/e2e-isolated-runtime');
-const { validatePublicationUpdate } = require('../services/product-publication-guard');
+const {
+  evaluateCatalogProductCertification,
+  CATALOG_CERTIFICATION_VERSION,
+} = require('../services/catalog-certification');
+const { reconcileCertificationBatch } = require('../utils/certification-accounting');
 const ali = require('./aliexpress-incremental-e2e-200');
 const { NEW_UNIQUE_IDS } = require('./cj-reconcile-current-new-12-promote');
 const {
@@ -123,42 +127,13 @@ async function loadAcceptedRows(cjIds) {
 }
 
 function classify(row) {
-  const reasons = [];
-  const locale = String(row.source_locale || '').trim().toLowerCase().replace('_', '-');
-  const editorial = row.needs_review === false
-    && (row.content_source === 'manual'
-      || row.content_source === 'ai_enriched'
-      || (row.content_source === 'connector_raw' && (locale === 'fr' || locale.startsWith('fr-'))));
-
-  if (!['TEST', 'PRIORITY'].includes(String(row.sourcing_decision || ''))) reasons.push('decision_not_accepted');
-  if (String(row?.normalized_source_contract?.schema_version || '') !== '2') reasons.push('source_contract_v2_missing');
-  if (!String(row.name || '').trim()) reasons.push('name_missing');
-  if (!String(row.description || '').trim()) reasons.push('description_missing');
-  if (!editorial) reasons.push('french_editorial_not_ready');
-  if (!String(row.category || '').trim()) reasons.push('customs_category_missing');
-  if (!String(row.boutique_category_key || '').trim()) reasons.push('boutique_category_missing');
-  if (!String(row.boutique_subcategory_key || '').trim()) reasons.push('boutique_subcategory_missing');
-  if (row.taxonomy_active !== true) reasons.push('boutique_taxonomy_inactive_or_invalid');
-  if (Number(row.active_media || 0) < 1) reasons.push('media_missing');
-  if (Number(row.active_supplier_skus || 0) < 1) reasons.push('active_supplier_sku_missing');
-  if (Number(row.complete_supplier_skus || 0) !== Number(row.active_supplier_skus || 0)) {
-    reasons.push('supplier_order_identity_incomplete');
-  }
-  if (row.lifecycle_status !== 'candidate' || row.is_active === true) reasons.push('not_inactive_candidate');
-  if (Number(row.enabled_markets || 0) > 0) reasons.push('market_exposure_enabled');
-
-  const publication = validatePublicationUpdate({
-    before: {
-      ...row,
-      is_active: false,
-      is_available: false,
-    },
-    patch: { is_active: true },
-    context: { catalogMediaCount: Number(row.active_media || 0) },
-  });
-  if (!publication.ok) reasons.push(`publication_guard:${publication.code}`);
-
-  return { ready: reasons.length === 0, reasons, publication_guard: publication.ok ? 'PASS' : publication.code };
+  const verdict = evaluateCatalogProductCertification(row);
+  return {
+    ready: verdict.certified,
+    reasons: verdict.reasons,
+    publication_guard: verdict.publication_guard,
+    certification_version: verdict.certification_version,
+  };
 }
 
 function aggregate(rows, expectedCjIds) {
@@ -204,8 +179,13 @@ async function run(options = parseArgs(), env = process.env) {
   const rows = await loadAcceptedRows(expected.all);
   const result = aggregate(rows, expected.all);
   const s = result.summary;
+  const accounting = reconcileCertificationBatch({
+    input_total: TOTAL_TARGET,
+    certified: s.ready,
+  });
 
-  const accepted = s.total_rows === TOTAL_TARGET
+  const accepted = accounting.balanced
+    && s.total_rows === TOTAL_TARGET
     && s.ready === TOTAL_TARGET
     && s.ali_total === ALI_TARGET
     && s.ali_ready === ALI_TARGET
@@ -221,6 +201,7 @@ async function run(options = parseArgs(), env = process.env) {
 
   const report = {
     schema_version: 1,
+    certification_version: CATALOG_CERTIFICATION_VERSION,
     generated_at: new Date().toISOString(),
     dataset_id: DATASET_ID,
     runtime_dataset_id: runtime.dataset_id,
@@ -237,7 +218,10 @@ async function run(options = parseArgs(), env = process.env) {
         ready: s.cj_ready,
       },
     },
+    accounting,
     integrity: {
+      unaccounted: accounting.unaccounted,
+      overflow: accounting.overflow,
       distinct_supplier_identities: s.distinct_supplier_identities,
       distinct_product_ids: s.distinct_product_ids,
       duplicate_supplier_identities: s.duplicate_supplier_identities,
