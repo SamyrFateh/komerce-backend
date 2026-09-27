@@ -168,12 +168,8 @@ async function applyProjection(projection){
   }
 }
 
-async function main(options=parseArgs()){
-  assertRuntime();
-  const rows=await loadRows();
-  if(rows.length!==TARGET) throw new Error(`REFUS: vague attendue ${TARGET}, trouvée ${rows.length}`);
-  const config=await pricingEngine.loadGlobalConfig();
-  const taxonomyConfig = Object.values(config.categories || {}).map(category => ({
+function summarizeTaxonomyConfig(config = {}) {
+  const categories = Object.values(config.categories || {}).map(category => ({
     key: category.key,
     is_active: category.is_active !== false,
     classification_terms_count:
@@ -182,14 +178,22 @@ async function main(options=parseArgs()){
         : 0,
     default_weight_kg: category.default_weight_kg ?? null,
   }));
-  const configuredActive = taxonomyConfig.filter(
-    category => category.is_active && category.classification_terms_count > 0
-  ).length;
-  console.log(`[aliexpress-taxonomy-200] CONFIG ${JSON.stringify({
-    categories: taxonomyConfig,
-    configured_active: configuredActive,
-  })}`);
-  if (!configuredActive) {
+  return {
+    categories,
+    configured_active: categories.filter(
+      category => category.is_active && category.classification_terms_count > 0
+    ).length,
+  };
+}
+
+async function main(options=parseArgs()){
+  assertRuntime();
+  const rows=await loadRows();
+  if(rows.length!==TARGET) throw new Error(`REFUS: vague attendue ${TARGET}, trouvée ${rows.length}`);
+  const config=await pricingEngine.loadGlobalConfig();
+  const taxonomyConfig = summarizeTaxonomyConfig(config);
+  console.log(`[aliexpress-taxonomy-200] CONFIG ${JSON.stringify(taxonomyConfig)}`);
+  if (!taxonomyConfig.configured_active) {
     throw new Error('TAXONOMY_CLASSIFICATION_CONFIG_MISSING: aucune customs_categories active configurée');
   }
   const projection=await project(rows,config);
