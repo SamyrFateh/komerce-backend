@@ -42,6 +42,8 @@ async function expectedIdentities(env=process.env){
         supplier_name='AliExpress'
         AND raw_payload #>> '{discovery,wave}'=$1
         AND state='imported_to_catalog'
+        AND UPPER(COALESCE(scan_result->>'sourcing_decision','UNKNOWN')) IN ('TEST','PRIORITY')
+        AND komerce_category IS NOT NULL
       ) OR (
         supplier_name='CJdropshipping'
         AND state='imported_to_catalog'
