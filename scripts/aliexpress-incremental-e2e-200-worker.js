@@ -21,6 +21,7 @@
 const { spawnSync } = require('child_process');
 
 const MODES = Object.freeze([
+  'idle',
   'campaign',
   'taxonomy-audit',
   'taxonomy-apply-and-accept',
@@ -28,7 +29,7 @@ const MODES = Object.freeze([
 ]);
 
 function resolveMode(env = process.env) {
-  const mode = String(env.KOMERCE_ALI_E2E_200_WORKER_MODE || 'campaign').trim().toLowerCase();
+  const mode = String(env.KOMERCE_ALI_E2E_200_WORKER_MODE || 'idle').trim().toLowerCase();
   if (!MODES.includes(mode)) {
     throw new Error(`KOMERCE_ALI_E2E_200_WORKER_MODE invalide: ${mode}. Attendu: ${MODES.join(', ')}`);
   }
@@ -36,6 +37,7 @@ function resolveMode(env = process.env) {
 }
 
 function commandPlan(mode = resolveMode()) {
+  if (mode === 'idle') return [];
   if (mode === 'taxonomy-audit') {
     return [
       ['scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js', '--operation=audit'],
