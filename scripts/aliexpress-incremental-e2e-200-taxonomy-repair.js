@@ -88,6 +88,7 @@ async function project(rows,config){
       product_ref:row.product_ref,
       supplier_product_id:row.supplier_product_id,
       old_category:oldCategory,
+      old_product_category:row.old_product_category||null,
       new_category:newCategory,
       old_decision:oldDecision,
       new_decision:newDecision,
