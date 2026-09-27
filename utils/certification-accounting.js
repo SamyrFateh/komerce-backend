@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      every_input_has_one_explicit_outcome
+ * @doctrine      docs/doctrine/DOCTRINE_CERTIFICATION_CATALOGUE_SOURCING.md
  * @impact-areas  catalog, sourcing, ci
  * @version       2026-09-v1
  */
