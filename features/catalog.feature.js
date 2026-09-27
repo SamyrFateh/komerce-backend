@@ -131,6 +131,7 @@ module.exports = {
       'scripts/catalog-e2e-700-acceptance.js',
       'scripts/catalog-e2e-taxonomy-bootstrap.js',
       'scripts/catalog-cj-certified-500-materialize.js',
+      'scripts/catalog-cj-certified-500-watch-audit.js',
       'scripts/catalog-e2e-712-acceptance.js',
     ],
     services: [
