@@ -59,6 +59,7 @@ module.exports = {
       'transformation candidat → produit (déclenchement, pas la fiche catalogue elle-même)',
       'journal d\'événements candidat (audit, correction manuelle, scan, décision)',
       'persistence lifecycle des sourcing_candidates issus des imports catalog via frontière owner dédiée',
+      'certification sourcing canonique v1 : chaque input fournisseur doit aboutir à une issue explicite et traçable, avec comptabilité batch UNACCOUNTED=0 / OVERFLOW=0 indépendante du fournisseur',
     ],
     out: [
       'connecteurs fournisseur eux-mêmes et normalisation NormalizedSupplierProduct (feature catalog, ' +
@@ -127,6 +128,7 @@ module.exports = {
       'services/sourcing-candidate-actions.js',
       'services/sourcing-workspace.js',
       'services/sourcing-source-autopilot.js',
+      'services/sourcing-certification.js',
     ],
     routes: [
       'routes/sourcing-scanner.js',
@@ -166,6 +168,7 @@ module.exports = {
       'tests/unit/admin-sourcing-workspace-route.test.js',
       'tests/unit/sourcing-workspace.test.js',
       'tests/unit/sourcing-source-autopilot.test.js',
+      'tests/unit/sourcing-certification.test.js',
       'tests/unit/sourcing-candidate-actions.test.js',
       'tests/unit/require-sourcing-global-authority.test.js',
       'tests/unit/sourcing-observation-foundation-migration.test.js',
@@ -304,6 +307,10 @@ module.exports = {
     'le Golden E2E est read-only et termine toujours par HARD_STOP ou BLOCKED_SUPPLIER_IDENTITY sans placeOrder',
     'l autopilot est une autorisation opérateur distincte du lifecycle source ; il reste false par défaut et ne démarre jamais une source historique implicitement',
     'le runner autopilot ne contient aucune branche fournisseur et n execute que des pulls bornés déclarés par le registry connecteur',
+    { statement: 'la certification Sourcing est provider-independent : TEST/PRIORITY produit READY_FOR_REFINERY certifié ; WATCH/AVOID/LOSS reste une issue DEFERRED explicite ; import, quarantaine, rejet et archivage exigent identité, provenance et raison/lien requis',
+      test: 'tests/unit/sourcing-certification.test.js' },
+    { statement: 'tout batch Sourcing certifié réconcilie exactement son nombre d entrées avec certified + quarantined + rejected + duplicates + archived + other_terminal ; UNACCOUNTED=0 et OVERFLOW=0',
+      test: 'tests/unit/certification-accounting.test.js' },
     'le dashboard Sourcing affiche BROKEN uniquement lorsqu un invariant d intégrité est rompu ; ATTENTION couvre les exceptions opérationnelles bloquées',
     'le dashboard ne fabrique aucune tendance sans historique persistant',
     'le routage Hub et la destination physique restent hors autorité Sourcing et constituent le domaine suivant',

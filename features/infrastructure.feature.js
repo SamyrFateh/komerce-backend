@@ -64,6 +64,7 @@ module.exports = {
       'utils/phone.js',
       'utils/rates.js',
       'utils/reference.js',
+      'utils/certification-accounting.js',
       // utils/rules.js — transféré à la feature business-rules (arbitrage B, 2026-07-29)
     ],
     validators: [
@@ -174,6 +175,8 @@ module.exports = {
       'scripts/reset-admin.js',
       'scripts/run-migrations.js',
       'scripts/run-integration-tests.js',
+      'scripts/run-e2e-feature-tests.js',
+      'scripts/e2e-impact-scope.js',
       'scripts/run-security-360.js',
       'scripts/seed.js',
       'scripts/setup-hooks.sh',
@@ -415,8 +418,11 @@ module.exports = {
       'tests/unit/db.test.js',
       'tests/unit/rates.test.js',
       'tests/unit/reference.test.js',
+      'tests/unit/certification-accounting.test.js',
       'tests/unit/request-id.test.js',
       'tests/unit/schema-sync-summary.test.js',
+      'tests/unit/e2e-impact-scope.test.js',
+      'tests/unit/run-e2e-feature-tests.test.js',
       // tests/unit/rules-engine.test.js — transféré à business-rules (arbitrage B)
       'tests/unit/upload.test.js',
       'tests/integration/outbox-producer.test.js',

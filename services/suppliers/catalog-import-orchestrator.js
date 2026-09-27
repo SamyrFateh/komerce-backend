@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        normalized_supplier_products, catalog_import_context
  * @outputs       sourcing_candidates, import_summary, shadow_observation_summary
- * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/sourcing-candidate-import-service.js, services/sourcing-observation-shadow-service.js, services/suppliers/normalized-product.js, services/suppliers/connectors/*
+ * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/sourcing-candidate-import-service.js, services/sourcing-observation-shadow-service.js, services/sourcing-certification.js, services/suppliers/normalized-product.js, services/suppliers/connectors/*
  * @used-by       routes/sourcing-scanner.js
  * @db-read       none
  * @db-write      supplier_catalog_imports
@@ -33,6 +33,11 @@ const pricingEngine = require('../pricing-engine');
 const eligibility = require('../catalog-eligibility');
 const sourcingCandidateImport = require('../sourcing-candidate-import-service');
 const sourcingObservationShadow = require('../sourcing-observation-shadow-service');
+const {
+  SOURCING_CERTIFICATION_VERSION,
+  decisionOutcome,
+  reconcileSourcingCounts,
+} = require('../sourcing-certification');
 const { buildNormalizedSourceContractSnapshot } = require('./normalized-product');
 const { getRuleNumber } = require('../../utils/rules');
 const { importJsonCatalog } = require('./catalog-import-json');
@@ -178,7 +183,14 @@ async function importCatalog(body, userId, dispatchToConnector) {
   }
 
   // 4. Pour chaque NormalizedSupplierProduct : raffiner et persister.
-  const results = { created: 0, errors: [...invalidFromConnector] };
+  const results = {
+    created: 0,
+    auto_rejected: 0,
+    ready_for_refinery: 0,
+    certification_blocked: 0,
+    deferred: 0,
+    errors: [...invalidFromConnector],
+  };
   for (const product of products) {
     try {
       // PDC-1 : snapshot du mapping fournisseur → contrat normalisé. V1 = null.
@@ -222,6 +234,20 @@ async function importCatalog(body, userId, dispatchToConnector) {
       } else {
         results.created++;
       }
+      if (isAbsoluteExclusion) {
+        results.auto_rejected += 1;
+      } else {
+        const outcome = decisionOutcome(scan.sourcing_decision);
+        if (outcome === 'ready_for_refinery') {
+          if (String(normalizedSourceContract?.schema_version || '') === '2') {
+            results.ready_for_refinery += 1;
+          } else {
+            results.certification_blocked += 1;
+          }
+        } else if (outcome === 'deferred') {
+          results.deferred += 1;
+        }
+      }
     } catch (errOne) {
       results.errors.push({ product_name: product.product_name || '?', error: errOne.message });
     }
@@ -249,9 +275,19 @@ async function importCatalog(body, userId, dispatchToConnector) {
     && Number(shadowResolution.review_required || 0) === 0
     && Number(shadowResolution.deferred_parent || 0) === 0;
   const accepted = results.created + (results.updated || 0);
+  const sourceCertificationAccounting = reconcileSourcingCounts({
+    inputTotal: totalFromConnector,
+    readyForRefinery: results.ready_for_refinery,
+    rejected: invalidFromConnector.length + results.auto_rejected,
+    deferred: results.deferred,
+  });
   const pipelineStatus = sourceType === 'api'
-    ? (canonicalResolved && accepted === products.length && results.errors.length === 0
-      ? 'CANONICAL_RESOLVED' : 'PARTIAL_BLOCKED')
+    ? (sourceCertificationAccounting.balanced
+      && canonicalResolved
+      && accepted === products.length
+      && results.errors.length === 0
+        ? 'CANONICAL_RESOLVED'
+        : 'PARTIAL_BLOCKED')
     : 'CATALOG_IMPORT_RECORDED';
 
   return {
@@ -271,6 +307,14 @@ async function importCatalog(body, userId, dispatchToConnector) {
       rejected: results.errors.length,
       reject_reasons: aggregateReasons(results.errors),
       unmapped_columns: connectorResult.unmapped_columns || [],
+      source_certification: {
+        certification_version: SOURCING_CERTIFICATION_VERSION,
+        stage: 'SCANNED',
+        ready_for_refinery: results.ready_for_refinery,
+        certification_blocked: results.certification_blocked,
+        deferred: results.deferred,
+        ...sourceCertificationAccounting,
+      },
       shadow_ingestion: shadowIngestion,
     },
   };
