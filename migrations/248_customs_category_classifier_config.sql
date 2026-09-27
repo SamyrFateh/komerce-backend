@@ -34,7 +34,7 @@ SET classification_terms = CASE key
   WHEN 'ceremonie' THEN '{"evening dress":10,"formal suit":10,"wedding dress":12,"abaya":10,"ceremony":8,"ceremonie":8}'::jsonb
   WHEN 'electro' THEN '{"headphone":8,"headphones":8,"earphone":8,"earphones":8,"earbud":8,"earbuds":8,"headset":8,"speaker":7,"electronic":5,"electronics":5,"smartwatch":7,"smart watch":7,"lamp":4,"hair dryer":8}'::jsonb
   WHEN 'cosmetiques' THEN '{"cosmetic":8,"cosmetics":8,"beauty":6,"parfum":8,"perfume":8,"makeup":8,"skin care":9,"skincare":9,"facial cleansing":10,"cleansing brush":9,"nail":8,"uv nail lamp":11}'::jsonb
-  WHEN 'mariage' THEN '{"bag":6,"handbag":7,"crossbody":8,"gift":6,"wedding":7,"home decor":6,"decor":5,"decoration":5,"jewelry":7,"bijou":7,"vaisselle":6}'::jsonb
+  WHEN 'mariage' THEN '{"gift":6,"wedding":7,"home decor":6,"decor":5,"decoration":5,"jewelry":7,"bijou":7,"vaisselle":6}'::jsonb
   WHEN 'enfants' THEN '{"kid":10,"kids":10,"child":10,"children":10,"baby":10,"toy":8,"toys":8,"school":8,"school bag":9,"backpack":5}'::jsonb
   WHEN 'materiels' THEN '{"tool":8,"tools":8,"power tool":10,"hand tool":10,"hardware":8,"wrench":9,"screwdriver":9,"padlock":9,"door lock":9,"brake":8,"air filter":8,"oil filter":8,"motorcycle":7,"kitchen utensil":8,"kitchenware":8}'::jsonb
   ELSE classification_terms
