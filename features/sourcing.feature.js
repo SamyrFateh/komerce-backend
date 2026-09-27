@@ -130,6 +130,7 @@ module.exports = {
       'services/sourcing-source-autopilot.js',
       'services/sourcing-certification.js',
       'services/sourcing-certification-gate-a.js',
+      'services/sourcing-certification-gate-a-fixture-harness.js',
     ],
     routes: [
       'routes/sourcing-scanner.js',
@@ -171,6 +172,7 @@ module.exports = {
       'tests/unit/sourcing-source-autopilot.test.js',
       'tests/unit/sourcing-certification.test.js',
       'tests/unit/sourcing-certification-gate-a.test.js',
+      'tests/unit/sourcing-certification-gate-a-fixture-harness.test.js',
       'tests/unit/sourcing-candidate-actions.test.js',
       'tests/unit/require-sourcing-global-authority.test.js',
       'tests/unit/sourcing-observation-foundation-migration.test.js',
