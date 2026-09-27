@@ -23,7 +23,7 @@ const path=require('path');
 const zlib=require('zlib');
 const {spawnSync}=require('child_process');
 const db=require('../db');
-const {buildExpectedCjIds,CJ_TARGET,ALI_TARGET,TOTAL_TARGET,DATASET_ID}=require('./catalog-e2e-712-identities');
+const {resolveExpectedCjIds,CJ_TARGET,ALI_TARGET,TOTAL_TARGET,DATASET_ID}=require('./catalog-e2e-712-identities');
 
 const FLAG='KOMERCE_ALLOW_CATALOG_712_PRODUCTION_IMPORT';
 const DEST_ENV='KOMERCE_CATALOG_DEST_DATABASE_URL';
