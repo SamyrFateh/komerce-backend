@@ -34,6 +34,7 @@ describe('AliExpress incremental +200 Railway worker launcher', () => {
     expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-712-materialize' }))
       .toBe('catalog-712-materialize');
     expect(worker.commandPlan('catalog-712-materialize')).toEqual([
+      ['scripts/catalog-e2e-taxonomy-bootstrap.js'],
       ['scripts/catalog-cj-certified-500-materialize.js'],
       ['scripts/catalog-e2e-712-acceptance.js', '--output=artifacts/catalog-e2e-712/final-acceptance.json'],
     ]);
