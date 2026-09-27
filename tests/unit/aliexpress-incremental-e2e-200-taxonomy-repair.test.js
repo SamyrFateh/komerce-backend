@@ -87,6 +87,32 @@ describe('AliExpress incremental +200 taxonomy repair', () => {
     expect(out.summary.scan_decision_drift).toBe(0);
   });
 
+  test('refuses apply unless the projected 200-product distribution is exact', () => {
+    expect(() => repair.assertSafeProjection({
+      summary: {
+        total: 200,
+        scan_decision_drift: 0,
+        after: { vetements: 117, enfants: 60, cosmetiques: 23 },
+      },
+    })).not.toThrow();
+
+    expect(() => repair.assertSafeProjection({
+      summary: {
+        total: 200,
+        scan_decision_drift: 0,
+        after: { cosmetiques: 200 },
+      },
+    })).toThrow(/UNEXPECTED_DISTRIBUTION/);
+
+    expect(() => repair.assertSafeProjection({
+      summary: {
+        total: 200,
+        scan_decision_drift: 1,
+        after: { vetements: 117, enfants: 60, cosmetiques: 23 },
+      },
+    })).toThrow(/DECISION_DRIFT/);
+  });
+
   test('accepts only audit or apply operations', () => {
     expect(repair.parseArgs(['--operation=audit'])).toEqual({ operation: 'audit' });
     expect(repair.parseArgs(['--operation=apply'])).toEqual({ operation: 'apply' });
