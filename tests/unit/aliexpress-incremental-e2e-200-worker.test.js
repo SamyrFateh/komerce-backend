@@ -5,8 +5,13 @@
 const worker = require('../../scripts/aliexpress-incremental-e2e-200-worker');
 
 describe('AliExpress incremental +200 Railway worker launcher', () => {
-  test('defaults to the historical campaign mode', () => {
-    expect(worker.resolveMode({})).toBe('campaign');
+  test('fails closed to idle when no explicit worker mode is configured', () => {
+    expect(worker.resolveMode({})).toBe('idle');
+    expect(worker.commandPlan('idle')).toEqual([]);
+  });
+
+  test('runs the historical campaign only when explicitly selected', () => {
+    expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'campaign' })).toBe('campaign');
     expect(worker.commandPlan('campaign').map(step => step.join(' '))).toEqual([
       'scripts/aliexpress-wave2-sourcing.js',
       'scripts/aliexpress-incremental-e2e-200.js --operation=refinery-audit',
