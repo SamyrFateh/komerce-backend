@@ -28,6 +28,8 @@ const MODES = Object.freeze([
   'taxonomy-repair-topup',
   'catalog-700-build',
   'catalog-700-local-audit',
+  'catalog-cj-reconcile-promote-local',
+  'catalog-cj-new12-finish',
 ]);
 
 function resolveMode(env = process.env) {
@@ -40,6 +42,18 @@ function resolveMode(env = process.env) {
 
 function commandPlan(mode = resolveMode()) {
   if (mode === 'idle') return [];
+  if (mode === 'catalog-cj-new12-finish') {
+    return [
+      ['scripts/catalog-fr-free-e2e-preparation.js', '--limit=12', '--supplier=CJdropshipping', '--output=artifacts/catalog-e2e-700/cj-new12-fr.json'],
+      ['scripts/cj-refinery-commandability-continuation.js', '--limit=12', '--chunk=12', '--output=artifacts/catalog-e2e-700/cj-new12-commandability.json'],
+      ['scripts/catalog-refinery-final-acceptance.js', '--mode=final', '--expected=12', '--output=artifacts/catalog-e2e-700/cj-new12-final.json'],
+    ];
+  }
+  if (mode === 'catalog-cj-reconcile-promote-local') {
+    return [
+      ['scripts/cj-reconcile-current-new-12-promote.js'],
+    ];
+  }
   if (mode === 'catalog-700-local-audit') {
     return [
       ['scripts/real-supplier-1000-stress-staging.js', '--operation=supplier-slice-audit', '--supplier=CJdropshipping', '--limit=500'],

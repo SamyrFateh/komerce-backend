@@ -30,6 +30,24 @@ describe('AliExpress incremental +200 Railway worker launcher', () => {
     expect(worker.commandPlan('catalog-700-local-audit').flat().join(' ')).not.toMatch(/cj-500-e2e-catalog-sync|cj-refinery-commandability|fetchProducts/);
   });
 
+  test('finishes the reconciled CJ new12 in one explicit plan', () => {
+    expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-cj-new12-finish' }))
+      .toBe('catalog-cj-new12-finish');
+    expect(worker.commandPlan('catalog-cj-new12-finish')).toEqual([
+      ['scripts/catalog-fr-free-e2e-preparation.js', '--limit=12', '--supplier=CJdropshipping', '--output=artifacts/catalog-e2e-700/cj-new12-fr.json'],
+      ['scripts/cj-refinery-commandability-continuation.js', '--limit=12', '--chunk=12', '--output=artifacts/catalog-e2e-700/cj-new12-commandability.json'],
+      ['scripts/catalog-refinery-final-acceptance.js', '--mode=final', '--expected=12', '--output=artifacts/catalog-e2e-700/cj-new12-final.json'],
+    ]);
+  });
+
+  test('promotes only the reconciled new CJ products from local data', () => {
+    expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-cj-reconcile-promote-local' }))
+      .toBe('catalog-cj-reconcile-promote-local');
+    expect(worker.commandPlan('catalog-cj-reconcile-promote-local')).toEqual([
+      ['scripts/cj-reconcile-current-new-12-promote.js'],
+    ]);
+  });
+
   test('builds the unified 700 dataset in one explicit fail-closed plan', () => {
     expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-700-build' }))
       .toBe('catalog-700-build');
