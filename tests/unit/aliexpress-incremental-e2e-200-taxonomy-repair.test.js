@@ -77,7 +77,12 @@ describe('AliExpress incremental +200 taxonomy repair', () => {
       },
     ];
 
-    const out = await repair.project(rows, {});
+    const out = await repair.project(rows, {
+      categories: {
+        vetements: { key: 'vetements', is_active: true },
+        cosmetiques: { key: 'cosmetiques', is_active: true },
+      },
+    });
     expect(out.summary.total).toBe(2);
     expect(out.summary.changed).toBe(1);
     expect(out.summary.transitions).toEqual({
@@ -85,32 +90,35 @@ describe('AliExpress incremental +200 taxonomy repair', () => {
       'cosmetiques -> cosmetiques': 1,
     });
     expect(out.summary.scan_decision_drift).toBe(0);
+    expect(out.summary.unresolved_category).toBe(0);
+    expect(out.summary.invalid_category).toBe(0);
   });
 
-  test('refuses apply unless the projected 200-product distribution is exact', () => {
-    expect(() => repair.assertSafeProjection({
-      summary: {
-        total: 200,
-        scan_decision_drift: 0,
-        after: { vetements: 117, enfants: 60, cosmetiques: 23 },
-      },
-    })).not.toThrow();
+  test('accepts any configured distribution but refuses unresolved, invalid, or decision drift', () => {
+    const safe = {
+      total: 200,
+      scan_decision_drift: 0,
+      unresolved_category: 0,
+      invalid_category: 0,
+      after: { arbitrary_a: 73, arbitrary_b: 127 },
+    };
+    expect(() => repair.assertSafeProjection({ summary: safe })).not.toThrow();
 
     expect(() => repair.assertSafeProjection({
-      summary: {
-        total: 200,
-        scan_decision_drift: 0,
-        after: { cosmetiques: 200 },
-      },
-    })).toThrow(/UNEXPECTED_DISTRIBUTION/);
+      summary: { ...safe, unresolved_category: 1, after: { arbitrary_a: 72, arbitrary_b: 127, UNRESOLVED: 1 } },
+    })).toThrow(/UNRESOLVED_CATEGORY/);
 
     expect(() => repair.assertSafeProjection({
-      summary: {
-        total: 200,
-        scan_decision_drift: 1,
-        after: { vetements: 117, enfants: 60, cosmetiques: 23 },
-      },
+      summary: { ...safe, invalid_category: 1 },
+    })).toThrow(/INVALID_CATEGORY/);
+
+    expect(() => repair.assertSafeProjection({
+      summary: { ...safe, scan_decision_drift: 1 },
     })).toThrow(/DECISION_DRIFT/);
+
+    expect(() => repair.assertSafeProjection({
+      summary: { ...safe, after: { arbitrary_a: 72, arbitrary_b: 127 } },
+    })).toThrow(/AFTER_TOTAL_MISMATCH/);
   });
 
   test('proves dynamic customs category configuration is actually loaded', () => {
