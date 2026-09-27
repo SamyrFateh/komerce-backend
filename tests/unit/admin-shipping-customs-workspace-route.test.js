@@ -47,6 +47,18 @@ jest.mock('../../middleware/require-dashboard-global-authority', () => ({
   hasDashboardGlobalAuthority: jest.fn(async () => mockGlobalAllowed),
 }));
 
+// MARKET-DELEGATION LOT B (audit logistics.read, migration 251) : GET
+// /market/:marketCode est désormais gated, pour market_operator, par
+// resolveAuthorization(..., requiredCapability: 'logistics.read'), plus
+// seulement par operator_market_scopes. mockGrantedMarketCodes simule la
+// détention réelle de la capability déléguée (distincte du scope legacy
+// simulé plus haut).
+let mockGrantedMarketCodes = new Set(['CM']);
+const mockResolveAuthorization = jest.fn();
+jest.mock('../../services/market-delegation-service', () => ({
+  resolveAuthorization: (...args) => mockResolveAuthorization(...args),
+}));
+
 const mockBuildWorkspace = jest.fn();
 const mockConfirmTransit = jest.fn();
 const mockCreateCustomsShipment = jest.fn();
@@ -108,6 +120,17 @@ beforeEach(() => {
   mockAllowedMarkets = new Set(['market-cm-id']);
   mockGlobalAllowed = false;
   mockUserRole = 'admin';
+  mockGrantedMarketCodes = new Set(['CM']);
+  mockResolveAuthorization.mockImplementation(async (_db, { marketCode, requiredCapability }) => {
+    if (requiredCapability === 'logistics.read' && mockGrantedMarketCodes.has(marketCode)) {
+      const marketId = marketCode === 'CM' ? 'market-cm-id' : marketCode === 'CG' ? 'market-cg-id' : `market-${marketCode}-id`;
+      return { market_id: marketId, market_code: marketCode, assignment_id: 'assignment-1', membership_id: 'membership-1' };
+    }
+    const error = new Error('Capability logistics.read requise ou absente du ceiling actif.');
+    error.code = 'MARKET_CAPABILITY_REQUIRED';
+    error.status = 403;
+    throw error;
+  });
   mockBuildWorkspace.mockResolvedValue({
     scope: { code: 'CM', name: 'Market CM', currency: 'XAF' },
     summary: {},
@@ -151,6 +174,45 @@ test('opérateur CM ne peut pas ouvrir CG', async () => {
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('market_scope_denied');
   expect(mockBuildWorkspace).not.toHaveBeenCalled();
+});
+
+test('market_operator avec logistics.read sur CM lit le Workspace (capability exacte)', async () => {
+  mockUserRole = 'market_operator';
+  mockGrantedMarketCodes = new Set(['CM']);
+
+  const res = await request(app()).get('/api/admin/workspaces/shipping-customs/market/CM');
+
+  expect(res.status).toBe(200);
+  expect(mockBuildWorkspace).toHaveBeenCalledWith(expect.objectContaining({
+    market: expect.objectContaining({ id: 'market-cm-id', code: 'CM' }),
+  }));
+  expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+    marketCode: 'CM',
+    requiredCapability: 'logistics.read',
+  }));
+});
+
+test('révocation de logistics.read retire l’accès market_operator même avec un scope marché toujours actif', async () => {
+  mockUserRole = 'market_operator';
+  mockAllowedMarkets = new Set(['market-cm-id']); // scope legacy toujours actif sur CM
+  mockGrantedMarketCodes = new Set(); // mais la capability déléguée est révoquée
+
+  const res = await request(app()).get('/api/admin/workspaces/shipping-customs/market/CM');
+
+  expect(res.status).toBe(403);
+  expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+  expect(mockBuildWorkspace).not.toHaveBeenCalled();
+});
+
+test('les rôles natifs (admin/agent_hub/agent_transitaire) ne passent jamais par la capability déléguée', async () => {
+  mockGrantedMarketCodes = new Set(); // aucune capability déléguée nulle part
+  mockUserRole = 'agent_hub';
+
+  const res = await request(app()).get('/api/admin/workspaces/shipping-customs/market/CM');
+
+  expect(res.status).toBe(200);
+  expect(mockBuildWorkspace).toHaveBeenCalled();
+  expect(mockResolveAuthorization).not.toHaveBeenCalled();
 });
 
 test('autorité globale explicite peut entrer dans CG seulement après sélection explicite', async () => {
