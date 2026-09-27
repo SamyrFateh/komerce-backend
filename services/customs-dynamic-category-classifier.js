@@ -11,9 +11,9 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      dynamic_taxonomy_from_customs_categories, no_hardcoded_category_keys
+ * @doctrine      dynamic_taxonomy_from_customs_categories, no_hardcoded_category_keys, supplier_identity_over_discovery_intent
  * @impact-areas  catalog, sourcing, customs, economic-engine
- * @version       2026-09-v1
+ * @version       2026-09-v2
  */
 
 'use strict';
@@ -58,12 +58,15 @@ function termsForCategory(category = {}) {
 
 function supplierSignals(product = {}) {
   const discovery = product?.raw_payload?.discovery || {};
+  // Le contenu réellement retourné par le fournisseur est l'autorité.
+  // Le contexte de découverte décrit une intention de recherche et peut être
+  // pollué par des résultats hors sujet : il reste un indice secondaire.
   return [
-    { name: 'keyword', value: discovery.keyword, multiplier: 5 },
-    { name: 'product_name', value: product.product_name, multiplier: 4 },
-    { name: 'supplier_category', value: product.supplier_category, multiplier: 3 },
-    { name: 'target_subcategory', value: discovery.target_subcategory, multiplier: 2 },
-    { name: 'description', value: product.description, multiplier: 1 },
+    { name: 'product_name', value: product.product_name, multiplier: 6 },
+    { name: 'supplier_category', value: product.supplier_category, multiplier: 4 },
+    { name: 'description', value: product.description, multiplier: 2 },
+    { name: 'keyword', value: discovery.keyword, multiplier: 2 },
+    { name: 'target_subcategory', value: discovery.target_subcategory, multiplier: 1 },
   ].filter(signal => String(signal.value || '').trim());
 }
 
