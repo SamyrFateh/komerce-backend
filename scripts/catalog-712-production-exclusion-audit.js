@@ -20,7 +20,7 @@
 
 const {Pool}=require('pg');
 const db=require('../db');
-const {buildExpectedCjIds,TOTAL_TARGET}=require('./catalog-e2e-712-identities');
+const {resolveExpectedCjIds,TOTAL_TARGET}=require('./catalog-e2e-712-identities');
 
 const DEST_ENV='KOMERCE_CATALOG_DEST_DATABASE_URL';
 const ALI_WAVE='incremental-e2e-200-v1';
