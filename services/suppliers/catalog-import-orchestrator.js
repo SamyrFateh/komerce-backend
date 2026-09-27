@@ -35,6 +35,7 @@ const sourcingCandidateImport = require('../sourcing-candidate-import-service');
 const sourcingObservationShadow = require('../sourcing-observation-shadow-service');
 const {
   SOURCING_CERTIFICATION_VERSION,
+  decisionOutcome,
   reconcileSourcingCounts,
 } = require('../sourcing-certification');
 const { buildNormalizedSourceContractSnapshot } = require('./normalized-product');
@@ -182,7 +183,13 @@ async function importCatalog(body, userId, dispatchToConnector) {
   }
 
   // 4. Pour chaque NormalizedSupplierProduct : raffiner et persister.
-  const results = { created: 0, auto_rejected: 0, errors: [...invalidFromConnector] };
+  const results = {
+    created: 0,
+    auto_rejected: 0,
+    ready_for_refinery: 0,
+    deferred: 0,
+    errors: [...invalidFromConnector],
+  };
   for (const product of products) {
     try {
       // PDC-1 : snapshot du mapping fournisseur → contrat normalisé. V1 = null.
@@ -226,7 +233,13 @@ async function importCatalog(body, userId, dispatchToConnector) {
       } else {
         results.created++;
       }
-      if (isAbsoluteExclusion) results.auto_rejected += 1;
+      if (isAbsoluteExclusion) {
+        results.auto_rejected += 1;
+      } else {
+        const outcome = decisionOutcome(scan.sourcing_decision);
+        if (outcome === 'ready_for_refinery') results.ready_for_refinery += 1;
+        else if (outcome === 'deferred') results.deferred += 1;
+      }
     } catch (errOne) {
       results.errors.push({ product_name: product.product_name || '?', error: errOne.message });
     }
@@ -256,8 +269,9 @@ async function importCatalog(body, userId, dispatchToConnector) {
   const accepted = results.created + (results.updated || 0);
   const sourceCertificationAccounting = reconcileSourcingCounts({
     inputTotal: totalFromConnector,
-    certified: Math.max(0, accepted - results.auto_rejected),
+    readyForRefinery: results.ready_for_refinery,
     rejected: invalidFromConnector.length + results.auto_rejected,
+    deferred: results.deferred,
   });
   const pipelineStatus = !sourceCertificationAccounting.balanced
     ? 'PARTIAL_BLOCKED'
@@ -285,6 +299,9 @@ async function importCatalog(body, userId, dispatchToConnector) {
       unmapped_columns: connectorResult.unmapped_columns || [],
       source_certification: {
         certification_version: SOURCING_CERTIFICATION_VERSION,
+        stage: 'SCANNED',
+        ready_for_refinery: results.ready_for_refinery,
+        deferred: results.deferred,
         ...sourceCertificationAccounting,
       },
       shadow_ingestion: shadowIngestion,
