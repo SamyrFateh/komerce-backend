@@ -244,6 +244,7 @@ async function supplierSliceAudit(limit, supplier) {
   const errors = [];
   let qualityPass = 0;
   let refineryPass = 0;
+  const refineryPassSupplierIds = [];
 
   for (const row of rows) {
     const reasons = localQualityReasons(row);
@@ -274,7 +275,10 @@ async function supplierSliceAudit(limit, supplier) {
       const computed = String(scan.sourcing_decision || 'UNKNOWN').toUpperCase();
       bump(decisions, computed);
       bump(categories, normalized.komerce_category);
-      if (ALLOWED_DECISIONS.has(computed)) refineryPass += 1;
+      if (ALLOWED_DECISIONS.has(computed)) {
+        refineryPass += 1;
+        refineryPassSupplierIds.push(row.supplier_product_id);
+      }
     } catch (error) {
       bump(qualityReasons, 'refinery_error');
       errors.push({
@@ -298,6 +302,7 @@ async function supplierSliceAudit(limit, supplier) {
     waste_total: waste,
     waste_rate: input ? Number((waste / input).toFixed(4)) : 0,
     replacement_needed: Math.max(0, limit - refineryPass),
+    refinery_pass_supplier_product_ids: refineryPassSupplierIds,
     duplicate_supplier_ids: duplicateIds.size,
     quality_reasons: qualityReasons,
     decisions,
