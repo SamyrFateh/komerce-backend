@@ -187,6 +187,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
     created: 0,
     auto_rejected: 0,
     ready_for_refinery: 0,
+    certification_blocked: 0,
     deferred: 0,
     errors: [...invalidFromConnector],
   };
@@ -237,8 +238,15 @@ async function importCatalog(body, userId, dispatchToConnector) {
         results.auto_rejected += 1;
       } else {
         const outcome = decisionOutcome(scan.sourcing_decision);
-        if (outcome === 'ready_for_refinery') results.ready_for_refinery += 1;
-        else if (outcome === 'deferred') results.deferred += 1;
+        if (outcome === 'ready_for_refinery') {
+          if (String(normalizedSourceContract?.schema_version || '') === '2') {
+            results.ready_for_refinery += 1;
+          } else {
+            results.certification_blocked += 1;
+          }
+        } else if (outcome === 'deferred') {
+          results.deferred += 1;
+        }
       }
     } catch (errOne) {
       results.errors.push({ product_name: product.product_name || '?', error: errOne.message });
@@ -273,12 +281,14 @@ async function importCatalog(body, userId, dispatchToConnector) {
     rejected: invalidFromConnector.length + results.auto_rejected,
     deferred: results.deferred,
   });
-  const pipelineStatus = !sourceCertificationAccounting.balanced
-    ? 'PARTIAL_BLOCKED'
-    : (sourceType === 'api'
-      ? (canonicalResolved && accepted === products.length && results.errors.length === 0
-        ? 'CANONICAL_RESOLVED' : 'PARTIAL_BLOCKED')
-      : 'CATALOG_IMPORT_RECORDED');
+  const pipelineStatus = sourceType === 'api'
+    ? (sourceCertificationAccounting.balanced
+      && canonicalResolved
+      && accepted === products.length
+      && results.errors.length === 0
+        ? 'CANONICAL_RESOLVED'
+        : 'PARTIAL_BLOCKED')
+    : 'CATALOG_IMPORT_RECORDED';
 
   return {
     status: 200,
@@ -301,6 +311,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
         certification_version: SOURCING_CERTIFICATION_VERSION,
         stage: 'SCANNED',
         ready_for_refinery: results.ready_for_refinery,
+        certification_blocked: results.certification_blocked,
         deferred: results.deferred,
         ...sourceCertificationAccounting,
       },
