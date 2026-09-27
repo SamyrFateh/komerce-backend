@@ -38,6 +38,27 @@ describe('catalog E2E taxonomy bootstrap', () => {
     })).toMatchObject({ mode: 'railway-isolated' });
   });
 
+  test('audit treats a pre-migration database without customs_category_key as affinity-not-ready', async () => {
+    const err = new Error('column does not exist');
+    err.code = '42703';
+    mockQuery
+      .mockRejectedValueOnce(err)
+      .mockResolvedValueOnce({
+        rows: bootstrap.expectedPairs().map(p => ({
+          category: p.category,
+          subcategory: p.subcategory,
+          customs_category_key: null,
+        })),
+      });
+
+    const out = await bootstrap.audit();
+    expect(out.active_pairs_found).toBe(21);
+    expect(out.affinity_pairs_found).toBe(0);
+    expect(out.missing_affinity).toHaveLength(21);
+    expect(out.ready).toBe(false);
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+  });
+
   test('audit reports missing active canonical pairs without mutating', async () => {
     mockQuery.mockResolvedValueOnce({
       rows: [
