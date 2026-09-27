@@ -21,6 +21,7 @@
 const db = require('../db');
 const cj = require('../services/suppliers/connectors/cj-connector');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
+const semantic = require('../services/suppliers/discovery-semantic-relevance');
 const { BALANCED_E2E_500_PLAN, planTotal, planByUniverse } = require('../services/suppliers/e2e-catalog-500-plan');
 
 const SUPPLIER_NAME = cj.SUPPLIER_NAME;
@@ -75,7 +76,12 @@ function basicCleanProduct(product = {}) {
   );
 }
 
+function semanticRelevance(product, keyword) {
+  return semantic.audit(product, keyword);
+}
+
 function withDiscoveryProvenance(product, { segment, keyword, queryPage }) {
+  const relevance = semanticRelevance(product, keyword);
   return {
     ...product,
     raw_payload: {
@@ -89,6 +95,7 @@ function withDiscoveryProvenance(product, { segment, keyword, queryPage }) {
         target_subcategory: segment.subcategory,
         keyword,
         query_page: queryPage,
+        semantic_relevance: relevance,
       },
     },
   };
@@ -125,6 +132,7 @@ async function segmentCount(segmentId) {
         AND sc.state IN ('scanned','imported_to_catalog')
         AND sc.raw_payload->'discovery'->>'campaign'=$2
         AND sc.raw_payload->'discovery'->>'segment_id'=$3
+        AND sc.raw_payload->'discovery'->'semantic_relevance'->>'relevant'='true'
         AND sc.supplier_product_id IS NOT NULL
         AND COALESCE(sc.product_name,'') <> ''
         AND sc.image_url ~ '^https://'
@@ -229,6 +237,7 @@ async function runSegment(segment, seenIds) {
     const remaining = segment.target - accepted;
     const fresh = page.products
       .filter(basicCleanProduct)
+      .filter((product) => product.raw_payload?.discovery?.semantic_relevance?.relevant === true)
       .filter((product) => !seenIds.has(product.supplier_product_id))
       .slice(0, remaining);
 
@@ -293,6 +302,8 @@ async function run() {
     universes: byUniverse,
     segments: results,
     real_supplier_only: true,
+    semantic_relevance_required: true,
+    semantic_gate_version: semantic.GATE_VERSION,
     commandable_units_required_at_discovery: false,
     commandable_units_phase: 'exact-detail-continuation',
     auto_publish: false,
@@ -328,6 +339,7 @@ module.exports = {
   assertRuntime,
   positiveStock,
   basicCleanProduct,
+  semanticRelevance,
   withDiscoveryProvenance,
   logicalSearchPage,
   run,
