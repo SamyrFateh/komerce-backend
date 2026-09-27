@@ -42,7 +42,7 @@ function parseArgs(argv=process.argv.slice(2)){
   if(!bundle) throw new Error('--bundle requis');
   return {bundle};
 }
-function hostOf(url){try{return new URL(String(url||'')).hostname}catch{return null}}
+function hostOf(url){try{return new URL(String(url||'')).hostname.toLowerCase()}catch{return null}}
 function assertRuntime(env=process.env){
   if(!truthy(env[FLAG])) throw new Error(`REFUS: ${FLAG}=1 requis`);
   if(String(env.KOMERCE_CATALOG_TRANSFER_ROLE||'')!==ROLE) throw new Error('CATALOG_TRANSFER_DESTINATION_ROLE_REQUIRED');
