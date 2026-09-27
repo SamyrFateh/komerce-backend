@@ -23,7 +23,7 @@ const catalogImportOrchestrator = require('../services/suppliers/catalog-import-
 const scanner = require('../services/supplier-catalog-scanner');
 const pool = require('./aliexpress-500-catalog-sync');
 const golden = require('./aliexpress-golden-e2e-core');
-const semantic = require('./aliexpress-golden-semantic');
+const semantic = require('../services/suppliers/discovery-semantic-relevance');
 
 function parseSupplierProductId(argv = process.argv.slice(2)) {
   const arg = argv.find((item) => item.startsWith('--supplier-product-id='));
@@ -110,6 +110,7 @@ async function main(argv = process.argv.slice(2), env = process.env) {
   const body = {
     supplier_name: 'AliExpress',
     source_type: 'api',
+    supplier_id: 'aliexpress',
     source_filename: `aliexpress-golden-repair/${id}.json`,
     notes: `Golden repair staging — exact AliExpress product ${id}`,
     is_full_snapshot: false,

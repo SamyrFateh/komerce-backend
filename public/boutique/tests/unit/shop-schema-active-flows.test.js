@@ -60,7 +60,7 @@ describe('shop-schema — fallback déclaratif', () => {
     expect(schema.getCategorySectionEmoji('inconnue')).toBe('📦');
     expect(schema.getCategoryImage('Tech')).toContain('/boutique/categories/tech-v2.webp');
     expect(schema.getCategoryFilter('Soldes')).toEqual({ promo: true });
-    expect(schema.getDbKeysForCategory('Mode & Beauté')).toEqual(['Mode', 'Beauté']);
+    expect(schema.getDbKeysForCategory('Mode & Beauté')).toEqual(['Mode & Beauté', 'Mode', 'Beauté']);
     expect(schema.getDbKeysForCategory('inconnue')).toEqual(['inconnue']);
 
     const techSubcats = schema.getSubcategories('Tech');
@@ -140,6 +140,7 @@ describe('shop-schema — chargement DB', () => {
       filter: { custom: true },
     });
     expect(custom.railBadge).toEqual({ kind: 'text', text: '🧩' });
+    expect(schema.getDbKeysForCategory('Custom')).toEqual(['Custom', 'AliasCustom']);
     expect(schema.getSubcategories('AliasCustom')[0]).toEqual({
       key: 'Sub', label: 'Sous-catégorie', shortLabel: 'Sous', icon: '⭐', dbKeys: ['SubAlias'],
     });

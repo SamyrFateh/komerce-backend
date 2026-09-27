@@ -57,7 +57,6 @@ import {
 import {
   _setupMobilePager,
   _recalcPagerVars,
-  _setupSectionAutoAdvance,
   _setupHorizontalWrap,
   _syncChipToScroll,
   _onPagerScroll,
@@ -81,9 +80,6 @@ import {
   renderSubcatRail     as _renderSubcatRail,
 } from './controllers/home-controller.js';
 import { isDesktop, clearInlinePagerStyles, ensureDesktopScrollOwner, scrollPageToTop, scrollPageToElement } from './b-scroll-owner.js';
-// SPIKE Phase 2 (branche isolée) — no-op sauf ?shell=vertical. Ne change jamais
-// le comportement par défaut (pager Temu). Voir spike-vertical-shell.js.
-import { isVerticalShell, installVerticalNavigation } from './spike-vertical-shell.js';
 import {
   setProducts, getAllProducts, getPromoProducts, writeCache,
 }                             from './product-store.js';
@@ -182,6 +178,28 @@ function appendNextPage() {
   if (spinner) spinner.classList.remove('show');
 }
 
+/* ── HERO PRODUCT COUNT ─────────────────────────────────────────────
+ * Le compteur du bandeau hero ("N produits") vient exclusivement du
+ * catalogue réellement chargé — jamais une valeur écrite en dur dans
+ * le HTML. Absent ou zéro → l'élément reste masqué plutôt que
+ * d'afficher un compte trompeur. Cf. GAP-F1,
+ * docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md.
+ */
+function updateHeroProductCount(count) {
+  const el  = document.getElementById('k-hero-count');
+  const sep = document.getElementById('k-hero-count-sep');
+  if (!el) return;
+  if (!Number.isFinite(count) || count <= 0) {
+    el.hidden = true;
+    el.textContent = '';
+    if (sep) sep.hidden = true;
+    return;
+  }
+  el.textContent = `${count} produit${count > 1 ? 's' : ''}`;
+  el.hidden = false;
+  if (sep) sep.hidden = false;
+}
+
 /* ── LOAD PRODUCTS ──────────────────────────────────────────────── */
 
 async function loadProducts() {
@@ -199,7 +217,7 @@ async function loadProducts() {
     if (cached) {
       products = setProducts(JSON.parse(cached).filter(p => p.is_available !== false));
     } else {
-      showToast('Pas de connexion', 'error');
+      _showCatalogLoadError(e);
       return;
     }
   }
@@ -207,6 +225,8 @@ async function loadProducts() {
   // Synchroniser state avec le store centralisé
   state.products = getAllProducts();
   state.filtered  = [...state.products];
+
+  updateHeroProductCount(state.products.length);
 
   // Re-sync le rail de chips avec l'ordre DB : le schema async peut s'être résolu
   // après le premier renderCategoryRail() synchrone du boot (race condition).
@@ -336,6 +356,121 @@ function _triggerGridEnterAnim() {
   }
 }
 
+/* ── ÉTAT VIDE DU CATALOGUE ──────────────────────────────────────────
+ * GAP-F3 (docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md) — une grille
+ * vide n'affichait rien : aucun message, aucune action. Trois raisons
+ * distinctes, trois textes distincts. Réutilise le patron visuel déjà
+ * établi par renderTrackNoOrders() (js/b-tracking.js, classes
+ * .k-track-error*, déjà chargées dans ce bundle CSS).
+ *
+ * « Être prévenu » n'est PAS un formulaire d'inscription fonctionnel :
+ * la doctrine de consentement (docs/doctrine/
+ * DOCTRINE_CONSENTEMENT_COMMUNICATION.md) n'est pas encore implémentée.
+ * Le seul canal honnête aujourd'hui est le lien WhatsApp déjà utilisé
+ * partout ailleurs dans la boutique (js/boutique.js, KOMERCE_WA_URL).
+ */
+const KOMERCE_WA_EMPTY_CATALOG_URL =
+  'https://wa.me/33699272526?text=' +
+  encodeURIComponent('Bonjour Komerce ! Le catalogue de mon marché est vide, prévenez-moi quand il ouvre 🙂');
+
+function _renderEmptyState({ icon, title, sub, actionLabel, actionHref, actionId }) {
+  const actionHtml = actionHref
+    ? `<a class="k-track-retry-btn" id="${actionId}" href="${actionHref}" target="_blank" rel="noopener">${actionLabel}</a>`
+    : `<button class="k-track-retry-btn" id="${actionId}" type="button">${actionLabel}</button>`;
+  return (
+    '<div class="k-track-error k-catalog-empty">' +
+      `<div class="k-track-error-icon">${icon}</div>` +
+      `<div class="k-track-error-title">${sanitize(title)}</div>` +
+      `<div class="k-track-error-sub">${sanitize(sub)}</div>` +
+      actionHtml +
+    '</div>'
+  );
+}
+
+// G-L2 — Échec du chargement du catalogue sans cache (première visite) :
+// état explicite + « Réessayer » au lieu d'un toast éphémère et d'une grille
+// vide. Message juste selon la cause : réseau coupé vs serveur indisponible.
+function renderCatalogLoadErrorState(err) {
+  const offline = (typeof navigator !== 'undefined' && navigator.onLine === false)
+    || (err && err.name === 'TypeError');
+  const busy = !!err && (err.status === 429 || err.status === 503);
+  return _renderEmptyState({
+    icon: offline ? '📶' : '⏳',
+    title: offline ? 'Pas de connexion internet' : 'Le catalogue ne répond pas pour le moment',
+    sub: offline
+      ? 'Vérifiez votre réseau, puis réessayez.'
+      : (busy ? 'Beaucoup de visites en ce moment. Réessayez dans quelques instants.'
+              : 'Réessayez dans quelques instants.'),
+    actionLabel: 'Réessayer',
+    actionId: 'k-catalog-retry-btn',
+  });
+}
+
+function _showCatalogLoadError(err) {
+  if (!dom.grid) return;
+  // Même mise en page que les états vides de renderGrid() : sur mobile,
+  // l'écran se place sous le bloc fixe (header + hero + rail), pager arrêté.
+  dom.grid.classList.remove('k-grid-has-sections', 'k-grid-cat-pager');
+  destroyMobilePager();
+  dom.grid.innerHTML = renderCatalogLoadErrorState(err);
+  if (!isDesktop() && dom.pageScroll) {
+    dom.pageScroll.classList.add('k-pager-active');
+    _recalcPagerVars();
+  }
+  const retry = () => {
+    window.removeEventListener('online', retry);
+    const btn = document.getElementById('k-catalog-retry-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Chargement…'; }
+    loadProducts();
+  };
+  document.getElementById('k-catalog-retry-btn')?.addEventListener('click', retry, { once: true });
+  window.addEventListener('online', retry, { once: true });
+}
+
+function renderCatalogEmptyState() {
+  return _renderEmptyState({
+    icon: '🧺',
+    title: 'Le catalogue de votre marché arrive',
+    sub: 'Nous ajoutons les premiers produits. Écrivez-nous sur WhatsApp pour être prévenu dès l’ouverture.',
+    actionLabel: 'Être prévenu sur WhatsApp',
+    actionHref: KOMERCE_WA_EMPTY_CATALOG_URL,
+    actionId: 'k-catalog-empty-wa-btn',
+  });
+}
+
+function renderCategoryEmptyState() {
+  return _renderEmptyState({
+    icon: '🔍',
+    title: 'Aucun produit dans ce rayon pour l’instant',
+    sub: 'De nouveaux produits arrivent régulièrement. En attendant, découvrez tout le catalogue.',
+    actionLabel: 'Voir tout le catalogue',
+    actionHref: null,
+    actionId: 'k-catalog-empty-see-all-btn',
+  });
+}
+
+function renderSearchEmptyState(query) {
+  return _renderEmptyState({
+    icon: '🔎',
+    title: `Aucun résultat pour « ${query} »`,
+    sub: 'Vérifiez l’orthographe ou essayez un mot plus général.',
+    actionLabel: 'Réinitialiser la recherche',
+    actionHref: null,
+    actionId: 'k-catalog-empty-clear-search-btn',
+  });
+}
+
+function _bindEmptyStateActions(reason) {
+  if (reason === 'category') {
+    document.getElementById('k-catalog-empty-see-all-btn')
+      ?.addEventListener('click', () => setActiveCat('all'));
+  } else if (reason === 'search') {
+    document.getElementById('k-catalog-empty-clear-search-btn')
+      ?.addEventListener('click', () => setActiveCat(state.activeCat, state.activeSubcat));
+  }
+  // reason === 'catalog' : lien WhatsApp direct, aucun listener requis.
+}
+
 function renderGrid() {
   state.page = 0;
   const _isMobile = !isDesktop();
@@ -387,6 +522,31 @@ function renderGrid() {
     list = list.filter(p => matchesSubcategory(state.activeCat, state.activeSubcat, p.subcategory));
   }
 
+  const _searchQuery = (dom.searchInput && dom.searchInput.value.trim()) || '';
+  if (list.length === 0) {
+    dom.grid.classList.remove('k-grid-has-sections', 'k-grid-cat-pager');
+    destroyMobilePager();
+    let reason;
+    if (state.products.length === 0) {
+      dom.grid.innerHTML = renderCatalogEmptyState();
+      reason = 'catalog';
+    } else if (_searchQuery.length >= 2) {
+      dom.grid.innerHTML = renderSearchEmptyState(_searchQuery);
+      reason = 'search';
+    } else {
+      dom.grid.innerHTML = renderCategoryEmptyState();
+      reason = 'category';
+    }
+    _bindEmptyStateActions(reason);
+    // Empty/search states share the same fixed viewport below the masthead.
+    // No category pager or end-bounce listeners are attached to this screen.
+    if (_isMobile && dom.pageScroll) {
+      dom.pageScroll.classList.add('k-pager-active');
+      _recalcPagerVars();
+    }
+    return;
+  }
+
   const useSections = state.activeCat === 'all' || _isMobile;
 
   // ── RECHERCHE ACTIVE : jamais d'équilibrage ──────────────────────────────
@@ -436,25 +596,7 @@ function renderGrid() {
     });
     _triggerGridEnterAnim();
     _bindGridEvents();
-    if (_isMobile && isVerticalShell()) {
-      // ── SPIKE Phase 2 — shell vertical natif ──────────────────────────
-      // On NE monte PAS le pager : pas de k-pager-active, pas de cage fixed,
-      // pas de ghost loop, pas de bounce. Les .k-cat-section rendues par
-      // render-home-sections deviennent des sections verticales dans le flux
-      // document. getMobileScrollContainer() retourne null → tous les modules
-      // (modal, cart, nav) utilisent window nativement, SANS modification.
-      dom.grid.classList.add('k-grid-vertical-sections');
-      requestAnimationFrame(function() {
-        installVerticalNavigation();
-        if (state.activeCat !== 'all') {
-          const section = document.querySelector('.k-cat-section[data-cat="' + state.activeCat + '"]');
-          if (section) {
-            const y = section.getBoundingClientRect().top + window.scrollY - 100;
-            window.scrollTo({ top: Math.max(0, y), behavior: 'auto' });
-          }
-        }
-      });
-    } else if (_isMobile) {
+    if (_isMobile) {
       let _ps = dom.pageScroll;
       // Poser --pager-top/--pager-h AVANT k-pager-active (variables CSS requises
       // par le position:fixed du pager). On appelle uniquement _recalcPagerVars()
@@ -466,7 +608,6 @@ function renderGrid() {
         _recalcPagerVars();        // mesure APRÈS que le DOM (hero fixe + chips) soit stabilisé
         _setupInfiniteLoop();      // ghost loop : clone Tout à la fin — DOIT être avant _setupMobilePager
         _setupMobilePager();       // listeners scroll/touch — DOM ghost déjà stabilisé
-        _setupSectionAutoAdvance(); // bounce bas → catégorie suivante
         if (state.activeCat !== 'all') {
           setTimeout(function() { _scrollPagerToCat(state.activeCat, 'instant'); }, 80);
         }
@@ -585,6 +726,12 @@ function _installGridDelegation() {
 
     const card = e.target.closest('.k-card');
     if (!card) return;
+
+    // Les cartes du rail Discovery utilisent le shell visuel .k-card mais
+    // possèdent leur propre contrat d'ouverture (kind + ref). En particulier,
+    // leur CTA est placé dans .k-card-add : la délégation catalogue l'avalait
+    // avant que le parcours Service puisse s'ouvrir sur mobile.
+    if (card.matches('.k-discovery-canonical-card[data-discovery-kind][data-discovery-ref]')) return;
 
     // FAV ────────────────────────────────────────────────────────
     const favBtn = e.target.closest('.k-card-fav');
@@ -844,5 +991,7 @@ function renderSearchDropdown(results) {
 export {
   renderPromos, renderGrid, appendNextPage,
   setupCats, setupCatSwipeNav, centerActiveChip, setupSearch,
-  loadProducts, _renderCard,
+  loadProducts, _renderCard, updateHeroProductCount,
+  renderCatalogEmptyState, renderCategoryEmptyState, renderSearchEmptyState, renderCatalogLoadErrorState,
 };
+

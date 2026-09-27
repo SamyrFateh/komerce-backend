@@ -13,11 +13,27 @@
   padding: 4px 12px 12px;
 }
 
-/* Temporary validation shell: section product grid remains owned by products.css. */
-body.spike-shell-vertical .k-sec-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 9px;
+/* Empty catalogue/search messages occupy the whole product grid. */
+.k-grid > .k-catalog-empty {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 28px 20px 36px;
+}
+
+.k-catalog-empty .k-track-retry-btn {
+  max-width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Empty catalogue/search: infinite-scroll has nothing to paginate.
+   Hide both observer sentinel and spinner so the bottom of the empty state
+   never looks like a pending network request. */
+#k-catalog-section:has(.k-catalog-empty) #k-scroll-sentinel,
+#k-catalog-section:has(.k-catalog-empty) .k-load-more-spinner {
+  display: none;
 }
 
 /* ── CARTE ───────────────────────────────────────────────────── */
@@ -168,6 +184,9 @@ body.spike-shell-vertical .k-sec-grid {
   align-items: center;
   justify-content: center;
 }
+/* G-07 — zone tactile 40×40 sans changer le visuel 30×30 */
+.k-card-add-trigger { position: relative; }
+.k-card-add-trigger::after { content: ''; position: absolute; inset: -5px; }
 .k-card-add:active {
   transform: scale(.90);
   background: var(--action-commerce-hover);

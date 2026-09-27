@@ -58,7 +58,11 @@ test('listSignals passes arbitrary filter values only as SQL parameters', async 
   await service.listSignals({ status: 'open', severity: attack, signal_type: 'parcel_blocked', owner_role: 'admin' });
   const [sql, params] = mockQuery.mock.calls[0];
   expect(sql).not.toContain(attack);
-  expect(params).toEqual(['open', attack, 'parcel_blocked', 'admin', null, null, 50, 0]);
+  // severity est désormais une liste (support de plusieurs valeurs, ex.
+  // ?severity=critical,urgent) — toujours liée en paramètre PostgreSQL via
+  // ANY($2::text[]), jamais concaténée dans le texte SQL. La valeur malveillante
+  // finit dans un tableau à un seul élément, jamais interprétée comme SQL.
+  expect(params).toEqual(['open', [attack], 'parcel_blocked', 'admin', null, null, 50, 0]);
 });
 
 test('acknowledgeByRef is global-only by default', async () => {

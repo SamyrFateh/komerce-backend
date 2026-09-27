@@ -25,6 +25,12 @@
     flex-shrink: 0;
   }
 
+  /* P-02 — zone tactile 40x40, visuel 30x30 inchangé.
+     inset -6px (et non -5px) : le bouton a une bordure de 1 px ;
+     -5px ne donnait que 38 px effectifs (mesuré). */
+  #k-modal .k-sug-add { position: relative; }
+  #k-modal .k-sug-add::after { content: ''; position: absolute; inset: -6px; }
+
   #k-modal .k-sug-add:active {
     background: var(--commerce-yellow-hover);
     transform: scale(.88);

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-16T00:16:48.765Z",
+  "generatedAt": "2026-09-26T21:32:18.697Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 646,
-    "protected": 591,
+    "total": 653,
+    "protected": 598,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2286,6 +2286,14 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/deactivate",
       "level": "PROTECTED",
       "roles": [
@@ -2394,6 +2402,11 @@
       "roles": []
     },
     {
+      "key": "PUT /api/auth/me/password",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "DELETE /api/auth/me/pickup-authorization",
       "level": "PROTECTED",
       "roles": []
@@ -2481,6 +2494,16 @@
     {
       "key": "POST /api/auth/register",
       "level": "PUBLIC",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/step-up/otp/request",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "POST /api/auth/step-up/otp/verify",
+      "level": "PROTECTED",
       "roles": []
     },
     {
@@ -3241,12 +3264,27 @@
       "roles": []
     },
     {
+      "key": "POST /api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
       "key": "PUT /api/market-delegation/markets/{marketCode}/client-cases/disputes/{disputeId}",
       "level": "PROTECTED",
       "roles": []
     },
     {
       "key": "GET /api/market-delegation/markets/{marketCode}/client-cases/disputes",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/clients/{clientPhone}",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/clients",
       "level": "PROTECTED",
       "roles": []
     },

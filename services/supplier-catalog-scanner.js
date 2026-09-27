@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       services/pricing-engine.js, utils/rates.js
+ * @depends       services/pricing-engine.js, services/customs-dynamic-category-classifier.js, utils/rates.js
  * @used-by       routes/sourcing-scanner.js, services/suppliers/catalog-import-orchestrator.js
  * @db-read       none
  * @db-write      none
@@ -45,6 +45,7 @@
 'use strict';
 
 const pricingEngine = require('./pricing-engine');
+const { classifySupplierProduct } = require('./customs-dynamic-category-classifier');
 const { resolveFxRates } = require('../utils/rates');
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -86,121 +87,49 @@ function convertToKMF(amount, currency, finance) {
   return Math.round(v * fx.usd_kmf);
 }
 
-function findAvailableCategory(cats, keys) {
-  for (const key of keys || []) {
-    const cat = cats.find(c => c.key === key);
-    if (cat) return cat;
-  }
-  return null;
-}
-
 /**
- * Mappe une catégorie/description fournisseur (texte libre) vers une
- * customs_categories.key Komerce. Les aliases gardent la compatibilité avec
- * les anciens jeux de catégories tout en privilégiant les 8 catégories
- * douanières canoniques actuellement seedées.
+ * Résolution dynamique : aucune clé de customs_categories n'est connue ici.
+ * La configuration vient exclusivement des catégories actives chargées par
+ * pricingEngine.loadGlobalConfig().
  */
 function mapCategory(supplierCat, komerceCats) {
-  const cats = Array.isArray(komerceCats) ? komerceCats : [];
-  if (!supplierCat) {
-    const fallback = cats.find(c => c.key === 'autre') || cats[0];
-    return { key: fallback?.key || 'autre', source: 'default', confidence: 'low' };
-  }
-  const s = String(supplierCat).toLowerCase();
-  const rules = [
-    { keys: ['evening dress', 'formal suit', 'ceremon', 'cérémon', 'abaya', 'wedding dress'], catKeys: ['ceremonie', 'vetements'] },
-    { keys: ['headphone', 'headphones', 'earphone', 'earphones', 'earbud', 'earbuds', 'headset', 'tws', 'speaker'], catKeys: ['electro', 'electronique', 'accessoires'] },
-    { keys: ['phone', 'mobile', 'téléphone', 'telephone', 'smartphone'], catKeys: ['phones'] },
-    { keys: ['cosmetic', 'beauty', 'beauté', 'parfum', 'perfume', 'cosmétique', 'maquillage', 'skin care', 'skincare'], catKeys: ['cosmetiques'] },
-    { keys: ['toy', 'jouet', 'enfant', 'kids', 'school supplies', 'school bag'], catKeys: ['enfants', 'vetements'] },
-    { keys: ['home appliance', 'household appliance', 'electronic', 'electronics', 'gadget', 'electrique', 'électrique', 'smartwatch', 'wrist watch'], catKeys: ['electro', 'electronique', 'maison'] },
-    { keys: ['power tool', 'hand tool', 'outillage', 'hardware', 'quincailler', 'padlock', 'door lock', 'brake', 'car oil filter', 'car air filter', 'motorcycle', 'car led', 'headlight'], catKeys: ['materiels', 'autre'] },
-    { keys: ['kitchenware', 'kitchen utensil', 'cuisine', 'ustensil'], catKeys: ['materiels', 'maison', 'mariage'] },
-    { keys: ['gift', 'cadeau', 'home decor', 'déco', 'deco', 'jewelry', 'bijou', 'vaisselle'], catKeys: ['mariage', 'accessoires', 'autre'] },
-    { keys: ['cloth', 'clothing', 'vetement', 'vêtement', 'robe', 'dress', 'shirt', 'chemise', 'pantalon', 'fashion', 'tissu', 'fabric', 'textile'], catKeys: ['vetements', 'tissus'] },
-    { keys: ['bag', 'sac', 'accessoire', 'accessory'], catKeys: ['mariage', 'accessoires', 'materiels'] },
-    { keys: ['maison', 'home'], catKeys: ['mariage', 'maison', 'materiels'] },
-  ];
-  for (const r of rules) {
-    if (!r.keys.some(k => s.includes(k))) continue;
-    const cat = findAvailableCategory(cats, r.catKeys);
-    if (cat) return { key: cat.key, source: 'mapped', confidence: 'medium' };
-  }
-  const fallback = cats.find(c => c.key === 'autre') || cats[0];
-  return { key: fallback?.key || 'autre', source: 'default', confidence: 'low' };
+  return classifySupplierProduct({ supplier_category: supplierCat }, komerceCats);
 }
 
-const DISCOVERY_SEGMENT_CATEGORY_KEYS = Object.freeze({
-  'mode-femme': ['vetements'],
-  'mode-homme': ['vetements'],
-  'mode-enfant': ['enfants', 'vetements'],
-  beaute: ['cosmetiques'],
-  'maison-confort': ['electro', 'maison'],
-  'maison-cuisine': ['materiels', 'maison', 'mariage'],
-  'maison-deco': ['mariage', 'maison'],
-  'maison-enfants': ['enfants'],
-  'tech-phones': ['phones'],
-  'tech-audio': ['electro', 'electronique'],
-  'tech-montres': ['electro', 'electronique'],
-  'bricolage-outillage': ['materiels'],
-  'bricolage-electricite': ['materiels', 'electro'],
-  'bricolage-securite': ['materiels'],
-  'creation-ceremonie': ['ceremonie', 'vetements'],
-  'creation-cadeau': ['mariage'],
-  'creation-impression': ['mariage', 'materiels'],
-  'auto-filtres': ['materiels'],
-  'auto-freinage': ['materiels'],
-  'auto-eclairage': ['materiels', 'electro'],
-  'auto-moto': ['materiels'],
-});
-
 function mapProductCategory(product, komerceCats) {
-  const cats = Array.isArray(komerceCats) ? komerceCats : [];
-  const discovery = product?.raw_payload?.discovery || {};
-  const segmentKeys = DISCOVERY_SEGMENT_CATEGORY_KEYS[String(discovery.segment_id || '')];
-  const segmentCat = findAvailableCategory(cats, segmentKeys);
-  if (segmentCat) {
-    return { key: segmentCat.key, source: 'mapped', confidence: 'high' };
-  }
-  const hint = [
-    discovery.target_category,
-    discovery.target_subcategory,
-    discovery.keyword,
-    product?.product_name,
-    product?.supplier_category,
-  ].filter(Boolean).join(' ');
-  return mapCategory(hint || product?.supplier_category, cats);
+  return classifySupplierProduct(product, komerceCats);
 }
 
 function estimateWeight(suppliedWeight, categoryKey, komerceCats) {
   if (suppliedWeight != null && Number(suppliedWeight) > 0) {
     return { value: Number(suppliedWeight), source: 'supplier', confidence: 'high' };
   }
-  const defaults = {
-    phones: 0.3, vetements: 0.4, tissus: 0.6, ceremonie: 0.5,
-    cosmetiques: 0.2, enfants: 0.5, mariage: 0.6, materiels: 1.0,
-    accessoires: 0.3, maison: 1.5, electro: 1.0, electronique: 1.0,
-    autre: 0.5,
-  };
   const cat = (komerceCats || []).find(c => c.key === categoryKey);
-  if (cat?.default_weight_kg) return { value: Number(cat.default_weight_kg), source: 'category', confidence: 'medium' };
-  if (defaults[categoryKey]) return { value: defaults[categoryKey], source: 'category', confidence: 'low' };
+  const configured = Number(cat?.default_weight_kg);
+  if (Number.isFinite(configured) && configured > 0) {
+    return { value: configured, source: 'category', confidence: 'medium' };
+  }
   return { value: 0.5, source: 'default', confidence: 'low' };
 }
 
-function estimateVolume(dimensions, categoryKey) {
+function estimateVolume(dimensions, categoryKey, komerceCats) {
   const d = dimensions || {};
   const lcm = Number(d.l_cm) || 0;
   const wcm = Number(d.w_cm) || 0;
   const hcm = Number(d.h_cm) || 0;
-  if (lcm > 0 && wcm > 0 && hcm > 0) return { value: (lcm * wcm * hcm) / 1_000_000, source: 'supplier', confidence: 'high' };
-  const defaults = {
-    phones: 0.001, vetements: 0.005, tissus: 0.008, ceremonie: 0.007,
-    cosmetiques: 0.0008, enfants: 0.006, mariage: 0.006, materiels: 0.010,
-    accessoires: 0.003, maison: 0.020, electro: 0.010, electronique: 0.010,
-    autre: 0.005,
-  };
-  return { value: defaults[categoryKey] || 0.005, source: 'category', confidence: 'low' };
+  if (lcm > 0 && wcm > 0 && hcm > 0) {
+    return { value: (lcm * wcm * hcm) / 1_000_000, source: 'supplier', confidence: 'high' };
+  }
+
+  const cat = (komerceCats || []).find(c => c.key === categoryKey);
+  const dl = Number(cat?.default_dim_l_cm) || 0;
+  const dw = Number(cat?.default_dim_w_cm) || 0;
+  const dh = Number(cat?.default_dim_h_cm) || 0;
+  if (dl > 0 && dw > 0 && dh > 0) {
+    return { value: (dl * dw * dh) / 1_000_000, source: 'category', confidence: 'medium' };
+  }
+
+  return { value: 0.005, source: 'default', confidence: 'low' };
 }
 
 function computeConfidence(dataSources) {
@@ -225,7 +154,7 @@ async function normalizeCandidate(product, options = {}) {
   dataSources.purchase_price = product.purchase_price ? 'supplier' : 'missing';
   const w = estimateWeight(product.weight_kg, komerceCategory, komerceCats);
   dataSources.weight = w.source;
-  const v = estimateVolume(product.dimensions, komerceCategory);
+  const v = estimateVolume(product.dimensions, komerceCategory, komerceCats);
   dataSources.volume = v.source;
   const cat = config.categories[komerceCategory];
   const targetMarginPct = cat?.default_margin_pct ? Number(cat.default_margin_pct) : Number(config.finance?.target_marge_brute_pct) || 40;
@@ -240,7 +169,7 @@ async function normalizeCandidate(product, options = {}) {
     image_url: product.image_url || null,
     product_url: product.product_url || null,
     description: product.description || null,
-    stock_available: product.stock_available || null,
+    stock_available: product.stock_available ?? null,
     min_order_qty: product.min_order_qty || null,
     supplier_delay_days: product.supplier_delay_days || null,
     weight_kg: product.weight_kg || null,
@@ -254,6 +183,15 @@ async function normalizeCandidate(product, options = {}) {
     target_margin_pct: targetMarginPct,
     data_sources: dataSources,
     confidence: computeConfidence(dataSources),
+    category_resolution: {
+      source: catMap.source,
+      confidence: catMap.confidence,
+      reason: catMap.reason || null,
+      score: catMap.score || 0,
+      second_candidate_key: catMap.second_candidate_key || null,
+      second_score: catMap.second_score || 0,
+      evidence: catMap.evidence || [],
+    },
   };
 }
 
@@ -279,7 +217,7 @@ async function scanCandidate(candidate, options = {}) {
   if (candidate.data_sources?.category === 'default') {
     return { scan_result: null, sourcing_decision: 'WATCH', reason: 'Catégorie Komerce non résolue — décision impossible.', recommended_action: 'Compléter ou corriger la catégorie avant promotion.', market_confidence: 'unknown', confidence: candidate.confidence || 'low' };
   }
-  const input = { product_id: null, category: candidate.komerce_category || 'autre', cost_kmf: candidate.purchase_price_kmf || 0, weight_kg: candidate.estimated_weight_kg || 0.5, volume_m3: candidate.estimated_volume_m3 || 0.005, current_price_kmf: 0, channel: candidate.channel || 'cash_relais' };
+  const input = { product_id: null, category: candidate.komerce_category, cost_kmf: candidate.purchase_price_kmf || 0, weight_kg: candidate.estimated_weight_kg || 0.5, volume_m3: candidate.estimated_volume_m3 || 0.005, current_price_kmf: 0, channel: candidate.channel || 'cash_relais' };
   const reco = await pricingEngine.recommend(input, { config });
   const testHealth = economicTestHealth(reco);
   const scanResult = { ...reco, economic_test_health_status: testHealth.status, economic_test_margin_pct: testHealth.margin_pct };

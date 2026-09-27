@@ -6,10 +6,10 @@
  * @status        production
  * @owner         public/boutique/tests/unit/visual-geometry-css-invariants.test.js
  * @purpose       Verrouille les corrections CSS de la campagne QA visuelle
- *                2026-08 (LOT 1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“6 : onglets side cart, recap check, card-name
- *                desktop, chips paiement autonomes, checkout neutre, drawers) contre toute rÃƒÆ’Ã‚Â©gression
+ *                2026-08 (LOT 1–6 : onglets side cart, recap check, card-name
+ *                desktop, chips paiement autonomes, checkout neutre, drawers) contre toute régression
  *                silencieuse dans les sources CSS.
- *                ÃƒÆ’Ã¢â‚¬Â°quivalent Jest des invariants G6 du spec Playwright
+ *                Équivalent Jest des invariants G6 du spec Playwright
  *                visual-geometry-audit.spec.js (projectable sans navigateur).
  * @impact-areas  shared-cart, checkout, catalogue, css
  * @version       2026-08-qa
@@ -32,31 +32,31 @@ function readBoutiqueHtml() {
   return fs.readFileSync(path.join(BOUTIQUE, 'index.html'), 'utf8');
 }
 
-describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS statiques (LOT 1ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“6, 2026-08)', () => {
-  describe('LOT 5 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â surfaces transactionnelles accessibles', () => {
-    it('retire le drawer fermÃƒÆ’Ã‚Â© de lÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢arbre visuel et le rÃƒÆ’Ã‚Â©vÃƒÆ’Ã‚Â¨le uniquement ÃƒÆ’Ã‚Â  lÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ouverture', () => {
+describe('QA visuelle — invariants CSS statiques (LOT 1–6, 2026-08)', () => {
+  describe('LOT 5 — surfaces transactionnelles accessibles', () => {
+    it('retire le drawer fermé de l’arbre visuel et le révèle uniquement à l’ouverture', () => {
       const cart = readCss('cart.css');
       expect(cart).toMatch(/\.k-cart-drawer\s*\{[^}]*visibility:\s*hidden/s);
       expect(cart).toMatch(/\.k-cart-drawer\.open\s*\{[^}]*visibility:\s*visible/s);
     });
   });
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LOT 1 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Onglets side cart ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-  describe('LOT 1 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â shared-list-side-cart.css : centrage onglets', () => {
+  // ── LOT 1 — Onglets side cart ─────────────────────────────────────────────
+  describe('LOT 1 — shared-list-side-cart.css : centrage onglets', () => {
     let css;
     beforeAll(() => { css = readCss('shared-list-side-cart.css'); });
 
-    it('LOT1-a : .k-cart-tab possÃƒÆ’Ã‚Â¨de text-align:center (centrage cross-browser)', () => {
+    it('LOT1-a : .k-cart-tab possède text-align:center (centrage cross-browser)', () => {
       const block = css.match(/\.k-cart-tab\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(block).toMatch(/text-align\s*:\s*center/);
     });
 
-    it('LOT1-b : .k-cart-tab possÃƒÆ’Ã‚Â¨de line-height:1 (paritÃƒÆ’Ã‚Â© de hauteur avec .k-cart-tab-exit)', () => {
+    it('LOT1-b : .k-cart-tab possède line-height:1 (parité de hauteur avec .k-cart-tab-exit)', () => {
       const block = css.match(/\.k-cart-tab\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(block).toMatch(/line-height\s*:\s*1\b/);
     });
 
-    it('LOT1-c : .k-cart-tab-group .k-tab-shared-list possÃƒÆ’Ã‚Â¨de padding-left:26px (centrage optique vs ÃƒÆ’Ã¢â‚¬â€)', () => {
+    it('LOT1-c : .k-cart-tab-group .k-tab-shared-list possède padding-left:26px (centrage optique vs ×)', () => {
       const block = css.match(/\.k-cart-tab-group\s+\.k-tab-shared-list\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(block).toMatch(/padding-left\s*:\s*26px/);
     });
@@ -71,12 +71,12 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(block).toMatch(/width\s*:\s*26px/);
     });
 
-    it('LOT1-f : .k-list-indicator est masquÃƒÆ’Ã‚Â© (rÃƒÆ’Ã‚Â©trocompat preservÃƒÆ’Ã‚Â©e)', () => {
+    it('LOT1-f : .k-list-indicator est masqué (rétrocompat preservée)', () => {
       const block = css.match(/\.k-list-indicator\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(block).toMatch(/display\s*:\s*none/);
     });
 
-    it('LOT1-g : les deux onglets occupent deux colonnes ÃƒÆ’Ã‚Â©gales et leur contenu est centrÃƒÆ’Ã‚Â©', () => {
+    it('LOT1-g : les deux onglets occupent deux colonnes égales et leur contenu est centré', () => {
       const tabs = css.match(/\.k-cart-tabs\s*\{([^}]+)\}/s)?.[1] ?? '';
       const tab = css.match(/\.k-cart-tab\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(tabs).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\)/);
@@ -85,7 +85,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(tab).toMatch(/justify-content\s*:\s*center/);
     });
 
-    it('LOT1-h : rail distinct, panier neutre, liste contextualisÃƒÆ’Ã‚Â©e et lignes claimed lisibles', () => {
+    it('LOT1-h : rail distinct, panier neutre, liste contextualisée et lignes claimed lisibles', () => {
       const tabs = css.match(/\.k-cart-tabs\s*\{([^}]+)\}/s)?.[1] ?? '';
       const personal = css.match(
         /\.k-cart-tabs\[data-active="personal"\]\s+\.k-tab-personal\.k-cart-tab--active\s*\{([^}]+)\}/s
@@ -132,14 +132,14 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       );
     });
 
-    it('LOT1-k : le sÃƒÆ’Ã‚Â©lecteur est un rail matÃƒÆ’Ã‚Â©rialisÃƒÆ’Ã‚Â©, pas deux onglets blancs flottants', () => {
+    it('LOT1-k : le sélecteur est un rail matérialisé, pas deux onglets blancs flottants', () => {
       const tabs = css.match(/\.k-cart-tabs\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(tabs).toMatch(/border\s*:\s*1px\s+solid\s+var\(--border\)/);
       expect(tabs).toMatch(/border-radius\s*:\s*14px/);
       expect(tabs).toMatch(/background\s*:\s*var\(--sand\)/);
     });
 
-    it('LOT1-l : le drawer mobile possÃƒÆ’Ã‚Â¨de un header-navigation unique', () => {
+    it('LOT1-l : le drawer mobile possède un header-navigation unique', () => {
       const cart = readCss('cart.css');
 
       const drawer = cart.match(/\.k-cart-drawer\s*\{([^}]+)\}/s)?.[1] ?? '';
@@ -157,7 +157,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       );
     });
 
-    it('LOT1-i : la sÃƒÆ’Ã‚Â©lection liste reste compacte et centrÃƒÆ’Ã‚Â©e dans sa ligne', () => {
+    it('LOT1-i : la sélection liste reste compacte et centrée dans sa ligne', () => {
       const box = css.match(/\.k-cart-item-select\s*\{([^}]+)\}/s)?.[1] ?? '';
       const checked = css.match(/\.k-cart-item-select\.is-checked\s*\{([^}]+)\}/s)?.[1] ?? '';
 
@@ -173,12 +173,12 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
     });
   });
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LOT 2 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â RÃƒÆ’Ã‚Â©capitulatif checkout ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-  describe('LOT 2 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â checkout : rÃƒÆ’Ã‚Â©cap = liste, checkout = calcul', () => {
+  // ── LOT 2 — Récapitulatif checkout ───────────────────────────────────
+  describe('LOT 2 — checkout : récap = liste, checkout = calcul', () => {
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
 
-    it('LOT2-a : le rÃƒÆ’Ã‚Â©cap possÃƒÆ’Ã‚Â¨de une vraie sÃƒÆ’Ã‚Â©lection mais aucun total propre', () => {
+    it('LOT2-a : le récap possède une vraie sélection mais aucun total propre', () => {
       expect(css).toMatch(/\.ck-recap-item-select\s*\{/);
       expect(css).not.toMatch(/\.ck-recap-step\s+\.ck-recap-total\s*\{/);
       expect(css).not.toMatch(/\.ck-recap-item-remove\s*\{/);
@@ -197,19 +197,19 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(image).toMatch(/object-fit\s*:\s*cover/);
     });
 
-    it('LOT2-c : lignes plates sÃƒÆ’Ã‚Â©parÃƒÆ’Ã‚Â©es', () => {
+    it('LOT2-c : lignes plates séparées', () => {
       const block = css.match(/\.ck-recap-step\s+\.ck-recap-item\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(block).toMatch(/display\s*:\s*grid/);
       expect(block).toMatch(/border-bottom\s*:/);
     });
   });
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LOT 3 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Badges paiement autonomes ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-  describe('LOT 2d ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â checkout : sÃƒÆ’Ã‚Â©paration rÃƒÆ’Ã‚Â©cap / finalisation', () => {
+  // ── LOT 3 — Badges paiement autonomes ────────────────────────────────────
+  describe('LOT 2d — checkout : séparation récap / finalisation', () => {
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
 
-    it('le checkout mobile possÃƒÆ’Ã‚Â¨de une vraie surface transactionnelle', () => {
+    it('le checkout mobile possède une vraie surface transactionnelle', () => {
       const aside = css.match(/\.ck-checkout-aside\s*\{([^}]+)\}/s)?.[1] ?? '';
 
       expect(aside).toMatch(/display\s*:\s*block/);
@@ -217,7 +217,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(aside).toMatch(/border-radius\s*:\s*18px/);
     });
 
-    it('le rÃƒÆ’Ã‚Â©cap mobile est repliable tandis que desktop reste dÃƒÆ’Ã‚Â©pliÃƒÆ’Ã‚Â©', () => {
+    it('le récap mobile est repliable tandis que desktop reste déplié', () => {
       const content = css.match(/\.ck-recap-content\s*\{([^}]+)\}/s)?.[1] ?? '';
       const expanded = css.match(
         /\.ck-recap-step\.is-expanded\s+\.ck-recap-content\s*\{([^}]+)\}/s
@@ -240,53 +240,53 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
     });
   });
 
-  describe('LOT 3 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â checkout-vertical-rail.css : em.ck-soon / em.ck-stripe-tag surcharges gÃƒÆ’Ã‚Â©omÃƒÆ’Ã‚Â©triques', () => {
+  describe('LOT 3 — checkout-vertical-rail.css : em.ck-soon / em.ck-stripe-tag surcharges géométriques', () => {
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
 
-    it('LOT3 : sÃƒÆ’Ã‚Â©lecteur combinÃƒÆ’Ã‚Â© present ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â border-radius:999px, padding, margin-top surchargÃƒÆ’Ã‚Â©s', () => {
-      // La rÃƒÆ’Ã‚Â¨gle combinÃƒÆ’Ã‚Â©e (.ck-soon, .ck-stripe-tag { border-radius:999px; padding:2px 6px; margin-top:4px })
-      // est dans la baseline css-guard (conflits lÃƒÆ’Ã‚Â©gitimes avec cart.css dÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  figÃƒÆ’Ã‚Â©s).
-      // background et color restent dans cart.css ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â les redÃƒÆ’Ã‚Â©clarer ici avec des valeurs diffÃƒÆ’Ã‚Â©rentes
-      // crÃƒÆ’Ã‚Â©e de nouveaux conflits hors baseline (vÃƒÆ’Ã‚Â©rifiÃƒÆ’Ã‚Â© empiriquement par css-guard --strict).
+    it('LOT3 : sélecteur combiné present — border-radius:999px, padding, margin-top surchargés', () => {
+      // La règle combinée (.ck-soon, .ck-stripe-tag { border-radius:999px; padding:2px 6px; margin-top:4px })
+      // est dans la baseline css-guard (conflits légitimes avec cart.css déjà figés).
+      // background et color restent dans cart.css — les redéclarer ici avec des valeurs différentes
+      // crée de nouveaux conflits hors baseline (vérifié empiriquement par css-guard --strict).
       const combined = css.match(
         /\.ck-chip-lbl\s+em\.ck-soon[\s\S]{0,200}\.ck-chip-lbl\s+em\.ck-stripe-tag\s*\{([^}]+)\}/
       );
       const block = combined ? combined[1] : '';
-      expect(block).toBeTruthy(); // RÃƒÆ’Ã‚Â¨gle combinÃƒÆ’Ã‚Â©e .ck-soon/.ck-stripe-tag introuvable
+      expect(block).toBeTruthy(); // Règle combinée .ck-soon/.ck-stripe-tag introuvable
       expect(block).toMatch(/border-radius\s*:\s*999px/);
       expect(block).toMatch(/padding\s*:/);
       expect(block).toMatch(/margin-top\s*:/);
-      // Invariant css-guard : background et color ne doivent PAS ÃƒÆ’Ã‚Âªtre dans cette rÃƒÆ’Ã‚Â¨gle
+      // Invariant css-guard : background et color ne doivent PAS être dans cette règle
       expect(block).not.toMatch(/background\s*:/);
       expect(block).not.toMatch(/\bcolor\s*:/);
     });
   });
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LOT 4 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Cartes produit desktop ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-  describe('LOT 4 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â products.css : .k-card-name 2 lignes desktop', () => {
+  // ── LOT 4 — Cartes produit desktop ───────────────────────────────────────
+  describe('LOT 4 — products.css : .k-card-name 2 lignes desktop', () => {
     let css;
     beforeAll(() => { css = readCss('products.css'); });
 
-    it('LOT4-a : .k-card-name desktop surcharge -webkit-line-clamp ÃƒÆ’Ã‚Â  2 (cohÃƒÆ’Ã‚Â©rence avec min-height:2.4em)', () => {
+    it('LOT4-a : .k-card-name desktop surcharge -webkit-line-clamp à 2 (cohérence avec min-height:2.4em)', () => {
       // Le bloc @media ((min-width: 900px)) doit contenir .k-card-name avec clamp:2
       const mediaBlock = css.match(/@media\s*\(\(min-width:\s*900px\)\)[\s\S]*?\.k-card-name\s*\{([^}]+)\}/)?.[1] ?? '';
       expect(mediaBlock).toMatch(/-webkit-line-clamp\s*:\s*2\b/);
     });
 
-    it('LOT4-b : .k-card-name mobile conserve -webkit-line-clamp:1 (non modifiÃƒÆ’Ã‚Â©)', () => {
+    it('LOT4-b : .k-card-name mobile conserve -webkit-line-clamp:1 (non modifié)', () => {
       // Le bloc mobile (AVANT tout @media) contient le clamp d'origine
       const mobileBlock = css.match(/\.k-card-name\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(mobileBlock).toMatch(/-webkit-line-clamp\s*:\s*1\b/);
     });
   });
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LOT 5 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Checkout final neutre et compact ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-  describe('LOT 5 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â checkout-vertical-rail.css : hiÃƒÆ’Ã‚Â©rarchie neutre', () => {
+  // ── LOT 5 — Checkout final neutre et compact ─────────────────────────────
+  describe('LOT 5 — checkout-vertical-rail.css : hiérarchie neutre', () => {
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
 
-    it('LOT5-a : le header reste clair et neutre, sans bandeau mÃƒÆ’Ã‚Â©tier', () => {
+    it('LOT5-a : le header reste clair et neutre, sans bandeau métier', () => {
       const block = css.match(/\.k-order-header\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(block).toMatch(/background\s*:\s*var\(--checkout-cream\)/);
       expect(block).toMatch(/color\s*:\s*var\(--text\)/);
@@ -313,7 +313,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(block).not.toMatch(/checkout-accent|cta-green/);
     });
 
-    it('LOT5-d : les cartes de contexte et le modal desktop gardent la gÃƒÆ’Ã‚Â©omÃƒÆ’Ã‚Â©trie finale', () => {
+    it('LOT5-d : les cartes de contexte et le modal desktop gardent la géométrie finale', () => {
       const header = css.match(/\.ck-step-header\s*\{([^}]+)\}/s)?.[1] ?? '';
       expect(header).toMatch(/min-height\s*:\s*50px/);
       expect(header).toMatch(/border-radius\s*:\s*12px/);
@@ -329,9 +329,9 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
     });
   });
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LOT 6 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Drawers lisibles desktop et mobile ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-  describe('LOT 6 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â drawers : largeur et respiration', () => {
-    it('LOT6-a : le side cart desktop rÃƒÆ’Ã‚Â©serve sa largeur exacte sans recouvrir le shell', () => {
+  // ── LOT 6 — Drawers lisibles desktop et mobile ───────────────────────────
+  describe('LOT 6 — drawers : largeur et respiration', () => {
+    it('LOT6-a : le side cart desktop réserve sa largeur exacte sans recouvrir le shell', () => {
       const desktop = readCss('boutique-desktop.css');
 
       expect(desktop).toMatch(/:root\s*\{\s*--sc-reserve-w:\s*296px/);
@@ -341,13 +341,22 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(desktop).toMatch(/body\.modal-open,\s*body\.cart-open\s*\{[^}]*padding-right:\s*0/s);
     });
 
-    it('LOT6-a2 : la fiche produit rÃƒÆ’Ã‚Â©serve un side-cart stable et possÃƒÆ’Ã‚Â¨de un ÃƒÆ’Ã‚Â©tat vide composÃƒÆ’Ã‚Â©', () => {
+    it('LOT6-a2 : la fiche produit réserve un side-cart stable et possède un état vide composé', () => {
       const shell = readCss('modal-shell.css');
       const desktop = readCss('boutique-desktop.css');
+      // .k-side-cart--in-modal .k-sc-item-name a été transféré vers
+      // side-cart-desktop-polish.css par B2-1 (34489f29c, "transfère
+      // l'ownership visuel du side-cart desktop") : la déclaration
+      // -webkit-line-clamp:2 laissée ici était déjà perdante (le fichier
+      // polish, chargé après dans desktop.css, gagnait déjà la cascade
+      // avec line-clamp:1 depuis 6a263ac30). B2-1 a retiré cette
+      // déclaration morte ; side-cart-css-ownership.test.js verrouille
+      // désormais ce transfert de propriété.
+      const polish = readCss('side-cart-desktop-polish.css');
 
       expect(shell).toMatch(/grid-template-columns\s*:\s*minmax\(0,\s*1fr\)\s+296px/);
       expect(desktop).toMatch(/\.k-sc-empty\s*\{[^}]*min-height:\s*220px[^}]*justify-content:\s*center/s);
-      expect(desktop).toMatch(/\.k-side-cart--in-modal \.k-sc-item-name\s*\{[^}]*-webkit-line-clamp:\s*2/s);
+      expect(polish).toMatch(/\.k-side-cart--in-modal \.k-sc-item-name\s*\{[^}]*-webkit-line-clamp:\s*1/s);
     });
 
     it('LOT6-b : le drawer de liste mobile conserve marge et espacement entre les lignes', () => {
@@ -357,7 +366,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(block).toMatch(/padding\s*:\s*8px\s+10px/);
     });
 
-    it('LOT6-c : le side cart desktop utilise une coque neutre sans contour mÃƒÆ’Ã‚Â©tier', () => {
+    it('LOT6-c : le side cart desktop utilise une coque neutre sans contour métier', () => {
       const css = readCss('boutique-desktop.css');
       const block = css.match(/\.k-side-cart\s*\{([^}]+)\}/s)?.[1] ?? '';
 
@@ -388,8 +397,8 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
     });
   });
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LOT 7 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ParitÃƒÆ’Ã‚Â© ligne produit panier / liste ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-  describe('LOT 7 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â panier et liste : gÃƒÆ’Ã‚Â©omÃƒÆ’Ã‚Â©trie de ligne canonique', () => {
+  // ── LOT 7 — Parité ligne produit panier / liste ──────────────────────────
+  describe('LOT 7 — panier et liste : géométrie de ligne canonique', () => {
     let cart;
     let shared;
     let responsive;
@@ -418,7 +427,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(prop(snapshot, 'border-radius')).toBe(prop(personal, 'border-radius'));
     });
 
-    it('LOT7-b : le gap image ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ texte reste le gap canonique de 10px', () => {
+    it('LOT7-b : le gap image → texte reste le gap canonique de 10px', () => {
       const personal =
         cart.match(/\\.k-cart-item\\s*\\{([^}]+)\\}/s)?.[1] ?? '';
       const open =
@@ -441,8 +450,8 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
   });
 
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LOT 8 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â accent commerce jaune ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-  describe('LOT 8 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â accent commerce jaune', () => {
+  // ── LOT 8 — accent commerce jaune ─────────────────────────────
+  describe('LOT 8 — accent commerce jaune', () => {
     let tokens;
     let products;
     let cart;
@@ -455,7 +464,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       layout = readCss('layout.css');
     });
 
-    it('LOT8-a : le jaune commerce est tokenisÃƒÆ’Ã‚Â©', () => {
+    it('LOT8-a : le jaune commerce est tokenisé', () => {
       expect(tokens).toMatch(/--commerce-yellow\s*:\s*#FFD400/);
       expect(tokens).toMatch(/--action-commerce\s*:\s*var\(--commerce-yellow\)/);
       expect(tokens).toMatch(/--action-confirm\s*:\s*var\(--text\)/);
@@ -518,9 +527,9 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
     });
   });
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LOT 6B ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â palette sÃƒÆ’Ã‚Â©mantique transverse ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-  describe('LOT 6B ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â harmonisation chromatique des actions', () => {
-    it('les CTA commerce du panier et de la liste partagÃƒÆ’Ã‚Â©e partagent le mÃƒÆ’Ã‚Âªme rÃƒÆ’Ã‚Â´le', () => {
+  // ── LOT 6B — palette sémantique transverse ───────────────────────────
+  describe('LOT 6B — harmonisation chromatique des actions', () => {
+    it('les CTA commerce du panier et de la liste partagée partagent le même rôle', () => {
       const cart = readCss('cart.css');
       const desktop = readCss('boutique-desktop.css');
       const shared = readCss('shared-list-side-cart.css');
@@ -547,7 +556,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(buy).toMatch(/color\s*:\s*var\(--action-commerce-text\)/);
     });
 
-    it('le checkout final garde son chrome neutre et rÃƒÆ’Ã‚Â©serve le jaune ÃƒÆ’Ã‚Â  la transaction', () => {
+    it('le checkout final garde son chrome neutre et réserve le jaune à la transaction', () => {
       const checkout = readCss('checkout-vertical-rail.css');
       const header = checkout.match(/\.k-order-header\s*\{([^}]+)\}/s)?.[1] ?? '';
       const finalCta = checkout.match(/\.k-order-overlay\.open\s+\.ck-confirm-btn\s*\{([^}]+)\}/s)?.[1] ?? '';
@@ -557,7 +566,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(finalCta).toMatch(/color\s*:\s*var\(--action-commerce-text\)/);
     });
 
-    it('confirmation, identitÃƒÆ’Ã‚Â© et ÃƒÆ’Ã‚Â©ditorial restent distincts du commerce', () => {
+    it('confirmation, identité et éditorial restent distincts du commerce', () => {
       const cart = readCss('cart.css');
       const identity = readCss('identity.css');
       const products = readCss('products.css');
@@ -586,15 +595,15 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
     });
   });
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LOT 10 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â bandeau desktop neutre et compact ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-  describe('LOT 10 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â bandeau desktop premium', () => {
+  // ── LOT 10 — bandeau desktop neutre et compact ─────────────────────
+  describe('LOT 10 — bandeau desktop premium', () => {
     let layout;
 
     beforeAll(() => {
       layout = readCss('layout.css');
     });
 
-    it('LOT10-a : les actions desktop utilisent un matÃƒÆ’Ã‚Â©riau neutre', () => {
+    it('LOT10-a : les actions desktop utilisent un matériau neutre', () => {
       const blocks = [...layout.matchAll(/\.k-header-nav-btn\s*\{([^}]+)\}/gs)]
         .map(m => m[1]);
 
@@ -662,7 +671,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(header.indexOf('id="k-header-komerce-btn"')).toBeLessThan(header.indexOf('data-tab="fav"'));
     });
 
-    it('LOT10-e : le groupe actions et avatar sont resserrÃƒÆ’Ã‚Â©s', () => {
+    it('LOT10-e : le groupe actions et avatar sont resserrés', () => {
       const actions = [...layout.matchAll(/\.k-header-actions\s*\{([^}]+)\}/gs)]
         .map(m => m[1])
         .find(b => /gap\s*:\s*6px/.test(b)) || '';
@@ -683,7 +692,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(desktopCart).toMatch(/height\s*:\s*40px/);
     });
 
-    it('LOT10-f : une seule rÃƒÆ’Ã‚Â¨gle porte la gÃƒÆ’Ã‚Â©omÃƒÆ’Ã‚Â©trie compacte du badge desktop', () => {
+    it('LOT10-f : une seule règle porte la géométrie compacte du badge desktop', () => {
       const badgeBlocks = [...layout.matchAll(
         /\.k-header \.k-cart-btn\.k-header-action \.k-cart-badge\s*\{([^}]+)\}/gs
       )].map(m => m[1]);
@@ -699,8 +708,8 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
     });
   });
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LOT 9 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â vÃƒÆ’Ã‚Â©ritÃƒÆ’Ã‚Â© visuelle side-cart / mobile ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-  describe('LOT 9 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â vÃƒÆ’Ã‚Â©ritÃƒÆ’Ã‚Â© visuelle side-cart / mobile', () => {
+  // ── LOT 9 — vérité visuelle side-cart / mobile ──────────────────────
+  describe('LOT 9 — vérité visuelle side-cart / mobile', () => {
     it('LOT9-a : la coque panier/liste est strictement neutre', () => {
       const desktop = readCss('boutique-desktop.css');
       const shared = readCss('shared-list-side-cart.css');
@@ -726,7 +735,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
         /\.k-cart-drawer\[data-mode="shared-list"\]\s*\{[^}]*border-top-color/
       );
     });
-    it('LOT9-b : snapshot et panier partagent gÃƒÆ’Ã‚Â©omÃƒÆ’Ã‚Â©trie et dÃƒÆ’Ã‚Â©part vertical du texte', () => {
+    it('LOT9-b : snapshot et panier partagent géométrie et départ vertical du texte', () => {
       const cart = readCss('cart.css');
       const shared = readCss('shared-list-side-cart.css');
       const responsive = readCss('shared-list-side-cart-responsive.css');
@@ -768,7 +777,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(meta).toMatch(/margin-top\s*:\s*0/);
       expect(meta).toMatch(/line-height\s*:\s*1\.3/);
     });
-    it('LOT9-c : layout.css ne possÃƒÆ’Ã‚Â¨de plus de gÃƒÆ’Ã‚Â©omÃƒÆ’Ã‚Â©trie panier concurrente', () => {
+    it('LOT9-c : layout.css ne possède plus de géométrie panier concurrente', () => {
       const layout = readCss('layout.css');
 
       expect(layout).not.toMatch(
@@ -780,7 +789,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       );
     });
 
-    it('LOT9-d : le stepper suggestion mobile impose rÃƒÆ’Ã‚Â©ellement son bounding 76x30', () => {
+    it('LOT9-d : le stepper suggestion mobile impose réellement son bounding 76x30', () => {
       const polish = readCss('modal-product-polish.css');
 
       expect(polish).toMatch(
@@ -846,8 +855,8 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
     });
   });
 
-  // ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ LOT 7 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Checkout desktop pleine page ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
-  describe('LOT 7 ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â projection responsive checkout', () => {
+  // ── LOT 7 — Checkout desktop pleine page ────────────────────────────────
+  describe('LOT 7 — projection responsive checkout', () => {
     let css;
     beforeAll(() => { css = readCss('checkout-vertical-rail.css'); });
 
@@ -881,7 +890,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       expect(css).toMatch(/border-radius\s*:\s*0/);
     });
 
-    it('LOT7-c : desktop possÃƒÆ’Ã‚Â¨de deux colonnes et un aside sticky', () => {
+    it('LOT7-c : desktop possède deux colonnes et un aside sticky', () => {
       const layoutBlocks = [
         ...css.matchAll(/\.ck-checkout-layout\s*\{([^}]+)\}/g),
       ];
@@ -921,7 +930,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
   });
 
 
-  describe('HOTFIX mobile ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â vÃƒÆ’Ã‚Â©ritÃƒÆ’Ã‚Â© modale', () => {
+  describe('HOTFIX mobile — vérité modale', () => {
     let polish;
     let checkout;
 
@@ -930,7 +939,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       checkout = readCss('checkout-vertical-rail.css');
     });
 
-    it('MOB-H1 : le bouton panier garde son offset validÃƒÆ’Ã‚Â© et son icÃƒÆ’Ã‚Â´ne reste centrÃƒÆ’Ã‚Â©e', () => {
+    it('MOB-H1 : le bouton panier garde son offset validé et son icône reste centrée', () => {
       const cart = polish.match(
         /#k-modal \.k-modal-cart-btn\s*\{([^}]+)\}/s
       )?.[1] ?? '';
@@ -958,7 +967,7 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       );
     });
 
-    it('MOB-H2 : le titre scrollÃƒÆ’Ã‚Â© ne traverse pas la zone du panier', () => {
+    it('MOB-H2 : le titre scrollé ne traverse pas la zone du panier', () => {
       const product = polish.match(
         /#k-modal\.is-scrolled \.k-modal-topbar-product\s*\{([^}]+)\}/s
       )?.[1] ?? '';
@@ -1003,14 +1012,14 @@ describe('QA visuelle ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â invariants CSS stat
       )?.[1] ?? '';
 
       expect(pseudo).toContain('content: "\\2713";');
-      expect(pseudo).not.toContain('ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ');
+      expect(pseudo).not.toContain('✓');
     });
   });
 
 });
 
 
-describe('POLISH final ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â logo desktop, badge panier, paritÃƒÆ’Ã‚Â© mobile liste', () => {
+describe('POLISH final — logo desktop, badge panier, parité mobile liste', () => {
   it('anime uniquement le pictogramme du logo desktop et conserve reduced-motion', () => {
     const index = fs.readFileSync(path.resolve(__dirname, '../../index.html'), 'utf8');
     const hero = readCss('hero.css');
@@ -1093,13 +1102,22 @@ describe('PDP desktop - hero imposant et panier centre', () => {
 
   it('centre le panier court et borne le panier long dans la modal', () => {
     const css = readCss('boutique-desktop.css');
+    // max-height est aussi une propriété "transférée" par B2-1 (34489f29c) :
+    // calc(100dvh - 90px) était déjà perdant dans boutique-desktop.css face
+    // à max-height:100% posé par side-cart-desktop-polish.css depuis
+    // 6a263ac30 (chargé après dans le bundle) ; B2-1 a retiré la
+    // déclaration morte de boutique-desktop.css.
+    const polish = readCss('side-cart-desktop-polish.css');
 
     const cart = css.match(
       /\.k-side-cart--in-modal\s*\{([^}]+)\}/s
     )?.[1] ?? '';
+    const cartPolish = polish.match(
+      /\.k-side-cart--in-modal\s*\{([^}]+)\}/s
+    )?.[1] ?? '';
 
     expect(cart).toMatch(/height\s*:\s*auto/);
-    expect(cart).toMatch(/max-height\s*:\s*calc\(100dvh\s*-\s*90px\)/);
+    expect(cartPolish).toMatch(/max-height\s*:\s*100%/);
     expect(cart).toMatch(/min-height\s*:\s*0/);
     expect(cart).toMatch(/flex\s*:\s*0\s+1\s+auto/);
     expect(cart).toMatch(/margin-block\s*:\s*0/);
@@ -1149,18 +1167,22 @@ describe('FINISH PDP desktop media', () => {
     );
   });
 
-  it('centre réellement un panier court dans son slot', () => {
+  it('ancre le panier en haut de son slot (justify-content:flex-start, padding-block:0 — B2-1b)', () => {
     const shell = readCss('modal-shell.css');
     const desktop = readCss('boutique-desktop.css');
-
-    const slotBlocks = [
-      ...shell.matchAll(
-        /#k-modal \.k-modal-cart-slot\s*\{([^}]+)\}/gs
-      ),
-    ].map((m) => m[1]);
+    // justify-content:center + padding-block:16px ont été retirés de
+    // modal-shell.css par ee8da110d ("B2-1b — ferme les 3 derniers
+    // conflits cascade du side-cart"), suite automatisée de B2-1 : ces
+    // déclarations étaient déjà perdantes face à side-cart-desktop-polish.css
+    // (justify-content:flex-start, padding-block:0), qui ancre volontairement
+    // le panier en haut du slot PDP plutôt qu'au centre — cf. son propre test
+    // "ancre le side cart PDP en haut" (side-cart-desktop-polish.test.js).
+    const polish = readCss('side-cart-desktop-polish.css');
 
     const slot =
-      slotBlocks.find((b) => /justify-content/.test(b)) ?? '';
+      polish.match(
+        /#k-modal \.k-modal-cart-slot\s*\{([^}]+)\}/s
+      )?.[1] ?? '';
 
     const items =
       desktop.match(
@@ -1168,9 +1190,9 @@ describe('FINISH PDP desktop media', () => {
       )?.[1] ?? '';
 
     expect(slot).toMatch(
-      /justify-content\s*:\s*center/
+      /justify-content\s*:\s*flex-start/
     );
-    expect(slot).toMatch(/padding-block\s*:\s*16px/);
+    expect(slot).toMatch(/padding-block\s*:\s*0/);
 
     expect(items).toMatch(
       /flex\s*:\s*0\s+1\s+auto/

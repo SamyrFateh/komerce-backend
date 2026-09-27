@@ -19,7 +19,7 @@ describe('public catalog route exposure gate', () => {
 
     expect(productsRoute).toContain("const conditions = [publicCatalogVisibilitySql('p', marketCodeParamIndex ? { marketCodeParamIndex } : {})]");
     expect(productsRoute).toContain("WHERE ${publicCatalogVisibilitySql('p')}");
-    expect(productsRoute).toContain("const conditions = [publicCatalogVisibilitySql('p'), 'p.subcategory IS NOT NULL']");
+    expect(productsRoute).toContain("'COALESCE(p.boutique_subcategory_key, p.subcategory) IS NOT NULL'");
     expect(productsRoute).toContain("const detailConditions = [publicCatalogVisibilitySql('p', marketCode ? { marketCodeParamIndex: 2 } : {})]");
   });
 

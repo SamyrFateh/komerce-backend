@@ -542,11 +542,12 @@ async function buildCommerce(query = {}, options = {}) {
   const market = options.market || null;
   const { period, filters } = buildPeriodFilters(query, market && market.id, options.now || new Date());
 
-  const [ca, commandes, panier, marge, topProducts, productProfitability, categories, funnel] = await Promise.all([
+  const [ca, commandes, panier, marge, produitsActifsVendus, topProducts, productProfitability, categories, funnel] = await Promise.all([
     metrics.getCAEncaisse(filters),
     metrics.getCmdsCreees(filters),
     getPanierMoyen(filters),
     metrics.getMargeConsolidee(filters),
+    metrics.getProduitsActifsVendus(filters),
     getTopProducts(filters),
     getProductProfitability(filters, { limit: 10 }),
     getCategoryPerformance(filters),
@@ -574,7 +575,7 @@ async function buildCommerce(query = {}, options = {}) {
   return Object.freeze({
     scope: publicScope(market),
     period,
-    kpis: Object.freeze([ca, commandes, panier, marge]),
+    kpis: Object.freeze([ca, commandes, panier, marge, produitsActifsVendus]),
     top_products: publicTopProducts,
     product_profitability: Object.freeze(productProfitability),
     product_viability: viability.items,

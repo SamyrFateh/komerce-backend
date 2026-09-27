@@ -24,6 +24,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { attachMarketExecutionRoleFor } = require('../middleware/require-market-execution-capability');
 const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
+const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const workspace = require('../services/operations-workspace');
 const log = require('../utils/logger').child({ module: 'admin-operations-workspace' });
@@ -124,6 +125,22 @@ function requireWorkspaceMarketAccess(req, res, next) {
     .catch(next);
 }
 
+// MARKET-DELEGATION LOT B (audit operations.read) : GET /market/:marketCode
+// était gated par le bundle legacy (attachWorkspaceReadDelegation +
+// requireWorkspaceMarketAccess), jamais par la capability exacte — révoquer
+// operations.read seule ne retirait rien tant que operator_market_scopes
+// restait actif. Les rôles natifs (admin/agent_hub/agent_relais) gardent leur
+// accès terrain inchangé ; seul market_operator doit désormais prouver
+// operations.read (requires_audit=false au registre).
+const NATIVE_WORKSPACE_ROLES = new Set(['admin', 'agent_hub', 'agent_relais']);
+function requireWorkspaceReadCapability() {
+  const capabilityGuard = requireMarketDelegatedCapability('operations.read', { audit: false });
+  return (req, res, next) => {
+    if (req.user && NATIVE_WORKSPACE_ROLES.has(req.user.role)) return next();
+    return capabilityGuard(req, res, next);
+  };
+}
+
 function actionActor(req) {
   return {
     id: req.user && req.user.id,
@@ -160,6 +177,7 @@ router.get(
   requireWorkspaceReadRole,
   attachAuthorizedMarkets,
   requireWorkspaceMarketAccess,
+  requireWorkspaceReadCapability(),
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
@@ -317,6 +335,7 @@ module.exports._test = {
   rejectClientMarketAuthority,
   resolveRequestedMarket,
   requireWorkspaceMarketAccess,
+  requireWorkspaceReadCapability,
   actionActor,
   sendWorkspaceError,
 };

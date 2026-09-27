@@ -143,6 +143,50 @@
     ];
   }
 
+  function signalItems(signals = {}) {
+    return [
+      { key: 'dossiers-a-traiter', label: 'Dossiers douane à traiter', value: formatNumber(signals.dossiers_a_traiter), tone: signals.dossiers_a_traiter ? 'warning' : 'neutral' },
+      { key: 'transit-14j', label: 'Transit > 14 jours', value: formatNumber(signals.transit_plus_14j), tone: signals.transit_plus_14j ? 'critical' : 'neutral' },
+      { key: 'colis-sans-dossier', label: 'Colis sans dossier douane', value: formatNumber(signals.colis_sans_dossier), tone: signals.colis_sans_dossier ? 'warning' : 'neutral' },
+      { key: 'couts-logistiques', label: 'Coûts logistiques', value: formatKmf(signals.couts_logistiques_kmf), tone: 'neutral' },
+      { key: 'delai-moyen', label: 'Délai moyen déclaration', value: signals.delai_moyen_jours != null ? `${signals.delai_moyen_jours} j` : '—', tone: 'neutral' },
+    ];
+  }
+
+  /**
+   * Couche de pilotage additive — au-dessus du flux d'exécution déjà
+   * existant (renderTransit/renderCustoms), jamais à leur place.
+   * Consomme payload.signals (services/shipping-customs-workspace.js#
+   * buildSignals), jamais de recalcul métier côté navigateur.
+   *
+   * Volontairement absent : aucun signal "documents expirants" ni
+   * "conformité documentaire" — customs_shipments ne trace aucun type
+   * de document ni date d'expiration (vérifié dans le schéma), cohérent
+   * avec la copie déjà présente plus bas sur cette page.
+   */
+  function renderSignals(rootNode, ui, doc, payload) {
+    const signals = payload.signals || {};
+    const slot = ui.Section.create({
+      id: 'shipping-customs-signals',
+      title: 'Signaux international',
+      description: 'Ce que le serveur observe déjà sur ce marché — sans délai cible ni conformité documentaire inventés.',
+    });
+    rootNode.appendChild(slot.element);
+
+    const strip = doc.createElement('div');
+    strip.className = 'kmc-metric-strip';
+    strip.setAttribute('data-metric-strip', '');
+    signalItems(signals).forEach(item => {
+      const card = doc.createElement('article');
+      card.className = `kmc-metric-card is-${item.tone || 'neutral'}`;
+      if (item.key) card.setAttribute('data-metric-key', item.key);
+      card.appendChild(text(doc, 'span', 'kmc-metric-label', item.label));
+      card.appendChild(text(doc, 'strong', 'kmc-metric-value', item.value != null ? item.value : '—'));
+      strip.appendChild(card);
+    });
+    slot.slot.appendChild(strip);
+  }
+
   async function runAction(context, button, options) {
     const confirmFn = context.confirm || (() => true);
     if (options.confirmMessage && !confirmFn(options.confirmMessage)) return null;
@@ -338,6 +382,7 @@
     rootNode.className = 'kmc-operations-workspace';
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload, context));
+    renderSignals(rootNode, ui, doc, payload);
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-workspace-metrics';
     rootNode.appendChild(metrics);

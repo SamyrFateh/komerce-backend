@@ -292,3 +292,77 @@ describe('confirmPaymentCycle — vérification stock (FOR UPDATE)', () => {
     expect(variantUpdate[1]).toEqual([2, 'p2', 'taille', 'L']);
   });
 });
+
+describe('confirmPaymentCycle — exact SKU grouped before stock decrement', () => {
+  const soldLines = [
+    { product_id: 'p1', sku_id: 'sku-1', inventory_model: 'SKU',
+      quantity: 2, stock: 999, product_name: 'Produit SKU', has_variants: false },
+    { product_id: 'p1', sku_id: 'sku-1', inventory_model: 'SKU',
+      quantity: 2, stock: 999, product_name: 'Produit SKU', has_variants: false },
+  ];
+
+  test('2+2 avec stock exact 3 => stockBlocked, besoin 4, aucun décrément', async () => {
+    const dbClient = makeDbClient([
+      { rows: soldLines },
+      { rows: [{ id: 'sku-1', stock: 3 }] },
+    ]);
+    const result = await confirmPaymentCycle({
+      orderId: 'o-aggregate-block', actor: { id: 'u1', role: 'system' },
+      source: 'cash_confirm', dbClient,
+    });
+    expect(result).toMatchObject({
+      success: true, stockBlocked: true, insufficientItems: [{
+        sku_id: 'sku-1', product_id: 'p1', available: 3, needed: 4,
+      }],
+    });
+    expect(dbClient.query.mock.calls.filter(([sql]) => sql.includes('FROM product_skus')))
+      .toHaveLength(1);
+    expect(dbClient.query.mock.calls.some(([sql]) => sql.includes('UPDATE product_skus')))
+      .toBe(false);
+  });
+
+  test('2+2 avec stock exact 4 => un contrôle verrouillé et deux décréments dans la TX', async () => {
+    const dbClient = makeDbClient([
+      { rows: soldLines },
+      { rows: [{ id: 'sku-1', stock: 4 }] },
+      { rows: [{ id: 'sku-1' }] },
+      { rows: [{ id: 'sku-1' }] },
+    ]);
+    const result = await confirmPaymentCycle({
+      orderId: 'o-aggregate-ok', actor: { id: 'u1', role: 'system' },
+      source: 'cash_confirm', dbClient,
+    });
+    expect(result.stockBlocked).toBe(false);
+    const locks = dbClient.query.mock.calls.filter(([sql]) =>
+      sql.includes('FROM product_skus') && sql.includes('FOR UPDATE'));
+    expect(locks).toHaveLength(1);
+    expect(locks[0][1]).toEqual(['sku-1', 'p1']);
+    const updates = dbClient.query.mock.calls.filter(([sql]) =>
+      sql.includes('UPDATE product_skus SET stock'));
+    expect(updates).toHaveLength(2);
+    expect(updates.map(([, params]) => params)).toEqual([
+      [2, 'sku-1', 'p1'], [2, 'sku-1', 'p1'],
+    ]);
+  });
+
+  test('deux SKU exacts sont verrouillés séparément, sans fusion par produit', async () => {
+    const dbClient = makeDbClient([
+      { rows: [
+        { ...soldLines[0], sku_id: 'sku-B' },
+        { ...soldLines[1], sku_id: 'sku-A' },
+      ] },
+      { rows: [{ id: 'sku-A', stock: 2 }] },
+      { rows: [{ id: 'sku-B', stock: 2 }] },
+      { rows: [{ id: 'sku-B' }] },
+      { rows: [{ id: 'sku-A' }] },
+    ]);
+    const result = await confirmPaymentCycle({
+      orderId: 'o-distinct', actor: { id: 'u1', role: 'system' },
+      source: 'cash_confirm', dbClient,
+    });
+    expect(result.stockBlocked).toBe(false);
+    const locks = dbClient.query.mock.calls.filter(([sql]) =>
+      sql.includes('FROM product_skus') && sql.includes('FOR UPDATE'));
+    expect(locks.map(([, params]) => params[0])).toEqual(['sku-A', 'sku-B']);
+  });
+});

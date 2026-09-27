@@ -58,19 +58,54 @@ const EXCEPTIONAL_COST_TYPES = Object.freeze([
   'incident', 'marketing',
 ]);
 
+// shareByWeight — ventilation proportionnelle qui conserve le total.
+//
+// AVANT (bug corrigé ici) : chaque part était arrondie indépendamment
+// (Math.round par entrée), donc la somme des parts pouvait ne PAS égaler
+// `total` — ex. shareByWeight(100, [poids 1, 1, 1]) rendait 33+33+33=99,
+// perdant 1 KMF qui n'atterrissait dans aucun order_item_real_cost_
+// allocations. Sur assez de ventilations customs/freight, cet écart
+// s'accumule en dérive de réconciliation comptable jamais tracée.
+//
+// APRÈS : méthode du plus grand reste (même idiome que allocateConserving,
+// services/pricing-period-structure.js) — on arrondit chaque part vers le
+// bas, puis on distribue le reliquat entier (nécessairement < nombre
+// d'entrées) une unité à la fois aux entrées dont la partie fractionnaire
+// tronquée était la plus grande. Départage déterministe par id pour un
+// résultat reproductible entre deux appels avec les mêmes entrées.
 function shareByWeight(total, entries) {
   const totalWeight = entries.reduce((s, e) => s + Number(e.weight || 0), 0);
   if (totalWeight === 0 || !entries.length) {
     return entries.map(e => ({ id: e.id, share: 0, share_pct: 0 }));
   }
-  return entries.map(e => {
+
+  const totalAmount = Math.round(Number(total) || 0);
+
+  const raw = entries.map((e, index) => {
     const w = Number(e.weight || 0);
+    const rawShare = totalAmount * w / totalWeight;
+    const floorShare = Math.floor(rawShare);
     return {
+      index,
       id: e.id,
-      share: Math.round(total * w / totalWeight),
+      floorShare,
+      remainder: rawShare - floorShare,
       share_pct: Math.round((w / totalWeight) * 10000) / 100,
     };
   });
+
+  let remaining = totalAmount - raw.reduce((s, r) => s + r.floorShare, 0);
+  const byLargestRemainder = [...raw].sort((a, b) => {
+    if (b.remainder !== a.remainder) return b.remainder - a.remainder;
+    return String(a.id).localeCompare(String(b.id));
+  });
+  for (let i = 0; i < remaining; i += 1) {
+    byLargestRemainder[i % byLargestRemainder.length].floorShare += 1;
+  }
+
+  return raw
+    .sort((a, b) => a.index - b.index)
+    .map(r => ({ id: r.id, share: r.floorShare, share_pct: r.share_pct }));
 }
 
 function taxableWeight(weightKg, volumeM3, mode = 'sea') {

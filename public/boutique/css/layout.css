@@ -27,6 +27,23 @@ body {
 }
 
 /* ── HEADER ─────────────────────────────────────────────────── */
+@media (max-width: 899px) {
+  #k-hero-fixed-wrap {
+    background-color: var(--white);
+  }
+
+  /* Empty states scroll inside the same viewport as populated categories. */
+  #k-page-scroll.k-pager-active:has(.k-catalog-empty) {
+    overflow-y: auto;
+  }
+
+  #k-page-scroll.k-pager-active:has(.k-catalog-empty) #k-catalog-section {
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+}
+
 .k-header {
   position: fixed; /* PATCH header-fixed — sticky ne survit pas à body:overflow:hidden (pager actif) */
   top: 0;
@@ -1189,4 +1206,46 @@ body:has(#k-page-scroll.k-pager-active) {
 
 @media (min-width: 900px) {
   #k-header-spacer { height: 0; }
+}
+
+/* KOMERCE HERO PREVIEW — cart avatar remains owned by layout.css.
+   Shrink only the illustration on mobile; preserve the 42px button,
+   live badge and existing empty/full-cart animations. */
+@media (max-width: 899px) {
+  .k-header .k-cart-btn.k-header-action .k-cart-avatar,
+  .k-header .k-cart-btn.is-empty .k-cart-avatar,
+  .k-header .k-cart-btn.hidden .k-cart-avatar,
+  .k-cart-btn.k-header-action.is-empty .k-cart-avatar,
+  .k-cart-btn.k-header-action.hidden .k-cart-avatar {
+    width: 21px;
+  }
+}
+
+/* G-05 — 900–1199 px : les 4 boutons de navigation passent en icône seule
+   (aria-label déjà présent) pour supprimer le débordement horizontal.
+   Borne alignée sur le palier canonique 1200px (check-breakpoints.js
+   n'autorise que 900/1200 ; le doc de réconciliation visait 900-1279 mais
+   au-delà de 1199 le raffinement desktop du bloc 1200px ci-dessus prend le
+   relais). Scopé .k-header-actions : ne touche pas le CTA « Suivre ma
+   commande » qui porte aussi .k-header-nav-btn. */
+@media (min-width: 900px) and (max-width: 1199px) {
+  .k-header-actions .k-header-nav-btn {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    gap: 0;
+  }
+  .k-header-actions .k-header-nav-btn > span:not(.k-komerce-nav-icon, .k-header-group-badge),
+  .k-header-actions .k-header-nav-btn .k-komerce-nav-label {
+    display: none;
+  }
+}
+
+/* P-01 — >= 1200 px : le bloc d'actions garde la largeur de ses boutons ;
+   c'est la recherche (flex: 0 1 430px) qui absorbe l'écart. Supprime le
+   débordement résiduel 1200-1260 px sans breakpoint supplémentaire. */
+@media (min-width: 1200px) {
+  .k-header-actions { flex: 0 0 auto; }
 }

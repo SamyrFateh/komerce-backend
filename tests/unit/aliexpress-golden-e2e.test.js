@@ -78,6 +78,25 @@ describe('AliExpress Golden E2E source gate', () => {
       .toThrow(/mutuellement exclusifs/);
   });
 
+  test('an accepted staging import with failed shadow remains BLOCKED', () => {
+    const candidate = { state: 'scanned', scan_result: { sourcing_decision: 'TEST' } };
+    expect(golden.classifyGoldenImport({
+      accepted: 1, canonical_resolved: false, pipeline_status: 'PARTIAL_BLOCKED',
+      shadow_ingestion: { status: 'failed', code: 'SHADOW_OBSERVATION_FAILED' },
+    }, candidate)).toEqual({
+      status: 'BLOCKED', reason: 'SHADOW_OBSERVATION_FAILED', canonical_resolved: false,
+    });
+  });
+
+  test('a resolved shadow still needs an explicit price decision; exclusion stays REJECTED', () => {
+    const accepted = { canonical_resolved: true, pipeline_status: 'CANONICAL_RESOLVED' };
+    const candidate = { state: 'scanned', scan_result: { sourcing_decision: 'TEST' } };
+    expect(golden.classifyGoldenImport(accepted, candidate).status).toBe('PENDING_PRICE_DECISION');
+    expect(golden.classifyGoldenImport(accepted, {
+      state: 'rejected', scan_result: { sourcing_decision: 'EXCLUDED' },
+    }).status).toBe('REJECTED');
+  });
+
   test('never turns scanner recommendation into a price decision', () => {
     const summary = golden.candidateSummary({
       id: 'c1',

@@ -168,8 +168,8 @@ describe('GET /api/products — liste', () => {
       .mockResolvedValueOnce({ rows: [{ count: '0' }] });
     await request(buildApp()).get('/api/products?category=electro&subcategory=phones&search=iphone&min_price=1000&max_price=5000&in_stock=true');
     const [sql, params] = mockDbQuery.mock.calls[0];
-    expect(sql).toContain('p.category = $1');
-    expect(sql).toContain('p.subcategory = $2');
+    expect(sql).toContain('COALESCE(p.boutique_category_key, p.category) = $1');
+    expect(sql).toContain('COALESCE(p.boutique_subcategory_key, p.subcategory) = $2');
     expect(sql).toContain('p.name ILIKE $3 OR p.description ILIKE $3');
     expect(sql).toContain('p.price_kmf >= $4');
     expect(sql).toContain('p.price_kmf <= $5');
@@ -235,7 +235,7 @@ describe('GET /api/products/subcategories', () => {
     const res = await request(buildApp()).get('/api/products/subcategories');
     expect(res.status).toBe(200);
     const [sql, params] = mockDbQuery.mock.calls[0];
-    expect(sql).not.toContain('category = $1');
+    expect(sql).not.toContain('COALESCE(p.boutique_category_key, p.category) = $1');
     expect(params).toEqual([]);
   });
 
@@ -243,7 +243,7 @@ describe('GET /api/products/subcategories', () => {
     mockDbQuery.mockResolvedValueOnce({ rows: [] });
     await request(buildApp()).get('/api/products/subcategories?category=electro');
     const [sql, params] = mockDbQuery.mock.calls[0];
-    expect(sql).toContain('category = $1');
+    expect(sql).toContain('COALESCE(p.boutique_category_key, p.category) = $1');
     expect(params).toEqual(['electro']);
   });
 });

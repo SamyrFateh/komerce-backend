@@ -24,12 +24,21 @@
  */
 const BUNDLES = [
   {
+    // GAP-F4 étape 2 (docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md) — sous-
+    // ensemble de components.css mesuré par couverture réelle (cf.
+    // scripts/generate-critical-home-css.js), chargé de façon bloquante en
+    // <head> pour ne pas attendre tout components.css (chargé ensuite en
+    // preload non bloquant) avant le premier affichage.
+    out: 'critical-home.css',
+    files: ['critical-home'],
+  },
+  {
     out: 'base.css',
     files: ['tokens', 'reset', 'layout', 'hero', 'hero-ultra-mobile', 'mobile-shell-convergence'],
   },
   {
     out: 'components.css',
-    files: ['categories', 'category-cutout-navigation', 'products', 'product-image-loading', 'discovery-rail', 'spike-vertical-shell', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
+    files: ['categories', 'category-cutout-navigation', 'products', 'product-image-loading', 'discovery-rail', 'modal-shell', 'modal-media', 'modal-product', 'modal-product-lot4-hybrid',
             'modal-desktop-density', 'modal-mobile-canonical', 'modal-enriched-content', 'modal-cart-sku-guard',
             'cart', 'interactions', 'modal-mobile-suggestion-actions', 'modal-product-polish', 'modal-suggestion-filter', 'modal-suggestion-card-polish', 'hero-cart-proxy',
             'shared-list-side-cart', 'shared-list-side-cart-responsive', 'shared-list-library-remove',

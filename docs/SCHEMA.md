@@ -159,14 +159,21 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 | Table | Rôle |
 |---|---|
-| `products` | Catalogue produit. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `repack_volume_cm3` (NUMERIC, nullable — volume constaté après repack hub) et `repack_exempt` (BOOLEAN NOT NULL DEFAULT FALSE — exclusion doctrinale posée par admin). Doctrine : `docs/doctrine/DOCTRINE_DENSITE_VALEUR.md`. Aucune contrainte bloquante. **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : `fragility` (texte) devient la SOURCE UNIQUE du tag manipulation (valeurs conseillées : fragile, electronique, sensible_chaleur, sensible_humidite) ; `is_fragile` DÉPRÉCIÉE, backfillée, drop planifié `migrations/scheduled/097` (exécutable 2026-07-16). Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §3. **Migration 098 (2026-07-03, `verified_live_schema`)** : + 5 colonnes de cuisine raffinerie, invisibles boutique — `name_source`, `description_source`, `source_locale`, `content_source` (connector_raw | ai_enriched | manual, backfill legacy = manual), `enrichment_version`. Doctrine : `docs/doctrine/DOCTRINE_CATALOGUE.md` §4-5. **Migration 104 (2026-07-12, `verified_live_schema`)** : + `inventory_model` TEXT NOT NULL DEFAULT `LEGACY_VARIANTS`, CHECK (`LEGACY_VARIANTS` | `SKU`). La bascule vers SKU est explicite et atomique ; jamais déduite de l’existence de lignes dans `product_skus`. |
+| `products` | Catalogue produit. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `repack_volume_cm3` (NUMERIC, nullable — volume constaté après repack hub) et `repack_exempt` (BOOLEAN NOT NULL DEFAULT FALSE — exclusion doctrinale posée par admin). Doctrine : `docs/doctrine/DOCTRINE_DENSITE_VALEUR.md`. Aucune contrainte bloquante. **Migration 096 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : `fragility` (texte) devient la SOURCE UNIQUE du tag manipulation (valeurs conseillées : fragile, electronique, sensible_chaleur, sensible_humidite) ; `is_fragile` DÉPRÉCIÉE, backfillée, drop planifié `migrations/scheduled/097` (exécutable 2026-07-16). Doctrine : `docs/doctrine/DOCTRINE_NON_CONFORMITE.md` §3. **Migration 098 (2026-07-03, `verified_live_schema`)** : + 5 colonnes de cuisine raffinerie, invisibles boutique — `name_source`, `description_source`, `source_locale`, `content_source` (connector_raw | ai_enriched | manual, backfill legacy = manual), `enrichment_version`. Doctrine : `docs/doctrine/DOCTRINE_CATALOGUE.md` §4-5. **Migration 104 (2026-07-12, `verified_live_schema`)** : + `inventory_model` TEXT NOT NULL DEFAULT `LEGACY_VARIANTS`, CHECK (`LEGACY_VARIANTS` | `SKU`). La bascule vers SKU est explicite et atomique ; jamais déduite de l’existence de lignes dans `product_skus`. **Migration 245 (2026-09-26, `intended_migration_schema`)** : + `boutique_category_key` et `boutique_subcategory_key` TEXT nullable. Ces deux champs portent uniquement la taxonomie de merchandising/navigation ; `products.category` conserve sa responsabilité économique/douanière historique. La lecture publique préfère les champs boutique lorsqu’ils sont présents et retombe sur `category/subcategory` pour les produits historiques. |
 | `product_variants` | Variantes (taille, couleur). |
 | `product_suppliers` | Lien produit ↔ fournisseurs. **Migration 239 (2026-09-17, `intended_migration_schema`)** : `supplier_price_aed` devient nullable et explicitement legacy pour les routes SKU/SOI ; le mapping conserve l'autorité sur le fournisseur opérationnel, pas sur le prix natif de la Canonical Unit. |
 | `baskets` | Paniers (différents `basket_type`). |
 | `basket_items` | Items panier. |
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
-| `catalog_glossary` | Glossaire EN→FR injecté dans l'enrichissement IA (doctrine catalogue §4). `term_fr='='` signifie ne pas traduire (marques, termes culturels). Mémoire des corrections : chaque retouche récurrente devient une entrée. Migration 098, confirmée live. |
+| `catalog_glossary` | Glossaire EN→FR autoritaire Komerce (doctrine catalogue §4). `term_fr='='` signifie ne pas traduire. Mémoire des corrections validées : une décision Komerce gagne toujours sur une référence externe. Migration 098, confirmée live. |
+<!-- schema-pending
+object: catalog_terminology_reference
+kind: table
+migration: 243
+section: ## 4. Tables par domaine
+role: Mémoire terminologique externe sourcée EN→FR (TERMIUM Plus en premier), multi-contextes et multi-traductions. Import filtré par corpus réel, provenance/licence conservées. Référence uniquement : n'écrase jamais catalog_glossary.
+-->
 | `catalog_exclusions` | Éligibilité « ce que Komerce peut recevoir » (doctrine catalogue §3). Deux couches : `absolute` (douane/loi, définitif) et `restricted` (contrainte transport, ex. batteries lithium = maritime uniquement). Matching mots-clés sur la donnée source EN, étage ③ de la raffinerie. Migration 098, confirmée live. |
 | `catalog_field_overrides` | Retouches manuelles par champ, réappliquées après chaque re-raffinage (doctrine catalogue §5 — rejouabilité). UNIQUE(product_id, field_name) : dernier override par champ gagne. Le CRUD admin édite cette table, jamais la fiche générée. FK `products` ON DELETE CASCADE. Migration 098, confirmée live. |
 | `catalog_global_access_grants` | Grants explicites autorisant les surfaces Catalogue globales ; vérité d’autorisation résolue côté serveur. Vérifiée live Railway. |
@@ -178,6 +185,23 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `product_content_sections` | Sections éditoriales structurées + materials/care/warnings via section_key réservés (MATERIALS/CARE/WARNINGS, toujours BULLETS). UNIQUE(product_id, section_key) pour ré-promotion idempotente. content_json validé par le service de projection avant de traverser le contrat public. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
 | `product_attributes` | Attributs structurés clé/label/valeur. kind=HIGHLIGHT alimente content.highlights, kind=SPECIFICATION alimente content.specifications (group/key/label/value/unit). UNIQUE(product_id, kind, group_key, attribute_key) pour idempotence. **Migration 111 — promue le 2026-08-12 (schema-promote, dump live verifie).** |
 | `product_market_exposure` | Exposition commerciale d'un produit du catalogue global sur un Market ID donné (partenaire pays, capability catalog.expose). Le catalogue (products) reste unique ; cette table n'est qu'une projection d'exposition, même patron que commercial_exposure sur physical_offers/services. Absence de ligne = DISABLED (fail-closed). Écrite exclusivement via services/catalog-market-exposure-service.js (catalog, lifecycle owner) ; market-delegation délègue, jamais de SQL direct. **Migration 202 — promue le 2026-09-10 (schema-promote, dump live verifie).** |
+
+<!-- schema-pending
+object: catalog_stock_sync_state
+kind: table
+migration: 241
+section: ### 4.5 Paniers et catalogue
+role: État courant (non-journal) de la dernière observation de stock fournisseur effectivement APPLIQUÉE par product_skus.id (Mission 1, KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE, docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md). Alimentée exclusivement par services/catalog-stock-sync-application.js — jamais par order-payment-confirmation.js ni order-status-machine.js, qui continuent d'écrire product_skus.stock uniquement via product-stock-service.js#adjustStock (mouvement relatif). Une observation plus récente REMPLACE la ligne existante en une transaction verrouillée (FOR UPDATE sur product_skus), jamais un second insert à réconcilier.
+-->
+
+<!-- schema-pending
+object: catalog_field_sync_state
+kind: table
+migration: 242
+section: ### 4.5 Paniers et catalogue
+role: Généralise catalog_stock_sync_state (migration 241) à tout champ du contrat Catalog Change Intake au-delà du stock (Mission 2, KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE). État courant (non-journal) de la dernière observation effectivement APPLIQUÉE, par (subject_type, subject_id, field_name). Les champs texte/médias sont suivis au grain product ; `purchase_price` est suivi au grain sku sous la forme native `{amount,currency}`, les deux faits devant provenir de la même capture, sans conversion implicite. Alimentée exclusivement par services/catalog-field-sync-application.js. N'écrit jamais products.cost_kmf (alimente le moteur économique actif, services/pricing-output.js) ni offer_status/is_active/option_axes/sellable_units (lié à la publication, services/catalog-promotion/*) — decision-only pour ces champs, cette table n'en porte donc jamais de ligne applied.
+-->
+
 
 
 
@@ -232,7 +256,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 
 | Table | Rôle |
 |---|---|
-| `customs_categories` | Catégories douane. |
+| `customs_categories` | Catégories douane. **Migration 248 (2026-09-27, `intended_migration_schema`)** : + `classification_terms` JSONB (objet de termes/phrases pondérés utilisés par la classification fournisseur dynamique) et + `default_weight_kg` NUMERIC(8,3). La Raffinerie ne doit connaître aucune clé de catégorie métier en dur ; seules les catégories actives et leur configuration DB pilotent le classement. |
 | `customs_shipments` | Expéditions douane. **Migration 092 (2026-06-25)** : workflow déclaration en deux étapes. Enum `customs_shipment_status` (`pending` → `declared` → `confirmed`). Colonne `status` (NOT NULL DEFAULT pending). `customs_paid_kmf` devient nullable (saisi lors de la déclaration, pas à la création). Colonnes `declared_at`, `declared_by` pour traçabilité. Gate : impossible de passer une commande en `available` si l'expédition liée est `pending`. Doctrine : `docs/doctrine/DOUANE_DECLARATION_PIVOT.md`. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `total_volume_m3` (NUMERIC(8,4), nullable — volume facturé transitaire, sert W/M et remplissage). Doctrine : `DOCTRINE_DENSITE_VALEUR.md`. |
 | `customs_shipment_parcels` | Lien shipment ↔ colis. **Migration 095 (2026-07-02, `verified_live_schema` — vérifié live Railway)** : + `parcel_volume_cm3` (NUMERIC(12,2), nullable — volume facturé transitaire, sert W/M et remplissage). Doctrine : `DOCTRINE_DENSITE_VALEUR.md`. |
 | `customs_history` | Historique taux effectifs. Migration 221 (chantier currency debt) : `customs_estimated_kmf` et `customs_real_kmf` passent de `integer` à `numeric(14,2)`. Les deux colonnes GÉNÉRÉES qui en dérivent — `customs_delta_kmf` (`customs_real_kmf - customs_estimated_kmf`) et `customs_delta_pct` — sont supprimées puis recréées à l'identique dans la même migration : Postgres refuse d'altérer le type d'une colonne dont dépend une generated column. Recréation, pas création — aucune colonne nouvelle, aucun changement de contrat pour les consommateurs. |

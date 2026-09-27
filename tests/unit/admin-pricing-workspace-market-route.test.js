@@ -35,6 +35,54 @@ jest.mock('../../middleware/require-pricing-global-authority', () => ({
   requirePricingGlobalAuthority: (req, res, next) => mockCentralPricing ? next() : res.status(403).json({ code: 'pricing_global_access_denied' }),
 }));
 
+// Les 10 endpoints d'écriture de l'atelier prix sont désormais gardés par
+// requireMarketDelegatedCapability (MARKET-DELEGATION-P0B, Gap 1) au lieu du
+// rôle projeté market_operator + requireMarketScopeRole('manager'). On simule
+// donc directement resolveAuthorization/audit du service de délégation plutôt
+// que de continuer à piloter l'autorisation via mockScopeRole côté scope —
+// c'est exactement le point du fix : la capability est la seule autorité.
+// mockGrantedCapabilities permet de prouver que c'est la capability, et non
+// le rôle, qui décide (cas ajout/retrait sans changement de rôle) : par
+// défaut un manager a tout, un viewer n'a rien, mais un test peut retirer une
+// capability précise à un manager sans toucher mockScopeRole.
+let mockGrantedCapabilities = null; // null = déduit de mockScopeRole (comportement par défaut)
+const mockAllPricingCapabilities = new Set([
+  'pricing.decide', 'pricing.activate', 'pricing.policy.set',
+  'pricing.cost_component.update', 'pricing.cost_component.reset',
+  'market.observation.record', 'structure.event.record',
+]);
+
+// LOT B (audit pricing.read/pricing.simulate) : fait produit réel — la
+// lecture du workspace et la simulation sont ouvertes à TOUT membre du
+// marché (viewer comme manager), contrairement aux mutations qui restent
+// manager-only. mockPricingReadGranted permet un test négatif de révocation
+// indépendant de mockScopeRole (retrait de la capability sans changement de
+// rôle), preuve que c'est bien la capability qui fait autorité.
+let mockPricingReadGranted = true;
+const mockReadCapabilities = new Set(['pricing.read', 'pricing.simulate']);
+
+jest.mock('../../services/market-delegation-service', () => ({
+  resolveAuthorization: jest.fn(async (_executor, { marketCode, requiredCapability }) => {
+    const granted = mockReadCapabilities.has(requiredCapability)
+      ? (mockPricingReadGranted ? mockReadCapabilities : new Set())
+      : (mockGrantedCapabilities || (mockScopeRole === 'manager' ? mockAllPricingCapabilities : new Set()));
+    if (!granted.has(requiredCapability)) {
+      const error = new Error(`Capability ${requiredCapability} requise.`);
+      error.code = 'MARKET_CAPABILITY_REQUIRED';
+      error.status = 403;
+      throw error;
+    }
+    return {
+      market_id: marketCode === 'CM' ? 'market-cm' : 'market-cg',
+      market_code: marketCode,
+      assignment_id: 'assignment-1',
+      membership_id: 'membership-1',
+      capabilities: [...granted],
+    };
+  }),
+  audit: jest.fn(async () => {}),
+}));
+
 jest.mock('../../db', () => ({ query: jest.fn() }));
 const db = require('../../db');
 
@@ -108,6 +156,8 @@ beforeEach(() => {
   mockAuthorized = new Set(['market-cm']);
   mockCentralPricing = false;
   mockScopeRole = 'manager';
+  mockGrantedCapabilities = null;
+  mockPricingReadGranted = true;
   db.query.mockImplementation(async (_sql, params) => ({ rows: [{ id: params[0] === 'CM' ? 'market-cm' : 'market-cg', code: params[0], name: params[0], currency: 'XAF' }] }));
 });
 
@@ -278,7 +328,11 @@ test('autorité Pricing globale peut gérer coûts et politique mais ne prend pa
 
   const localPrice = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price').send({ amount: 1000, reason: 'central' });
   expect(localPrice.status).toBe(403);
-  expect(localPrice.body.code).toBe('market_local_strategy_manager_required');
+  // requireLocalStrategyCapability n'admet jamais le bypass pricingGlobalAuthority
+  // (doctrine country_manager_owns_local_strategy) — même un admin central sans
+  // la capability pricing.decide sur ce marché reçoit le refus capability, pas
+  // un raccourci de rôle.
+  expect(localPrice.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
 });
 
 test('opérateur CM reçoit 403 sur modèle, décision et corridor CG', async () => {
@@ -294,4 +348,97 @@ test('market_operator ne peut jamais atteindre le pricing global', async () => {
   const res = await request(app()).get('/api/admin/workspaces/pricing');
   expect(res.status).toBe(403);
   expect(mockWorkspace.buildWorkspace).not.toHaveBeenCalled();
+});
+
+// Preuve directe du fix MARKET-DELEGATION-P0B (Gap 1) : c'est la capability,
+// jamais le rôle, qui ouvre ou ferme l'action — cas 8 (retrait) et 9 (ajout)
+// du mandat, sur pricing.decide (décision locale) et pricing.activate.
+// Preuve directe du fix MARKET-DELEGATION LOT B : pricing.read et
+// pricing.simulate n'avaient encore aucun consommateur réel avant ce lot —
+// révoquer la capability seule (sans toucher au rôle scope) doit fermer la
+// lecture et la simulation, et un manager ne bypass jamais ce guard.
+describe('pricing.read / pricing.simulate priment sur le rôle scope (LOT B)', () => {
+  test('révocation de pricing.read ferme la lecture du workspace même pour un manager avec scope actif', async () => {
+    mockPricingReadGranted = false;
+    const res = await request(app()).get('/api/admin/workspaces/pricing/market/CM');
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    expect(mockWorkspace.buildMarketWorkspace).not.toHaveBeenCalled();
+  });
+
+  test('révocation de pricing.read ferme aussi decision, decision-policy/history, commercial-prices, corridor et charges', async () => {
+    mockPricingReadGranted = false;
+    const endpoints = [
+      '/api/admin/workspaces/pricing/market/CM/decision',
+      '/api/admin/workspaces/pricing/market/CM/decision-policy/history',
+      '/api/admin/workspaces/pricing/market/CM/commercial-prices',
+      '/api/admin/workspaces/pricing/market/CM/corridor?product_ref=KPR-1',
+      '/api/admin/workspaces/pricing/market/CM/charges',
+      '/api/admin/workspaces/pricing/market/CM/structure-events',
+    ];
+    for (const endpoint of endpoints) {
+      const res = await request(app()).get(endpoint);
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    }
+  });
+
+  test('viewer avec pricing.read (défaut) simule un impact sans mutation', async () => {
+    mockScopeRole = 'viewer';
+    const res = await request(app())
+      .post('/api/admin/workspaces/pricing/market/CM/simulate-impact')
+      .send({ product_ref: 'KPR-1', proposed_price: 12000 });
+    expect(res.status).toBe(200);
+    expect(mockWorkspace.simulateImpact).toHaveBeenCalledWith(
+      expect.objectContaining({ product_ref: 'KPR-1' }),
+      expect.objectContaining({ id: 'market-cm', code: 'CM' })
+    );
+  });
+
+  test('révocation de pricing.simulate ferme la simulation même pour un manager', async () => {
+    mockPricingReadGranted = false;
+    const res = await request(app())
+      .post('/api/admin/workspaces/pricing/market/CM/simulate-impact')
+      .send({ product_ref: 'KPR-1', proposed_price: 12000 });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    expect(mockWorkspace.simulateImpact).not.toHaveBeenCalled();
+  });
+});
+
+describe('pricing.decide / pricing.activate priment sur le rôle market_operator (retrait/ajout)', () => {
+  test('retrait de pricing.decide : le rôle market_operator seul ne suffit plus à décider un prix local', async () => {
+    mockGrantedCapabilities = new Set(); // rôle market_operator conservé, mais aucune capability
+    const res = await request(app())
+      .post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price')
+      .send({ amount: 1000, reason: 'sans capability' });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    expect(mockCommercialPrice.setMarketPriceDraft).not.toHaveBeenCalled();
+  });
+
+  test('ajout de pricing.decide seule (sans pricing.activate) : décide mais ne peut pas activer', async () => {
+    mockGrantedCapabilities = new Set(['pricing.decide']);
+    const decide = await request(app())
+      .post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price')
+      .send({ amount: 1000, reason: 'capability précise' });
+    expect(decide.status).toBe(200);
+    expect(mockCommercialPrice.setMarketPriceDraft).toHaveBeenCalled();
+
+    const activate = await request(app())
+      .post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price/activate')
+      .send({});
+    expect(activate.status).toBe(403);
+    expect(activate.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    expect(mockActivation.activateLocalPrice).not.toHaveBeenCalled();
+  });
+
+  test('ajout de pricing.activate en plus : l’activation devient possible sans changement de rôle', async () => {
+    mockGrantedCapabilities = new Set(['pricing.decide', 'pricing.activate']);
+    const activate = await request(app())
+      .post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price/activate')
+      .send({});
+    expect(activate.status).toBe(200);
+    expect(mockActivation.activateLocalPrice).toHaveBeenCalled();
+  });
 });

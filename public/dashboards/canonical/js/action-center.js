@@ -77,23 +77,48 @@
     return allowed[0] || null;
   }
 
+  function severityFilterFromLocation(locationLike) {
+    try {
+      if (!locationLike || !locationLike.href) return null;
+      const raw = new URL(locationLike.href).searchParams.get('severity');
+      if (!raw) return null;
+      // Liste blanche stricte — jamais une valeur arbitraire du navigateur
+      // envoyée telle quelle au serveur au-delà de ce que le contrat
+      // signals.severity accepte réellement.
+      const allowed = new Set(['urgent', 'critical', 'warning', 'info']);
+      const values = raw.split(',').map(s => s.trim()).filter(v => allowed.has(v));
+      return values.length ? values.join(',') : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   async function resolveRuntimeScope(options) {
     const adminContext = options.adminContext || await jsonRequest(options.fetch, CONTEXT_ENDPOINT);
-    const marketCode = selectedMarketCode(adminContext, options.location || (typeof globalThis !== 'undefined' ? globalThis.location : null));
+    const locationLike = options.location || (typeof globalThis !== 'undefined' ? globalThis.location : null);
+    const marketCode = selectedMarketCode(adminContext, locationLike);
+    const severity = severityFilterFromLocation(locationLike);
+    const query = severity ? `?severity=${encodeURIComponent(severity)}` : '';
     if (adminContext && adminContext.access && adminContext.access.mode === 'market') {
       if (!marketCode) {
         const error = new Error('Aucun Market ID autorisé pour le Centre d’actions');
         error.code = 'action_center_market_context_missing';
         throw error;
       }
+      const endpoint = `${ENDPOINT}/market/${encodeURIComponent(marketCode)}`;
       return {
         mode: 'market',
         marketCode,
-        endpoint: `${ENDPOINT}/market/${encodeURIComponent(marketCode)}`,
+        severity,
+        endpoint,
+        loadEndpoint: `${endpoint}${query}`,
         adminContext,
       };
     }
-    return { mode: 'global', marketCode: null, endpoint: ENDPOINT, adminContext };
+    return {
+      mode: 'global', marketCode: null, severity,
+      endpoint: ENDPOINT, loadEndpoint: `${ENDPOINT}${query}`, adminContext,
+    };
   }
 
   function setFeedback(rootNode, message, tone = 'neutral') {
@@ -103,7 +128,7 @@
     target.textContent = message || '';
   }
 
-  function header(doc, payload) {
+  function header(doc, payload, severity) {
     const node = doc.createElement('header');
     node.className = 'kmc-workspace-header';
     const market = payload && payload.scope && payload.scope.market;
@@ -114,6 +139,16 @@
     copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', market
       ? 'Signaux dérivés de ce marché uniquement · acquitter, reporter ou résoudre sans modifier la donnée métier source'
       : 'Surface centrale globale · signaux dérivés · acquitter, reporter ou résoudre sans modifier la donnée métier source'));
+    if (severity) {
+      const filterLine = doc.createElement('p');
+      filterLine.className = 'kmc-workspace-subtitle';
+      filterLine.appendChild(text(doc, 'strong', '', `Filtré · ${severity.split(',').map(severityLabel).join(', ')}`));
+      filterLine.appendChild(doc.createTextNode(' — '));
+      const clear = text(doc, 'a', 'kmc-workspace-nav-link', 'Voir tous les signaux');
+      clear.href = market ? `/admin/action-center?market=${encodeURIComponent(market.code)}` : '/admin/action-center';
+      filterLine.appendChild(clear);
+      copy.appendChild(filterLine);
+    }
     node.appendChild(copy);
 
     const nav = doc.createElement('nav');
@@ -270,16 +305,18 @@
       fetch: options.fetch,
       ui: options.ui,
       endpoint: runtime.endpoint,
+      loadEndpoint: runtime.loadEndpoint,
+      severity: runtime.severity,
       scopeMode: runtime.mode,
       marketCode: runtime.marketCode,
       reload: null,
     };
 
     async function load() {
-      const payload = await jsonRequest(context.fetch, context.endpoint);
+      const payload = await jsonRequest(context.fetch, context.loadEndpoint);
       const rootNode = context.root;
       rootNode.replaceChildren();
-      rootNode.appendChild(header(context.document, payload));
+      rootNode.appendChild(header(context.document, payload, context.severity));
       rootNode.appendChild(context.ui.KpiStrip.create(metricItems(payload.summary)).element);
 
       const controls = context.ui.Section.create({

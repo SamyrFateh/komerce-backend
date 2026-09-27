@@ -37,7 +37,8 @@
 
 const db = require('../db');
 const walletReceiptService = require('./documents/wallet-receipt');
-const { markPaid } = require('./payment-service');
+// Checkout persistence is loaded lazily inside the full-payment branch to avoid
+// a module-initialization cycle (checkout persistence also imports wallet-service).
 const { setWalletApplied } = require('./order-mutation-service');
 const log = require('../utils/logger').child({ module: 'wallet-service' });
 
@@ -396,25 +397,26 @@ async function applyToOrder(client, { userId, orderId, amountKmf }) {
   const newApplied     = alreadyApplied + max;
   const remainingToPay = Math.max(0, order.total_kmf - newApplied);
 
-  // D-02 : séparation des responsabilités — wallet écrit wallet_applied_kmf,
-  // payment-service.markPaid() owne payment_status (invariant I-BACK-4).
+  // Wallet écrit wallet_applied_kmf ; le cycle canonique de confirmation
+  // positionne payment_status via la state machine (invariant I-BACK-4).
   await setWalletApplied(client, {
     orderId,
     amountKmf: newApplied,
   });
   if (remainingToPay <= 0) {
-    const markPaidResult = await markPaid(orderId, { client });
-    if (!markPaidResult.changed) {
-      // Le débit wallet et wallet_applied_kmf ci-dessus sont déjà écrits dans
-      // CETTE transaction (non commités) — l'appelant (routes/wallet.js) fait
-      // un ROLLBACK sur toute exception, donc jeter ici annule proprement le
-      // débit plutôt que de laisser payment_status désynchronisé de
-      // wallet_applied_kmf. Cause : order.payment_status n'était ni 'pending'
-      // ni débloqué par un paymentEvent (ex. 'refunded'/'failed' concurrent
-      // au checkout) — cf. payment-status-validator.
+    // Même chemin canonique que le checkout wallet 100 % : state machine,
+    // stock, facture et secret, dans la transaction du caller. La commande
+    // verrouillée fournit le relais serveur, jamais le corps de la requête.
+    const { completeWalletFullPayment } = require('./order-checkout-persistence');
+    const completion = await completeWalletFullPayment(client, {
+      order,
+      user: { id: userId, role: 'user' },
+      relais: order.relais_id ? { id: order.relais_id } : null,
+    });
+    if (!completion.ok) {
       throw Object.assign(
-        new Error(`Application wallet impossible : payment_status de la commande n'autorise pas 'paid'`),
-        { statusCode: 409 }
+        new Error(completion.body?.error || 'Confirmation wallet impossible'),
+        { statusCode: completion.status || 409, items: completion.body?.items }
       );
     }
   }

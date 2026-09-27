@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        category_sections, scroll_state, viewport, modal_events
  * @outputs       horizontal_pager_state, active_chip_sync, category_scroll_memory
- * @depends       b-bus.js, b-pager-end-bounce.js, b-scroll-owner.js, b-store.js
+ * @depends       b-bus.js, b-scroll-owner.js, b-store.js
  * @used-by       b-catalog.js, b-subcat.js, b-nav.js, discovery-rail.js
  * @doctrine      navigation_sans_friction, categorie_souscategorie_switch_fluide, mobile_desktop_coherence, docs/doctrine/DOCTRINE_DISCOVERY_ACCESSIBILITE_LOCALE.md
  * @impact-areas  mobile-navigation, category-navigation, scroll-ownership, product-grid, discovery-rail
@@ -22,9 +22,8 @@
  * - vertical   = exploration locale de l'univers courant ;
  * - toute entrée horizontale dans un univers repart en haut afin que
  *   `Disponible ici`, lorsqu'il existe, soit immédiatement visible ;
- * - le premier relâchement vertical en bas déclenche le bump historique :
- *   passage automatique sans signal intermédiaire ni second geste vers la
- *   catégorie suivante, repositionnée en haut ;
+ * - le scroll vertical ne change JAMAIS de catégorie (pas de bump) : on
+ *   change d'univers uniquement par puce ou swipe horizontal ;
  * - un unique ghost DROITE, snapshot inerte de Tout, permet dernière catégorie → Tout.
  *
  * Le ghost n'est jamais une page métier : pas de fetch, pas d'event listener,
@@ -35,7 +34,6 @@
 import { bus } from './b-bus.js';
 import { state, dom, setActiveCatState } from './b-store.js';
 import { isDesktop } from './b-scroll-owner.js';
-import { setupPagerEndBounce, teardownPagerEndBounce } from './b-pager-end-bounce.js';
 
 let _stabilizationHooksInstalled = false;
 let _recalcRaf = 0;
@@ -358,56 +356,6 @@ function _setupInfiniteLoop() {
   ghost.scrollTop = 0;
 }
 
-function _teardownSectionAutoAdvance(pages = _getPages()) {
-  pages.forEach((page) => {
-    if (page._bounceH) {
-      page.removeEventListener('scroll', page._bounceH);
-      page._bounceH = null;
-    }
-    if (page._bounceTouchEnd) {
-      page.removeEventListener('touchend', page._bounceTouchEnd);
-      page.removeEventListener('touchcancel', page._bounceTouchEnd);
-      page._bounceTouchEnd = null;
-    }
-    if (page._bounceTimer) {
-      clearTimeout(page._bounceTimer);
-      page._bounceTimer = null;
-    }
-    page._bounceLastST = 0;
-    page._bounceWasDown = false;
-  });
-  teardownPagerEndBounce(pages);
-}
-
-function _setupSectionAutoAdvance() {
-  const pages = _getPages();
-  _teardownSectionAutoAdvance(pages);
-
-  return setupPagerEndBounce({
-    pages,
-    isBlocked: () => state.modalOpen || isDesktop(),
-    onAdvance: (currentPage, nextPage) => {
-      const grid = _getGrid();
-      if (!grid) return;
-      const realPages = _getPages(grid);
-      const currentIndex = realPages.indexOf(currentPage);
-      if (currentIndex < 0) return;
-
-      _resetPageToTop(nextPage, grid);
-      _syncChip(nextPage.dataset.cat || 'all');
-
-      if (currentIndex + 1 < realPages.length) {
-        _scrollToIndex(grid, currentIndex + 1, 'smooth');
-        return;
-      }
-
-      const ghost = grid.querySelector(':scope > .k-cat-section[data-ghost="right"]');
-      const ghostIndex = _getPagerPages(grid).indexOf(ghost);
-      _scrollToIndex(grid, ghostIndex >= 0 ? ghostIndex : 0, 'smooth');
-    },
-  });
-}
-
 function _scrollPagerToGhost() {
   return _scrollPagerToCat('all');
 }
@@ -437,7 +385,6 @@ function destroyMobilePager() {
       grid._pagerScrollH = null;
     }
 
-    _teardownSectionAutoAdvance(_getPages(grid));
     grid.querySelectorAll('[data-ghost]').forEach((ghost) => ghost.remove());
     grid.classList.remove('k-grid-cat-pager');
     ['transform', 'transition', 'width', 'height', 'position', 'overflow', 'willChange', 'display']
@@ -470,7 +417,6 @@ function _setupPagerDots() {}
 export {
   _setupMobilePager,
   _recalcPagerVars,
-  _setupSectionAutoAdvance,
   _setupHorizontalWrap,
   _syncChipToScroll,
   _onPagerScroll,

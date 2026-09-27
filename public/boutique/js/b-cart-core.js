@@ -71,12 +71,12 @@ export function saveCart() {
 /**
  * @brief updateCartBadge — Source de vérité unique pour tous les états panier
  * Synchronise : badge header, badge modal, badge bnav, avatar (seule/panier)
- * Règle : panier vide → avatar_seule.png ; plein → avatar_panier.png + animation
+ * Règle : panier vide → avatar_seule.webp ; plein → avatar_panier.webp + animation
  */
 export function updateCartBadge() {
   const count = cartQty();
   const hasItems = count > 0;
-  const avatarSrc = hasItems ? '/images/avatar_panier.png' : '/images/avatar_seule.png';
+  const avatarSrc = hasItems ? '/images/avatar_panier.webp' : '/images/avatar_seule.webp';
 
   document.querySelectorAll('.k-cart-btn, #k-modal-cart-btn').forEach(btn => {
     btn.classList.toggle('has-items', hasItems);

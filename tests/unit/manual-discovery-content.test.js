@@ -30,6 +30,7 @@ jest.mock('../../services/local-stock-service', () => ({
 
 const {
   MAX_DISCOVERY_CANDIDATES,
+  isValidLocalMediaReference,
   validateManifest,
   candidateToken,
   buildCandidateString,
@@ -119,6 +120,23 @@ test('refuse une exposition locale qui ne porte pas sa vérité source', () => {
   expect(result.ok).toBe(false);
   expect(result.errors.join('\n')).toContain('local_stock.expose=true');
   expect(result.errors.join('\n')).toContain('status=active et expose=true');
+});
+
+test('rejette les visuels de catégories, les fiches locales sans photo et sans contexte', () => {
+  const input = manifest();
+  input.local_products[0].image_ref = '/boutique/categories/cat-bricolage-v3.webp';
+  input.services[0].image_ref = '';
+  input.services[0].description = '';
+  input.services[0].zone = '';
+  const result = validateManifest(input);
+  expect(result.ok).toBe(false);
+  expect(result.errors.join('\\n')).toContain('local_products[0].image_ref');
+  expect(result.errors.join('\\n')).toContain('services[0].image_ref');
+  expect(result.errors.join('\\n')).toContain('services[0] exposé exige description et zone');
+  expect(isValidLocalMediaReference('/boutique/categories/cat-bricolage-v3.webp')).toBe(false);
+  expect(isValidLocalMediaReference('//external.bad/photo.webp')).toBe(false);
+  expect(isValidLocalMediaReference('https://images.pexels.com/photos/1/pexels-photo-1.jpeg')).toBe(true);
+  expect(isValidLocalMediaReference('/media/service-plomberie.webp')).toBe(true);
 });
 
 test('refuse une politique Discovery ambiguë ou au-delà du cap runtime', () => {

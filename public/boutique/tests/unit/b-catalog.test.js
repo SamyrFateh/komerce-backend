@@ -47,7 +47,6 @@ const mockScrollPageToElement = jest.fn();
 const mockDestroyMobilePager = jest.fn();
 const mockSetupMobilePager = jest.fn();
 const mockRecalcPagerVars = jest.fn();
-const mockSetupSectionAutoAdvance = jest.fn();
 const mockScrollPagerToCat = jest.fn();
 const mockSetupInfiniteLoop = jest.fn();
 const mockRenderFlatSubcat = jest.fn(() => '<article class="k-card" data-id="flat"></article>');
@@ -117,7 +116,6 @@ jest.mock('../../js/b-subcat.js', () => ({
 jest.mock('../../js/b-pager.js', () => ({
   _setupMobilePager: mockSetupMobilePager,
   _recalcPagerVars: mockRecalcPagerVars,
-  _setupSectionAutoAdvance: mockSetupSectionAutoAdvance,
   _setupHorizontalWrap: jest.fn(),
   _syncChipToScroll: jest.fn(),
   _onPagerScroll: jest.fn(),
@@ -520,5 +518,19 @@ describe('b-catalog — chargement produits', () => {
     expect(mockMarkAllCartButtons).toHaveBeenCalled();
     expect(mockPruneObsoleteCart).toHaveBeenCalledWith(new Set(['1']));
     expect(mockShowToast).toHaveBeenCalledWith('1 produit obsolète retiré du panier', 'info');
+  });
+});
+
+describe('b-catalog — spike vertical-shell retiré', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(
+    path.join(__dirname, '../../js/b-catalog.js'),
+    'utf8'
+  );
+
+  test('ne câble plus le spike Phase 2 (shell vertical)', () => {
+    expect(source).not.toMatch(/spike-vertical-shell/);
+    expect(source).not.toMatch(/spike-shell-vertical/);
   });
 });

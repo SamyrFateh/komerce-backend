@@ -156,6 +156,35 @@ Le dashboard doit répondre immédiatement à deux questions :
 1. **A-t-il le droit ?**
 2. **Peut-il réellement faire le travail avec l'UI et les APIs présentes ?**
 
+### 8.1 Décision catalogue marché — ne jamais refaire la curation globale
+
+Pour les produits du catalogue, le dashboard pays doit répondre à une seule
+question opérationnelle :
+
+> **« Ce produit déjà validé globalement peut-il être vendu sur mon marché maintenant ? »**
+
+Le responsable pays ne valide ni la traduction, ni l'identité fournisseur, ni la
+qualité globale de la fiche. Ces autorités appartiennent au Catalogue global.
+
+Sa carte de décision marché expose uniquement les faits de son périmètre :
+
+- **Catalogue global** : validé / non validé (lecture seule) ;
+- **Prix local** : prêt / manquant / bloqué ;
+- **Logistique** : route exploitable / à confirmer / bloquée ;
+- **Paiement** : moyens disponibles / incomplets ;
+- **Restrictions locales** : aucune / à vérifier / bloquante ;
+- **Stock/disponibilité** : état consommable par le marché ;
+- **Exposition** : ENABLED / DISABLED, décision explicite et auditée.
+
+Les compteurs de tête doivent être décisionnels :
+**Prêts à exposer · À compléter · Bloqués · Exposés · Masqués**.
+
+Le bouton **Exposer** n'est actif que si les gates serveur du marché sont verts.
+L'UI n'invente aucun readiness local.
+
+L'absence de décision d'exposition reste `DISABLED` (fail-closed). Une
+publication globale ne crée jamais implicitement une exposition pays.
+
 ## 9. Séquence d'exécution
 
 Le chantier se ferme par tranches verticales testables :

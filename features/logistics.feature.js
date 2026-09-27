@@ -315,6 +315,16 @@ module.exports = {
       'GET /api/v2/parcels/critical',
       'GET /api/v2/parcels/kpis',
       'GET /api/v2/parcels/reconciliation',
+      // Rapatriées depuis le route-registry (audit 2026-09) — routes réelles
+      // câblées via routes/hub.js et routes/parcels.js, jamais déclarées
+      // jusqu'ici.
+      'POST /api/hub/move',
+      'POST /api/hub/outcome',
+      'POST /api/hub/revalidate',
+      'POST /api/hub/transition',
+      'POST /api/hub/unit',
+      'GET /api/parcels',
+      'POST /api/parcels',
     ],
     internalApi: [
       { fn: 'transitionParcelStatus', file: 'services/parcel-operations.js' },

@@ -84,7 +84,15 @@ if (!hasIntegrationEnv) {
       mode: 'market',
       allowedMarkets: ['CM'],
       defaultMarket: 'CM',
-      capabilities: ['pilotage.read', 'dashboard.market.read'],
+      // LOT B (audit dashboard.market.read) : resolveDashboardAdminContext
+      // ne fabrique plus dashboard.market.read côté "capabilities" — seule
+      // la capability DELEGATION réellement prouvée (via
+      // delegatedCapabilities) fait foi désormais.
+      capabilities: ['pilotage.read'],
+      // adminCountry n'a qu'un operator_market_scopes legacy — aucune
+      // assignment_membership DELEGATION réelle sur CM, donc projection vide
+      // (jamais une erreur : cf. NO_DELEGATED_CAPABILITY_CODES).
+      delegatedCapabilities: { CM: [] },
     });
   });
 

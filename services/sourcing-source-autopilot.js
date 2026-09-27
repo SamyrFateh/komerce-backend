@@ -26,6 +26,8 @@ const { buildSourceDescriptor } = require('./sourcing-observation-shadow-service
 
 const LOCK_NAMESPACE = 'komerce:sourcing-source-autopilot';
 const DEFAULT_BATCH_LIMIT = 10;
+const DEFAULT_TRANSIENT_RETRIES = 3;
+const DEFAULT_TRANSIENT_RETRY_DELAY_MS = 2000;
 
 class SourcingSourceAutopilotError extends Error {
   constructor(status, message, code, details = null) {
@@ -142,6 +144,22 @@ function boundedError(err) {
   return String(err?.message || err || 'erreur inconnue').slice(0, 500);
 }
 
+function boundedNonNegativeInt(value, fallback, max) {
+  const n = Number.parseInt(value ?? fallback, 10);
+  return Number.isInteger(n) && n >= 0 && n <= max ? n : fallback;
+}
+
+function isTransientImportResult(result) {
+  const status = Number(result?.status || 0);
+  const message = String(result?.body?.error || '');
+  return status >= 500
+    || /(?:HTTP\s*)?429|too many requests|rate.?limit|timeout|timed out|temporar(?:y|ily) unavailable|bad gateway|gateway timeout|service unavailable|ECONNRESET|ECONNREFUSED|EAI_AGAIN|ENOTFOUND/i.test(message);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms) || 0)));
+}
+
 async function acquireSourceLock(client, sourceRef) {
   const { rows: [row] } = await client.query(
     'SELECT pg_try_advisory_lock(hashtext($1), hashtext($2)) AS locked',
@@ -215,43 +233,72 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
     locked = await acquireSourceLock(lockClient, sourceRef);
     if (!locked) return { status: 'skipped', source_ref: sourceRef, reason: 'already_running' };
 
-    const result = await catalogImport.importCatalog(
-      buildImportBody(source, automation, reason),
-      null,
-      importDispatch.dispatchToConnector
+    const maxTransientRetries = boundedNonNegativeInt(
+      process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES,
+      DEFAULT_TRANSIENT_RETRIES,
+      10
     );
+    const transientRetryDelayMs = boundedNonNegativeInt(
+      process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS,
+      DEFAULT_TRANSIENT_RETRY_DELAY_MS,
+      300000
+    );
+
+    let result;
+    let transientRetries = 0;
+    while (true) {
+      // eslint-disable-next-line no-await-in-loop
+      result = await catalogImport.importCatalog(
+        buildImportBody(source, automation, reason),
+        null,
+        importDispatch.dispatchToConnector
+      );
+      if (!isTransientImportResult(result) || transientRetries >= maxTransientRetries) break;
+      transientRetries += 1;
+      const delay = transientRetryDelayMs * (2 ** (transientRetries - 1));
+      if (delay > 0) {
+        // eslint-disable-next-line no-await-in-loop
+        await sleep(delay);
+      }
+    }
 
     if (result.status >= 400) {
       const empty = result.status === 400 && result.body?.error === 'Aucun produit valide trouvé';
-      await recordSyntheticCapture(sourceRef, empty ? 'complete' : 'failed', {
+      const retryPending = !empty && isTransientImportResult(result);
+      await recordSyntheticCapture(sourceRef, retryPending ? 'partial' : (empty ? 'complete' : 'failed'), {
         autopilot: true,
         reason,
-        outcome: empty ? 'empty' : 'failed',
+        outcome: retryPending ? 'retry_pending' : (empty ? 'empty' : 'failed'),
         error: result.body?.error || `HTTP ${result.status}`,
         rejected: result.body?.invalid?.length || result.body?.rejected || 0,
+        transient_retries: transientRetries,
       });
       return {
-        status: empty ? 'empty' : 'failed',
+        status: retryPending ? 'retry_pending' : (empty ? 'empty' : 'failed'),
         source_ref: sourceRef,
-        code: empty ? null : 'import_failed',
+        code: retryPending ? 'transient_import_retry_pending' : (empty ? null : 'import_failed'),
         error: result.body?.error || null,
+        transient_retries: transientRetries,
       };
     }
 
     const body = result.body || {};
-    if (body.shadow_ingestion?.status === 'failed') {
+    const partial = body.pipeline_status === 'PARTIAL_BLOCKED'
+      || body.shadow_ingestion?.status === 'failed'
+      || body.shadow_ingestion?.resolution?.status === 'failed';
+    if (partial) {
       await recordSyntheticCapture(sourceRef, 'partial', {
         autopilot: true,
         reason,
-        outcome: 'imported_shadow_failed',
+        outcome: 'imported_canonical_incomplete',
         accepted: body.accepted || 0,
         rejected: body.rejected || 0,
-        shadow_code: body.shadow_ingestion.code || null,
+        shadow_code: body.shadow_ingestion?.code || body.shadow_ingestion?.resolution?.code || null,
       });
     }
 
     return {
-      status: 'ok',
+      status: partial ? 'partial' : 'ok',
       source_ref: sourceRef,
       supplier_name: automation.supplier_name,
       accepted: body.accepted || 0,
@@ -259,6 +306,8 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
       updated: body.updated || 0,
       rejected: body.rejected || 0,
       shadow_status: body.shadow_ingestion?.status || null,
+      pipeline_status: body.pipeline_status || null,
+      transient_retries: transientRetries,
     };
   } catch (err) {
     await recordSyntheticCapture(sourceRef, 'failed', {
@@ -350,4 +399,5 @@ module.exports = {
   _automationBySourceRef: automationBySourceRef,
   _buildImportBody: buildImportBody,
   _recordSyntheticCapture: recordSyntheticCapture,
+  _isTransientImportResult: isTransientImportResult,
 };

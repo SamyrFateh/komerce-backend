@@ -49,6 +49,10 @@ jest.mock('../../services/documents/wallet-receipt', () => ({
   issue: jest.fn(),
 }));
 
+jest.mock('../../services/order-checkout-persistence', () => ({
+  completeWalletFullPayment: jest.fn(),
+}));
+
 jest.mock('../../utils/logger', () => ({
   child: jest.fn(() => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() })),
 }));
@@ -56,6 +60,7 @@ jest.mock('../../utils/logger', () => ({
 const db = require('../../db');
 const walletReceiptService = require('../../services/documents/wallet-receipt');
 const walletService = require('../../services/wallet-service');
+const { completeWalletFullPayment } = require('../../services/order-checkout-persistence');
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -426,30 +431,19 @@ describe('issueReceiptForCredit()', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('applyToOrder()', () => {
-  test('applies wallet to order and marks paid when fully covered', async () => {
+  test('full coverage delegates to canonical checkout cycle with the same transaction client and server relay', async () => {
+    completeWalletFullPayment.mockResolvedValueOnce({ ok: true, walletPickupCode: '123456' });
     mockQuery
-      // SELECT order
-      .mockResolvedValueOnce({ rows: [{ id: 'order-1', user_id: 'user-1', total_kmf: 3000, reference: 'KMC-001' }] })
-      // getOrCreateWallet (no forUpdate)
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', user_id: 'user-1', total_kmf: 3000, reference: 'KMC-001', relais_id: 'relay-server' }] })
       .mockResolvedValueOnce({ rows: [{ id: 'w-1', balance_kmf: 5000 }] })
-      // debit(): idempotence check
       .mockResolvedValueOnce({ rows: [] })
-      // debit(): getOrCreateWallet FOR UPDATE
       .mockResolvedValueOnce({ rows: [{ id: 'w-1', balance_kmf: 5000 }] })
-      // debit(): UPDATE balance
       .mockResolvedValueOnce({ rows: [{ balance_kmf: 2000 }] })
-      // debit(): INSERT transaction
       .mockResolvedValueOnce({ rows: [{ id: 'tx-1', type: 'debit' }] })
-      // debit(): SELECT lots FIFO
       .mockResolvedValueOnce({ rows: [{ id: 'lot-1', remaining_kmf: 3000, created_at: '2026-01-01' }] })
-      // debit(): UPDATE lot
       .mockResolvedValueOnce({ rows: [{}] })
-      // debit(): INSERT consumption
       .mockResolvedValueOnce({ rows: [{ id: 'cons-1', amount_kmf: 3000 }] })
-      // applyToOrder(): UPDATE orders (wallet_applied_kmf)
-      .mockResolvedValueOnce({ rows: [{}] })
-      // markPaid(): UPDATE orders (payment_status via payment-service.js)
-      .mockResolvedValueOnce({ rows: [{}], rowCount: 1 });
+      .mockResolvedValueOnce({ rows: [{}] });
 
     const result = await walletService.applyToOrder(mockClient, {
       userId: 'user-1', orderId: 'order-1', amountKmf: 3000,
@@ -457,9 +451,20 @@ describe('applyToOrder()', () => {
 
     expect(result.applied_kmf).toBe(3000);
     expect(result.remaining_to_pay).toBe(0);
+    expect(completeWalletFullPayment).toHaveBeenCalledTimes(1);
+    expect(completeWalletFullPayment).toHaveBeenCalledWith(mockClient, {
+      order: expect.objectContaining({ id: 'order-1', relais_id: 'relay-server' }),
+      user: { id: 'user-1', role: 'user' },
+      relais: { id: 'relay-server' },
+    });
+    expect(mockQuery.mock.calls.some(([sql]) => /UPDATE\s+orders\s+SET\s+payment_status/i.test(sql))).toBe(false);
   });
 
-  test('P5-N2/N3 : abandonne (throw) si markPaid ne peut pas passer payment_status à paid', async () => {
+  test('full coverage rejects stockBlocked with typed 409 for caller rollback', async () => {
+    completeWalletFullPayment.mockResolvedValueOnce({
+      ok: false, status: 409,
+      body: { error: 'Stock insuffisant pour finaliser la commande', items: [{ product_id: 'product-1' }] },
+    });
     mockQuery
       .mockResolvedValueOnce({ rows: [{ id: 'order-1', user_id: 'user-1', total_kmf: 3000, reference: 'KMC-001' }] })
       .mockResolvedValueOnce({ rows: [{ id: 'w-1', balance_kmf: 5000 }] })
@@ -470,14 +475,35 @@ describe('applyToOrder()', () => {
       .mockResolvedValueOnce({ rows: [{ id: 'lot-1', remaining_kmf: 3000, created_at: '2026-01-01' }] })
       .mockResolvedValueOnce({ rows: [{}] })
       .mockResolvedValueOnce({ rows: [{ id: 'cons-1', amount_kmf: 3000 }] })
-      // applyToOrder(): UPDATE orders (wallet_applied_kmf)
-      .mockResolvedValueOnce({ rows: [{}] })
-      // markPaid(): no-op — la garde du validateur a bloqué la transition
-      .mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      .mockResolvedValueOnce({ rows: [{}] });
 
-    await expect(
-      walletService.applyToOrder(mockClient, { userId: 'user-1', orderId: 'order-1', amountKmf: 3000 })
-    ).rejects.toThrow(/payment_status/);
+    await expect(walletService.applyToOrder(mockClient, {
+      userId: 'user-1', orderId: 'order-1', amountKmf: 3000,
+    })).rejects.toMatchObject({
+      statusCode: 409,
+      items: [{ product_id: 'product-1' }],
+    });
+    expect(completeWalletFullPayment).toHaveBeenCalledTimes(1);
+  });
+
+  test('partial coverage never enters canonical confirmation cycle', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'order-1', user_id: 'user-1', total_kmf: 3000, reference: 'KMC-001' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'w-1', balance_kmf: 1000 }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: 'w-1', balance_kmf: 1000 }] })
+      .mockResolvedValueOnce({ rows: [{ balance_kmf: 0 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'tx-1', type: 'debit' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'lot-1', remaining_kmf: 1000 }] })
+      .mockResolvedValueOnce({ rows: [{}] })
+      .mockResolvedValueOnce({ rows: [{ id: 'cons-1', amount_kmf: 1000 }] })
+      .mockResolvedValueOnce({ rows: [{}] });
+
+    const result = await walletService.applyToOrder(mockClient, {
+      userId: 'user-1', orderId: 'order-1', amountKmf: 1000,
+    });
+    expect(result.remaining_to_pay).toBe(2000);
+    expect(completeWalletFullPayment).not.toHaveBeenCalled();
   });
 
   test('throws when order not found', async () => {

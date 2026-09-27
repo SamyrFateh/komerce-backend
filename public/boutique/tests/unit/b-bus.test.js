@@ -28,4 +28,9 @@ describe('b-bus — registre des événements', () => {
 
     expect(retiredSection).not.toContain('modal:detail-ready');
   });
+
+  test('ne câble plus le spike Phase 2 (shell vertical)', () => {
+    expect(source).not.toMatch(/spike-vertical-shell/);
+    expect(source).not.toMatch(/spike-shell-vertical/);
+  });
 });

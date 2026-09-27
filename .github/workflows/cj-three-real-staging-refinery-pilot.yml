@@ -1,0 +1,106 @@
+name: CJ three real products — isolated staging refinery pilot
+
+# Never use Railway, any RAILWAY_* secret, production DATABASE_URL or
+# staging labels over production. The CI PostgreSQL service is the only DB.
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: komerce-cj-three-real-staging-pilot
+  cancel-in-progress: false
+
+jobs:
+  three-exact:
+    name: Read three live CJ offers, refine in disposable PostgreSQL
+    if: >-
+      github.actor == github.repository_owner &&
+      github.event.issue.title == '[staging-op] cj-three-real-refinery-pilot' &&
+      github.event.issue.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_cj_three_pilot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_cj_three_pilot"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_cj_three_pilot
+      PGPASSWORD: komerce
+      JWT_SECRET: ci-ephemeral-isolated-proof-only
+      ADMIN_PASSWORD: ci-ephemeral-isolated-proof-only
+      STRIPE_SECRET_KEY: sk_test_ci_placeholder
+      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
+      QR_SECRET: ci-ephemeral-isolated-proof-only
+      AUTHKEY_API_KEY: ci-ephemeral-isolated-proof-only
+      PAYPAL_CLIENT_ID: ci-ephemeral-isolated-proof-only
+      PAYPAL_CLIENT_SECRET: ci-ephemeral-isolated-proof-only
+      PAYPAL_WEBHOOK_ID: ci-ephemeral-isolated-proof-only
+      META_WA_APP_SECRET: ci-ephemeral-isolated-proof-only
+    steps:
+      - name: Checkout protected main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Assert disposable localhost database before any provider call
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$DATABASE_URL" = 'postgresql://komerce:komerce@127.0.0.1:5432/komerce_cj_three_pilot'
+          test "$NODE_ENV" = test && test "$KOMERCE_ENV" = staging
+          test "$KOMERCE_DISABLE_CRONS" = true
+          test "$(psql -h 127.0.0.1 -U komerce -d komerce_cj_three_pilot -At -c 'SELECT current_database()')" = komerce_cj_three_pilot
+          node --check scripts/cj-three-real-staging-pilot.js
+
+      - name: Bootstrap schema and reference data on localhost only
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -h 127.0.0.1 -U komerce -d komerce_cj_three_pilot -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql > /dev/null
+          node scripts/ci-db-bootstrap.js
+
+      - name: Three exact live CJ GETs then canonical refinery import — no publishing
+        shell: bash
+        env:
+          # Dedicated proof token already referenced by the manual-only CJ
+          # provider contract workflow. No Railway or production DB secret.
+          CJ_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "${CJ_ACCESS_TOKEN:-}" || { echo '::error::CJ_DEDICATED_READ_TOKEN_MISSING'; exit 1; }
+          node scripts/cj-three-real-staging-pilot.js
+
+      - name: Confirm no catalogue products were published by the test
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(psql -h 127.0.0.1 -U komerce -d komerce_cj_three_pilot -At -c 'SELECT count(*) FROM products')" = 0
+          test "$(psql -h 127.0.0.1 -U komerce -d komerce_cj_three_pilot -At -c 'SELECT count(*) FROM sourcing_candidates')" = 3

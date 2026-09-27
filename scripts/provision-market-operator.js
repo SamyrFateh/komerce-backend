@@ -319,7 +319,7 @@ async function main() {
     console.error('❌ Erreur :', err.message);
     process.exit(1);
   } finally {
-    await db.end().catch(() => {});
+    await db.pool.end().catch(() => {});
     process.exit(0);
   }
 }

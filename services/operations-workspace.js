@@ -8,7 +8,7 @@
  * @outputs       market_scoped_operations_work_queue, delegated_domain_mutations
  * @depends       db, services/order-status-machine.js, services/auto-parcel.js, services/scan-engine.js, services/inventory-service.js, services/parcel-auto-create-service.js
  * @used-by       routes/admin-operations-workspace.js
- * @db-read       orders, order_items, parcels, parcel_items, products, relais, users, inventory_items
+ * @db-read       orders, order_items, parcels, parcel_items, products, relais, users, inventory_items, order_incidents
  * @db-write      order_comments
  * @db-write-via:order-status-machine product_variants, order_status_history, products
  * @db-write-via:auto-parcel parcel_items, parcels
@@ -196,6 +196,99 @@ async function queryInventory(marketId) {
   return { items, open_parcels: openParcels };
 }
 
+/**
+ * Signaux réseau Hub/Relais — couche de pilotage additive au-dessus des
+ * files d'exécution déjà existantes (buildQueues). Réutilise le même
+ * seuil de 72h et le même filtre cash déjà établis et éprouvés dans
+ * services/relay-dashboard-queries.js#getDashboardKPIs (colis en attente
+ * depuis +72h, cash à encaisser), ici agrégés au niveau du marché entier
+ * plutôt qu'un relais unique.
+ *
+ * Volontairement absent : aucun signal "stock sous le seuil d'alerte" par
+ * hub/relais — cette notion (niveau de stock + seuil configuré) n'existe
+ * dans aucune table du schéma aujourd'hui. L'inventer aurait affiché un
+ * chiffre qui a l'air réel sans l'être.
+ */
+async function querySignals(marketId) {
+  const { rows: [totals] } = await db.query(
+    `SELECT
+        COUNT(*) FILTER (WHERE o.status = 'available'
+          AND o.available_at < NOW() - INTERVAL '72 hours')::int AS collectes_en_retard,
+        COUNT(*) FILTER (WHERE o.status = 'available'
+          AND o.payment_mode = 'cash_relais'
+          AND o.payment_status = 'pending')::int AS cash_a_securiser_count,
+        COALESCE(SUM(o.total_kmf) FILTER (WHERE o.status = 'available'
+          AND o.payment_mode = 'cash_relais'
+          AND o.payment_status = 'pending'), 0)::bigint AS cash_a_securiser_kmf,
+        COUNT(DISTINCT o.relais_id) FILTER (WHERE o.status NOT IN ('cancelled', 'refunded', 'collected'))::int AS relais_actifs
+       FROM orders o
+      WHERE o.market_id = $1`,
+    [marketId]
+  );
+
+  const { rows: incidents } = await db.query(
+    `SELECT oi.id, oi.type, oi.priority, oi.status, oi.created_at,
+            r.name AS relais_name
+       FROM order_incidents oi
+       JOIN orders o ON o.id = oi.order_id
+       LEFT JOIN relais r ON r.id = o.relais_id
+      WHERE o.market_id = $1
+        AND oi.status IN ('open', 'in_progress')
+      ORDER BY
+        CASE oi.priority WHEN 'urgent' THEN 0 WHEN 'high' THEN 1 WHEN 'normal' THEN 2 ELSE 3 END,
+        oi.created_at ASC
+      LIMIT 20`,
+    [marketId]
+  );
+
+  const { rows: byRelais } = await db.query(
+    `SELECT r.id, r.name, r.island,
+            COUNT(*) FILTER (WHERE o.status = 'available')::int AS disponibles,
+            COUNT(*) FILTER (WHERE o.status = 'available'
+              AND o.available_at < NOW() - INTERVAL '72 hours')::int AS en_retard,
+            COALESCE(SUM(o.total_kmf) FILTER (WHERE o.status = 'available'
+              AND o.payment_mode = 'cash_relais'
+              AND o.payment_status = 'pending'), 0)::bigint AS cash_pending_kmf,
+            COUNT(*) FILTER (WHERE o.status = 'collected'
+              AND o.collected_at >= NOW() - INTERVAL '7 days')::int AS collectes_7j
+       FROM relais r
+       JOIN orders o ON o.relais_id = r.id
+      WHERE r.market_id = $1
+        AND o.status NOT IN ('cancelled', 'refunded')
+      GROUP BY r.id, r.name, r.island
+     HAVING COUNT(*) FILTER (WHERE o.status NOT IN ('cancelled', 'refunded')) > 0
+      ORDER BY en_retard DESC, disponibles DESC
+      LIMIT 20`,
+    [marketId]
+  );
+
+  return Object.freeze({
+    collectes_en_retard: totals.collectes_en_retard,
+    cash_a_securiser: {
+      count: totals.cash_a_securiser_count,
+      total_kmf: Number(totals.cash_a_securiser_kmf),
+    },
+    relais_actifs: totals.relais_actifs,
+    incidents_ouverts: incidents.length,
+    incidents: incidents.map(row => ({
+      id: row.id,
+      type: row.type,
+      priority: row.priority,
+      relais_name: row.relais_name || null,
+      created_at: row.created_at,
+    })),
+    par_relais: byRelais.map(row => ({
+      id: row.id,
+      name: row.name,
+      island: row.island,
+      disponibles: row.disponibles,
+      en_retard: row.en_retard,
+      cash_pending_kmf: Number(row.cash_pending_kmf),
+      collectes_7j: row.collectes_7j,
+    })),
+  });
+}
+
 function buildQueues(orders, parcels) {
   return {
     hub: {
@@ -228,17 +321,19 @@ function buildSummary(queues, distribution, inventoryState) {
 
 async function buildWorkspace(options = {}) {
   const market = requireMarket(options.market);
-  const [orders, parcels, distribution, inventoryState] = await Promise.all([
+  const [orders, parcels, distribution, inventoryState, signals] = await Promise.all([
     queryOrders(market.id),
     queryParcels(market.id),
     queryDistribution(market.id),
     queryInventory(market.id),
+    querySignals(market.id),
   ]);
   const queues = buildQueues(orders, parcels);
 
   return Object.freeze({
     scope: publicMarket(market),
     summary: buildSummary(queues, distribution, inventoryState),
+    signals,
     queues,
     distribution,
     inventory: inventoryState,
@@ -254,6 +349,7 @@ async function buildWorkspace(options = {}) {
         'parcel_items',
         'inventory_items',
         'relais',
+        'order_incidents',
       ]),
     }),
   });

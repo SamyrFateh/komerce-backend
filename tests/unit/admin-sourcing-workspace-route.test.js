@@ -41,6 +41,7 @@ const mockCalls = {
   createSupplier: jest.fn(),
   updateSupplier: jest.fn(),
   setSupplierActive: jest.fn(),
+  recordUnitStockChange: jest.fn(),
 };
 
 jest.mock('../../services/sourcing-workspace', () => ({
@@ -57,6 +58,10 @@ jest.mock('../../services/sourcing-workspace', () => ({
   createSupplier: (...args) => mockCalls.createSupplier(...args),
   updateSupplier: (...args) => mockCalls.updateSupplier(...args),
   setSupplierActive: (...args) => mockCalls.setSupplierActive(...args),
+}));
+
+jest.mock('../../services/sourcing-catalog-change-observation', () => ({
+  recordUnitStockChange: (...args) => mockCalls.recordUnitStockChange(...args),
 }));
 
 jest.mock('../../services/sourcing-integrity-service', () => ({
@@ -88,6 +93,7 @@ beforeEach(() => {
   mockCalls.promoteCandidate.mockResolvedValue({ candidate_ref: 'KSC-000001', product_ref: 'KPR-000002' });
   mockCalls.setSourceAutopilot.mockResolvedValue({ source_ref: 'api:cj', autopilot_enabled: true });
   mockCalls.createSupplier.mockResolvedValue({ partner_ref: 'KPT-000001', name: 'Supplier' });
+  mockCalls.recordUnitStockChange.mockResolvedValue({ status: 'recorded', capture_id: 'capture-1', observations: 1, application_status: 'NOT_EVALUATED' });
 });
 
 test('grant sourcing ouvre une projection globale incluant la santé canonique', async () => {
@@ -158,4 +164,56 @@ test('création fournisseur reste dans la frontière sourcing', async () => {
     .send({ name: 'Supplier', partner_type: 'sourcing' });
   expect(res.status).toBe(201);
   expect(mockCalls.createSupplier).toHaveBeenCalledWith({ name: 'Supplier', partner_type: 'sourcing' });
+});
+
+
+describe('first Catalog Change Intake observation seam — global Sourcing guard', () => {
+  const endpoint = '/api/admin/workspaces/sourcing/sources/api%3Acj/catalog-changes/observe';
+  const body = {
+    source: { provider: 'cj', account_scope: 'default', source_ref: 'external-product-1' },
+    method: 'PULL_EXACT', event_id: 'event-1', observed_at: '2026-09-23T20:00:00Z',
+    subject: { product_ref: 'product-1', unit_ref: 'unit-1' },
+    facts: { stock_available: { status: 'OBSERVED', value: 0 } },
+  };
+
+  test('authorized operator records observation without publishing or applying product updates', async () => {
+    const res = await request(app()).post(endpoint).send(body);
+    expect(res.status).toBe(201);
+    expect(res.body.action).toBe('observe_unit_stock_change');
+    expect(res.body.result).toMatchObject({ status: 'recorded', application_status: 'NOT_EVALUATED' });
+    expect(mockCalls.recordUnitStockChange).toHaveBeenCalledWith({
+      sourceRef: 'api:cj', envelope: body,
+    });
+    expect(mockCalls.updatePortfolioProduct).not.toHaveBeenCalled();
+    expect(mockCalls.promoteCandidate).not.toHaveBeenCalled();
+    expect(res.headers['cache-control']).toContain('no-store');
+  });
+
+  test('global sourcing grant is required before any stock observation is recorded', async () => {
+    mockSourcingAllowed = false;
+    const res = await request(app()).post(endpoint).send(body);
+    expect(res.status).toBe(403);
+    expect(mockCalls.recordUnitStockChange).not.toHaveBeenCalled();
+  });
+
+  test('backend source error is fail-closed and does not produce a successful observation', async () => {
+    mockCalls.recordUnitStockChange.mockRejectedValue(
+      Object.assign(new Error('Source non enregistrée'), {
+        status: 409, code: 'catalog_change_source_unavailable',
+      })
+    );
+    const res = await request(app()).post(endpoint).send(body);
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('catalog_change_source_unavailable');
+  });
+
+  test('an exact retry returns 200 with the original capture reference', async () => {
+    mockCalls.recordUnitStockChange.mockResolvedValue({
+      status: 'already_recorded', capture_id: 'capture-1',
+      observations: 1, application_status: 'NOT_EVALUATED',
+    });
+    const res = await request(app()).post(endpoint).send(body);
+    expect(res.status).toBe(200);
+    expect(res.body.result.capture_id).toBe('capture-1');
+  });
 });

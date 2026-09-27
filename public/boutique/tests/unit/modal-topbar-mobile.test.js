@@ -24,7 +24,7 @@
  *      l'état scrollé
  *   4. le bouton panier a un fond transparent, aucune bordure visible
  *   5. le bouton panier conserve une cible tactile correcte
- *   6. l'asset panier_tresse.png reste utilisé (HTML)
+ *   6. l'asset panier_tresse_vert.webp reste utilisé (HTML)
  *   7. le badge panier reste présent (CSS + HTML)
  *   8. #k-modal-nav existe comme groupe cohérent (capsule unique)
  *   9. l'override desktop ≥900px reste présent (non-régression)
@@ -123,15 +123,38 @@ describe('topbar mobile canonique — oracle REF-2026-07e', () => {
   });
 
   test('le bouton panier conserve une cible tactile correcte sur mobile (>= 40px)', () => {
-    const mobileBlock = mobileMediaBlock;
-    const rule = mobileBlock.match(/#k-modal \.k-modal-cart-btn\s*\{([^}]*)\}/)?.[1] ?? '';
-    expect(rule).toMatch(/width\s*:\s*40px/);
-    expect(rule).toMatch(/height\s*:\s*40px/);
+    // La géométrie réelle du bouton panier mobile n'est plus portée par
+    // modal-shell.css (qui neutralise seulement fond/bordure/ombre ici) mais
+    // par modal-product-polish.css, chargé après dans le bundle (voir
+    // scripts/css-bundles.js) et qui gagne la cascade à spécificité égale
+    // (#k-modal .k-modal-cart-btn des deux côtés). C'est ce fichier qui fixe
+    // la taille réellement rendue : le vérifier ici plutôt que sur
+    // modal-shell.css évite de re-casser ce test au moindre refactor de
+    // fichier sans changer la taille réelle.
+    const polish = fs.readFileSync(
+      path.join(ROOT, 'css/modal-product-polish.css'),
+      'utf8'
+    );
+    const mobilePolishIdx = polish.indexOf('@media (max-width: 899px)');
+    const desktopPolishIdx = polish.indexOf('@media (min-width: 900px)');
+    const mobilePolishBlock = polish.slice(mobilePolishIdx, desktopPolishIdx);
+    const rule = mobilePolishBlock.match(/#k-modal \.k-modal-cart-btn\s*\{([^}]*)\}/)?.[1] ?? '';
+    const widthMatch = rule.match(/width\s*:\s*(\d+)px/);
+    const heightMatch = rule.match(/height\s*:\s*(\d+)px/);
+    expect(widthMatch).not.toBeNull();
+    expect(heightMatch).not.toBeNull();
+    expect(Number(widthMatch[1])).toBeGreaterThanOrEqual(40);
+    expect(Number(heightMatch[1])).toBeGreaterThanOrEqual(40);
   });
 
-  test("l'asset panier_tresse_vert.png reste utilisé dans la topbar", () => {
+  test("l'asset panier_tresse_vert.webp reste utilisé dans la topbar", () => {
+    // panier_tresse_vert.png n'a jamais existé sur disque : c'était une
+    // référence fantôme corrigée au lot V3 (scripts/check-assets.js) et que
+    // render-product-card.test.js / card-stepper-compliance.test.js / b-cart.test.js
+    // vérifient désormais explicitement absente. L'asset réel, converti en
+    // webp, est panier_tresse_vert.webp.
     const topbarHtml = html.slice(html.indexOf('k-modal-topbar'), html.indexOf('k-modal-topbar-right') + 400);
-    expect(topbarHtml).toMatch(/panier_tresse_vert\.png/);
+    expect(topbarHtml).toMatch(/panier_tresse_vert\.webp/);
   });
 
   test('le badge panier reste présent (CSS + HTML)', () => {

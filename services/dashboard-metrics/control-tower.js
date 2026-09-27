@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, ./_helpers
  * @used-by       services/dashboard-metrics/index.js
- * @db-read       cash_collections, order_item_cost_imputations, order_item_real_cost_allocations, orders, parcels, scan_events, signals
+ * @db-read       cash_collections, order_item_cost_imputations, order_item_real_cost_allocations, order_items, orders, parcels, scan_events, signals
  * @db-write      (none)
  * @db-txn        @none
  * @doctrine      server_market_scope_is_authority
@@ -88,6 +88,41 @@ async function getCmdsCreees(filters = {}) {
   });
 }
 
+async function getProduitsActifsVendus(filters = {}) {
+  const { where, params } = buildFiltersClause(filters);
+  const sql = `
+    SELECT COUNT(DISTINCT oi.product_id)::int AS value
+    FROM order_items oi
+    JOIN orders o ON o.id = oi.order_id
+    WHERE ${where}
+      AND o.payment_status = 'paid'
+      AND o.status NOT IN ('cancelled', 'refunded')
+  `;
+  const r = await db.query(sql, params);
+  const value = Number(r.rows[0].value) || 0;
+
+  let delta = null;
+  const prev = buildPreviousPeriod(filters);
+  if (prev) {
+    const prevQuery = buildFiltersClause(prev);
+    const prevSql = `
+      SELECT COUNT(DISTINCT oi.product_id)::int AS value
+      FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      WHERE ${prevQuery.where}
+        AND o.payment_status = 'paid'
+        AND o.status NOT IN ('cancelled', 'refunded')
+    `;
+    const prevR = await db.query(prevSql, prevQuery.params);
+    delta = computeDelta(value, Number(prevR.rows[0].value), 'periode precedente');
+  }
+
+  return makeKpi('produits_actifs_vendus', 'Produits actifs vendus', value, 'count', {
+    delta,
+    drillTo: '/admin/workspaces/catalog',
+  });
+}
+
 async function getCmdsActives(filters = {}) {
   const { where, params } = buildFiltersClause(filters);
   const sql = `
@@ -150,8 +185,48 @@ async function getAlertesCritiques(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('alertes_critiques', 'Alertes critiques', value, 'count', {
-    drillTo: '/admin/action-center?severity=critical',
+    drillTo: '/admin/action-center?severity=critical,urgent',
     warning: value > 10 ? 'Beaucoup de signaux non resolus' : null,
+  });
+}
+
+// Miroir exact de getAlertesCritiques, sévérité 'warning' au lieu de
+// 'critical'/'urgent'. Ajouté car "Points d'attention" côté Pilotage
+// comptait auparavant un sous-ensemble de system_alerts (limité à 5
+// lignes, lui-même filtré sur critical/urgent) — structurellement
+// incapable de contenir un item 'warning', donc toujours 0. Un vrai
+// COUNT(*) dédié, comme pour les critiques, plutôt qu'un comptage
+// approximatif reconstruit côté navigateur depuis une liste tronquée.
+async function getPointsAttention(filters = {}) {
+  const params = [];
+  const temporal = [];
+
+  if (filters.from) {
+    params.push(filters.from);
+    temporal.push(`s.created_at >= $${params.length}`);
+  }
+  if (filters.to) {
+    params.push(filters.to);
+    temporal.push(`s.created_at <= $${params.length}`);
+  }
+
+  const marketScope = buildSignalMarketClause(filters, 's', params.length + 1);
+  params.push(...marketScope.params);
+
+  const sql = `
+    SELECT COUNT(*)::int AS value
+    FROM signals s
+    WHERE s.severity = 'warning'
+      AND s.status IN ('open', 'acknowledged', 'snoozed')
+      ${temporal.length ? `AND ${temporal.join(' AND ')}` : ''}
+      AND ${marketScope.where}
+  `;
+
+  const r = await db.query(sql, params);
+  const value = Number(r.rows[0].value) || 0;
+
+  return makeKpi('points_attention', 'Points d’attention', value, 'count', {
+    drillTo: '/admin/action-center?severity=warning',
   });
 }
 
@@ -245,9 +320,11 @@ async function getTauxCompletudeCouts(filters = {}) {
 module.exports = {
   getCAEncaisse,
   getCmdsCreees,
+  getProduitsActifsVendus,
   getCmdsActives,
   getColisEnTransit,
   getAlertesCritiques,
+  getPointsAttention,
   getCmdsBloquees,
   getTauxCompletudeScans,
   getTauxCompletudeCouts,

@@ -458,8 +458,12 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-track-form { background: var(--white); border-radius: 12px; padding: 18px; box-shadow: 0 2px 12px var(--overlay-black-sm); margin-bottom: 16px; }
 .k-track-ref-wrap { display: flex; align-items: center; gap: 0; width: 100%; border: 1.5px solid var(--sand-dark); border-radius: 8px; overflow: hidden; background: var(--white); transition: border-color .2s; }
 .k-track-ref-wrap:focus-within { border-color: var(--accent-editorial); }
-.k-track-ref-prefix { flex: 0 0 auto; padding: 12px 2px 12px 14px; font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; user-select: none; }
-.k-track-input--ref { flex: 1; min-width: 0; border: none; outline: none; padding: 12px 14px 12px 0; font-size: 18px; font-weight: 700; letter-spacing: 4px; background: transparent; }
+.k-track-ref-prefix { flex: 0 0 auto; padding: 12px 4px 12px 14px; font-size: 18px; font-weight: 700; letter-spacing: 4px; line-height: 1; color: var(--text); white-space: nowrap; user-select: none; }
+/* Champ préfixé « K » : le cadre est porté par .k-track-ref-wrap. Spécificité
+   2 classes pour battre .k-track-input (déclaré plus bas), sinon le champ
+   redessine sa propre bordure arrondie dans le cadre (double cadre). */
+.k-track-ref-wrap .k-track-input--ref { flex: 1; min-width: 0; border: none; border-radius: 0; outline: none; padding: 12px 14px 12px 0; font-size: 18px; font-weight: 700; letter-spacing: 4px; background: transparent; }
+.k-track-ref-wrap .k-track-input--ref:focus { border: none; box-shadow: none; }
 .k-track-btn { width: 100%; margin-top: 12px; padding: 13px; background: var(--action-confirm); color: var(--action-confirm-text); border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background .15s, opacity .15s; }
 .k-track-btn:not(:disabled):hover { background: var(--action-confirm-hover); }
 .k-track-btn:active { opacity: .8; }

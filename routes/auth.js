@@ -196,6 +196,37 @@ router.delete('/me/pickup-authorization', authenticate, requireRecentAuth, async
   } catch (err) { next(err); }
 });
 
+// AUTH-7b — Changement de mot de passe en libre-service. requireRecentAuth
+// exige une session prouvée récemment par une méthode forte (passkey ou OTP,
+// cf. routes/auth-passkey.js#step-up et routes/auth-step-up-otp.js) : un
+// simple login email+password ne suffit pas à passer ce garde, exactement
+// la propriété demandée ("confirmation OTP" avant de pouvoir changer le
+// mot de passe). current_password est en plus vérifié ici : preuve de
+// connaissance ET preuve de possession récente, jamais l'une sans l'autre.
+router.put('/me/password', authenticate, requireRecentAuth, validate(auth.changePassword), async (req, res, next) => {
+  try {
+    const { current_password, new_password } = req.body;
+
+    // req.user (posé par authenticate) exclut délibérément password_hash —
+    // on le relit ici, seule route qui en a besoin.
+    const { rows } = await db.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+    if (!rows.length || !rows[0].password_hash) {
+      return res.status(409).json({ error: 'Ce compte n’a pas de mot de passe défini.' });
+    }
+
+    const valid = await bcrypt.compare(current_password, rows[0].password_hash);
+    if (!valid) {
+      return res.status(401).json({ error: 'Mot de passe actuel incorrect.' });
+    }
+
+    const hash = await bcrypt.hash(new_password, 12);
+    await db.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [hash, req.user.id]);
+
+    log.info(`[me/password] ✅ Mot de passe changé → user=${req.user.id} (IP: ${req.ip})`);
+    res.json({ success: true, message: 'Mot de passe mis à jour.' });
+  } catch (err) { next(err); }
+});
+
 // ─── POST /api/auth/guest-checkout — SUPPRIMÉ (faille de sécurité) ───────────────
 // Cette route créait un compte (ou réutilisait un compte EXISTANT) et posait une
 // session SANS vérification OTP → prise de contrôle de compte possible en tapant

@@ -39,11 +39,24 @@
     const summary = payload.summary || {};
     const items = [];
 
+    if (Number(summary.incoming_products) > 0) {
+      items.push({
+        key: 'incoming',
+        label: 'Nouveaux produits à valider',
+        helper: 'Choisissez simplement ceux qui ont leur place sur ce marché',
+        value: formatNumber(summary.incoming_products),
+        tone: 'warning',
+        icon: '+',
+        href: '#market-catalog-review',
+        actionLabel: 'Valider →',
+      });
+    }
+
     if (Number(summary.undecided_products) > 0) {
       items.push({
         key: 'undecided',
-        label: 'Sans décision pays',
-        helper: 'Masqués par défaut jusqu’à une décision explicite du marché',
+        label: 'Produits publiés sans décision pays',
+        helper: 'Ils restent masqués jusqu’à une décision explicite du marché',
         value: formatNumber(summary.undecided_products),
         tone: 'warning',
         icon: '?',
@@ -72,15 +85,15 @@
     const summary = payload.summary || {};
     return [
       {
-        key: 'catalog',
-        label: 'Catalogue actif',
-        value: formatNumber(summary.catalog_products),
-        tone: 'neutral',
-        helper: 'Produits actifs du catalogue global éligibles à une décision pays',
+        key: 'incoming',
+        label: 'À valider',
+        value: formatNumber(summary.incoming_products),
+        tone: Number(summary.incoming_products) > 0 ? 'warning' : 'positive',
+        helper: 'Nouveaux produits prêts pour une décision marché',
       },
       {
         key: 'enabled',
-        label: 'Exposés',
+        label: 'Visibles',
         value: formatNumber(summary.exposed_products),
         tone: 'positive',
       },
@@ -90,18 +103,18 @@
         value: formatNumber(summary.hidden_products),
         tone: Number(summary.undecided_products) > 0 ? 'warning' : 'neutral',
         helper: Number(summary.undecided_products) > 0
-          ? `${formatNumber(summary.undecided_products)} sans décision explicite`
-          : 'Décisions explicites du marché',
+          ? `${formatNumber(summary.undecided_products)} produit(s) publié(s) encore sans décision`
+          : 'Décisions marché enregistrées',
       },
       {
         key: 'coverage',
-        label: 'Taux d’exposition',
+        label: 'Part visible',
         value: formatPercent(summary.exposure_pct),
         tone: 'neutral',
       },
       {
         key: 'decided',
-        label: 'Décisions enregistrées',
+        label: 'Décisions prises',
         value: formatNumber(summary.decided_products),
         tone: Number(summary.undecided_products) > 0 ? 'warning' : 'positive',
       },

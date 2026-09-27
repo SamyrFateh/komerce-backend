@@ -1,0 +1,141 @@
+name: Staging storefront E2E audit
+
+# Manuel uniquement pour l'instant (pas de push-to-main automatique) — le
+# catalogue produit réel en staging est encore en construction (chantier
+# séparé). Tant qu'il n'est pas prêt, ces specs échoueraient par manque de
+# données (grille catalogue jamais hydratée), pas par régression réelle.
+# Déclenchement : ouvrir une issue titrée exactement
+# "[staging-op] storefront-e2e-audit", par le propriétaire du repo.
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: komerce-staging-storefront-e2e-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Playwright storefront battery
+    if: >-
+      github.event_name == 'issues' && github.actor == github.repository_owner &&
+      github.event.issue.title == '[staging-op] storefront-e2e-audit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      BASE_URL: https://komerce.co/boutique/
+      CI: '1'
+
+    steps:
+      - name: Checkout main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+
+      - name: Install Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: public/boutique
+        run: npx playwright install --with-deps chromium
+
+      - name: Run storefront battery (public, no test-account credentials required)
+        id: audit
+        working-directory: public/boutique
+        shell: bash
+        run: |
+          set +e
+          rc=0
+
+          # Périmètre : specs publiques, dépendantes du catalogue réel, sans
+          # identifiants de compte de test. Exclus délibérément :
+          #   - authenticated/*, wallet.spec.js (top-level) — nécessitent
+          #     TEST_ACCOUNT_PHONE/OTP, absents de ce workflow.
+          #   - pdp-aliexpress-live-audit.spec.js, pdp-aliexpress-all-units.spec.js
+          #     — déjà couverts par staging-pdp-aliexpress-live-audit.yml,
+          #     ne pas dupliquer.
+          #   - admin-pricing-market-decision.spec.js — dashboard admin
+          #     entièrement mocké (route.fulfill), hors périmètre boutique.
+          #   - modal-mdm9-gallery-layout.spec.js, modal-geometry.spec.js,
+          #     modal-visual-regression.spec.js, hero-geometry.spec.js,
+          #     modal-backtop-zindex.spec.js, csp-fronts.spec.js,
+          #     visual-geometry-audit.spec.js — projet "Chromium Local-Only",
+          #     fixtures déterministes, indépendants du catalogue staging.
+          # calibration.spec.js est volontairement placé en premier (valide
+          # que les sélecteurs correspondent au site réel avant le reste).
+          SPECS="tests/e2e/calibration.spec.js \
+            tests/e2e/home.spec.js \
+            tests/e2e/catalog.spec.js \
+            tests/e2e/catalog-market-exposure.spec.js \
+            tests/e2e/catalog-responsive-matrix.spec.js \
+            tests/e2e/search.spec.js \
+            tests/e2e/navigation.spec.js \
+            tests/e2e/cart.spec.js \
+            tests/e2e/checkout.spec.js \
+            tests/e2e/checkout-final-simplification.spec.js \
+            tests/e2e/modal.spec.js \
+            tests/e2e/modal-v3-desktop-responsive-closure.spec.js \
+            tests/e2e/modal-v3-enriched-catalogue.spec.js \
+            tests/e2e/modal-v3-mobile-finition.spec.js \
+            tests/e2e/product-detail-pdc.spec.js \
+            tests/e2e/golden-product-content-live.spec.js \
+            tests/e2e/golden-product-gpm.spec.js \
+            tests/e2e/favorites.spec.js \
+            tests/e2e/tracking.spec.js \
+            tests/e2e/group.spec.js \
+            tests/e2e/accessibility.spec.js \
+            tests/e2e/desktop.spec.js \
+            tests/e2e/cross-browser.spec.js \
+            tests/e2e/resilience.spec.js \
+            tests/e2e/render-integrity.spec.js"
+
+          mkdir -p test-results/storefront-audit
+
+          echo '=== Mobile Chrome (la boutique est mobile-first) ==='
+          npx playwright test $SPECS \
+            --project='Mobile Chrome' --workers=1 --retries=0 \
+            --output=test-results/storefront-audit/mobile || rc=$?
+
+          echo '=== Desktop Chrome ==='
+          npx playwright test $SPECS \
+            --project='Desktop Chrome' --workers=1 --retries=0 \
+            --output=test-results/storefront-audit/desktop || rc=$?
+
+          exit $rc
+
+      - name: Upload storefront battery artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storefront-playwright-battery
+          path: |
+            public/boutique/test-results/storefront-audit/
+            public/boutique/test-results/results.xml
+            public/boutique/playwright-report/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Comment command issue
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          OUTCOME: ${{ steps.audit.outcome }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --body "Storefront Playwright battery: ${OUTCOME}. Review artifact storefront-playwright-battery."
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed

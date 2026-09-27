@@ -6,8 +6,8 @@
     "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"       → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"      → réponse couverte par un test intégration/unitaire\n  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),\n  - x-contract-status: \"service-read\" → forme top-level lue dans le service/lib appelée par la route,\n                                       pas de test sur le corps HTTP — confiance < \"test\"\n  - x-contract-status: \"scan-*\"    → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"   → non couvert, à compléter"
   },
   "x-contract-debt": {
-    "unknown_responses": 45,
-    "total_routes": 589,
+    "unknown_responses": 48,
+    "total_routes": 593,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -422,6 +422,28 @@
                       "x-observed": true
                     }
                   }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/auth/me/password": {
+      "put": {
+        "summary": "PUT /api/auth/me/password",
+        "x-route-file": "routes/auth.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
                 }
               }
             }
@@ -7585,6 +7607,71 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rejeu identique : observation existante"
+          },
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Enveloppe invalide"
+          },
+          "403": {
+            "description": "Autorité globale Sourcing requise"
+          },
+          "409": {
+            "description": "Source incohérente ou événement déjà reçu avec une autre valeur"
+          },
+          "413": {
+            "description": "Enveloppe trop volumineuse"
+          },
+          "422": {
+            "description": "Identité exacte ou fait stock exigé"
           },
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
@@ -17547,6 +17634,50 @@
         }
       }
     },
+    "/api/auth/step-up/otp/request": {
+      "post": {
+        "summary": "POST /api/auth/step-up/otp/request",
+        "x-route-file": "routes/auth-step-up-otp.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/auth/step-up/otp/verify": {
+      "post": {
+        "summary": "POST /api/auth/step-up/otp/verify",
+        "x-route-file": "routes/auth-step-up-otp.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/client/tracking": {
       "get": {
         "summary": "GET /api/client/tracking",
@@ -24562,7 +24693,7 @@
     "/api/market-delegation/markets/{marketCode}/cash-control-policy": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/cash-control-policy",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-cash-control.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -24607,7 +24738,7 @@
       },
       "put": {
         "summary": "PUT /api/market-delegation/markets/{marketCode}/cash-control-policy",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-cash-control.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -24654,7 +24785,7 @@
     "/api/market-delegation/markets/{marketCode}/network/relais": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/network/relais",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-network.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -24684,7 +24815,7 @@
       },
       "post": {
         "summary": "POST /api/market-delegation/markets/{marketCode}/network/relais",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-network.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -24716,7 +24847,7 @@
     "/api/market-delegation/markets/{marketCode}/network/relais/{relaisId}": {
       "put": {
         "summary": "PUT /api/market-delegation/markets/{marketCode}/network/relais/{relaisId}",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-network.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -24756,7 +24887,7 @@
     "/api/market-delegation/markets/{marketCode}/network/relais/{relaisId}/suspend": {
       "post": {
         "summary": "POST /api/market-delegation/markets/{marketCode}/network/relais/{relaisId}/suspend",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-network.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -24796,7 +24927,7 @@
     "/api/market-delegation/markets/{marketCode}/network/relais/{relaisId}/activate": {
       "post": {
         "summary": "POST /api/market-delegation/markets/{marketCode}/network/relais/{relaisId}/activate",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-network.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -24836,7 +24967,7 @@
     "/api/market-delegation/markets/{marketCode}/network/providers": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/network/providers",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-provider.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -24866,7 +24997,7 @@
       },
       "post": {
         "summary": "POST /api/market-delegation/markets/{marketCode}/network/providers",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-provider.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -24898,7 +25029,7 @@
     "/api/market-delegation/markets/{marketCode}/network/providers/{providerId}": {
       "put": {
         "summary": "PUT /api/market-delegation/markets/{marketCode}/network/providers/{providerId}",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-provider.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -24938,7 +25069,7 @@
     "/api/market-delegation/markets/{marketCode}/network/providers/{providerId}/suspend": {
       "post": {
         "summary": "POST /api/market-delegation/markets/{marketCode}/network/providers/{providerId}/suspend",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-provider.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -24978,7 +25109,7 @@
     "/api/market-delegation/markets/{marketCode}/network/providers/{providerId}/activate": {
       "post": {
         "summary": "POST /api/market-delegation/markets/{marketCode}/network/providers/{providerId}/activate",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-provider.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25018,7 +25149,7 @@
     "/api/market-delegation/markets/{marketCode}/catalog/exposure": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/catalog/exposure",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-catalog.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25055,7 +25186,62 @@
                       "type": "string",
                       "x-observed": true
                     },
+                    "review_queue": {
+                      "type": "string",
+                      "x-observed": true
+                    },
                     "exposure": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate": {
+      "post": {
+        "summary": "POST /api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate",
+        "x-route-file": "routes/market-delegation-catalog.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "validation": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -25073,7 +25259,7 @@
     "/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}": {
       "put": {
         "summary": "PUT /api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-catalog.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25124,7 +25310,7 @@
     "/api/market-delegation/markets/{marketCode}/local-offer/services": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/local-offer/services",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-local-offer.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25156,7 +25342,7 @@
     "/api/market-delegation/markets/{marketCode}/local-offer/services/{serviceId}": {
       "put": {
         "summary": "PUT /api/market-delegation/markets/{marketCode}/local-offer/services/{serviceId}",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-local-offer.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25196,7 +25382,7 @@
     "/api/market-delegation/markets/{marketCode}/local-offer/physical-offers": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/local-offer/physical-offers",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-local-offer.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25228,7 +25414,7 @@
     "/api/market-delegation/markets/{marketCode}/local-offer/physical-offers/{physicalOfferId}": {
       "put": {
         "summary": "PUT /api/market-delegation/markets/{marketCode}/local-offer/physical-offers/{physicalOfferId}",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-local-offer.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25268,7 +25454,7 @@
     "/api/market-delegation/markets/{marketCode}/client-cases/disputes": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/client-cases/disputes",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-client-case.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25300,7 +25486,7 @@
     "/api/market-delegation/markets/{marketCode}/client-cases/disputes/{disputeId}": {
       "put": {
         "summary": "PUT /api/market-delegation/markets/{marketCode}/client-cases/disputes/{disputeId}",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-client-case.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25340,7 +25526,7 @@
     "/api/market-delegation/markets/{marketCode}/settlements": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/settlements",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-settlement.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25372,7 +25558,7 @@
     "/api/market-delegation/markets/{marketCode}/settlements/{settlementId}/request": {
       "post": {
         "summary": "POST /api/market-delegation/markets/{marketCode}/settlements/{settlementId}/request",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-settlement.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25412,7 +25598,7 @@
     "/api/market-delegation/markets/{marketCode}/settlements/{settlementId}/receive": {
       "post": {
         "summary": "POST /api/market-delegation/markets/{marketCode}/settlements/{settlementId}/receive",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-settlement.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25452,7 +25638,7 @@
     "/api/market-delegation/markets/{marketCode}/structure-events": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/structure-events",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-structure-event.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25482,7 +25668,7 @@
       },
       "post": {
         "summary": "POST /api/market-delegation/markets/{marketCode}/structure-events",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-structure-event.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -25514,7 +25700,7 @@
     "/api/market-delegation/markets/{marketCode}/performance": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/performance",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-performance.js",
         "parameters": [
           {
             "name": "marketCode",

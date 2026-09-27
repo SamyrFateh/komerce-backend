@@ -53,8 +53,17 @@ describe('runtime CSS variable ownership contract', () => {
   });
 
   test('rejects an extra write path inside an otherwise allowed producer', () => {
+    // js/hero-bootstrap.js gardait la géométrie mobile du hero repliable et
+    // écrivait --pager-top/--pager-h à ce titre ; ce comportement a été
+    // retiré par 03b4e71ba ("keep mobile hero stable during category
+    // scroll"), qui a supprimé toute écriture de ces variables dans le
+    // fichier. Il n'apparaît donc plus du tout dans jsVarOwners()['--pager-h'],
+    // bien qu'il reste un producteur autorisé dans le contrat (permission
+    // inutilisée, pas une violation). js/b-subcat.js occupe aujourd'hui le
+    // même rôle de producteur contextuel non-principal et écrit réellement
+    // --pager-h : c'est lui qui sert de cas pour l'écriture excédentaire.
     const map = cloneMap(jsVarOwners());
-    const row = map['--pager-h'].find(item => item.file === 'js/hero-bootstrap.js');
+    const row = map['--pager-h'].find(item => item.file === 'js/b-subcat.js');
     row.count = 2;
 
     const result = evaluateRuntimeCssVarOwnership(map, JS_OWNED_VARS);
@@ -63,7 +72,7 @@ describe('runtime CSS variable ownership contract', () => {
       expect.objectContaining({
         type: 'too-many-write-paths',
         variable: '--pager-h',
-        file: 'js/hero-bootstrap.js',
+        file: 'js/b-subcat.js',
         count: 2,
         maxWrites: 1,
       }),

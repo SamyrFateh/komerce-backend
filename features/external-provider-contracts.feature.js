@@ -73,6 +73,7 @@ module.exports = {
     scripts: [
       'scripts/provider-contract-proof.js',
       'scripts/external-provider-boundary-scan.js',
+      'scripts/external-provider-batch-proof.js',
       'scripts/stripe-provider-contract-proof.js',
       'scripts/ebay-sandbox-browse-proof.js',
     ],
@@ -82,6 +83,7 @@ module.exports = {
     tests: [
       'tests/unit/provider-contract-proof.test.js',
       'tests/unit/external-provider-boundary-scan.test.js',
+      'tests/unit/external-provider-batch-proof.test.js',
       'tests/unit/stripe-provider-contract-proof.test.js',
       'tests/unit/ebay-sandbox-browse-proof.test.js',
     ],
@@ -107,6 +109,7 @@ module.exports = {
       { fn: 'assertThrough', file: 'scripts/provider-contract-proof.js' },
       { fn: 'summary', file: 'scripts/provider-contract-proof.js' },
       { fn: 'scanRepository', file: 'scripts/external-provider-boundary-scan.js' },
+      { fn: 'runBatch', file: 'scripts/external-provider-batch-proof.js' },
       { fn: 'runStripeReadOnlyProof', file: 'scripts/stripe-provider-contract-proof.js' },
       { fn: 'runEbayBrowseReadOnlyProof', file: 'scripts/ebay-sandbox-browse-proof.js' },
     ],

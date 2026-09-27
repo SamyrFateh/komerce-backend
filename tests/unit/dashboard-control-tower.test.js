@@ -37,6 +37,20 @@ describe('dashboard-metrics/control-tower', () => {
     expect(result.delta).toMatchObject({ value: -50, direction: 'down' });
   });
 
+  it('getProduitsActifsVendus compte les produits distincts vendus sur commandes payées et drill vers le catalogue', async () => {
+    db.query
+      .mockResolvedValueOnce({ rows: [{ value: '8' }] })
+      .mockResolvedValueOnce({ rows: [{ value: '5' }] });
+
+    const result = await control.getProduitsActifsVendus({ from: '2026-06-01T00:00:00.000Z', to: '2026-06-11T00:00:00.000Z' });
+
+    expect(result).toMatchObject({ key: 'produits_actifs_vendus', value: 8, unit: 'count', drill_to: '/admin/workspaces/catalog' });
+    expect(result.delta).toMatchObject({ value: 60, direction: 'up' });
+    expect(String(db.query.mock.calls[0][0])).toMatch(/COUNT\(DISTINCT oi\.product_id\)/);
+    expect(String(db.query.mock.calls[0][0])).toMatch(/payment_status = 'paid'/);
+    expect(String(db.query.mock.calls[0][0])).toMatch(/status NOT IN \('cancelled', 'refunded'\)/);
+  });
+
   it('getCmdsActives utilise la liste canonique des statuts actifs et drill vers Operations', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ value: '7' }] });
 
@@ -61,8 +75,18 @@ describe('dashboard-metrics/control-tower', () => {
 
     const result = await control.getAlertesCritiques({ from: '2026-06-01', to: '2026-06-30' });
 
-    expect(result).toMatchObject({ key: 'alertes_critiques', value: 11, drill_to: '/admin/action-center?severity=critical' });
+    expect(result).toMatchObject({ key: 'alertes_critiques', value: 11, drill_to: '/admin/action-center?severity=critical,urgent' });
     expect(result.data_quality.warning).toBe('Beaucoup de signaux non resolus');
+    expect(db.query.mock.calls[0][1]).toEqual(['2026-06-01', '2026-06-30']);
+  });
+
+  it('getPointsAttention compte les signaux warning et drill vers Action Center', async () => {
+    db.query.mockResolvedValueOnce({ rows: [{ value: '4' }] });
+
+    const result = await control.getPointsAttention({ from: '2026-06-01', to: '2026-06-30' });
+
+    expect(result).toMatchObject({ key: 'points_attention', value: 4, drill_to: '/admin/action-center?severity=warning' });
+    expect(db.query.mock.calls[0][0]).toContain("s.severity = 'warning'");
     expect(db.query.mock.calls[0][1]).toEqual(['2026-06-01', '2026-06-30']);
   });
 

@@ -73,6 +73,24 @@ describe('sourcing-candidate-import-service', () => {
     expect(q.query.mock.calls[0][0]).toContain("data_sources->>'purchase_price'");
   });
 
+  it.each([
+    [0, 0],
+    [1, 1],
+    [4, 4],
+    [null, null],
+    [undefined, null],
+  ])('persists supplier stock %s as %s without turning an observed zero into UNKNOWN', async (observed, expected) => {
+    const q = { query: jest.fn().mockResolvedValueOnce({
+      rows: [{ id: 'cand-1', was_updated: false, data_sources: {} }],
+    }) };
+    const input = baseInput();
+    input.product.stock_available = observed;
+    await upsertCandidateFromCatalogImport(q, input);
+    const [sql, params] = q.query.mock.calls[0];
+    expect(sql).toContain('stock_available     = EXCLUDED.stock_available');
+    expect(params[10]).toBe(expected); // $11: persisted sourcing_candidates.stock_available
+  });
+
   it('preserves manual locks and records the same re-import audit event', async () => {
     const q = {
       query: jest.fn()

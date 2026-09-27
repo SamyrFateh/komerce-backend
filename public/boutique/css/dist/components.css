@@ -1413,11 +1413,27 @@ html.k-mobile-premium-v1 .k-chip-label {
   padding: 4px 12px 12px;
 }
 
-/* Temporary validation shell: section product grid remains owned by products.css. */
-body.spike-shell-vertical .k-sec-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 9px;
+/* Empty catalogue/search messages occupy the whole product grid. */
+.k-grid > .k-catalog-empty {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 28px 20px 36px;
+}
+
+.k-catalog-empty .k-track-retry-btn {
+  max-width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Empty catalogue/search: infinite-scroll has nothing to paginate.
+   Hide both observer sentinel and spinner so the bottom of the empty state
+   never looks like a pending network request. */
+#k-catalog-section:has(.k-catalog-empty) #k-scroll-sentinel,
+#k-catalog-section:has(.k-catalog-empty) .k-load-more-spinner {
+  display: none;
 }
 
 /* ── CARTE ───────────────────────────────────────────────────── */
@@ -1568,6 +1584,9 @@ body.spike-shell-vertical .k-sec-grid {
   align-items: center;
   justify-content: center;
 }
+/* G-07 — zone tactile 40×40 sans changer le visuel 30×30 */
+.k-card-add-trigger { position: relative; }
+.k-card-add-trigger::after { content: ''; position: absolute; inset: -5px; }
 .k-card-add:active {
   transform: scale(.90);
   background: var(--action-commerce-hover);
@@ -2459,11 +2478,12 @@ body.spike-shell-vertical .k-sec-grid {
 /* ── discovery-rail.css ──────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════
    KOMERCE — discovery-rail.css
-   Rail « Près de vous » natif Boutique.
+   Rail « Disponible ici » natif Boutique.
 
-   Doctrine : une seule expérience Komerce. Aucun shell marketplace,
-   aucune taxonomie parallèle. Le kind métier n'est visible qu'à travers
-   le sous-titre et le verbe d'action.
+   Doctrine : une seule expérience Komerce et un seul shell de carte.
+   Discovery réutilise .k-card / .k-card-* sur mobile et desktop ; ce fichier
+   ne possède que la géométrie du rail et les capacités locales (statut,
+   contexte, CTA provider).
    Mobile-first, zéro !important, tokens uniquement.
    ═══════════════════════════════════════════════════════════════ */
 
@@ -2513,10 +2533,9 @@ body.spike-shell-vertical .k-sec-grid {
   margin-right: 4px;
 }
 
-/* Mobile V2.9.7 — Disponible ici appartient au scroll vertical de la page
-   catégorie. Le pager #k-grid reste l'unique propriétaire du geste horizontal :
-   aucun overflow-x ni scroll-snap imbriqué ne doit concurrencer le swipe entre
-   univers. Les offres locales, produits et services s'empilent donc 2 par 2. */
+/* Mobile — le pager #k-grid reste l'unique propriétaire du geste horizontal.
+   Discovery reste dans le scroll vertical, en 2 colonnes, mais les cartes sont
+   désormais les cartes Komerce canoniques et non une seconde famille DOM. */
 .k-discovery-rail {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2525,33 +2544,16 @@ body.spike-shell-vertical .k-sec-grid {
   padding: 1px 0 5px;
 }
 
-.k-discovery-card {
+.k-discovery-canonical-card {
   min-width: 0;
   max-width: none;
-  display: flex;
-  flex-direction: column;
-  background: var(--sand);
-  border: 1px solid var(--border);
-  border-radius: 13px;
-  overflow: hidden;
-  box-shadow: var(--elev-1);
-  cursor: pointer;
-  transition: transform .25s var(--ease), box-shadow .25s var(--ease);
 }
 
-.k-discovery-media {
-  position: relative;
-  aspect-ratio: 3 / 2;
-  overflow: hidden;
-  flex: 0 0 auto;
-  background: linear-gradient(145deg, var(--sand) 0%, var(--sand-warm) 100%);
+.k-discovery-canonical-media {
+  aspect-ratio: 1 / 1;
 }
 
-.k-discovery-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+.k-discovery-canonical-img {
   object-fit: cover;
 }
 
@@ -2561,6 +2563,7 @@ body.spike-shell-vertical .k-sec-grid {
   display: grid;
   place-items: center;
   color: var(--ocean-dark);
+  background: linear-gradient(145deg, var(--sand) 0%, var(--sand-warm) 100%);
 }
 
 .k-discovery-fallback svg {
@@ -2573,6 +2576,7 @@ body.spike-shell-vertical .k-sec-grid {
   position: absolute;
   top: 6px;
   left: 6px;
+  z-index: 2;
   max-width: calc(100% - 12px);
   min-height: 20px;
   display: inline-flex;
@@ -2588,103 +2592,79 @@ body.spike-shell-vertical .k-sec-grid {
   font-weight: 700;
 }
 
-/* Géométrie canonique Discovery : les trois kinds possèdent les mêmes
-   rangs structurels. Une donnée optionnelle peut être vide ; elle ne peut
-   jamais déplacer l'action ni modifier l'empreinte de la carte. */
-.k-discovery-info {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  min-height: 88px;
-  padding: 7px;
+.k-discovery-canonical-context {
+  min-height: 1.28em;
 }
 
-.k-discovery-name {
-  min-height: 28px;
-  max-height: 28px;
-  color: var(--ocean-dark);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1.25;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.k-discovery-primary-slot {
-  min-height: 15px;
-  margin-top: 2px;
-  display: flex;
-  align-items: center;
-}
-
-.k-discovery-context-slot {
-  min-height: 14px;
-  margin-top: 1px;
-  display: flex;
-  align-items: center;
+.k-discovery-canonical-price-col {
   min-width: 0;
 }
 
-.k-discovery-price {
-  color: var(--ocean-dark);
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 1.15;
+.k-discovery-canonical-price-placeholder {
+  display: block;
+  min-height: 18px;
 }
 
-.k-discovery-provider {
-  min-width: 0;
-  color: var(--text-muted);
-  font-size: 9px;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
+/* Product garde exactement .k-card-add de products.css. Seuls Service et
+   Physical Offer transforment ce slot canonique en CTA verbal. */
+[data-discovery-kind="physical_offer"] .k-card-bottom,
+[data-discovery-kind="service"] .k-card-bottom {
+  padding-right: 104px;
+}
+
+[data-discovery-kind="physical_offer"] .k-discovery-canonical-action-slot,
+[data-discovery-kind="service"] .k-discovery-canonical-action-slot {
+  width: auto;
+  min-width: 76px;
+  max-width: 96px;
+  height: 32px;
+  padding: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
+  border: 1px solid var(--action-commerce-border);
+  border-radius: 999px;
+  background: var(--action-commerce);
+  box-shadow: var(--action-commerce-shadow);
 }
 
-/* Point A — Product local : Discovery ne touche jamais au sélecteur critique
-   du contrôle panier. Le wrapper fournit uniquement le containing block mobile ;
-   products.css/cart.css restent propriétaires de la forme et du stepper. */
-.k-discovery-product-action-row {
-  position: relative;
-  min-height: 42px;
-  margin-top: auto;
-}
-
-.k-discovery-cta {
+.k-discovery-canonical-cta {
   width: 100%;
-  min-height: 28px;
-  margin-top: auto;
-  padding: 5px 7px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--sand-warm);
-  color: var(--ocean-dark);
-  font-size: 10px;
+  height: 100%;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 0;
+  background: transparent;
+  color: var(--action-commerce-text);
+  font: inherit;
+  font-size: 9px;
   font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
-  transition: transform .15s var(--ease), box-shadow .15s var(--ease), background .15s var(--ease);
 }
 
-.k-discovery-cta:active {
-  transform: scale(.98);
-}
-
-/* ── CTA differentiation by kind ──────────────────────────────────── */
-
-.k-discovery-card[data-discovery-kind="physical_offer"] .k-discovery-cta {
-  background: var(--terracotta-bg);
-  color: var(--terracotta-dark);
+[data-discovery-kind="physical_offer"] .k-discovery-canonical-action-slot {
   border-color: var(--border-terra-22);
+  background: var(--terracotta-bg);
+  box-shadow: none;
 }
 
-.k-discovery-card[data-discovery-kind="service"] .k-discovery-cta {
-  background: var(--cta-green-10);
-  color: var(--cta-green);
+[data-discovery-kind="physical_offer"] .k-discovery-canonical-cta {
+  color: var(--terracotta-dark);
+}
+
+[data-discovery-kind="service"] .k-discovery-canonical-action-slot {
   border-color: var(--border-sage-22);
+  background: var(--cta-green-10);
+  box-shadow: none;
+}
+
+[data-discovery-kind="service"] .k-discovery-canonical-cta {
+  color: var(--cta-green);
+}
+
+.k-discovery-canonical-cta:focus-visible {
+  outline: 2px solid var(--ocean);
+  outline-offset: -3px;
 }
 
 /* ── U3 — facultative timing inside Discovery detail ────────────────
@@ -2731,13 +2711,8 @@ body.spike-shell-vertical .k-sec-grid {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .k-discovery-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--elev-2);
-  }
-
-  .k-discovery-cta:hover {
-    box-shadow: var(--elev-1);
+  .k-discovery-canonical-cta:hover {
+    filter: brightness(.98);
   }
 }
 
@@ -2758,8 +2733,8 @@ body.spike-shell-vertical .k-sec-grid {
     font-size: 12px;
   }
 
-  /* Desktop conserve le rail horizontal éditorial : le conflit de gestes
-     n'existe que dans le pager tactile mobile. */
+  /* Desktop conserve le rail horizontal éditorial. La géométrie précise des
+     cartes (4 colonnes catalogue) reste portée par discovery-desktop-v2.css. */
   .k-discovery-rail {
     display: flex;
     align-items: stretch;
@@ -2777,144 +2752,10 @@ body.spike-shell-vertical .k-sec-grid {
     display: none;
   }
 
-  .k-discovery-card {
-    flex: 0 0 calc((100% - 60px) / 6);
-    min-width: 190px;
-    max-width: 220px;
-    scroll-snap-align: start;
-  }
-
-  .k-discovery-media {
-    height: 130px;
-    aspect-ratio: auto;
-  }
-
-  .k-discovery-info {
-    min-height: 104px;
-    padding: 8px 9px;
-  }
-
-  .k-discovery-name {
-    min-height: 30px;
-    max-height: 30px;
-    font-size: 12px;
-  }
-
-  .k-discovery-primary-slot {
-    min-height: 17px;
-    margin-top: 3px;
-  }
-
-  .k-discovery-context-slot {
-    min-height: 16px;
-    margin-top: 2px;
-  }
-
-  .k-discovery-price {
-    font-size: 12px;
-  }
-
-  .k-discovery-provider,
   .k-discovery-status,
-  .k-discovery-cta {
+  .k-discovery-canonical-cta {
     font-size: 10px;
   }
-
-  .k-discovery-cta {
-    min-height: 32px;
-    padding: 7px 9px;
-  }
-}
-
-
-/* ── spike-vertical-shell.css ────────────────────────────── */
-/*
- * spike-vertical-shell.css — PHASE 2 spike.
- *
- * ⚠️ SPIKE — branche isolée, jamais mergé.
- *
- * Toutes les règles sont préfixées par `body.spike-shell-vertical`, posée
- * UNIQUEMENT quand ?shell=vertical. En mode pager (défaut), ce fichier n'a
- * AUCUN effet — sélecteurs inertes.
- *
- * Objectif : afficher les .k-cat-section verticalement dans le flux document,
- * sans cage fixed, sans k-pager-active (non posé par b-catalog en mode spike).
- * Le rail catégories devient sticky. Un seul scroll owner : le document.
- */
-
-/* ── Neutraliser toute trace de cage. En mode vertical, b-catalog ne pose pas
-   k-pager-active ; la spécificité body.spike-shell-vertical + l'injection tardive
-   suffisent sans créer de dette !important. ── */
-body.spike-shell-vertical #k-page-scroll {
-  position: static;
-  top: auto;
-  bottom: auto;
-  left: auto;
-  right: auto;
-  width: auto;
-  height: auto;
-  overflow: visible;
-}
-
-body.spike-shell-vertical #k-catalog-section {
-  height: auto;
-  overflow: visible;
-}
-
-/* Réafficher le footer (masqué par la cage en mode pager) */
-body.spike-shell-vertical .k-footer {
-  display: block;
-}
-
-/* ── Grid en mode sections verticales ── */
-body.spike-shell-vertical .k-grid-vertical-sections {
-  display: block;
-}
-
-/* Chaque catégorie = section verticale successive dans le flux */
-body.spike-shell-vertical .k-cat-section {
-  display: block;
-  width: 100%;
-  height: auto;
-  flex: none;
-  overflow: visible;
-  /* Offset de scroll pour scrollIntoView sous le rail sticky */
-  scroll-margin-top: 100px;
-}
-
-/* Les produits d'une section restent en grille 2-col (déjà le cas) */
-body.spike-shell-vertical .k-cat-section .k-grid-inner {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 9px;
-}
-
-/* ── Rail catégories sticky (au lieu de piloter la cage) ── */
-body.spike-shell-vertical #k-sticky-bar {
-  position: sticky;
-  top: 0;
-  z-index: 500;
-}
-
-/* Rail chips réellement swipeable horizontalement (scroll-x du rail seul) */
-body.spike-shell-vertical .k-cats {
-  overflow-x: auto;
-  scrollbar-width: none;
-  scroll-snap-type: x proximity;
-}
-body.spike-shell-vertical .k-cats::-webkit-scrollbar {
-  display: none;
-}
-
-/* Discovery « Près de vous » : simple section dans le flux, aucune contrainte */
-body.spike-shell-vertical #k-discovery-local {
-  display: block;
-  width: 100%;
-}
-
-/* HUD spike : laisser de la place en bas pour ne pas masquer le dernier produit */
-body.spike-shell-vertical {
-  padding-bottom: 24px;
 }
 
 
@@ -3353,6 +3194,9 @@ body.spike-shell-vertical {
     justify-content: center; gap: 0; font-size: 13px;
     background: transparent; border: none; box-shadow: none;
   }
+  /* G-07 — zone tactile 40×40 sans changer le visuel 28×28 */
+  #k-modal-nav .k-modal-nav-btn { position: relative; }
+  #k-modal-nav .k-modal-nav-btn::after { content: ''; position: absolute; inset: -6px; }
   #k-modal-nav .k-modal-nav-counter { font-size: 10.5px; min-width: 42px; padding: 0 2px; text-align: center; }
 
   /* Retour / fermeture : même langage visuel, cible tactile 40px,
@@ -4316,6 +4160,35 @@ body.spike-shell-vertical {
   display: block;
 }
 
+/* La modale Discovery réutilise le shell, pas les colonnes ni la buybox Produit.
+   Les sélecteurs ID ci-dessous prévalent sur les règles #k-modal .k-modal-*
+   du layout produit (sinon CTA Acheter / colonne panier restent visibles). */
+#k-modal.k-modal--discovery .k-modal-body {
+  display: block;
+  width: 100%;
+}
+#k-modal.k-modal--discovery .k-modal-main {
+  width: 100%;
+}
+#k-modal.k-modal--discovery .k-modal-product-zone {
+  display: block;
+  width: 100%;
+}
+#k-modal.k-modal--discovery .k-modal-img-wrap,
+#k-modal.k-modal--discovery .k-modal-right-rail,
+#k-modal.k-modal--discovery .k-modal-buybox,
+#k-modal.k-modal--discovery .k-modal-long-details,
+#k-modal.k-modal--discovery .k-modal-enriched-content,
+#k-modal.k-modal--discovery .k-modal-suggestions,
+#k-modal.k-modal--discovery .k-modal-cart-slot,
+#k-modal.k-modal--discovery .k-modal-actions {
+  display: none;
+}
+#k-modal.k-modal--discovery .k-modal-discovery-detail:not([hidden]) {
+  display: block;
+  width: 100%;
+}
+
 .k-modal-discovery-shell {
   width: min(100%, 860px);
   margin: 0 auto;
@@ -4417,6 +4290,12 @@ body.spike-shell-vertical {
   .k-modal-discovery-title {
     font-size: 26px;
   }
+}
+
+/* Discovery (Service / Offre locale) is an inquiry, never a product cart.
+   The product topbar remains unchanged for normal catalogue products. */
+#k-modal.k-modal--discovery .k-modal-cart-btn {
+  display: none;
 }
 
 
@@ -8609,8 +8488,12 @@ body.cart-open .k-hero { pointer-events: none; }
 .k-track-form { background: var(--white); border-radius: 12px; padding: 18px; box-shadow: 0 2px 12px var(--overlay-black-sm); margin-bottom: 16px; }
 .k-track-ref-wrap { display: flex; align-items: center; gap: 0; width: 100%; border: 1.5px solid var(--sand-dark); border-radius: 8px; overflow: hidden; background: var(--white); transition: border-color .2s; }
 .k-track-ref-wrap:focus-within { border-color: var(--accent-editorial); }
-.k-track-ref-prefix { flex: 0 0 auto; padding: 12px 2px 12px 14px; font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; user-select: none; }
-.k-track-input--ref { flex: 1; min-width: 0; border: none; outline: none; padding: 12px 14px 12px 0; font-size: 18px; font-weight: 700; letter-spacing: 4px; background: transparent; }
+.k-track-ref-prefix { flex: 0 0 auto; padding: 12px 4px 12px 14px; font-size: 18px; font-weight: 700; letter-spacing: 4px; line-height: 1; color: var(--text); white-space: nowrap; user-select: none; }
+/* Champ préfixé « K » : le cadre est porté par .k-track-ref-wrap. Spécificité
+   2 classes pour battre .k-track-input (déclaré plus bas), sinon le champ
+   redessine sa propre bordure arrondie dans le cadre (double cadre). */
+.k-track-ref-wrap .k-track-input--ref { flex: 1; min-width: 0; border: none; border-radius: 0; outline: none; padding: 12px 14px 12px 0; font-size: 18px; font-weight: 700; letter-spacing: 4px; background: transparent; }
+.k-track-ref-wrap .k-track-input--ref:focus { border: none; box-shadow: none; }
 .k-track-btn { width: 100%; margin-top: 12px; padding: 13px; background: var(--action-confirm); color: var(--action-confirm-text); border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: background .15s, opacity .15s; }
 .k-track-btn:not(:disabled):hover { background: var(--action-confirm-hover); }
 .k-track-btn:active { opacity: .8; }
@@ -10763,6 +10646,12 @@ body.cart-open  #k-section-index { display:none; }
     place-items: center;
     flex-shrink: 0;
   }
+
+  /* P-02 — zone tactile 40x40, visuel 30x30 inchangé.
+     inset -6px (et non -5px) : le bouton a une bordure de 1 px ;
+     -5px ne donnait que 38 px effectifs (mesuré). */
+  #k-modal .k-sug-add { position: relative; }
+  #k-modal .k-sug-add::after { content: ''; position: absolute; inset: -6px; }
 
   #k-modal .k-sug-add:active {
     background: var(--commerce-yellow-hover);
@@ -13122,6 +13011,39 @@ body.k-id-scroll-lock { overflow: hidden; }
   justify-content: space-between;
   gap: 10px;
   font-weight: 700;
+}
+
+/* MVola Comores — vraie marque visuelle, servie localement (pas de hotlink). */
+.ck-pay-chip input[value="mobile_money"] + .ck-chip-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: url('/boutique/img/payment/mvola-comores.png') center / contain no-repeat;
+  font-size: 0;
+}
+
+.k-mobile-money-title > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0;
+}
+
+.k-mobile-money-title > span:first-child::before {
+  content: '';
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  border-radius: 6px;
+  background: url('/boutique/img/payment/mvola-comores.png') center / contain no-repeat;
+}
+
+#mobile-money-provider-title {
+  font-size: 15px;
+  line-height: 1.2;
 }
 
 .k-mobile-money-currency {

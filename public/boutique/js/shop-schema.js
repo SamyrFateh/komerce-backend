@@ -322,7 +322,11 @@ export function getCategorySectionEmoji(key) { const c = getCategoryByKey(key); 
 export function getCategoryImage(key) { const c = getCategoryByKey(key); return c?.image || _CATEGORY_IMAGES[key] || null; }
 export function getCategoryFilter(key) { return getCategoryByKey(key)?.filter || null; }
 export function normalizeCategoryKey(rawCategory) { if (!rawCategory) return rawCategory; const c = _idx().get(rawCategory); return c ? c.key : rawCategory; }
-export function getDbKeysForCategory(categoryKey) { const c = getCategoryByKey(categoryKey); if (!c) return [categoryKey]; if (Array.isArray(c.dbKeys) && c.dbKeys.length) return [...c.dbKeys]; return [c.key]; }
+export function getDbKeysForCategory(categoryKey) {
+  const c = getCategoryByKey(categoryKey);
+  if (!c) return [categoryKey];
+  return [...new Set([c.key, ...(Array.isArray(c.dbKeys) ? c.dbKeys : [])].filter(Boolean))];
+}
 export function getSubcategories(categoryKey) {
   const c = _idx().get(categoryKey);
   return c?.subcategories

@@ -271,7 +271,7 @@ module.exports = {
       '.github/workflows-disabled/lot7-staging-business-qualification.yml',
       '.github/workflows-disabled/lot8-pre-go-live-certification.yml',
       '.github/workflows-disabled/lot8-reconcile-current-main-once.yml',
-      '.github/workflows-disabled/pr-governance.yml',
+      '.github/workflows/pr-governance.yml',
     ],
     assets: [
       'public/images/Komerce_Kero_Desktop_2.png',
@@ -280,7 +280,9 @@ module.exports = {
       'public/images/Logo_Komerce_white.png',
       'public/images/apple-touch-icon.png',
       'public/images/avatar_panier.png',
+      'public/images/avatar_panier.webp',
       'public/images/avatar_seule.png',
+      'public/images/avatar_seule.webp',
       'public/images/categories/cat-beaute.jpg',
       'public/images/categories/cat-beaute.svg',
       'public/images/categories/cat-couture.jpg',
@@ -302,7 +304,9 @@ module.exports = {
       'public/images/panier_africain.png',
       'public/images/panier_africain_sm.png',
       'public/images/panier_tresse.png',
+      'public/images/panier_tresse.webp',
       'public/images/panier_tresse_vert.png',
+      'public/images/panier_tresse_vert.webp',
     ],
     db: [
       'db/migrations/004_fix_order_status_enum.sql',

@@ -525,15 +525,20 @@ describe('bootstrap/html-routes', () => {
       expect(res.sendFile).not.toHaveBeenCalled();
     });
 
-    test('requête non-API inconnue → sert boutique/index.html (fallback SPA)', () => {
+    test('requête non-API inconnue → sert boutique/index.html (fallback SPA) via sendHtml(), no-cache', () => {
       const res = fakeRes();
       app._routes['*']({ path: '/une-route-inconnue' }, res);
       expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/html; charset=utf-8');
+      // GAP-F4 (docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md) — le catch-all
+      // utilise désormais sendHtml() comme toutes les autres routes HTML de ce
+      // fichier, au lieu d'un res.sendFile() brut sans Cache-Control explicite
+      // (qui retombait sur le défaut d'Express, public/max-age=0 — trouvé en
+      // vérifiant /boutique.html en conditions réelles).
+      expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'no-cache');
       expect(res.sendFile).toHaveBeenCalledWith(
-        require('path').join(PUBLIC_DIR, 'boutique', 'index.html')
+        require('path').join(PUBLIC_DIR, 'boutique', 'index.html'),
+        expect.any(Function)
       );
-      // Contrairement à sendHtml(), le catch-all n'a pas de callback ENOENT dédié.
-      expect(res.sendFile.mock.calls[0].length).toBe(1);
       expect(res.status).not.toHaveBeenCalled();
     });
   });

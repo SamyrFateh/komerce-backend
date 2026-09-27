@@ -18,6 +18,10 @@ Partir de :
 
 `docs/ops/manual-discovery-content.example.json`
 
+Cet exemple est volontairement **inerte** : ses prestataires fictifs sont en statut `pending`, ses offres sont en `draft`, `expose=false` et sans entrée `discovery`. Il n'ajoute plus de faux produit catalogue ni d'image de catégorie. Pour une offre réelle, remplacer l'identité, le contact, le texte et la photographie par les informations vérifiées du prestataire **avant** de passer à `active` / `expose=true` et de définir `discovery`.
+
+Le seed STAGING démonstratif, distinct du flux manuel, est documenté dans `docs/ops/DISCOVERY_STAGING_MEDIA_CURATION.md` : les photographies y sont des **illustrations** et ne prouvent pas l'identité du partenaire, son stock ou sa zone.
+
 Les identités sont stables :
 
 - catalogue : `product_ref` obligatoire, utilisé pour l'upsert ;
@@ -46,6 +50,7 @@ C'est le comportement par défaut. Le script valide notamment :
 - statut/exposition compatibles avec Discovery ;
 - ordre Discovery non ambigu ;
 - maximum de candidats supporté par le rail courant.
+- pour tout service/offre local exposé : une image spécifique à l'offre (pas de `/boutique/categories/cat-*.webp`), une description et une zone exploitables. La correspondance **réelle** photo/prestation exige encore une revue humaine.
 
 ## Application explicite
 
@@ -105,6 +110,8 @@ Il reste de type `service`. Pour être déclaré dans Discovery :
 - provider actif au runtime.
 
 La modale l'identifie comme **Service local** et propose `Demander`.
+
+Une offre locale réelle ne doit pas récupérer le visuel d'une catégorie Komerce par défaut. Si les médias sont absents ou incohérents, conserver `expose=false` et ne pas créer de candidat Discovery.
 
 ## Desktop = mobile
 

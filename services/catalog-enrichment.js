@@ -22,9 +22,9 @@
 /**
  * KOMERCE — Étage ⑤ Enrichissement FR (K-3)
  *
- * La doctrine métier est indépendante du fournisseur IA. Le provider est
- * choisi par CATALOG_ENRICH_PROVIDER=anthropic|openai. Même prompt, même
- * contrat de sortie, même validation, même traçabilité et mêmes overrides.
+ * La doctrine métier est indépendante du transport IA.
+ * L'enrichissement catalogue Komerce utilise Anthropic uniquement.
+ * OpenAI n'est plus une dépendance du pipeline catalogue.
  */
 
 const db = require('../db');
@@ -34,9 +34,7 @@ const prompt = require('./prompts/catalog-enrichment.prompt');
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const ANTHROPIC_VERSION = '2023-06-01';
-const OPENAI_URL = 'https://api.openai.com/v1/responses';
 const DEFAULT_ANTHROPIC_MODEL = 'claude-haiku-4-5';
-const DEFAULT_OPENAI_MODEL = 'gpt-5.6-luna';
 const CALL_TIMEOUT_MS = 45_000;
 const MAX_OUTPUT_TOKENS = 1500;
 
@@ -69,33 +67,14 @@ async function loadOverrides(productId) {
   return rows;
 }
 
-function resolveProvider() {
-  const provider = String(process.env.CATALOG_ENRICH_PROVIDER || 'anthropic').trim().toLowerCase();
-  if (!['anthropic', 'openai'].includes(provider)) {
-    const err = new Error(`CATALOG_ENRICH_PROVIDER invalide: ${provider}`);
+function resolveProvider(env = process.env) {
+  const configured = String(env.CATALOG_ENRICH_PROVIDER || '').trim().toLowerCase();
+  if (configured && configured !== 'anthropic') {
+    const err = new Error(`CATALOG_ENRICH_PROVIDER non supporté: ${configured} — le catalogue utilise Anthropic uniquement`);
     err.code = 'ENRICH_PROVIDER_INVALID';
     throw err;
   }
-  return provider;
-}
-
-function outputSchema() {
-  return {
-    type: 'object',
-    properties: {
-      name_fr: { type: 'string' },
-      description_fr: { type: 'string' },
-      category: { type: ['string', 'null'] },
-      fragility: {
-        type: ['string', 'null'],
-        enum: [...prompt.ALLOWED_FRAGILITIES, null],
-      },
-      confidence: { type: 'number' },
-      review_notes: { type: 'array', items: { type: 'string' } },
-    },
-    required: ['name_fr', 'description_fr', 'category', 'fragility', 'confidence', 'review_notes'],
-    additionalProperties: false,
-  };
+  return 'anthropic';
 }
 
 async function callAnthropicModel(systemPrompt, userMessage) {
@@ -146,72 +125,8 @@ async function callAnthropicModel(systemPrompt, userMessage) {
   }
 }
 
-async function callOpenAIModel(systemPrompt, userMessage) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    const err = new Error('OPENAI_API_KEY manquant — enrichissement indisponible');
-    err.code = 'ENRICH_NO_KEY';
-    throw err;
-  }
-  const model = process.env.CATALOG_ENRICH_MODEL || DEFAULT_OPENAI_MODEL;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), CALL_TIMEOUT_MS);
-  try {
-    const res = await fetch(OPENAI_URL, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        instructions: systemPrompt,
-        input: userMessage,
-        max_output_tokens: MAX_OUTPUT_TOKENS,
-        store: false,
-        text: {
-          format: {
-            type: 'json_schema',
-            name: 'catalog_enrichment',
-            strict: true,
-            schema: outputSchema(),
-          },
-        },
-      }),
-    });
-    const body = await res.text();
-    if (!res.ok) {
-      const err = new Error(`OpenAI API ${res.status}: ${body.slice(0, 300)}`);
-      err.code = 'ENRICH_API_ERROR';
-      throw err;
-    }
-    const data = JSON.parse(body);
-    const text = (data.output || [])
-      .filter((item) => item.type === 'message')
-      .flatMap((item) => item.content || [])
-      .filter((part) => part.type === 'output_text')
-      .map((part) => part.text)
-      .join('\n');
-    if (!text) {
-      const err = new Error(`OpenAI API: réponse sans output_text (status=${data.status || 'unknown'})`);
-      err.code = 'ENRICH_INVALID_OUTPUT';
-      throw err;
-    }
-    return {
-      text,
-      model: data.model || model,
-      inputTokens: data.usage?.input_tokens ?? null,
-      outputTokens: data.usage?.output_tokens ?? null,
-    };
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 async function callModel(systemPrompt, userMessage) {
-  const provider = resolveProvider();
-  if (provider === 'openai') return callOpenAIModel(systemPrompt, userMessage);
+  resolveProvider();
   return callAnthropicModel(systemPrompt, userMessage);
 }
 
@@ -349,9 +264,7 @@ module.exports = {
   loadGlossary,
   loadAllowedCategories,
   resolveProvider,
-  outputSchema,
   OVERRIDABLE_FIELDS,
   _callModel: callModel,
   _callAnthropicModel: callAnthropicModel,
-  _callOpenAIModel: callOpenAIModel,
 };

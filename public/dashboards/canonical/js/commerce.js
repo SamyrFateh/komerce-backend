@@ -67,7 +67,7 @@
         { key: 'ca-encaisse', label: 'CA encaissé' },
         { key: 'commandes', label: 'Commandes créées' },
         { key: 'panier-moyen', label: 'Panier moyen' },
-        { key: 'marge', label: 'Marge consolidée' },
+        { key: 'produits-actifs-vendus', label: 'Produits actifs vendus' },
       ],
     },
     sections: [
@@ -142,7 +142,7 @@
     ca_encaisse: 'ca-encaisse',
     cmds_creees: 'commandes',
     panier_moyen: 'panier-moyen',
-    marge_consolidee: 'marge',
+    produits_actifs_vendus: 'produits-actifs-vendus',
   });
 
   function normalizePeriod(value) {

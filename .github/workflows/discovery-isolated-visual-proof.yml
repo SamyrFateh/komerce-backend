@@ -1,0 +1,58 @@
+name: Discovery isolated visual proof
+
+# This workflow NEVER uses BASE_URL, Railway, production data, credentials,
+# real inquiry endpoints, or a background scheduler. Runs only for this
+# targeted proof change (or explicit manual dispatch).
+on:
+  pull_request:
+    paths:
+      - 'public/boutique/tests/e2e/discovery-isolated-visual.spec.js'
+      - '.github/workflows/discovery-isolated-visual-proof.yml'
+      - 'public/boutique/playwright.config.js'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: discovery-isolated-visual-proof
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    name: Chromium desktop and mobile - local synthetic API
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: public/boutique/package-lock.json
+      - name: Install only the Boutique dependencies
+        working-directory: public/boutique
+        run: npm ci
+      - name: Install Chromium
+        working-directory: public/boutique
+        run: npx playwright install --with-deps chromium
+      - name: Capture isolated Discovery proof
+        working-directory: public/boutique
+        run: |
+          test -z "${BASE_URL:-}" || { echo 'Refuse remote BASE_URL'; exit 1; }
+          npx playwright test tests/e2e/discovery-isolated-visual.spec.js \
+            --project='Desktop Chrome' --workers=1 --retries=0
+      - name: Upload screenshots and test results (including failures)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: discovery-isolated-visual-proof
+          path: |
+            public/boutique/test-results/discovery-isolated/*.png
+            public/boutique/test-results/results.xml
+            public/boutique/test-results/**/test-failed-*.png
+            public/boutique/test-results/**/error-context.md
+          if-no-files-found: warn
+          retention-days: 7

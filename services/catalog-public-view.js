@@ -212,7 +212,16 @@ function isPublicCatalogProduct(row) {
 }
 
 function publicProductColumns(alias = 'p') {
-  return PUBLIC_PRODUCT_FIELDS.map((f) => `${alias}.${f}`).join(',\n         ');
+  const a = assertSqlAlias(alias);
+  return PUBLIC_PRODUCT_FIELDS.map((field) => {
+    if (field === 'category') {
+      return `COALESCE(${a}.boutique_category_key, ${a}.category) AS category`;
+    }
+    if (field === 'subcategory') {
+      return `COALESCE(${a}.boutique_subcategory_key, ${a}.subcategory) AS subcategory`;
+    }
+    return `${a}.${field}`;
+  }).join(',\n         ');
 }
 
 function toPublicProduct(row) {

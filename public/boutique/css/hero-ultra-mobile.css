@@ -12,48 +12,86 @@
 
 /*
  * HERO ULTRA MOBILE — KOMERCE COMPACT BRAND MASTHEAD
- * Cible : 50–58 px de hauteur utile sous le header 44 px.
+ * Cible : 70–78 px de hauteur utile sous le header 44 px.
  *
- * Mesure Playwright live V2.9.2 (390x844) :
- * hero 54.6 px, catégories à y=102.6, Disponible ici à y=172.6.
+ * La hauteur totale masthead + respiration reste quasi identique :
+ * l'espace auparavant perdu en padding du rail est réalloué à la scène.
  * Le hero reste stable pendant le scroll des pages catégories.
  */
 @media (max-width: 899px) {
+  .k-hero {
+    overflow: visible;
+  }
+
+  /* Deux bandes : slogan centré en haut, scène de remise complète dessous.
+     Le hero grandit juste assez pour que le colis K, le téléphone et le
+     décor relais restent lisibles ; la respiration du rail est rendue à
+     la scène (padding-top rail réduit ci-dessous). */
   .k-hero .k-hero-inner .k-hero-media {
-    height: clamp(50px, 14vw, 58px);
+    height: clamp(120px, 33vw, 134px);
     margin-top: 0;
     margin-bottom: 0;
+    overflow: visible;
   }
 
+  /* Composition mobile : nos deux personnages historiques portent seuls
+     l'acte de remise. Le téléphone, le colis et les mains forment le centre
+     narratif ; aucun troisième personnage ne dilue la lecture. */
   .k-hero-media .k-hero-figures {
-    background-image: url('/images/komerce_hero_catalog_canonical_v5_mobile.webp');
-    /* Ne plus pousser une image agrandie contre le bord haut du conteneur :
-       .k-hero-media est volontairement overflow:hidden pour le rayon de carte.
-       À 100% + top 0%, les coiffures restent entièrement dans la boîte,
-       sans perdre le téléphone ni réagrandir le masthead. */
-    background-size: auto 100%;
-    background-position: 70% 0%;
-    -webkit-mask-image: none;
-    mask-image: none;
+    /* Master handoff v3 (marge haute intégrée : les coiffures ne touchent
+       plus le bord). Ratio natif 2022×778 respecté, ni zoom ni fondu
+       latéral ; la scène entière tient sous le slogan. */
+    inset: 26px auto auto 50%;
+    transform: translateX(-50%);
+    height: calc(100% - 28px);
+    width: auto;
+    aspect-ratio: 2022 / 778;
+    max-width: calc(100% - 8px);
+    border-radius: 16px;
+    background-image: url('/images/komerce-hero-handoff-v3-mobile.webp');
+    background-size: contain;
+    background-position: center center;
+    /* Seule la marge haute VIDE du master (0–11 %, aucun cheveu avant
+       13,5 %) est fondue : elle se glisse sous le slogan sans bord dur.
+       Aucun fondu latéral, aucune coupe des têtes. */
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 11%);
+    mask-image: linear-gradient(to bottom, transparent 0, black 11%);
   }
 
-  .k-hero-media .k-hero-mini-slogan--premium {
-    inset: 0 auto 0 0;
-    width: 35%;
-    padding: 2px 0 0 9px;
-    align-items: flex-start;
+
+  .k-hero-copy-mobile { display: inline; }
+  .k-hero-copy-desktop { display: none; }
+
+  /* Slogan centré en bande haute, au-dessus de la scène, jamais recouvert. */
+  html .k-hero-media .k-hero-mini-slogan--premium {
+    inset: 1px 0 auto 0;
+    width: 100%;
+    padding: 0 12px;
+    align-items: center;
     justify-content: flex-start;
-    text-align: left;
+    text-align: center;
   }
 
-  .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {
-    font-size: clamp(10px, 2.7vw, 12px);
-    line-height: 1.01;
+  html .k-hero-media .k-hero-mini-slogan--premium .k-line-1 {
+    font-size: clamp(14px, 3.9vw, 16px);
+    line-height: 1.04;
+    letter-spacing: .005em;
+    text-align: center;
   }
 
-  .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {
-    margin-top: 1px;
-    font-size: clamp(10px, 2.8vw, 12px);
-    line-height: 1.01;
+  html .k-hero-media .k-hero-mini-slogan--premium .k-line-2 {
+    margin-top: 0;
+    font-size: clamp(14px, 3.9vw, 16px);
+    line-height: 1.04;
+    letter-spacing: .005em;
+    text-align: center;
   }
+
+}
+
+/* G-06 — Mobile en paysage à faible hauteur : la scène et le slogan cèdent
+   la place au catalogue ; le rail de rayons reste. Le JS du pager mesure
+   #k-hero-fixed-wrap dynamiquement : aucun ajustement JS requis. */
+@media (max-width: 899px) and (orientation: landscape) and (max-height: 500px) {
+  .k-hero { display: none; }
 }

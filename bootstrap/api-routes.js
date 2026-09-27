@@ -105,6 +105,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const clientNotificationsRouter = require('../routes/client-notifications');
   const otpRouter = require('../routes/otp');
   const authPasskeyRouter = require('../routes/auth-passkey');
+  const authStepUpOtpRouter = require('../routes/auth-step-up-otp');
   const clientTrackingRouter = require('../routes/client-tracking');
   const simulatorRouter = require('../routes/simulator');
   const pickupRouter    = require('../routes/pickup-secret');
@@ -122,6 +123,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const marketDelegationProviderRouter = require('../routes/market-delegation-provider');
   const marketDelegationCatalogRouter = require('../routes/market-delegation-catalog');
   const marketDelegationLocalOfferRouter = require('../routes/market-delegation-local-offer');
+  const marketDelegationClientRouter = require('../routes/market-delegation-client');
   const marketDelegationClientCaseRouter = require('../routes/market-delegation-client-case');
   const marketDelegationSettlementRouter = require('../routes/market-delegation-settlement');
   const marketDelegationStructureEventRouter = require('../routes/market-delegation-structure-event');
@@ -196,6 +198,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/tracking', trackingRouter);
   app.use('/api/auth/otp', otpRouter);
   app.use('/api/auth/passkey', authPasskeyRouter); // AUTH-2 — feature auth-passkey
+  app.use('/api/auth/step-up/otp', authStepUpOtpRouter); // AUTH-7b — step-up OTP (complète le step-up passkey)
   app.use('/api/client/tracking', clientTrackingRouter);
   app.use('/api/simulator', simulatorRouter);
   // FIX: alias /api/admin/simulator → frontend appelait le mauvais préfixe → 404 sur /status
@@ -244,6 +247,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/market-delegation', marketDelegationProviderRouter);
   app.use('/api/market-delegation', marketDelegationCatalogRouter);
   app.use('/api/market-delegation', marketDelegationLocalOfferRouter);
+  app.use('/api/market-delegation', marketDelegationClientRouter);
   app.use('/api/market-delegation', marketDelegationClientCaseRouter);
   app.use('/api/market-delegation', marketDelegationSettlementRouter);
   app.use('/api/market-delegation', marketDelegationStructureEventRouter);

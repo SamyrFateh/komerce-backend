@@ -19,13 +19,17 @@ module.exports = {
     '!**/node_modules/**',
   ],
 
-  // Coverage thresholds (start low, increase as tests grow)
+  // Coverage thresholds — mesurés le 2026-09-19 : lignes 86.76%,
+  // statements 84.96%, functions 84.36%, branches 72.6% (tests unit
+  // seuls, npm run test:unit:coverage). Seuils fixés avec une marge de
+  // sécurité sous ces valeurs réelles — protègent contre une régression
+  // significative sans bloquer sur la moindre fluctuation normale.
   coverageThreshold: {
     global: {
-      branches:   20,
-      functions:  30,
-      lines:      30,
-      statements: 30,
+      branches:   65,
+      functions:  78,
+      lines:      80,
+      statements: 78,
     },
   },
 

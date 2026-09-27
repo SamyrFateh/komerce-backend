@@ -12,7 +12,7 @@ const bootstrapSource = fs.readFileSync(path.join(ROOT, 'bootstrap', 'api-routes
 describe('market-delegation catalog routes', () => {
   test('both routes are authenticated', () => {
     const routeDeclarations = routeSource.match(/router\.(get|post|put|delete)\([^\n]+/g) || [];
-    expect(routeDeclarations).toHaveLength(2);
+    expect(routeDeclarations).toHaveLength(3);
     expect(routeDeclarations.every(line => line.includes('authenticate'))).toBe(true);
   });
 
@@ -43,10 +43,16 @@ describe('market-delegation catalog routes', () => {
     expect(routeSource).not.toMatch(/requiredCapability:\s*['"]catalog\.expose['"]/);
   });
 
-  test('GET renvoie le résumé d’exposition calculé côté service', () => {
+  test('GET renvoie le résumé marché et la file simple des nouveaux produits', () => {
     expect(routeSource).toContain('summarizeExposure');
-    expect(routeSource).toMatch(/summary:\s*result\.summary/);
-    expect(routeSource).toMatch(/summary:\s*summarizeExposure\(exposure\)/);
+    expect(routeSource).toContain('listReviewQueue');
+    expect(routeSource).toMatch(/incoming_products:\s*reviewQueue\.total/);
+    expect(routeSource).toMatch(/review_queue:\s*result\.reviewQueue/);
+  });
+
+  test('la validation marché possède une route explicite, sans market_id client', () => {
+    expect(routeSource).toMatch(/router\.post\('\/markets\/:marketCode\/catalog\/review\/:productId\/validate'/);
+    expect(routeSource).toContain('validateForMarket');
   });
 
   test('no DELETE endpoint — exposure toggles, never removes a decision', () => {

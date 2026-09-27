@@ -57,7 +57,23 @@ test('metricItems ne fait que formatter les valeurs serveur', () => {
   expect(metrics.find(row => row.key === 'security').value).toBe('Central uniquement');
 });
 
-test('mount charge exclusivement l’endpoint Entity 360 dérivé du téléphone URL', async () => {
+function globalContext() {
+  return { access: { mode: 'global', allowedMarkets: [], defaultMarket: null, capabilities: [] } };
+}
+
+function marketContext(code) {
+  return { access: { mode: 'market', allowedMarkets: [code], defaultMarket: code, capabilities: ['client.read'] } };
+}
+
+function contract(expectedMode, expectedMarket) {
+  return {
+    resolveMarketView: jest.fn(() => (expectedMode === 'global'
+      ? { mode: 'global', marketCode: null }
+      : { mode: 'market', marketCode: expectedMarket })),
+  };
+}
+
+test('mount admin global charge l’endpoint Entity 360 dérivé du téléphone URL', async () => {
   const root = node();
   const fakeUi = ui();
   const document = { createElement: jest.fn(() => node()) };
@@ -74,6 +90,8 @@ test('mount charge exclusivement l’endpoint Entity 360 dérivé du téléphone
     ui: fakeUi,
     fetch: fetchFn,
     pathname: '/admin/clients/%2B2691234567',
+    adminContext: globalContext(),
+    contextContract: contract('global'),
   });
 
   expect(result.endpoint).toBe('/api/admin/entities/clients/%2B2691234567');
@@ -82,4 +100,49 @@ test('mount charge exclusivement l’endpoint Entity 360 dérivé du téléphone
     expect.objectContaining({ method: 'GET', credentials: 'include' })
   );
   expect(fakeUi.MetricStrip.render).toHaveBeenCalled();
+});
+
+test('mount market_operator charge l’endpoint DELEGATION scopé à son marché', async () => {
+  const root = node();
+  const fakeUi = ui();
+  const document = { createElement: jest.fn(() => node()) };
+  const fetchFn = jest.fn(async url => ({
+    ok: true,
+    status: 200,
+    json: async () => payload(),
+    url,
+  }));
+
+  const result = await client360.mount({
+    root,
+    document,
+    ui: fakeUi,
+    fetch: fetchFn,
+    pathname: '/admin/clients/%2B2691234567',
+    adminContext: marketContext('KM'),
+    contextContract: contract('market', 'KM'),
+  });
+
+  expect(result.endpoint).toBe('/api/market-delegation/markets/KM/clients/%2B2691234567');
+  expect(fetchFn).toHaveBeenCalledWith(
+    '/api/market-delegation/markets/KM/clients/%2B2691234567',
+    expect.objectContaining({ method: 'GET', credentials: 'include' })
+  );
+});
+
+test('mount sans contextContract refuse plutôt que de fabriquer un endpoint par défaut', async () => {
+  const root = node();
+  const fakeUi = ui();
+  const document = { createElement: jest.fn(() => node()) };
+  const fetchFn = jest.fn();
+
+  await expect(client360.mount({
+    root,
+    document,
+    ui: fakeUi,
+    fetch: fetchFn,
+    pathname: '/admin/clients/%2B2691234567',
+    adminContext: globalContext(),
+  })).rejects.toThrow('canonical_client_360_admin_context_contract_missing');
+  expect(fetchFn).not.toHaveBeenCalled();
 });

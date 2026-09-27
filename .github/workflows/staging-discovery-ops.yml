@@ -39,11 +39,11 @@ jobs:
       KOMERCE_ENV: staging
       NODE_ENV: test
       DISCOVERY_STAGING_SEED_ENABLED: 'true'
-      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      DATABASE_URL: ${{ secrets.RAILWAY_STAGING_DATABASE_URL }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
       RAILWAY_PROJECT_ID: '1c5c37ab-557b-41b1-885a-8b3ead573795'
-      RAILWAY_SERVICE_ID: '48ee010d-a1c3-4c47-9028-c1aacf90e00f'
-      RAILWAY_ENVIRONMENT_ID: '7a0ce7dc-93a0-4bfa-88c9-088f70e8883a'
+      RAILWAY_SERVICE_ID: ${{ vars.KOMERCE_STAGING_RAILWAY_SERVICE_ID }}
+      RAILWAY_ENVIRONMENT_ID: ${{ vars.KOMERCE_STAGING_RAILWAY_ENVIRONMENT_ID }}
       RAILWAY_GRAPHQL_URL: 'https://backboard.railway.com/graphql/v2'
 
     steps:
@@ -75,6 +75,23 @@ jobs:
           echo "operation=$operation" >> "$GITHUB_OUTPUT"
           echo "Operation: $operation"
 
+      # Fail closed: this workflow previously pointed to the live production
+      # Railway environment. Never run any DB probe/seed or variable update
+      # until a dedicated staging target has been configured and reviewed.
+      - name: Require isolated staging target
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${RAILWAY_ENVIRONMENT_ID:-}" ] || [ -z "${RAILWAY_SERVICE_ID:-}" ]; then
+            echo '::error::Dedicated staging environment/service IDs are not configured'
+            exit 1
+          fi
+          if [ "$RAILWAY_ENVIRONMENT_ID" = '7a0ce7dc-93a0-4bfa-88c9-088f70e8883a' ] || \
+             [ "$RAILWAY_SERVICE_ID" = '48ee010d-a1c3-4c47-9028-c1aacf90e00f' ]; then
+            echo '::error::Refusing staging operation against the production target'
+            exit 1
+          fi
+
       - name: Checkout main only
         uses: actions/checkout@v4
         with:
@@ -89,13 +106,12 @@ jobs:
           cache: npm
 
       - name: Verify Railway staging project token
-        if: steps.operation.outputs.operation == 'railway-check' || steps.operation.outputs.operation == 'discovery-seed'
         id: railway_access
         shell: bash
         run: |
           set -euo pipefail
           if [ -z "${RAILWAY_TOKEN:-}" ]; then
-            echo '::error::RAILWAY_TOKEN manque dans les secrets GitHub'
+            echo '::error::RAILWAY_STAGING_TOKEN manque dans les secrets GitHub'
             exit 1
           fi
 
@@ -140,7 +156,7 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${DATABASE_URL:-}" ]; then
-            echo '::error::RAILWAY_DATABASE_URL manque dans les secrets GitHub'
+            echo '::error::RAILWAY_STAGING_DATABASE_URL manque dans les secrets GitHub'
             exit 1
           fi
 

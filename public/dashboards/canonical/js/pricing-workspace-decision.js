@@ -155,6 +155,25 @@
       });
   }
 
+  function formatCostValue(value, unit) {
+    const numeric = number(value);
+    if (numeric == null) return '—';
+    if (unit === 'kmf') return formatKmf(numeric);
+    if (unit === 'pct') return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(numeric)} %`;
+    return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(numeric)}${unit ? ` ${unit}` : ''}`;
+  }
+
+  function globalCostItems(payload) {
+    return (Array.isArray(payload && payload.cost_components) ? payload.cost_components : [])
+      .slice(0, 12)
+      .map(row => ({
+        title: row.key || 'Composant',
+        helper: [row.family, row.category].filter(Boolean).join(' · ') || 'Sans catégorie',
+        value: formatCostValue(row.default_value, row.unit),
+        tone: row.is_active ? 'neutral' : 'warning',
+      }));
+  }
+
   function marketDecisionMeta(decision) {
     const status = decision && decision.decision_status;
     if (status === 'COVERED') return { label: 'Marché couvert', tone: 'positive' };
@@ -303,6 +322,22 @@
       overview.appendChild(ranked.section);
     }
 
+    if (!marketMode) {
+      const costItems = globalCostItems(payload);
+      if (costItems.length) {
+        const costs = cardSection(doc, 'Coûts', 'Composants de coûts actifs, autorité centrale cost_components. Gestion détaillée réservée à l’Atelier des coûts.', 'pricing-costs');
+        decisionUi.RankedList.render(costs.body, { items: costItems });
+        overview.appendChild(costs.section);
+      }
+
+      const strategy = cardSection(doc, 'Stratégie & concurrence', 'Comparaison CDR / concurrence / prix actuel. Les observations concurrentes sont adressées par une référence métier KPC.', 'pricing-strategy');
+      const competitorCount = number(payload && payload.summary && payload.summary.competitor_observations);
+      strategy.body.appendChild(text(doc, 'p', 'kmc-workspace-note', competitorCount
+        ? `${competitorCount} observation(s) concurrentielle(s) enregistrée(s) sur la période. Le détail par produit reste à construire — cette synthèse globale ne recalcule aucun prix, elle reporte le compte déjà produit par le moteur.`
+        : 'Aucune observation concurrentielle enregistrée pour l’instant sur ce périmètre. Cette section affichera les écarts CDR/concurrence dès que des observations existeront.'));
+      overview.appendChild(strategy.section);
+    }
+
     const footer = doc.createElement('div');
     decisionUi.TrustFooter.render(footer, marketMode ? marketTrust(payload, decision, options.requestedMarket) : globalTrust(payload));
     overview.appendChild(footer);
@@ -349,6 +384,7 @@
     globalDecisionItems,
     globalMetricItems,
     globalProductItems,
+    globalCostItems,
     marketDecisionMeta,
     marketDecisionItems,
     marketMetricItems,

@@ -119,11 +119,24 @@ function selectorOccurrences(css, selector) {
   return positions.map(pos => ({ desktop: isInsideDesktopMQ(cleaned, pos) }));
 }
 
+// GAP-F4 étape 2 (docs/gaps/GAP_BOUTIQUE_FRONTEND_CORRECTIONS.md) —
+// critical-home.css est un miroir GÉNÉRÉ (cf. son en-tête @provenance et
+// scripts/generate-critical-home-css.js) : il duplique verbatim des règles
+// déjà présentes dans leurs fichiers propriétaires sémantiques (categories.css,
+// products.css…) pour un chargement précoce, sans introduire de décision de
+// style indépendante. Exclu uniquement du contrat de PROPRIÉTÉ des sélecteurs
+// (évite 56+ faux positifs "owner non autorisé" à chaque régénération) —
+// reste inclus dans l'inventaire de bundles, les résumés hex/!important et
+// la détection de tokens cassés, où son contenu dupliqué mérite d'être
+// audité comme le reste (listCss() n'est donc pas touchée ici).
+const GENERATED_MIRROR_FILES = new Set(['critical-home']);
+
 function selectorMap() {
   const map = {};
   for (const selector of TRACKED_SELECTORS) {
     map[selector] = [];
     for (const source of listCss()) {
+      if (GENERATED_MIRROR_FILES.has(source)) continue;
       const occurrences = selectorOccurrences(readCss(source), selector);
       if (occurrences.length === 0) continue;
       map[selector].push({

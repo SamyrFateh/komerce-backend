@@ -7,7 +7,7 @@
  * @inputs        product_id, field_name, field_value, reason, admin_user
  * @outputs       override_row, applied_product_row
  * @depends       db.js, services/catalog-enrichment.js
- * @used-by       services/product-admin-service.js, services/catalog-approval.js
+ * @used-by       services/product-admin-service.js, services/catalog-approval.js, scripts/catalog-fr-quality-apply.js
  * @db-read       catalog_field_overrides, products
  * @db-write      catalog_field_overrides, products
  * @db-txn        none
@@ -83,6 +83,30 @@ async function upsertOverride(q, { productId, fieldName, fieldValue, reason = nu
   return { override, product };
 }
 
+async function finalizeReviewedManualPreparation(q, productId) {
+  const { rows: [product] } = await q.query(
+    `UPDATE products
+        SET content_source='manual',
+            enrichment_version=NULL,
+            enrichment_confidence=NULL,
+            needs_review=FALSE,
+            updated_at=NOW()
+      WHERE id=$1
+        AND lifecycle_status='candidate'
+        AND is_active=FALSE
+        AND (name_source IS NOT NULL OR description_source IS NOT NULL)
+      RETURNING *`,
+    [productId]
+  );
+
+  if (!product) {
+    const err = new Error(`Préparation manuelle revue impossible pour produit ${productId}`);
+    err.code = 'REVIEWED_MANUAL_PREPARATION_NOT_APPLICABLE';
+    throw err;
+  }
+  return product;
+}
+
 async function upsertOverrides(q, productId, fields, { reason = null, setBy = null } = {}) {
   const entries = Object.entries(fields || {});
   const unknown = entries.map(([f]) => f).filter((f) => !OVERRIDABLE_FIELDS.includes(f));
@@ -123,6 +147,7 @@ module.exports = {
   isPipelineSourced,
   upsertOverride,
   upsertOverrides,
+  finalizeReviewedManualPreparation,
   _isFrenchLocale: isFrenchLocale,
   _manualPreparationComplete: manualPreparationComplete,
 };

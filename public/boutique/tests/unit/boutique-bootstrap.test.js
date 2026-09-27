@@ -95,7 +95,7 @@ jest.mock('../../js/b-tracking.js', () => ({
   formatOrderDate: jest.fn(), renderTrackViewSearchMode: jest.fn(),
 }));
 jest.mock('../../js/b-pager.js', () => ({
-  _setupMobilePager: jest.fn(), _setupSectionAutoAdvance: jest.fn(),
+  _setupMobilePager: jest.fn(),
   _setupHorizontalWrap: jest.fn(), _syncChipToScroll: jest.fn(), _onPagerScroll: jest.fn(),
 }));
 jest.mock('../../js/b-scroll-owner.js', () => ({
@@ -308,5 +308,19 @@ describe('syncModalViewportOwner (fix Samsung Internet)', () => {
 
     document.getElementById('outside').dispatchEvent(new Event('scroll', { bubbles: true }));
     expect(window.requestAnimationFrame).not.toHaveBeenCalled();
+  });
+});
+
+describe('boutique.js — spike vertical-shell retiré', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(
+    path.join(__dirname, '../../js/boutique.js'),
+    'utf8'
+  );
+
+  test('ne câble plus le spike Phase 2 (shell vertical)', () => {
+    expect(source).not.toMatch(/spike-vertical-shell/);
+    expect(source).not.toMatch(/spike-shell-vertical/);
   });
 });

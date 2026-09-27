@@ -72,6 +72,7 @@ module.exports = {
       'routes/client-auth.js',
       'routes/auth.js',
       'routes/otp.js',
+      'routes/auth-step-up-otp.js',
     ],
     boutique: [
       // Backfill gouvernance globale : header @komerce-arch domain=auth confirmé
@@ -100,6 +101,7 @@ module.exports = {
       'tests/unit/client-auth.test.js',
       'tests/unit/pickup-authorization-service.test.js',
       'tests/unit/name-normalize.test.js',
+      'tests/unit/auth-step-up-otp-route.test.js',
     ],
   },
 
@@ -163,6 +165,9 @@ module.exports = {
       'GET /api/auth/me/pickup-authorization',
       'PUT /api/auth/me/pickup-authorization',
       'DELETE /api/auth/me/pickup-authorization',
+      'PUT /api/auth/me/password',
+      'POST /api/auth/step-up/otp/request',
+      'POST /api/auth/step-up/otp/verify',
     ],
     // O7.3 (provider auth-identity) : makeIntlPhoneInput (public/boutique/js/b-phone.js)
     // est consommé par shared-cart (b-share-cart.js) — corrigé depuis une

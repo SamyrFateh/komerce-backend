@@ -7,7 +7,7 @@
  * @inputs        none (static composition root)
  * @outputs       map of provider code -> fulfillment adapter object
  * @depends       services/suppliers/allegro-fulfillment-adapter.js, services/suppliers/aliexpress-fulfillment-adapter.js
- * @used-by       services/purchasing-trigger-service.js (GAP-2)
+ * @used-by       services/purchasing-trigger-service.js (GAP-2, GAP-4A/4B, GAP-5)
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -25,16 +25,15 @@
  * validé par le même contrat, services/suppliers/supplier-fulfillment-
  * adapter-contract.js:validateAdapter().
  *
- * Avant ce fichier, aucun composition root n'assemblait cette map nulle
- * part dans le chemin réel : le gate et la readiness ne sont exercés que
- * par des scripts Golden (cf. GAP-0). GAP-2 en crée le premier usage réel
- * (résolution d'exécution auto-order dans purchasing-trigger-service.js).
- *
- * GAP-4 (branchement du gate sur le vrai chemin Purchasing) doit
- * réutiliser CETTE MÊME map pour l'injecter dans le gate, plutôt que
- * d'en construire une seconde. Un futur provider s'enregistre ici une
- * seule fois, consommé par les deux usages (preflight readiness et
- * résolution d'exécution auto-order).
+ * Le registre est branché au chemin réel dans
+ * services/purchasing-trigger-service.js. GAP-2 a installé la résolution
+ * d'adapter ; GAP-4A utilise cette même map dans la readiness canonique
+ * (canonical-unit-purchasing-gate.js) et GAP-4B utilise la frontière
+ * d'exécution séparée (procurement-execution-boundary.js).
+ * GAP-5 a ajouté la frontière evidence -> verify/reconcile -> confirm.
+ * Ces étapes sont livrées (#1599, #1601, #1606), non futures.
+ * Un provider est enregistré une seule fois dans cette map ; ses capacités
+ * sont vérifiées par le consommateur correspondant, sans deuxième registre.
  *
  * Aucun des deux adapters actuels n'expose `placeOrder` — c'est un fait
  * du domaine (ni Allegro ni AliExpress n'offrent de buyer checkout API

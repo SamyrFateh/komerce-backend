@@ -164,6 +164,44 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     expect(financeDecision.drillCards(finance, { role: 'admin' })).toHaveLength(2);
   });
 
+  test('les cartes de décision utilisent le drill_to serveur quand il existe, jamais une ancre partagée par défaut', () => {
+    const payload = payloadFixture();
+    payload.kpis = payload.kpis.map(item => (item.key === 'paiements_en_attente'
+      ? { ...item, drill_to: '/admin/orders' }
+      : item));
+    const decisions = financeDecision.decisionItems(payload, finance);
+    const pending = decisions.find(item => item.key === 'payments-pending');
+    expect(pending.href).toBe('/admin/orders');
+  });
+
+  test('sans drill_to backend, repli sur l’ancre locale (jamais un lien cassé)', () => {
+    const payload = payloadFixture();
+    const decisions = financeDecision.decisionItems(payload, finance);
+    const pending = decisions.find(item => item.key === 'payments-pending');
+    expect(pending.href).toBe('#finance-kpis');
+  });
+
+  test('incompleteCostOrderItems projette les commandes réelles à coût incomplet, jamais les métriques de qualité coût/marge', () => {
+    const payload = payloadFixture();
+    payload.incomplete_cost_orders = [
+      { reference: 'CMD-I1', status: 'confirmed', payment_status: 'paid', total_kmf: 5000, created_at: '2026-08-20T00:00:00.000Z' },
+    ];
+    const items = financeDecision.incompleteCostOrderItems(payload, finance);
+    expect(items).toHaveLength(1);
+    expect(items[0]).toEqual(expect.objectContaining({ title: 'CMD-I1', value: finance.formatKmf(5000) }));
+  });
+
+  test('varianceItems exclut les commandes à variance nulle — correspondance exacte avec le compte du bandeau de décision', () => {
+    const payload = payloadFixture();
+    payload.costing_orders = [
+      ...payload.costing_orders,
+      { reference: 'CMD-ZERO', sale_total_kmf: 10000, estimated_cost_kmf: 6000, real_cost_kmf: 6000, variance_kmf: 0, consolidated_margin_kmf: 4000, cost_status: 'actual' },
+    ];
+    const items = financeDecision.varianceItems(payload, finance);
+    expect(items.map(item => item.title)).toEqual(['CMD-C']);
+    expect(items.map(item => item.title)).not.toContain('CMD-ZERO');
+  });
+
   test('une marge réelle relais absente reste explicitement inconnue', () => {
     const sources = finance.resolveSources({ relay_profitability: [{ relais_name: 'R', orders: 1, revenue_kmf: 10000, estimated_margin_kmf: 1000, consolidated_margin_kmf: null, cost_coverage_pct: 0 }] });
     expect(sources['finance.relay-profitability'][0]['marge-reelle']).toBe('—');

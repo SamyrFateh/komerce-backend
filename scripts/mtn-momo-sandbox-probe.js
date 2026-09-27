@@ -59,6 +59,9 @@ async function main() {
   if (!mtn.isConfigured()) {
     throw new Error('adapter MTN considéré non configuré');
   }
+  if (!String(process.env.MTN_PROOF_SANDBOX_MSISDN || '').replace(/\\D/g, '')) {
+    throw new Error('MTN_PROOF_SANDBOX_MSISDN requis : fournir un numéro de test Sandbox explicitement validé');
+  }
 
   const orderReference = `KOMERCE-STAGING-PROBE-${Date.now()}`;
   const initiated = await mtn.initiate({
@@ -67,9 +70,9 @@ async function main() {
     // EUR du Sandbox sans modifier le marché Congo.
     amount: 26560,
     currency: 'XAF',
-    // MTN documente que tout numéro hors scénarios prédéfinis aboutit au cas
-    // nominal de succès dans le Sandbox.
-    msisdn: '242061234567',
+    // Le numéro de test doit être explicitement validé/fourni par l'opérateur.
+    // Aucun MSISDN inventé ou supposé nominal n'est accepté comme preuve externe.
+    msisdn: String(process.env.MTN_PROOF_SANDBOX_MSISDN || '').replace(/\\D/g, ''),
     callbackUrl: 'https://komerce.co/api/payments/mobile-money/callback/mtn_momo/00000000-0000-4000-8000-000000000000',
   });
 

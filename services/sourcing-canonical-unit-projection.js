@@ -54,6 +54,7 @@ function buildCanonicalUnitProjection(rows = [], refs = []) {
       ambiguity_preserved: !identityDeterministic,
     },
     current_state: state,
+    last_observation_delta: core.observationDelta(rows, UNIT_STATE_FIELDS),
     observation_count: rows.length,
     observed_at: latest?.observed_at || null,
     provenance: core.provenance(rows),

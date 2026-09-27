@@ -1,0 +1,177 @@
+name: Isolated catalog curation census
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Run carrying the reusable checkpoint'
+        required: false
+        default: '36249230661'
+      checkpoint_name:
+        description: 'Checkpoint artifact name'
+        required: false
+        default: 'cj-fr-cold-start-memory-checkpoint'
+      expected:
+        description: 'Expected inactive CJ catalog candidates'
+        required: false
+        default: '974'
+      preview:
+        description: 'Read-only review-order preview size'
+        required: false
+        default: '120'
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+concurrency:
+  group: isolated-catalog-curation-census
+  cancel-in-progress: false
+
+jobs:
+  census:
+    name: Catalogue curation census
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.title == '[isolated-op] catalog-curation-census-974')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_real_catalog_stress
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_real_catalog_stress"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      CI: '1'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: postgresql://komerce:komerce@127.0.0.1:5432/komerce_real_catalog_stress
+      PGPASSWORD: komerce
+
+    steps:
+      - name: Checkout protected main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve census inputs
+        id: cfg
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_RUN_ID: ${{ inputs.source_run_id || '36249230661' }}
+          INPUT_CHECKPOINT: ${{ inputs.checkpoint_name || 'cj-fr-cold-start-memory-checkpoint' }}
+          INPUT_EXPECTED: ${{ inputs.expected || '974' }}
+          INPUT_PREVIEW: ${{ inputs.preview || '120' }}
+        run: |
+          set -euo pipefail
+          run_id="$INPUT_RUN_ID"
+          checkpoint="$INPUT_CHECKPOINT"
+          expected="$INPUT_EXPECTED"
+          preview="$INPUT_PREVIEW"
+
+          if [ "$EVENT_NAME" = 'issues' ]; then
+            run_id='36249230661'
+            checkpoint='cj-fr-cold-start-memory-checkpoint'
+            expected='974'
+            preview='120'
+          fi
+
+          {
+            echo "run_id=$run_id"
+            echo "checkpoint=$checkpoint"
+            echo "expected=$expected"
+            echo "preview=$preview"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download accepted reusable checkpoint
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.cfg.outputs.checkpoint }}
+          path: checkpoint
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.cfg.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Restore disposable checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          dump_file="$(find checkpoint -type f -name '*.dump' | head -1)"
+          test -n "$dump_file" || { echo '::error::Checkpoint sans dump PostgreSQL'; exit 1; }
+          pg_restore --clean --if-exists --no-owner --no-privileges \
+            -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress "$dump_file"
+          psql -h 127.0.0.1 -U komerce -d komerce_real_catalog_stress \
+            -v ON_ERROR_STOP=1 -f migrations/244_catalog_glossary_batch001.sql
+
+      - name: Run read-only curation census
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/catalog-curation-census
+          node scripts/catalog-curation-census.js \
+            --expected="${{ steps.cfg.outputs.expected }}" \
+            --preview="${{ steps.cfg.outputs.preview }}" \
+            --output=artifacts/catalog-curation-census/report.json
+
+      - name: Upload census report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalog-curation-census
+          path: artifacts/catalog-curation-census/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Write census summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## Catalogue curation census'
+            echo
+            echo "- expected candidates: `${{ steps.cfg.outputs.expected }}`"
+            echo "- source DB: disposable PostgreSQL localhost only"
+            echo "- writes/publication/exposure/order/payment: forbidden"
+            echo "- review order is indicative; first publication remains human"
+            echo "- value density: excluded until calibrated"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Close successful command issue
+        if: success() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" \
+            --body 'Catalogue curation census completed read-only on the accepted 974-product CJ checkpoint. Report artifact uploaded.'
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed

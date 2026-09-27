@@ -35,6 +35,28 @@ jest.mock('../../middleware/require-pricing-global-authority', () => ({
   requirePricingGlobalAuthority: (req, res, next) => mockCentralPricing ? next() : res.status(403).json({ code: 'pricing_global_access_denied' }),
 }));
 
+// POST /market/:marketCode/structure-events est désormais gardé par la
+// capability structure.event.record (MARKET-DELEGATION-P0B, Gap 1) au lieu du
+// rôle projeté market_operator + requireMarketScopeRole('manager').
+jest.mock('../../services/market-delegation-service', () => ({
+  resolveAuthorization: jest.fn(async (_executor, { marketCode, requiredCapability }) => {
+    if (mockScopeRole !== 'manager') {
+      const error = new Error(`Capability ${requiredCapability} requise.`);
+      error.code = 'MARKET_CAPABILITY_REQUIRED';
+      error.status = 403;
+      throw error;
+    }
+    return {
+      market_id: marketCode === 'CM' ? 'market-cm' : 'market-cg',
+      market_code: marketCode,
+      assignment_id: 'assignment-1',
+      membership_id: 'membership-1',
+      capabilities: [requiredCapability],
+    };
+  }),
+  audit: jest.fn(async () => {}),
+}));
+
 jest.mock('../../db', () => ({ query: jest.fn() }));
 const db = require('../../db');
 

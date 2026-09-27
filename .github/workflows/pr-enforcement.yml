@@ -20,6 +20,8 @@ jobs:
     timeout-minutes: 8
     outputs:
       backend: ${{ steps.scope.outputs.backend }}
+      provider_proof_only: ${{ steps.scope.outputs.provider_proof_only }}
+      cj_pilot_proof_only: ${{ steps.scope.outputs.cj_pilot_proof_only }}
       backend_files: ${{ steps.scope.outputs.backend_files }}
       dashboard: ${{ steps.scope.outputs.dashboard }}
       dashboard_files: ${{ steps.scope.outputs.dashboard_files }}
@@ -54,6 +56,9 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node scripts/pr-enforcement-scope.js --base "$BASE_SHA" --head "$HEAD_SHA" --github-output "$GITHUB_OUTPUT"
+      - name: CJ pilot report syntax — targeted proof-only check
+        if: steps.scope.outputs.cj_pilot_proof_only == 'true'
+        run: node --check scripts/cj-three-real-staging-pilot.js
       - name: Feature card schema — zero debt
         run: node scripts/feature-schema-check.js --strict --full
       - name: Docs history — zero debt
@@ -78,17 +83,14 @@ jobs:
     # harnais Golden seul ouvre ce job sans exécuter les gates backend inutiles.
     if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.golden == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          # fetch-depth: 0 requis — mêmes tests de gouvernance (baseline
-          # railway-live-schema.sql, cf. ci-migrate.js) que le job `integration`,
-          # qui utilise déjà fetch-depth: 0 pour la même raison. Sous shallow
-          # clone (défaut depth=1), `git log -1 -- <dump>` retombe sur HEAD
-          # lui-même — faux positif de baseline (incident constaté sur #1594).
-          fetch-depth: 0
+          fetch-depth: 1
+      - name: Deepen git history (tests/unit/allegro-golden-preflight-contract.test.js — G-01/G-02 — résout le vrai commit de baseline de docs/db/railway-live-schema.sql via `git log -1 -- <dump>` ; sous shallow, retombe sur HEAD, faux positif de baseline, incident #1594)
+        run: git fetch --unshallow origin || true
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -115,6 +117,9 @@ jobs:
         env:
           BACKEND_FILES: ${{ needs.changes.outputs.backend_files }}
         run: node scripts/run-staged-related-tests.js --files "$BACKEND_FILES"
+      - name: Unit test coverage threshold
+        if: needs.changes.outputs.backend == 'true'
+        run: npm run test:unit:coverage
 
       - name: Golden CDR — présence du snapshot réel
         if: needs.changes.outputs.golden == 'true'
@@ -131,6 +136,36 @@ jobs:
         run: node scripts/check-agent-remediation-contract.js --scope=backend
 
       - name: Prove gates did not mutate the tree
+        run: git diff --exit-code
+
+  provider_contracts:
+    name: Isolated provider contract proof gates
+    needs: changes
+    if: needs.changes.outputs.provider_proof_only == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install isolated test dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify collector code and unit contract
+        run: |
+          node --check scripts/external-provider-batch-proof.js
+          npx jest tests/unit/external-provider-batch-proof.test.js --runInBand --silent
+      - name: Produce offline inventory without provider API calls
+        run: |
+          node scripts/external-provider-batch-proof.js --mode=inventory \
+            --providers=all --out=artifacts/provider-contract-batch/report.json
+      - name: Prove targeted gates did not modify tracked sources
         run: git diff --exit-code
 
   migrations:
@@ -173,7 +208,11 @@ jobs:
   from_scratch:
     name: From-scratch DB + integration + E2E API
     needs: changes
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.migrations == 'true' || needs.changes.outputs.governance == 'true'
+    # Provider-only probes have dedicated isolated tests; runtime, manifest or
+    # migration changes still reach the complete DB/integration/E2E gates.
+    # CI-local CJ pilot report-only edits have a targeted syntax + governance
+    # gate; mixed or runtime changes still require full from-scratch tests.
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.migrations == 'true' || (needs.changes.outputs.governance == 'true' && needs.changes.outputs.provider_proof_only != 'true' && needs.changes.outputs.cj_pilot_proof_only != 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 35
     services:
@@ -297,7 +336,7 @@ jobs:
           cache-dependency-path: public/boutique/package-lock.json
 
       - name: Install Boutique test dependencies
-        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true' || needs.changes.outputs.boutique_package == 'true'
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true' || needs.changes.outputs.boutique_package == 'true' || needs.changes.outputs.boutique_css == 'true'
         run: npm --prefix public/boutique ci
       - name: JS quality
         if: needs.changes.outputs.boutique_js == 'true'
@@ -330,7 +369,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: node scripts/arch-doctrine-sanitize-check.js --diff="$BASE_SHA"
       - name: Related Boutique unit tests
-        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true'
+        if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true' || needs.changes.outputs.boutique_css == 'true'
         env:
           BOUTIQUE_TEST_FILES: ${{ needs.changes.outputs.boutique_test_files }}
         run: node scripts/run-staged-related-tests.js --files "$BOUTIQUE_TEST_FILES"
@@ -415,7 +454,7 @@ jobs:
   verdict:
     name: Required verdict
     if: always()
-    needs: [changes, backend, migrations, from_scratch, dashboard, boutique, governance]
+    needs: [changes, provider_contracts, backend, migrations, from_scratch, dashboard, boutique, governance]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -423,6 +462,7 @@ jobs:
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
+          PROVIDER_CONTRACTS_RESULT: ${{ needs.provider_contracts.result }}
           MIGRATIONS_RESULT: ${{ needs.migrations.result }}
           FROM_SCRATCH_RESULT: ${{ needs.from_scratch.result }}
           DASHBOARD_RESULT: ${{ needs.dashboard.result }}
@@ -431,13 +471,14 @@ jobs:
         run: |
           echo "changes=$CHANGES_RESULT"
           echo "backend=$BACKEND_RESULT"
+          echo "provider_contracts=$PROVIDER_CONTRACTS_RESULT"
           echo "migrations=$MIGRATIONS_RESULT"
           echo "from_scratch=$FROM_SCRATCH_RESULT"
           echo "dashboard=$DASHBOARD_RESULT"
           echo "boutique=$BOUTIQUE_RESULT"
           echo "governance=$GOVERNANCE_RESULT"
           test "$CHANGES_RESULT" = "success"
-          for result in "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$FROM_SCRATCH_RESULT" "$DASHBOARD_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do
+          for result in "$PROVIDER_CONTRACTS_RESULT" "$BACKEND_RESULT" "$MIGRATIONS_RESULT" "$FROM_SCRATCH_RESULT" "$DASHBOARD_RESULT" "$BOUTIQUE_RESULT" "$GOVERNANCE_RESULT"; do
             if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
               echo "Scoped enforcement failed: $result"
               exit 1

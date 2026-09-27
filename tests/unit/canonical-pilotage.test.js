@@ -17,8 +17,9 @@ function payloadFixture() {
       { key: 'ca_encaisse', value: 1250000, unit: 'KMF', data_quality: {} },
       { key: 'cmds_actives', value: 12, unit: 'count', data_quality: {} },
       { key: 'marge_consolidee', value: 18.5, unit: '%', data_quality: { warning: 'Données partielles' } },
-      { key: 'alertes_critiques', value: 2, unit: 'count', data_quality: {} },
+      { key: 'alertes_critiques', value: 2, unit: 'count', data_quality: {}, drill_to: '/admin/action-center?severity=critical,urgent' },
       { key: 'taux_completude_couts', value: 75, unit: '%', data_quality: {} },
+      { key: 'points_attention', value: 1, unit: 'count', data_quality: {}, drill_to: '/admin/action-center?severity=warning' },
     ],
     system_alerts: [
       {

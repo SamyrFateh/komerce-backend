@@ -47,7 +47,23 @@ const MARKET = Object.freeze({
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockQuery.mockResolvedValue({ rows: [] });
+  mockQuery.mockImplementation(async (sql) => {
+    // L'agrégat de services/operations-workspace.js#querySignals n'a pas de
+    // GROUP BY : Postgres renvoie toujours exactement une ligne, jamais un
+    // tableau vide — contrairement aux autres requêtes de ce fichier
+    // (listes), pour lesquelles le défaut générique { rows: [] } reste correct.
+    if (String(sql).includes('collectes_en_retard')) {
+      return {
+        rows: [{
+          collectes_en_retard: 0,
+          cash_a_securiser_count: 0,
+          cash_a_securiser_kmf: 0,
+          relais_actifs: 0,
+        }],
+      };
+    }
+    return { rows: [] };
+  });
   mockTransition.mockResolvedValue({ success: true });
   mockDistributeOrder.mockResolvedValue({ success: true, parcel_ref: 'PCL-CM-001' });
   mockProcessScan.mockResolvedValue({
@@ -62,7 +78,7 @@ beforeEach(() => {
 test('buildWorkspace scope toutes ses lectures DB par le market id serveur', async () => {
   await workspace.buildWorkspace({ market: MARKET });
 
-  expect(mockQuery).toHaveBeenCalledTimes(6);
+  expect(mockQuery).toHaveBeenCalledTimes(9);
   for (const call of mockQuery.mock.calls) {
     expect(call[1]).toContain('market-cm-id');
     expect(String(call[0])).toMatch(/market_id\s*=\s*\$1|market_id\s*=\s*\$2/);
@@ -217,4 +233,63 @@ test('assignInventory refuse un colis fermé même dans le bon marché', async (
     status: 409,
   });
   expect(mockScanIntoParcel).not.toHaveBeenCalled();
+});
+
+test('buildWorkspace expose payload.signals — collectes en retard, cash à sécuriser en KMF, incidents et relais triés', async () => {
+  mockQuery.mockImplementation(async (sql) => {
+    if (String(sql).includes('collectes_en_retard')) {
+      return {
+        rows: [{
+          collectes_en_retard: 3,
+          cash_a_securiser_count: 2,
+          cash_a_securiser_kmf: '47000',
+          relais_actifs: 5,
+        }],
+      };
+    }
+    if (String(sql).includes('order_incidents')) {
+      return {
+        rows: [
+          { id: 'inc-1', type: 'blocage', priority: 'high', status: 'open', created_at: '2026-09-01T00:00:00Z', relais_name: 'Relais Akwa' },
+        ],
+      };
+    }
+    if (String(sql).includes('GROUP BY r.id')) {
+      return {
+        rows: [
+          { id: 'relais-1', name: 'Relais Akwa', island: 'Douala', disponibles: 4, en_retard: 3, cash_pending_kmf: '15000', collectes_7j: 2 },
+        ],
+      };
+    }
+    return { rows: [] };
+  });
+
+  const result = await workspace.buildWorkspace({ market: MARKET });
+
+  expect(result.signals).toEqual({
+    collectes_en_retard: 3,
+    cash_a_securiser: { count: 2, total_kmf: 47000 },
+    relais_actifs: 5,
+    incidents_ouverts: 1,
+    incidents: [
+      { id: 'inc-1', type: 'blocage', priority: 'high', relais_name: 'Relais Akwa', created_at: '2026-09-01T00:00:00Z' },
+    ],
+    par_relais: [
+      { id: 'relais-1', name: 'Relais Akwa', island: 'Douala', disponibles: 4, en_retard: 3, cash_pending_kmf: 15000, collectes_7j: 2 },
+    ],
+  });
+  // cash_a_securiser_kmf et cash_pending_kmf arrivent en string depuis
+  // Postgres (bigint) — vérifie que le service les convertit bien en Number,
+  // jamais laissés en chaîne pour l'UI.
+  expect(typeof result.signals.cash_a_securiser.total_kmf).toBe('number');
+  expect(typeof result.signals.par_relais[0].cash_pending_kmf).toBe('number');
+});
+
+test('querySignals ne propose jamais de signal "stock sous seuil" — donnée absente du schéma, jamais inventée', async () => {
+  const result = await workspace.buildWorkspace({ market: MARKET });
+  expect(result.signals).not.toHaveProperty('stock_alert');
+  expect(result.signals).not.toHaveProperty('hubs_en_tension');
+  expect(Object.keys(result.signals)).toEqual([
+    'collectes_en_retard', 'cash_a_securiser', 'relais_actifs', 'incidents_ouverts', 'incidents', 'par_relais',
+  ]);
 });

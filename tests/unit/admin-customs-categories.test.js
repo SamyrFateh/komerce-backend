@@ -146,7 +146,7 @@ describe('POST /api/admin/customs-categories — création', () => {
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ key: 'electro', label: 'Électronique', tva_pct: 10 });
     const [, params] = mockDbQuery.mock.calls[1];
-    expect(params).toEqual(['electro', 'Électronique', null, null, 0, 10, 0, null, null, null, null, null, null, 99, true]);
+    expect(params).toEqual(['electro', 'Électronique', null, null, 0, 10, 0, null, null, null, null, null, null, {}, null, 99, true]);
   });
 
   it('is_active:false explicite → conservé tel quel (pas écrasé par defaut true)', async () => {
@@ -156,7 +156,24 @@ describe('POST /api/admin/customs-categories — création', () => {
 
     await request(buildApp()).post('/api/admin/customs-categories').send({ key: 'electro', label: 'Électronique', is_active: false });
     const [, params] = mockDbQuery.mock.calls[1];
-    expect(params[14]).toBe(false);
+    expect(params[16]).toBe(false);
+  });
+
+  it('classification_terms et default_weight_kg sont persistés comme configuration dynamique', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ key: 'bagagerie' }] });
+
+    await request(buildApp()).post('/api/admin/customs-categories').send({
+      key: 'bagagerie',
+      label: 'Bagagerie',
+      classification_terms: { crossbody: 10, handbag: 8 },
+      default_weight_kg: 0.7,
+    });
+
+    const [, params] = mockDbQuery.mock.calls[1];
+    expect(params[13]).toEqual({ crossbody: 10, handbag: 8 });
+    expect(params[14]).toBe(0.7);
   });
 
   it('erreur DB → 500', async () => {
@@ -201,6 +218,18 @@ describe('PUT /api/admin/customs-categories/:key — modification', () => {
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain('label = $1, douane_pct = $2, is_active = $3');
     expect(params).toEqual(['X', 5, false, 'electro']);
+  });
+
+  it('permet de modifier les termes de classification sans déploiement applicatif', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'bagagerie' }] });
+    await request(buildApp()).put('/api/admin/customs-categories/bagagerie').send({
+      classification_terms: { crossbody: 12 },
+      default_weight_kg: 0.8,
+    });
+    const [sql, params] = mockDbQuery.mock.calls[0];
+    expect(sql).toContain('classification_terms');
+    expect(sql).toContain('default_weight_kg');
+    expect(params).toEqual([{ crossbody: 12 }, 0.8, 'bagagerie']);
   });
 
   it('champ non-autorisé (ex: key) → ignoré silencieusement', async () => {

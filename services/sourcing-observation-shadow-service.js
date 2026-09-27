@@ -148,7 +148,7 @@ async function recordCatalogImportObservationsShadow(context) {
   try {
     resolution = await shadowResolution.resolveCaptureShadow(summary.capture_id);
   } catch (err) {
-    resolution = { status: 'failed', code: err.code || 'SHADOW_RESOLUTION_FAILED' };
+    resolution = { status: 'failed', code: err.code || 'SHADOW_RESOLUTION_FAILED', reason: String(err.message || 'Shadow resolution failed').slice(0, 300) };
   }
   return { ...summary, resolution };
 }

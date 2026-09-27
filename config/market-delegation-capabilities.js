@@ -26,7 +26,12 @@ const CAPABILITIES = Object.freeze([
   ['network.suspend','DELEGATION','network','MARKET','DELEGABLE',true,'LIVE'],
   ['provider.manage','DELEGATION','network','MARKET','DELEGABLE',true,'LIVE'],
   ['market_config.read','DELEGATION','market-config','MARKET','DELEGABLE',false,'LIVE'],
-  ['market_config.update','DELEGATION','market-config','MARKET','DELEGABLE',true,'MISSING'],
+  // Audit schéma (migration 135_markets_foundation.sql, jamais altérée) : hors
+  // code/currency/minor_unit (réservés central) et is_active (même autorité que
+  // market.create, doit rester central), il ne reste aucun champ de configuration
+  // marché à déléguer. CENTRAL_ONLY/CENTRAL_HELD documente ce constat au lieu de
+  // laisser un MISSING qui suggérerait un backlog de construction restant.
+  ['market_config.update','DELEGATION','market-config','MARKET','CENTRAL_ONLY',true,'CENTRAL_HELD'],
   ['finance.read','DELEGATION','finance','MARKET','DELEGABLE',false,'LIVE'],
   ['finance.act','DELEGATION','finance','MARKET','DELEGABLE',true,'LIVE'],
   ['settlement.receive','DELEGATION','finance','MARKET','DELEGABLE',true,'LIVE'],
@@ -50,10 +55,23 @@ const CAPABILITIES = Object.freeze([
   delegation_mode: delegationMode, requires_audit: requiresAudit, status,
 })));
 
-function autonomyStats(rows = CAPABILITIES) {
-  const delegation = rows.filter(row => row.class === 'DELEGATION');
-  const live = delegation.filter(row => row.status === 'LIVE');
-  return { live: live.length, total: delegation.length, rate: delegation.length ? live.length / delegation.length : 0 };
+// Le KPI d'autonomie ne mesure que les capabilities MARKET réellement
+// DELEGABLE : une capability `class = DELEGATION` mais `delegation_mode =
+// CENTRAL_ONLY` (ex. market_config.update, cf. migration 246) documente une
+// non-délégation volontaire et ne doit pas faire baisser le taux — elle
+// n'appartient tout simplement pas au dénominateur.
+function autonomyDenominator(rows = CAPABILITIES) {
+  return rows.filter(row => (
+    row.class === 'DELEGATION'
+    && row.authority_scope === 'MARKET'
+    && row.delegation_mode === 'DELEGABLE'
+  ));
 }
 
-module.exports = { CAPABILITIES, autonomyStats };
+function autonomyStats(rows = CAPABILITIES) {
+  const delegable = autonomyDenominator(rows);
+  const live = delegable.filter(row => row.status === 'LIVE');
+  return { live: live.length, total: delegable.length, rate: delegable.length ? live.length / delegable.length : 0 };
+}
+
+module.exports = { CAPABILITIES, autonomyStats, autonomyDenominator };

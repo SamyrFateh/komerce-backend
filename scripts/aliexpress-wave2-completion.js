@@ -175,6 +175,7 @@ async function importFetchedSubset({ syncKey, logicalPage, subset, spec }) {
   const body = {
     supplier_name: primary.SUPPLIER_NAME,
     source_type: 'api',
+    supplier_id: 'aliexpress',
     source_filename: sourceFilename(syncKey, logicalPage),
     notes: `AliExpress ${wave2.WAVE_ID} completion — ${spec.category}/${spec.subcategory} — ${spec.keyword} — page ${logicalPage}`,
     is_full_snapshot: false,

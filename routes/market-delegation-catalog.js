@@ -26,8 +26,10 @@ const { authenticate } = require('../middleware/auth');
 const {
   resolveAuthorization,
   listExposure,
+  listReviewQueue,
   summarizeExposure,
   setExposure,
+  validateForMarket,
 } = require('../services/market-delegation-catalog-service');
 
 function correlationId(req) {
@@ -78,16 +80,44 @@ router.get('/markets/:marketCode/catalog/exposure', authenticate, async (req, re
         marketCode: req.params.marketCode,
         requiredCapability: 'catalog.read',
       });
-      const exposure = await listExposure(client, { marketId: authz.market_id });
-      return { authz, exposure, summary: summarizeExposure(exposure) };
+      const [exposure, reviewQueue] = await Promise.all([
+        listExposure(client, { marketId: authz.market_id }),
+        listReviewQueue(client, { marketId: authz.market_id, limit: 100 }),
+      ]);
+      return {
+        authz,
+        exposure,
+        reviewQueue,
+        summary: {
+          ...summarizeExposure(exposure),
+          incoming_products: reviewQueue.total,
+        },
+      };
     });
     res.json({
       market: { code: result.authz.market_code, name: result.authz.market_name, currency: result.authz.currency },
       assignment_id: result.authz.assignment_id,
       actor_capabilities: result.authz.capabilities,
       summary: result.summary,
+      review_queue: result.reviewQueue,
       exposure: result.exposure,
     });
+  } catch (error) {
+    if (sendDelegationError(res, error)) return;
+    next(error);
+  }
+});
+
+router.post('/markets/:marketCode/catalog/review/:productId/validate', authenticate, async (req, res, next) => {
+  try {
+    rejectMarketId(req.body);
+    const result = await withTransaction(client => validateForMarket(client, {
+      marketCode: req.params.marketCode,
+      actorUserId: req.user.id,
+      correlationId: correlationId(req),
+      productId: req.params.productId,
+    }));
+    res.json({ success: true, validation: result });
   } catch (error) {
     if (sendDelegationError(res, error)) return;
     next(error);

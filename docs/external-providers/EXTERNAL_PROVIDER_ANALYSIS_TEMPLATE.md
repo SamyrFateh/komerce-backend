@@ -96,6 +96,13 @@ Keep only the relevant profile(s). Add a new profile only when a real provider f
 | Variants / exact units | | |
 | Native price + currency | | |
 | Stock / availability | | |
+| Exact tracked Offer/Unit refresh | | Scope, account permissions, exact identity, max age |
+| Supplier-to-Komerce webhook (PUSH) | | Event types, scope: own seller offers or third-party offers, signature, replay, latency |
+| Change feed / cursor | | Covered offer scope, ordering, retention, pagination, recovery |
+| Stock semantics | | Numeric exact / bounded / availability-for-requested-quantity / UNKNOWN |
+| Quantity-aware precommit check | | Reservation vs non-binding quote, TTL, checkout/payment phase, race and manual fallback |
+| Confirmed withdrawal evidence | | Exact 404 meaning or complete snapshot; paginated absence is not removal |
+| Rate limits / tracking cadence | | Quotas, backoff, refresh costs, staleness policy |
 | Sellability / publication state | | |
 | Shipping / quote | | |
 | Manual procurement | | |

@@ -44,9 +44,16 @@ describe('run-staged-related-tests — resolution ciblee', () => {
     expect(isRootSource('public/boutique/js/b-cart.js')).toBe(false);
   });
 
-  test('classe seulement le runtime Boutique JS dans le workspace Boutique', () => {
+  test('classe le runtime Boutique JS et le CSS source (hors bundle dist) dans le workspace Boutique', () => {
     expect(isBoutiqueSource('public/boutique/js/b-cart.js')).toBe(true);
-    expect(isBoutiqueSource('public/boutique/css/cart.css')).toBe(false);
+    // Incident 2026-09 (8 suites cassées, dérive silencieuse) : le CSS
+    // Boutique doit être un "source" au même titre que le JS, sinon les
+    // tests de doctrine qui le lisent en texte (readCss / fs.readFileSync)
+    // ne sont jamais sélectionnés par ce gate quand seul du CSS est modifié.
+    expect(isBoutiqueSource('public/boutique/css/cart.css')).toBe(true);
+    // css/dist est un bundle généré, jamais une source de vérité — même
+    // frontière que boutiqueCss dans pr-enforcement-scope.js.
+    expect(isBoutiqueSource('public/boutique/css/dist/components.css')).toBe(false);
     expect(isBoutiqueSource('public/boutique/tests/unit/b-cart.test.js')).toBe(false);
   });
 
@@ -95,5 +102,21 @@ describe('run-staged-related-tests — resolution ciblee', () => {
     expect(contentReferencesSource(testContent, 'public/dashboards/canonical/js/app.js')).toBe(true);
     // 'legacy' n'apparait nulle part dans le fichier -> pas de lien.
     expect(contentReferencesSource(testContent, 'public/dashboards/legacy/js/app.js')).toBe(false);
+  });
+
+  test('un test de doctrine Boutique qui lit du CSS en texte est repere par contentReferencesSource (incident 2026-09)', () => {
+    // Reproduit tel quel le pattern de tests/unit/visual-geometry-css-invariants.test.js
+    // et tests/unit/boutique-desktop.test.js : lecture via fs.readFileSync,
+    // jamais require() — invisible a --findRelatedTests, capte seulement par
+    // ce fallback textuel. Avant le fix, ce fallback etait desactive pour le
+    // workspace Boutique (contentAware: false), donc un changement CSS pur
+    // ne selectionnait jamais ce test malgre ce couplage explicite.
+    const testContent = `
+      const CSS = path.resolve(__dirname, '../../css');
+      function readCss(name) { return fs.readFileSync(path.join(CSS, name), 'utf8'); }
+      const desktop = readCss('boutique-desktop.css');
+    `;
+    expect(contentReferencesSource(testContent, 'public/boutique/css/boutique-desktop.css')).toBe(true);
+    expect(contentReferencesSource(testContent, 'public/boutique/css/cart.css')).toBe(false);
   });
 });

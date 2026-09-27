@@ -92,8 +92,8 @@ module.exports = {
 
   contract: {
     exposes: [
-      'GET /api/local-stock/availability?product_id=X&market=CODE — projection Discovery minimale availability/exposable ; market CODE résolu serveur',
-      'GET /api/local-stock/checkout-preview?relais_id=R&product_id=P&quantity=Q — projection checkout read-only, relais -> market_id résolu serveur, jamais une réservation',
+      'GET /api/local-stock/availability', // ?product_id=X&market=CODE — projection Discovery minimale availability/exposable ; market CODE résolu serveur
+      'GET /api/local-stock/checkout-preview', // ?relais_id=R&product_id=P&quantity=Q — projection checkout read-only, relais -> market_id résolu serveur, jamais une réservation
     ],
     internalApi: [
       { fn: 'getDecisionAvailabilityEvidence', file: 'services/local-stock-decision-projection.js' },

@@ -263,6 +263,25 @@ function candidateSummary(candidate) {
   };
 }
 
+// Un candidat persisté n'est jamais la preuve que son identité canonique est résolue.
+function classifyGoldenImport(importBody, candidate) {
+  const canonicalResolved = importBody?.canonical_resolved === true
+    && importBody?.pipeline_status === 'CANONICAL_RESOLVED';
+  const rejected = candidate?.state === 'rejected'
+    || candidate?.scan_result?.sourcing_decision === 'EXCLUDED';
+  if (rejected) return { status: 'REJECTED', reason: 'SOURCE_OR_ELIGIBILITY_REJECTED', canonical_resolved: canonicalResolved };
+  if (!canonicalResolved) {
+    const shadow = importBody?.shadow_ingestion || {};
+    const reason = shadow.status !== 'recorded'
+      ? (shadow.code || 'SHADOW_NOT_RECORDED')
+      : shadow.resolution?.status !== 'resolved'
+        ? (shadow.resolution?.code || 'SHADOW_RESOLUTION_INCOMPLETE')
+        : 'CANONICAL_IDENTITY_REVIEW_REQUIRED';
+    return { status: 'BLOCKED', reason, canonical_resolved: false };
+  }
+  return { status: 'PENDING_PRICE_DECISION', reason: 'EXPLICIT_PRICE_DECISION_REQUIRED', canonical_resolved: true };
+}
+
 async function dryRun(env = process.env) {
   const rt = assertStaging(env);
   const config = discoveryConfig(env);
@@ -306,6 +325,7 @@ async function executeImport(supplierProductId, env = process.env) {
   const body = {
     supplier_name: SUPPLIER_NAME,
     source_type: 'api',
+    supplier_id: 'aliexpress',
     source_filename: `aliexpress-golden-e2e/${supplierProductId}.json`,
     notes: `Golden E2E staging — exact AliExpress product ${supplierProductId}`,
     is_full_snapshot: false,
@@ -318,16 +338,18 @@ async function executeImport(supplierProductId, env = process.env) {
   const candidate = await readCandidate(supplierProductId);
   if (!candidate) throw new Error(`Import accepté mais candidat ${supplierProductId} introuvable`);
   const summary = candidateSummary(candidate);
-  const blocked = candidate.state === 'rejected' || summary.sourcing_decision === 'EXCLUDED';
+  const verdict = classifyGoldenImport(result.body, candidate);
   const output = {
     mode: 'import',
     runtime: rt,
-    imported: true,
+    imported_to_staging: true,
+    refinery_verdict: verdict.status,
+    canonical_resolved: verdict.canonical_resolved,
     source: sourceSummary(live),
     import: result.body,
     candidate: summary,
-    next_gate: blocked
-      ? { action: 'STOP', reason: 'SOURCE_OR_ELIGIBILITY_REJECTED' }
+    next_gate: verdict.status !== 'PENDING_PRICE_DECISION'
+      ? { action: 'STOP', reason: verdict.reason, promotion: 'NOT_PERFORMED', place_order: 'HARD_STOP' }
       : {
           action: 'EXPLICIT_PRICE_DECISION_REQUIRED',
           recommended_price_kmf: summary.recommended_price_kmf,
@@ -376,6 +398,7 @@ module.exports = {
   withGoldenProvenance,
   sourceSummary,
   candidateSummary,
+  classifyGoldenImport,
   dryRun,
   executeImport,
   main,

@@ -40,6 +40,7 @@ jest.mock('../../services/sourcing-observation-shadow-service', () => ({
 }));
 
 const autopilot = require('../../services/sourcing-source-autopilot');
+const oneShotRunner = require('../../scripts/sourcing-source-autopilot');
 
 function sourceRow(overrides = {}) {
   return {
@@ -147,6 +148,98 @@ test('source ON exécute le pull borné via le registry sans branche fournisseur
   expect(lockClient.release).toHaveBeenCalledTimes(1);
 });
 
+test('erreur fournisseur transitoire est retentée puis peut réussir sans casser la source', async () => {
+  process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES = '2';
+  process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS = '0';
+  mockSourceQueries();
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog
+    .mockResolvedValueOnce({ status: 400, body: { error: 'HTTP 429 Too Many Requests' } })
+    .mockResolvedValueOnce({
+      status: 200,
+      body: {
+        accepted: 2, created: 2, updated: 0, rejected: 0,
+        pipeline_status: 'CANONICAL_RESOLVED',
+        shadow_ingestion: { status: 'recorded' },
+      },
+    });
+
+  const result = await autopilot.runSourceOnce('api:cj', { reason: 'test' });
+
+  expect(mockImportCatalog).toHaveBeenCalledTimes(2);
+  expect(result).toMatchObject({ status: 'ok', accepted: 2, transient_retries: 1 });
+  delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES;
+  delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS;
+});
+
+test('erreur fournisseur transitoire persistante devient retry_pending et non failed critique', async () => {
+  process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES = '2';
+  process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS = '0';
+  mockSourceQueries();
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog.mockResolvedValue({
+    status: 400,
+    body: { error: 'gateway timeout from supplier' },
+  });
+
+  const result = await autopilot.runSourceOnce('api:cj', { reason: 'test' });
+
+  expect(mockImportCatalog).toHaveBeenCalledTimes(3);
+  expect(result).toMatchObject({
+    status: 'retry_pending',
+    code: 'transient_import_retry_pending',
+    transient_retries: 2,
+  });
+  expect(mockQuery.mock.calls.some(([sql, params]) =>
+    String(sql).includes('INSERT INTO sourcing_captures')
+      && params[2] === 'partial'
+      && String(params[4]).includes('retry_pending')
+  )).toBe(true);
+  delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES;
+  delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS;
+});
+
+test('shadow incomplet ne peut jamais etre annonce comme un autopilot ok', async () => {
+  mockSourceQueries();
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog.mockResolvedValue({
+    status: 200,
+    body: {
+      accepted: 1, created: 1, updated: 0, rejected: 0,
+      pipeline_status: 'PARTIAL_BLOCKED',
+      shadow_ingestion: { status: 'failed', code: 'SHADOW_OBSERVATION_FAILED' },
+    },
+  });
+
+  const result = await autopilot.runSourceOnce('api:cj', { reason: 'test' });
+
+  expect(result).toMatchObject({
+    status: 'partial', source_ref: 'api:cj', accepted: 1,
+    pipeline_status: 'PARTIAL_BLOCKED',
+  });
+  expect(mockQuery.mock.calls.some(([sql, params]) =>
+    String(sql).includes('INSERT INTO sourcing_captures') && params[2] === 'partial'
+  )).toBe(true);
+});
+
 test('activation modifie uniquement autopilot_enabled et peut rester sans premier run en test', async () => {
   mockSourceQueries();
 
@@ -166,4 +259,103 @@ test('activation refuse fail-closed si le runtime global est OFF', async () => {
     .rejects.toMatchObject({ status: 409, code: 'sourcing_autopilot_runtime_disabled' });
 
   expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('UPDATE sourcing_sources'))).toBe(false);
+});
+
+
+describe('sourcing source autopilot one-shot router', () => {
+  test('sans one-shot conserve le passage autopilot canonique et borné', async () => {
+    const runActiveSources = jest.fn().mockResolvedValue({ status: 'ok', results: [] });
+
+    await expect(oneShotRunner.runTask(
+      { KOMERCE_SOURCE_AUTOPILOT_BATCH_LIMIT: '75' },
+      { autopilot: { runActiveSources } }
+    )).resolves.toEqual({
+      task: { kind: 'autopilot' },
+      result: { status: 'ok', results: [] },
+    });
+
+    expect(runActiveSources).toHaveBeenCalledWith({
+      limit: 50,
+      reason: 'railway_cron',
+    });
+  });
+
+  test('route uniquement le dry-run AliExpress allowlisté', async () => {
+    const env = { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: 'aliexpress-golden-dry-run' };
+    const aliexpressGolden = { main: jest.fn().mockResolvedValue({ status: 'ok' }) };
+
+    await oneShotRunner.runTask(env, { aliexpressGolden });
+
+    expect(aliexpressGolden.main).toHaveBeenCalledWith(['--dry-run'], env);
+  });
+
+  test('route uniquement la sonde de qualité FR multi-source sans mutation', async () => {
+    const env = { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: 'refinery-fr-cross-supplier-audit' };
+    const refineryFrAudit = { run: jest.fn().mockResolvedValue({ writes: false, ai_call_invoked: false }) };
+    const outcome = await oneShotRunner.runTask(env, { refineryFrAudit });
+    expect(refineryFrAudit.run).toHaveBeenCalledWith({ env });
+    expect(outcome.result).toMatchObject({ writes: false, ai_call_invoked: false });
+  });
+
+  test('route la sonde commerciale AliExpress exacte sans import ni promotion', async () => {
+    const env = { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: 'aliexpress-golden-commercial-audit' };
+    const aliexpressCommercialAudit = { run: jest.fn().mockResolvedValue({ writes: false }) };
+
+    await oneShotRunner.runTask(env, { aliexpressCommercialAudit });
+
+    expect(aliexpressCommercialAudit.run).toHaveBeenCalledWith({ env });
+  });
+
+  test('route un import AliExpress vers un identifiant numérique exact', async () => {
+    const env = { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: 'aliexpress-golden-import:1005010358671233' };
+    const aliexpressGolden = { main: jest.fn().mockResolvedValue({ imported: true }) };
+
+    await oneShotRunner.runTask(env, { aliexpressGolden });
+
+    expect(aliexpressGolden.main).toHaveBeenCalledWith([
+      '--execute-import',
+      '--supplier-product-id=1005010358671233',
+    ], env);
+  });
+
+  test('route la preuve Allegro avec un prix positif explicite', async () => {
+    const env = { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: 'allegro-golden-prebuyer:12000' };
+    const allegroGolden = { run: jest.fn().mockResolvedValue({ status: 'PASS' }) };
+
+    await oneShotRunner.runTask(env, { allegroGolden });
+
+    expect(allegroGolden.run).toHaveBeenCalledWith(['--price-kmf=12000'], { env });
+  });
+
+  test('route un slot Sandbox Allegro explicite et borné', async () => {
+    const env = { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: 'allegro-golden-prebuyer:12000:2' };
+    const allegroGolden = { run: jest.fn().mockResolvedValue({ status: 'PASS' }) };
+
+    await oneShotRunner.runTask(env, { allegroGolden });
+
+    expect(allegroGolden.run).toHaveBeenCalledWith(['--price-kmf=12000', '--seed-slot=2'], { env });
+  });
+
+  test.each([
+    'aliexpress-golden-import:not-an-id',
+    'aliexpress-golden-import:1234',
+    'allegro-golden-prebuyer:0',
+    'allegro-golden-prebuyer:-1',
+    'allegro-golden-prebuyer:12000:0',
+    'allegro-golden-prebuyer:12000:4',
+    'node scripts/anything.js',
+  ])('échoue fermé avant tout appel pour %s', async (value) => {
+    const aliexpressGolden = { main: jest.fn() };
+    const allegroGolden = { run: jest.fn() };
+
+    await expect(oneShotRunner.runTask(
+      { KOMERCE_SOURCE_AUTOPILOT_ONE_SHOT: value },
+      { aliexpressGolden, allegroGolden }
+    )).rejects.toMatchObject({
+      code: 'source_autopilot_one_shot_not_allowlisted',
+    });
+
+    expect(aliexpressGolden.main).not.toHaveBeenCalled();
+    expect(allegroGolden.run).not.toHaveBeenCalled();
+  });
 });

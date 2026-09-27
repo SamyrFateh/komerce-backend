@@ -8,7 +8,7 @@
  * @outputs       canonical decision-first orders payload (files de travail, cycle de vie, mix paiement)
  * @depends       db, services/dashboard-operations.js (publicScope helper via re-export)
  * @used-by       routes/admin-dashboard.js, routes/admin-dashboard-market.js
- * @db-read       orders
+ * @db-read       orders, order_incidents, disputes, relais, users
  * @db-write      none
  * @db-txn        none
  * @doctrine      workspace_acts_dashboard_observes, browser_never_recomputes_truth, missing_data_never_means_zero, client_market_id_never_authority
@@ -65,53 +65,285 @@ async function getPaymentMix(mid) {
 
 // File « cash à confirmer » — requête identique au contrat order-api-v2 /pending-cash.
 async function getPendingCash(mid, limit = 25) {
-  const { rows } = await db.query(
-    `SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.cash_ref_code, o.created_at
-       FROM orders o
-      WHERE ($1::uuid IS NULL OR o.market_id = $1)
-        AND o.payment_status = 'pending'
-        AND o.status NOT IN ('cancelled', 'collected', 'refunded')
-      ORDER BY o.created_at ASC
-      LIMIT $2`,
-    [mid, limit],
-  );
-  return rows.map(r => Object.freeze({
+  const [{ rows }, { rows: countRows }] = await Promise.all([
+    db.query(
+      `SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.cash_ref_code, o.created_at
+         FROM orders o
+        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+          AND o.payment_status = 'pending'
+          AND o.status NOT IN ('cancelled', 'collected', 'refunded')
+        ORDER BY o.created_at ASC
+        LIMIT $2`,
+      [mid, limit],
+    ),
+    db.query(
+      `SELECT COUNT(*)::int AS value
+         FROM orders o
+        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+          AND o.payment_status = 'pending'
+          AND o.status NOT IN ('cancelled', 'collected', 'refunded')`,
+      [mid],
+    ),
+  ]);
+  const items = rows.map(r => Object.freeze({
     id: r.id, reference: r.reference, status: r.status,
     total_kmf: r.total_kmf, payment_mode: r.payment_mode, cash_ref_code: r.cash_ref_code,
   }));
+  return Object.freeze({ items, count_total: Number(countRows[0]?.value) || 0 });
 }
 
 // File « colis à créer » — requête identique au contrat order-api-v2 /ready-for-parcel.
+// count_total est un COUNT(*) séparé, jamais rows.length : la liste est
+// plafonnée à `limit` pour rester une file de travail actionnable, mais le
+// KPI affiché doit refléter le vrai total, pas la troncature (doctrine
+// "éviter les incohérences entre les compteurs et leurs listes sous-jacentes").
 async function getReadyForParcel(mid, limit = 25) {
-  const { rows } = await db.query(
-    `SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.created_at
-       FROM orders o
-      WHERE ($1::uuid IS NULL OR o.market_id = $1)
-        AND o.payment_status = 'paid'
-        AND o.status IN ('confirmed', 'ordered')
-      ORDER BY o.created_at ASC
-      LIMIT $2`,
-    [mid, limit],
-  );
-  return rows.map(r => Object.freeze({
+  const [{ rows }, { rows: countRows }] = await Promise.all([
+    db.query(
+      `SELECT o.id, o.reference, o.status, o.total_kmf, o.payment_mode, o.created_at
+         FROM orders o
+        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+          AND o.payment_status = 'paid'
+          AND o.status IN ('confirmed', 'ordered')
+        ORDER BY o.created_at ASC
+        LIMIT $2`,
+      [mid, limit],
+    ),
+    db.query(
+      `SELECT COUNT(*)::int AS value
+         FROM orders o
+        WHERE ($1::uuid IS NULL OR o.market_id = $1)
+          AND o.payment_status = 'paid'
+          AND o.status IN ('confirmed', 'ordered')`,
+      [mid],
+    ),
+  ]);
+  const items = rows.map(r => Object.freeze({
     id: r.id, reference: r.reference, status: r.status,
     total_kmf: r.total_kmf, payment_mode: r.payment_mode,
   }));
+  return Object.freeze({ items, count_total: Number(countRows[0]?.value) || 0 });
 }
 
 function kpi(key, label, value) {
   return Object.freeze({ key, label, value });
 }
 
+// Seuils repris tels quels de ce qui existe déjà ailleurs dans le codebase —
+// jamais inventés pour ce fichier :
+//   - PAYMENT_PENDING_HOURS : même seuil que services/alert-engine.js#
+//     checkCashPending (CASH_PENDING_HOURS: 72).
+//   - RETRAIT_LATE_HOURS : même seuil que services/operations-workspace.js#
+//     querySignals (72h, "collectes en retard").
+//   - STALE_HOURS : même seuil que services/alert-engine.js#checkStuckParcels
+//     converti en heures (STUCK_DAYS: 7 → 168h) pour "commandes >72h sans
+//     mouvement" du mock — le mock demande 72h précisément, valeur
+//     conservée telle qu'affichée dans le mock plutôt que le seuil plus
+//     large de l'alert-engine (7j), qui sert une alerte différente
+//     (colis physiquement coincé, pas juste "sans mouvement récent").
+const PAYMENT_PENDING_HOURS = 72;
+const RETRAIT_LATE_HOURS = 72;
+const STALE_HOURS = 72;
+
+/**
+ * Couche de pilotage additive — bandeau de décision + SLA du mock
+ * "Commandes" (05_Commandes.png). Calcul sur des requêtes dédiées,
+ * scopées serveur par market_id comme le reste de ce fichier.
+ *
+ * Volontairement absent : "Commandes dans les temps (%)" — cette
+ * métrique suppose un délai de livraison CIBLE configuré quelque part
+ * (SLA contractuel par marché) ; aucune table du schéma ne porte cette
+ * notion aujourd'hui (vérifié). Documentée ici plutôt qu'inventée avec
+ * un seuil arbitraire qui aurait l'air d'un engagement réel.
+ */
+
+// Vocabulaire de type déjà établi et validé ailleurs dans le codebase
+// (routes/relay-dashboard.js, routes/hub-dashboard.js — validTypes) —
+// jamais une catégorisation inventée pour cette table.
+const INCIDENT_TYPE_LABEL = Object.freeze({
+  retard: 'Retard transport',
+  blocage: 'Blocage',
+  paiement: 'Paiement à régulariser',
+  stock: 'Pas d’allocation stock',
+  colis_endommage: 'Produit endommagé',
+  colis_perdu: 'Colis perdu',
+  client_absent: 'En attente client',
+  autre: 'Autre incident',
+});
+
+/**
+ * Commandes prioritaires — union des commandes déjà détectées par les 4
+ * signaux de décision (getDecisionSignals), avec le VRAI problème associé
+ * plutôt qu'une catégorie inventée : le type d'incident vient de
+ * order_incidents.type (vocabulaire déjà validé côté relais/hub), le type
+ * de litige de disputes.type, jamais une classification recalculée côté
+ * navigateur. Une commande peut apparaître pour plusieurs raisons à la
+ * fois ; seule la plus urgente est affichée en "problème" par ligne
+ * (ordre : incident > litige > paiement > retrait), le tri global reste
+ * par ancienneté décroissante.
+ */
+async function getPriorityOrders(mid, limit = 20) {
+  const { rows } = await db.query(
+    `WITH candidates AS (
+        SELECT o.id, o.reference, o.status, o.payment_mode, o.payment_status,
+               o.created_at, o.available_at, r.name AS relais_name,
+               u.full_name AS client_name,
+               oi.type AS incident_type, oi.description AS incident_description,
+               d.type AS dispute_type,
+               CASE
+                 WHEN oi.id IS NOT NULL THEN oi.created_at
+                 WHEN d.id IS NOT NULL THEN d.created_at
+                 WHEN o.payment_status = 'pending' THEN o.created_at
+                 WHEN o.status = 'available' THEN o.available_at
+               END AS since_at,
+               CASE
+                 WHEN oi.id IS NOT NULL THEN 1
+                 WHEN d.id IS NOT NULL THEN 2
+                 WHEN o.payment_status = 'pending' THEN 3
+                 WHEN o.status = 'available' THEN 4
+               END AS priority_rank
+          FROM orders o
+          LEFT JOIN relais r ON r.id = o.relais_id
+          LEFT JOIN users u ON u.id = o.user_id
+          LEFT JOIN LATERAL (
+            SELECT id, type, description, created_at FROM order_incidents
+             WHERE order_id = o.id AND status IN ('open', 'in_progress')
+             ORDER BY created_at DESC LIMIT 1
+          ) oi ON TRUE
+          LEFT JOIN LATERAL (
+            SELECT id, type, created_at FROM disputes
+             WHERE order_id = o.id AND status IN ('open', 'processing')
+             ORDER BY created_at DESC LIMIT 1
+          ) d ON TRUE
+         WHERE ($1::uuid IS NULL OR o.market_id = $1)
+           AND o.status NOT IN ('cancelled', 'refunded')
+           AND (
+             oi.id IS NOT NULL
+             OR d.id IS NOT NULL
+             OR (o.status NOT IN ('collected') AND o.payment_status = 'pending' AND o.created_at < NOW() - INTERVAL '72 hours')
+             OR (o.status = 'available' AND o.available_at < NOW() - INTERVAL '72 hours')
+           )
+     )
+     SELECT * FROM candidates
+     WHERE priority_rank IS NOT NULL
+     ORDER BY priority_rank ASC, since_at ASC
+     LIMIT $2`,
+    [mid, limit]
+  );
+
+  return rows.map(row => {
+    const problem = row.incident_type
+      ? (INCIDENT_TYPE_LABEL[row.incident_type] || row.incident_type)
+      : row.dispute_type
+        ? `Litige : ${row.dispute_type}`
+        : row.payment_status === 'pending'
+          ? 'Paiement non finalisé'
+          : 'Retrait relais en retard';
+    const days = Math.floor((Date.now() - new Date(row.since_at).getTime()) / 86400000);
+    return Object.freeze({
+      reference: row.reference,
+      client_name: row.client_name,
+      status: row.status,
+      payment_status: row.payment_status,
+      relais_name: row.relais_name,
+      since_days: days,
+      problem,
+    });
+  });
+}
+
+async function getDecisionSignals(mid) {
+  const { rows: [totals] } = await db.query(
+    `SELECT
+        COUNT(*) FILTER (WHERE o.payment_status = 'pending'
+          AND o.status NOT IN ('cancelled', 'refunded', 'collected')
+          AND o.created_at < NOW() - INTERVAL '${PAYMENT_PENDING_HOURS} hours')::int AS paiements_en_attente,
+        COUNT(*) FILTER (WHERE o.status = 'available'
+          AND o.available_at < NOW() - INTERVAL '${RETRAIT_LATE_HOURS} hours')::int AS retraits_en_retard,
+        COUNT(*) FILTER (WHERE o.status NOT IN ('cancelled', 'refunded', 'collected')
+          AND o.updated_at < NOW() - INTERVAL '${STALE_HOURS} hours')::int AS sans_mouvement_72h,
+        COUNT(*) FILTER (WHERE o.status = 'available'
+          AND o.available_at::date = CURRENT_DATE)::int AS prets_aujourdhui,
+        AVG(EXTRACT(EPOCH FROM (o.collected_at - o.created_at)) / 86400)
+          FILTER (WHERE o.status = 'collected' AND o.collected_at IS NOT NULL)::numeric AS delai_moyen_jours
+       FROM orders o
+      WHERE ($1::uuid IS NULL OR o.market_id = $1)`,
+    [mid]
+  );
+
+  const { rows: [blockedRow] } = await db.query(
+    `SELECT COUNT(DISTINCT oi.order_id)::int AS n
+       FROM order_incidents oi
+       JOIN orders o ON o.id = oi.order_id
+      WHERE ($1::uuid IS NULL OR o.market_id = $1)
+        AND oi.status IN ('open', 'in_progress')`,
+    [mid]
+  );
+
+  const { rows: [disputesRow] } = await db.query(
+    `SELECT COUNT(*)::int AS n
+       FROM disputes d
+       JOIN orders o ON o.id = d.order_id
+      WHERE ($1::uuid IS NULL OR o.market_id = $1)
+        AND d.status IN ('open', 'processing')`,
+    [mid]
+  );
+
+  return Object.freeze({
+    paiements_en_attente: totals.paiements_en_attente,
+    commandes_bloquees: blockedRow.n,
+    retraits_en_retard: totals.retraits_en_retard,
+    litiges_ouverts: disputesRow.n,
+    sla: Object.freeze({
+      delai_moyen_jours: totals.delai_moyen_jours != null ? Math.round(Number(totals.delai_moyen_jours) * 10) / 10 : null,
+      sans_mouvement_72h: totals.sans_mouvement_72h,
+      prets_aujourdhui: totals.prets_aujourdhui,
+    }),
+  });
+}
+
+// Funnel métier du mock (05_Commandes.png) : Créées -> Payées -> Expédiées
+// -> Disponibles relais -> Retirées. Distinct du `lifecycle` technique
+// existant (état courant par statut interne) : ici chaque étape compte les
+// commandes ayant ATTEINT ce stade ou un stade ultérieur (funnel cumulatif),
+// pas seulement celles actuellement figées dessus — cohérent avec les
+// valeurs décroissantes du mock (284 -> 230 -> 198 -> 176 -> 162).
+async function getBusinessFunnel(mid) {
+  const { rows: [row] } = await db.query(
+    `SELECT
+        COUNT(*) FILTER (WHERE o.status NOT IN ('cancelled', 'refunded'))::int AS creees,
+        COUNT(*) FILTER (WHERE o.payment_status = 'paid'
+          AND o.status NOT IN ('cancelled', 'refunded'))::int AS payees,
+        COUNT(*) FILTER (WHERE o.status IN ('shipped', 'in_transit', 'available', 'collected'))::int AS expediees,
+        COUNT(*) FILTER (WHERE o.status IN ('available', 'collected'))::int AS disponibles_relais,
+        COUNT(*) FILTER (WHERE o.status = 'collected')::int AS retirees,
+        COUNT(*) FILTER (WHERE o.status IN ('cancelled', 'refunded'))::int AS perdues
+       FROM orders o
+      WHERE ($1::uuid IS NULL OR o.market_id = $1)`,
+    [mid]
+  );
+  return Object.freeze({
+    creees: row.creees,
+    payees: row.payees,
+    expediees: row.expediees,
+    disponibles_relais: row.disponibles_relais,
+    retirees: row.retirees,
+    perdues: row.perdues,
+  });
+}
+
 async function buildOrders(options = {}) {
   const market = options.market || null;
   const mid = marketId(market);
 
-  const [byStatus, paymentMix, pendingCash, readyForParcel] = await Promise.all([
+  const [byStatus, paymentMix, pendingCash, readyForParcel, signals, funnel, priorityOrders] = await Promise.all([
     getStatusCounts(mid),
     getPaymentMix(mid),
     getPendingCash(mid),
     getReadyForParcel(mid),
+    getDecisionSignals(mid),
+    getBusinessFunnel(mid),
+    getPriorityOrders(mid),
   ]);
 
   const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
@@ -126,26 +358,33 @@ async function buildOrders(options = {}) {
       total_orders: total,
       active_orders: active,
       cancelled: byStatus.cancelled || 0,
-      cash_to_confirm: pendingCash.length,
-      parcels_to_create: readyForParcel.length,
+      cash_to_confirm: pendingCash.count_total,
+      parcels_to_create: readyForParcel.count_total,
     }),
+    signals,
+    funnel,
+    priority_orders: Object.freeze(priorityOrders),
     kpis: Object.freeze([
       kpi('total_orders', 'Commandes', total),
       kpi('active_orders', 'Commandes actives', active),
-      kpi('cash_to_confirm', 'Cash à confirmer', pendingCash.length),
-      kpi('parcels_to_create', 'Colis à créer', readyForParcel.length),
+      kpi('cash_to_confirm', 'Cash à confirmer', pendingCash.count_total),
+      kpi('parcels_to_create', 'Colis à créer', readyForParcel.count_total),
       kpi('cancelled', 'Annulées', byStatus.cancelled || 0),
     ]),
     lifecycle: Object.freeze(lifecycle),
     payment_mix: Object.freeze(paymentMix),
     work_queues: Object.freeze({
-      pending_cash: Object.freeze(pendingCash),
-      ready_for_parcel: Object.freeze(readyForParcel),
+      pending_cash: pendingCash.items,
+      pending_cash_shown: pendingCash.items.length,
+      pending_cash_total: pendingCash.count_total,
+      ready_for_parcel: readyForParcel.items,
+      ready_for_parcel_shown: readyForParcel.items.length,
+      ready_for_parcel_total: readyForParcel.count_total,
     }),
     data_quality: Object.freeze({
       generated_at: new Date(options.now || Date.now()).toISOString(),
       scope_mode: market ? 'market' : 'global',
-      source_tables: Object.freeze(['orders']),
+      source_tables: Object.freeze(['orders', 'order_incidents', 'disputes']),
     }),
   });
 }

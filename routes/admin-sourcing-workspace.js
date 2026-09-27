@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_session, sourcing_global_grant, business_references, action_payloads
  * @outputs       global_sourcing_projection, sourcing_action_results, source_autopilot_switch_results
- * @depends       middleware/auth.js, middleware/require-sourcing-global-authority.js, services/sourcing-workspace.js, services/sourcing-integrity-service.js
+ * @depends       middleware/auth.js, middleware/require-sourcing-global-authority.js, services/sourcing-workspace.js, services/sourcing-integrity-service.js, services/sourcing-catalog-change-observation.js
  * @used-by       bootstrap/api-routes.js, canonical sourcing workspace
  * @db-read       none
  * @db-write      none
@@ -23,6 +23,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { requireSourcingGlobalAuthority } = require('../middleware/require-sourcing-global-authority');
 const workspace = require('../services/sourcing-workspace');
 const sourcingHealth = require('../services/sourcing-integrity-service');
+const catalogChangeObservation = require('../services/sourcing-catalog-change-observation');
 
 const router = express.Router();
 const guard = [authenticate, requireRole(['admin', 'sourcing']), requireSourcingGlobalAuthority];
@@ -80,6 +81,19 @@ router.get('/', async (req, res, next) => {
 router.post('/imports', async (req, res, next) => {
   try { sendAction(res, 'import_catalog', await workspace.importCatalog(req.body, req.user)); }
   catch (err) { handleError(err, res, next); }
+});
+
+// Operator-only first intake seam: persists one exact stock observation for an
+// already registered API source, never applies it to Catalog or Purchasing.
+router.post('/sources/:sourceRef/catalog-changes/observe', async (req, res, next) => {
+  try {
+    const result = await catalogChangeObservation.recordUnitStockChange({
+      sourceRef: req.params.sourceRef, envelope: req.body,
+    });
+    res.set('Cache-Control', 'no-store');
+    sendAction(res, 'observe_unit_stock_change', result,
+      result.status === 'recorded' ? 201 : 200);
+  } catch (err) { handleError(err, res, next); }
 });
 
 router.post('/sources/:sourceRef/activate', async (req, res, next) => {

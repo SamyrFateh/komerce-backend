@@ -43,11 +43,31 @@ function norm(file) {
   return String(file || '').replace(/\\/g, '/').replace(/^\.\//, '').trim();
 }
 
+// Strictly isolated tooling-only changes. Adding *any* runtime service,
+// manifest, migration, general test, package or CI enforcement file must
+// fall back to the existing full-domain checks. Never use a directory-wide
+// exemption for scripts/ or tests/.
+function isProviderProofOnlyFile(file) {
+  const f = norm(file);
+  return f === 'scripts/external-provider-batch-proof.js'
+    || f === 'tests/unit/external-provider-batch-proof.test.js'
+    || f === 'governance/external-provider-registry.json'
+    || f === '.github/workflows/external-provider-contract-batch.yml'
+    || /^docs\/external-providers\/[a-zA-Z0-9/_-]+\.md$/.test(f);
+}
+
+// This manual, CI-local CJ report script is not loaded by the running backend.
+// Only an exact one-file PR qualifies; any mixed/runtime/CI change loses the
+// shortcut and goes through the normal from-scratch gates.
+function isCjPilotProofOnlyFile(file) {
+  return norm(file) === 'scripts/cj-three-real-staging-pilot.js';
+}
+
 function isBackendFile(file) {
   const f = norm(file);
-  return /^(?:server\.js|package(?:-lock)?\.json|jest\.unit\.config\.js)$/i.test(f)
+  return /^(?:server\.js|package(?:-lock)?\.json|jest\.config\.js|jest\.unit\.config\.js)$/i.test(f)
     || /^(?:routes|services|middleware|utils|validators|core|bootstrap|db)\/.+/i.test(f)
-    || /^(?:scripts\/(?:gen-security-360|run-security-360)\.js|scripts\/\.security-360-baseline\.json|docs\/SECURITY_360\.(?:json|md))$/i.test(f)
+    || /^(?:scripts\/(?:gen-security-360|run-security-360|provision-market-operator)\.js|scripts\/\.security-360-baseline\.json|docs\/SECURITY_360\.(?:json|md))$/i.test(f)
     || /^tests\/.+/i.test(f);
 }
 
@@ -160,7 +180,12 @@ function isGovernanceFile(file) {
 
 function classify(files) {
   const changedFiles = [...new Set((files || []).map(norm).filter(Boolean))].sort();
-  const backendFiles = changedFiles.filter(isBackendFile);
+  const providerProofOnly = changedFiles.length > 0 && changedFiles.every(isProviderProofOnlyFile);
+  const cjPilotProofOnly = changedFiles.length > 0 && changedFiles.every(isCjPilotProofOnlyFile);
+  // The isolated probe unit test is not a backend business test *only when*
+  // the entire PR belongs to this strict tooling allowlist.
+  const backendFiles = changedFiles.filter(file =>
+    isBackendFile(file) && !(providerProofOnly && file === 'tests/unit/external-provider-batch-proof.test.js'));
   const goldenFiles = changedFiles.filter(isGoldenCdrFile);
   const migrationFiles = changedFiles.filter(isMigrationFile);
   const schemaDump = changedFiles.some(isLiveSchemaFile);
@@ -171,7 +196,7 @@ function classify(files) {
   const boutiqueHtml = changedFiles.some(isBoutiqueHtml);
   const boutiqueUnit = changedFiles.some(isBoutiqueUnitTest);
   const boutiquePackage = changedFiles.some(isBoutiquePackageFile);
-  const boutiqueTestFiles = boutiqueFiles.filter(file => isBoutiqueJsSource(file) || isBoutiqueUnitTest(file));
+  const boutiqueTestFiles = boutiqueFiles.filter(file => isBoutiqueJsSource(file) || isBoutiqueUnitTest(file) || isBoutiqueCssSource(file));
   const governanceFiles = changedFiles.filter(isGovernanceFile);
 
   return {
@@ -196,6 +221,8 @@ function classify(files) {
     boutiquePackage,
     governance: governanceFiles.length > 0,
     packageJsonGovernanceOnly: false,
+    providerProofOnly,
+    cjPilotProofOnly,
   };
 }
 
@@ -293,6 +320,8 @@ function appendGithubOutput(path, model) {
   if (!path) return;
   const lines = [
     `backend=${model.backend ? 'true' : 'false'}`,
+    `provider_proof_only=${model.providerProofOnly ? 'true' : 'false'}`,
+    `cj_pilot_proof_only=${model.cjPilotProofOnly ? 'true' : 'false'}`,
     `backend_files=${model.backendFiles.join(',')}`,
     `golden=${model.golden ? 'true' : 'false'}`,
     `golden_files=${model.goldenFiles.join(',')}`,
@@ -339,6 +368,8 @@ module.exports = {
   GOVERNANCE_ONLY_PACKAGE_SCRIPTS,
   norm,
   isBackendFile,
+  isProviderProofOnlyFile,
+  isCjPilotProofOnlyFile,
   isMigrationFile,
   isLiveSchemaFile,
   isGoldenCdrFile,

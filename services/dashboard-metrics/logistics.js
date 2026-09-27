@@ -62,13 +62,13 @@ async function getPaiementsEnAttente(filters = {}) {
     FROM orders o
     WHERE ${where}
       AND o.payment_status = 'pending'
-      AND o.status NOT IN ('cancelled', 'refunded')
+      AND o.status NOT IN ('cancelled', 'collected', 'refunded')
   `;
   const r = await db.query(sql, params);
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('paiements_en_attente', 'Paiements en attente', value, 'count', {
-    drillTo: '/admin/operations?payment_status=pending',
+    drillTo: '/admin/orders',
   });
 }
 

@@ -261,6 +261,7 @@ const ROUTE_SCHEMA_MAP = [
   // (toutes montées dans bootstrap/api-routes.js), appelées par market-team.js,
   // market-catalog.js, market-cash-control.js, team-invite.js côté Canonical.
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure', method: 'get', schema: null },
+  { prefix: '/api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate', method: 'post', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}', method: 'put', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/team', method: 'get', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/team/invitations', method: 'post', schema: null },
@@ -287,6 +288,7 @@ const ROUTE_SCHEMA_MAP = [
   // LOT 4E — Canonical Sourcing Workspace (global central actions)
   { prefix: '/api/admin/workspaces/sourcing', method: 'get', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/imports', method: 'post', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/products/{productRef}/update', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/candidates/{candidateRef}/update', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/candidates/{candidateRef}/scan', method: 'post', schema: null },
@@ -416,7 +418,10 @@ const KNOWN_RESPONSES = {
   // montage unique) — aucun n'appelle la route via supertest/request(app) →
   // 'route-read', champs lus directement dans les handlers routes/*.js.
   '/api/market-delegation/markets/{marketCode}/catalog/exposure': {
-    get: { fields: ['market','assignment_id','actor_capabilities','summary','exposure'], source: 'route-read' }
+    get: { fields: ['market','assignment_id','actor_capabilities','summary','review_queue','exposure'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate': {
+    post: { fields: ['success','validation'], source: 'route-read' }
   },
   '/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}': {
     put: { fields: ['success','exposure'], source: 'route-read' }
@@ -457,6 +462,7 @@ const KNOWN_RESPONSES = {
   // LOT 4E — réponses Sourcing Workspace consommées par Canonical.
   '/api/admin/workspaces/sourcing': { get: { fields: ['scope','summary','portfolio','imports','candidates','suppliers','connectors','sources'], source: 'test' } },
   '/api/admin/workspaces/sourcing/imports': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/sourcing/products/{productRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/sourcing/candidates/{candidateRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/sourcing/candidates/{candidateRef}/scan': { post: { fields: ['ok','action','result'], source: 'test' } },
@@ -2357,6 +2363,7 @@ if (inventory.length < 150) {
 }
 
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'POST /api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe': '201',
   'POST /api/providers-services/inquiries': '201',
 });
 
@@ -2365,6 +2372,14 @@ const SUCCESS_STATUS_OVERRIDES = Object.freeze({
 // KNOWN_RESPONSES (pas un schéma de corps, juste un code de statut documenté en plus).
 // Format : "METHOD /chemin/{param}" → { [code]: { description } }
 const RESPONSE_OVERRIDES = {
+  'POST /api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe': {
+    '200': { description: 'Rejeu identique : observation existante' },
+    '400': { description: 'Enveloppe invalide' },
+    '403': { description: 'Autorité globale Sourcing requise' },
+    '409': { description: 'Source incohérente ou événement déjà reçu avec une autre valeur' },
+    '413': { description: 'Enveloppe trop volumineuse' },
+    '422': { description: 'Identité exacte ou fait stock exigé' },
+  },
   'POST /api/auth/passkey/register/options': { '401': { description: 'Session K1 requise' }, '500': { description: 'Erreur serveur WebAuthn' } },
   'POST /api/auth/passkey/register/verify': { '400': { description: 'Réponse WebAuthn invalide ou refusée' }, '401': { description: 'Session K1 requise' }, '500': { description: 'Erreur serveur WebAuthn' } },
   'POST /api/auth/passkey/login/options': { '500': { description: 'Erreur serveur WebAuthn' } },

@@ -81,8 +81,7 @@ module.exports = {
 
   contract: {
     exposes: [
-      'GET /api/boutique/suggestions — ranking produit historique',
-      'GET /api/boutique/suggestions?surface=local&market=CODE — DiscoveryCard[] read-only, [] si activation ou données absentes',
+      'GET /api/boutique/suggestions', // ranking produit historique ; ou ?surface=local&market=CODE — DiscoveryCard[] read-only, [] si activation ou données absentes
     ],
     consumes: [
       'catalog (lecture produit)',

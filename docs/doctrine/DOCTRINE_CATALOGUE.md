@@ -7,13 +7,28 @@
 
 ---
 
+
+## Classification économique vs taxonomie boutique
+
+`products.category` conserve sa responsabilité historique de **classification économique/douanière**. Elle alimente notamment le pricing et le gel douanier des lignes de commande.
+
+La navigation marchande est une responsabilité différente :
+
+- `products.boutique_category_key` = univers boutique canonique ;
+- `products.boutique_subcategory_key` = sous-catégorie boutique canonique ;
+- les lectures publiques utilisent ces champs lorsqu'ils existent, avec fallback historique sur `category/subcategory` pour les anciens produits ;
+- un connecteur fournisseur ne doit jamais écraser la classification douanière pour fabriquer une catégorie d'affichage ;
+- le provenance discovery (`target_category`, `target_subcategory`) peut alimenter la taxonomie boutique lors de la promotion, sans modifier la classification économique.
+
+Cette séparation est obligatoire pour tout nouveau peuplement fournisseur destiné aux tests E2E.
+
 ## 1. Phrase de vérité
 
 > **Le catalogue ne se saisit pas à l'aveugle, il se raffine. La donnée fournisseur
 > entre telle quelle et reste immuable. Komerce la normalise, prépare un contenu
-> client en français par une voie autorisée — source native FR, rédaction/traduction
-> humaine ou assistance IA — puis l'humain valide la première publication. L'IA
-> améliore quand elle est utile ; elle n'est jamais un prérequis de publication.**
+> client en français par une voie autorisée — source native FR ou préparation
+> manuelle/assistée hors runtime — puis l'humain valide la première publication.
+> Le pipeline canonique ne dépend d'aucune API IA payante.**
 
 Le CRUD vide n'est pas le modèle principal : le catalogue part d'une source, même
 lorsque cette source est saisie via le connecteur `manual`. En revanche, l'admin
@@ -22,9 +37,10 @@ peut **rédiger, traduire et corriger** le contenu client avant publication. Cet
 source et le `raw_payload`.
 
 Budget d'effort cible : garder la préparation et la validation aussi légères que
-possible. Une fiche déjà propre en français ne doit déclencher aucun appel IA
-inutile. Une fiche étrangère ou médiocre peut être préparée manuellement ou avec
-une assistance IA, puis validée humainement.
+possible. Une fiche déjà propre en français ne déclenche aucun appel externe.
+Une fiche étrangère peut être préparée par règles locales, par l'opérateur ou avec
+l'aide d'un assistant IA hors runtime, puis enregistrée comme préparation manuelle
+tracée. Cette aide ne crée aucune dépendance API du catalogue.
 
 ### 1.1 Catalogue distant unique — une vérité produit, N projections marché
 
@@ -85,7 +101,7 @@ alors que le catalogue distant reste global et simplement projeté selon le marc
 ```txt
  ①connecteur → ②normalisation → ③éligibilité → ④pricing/rails → ⑤préparation FR → ⑥APPROBATION → publié
    source brute     cat. Komerce,   « ce que        sourcing_         native FR /         décision
-   multi-langue     KMF, poids,     Komerce peut    decision,         manuel / IA          humaine
+   multi-langue     KMF, poids,     Komerce peut    decision,         manuel / offline     humaine
                     volume          recevoir »      densité, marge    facultative          initiale
 ```
 
@@ -132,20 +148,64 @@ Trois voies sont autorisées :
    `content_source='manual'`, tandis que `name_source`, `description_source` et
    `source_locale` restent inchangés. Les corrections champ par champ restent
    tracées dans `catalog_field_overrides`.
-3. **Assistance IA facultative** — une IA peut proposer traduction, reformulation,
-   catégorie, attributs ou précautions. Le résultat est tracé
-   `content_source='ai_enriched'`, avec `enrichment_version`, confiance et
-   `needs_review` selon les règles du service.
+3. **Assistance IA hors runtime facultative** — un assistant peut aider l'opérateur
+   à préparer un lot, mais le résultat est importé comme décision éditoriale tracée
+   `content_source='manual'`. Le catalogue ne fait aucun appel à une API IA
+   payante dans son pipeline canonique. Le statut historique `ai_enriched` reste
+   lisible pour compatibilité des anciennes données mais n'est plus la voie par défaut.
 
 Une source étrangère brute (`connector_raw` non française) **ne peut jamais être
 publiée telle quelle**. Elle doit d'abord passer par la voie humaine ou IA.
 
-L'absence de crédit, de clé API ou l'indisponibilité d'un fournisseur IA ne doit
-jamais bloquer une fiche native FR ou une fiche préparée manuellement.
+### 4.1 Deux niveaux à ne jamais confondre : fixture E2E et qualité éditoriale
+
+La préparation déterministe locale utilisée pour charger rapidement un catalogue
+de test en staging peut nettoyer un titre, raccourcir du bruit fournisseur et
+fabriquer une description minimale. Elle est utile pour **éprouver le pipeline**,
+mais elle ne constitue pas une traduction sémantique ni une validation éditoriale.
+Son autorité doit rester explicitement de type fixture E2E.
+
+Pour devenir **READY éditorial**, une source étrangère doit passer un **FR Quality
+Pass** source→français, distinct du simple stress technique :
+
+1. export d'un workpack borné depuis les faits source canoniques ;
+2. traduction/réécriture française naturelle hors runtime ;
+3. second passage de contrôle source→FR dans un **artifact distinct** de la
+   proposition ; cette revue est liée au hash source et au hash exact de la sortie
+   française, afin qu'une traduction ne puisse pas s'auto-déclarer revue ;
+4. vérification d'un hash de source avant application afin de refuser une traduction
+   préparée sur une version devenue obsolète ;
+5. préflight de tout le lot avant la première écriture ; un produit hors régime
+   pipeline, une source FR ou un état lifecycle incompatible bloque avant mutation ;
+6. application du lot dans une transaction **all-or-nothing**, uniquement via
+   overrides tracés `manual` ; un échec technique provoque un rollback total ;
+7. contrôles statiques : longueur, discrimination FR/EN/ES, bruit fournisseur,
+   valeurs techniques inventées, claims contrôlés (Bluetooth/USB/IP/GPS/NFC),
+   omissions de caractéristiques critiques et lifecycle inactif ;
+8. le résultat est **READY_FOR_HUMAN_PUBLICATION_REVIEW**, jamais "READY publié" :
+   l'approbation humaine de première publication reste l'étage ⑥.
+
+Le FR Quality Pass ne possède ni le pricing, ni le stock, ni la taxonomie, ni
+l'exposition marché. Il ne constitue pas non plus une preuve autonome de qualité
+humaine : les gates et la seconde revue réduisent les faux positifs, puis l'étage ⑥
+reste l'autorité finale de publication. Une anomalie de catégorie/sous-catégorie peut être signalée
+dans le workpack mais doit être corrigée par l'autorité Catalogue dédiée, jamais
+inventée par la traduction.
+
+Aucune clé API ni crédit IA ne doit être nécessaire pour importer, préparer ou
+tester le catalogue. Une indisponibilité de fournisseur IA ne peut donc pas bloquer
+le pipeline canonique.
 
 Garde-fous communs :
-- **Glossaire métier en DB** (`catalog_glossary`) : référence terminologique pour
-  les traductions humaines comme pour l'IA ;
+- **Glossaire métier en DB** (`catalog_glossary`) : autorité terminologique Komerce
+  pour les traductions humaines comme pour l'IA ;
+- **Mémoire terminologique externe sourcée** (`catalog_terminology_reference`) :
+  références EN→FR importées depuis des banques ouvertes reconnues (TERMIUM Plus
+  en premier), conservant domaine, provenance et licence. Cette mémoire propose
+  des candidats contextuels mais ne remplace jamais `catalog_glossary` ; en cas
+  de conflit, la décision Komerce validée gagne ;
+- les imports externes sont **filtrés par le corpus réellement rencontré** : on
+  n'alourdit pas la base avec des millions de termes inutiles ;
 - **Marquage d'origine** : `content_source` (`ai_enriched` / `manual` /
   `connector_raw`) décrit la provenance de la présentation client ;
 - **Overrides** : les corrections humaines d'une fiche issue du pipeline restent
@@ -182,6 +242,62 @@ L'approbation (étage ⑥) reste l'autorité de publication :
   prévue par le garde de publication.
 - Une IA peut proposer ; elle ne possède jamais l'autorité de publication.
 
+## 6.1 Gate de sortie Raffinerie → Catalogue
+
+Une référence n'est considérée comme **entrée correctement dans le catalogue**
+que lorsque les invariants structurels suivants sont vrais simultanément :
+
+- le candidat Sourcing est lié à un produit catalogue unique ;
+- le contrat fournisseur normalisé V2 et la vérité source sont conservés ;
+- au moins un média catalogue actif existe ;
+- la structure SKU fournisseur existe ;
+- chaque SKU fournisseur possède son `supplier_unit_ref` et sa
+  `supplier_order_identity` ;
+- une catégorie catalogue est présente ;
+- le produit reste `lifecycle_status='candidate'` et `is_active=false` ;
+- il est visible dans la file humaine d'approbation ;
+- aucune exposition marché `ENABLED` n'existe avant la première publication
+  globale.
+
+Ce gate structurel est indépendant de la préparation éditoriale. Il doit être
+prouvé avant de traiter la traduction comme dernier travail de contenu.
+
+Le gate final **READY_FOR_HUMAN_PUBLICATION_REVIEW** ajoute ensuite :
+
+- contenu français préparé et relu (`content_source='manual'` ou équivalent
+  historiquement accepté, `needs_review=false`) ;
+- au moins un SKU fournisseur actif et commandable ;
+- `product-publication-guard` = PASS.
+
+Le gate final simule la publication mais **ne publie rien**. La mutation de
+première publication reste exclusivement humaine, conformément au §6.
+
+## 6.2 Une même grammaire de décision, deux autorités différentes
+
+Les dashboards Catalogue global et Marché utilisent le même langage visuel
+(`prêt` / `à vérifier` / `bloqué`) mais ne répondent pas à la même question.
+
+**Catalogue global** :
+
+> « Ce produit mérite-t-il d'exister chez Komerce ? »
+
+Le collègue voit au premier niveau : contenu FR, catégorie, médias, SKU/identité
+fournisseur, stock, prix et résultat du garde de publication. Les détails de
+Raffinerie (hashes, TERMIUM, payloads, diagnostics) restent disponibles en
+drill-down mais ne polluent pas la décision principale.
+
+**Marché** :
+
+> « Ce produit global déjà validé peut-il être vendu sur CE marché maintenant ? »
+
+Le responsable pays ne refait jamais la validation globale. Il décide seulement
+les vérités de son périmètre : prix local, exposition, disponibilité/restrictions
+locales, logistique et paiement.
+
+Règle fail-closed commune : **pas de décision explicite = pas d'exposition**.
+La publication globale d'un produit ne le rend jamais automatiquement visible
+dans un marché.
+
 ## 7. Ce que la doctrine interdit
 
 - Ne jamais créer une copie du catalogue distant par marché.
@@ -202,19 +318,20 @@ L'approbation (étage ⑥) reste l'autorité de publication :
   raffinerie propose, le cap arbitre — un produit qui entre en pousse un autre
   vers la sortie (classement par densité de valeur, V-2).
 
-## 8. L'IA sous gouvernance — assistance optionnelle
+## 8. L'IA hors runtime — aide opérateur, pas dépendance
 
-L'enrichissement IA reste un composant gouverné lorsqu'il est utilisé : prompt
-versionné dans le dépôt, sortie contrainte par schéma, échecs tracés, coût par
-produit suivi. Un changement de prompt = une PR = les gates.
+Le pipeline canonique Catalogue n'appelle aucun fournisseur LLM payant. Il doit
+rester entièrement exécutable avec les données fournisseur, les règles locales,
+les overrides et la validation humaine.
 
-Mais le composant IA est **optionnel et remplaçable**. Komerce doit rester capable
-d'importer, préparer, valider et publier un catalogue sans dépendre d'OpenAI,
-Anthropic ou de tout autre fournisseur LLM.
+Un assistant IA peut néanmoins être utilisé par l'opérateur pour préparer ou
+revoir un lot hors runtime. Dans ce cas, le résultat relu est importé comme
+préparation `manual` et reste traçable par overrides. Il n'existe alors ni secret
+LLM requis par le catalogue, ni coût API par produit, ni dépendance de disponibilité
+d'un fournisseur IA.
 
-L'utilisation ponctuelle d'un assistant externe pour aider l'opérateur à préparer
-un lot de fiches n'introduit pas de dépendance runtime : une fois relu et intégré
-au workflow éditorial, ce contenu relève de la voie humaine `manual`.
+Les anciens composants `ai_enriched` restent compatibles avec l'historique mais
+ne constituent plus la voie canonique de préparation.
 
 ## 9. Clés business_rules
 
@@ -231,7 +348,7 @@ au workflow éditorial, ce contenu relève de la voie humaine `manual`.
 |---|---|---|
 | K-1 | Colonnes source + marquage : `name_source`, `description_source`, `source_locale`, `content_source`, `enrichment_version`, table `catalog_glossary`, table `catalog_exclusions` | aucune |
 | K-2 | Étage ③ dans le scanner : matching exclusions sur donnée source, décisions `excluded`/`restricted` avec raison | K-1 |
-| K-3 | Préparation éditoriale FR : voie native FR + voie manuelle ; service IA conservé comme assistance facultative | K-1 |
+| K-3 | Préparation éditoriale FR : voie native FR + voie manuelle/assistée hors runtime ; zéro API IA requise ; distinction obligatoire fixture E2E / FR Quality Pass source→FR | K-1 |
 | K-4 | File d'approbation admin : fiche préparée → approve / reject / edit / override en 1 écran ; provenance et overrides tracés | K-3 |
 | K-5 | Auto-publication bornée des mises à jour + retraitement en masse optionnel selon la provenance du contenu | K-4 + terrain |
 | K-M | Projection marché du catalogue distant : composition des overlays propriétaires (pricing/logistics/payments/recommendations) sans duplication de produit | autorités marché correspondantes |

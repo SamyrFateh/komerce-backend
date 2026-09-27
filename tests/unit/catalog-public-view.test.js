@@ -184,7 +184,13 @@ describe('publicProductColumns', () => {
   it('génère la liste préfixée alignée sur PUBLIC_PRODUCT_FIELDS', () => {
     const sql = publicProductColumns('p');
     for (const field of PUBLIC_PRODUCT_FIELDS) {
-      expect(sql).toContain(`p.${field}`);
+      if (field === 'category') {
+        expect(sql).toContain('COALESCE(p.boutique_category_key, p.category) AS category');
+      } else if (field === 'subcategory') {
+        expect(sql).toContain('COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory');
+      } else {
+        expect(sql).toContain(`p.${field}`);
+      }
     }
     for (const cuisine of CUISINE_FIELDS) {
       expect(sql).not.toContain(`p.${cuisine}`);
@@ -193,6 +199,7 @@ describe('publicProductColumns', () => {
 
   it('respecte l\'alias fourni', () => {
     expect(publicProductColumns('x')).toContain('x.id');
+    expect(publicProductColumns('x')).toContain('COALESCE(x.boutique_category_key, x.category) AS category');
     expect(publicProductColumns('x')).not.toContain('p.id');
   });
 

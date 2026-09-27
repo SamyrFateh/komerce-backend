@@ -44,7 +44,12 @@ function stageFromRow(row) {
   if (row.boutique_effective) return 'boutique';
   if (row.product_is_active) return 'catalog';
   if (row.product_ref) {
-    if (row.content_source === 'ai_enriched' && !row.needs_review) return 'fr_ready';
+    const sourceLocale = String(row.source_locale || '').trim().toLowerCase().replace('_', '-');
+    const nativeFr = row.content_source === 'connector_raw'
+      && (sourceLocale === 'fr' || sourceLocale.startsWith('fr-'));
+    if (!row.needs_review && (row.content_source === 'manual' || row.content_source === 'ai_enriched' || nativeFr)) {
+      return 'fr_ready';
+    }
     return 'curation';
   }
   if (QUALIFIED_STATES.includes(row.state)) return 'qualified';
@@ -73,8 +78,17 @@ async function queryPipelineTotals() {
       COUNT(*) FILTER (WHERE sc.state = ANY($2::text[]))::int AS qualified,
       COUNT(DISTINCT p.id) FILTER (
         WHERE p.id IS NOT NULL
-          AND p.content_source = 'ai_enriched'
           AND p.needs_review = FALSE
+          AND (
+            p.content_source IN ('manual','ai_enriched')
+            OR (
+              p.content_source='connector_raw'
+              AND (
+                REPLACE(LOWER(COALESCE(p.source_locale,'')),'_','-')='fr'
+                OR REPLACE(LOWER(COALESCE(p.source_locale,'')),'_','-') LIKE 'fr-%'
+              )
+            )
+          )
       )::int AS fr_ready,
       COUNT(DISTINCT p.id) FILTER (
         WHERE p.id IS NOT NULL

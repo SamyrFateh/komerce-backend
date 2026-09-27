@@ -139,8 +139,9 @@
         "PAYPAL_CLIENT_ID",
         "PAYPAL_ENV"
       ],
-      "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "analysis_document": "docs/external-providers/payments/PAYPAL.md",
+      "highest_proof": "UNQUALIFIED",
+      "qualification_note": "Global level remains UNQUALIFIED. Reported P1 is limited to SANDBOX ORDER_CREATE_AND_EXACT_READBACK (CREATED, not captured or paid); operator-transcribed, not independently rechecked. Evidence: docs/_archive/external-provider-proofs/PAYPAL_SANDBOX_ORDER_P1_2026-09-23.md."
     },
     {
       "id": "mtn-momo-cg",
@@ -155,7 +156,7 @@
       "markers": [
         "MTN_MOMO_CG_"
       ],
-      "analysis_document": null,
+      "analysis_document": "docs/external-providers/payments/MTN_MOMO_CG.md",
       "highest_proof": "UNQUALIFIED"
     },
     {
@@ -208,7 +209,7 @@
         "META_WA_TOKEN",
         "PHONE_NUMBER_ID"
       ],
-      "analysis_document": null,
+      "analysis_document": "docs/external-providers/messaging/META_WHATSAPP.md",
       "highest_proof": "UNQUALIFIED"
     },
     {
@@ -243,12 +244,13 @@
         "BREVO_KEY"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "qualification_note": "REST client implemented in utils/email.js and covered by tests/unit/email.test.js, but no application caller of sendOrderEmail established on 2026-09-23. Integration in an active order/notification flow and live delivery remain unproved."
     },
     {
       "id": "anthropic",
       "family": "ai",
-      "expected_scope": "runtime",
+      "expected_scope": "tooling",
       "consumers": [
         "catalog"
       ],
@@ -260,12 +262,13 @@
         "ANTHROPIC_URL"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "qualification_note": "No canonical catalog runtime, promotion or staging stress flow calls Anthropic. Historical enrichment service is non-canonical tooling only."
     },
     {
       "id": "openai",
       "family": "ai",
-      "expected_scope": "runtime",
+      "expected_scope": "tooling",
       "consumers": [
         "catalog"
       ],
@@ -277,7 +280,8 @@
         "OPENAI_URL"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "qualification_note": "OpenAI is not a catalog runtime/enrichment dependency. Remaining use is limited to optional Showcase media-realism tooling."
     },
     {
       "id": "imagekit",
@@ -401,7 +405,8 @@
         "TWILIO_AUTH_TOKEN"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "qualification_note": "Declared configuration only: no active runtime API consumer established in the repository inventory; no provider proof."
     },
     {
       "id": "africas-talking",
@@ -415,7 +420,8 @@
         "AT_SENDER_ID"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "qualification_note": "Declared configuration only: no active runtime API consumer established in the repository inventory; no provider proof."
     }
   ]
 }

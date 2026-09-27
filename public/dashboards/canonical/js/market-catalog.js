@@ -90,11 +90,11 @@
     const header = el('header', 'kmc-workspace-header');
     const copy = el('div');
     copy.appendChild(el('span', 'kmc-workspace-kicker', 'CATALOGUE · PAYS'));
-    copy.appendChild(el('h1', 'kmc-workspace-title', `${payload.market.name || marketCode} · Piloter l’offre visible`));
+    copy.appendChild(el('h1', 'kmc-workspace-title', `${payload.market.name || marketCode} · Choisir les produits du marché`));
     copy.appendChild(el(
       'p',
       'kmc-workspace-subtitle',
-      `Market ID ${marketCode} · ${payload.market.currency || '—'} · le marché choisit l’exposition, la fiche produit globale reste centrale`
+      `Market ID ${marketCode} · ${payload.market.currency || '—'} · choisissez les produits qui ont leur place sur ce marché`
     ));
     header.appendChild(copy);
 
@@ -154,11 +154,11 @@
 
     const section = el('section', 'kmc-decision-surface-card');
     section.setAttribute('data-market-catalog-overview', 'decision-first-v1');
-    section.appendChild(el('h2', 'kmc-decision-dashboard-section-title', 'Décider l’exposition du marché'));
+    section.appendChild(el('h2', 'kmc-decision-dashboard-section-title', 'Produits à décider'));
     section.appendChild(el(
       'p',
       'kmc-decision-dashboard-section-copy',
-      'Un produit sans décision explicite reste masqué par défaut. Les compteurs ci-dessous viennent du read-model serveur du Market ID.'
+      'Les nouveaux produits arrivent ici prêts à être examinés. Validez ceux qui conviennent à votre marché ; les autres restent masqués.'
     ));
 
     const decisions = projection.decisionItems(payload);
@@ -197,17 +197,143 @@
     return button;
   }
 
+  function renderIncomingProducts(payload, marketCode) {
+    const section = el('section', 'kmc-section');
+    section.id = 'market-catalog-review';
+    section.appendChild(el('h2', 'kmc-section-title', 'Nouveaux produits'));
+    section.appendChild(el(
+      'p',
+      'kmc-workspace-note',
+      'Décidez uniquement si le produit a sa place sur votre marché. Les contrôles techniques ont déjà été faits en amont.'
+    ));
+
+    const queue = payload.review_queue || {};
+    const rows = Array.isArray(queue.items) ? queue.items : [];
+    const canManage = Array.isArray(payload.actor_capabilities)
+      && payload.actor_capabilities.includes('catalog.expose');
+
+    if (!rows.length) {
+      section.appendChild(el('div', 'kmc-workspace-empty', 'Aucun nouveau produit à valider.'));
+      root.appendChild(section);
+      return;
+    }
+
+    const wrap = el('div', 'kmc-workspace-table-wrap');
+    const table = el('table', 'kmc-workspace-table');
+    table.innerHTML = '<thead><tr><th>Produit</th><th>Catégorie</th><th>Stock</th><th>Action</th></tr></thead>';
+    const tbody = global.document.createElement('tbody');
+
+    async function validate(row, button) {
+      button.disabled = true;
+      setFeedback(`${row.product_ref || 'Produit'} · validation pour ${marketCode}…`);
+      try {
+        await request(
+          `/api/market-delegation/markets/${encodeURIComponent(marketCode)}/catalog/review/${encodeURIComponent(row.product_id)}/validate`,
+          { method: 'POST', body: {} }
+        );
+        setFeedback(`${row.product_name || row.product_ref || 'Produit'} · validé pour ${marketCode}.`, 'positive');
+        await load();
+      } catch (error) {
+        button.disabled = false;
+        setFeedback(`${error.message}${error.code ? ` · ${error.code}` : ''}`, 'critical');
+      }
+    }
+
+    async function decline(row, button) {
+      button.disabled = true;
+      setFeedback(`${row.product_ref || 'Produit'} · décision en cours…`);
+      try {
+        await request(
+          `/api/market-delegation/markets/${encodeURIComponent(marketCode)}/catalog/exposure/${encodeURIComponent(row.product_id)}`,
+          { method: 'PUT', body: { commercial_exposure: 'DISABLED' } }
+        );
+        setFeedback(`${row.product_name || row.product_ref || 'Produit'} · non retenu pour ${marketCode}.`);
+        await load();
+      } catch (error) {
+        button.disabled = false;
+        setFeedback(`${error.message}${error.code ? ` · ${error.code}` : ''}`, 'critical');
+      }
+    }
+
+    rows.forEach(row => {
+      const tr = global.document.createElement('tr');
+
+      const product = el('td');
+      const line = el('div', 'kmc-market-product-line');
+      if (row.image_url) {
+        const image = global.document.createElement('img');
+        image.src = row.image_url;
+        image.alt = row.product_name || 'Produit';
+        image.loading = 'lazy';
+        image.width = 56;
+        image.height = 56;
+        image.style.objectFit = 'cover';
+        image.style.borderRadius = '10px';
+        line.appendChild(image);
+      }
+      const copy = el('div');
+      copy.appendChild(el('strong', '', row.product_name || row.product_ref || 'Produit'));
+      copy.appendChild(el('div', 'kmc-workspace-note', row.product_ref || '—'));
+      if (row.description) {
+        copy.appendChild(el('div', 'kmc-workspace-note', String(row.description).slice(0, 140)));
+      }
+      line.appendChild(copy);
+      product.appendChild(line);
+      tr.appendChild(product);
+
+      tr.appendChild(el('td', '', [row.category, row.subcategory].filter(Boolean).join(' · ') || '—'));
+      tr.appendChild(el('td', '', row.stock == null ? 'Non précisé' : String(row.stock)));
+
+      const actionCell = el('td');
+      const detail = el('a', 'kmc-workspace-nav-link', 'Voir la fiche');
+      detail.href = `/admin/products/${encodeURIComponent(row.product_ref)}`;
+      detail.target = '_blank';
+      actionCell.appendChild(detail);
+
+      if (canManage) {
+        actionCell.appendChild(actionButton(
+          'Valider pour ce marché',
+          'primary',
+          event => validate(row, event.currentTarget)
+        ));
+        actionCell.appendChild(actionButton(
+          'Ne pas retenir',
+          'secondary',
+          event => decline(row, event.currentTarget)
+        ));
+      } else {
+        actionCell.appendChild(el('span', 'kmc-workspace-note', 'Lecture seule'));
+      }
+      tr.appendChild(actionCell);
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    section.appendChild(wrap);
+
+    if (Number(queue.total) > rows.length) {
+      section.appendChild(el(
+        'p',
+        'kmc-workspace-note',
+        `${rows.length} affichés sur ${queue.total} produit(s) à valider. Les suivants apparaissent au fur et à mesure des décisions.`
+      ));
+    }
+
+    root.appendChild(section);
+  }
+
   function renderExposure(payload, marketCode) {
     const projection = global.KomerceMarketCatalogDecision;
     if (!projection) throw new Error('market_catalog_decision_projection_missing');
 
     const section = el('section', 'kmc-section');
     section.id = 'market-catalog-exposure';
-    section.appendChild(el('h2', 'kmc-section-title', 'Catalogue actif · décision pays'));
+    section.appendChild(el('h2', 'kmc-section-title', 'Produits déjà publiés'));
     section.appendChild(el(
       'p',
       'kmc-workspace-note',
-      'Le Responsable pays choisit quels produits actifs du catalogue global sont visibles dans son marché. Aucune fiche, aucun SKU et aucune vérité produit globale ne sont modifiés ici.'
+      'Vous pouvez à tout moment rendre visible ou masquer un produit déjà publié sur ce marché.'
     ));
 
     const rows = Array.isArray(payload.exposure) ? payload.exposure : [];
@@ -300,6 +426,7 @@
       renderHeader(payload, marketCode);
       renderMarketSelector(context, marketCode);
       renderDecisionOverview(payload);
+      renderIncomingProducts(payload, marketCode);
       renderExposure(payload, marketCode);
     } catch (error) {
       if (error.status === 401) {

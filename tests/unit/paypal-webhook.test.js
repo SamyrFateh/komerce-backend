@@ -127,6 +127,32 @@ describe('POST /api/payments/paypal/webhook', () => {
     expect(res.body.error).toMatch(/signature/i);
   });
 
+  test('verification PayPal indisponible → 503 sans enregistrer ni traiter l evenement', async () => {
+    paypal.verifyWebhookSignature.mockRejectedValueOnce(
+      Object.assign(new Error('provider timeout'), { code: 'paypal_webhook_verification_unavailable' })
+    );
+    const res = await postWebhook(makeEvent({ id: 'EV-VERIFY-DOWN' }));
+    expect(res.status).toBe(503);
+    expect(res.body).toEqual({
+      received: false,
+      code: 'paypal_webhook_processing_unavailable',
+    });
+    expect(db.query).not.toHaveBeenCalled();
+    expect(confirmPaymentCycle).not.toHaveBeenCalled();
+    expect(JSON.stringify(res.body)).not.toContain('provider timeout');
+  });
+
+  test('traitement DB indisponible → 503 et non 200 trompeur', async () => {
+    paypal.verifyWebhookSignature.mockResolvedValueOnce(true);
+    db.query.mockResolvedValueOnce({ rows: [] });
+    db.query.mockRejectedValueOnce(new Error('db unavailable'));
+    paypal.extractCaptureInfo.mockReturnValue({ paypal_capture_id: 'CAP-1' });
+    const res = await postWebhook(makeEvent({ id: 'EV-DB-DOWN' }));
+    expect(res.status).toBe(503);
+    expect(res.body.received).toBe(false);
+    expect(JSON.stringify(res.body)).not.toContain('db unavailable');
+  });
+
   test('body non-JSON → 400', async () => {
     const res = await postWebhook('not-json-{{');
     expect(res.status).toBe(400);

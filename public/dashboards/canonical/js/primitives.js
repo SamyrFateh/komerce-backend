@@ -126,7 +126,10 @@
       const doc = defaultDocument;
       const section = doc.createElement('section');
       section.className = 'kmc-section';
-      if (options.id) section.setAttribute('data-section-id', String(options.id));
+      if (options.id) {
+        section.id = String(options.id);
+        section.setAttribute('data-section-id', String(options.id));
+      }
 
       if (options.title || options.description) {
         const header = doc.createElement('header');

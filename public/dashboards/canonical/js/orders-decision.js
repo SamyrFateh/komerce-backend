@@ -59,34 +59,94 @@
   // 1. Bandeau de décision — files bloquantes qui demandent une action aujourd'hui.
   function decisionItems(payload, base) {
     const items = [];
-    const cash = kpi(payload, 'cash_to_confirm');
-    const parcels = kpi(payload, 'parcels_to_create');
+    const signals = (payload && payload.signals) || {};
 
-    if (cash && Number(cash.value) > 0) {
+    if (signals.paiements_en_attente > 0) {
       items.push({
-        key: 'cash-to-confirm',
-        label: 'Cash à confirmer',
-        helper: 'Commandes payées cash en attente de confirmation',
-        value: base.formatNumber(cash.value, 0),
+        key: 'paiements-en-attente',
+        label: 'Paiements en attente',
+        helper: 'À relancer pour éviter l’annulation (cash non confirmé depuis +72h)',
+        value: base.formatNumber(signals.paiements_en_attente, 0),
         tone: 'warning',
         icon: '¤',
         href: '#orders-pending-cash',
-        actionLabel: 'Voir la file →',
+        actionLabel: 'Voir les paiements →',
       });
     }
-    if (parcels && Number(parcels.value) > 0) {
+    if (signals.commandes_bloquees > 0) {
       items.push({
-        key: 'parcels-to-create',
-        label: 'Colis à créer',
-        helper: 'Commandes payées, prêtes à passer en logistique',
-        value: base.formatNumber(parcels.value, 0),
+        key: 'commandes-bloquees',
+        label: 'Commandes bloquées',
+        helper: 'Nécessitent une action immédiate (incident ouvert)',
+        value: base.formatNumber(signals.commandes_bloquees, 0),
+        tone: 'critical',
+        icon: '!',
+      });
+    }
+    if (signals.retraits_en_retard > 0) {
+      items.push({
+        key: 'retraits-en-retard',
+        label: 'Retraits en retard',
+        helper: 'Disponibles en relais depuis plus de 72h',
+        value: base.formatNumber(signals.retraits_en_retard, 0),
+        tone: 'critical',
+        icon: '⏱',
+      });
+    }
+    if (signals.litiges_ouverts > 0) {
+      items.push({
+        key: 'litiges-ouverts',
+        label: 'Litiges ouverts',
+        helper: 'À traiter avec le client',
+        value: base.formatNumber(signals.litiges_ouverts, 0),
         tone: 'warning',
-        icon: '▣',
-        href: '#orders-ready-for-parcel',
-        actionLabel: 'Voir la file →',
+        icon: '⚖',
       });
     }
     return items.slice(0, 4);
+  }
+
+  // SLA & promesse client — cf. services/dashboard-orders.js#getDecisionSignals.
+  // "Commandes dans les temps (%)" du mock volontairement absent : suppose un
+  // délai de livraison CIBLE configuré par marché, qui n'existe dans aucune
+  // table du schéma aujourd'hui.
+  function slaItems(payload, base) {
+    const sla = (payload && payload.signals && payload.signals.sla) || {};
+    return [
+      {
+        key: 'delai-moyen',
+        title: 'Délai moyen de livraison',
+        subtitle: sla.delai_moyen_jours != null ? `${base.formatNumber(sla.delai_moyen_jours, 1)} jours` : '—',
+        tone: 'info',
+      },
+      {
+        key: 'sans-mouvement',
+        title: 'Commandes > 72h sans mouvement',
+        subtitle: base.formatNumber(sla.sans_mouvement_72h, 0),
+        tone: sla.sans_mouvement_72h > 0 ? 'warning' : 'info',
+      },
+      {
+        key: 'prets-aujourdhui',
+        title: 'Commandes prêtes aujourd’hui',
+        subtitle: base.formatNumber(sla.prets_aujourdhui, 0),
+        tone: 'info',
+      },
+    ];
+  }
+
+  // Funnel métier du mock (Créées -> Payées -> Expédiées -> Disponibles
+  // relais -> Retirées), additif au funnel technique déjà affiché
+  // ("Cycle de vie") — les deux servent des lecteurs différents, aucun ne
+  // remplace l'autre.
+  function businessFunnelStages(payload, base) {
+    const funnel = (payload && payload.funnel) || {};
+    return [
+      { label: 'Commandes créées', value: base.formatNumber(funnel.creees, 0) },
+      { label: 'Payées', value: base.formatNumber(funnel.payees, 0) },
+      { label: 'Expédiées', value: base.formatNumber(funnel.expediees, 0) },
+      { label: 'Disponibles relais', value: base.formatNumber(funnel.disponibles_relais, 0) },
+      { label: 'Retirées', value: base.formatNumber(funnel.retirees, 0) },
+    ];
   }
 
   // 2. KPI de tête — tels que fournis, sans recalcul.
@@ -126,6 +186,25 @@
       helper: [row.status, row.payment_mode, row.total_kmf != null ? `${base.formatNumber(row.total_kmf, 0)} KMF` : null]
         .filter(Boolean).join(' · '),
       tone: 'warning',
+      href: row.reference ? `/admin/orders/${encodeURIComponent(row.reference)}` : undefined,
+      actionLabel: row.reference ? 'Ouvrir →' : undefined,
+    }));
+  }
+
+  // Commandes prioritaires — cf. services/dashboard-orders.js#getPriorityOrders.
+  // Le "problème" vient du vocabulaire d'incident déjà validé côté relais/hub
+  // (order_incidents.type) ou du type de litige réel (disputes.type), jamais
+  // une catégorie recalculée côté navigateur.
+  function priorityOrderItems(payload, base) {
+    return (Array.isArray(payload && payload.priority_orders) ? payload.priority_orders : []).map(row => ({
+      title: row.reference || 'Commande',
+      helper: [
+        row.client_name,
+        row.relais_name,
+        `depuis ${base.formatNumber(row.since_days, 0)} j`,
+        row.problem,
+      ].filter(Boolean).join(' · '),
+      tone: 'critical',
       href: row.reference ? `/admin/orders/${encodeURIComponent(row.reference)}` : undefined,
       actionLabel: row.reference ? 'Ouvrir →' : undefined,
     }));
@@ -191,6 +270,31 @@
     ui.MetricStrip.render(kpisSection.body, { items: metricItems(payload, base) });
     dashboard.appendChild(kpisSection.section);
 
+    // Bloc 2b — funnel métier + SLA (additif, cf. buildSignals côté serveur)
+    const businessGrid = doc.createElement('div');
+    businessGrid.className = 'kmc-decision-dashboard-grid-2';
+
+    const businessFunnel = businessFunnelStages(payload, base);
+    if (businessFunnel.some(stage => stage.value !== '—')) {
+      const funnelSection = cardSection(doc, 'Funnel de conversion', 'Du clic à la livraison : suivez chaque étape et identifiez les pertes.', 'orders-business-funnel');
+      decisionUi.Funnel.render(funnelSection.body, { stages: businessFunnel });
+      businessGrid.appendChild(funnelSection.section);
+    }
+
+    const slaSection = cardSection(doc, 'SLA & promesse client', 'Tenez vos engagements et offrez une expérience fiable.', 'orders-sla');
+    decisionUi.SummaryCards.render(slaSection.body, { items: slaItems(payload, base) });
+    businessGrid.appendChild(slaSection.section);
+
+    dashboard.appendChild(businessGrid);
+
+    // Bloc 2c — commandes prioritaires
+    const priorityItems = priorityOrderItems(payload, base);
+    if (priorityItems.length) {
+      const prioritySection = cardSection(doc, 'Commandes prioritaires', 'Les commandes qui nécessitent votre attention en priorité.', 'orders-priority');
+      decisionUi.RankedList.render(prioritySection.body, { items: priorityItems });
+      dashboard.appendChild(prioritySection.section);
+    }
+
     // Bloc 3 — funnel du cycle de vie
     const stages = lifecycleStages(payload, base);
     if (stages.length) {
@@ -211,13 +315,28 @@
     const queuesGrid = doc.createElement('div');
     queuesGrid.className = 'kmc-decision-dashboard-grid-2';
 
+    function queueDescription(base_text, shown, total) {
+      if (total != null && shown != null && total > shown) {
+        return `${base_text} ${shown} sur ${total} affichée(s) — les plus anciennes en priorité.`;
+      }
+      return base_text;
+    }
+
     const pendingCash = workQueueItems((payload && payload.work_queues && payload.work_queues.pending_cash) || [], base);
-    const cashSection = cardSection(doc, 'Cash à confirmer', 'Commandes en attente de confirmation de paiement cash, les plus anciennes en premier.', 'orders-pending-cash');
+    const cashSection = cardSection(doc, 'Cash à confirmer', queueDescription(
+      'Commandes en attente de confirmation de paiement cash, les plus anciennes en premier.',
+      payload && payload.work_queues && payload.work_queues.pending_cash_shown,
+      payload && payload.work_queues && payload.work_queues.pending_cash_total,
+    ), 'orders-pending-cash');
     decisionUi.RankedList.render(cashSection.body, { items: pendingCash });
     queuesGrid.appendChild(cashSection.section);
 
     const readyForParcel = workQueueItems((payload && payload.work_queues && payload.work_queues.ready_for_parcel) || [], base);
-    const parcelSection = cardSection(doc, 'Colis à créer', 'Commandes payées prêtes à passer en logistique, les plus anciennes en premier.', 'orders-ready-for-parcel');
+    const parcelSection = cardSection(doc, 'Colis à créer', queueDescription(
+      'Commandes payées prêtes à passer en logistique, les plus anciennes en premier.',
+      payload && payload.work_queues && payload.work_queues.ready_for_parcel_shown,
+      payload && payload.work_queues && payload.work_queues.ready_for_parcel_total,
+    ), 'orders-ready-for-parcel');
     decisionUi.RankedList.render(parcelSection.body, { items: readyForParcel });
     queuesGrid.appendChild(parcelSection.section);
 
