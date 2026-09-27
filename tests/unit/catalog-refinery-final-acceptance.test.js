@@ -23,6 +23,7 @@ const {
 function baseRow(overrides = {}) {
   return {
     product_ref: 'KPR-TEST-1',
+    supplier_name: 'CJdropshipping',
     supplier_product_id: 'CJ-1',
     normalized_source_contract: {
       schema_version: '2',
@@ -33,8 +34,11 @@ function baseRow(overrides = {}) {
     source_locale: 'en',
     name: 'Chargeur USB-C 20W',
     description: 'Chargeur USB-C compact avec une puissance indiquée de 20W.',
-    category: 'Tech',
+    category: 'electronics',
     subcategory: 'Chargeurs',
+    boutique_category_key: 'Tech',
+    boutique_subcategory_key: 'Chargeurs',
+    taxonomy_active: true,
     price_kmf: 5000,
     stock: 10,
     content_source: 'manual',
@@ -88,6 +92,16 @@ describe('catalog Raffinerie final acceptance', () => {
     expect(verdict.structural_ok).toBe(true);
     expect(verdict.final_ok).toBe(true);
     expect(verdict.publication_guard).toBe('PASS');
+  });
+
+  test('canonical boutique subcategory is structural and final certification input', () => {
+    const verdict = classify(baseRow({ boutique_subcategory_key: null, taxonomy_active: false }));
+    expect(verdict.structural_ok).toBe(false);
+    expect(verdict.final_ok).toBe(false);
+    expect(verdict.structural).toEqual(expect.arrayContaining([
+      'boutique_subcategory_missing',
+      'boutique_taxonomy_inactive_or_invalid',
+    ]));
   });
 
   test('pre-publication market exposure is a structural blocker', () => {
