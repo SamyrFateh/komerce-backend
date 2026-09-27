@@ -22,6 +22,7 @@ const db = require('../db');
 const cj = require('../services/suppliers/connectors/cj-connector');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const semantic = require('../services/suppliers/discovery-semantic-relevance');
+const e2eRuntime = require('../services/suppliers/e2e-isolated-runtime');
 const { BALANCED_E2E_500_PLAN, planTotal, planByUniverse } = require('../services/suppliers/e2e-catalog-500-plan');
 
 const SUPPLIER_NAME = cj.SUPPLIER_NAME;
@@ -47,12 +48,7 @@ function assertRuntime(env = process.env) {
   if (!env.CJ_ACCESS_TOKEN && !env.CJ_API_KEY) {
     throw new Error('CJ_ACCESS_TOKEN ou CJ_API_KEY requis');
   }
-  if (!env.DATABASE_URL) throw new Error('DATABASE_URL requis');
-  const url = new URL(env.DATABASE_URL);
-  const dbName = String(url.pathname || '').replace(/^\//, '');
-  if (!['127.0.0.1', 'localhost'].includes(url.hostname) || dbName !== 'komerce_real_catalog_stress') {
-    throw new Error('REFUS: base jetable localhost komerce_real_catalog_stress requise');
-  }
+  e2eRuntime.assertIsolatedE2eRuntime(env);
   if (planTotal(BALANCED_E2E_500_PLAN) !== TARGET) {
     throw new Error(`Plan équilibré invalide: ${planTotal(BALANCED_E2E_500_PLAN)}/${TARGET}`);
   }

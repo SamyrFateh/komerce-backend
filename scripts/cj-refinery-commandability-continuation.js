@@ -25,6 +25,7 @@ const path = require('path');
 const db = require('../db');
 const cjConnector = require('../services/suppliers/connectors/cj-connector');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
+const e2eRuntime = require('../services/suppliers/e2e-isolated-runtime');
 const { promoteCatalog } = require('../services/catalog-promotion');
 const { validatePublicationUpdate } = require('../services/product-publication-guard');
 
@@ -86,13 +87,7 @@ function assertDisposableRuntime(env = process.env, { requireCj = true } = {}) {
   if (requireCj && !env.CJ_ACCESS_TOKEN && !env.CJ_API_KEY) {
     throw new Error('CJ_ACCESS_TOKEN ou CJ_API_KEY requis');
   }
-  if (!env.DATABASE_URL) throw new Error('DATABASE_URL requis');
-
-  const url = new URL(env.DATABASE_URL);
-  const dbName = String(url.pathname || '').replace(/^\//, '');
-  if (!['127.0.0.1', 'localhost'].includes(url.hostname) || dbName !== 'komerce_real_catalog_stress') {
-    throw new Error('REFUS: base jetable localhost komerce_real_catalog_stress requise');
-  }
+  e2eRuntime.assertIsolatedE2eRuntime(env);
 }
 
 function isQuotaError(error) {

@@ -21,6 +21,20 @@ describe('AliExpress incremental +200 Railway worker launcher', () => {
     ]);
   });
 
+  test('builds the unified 700 dataset in one explicit fail-closed plan', () => {
+    expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-700-build' }))
+      .toBe('catalog-700-build');
+    expect(worker.commandPlan('catalog-700-build')).toEqual([
+      ['scripts/cj-500-e2e-catalog-sync.js'],
+      ['scripts/real-supplier-1000-stress-staging.js', '--operation=refinery-audit', '--limit=715'],
+      ['scripts/real-supplier-1000-stress-staging.js', '--operation=promote', '--limit=500'],
+      ['scripts/catalog-fr-free-e2e-preparation.js', '--limit=1000'],
+      ['scripts/cj-refinery-commandability-continuation.js', '--limit=500', '--chunk=20', '--output=artifacts/catalog-e2e-700/cj-commandability.json'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=accept', '--output=artifacts/catalog-e2e-700/ali-final-acceptance.json'],
+      ['scripts/catalog-e2e-700-acceptance.js', '--output=artifacts/catalog-e2e-700/final-acceptance.json'],
+    ]);
+  });
+
   test('taxonomy-audit runs only the read-only projection command', () => {
     expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'taxonomy-audit' }))
       .toBe('taxonomy-audit');
