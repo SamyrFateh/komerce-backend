@@ -6,8 +6,8 @@
  * @layer         tooling
  * @criticality   high
  * @inputs        KOMERCE_ALI_E2E_200_WORKER_MODE
- * @outputs       selected isolated catalog campaign action, including canonical 700 build
- * @depends       scripts/aliexpress-wave2-sourcing.js, scripts/aliexpress-incremental-e2e-200.js, scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js, scripts/cj-500-e2e-catalog-sync.js, scripts/catalog-e2e-700-acceptance.js
+ * @outputs       selected isolated catalog campaign action, including canonical 700 legacy and 712 reconciled build
+ * @depends       scripts/aliexpress-wave2-sourcing.js, scripts/aliexpress-incremental-e2e-200.js, scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js, scripts/cj-500-e2e-catalog-sync.js, scripts/catalog-e2e-700-acceptance.js, scripts/catalog-cj-certified-500-materialize.js, scripts/catalog-e2e-712-acceptance.js
  * @used-by       railway.ali-e2e-200.json
  * @db-read       delegated
  * @db-write      delegated
@@ -30,6 +30,8 @@ const MODES = Object.freeze([
   'catalog-700-local-audit',
   'catalog-cj-reconcile-promote-local',
   'catalog-cj-new12-finish',
+  'catalog-712-materialize',
+  'catalog-712-accept',
 ]);
 
 function resolveMode(env = process.env) {
@@ -42,6 +44,17 @@ function resolveMode(env = process.env) {
 
 function commandPlan(mode = resolveMode()) {
   if (mode === 'idle') return [];
+  if (mode === 'catalog-712-materialize') {
+    return [
+      ['scripts/catalog-cj-certified-500-materialize.js'],
+      ['scripts/catalog-e2e-712-acceptance.js', '--output=artifacts/catalog-e2e-712/final-acceptance.json'],
+    ];
+  }
+  if (mode === 'catalog-712-accept') {
+    return [
+      ['scripts/catalog-e2e-712-acceptance.js', '--output=artifacts/catalog-e2e-712/final-acceptance.json'],
+    ];
+  }
   if (mode === 'catalog-cj-new12-finish') {
     return [
       ['scripts/catalog-fr-free-e2e-preparation.js', '--limit=12', '--supplier=CJdropshipping', '--output=artifacts/catalog-e2e-700/cj-new12-fr.json'],

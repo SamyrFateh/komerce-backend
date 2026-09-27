@@ -56,7 +56,8 @@ module.exports = {
       'source Allegro Sandbox vendeur : offres exactes V2 en PLN, OAuth refresh chiffré sous verrou, aucun achat automatique',
       'source AliExpress de stress-test Raffinerie : Open Platform Drop Shipping api-sg, OAuth serveur géré et chiffré, feed/detail normalisés V2, aucune publication automatique',
       'pool AliExpress staging borné à 500 références réellement en stock, dédupliqué et reprenable, alimenté exclusivement via la Raffinerie et sans publication automatique',
-      'dataset E2E unifié 700 : 200 AliExpress validés + 500 CJ semantic-positive, cohabitant dans une base Railway isolée explicitement gardée, sans exposition marché ni publication automatique',
+      'dataset E2E unifié 700 historique : 200 AliExpress validés + 500 CJ semantic-positive, cohabitant dans une base Railway isolée explicitement gardée, sans exposition marché ni publication automatique',
+      'dataset E2E réconcilié 712 : 200 AliExpress + 500 CJ historiques certifiés + 12 CJ nouveaux uniques, matérialisés par identité fournisseur exacte, taxonomie boutique dynamique active, SKU/SOI complets et zéro exposition marché',
       'product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services',
       'migration 206 : snapshot de compatibilité produit x marché, reproduction exacte de publicCatalogVisibilitySql() croisée avec chaque marché actif — cutover, pas un all x all aveugle',
       'services/catalog-public-view.js::publicCatalogVisibilitySql(alias, { marketCodeParam }) : le chemin de lecture storefront consulte désormais product_market_exposure quand un marché est fourni ; sans marché, comportement historique inchangé à l’identique',
@@ -128,6 +129,8 @@ module.exports = {
       'scripts/catalog-refinery-final-acceptance.js',
       'scripts/cj-500-e2e-catalog-sync.js',
       'scripts/catalog-e2e-700-acceptance.js',
+      'scripts/catalog-cj-certified-500-materialize.js',
+      'scripts/catalog-e2e-712-acceptance.js',
     ],
     services: [
       // MISSION 1 (KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE) — décideur
@@ -352,6 +355,8 @@ module.exports = {
       'tests/unit/discovery-semantic-relevance.test.js',
       'tests/unit/e2e-isolated-runtime.test.js',
       'tests/unit/catalog-e2e-700-acceptance.test.js',
+      'tests/unit/catalog-cj-certified-500-materialize.test.js',
+      'tests/unit/catalog-e2e-712-acceptance.test.js',
       'tests/unit/aliexpress-native-sku-identity.test.js',
       'tests/unit/aliexpress-promote-authority-regression.test.js',
       'tests/unit/aliexpress-promote-drafts-staging.test.js',
