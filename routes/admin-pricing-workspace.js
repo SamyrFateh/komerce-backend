@@ -323,7 +323,7 @@ router.post('/market/:marketCode/price-observations/:observationRef/deactivate',
   } catch (error) { handleError(error, res, next); }
 });
 
-router.get('/market/:marketCode/products/:productRef/local-price/activation-preview', async (req, res, next) => {
+router.get('/market/:marketCode/products/:productRef/local-price/activation-preview', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     res.json(await marketLocalPriceActivation.previewLocalPriceActivation({

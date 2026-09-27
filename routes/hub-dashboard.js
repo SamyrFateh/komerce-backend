@@ -46,7 +46,8 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
-const { attachAuthorizedMarketsForOperator, resolveMarketScopeRole, hasMarketScopeRole } = require('../middleware/require-market-scope');
+const { attachAuthorizedMarketsForOperator } = require('../middleware/require-market-scope');
+const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { generateParcelRef } = require('../utils/reference');
 const { transitionOrderStatus } = require('../services/order-status-machine');
@@ -79,19 +80,35 @@ const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 const hubRead      = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
 const hubSupervise = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
 
-async function ensureMarketOperatorCanSupervise(req, marketId) {
-  if (req.user.role !== 'market_operator') return null;
-  if (!req.authorizedMarkets || !req.authorizedMarkets.has(marketId)) {
-    return { status: 403, body: { error: 'Commande hors de votre périmètre marché', code: 'market_scope_denied' } };
-  }
-  const actualRole = await resolveMarketScopeRole(req.user.id, marketId);
-  if (!hasMarketScopeRole(actualRole, 'manager')) {
-    return {
-      status: 403,
-      body: { error: `Scope ${actualRole || 'aucun'} insuffisant — manager requis`, code: 'market_scope_role_insufficient' },
-    };
-  }
-  return null;
+// ── hub.supervise (capability_is_the_authority_not_role) ────────────────────
+// Les routes de supervision (incident/escalade/commentaire) sont adressées
+// par :id de commande, jamais par code marché — requireMarketDelegatedCapability
+// résout l'autorisation à partir de req.params.marketCode, il faut donc
+// résoudre le marché de la commande AVANT de vérifier la capability.
+async function resolveOrderMarket(req, res, next) {
+  try {
+    const { rows } = await db.query(
+      `SELECT o.id, o.reference, o.market_id, m.code AS market_code
+         FROM orders o
+         JOIN markets m ON m.id = o.market_id
+        WHERE o.id = $1`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Commande introuvable' });
+    req.order = rows[0];
+    req.params.marketCode = rows[0].market_code;
+    return next();
+  } catch (err) { return next(err); }
+}
+
+// admin/agent_hub restent autorisés par leur rôle seul (déjà vérifié par
+// hubRead/requireRole en amont) — seul un market_operator doit prouver la
+// capability hub.supervise, exactement comme ensureMarketOperatorCanSupervise
+// ne s'appliquait qu'à ce rôle.
+const hubSuperviseCapability = requireMarketDelegatedCapability('hub.supervise', { audit: false });
+function requireHubSupervise(req, res, next) {
+  if (req.user && req.user.role !== 'market_operator') return next();
+  return hubSuperviseCapability(req, res, next);
 }
 
 // ── DDL géré par migrations/075_hub_shares_collective_schema.sql ────────────
@@ -485,21 +502,21 @@ router.post('/parcels/:id/ship', ...hubAuth, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-router.post('/orders/:id/incident', ...hubSupervise, async (req, res, next) => {
+const INCIDENT_TYPES = ['retard', 'blocage', 'paiement', 'stock', 'colis_endommage', 'colis_perdu', 'client_absent', 'autre'];
+
+function validateIncidentBody(req, res, next) {
+  const { type, description } = req.body;
+  if (!type || !description) return res.status(400).json({ error: 'type et description requis' });
+  if (!INCIDENT_TYPES.includes(type)) {
+    return res.status(400).json({ error: `Type invalide. Valides: ${INCIDENT_TYPES.join(', ')}` });
+  }
+  next();
+}
+
+router.post('/orders/:id/incident', ...hubSupervise, validateIncidentBody, resolveOrderMarket, requireHubSupervise, async (req, res, next) => {
   try {
     const { type, description, priority = 'normal' } = req.body;
-    if (!type || !description) return res.status(400).json({ error: 'type et description requis' });
-
-    const validTypes = ['retard', 'blocage', 'paiement', 'stock', 'colis_endommage', 'colis_perdu', 'client_absent', 'autre'];
-    if (!validTypes.includes(type)) {
-      return res.status(400).json({ error: `Type invalide. Valides: ${validTypes.join(', ')}` });
-    }
-
-    const { rows: [order] } = await db.query('SELECT id, market_id FROM orders WHERE id = $1', [req.params.id]);
-    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
-
-    const denial = await ensureMarketOperatorCanSupervise(req, order.market_id);
-    if (denial) return res.status(denial.status).json(denial.body);
+    const order = req.order;
 
     const { rows: [incident] } = await db.query(`
       INSERT INTO order_incidents (order_id, type, description, priority, reporter_id)
@@ -516,18 +533,15 @@ router.post('/orders/:id/incident', ...hubSupervise, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-router.post('/orders/:id/escalate', ...hubSupervise, async (req, res, next) => {
+function validateEscalateBody(req, res, next) {
+  if (!req.body || !req.body.reason) return res.status(400).json({ error: 'Raison requise' });
+  next();
+}
+
+router.post('/orders/:id/escalate', ...hubSupervise, validateEscalateBody, resolveOrderMarket, requireHubSupervise, async (req, res, next) => {
   try {
     const { reason, priority = 'high' } = req.body;
-    if (!reason) return res.status(400).json({ error: 'Raison requise' });
-
-    const { rows: [order] } = await db.query(
-      'SELECT id, reference, market_id FROM orders WHERE id = $1', [req.params.id]
-    );
-    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
-
-    const denial = await ensureMarketOperatorCanSupervise(req, order.market_id);
-    if (denial) return res.status(denial.status).json(denial.body);
+    const order = req.order;
 
     const { rows: [incident] } = await db.query(`
       INSERT INTO order_incidents (order_id, type, description, priority, reporter_id)
@@ -548,16 +562,15 @@ router.post('/orders/:id/escalate', ...hubSupervise, async (req, res, next) => {
   } catch(e) { next(e); }
 });
 
-router.post('/orders/:id/comment', ...hubSupervise, async (req, res, next) => {
+function validateCommentBody(req, res, next) {
+  if (!req.body || !req.body.content) return res.status(400).json({ error: 'Contenu requis' });
+  next();
+}
+
+router.post('/orders/:id/comment', ...hubSupervise, validateCommentBody, resolveOrderMarket, requireHubSupervise, async (req, res, next) => {
   try {
     const { content } = req.body;
-    if (!content) return res.status(400).json({ error: 'Contenu requis' });
-
-    const { rows: [order] } = await db.query('SELECT id, market_id FROM orders WHERE id = $1', [req.params.id]);
-    if (!order) return res.status(404).json({ error: 'Commande introuvable' });
-
-    const denial = await ensureMarketOperatorCanSupervise(req, order.market_id);
-    if (denial) return res.status(denial.status).json(denial.body);
+    const order = req.order;
 
     const { rows: [comment] } = await db.query(`
       INSERT INTO order_comments (order_id, author_id, author_name, text)
