@@ -77,6 +77,7 @@ module.exports = {
       'migrations/092_customs_shipments_declaration_workflow.sql',
       'migrations/093_customs_invoice_document_type.sql',
       'migrations/248_customs_category_classifier_config.sql',
+      'migrations/249_customs_category_classifier_calibration.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
