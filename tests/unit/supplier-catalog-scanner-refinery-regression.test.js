@@ -26,14 +26,14 @@ const config = {
     target_marge_brute_pct: 40,
   },
   categories: {
-    phones: { key: 'phones', default_margin_pct: 30 },
-    vetements: { key: 'vetements', default_margin_pct: 45 },
-    ceremonie: { key: 'ceremonie', default_margin_pct: 55 },
-    electro: { key: 'electro', default_margin_pct: 32 },
-    cosmetiques: { key: 'cosmetiques', default_margin_pct: 50 },
-    mariage: { key: 'mariage', default_margin_pct: 55 },
-    enfants: { key: 'enfants', default_margin_pct: 32 },
-    materiels: { key: 'materiels', default_margin_pct: 35 },
+    phones: { key: 'phones', default_margin_pct: 30, classification_terms: { phone: 8, smartphone: 10 }, default_weight_kg: 0.3, default_dim_l_cm: 17, default_dim_w_cm: 12, default_dim_h_cm: 11 },
+    vetements: { key: 'vetements', default_margin_pct: 45, classification_terms: { dress: 8, blouse: 8, clothing: 7, sneaker: 6, sandals: 6 }, default_weight_kg: 0.4, default_dim_l_cm: 25, default_dim_w_cm: 22, default_dim_h_cm: 10 },
+    ceremonie: { key: 'ceremonie', default_margin_pct: 55, classification_terms: { 'evening dress': 12, abaya: 10 } },
+    electro: { key: 'electro', default_margin_pct: 32, classification_terms: { headphone: 8, speaker: 8, electronic: 5 } },
+    cosmetiques: { key: 'cosmetiques', default_margin_pct: 50, classification_terms: { beauty: 5, skincare: 10, 'facial cleansing': 12, nail: 8 } },
+    mariage: { key: 'mariage', default_margin_pct: 55, classification_terms: { wedding: 8, gift: 8, jewelry: 8 } },
+    enfants: { key: 'enfants', default_margin_pct: 32, classification_terms: { kids: 12, children: 12, toy: 9 } },
+    materiels: { key: 'materiels', default_margin_pct: 35, classification_terms: { tool: 8, tools: 8, 'power tools': 12, drill: 10 } },
   },
 };
 
@@ -57,13 +57,13 @@ describe('AliExpress refinery canonical regressions', () => {
           keyword: 'women dress',
         },
       },
-    }, cats)).toEqual({ key: 'vetements', source: 'mapped', confidence: 'high' });
+    }, cats)).toEqual(expect.objectContaining({ key: 'vetements', source: 'mapped', confidence: 'high' }));
 
     expect(mapProductCategory({
       supplier_category: 'AliExpress category 440504',
       product_name: 'Cordless Drill',
       raw_payload: { discovery: { segment_id: 'bricolage-outillage', keyword: 'power tools' } },
-    }, cats)).toEqual({ key: 'materiels', source: 'mapped', confidence: 'high' });
+    }, cats)).toEqual(expect.objectContaining({ key: 'materiels', source: 'mapped', confidence: 'high' }));
   });
 
   it('priorise le sous-segment de découverte sur un parent ambigu Mode & Beauté', () => {
@@ -84,7 +84,7 @@ describe('AliExpress refinery canonical regressions', () => {
         target_subcategory: 'Enfant',
         keyword: 'kids sandals',
       } },
-    }, cats)).toEqual({ key: 'enfants', source: 'mapped', confidence: 'high' });
+    }, cats)).toEqual(expect.objectContaining({ key: 'enfants', source: 'mapped', confidence: 'high' }));
 
     expect(mapProductCategory({
       product_name: 'Facial Cleansing Brush',
@@ -93,7 +93,7 @@ describe('AliExpress refinery canonical regressions', () => {
         target_subcategory: 'Beauté',
         keyword: 'facial cleansing brush',
       } },
-    }, cats)).toEqual({ key: 'cosmetiques', source: 'mapped', confidence: 'high' });
+    }, cats)).toEqual(expect.objectContaining({ key: 'cosmetiques', source: 'mapped', confidence: 'high' }));
   });
 
   it('normalise un candidat AliExpress avec la categorie Komerce issue de la provenance', async () => {
