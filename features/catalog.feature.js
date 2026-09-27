@@ -326,6 +326,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/catalog-certification-gate-b.test.js',
+      'tests/unit/catalog-sync-checkpoint-gate-a.test.js',
       'tests/unit/pipeline-certification-gate-c.test.js',
       'tests/integration/catalog-field-sync-decision-catalog-field-sync-application-real-db.test.js',
       'tests/integration/catalog-stock-sync-decision-real-db.test.js',
