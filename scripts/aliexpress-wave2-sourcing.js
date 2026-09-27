@@ -243,7 +243,7 @@ async function auditWave(waveId = WAVE_ID) {
        FROM sourcing_candidates
       WHERE supplier_name = $1
         AND raw_payload #>> '{discovery,wave}' = $2`,
-    [primary.SUPPLIER_NAME, WAVE_ID]
+    [primary.SUPPLIER_NAME, waveId]
   );
   const { rows: decisions } = await db.query(
     `SELECT COALESCE(scan_result->>'sourcing_decision', 'UNKNOWN') AS decision,
@@ -252,7 +252,7 @@ async function auditWave(waveId = WAVE_ID) {
       WHERE supplier_name = $1
         AND raw_payload #>> '{discovery,wave}' = $2
       GROUP BY 1 ORDER BY 1`,
-    [primary.SUPPLIER_NAME, WAVE_ID]
+    [primary.SUPPLIER_NAME, waveId]
   );
   const { rows: categories } = await db.query(
     `SELECT COALESCE(komerce_category, 'UNRESOLVED') AS category,
@@ -261,7 +261,7 @@ async function auditWave(waveId = WAVE_ID) {
       WHERE supplier_name = $1
         AND raw_payload #>> '{discovery,wave}' = $2
       GROUP BY 1 ORDER BY count DESC, category`,
-    [primary.SUPPLIER_NAME, WAVE_ID]
+    [primary.SUPPLIER_NAME, waveId]
   );
   return {
     total: Number(summary?.total || 0),
@@ -273,14 +273,14 @@ async function auditWave(waveId = WAVE_ID) {
   };
 }
 
-async function importFetchedSubset({ syncKey, logicalPage, subset, spec }) {
+async function importFetchedSubset({ syncKey, waveId = WAVE_ID, logicalPage, subset, spec }) {
   if (!subset.length) return { accepted: 0, rejected: 0, import_id: null };
   const body = {
     supplier_name: primary.SUPPLIER_NAME,
     source_type: 'api',
     supplier_id: 'aliexpress',
-    source_filename: waveSourceFilename(syncKey, logicalPage),
-    notes: `AliExpress ${WAVE_ID} — ${spec.category}/${spec.subcategory} — ${spec.keyword} — page ${logicalPage}`,
+    source_filename: waveSourceFilename(syncKey, logicalPage, waveId),
+    notes: `AliExpress ${waveId} — ${spec.category}/${spec.subcategory} — ${spec.keyword} — page ${logicalPage}`,
     is_full_snapshot: false,
   };
   const dispatchSubset = async () => ({ products: subset, invalid: [], total: subset.length });
@@ -336,7 +336,7 @@ async function runWaveLocked(config, providerEnv) {
   const seenIds = await loadSeenSupplierIds();
   let logicalPage = Math.max(1, Number(checkpoint?.next_page) || 1);
   let pages = 0;
-  console.log(`[aliexpress-wave2] runtime=${config.runtime} baselineKnown=${baselineKnown} waveStart=${startingWave}/${WAVE_TARGET} queries=${WAVE_QUERIES.length} pagesPerQuery=${config.maxSearchPagesPerQuery}`);
+  console.log(`[aliexpress-wave2] runtime=${config.runtime} baselineKnown=${baselineKnown} waveStart=${startingWave}/${config.target} queries=${WAVE_QUERIES.length} pagesPerQuery=${config.maxSearchPagesPerQuery}`);
 
   while (logicalPage <= maxLogicalPages) {
     const before = await countWaveClean(config.waveId);
@@ -388,6 +388,7 @@ async function runWaveLocked(config, providerEnv) {
     const imported = await importFetchedSubset({
       syncKey: config.syncKey,
       logicalPage,
+      waveId: config.waveId,
       subset,
       spec,
     });
