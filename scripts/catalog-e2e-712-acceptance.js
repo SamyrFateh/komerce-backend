@@ -7,7 +7,7 @@
  * @criticality   high
  * @inputs        isolated dataset containing 200 AliExpress + 500 certified CJ + 12 reconciled CJ
  * @outputs       definitive 712-product E2E catalog acceptance
- * @depends       db.js, e2e-isolated-runtime, product-publication-guard, catalog-cj-certified-500-materialize, aliexpress-incremental-e2e-200
+ * @depends       db.js, services/suppliers/e2e-isolated-runtime.js, services/product-publication-guard.js, scripts/catalog-cj-certified-500-materialize.js, scripts/aliexpress-incremental-e2e-200.js, scripts/cj-reconcile-current-new-12-promote.js
  * @used-by       Railway isolated catalog E2E worker
  * @db-read       sourcing_candidates, products, catalog_media, product_skus, product_market_exposure, boutique_categories, boutique_subcategories
  * @db-write      none
