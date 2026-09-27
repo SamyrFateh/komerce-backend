@@ -106,9 +106,14 @@ jobs:
       - name: Feature guard
         if: needs.changes.outputs.backend == 'true'
         run: node scripts/feature-guard.js --strict
-      - name: Executable feature invariants
+      - name: Canonical catalog + sourcing certification invariants
         if: needs.changes.outputs.backend == 'true'
-        run: node scripts/feature-invariant-check.js --strict
+        run: >-
+          npx jest
+          tests/unit/certification-accounting.test.js
+          tests/unit/catalog-certification.test.js
+          tests/unit/sourcing-certification.test.js
+          --runInBand --silent
       - name: Contract consumer check
         if: needs.changes.outputs.backend == 'true'
         run: node scripts/contract-check.js
