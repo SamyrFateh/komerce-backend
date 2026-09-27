@@ -612,7 +612,7 @@ describe('importCatalog', () => {
 
     expect(result.body.created).toBe(1);
     expect(result.body.errors).toEqual([{ product_name: 'BAD', error: 'normalisation impossible' }]);
-    expect(result.body.pipeline_status).toBe('PARTIAL_BLOCKED');
+    expect(result.body.pipeline_status).toBe('CATALOG_IMPORT_RECORDED');
     expect(result.body.source_certification).toMatchObject({
       input_total: 2,
       certified: 1,
