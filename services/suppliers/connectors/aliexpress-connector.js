@@ -30,6 +30,15 @@ const MAX_PAGE_SIZE = 50;
 const SOURCE_LOCALE = 'en';
 const TARGET_CURRENCY = 'USD';
 const TARGET_LANGUAGE = 'EN';
+const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
+const MIN_REQUEST_TIMEOUT_MS = 100;
+const MAX_REQUEST_TIMEOUT_MS = 120000;
+
+function requestTimeoutMs(env = process.env) {
+  const parsed = Number.parseInt(env?.ALIEXPRESS_API_TIMEOUT_MS, 10);
+  if (!Number.isInteger(parsed)) return DEFAULT_REQUEST_TIMEOUT_MS;
+  return Math.min(MAX_REQUEST_TIMEOUT_MS, Math.max(MIN_REQUEST_TIMEOUT_MS, parsed));
+}
 
 function isConfigured(env = process.env) {
   return Boolean(env?.[APP_KEY_ENV] && env?.[APP_SECRET_ENV] && env?.[SESSION_ENV]);
@@ -126,10 +135,24 @@ function responseKeyFor(method) {
 
 async function invokeTop(method, businessParams, { fetchImpl = fetch, env = process.env, now = new Date() } = {}) {
   const query = buildTopRequest(method, businessParams, { env, now });
-  const response = await fetchImpl(`${BASE_URL}?${query.toString()}`, {
-    method: 'POST',
-    headers: { Accept: 'application/json' },
-  });
+  const timeoutMs = requestTimeoutMs(env);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  let response;
+  try {
+    response = await fetchImpl(`${BASE_URL}?${query.toString()}`, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted || error?.name === 'AbortError') {
+      throw new Error(`[${SUPPLIER_NAME}] ${method} timeout après ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
   const body = await response.json().catch(() => ({}));
   if (!response.ok || body.error_response) {
     const err = body.error_response || body || {};
@@ -481,6 +504,8 @@ module.exports = {
   SESSION_ENV,
   DEFAULT_FEED_NAME,
   MAX_PAGE_SIZE,
+  DEFAULT_REQUEST_TIMEOUT_MS,
+  requestTimeoutMs,
   IS_ACTIVE,
   INACTIVE_REASON,
   isConfigured,
