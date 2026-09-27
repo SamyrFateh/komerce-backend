@@ -153,6 +153,42 @@ describe('importCatalog', () => {
     );
   });
 
+  test('API TEST sans contrat source V2 reste PARTIAL_BLOCKED et UNACCOUNTED', async () => {
+    jest.clearAllMocks();
+    const dispatch = jest.fn().mockResolvedValue({
+      products: [{ supplier_product_id: 'legacy-api-1', product_name: 'Legacy API product' }],
+      invalid: [],
+    });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-api-v1' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        return Promise.resolve({ rows: [{ id: 'candidate-api-v1', data_sources: {}, was_updated: false }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    scanner.scanCandidate.mockResolvedValue(makeScan());
+    shadow.recordCatalogImportObservationsShadow.mockResolvedValue({
+      status: 'recorded',
+      capture_id: 'capture-api-v1',
+      resolution: { status: 'resolved', review_required: 0, deferred_parent: 0 },
+    });
+
+    const result = await importCatalog({
+      supplier_name: 'AliExpress',
+      source_type: 'api',
+      supplier_id: 'aliexpress',
+    }, 1, dispatch);
+
+    expect(result.body.pipeline_status).toBe('PARTIAL_BLOCKED');
+    expect(result.body.source_certification).toMatchObject({
+      ready_for_refinery: 0,
+      certification_blocked: 1,
+      unaccounted: 1,
+      balanced: false,
+    });
+  });
+
   test('API source n annonce une resolution canonique que si le shadow a resolu ses identites', async () => {
     jest.clearAllMocks();
     const dispatch = jest.fn().mockResolvedValue({
