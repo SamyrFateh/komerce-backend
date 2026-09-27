@@ -29,10 +29,10 @@ const config = {
     target_marge_brute_pct: 40,
   },
   categories: {
-    phones: { key: 'phones', default_weight_kg: 0.25, default_margin_pct: 35 },
-    vetements: { key: 'vetements', default_weight_kg: 0.4, default_margin_pct: 45 },
-    maison: { key: 'maison', default_weight_kg: 1.5, default_margin_pct: 40 },
-    autre: { key: 'autre', default_weight_kg: 0.5, default_margin_pct: 40 },
+    phones: { key: 'phones', classification_terms: ['smartphone', 'phone', 'mobile'], default_weight_kg: 0.25, default_margin_pct: 35 },
+    vetements: { key: 'vetements', classification_terms: ['dress', 'shirt', 'clothing'], default_weight_kg: 0.4, default_margin_pct: 45 },
+    maison: { key: 'maison', classification_terms: ['home', 'kitchen'], default_weight_kg: 1.5, default_margin_pct: 40, default_dim_l_cm: 40, default_dim_w_cm: 25, default_dim_h_cm: 20 },
+    autre: { key: 'autre', classification_terms: [], default_weight_kg: 0.5, default_margin_pct: 40 },
   },
 };
 
@@ -65,6 +65,16 @@ describe('supplier-catalog-scanner', () => {
       expect(mapCategory('home kitchen', cats)).toEqual({ key: 'maison', source: 'mapped', confidence: 'medium' });
     });
 
+    it('adopte une nouvelle catégorie configurée sans règle JS supplémentaire', () => {
+      const dynamicCats = [
+        ...cats,
+        { key: 'footwear', label: 'Chaussures', classification_terms: ['sneaker', 'sandals'] },
+      ];
+      expect(mapCategory('trail sneaker breathable', dynamicCats)).toEqual({
+        key: 'footwear', source: 'mapped', confidence: 'medium',
+      });
+    });
+
     it('retourne autre en fallback quand la categorie est inconnue', () => {
       expect(mapCategory('unknown category', cats)).toEqual({ key: 'autre', source: 'default', confidence: 'low' });
       expect(mapCategory(null, cats)).toEqual({ key: 'autre', source: 'default', confidence: 'low' });
@@ -91,7 +101,7 @@ describe('supplier-catalog-scanner', () => {
     });
 
     it('retombe sur un volume categorie si les dimensions sont absentes', () => {
-      expect(estimateVolume(null, 'maison')).toEqual({ value: 0.020, source: 'category', confidence: 'low' });
+      expect(estimateVolume(null, 'maison', cats)).toEqual({ value: 0.020, source: 'category', confidence: 'medium' });
     });
   });
 
