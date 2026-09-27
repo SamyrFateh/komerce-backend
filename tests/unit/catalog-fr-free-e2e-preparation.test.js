@@ -39,6 +39,18 @@ describe('catalog-fr-free-e2e-preparation', () => {
     })).not.toThrow();
   });
 
+  test('can scope free FR preparation to one discovery wave', () => {
+    expect(prep.parseArgs([
+      '--limit=200',
+      '--supplier=AliExpress',
+      '--discovery-wave=incremental-e2e-200-v1',
+    ])).toMatchObject({
+      limit: 200,
+      suppliers: ['AliExpress'],
+      discoveryWave: 'incremental-e2e-200-v1',
+    });
+  });
+
   test('prepares French-facing E2E fields without provider credentials', () => {
     const out = prep.prepareFrenchFields({
       name_source: 'Wireless Phone Charger 2026 Best Seller',
