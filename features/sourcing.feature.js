@@ -129,6 +129,7 @@ module.exports = {
       'services/sourcing-workspace.js',
       'services/sourcing-source-autopilot.js',
       'services/sourcing-certification.js',
+      'services/sourcing-certification-gate-a.js',
     ],
     routes: [
       'routes/sourcing-scanner.js',
@@ -169,6 +170,7 @@ module.exports = {
       'tests/unit/sourcing-workspace.test.js',
       'tests/unit/sourcing-source-autopilot.test.js',
       'tests/unit/sourcing-certification.test.js',
+      'tests/unit/sourcing-certification-gate-a.test.js',
       'tests/unit/sourcing-candidate-actions.test.js',
       'tests/unit/require-sourcing-global-authority.test.js',
       'tests/unit/sourcing-observation-foundation-migration.test.js',
@@ -241,6 +243,7 @@ module.exports = {
       'POST /api/admin/workspaces/sourcing/sources/:sourceRef/deactivate',
     ],
     internalApi: [
+      { fn: 'certifyGateA', file: 'services/sourcing-certification-gate-a.js' },
       { fn: 'upsertCandidateFromCatalogImport', file: 'services/sourcing-candidate-import-service.js' },
       { fn: 'archiveMissingCandidatesFromCatalogImport', file: 'services/sourcing-candidate-import-service.js' },
       { fn: 'recordCatalogImportObservationsShadow', file: 'services/sourcing-observation-shadow-service.js' },
@@ -309,6 +312,8 @@ module.exports = {
     'le runner autopilot ne contient aucune branche fournisseur et n execute que des pulls bornés déclarés par le registry connecteur',
     { statement: 'la certification Sourcing est provider-independent : TEST/PRIORITY produit READY_FOR_REFINERY certifié ; WATCH/AVOID/LOSS reste une issue DEFERRED explicite ; import, quarantaine, rejet et archivage exigent identité, provenance et raison/lien requis',
       test: 'tests/unit/sourcing-certification.test.js' },
+    { statement: 'Gate A SOURCING_CERTIFIED exige les 18 scénarios de torture déterministes, sans réseau ni IA payante, sans corruption, doublon ou perte silencieuse et avec provenance préservée',
+      test: 'tests/unit/sourcing-certification-gate-a.test.js' },
     { statement: 'tout batch Sourcing certifié réconcilie exactement son nombre d entrées avec certified + quarantined + rejected + duplicates + archived + other_terminal ; UNACCOUNTED=0 et OVERFLOW=0',
       test: 'tests/unit/certification-accounting.test.js' },
     'le dashboard Sourcing affiche BROKEN uniquement lorsqu un invariant d intégrité est rompu ; ATTENTION couvre les exceptions opérationnelles bloquées',
