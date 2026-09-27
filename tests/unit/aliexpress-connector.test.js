@@ -229,11 +229,13 @@ describe('aliexpress-connector', () => {
           key: 'electronique',
           default_weight_kg: 1,
           default_margin_pct: 35,
+          classification_terms: { speaker: 10, electronics: 8, audio: 8 },
         },
         autre: {
           key: 'autre',
           default_weight_kg: 0.5,
           default_margin_pct: 40,
+          classification_terms: {},
         },
       },
     };
