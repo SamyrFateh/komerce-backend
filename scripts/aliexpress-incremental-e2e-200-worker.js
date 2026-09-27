@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
  * @komerce-arch
- * @role          aliexpress-incremental-e2e-200-worker-launcher
+ * @role          supplier-catalog-isolated-e2e-worker-launcher
  * @domain        catalog
  * @layer         tooling
  * @criticality   high
  * @inputs        KOMERCE_ALI_E2E_200_WORKER_MODE
- * @outputs       selected isolated +200 campaign action
- * @depends       scripts/aliexpress-wave2-sourcing.js, scripts/aliexpress-incremental-e2e-200.js, scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js
+ * @outputs       selected isolated catalog campaign action, including canonical 700 build
+ * @depends       scripts/aliexpress-wave2-sourcing.js, scripts/aliexpress-incremental-e2e-200.js, scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js, scripts/cj-500-e2e-catalog-sync.js, scripts/catalog-e2e-700-acceptance.js
  * @used-by       railway.ali-e2e-200.json
  * @db-read       delegated
  * @db-write      delegated
