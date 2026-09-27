@@ -141,7 +141,8 @@ async function collectAcceptance(){
       SELECT product_id,COUNT(*) FILTER (WHERE commercial_exposure='ENABLED')::int enabled_markets
         FROM product_market_exposure GROUP BY product_id
     )
-    SELECT sc.supplier_product_id,p.product_ref,p.name,p.description,p.category,p.subcategory,
+    SELECT sc.supplier_product_id,sc.komerce_category,sc.scan_result,
+           p.product_ref,p.name,p.description,p.category,p.subcategory,
            p.price_kmf,p.stock,p.content_source,p.needs_review,p.source_locale,
            p.lifecycle_status,p.is_active,p.is_available,
            COALESCE(media.active_media,0)::int active_media,
@@ -155,6 +156,8 @@ async function collectAcceptance(){
       LEFT JOIN exposure ON exposure.product_id=p.id
      WHERE sc.supplier_name=$1 AND sc.raw_payload #>> '{discovery,wave}'=$2
        AND sc.state='imported_to_catalog'
+       AND COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN') IN ('TEST','PRIORITY')
+       AND sc.komerce_category IS NOT NULL
      ORDER BY p.product_ref`,[SUPPLIER,WAVE_ID]);
   const products=rows.map(row=>{
     const reasons=[];
@@ -165,6 +168,7 @@ async function collectAcceptance(){
     if(Number(row.active_media)<1) reasons.push('media_missing');
     if(Number(row.active_supplier_skus)<1) reasons.push('active_supplier_sku_missing');
     if(Number(row.active_complete_soi_skus)<Number(row.active_supplier_skus)) reasons.push('supplier_order_identity_partial');
+    if(!String(row.komerce_category||'').trim()) reasons.push('candidate_category_missing');
     if(!String(row.category||'').trim()) reasons.push('category_missing');
     if(row.lifecycle_status!=='candidate'||row.is_active===true) reasons.push('not_inactive_candidate');
     if(Number(row.enabled_markets)>0) reasons.push('market_exposure_enabled');
