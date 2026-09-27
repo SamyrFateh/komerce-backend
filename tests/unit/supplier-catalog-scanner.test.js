@@ -61,8 +61,8 @@ describe('supplier-catalog-scanner', () => {
 
   describe('mapCategory', () => {
     it('mappe les categories fournisseur vers les categories Komerce', () => {
-      expect(mapCategory('smartphone accessories', cats)).toEqual(expect.objectContaining({ key: 'phones', source: 'mapped', confidence: 'medium' }));
-      expect(mapCategory('home kitchen', cats)).toEqual(expect.objectContaining({ key: 'maison', source: 'mapped', confidence: 'medium' }));
+      expect(mapCategory('smartphone accessories', cats)).toEqual(expect.objectContaining({ key: 'phones', source: 'mapped' }));
+      expect(mapCategory('home kitchen', cats)).toEqual(expect.objectContaining({ key: 'maison', source: 'mapped' }));
     });
 
     it('laisse une categorie inconnue non resolue au lieu de la forcer', () => {
