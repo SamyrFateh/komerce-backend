@@ -129,7 +129,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
     ? (invalidFromConnector.length / totalFromConnector) * 100
     : 0;
 
-  if (invalidPct > maxInvalidPct) {
+  if (invalidPct > maxInvalidPct && sourceType !== 'api') {
     return {
       status: 400,
       body: {

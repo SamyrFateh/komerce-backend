@@ -148,6 +148,69 @@ test('source ON exécute le pull borné via le registry sans branche fournisseur
   expect(lockClient.release).toHaveBeenCalledTimes(1);
 });
 
+test('erreur fournisseur transitoire est retentée puis peut réussir sans casser la source', async () => {
+  process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES = '2';
+  process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS = '0';
+  mockSourceQueries();
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog
+    .mockResolvedValueOnce({ status: 400, body: { error: 'HTTP 429 Too Many Requests' } })
+    .mockResolvedValueOnce({
+      status: 200,
+      body: {
+        accepted: 2, created: 2, updated: 0, rejected: 0,
+        pipeline_status: 'CANONICAL_RESOLVED',
+        shadow_ingestion: { status: 'recorded' },
+      },
+    });
+
+  const result = await autopilot.runSourceOnce('api:cj', { reason: 'test' });
+
+  expect(mockImportCatalog).toHaveBeenCalledTimes(2);
+  expect(result).toMatchObject({ status: 'ok', accepted: 2, transient_retries: 1 });
+  delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES;
+  delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS;
+});
+
+test('erreur fournisseur transitoire persistante devient retry_pending et non failed critique', async () => {
+  process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES = '2';
+  process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS = '0';
+  mockSourceQueries();
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog.mockResolvedValue({
+    status: 400,
+    body: { error: 'gateway timeout from supplier' },
+  });
+
+  const result = await autopilot.runSourceOnce('api:cj', { reason: 'test' });
+
+  expect(mockImportCatalog).toHaveBeenCalledTimes(3);
+  expect(result).toMatchObject({
+    status: 'retry_pending',
+    code: 'transient_import_retry_pending',
+    transient_retries: 2,
+  });
+  expect(mockQuery.mock.calls.some(([sql, params]) =>
+    String(sql).includes('INSERT INTO sourcing_captures')
+      && params[2] === 'partial'
+      && String(params[4]).includes('retry_pending')
+  )).toBe(true);
+  delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES;
+  delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS;
+});
+
 test('shadow incomplet ne peut jamais etre annonce comme un autopilot ok', async () => {
   mockSourceQueries();
   const lockClient = {

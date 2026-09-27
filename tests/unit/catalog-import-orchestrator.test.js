@@ -194,6 +194,49 @@ describe('importCatalog', () => {
     expect(db.query).not.toHaveBeenCalledWith(expect.stringContaining('INSERT INTO supplier_catalog_imports'), expect.anything());
   });
 
+  test('source API : les invalides sont quarantainés même au-dessus du seuil et les valides continuent', async () => {
+    const product = { supplier_product_id: 'api-good-1', product_name: 'Produit valide' };
+    const dispatch = jest.fn().mockResolvedValue({
+      products: [product],
+      invalid: [
+        { errors: ['media absent'] },
+        { errors: ['prix invalide'] },
+        { errors: ['stock invalide'] },
+      ],
+      unmapped_columns: [],
+    });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-api-quarantine' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        return Promise.resolve({ rows: [{ id: 'cand-api-good-1', data_sources: {}, was_updated: false }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    scanner.scanCandidate.mockResolvedValue(makeScan());
+    shadow.recordCatalogImportObservationsShadow.mockResolvedValue({
+      status: 'recorded',
+      capture_id: 'capture-api-quarantine',
+      resolution: { status: 'resolved', review_required: 0, deferred_parent: 0 },
+    });
+
+    const result = await importCatalog({
+      supplier_name: 'CJdropshipping',
+      source_type: 'api',
+      supplier_id: 'cj',
+    }, 1, dispatch);
+
+    expect(result.status).toBe(200);
+    expect(result.body.accepted).toBe(1);
+    expect(result.body.rejected).toBe(3);
+    expect(result.body.pipeline_status).toBe('PARTIAL_BLOCKED');
+    expect(result.body.reject_reasons).toEqual({
+      'media absent': 1,
+      'prix invalide': 1,
+      'stock invalide': 1,
+    });
+  });
+
   test('sous le seuil (< 30% invalides) → import continue normalement', async () => {
     const product = { supplier_product_id: 'sku-1', product_name: 'Savon' };
     const dispatch = jest.fn().mockResolvedValue({
