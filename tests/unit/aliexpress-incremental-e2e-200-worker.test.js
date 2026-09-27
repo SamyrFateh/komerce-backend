@@ -30,6 +30,14 @@ describe('AliExpress incremental +200 Railway worker launcher', () => {
     expect(worker.commandPlan('catalog-700-local-audit').flat().join(' ')).not.toMatch(/cj-500-e2e-catalog-sync|cj-refinery-commandability|fetchProducts/);
   });
 
+  test('promotes only the reconciled new CJ products from local data', () => {
+    expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-cj-reconcile-promote-local' }))
+      .toBe('catalog-cj-reconcile-promote-local');
+    expect(worker.commandPlan('catalog-cj-reconcile-promote-local')).toEqual([
+      ['scripts/cj-reconcile-current-new-12-promote.js'],
+    ]);
+  });
+
   test('builds the unified 700 dataset in one explicit fail-closed plan', () => {
     expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-700-build' }))
       .toBe('catalog-700-build');

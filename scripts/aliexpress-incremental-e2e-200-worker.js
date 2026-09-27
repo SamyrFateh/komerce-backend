@@ -28,6 +28,7 @@ const MODES = Object.freeze([
   'taxonomy-repair-topup',
   'catalog-700-build',
   'catalog-700-local-audit',
+  'catalog-cj-reconcile-promote-local',
 ]);
 
 function resolveMode(env = process.env) {
@@ -40,6 +41,11 @@ function resolveMode(env = process.env) {
 
 function commandPlan(mode = resolveMode()) {
   if (mode === 'idle') return [];
+  if (mode === 'catalog-cj-reconcile-promote-local') {
+    return [
+      ['scripts/cj-reconcile-current-new-12-promote.js'],
+    ];
+  }
   if (mode === 'catalog-700-local-audit') {
     return [
       ['scripts/real-supplier-1000-stress-staging.js', '--operation=supplier-slice-audit', '--supplier=CJdropshipping', '--limit=500'],
