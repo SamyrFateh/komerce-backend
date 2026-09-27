@@ -89,7 +89,12 @@ describe('AliExpress incremental +200 taxonomy repair', () => {
       },
     ];
 
-    const out = await repair.project(rows, {});
+    const out = await repair.project(rows, {
+      categories: {
+        vetements: { key: 'vetements', is_active: true },
+        cosmetiques: { key: 'cosmetiques', is_active: true },
+      },
+    });
     expect(out.summary.total).toBe(2);
     expect(out.summary.changed).toBe(1);
     expect(out.summary.transitions).toEqual({
@@ -97,58 +102,35 @@ describe('AliExpress incremental +200 taxonomy repair', () => {
       'cosmetiques -> cosmetiques': 1,
     });
     expect(out.summary.scan_decision_drift).toBe(0);
+    expect(out.summary.unresolved_category).toBe(0);
+    expect(out.summary.invalid_category).toBe(0);
   });
 
-  test('validates projection dynamically against active configured categories', () => {
-    const config = {
-      categories: {
-        apparel: { key: 'apparel', is_active: true },
-        beauty: { key: 'beauty', is_active: true },
-        inactive: { key: 'inactive', is_active: false },
-      },
+  test('accepts any configured distribution but refuses unresolved, invalid, or decision drift', () => {
+    const safe = {
+      total: 200,
+      scan_decision_drift: 0,
+      unresolved_category: 0,
+      invalid_category: 0,
+      after: { arbitrary_a: 73, arbitrary_b: 127 },
     };
-
-    const resolved = Array.from({ length: 199 }, (_, i) => ({
-      product_ref: `KPR-${i + 1}`,
-      new_category: i % 2 ? 'apparel' : 'beauty',
-      new_decision: 'TEST',
-      normalized: { data_sources: { category: 'mapped' } },
-    }));
-    resolved.push({
-      product_ref: 'KPR-200',
-      new_category: null,
-      new_decision: 'WATCH',
-      normalized: { data_sources: { category: 'default' } },
-    });
-
-    expect(repair.assertSafeProjection({
-      summary: { total: 200 },
-      details: resolved,
-    }, config)).toEqual({
-      resolved: 199,
-      unresolved: 1,
-      active_category_keys: ['apparel', 'beauty'],
-    });
+    expect(() => repair.assertSafeProjection({ summary: safe })).not.toThrow();
 
     expect(() => repair.assertSafeProjection({
-      summary: { total: 200 },
-      details: [{
-        product_ref: 'KPR-X',
-        new_category: 'inactive',
-        new_decision: 'TEST',
-        normalized: { data_sources: { category: 'mapped' } },
-      }],
-    }, config)).toThrow(/INACTIVE_OR_UNKNOWN_CATEGORY/);
+      summary: { ...safe, unresolved_category: 1, after: { arbitrary_a: 72, arbitrary_b: 127, UNRESOLVED: 1 } },
+    })).toThrow(/UNRESOLVED_CATEGORY/);
 
     expect(() => repair.assertSafeProjection({
-      summary: { total: 200 },
-      details: [{
-        product_ref: 'KPR-Y',
-        new_category: null,
-        new_decision: 'TEST',
-        normalized: { data_sources: { category: 'default' } },
-      }],
-    }, config)).toThrow(/UNSAFE_UNRESOLVED/);
+      summary: { ...safe, invalid_category: 1 },
+    })).toThrow(/INVALID_CATEGORY/);
+
+    expect(() => repair.assertSafeProjection({
+      summary: { ...safe, scan_decision_drift: 1 },
+    })).toThrow(/DECISION_DRIFT/);
+
+    expect(() => repair.assertSafeProjection({
+      summary: { ...safe, after: { arbitrary_a: 72, arbitrary_b: 127 } },
+    })).toThrow(/AFTER_TOTAL_MISMATCH/);
   });
 
   test('proves dynamic customs category configuration is actually loaded', () => {

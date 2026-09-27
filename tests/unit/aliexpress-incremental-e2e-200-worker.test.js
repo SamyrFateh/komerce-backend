@@ -30,6 +30,40 @@ describe('AliExpress incremental +200 Railway worker launcher', () => {
     expect(worker.commandPlan('catalog-700-local-audit').flat().join(' ')).not.toMatch(/cj-500-e2e-catalog-sync|cj-refinery-commandability|fetchProducts/);
   });
 
+  test('audits historical CJ WATCH rows without supplier calls', () => {
+    expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-712-watch-audit' }))
+      .toBe('catalog-712-watch-audit');
+    expect(worker.commandPlan('catalog-712-watch-audit')).toEqual([
+      ['scripts/catalog-cj-certified-500-watch-audit.js'],
+    ]);
+  });
+
+  test('materializes and accepts the reconciled 712 catalog in one plan', () => {
+    expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-712-materialize' }))
+      .toBe('catalog-712-materialize');
+    expect(worker.commandPlan('catalog-712-materialize')).toEqual([
+      ['scripts/catalog-e2e-taxonomy-bootstrap.js'],
+      ['scripts/catalog-cj-certified-500-materialize.js'],
+      ['scripts/catalog-e2e-712-acceptance.js', '--output=artifacts/catalog-e2e-712/final-acceptance.json'],
+    ]);
+  });
+
+  test('can rerun the 712 gate without supplier calls', () => {
+    expect(worker.commandPlan('catalog-712-accept')).toEqual([
+      ['scripts/catalog-e2e-712-acceptance.js', '--output=artifacts/catalog-e2e-712/final-acceptance.json'],
+    ]);
+  });
+
+  test('finishes the reconciled CJ new12 in one explicit plan', () => {
+    expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-cj-new12-finish' }))
+      .toBe('catalog-cj-new12-finish');
+    expect(worker.commandPlan('catalog-cj-new12-finish')).toEqual([
+      ['scripts/catalog-fr-free-e2e-preparation.js', '--limit=12', '--supplier=CJdropshipping', '--output=artifacts/catalog-e2e-700/cj-new12-fr.json'],
+      ['scripts/cj-refinery-commandability-continuation.js', '--limit=12', '--chunk=12', '--output=artifacts/catalog-e2e-700/cj-new12-commandability.json'],
+      ['scripts/catalog-refinery-final-acceptance.js', '--mode=final', '--expected=12', '--output=artifacts/catalog-e2e-700/cj-new12-final.json'],
+    ]);
+  });
+
   test('promotes only the reconciled new CJ products from local data', () => {
     expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'catalog-cj-reconcile-promote-local' }))
       .toBe('catalog-cj-reconcile-promote-local');

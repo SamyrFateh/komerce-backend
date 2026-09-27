@@ -6,8 +6,8 @@
  * @layer         tooling
  * @criticality   high
  * @inputs        KOMERCE_ALI_E2E_200_WORKER_MODE
- * @outputs       selected isolated catalog campaign action, including canonical 700 build
- * @depends       scripts/aliexpress-wave2-sourcing.js, scripts/aliexpress-incremental-e2e-200.js, scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js, scripts/cj-500-e2e-catalog-sync.js, scripts/catalog-e2e-700-acceptance.js
+ * @outputs       selected isolated catalog campaign action, including canonical 700 legacy and 712 reconciled build
+ * @depends       scripts/aliexpress-wave2-sourcing.js, scripts/aliexpress-incremental-e2e-200.js, scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js, scripts/cj-500-e2e-catalog-sync.js, scripts/catalog-e2e-700-acceptance.js, scripts/catalog-e2e-taxonomy-bootstrap.js, scripts/catalog-cj-certified-500-materialize.js, scripts/catalog-e2e-712-acceptance.js
  * @used-by       railway.ali-e2e-200.json
  * @db-read       delegated
  * @db-write      delegated
@@ -29,6 +29,10 @@ const MODES = Object.freeze([
   'catalog-700-build',
   'catalog-700-local-audit',
   'catalog-cj-reconcile-promote-local',
+  'catalog-cj-new12-finish',
+  'catalog-712-materialize',
+  'catalog-712-accept',
+  'catalog-712-watch-audit',
 ]);
 
 function resolveMode(env = process.env) {
@@ -41,6 +45,30 @@ function resolveMode(env = process.env) {
 
 function commandPlan(mode = resolveMode()) {
   if (mode === 'idle') return [];
+  if (mode === 'catalog-712-watch-audit') {
+    return [
+      ['scripts/catalog-cj-certified-500-watch-audit.js'],
+    ];
+  }
+  if (mode === 'catalog-712-materialize') {
+    return [
+      ['scripts/catalog-e2e-taxonomy-bootstrap.js'],
+      ['scripts/catalog-cj-certified-500-materialize.js'],
+      ['scripts/catalog-e2e-712-acceptance.js', '--output=artifacts/catalog-e2e-712/final-acceptance.json'],
+    ];
+  }
+  if (mode === 'catalog-712-accept') {
+    return [
+      ['scripts/catalog-e2e-712-acceptance.js', '--output=artifacts/catalog-e2e-712/final-acceptance.json'],
+    ];
+  }
+  if (mode === 'catalog-cj-new12-finish') {
+    return [
+      ['scripts/catalog-fr-free-e2e-preparation.js', '--limit=12', '--supplier=CJdropshipping', '--output=artifacts/catalog-e2e-700/cj-new12-fr.json'],
+      ['scripts/cj-refinery-commandability-continuation.js', '--limit=12', '--chunk=12', '--output=artifacts/catalog-e2e-700/cj-new12-commandability.json'],
+      ['scripts/catalog-refinery-final-acceptance.js', '--mode=final', '--expected=12', '--output=artifacts/catalog-e2e-700/cj-new12-final.json'],
+    ];
+  }
   if (mode === 'catalog-cj-reconcile-promote-local') {
     return [
       ['scripts/cj-reconcile-current-new-12-promote.js'],

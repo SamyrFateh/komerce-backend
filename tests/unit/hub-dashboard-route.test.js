@@ -53,6 +53,29 @@ jest.mock('../../middleware/require-market-delegated-role', () => ({
   attachMarketDelegatedRoleFor: () => (req, res, next) => next(),
 }));
 
+// Hors périmètre de ce test suite : attachAuthorizedMarketsForOperator est
+// déjà couvert par ses propres tests (middleware/require-market-scope). Pour
+// hub.supervise, l'autorité réelle est requireMarketDelegatedCapability, pas
+// req.authorizedMarkets — ce no-op isole le test de cette dépendance.
+jest.mock('../../middleware/require-market-scope', () => ({
+  attachAuthorizedMarketsForOperator: (req, res, next) => next(),
+}));
+
+// hub.supervise (audit manager-capabilities) : requireMarketDelegatedCapability
+// remplace ensureMarketOperatorCanSupervise pour un market_operator — on
+// simule directement le verdict de capability plutôt que de rejouer
+// resolveAuthorization/market-delegation-service (déjà testé ailleurs).
+let mockHubSuperviseGranted = true;
+jest.mock('../../middleware/require-market-delegated-capability', () => ({
+  requireMarketDelegatedCapability: (capability) => (req, res, next) => {
+    if (mockHubSuperviseGranted) {
+      req.marketDelegatedCapability = { capability, market_id: 'market-cm', market_code: req.params.marketCode };
+      return next();
+    }
+    return res.status(403).json({ error: `Capability ${capability} requise.`, code: 'MARKET_CAPABILITY_REQUIRED' });
+  },
+}));
+
 jest.mock('../../services/hub-dashboard-queries', () => ({
   getDashboardKPIs: jest.fn(),
   getQueue: jest.fn(),
@@ -89,6 +112,7 @@ describe('routes/hub-dashboard', () => {
     mockDbQuery.mockReset();
     mockGetClient.mockReset();
     mockUser = { id: 'op-1', role: 'agent_hub', full_name: 'Opérateur Un' };
+    mockHubSuperviseGranted = true;
     transitionOrderStatus.mockResolvedValue({ success: true });
   });
 
@@ -584,6 +608,76 @@ describe('routes/hub-dashboard', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.comment).toEqual({ id: 'c1', text: 'RAS' });
+    });
+  });
+
+  // Audit manager-capabilities : admin/agent_hub gardent leur bypass rôle
+  // (déjà couvert plus haut) — seul un market_operator doit désormais prouver
+  // la capability hub.supervise, résolue à partir du marché de la commande.
+  describe('hub.supervise (market_operator)', () => {
+    const ORDER_WITH_MARKET = { id: 'order-1', reference: 'CMD-1', market_id: 'market-cm', market_code: 'CM' };
+
+    beforeEach(() => {
+      mockUser = { id: 'mo-1', role: 'market_operator', full_name: 'Manager CM' };
+    });
+
+    test('incident : refusé sans hub.supervise même avec une commande valide', async () => {
+      mockHubSuperviseGranted = false;
+      mockDbQuery.mockResolvedValueOnce({ rows: [ORDER_WITH_MARKET] }); // resolveOrderMarket
+      const res = await request(buildApp())
+        .post('/api/hub-dashboard/orders/order-1/incident')
+        .send({ type: 'retard', description: 'colis en retard' });
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    });
+
+    test('incident : autorisé avec hub.supervise, marché résolu avant la capability', async () => {
+      mockDbQuery
+        .mockResolvedValueOnce({ rows: [ORDER_WITH_MARKET] }) // resolveOrderMarket
+        .mockResolvedValueOnce({ rows: [{ id: 'inc1', type: 'retard' }] })
+        .mockResolvedValueOnce({ rows: [] });
+      const res = await request(buildApp())
+        .post('/api/hub-dashboard/orders/order-1/incident')
+        .send({ type: 'retard', description: 'colis en retard' });
+      expect(res.status).toBe(201);
+      expect(res.body.incident).toEqual({ id: 'inc1', type: 'retard' });
+    });
+
+    test('incident : le corps invalide reste rejeté en 400 avant toute requête DB (ordre préservé)', async () => {
+      const res = await request(buildApp())
+        .post('/api/hub-dashboard/orders/order-1/incident')
+        .send({ type: 'retard' }); // description manquante
+      expect(res.status).toBe(400);
+      expect(mockDbQuery).not.toHaveBeenCalled();
+    });
+
+    test('escalate : refusé sans hub.supervise', async () => {
+      mockHubSuperviseGranted = false;
+      mockDbQuery.mockResolvedValueOnce({ rows: [ORDER_WITH_MARKET] });
+      const res = await request(buildApp())
+        .post('/api/hub-dashboard/orders/order-1/escalate')
+        .send({ reason: 'stock manquant' });
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    });
+
+    test('comment : refusé sans hub.supervise', async () => {
+      mockHubSuperviseGranted = false;
+      mockDbQuery.mockResolvedValueOnce({ rows: [ORDER_WITH_MARKET] });
+      const res = await request(buildApp())
+        .post('/api/hub-dashboard/orders/order-1/comment')
+        .send({ content: 'RAS' });
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    });
+
+    test('incident : 404 si commande introuvable, résolu avant la capability', async () => {
+      mockHubSuperviseGranted = false; // même sans la capability, le 404 doit primer
+      mockDbQuery.mockResolvedValueOnce({ rows: [] }); // resolveOrderMarket ne trouve rien
+      const res = await request(buildApp())
+        .post('/api/hub-dashboard/orders/order-1/incident')
+        .send({ type: 'retard', description: 'colis en retard' });
+      expect(res.status).toBe(404);
     });
   });
 

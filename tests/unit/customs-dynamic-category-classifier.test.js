@@ -4,6 +4,7 @@
 
 const {
   classifySupplierProduct,
+  supplierSignals,
   scoreCategory,
 } = require('../../services/customs-dynamic-category-classifier');
 
@@ -84,6 +85,57 @@ describe('dynamic customs supplier category classifier', () => {
       confidence: 'low',
       reason: 'no_configured_term_match',
     }));
+  });
+
+  test('supplier identity outranks a polluted discovery keyword', () => {
+    const categories = [
+      {
+        key: 'hardware_dynamic',
+        label: 'Hardware',
+        classification_terms: { motorcycle: 7, footpeg: 10, bicycle: 9 },
+        is_active: true,
+      },
+      {
+        key: 'fashion_dynamic',
+        label: 'Fashion',
+        classification_terms: { blouse: 7, dress: 7 },
+        is_active: true,
+      },
+    ];
+
+    const result = classifySupplierProduct({
+      product_name: 'Aluminum Motorcycle Part Universal Footpeg for bicycle',
+      raw_payload: {
+        discovery: {
+          keyword: 'linen women blouse',
+          target_subcategory: 'Femme',
+        },
+      },
+    }, categories);
+
+    expect(result).toEqual(expect.objectContaining({
+      key: 'hardware_dynamic',
+      source: 'mapped',
+    }));
+    expect(result.evidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({ signal: 'product_name', term: 'footpeg' }),
+    ]));
+  });
+
+  test('uses discovery intent only as a secondary signal', () => {
+    const signals = supplierSignals({
+      product_name: 'Real Product',
+      supplier_category: 'Supplier Category',
+      description: 'Description',
+      raw_payload: { discovery: { keyword: 'Search Intent', target_subcategory: 'Target' } },
+    });
+    expect(signals.map(({ name, multiplier }) => [name, multiplier])).toEqual([
+      ['product_name', 6],
+      ['supplier_category', 4],
+      ['description', 2],
+      ['keyword', 2],
+      ['target_subcategory', 1],
+    ]);
   });
 
   test('configured weighted terms dominate weak label metadata', () => {
