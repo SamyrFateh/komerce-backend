@@ -168,11 +168,34 @@ async function applyProjection(projection){
   }
 }
 
+function summarizeTaxonomyConfig(config = {}) {
+  const categories = Object.values(config.categories || {}).map(category => ({
+    key: category.key,
+    is_active: category.is_active !== false,
+    classification_terms_count:
+      category.classification_terms && typeof category.classification_terms === 'object'
+        ? Object.keys(category.classification_terms).length
+        : 0,
+    default_weight_kg: category.default_weight_kg ?? null,
+  }));
+  return {
+    categories,
+    configured_active: categories.filter(
+      category => category.is_active && category.classification_terms_count > 0
+    ).length,
+  };
+}
+
 async function main(options=parseArgs()){
   assertRuntime();
   const rows=await loadRows();
   if(rows.length!==TARGET) throw new Error(`REFUS: vague attendue ${TARGET}, trouvée ${rows.length}`);
   const config=await pricingEngine.loadGlobalConfig();
+  const taxonomyConfig = summarizeTaxonomyConfig(config);
+  console.log(`[aliexpress-taxonomy-200] CONFIG ${JSON.stringify(taxonomyConfig)}`);
+  if (!taxonomyConfig.configured_active) {
+    throw new Error('TAXONOMY_CLASSIFICATION_CONFIG_MISSING: aucune customs_categories active configurée');
+  }
   const projection=await project(rows,config);
   console.log(`[aliexpress-taxonomy-200] AUDIT ${JSON.stringify(projection.summary)}`);
   if(options.operation==='apply'){
@@ -196,4 +219,4 @@ if(require.main===module){
   }).finally(()=>db.pool.end());
 }
 
-module.exports={SUPPLIER,WAVE_ID,TARGET,FLAG,EXPECTED_AFTER,assertRuntime,parseArgs,loadRows,project,assertSafeProjection,applyProjection,main};
+module.exports={SUPPLIER,WAVE_ID,TARGET,FLAG,EXPECTED_AFTER,assertRuntime,parseArgs,loadRows,project,assertSafeProjection,applyProjection,summarizeTaxonomyConfig,main};

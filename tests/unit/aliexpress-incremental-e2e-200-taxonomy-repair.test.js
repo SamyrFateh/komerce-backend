@@ -113,6 +113,51 @@ describe('AliExpress incremental +200 taxonomy repair', () => {
     })).toThrow(/DECISION_DRIFT/);
   });
 
+  test('proves dynamic customs category configuration is actually loaded', () => {
+    expect(repair.summarizeTaxonomyConfig({
+      categories: {
+        configured: {
+          key: 'configured',
+          is_active: true,
+          classification_terms: { crossbody: 10, handbag: 8 },
+          default_weight_kg: 0.4,
+        },
+        inactive: {
+          key: 'inactive',
+          is_active: false,
+          classification_terms: { ignored: 10 },
+        },
+        empty: {
+          key: 'empty',
+          is_active: true,
+          classification_terms: {},
+        },
+      },
+    })).toEqual({
+      categories: [
+        {
+          key: 'configured',
+          is_active: true,
+          classification_terms_count: 2,
+          default_weight_kg: 0.4,
+        },
+        {
+          key: 'inactive',
+          is_active: false,
+          classification_terms_count: 1,
+          default_weight_kg: null,
+        },
+        {
+          key: 'empty',
+          is_active: true,
+          classification_terms_count: 0,
+          default_weight_kg: null,
+        },
+      ],
+      configured_active: 1,
+    });
+  });
+
   test('accepts only audit or apply operations', () => {
     expect(repair.parseArgs(['--operation=audit'])).toEqual({ operation: 'audit' });
     expect(repair.parseArgs(['--operation=apply'])).toEqual({ operation: 'apply' });
