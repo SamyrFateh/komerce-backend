@@ -120,6 +120,12 @@ if (!hasIntegrationEnv) {
     const st = result.body.statistics;
     expect(st.rejected).toBe(1);
     expect(st.total).toBe(3);
+    expect(result.body.source_certification).toMatchObject({
+      input_total: 3,
+      unaccounted: 0,
+      overflow: 0,
+      balanced: true,
+    });
 
     const batchRow = await db.query('SELECT * FROM supplier_catalog_imports WHERE id = $1', [result.body.import_id]);
     expect(batchRow.rows[0].source_type).toBe('json');
@@ -157,6 +163,12 @@ if (!hasIntegrationEnv) {
     expect(result.status).toBe(200);
     importedIds.push(result.body.import_id);
     expect(result.body.status).toMatch(/BLOCKED_INVALID_THRESHOLD|COMPLETED/);
+    expect(result.body.source_certification).toMatchObject({
+      input_total: 2,
+      rejected: 2,
+      unaccounted: 0,
+      balanced: true,
+    });
 
     const batchRow = await db.query('SELECT status, ready_count, rejected_count FROM supplier_catalog_imports WHERE id = $1', [result.body.import_id]);
     expect(batchRow.rows[0]).toBeTruthy(); // le batch existe : pas de 400 pré-INSERT
