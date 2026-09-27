@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * @komerce-arch
  * @role          sourcing-certification-gate-a
@@ -17,6 +15,8 @@
  * @impact-areas  sourcing, catalog, ci
  * @version       2026-09-v1
  */
+
+'use strict';
 
 const GATE_A_VERSION = 'sourcing-certified-gate-a-v1';
 
