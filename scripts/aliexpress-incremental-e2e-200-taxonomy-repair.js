@@ -79,7 +79,12 @@ function bumpTransition(map,from,to){ const k=`${from||'UNRESOLVED'} -> ${to||'U
 
 async function project(rows,config){
   const transitions={},before={},after={},details=[];
-  let changed=0, scanDecisionDrift=0;
+  const activeCategoryKeys = new Set(
+    Object.values(config?.categories || {})
+      .filter(category => category && category.is_active !== false)
+      .map(category => category.key)
+  );
+  let changed=0, scanDecisionDrift=0, unresolvedCategory=0, invalidCategory=0;
   for(const row of rows){
     const contract=row.normalized_source_contract;
     if(!contract||String(contract.schema_version||'')!=='2') throw new Error(`normalized_v2_missing:${row.supplier_product_id}`);
@@ -93,6 +98,8 @@ async function project(rows,config){
     bump(before,oldCategory); bump(after,newCategory); bumpTransition(transitions,oldCategory,newCategory);
     if(oldCategory!==newCategory) changed+=1;
     if(oldDecision!==newDecision) scanDecisionDrift+=1;
+    if(!newCategory || normalized.data_sources?.category === 'default') unresolvedCategory+=1;
+    if(newCategory && !activeCategoryKeys.has(newCategory)) invalidCategory+=1;
     details.push({
       candidate_id:row.candidate_id,
       product_id:row.product_id,
@@ -107,42 +114,42 @@ async function project(rows,config){
       scan,
     });
   }
-  return {summary:{total:rows.length,changed,unchanged:rows.length-changed,scan_decision_drift:scanDecisionDrift,before,after,transitions},details};
+  return {
+    summary:{
+      total:rows.length,
+      changed,
+      unchanged:rows.length-changed,
+      scan_decision_drift:scanDecisionDrift,
+      unresolved_category:unresolvedCategory,
+      invalid_category:invalidCategory,
+      before,
+      after,
+      transitions,
+    },
+    details,
+  };
 }
 
-function assertSafeProjection(projection, config = {}) {
-  const summary = projection?.summary || {};
-  if (summary.total !== TARGET) {
-    throw new Error(`TAXONOMY_REPAIR_UNSAFE_TOTAL:${summary.total}/${TARGET}`);
+function assertSafeProjection(projection){
+  const summary=projection?.summary||{};
+  if(summary.total!==TARGET) throw new Error(`TAXONOMY_REPAIR_UNSAFE_TOTAL:${summary.total}/${TARGET}`);
+  if(summary.scan_decision_drift!==0) {
+    throw new Error(`TAXONOMY_REPAIR_DECISION_DRIFT:${summary.scan_decision_drift}`);
   }
-
-  const activeKeys = new Set(
-    Object.values(config.categories || {})
-      .filter(category => category && category.is_active !== false)
-      .map(category => category.key)
-  );
-
-  const unresolved = [];
-  for (const item of projection.details || []) {
-    const key = item.new_category;
-    if (key) {
-      if (!activeKeys.has(key)) {
-        throw new Error(`TAXONOMY_REPAIR_INACTIVE_OR_UNKNOWN_CATEGORY:${key}`);
-      }
-      continue;
-    }
-
-    if (item.new_decision !== 'WATCH' || item.normalized?.data_sources?.category !== 'default') {
-      throw new Error(`TAXONOMY_REPAIR_UNSAFE_UNRESOLVED:${item.product_ref || item.supplier_product_id}`);
-    }
-    unresolved.push(item);
+  if(Number(summary.unresolved_category||0)!==0) {
+    throw new Error(`TAXONOMY_REPAIR_UNRESOLVED_CATEGORY:${summary.unresolved_category}`);
   }
-
-  return {
-    resolved: Number(summary.total || 0) - unresolved.length,
-    unresolved: unresolved.length,
-    active_category_keys: [...activeKeys].sort(),
-  };
+  if(Number(summary.invalid_category||0)!==0) {
+    throw new Error(`TAXONOMY_REPAIR_INVALID_CATEGORY:${summary.invalid_category}`);
+  }
+  const after=summary.after||{};
+  if(Object.prototype.hasOwnProperty.call(after,'UNRESOLVED')) {
+    throw new Error(`TAXONOMY_REPAIR_UNRESOLVED_DISTRIBUTION:${JSON.stringify(after)}`);
+  }
+  const afterTotal=Object.values(after).reduce((sum,value)=>sum+Number(value||0),0);
+  if(afterTotal!==summary.total) {
+    throw new Error(`TAXONOMY_REPAIR_AFTER_TOTAL_MISMATCH:${afterTotal}/${summary.total}`);
+  }
 }
 
 async function applyProjection(projection, config){
@@ -235,7 +242,7 @@ async function main(options=parseArgs()){
   const projection=await project(rows,config);
   console.log(`[aliexpress-taxonomy-200] AUDIT ${JSON.stringify(projection.summary)}`);
   if(options.operation==='apply'){
-    const safety = await applyProjection(projection, config);
+    const safety = await applyProjection(projection);
     const verifyLoaded=await loadRows();
     const verifyScope=selectRepairCohort(verifyLoaded);
     const verify=await project(verifyScope.cohort,config);
@@ -243,7 +250,11 @@ async function main(options=parseArgs()){
       x=>x.product_id&&x.new_category&&x.old_product_category!==x.new_category
     ).length;
     const unresolved=verify.details.filter(x=>!x.new_category).length;
-    const accepted=verify.summary.changed===0&&productMismatch===0;
+    const accepted=verify.summary.changed===0
+      && verify.summary.scan_decision_drift===0
+      && verify.summary.unresolved_category===0
+      && verify.summary.invalid_category===0
+      && productMismatch===0;
     const result={accepted,product_category_mismatch:productMismatch,unresolved,safety,...verify.summary};
     console.log(`[aliexpress-taxonomy-200] APPLY ${JSON.stringify(result)}`);
     if(!accepted) throw new Error(`TAXONOMY_REPAIR_INCOMPLETE:${JSON.stringify(result)}`);
