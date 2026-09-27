@@ -24,6 +24,19 @@ describe('AliExpress incremental +200 Railway worker launcher', () => {
     ]);
   });
 
+  test('taxonomy repair top-up mode repairs, replenishes, promotes, prepares and accepts in one run', () => {
+    expect(worker.resolveMode({ KOMERCE_ALI_E2E_200_WORKER_MODE: 'taxonomy-repair-topup' }))
+      .toBe('taxonomy-repair-topup');
+    expect(worker.commandPlan('taxonomy-repair-topup')).toEqual([
+      ['scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js', '--operation=apply'],
+      ['scripts/aliexpress-wave2-sourcing.js'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=refinery-audit'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=promote'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=prepare-fr'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=accept', '--output=artifacts/aliexpress-incremental-e2e-200/final-acceptance.json'],
+    ]);
+  });
+
   test('taxonomy apply mode repairs then re-audits and re-accepts the same 200', () => {
     expect(worker.commandPlan('taxonomy-apply-and-accept')).toEqual([
       ['scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js', '--operation=apply'],
