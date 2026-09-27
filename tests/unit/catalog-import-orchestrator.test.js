@@ -230,6 +230,13 @@ describe('importCatalog', () => {
     expect(result.body.accepted).toBe(1);
     expect(result.body.rejected).toBe(3);
     expect(result.body.pipeline_status).toBe('PARTIAL_BLOCKED');
+    expect(result.body.source_certification).toMatchObject({
+      input_total: 4,
+      certified: 1,
+      rejected: 3,
+      unaccounted: 0,
+      balanced: true,
+    });
     expect(result.body.reject_reasons).toEqual({
       'media absent': 1,
       'prix invalide': 1,
@@ -287,6 +294,13 @@ describe('importCatalog', () => {
     expect(result.body.rejected).toBe(1);
     expect(result.body.reject_reasons).toEqual({ 'devise absente': 1 });
     expect(result.body.unmapped_columns).toEqual(['couleur_preferee']);
+    expect(result.body.source_certification).toMatchObject({
+      input_total: 2,
+      certified: 1,
+      rejected: 1,
+      unaccounted: 0,
+      balanced: true,
+    });
   });
 
   // ── DSC-E1 : upsert idempotent ──────────────────────────────────────────
@@ -461,6 +475,13 @@ describe('importCatalog', () => {
 
     expect(result.body.created).toBe(1);
     expect(result.body.errors).toEqual([{ product_name: 'BAD', error: 'normalisation impossible' }]);
+    expect(result.body.pipeline_status).toBe('PARTIAL_BLOCKED');
+    expect(result.body.source_certification).toMatchObject({
+      input_total: 2,
+      certified: 1,
+      unaccounted: 1,
+      balanced: false,
+    });
   });
 
   // ── DSC-E3 : archivage full-snapshot ─────────────────────────────────────
