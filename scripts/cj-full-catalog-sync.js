@@ -206,9 +206,17 @@ async function syncCategory(category, config, budget, seenIds, deps = {}) {
       }
     }
 
+    // De-duplicate both against prior pages/runs and inside the current
+    // supplier page. Do not mutate seenIds until the import succeeds.
+    const pageIds = new Set();
     const cleanNew = (fetched.products || [])
       .filter(basicCleanProduct)
-      .filter((product) => !seenIds.has(product.supplier_product_id));
+      .filter((product) => {
+        const id = product.supplier_product_id;
+        if (seenIds.has(id) || pageIds.has(id)) return false;
+        pageIds.add(id);
+        return true;
+      });
     const subset = cleanNew.slice(0, remaining);
     const imported = await importSubset({
       syncKey: config.syncKey,
