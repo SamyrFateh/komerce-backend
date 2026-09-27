@@ -72,7 +72,9 @@ async function resolveExpectedCjIds({ env = process.env, executor = null } = {})
 
   const authority = `github-actions-run-${CERTIFIED_RUN_ID}`;
   const { rows } = await executor.query(
-    `SELECT supplier_product_id
+    `SELECT DISTINCT ON (raw_payload #>> '{discovery,certified_product_ref}')
+            supplier_product_id,
+            raw_payload #>> '{discovery,certified_product_ref}' AS certified_product_ref
        FROM sourcing_candidates
       WHERE supplier_name='CJdropshipping'
         AND state='imported_to_catalog'
@@ -80,13 +82,40 @@ async function resolveExpectedCjIds({ env = process.env, executor = null } = {})
         AND raw_payload #>> '{discovery,source}'='certified-artifact+exact-product-query'
         AND raw_payload #>> '{discovery,semantic_relevance,authority}'=$2
         AND raw_payload #>> '{discovery,semantic_relevance,evidence}'='historical_final_acceptance_500_of_500'
-      ORDER BY supplier_product_id`,
+        AND raw_payload #>> '{discovery,certified_product_ref}' ~ '^KPR-[0-9]{6}
+}
+
+module.exports = {
+  CJ_HISTORICAL_TARGET,
+  CJ_NEW_TARGET,
+  CJ_TARGET,
+  ALI_TARGET,
+  TOTAL_TARGET,
+  DATASET_ID,
+  assembleExpectedCjIds,
+  buildExpectedCjIds,
+  resolveExpectedCjIds,
+};
+
+      ORDER BY raw_payload #>> '{discovery,certified_product_ref}',
+               updated_at DESC NULLS LAST,
+               id DESC`,
     [String(CERTIFIED_RUN_ID), authority]
   );
 
+  const expectedRefs = Array.from(
+    { length: CJ_HISTORICAL_TARGET },
+    (_, index) => `KPR-${String(index + 1).padStart(6, '0')}`
+  );
+  const actualRefs = rows.map(row => String(row.certified_product_ref || ''));
+  if (actualRefs.length !== CJ_HISTORICAL_TARGET
+      || actualRefs.some((ref, index) => ref !== expectedRefs[index])) {
+    throw new Error(`CATALOG_712_PERSISTED_CERTIFIED_REFS_INVALID:${actualRefs.length}/${CJ_HISTORICAL_TARGET}`);
+  }
+
   return Object.freeze({
     ...assembleExpectedCjIds(rows.map(row => row.supplier_product_id)),
-    authority: 'persisted_certified_run_id',
+    authority: 'persisted_certified_product_ref',
     certified_run_id: CERTIFIED_RUN_ID,
   });
 }
