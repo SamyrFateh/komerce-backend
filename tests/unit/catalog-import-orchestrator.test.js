@@ -304,6 +304,83 @@ describe('importCatalog', () => {
     });
   });
 
+  test('exclusion absolue est une issue rejetée explicite et équilibrée', async () => {
+    jest.clearAllMocks();
+    const product = makeV2Product({
+      supplier_product_id: 'excluded-1',
+      product_name: 'Produit interdit',
+    });
+    const dispatch = jest.fn().mockResolvedValue({ products: [product], invalid: [] });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-excluded' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        return Promise.resolve({ rows: [{ id: 'cand-excluded', data_sources: {}, was_updated: false }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    eligibility.checkEligibility.mockReturnValue({
+      layer: 'absolute',
+      label: 'Produit interdit',
+      match: { type: 'keyword', value: 'forbidden' },
+      legal_note: 'Blocage test',
+    });
+
+    const result = await importCatalog(
+      { supplier_name: 'Acme', source_type: 'manual' },
+      'user-1',
+      dispatch
+    );
+
+    expect(scanner.scanCandidate).not.toHaveBeenCalled();
+    expect(result.body.pipeline_status).toBe('CATALOG_IMPORT_RECORDED');
+    expect(result.body.source_certification).toMatchObject({
+      ready_for_refinery: 0,
+      deferred: 0,
+      rejected: 1,
+      unaccounted: 0,
+      balanced: true,
+    });
+  });
+
+  test('WATCH est une issue DEFERRED explicite, comptée mais non certifiée', async () => {
+    jest.clearAllMocks();
+    const product = makeV2Product({
+      supplier_product_id: 'watch-1',
+      product_name: 'Produit à surveiller',
+    });
+    const dispatch = jest.fn().mockResolvedValue({ products: [product], invalid: [] });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-watch' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        return Promise.resolve({ rows: [{ id: 'cand-watch', data_sources: {}, was_updated: false }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    eligibility.checkEligibility.mockReturnValue({ layer: null, eligible: true });
+    scanner.scanCandidate.mockResolvedValue(makeScan({
+      sourcing_decision: 'WATCH',
+      recommended_action: 'Attendre',
+    }));
+
+    const result = await importCatalog(
+      { supplier_name: 'Acme', source_type: 'manual' },
+      'user-1',
+      dispatch
+    );
+
+    expect(result.body.pipeline_status).toBe('CATALOG_IMPORT_RECORDED');
+    expect(result.body.source_certification).toMatchObject({
+      ready_for_refinery: 0,
+      deferred: 1,
+      certified: 0,
+      other_terminal: 1,
+      unaccounted: 0,
+      balanced: true,
+    });
+  });
+
   test('sous le seuil (< 30% invalides) → import continue normalement', async () => {
     const product = { supplier_product_id: 'sku-1', product_name: 'Savon' };
     const dispatch = jest.fn().mockResolvedValue({
