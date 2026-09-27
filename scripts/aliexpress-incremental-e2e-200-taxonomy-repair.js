@@ -180,7 +180,7 @@ async function main(options=parseArgs()){
     const verifyRows=await loadRows();
     const verify=await project(verifyRows,config);
     const productMismatch=verify.details.filter(x=>x.product_id&&x.old_product_category!==x.new_category).length;
-    const accepted=verify.summary.changed===0&&productMismatch===0;
+    const accepted=verify.summary.changed===0&&verify.summary.scan_decision_drift===0&&productMismatch===0;
     const result={accepted,product_category_mismatch:productMismatch,...verify.summary};
     console.log(`[aliexpress-taxonomy-200] APPLY ${JSON.stringify(result)}`);
     if(!accepted) throw new Error(`TAXONOMY_REPAIR_INCOMPLETE:${JSON.stringify(result)}`);
