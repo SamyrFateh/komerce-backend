@@ -52,10 +52,20 @@ const mockAllPricingCapabilities = new Set([
   'market.observation.record', 'structure.event.record',
 ]);
 
+// LOT B (audit pricing.read/pricing.simulate) : fait produit réel — la
+// lecture du workspace et la simulation sont ouvertes à TOUT membre du
+// marché (viewer comme manager), contrairement aux mutations qui restent
+// manager-only. mockPricingReadGranted permet un test négatif de révocation
+// indépendant de mockScopeRole (retrait de la capability sans changement de
+// rôle), preuve que c'est bien la capability qui fait autorité.
+let mockPricingReadGranted = true;
+const mockReadCapabilities = new Set(['pricing.read', 'pricing.simulate']);
+
 jest.mock('../../services/market-delegation-service', () => ({
   resolveAuthorization: jest.fn(async (_executor, { marketCode, requiredCapability }) => {
-    const granted = mockGrantedCapabilities
-      || (mockScopeRole === 'manager' ? mockAllPricingCapabilities : new Set());
+    const granted = mockReadCapabilities.has(requiredCapability)
+      ? (mockPricingReadGranted ? mockReadCapabilities : new Set())
+      : (mockGrantedCapabilities || (mockScopeRole === 'manager' ? mockAllPricingCapabilities : new Set()));
     if (!granted.has(requiredCapability)) {
       const error = new Error(`Capability ${requiredCapability} requise.`);
       error.code = 'MARKET_CAPABILITY_REQUIRED';
@@ -147,6 +157,7 @@ beforeEach(() => {
   mockCentralPricing = false;
   mockScopeRole = 'manager';
   mockGrantedCapabilities = null;
+  mockPricingReadGranted = true;
   db.query.mockImplementation(async (_sql, params) => ({ rows: [{ id: params[0] === 'CM' ? 'market-cm' : 'market-cg', code: params[0], name: params[0], currency: 'XAF' }] }));
 });
 
@@ -342,6 +353,59 @@ test('market_operator ne peut jamais atteindre le pricing global', async () => {
 // Preuve directe du fix MARKET-DELEGATION-P0B (Gap 1) : c'est la capability,
 // jamais le rôle, qui ouvre ou ferme l'action — cas 8 (retrait) et 9 (ajout)
 // du mandat, sur pricing.decide (décision locale) et pricing.activate.
+// Preuve directe du fix MARKET-DELEGATION LOT B : pricing.read et
+// pricing.simulate n'avaient encore aucun consommateur réel avant ce lot —
+// révoquer la capability seule (sans toucher au rôle scope) doit fermer la
+// lecture et la simulation, et un manager ne bypass jamais ce guard.
+describe('pricing.read / pricing.simulate priment sur le rôle scope (LOT B)', () => {
+  test('révocation de pricing.read ferme la lecture du workspace même pour un manager avec scope actif', async () => {
+    mockPricingReadGranted = false;
+    const res = await request(app()).get('/api/admin/workspaces/pricing/market/CM');
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    expect(mockWorkspace.buildMarketWorkspace).not.toHaveBeenCalled();
+  });
+
+  test('révocation de pricing.read ferme aussi decision, decision-policy/history, commercial-prices, corridor et charges', async () => {
+    mockPricingReadGranted = false;
+    const endpoints = [
+      '/api/admin/workspaces/pricing/market/CM/decision',
+      '/api/admin/workspaces/pricing/market/CM/decision-policy/history',
+      '/api/admin/workspaces/pricing/market/CM/commercial-prices',
+      '/api/admin/workspaces/pricing/market/CM/corridor?product_ref=KPR-1',
+      '/api/admin/workspaces/pricing/market/CM/charges',
+      '/api/admin/workspaces/pricing/market/CM/structure-events',
+    ];
+    for (const endpoint of endpoints) {
+      const res = await request(app()).get(endpoint);
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    }
+  });
+
+  test('viewer avec pricing.read (défaut) simule un impact sans mutation', async () => {
+    mockScopeRole = 'viewer';
+    const res = await request(app())
+      .post('/api/admin/workspaces/pricing/market/CM/simulate-impact')
+      .send({ product_ref: 'KPR-1', proposed_price: 12000 });
+    expect(res.status).toBe(200);
+    expect(mockWorkspace.simulateImpact).toHaveBeenCalledWith(
+      expect.objectContaining({ product_ref: 'KPR-1' }),
+      expect.objectContaining({ id: 'market-cm', code: 'CM' })
+    );
+  });
+
+  test('révocation de pricing.simulate ferme la simulation même pour un manager', async () => {
+    mockPricingReadGranted = false;
+    const res = await request(app())
+      .post('/api/admin/workspaces/pricing/market/CM/simulate-impact')
+      .send({ product_ref: 'KPR-1', proposed_price: 12000 });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    expect(mockWorkspace.simulateImpact).not.toHaveBeenCalled();
+  });
+});
+
 describe('pricing.decide / pricing.activate priment sur le rôle market_operator (retrait/ajout)', () => {
   test('retrait de pricing.decide : le rôle market_operator seul ne suffit plus à décider un prix local', async () => {
     mockGrantedCapabilities = new Set(); // rôle market_operator conservé, mais aucune capability

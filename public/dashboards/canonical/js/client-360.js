@@ -23,7 +23,26 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (root) root.KomerceCanonicalClient360 = api;
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createClient360() {
-  const ENDPOINT_PREFIX = '/api/admin/entities/clients/';
+  const GLOBAL_ENDPOINT_PREFIX = '/api/admin/entities/clients/';
+  // GAP 3 / LOT A (A4) : même bascule que Client Index (A3) — le endpoint
+  // marché legacy est remplacé par le endpoint DELEGATION
+  // (/api/market-delegation/markets/:marketCode/clients/:phone, gated
+  // requireMarketDelegatedCapability('client.read')) — capability is the
+  // authority, not role. Pas de sélecteur marché navigateur sur cette page :
+  // le marché vient de adminContext.access.defaultMarket via
+  // resolveMarketView(adminContext) (aucun requestedMarket saisi ici).
+  const MARKET_ENDPOINT_PREFIX = '/api/market-delegation/markets/';
+  const MARKET_ENDPOINT_SUFFIX = '/clients/';
+
+  function endpointForContext(phone, adminContext, contextContract) {
+    if (!contextContract || typeof contextContract.resolveMarketView !== 'function') {
+      throw new Error('canonical_client_360_admin_context_contract_missing');
+    }
+    const view = contextContract.resolveMarketView(adminContext);
+    return view.mode === 'global'
+      ? GLOBAL_ENDPOINT_PREFIX + encodeURIComponent(phone)
+      : MARKET_ENDPOINT_PREFIX + encodeURIComponent(view.marketCode) + MARKET_ENDPOINT_SUFFIX + encodeURIComponent(phone);
+  }
 
   function phoneFromPath(pathname) {
     const match = String(pathname || '').match(/^\/admin\/clients\/([^/]+)$/);
@@ -293,6 +312,8 @@
     const ui = options.ui;
     const fetchFn = options.fetch;
     const phone = options.phone || phoneFromPath(options.pathname || '');
+    const adminContext = options.adminContext;
+    const contextContract = options.contextContract;
 
     if (!rootNode) throw new Error('canonical_client_360_root_missing');
     if (!ui || !ui.UIState || !ui.DataTable || !ui.Section || !ui.MetricStrip || !ui.AlertPanel) {
@@ -302,7 +323,7 @@
 
     ui.UIState.render(rootNode, 'loading', 'Chargement du client…');
     try {
-      const endpoint = ENDPOINT_PREFIX + encodeURIComponent(phone);
+      const endpoint = endpointForContext(phone, adminContext, contextContract);
       const payload = await jsonRequest(fetchFn, endpoint);
       renderPayload(rootNode, ui, doc, payload);
       return Object.freeze({ payload, endpoint, phone });
@@ -313,7 +334,9 @@
   }
 
   return Object.freeze({
-    ENDPOINT_PREFIX,
+    GLOBAL_ENDPOINT_PREFIX,
+    MARKET_ENDPOINT_PREFIX,
+    endpointForContext,
     phoneFromPath,
     formatNumber,
     formatKmf,

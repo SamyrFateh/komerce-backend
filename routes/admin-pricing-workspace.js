@@ -140,12 +140,22 @@ async function marketAccessProjection(req) {
 // Réservé aux actions où l'autorité centrale a toujours eu un sens (coûts,
 // politique de décision, faits de structure) — cf. requireMarketPricingManager
 // ci-avant, remplacé ici à l'identique côté bypass central.
-function requirePricingCapability(capability) {
-  const capabilityGuard = requireMarketDelegatedCapability(capability);
+function requirePricingCapability(capability, options = {}) {
+  const capabilityGuard = requireMarketDelegatedCapability(capability, options);
   return (req, res, next) => {
     if (req.pricingGlobalAuthority) return next();
     return capabilityGuard(req, res, next);
   };
+}
+
+// MARKET-DELEGATION LOT B (audit pricing.read/pricing.simulate) : toutes les
+// routes GET du workspace + la simulation étaient ouvertes à quiconque avait
+// déjà passé le bundle legacy (requireMarketPricingAccess), jamais gardées
+// par la capability exacte — pricing.read/pricing.simulate n'avaient encore
+// aucun consommateur réel. requires_audit=false au registre pour ces deux
+// capabilities (lecture), contrairement aux mutations ci-dessus.
+function requirePricingReadCapability(capability) {
+  return requirePricingCapability(capability, { audit: false });
 }
 
 // La stratégie commerciale locale (observations, brouillon/activation/reset de
@@ -197,7 +207,7 @@ router.use(
   requireMarketPricingAccess
 );
 
-router.get('/market/:marketCode', async (req, res, next) => {
+router.get('/market/:marketCode', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     const projection = await workspace.buildMarketWorkspace({ market: req.workspaceMarket });
@@ -226,7 +236,7 @@ router.get('/market/:marketCode', async (req, res, next) => {
 
 // Surface de décision : aucune date n'est fournie par le navigateur. La fenêtre
 // est dérivée côté serveur depuis la politique courante du marché.
-router.get('/market/:marketCode/decision', async (req, res, next) => {
+router.get('/market/:marketCode/decision', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     const rawPeriod = typeof req.query.period === 'string' ? req.query.period.trim() : '';
@@ -240,7 +250,7 @@ router.get('/market/:marketCode/decision', async (req, res, next) => {
   } catch (error) { handleError(error, res, next); }
 });
 
-router.get('/market/:marketCode/decision-policy/history', async (req, res, next) => {
+router.get('/market/:marketCode/decision-policy/history', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     res.json({
@@ -267,12 +277,12 @@ router.post('/market/:marketCode/decision-policy', requirePricingCapability('pri
 
 // La simulation n'écrit rien : viewer et manager peuvent explorer un scénario
 // tant qu'ils possèdent l'accès serveur au marché.
-router.post('/market/:marketCode/simulate-impact', async (req, res, next) => {
+router.post('/market/:marketCode/simulate-impact', requirePricingReadCapability('pricing.simulate'), async (req, res, next) => {
   try { sendAction(res, 'simulate_impact', await workspace.simulateImpact(req.body || {}, req.workspaceMarket)); }
   catch (error) { handleError(error, res, next); }
 });
 
-router.get('/market/:marketCode/commercial-prices', async (req, res, next) => {
+router.get('/market/:marketCode/commercial-prices', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     res.json(await marketCommercialPrice.listMarketPriceDrafts(req.workspaceMarket));
@@ -281,7 +291,7 @@ router.get('/market/:marketCode/commercial-prices', async (req, res, next) => {
 
 // Corridor de prix observé : la vérité locale est distincte de la référence
 // concurrence globale. Aucun fallback global n'est promu silencieusement.
-router.get('/market/:marketCode/corridor', async (req, res, next) => {
+router.get('/market/:marketCode/corridor', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     res.json(await pricingMarketCorridor.buildMarketCorridor({
@@ -397,7 +407,7 @@ router.post('/market/:marketCode/cost-components/:key/reset', requirePricingCapa
 // resolveRequestedMarket + attachAuthorizedMarkets ci-dessus). scope_kind est
 // forcé à MARKET_DIRECT ici — un market_operator ne peut jamais écrire un
 // fait GROUP (mutualisé), qui affecte tous les marchés.
-router.get('/market/:marketCode/charges', async (req, res, next) => {
+router.get('/market/:marketCode/charges', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     const { rows } = await db.query(
@@ -410,7 +420,7 @@ router.get('/market/:marketCode/charges', async (req, res, next) => {
   } catch (error) { handleError(error, res, next); }
 });
 
-router.get('/market/:marketCode/structure-events', async (req, res, next) => {
+router.get('/market/:marketCode/structure-events', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     const events = await pricingPeriodStructure.listStructureCostEvents({

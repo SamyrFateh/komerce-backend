@@ -476,11 +476,13 @@
     });
   }
 
-  function renderClient360(root, user) {
+  function renderClient360(root, user, adminContext) {
     if (!global.KomerceCanonicalClient360) throw new Error('canonical_client_360_module_missing');
     return global.KomerceCanonicalClient360.mount({
       root,
       user,
+      adminContext,
+      contextContract: global.KomerceAdminContext,
       pathname: global.location.pathname,
       document: global.document,
       fetch: global.fetch.bind(global),
@@ -654,7 +656,7 @@
     if (surface === SURFACES.SETTINGS) return renderSettingsWorkspace(root, user);
     if (surface === SURFACES.ORDER_360) return renderOrder360(root, user);
     if (surface === SURFACES.CLIENT_INDEX) return renderClientIndexShell(root, user, adminContext);
-    if (surface === SURFACES.CLIENT_360) return renderClient360(root, user);
+    if (surface === SURFACES.CLIENT_360) return renderClient360(root, user, adminContext);
     if (surface === SURFACES.PRODUCT_360) return renderProduct360(root, user);
     if (surface === SURFACES.OPERATIONS_WORKSPACE) return renderOperationsWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.SHIPPING_CUSTOMS_WORKSPACE) return renderShippingCustomsWorkspaceShell(root, user, adminContext);

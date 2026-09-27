@@ -74,6 +74,24 @@ test('renderReady monte Client 360 sans sélecteur marché navigateur', async ()
   expect(env.client360Mount).toHaveBeenCalledWith(expect.objectContaining({
     root: env.root,
     user,
+    adminContext: context,
+    contextContract: global.window.KomerceAdminContext,
     pathname: '/admin/clients/%2B2691234567',
+  }));
+});
+
+test('renderReady transmet le contexte market_operator à Client 360 (A4 — pas de fallback admin global)', async () => {
+  const env = loadApp('/admin/clients/%2B2691234567');
+  const user = { id: 'op-1', role: 'market_operator' };
+  const context = {
+    actor: user,
+    access: { mode: 'market', allowedMarkets: ['KM'], defaultMarket: 'KM', capabilities: ['client.read'] },
+  };
+
+  await env.api.renderReady(env.root, user, context);
+
+  expect(env.client360Mount).toHaveBeenCalledWith(expect.objectContaining({
+    adminContext: context,
+    contextContract: global.window.KomerceAdminContext,
   }));
 });
