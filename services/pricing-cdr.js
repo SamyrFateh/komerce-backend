@@ -113,11 +113,25 @@ async function loadGlobalConfig(options = {}) {
     }
   }
 
-  const [fcRes, catsRes, provRes, chargesRes] = await Promise.all([
+  const [fcRes, catsRes, provRes, chargesRes, affinityRes] = await Promise.all([
     db.query('SELECT * FROM finance_config WHERE id = 1'),
     db.query('SELECT * FROM customs_categories WHERE is_active = TRUE'),
     db.query('SELECT * FROM risk_provisions WHERE is_active = TRUE'),
     db.query('SELECT * FROM charges WHERE is_active = TRUE'),
+    db.query(`
+      SELECT bs.category_key,
+             bs.key AS subcategory_key,
+             bs.customs_category_key
+        FROM boutique_subcategories bs
+        JOIN boutique_categories bc
+          ON bc.key=bs.category_key
+         AND bc.is_active=TRUE
+        JOIN customs_categories cc
+          ON cc.key=bs.customs_category_key
+         AND cc.is_active=TRUE
+       WHERE bs.is_active=TRUE
+         AND bs.customs_category_key IS NOT NULL
+    `),
   ]);
 
   const categories = {};
@@ -135,6 +149,7 @@ async function loadGlobalConfig(options = {}) {
   return {
     finance: fcRes.rows[0] || {},
     categories,
+    boutique_customs_affinities: affinityRes.rows,
     components,
     components_source: componentsSource,
     provisions: provRes.rows,
