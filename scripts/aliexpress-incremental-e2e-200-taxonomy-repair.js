@@ -219,4 +219,4 @@ if(require.main===module){
   }).finally(()=>db.pool.end());
 }
 
-module.exports={SUPPLIER,WAVE_ID,TARGET,FLAG,EXPECTED_AFTER,assertRuntime,parseArgs,loadRows,project,assertSafeProjection,applyProjection,main};
+module.exports={SUPPLIER,WAVE_ID,TARGET,FLAG,EXPECTED_AFTER,assertRuntime,parseArgs,loadRows,project,assertSafeProjection,applyProjection,summarizeTaxonomyConfig,main};
