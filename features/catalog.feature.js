@@ -59,6 +59,7 @@ module.exports = {
       'dataset E2E unifié 700 historique : 200 AliExpress validés + 500 CJ semantic-positive, cohabitant dans une base Railway isolée explicitement gardée, sans exposition marché ni publication automatique',
       'dataset E2E réconcilié 712 : 200 AliExpress + 500 CJ historiques certifiés + 12 CJ nouveaux uniques, matérialisés par identité fournisseur exacte, taxonomie boutique dynamique active, SKU/SOI complets et zéro exposition marché',
       'chaque sous-catégorie boutique commerciale active déclare une affinité douanière administrable ; le produit fournisseur réel garde priorité et l affinité ne sert qu en fallback de proximité pour éviter les catégories Komerce nulles sur un produit accepté',
+      'un dataset E2E certifié peut être transféré vers le catalogue réel uniquement par replay des contrats fournisseur V2 via les autorités canoniques import/scan/promotion ; les identités déjà présentes sont laissées intactes et aucune exposition marché n est créée automatiquement',
       'product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services',
       'migration 206 : snapshot de compatibilité produit x marché, reproduction exacte de publicCatalogVisibilitySql() croisée avec chaque marché actif — cutover, pas un all x all aveugle',
       'services/catalog-public-view.js::publicCatalogVisibilitySql(alias, { marketCodeParam }) : le chemin de lecture storefront consulte désormais product_market_exposure quand un marché est fourni ; sans marché, comportement historique inchangé à l’identique',
@@ -135,6 +136,8 @@ module.exports = {
       'scripts/catalog-cj-certified-500-watch-audit.js',
       'scripts/catalog-cj-certified-500-resolve-watch.js',
       'scripts/catalog-e2e-712-acceptance.js',
+      'scripts/catalog-712-transfer.js',
+      'scripts/catalog-712-transfer-import.js',
     ],
     services: [
       // MISSION 1 (KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE) — décideur
@@ -364,6 +367,7 @@ module.exports = {
       'tests/unit/catalog-cj-certified-500-resolve-watch.test.js',
       'tests/unit/catalog-cj-certified-500-materialize.test.js',
       'tests/unit/catalog-e2e-712-acceptance.test.js',
+      'tests/unit/catalog-712-transfer.test.js',
       'tests/unit/aliexpress-native-sku-identity.test.js',
       'tests/unit/aliexpress-promote-authority-regression.test.js',
       'tests/unit/aliexpress-promote-drafts-staging.test.js',
