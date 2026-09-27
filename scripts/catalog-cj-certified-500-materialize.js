@@ -7,10 +7,13 @@
  * @criticality   high
  * @inputs        certified CJ 500 supplier-id snapshot, exact CJ detail API, isolated Railway E2E DB
  * @outputs       500 historical CJ products materialized as inactive commandable catalog drafts
- * @depends       db.js, cj-connector, catalog-import-orchestrator, sourcing-candidate-actions, catalog-promotion, catalog-overrides, e2e-catalog-500-plan
+ * @depends       db.js, services/suppliers/connectors/cj-connector.js, services/suppliers/catalog-import-orchestrator.js, services/sourcing-candidate-actions.js, services/catalog-promotion.js, services/catalog-overrides.js, scripts/catalog-fr-free-e2e-preparation.js, scripts/aliexpress-incremental-e2e-200.js, services/suppliers/e2e-isolated-runtime.js, services/suppliers/e2e-catalog-500-plan.js, scripts/cj-reconcile-current-new-12-promote.js
  * @used-by       ali-e2e-200-worker catalog-712-materialize mode
  * @db-read       sourcing_candidates, products, product_skus, catalog_media, product_market_exposure, boutique_categories, boutique_subcategories
- * @db-write-via  canonical catalog import/promotion/override authorities only
+ * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates, sourcing_candidate_events
+ * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events, products
+ * @db-write-via:catalog-promotion catalog_media, product_variants, product_skus, product_sku_media
+ * @db-write-via:catalog-overrides catalog_field_overrides, products
  * @db-txn        canonical owners
  * @doctrine      certified_identity_restore, exact_detail_only, no_discovery, no_auto_publish, dynamic_taxonomy_fail_closed
  * @impact-areas  catalog, sourcing, supplier-import, staging-e2e
