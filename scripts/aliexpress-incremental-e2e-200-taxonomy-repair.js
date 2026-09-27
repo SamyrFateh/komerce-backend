@@ -67,21 +67,36 @@ function bump(map,key){ const k=key||'UNRESOLVED'; map[k]=(map[k]||0)+1; }
 function bumpTransition(map,from,to){ const k=`${from||'UNRESOLVED'} -> ${to||'UNRESOLVED'}`; map[k]=(map[k]||0)+1; }
 
 async function project(rows,config){
-  const transitions={},before={},after={},details=[];
-  let changed=0, scanDecisionDrift=0;
+  const transitions={},before={},after={},expected={},provenance={},details=[];
+  const activeCategories=Object.values(config?.categories||{});
+  let changed=0, scanDecisionDrift=0, categoryMismatch=0, unresolvedProvenance=0;
   for(const row of rows){
     const contract=row.normalized_source_contract;
     if(!contract||String(contract.schema_version||'')!=='2') throw new Error(`normalized_v2_missing:${row.supplier_product_id}`);
     const sourceProduct={...JSON.parse(JSON.stringify(contract)),raw_payload:JSON.parse(JSON.stringify(row.raw_payload||{}))};
+    const expectedMap=scanner.mapProductCategory(sourceProduct,activeCategories);
+    const expectedCategory=expectedMap?.key||null;
+    const discovery=sourceProduct.raw_payload?.discovery||{};
+    const provenanceKey=[
+      discovery.segment_id||null,
+      discovery.target_category||null,
+      discovery.target_subcategory||null,
+    ].filter(Boolean).join(' | ')||'UNRESOLVED';
     const normalized=await scanner.normalizeCandidate(sourceProduct,{config});
     const scan=await scanner.scanCandidate(normalized,{config});
     const oldCategory=row.old_candidate_category||null;
     const newCategory=normalized.komerce_category||null;
     const oldDecision=String(row.old_scan_result?.sourcing_decision||'UNKNOWN').toUpperCase();
     const newDecision=String(scan.sourcing_decision||'UNKNOWN').toUpperCase();
-    bump(before,oldCategory); bump(after,newCategory); bumpTransition(transitions,oldCategory,newCategory);
+    bump(before,oldCategory);
+    bump(after,newCategory);
+    bump(expected,expectedCategory);
+    bump(provenance,`${provenanceKey} -> ${expectedCategory||'UNRESOLVED'}`);
+    bumpTransition(transitions,oldCategory,newCategory);
     if(oldCategory!==newCategory) changed+=1;
     if(oldDecision!==newDecision) scanDecisionDrift+=1;
+    if(!expectedCategory||expectedMap?.source==='default') unresolvedProvenance+=1;
+    if(newCategory!==expectedCategory) categoryMismatch+=1;
     details.push({
       candidate_id:row.candidate_id,
       product_id:row.product_id,
@@ -90,20 +105,37 @@ async function project(rows,config){
       old_category:oldCategory,
       old_product_category:row.old_product_category||null,
       new_category:newCategory,
+      expected_category:expectedCategory,
+      category_mapping_source:expectedMap?.source||'default',
+      discovery_provenance:provenanceKey,
       old_decision:oldDecision,
       new_decision:newDecision,
       normalized,
       scan,
     });
   }
-  return {summary:{total:rows.length,changed,unchanged:rows.length-changed,scan_decision_drift:scanDecisionDrift,before,after,transitions},details};
+  return {
+    summary:{
+      total:rows.length,
+      changed,
+      unchanged:rows.length-changed,
+      scan_decision_drift:scanDecisionDrift,
+      category_mismatch:categoryMismatch,
+      unresolved_provenance:unresolvedProvenance,
+      before,
+      expected,
+      after,
+      provenance,
+      transitions,
+    },
+    details,
+  };
 }
 
-const EXPECTED_AFTER = Object.freeze({
-  vetements: 117,
-  enfants: 60,
-  cosmetiques: 23,
-});
+function sameDistribution(actual={},expected={}){
+  const keys=[...new Set([...Object.keys(actual||{}),...Object.keys(expected||{})])].sort();
+  return keys.every(key=>Number(actual?.[key]||0)===Number(expected?.[key]||0));
+}
 
 function assertSafeProjection(projection){
   const summary=projection?.summary||{};
@@ -111,12 +143,18 @@ function assertSafeProjection(projection){
   if(summary.scan_decision_drift!==0) {
     throw new Error(`TAXONOMY_REPAIR_DECISION_DRIFT:${summary.scan_decision_drift}`);
   }
-  const after=summary.after||{};
-  const keys=Object.keys(after).sort();
-  const expectedKeys=Object.keys(EXPECTED_AFTER).sort();
-  if(JSON.stringify(keys)!==JSON.stringify(expectedKeys)
-      || expectedKeys.some(key=>Number(after[key]||0)!==EXPECTED_AFTER[key])) {
-    throw new Error(`TAXONOMY_REPAIR_UNEXPECTED_DISTRIBUTION:${JSON.stringify(after)}`);
+  if(summary.unresolved_provenance!==0) {
+    throw new Error(`TAXONOMY_REPAIR_UNRESOLVED_PROVENANCE:${summary.unresolved_provenance}`);
+  }
+  if(summary.category_mismatch!==0) {
+    throw new Error(`TAXONOMY_REPAIR_CATEGORY_MISMATCH:${summary.category_mismatch}`);
+  }
+  const expectedTotal=Object.values(summary.expected||{}).reduce((sum,value)=>sum+Number(value||0),0);
+  if(expectedTotal!==summary.total) {
+    throw new Error(`TAXONOMY_REPAIR_EXPECTED_TOTAL_MISMATCH:${expectedTotal}/${summary.total}`);
+  }
+  if(!sameDistribution(summary.after||{},summary.expected||{})) {
+    throw new Error(`TAXONOMY_REPAIR_UNEXPECTED_DISTRIBUTION:${JSON.stringify({expected:summary.expected,after:summary.after})}`);
   }
 }
 
@@ -196,4 +234,4 @@ if(require.main===module){
   }).finally(()=>db.pool.end());
 }
 
-module.exports={SUPPLIER,WAVE_ID,TARGET,FLAG,EXPECTED_AFTER,assertRuntime,parseArgs,loadRows,project,assertSafeProjection,applyProjection,main};
+module.exports={SUPPLIER,WAVE_ID,TARGET,FLAG,assertRuntime,parseArgs,loadRows,project,sameDistribution,assertSafeProjection,applyProjection,main};
