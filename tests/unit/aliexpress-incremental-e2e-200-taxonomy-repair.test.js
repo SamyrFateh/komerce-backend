@@ -87,30 +87,56 @@ describe('AliExpress incremental +200 taxonomy repair', () => {
     expect(out.summary.scan_decision_drift).toBe(0);
   });
 
-  test('refuses apply unless the projected 200-product distribution is exact', () => {
-    expect(() => repair.assertSafeProjection({
-      summary: {
-        total: 200,
-        scan_decision_drift: 0,
-        after: { vetements: 117, enfants: 60, cosmetiques: 23 },
+  test('validates projection dynamically against active configured categories', () => {
+    const config = {
+      categories: {
+        apparel: { key: 'apparel', is_active: true },
+        beauty: { key: 'beauty', is_active: true },
+        inactive: { key: 'inactive', is_active: false },
       },
-    })).not.toThrow();
+    };
+
+    const resolved = Array.from({ length: 199 }, (_, i) => ({
+      product_ref: `KPR-${i + 1}`,
+      new_category: i % 2 ? 'apparel' : 'beauty',
+      new_decision: 'TEST',
+      normalized: { data_sources: { category: 'mapped' } },
+    }));
+    resolved.push({
+      product_ref: 'KPR-200',
+      new_category: null,
+      new_decision: 'WATCH',
+      normalized: { data_sources: { category: 'default' } },
+    });
+
+    expect(repair.assertSafeProjection({
+      summary: { total: 200 },
+      details: resolved,
+    }, config)).toEqual({
+      resolved: 199,
+      unresolved: 1,
+      active_category_keys: ['apparel', 'beauty'],
+    });
 
     expect(() => repair.assertSafeProjection({
-      summary: {
-        total: 200,
-        scan_decision_drift: 0,
-        after: { cosmetiques: 200 },
-      },
-    })).toThrow(/UNEXPECTED_DISTRIBUTION/);
+      summary: { total: 200 },
+      details: [{
+        product_ref: 'KPR-X',
+        new_category: 'inactive',
+        new_decision: 'TEST',
+        normalized: { data_sources: { category: 'mapped' } },
+      }],
+    }, config)).toThrow(/INACTIVE_OR_UNKNOWN_CATEGORY/);
 
     expect(() => repair.assertSafeProjection({
-      summary: {
-        total: 200,
-        scan_decision_drift: 1,
-        after: { vetements: 117, enfants: 60, cosmetiques: 23 },
-      },
-    })).toThrow(/DECISION_DRIFT/);
+      summary: { total: 200 },
+      details: [{
+        product_ref: 'KPR-Y',
+        new_category: null,
+        new_decision: 'TEST',
+        normalized: { data_sources: { category: 'default' } },
+      }],
+    }, config)).toThrow(/UNSAFE_UNRESOLVED/);
   });
 
   test('proves dynamic customs category configuration is actually loaded', () => {

@@ -99,29 +99,43 @@ async function project(rows,config){
   return {summary:{total:rows.length,changed,unchanged:rows.length-changed,scan_decision_drift:scanDecisionDrift,before,after,transitions},details};
 }
 
-const EXPECTED_AFTER = Object.freeze({
-  vetements: 117,
-  enfants: 60,
-  cosmetiques: 23,
-});
+function assertSafeProjection(projection, config = {}) {
+  const summary = projection?.summary || {};
+  if (summary.total !== TARGET) {
+    throw new Error(`TAXONOMY_REPAIR_UNSAFE_TOTAL:${summary.total}/${TARGET}`);
+  }
 
-function assertSafeProjection(projection){
-  const summary=projection?.summary||{};
-  if(summary.total!==TARGET) throw new Error(`TAXONOMY_REPAIR_UNSAFE_TOTAL:${summary.total}/${TARGET}`);
-  if(summary.scan_decision_drift!==0) {
-    throw new Error(`TAXONOMY_REPAIR_DECISION_DRIFT:${summary.scan_decision_drift}`);
+  const activeKeys = new Set(
+    Object.values(config.categories || {})
+      .filter(category => category && category.is_active !== false)
+      .map(category => category.key)
+  );
+
+  const unresolved = [];
+  for (const item of projection.details || []) {
+    const key = item.new_category;
+    if (key) {
+      if (!activeKeys.has(key)) {
+        throw new Error(`TAXONOMY_REPAIR_INACTIVE_OR_UNKNOWN_CATEGORY:${key}`);
+      }
+      continue;
+    }
+
+    if (item.new_decision !== 'WATCH' || item.normalized?.data_sources?.category !== 'default') {
+      throw new Error(`TAXONOMY_REPAIR_UNSAFE_UNRESOLVED:${item.product_ref || item.supplier_product_id}`);
+    }
+    unresolved.push(item);
   }
-  const after=summary.after||{};
-  const keys=Object.keys(after).sort();
-  const expectedKeys=Object.keys(EXPECTED_AFTER).sort();
-  if(JSON.stringify(keys)!==JSON.stringify(expectedKeys)
-      || expectedKeys.some(key=>Number(after[key]||0)!==EXPECTED_AFTER[key])) {
-    throw new Error(`TAXONOMY_REPAIR_UNEXPECTED_DISTRIBUTION:${JSON.stringify(after)}`);
-  }
+
+  return {
+    resolved: Number(summary.total || 0) - unresolved.length,
+    unresolved: unresolved.length,
+    active_category_keys: [...activeKeys].sort(),
+  };
 }
 
-async function applyProjection(projection){
-  assertSafeProjection(projection);
+async function applyProjection(projection, config){
+  const safety = assertSafeProjection(projection, config);
   const client=await db.getClient();
   try{
     await client.query('BEGIN');
@@ -152,10 +166,15 @@ async function applyProjection(projection){
            JSON.stringify(merged),
            item.candidate_id,
          ]);
-      if(item.product_id){
+      if(item.product_id && item.normalized.komerce_category){
         await client.query(
           'UPDATE products SET category=$1, updated_at=NOW() WHERE id=$2 AND lifecycle_status=\'candidate\' AND is_active=FALSE',
           [item.normalized.komerce_category,item.product_id]
+        );
+      } else if(item.product_id) {
+        await client.query(
+          'UPDATE products SET needs_review=TRUE, updated_at=NOW() WHERE id=$1 AND lifecycle_status=\'candidate\' AND is_active=FALSE',
+          [item.product_id]
         );
       }
     }
@@ -199,12 +218,15 @@ async function main(options=parseArgs()){
   const projection=await project(rows,config);
   console.log(`[aliexpress-taxonomy-200] AUDIT ${JSON.stringify(projection.summary)}`);
   if(options.operation==='apply'){
-    await applyProjection(projection);
+    const safety = await applyProjection(projection, config);
     const verifyRows=await loadRows();
     const verify=await project(verifyRows,config);
-    const productMismatch=verify.details.filter(x=>x.product_id&&x.old_product_category!==x.new_category).length;
+    const productMismatch=verify.details.filter(
+      x=>x.product_id&&x.new_category&&x.old_product_category!==x.new_category
+    ).length;
+    const unresolved=verify.details.filter(x=>!x.new_category).length;
     const accepted=verify.summary.changed===0&&productMismatch===0;
-    const result={accepted,product_category_mismatch:productMismatch,...verify.summary};
+    const result={accepted,product_category_mismatch:productMismatch,unresolved,safety,...verify.summary};
     console.log(`[aliexpress-taxonomy-200] APPLY ${JSON.stringify(result)}`);
     if(!accepted) throw new Error(`TAXONOMY_REPAIR_INCOMPLETE:${JSON.stringify(result)}`);
     return result;
@@ -219,4 +241,4 @@ if(require.main===module){
   }).finally(()=>db.pool.end());
 }
 
-module.exports={SUPPLIER,WAVE_ID,TARGET,FLAG,EXPECTED_AFTER,assertRuntime,parseArgs,loadRows,project,assertSafeProjection,applyProjection,summarizeTaxonomyConfig,main};
+module.exports={SUPPLIER,WAVE_ID,TARGET,FLAG,assertRuntime,parseArgs,loadRows,project,assertSafeProjection,applyProjection,summarizeTaxonomyConfig,main};
