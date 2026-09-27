@@ -34,7 +34,7 @@ function assertRuntime(env=process.env){
   return {source_host:source,dest_host:dest};
 }
 async function expectedIdentities(env=process.env){
-  const expectedCj=buildExpectedCjIds(env);
+  const expectedCj=await resolveExpectedCjIds({env,executor:db});
   const {rows}=await db.query(
     `SELECT supplier_name,supplier_product_id
        FROM sourcing_candidates
