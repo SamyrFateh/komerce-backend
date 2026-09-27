@@ -26,14 +26,14 @@ const config = {
     target_marge_brute_pct: 40,
   },
   categories: {
-    phones: { key: 'phones', default_margin_pct: 30 },
-    vetements: { key: 'vetements', default_margin_pct: 45 },
-    ceremonie: { key: 'ceremonie', default_margin_pct: 55 },
-    electro: { key: 'electro', default_margin_pct: 32 },
-    cosmetiques: { key: 'cosmetiques', default_margin_pct: 50 },
-    mariage: { key: 'mariage', default_margin_pct: 55 },
-    enfants: { key: 'enfants', default_margin_pct: 32 },
-    materiels: { key: 'materiels', default_margin_pct: 35 },
+    phones: { key: 'phones', classification_terms: ['phone', 'smartphone', 'mobile'], default_margin_pct: 30 },
+    vetements: { key: 'vetements', classification_terms: ['dress', 'shirt', 'clothing', 'women', 'men', 'sandals'], default_margin_pct: 45 },
+    ceremonie: { key: 'ceremonie', classification_terms: ['evening dress', 'ceremony', 'wedding'], default_margin_pct: 55 },
+    electro: { key: 'electro', classification_terms: ['electronics', 'headphone', 'smartwatch'], default_margin_pct: 32 },
+    cosmetiques: { key: 'cosmetiques', classification_terms: ['beauty', 'facial', 'cosmetic', 'nail'], default_margin_pct: 50 },
+    mariage: { key: 'mariage', classification_terms: ['gift', 'decor', 'wedding'], default_margin_pct: 55 },
+    enfants: { key: 'enfants', classification_terms: ['kids', 'children', 'child', 'enfant'], default_margin_pct: 32 },
+    materiels: { key: 'materiels', classification_terms: ['power tool', 'tool', 'hardware'], default_margin_pct: 35 },
   },
 };
 
@@ -45,7 +45,7 @@ describe('AliExpress refinery canonical regressions', () => {
     pricingEngine.loadGlobalConfig.mockResolvedValue(config);
   });
 
-  it('preserve la segmentation de découverte au lieu de tomber silencieusement sur phones', () => {
+  it('classe depuis les termes configurés sans dépendre d une clé métier codée dans le scanner', () => {
     expect(mapProductCategory({
       supplier_category: 'AliExpress category 63705',
       product_name: 'Women Summer Dress',
@@ -66,7 +66,7 @@ describe('AliExpress refinery canonical regressions', () => {
     }, cats)).toEqual({ key: 'materiels', source: 'mapped', confidence: 'high' });
   });
 
-  it('priorise le sous-segment de découverte sur un parent ambigu Mode & Beauté', () => {
+  it('pondère les signaux précis au-dessus du parent ambigu Mode & Beauté', () => {
     expect(mapProductCategory({
       product_name: 'Women Summer Dress',
       supplier_category: 'AliExpress category 63705',
