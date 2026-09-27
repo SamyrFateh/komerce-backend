@@ -141,6 +141,7 @@ module.exports = {
       'scripts/catalog-712-transfer.js',
       'scripts/catalog-712-transfer-import.js',
       'scripts/catalog-712-production-exclusion-audit.js',
+      'scripts/catalog-712-production-readonly-audit.js',
     ],
     services: [
       // MISSION 1 (KOMERCE_AUDIT_ABSTRACTIONS_CATALOG_CHANGE_INTAKE) — décideur
