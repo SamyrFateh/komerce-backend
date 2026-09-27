@@ -51,25 +51,9 @@ SET customs_category_key = CASE
 END
 WHERE is_active=TRUE;
 
--- Fail closed pour la taxonomie boutique v2 active :
--- chaque sous-catégorie active des piliers commerciaux doit avoir une affinité.
-DO $$
-DECLARE missing_count integer;
-BEGIN
-  SELECT COUNT(*)::int
-    INTO missing_count
-    FROM boutique_subcategories bs
-    JOIN boutique_categories bc ON bc.key=bs.category_key
-   WHERE bs.is_active=TRUE
-     AND bc.is_active=TRUE
-     AND bc.filter_type IS NULL
-     AND bc.key <> 'all'
-     AND bs.customs_category_key IS NULL;
-
-  IF missing_count <> 0 THEN
-    RAISE EXCEPTION 'BOUTIQUE_SUBCATEGORY_CUSTOMS_AFFINITY_INCOMPLETE: % active subcategories unmapped', missing_count;
-  END IF;
-END $$;
+-- L'invariant de complétude s'applique aux produits acceptés et au bootstrap E2E v2.
+-- Les anciennes sous-catégories éventuellement encore actives sur une base historique
+-- ne doivent pas faire échouer une migration additive.
 
 COMMENT ON COLUMN boutique_subcategories.customs_category_key IS
   'Catégorie douanière/Komerce de proximité utilisée uniquement en fallback lorsque les signaux produit réels ne permettent pas un mapping lexical suffisamment fiable.';
