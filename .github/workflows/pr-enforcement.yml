@@ -106,6 +106,9 @@ jobs:
       - name: Feature guard
         if: needs.changes.outputs.backend == 'true'
         run: node scripts/feature-guard.js --strict
+      - name: Executable feature invariants
+        if: needs.changes.outputs.backend == 'true'
+        run: node scripts/feature-invariant-check.js --strict
       - name: Contract consumer check
         if: needs.changes.outputs.backend == 'true'
         run: node scripts/contract-check.js
