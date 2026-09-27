@@ -175,6 +175,10 @@ function waveSourceFilename(syncKey, logicalPage, waveId = WAVE_ID) {
   return `aliexpress-pool/${syncKey}/${waveId}/page-${String(logicalPage).padStart(4, '0')}.json`;
 }
 
+function semanticRelevance(product, keyword) {
+  return semantic.audit(product, keyword);
+}
+
 function withWaveProvenance(product, spec, waveId = WAVE_ID) {
   const rawPayload = product?.raw_payload || {};
   return {
@@ -381,7 +385,7 @@ async function runWaveLocked(config, providerEnv) {
 
     const fetchedProducts = (Array.isArray(fetched.products) ? fetched.products : [])
       .map(product => {
-        const relevance = semantic.audit(product, spec.keyword);
+        const relevance = semanticRelevance(product, spec.keyword);
         const projected = withWaveProvenance(product, {
           ...spec,
           countryCode: config.countryCode,
@@ -492,6 +496,7 @@ module.exports = {
   checkpointCategoryId,
   waveSourceFilename,
   withWaveProvenance,
+  semanticRelevance,
   countWaveClean,
   auditWave,
   runWave,
