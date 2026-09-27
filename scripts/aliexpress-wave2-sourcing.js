@@ -23,6 +23,7 @@ const aliexpressConnector = require('../services/suppliers/connectors/aliexpress
 const aliexpressBaseConnector = require('../services/suppliers/connectors/aliexpress-connector');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const checkpoints = require('../services/suppliers/catalog-sync-checkpoint');
+const semantic = require('./aliexpress-golden-semantic');
 
 const WAVE_ID = 'wave2-500-v1';
 const WAVE_TARGET = 500;
@@ -228,6 +229,8 @@ async function countWaveClean(waveId = WAVE_ID) {
         AND sc.image_url ~ '^https://'
         AND sc.purchase_price IS NOT NULL
         AND sc.purchase_price > 0
+        AND COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN') IN ('TEST','PRIORITY')
+        AND sc.komerce_category IS NOT NULL
         AND ${primary.stockSqlPredicate('sc')}`,
     [primary.SUPPLIER_NAME, waveId]
   );
@@ -377,12 +380,18 @@ async function runWaveLocked(config, providerEnv) {
     }
 
     const fetchedProducts = (Array.isArray(fetched.products) ? fetched.products : [])
-      .map(product => withWaveProvenance(product, {
-        ...spec,
-        countryCode: config.countryCode,
-      }, config.waveId));
+      .map(product => {
+        const relevance = semantic.audit(product, spec.keyword);
+        const projected = withWaveProvenance(product, {
+          ...spec,
+          countryCode: config.countryCode,
+        }, config.waveId);
+        projected.raw_payload.discovery.semantic_relevance = relevance;
+        return projected;
+      });
     const cleanNew = fetchedProducts
       .filter(primary.basicCleanProduct)
+      .filter(product => product.raw_payload?.discovery?.semantic_relevance?.relevant === true)
       .filter(product => !seenIds.has(product.supplier_product_id));
     const subset = cleanNew.slice(0, remaining);
     const imported = await importFetchedSubset({
