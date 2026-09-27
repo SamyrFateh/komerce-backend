@@ -24,6 +24,7 @@ const MODES = Object.freeze([
   'campaign',
   'taxonomy-audit',
   'taxonomy-apply-and-accept',
+  'taxonomy-repair-topup',
 ]);
 
 function resolveMode(env = process.env) {
@@ -38,6 +39,16 @@ function commandPlan(mode = resolveMode()) {
   if (mode === 'taxonomy-audit') {
     return [
       ['scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js', '--operation=audit'],
+    ];
+  }
+  if (mode === 'taxonomy-repair-topup') {
+    return [
+      ['scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js', '--operation=apply'],
+      ['scripts/aliexpress-wave2-sourcing.js'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=refinery-audit'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=promote'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=prepare-fr'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=accept', '--output=artifacts/aliexpress-incremental-e2e-200/final-acceptance.json'],
     ];
   }
   if (mode === 'taxonomy-apply-and-accept') {
