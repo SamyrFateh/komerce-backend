@@ -99,7 +99,29 @@ async function project(rows,config){
   return {summary:{total:rows.length,changed,unchanged:rows.length-changed,scan_decision_drift:scanDecisionDrift,before,after,transitions},details};
 }
 
+const EXPECTED_AFTER = Object.freeze({
+  vetements: 117,
+  enfants: 60,
+  cosmetiques: 23,
+});
+
+function assertSafeProjection(projection){
+  const summary=projection?.summary||{};
+  if(summary.total!==TARGET) throw new Error(`TAXONOMY_REPAIR_UNSAFE_TOTAL:${summary.total}/${TARGET}`);
+  if(summary.scan_decision_drift!==0) {
+    throw new Error(`TAXONOMY_REPAIR_DECISION_DRIFT:${summary.scan_decision_drift}`);
+  }
+  const after=summary.after||{};
+  const keys=Object.keys(after).sort();
+  const expectedKeys=Object.keys(EXPECTED_AFTER).sort();
+  if(JSON.stringify(keys)!==JSON.stringify(expectedKeys)
+      || expectedKeys.some(key=>Number(after[key]||0)!==EXPECTED_AFTER[key])) {
+    throw new Error(`TAXONOMY_REPAIR_UNEXPECTED_DISTRIBUTION:${JSON.stringify(after)}`);
+  }
+}
+
 async function applyProjection(projection){
+  assertSafeProjection(projection);
   const client=await db.getClient();
   try{
     await client.query('BEGIN');
@@ -174,4 +196,4 @@ if(require.main===module){
   }).finally(()=>db.pool.end());
 }
 
-module.exports={SUPPLIER,WAVE_ID,TARGET,FLAG,assertRuntime,parseArgs,loadRows,project,applyProjection,main};
+module.exports={SUPPLIER,WAVE_ID,TARGET,FLAG,EXPECTED_AFTER,assertRuntime,parseArgs,loadRows,project,assertSafeProjection,applyProjection,main};
