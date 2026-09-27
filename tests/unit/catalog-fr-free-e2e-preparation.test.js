@@ -53,4 +53,15 @@ describe('catalog-fr-free-e2e-preparation', () => {
     expect(out.description).toMatch(/parcours de test Komerce/i);
     expect(out.preparation_version).toBe(prep.PREPARATION_VERSION);
   });
+
+
+  test('scrubs source-noise patterns rejected by the publication guard', () => {
+    const urlNoise = prep.compactTitle('Wireless Speaker https://supplier.example/image.webp NEW 2026');
+    expect(urlNoise).not.toMatch(/https?:\/\/|\.webp|\bnew\b|2026/i);
+
+    const acronymNoise = prep.compactTitle('USB RGB TWS ANC Wireless Headset');
+    const acronymTokens = acronymNoise.match(/\b[A-Z][A-Z0-9]{1,8}\b/g) || [];
+    expect(acronymTokens.length).toBeLessThan(4);
+    expect(acronymNoise.length).toBeLessThanOrEqual(80);
+  });
 });
