@@ -21,8 +21,9 @@
  *
  * Usage :
  *   node scripts/run-e2e-feature-tests.js                  # tout
- *   node scripts/run-e2e-feature-tests.js --feature=orders # une feature
- *   node scripts/run-e2e-feature-tests.js --lot=1          # un lot
+ *   node scripts/run-e2e-feature-tests.js --feature=orders          # une feature
+ *   node scripts/run-e2e-feature-tests.js --features=catalog,sourcing # plusieurs features
+ *   node scripts/run-e2e-feature-tests.js --lot=1                   # un lot
  *
  * Précondition : DATABASE_URL pointe une base de test construite depuis
  * docs/db/railway-live-schema.sql puis réconciliée par scripts/ci-migrate.js.
@@ -51,13 +52,22 @@ const LOTS = {
 };
 
 function parseArgs(argv) {
-  const out = { feature: null, lot: null };
+  const out = { feature: null, features: null, lot: null };
   for (const arg of argv.slice(2)) {
     const feature = /^--feature=(.+)$/.exec(arg);
     if (feature) { out.feature = feature[1]; continue; }
+    const features = /^--features=(.+)$/.exec(arg);
+    if (features) {
+      out.features = [...new Set(features[1].split(',').map(v => v.trim()).filter(Boolean))].sort();
+      continue;
+    }
     const lot = /^--lot=(.+)$/.exec(arg);
     if (lot) { out.lot = lot[1]; continue; }
     throw new Error(`Argument inconnu : ${arg}`);
+  }
+  const selectors = [out.feature, out.features && out.features.length, out.lot].filter(Boolean);
+  if (selectors.length > 1) {
+    throw new Error('Utiliser un seul sélecteur : --feature, --features ou --lot');
   }
   return out;
 }
@@ -74,7 +84,7 @@ function listSuites() {
     }));
 }
 
-function selectSuites(suites, { feature, lot }) {
+function selectSuites(suites, { feature, features, lot }) {
   if (feature) {
     const kept = suites.filter((s) => s.feature === feature);
     if (!kept.length) {
@@ -82,6 +92,16 @@ function selectSuites(suites, { feature, lot }) {
       throw new Error(`Aucun E2E pour la feature « ${feature} ». Features couvertes : ${known}`);
     }
     return kept;
+  }
+  if (features && features.length) {
+    const knownSet = new Set(suites.map((s) => s.feature));
+    const missing = features.filter(name => !knownSet.has(name));
+    if (missing.length) {
+      const known = [...knownSet].sort().join(', ') || '(aucune)';
+      throw new Error(`Aucun E2E pour : ${missing.join(', ')}. Features couvertes : ${known}`);
+    }
+    const requested = new Set(features);
+    return suites.filter((s) => requested.has(s.feature));
   }
   if (lot) {
     const members = LOTS[lot];
@@ -152,8 +172,9 @@ async function main() {
   }
 
   const scope = args.feature ? `feature ${args.feature}`
-    : args.lot ? `lot ${args.lot}`
-      : 'tous lots';
+    : args.features ? `features ${args.features.join(',')}`
+      : args.lot ? `lot ${args.lot}`
+        : 'tous lots';
 
   console.log('\n════════════════════════════════════════════════════════════');
   console.log(
@@ -170,6 +191,6 @@ async function main() {
   console.log('Toutes les suites E2E sélectionnées sont vertes.');
 }
 
-main();
+if (require.main === module) main();
 
-module.exports = { LOTS, listSuites, selectSuites };
+module.exports = { LOTS, parseArgs, listSuites, selectSuites };
