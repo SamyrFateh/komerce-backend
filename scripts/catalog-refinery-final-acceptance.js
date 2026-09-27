@@ -7,9 +7,9 @@
  * @criticality   high
  * @inputs        disposable CJ catalog checkpoint
  * @outputs       definitive Raffinerie→catalog acceptance report
- * @depends       db.js, services/product-publication-guard.js
+ * @depends       db.js, services/catalog-certification.js
  * @used-by       isolated-catalog-refinery-final-acceptance.yml
- * @db-read       sourcing_candidates, products, catalog_media, product_skus, product_market_exposure
+ * @db-read       sourcing_candidates, products, catalog_media, product_skus, product_market_exposure, boutique_categories, boutique_subcategories
  * @db-write      none
  * @db-txn        none
  * @doctrine      refinery_is_complete_only_when_catalog_candidate_is_traceable_reviewable_and_fail_closed
@@ -22,7 +22,7 @@ const fs = require('fs');
 const path = require('path');
 const db = require('../db');
 const e2eRuntime = require('../services/suppliers/e2e-isolated-runtime');
-const { validatePublicationUpdate } = require('../services/product-publication-guard');
+const { evaluateCatalogProductCertification } = require('../services/catalog-certification');
 
 const SUPPLIER = 'CJdropshipping';
 const DEFAULT_EXPECTED = 974;
@@ -104,6 +104,7 @@ async function loadRows() {
         GROUP BY product_id
      )
      SELECT p.id AS product_id,
+            sc.supplier_name,
             p.product_ref,
             p.name,
             p.description,
@@ -112,6 +113,9 @@ async function loadRows() {
             p.source_locale,
             p.category,
             p.subcategory,
+            p.boutique_category_key,
+            p.boutique_subcategory_key,
+            CASE WHEN bc.key IS NOT NULL AND bs.key IS NOT NULL THEN TRUE ELSE FALSE END AS taxonomy_active,
             p.price_kmf,
             p.stock,
             p.content_source,
@@ -134,6 +138,12 @@ async function loadRows() {
        LEFT JOIN media ON media.product_id=p.id
        LEFT JOIN sku ON sku.product_id=p.id
        LEFT JOIN exposure ON exposure.product_id=p.id
+       LEFT JOIN boutique_categories bc
+         ON bc.key=p.boutique_category_key AND bc.is_active=TRUE
+       LEFT JOIN boutique_subcategories bs
+         ON bs.category_key=bc.key
+        AND bs.key=p.boutique_subcategory_key
+        AND bs.is_active=TRUE
       WHERE sc.supplier_name=$1
         AND sc.state='imported_to_catalog'
         AND sc.product_id IS NOT NULL
@@ -168,7 +178,6 @@ function editorialReady(row) {
 
 function classify(row) {
   const structural = [];
-  const final = [];
 
   if (!sourceTruthReady(row)) structural.push('source_truth_or_normalized_v2_missing');
   if (!(Number(row.active_media) >= 1)) structural.push('media_missing');
@@ -178,40 +187,25 @@ function classify(row) {
     structural.push('supplier_order_identity_partial');
   }
   if (!String(row.category || '').trim()) structural.push('category_missing');
+  if (!String(row.boutique_category_key || '').trim()) structural.push('boutique_category_missing');
+  if (!String(row.boutique_subcategory_key || '').trim()) structural.push('boutique_subcategory_missing');
+  if (row.taxonomy_active !== true) structural.push('boutique_taxonomy_inactive_or_invalid');
   if (!approvalQueueVisible(row)) structural.push('approval_queue_not_visible');
   if (row.lifecycle_status !== 'candidate' || row.is_active === true) structural.push('not_inactive_candidate');
   if (Number(row.enabled_markets) > 0) structural.push('market_exposure_enabled_before_global_publication');
 
-  if (!editorialReady(row)) final.push('editorial_not_ready');
-  if (!(Number(row.active_supplier_skus) >= 1)) final.push('active_supplier_sku_missing');
-  if (Number(row.active_complete_soi_skus) < Number(row.active_supplier_skus)) {
-    final.push('active_supplier_order_identity_partial');
-  }
-
-  const publication = validatePublicationUpdate({
-    before: {
-      ...row,
-      is_active: false,
-      is_available: false,
-      stock: row.stock,
-      price_kmf: row.price_kmf,
-      name: row.name,
-      description: row.description,
-      category: row.category,
-      content_source: row.content_source,
-      source_locale: row.source_locale,
-    },
-    patch: { is_active: true },
-    context: { catalogMediaCount: Number(row.active_media || 0) },
+  const canonical = evaluateCatalogProductCertification({
+    ...row,
+    complete_supplier_skus: Number(row.active_complete_soi_skus || 0),
   });
-  if (!publication.ok) final.push(`publication_guard:${publication.code}`);
 
   return {
     structural_ok: structural.length === 0,
-    final_ok: structural.length === 0 && final.length === 0,
+    final_ok: structural.length === 0 && canonical.certified,
     structural,
-    final,
-    publication_guard: publication.ok ? 'PASS' : publication.code,
+    final: canonical.reasons,
+    publication_guard: canonical.publication_guard,
+    certification_version: canonical.certification_version,
   };
 }
 
@@ -234,6 +228,9 @@ async function run(options = parseArgs()) {
       sourcing_decision: row.sourcing_decision,
       category: row.category,
       subcategory: row.subcategory,
+      boutique_category_key: row.boutique_category_key,
+      boutique_subcategory_key: row.boutique_subcategory_key,
+      taxonomy_active: row.taxonomy_active,
       content_source: row.content_source,
       needs_review: row.needs_review,
       active_media: Number(row.active_media || 0),
@@ -268,6 +265,9 @@ async function run(options = parseArgs()) {
     products_with_active_supplier_sku: rows.filter(row => Number(row.active_supplier_skus) >= 1).length,
     products_with_category: rows.filter(row => String(row.category || '').trim()).length,
     products_with_subcategory: rows.filter(row => String(row.subcategory || '').trim()).length,
+    products_with_boutique_category: rows.filter(row => String(row.boutique_category_key || '').trim()).length,
+    products_with_boutique_subcategory: rows.filter(row => String(row.boutique_subcategory_key || '').trim()).length,
+    products_with_active_boutique_taxonomy: rows.filter(row => row.taxonomy_active === true).length,
     products_with_source_truth_v2: rows.filter(sourceTruthReady).length,
     products_with_enabled_market_exposure: rows.filter(row => Number(row.enabled_markets) > 0).length,
     structural_reasons: countReasons(products, 'structural'),

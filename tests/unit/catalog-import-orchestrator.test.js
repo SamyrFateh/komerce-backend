@@ -52,10 +52,22 @@ function makeNormalized(overrides = {}) {
 function makeScan(overrides = {}) {
   return {
     scan_result: { score: 0.8 },
-    sourcing_decision: 'accept',
+    sourcing_decision: 'TEST',
     reason: 'ok',
     recommended_action: 'import',
     confidence: 0.9,
+    ...overrides,
+  };
+}
+
+function makeV2Product(overrides = {}) {
+  return {
+    schema_version: '2',
+    supplier_name: 'Acme',
+    supplier_product_id: 'sku-1',
+    product_name: 'Produit test',
+    currency: 'AED',
+    raw_payload: { source: 'unit-test' },
     ...overrides,
   };
 }
@@ -108,7 +120,11 @@ describe('importCatalog', () => {
   test('candidat accepte en staging mais echec shadow => preuve API partielle et cause conservee', async () => {
     jest.clearAllMocks();
     const dispatch = jest.fn().mockResolvedValue({
-      products: [{ supplier_product_id: '1005006471612403', product_name: 'Produit test' }], invalid: [],
+      products: [makeV2Product({
+        supplier_name: 'AliExpress',
+        supplier_product_id: '1005006471612403',
+        product_name: 'Produit test',
+      })], invalid: [],
     });
     db.query.mockImplementation((sql) => {
       if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-api-1' }] });
@@ -137,10 +153,50 @@ describe('importCatalog', () => {
     );
   });
 
+  test('API TEST sans contrat source V2 reste PARTIAL_BLOCKED et UNACCOUNTED', async () => {
+    jest.clearAllMocks();
+    const dispatch = jest.fn().mockResolvedValue({
+      products: [{ supplier_product_id: 'legacy-api-1', product_name: 'Legacy API product' }],
+      invalid: [],
+    });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-api-v1' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        return Promise.resolve({ rows: [{ id: 'candidate-api-v1', data_sources: {}, was_updated: false }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    scanner.scanCandidate.mockResolvedValue(makeScan());
+    shadow.recordCatalogImportObservationsShadow.mockResolvedValue({
+      status: 'recorded',
+      capture_id: 'capture-api-v1',
+      resolution: { status: 'resolved', review_required: 0, deferred_parent: 0 },
+    });
+
+    const result = await importCatalog({
+      supplier_name: 'AliExpress',
+      source_type: 'api',
+      supplier_id: 'aliexpress',
+    }, 1, dispatch);
+
+    expect(result.body.pipeline_status).toBe('PARTIAL_BLOCKED');
+    expect(result.body.source_certification).toMatchObject({
+      ready_for_refinery: 0,
+      certification_blocked: 1,
+      unaccounted: 1,
+      balanced: false,
+    });
+  });
+
   test('API source n annonce une resolution canonique que si le shadow a resolu ses identites', async () => {
     jest.clearAllMocks();
     const dispatch = jest.fn().mockResolvedValue({
-      products: [{ supplier_product_id: '1005006471612404', product_name: 'Produit resolu' }], invalid: [],
+      products: [makeV2Product({
+        supplier_name: 'AliExpress',
+        supplier_product_id: '1005006471612404',
+        product_name: 'Produit resolu',
+      })], invalid: [],
     });
     db.query.mockImplementation((sql) => {
       if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-api-2' }] });
@@ -195,7 +251,11 @@ describe('importCatalog', () => {
   });
 
   test('source API : les invalides sont quarantainés même au-dessus du seuil et les valides continuent', async () => {
-    const product = { supplier_product_id: 'api-good-1', product_name: 'Produit valide' };
+    const product = makeV2Product({
+      supplier_name: 'CJdropshipping',
+      supplier_product_id: 'api-good-1',
+      product_name: 'Produit valide',
+    });
     const dispatch = jest.fn().mockResolvedValue({
       products: [product],
       invalid: [
@@ -230,10 +290,94 @@ describe('importCatalog', () => {
     expect(result.body.accepted).toBe(1);
     expect(result.body.rejected).toBe(3);
     expect(result.body.pipeline_status).toBe('PARTIAL_BLOCKED');
+    expect(result.body.source_certification).toMatchObject({
+      input_total: 4,
+      certified: 1,
+      rejected: 3,
+      unaccounted: 0,
+      balanced: true,
+    });
     expect(result.body.reject_reasons).toEqual({
       'media absent': 1,
       'prix invalide': 1,
       'stock invalide': 1,
+    });
+  });
+
+  test('exclusion absolue est une issue rejetée explicite et équilibrée', async () => {
+    jest.clearAllMocks();
+    const product = makeV2Product({
+      supplier_product_id: 'excluded-1',
+      product_name: 'Produit interdit',
+    });
+    const dispatch = jest.fn().mockResolvedValue({ products: [product], invalid: [] });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-excluded' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        return Promise.resolve({ rows: [{ id: 'cand-excluded', data_sources: {}, was_updated: false }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    eligibility.checkEligibility.mockReturnValue({
+      layer: 'absolute',
+      label: 'Produit interdit',
+      match: { type: 'keyword', value: 'forbidden' },
+      legal_note: 'Blocage test',
+    });
+
+    const result = await importCatalog(
+      { supplier_name: 'Acme', source_type: 'manual' },
+      'user-1',
+      dispatch
+    );
+
+    expect(scanner.scanCandidate).not.toHaveBeenCalled();
+    expect(result.body.pipeline_status).toBe('CATALOG_IMPORT_RECORDED');
+    expect(result.body.source_certification).toMatchObject({
+      ready_for_refinery: 0,
+      deferred: 0,
+      rejected: 1,
+      unaccounted: 0,
+      balanced: true,
+    });
+  });
+
+  test('WATCH est une issue DEFERRED explicite, comptée mais non certifiée', async () => {
+    jest.clearAllMocks();
+    const product = makeV2Product({
+      supplier_product_id: 'watch-1',
+      product_name: 'Produit à surveiller',
+    });
+    const dispatch = jest.fn().mockResolvedValue({ products: [product], invalid: [] });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-watch' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        return Promise.resolve({ rows: [{ id: 'cand-watch', data_sources: {}, was_updated: false }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    eligibility.checkEligibility.mockReturnValue({ layer: null, eligible: true });
+    scanner.scanCandidate.mockResolvedValue(makeScan({
+      sourcing_decision: 'WATCH',
+      recommended_action: 'Attendre',
+    }));
+
+    const result = await importCatalog(
+      { supplier_name: 'Acme', source_type: 'manual' },
+      'user-1',
+      dispatch
+    );
+
+    expect(result.body.pipeline_status).toBe('CATALOG_IMPORT_RECORDED');
+    expect(result.body.source_certification).toMatchObject({
+      ready_for_refinery: 0,
+      deferred: 1,
+      certified: 0,
+      other_terminal: 1,
+      unaccounted: 0,
+      balanced: true,
     });
   });
 
@@ -259,7 +403,7 @@ describe('importCatalog', () => {
   });
 
   test('réponse finale enrichie : accepted/rejected/reject_reasons/unmapped_columns (ligne de synthèse fondateur)', async () => {
-    const product = { supplier_product_id: 'sku-1', product_name: 'Savon' };
+    const product = makeV2Product({ supplier_product_id: 'sku-1', product_name: 'Savon' });
     const dispatch = jest.fn().mockResolvedValue({
       products: [product],
       invalid: [{ errors: ['devise absente'] }],
@@ -287,6 +431,13 @@ describe('importCatalog', () => {
     expect(result.body.rejected).toBe(1);
     expect(result.body.reject_reasons).toEqual({ 'devise absente': 1 });
     expect(result.body.unmapped_columns).toEqual(['couleur_preferee']);
+    expect(result.body.source_certification).toMatchObject({
+      input_total: 2,
+      certified: 1,
+      rejected: 1,
+      unaccounted: 0,
+      balanced: true,
+    });
   });
 
   // ── DSC-E1 : upsert idempotent ──────────────────────────────────────────
@@ -434,8 +585,8 @@ describe('importCatalog', () => {
 
   test('une erreur sur un produit n\'interrompt pas le batch', async () => {
     const products = [
-      { supplier_product_id: 'sku-ok', product_name: 'OK' },
-      { supplier_product_id: 'sku-bad', product_name: 'BAD' },
+      makeV2Product({ supplier_product_id: 'sku-ok', product_name: 'OK' }),
+      makeV2Product({ supplier_product_id: 'sku-bad', product_name: 'BAD' }),
     ];
     const dispatch = jest.fn().mockResolvedValue({ products });
 
@@ -461,6 +612,13 @@ describe('importCatalog', () => {
 
     expect(result.body.created).toBe(1);
     expect(result.body.errors).toEqual([{ product_name: 'BAD', error: 'normalisation impossible' }]);
+    expect(result.body.pipeline_status).toBe('CATALOG_IMPORT_RECORDED');
+    expect(result.body.source_certification).toMatchObject({
+      input_total: 2,
+      certified: 1,
+      unaccounted: 1,
+      balanced: false,
+    });
   });
 
   // ── DSC-E3 : archivage full-snapshot ─────────────────────────────────────
