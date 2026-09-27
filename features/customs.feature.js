@@ -78,6 +78,7 @@ module.exports = {
       'migrations/093_customs_invoice_document_type.sql',
       'migrations/248_customs_category_classifier_config.sql',
       'migrations/249_customs_category_classifier_calibration.sql',
+      'migrations/250_boutique_subcategory_customs_affinity.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -222,6 +223,7 @@ module.exports = {
   invariants: [
     'la declaration est instrumentee, jamais optimisee pour reduire un cout',
     'la classification fournisseur ne connaît aucune clé de catégorie métier en dur : elle score uniquement les customs_categories actives et leur classification_terms configuré',
+    'si le produit réel ne permet pas un classement suffisamment fiable, une affinité administrable portée par la sous-catégorie boutique peut fournir la catégorie douanière active la plus proche ; cette affinité ne prime jamais un match fournisseur medium/high',
   ],
 
 };
