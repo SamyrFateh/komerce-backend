@@ -41,8 +41,8 @@ describe('catalog E2E taxonomy bootstrap', () => {
   test('audit reports missing active canonical pairs without mutating', async () => {
     mockQuery.mockResolvedValueOnce({
       rows: [
-        { category: 'Mode & Beauté', subcategory: 'Femme' },
-        { category: 'Tech', subcategory: 'Audio' },
+        { category: 'Mode & Beauté', subcategory: 'Femme', customs_category_key: 'vetements' },
+        { category: 'Tech', subcategory: 'Audio', customs_category_key: 'electro' },
       ],
     });
     const out = await bootstrap.audit();
@@ -56,13 +56,15 @@ describe('catalog E2E taxonomy bootstrap', () => {
   test('audit passes when all canonical pairs are active', async () => {
     const pairs = bootstrap.expectedPairs();
     mockQuery.mockResolvedValueOnce({
-      rows: pairs.map(p => ({ category: p.category, subcategory: p.subcategory })),
+      rows: pairs.map(p => ({ category: p.category, subcategory: p.subcategory, customs_category_key: 'materiels' })),
     });
     const out = await bootstrap.audit();
     expect(out).toMatchObject({
       expected_pairs: 21,
       active_pairs_found: 21,
+      affinity_pairs_found: 21,
       missing: [],
+      missing_affinity: [],
       ready: true,
     });
   });
