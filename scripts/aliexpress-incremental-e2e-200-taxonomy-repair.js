@@ -168,7 +168,7 @@ async function applyProjection(projection, config){
          ]);
       if(item.product_id && item.normalized.komerce_category){
         await client.query(
-          'UPDATE products SET category=$1, needs_review=FALSE, updated_at=NOW() WHERE id=$2 AND lifecycle_status=\'candidate\' AND is_active=FALSE',
+          'UPDATE products SET category=$1, updated_at=NOW() WHERE id=$2 AND lifecycle_status=\'candidate\' AND is_active=FALSE',
           [item.normalized.komerce_category,item.product_id]
         );
       } else if(item.product_id) {
