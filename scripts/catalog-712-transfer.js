@@ -23,7 +23,7 @@ const path=require('path');
 const zlib=require('zlib');
 const {spawnSync}=require('child_process');
 const db=require('../db');
-const {buildExpectedCjIds,CJ_TARGET,ALI_TARGET,TOTAL_TARGET,DATASET_ID}=require('./catalog-e2e-712-identities');
+const {resolveExpectedCjIds,CJ_TARGET,ALI_TARGET,TOTAL_TARGET,DATASET_ID}=require('./catalog-e2e-712-identities');
 
 const FLAG='KOMERCE_ALLOW_CATALOG_712_PRODUCTION_IMPORT';
 const DEST_ENV='KOMERCE_CATALOG_DEST_DATABASE_URL';
@@ -43,7 +43,7 @@ function assertRuntime(env=process.env){
   return {source_host:sourceHost,dest_host:destHost};
 }
 async function loadBundle(env=process.env){
-  const expectedCj=buildExpectedCjIds(env);
+  const expectedCj=await resolveExpectedCjIds({env,executor:db});
   const {rows}=await db.query(
     `SELECT sc.supplier_name,sc.supplier_product_id,sc.raw_payload,sc.normalized_source_contract,
             sc.scan_result,sc.komerce_category,sc.state,sc.product_id,

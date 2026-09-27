@@ -20,7 +20,7 @@
 
 const {Pool}=require('pg');
 const db=require('../db');
-const {buildExpectedCjIds,TOTAL_TARGET}=require('./catalog-e2e-712-identities');
+const {resolveExpectedCjIds,TOTAL_TARGET}=require('./catalog-e2e-712-identities');
 
 const DEST_ENV='KOMERCE_CATALOG_DEST_DATABASE_URL';
 const ALI_WAVE='incremental-e2e-200-v1';
@@ -34,7 +34,7 @@ function assertRuntime(env=process.env){
   return {source_host:source,dest_host:dest};
 }
 async function expectedIdentities(env=process.env){
-  const expectedCj=buildExpectedCjIds(env);
+  const expectedCj=await resolveExpectedCjIds({env,executor:db});
   const {rows}=await db.query(
     `SELECT supplier_name,supplier_product_id
        FROM sourcing_candidates
