@@ -8,7 +8,7 @@
     "preDeployCommand": [
       "node -e \"const fs=require('fs'),db=require('./db');(async()=>{for(const f of ['docs/db/railway-live-schema.sql','migrations/227_sourcing_resolution_foundation.sql','migrations/238_sourcing_source_autopilot.sql','migrations/036b_seed_customs_categories.sql','migrations/245_products_boutique_taxonomy.sql','migrations/244_catalog_glossary_batch001.sql']){const sql=fs.readFileSync(f,'utf8');try{await db.query(sql);console.log('applied',f)}catch(e){if(/already exists|duplicate object|duplicate key/i.test(String(e.message||e))){console.log('skip',f,e.message)}else throw e}}})().then(()=>db.pool.end()).catch(e=>{console.error(e);process.exit(1)})\""
     ],
-    "startCommand": "node scripts/aliexpress-wave2-sourcing.js && node scripts/aliexpress-incremental-e2e-200.js --operation=refinery-audit && node scripts/aliexpress-incremental-e2e-200.js --operation=promote && node scripts/aliexpress-incremental-e2e-200.js --operation=prepare-fr && node scripts/aliexpress-incremental-e2e-200.js --operation=accept --output=artifacts/aliexpress-incremental-e2e-200/final-acceptance.json",
+    "startCommand": "node scripts/aliexpress-incremental-e2e-200-worker.js",
     "restartPolicyType": "NEVER"
   }
 }
