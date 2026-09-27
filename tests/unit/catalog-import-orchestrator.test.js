@@ -52,7 +52,7 @@ function makeNormalized(overrides = {}) {
 function makeScan(overrides = {}) {
   return {
     scan_result: { score: 0.8 },
-    sourcing_decision: 'accept',
+    sourcing_decision: 'TEST',
     reason: 'ok',
     recommended_action: 'import',
     confidence: 0.9,
