@@ -36,6 +36,7 @@ const MODES = Object.freeze([
   'catalog-712-resolve-watch',
   'catalog-712-production-import',
   'catalog-712-production-exclusion-audit',
+  'catalog-712-production-readonly-audit',
 ]);
 
 function resolveMode(env = process.env) {
@@ -48,6 +49,11 @@ function resolveMode(env = process.env) {
 
 function commandPlan(mode = resolveMode()) {
   if (mode === 'idle') return [];
+  if (mode === 'catalog-712-production-readonly-audit') {
+    return [
+      ['scripts/catalog-712-production-readonly-audit.js'],
+    ];
+  }
   if (mode === 'catalog-712-production-exclusion-audit') {
     return [
       ['scripts/catalog-712-production-exclusion-audit.js'],
