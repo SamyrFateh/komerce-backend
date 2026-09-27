@@ -146,7 +146,7 @@ describe('POST /api/admin/customs-categories — création', () => {
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ key: 'electro', label: 'Électronique', tva_pct: 10 });
     const [, params] = mockDbQuery.mock.calls[1];
-    expect(params).toEqual(['electro', 'Électronique', null, null, 0, 10, 0, null, null, null, null, null, null, 99, true]);
+    expect(params).toEqual(['electro', 'Électronique', null, null, 0, 10, 0, null, null, null, null, null, null, [], 99, true]);
   });
 
   it('is_active:false explicite → conservé tel quel (pas écrasé par defaut true)', async () => {
@@ -156,7 +156,7 @@ describe('POST /api/admin/customs-categories — création', () => {
 
     await request(buildApp()).post('/api/admin/customs-categories').send({ key: 'electro', label: 'Électronique', is_active: false });
     const [, params] = mockDbQuery.mock.calls[1];
-    expect(params[14]).toBe(false);
+    expect(params[15]).toBe(false);
   });
 
   it('erreur DB → 500', async () => {
