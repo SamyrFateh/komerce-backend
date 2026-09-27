@@ -26,6 +26,7 @@
  */
 
 const { describeE2E, createCleanup, tag, uuid } = require('../helpers/e2eDbKit');
+const { REFERENCE_MARKETS } = require('../../scripts/seed-reference-data');
 
 jest.setTimeout(60000);
 
@@ -38,12 +39,73 @@ describeE2E('E2E-SETTLEMENT — state machine DB (SQL direct)', ({ db }) => {
 
   const settlementIds = new Set();
   let cleanup;
+  let marketCode;
+  let otherMarketCode;
 
   const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const pick = () => LETTERS[Math.floor(Math.random() * 26)] + LETTERS[Math.floor(Math.random() * 26)];
-  const marketCode = pick();
-  let otherMarketCode = pick();
-  while (otherMarketCode === marketCode) otherMarketCode = pick();
+
+  // Bug corrigé ici : un tirage purement aléatoire dans les 26*26 codes à 2
+  // lettres peut retomber sur un marché de référence RÉEL et permanent
+  // (seed-reference-data.js : KM, YT, CM, CG — jamais nettoyé par aucun
+  // test, présent sur toute base from-scratch). C'est exactement ce qui a
+  // provoqué `duplicate key value violates unique constraint
+  // "markets_code_key" — Key (code)=(YT) already exists` : le tirage a
+  // fini par retomber sur Mayotte. Les 15 tests de ce fichier partagent un
+  // seul beforeAll ; son échec fait tomber les 15 à la fois (READY commun),
+  // ce qui explique le "15 failed / 15 total" sans lien avec les autres
+  // suites (contraintes prix, idempotency wallet, Stripe — erreurs DB
+  // intentionnelles qui, elles, sont attendues et n'empêchent pas leur
+  // suite de réussir).
+  //
+  // Le fix interroge la table `markets` réelle (idempotent, valable sur une
+  // base from-scratch comme sur une base déjà peuplée par d'autres suites
+  // — indépendant de l'ordre d'exécution) plutôt que de supposer une liste
+  // figée de codes réservés. Les 4 codes de référence sont tout de même
+  // exclus explicitement en ceinture de sécurité, au cas où `markets`
+  // serait vide au moment du tirage (ordre de bootstrap CI inhabituel).
+  async function reserveMarketCode(exclude) {
+    const { rows } = await db.query('SELECT code FROM markets');
+    const used = new Set(rows.map(row => row.code));
+    for (const ref of REFERENCE_MARKETS) used.add(ref.code);
+    for (const code of exclude) used.add(code);
+
+    for (let attempt = 0; attempt < 5000; attempt += 1) {
+      const candidate = pick();
+      if (!used.has(candidate)) return candidate;
+    }
+    throw new Error(
+      '[E2E-SETTLEMENT] aucun code marché à 2 lettres disponible après 5000 tirages — ' +
+      'table markets anormalement pleine (676 codes possibles).'
+    );
+  }
+
+  // Ceinture de sécurité supplémentaire : même après la réservation
+  // ci-dessus, une autre suite E2E pourrait en théorie insérer le même code
+  // entre la lecture et l'écriture (TOCTOU). Sur unique_violation exacte
+  // (23505, contrainte markets_code_key), on retire le code fautif de
+  // l'exclusion locale, on en tire un autre, et on retente — jamais un
+  // échec silencieux, jamais un skip.
+  async function insertMarketWithUniqueCode(id, label, exclude) {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const code = await reserveMarketCode(exclude);
+      try {
+        await db.query(
+          `INSERT INTO markets (id, code, name, currency, minor_unit, is_active)
+           VALUES ($1, $2, $3, 'XAF', 0, TRUE)`,
+          [id, code, tag(label)]
+        );
+        return code;
+      } catch (err) {
+        if (err && err.code === '23505' && /markets_code_key/.test(err.message || '')) {
+          exclude.add(code);
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new Error(`[E2E-SETTLEMENT] impossible de réserver un code marché unique pour "${label}" après 10 tentatives.`);
+  }
 
   async function insertReady(overrides = {}) {
     const id = overrides.id || uuid();
@@ -98,18 +160,12 @@ describeE2E('E2E-SETTLEMENT — state machine DB (SQL direct)', ({ db }) => {
   beforeAll(async () => {
     cleanup = createCleanup(db);
 
-    await db.query(
-      `INSERT INTO markets (id, code, name, currency, minor_unit, is_active)
-       VALUES ($1, $2, $3, 'XAF', 0, TRUE)`,
-      [marketId, marketCode, tag('marche-e2e')]
-    );
+    const reservedCodes = new Set();
+    marketCode = await insertMarketWithUniqueCode(marketId, 'marche-e2e', reservedCodes);
+    reservedCodes.add(marketCode);
     cleanup.track('markets', 'id', marketId);
 
-    await db.query(
-      `INSERT INTO markets (id, code, name, currency, minor_unit, is_active)
-       VALUES ($1, $2, $3, 'XAF', 0, TRUE)`,
-      [otherMarketId, otherMarketCode, tag('marche-e2e-autre')]
-    );
+    otherMarketCode = await insertMarketWithUniqueCode(otherMarketId, 'marche-e2e-autre', reservedCodes);
     cleanup.track('markets', 'id', otherMarketId);
 
     for (const [id, email] of [
