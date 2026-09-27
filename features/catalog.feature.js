@@ -416,6 +416,7 @@ module.exports = {
       'tests/unit/cj-real-showcase-seed.test.js',
       'tests/unit/cj-catalog-index.test.js',
       'tests/unit/cj-full-catalog-sync.test.js',
+      'tests/unit/cj-full-catalog-sync-gate-a-pagination.test.js',
       'tests/unit/catalog-candidate-product-service.test.js',
       'tests/unit/catalog-product-mutation-service.test.js',
       'tests/unit/catalog-change-intake.test.js',

@@ -134,8 +134,12 @@ async function importFetchedSubset({ syncKey, category, page, subset }) {
   return result.body;
 }
 
-async function syncCategory(category, config, budget, seenIds) {
-  let checkpoint = await checkpoints.getCheckpoint(db, {
+async function syncCategory(category, config, budget, seenIds, deps = {}) {
+  const fetchProducts = deps.fetchProducts || cjConnector.fetchProducts;
+  const countClean = deps.countCleanCandidates || countCleanCandidates;
+  const importSubset = deps.importFetchedSubset || importFetchedSubset;
+  const checkpointStore = deps.checkpoints || checkpoints;
+  let checkpoint = await checkpointStore.getCheckpoint(db, {
     supplierName: SUPPLIER_NAME,
     syncKey: config.syncKey,
     categoryId: category.category_id,
@@ -151,13 +155,13 @@ async function syncCategory(category, config, budget, seenIds) {
   while (totalPages == null || page <= totalPages) {
     if (budget.used >= config.maxApiCalls) return { status: 'budget-paused', pages };
 
-    const beforeCount = await countCleanCandidates();
+    const beforeCount = await countClean();
     const remaining = config.maxCleanProducts - beforeCount;
     if (remaining <= 0) return { status: 'target-reached', pages };
 
     let fetched;
     try {
-      fetched = await cjConnector.fetchProducts({
+      fetched = await fetchProducts({
         categoryId: category.category_id,
         page,
         size: config.pageSize,
@@ -165,7 +169,7 @@ async function syncCategory(category, config, budget, seenIds) {
       budget.used += 1;
     } catch (error) {
       if (checkpoint) {
-        await checkpoints.recordError(db, {
+        await checkpointStore.recordError(db, {
           supplierName: SUPPLIER_NAME,
           syncKey: config.syncKey,
           categoryId: category.category_id,
@@ -180,7 +184,7 @@ async function syncCategory(category, config, budget, seenIds) {
       totalRecords = Math.max(0, Number(fetched.total_records) || 0);
       totalPages = totalPagesFor(totalRecords, config.pageSize);
       cappedBySupplier = totalRecords >= CJ_RESULT_CAP;
-      checkpoint = await checkpoints.ensureCheckpoint(db, {
+      checkpoint = await checkpointStore.ensureCheckpoint(db, {
         supplierName: SUPPLIER_NAME,
         syncKey: config.syncKey,
         categoryId: category.category_id,
@@ -190,7 +194,7 @@ async function syncCategory(category, config, budget, seenIds) {
         cappedBySupplier,
       });
       if (totalPages === 0) {
-        await checkpoints.markComplete(db, {
+        await checkpointStore.markComplete(db, {
           supplierName: SUPPLIER_NAME,
           syncKey: config.syncKey,
           categoryId: category.category_id,
@@ -202,11 +206,19 @@ async function syncCategory(category, config, budget, seenIds) {
       }
     }
 
+    // De-duplicate both against prior pages/runs and inside the current
+    // supplier page. Do not mutate seenIds until the import succeeds.
+    const pageIds = new Set();
     const cleanNew = (fetched.products || [])
       .filter(basicCleanProduct)
-      .filter((product) => !seenIds.has(product.supplier_product_id));
+      .filter((product) => {
+        const id = product.supplier_product_id;
+        if (seenIds.has(id) || pageIds.has(id)) return false;
+        pageIds.add(id);
+        return true;
+      });
     const subset = cleanNew.slice(0, remaining);
-    const imported = await importFetchedSubset({
+    const imported = await importSubset({
       syncKey: config.syncKey,
       category,
       page,
@@ -215,12 +227,12 @@ async function syncCategory(category, config, budget, seenIds) {
     for (const product of subset) seenIds.add(product.supplier_product_id);
 
     pages += 1;
-    const afterCount = await countCleanCandidates();
+    const afterCount = await countClean();
     if (afterCount > config.maxCleanProducts) {
       throw new Error(`Cap CJ dépassé: ${afterCount}/${config.maxCleanProducts}`);
     }
 
-    await checkpoints.recordPageSuccess(db, {
+    await checkpointStore.recordPageSuccess(db, {
       supplierName: SUPPLIER_NAME,
       syncKey: config.syncKey,
       categoryId: category.category_id,
@@ -242,7 +254,7 @@ async function syncCategory(category, config, budget, seenIds) {
 
 async function runSync() {
   const config = runtimeConfig();
-  const startingClean = await countCleanCandidates();
+  const startingClean = await countClean();
   if (startingClean > config.maxCleanProducts) {
     throw new Error(`Pool CJ déjà au-dessus du cap: ${startingClean}/${config.maxCleanProducts}`);
   }
@@ -270,7 +282,7 @@ async function runSync() {
     }
   }
 
-  const finalClean = await countCleanCandidates();
+  const finalClean = await countClean();
   const summary = await checkpoints.summarize(db, {
     supplierName: SUPPLIER_NAME,
     syncKey: config.syncKey,
@@ -317,5 +329,6 @@ module.exports = {
   totalPagesFor,
   importSourceFilename,
   basicCleanProduct,
+  syncCategory,
   runSync,
 };
