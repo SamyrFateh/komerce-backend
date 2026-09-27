@@ -7,11 +7,11 @@
  * @inputs        canonical catalog candidate facts
  * @outputs       versioned certification verdict and reasons
  * @depends       services/product-publication-guard.js, utils/certification-accounting.js
- * @used-by       scripts/catalog-e2e-712-acceptance.js
+ * @used-by       scripts/catalog-e2e-712-acceptance.js, scripts/catalog-refinery-final-acceptance.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      certification_is_provider_independent_fail_closed_and_versioned
+ * @doctrine      docs/doctrine/DOCTRINE_CERTIFICATION_CATALOGUE_SOURCING.md
  * @impact-areas  catalog, sourcing, staging-e2e, ci
  * @version       2026-09-v1
  */
