@@ -252,7 +252,10 @@ jobs:
             --expected=500 \
             --output=artifacts/cj-balanced-e2e-500/final-acceptance.json
 
-      - name: Export reusable balanced E2E catalog
+      - name: Export reusable balanced E2E catalog (best effort)
+        continue-on-error: true
+        env:
+          PGOPTIONS: '-c statement_timeout=0'
         shell: bash
         run: |
           set -euo pipefail
@@ -318,6 +321,7 @@ jobs:
             echo '- supplier stock: required at discovery'
             echo '- exact SKU + Supplier Order Identity: required after CJ detail continuation'
             echo '- boutique taxonomy separated from customs classification'
+            echo '- export/dump: best effort after final acceptance; never invalidates a successful 500/500 import'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Close successful command issue
