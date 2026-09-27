@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-scope.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       operator_market_scopes, order_items, orders, parcel_items, parcels, products
+ * @db-read       markets, operator_market_scopes, order_items, orders, parcel_items, parcels, products
  * @db-write      order_comments, order_incidents
  * @db-write-via:parcel-item-mutation-service parcel_items
  * @db-write-via:parcel-mutation-service parcels
