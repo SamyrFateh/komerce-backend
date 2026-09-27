@@ -27,6 +27,7 @@ const MODES = Object.freeze([
   'taxonomy-apply-and-accept',
   'taxonomy-repair-topup',
   'catalog-700-build',
+  'catalog-700-local-audit',
 ]);
 
 function resolveMode(env = process.env) {
@@ -39,6 +40,11 @@ function resolveMode(env = process.env) {
 
 function commandPlan(mode = resolveMode()) {
   if (mode === 'idle') return [];
+  if (mode === 'catalog-700-local-audit') {
+    return [
+      ['scripts/real-supplier-1000-stress-staging.js', '--operation=supplier-slice-audit', '--supplier=CJdropshipping', '--limit=500'],
+    ];
+  }
   if (mode === 'catalog-700-build') {
     return [
       ['scripts/cj-500-e2e-catalog-sync.js'],
