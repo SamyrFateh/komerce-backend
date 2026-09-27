@@ -7,7 +7,7 @@
  * @criticality   high
  * @inputs        KOMERCE_ALI_E2E_200_WORKER_MODE
  * @outputs       selected isolated catalog campaign action, including canonical 700 legacy and 712 reconciled build
- * @depends       scripts/aliexpress-wave2-sourcing.js, scripts/aliexpress-incremental-e2e-200.js, scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js, scripts/cj-500-e2e-catalog-sync.js, scripts/catalog-e2e-700-acceptance.js, scripts/catalog-e2e-taxonomy-bootstrap.js, scripts/catalog-cj-certified-500-materialize.js, scripts/catalog-cj-certified-500-resolve-watch.js, scripts/catalog-e2e-712-acceptance.js
+ * @depends       scripts/aliexpress-wave2-sourcing.js, scripts/aliexpress-incremental-e2e-200.js, scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js, scripts/cj-500-e2e-catalog-sync.js, scripts/catalog-e2e-700-acceptance.js, scripts/catalog-e2e-taxonomy-bootstrap.js, scripts/catalog-cj-certified-500-materialize.js, scripts/catalog-cj-certified-500-resolve-watch.js, scripts/catalog-e2e-712-acceptance.js, scripts/catalog-712-transfer.js, scripts/catalog-712-transfer-import.js
  * @used-by       railway.ali-e2e-200.json
  * @db-read       delegated
  * @db-write      delegated
@@ -34,6 +34,7 @@ const MODES = Object.freeze([
   'catalog-712-accept',
   'catalog-712-watch-audit',
   'catalog-712-resolve-watch',
+  'catalog-712-production-import',
 ]);
 
 function resolveMode(env = process.env) {
@@ -46,6 +47,11 @@ function resolveMode(env = process.env) {
 
 function commandPlan(mode = resolveMode()) {
   if (mode === 'idle') return [];
+  if (mode === 'catalog-712-production-import') {
+    return [
+      ['scripts/catalog-712-transfer.js'],
+    ];
+  }
   if (mode === 'catalog-712-resolve-watch') {
     return [
       ['scripts/catalog-e2e-taxonomy-bootstrap.js'],
