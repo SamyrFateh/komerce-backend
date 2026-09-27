@@ -35,6 +35,31 @@ function boutiqueTaxonomyFromCandidate(candidate = {}) {
   };
 }
 
+async function resolveActiveBoutiqueTaxonomy(q, candidate = {}) {
+  const requested = boutiqueTaxonomyFromCandidate(candidate);
+  if (!requested.category && !requested.subcategory) return requested;
+  if (!requested.category || !requested.subcategory) {
+    throw new Error('BOUTIQUE_TAXONOMY_INCOMPLETE: target_category + target_subcategory requis ensemble');
+  }
+
+  const { rows: [row] } = await q.query(
+    `SELECT bc.key AS category, bs.key AS subcategory
+       FROM boutique_categories bc
+       JOIN boutique_subcategories bs
+         ON bs.category_key=bc.key
+        AND bs.key=$2
+        AND bs.is_active=TRUE
+      WHERE bc.is_active=TRUE
+        AND bc.key=$1
+      LIMIT 1`,
+    [requested.category, requested.subcategory]
+  );
+  if (!row) {
+    throw new Error(`BOUTIQUE_TAXONOMY_INVALID: ${requested.category} / ${requested.subcategory}`);
+  }
+  return row;
+}
+
 /**
  * Creates the inactive catalog draft produced by the sourcing promotion flow.
  *
@@ -47,7 +72,7 @@ async function createDraftProductFromSourcingCandidate(q, {
 }) {
   const weightKg = candidate.estimated_weight_kg || null;
   const sourceLocale = sourceLocaleFromCandidate(candidate);
-  const boutiqueTaxonomy = boutiqueTaxonomyFromCandidate(candidate);
+  const boutiqueTaxonomy = await resolveActiveBoutiqueTaxonomy(q, candidate);
 
   const prodRes = await q.query(
     `INSERT INTO products (
@@ -81,4 +106,5 @@ module.exports = {
   createDraftProductFromSourcingCandidate,
   sourceLocaleFromCandidate,
   boutiqueTaxonomyFromCandidate,
+  resolveActiveBoutiqueTaxonomy,
 };
