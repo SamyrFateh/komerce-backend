@@ -117,7 +117,7 @@ describe('catalog Raffinerie final acceptance', () => {
     }));
     expect(verdict.structural_ok).toBe(true);
     expect(verdict.final_ok).toBe(false);
-    expect(verdict.final).toContain('editorial_not_ready');
+    expect(verdict.final).toContain('french_editorial_not_ready');
     expect(verdict.final).toContain('publication_guard:enrichment_required');
   });
 
