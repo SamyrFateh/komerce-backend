@@ -112,6 +112,8 @@ async function loadRows() {
             p.source_locale,
             p.category,
             p.subcategory,
+            p.boutique_category_key,
+            p.boutique_subcategory_key,
             p.price_kmf,
             p.stock,
             p.content_source,
@@ -177,7 +179,9 @@ function classify(row) {
   if (Number(row.complete_soi_skus) < Number(row.supplier_skus)) {
     structural.push('supplier_order_identity_partial');
   }
-  if (!String(row.category || '').trim()) structural.push('category_missing');
+  if (!String(row.category || '').trim()) structural.push('customs_category_missing');
+  if (!String(row.boutique_category_key || '').trim()) structural.push('boutique_category_missing');
+  if (!String(row.boutique_subcategory_key || '').trim()) structural.push('boutique_subcategory_missing');
   if (!approvalQueueVisible(row)) structural.push('approval_queue_not_visible');
   if (row.lifecycle_status !== 'candidate' || row.is_active === true) structural.push('not_inactive_candidate');
   if (Number(row.enabled_markets) > 0) structural.push('market_exposure_enabled_before_global_publication');
@@ -232,8 +236,10 @@ async function run(options = parseArgs()) {
       product_ref: row.product_ref,
       supplier_product_id: row.supplier_product_id,
       sourcing_decision: row.sourcing_decision,
-      category: row.category,
-      subcategory: row.subcategory,
+      category: row.boutique_category_key,
+      subcategory: row.boutique_subcategory_key,
+      customs_category: row.category,
+      legacy_subcategory: row.subcategory,
       content_source: row.content_source,
       needs_review: row.needs_review,
       active_media: Number(row.active_media || 0),
@@ -266,8 +272,8 @@ async function run(options = parseArgs()) {
       && Number(row.complete_soi_skus) === Number(row.supplier_skus)
     ).length,
     products_with_active_supplier_sku: rows.filter(row => Number(row.active_supplier_skus) >= 1).length,
-    products_with_category: rows.filter(row => String(row.category || '').trim()).length,
-    products_with_subcategory: rows.filter(row => String(row.subcategory || '').trim()).length,
+    products_with_category: rows.filter(row => String(row.boutique_category_key || '').trim()).length,
+    products_with_subcategory: rows.filter(row => String(row.boutique_subcategory_key || '').trim()).length,
     products_with_source_truth_v2: rows.filter(sourceTruthReady).length,
     products_with_enabled_market_exposure: rows.filter(row => Number(row.enabled_markets) > 0).length,
     structural_reasons: countReasons(products, 'structural'),
