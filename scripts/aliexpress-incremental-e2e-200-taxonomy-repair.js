@@ -63,6 +63,17 @@ async function loadRows(q=db){
   return rows;
 }
 
+function selectRepairCohort(rows) {
+  const all = Array.isArray(rows) ? rows : [];
+  if (all.length < TARGET) {
+    throw new Error(`REFUS: vague attendue au moins ${TARGET}, trouvée ${all.length}`);
+  }
+  return {
+    cohort: all.slice(0, TARGET),
+    tail: all.slice(TARGET),
+  };
+}
+
 function bump(map,key){ const k=key||'UNRESOLVED'; map[k]=(map[k]||0)+1; }
 function bumpTransition(map,from,to){ const k=`${from||'UNRESOLVED'} -> ${to||'UNRESOLVED'}`; map[k]=(map[k]||0)+1; }
 
@@ -141,8 +152,8 @@ function assertSafeProjection(projection){
   }
 }
 
-async function applyProjection(projection){
-  assertSafeProjection(projection);
+async function applyProjection(projection, config){
+  const safety = assertSafeProjection(projection, config);
   const client=await db.getClient();
   try{
     await client.query('BEGIN');
@@ -173,10 +184,15 @@ async function applyProjection(projection){
            JSON.stringify(merged),
            item.candidate_id,
          ]);
-      if(item.product_id){
+      if(item.product_id && item.normalized.komerce_category){
         await client.query(
           'UPDATE products SET category=$1, updated_at=NOW() WHERE id=$2 AND lifecycle_status=\'candidate\' AND is_active=FALSE',
           [item.normalized.komerce_category,item.product_id]
+        );
+      } else if(item.product_id) {
+        await client.query(
+          'UPDATE products SET needs_review=TRUE, updated_at=NOW() WHERE id=$1 AND lifecycle_status=\'candidate\' AND is_active=FALSE',
+          [item.product_id]
         );
       }
     }
@@ -209,8 +225,14 @@ function summarizeTaxonomyConfig(config = {}) {
 
 async function main(options=parseArgs()){
   assertRuntime();
-  const rows=await loadRows();
-  if(rows.length!==TARGET) throw new Error(`REFUS: vague attendue ${TARGET}, trouvée ${rows.length}`);
+  const loaded=await loadRows();
+  const scope=selectRepairCohort(loaded);
+  const rows=scope.cohort;
+  console.log(`[aliexpress-taxonomy-200] SCOPE ${JSON.stringify({
+    total_rows: loaded.length,
+    repair_cohort: rows.length,
+    ignored_tail: scope.tail.length,
+  })}`);
   const config=await pricingEngine.loadGlobalConfig();
   const taxonomyConfig = summarizeTaxonomyConfig(config);
   console.log(`[aliexpress-taxonomy-200] CONFIG ${JSON.stringify(taxonomyConfig)}`);
@@ -220,16 +242,20 @@ async function main(options=parseArgs()){
   const projection=await project(rows,config);
   console.log(`[aliexpress-taxonomy-200] AUDIT ${JSON.stringify(projection.summary)}`);
   if(options.operation==='apply'){
-    await applyProjection(projection);
-    const verifyRows=await loadRows();
-    const verify=await project(verifyRows,config);
-    const productMismatch=verify.details.filter(x=>x.product_id&&x.old_product_category!==x.new_category).length;
+    const safety = await applyProjection(projection);
+    const verifyLoaded=await loadRows();
+    const verifyScope=selectRepairCohort(verifyLoaded);
+    const verify=await project(verifyScope.cohort,config);
+    const productMismatch=verify.details.filter(
+      x=>x.product_id&&x.new_category&&x.old_product_category!==x.new_category
+    ).length;
+    const unresolved=verify.details.filter(x=>!x.new_category).length;
     const accepted=verify.summary.changed===0
       && verify.summary.scan_decision_drift===0
       && verify.summary.unresolved_category===0
       && verify.summary.invalid_category===0
       && productMismatch===0;
-    const result={accepted,product_category_mismatch:productMismatch,...verify.summary};
+    const result={accepted,product_category_mismatch:productMismatch,unresolved,safety,...verify.summary};
     console.log(`[aliexpress-taxonomy-200] APPLY ${JSON.stringify(result)}`);
     if(!accepted) throw new Error(`TAXONOMY_REPAIR_INCOMPLETE:${JSON.stringify(result)}`);
     return result;
@@ -244,4 +270,4 @@ if(require.main===module){
   }).finally(()=>db.pool.end());
 }
 
-module.exports={SUPPLIER,WAVE_ID,TARGET,FLAG,assertRuntime,parseArgs,loadRows,project,assertSafeProjection,applyProjection,summarizeTaxonomyConfig,main};
+module.exports={SUPPLIER,WAVE_ID,TARGET,FLAG,assertRuntime,parseArgs,loadRows,selectRepairCohort,project,assertSafeProjection,applyProjection,summarizeTaxonomyConfig,main};

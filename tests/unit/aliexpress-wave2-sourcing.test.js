@@ -9,6 +9,7 @@ const {
   checkpointCategoryId,
   waveSourceFilename,
   withWaveProvenance,
+  semanticRelevance,
 } = require('../../scripts/aliexpress-wave2-sourcing');
 
 describe('AliExpress Wave 2 sourcing', () => {
@@ -49,6 +50,23 @@ describe('AliExpress Wave 2 sourcing', () => {
     expect(projected.raw_payload.discovery.target_category).toBe('Mode & Beauté');
     expect(projected.raw_payload.discovery.query_page).toBe(2);
     expect(original.raw_payload.discovery.wave).toBeUndefined();
+  });
+
+  test('rejects a rich AliExpress result that is off-query before import', () => {
+    const offQuery = semanticRelevance({
+      product_name: 'Aluminum Motorcycle Footpeg Pedals',
+      supplier_category: 'Motorcycle Parts',
+      description: 'Universal folding footrest for scooter',
+    }, 'linen women blouse');
+    expect(offQuery.relevant).toBe(false);
+
+    const relevant = semanticRelevance({
+      product_name: 'Women Linen Blouse Summer Shirt',
+      supplier_category: 'Women Clothing',
+      description: 'Breathable linen blouse',
+    }, 'linen women blouse');
+    expect(relevant.relevant).toBe(true);
+    expect(relevant.matched_tokens).toEqual(expect.arrayContaining(['linen', 'women', 'blouse']));
   });
 
   test('uses an isolated source path', () => {

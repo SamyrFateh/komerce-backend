@@ -36,6 +36,18 @@ describe('AliExpress incremental +200 taxonomy repair', () => {
     })).toThrow(/staging\/test/);
   });
 
+  test('keeps a deterministic 200-row repair cohort when semantic top-up appended a tail', () => {
+    const rows = Array.from({ length: 215 }, (_, index) => ({ candidate_id: `c-${index + 1}` }));
+    const scope = repair.selectRepairCohort(rows);
+
+    expect(scope.cohort).toHaveLength(200);
+    expect(scope.tail).toHaveLength(15);
+    expect(scope.cohort[0].candidate_id).toBe('c-1');
+    expect(scope.cohort[199].candidate_id).toBe('c-200');
+    expect(scope.tail[0].candidate_id).toBe('c-201');
+    expect(() => repair.selectRepairCohort(rows.slice(0, 199))).toThrow(/au moins 200/);
+  });
+
   test('projects category transitions without resourcing', async () => {
     scanner.normalizeCandidate
       .mockResolvedValueOnce({

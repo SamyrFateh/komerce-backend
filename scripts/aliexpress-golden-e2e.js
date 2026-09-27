@@ -21,7 +21,7 @@
 const db = require('../db');
 const connected = require('../services/suppliers/connectors/aliexpress-connected-connector');
 const baseConnector = require('../services/suppliers/connectors/aliexpress-connector');
-const semantic = require('./aliexpress-golden-semantic');
+const semantic = require('../services/suppliers/discovery-semantic-relevance');
 const pool = require('./aliexpress-500-catalog-sync');
 const core = require('./aliexpress-golden-e2e-core');
 

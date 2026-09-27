@@ -126,6 +126,7 @@ jobs:
                 WHERE sc.supplier_name='CJdropshipping'
                   AND sc.state IN ('scanned','imported_to_catalog')
                   AND sc.raw_payload->'discovery'->>'campaign'='cj-balanced-e2e-500-v1'
+                  AND sc.raw_payload->'discovery'->'semantic_relevance'->>'relevant'='true'
                 GROUP BY 1,2,3
                 ORDER BY 1`
             );
@@ -137,7 +138,15 @@ jobs:
             }
             const total=rows.reduce((n,r)=>n+Number(r.n),0);
             if(total!==500) throw new Error(`BALANCED_TOTAL_MISMATCH:${total}/500`);
-            console.log('BALANCED_CJ_EXACT=500');
+            const {rows:[bad]}=await db.query(
+              `SELECT COUNT(*)::int AS n
+                 FROM sourcing_candidates sc
+                WHERE sc.supplier_name='CJdropshipping'
+                  AND sc.raw_payload->'discovery'->>'campaign'='cj-balanced-e2e-500-v1'
+                  AND COALESCE(sc.raw_payload->'discovery'->'semantic_relevance'->>'relevant','false') <> 'true'`
+            );
+            if(Number(bad.n)!==0) throw new Error(`SEMANTIC_RELEVANCE_INVALID:${bad.n}`);
+            console.log('BALANCED_CJ_SEMANTIC_EXACT=500');
           })().finally(()=>db.pool.end());
           NODE
 
@@ -186,6 +195,7 @@ jobs:
                 WHERE sc.supplier_name='CJdropshipping'
                   AND sc.state='imported_to_catalog'
                   AND sc.raw_payload->'discovery'->>'campaign'='cj-balanced-e2e-500-v1'
+                  AND sc.raw_payload->'discovery'->'semantic_relevance'->>'relevant'='true'
                 ORDER BY p.product_ref`
             );
             if(rows.length!==500) throw new Error(`PROMOTED_TOTAL_MISMATCH:${rows.length}/500`);
@@ -319,6 +329,7 @@ jobs:
             echo '- production publication: forbidden'
             echo '- market exposure: none'
             echo '- supplier stock: required at discovery'
+            echo '- semantic relevance to discovery query: required for all 500'
             echo '- exact SKU + Supplier Order Identity: required after CJ detail continuation'
             echo '- boutique taxonomy separated from customs classification'
             echo '- export/dump: best effort after final acceptance; never invalidates a successful 500/500 import'

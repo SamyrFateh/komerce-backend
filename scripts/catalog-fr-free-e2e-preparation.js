@@ -9,7 +9,7 @@
  * @outputs       traced manual FR overrides for staging E2E + optional JSON workpack
  * @depends       db.js, services/catalog-overrides.js, scripts/showcase-curate-staging-500.js
  * @used-by       staging real-supplier stress workflows
- * @db-read       sourcing_candidates, products
+ * @db-read       sourcing_candidates, products, customs_categories
  * @db-write-via  services/catalog-overrides.js
  * @db-txn        canonical override writes
  * @doctrine      no_paid_ai_api, source_preserved, staging_e2e_fixture_only
@@ -28,16 +28,6 @@ const SUPPLIERS = Object.freeze(['AliExpress', 'CJdropshipping']);
 const MAX_LIMIT = 1000;
 const PREPARATION_VERSION = 'free-fr-e2e-v1';
 
-const CATEGORY_DESCRIPTIONS = Object.freeze({
-  vetements: 'Article de mode préparé pour les parcours de test Komerce à partir de la référence fournisseur conservée.',
-  mariage: 'Article mariage préparé pour les parcours de test Komerce à partir de la référence fournisseur conservée.',
-  ceremonie: 'Article de cérémonie préparé pour les parcours de test Komerce à partir de la référence fournisseur conservée.',
-  enfants: 'Article enfant préparé pour les parcours de test Komerce à partir de la référence fournisseur conservée.',
-  phones: 'Produit ou accessoire mobile préparé pour les parcours de test Komerce à partir de la référence fournisseur conservée.',
-  electro: 'Produit électronique préparé pour les parcours de test Komerce à partir de la référence fournisseur conservée.',
-  materiels: 'Matériel ou équipement préparé pour les parcours de test Komerce à partir de la référence fournisseur conservée.',
-  cosmetiques: 'Produit beauté ou soin préparé pour les parcours de test Komerce à partir de la référence fournisseur conservée.',
-});
 
 function parseArgs(argv = process.argv.slice(2)) {
   let limit = MAX_LIMIT;
@@ -95,9 +85,10 @@ function compactTitle(value) {
 function prepareFrenchFields(row) {
   const sourceTitle = String(row.name_source || row.name || row.product_ref || '').trim();
   const name = compactTitle(sourceTitle);
-  const category = String(row.category || '').trim().toLowerCase();
-  const categoryText = CATEGORY_DESCRIPTIONS[category]
-    || 'Produit préparé pour les parcours de test Komerce à partir de la référence fournisseur conservée.';
+  const categoryLabel = String(row.category_label || '').trim();
+  const categoryText = categoryLabel
+    ? `Produit de catégorie « ${categoryLabel} » préparé pour les parcours de test Komerce à partir de la référence fournisseur conservée.`
+    : 'Produit préparé pour les parcours de test Komerce à partir de la référence fournisseur conservée.';
   return {
     name,
     description: `${name}. ${categoryText}`,
@@ -110,11 +101,16 @@ async function loadDrafts(limit, suppliers = SUPPLIERS, discoveryWave = null) {
     `SELECT p.id, p.product_ref, p.name, p.name_source, p.description_source,
             p.source_locale, p.category, p.subcategory, p.content_source,
             p.lifecycle_status, p.is_active,
-            sc.supplier_name, sc.supplier_product_id
+            sc.supplier_name, sc.supplier_product_id,
+            cc.label AS category_label
        FROM sourcing_candidates sc
        JOIN products p ON p.id=sc.product_id
+       LEFT JOIN customs_categories cc
+         ON cc.key=p.category AND cc.is_active=TRUE
       WHERE sc.supplier_name = ANY($1::text[])
         AND sc.state='imported_to_catalog'
+        AND COALESCE(sc.scan_result->>'sourcing_decision','UNKNOWN') IN ('TEST','PRIORITY')
+        AND sc.komerce_category IS NOT NULL
         AND p.lifecycle_status='candidate'
         AND p.is_active=FALSE
         AND p.content_source='connector_raw'
@@ -213,7 +209,6 @@ if (require.main === module) {
 
 module.exports = {
   PREPARATION_VERSION,
-  CATEGORY_DESCRIPTIONS,
   parseArgs,
   assertRuntime,
   compactTitle,

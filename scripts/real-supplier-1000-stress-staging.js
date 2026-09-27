@@ -47,6 +47,7 @@ function parseArgs(argv = process.argv.slice(2)) {
   let operation = 'audit';
   let limit = TARGET_TOTAL;
   let concurrency = 5;
+  let supplier = null;
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--operation') operation = String(argv[++i] || '').trim();
@@ -55,10 +56,12 @@ function parseArgs(argv = process.argv.slice(2)) {
     else if (arg.startsWith('--limit=')) limit = Number.parseInt(arg.split('=', 2)[1], 10);
     else if (arg === '--concurrency') concurrency = Number.parseInt(argv[++i], 10);
     else if (arg.startsWith('--concurrency=')) concurrency = Number.parseInt(arg.split('=', 2)[1], 10);
+    else if (arg === '--supplier') supplier = String(argv[++i] || '').trim();
+    else if (arg.startsWith('--supplier=')) supplier = String(arg.split('=', 2)[1] || '').trim();
     else throw new Error(`Argument inconnu: ${arg}`);
   }
-  if (!['audit', 'refinery-audit', 'promote', 'prepare-fr'].includes(operation)) {
-    throw new Error('operation doit être audit, refinery-audit, promote ou prepare-fr');
+  if (!['audit', 'supplier-slice-audit', 'refinery-audit', 'promote', 'prepare-fr'].includes(operation)) {
+    throw new Error('operation doit être audit, supplier-slice-audit, refinery-audit, promote ou prepare-fr');
   }
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
     throw new Error(`--limit doit être 1..${MAX_LIMIT}`);
@@ -66,7 +69,13 @@ function parseArgs(argv = process.argv.slice(2)) {
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 10) {
     throw new Error('--concurrency doit être 1..10');
   }
-  return { operation, limit, concurrency };
+  if (supplier && !SUPPLIERS.includes(supplier)) {
+    throw new Error(`--supplier invalide: ${supplier}. Attendu: ${SUPPLIERS.join(', ')}`);
+  }
+  if (operation === 'supplier-slice-audit' && !supplier) {
+    throw new Error('--supplier requis pour supplier-slice-audit');
+  }
+  return { operation, limit, concurrency, supplier };
 }
 
 function assertRuntime(args, env = process.env) {
@@ -189,6 +198,117 @@ async function audit() {
     target_reached: cleanTotal >= TARGET_TOTAL,
     linked_product_breakdown: products,
     french_enrichment_eligible: Number(enrich?.eligible_fr || 0),
+  };
+}
+
+
+function localQualityReasons(row) {
+  const reasons = [];
+  const contract = row?.normalized_source_contract || {};
+  if (!String(row?.supplier_product_id || '').trim()) reasons.push('supplier_product_id_missing');
+  if (!String(row?.product_name || '').trim()) reasons.push('product_name_missing');
+  if (!/^https:\/\//i.test(String(row?.image_url || ''))) reasons.push('image_url_invalid');
+  if (!(Number(row?.purchase_price) > 0)) reasons.push('purchase_price_invalid');
+  if (String(contract.schema_version || '') !== '2') reasons.push('contract_v2_missing');
+  if (row?.supplier_name === 'CJdropshipping') {
+    const stock = Number(contract.stock_available);
+    if (!Number.isFinite(stock) || stock <= 0) reasons.push('stock_missing_or_nonpositive');
+  }
+  if (!row?.raw_payload || typeof row.raw_payload !== 'object') reasons.push('raw_payload_missing');
+  return reasons;
+}
+
+async function loadSupplierSlice(limit, supplier) {
+  const { rows } = await db.query(`
+    SELECT id, supplier_name, supplier_product_id, product_name, image_url, purchase_price,
+           supplier_category, komerce_category, state, product_id, raw_payload,
+           normalized_source_contract, scan_result, purchase_price_kmf, created_at
+      FROM sourcing_candidates
+     WHERE supplier_name=$1
+       AND state IN ('scanned','imported_to_catalog')
+     ORDER BY created_at, id
+     LIMIT $2
+  `, [supplier, limit]);
+  return rows;
+}
+
+async function supplierSliceAudit(limit, supplier) {
+  const rows = await loadSupplierSlice(limit, supplier);
+  const config = await pricingEngine.loadGlobalConfig();
+  const exclusions = await eligibility.loadActiveExclusions();
+  const qualityReasons = {};
+  const decisions = {};
+  const categories = {};
+  const duplicateIds = new Set();
+  const seenIds = new Set();
+  const errors = [];
+  let qualityPass = 0;
+  let refineryPass = 0;
+  const refineryPassSupplierIds = [];
+
+  for (const row of rows) {
+    const reasons = localQualityReasons(row);
+    const supplierId = String(row.supplier_product_id || '').trim();
+    if (supplierId) {
+      if (seenIds.has(supplierId)) {
+        reasons.push('duplicate_supplier_product_id');
+        duplicateIds.add(supplierId);
+      } else {
+        seenIds.add(supplierId);
+      }
+    }
+    if (reasons.length) {
+      for (const reason of reasons) bump(qualityReasons, reason);
+      continue;
+    }
+    qualityPass += 1;
+    try {
+      const product = reconstructProduct(row);
+      // eslint-disable-next-line no-await-in-loop
+      const normalized = await scanner.normalizeCandidate(product, { config });
+      const verdict = eligibility.checkEligibility(normalized, exclusions);
+      const absolute = verdict?.layer === 'absolute';
+      // eslint-disable-next-line no-await-in-loop
+      const scan = absolute
+        ? { sourcing_decision: 'EXCLUDED', scan_result: null }
+        : await scanner.scanCandidate(normalized, { config });
+      const computed = String(scan.sourcing_decision || 'UNKNOWN').toUpperCase();
+      bump(decisions, computed);
+      bump(categories, normalized.komerce_category);
+      if (ALLOWED_DECISIONS.has(computed)) {
+        refineryPass += 1;
+        refineryPassSupplierIds.push(row.supplier_product_id);
+      }
+    } catch (error) {
+      bump(qualityReasons, 'refinery_error');
+      errors.push({
+        supplier_product_id: row.supplier_product_id,
+        error: String(error.message || error).slice(0, 240),
+      });
+    }
+  }
+
+  const input = rows.length;
+  const waste = input - refineryPass;
+  return {
+    supplier,
+    requested: limit,
+    input,
+    source_complete: input === limit,
+    local_only: true,
+    provider_api_calls: 0,
+    quality_pass: qualityPass,
+    refinery_pass: refineryPass,
+    waste_total: waste,
+    waste_rate: input ? Number((waste / input).toFixed(4)) : 0,
+    replacement_needed: Math.max(0, limit - refineryPass),
+    refinery_pass_supplier_product_ids: refineryPassSupplierIds,
+    duplicate_supplier_ids: duplicateIds.size,
+    quality_reasons: qualityReasons,
+    decisions,
+    categories,
+    errors_count: errors.length,
+    error_sample: errors.slice(0, 20),
   };
 }
 
@@ -369,6 +489,7 @@ async function main() {
   assertRuntime(args);
   let result;
   if (args.operation === 'audit') result = await audit();
+  else if (args.operation === 'supplier-slice-audit') result = await supplierSliceAudit(args.limit, args.supplier);
   else if (args.operation === 'refinery-audit') result = await refineryAudit(args.limit);
   else if (args.operation === 'promote') result = await promote(args.limit);
   else result = await prepareFr(args.limit);
@@ -399,6 +520,9 @@ module.exports = {
   classifyForPromotion,
   roundRobinPromotable,
   audit,
+  localQualityReasons,
+  loadSupplierSlice,
+  supplierSliceAudit,
   refineryAudit,
   promote,
   prepareFr,

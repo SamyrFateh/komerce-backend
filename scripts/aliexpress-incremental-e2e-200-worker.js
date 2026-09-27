@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
  * @komerce-arch
- * @role          aliexpress-incremental-e2e-200-worker-launcher
+ * @role          supplier-catalog-isolated-e2e-worker-launcher
  * @domain        catalog
  * @layer         tooling
  * @criticality   high
  * @inputs        KOMERCE_ALI_E2E_200_WORKER_MODE
- * @outputs       selected isolated +200 campaign action
- * @depends       scripts/aliexpress-wave2-sourcing.js, scripts/aliexpress-incremental-e2e-200.js, scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js
+ * @outputs       selected isolated catalog campaign action, including canonical 700 build
+ * @depends       scripts/aliexpress-wave2-sourcing.js, scripts/aliexpress-incremental-e2e-200.js, scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js, scripts/cj-500-e2e-catalog-sync.js, scripts/catalog-e2e-700-acceptance.js
  * @used-by       railway.ali-e2e-200.json
  * @db-read       delegated
  * @db-write      delegated
@@ -21,13 +21,19 @@
 const { spawnSync } = require('child_process');
 
 const MODES = Object.freeze([
+  'idle',
   'campaign',
   'taxonomy-audit',
   'taxonomy-apply-and-accept',
+  'taxonomy-repair-topup',
+  'catalog-700-build',
+  'catalog-700-local-audit',
+  'catalog-cj-reconcile-promote-local',
+  'catalog-cj-new12-finish',
 ]);
 
 function resolveMode(env = process.env) {
-  const mode = String(env.KOMERCE_ALI_E2E_200_WORKER_MODE || 'campaign').trim().toLowerCase();
+  const mode = String(env.KOMERCE_ALI_E2E_200_WORKER_MODE || 'idle').trim().toLowerCase();
   if (!MODES.includes(mode)) {
     throw new Error(`KOMERCE_ALI_E2E_200_WORKER_MODE invalide: ${mode}. Attendu: ${MODES.join(', ')}`);
   }
@@ -35,9 +41,48 @@ function resolveMode(env = process.env) {
 }
 
 function commandPlan(mode = resolveMode()) {
+  if (mode === 'idle') return [];
+  if (mode === 'catalog-cj-new12-finish') {
+    return [
+      ['scripts/catalog-fr-free-e2e-preparation.js', '--limit=12', '--supplier=CJdropshipping', '--output=artifacts/catalog-e2e-700/cj-new12-fr.json'],
+      ['scripts/cj-refinery-commandability-continuation.js', '--limit=12', '--chunk=12', '--output=artifacts/catalog-e2e-700/cj-new12-commandability.json'],
+      ['scripts/catalog-refinery-final-acceptance.js', '--mode=final', '--expected=12', '--output=artifacts/catalog-e2e-700/cj-new12-final.json'],
+    ];
+  }
+  if (mode === 'catalog-cj-reconcile-promote-local') {
+    return [
+      ['scripts/cj-reconcile-current-new-12-promote.js'],
+    ];
+  }
+  if (mode === 'catalog-700-local-audit') {
+    return [
+      ['scripts/real-supplier-1000-stress-staging.js', '--operation=supplier-slice-audit', '--supplier=CJdropshipping', '--limit=500'],
+    ];
+  }
+  if (mode === 'catalog-700-build') {
+    return [
+      ['scripts/cj-500-e2e-catalog-sync.js'],
+      ['scripts/real-supplier-1000-stress-staging.js', '--operation=refinery-audit', '--limit=715'],
+      ['scripts/real-supplier-1000-stress-staging.js', '--operation=promote', '--limit=500'],
+      ['scripts/catalog-fr-free-e2e-preparation.js', '--limit=1000'],
+      ['scripts/cj-refinery-commandability-continuation.js', '--limit=500', '--chunk=20', '--output=artifacts/catalog-e2e-700/cj-commandability.json'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=accept', '--output=artifacts/catalog-e2e-700/ali-final-acceptance.json'],
+      ['scripts/catalog-e2e-700-acceptance.js', '--output=artifacts/catalog-e2e-700/final-acceptance.json'],
+    ];
+  }
   if (mode === 'taxonomy-audit') {
     return [
       ['scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js', '--operation=audit'],
+    ];
+  }
+  if (mode === 'taxonomy-repair-topup') {
+    return [
+      ['scripts/aliexpress-incremental-e2e-200-taxonomy-repair.js', '--operation=apply'],
+      ['scripts/aliexpress-wave2-sourcing.js'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=refinery-audit'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=promote'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=prepare-fr'],
+      ['scripts/aliexpress-incremental-e2e-200.js', '--operation=accept', '--output=artifacts/aliexpress-incremental-e2e-200/final-acceptance.json'],
     ];
   }
   if (mode === 'taxonomy-apply-and-accept') {
