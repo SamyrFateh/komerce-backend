@@ -11,6 +11,7 @@ jest.mock('../../services/pricing-engine', () => ({
   loadGlobalConfig: jest.fn(),
 }));
 jest.mock('../../services/supplier-catalog-scanner', () => ({
+  mapProductCategory: jest.fn(),
   normalizeCandidate: jest.fn(),
   scanCandidate: jest.fn(),
 }));
@@ -37,6 +38,9 @@ describe('AliExpress incremental +200 taxonomy repair', () => {
   });
 
   test('projects category transitions without resourcing', async () => {
+    scanner.mapProductCategory
+      .mockReturnValueOnce({ key: 'vetements', source: 'mapped', confidence: 'high' })
+      .mockReturnValueOnce({ key: 'cosmetiques', source: 'mapped', confidence: 'high' });
     scanner.normalizeCandidate
       .mockResolvedValueOnce({
         komerce_category: 'vetements',
@@ -77,7 +81,12 @@ describe('AliExpress incremental +200 taxonomy repair', () => {
       },
     ];
 
-    const out = await repair.project(rows, {});
+    const out = await repair.project(rows, {
+      categories: {
+        vetements: { key: 'vetements' },
+        cosmetiques: { key: 'cosmetiques' },
+      },
+    });
     expect(out.summary.total).toBe(2);
     expect(out.summary.changed).toBe(1);
     expect(out.summary.transitions).toEqual({
@@ -85,14 +94,21 @@ describe('AliExpress incremental +200 taxonomy repair', () => {
       'cosmetiques -> cosmetiques': 1,
     });
     expect(out.summary.scan_decision_drift).toBe(0);
+    expect(out.summary.category_mismatch).toBe(0);
+    expect(out.summary.unresolved_provenance).toBe(0);
+    expect(out.summary.expected).toEqual({ vetements: 1, cosmetiques: 1 });
+    expect(out.summary.after).toEqual({ vetements: 1, cosmetiques: 1 });
   });
 
-  test('refuses apply unless the projected 200-product distribution is exact', () => {
+  test('accepts any dynamic category distribution when it matches defined provenance', () => {
     expect(() => repair.assertSafeProjection({
       summary: {
         total: 200,
         scan_decision_drift: 0,
-        after: { vetements: 117, enfants: 60, cosmetiques: 23 },
+        category_mismatch: 0,
+        unresolved_provenance: 0,
+        expected: { materiels: 130, electro: 70 },
+        after: { materiels: 130, electro: 70 },
       },
     })).not.toThrow();
 
@@ -100,27 +116,29 @@ describe('AliExpress incremental +200 taxonomy repair', () => {
       summary: {
         total: 200,
         scan_decision_drift: 0,
-        after: { cosmetiques: 200 },
+        category_mismatch: 0,
+        unresolved_provenance: 0,
+        expected: { materiels: 130, electro: 70 },
+        after: { materiels: 129, electro: 71 },
       },
     })).toThrow(/UNEXPECTED_DISTRIBUTION/);
-
-    expect(() => repair.assertSafeProjection({
-      summary: {
-        total: 200,
-        scan_decision_drift: 1,
-        after: { vetements: 117, enfants: 60, cosmetiques: 23 },
-      },
-    })).toThrow(/DECISION_DRIFT/);
   });
 
-  test('safe projection requires zero sourcing-decision drift', () => {
-    expect(() => repair.assertSafeProjection({
-      summary: {
-        total: 200,
-        scan_decision_drift: 0,
-        after: { vetements: 117, enfants: 60, cosmetiques: 23 },
-      },
-    })).not.toThrow();
+  test('refuses unresolved provenance, mapping mismatch, or sourcing-decision drift', () => {
+    const base = {
+      total: 200,
+      scan_decision_drift: 0,
+      category_mismatch: 0,
+      unresolved_provenance: 0,
+      expected: { vetements: 200 },
+      after: { vetements: 200 },
+    };
+    expect(() => repair.assertSafeProjection({ summary: { ...base, unresolved_provenance: 1 } }))
+      .toThrow(/UNRESOLVED_PROVENANCE/);
+    expect(() => repair.assertSafeProjection({ summary: { ...base, category_mismatch: 1 } }))
+      .toThrow(/CATEGORY_MISMATCH/);
+    expect(() => repair.assertSafeProjection({ summary: { ...base, scan_decision_drift: 1 } }))
+      .toThrow(/DECISION_DRIFT/);
   });
 
   test('accepts only audit or apply operations', () => {
