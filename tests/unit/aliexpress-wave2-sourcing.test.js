@@ -56,6 +56,27 @@ describe('AliExpress Wave 2 sourcing', () => {
       .toBe(`aliexpress-pool/wave2-sync/${WAVE_ID}/page-0007.json`);
   });
 
+  test('supports an isolated 200-product incremental campaign without changing the default 500 wave', () => {
+    const base = {
+      KOMERCE_ENV: 'staging',
+      DATABASE_URL: 'postgres://test',
+      ALIEXPRESS_APP_KEY: 'key',
+      ALIEXPRESS_APP_SECRET: 'secret',
+      ALIEXPRESS_SESSION: 'session',
+      KOMERCE_ALLOW_ALIEXPRESS_WAVE2: '1',
+      KOMERCE_ALIEXPRESS_WAVE2_TARGET: '200',
+      KOMERCE_ALIEXPRESS_WAVE2_ID: 'incremental-e2e-200-v1',
+      KOMERCE_ALIEXPRESS_WAVE2_SYNC_KEY: 'aliexpress-incremental-e2e-200-v1',
+    };
+    const config = waveConfig(base);
+    expect(config.target).toBe(200);
+    expect(config.waveId).toBe('incremental-e2e-200-v1');
+    expect(config.syncKey).toBe('aliexpress-incremental-e2e-200-v1');
+    expect(checkpointCategoryId(config.waveId)).toBe('text:incremental-e2e-200-v1');
+    expect(waveSourceFilename(config.syncKey, 7, config.waveId))
+      .toBe('aliexpress-pool/aliexpress-incremental-e2e-200-v1/incremental-e2e-200-v1/page-0007.json');
+  });
+
   test('requires explicit staging wave authorization', () => {
     const base = {
       KOMERCE_ENV: 'staging',
