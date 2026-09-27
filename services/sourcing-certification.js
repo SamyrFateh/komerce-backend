@@ -86,6 +86,26 @@ function rejectionOutcome(row = {}) {
     : 'rejected';
 }
 
+function reconcileSourcingCounts({
+  inputTotal,
+  certified = 0,
+  quarantined = 0,
+  rejected = 0,
+  duplicates = 0,
+  archived = 0,
+  otherTerminal = 0,
+} = {}) {
+  return reconcileCertificationBatch({
+    input_total: inputTotal,
+    certified,
+    quarantined,
+    rejected,
+    duplicates,
+    archived,
+    other_terminal: otherTerminal,
+  });
+}
+
 function certifySourcingBatch({
   inputTotal,
   candidates = [],
@@ -128,8 +148,8 @@ function certifySourcingBatch({
     counts[rejectionOutcome(row)] += 1;
   }
 
-  const accounting = reconcileCertificationBatch({
-    input_total: inputTotal,
+  const accounting = reconcileSourcingCounts({
+    inputTotal,
     ...counts,
   });
 
@@ -146,5 +166,6 @@ module.exports = {
   TERMINAL_STATES,
   evaluateSourcingCandidateOutcome,
   rejectionOutcome,
+  reconcileSourcingCounts,
   certifySourcingBatch,
 };
