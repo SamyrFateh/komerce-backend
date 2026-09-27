@@ -4,14 +4,14 @@
  * @domain        customs
  * @layer         service
  * @criticality   high
- * @inputs        normalized supplier signals, active customs_categories
+ * @inputs        normalized supplier signals, active customs_categories, optional active boutique subcategory customs affinities
  * @outputs       resolved customs category key + confidence + scoring evidence
  * @depends       none
  * @used-by       services/supplier-catalog-scanner.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      dynamic_taxonomy_from_customs_categories, no_hardcoded_category_keys, supplier_identity_over_discovery_intent
+ * @doctrine      dynamic_taxonomy_from_customs_categories, no_hardcoded_category_keys, supplier_identity_over_discovery_intent, boutique_subcategory_affinity_only_as_fallback
  * @impact-areas  catalog, sourcing, customs, economic-engine
  * @version       2026-09-v2
  */
@@ -102,10 +102,39 @@ function confidenceFor(topScore, secondScore) {
   return 'low';
 }
 
-function classifySupplierProduct(product, categories = []) {
+function resolveBoutiqueAffinity(product = {}, affinities = [], activeKeys = new Set()) {
+  const discovery = product?.raw_payload?.discovery || {};
+  const categoryKey = String(discovery.target_category || '').trim();
+  const subcategoryKey = String(discovery.target_subcategory || '').trim();
+  if (!categoryKey || !subcategoryKey) return null;
+
+  const row = (Array.isArray(affinities) ? affinities : []).find(item =>
+    String(item?.category_key || '') === categoryKey
+    && String(item?.subcategory_key || '') === subcategoryKey
+    && activeKeys.has(String(item?.customs_category_key || ''))
+  );
+  if (!row) return null;
+  return {
+    key: String(row.customs_category_key),
+    source: 'boutique_affinity',
+    confidence: 'medium',
+    score: 0,
+    evidence: [{
+      signal: 'boutique_subcategory_affinity',
+      category_key: categoryKey,
+      subcategory_key: subcategoryKey,
+      customs_category_key: String(row.customs_category_key),
+    }],
+    reason: 'boutique_subcategory_affinity',
+  };
+}
+
+function classifySupplierProduct(product, categories = [], options = {}) {
   const active = (Array.isArray(categories) ? categories : [])
     .filter(category => category && category.is_active !== false);
   const fallback = active.find(category => category.key === 'default') || null;
+  const activeKeys = new Set(active.map(category => String(category.key || '')).filter(Boolean));
+  const affinity = resolveBoutiqueAffinity(product, options.boutique_customs_affinities, activeKeys);
   const signals = supplierSignals(product);
 
   if (!active.length) {
@@ -129,6 +158,7 @@ function classifySupplierProduct(product, categories = []) {
     });
 
   if (!ranked.length) {
+    if (affinity) return affinity;
     return {
       key: fallback?.key || null,
       source: 'default',
@@ -144,6 +174,15 @@ function classifySupplierProduct(product, categories = []) {
   const confidence = confidenceFor(top.score, second.score);
 
   if (confidence === 'low') {
+    if (affinity) {
+      return {
+        ...affinity,
+        lexical_top_candidate_key: top.category.key,
+        lexical_top_score: top.score,
+        lexical_second_candidate_key: ranked[1]?.category?.key || null,
+        lexical_second_score: second.score,
+      };
+    }
     return {
       key: fallback?.key || null,
       source: 'default',
@@ -176,5 +215,6 @@ module.exports = {
   supplierSignals,
   scoreCategory,
   confidenceFor,
+  resolveBoutiqueAffinity,
   classifySupplierProduct,
 };
