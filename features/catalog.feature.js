@@ -380,6 +380,7 @@ module.exports = {
       'tests/unit/catalog-e2e-700-acceptance.test.js',
       'tests/unit/catalog-e2e-taxonomy-bootstrap.test.js',
       'tests/unit/catalog-cj-certified-500-resolve-watch.test.js',
+      'tests/unit/catalog-712-production-readonly-audit.test.js',
       'tests/unit/catalog-cj-certified-500-materialize.test.js',
       'tests/unit/catalog-e2e-712-acceptance.test.js',
       'tests/unit/catalog-certification.test.js',

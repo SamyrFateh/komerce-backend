@@ -5,11 +5,11 @@
  * @domain        catalog
  * @layer         tooling
  * @criticality   high
- * @inputs        production DATABASE_URL, exact catalog-e2e-712 identity authority
+ * @inputs        isolated source DATABASE_URL, production destination URL, exact certified 712 bundle
  * @outputs       read-only production presence/readiness audit for the exact 712 identities
- * @depends       db.js, scripts/catalog-e2e-712-identities.js
+ * @depends       db.js, pg, scripts/catalog-712-transfer.js, scripts/catalog-e2e-712-identities.js
  * @used-by       ali-e2e-200-worker catalog-712-production-readonly-audit mode
- * @db-read       sourcing_candidates, products, catalog_media, product_skus, product_market_exposure
+ * @db-read       source:sourcing_candidates/products; destination:sourcing_candidates/products/catalog_media/product_skus/product_market_exposure
  * @db-write      none
  * @db-txn        none
  * @doctrine      exact_identity_authority, read_only, no_provider_calls
@@ -18,26 +18,14 @@
  */
 'use strict';
 
+const {Pool}=require('pg');
 const db=require('../db');
-const {buildExpectedCjIds,ALI_TARGET,TOTAL_TARGET}=require('./catalog-e2e-712-identities');
+const transfer=require('./catalog-712-transfer');
+const {TOTAL_TARGET}=require('./catalog-e2e-712-identities');
 
-const ALI_WAVE='incremental-e2e-200-v1';
-
-async function expectedAliIds(){
-  const {rows}=await db.query(
-    `SELECT supplier_product_id
-       FROM sourcing_candidates
-      WHERE supplier_name='AliExpress'
-        AND raw_payload #>> '{discovery,wave}'=$1
-      ORDER BY supplier_product_id`,
-    [ALI_WAVE]
-  );
-  const ids=[...new Set(rows.map(r=>String(r.supplier_product_id)))];
-  if(ids.length!==ALI_TARGET) throw new Error(`PROD_712_ALI_IDENTITY_COUNT:${ids.length}/${ALI_TARGET}`);
-  return ids;
-}
-async function auditSupplier(supplier,ids){
-  const {rows}=await db.query(
+const DEST_ENV='KOMERCE_CATALOG_DEST_DATABASE_URL';
+async function auditSupplier(executor,supplier,ids){
+  const {rows}=await executor.query(
     `WITH media AS (
        SELECT product_id,COUNT(*) FILTER (WHERE is_active=TRUE)::int media_count
          FROM catalog_media GROUP BY product_id
@@ -103,23 +91,33 @@ function summarize(rows,expected){
     rejected_or_excluded:rows.filter(r=>r.state==='rejected'||r.decision==='EXCLUDED').length,
   };
 }
-async function run(){
-  const cj=buildExpectedCjIds(process.env).all;
-  const ali=await expectedAliIds();
-  const [aliRows,cjRows]=await Promise.all([
-    auditSupplier('AliExpress',ali),
-    auditSupplier('CJdropshipping',cj),
-  ]);
-  const all=[...aliRows,...cjRows];
-  const summary={
-    ali:summarize(aliRows,ali.length),
-    cj:summarize(cjRows,cj.length),
-    total:summarize(all,TOTAL_TARGET),
-    provider_api_calls:0,
-    writes:false,
-  };
-  console.log(`[catalog-712-production-readonly-audit] ${JSON.stringify(summary)}`);
-  return summary;
+async function run(env=process.env){
+  const runtime=transfer.assertRuntime({...env,KOMERCE_ALLOW_CATALOG_712_PRODUCTION_IMPORT:'1'});
+  const bundle=await transfer.loadBundle(env);
+  const ali=bundle.products.filter(x=>x.supplier_name==='AliExpress').map(x=>String(x.supplier_product_id));
+  const cj=bundle.products.filter(x=>x.supplier_name==='CJdropshipping').map(x=>String(x.supplier_product_id));
+  if(ali.length!==200||cj.length!==512) throw new Error(`PROD_712_EXACT_BUNDLE_INVALID ali=${ali.length} cj=${cj.length}`);
+  const pool=new Pool({connectionString:env[DEST_ENV]});
+  try{
+    const [aliRows,cjRows]=await Promise.all([
+      auditSupplier(pool,'AliExpress',ali),
+      auditSupplier(pool,'CJdropshipping',cj),
+    ]);
+    const all=[...aliRows,...cjRows];
+    const summary={
+      runtime,
+      source_bundle_total:bundle.total,
+      ali:summarize(aliRows,ali.length),
+      cj:summarize(cjRows,cj.length),
+      total:summarize(all,TOTAL_TARGET),
+      provider_api_calls:0,
+      writes:false,
+    };
+    console.log(`[catalog-712-production-readonly-audit] ${JSON.stringify(summary)}`);
+    return summary;
+  } finally {
+    await pool.end();
+  }
 }
 if(require.main===module){
   run().then(()=>process.exit(0)).catch(e=>{
@@ -127,4 +125,4 @@ if(require.main===module){
     process.exit(1);
   }).finally(()=>db.pool.end());
 }
-module.exports={ALI_WAVE,expectedAliIds,auditSupplier,summarize,run};
+module.exports={DEST_ENV,auditSupplier,summarize,run};
