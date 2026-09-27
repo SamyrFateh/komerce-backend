@@ -4,9 +4,9 @@
 const scanner = require('../../services/supplier-catalog-scanner');
 
 const categories = [
-  { key: 'phones' },
-  { key: 'electronique' },
-  { key: 'autre' },
+  { key: 'phones', classification_terms: ['smartphone', 'mobile phone', 'phone'] },
+  { key: 'electronique', classification_terms: ['headphone', 'earphone', 'earbud', 'headset', 'tws'] },
+  { key: 'autre', classification_terms: [] },
 ];
 
 describe('supplier category mapping — audio vs phone', () => {
