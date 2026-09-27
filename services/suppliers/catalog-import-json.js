@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        raw_json_source_batch, import_profile_v1
  * @outputs       supplier_catalog_imports (batch), sourcing_candidates (staging), supplier_catalog_import_rejections
- * @depends       db.js, services/suppliers/connectors/json-connector.js
+ * @depends       db.js, services/sourcing-certification.js, services/suppliers/connectors/json-connector.js
  * @used-by       services/suppliers/catalog-import-orchestrator.js (source_type=json), scripts/pilot-json-import.js
  * @db-read       none
  * @db-write      sourcing_candidates, supplier_catalog_import_rejections, supplier_catalog_imports
@@ -44,6 +44,10 @@
 const crypto = require('crypto');
 const db = require('../../db');
 const jsonConnector = require('./connectors/json-connector');
+const {
+  SOURCING_CERTIFICATION_VERSION,
+  reconcileSourcingCounts,
+} = require('../sourcing-certification');
 
 function batchError(code, errors) {
   const err = new Error(`${code} : ${(errors || []).join(' | ')}`);
@@ -276,6 +280,24 @@ async function importJsonCatalog(body, userId) {
     // batch existe déjà pour le dire (statut FAILED, cf. catch).
     const result = jsonConnector.classifyRows({ source: b.source, import_profile: profile });
     const { ready, quarantined, rejected, statistics } = result;
+    const duplicateRejected = rejected.filter(entry =>
+      entry.reason_code === 'DUPLICATE_SUPPLIER_PRODUCT_ID_IN_BATCH'
+    ).length;
+    const sourceCertificationAccounting = reconcileSourcingCounts({
+      inputTotal: statistics.total,
+      certified: statistics.ready,
+      quarantined: statistics.quarantined,
+      rejected: Math.max(0, statistics.rejected - duplicateRejected),
+      duplicates: duplicateRejected,
+    });
+    if (!sourceCertificationAccounting.balanced) {
+      const err = new Error(
+        `SOURCING_CERTIFICATION_ACCOUNTING_FAILED unaccounted=${sourceCertificationAccounting.unaccounted} overflow=${sourceCertificationAccounting.overflow}`
+      );
+      err.code = 'SOURCING_CERTIFICATION_ACCOUNTING_FAILED';
+      throw err;
+    }
+
     const profileForStaging = {
       ...profile,
       profile_hash: profileHash,
@@ -316,6 +338,10 @@ async function importJsonCatalog(body, userId) {
         supplier_name: supplierName,
         source_type: 'json',
         statistics,
+        source_certification: {
+          certification_version: SOURCING_CERTIFICATION_VERSION,
+          ...sourceCertificationAccounting,
+        },
       },
     };
   } catch (err) {
