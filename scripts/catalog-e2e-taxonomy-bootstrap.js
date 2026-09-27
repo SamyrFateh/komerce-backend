@@ -49,14 +49,27 @@ function assertRuntime(env = process.env) {
 
 async function audit(plan = BALANCED_E2E_500_PLAN) {
   const pairs = expectedPairs(plan);
-  const { rows } = await db.query(
-    `SELECT bc.key AS category, bs.key AS subcategory, bs.customs_category_key
-       FROM boutique_categories bc
-       JOIN boutique_subcategories bs
-         ON bs.category_key=bc.key
-        AND bs.is_active=TRUE
-      WHERE bc.is_active=TRUE`
-  );
+  let rows;
+  try {
+    ({ rows } = await db.query(
+      `SELECT bc.key AS category, bs.key AS subcategory, bs.customs_category_key
+         FROM boutique_categories bc
+         JOIN boutique_subcategories bs
+           ON bs.category_key=bc.key
+          AND bs.is_active=TRUE
+        WHERE bc.is_active=TRUE`
+    ));
+  } catch (error) {
+    if (error?.code !== '42703') throw error;
+    ({ rows } = await db.query(
+      `SELECT bc.key AS category, bs.key AS subcategory, NULL::text AS customs_category_key
+         FROM boutique_categories bc
+         JOIN boutique_subcategories bs
+           ON bs.category_key=bc.key
+          AND bs.is_active=TRUE
+        WHERE bc.is_active=TRUE`
+    ));
+  }
   const byPair = new Map(rows.map(row => [`${row.category}\u0000${row.subcategory}`, row]));
   const missing = pairs.filter(pair => !byPair.has(`${pair.category}\u0000${pair.subcategory}`));
   const missingAffinity = pairs.filter(pair => {
