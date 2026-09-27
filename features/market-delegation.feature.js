@@ -154,6 +154,7 @@ module.exports = {
       'routes/market-delegation-settlement.js',
       'routes/market-delegation-structure-event.js',
       'routes/market-delegation-performance.js',
+      'routes/market-delegation-market-config.js',
     ],
     tests: [
       'tests/unit/provision-market-operator.test.js',
@@ -173,6 +174,7 @@ module.exports = {
       'tests/unit/market-delegation-local-offer-service.test.js',
       'tests/unit/market-delegation-local-offer-routes.test.js',
       'tests/unit/market-delegation-client-routes.test.js',
+      'tests/unit/market-delegation-market-config-route.test.js',
       'tests/unit/market-delegation-client-case-service.test.js',
       'tests/unit/market-delegation-client-case-routes.test.js',
       'tests/unit/market-delegation-settlement-service.test.js',

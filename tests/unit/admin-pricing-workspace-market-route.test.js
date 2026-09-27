@@ -404,6 +404,28 @@ describe('pricing.read / pricing.simulate priment sur le rôle scope (LOT B)', (
     expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
     expect(mockWorkspace.simulateImpact).not.toHaveBeenCalled();
   });
+
+  // Suite de l'audit manager-capabilities : cette route n'avait aucun guard
+  // de capability avant ce lot (protégée seulement par le router.use en
+  // amont), donc tout viewer y accédait sans que pricing.read soit vérifiée.
+  test('viewer avec pricing.read (défaut) consulte l’activation-preview', async () => {
+    mockScopeRole = 'viewer';
+    const res = await request(app())
+      .get('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price/activation-preview');
+    expect(res.status).toBe(200);
+    expect(mockActivation.previewLocalPriceActivation).toHaveBeenCalledWith(
+      expect.objectContaining({ market: expect.objectContaining({ id: 'market-cm', code: 'CM' }), productRef: 'KPR-1' })
+    );
+  });
+
+  test('révocation de pricing.read ferme aussi l’activation-preview', async () => {
+    mockPricingReadGranted = false;
+    const res = await request(app())
+      .get('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price/activation-preview');
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    expect(mockActivation.previewLocalPriceActivation).not.toHaveBeenCalled();
+  });
 });
 
 describe('pricing.decide / pricing.activate priment sur le rôle market_operator (retrait/ajout)', () => {
