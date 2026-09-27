@@ -60,6 +60,7 @@ module.exports = {
   files: {
     services: [
       'services/customs-classification.js',
+      'services/customs-dynamic-category-classifier.js',
       'services/customs-analytics.js',
     
       'services/customs-shipment-service.js',],
@@ -75,6 +76,7 @@ module.exports = {
       'migrations/091_freeze_customs_classification_order_items.sql',
       'migrations/092_customs_shipments_declaration_workflow.sql',
       'migrations/093_customs_invoice_document_type.sql',
+      'migrations/248_customs_category_classifier_config.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
@@ -87,6 +89,7 @@ module.exports = {
       'tests/unit/admin-customs-shipments.test.js',
       'tests/unit/customs-analytics.test.js',
       'tests/unit/customs-classification.test.js',
+      'tests/unit/customs-dynamic-category-classifier.test.js',
       'tests/unit/customs-shipment-service.test.js',
       'tests/unit/customs-shipment-service-market-atomicity.test.js',
       'tests/integration/customs-shipments-contract.test.js',
@@ -217,6 +220,7 @@ module.exports = {
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'la declaration est instrumentee, jamais optimisee pour reduire un cout',
+    'la classification fournisseur ne connaît aucune clé de catégorie métier en dur : elle score uniquement les customs_categories actives et leur classification_terms configuré',
   ],
 
 };

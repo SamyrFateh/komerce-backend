@@ -29,10 +29,10 @@ const config = {
     target_marge_brute_pct: 40,
   },
   categories: {
-    phones: { key: 'phones', default_weight_kg: 0.25, default_margin_pct: 35 },
-    vetements: { key: 'vetements', default_weight_kg: 0.4, default_margin_pct: 45 },
-    maison: { key: 'maison', default_weight_kg: 1.5, default_margin_pct: 40 },
-    autre: { key: 'autre', default_weight_kg: 0.5, default_margin_pct: 40 },
+    phones: { key: 'phones', default_weight_kg: 0.25, default_margin_pct: 35, default_dim_l_cm: 17, default_dim_w_cm: 12, default_dim_h_cm: 11, classification_terms: { smartphone: 10, phone: 8 } },
+    vetements: { key: 'vetements', default_weight_kg: 0.4, default_margin_pct: 45, classification_terms: { clothing: 8, dress: 8 } },
+    maison: { key: 'maison', default_weight_kg: 1.5, default_margin_pct: 40, default_dim_l_cm: 40, default_dim_w_cm: 25, default_dim_h_cm: 20, classification_terms: { home: 8, kitchen: 8 } },
+    autre: { key: 'autre', default_weight_kg: 0.5, default_margin_pct: 40, classification_terms: {} },
   },
 };
 
@@ -61,13 +61,13 @@ describe('supplier-catalog-scanner', () => {
 
   describe('mapCategory', () => {
     it('mappe les categories fournisseur vers les categories Komerce', () => {
-      expect(mapCategory('smartphone accessories', cats)).toEqual({ key: 'phones', source: 'mapped', confidence: 'medium' });
-      expect(mapCategory('home kitchen', cats)).toEqual({ key: 'maison', source: 'mapped', confidence: 'medium' });
+      expect(mapCategory('smartphone accessories', cats)).toEqual(expect.objectContaining({ key: 'phones', source: 'mapped' }));
+      expect(mapCategory('home kitchen', cats)).toEqual(expect.objectContaining({ key: 'maison', source: 'mapped' }));
     });
 
-    it('retourne autre en fallback quand la categorie est inconnue', () => {
-      expect(mapCategory('unknown category', cats)).toEqual({ key: 'autre', source: 'default', confidence: 'low' });
-      expect(mapCategory(null, cats)).toEqual({ key: 'autre', source: 'default', confidence: 'low' });
+    it('laisse une categorie inconnue non resolue au lieu de la forcer', () => {
+      expect(mapCategory('unknown category', cats)).toEqual(expect.objectContaining({ key: null, source: 'default', confidence: 'low' }));
+      expect(mapCategory(null, cats)).toEqual(expect.objectContaining({ key: null, source: 'default', confidence: 'low' }));
     });
   });
 
@@ -91,7 +91,7 @@ describe('supplier-catalog-scanner', () => {
     });
 
     it('retombe sur un volume categorie si les dimensions sont absentes', () => {
-      expect(estimateVolume(null, 'maison')).toEqual({ value: 0.020, source: 'category', confidence: 'low' });
+      expect(estimateVolume(null, 'maison', cats)).toEqual({ value: 0.020, source: 'category', confidence: 'medium' });
     });
   });
 
@@ -176,13 +176,13 @@ describe('supplier-catalog-scanner', () => {
         supplier_category: null,
         purchase_price: null,
         currency: 'AED',
-        komerce_category: 'autre',
+        komerce_category: null,
         purchase_price_kmf: 0,
         estimated_weight_kg: 0.5,
         estimated_volume_m3: 0.005,
         target_margin_pct: 40,
       }));
-      expect(candidate.confidence).toBe('medium');
+      expect(candidate.confidence).toBe('low');
     });
   });
 
