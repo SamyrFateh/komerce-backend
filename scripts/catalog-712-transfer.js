@@ -32,7 +32,7 @@ const ALI_WAVE='incremental-e2e-200-v1';
 const CJ_CAMPAIGN='cj-balanced-e2e-500-v1';
 
 function truthy(v){return ['1','true','yes'].includes(String(v||'').trim().toLowerCase());}
-function hostOf(url){try{return new URL(String(url||'')).hostname}catch{return null}}
+function hostOf(url){try{return new URL(String(url||'')).hostname.toLowerCase()}catch{return null}}
 function assertRuntime(env=process.env){
   if(!truthy(env[FLAG])) throw new Error(`REFUS: ${FLAG}=1 requis`);
   const sourceHost=hostOf(env.DATABASE_URL);
