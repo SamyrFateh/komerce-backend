@@ -32,6 +32,7 @@ const MODES = Object.freeze([
   'catalog-cj-new12-finish',
   'catalog-712-materialize',
   'catalog-712-accept',
+  'catalog-712-watch-audit',
 ]);
 
 function resolveMode(env = process.env) {
@@ -44,6 +45,11 @@ function resolveMode(env = process.env) {
 
 function commandPlan(mode = resolveMode()) {
   if (mode === 'idle') return [];
+  if (mode === 'catalog-712-watch-audit') {
+    return [
+      ['scripts/catalog-cj-certified-500-watch-audit.js'],
+    ];
+  }
   if (mode === 'catalog-712-materialize') {
     return [
       ['scripts/catalog-e2e-taxonomy-bootstrap.js'],
