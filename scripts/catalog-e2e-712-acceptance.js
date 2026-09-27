@@ -31,6 +31,8 @@ const ali = require('./aliexpress-incremental-e2e-200');
 const { CERTIFIED_RUN_ID } = require('./catalog-cj-certified-500-materialize');
 const {
   buildExpectedCjIds,
+  CJ_HISTORICAL_TARGET,
+  CJ_NEW_TARGET,
   CJ_TARGET,
   ALI_TARGET,
   TOTAL_TARGET,
