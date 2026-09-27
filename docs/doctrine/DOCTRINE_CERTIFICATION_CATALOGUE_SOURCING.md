@@ -73,16 +73,27 @@ Le miroir Sourcing est versionné par `services/sourcing-certification.js`.
 
 Une observation Sourcing n'est pas certifiée parce qu'elle a été reçue. Elle doit atteindre une issue explicite et traçable.
 
-Les états terminaux canoniques actuels sont :
+La certification distingue le **cycle de vie persistant** du **résultat d'un batch de décision**.
+
+États persistants terminaux ou explicitement décidés :
 
 - `imported_to_catalog` ;
 - `quarantined` ;
 - `rejected` ;
-- `archived`.
+- `archived` ;
+- `watchlist` comme décision explicite mais réversible.
 
-Les états de travail comme `raw_imported`, `normalized`, `scanned`, `test_ready` ou `watchlist` ne constituent pas une issue terminale de certification batch.
+Après scan, les décisions sont interprétées de façon provider-independent :
 
-Pour `imported_to_catalog`, le lien vers un produit catalogue et le contrat source V2 sont obligatoires.
+- `TEST` / `PRIORITY` → `READY_FOR_REFINERY` : **SOURCING_CERTIFIED** ;
+- `WATCH` / `AVOID` / `LOSS` → `DEFERRED` : issue explicite comptabilisée, mais non certifiée pour la Raffinerie ;
+- `EXCLUDED` → rejet explicite.
+
+Un état `normalized`, `scanned` ou `test_ready` sans décision reconnue reste **UNACCOUNTED** pour la certification du batch.
+
+Le rail JSON s'arrête volontairement avant le scan : ses lignes `ready` sont comptabilisées comme `ready_for_scan` à l'étage d'ingestion, jamais comme `SOURCING_CERTIFIED`.
+
+Pour `imported_to_catalog`, le lien vers un produit catalogue et le contrat source V2 sont obligatoires. Pour `READY_FOR_REFINERY`, le contrat source V2 est également obligatoire.
 
 Une quarantaine doit conserver une raison explicite. Un rejet doit conserver sa raison. La provenance brute doit rester traçable.
 
