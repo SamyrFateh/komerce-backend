@@ -78,7 +78,6 @@ module.exports = {
       'migrations/093_customs_invoice_document_type.sql',
       'migrations/248_customs_category_classifier_config.sql',
       'migrations/249_customs_category_classifier_calibration.sql',
-      'migrations/250_boutique_subcategory_customs_affinity.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
