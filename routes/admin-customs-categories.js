@@ -86,20 +86,21 @@ router.post('/', ...guard, async (req, res, next) => {
          key, label, sub_label, emoji,
          douane_pct, tva_pct, taxe_add_pct,
          default_dim_l_cm, default_dim_w_cm, default_dim_h_cm,
-         sh_code, hint, default_margin_pct,
+         sh_code, hint, default_margin_pct, classification_terms,
          display_order, is_active
        ) VALUES (
          $1, $2, $3, $4,
          $5, $6, $7,
          $8, $9, $10,
-         $11, $12, $13,
-         $14, $15
+         $11, $12, $13, $14,
+         $15, $16
        ) RETURNING *`,
       [
         b.key, b.label, b.sub_label || null, b.emoji || null,
         b.douane_pct || 0, b.tva_pct || 10, b.taxe_add_pct || 0,
         b.default_dim_l_cm || null, b.default_dim_w_cm || null, b.default_dim_h_cm || null,
         b.sh_code || null, b.hint || null, b.default_margin_pct || null,
+        Array.isArray(b.classification_terms) ? b.classification_terms : [],
         b.display_order || 99, b.is_active !== false
       ]
     );
@@ -114,7 +115,7 @@ router.put('/:key', ...guard, async (req, res, next) => {
       'label', 'sub_label', 'emoji',
       'douane_pct', 'tva_pct', 'taxe_add_pct',
       'default_dim_l_cm', 'default_dim_w_cm', 'default_dim_h_cm',
-      'sh_code', 'hint', 'default_margin_pct',
+      'sh_code', 'hint', 'default_margin_pct', 'classification_terms',
       'display_order', 'is_active'
     ];
     const updates = [], values = [];
