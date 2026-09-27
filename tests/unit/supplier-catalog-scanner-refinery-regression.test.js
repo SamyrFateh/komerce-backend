@@ -66,6 +66,36 @@ describe('AliExpress refinery canonical regressions', () => {
     }, cats)).toEqual({ key: 'materiels', source: 'mapped', confidence: 'high' });
   });
 
+  it('priorise le sous-segment de découverte sur un parent ambigu Mode & Beauté', () => {
+    expect(mapProductCategory({
+      product_name: 'Women Summer Dress',
+      supplier_category: 'AliExpress category 63705',
+      raw_payload: { discovery: {
+        target_category: 'Mode & Beauté',
+        target_subcategory: 'Femme',
+        keyword: 'maxi summer dress',
+      } },
+    }, cats)).toEqual({ key: 'vetements', source: 'mapped', confidence: 'high' });
+
+    expect(mapProductCategory({
+      product_name: 'Kids Sandals',
+      raw_payload: { discovery: {
+        target_category: 'Mode & Beauté',
+        target_subcategory: 'Enfant',
+        keyword: 'kids sandals',
+      } },
+    }, cats)).toEqual({ key: 'enfants', source: 'mapped', confidence: 'high' });
+
+    expect(mapProductCategory({
+      product_name: 'Facial Cleansing Brush',
+      raw_payload: { discovery: {
+        target_category: 'Mode & Beauté',
+        target_subcategory: 'Beauté',
+        keyword: 'facial cleansing brush',
+      } },
+    }, cats)).toEqual({ key: 'cosmetiques', source: 'mapped', confidence: 'high' });
+  });
+
   it('normalise un candidat AliExpress avec la categorie Komerce issue de la provenance', async () => {
     const candidate = await normalizeCandidate({
       supplier_name: 'AliExpress',

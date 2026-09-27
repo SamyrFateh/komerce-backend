@@ -130,6 +130,30 @@ function mapCategory(supplierCat, komerceCats) {
   return { key: fallback?.key || 'autre', source: 'default', confidence: 'low' };
 }
 
+const DISCOVERY_PATH_CATEGORY_KEYS = Object.freeze({
+  'mode & beauté|femme': ['vetements'],
+  'mode & beauté|homme': ['vetements'],
+  'mode & beauté|enfant': ['enfants', 'vetements'],
+  'mode & beauté|beauté': ['cosmetiques'],
+  'maison|confort': ['electro', 'materiels'],
+  'maison|cuisine': ['materiels', 'mariage'],
+  'maison|déco': ['mariage'],
+  'maison|enfants': ['enfants'],
+  'tech|phones': ['phones'],
+  'tech|audio': ['electro'],
+  'tech|montres': ['electro'],
+  'bricolage|outillage': ['materiels'],
+  'bricolage|electricité': ['materiels', 'electro'],
+  'bricolage|sécurité': ['materiels'],
+  'créations personnelles|cérémonie': ['ceremonie', 'vetements'],
+  'créations personnelles|cadeau': ['mariage'],
+  'créations personnelles|impression': ['mariage', 'materiels'],
+  'auto|filtres': ['materiels'],
+  'auto|freinage': ['materiels'],
+  'auto|éclairage': ['materiels', 'electro'],
+  'auto|moto': ['materiels'],
+});
+
 const DISCOVERY_SEGMENT_CATEGORY_KEYS = Object.freeze({
   'mode-femme': ['vetements'],
   'mode-homme': ['vetements'],
@@ -162,14 +186,26 @@ function mapProductCategory(product, komerceCats) {
   if (segmentCat) {
     return { key: segmentCat.key, source: 'mapped', confidence: 'high' };
   }
-  const hint = [
-    discovery.target_category,
+
+  const pathKey = [
+    String(discovery.target_category || '').trim().toLowerCase(),
+    String(discovery.target_subcategory || '').trim().toLowerCase(),
+  ].join('|');
+  const pathCat = findAvailableCategory(cats, DISCOVERY_PATH_CATEGORY_KEYS[pathKey]);
+  if (pathCat) {
+    return { key: pathCat.key, source: 'mapped', confidence: 'high' };
+  }
+
+  const specificHint = [
     discovery.target_subcategory,
     discovery.keyword,
     product?.product_name,
     product?.supplier_category,
   ].filter(Boolean).join(' ');
-  return mapCategory(hint || product?.supplier_category, cats);
+  const specific = mapCategory(specificHint || product?.supplier_category, cats);
+  if (specific.source !== 'default') return specific;
+
+  return mapCategory(discovery.target_category || specificHint || product?.supplier_category, cats);
 }
 
 function estimateWeight(suppliedWeight, categoryKey, komerceCats) {
