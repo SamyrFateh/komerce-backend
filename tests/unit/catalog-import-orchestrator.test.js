@@ -60,6 +60,18 @@ function makeScan(overrides = {}) {
   };
 }
 
+function makeV2Product(overrides = {}) {
+  return {
+    schema_version: '2',
+    supplier_name: 'Acme',
+    supplier_product_id: 'sku-1',
+    product_name: 'Produit test',
+    currency: 'AED',
+    raw_payload: { source: 'unit-test' },
+    ...overrides,
+  };
+}
+
 describe('importCatalog', () => {
   beforeEach(() => {
     pricingEngine.loadGlobalConfig.mockResolvedValue(CONFIG);
@@ -108,7 +120,11 @@ describe('importCatalog', () => {
   test('candidat accepte en staging mais echec shadow => preuve API partielle et cause conservee', async () => {
     jest.clearAllMocks();
     const dispatch = jest.fn().mockResolvedValue({
-      products: [{ supplier_product_id: '1005006471612403', product_name: 'Produit test' }], invalid: [],
+      products: [makeV2Product({
+        supplier_name: 'AliExpress',
+        supplier_product_id: '1005006471612403',
+        product_name: 'Produit test',
+      })], invalid: [],
     });
     db.query.mockImplementation((sql) => {
       if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-api-1' }] });
@@ -140,7 +156,11 @@ describe('importCatalog', () => {
   test('API source n annonce une resolution canonique que si le shadow a resolu ses identites', async () => {
     jest.clearAllMocks();
     const dispatch = jest.fn().mockResolvedValue({
-      products: [{ supplier_product_id: '1005006471612404', product_name: 'Produit resolu' }], invalid: [],
+      products: [makeV2Product({
+        supplier_name: 'AliExpress',
+        supplier_product_id: '1005006471612404',
+        product_name: 'Produit resolu',
+      })], invalid: [],
     });
     db.query.mockImplementation((sql) => {
       if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-api-2' }] });
@@ -195,7 +215,11 @@ describe('importCatalog', () => {
   });
 
   test('source API : les invalides sont quarantainés même au-dessus du seuil et les valides continuent', async () => {
-    const product = { supplier_product_id: 'api-good-1', product_name: 'Produit valide' };
+    const product = makeV2Product({
+      supplier_name: 'CJdropshipping',
+      supplier_product_id: 'api-good-1',
+      product_name: 'Produit valide',
+    });
     const dispatch = jest.fn().mockResolvedValue({
       products: [product],
       invalid: [
@@ -266,7 +290,7 @@ describe('importCatalog', () => {
   });
 
   test('réponse finale enrichie : accepted/rejected/reject_reasons/unmapped_columns (ligne de synthèse fondateur)', async () => {
-    const product = { supplier_product_id: 'sku-1', product_name: 'Savon' };
+    const product = makeV2Product({ supplier_product_id: 'sku-1', product_name: 'Savon' });
     const dispatch = jest.fn().mockResolvedValue({
       products: [product],
       invalid: [{ errors: ['devise absente'] }],
@@ -448,8 +472,8 @@ describe('importCatalog', () => {
 
   test('une erreur sur un produit n\'interrompt pas le batch', async () => {
     const products = [
-      { supplier_product_id: 'sku-ok', product_name: 'OK' },
-      { supplier_product_id: 'sku-bad', product_name: 'BAD' },
+      makeV2Product({ supplier_product_id: 'sku-ok', product_name: 'OK' }),
+      makeV2Product({ supplier_product_id: 'sku-bad', product_name: 'BAD' }),
     ];
     const dispatch = jest.fn().mockResolvedValue({ products });
 
