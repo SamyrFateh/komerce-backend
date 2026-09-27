@@ -43,7 +43,7 @@ function assertRuntime(env=process.env){
   return {source_host:sourceHost,dest_host:destHost};
 }
 async function loadBundle(env=process.env){
-  const expectedCj=buildExpectedCjIds(env);
+  const expectedCj=await resolveExpectedCjIds({env,executor:db});
   const {rows}=await db.query(
     `SELECT sc.supplier_name,sc.supplier_product_id,sc.raw_payload,sc.normalized_source_contract,
             sc.scan_result,sc.komerce_category,sc.state,sc.product_id,
