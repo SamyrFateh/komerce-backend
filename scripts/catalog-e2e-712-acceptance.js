@@ -7,7 +7,7 @@
  * @criticality   high
  * @inputs        isolated dataset containing 200 AliExpress + 500 certified CJ + 12 reconciled CJ
  * @outputs       definitive 712-product E2E catalog acceptance
- * @depends       db.js, services/suppliers/e2e-isolated-runtime.js, services/catalog-certification.js, utils/certification-accounting.js, scripts/catalog-cj-certified-500-materialize.js, scripts/aliexpress-incremental-e2e-200.js, scripts/cj-reconcile-current-new-12-promote.js
+ * @depends       db.js, services/suppliers/e2e-isolated-runtime.js, services/catalog-certification.js, utils/certification-accounting.js, scripts/catalog-e2e-712-identities.js, scripts/catalog-cj-certified-500-materialize.js, scripts/aliexpress-incremental-e2e-200.js
  * @used-by       Railway isolated catalog E2E worker
  * @db-read       sourcing_candidates, products, catalog_media, product_skus, product_market_exposure, boutique_categories, boutique_subcategories
  * @db-write      none
@@ -28,20 +28,19 @@ const {
 } = require('../services/catalog-certification');
 const { reconcileCertificationBatch } = require('../utils/certification-accounting');
 const ali = require('./aliexpress-incremental-e2e-200');
-const { NEW_UNIQUE_IDS } = require('./cj-reconcile-current-new-12-promote');
+const { CERTIFIED_RUN_ID } = require('./catalog-cj-certified-500-materialize');
 const {
-  decodeCertifiedIds,
-  CERTIFIED_RUN_ID,
-} = require('./catalog-cj-certified-500-materialize');
+  buildExpectedCjIds,
+  CJ_HISTORICAL_TARGET,
+  CJ_NEW_TARGET,
+  CJ_TARGET,
+  ALI_TARGET,
+  TOTAL_TARGET,
+  DATASET_ID,
+} = require('./catalog-e2e-712-identities');
 
 const CJ_SUPPLIER = 'CJdropshipping';
 const ALI_SUPPLIER = 'AliExpress';
-const CJ_HISTORICAL_TARGET = 500;
-const CJ_NEW_TARGET = 12;
-const CJ_TARGET = CJ_HISTORICAL_TARGET + CJ_NEW_TARGET;
-const ALI_TARGET = 200;
-const TOTAL_TARGET = CJ_TARGET + ALI_TARGET;
-const DATASET_ID = 'catalog-e2e-712-v1';
 const DEFAULT_OUTPUT = path.resolve('artifacts/catalog-e2e-712/final-acceptance.json');
 
 function parseArgs(argv = process.argv.slice(2)) {
@@ -53,18 +52,6 @@ function parseArgs(argv = process.argv.slice(2)) {
     else throw new Error(`Argument inconnu: ${arg}`);
   }
   return { output };
-}
-
-function buildExpectedCjIds(env = process.env) {
-  const historical = decodeCertifiedIds(env);
-  const additions = NEW_UNIQUE_IDS.map(String);
-  const all = [...historical, ...additions];
-  if (historical.length !== CJ_HISTORICAL_TARGET) throw new Error('CATALOG_712_HISTORICAL_COUNT_INVALID');
-  if (additions.length !== CJ_NEW_TARGET) throw new Error('CATALOG_712_NEW12_COUNT_INVALID');
-  if (new Set(all).size !== CJ_TARGET) {
-    throw new Error(`CATALOG_712_CJ_ID_OVERLAP:${all.length - new Set(all).size}`);
-  }
-  return { historical, additions, all };
 }
 
 async function loadAcceptedRows(cjIds) {

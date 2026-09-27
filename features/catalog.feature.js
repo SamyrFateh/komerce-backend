@@ -137,6 +137,7 @@ module.exports = {
       'scripts/catalog-cj-certified-500-watch-audit.js',
       'scripts/catalog-cj-certified-500-resolve-watch.js',
       'scripts/catalog-e2e-712-acceptance.js',
+      'scripts/catalog-e2e-712-identities.js',
       'scripts/catalog-712-transfer.js',
       'scripts/catalog-712-transfer-import.js',
       'scripts/catalog-712-production-exclusion-audit.js',
