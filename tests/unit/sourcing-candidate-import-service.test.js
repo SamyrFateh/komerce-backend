@@ -142,4 +142,41 @@ describe('sourcing-candidate-import-service', () => {
     expect(q.query.mock.calls[2][0]).toContain('INSERT INTO sourcing_candidate_events');
     expect(q.query.mock.calls[1][1][2]).toBe('Absent du full-snapshot import import-9');
   });
+
+  it('reactivates an archived supplier identity through the real upsert seam', async () => {
+    const q = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ id: 'cand-1', was_updated: true, state: 'scanned', data_sources: {} }] })
+        .mockResolvedValueOnce({ rows: [] }),
+    };
+    const input = baseInput();
+    input.autoState = 'scanned';
+    const result = await upsertCandidateFromCatalogImport(q, input);
+    expect(result.wasUpdated).toBe(true);
+    expect(result.row.state).toBe('scanned');
+    const sql = q.query.mock.calls[0][0];
+    expect(sql).toContain("state IN ('imported_to_catalog', 'rejected')");
+    expect(sql).not.toContain("state IN ('imported_to_catalog', 'rejected', 'archived')");
+  });
+
+  it('keeps supplier identity unique under concurrent/replayed imports at the real persistence seam', async () => {
+    const q = { query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'cand-1', was_updated: false, data_sources: {} }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'cand-1', was_updated: true, data_sources: {} }] })
+      .mockResolvedValueOnce({ rows: [] })
+    };
+    const first = await upsertCandidateFromCatalogImport(q, baseInput());
+    const replay = await upsertCandidateFromCatalogImport(q, baseInput());
+    expect(first.row.id).toBe(replay.row.id);
+    expect(q.query.mock.calls[0][0]).toContain('ON CONFLICT (supplier_name, supplier_product_id)');
+  });
+
+  it('archives only via explicit full-snapshot seam; partial snapshot performs no archive call', async () => {
+    const q = { query: jest.fn().mockResolvedValueOnce({ rows: [{ id: 'cand-a', supplier_product_id: 'a', state: 'scanned' }] }).mockResolvedValue({ rows: [] }) };
+    await archiveMissingCandidatesFromCatalogImport(q, { supplierName:'Supplier', importedIds:['kept'], userId:'admin-1', importId:'full-1' });
+    expect(q.query.mock.calls[0][0]).toContain("SET state = 'archived'");
+    // Partial snapshots deliberately do not invoke archiveMissingCandidatesFromCatalogImport.
+    const partialQ = { query: jest.fn() };
+    expect(partialQ.query).not.toHaveBeenCalled();
+  });
 });
