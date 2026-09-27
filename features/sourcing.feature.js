@@ -307,7 +307,7 @@ module.exports = {
     'le Golden E2E est read-only et termine toujours par HARD_STOP ou BLOCKED_SUPPLIER_IDENTITY sans placeOrder',
     'l autopilot est une autorisation opérateur distincte du lifecycle source ; il reste false par défaut et ne démarre jamais une source historique implicitement',
     'le runner autopilot ne contient aucune branche fournisseur et n execute que des pulls bornés déclarés par le registry connecteur',
-    { statement: 'la certification Sourcing est provider-independent : imported_to_catalog, quarantined, rejected et archived ne sont certifiés que si identité, provenance et raison/lien terminal requis sont explicites',
+    { statement: 'la certification Sourcing est provider-independent : TEST/PRIORITY produit READY_FOR_REFINERY certifié ; WATCH/AVOID/LOSS reste une issue DEFERRED explicite ; import, quarantaine, rejet et archivage exigent identité, provenance et raison/lien requis',
       test: 'tests/unit/sourcing-certification.test.js' },
     { statement: 'tout batch Sourcing certifié réconcilie exactement son nombre d entrées avec certified + quarantined + rejected + duplicates + archived + other_terminal ; UNACCOUNTED=0 et OVERFLOW=0',
       test: 'tests/unit/certification-accounting.test.js' },
