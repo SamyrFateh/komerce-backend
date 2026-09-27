@@ -7,7 +7,7 @@
  */
 
 let mockCurrentUser = { id: 'admin-1', role: 'admin' };
-let mockAllowedMarkets = new Set(['market-cm-id']);
+let mockGrantedMarketCodes = new Set(['CM']);
 let mockGlobalAllowed = false;
 
 jest.mock('../../middleware/auth', () => ({
@@ -23,18 +23,17 @@ jest.mock('../../middleware/auth', () => ({
   },
 }));
 
-jest.mock('../../middleware/require-market-scope', () => ({
-  attachAuthorizedMarkets: (req, res, next) => {
-    req.authorizedMarkets = new Set(mockAllowedMarkets);
-    next();
-  },
-  requireMarketScope: getTargetMarketId => (req, res, next) => {
-    const target = getTargetMarketId(req);
-    if (!req.authorizedMarkets.has(target)) {
-      return res.status(403).json({ error: 'denied', code: 'market_scope_denied' });
-    }
-    next();
-  },
+// LOT B (audit dashboard.market.read) : le guard réel n'est plus
+// operator_market_scopes/requireMarketScope mais la capability exacte
+// resolveAuthorization(..., requiredCapability: 'dashboard.market.read').
+// mockGrantedMarketCodes simule l'ensemble des marchés où le membership
+// courant détient effectivement cette capability déléguée (pas juste un
+// scope). Codes d'erreur alignés sur les vrais codes de
+// services/market-delegation-service.js (MARKET_MEMBERSHIP_REQUIRED,
+// MARKET_CAPABILITY_REQUIRED), plus jamais market_scope_denied.
+const mockResolveAuthorization = jest.fn();
+jest.mock('../../services/market-delegation-service', () => ({
+  resolveAuthorization: (...args) => mockResolveAuthorization(...args),
 }));
 
 jest.mock('../../middleware/require-dashboard-global-authority', () => ({
@@ -92,7 +91,7 @@ function makeApp() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockCurrentUser = { id: 'admin-1', role: 'admin' };
-  mockAllowedMarkets = new Set(['market-cm-id']);
+  mockGrantedMarketCodes = new Set(['CM']);
   mockGlobalAllowed = false;
   mockResolveAdminContext.mockImplementation(async user => ({
     actor: { id: user.id, role: user.role },
@@ -111,6 +110,16 @@ beforeEach(() => {
       return { rows: [{ id: 'market-cg-id', code: 'CG', name: 'Congo', currency: 'XAF' }] };
     }
     return { rows: [] };
+  });
+  mockResolveAuthorization.mockImplementation(async (_db, { marketCode, requiredCapability }) => {
+    if (requiredCapability === 'dashboard.market.read' && mockGrantedMarketCodes.has(marketCode)) {
+      const marketId = marketCode === 'CM' ? 'market-cm-id' : marketCode === 'CG' ? 'market-cg-id' : `market-${marketCode}-id`;
+      return { market_id: marketId, market_code: marketCode, assignment_id: 'assignment-1', membership_id: 'membership-1' };
+    }
+    const error = new Error('Aucune membership active sur ce Market ID.');
+    error.code = 'MARKET_MEMBERSHIP_REQUIRED';
+    error.status = 403;
+    throw error;
   });
   mockBuildMarketPilotage.mockImplementation(async (filters, market) => ({
     scope: { mode: 'market', market: { code: market.code } },
@@ -165,9 +174,9 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
     expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('FROM markets'))).toBe(false);
   });
 
-  test('market_operator CM lit son cockpit CM mais ne peut pas lire CG', async () => {
+  test('market_operator CM lit son cockpit CM mais ne peut pas lire CG (capability exacte, pas juste le scope)', async () => {
     mockCurrentUser = { id: 'partner-cm-1', role: 'market_operator' };
-    mockAllowedMarkets = new Set(['market-cm-id']);
+    mockGrantedMarketCodes = new Set(['CM']);
     mockGlobalAllowed = false;
 
     const contextRes = await request(makeApp()).get('/api/admin/dashboard/context');
@@ -178,7 +187,33 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
     expect(contextRes.body.actor.role).toBe('market_operator');
     expect(cmRes.status).toBe(200);
     expect(cgRes.status).toBe(403);
-    expect(cgRes.body.code).toBe('market_scope_denied');
+    expect(cgRes.body.code).toBe('MARKET_MEMBERSHIP_REQUIRED');
+    expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      userId: 'partner-cm-1',
+      marketCode: 'CG',
+      requiredCapability: 'dashboard.market.read',
+    }));
+  });
+
+  test('révocation de dashboard.market.read retire l’accès CM même si le membership et le marché restent actifs', async () => {
+    mockCurrentUser = { id: 'partner-cm-1', role: 'market_operator' };
+    mockGlobalAllowed = false;
+    // Simule une capability retirée du ceiling actif alors que le membership
+    // et l'assignment sur CM existent toujours — distinct d'une absence de
+    // membership : preuve que c'est bien la capability, pas le scope marché,
+    // qui fait autorité.
+    mockResolveAuthorization.mockImplementationOnce(async () => {
+      const error = new Error('Capability dashboard.market.read absente du ceiling actif.');
+      error.code = 'MARKET_CAPABILITY_REQUIRED';
+      error.status = 403;
+      throw error;
+    });
+
+    const res = await request(makeApp()).get('/api/admin/dashboard/unified/market/CM');
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    expect(mockBuildMarketPilotage).not.toHaveBeenCalled();
   });
 
   test('market_id en query est refusé avant toute résolution et ne peut jamais autoriser', async () => {
@@ -198,16 +233,17 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
   });
 
   test('un admin sans grant market ni global reçoit 403', async () => {
-    mockAllowedMarkets = new Set();
+    mockGrantedMarketCodes = new Set();
     mockGlobalAllowed = false;
     const res = await request(makeApp()).get('/api/admin/dashboard/unified/market/CG');
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('market_scope_denied');
+    expect(res.body.code).toBe('MARKET_MEMBERSHIP_REQUIRED');
     expect(mockBuildMarketPilotage).not.toHaveBeenCalled();
   });
 
-  test('un grant CM autorise l’agrégat CM même sans autorité globale', async () => {
+  test('un grant CM autorise l’agrégat CM même sans autorité globale (dashboard.market.read exact)', async () => {
     mockGlobalAllowed = false;
+    mockGrantedMarketCodes = new Set(['CM']);
     const res = await request(makeApp())
       .get('/api/admin/dashboard/unified/market/cm?from=2026-08-01&status=confirmed');
 
@@ -215,6 +251,10 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
     expect(res.headers['cache-control']).toContain('private');
     expect(res.headers['cache-control']).toContain('no-store');
     expect(mockBuildMarketPilotage).toHaveBeenCalledTimes(1);
+    expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      marketCode: 'CM',
+      requiredCapability: 'dashboard.market.read',
+    }));
 
     const [filters, market] = mockBuildMarketPilotage.mock.calls[0];
     expect(market.id).toBe('market-cm-id');
@@ -225,14 +265,15 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
     });
   });
 
-  test('un grant global explicite autorise le drill d’un marché actif sans grant operator_market_scopes', async () => {
-    mockAllowedMarkets = new Set();
+  test('un grant global explicite autorise le drill d’un marché actif sans grant capability, et court-circuite avant resolveAuthorization', async () => {
+    mockGrantedMarketCodes = new Set();
     mockGlobalAllowed = true;
     const res = await request(makeApp()).get('/api/admin/dashboard/unified/market/CG');
 
     expect(res.status).toBe(200);
     expect(mockBuildMarketPilotage).toHaveBeenCalledTimes(1);
     expect(mockBuildMarketPilotage.mock.calls[0][1].code).toBe('CG');
+    expect(mockResolveAuthorization).not.toHaveBeenCalled();
   });
 });
 
