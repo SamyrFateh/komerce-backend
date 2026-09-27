@@ -504,6 +504,8 @@ module.exports = {
   SESSION_ENV,
   DEFAULT_FEED_NAME,
   MAX_PAGE_SIZE,
+  DEFAULT_REQUEST_TIMEOUT_MS,
+  requestTimeoutMs,
   IS_ACTIVE,
   INACTIVE_REASON,
   isConfigured,
