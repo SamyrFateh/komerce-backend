@@ -75,6 +75,7 @@ module.exports = {
       'migrations/091_freeze_customs_classification_order_items.sql',
       'migrations/092_customs_shipments_declaration_workflow.sql',
       'migrations/093_customs_invoice_document_type.sql',
+      'migrations/248_customs_category_classification_terms.sql',
     ],
       dash: [
       // dashboards/admin views — Lot 4
