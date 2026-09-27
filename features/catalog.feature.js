@@ -112,6 +112,7 @@ module.exports = {
       'scripts/cj-real-showcase-seed.js',
       'scripts/cj-full-catalog-sync.js',
       'scripts/aliexpress-500-catalog-sync.js',
+      'scripts/aliexpress-incremental-e2e-200.js',
       'scripts/real-supplier-1000-stress-staging.js',
       'scripts/catalog-fr-free-e2e-preparation.js',
       'scripts/cj-broad-catalog-stress-fill.js',
