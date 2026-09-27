@@ -15,6 +15,9 @@ if (!hasIntegrationEnv) {
   });
 } else {
   let mockUserId = null;
+  let assignmentId = null;
+  let membershipId = null;
+  let otherAssignmentIds = [];
   const mockBuildMarketPilotage = jest.fn(async (filters, market) => ({
     scope: { mode: 'market', market: { code: market.code } },
     server_market_id: filters.market_id,
@@ -84,14 +87,67 @@ if (!hasIntegrationEnv) {
     );
     mockUserId = rows[0].id;
 
-    await db.query(
-      `INSERT INTO operator_market_scopes (user_id, market_id, role)
-       VALUES ($1, $2, 'manager')`,
-      [mockUserId, marketIds.CM]
+    // LOT B (audit dashboard.market.read) : /unified/market/:marketCode est
+    // désormais gouverné exclusivement par la capability DELEGATION
+    // dashboard.market.read (cf. requireUnifiedMarketRead) — un
+    // operator_market_scopes legacy seul ne suffit plus. La fixture doit
+    // donc poser un vrai Market Operating Assignment ACTIVE + ceiling +
+    // membership ACTIVE + membership_capabilities pour CM (cf.
+    // tests/helpers/marketDelegationE2EKit.js pour le pattern de référence).
+    const assignment = await db.query(
+      `INSERT INTO market_operating_assignments (market_id, status)
+       VALUES ($1, 'ACTIVE')
+       RETURNING id`,
+      [marketIds.CM]
     );
+    assignmentId = assignment.rows[0].id;
+
+    await db.query(
+      `INSERT INTO assignment_capability_ceiling (assignment_id, capability)
+       VALUES ($1, 'dashboard.market.read')`,
+      [assignmentId]
+    );
+
+    const membership = await db.query(
+      `INSERT INTO assignment_memberships (assignment_id, user_id, status)
+       VALUES ($1, $2, 'ACTIVE')
+       RETURNING id`,
+      [assignmentId, mockUserId]
+    );
+    membershipId = membership.rows[0].id;
+
+    await db.query(
+      `INSERT INTO membership_capabilities (membership_id, capability)
+       VALUES ($1, 'dashboard.market.read')`,
+      [membershipId]
+    );
+
+    // CG et KM doivent aussi être onboardés en DELEGATION (assignment
+    // ACTIVE) — mockUserId n'y a simplement aucune membership. Sans ça,
+    // resolveActiveAssignmentByMarketCode échoue avant même la vérification
+    // de membership (409 MARKET_ASSIGNMENT_NOT_ACTIVE) et le test ne prouve
+    // plus « pas de grant » (403) mais « marché non onboardé ».
+    const otherAssignments = await db.query(
+      `INSERT INTO market_operating_assignments (market_id, status)
+       SELECT id, 'ACTIVE' FROM markets WHERE id = ANY($1)
+       RETURNING id`,
+      [[marketIds.CG, marketIds.KM]]
+    );
+    otherAssignmentIds = otherAssignments.rows.map(r => r.id);
   });
 
   afterAll(async () => {
+    if (otherAssignmentIds.length) {
+      await db.query('DELETE FROM market_operating_assignments WHERE id = ANY($1)', [otherAssignmentIds]);
+    }
+    if (membershipId) {
+      await db.query('DELETE FROM membership_capabilities WHERE membership_id = $1', [membershipId]);
+      await db.query('DELETE FROM assignment_memberships WHERE id = $1', [membershipId]);
+    }
+    if (assignmentId) {
+      await db.query('DELETE FROM assignment_capability_ceiling WHERE assignment_id = $1', [assignmentId]);
+      await db.query('DELETE FROM market_operating_assignments WHERE id = $1', [assignmentId]);
+    }
     if (mockUserId) {
       await db.query('DELETE FROM operator_market_scopes WHERE user_id = $1', [mockUserId]);
     }
@@ -114,7 +170,12 @@ if (!hasIntegrationEnv) {
     test.each(['CG', 'KM'])('%s sans grant → 403 avant agrégation', async code => {
       const res = await request(makeApp()).get(`/api/admin/dashboard/unified/market/${code}`);
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('market_scope_denied');
+      // LOT B (audit dashboard.market.read) : la route n'est plus gardée par
+      // le scope legacy (code 'market_scope_denied') mais par la capability
+      // DELEGATION dashboard.market.read — absence de membership renvoie
+      // désormais MARKET_MEMBERSHIP_REQUIRED (cf.
+      // require-market-delegated-capability.js / resolveAuthorization).
+      expect(res.body.code).toBe('MARKET_MEMBERSHIP_REQUIRED');
       expect(mockBuildMarketPilotage).not.toHaveBeenCalled();
     });
 

@@ -23,6 +23,7 @@ const db = require('../db');
 const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
+const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const {
   hasDashboardGlobalAuthority,
   requireDashboardGlobalAuthority,
@@ -75,6 +76,7 @@ async function resolveRequestedMarket(req, res, next) {
     }
 
     req.dashboardMarket = rows[0];
+    req.params.marketCode = code;
     next();
   } catch (err) {
     next(err);
@@ -96,6 +98,12 @@ function parseFilters(req) {
   };
 }
 
+// Scope legacy (operator_market_scopes) — reste la seule autorité pour
+// commerce/operations/orders/finance market-scoped : ce LOT B ne couvre que
+// /unified/market/:marketCode (cf. requireUnifiedMarketReadCapability
+// ci-dessous). Ne pas étendre ici tant que ces 4 routes n'ont pas leur
+// propre audit et leur propre couverture de test contre la capability
+// dashboard.market.read.
 function requireDashboardMarketRead(req, res, next) {
   const targetMarketId = req.dashboardMarket && req.dashboardMarket.id;
   const marketGuard = requireMarketScope(() => targetMarketId);
@@ -111,6 +119,29 @@ function requireDashboardMarketRead(req, res, next) {
         return next();
       }
       return marketGuard(req, res, next);
+    })
+    .catch(next);
+}
+
+// LOT B (audit dashboard.market.read) : /unified/market/:marketCode était
+// gated par le scope legacy operator_market_scopes (attachAuthorizedMarkets +
+// requireMarketScope), jamais par la capability exacte dashboard.market.read
+// — révoquer la capability seule ne retirait rien tant que le scope restait
+// actif. L'autorité globale explicite continue de court-circuiter avant
+// toute résolution DELEGATION (elle voit tous les marchés par construction).
+// capability_is_the_authority_not_role s'applique sans bypass de rôle natif :
+// admin lui-même doit prouver dashboard.market.read s'il n'a pas l'autorité
+// globale. requires_audit=false au registre pour cette capability de lecture.
+const requireUnifiedMarketReadCapability = requireMarketDelegatedCapability('dashboard.market.read', { audit: false });
+
+function requireUnifiedMarketRead(req, res, next) {
+  return hasDashboardGlobalAuthority(req.user && req.user.id)
+    .then(globalAllowed => {
+      if (globalAllowed) {
+        req.dashboardGlobalAuthority = true;
+        return next();
+      }
+      return requireUnifiedMarketReadCapability(req, res, next);
     })
     .catch(next);
 }
@@ -145,7 +176,7 @@ router.get(
   rejectClientMarketId,
   resolveRequestedMarket,
   attachAuthorizedMarkets,
-  requireDashboardMarketRead,
+  requireUnifiedMarketRead,
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
@@ -315,4 +346,5 @@ module.exports._test = {
   resolveRequestedMarket,
   parseFilters,
   requireDashboardMarketRead,
+  requireUnifiedMarketRead,
 };

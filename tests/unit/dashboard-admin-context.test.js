@@ -47,7 +47,7 @@ describe('dashboard-admin-context', () => {
         mode: 'global',
         allowedMarkets: ['CG', 'CM', 'KM'],
         defaultMarket: null,
-        capabilities: ['pilotage.read', 'dashboard.market.read', 'dashboard.global.read'],
+        capabilities: ['pilotage.read', 'dashboard.global.read'],
         delegatedCapabilities: {},
       },
     });
@@ -65,7 +65,7 @@ describe('dashboard-admin-context', () => {
       mode: 'market',
       allowedMarkets: ['CM', 'CG'],
       defaultMarket: 'CM',
-      capabilities: ['pilotage.read', 'dashboard.market.read'],
+      capabilities: ['pilotage.read'],
       delegatedCapabilities: { CM: [], CG: [] },
     });
     const [sql, params] = mockQuery.mock.calls[0];

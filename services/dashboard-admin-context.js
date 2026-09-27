@@ -54,8 +54,13 @@ async function getScopedMarketCodes(userId) {
   return rows.map(row => row.code);
 }
 
+// LOT B (audit dashboard.market.read) : dashboard.market.read est
+// DELEGATION/MARKET/DELEGABLE au registre — elle n'est jamais fabriquée ici
+// juste parce que mode === 'market' (même fix que client.read). Sa détention
+// réelle vit uniquement dans delegatedCapabilities[marketCode], jamais dans
+// cette liste de base.
 function capabilitiesFor(mode) {
-  const base = ['pilotage.read', 'dashboard.market.read'];
+  const base = ['pilotage.read'];
   if (mode === 'global') base.push('dashboard.global.read');
   return base;
 }

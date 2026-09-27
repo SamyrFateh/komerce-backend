@@ -41,10 +41,16 @@ function correlationId(req) {
  * still need a central/global bypass (e.g. pricing global authority) must
  * check that before this middleware runs — it does not know about roles.
  */
-function requireMarketDelegatedCapability(capability) {
+function requireMarketDelegatedCapability(capability, options = {}) {
   if (!capability || typeof capability !== 'string') {
     throw new TypeError('capability requise');
   }
+  // registry: requires_audit === false pour les capabilities *.read /
+  // *.simulate (cf. config/market-delegation-capabilities.js) — l'audit
+  // market_delegation_audit reste la valeur par défaut pour tout le reste
+  // (mutations), { audit: false } est un opt-out explicite par appelant,
+  // jamais un défaut implicite.
+  const shouldAudit = options.audit !== false;
 
   return async (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'Authentification requise.', code: 'AUTH_REQUIRED' });
@@ -60,20 +66,22 @@ function requireMarketDelegatedCapability(capability) {
         return res.status(403).json({ error: 'Marché hors périmètre.', code: 'MARKET_SCOPE_DENIED' });
       }
 
-      await audit(db, {
-        actorUserId: req.user.id,
-        assignmentId: authz.assignment_id,
-        membershipId: authz.membership_id,
-        capability,
-        action: 'DELEGATION_CAPABILITY_AUTHORIZED',
-        after: {
-          source: 'admin_pricing_workspace',
-          market_code: authz.market_code,
-          method: req.method,
-          path: req.path,
-        },
-        correlationId: correlationId(req),
-      });
+      if (shouldAudit) {
+        await audit(db, {
+          actorUserId: req.user.id,
+          assignmentId: authz.assignment_id,
+          membershipId: authz.membership_id,
+          capability,
+          action: 'DELEGATION_CAPABILITY_AUTHORIZED',
+          after: {
+            source: req.baseUrl || 'market_delegated_capability',
+            market_code: authz.market_code,
+            method: req.method,
+            path: req.path,
+          },
+          correlationId: correlationId(req),
+        });
+      }
 
       req.marketDelegatedCapability = {
         capability,
