@@ -23,6 +23,7 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
+const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const workspace = require('../services/shipping-customs-workspace');
 const log = require('../utils/logger').child({ module: 'admin-shipping-customs-workspace' });
 
@@ -33,6 +34,23 @@ const MARKET_CODE = /^[A-Z]{2}$/;
 const requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_transitaire', 'market_operator']);
 const requireTransitAction = requireRole(['admin', 'agent_hub', 'agent_transitaire']);
 const requireCustomsAction = requireRole(['admin']);
+
+// MARKET-DELEGATION LOT B (audit logistics.read, migration 251) : GET
+// /market/:marketCode était gardé par le rôle + operator_market_scopes
+// hérités, jamais par une capability exacte — aucune n'existait pour cette
+// surface. Les gestes transit/douane restent hors périmètre
+// (requireTransitAction/requireCustomsAction, non délégués) ; seule la
+// lecture du Workspace est concernée. Rôles natifs (admin/agent_hub/
+// agent_transitaire) inchangés ; seul market_operator doit désormais
+// prouver logistics.read (requires_audit=false au registre).
+const NATIVE_WORKSPACE_ROLES = new Set(['admin', 'agent_hub', 'agent_transitaire']);
+function requireWorkspaceReadCapability() {
+  const capabilityGuard = requireMarketDelegatedCapability('logistics.read', { audit: false });
+  return (req, res, next) => {
+    if (req.user && NATIVE_WORKSPACE_ROLES.has(req.user.role)) return next();
+    return capabilityGuard(req, res, next);
+  };
+}
 
 function rejectClientMarketAuthority(req, res, next) {
   const query = req.query || {};
@@ -124,7 +142,7 @@ router.use(
   requireWorkspaceMarketAccess
 );
 
-router.get('/market/:marketCode', async (req, res, next) => {
+router.get('/market/:marketCode', requireWorkspaceReadCapability(), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     const payload = await workspace.buildWorkspace({ market: req.workspaceMarket });
