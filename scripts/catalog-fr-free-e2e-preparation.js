@@ -43,6 +43,7 @@ function parseArgs(argv = process.argv.slice(2)) {
   let limit = MAX_LIMIT;
   let output = null;
   let suppliers = [...SUPPLIERS];
+  let discoveryWave = null;
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--limit') limit = Number.parseInt(argv[++i], 10);
@@ -51,6 +52,8 @@ function parseArgs(argv = process.argv.slice(2)) {
     else if (arg.startsWith('--output=')) output = String(arg.split('=', 2)[1] || '').trim();
     else if (arg === '--supplier') suppliers = [String(argv[++i] || '').trim()];
     else if (arg.startsWith('--supplier=')) suppliers = [String(arg.split('=', 2)[1] || '').trim()];
+    else if (arg === '--discovery-wave') discoveryWave = String(argv[++i] || '').trim() || null;
+    else if (arg.startsWith('--discovery-wave=')) discoveryWave = String(arg.split('=', 2)[1] || '').trim() || null;
     else throw new Error(`Argument inconnu: ${arg}`);
   }
   if (!Number.isInteger(limit) || limit < 1 || limit > MAX_LIMIT) {
@@ -59,7 +62,7 @@ function parseArgs(argv = process.argv.slice(2)) {
   if (!suppliers.length || suppliers.some((s) => !SUPPLIERS.includes(s))) {
     throw new Error(`--supplier doit être ${SUPPLIERS.join(' ou ')}`);
   }
-  return { limit, output: output ? path.resolve(output) : null, suppliers };
+  return { limit, output: output ? path.resolve(output) : null, suppliers, discoveryWave };
 }
 
 function assertRuntime(env = process.env) {
@@ -102,7 +105,7 @@ function prepareFrenchFields(row) {
   };
 }
 
-async function loadDrafts(limit, suppliers = SUPPLIERS) {
+async function loadDrafts(limit, suppliers = SUPPLIERS, discoveryWave = null) {
   const { rows } = await db.query(
     `SELECT p.id, p.product_ref, p.name, p.name_source, p.description_source,
             p.source_locale, p.category, p.subcategory, p.content_source,
@@ -117,9 +120,10 @@ async function loadDrafts(limit, suppliers = SUPPLIERS) {
         AND p.content_source='connector_raw'
         AND p.source_locale IS NOT NULL
         AND lower(p.source_locale) NOT LIKE 'fr%'
+        AND ($3::text IS NULL OR sc.raw_payload #>> '{discovery,wave}' = $3)
       ORDER BY p.product_ref
       LIMIT $2`,
-    [suppliers, limit]
+    [suppliers, limit, discoveryWave]
   );
   return rows;
 }
@@ -154,7 +158,7 @@ async function applyPreparedDraft(row) {
 
 async function run(options = parseArgs()) {
   assertRuntime();
-  const drafts = await loadDrafts(options.limit, options.suppliers || SUPPLIERS);
+  const drafts = await loadDrafts(options.limit, options.suppliers || SUPPLIERS, options.discoveryWave || null);
   const prepared = [];
   const errors = [];
 
