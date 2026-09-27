@@ -14,6 +14,8 @@ const {
   inactiveReason,
   formatTopTimestamp,
   buildTopRequest,
+  invokeTop,
+  requestTimeoutMs,
   extractProductId,
   normalizeDsProduct,
   flattenFeedProducts,
@@ -165,6 +167,33 @@ describe('aliexpress-connector', () => {
     expect(query.get('sign_method')).toBe('sha256');
     expect(query.get('sign')).toMatch(/^[A-F0-9]{64}$/);
     expect(query.toString()).not.toContain('app-secret');
+  });
+
+  test('borne la durée des appels Open Platform et remonte un timeout explicite', async () => {
+    expect(requestTimeoutMs(credentials)).toBe(30000);
+    expect(requestTimeoutMs({ ...credentials, ALIEXPRESS_API_TIMEOUT_MS: '5' })).toBe(100);
+    expect(requestTimeoutMs({ ...credentials, ALIEXPRESS_API_TIMEOUT_MS: '999999' })).toBe(120000);
+
+    const fetchImpl = jest.fn((_url, init) => new Promise((_resolve, reject) => {
+      init.signal.addEventListener('abort', () => {
+        const error = new Error('aborted');
+        error.name = 'AbortError';
+        reject(error);
+      }, { once: true });
+    }));
+
+    await expect(invokeTop(
+      'aliexpress.ds.text.search',
+      { keyword: 'linen women blouse' },
+      {
+        fetchImpl,
+        env: { ...credentials, ALIEXPRESS_API_TIMEOUT_MS: '100' },
+        now: new Date('2026-09-27T12:00:00.000Z'),
+      }
+    )).rejects.toThrow(/timeout après 100ms/);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl.mock.calls[0][1].signal).toBeDefined();
   });
 
   test('extrait un product id depuis un id brut ou une URL AliExpress', () => {
