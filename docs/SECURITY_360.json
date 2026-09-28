@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-27T13:55:27.297Z",
+  "generatedAt": "2026-09-28T11:54:15.633Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 654,
-    "protected": 599,
+    "total": 655,
+    "protected": 600,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2279,6 +2279,14 @@
     },
     {
       "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/activate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/capabilities/{capability}",
       "level": "PROTECTED",
       "roles": [
         "admin",

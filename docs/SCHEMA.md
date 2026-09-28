@@ -637,3 +637,19 @@ The canonical boutique taxonomy owns stable navigation imagery at subcategory le
 - `boutique_subcategories.image_alt`: descriptive alternative text for the canonical subcategory visual.
 - Source migration: `252_boutique_subcategory_canonical_images.sql`.
 - These fields are presentation metadata only; they do not change product taxonomy matching or sourcing identity.
+
+
+### Provider control policy (migration 255)
+
+- `sourcing_sources.discovery_enabled`: autorisation opérateur explicite de découverte automatique; défaut OFF.
+- `sourcing_sources.sync_enabled`: autorisation opérateur explicite de synchronisation fournisseur; défaut OFF.
+- `sourcing_sources.import_enabled`: autorisation opérateur explicite de passage automatique vers l'import canonique; défaut OFF.
+- `sourcing_sources.production_enabled`: autorisation opérateur de production; défaut OFF et activation fail-closed tant qu'une preuve runtime par fournisseur n'existe pas.
+
+<!-- schema-pending
+object: sourcing_provider_control_events
+kind: table
+migration: 255
+section: ### 4.10 Sourcing et fournisseurs
+role: Journal append-only des changements Discovery Sync Import Production avec avant/après, opérateur, motif et horodatage.
+-->

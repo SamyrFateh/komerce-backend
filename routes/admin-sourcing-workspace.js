@@ -24,6 +24,7 @@ const { requireSourcingGlobalAuthority } = require('../middleware/require-sourci
 const workspace = require('../services/sourcing-workspace');
 const sourcingHealth = require('../services/sourcing-integrity-service');
 const catalogChangeObservation = require('../services/sourcing-catalog-change-observation');
+const providerPolicy = require('../services/sourcing-provider-control-policy');
 
 const router = express.Router();
 const guard = [authenticate, requireRole(['admin', 'sourcing']), requireSourcingGlobalAuthority];
@@ -94,6 +95,12 @@ router.post('/sources/:sourceRef/catalog-changes/observe', async (req, res, next
     sendAction(res, 'observe_unit_stock_change', result,
       result.status === 'recorded' ? 201 : 200);
   } catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources/:sourceRef/capabilities/:capability', async (req,res,next)=>{
+  try {
+    sendAction(res,'set_provider_capability',await providerPolicy.setCapability(req.params.sourceRef,req.params.capability,req.body?.enabled,req.user,req.body?.reason));
+  } catch(err){handleError(err,res,next);}
 });
 
 router.post('/sources/:sourceRef/activate', async (req, res, next) => {

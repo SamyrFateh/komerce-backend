@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 48,
-    "total_routes": 593,
+    "total_routes": 595,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -7676,6 +7676,23 @@
           "429": {
             "description": "Too Many Requests — rate limit exceeded"
           }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/capabilities/{capability}": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/capabilities/{capability}",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {"name":"sourceRef","in":"path","required":true,"schema":{"type":"string"}},
+          {"name":"capability","in":"path","required":true,"schema":{"type":"string"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {"application/json":{"schema":{"x-contract-status":"route-read","description":"Enveloppe sendAction standard","type":"object","properties":{"ok":{"type":"boolean","x-observed":true},"action":{"type":"string","x-observed":true},"result":{"type":"object","x-observed":true}}}}}
+          },
+          "429": {"description":"Too Many Requests — rate limit exceeded"}
         }
       }
     },
