@@ -2,8 +2,8 @@
   "generatedAt": "2026-09-28T11:54:15.633Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 655,
-    "protected": 600,
+    "total": 659,
+    "protected": 604,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2255,6 +2255,38 @@
     },
     {
       "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/watchlist",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/sourcing/import-runs/{runRef}/items/{supplierProductId}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/sourcing/import-runs/{runRef}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/import-runs/replay",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/sourcing/import-runs",
       "level": "PROTECTED",
       "roles": [
         "admin",
