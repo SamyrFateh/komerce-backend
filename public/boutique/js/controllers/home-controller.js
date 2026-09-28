@@ -160,15 +160,18 @@ export function renderSubcatRail(catKey, opts = {}) {
         const key = escapeHtml(sub.key);
         const lbl = escapeHtml(sub.shortLabel || sub.label || sub.key);
         const icon = escapeHtml(sub.icon || '✨');
-        const photo = getShelfSubcategoryProductImage(state.products, catKey, sub.key);
+        const canonicalImage = sub.imageUrl || null;
+        const photo = canonicalImage ? null : getShelfSubcategoryProductImage(state.products, catKey, sub.key);
         const visual = getShelfSubcategoryVisual(catKey, sub.key);
-        const object = photo
-          ? renderShelfProductPhoto(photo, 'k-shelf-object--subcategory')
-          : visual
-            ? renderShelfUse(visual, 'k-shelf-object--subcategory')
-            : `<span class="k-shelf-emoji-fallback">${icon}</span>`;
+        const object = canonicalImage
+          ? renderShelfProductPhoto(canonicalImage, 'k-shelf-object--subcategory')
+          : photo
+            ? renderShelfProductPhoto(photo, 'k-shelf-object--subcategory')
+            : visual
+              ? renderShelfUse(visual, 'k-shelf-object--subcategory')
+              : `<span class="k-shelf-emoji-fallback">${icon}</span>`;
         const active = activeSubcat === sub.key ? ' active' : '';
-        const mediaAttr = photo ? ' data-shelf-media="product"' : '';
+        const mediaAttr = canonicalImage ? ' data-shelf-media="canonical"' : (photo ? ' data-shelf-media="product"' : '');
         return `<button type="button" class="k-subcutout${active}" data-subcat="${key}"${visual ? ` data-shelf-visual="${escapeHtml(visual)}"` : ''}${mediaAttr}>
           <span class="k-subcutout-icon" aria-hidden="true">${object}</span>
           <span class="k-subcutout-label">${lbl}</span>
