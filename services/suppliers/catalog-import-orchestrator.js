@@ -139,10 +139,24 @@ async function importCatalog(body, userId, dispatchToConnector) {
   const invalidFromConnector = connectorResult.invalid || [];
 
   if (!products.length) {
-    await runHook((id) => importRuns.failRun(id, 'no_valid_product'));
+    const connectorTotal = Number(connectorResult.total ?? invalidFromConnector.length ?? 0);
+    const rejected = invalidFromConnector.length;
+    const emptySource = connectorTotal === 0;
+    const failureCode = emptySource ? 'supplier_source_empty' : 'no_valid_supplier_product';
+    await runHook((id) => importRuns.failRun(id, failureCode));
     return {
       status: 400,
-      body: { error: 'Aucun produit valide trouvé', invalid: invalidFromConnector, run_ref: runtimeRun?.run_ref || null },
+      body: {
+        code: emptySource ? 'SUPPLIER_SOURCE_EMPTY' : 'NO_VALID_SUPPLIER_PRODUCT',
+        error: emptySource
+          ? 'Aucun produit valide trouvé · la source a retourné 0 produit'
+          : `Aucun produit valide trouvé · ${rejected}/${connectorTotal} produit(s) rejeté(s)`,
+        connector_total: connectorTotal,
+        rejected,
+        reject_reasons: aggregateReasons(invalidFromConnector),
+        invalid: invalidFromConnector,
+        run_ref: runtimeRun?.run_ref || null,
+      },
     };
   }
 
