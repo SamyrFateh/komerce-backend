@@ -154,6 +154,11 @@ router.post('/sources/:sourceRef/capabilities/:capability', async (req,res,next)
   } catch(err){handleError(err,res,next);}
 });
 
+router.post('/sources/:sourceRef/import-now', async (req, res, next) => {
+  try { sendAction(res, 'import_source_now', await workspace.runSourceImportNow(req.params.sourceRef, req.user)); }
+  catch (err) { handleError(err, res, next); }
+});
+
 router.post('/sources/:sourceRef/activate', async (req, res, next) => {
   try { sendAction(res, 'activate_source_autopilot', await workspace.setSourceAutopilot(req.params.sourceRef, true)); }
   catch (err) { handleError(err, res, next); }
