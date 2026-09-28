@@ -31,6 +31,8 @@ test('clean-room removes runtime facts but preserves provider configuration', ()
   expect(script).toContain("'supplier_oauth_connections'");
   expect(script).not.toContain('TRUNCATE TABLE sourcing_sources');
   expect(script).not.toContain('DELETE FROM sourcing_sources');
+  expect(script).not.toContain('RESTART IDENTITY CASCADE');
+  expect(script).toContain('DELETE FROM sourcing_captures');
 });
 
 test('old certification evidence is invalidated and no seed is invoked', () => {
