@@ -338,6 +338,13 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     sourceTotal,
     readyForRefinery + duplicates + rejected + deferred + quarantined + certificationBlocked
   );
+  const stageProgress = stages.reduce((sum, item) => {
+    if (item.status === 'COMPLETED') return sum + 1;
+    if (item.status !== 'RUNNING') return sum;
+    if (item.total > 0) return sum + Math.min(1, item.processed / item.total);
+    return sum + 0.15;
+  }, 0);
+  const progressPct = Math.min(100, Math.round((stageProgress / STAGE_KEYS.length) * 100));
 
   const recentItems = [...rows]
     .sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
@@ -379,9 +386,7 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     updated_at: iso(run.updated_at),
     current_stage: current.key,
     processed,
-    progress_pct: sourceTotal
-      ? Math.min(100, Math.round((processed / sourceTotal) * 100))
-      : 0,
+    progress_pct: progressPct,
     accounting,
     stages,
     current_item: recentItems[0] || null,
@@ -426,6 +431,7 @@ const CANDIDATE_COLUMNS = `
   sc.rejected_reason,
   sc.raw_payload IS NOT NULL AS has_raw_payload,
   sc.normalized_source_contract,
+  sc.scan_result,
   p.product_ref
 `;
 
