@@ -49,7 +49,11 @@ describe('render-categories — renderCategoryRailMarkup', () => {
     const rail = getRailCategories();
     expect(rail).toHaveLength(8);
     rail.forEach((category) => {
-      expect(category.image).toMatch(/^\/boutique\/categories\/[a-z-]+-v2\.webp$/);
+      if (category.key === 'Soldes') {
+        expect(category.image).toBe('/boutique/categories/cat-soldes-badge-v2.svg');
+      } else {
+        expect(category.image).toMatch(/^\/boutique\/categories\/[a-z-]+-v2\.webp$/);
+      }
     });
   });
 

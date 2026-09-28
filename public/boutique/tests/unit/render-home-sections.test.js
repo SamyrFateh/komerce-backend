@@ -63,7 +63,7 @@ describe('render-home-sections', () => {
       const html = renderHomeSections({ items, allProducts: items, isMobile: true, renderCard, normalizeCategory, shuffle: noShuffle });
       expect(html).toContain('data-cat="Soldes"');
       expect(html).toContain('Robe en promo');
-      expect(html).toContain('cat-soldes-percent-v1.svg');
+      expect(html).toContain('cat-soldes-badge-v2.svg');
     });
 
     it('items vides → pas de crash, retourne quand même les sections (vides)', () => {
