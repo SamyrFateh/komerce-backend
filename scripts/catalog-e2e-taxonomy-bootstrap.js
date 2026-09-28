@@ -27,6 +27,7 @@ const { BALANCED_E2E_500_PLAN } = require('../services/suppliers/e2e-catalog-500
 const FLAG = 'KOMERCE_ALLOW_CATALOG_E2E_TAXONOMY_BOOTSTRAP';
 const SQL_PATH = path.resolve(__dirname, '..', 'migrations', 'migrate-categories-v2.sql');
 const AFFINITY_SQL_PATH = path.resolve(__dirname, '..', 'migrations', '250_boutique_subcategory_customs_affinity.sql');
+const IMAGE_SQL_PATH = path.resolve(__dirname, '..', 'migrations', '252_boutique_subcategory_canonical_images.sql');
 
 function isTruthy(value) {
   return ['1', 'true', 'yes'].includes(String(value || '').trim().toLowerCase());
@@ -92,8 +93,10 @@ async function run(env = process.env) {
 
   if (!fs.existsSync(SQL_PATH)) throw new Error(`CANONICAL_TAXONOMY_SQL_MISSING:${SQL_PATH}`);
   if (!fs.existsSync(AFFINITY_SQL_PATH)) throw new Error(`CANONICAL_AFFINITY_SQL_MISSING:${AFFINITY_SQL_PATH}`);
+  if (!fs.existsSync(IMAGE_SQL_PATH)) throw new Error(`CANONICAL_IMAGE_SQL_MISSING:${IMAGE_SQL_PATH}`);
   const sql = fs.readFileSync(SQL_PATH, 'utf8');
   const affinitySql = fs.readFileSync(AFFINITY_SQL_PATH, 'utf8');
+  const imageSql = fs.readFileSync(IMAGE_SQL_PATH, 'utf8');
   if (!/INSERT INTO boutique_categories/.test(sql) || !/INSERT INTO boutique_subcategories/.test(sql)) {
     throw new Error('CANONICAL_TAXONOMY_SQL_INVALID');
   }
@@ -103,10 +106,11 @@ async function run(env = process.env) {
 
   await db.query(sql);
   await db.query(affinitySql);
+  await db.query(imageSql);
   const after = await audit();
   const summary = {
     runtime,
-    canonical_source: ['migrations/migrate-categories-v2.sql', 'migrations/250_boutique_subcategory_customs_affinity.sql'],
+    canonical_source: ['migrations/migrate-categories-v2.sql', 'migrations/250_boutique_subcategory_customs_affinity.sql', 'migrations/252_boutique_subcategory_canonical_images.sql'],
     before,
     after,
   };
