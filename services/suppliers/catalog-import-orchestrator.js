@@ -5,13 +5,14 @@
  * @layer         service
  * @criticality   medium
  * @inputs        normalized_supplier_products, catalog_import_context
- * @outputs       sourcing_candidates, import_summary, shadow_observation_summary
- * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/sourcing-candidate-import-service.js, services/sourcing-observation-shadow-service.js, services/sourcing-certification.js, services/suppliers/normalized-product.js, services/suppliers/connectors/*
+ * @outputs       sourcing_candidates, import_summary, shadow_observation_summary, provider_runtime_certification_attempt
+ * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/sourcing-candidate-import-service.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-certification.js, services/suppliers/normalized-product.js, services/suppliers/connectors/*
  * @used-by       routes/sourcing-scanner.js
  * @db-read       none
  * @db-write      supplier_catalog_imports
+ * @db-write-via:sourcing-provider-control-policy sourcing_sources
  * @db-txn        resolve_before_behavior_change
- * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/doctrine/DOCTRINE_SOURCE_SHADOW_INGESTION.md
+ * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/doctrine/DOCTRINE_SOURCE_SHADOW_INGESTION.md, provider_runtime_certification_requires_canonical_resolved_api_capture
  * @impact-areas  catalog, product-detail, sourcing
  * @version       2026-09
  */
