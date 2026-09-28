@@ -1,0 +1,32 @@
+{
+  "schema_version": "1",
+  "contract": "komerce-pipeline-certification-v1",
+  "gates": {
+    "A": {
+      "gate": "SOURCING_CERTIFIED",
+      "version": "sourcing-certified-gate-a-v1",
+      "required": 18,
+      "proof_matrix": "docs/certification/GATE_A_SOURCING_PROOF_MATRIX.md",
+      "applicability": {
+        "repeated_cursor": {
+          "current_providers": "not_applicable",
+          "reason": "Current CJ/AliExpress ingestion exposes no cursor-pagination capability; mandatory for any future cursor provider."
+        }
+      }
+    },
+    "B": {
+      "gate": "CATALOG_CERTIFIED",
+      "version": "catalog-certified-gate-b-v1",
+      "required": 16,
+      "proof_matrix": "docs/certification/GATE_B_CATALOG_PROOF_MATRIX.md"
+    },
+    "C": {
+      "gate": "E2E_CERTIFIED",
+      "version": "e2e-certified-gate-c-v1",
+      "required": 12,
+      "providers": ["CJ", "AliExpress"],
+      "proof_matrix": "docs/certification/GATE_C_E2E_PROOF_MATRIX.md"
+    }
+  },
+  "total_scenarios": 46
+}

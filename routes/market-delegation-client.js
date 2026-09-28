@@ -8,7 +8,7 @@
  * @outputs       market-scoped client index projection, market-scoped client 360 projection
  * @depends       middleware/auth.js, middleware/require-market-delegated-capability.js, services/client-index.js, services/client-360.js
  * @used-by       bootstrap/api-routes.js, market operator dashboard (canonical Clients screen)
- * @db-read       orders, users, recipients, markets (via client-index.js / client-360.js — no query reimplemented here)
+ * @db-read       orders, users, recipients, markets
  * @db-write      none
  * @db-write-via:market-delegation-service market_delegation_audit
  * @db-txn        none
