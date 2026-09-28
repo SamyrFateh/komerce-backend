@@ -4,7 +4,7 @@
  * @domain        sourcing
  * @layer         ui-workspace
  * @criticality   medium
- * @inputs        /api/admin/workspaces/sourcing/import-runs*
+ * @inputs        /api/admin/workspaces/sourcing, /api/admin/workspaces/sourcing/import-runs*, source control actions
  * @outputs       live canonical sourcing-to-catalogue runtime
  * @depends       none
  * @used-by       public/dashboards/canonical/js/app.js
@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      canonical_only, api_only, server_truth, no_legacy_import
  * @impact-areas  sourcing, catalog, certification, admin-dashboard
- * @version       2026-09-v1
+ * @version       2026-09-v2-source-controls
  */
 'use strict';
 
@@ -30,6 +30,8 @@
   let timer = null;
   let mountedRoot = null;
   let selectedRunRef = null;
+  let mutationBusy = false;
+  let actionFeedback = null;
 
   function esc(value) {
     return String(value == null ? '' : value)
@@ -45,10 +47,23 @@
     const d = new Date(value);
     return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
   }
-  async function api(path) {
-    const res = await global.fetch(path, { credentials:'include', headers:{ Accept:'application/json' } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+  async function api(path, options = {}) {
+    const init = {
+      method: options.method || 'GET',
+      credentials:'include',
+      headers:{ Accept:'application/json', ...(options.body ? { 'Content-Type':'application/json' } : {}) },
+    };
+    if (options.body) init.body = JSON.stringify(options.body);
+    const res = await global.fetch(path, init);
+    let payload = null;
+    try { payload = await res.json(); } catch (_) { payload = null; }
+    if (!res.ok) {
+      const error = new Error(payload?.error || `HTTP ${res.status}`);
+      error.code = payload?.code || null;
+      error.status = res.status;
+      throw error;
+    }
+    return payload;
   }
   function stageRows(run) {
     const map = new Map((run?.stages || []).map(stage => [stage.key, stage]));
@@ -76,7 +91,109 @@
       stages:[], events:[], recent_items:[], current_item:null, processed:0, progress_pct:0,
     };
   }
-  function render(root, payload) {
+
+  function sourceCanImportNow(source) {
+    return Boolean(
+      source?.status === 'active'
+      && source?.connector_ready
+      && source?.discovery_enabled
+      && source?.sync_enabled
+      && source?.import_enabled
+    );
+  }
+
+  function sourceCanStartAutopilot(source) {
+    return Boolean(
+      sourceCanImportNow(source)
+      && source?.runtime_enabled
+      && source?.production_runtime_certified
+      && source?.production_enabled
+    );
+  }
+
+  function sourceControlMarkup(source, run) {
+    const ref = esc(source.source_ref || '');
+    const label = esc(source.label || source.supplier_name || source.adapter_type || source.source_ref || 'Source');
+    const supplier = esc(source.supplier_name || source.adapter_type || 'Source API');
+    const certified = Boolean(source.production_runtime_certified);
+    const runningHere = Boolean(run?.status === 'RUNNING' && run?.source_ref && run.source_ref === source.source_ref);
+    const importReady = sourceCanImportNow(source) && !runningHere;
+    const autoOn = Boolean(source.autopilot_enabled);
+    const autoReady = autoOn || sourceCanStartAutopilot(source);
+    const capabilities = [
+      ['discovery','Découverte','discovery_enabled'],
+      ['sync','Sync','sync_enabled'],
+      ['import','Import','import_enabled'],
+      ['production','Production','production_enabled'],
+    ];
+
+    return `
+      <article class="kir-source-card ${runningHere ? 'is-running' : ''}" data-source-ref="${ref}">
+        <div class="kir-source-head">
+          <div>
+            <div class="kir-source-name">${label}</div>
+            <div class="kir-source-sub">${supplier}</div>
+          </div>
+          <div class="kir-source-badges">
+            <span class="kir-source-state ${source.connector_ready ? 'is-ok' : 'is-blocked'}">● ${source.connector_ready ? 'Connectée' : 'Bloquée'}</span>
+            <span class="kir-source-cert ${certified ? 'is-certified' : ''}">${certified ? 'Certifiée' : 'À certifier'}</span>
+          </div>
+        </div>
+
+        <div class="kir-source-switches">
+          ${capabilities.map(([cap,labelText,key]) => {
+            const on = Boolean(source[key]);
+            const locked = cap === 'production' && !certified && !on;
+            return `<button type="button"
+              class="kir-switch ${on ? 'is-on' : ''}"
+              role="switch"
+              aria-checked="${on ? 'true' : 'false'}"
+              data-source-capability="${cap}"
+              data-source-ref="${ref}"
+              data-current="${on ? '1' : '0'}"
+              ${locked ? 'disabled title="Certification runtime requise avant Production"' : ''}>
+              <i></i><span>${labelText}</span>
+            </button>`;
+          }).join('')}
+        </div>
+
+        <div class="kir-source-actions">
+          <button type="button" class="kir-btn kir-btn-import"
+            data-source-import="${ref}" ${importReady ? '' : 'disabled'}>
+            ${runningHere ? 'Import en cours…' : 'Importer maintenant'}
+          </button>
+          <button type="button" class="kir-btn ${autoOn ? 'kir-btn-stop' : 'kir-btn-auto'}"
+            data-source-autopilot="${ref}" data-current="${autoOn ? '1' : '0'}"
+            ${autoReady ? '' : 'disabled'}>
+            ${autoOn ? 'Arrêter autopilot' : 'Démarrer autopilot'}
+          </button>
+        </div>
+
+        <div class="kir-source-foot">
+          <span>${source.runtime_enabled ? 'Runtime actif' : 'Runtime autopilot OFF'}</span>
+          <span>Dernier passage · ${source.last_capture_at ? time(source.last_capture_at) : 'jamais'}</span>
+        </div>
+      </article>`;
+  }
+
+  function sourcePanelMarkup(workspace, run) {
+    const sources = Array.isArray(workspace?.sources) ? workspace.sources : [];
+    return `
+      <section class="kir-source-panel">
+        <div class="kir-source-panel-head">
+          <div>
+            <h2>Sources configurées</h2>
+            <p>Déclenchement opérateur, capacités autorisées et autopilot par fournisseur.</p>
+          </div>
+          <span>${sources.length} source${sources.length > 1 ? 's' : ''}</span>
+        </div>
+        ${actionFeedback ? `<div class="kir-source-feedback ${actionFeedback.ok ? 'is-ok' : 'is-error'}">${esc(actionFeedback.message)}</div>` : ''}
+        <div class="kir-source-list">
+          ${sources.length ? sources.map(source => sourceControlMarkup(source, run)).join('') : '<div class="kir-empty">Aucune source récurrente configurée.</div>'}
+        </div>
+      </section>`;
+  }
+  function render(root, payload, workspace = null) {
     const run = payload || zeroRun();
     const idle = !run.run_ref;
     const a = run.accounting || {};
@@ -106,6 +223,8 @@
             <small>${idle ? 'Le prochain import apparaîtra ici automatiquement.' : `${esc(run.provider || '—')} · ${esc(run.mode || 'normal')} · ${time(run.started_at)}`}</small>
           </div>
         </header>
+
+        ${sourcePanelMarkup(workspace, run)}
 
         <section class="kir-stage-card" aria-label="Pipeline d'import">
           ${stages.map(stage => `
@@ -192,14 +311,86 @@
     return api('/api/admin/workspaces/sourcing/import-runs/' + encodeURIComponent(first.run_ref));
   }
 
+  async function mutateSource(path, body, successMessage) {
+    mutationBusy = true;
+    actionFeedback = null;
+    try {
+      const result = await api(path, { method:'POST', body: body || {} });
+      const runRef = result?.result?.run_ref || result?.result?.first_run?.run_ref || null;
+      if (runRef) selectedRunRef = runRef;
+      actionFeedback = { ok:true, message: successMessage };
+      return result;
+    } catch (error) {
+      actionFeedback = { ok:false, message: error.message || 'Action refusée' };
+      throw error;
+    } finally {
+      mutationBusy = false;
+      await refresh();
+    }
+  }
+
+  function bindSourceControls(root) {
+    root.querySelectorAll('[data-source-capability]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const ref = button.getAttribute('data-source-ref');
+        const capability = button.getAttribute('data-source-capability');
+        const enabled = button.getAttribute('data-current') !== '1';
+        button.disabled = true;
+        try {
+          await mutateSource(
+            '/api/admin/workspaces/sourcing/sources/' + encodeURIComponent(ref) + '/capabilities/' + encodeURIComponent(capability),
+            { enabled, reason:'Pilotage depuis Import live' },
+            `${capability} ${enabled ? 'activé' : 'désactivé'} pour la source.`
+          );
+        } catch (_) {}
+      });
+    });
+
+    root.querySelectorAll('[data-source-import]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const ref = button.getAttribute('data-source-import');
+        button.disabled = true;
+        button.textContent = 'Démarrage…';
+        try {
+          await mutateSource(
+            '/api/admin/workspaces/sourcing/sources/' + encodeURIComponent(ref) + '/import-now',
+            {},
+            'Import opérateur lancé. Le run apparaît dans le pipeline live.'
+          );
+        } catch (_) {}
+      });
+    });
+
+    root.querySelectorAll('[data-source-autopilot]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const ref = button.getAttribute('data-source-autopilot');
+        const active = button.getAttribute('data-current') === '1';
+        button.disabled = true;
+        try {
+          await mutateSource(
+            '/api/admin/workspaces/sourcing/sources/' + encodeURIComponent(ref) + '/' + (active ? 'deactivate' : 'activate'),
+            {},
+            active ? 'Autopilot arrêté pour cette source.' : 'Autopilot démarré pour cette source.'
+          );
+        } catch (_) {}
+      });
+    });
+  }
+
   async function refresh() {
     if (!mountedRoot || !document.contains(mountedRoot) || global.location.pathname !== '/admin/import-runtime') {
       if (timer) clearInterval(timer);
       timer = null;
       return;
     }
+    if (mutationBusy) return;
     try {
-      render(mountedRoot, await resolveRun());
+      const [run, workspace] = await Promise.all([
+        resolveRun(),
+        api('/api/admin/workspaces/sourcing'),
+      ]);
+      render(mountedRoot, run, workspace);
+      bindSourceControls(mountedRoot);
     } catch (error) {
       mountedRoot.innerHTML = '<div class="kir-error">Suivi indisponible · ' + esc(error.message) + '</div>';
     }
@@ -209,11 +400,11 @@
     if (!options.root) throw new Error('canonical_import_runtime_root_missing');
     mountedRoot = options.root;
     selectedRunRef = null;
-    render(mountedRoot, null);
+    render(mountedRoot, null, { sources:[] });
     if (timer) clearInterval(timer);
     await refresh();
     timer = setInterval(refresh, POLL_MS);
   }
 
-  global.KomerceCanonicalImportRuntime = Object.freeze({ mount, render });
+  global.KomerceCanonicalImportRuntime = Object.freeze({ mount, render, sourceCanImportNow, sourceCanStartAutopilot });
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -378,6 +378,7 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     failure_reason: failureReason,
     provider: run.provider,
     source_type: run.source_type,
+    source_ref: run.source_ref || null,
     import_ref: run.import_ref || null,
     started_at: iso(run.started_at),
     finished_at: status === 'COMPLETED' || status === 'FAILED'

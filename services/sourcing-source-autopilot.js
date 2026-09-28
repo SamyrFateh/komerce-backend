@@ -330,6 +330,73 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
   }
 }
 
+async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operator_import_live' } = {}) {
+  await ensureRegisteredPullSources();
+  const source = await requireSource(sourceRef);
+  const automation = automationBySourceRef(sourceRef);
+
+  if (source.status !== 'active') {
+    throw new SourcingSourceAutopilotError(409, 'Source désactivée au niveau lifecycle', 'sourcing_source_lifecycle_disabled');
+  }
+  if (!source.discovery_enabled || !source.sync_enabled || !source.import_enabled) {
+    throw new SourcingSourceAutopilotError(
+      409,
+      'Discovery/Sync/Import doivent être autorisés avant un import opérateur',
+      'provider_preproduction_capability_policy_off'
+    );
+  }
+  if (!automation) {
+    throw new SourcingSourceAutopilotError(409, 'Source sans contrat d’autopull', 'sourcing_autopull_unavailable');
+  }
+  if (!automation.connector_ready) {
+    throw new SourcingSourceAutopilotError(
+      409,
+      automation.reason || 'Connecteur source non prêt',
+      'sourcing_connector_not_ready'
+    );
+  }
+
+  const lockClient = await db.getClient();
+  let locked = false;
+  try {
+    locked = await acquireSourceLock(lockClient, sourceRef);
+    if (!locked) {
+      throw new SourcingSourceAutopilotError(409, 'Un import est déjà en cours pour cette source', 'sourcing_source_already_running');
+    }
+
+    const result = await catalogImport.importCatalog(
+      buildImportBody(source, automation, reason),
+      actorId,
+      importDispatch.dispatchToConnector
+    );
+
+    if (result.status >= 400) {
+      throw new SourcingSourceAutopilotError(
+        result.status,
+        result.body?.error || 'Import source refusé',
+        result.body?.code || 'sourcing_source_import_failed',
+        result.body || null
+      );
+    }
+
+    const body = result.body || {};
+    return {
+      status: body.pipeline_status === 'CANONICAL_RESOLVED' ? 'certified' : 'completed',
+      source_ref: sourceRef,
+      run_ref: body.run_ref || null,
+      pipeline_status: body.pipeline_status || null,
+      accepted: body.accepted || 0,
+      created: body.created || 0,
+      updated: body.updated || 0,
+      rejected: body.rejected || 0,
+      canonical_resolved: Boolean(body.canonical_resolved),
+    };
+  } finally {
+    if (locked) await releaseSourceLock(lockClient, sourceRef);
+    lockClient.release();
+  }
+}
+
 async function setSourceActive(sourceRef, active, { runNow = true } = {}) {
   await ensureRegisteredPullSources();
   const source = await requireSource(sourceRef);
@@ -406,6 +473,7 @@ module.exports = {
   listSources,
   requireSource,
   setSourceActive,
+  runSourceImportNow,
   runSourceOnce,
   runActiveSources,
   _descriptorSourceRef: descriptorSourceRef,

@@ -184,3 +184,26 @@ describe('import runtime run projection', () => {
     warn.mockRestore();
   });
 });
+
+
+test('projection live expose la référence métier source sans UUID interne', () => {
+  const projection = runs.buildProjection({
+    run: {
+      run_ref: 'KIR-000001',
+      provider: 'CJdropshipping',
+      source_type: 'api',
+      source_ref: 'api:cj',
+      mode: 'normal',
+      status: 'RUNNING',
+      source_total: 0,
+      stages: {},
+      intake: {},
+      started_at: '2026-09-28T12:00:00Z',
+      updated_at: '2026-09-28T12:00:00Z',
+    },
+    rows: [],
+    sourceProof: null,
+  });
+  expect(projection.source_ref).toBe('api:cj');
+  expect(projection).not.toHaveProperty('id');
+});

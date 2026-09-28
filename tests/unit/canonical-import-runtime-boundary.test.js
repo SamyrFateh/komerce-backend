@@ -34,8 +34,8 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260928-2');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260928-2');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260928-4');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260928-4');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-runs');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
   expect(source).not.toMatch(/\b(?:ImportRuntimeView|KmcApi|ApiClient)\b/);
@@ -50,4 +50,21 @@ test('canonical app and navigation expose import runtime under Operations', () =
   expect(nav).toContain("id: 'import-runtime'");
   expect(nav).toContain("href: '/admin/import-runtime'");
   expect(nav).toContain("'import-runtime': 'operations'");
+});
+
+
+test('import runtime pilots configured sources without inventing client authority', () => {
+  const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
+  const css = fs.readFileSync(path.join(CANONICAL, 'css', 'import-runtime.css'), 'utf8');
+  expect(source).toContain("api('/api/admin/workspaces/sourcing')");
+  expect(source).toContain("'/capabilities/'");
+  expect(source).toContain("'/import-now'");
+  expect(source).toContain("'activate'");
+  expect(source).toContain("'deactivate'");
+  expect(source).toContain('production_runtime_certified');
+  expect(source).toContain('sourceCanImportNow');
+  expect(source).toContain('sourceCanStartAutopilot');
+  expect(css).toContain('.kir-source-panel');
+  expect(css).toContain('.kir-switch');
+  expect(css).toContain('.kir-btn-import');
 });
