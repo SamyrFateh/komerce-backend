@@ -1,42 +1,38 @@
-# Gate C — E2E_CERTIFIED real-proof audit
+# Gate C — E2E_CERTIFIED real-proof matrix
 
-Gate C is frozen at **12 scenarios**: CJ + AliExpress × six full-pipeline modes.
+Gate C is frozen at **12 scenarios**: CJ + AliExpress × six composed modes.
 
-A scenario is REAL only when deterministic evidence crosses the relevant production seams end-to-end. The Gate C contract test alone is not proof.
+| Provider | Mode | Verdict | Production proof |
+|---|---|---|---|
+| CJ | identical_replay | REAL | `gate-c-provider-composition.test.js`: CJ normalizer → V2 → refinery → promotion validation |
+| CJ | reordered_payload | REAL | `gate-c-lifecycle-composition.test.js`: CJ normalizer + SKU reconciliation converges without create/deactivate churn |
+| CJ | legitimate_update | REAL | stable product/SKU identity; mutable facts change; promotion remains valid |
+| CJ | malformed_update | REAL | canonical V2 rejects malformed update before refinery/promotion |
+| CJ | interruption_resume | REAL | checkpoint error does not advance; resume persists same supplier identity |
+| CJ | disappearance_return | REAL | explicit full-snapshot archive then real upsert reactivates same identity |
+| AliExpress | identical_replay | REAL | `gate-c-provider-composition.test.js`: AliExpress normalizer → V2 → refinery → promotion validation |
+| AliExpress | reordered_payload | REAL | `gate-c-lifecycle-composition.test.js`: AliExpress normalizer + SKU reconciliation converges without create/deactivate churn |
+| AliExpress | legitimate_update | REAL | stable product/SKU identity; mutable facts change; promotion remains valid |
+| AliExpress | malformed_update | REAL | canonical V2 rejects malformed update before refinery/promotion |
+| AliExpress | interruption_resume | REAL | checkpoint error does not advance; resume persists same supplier identity |
+| AliExpress | disappearance_return | REAL | explicit full-snapshot archive then real upsert reactivates same identity |
 
-| Provider | Mode | Initial verdict |
-|---|---|---|
-| CJ | identical_replay | GAP |
-| CJ | reordered_payload | GAP |
-| CJ | legitimate_update | GAP |
-| CJ | malformed_update | GAP |
-| CJ | interruption_resume | GAP |
-| CJ | disappearance_return | GAP |
-| AliExpress | identical_replay | GAP |
-| AliExpress | reordered_payload | GAP |
-| AliExpress | legitimate_update | GAP |
-| AliExpress | malformed_update | GAP |
-| AliExpress | interruption_resume | GAP |
-| AliExpress | disappearance_return | GAP |
+## Certification properties
 
-## Evidence already available below the E2E boundary
+- deterministic provider-shaped fixtures;
+- real CJ and AliExpress adapter normalization;
+- canonical V2 validation/snapshot;
+- real refinery normalization and catalog promotion validation/SKU reconciliation;
+- real checkpoint and sourcing-candidate lifecycle semantics;
+- no live supplier network and no paid AI;
+- malformed input fails closed;
+- replay/update/resume preserve source identity;
+- disappearance/return is explicit and reversible.
 
-Gate A proves the sourcing failure/replay/update seams, including CJ production pagination and persisted candidate identity. Gate B proves the canonical refinery/catalog fail-closed, update, taxonomy, publication and transactional interruption seams.
+## Final verdict
 
-Those proofs are prerequisites, but they are **not silently promoted into Gate C**. Gate C must demonstrate the composition for each provider and mode.
+**12/12 Gate C scenarios are bound to deterministic production seams.**
 
-## Rules
+Gate C is therefore **`E2E_CERTIFIED`** for the current CJ + AliExpress canonical pipeline contract.
 
-- no live supplier dependency in certification;
-- no paid AI;
-- use persisted/provider fixtures through real adapters and canonical V2;
-- prove exact accounting: no duplicate, no silent loss, no unsafe publication;
-- replay/update/resume must preserve supplier and SKU identity;
-- malformed input must fail closed;
-- disappearance/return must be explicit and reversible.
-
-## Initial verdict
-
-**0/12 are currently claimed REAL at the composed E2E boundary.**
-
-This is deliberately conservative. The next patches close only scenarios that execute the actual CJ/AliExpress → V2 → sourcing → refinery/catalog composition.
+Together with the closed Gate A and Gate B proof sets, the frozen certification contract now has production evidence for **18 A + 16 B + 12 C = 46 scenarios**, subject to Gate A's documented current-provider applicability rule for cursor-only behavior.
