@@ -187,7 +187,7 @@ describe('import runtime run projection', () => {
 
 
 test('projection live expose la référence métier source sans UUID interne', () => {
-  const projection = runtime.buildProjection({
+  const projection = runs.buildProjection({
     run: {
       run_ref: 'KIR-000001',
       provider: 'CJdropshipping',
