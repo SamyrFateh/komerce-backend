@@ -17,6 +17,7 @@ on:
           - aliexpress-prepare-fr-dry-run
           - purge-m038-legacy
           - full-catalog-reset
+          - clean-room-reset
       limit:
         description: 'Nombre maximum de candidats/promotions pour ce run'
         required: false
@@ -46,7 +47,8 @@ jobs:
         github.event.issue.title == '[staging-op] aliexpress-soi-replay-dry-run' ||
         github.event.issue.title == '[staging-op] aliexpress-prepare-fr-dry-run' ||
         github.event.issue.title == '[staging-op] purge-m038-legacy' ||
-        github.event.issue.title == '[staging-op] full-catalog-reset'))
+        github.event.issue.title == '[staging-op] full-catalog-reset' ||
+        github.event.issue.title == '[staging-op] clean-room-reset'))
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -79,12 +81,13 @@ jobs:
               '[staging-op] aliexpress-prepare-fr-dry-run') operation='aliexpress-prepare-fr-dry-run'; limit='500' ;;
               '[staging-op] purge-m038-legacy') operation='purge-m038-legacy'; limit='1' ;;
               '[staging-op] full-catalog-reset') operation='full-catalog-reset'; limit='1' ;;
+              '[staging-op] clean-room-reset') operation='clean-room-reset'; limit='1' ;;
               *) echo '::error::Opération non autorisée'; exit 1 ;;
             esac
           fi
 
           case "$operation" in
-            aliexpress-refinery-rescan-dry-run|aliexpress-refinery-rescan|aliexpress-draft-audit|aliexpress-promote-drafts|aliexpress-soi-replay-dry-run|aliexpress-prepare-fr-dry-run|purge-m038-legacy|full-catalog-reset) ;;
+            aliexpress-refinery-rescan-dry-run|aliexpress-refinery-rescan|aliexpress-draft-audit|aliexpress-promote-drafts|aliexpress-soi-replay-dry-run|aliexpress-prepare-fr-dry-run|purge-m038-legacy|full-catalog-reset|clean-room-reset) ;;
             *) echo '::error::Opération non autorisée'; exit 1 ;;
           esac
           if ! [[ "$limit" =~ ^[0-9]+$ ]] || [ "$limit" -lt 1 ] || [ "$limit" -gt 500 ]; then
@@ -226,6 +229,19 @@ jobs:
           compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-7000)"
           echo "summary=$compact" >> "$GITHUB_OUTPUT"
 
+      - name: Clean-room reset staging catalogue and sourcing
+        id: clean_room_reset
+        if: steps.operation.outputs.operation == 'clean-room-reset'
+        shell: bash
+        env:
+          KOMERCE_ALLOW_CLEAN_ROOM_RESET: '1'
+        run: |
+          set -euo pipefail
+          output="$(timeout 300s node scripts/staging-clean-room-reset.js)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-7000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
       - name: Write operation summary
         if: always()
         shell: bash
@@ -241,6 +257,7 @@ jobs:
           PREPARE_FR_DRY_RUN_SUMMARY: ${{ steps.enrich_fr_dry_run.outputs.summary }}
           PURGE_M038_SUMMARY: ${{ steps.purge_m038.outputs.summary }}
           FULL_CATALOG_RESET_SUMMARY: ${{ steps.full_catalog_reset.outputs.summary }}
+          CLEAN_ROOM_RESET_SUMMARY: ${{ steps.clean_room_reset.outputs.summary }}
         run: |
           {
             echo '## Komerce staging catalog operation'
@@ -256,6 +273,7 @@ jobs:
             if [ -n "${PREPARE_FR_DRY_RUN_SUMMARY:-}" ]; then echo "- FR preparation dry-run (0 AI API): \`${PREPARE_FR_DRY_RUN_SUMMARY}\`"; fi
             if [ -n "${PURGE_M038_SUMMARY:-}" ]; then echo "- purge M038: \`${PURGE_M038_SUMMARY}\`"; fi
             if [ -n "${FULL_CATALOG_RESET_SUMMARY:-}" ]; then echo "- full catalog reset: \`${FULL_CATALOG_RESET_SUMMARY}\`"; fi
+            if [ -n "${CLEAN_ROOM_RESET_SUMMARY:-}" ]; then echo "- clean-room reset: \`${CLEAN_ROOM_RESET_SUMMARY}\`"; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Close successful command issue
@@ -274,6 +292,7 @@ jobs:
           PREPARE_FR_DRY_RUN_SUMMARY: ${{ steps.enrich_fr_dry_run.outputs.summary }}
           PURGE_M038_SUMMARY: ${{ steps.purge_m038.outputs.summary }}
           FULL_CATALOG_RESET_SUMMARY: ${{ steps.full_catalog_reset.outputs.summary }}
+          CLEAN_ROOM_RESET_SUMMARY: ${{ steps.clean_room_reset.outputs.summary }}
         run: |
           set -euo pipefail
           note="Staging catalog operation \`$OPERATION\` completed successfully."
@@ -284,5 +303,8 @@ jobs:
           if [ -n "${PROMOTE_SUMMARY:-}" ]; then note="$note\n\n\`$PROMOTE_SUMMARY\`"; fi
           if [ -n "${SOI_REPLAY_DRY_RUN_SUMMARY:-}" ]; then note="$note\n\n\`$SOI_REPLAY_DRY_RUN_SUMMARY\`"; fi
           if [ -n "${PREPARE_FR_DRY_RUN_SUMMARY:-}" ]; then note="$note\n\n\`$PREPARE_FR_DRY_RUN_SUMMARY\`"; fi
+          if [ -n "${PURGE_M038_SUMMARY:-}" ]; then note="$note\n\n\`$PURGE_M038_SUMMARY\`"; fi
+          if [ -n "${FULL_CATALOG_RESET_SUMMARY:-}" ]; then note="$note\n\n\`$FULL_CATALOG_RESET_SUMMARY\`"; fi
+          if [ -n "${CLEAN_ROOM_RESET_SUMMARY:-}" ]; then note="$note\n\n\`$CLEAN_ROOM_RESET_SUMMARY\`"; fi
           gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$note"
           gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
