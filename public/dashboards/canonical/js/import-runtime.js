@@ -267,6 +267,7 @@
             ['Acceptés', num(a.accepted), 'good'],
             ['Doublons', num(a.duplicates), 'info'],
             ['Rejetés', num(a.rejected), 'bad'],
+            ['Différés', num(a.deferred), 'warn'],
             ['Quarantaine', num(a.quarantined), 'warn'],
             ['Certifiés', num(a.certified), 'good'],
           ].map(([label,value,tone]) => `
