@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 48,
-    "total_routes": 594,
+    "total_routes": 595,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
