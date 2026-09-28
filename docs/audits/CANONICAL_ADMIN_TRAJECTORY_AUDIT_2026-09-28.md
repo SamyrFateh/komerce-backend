@@ -262,3 +262,168 @@ Avant toute nouvelle suppression Legacy, produire une matrice de couverture exé
 - LEGACY_REQUIRED
 
 La purge Legacy ne devient autorisée que lorsque aucun besoin n'est PARTIAL ou LEGACY_REQUIRED.
+
+
+## 11. Matrice exhaustive des 30 besoins Legacy
+
+Convention :
+
+- **COVERED** : besoin réexprimé et accessible dans Canonical.
+- **COVERED_BUT_HIDDEN** : besoin réexprimé mais insuffisamment visible dans la navigation.
+- **PARTIAL** : une partie du besoin est absorbée, mais la couverture ou la preuve n'est pas complète.
+- **LEGACY_REQUIRED** : le besoin dépend encore explicitement d'une surface Legacy.
+
+| # | Vue Legacy / besoin | Destination actuelle | Statut audit | Visibilité actuelle | Décision de navigation |
+|---:|---|---|---|---|---|
+| 1 | SanteView — synthèse transverse | Pilotage | **PARTIAL** | faible | Exposer **Activité / Santé** comme entrée de lecture vers Pilotage ou vue locale dédiée |
+| 2 | PilotageView — KPI globaux / objectifs | Pilotage | **COVERED** | visible | Garder **Dashboard** |
+| 3 | ControlTowerView — top signaux / pipeline | Pilotage + Opérations + Action Center | **COVERED_BUT_HIDDEN** | dispersée | Exposer **Action Center** et **Retards / pipeline** depuis Pilotage |
+| 4 | SalesView — performance commerciale | Legacy `/admin/sales` | **LEGACY_REQUIRED** | hors Canonical | Faire revenir **Ventes** dans la navigation tant que Commerce ne couvre pas tout |
+| 5 | ClientsView — liste / investigation client | `/admin/clients` + Client 360 | **COVERED_BUT_HIDDEN** | enfouie sous Commandes | Exposer **Clients** explicitement |
+| 6 | OrdersLogisticsView — pipeline commande/logistique | Opérations | **COVERED_BUT_HIDDEN** | agrégé | Exposer **Logistique / Retards** comme sous-entrée claire |
+| 7 | EconomicView — santé économique | redirect Pricing WS | **PARTIAL** | masquée par redirect | Exposer **Économie** tant que la preuve d'absorption n'est pas formalisée |
+| 8 | CostingView — coût rendu / variance | redirect Finance | **PARTIAL** | masquée par redirect | Exposer **Coûts** comme rubrique Finance / Atelier économique |
+| 9 | PilotageFinView — projection / mix | redirect Finance | **PARTIAL** | masquée par redirect | Exposer **Prévisions** dans Finance/Pilotage |
+| 10 | InvoicesView — factures / trésorerie | Accounting Workspace | **COVERED_BUT_HIDDEN** | sous Finance | Exposer **Factures** ou rendre cette capacité évidente dans Comptabilité |
+| 11 | AccountingView — comptabilité | Accounting Workspace | **COVERED** | N2 seulement | Garder **Comptabilité**, plus visible |
+| 12 | HubRelaisView — exploitation hub/relais | Operations Workspace | **COVERED_BUT_HIDDEN** | N2 Opérations | Exposer **Hub / Relais** |
+| 13 | InventoryView — inventaire | Operations Workspace | **COVERED_BUT_HIDDEN** | absorbé dans Hub/Relais | Exposer **Inventaire** comme vue/rubrique du workspace |
+| 14 | TransitaireView — transit | Legacy `/admin/transitaire` | **LEGACY_REQUIRED** | hors Canonical | Exposer **Expéditions / Transit** même si la cible reste temporairement Legacy |
+| 15 | CustomsView — douane | Legacy `/admin/customs` + workspace additif | **LEGACY_REQUIRED** | ambiguë | Exposer **Douane** explicitement jusqu'au cutover complet |
+| 16 | CategoriesView — catégories catalogue | Catalog Workspace | **COVERED_BUT_HIDDEN** | absorbée | Exposer **Catégories** dans Catalogue |
+| 17 | ProductsView — produits | Catalog Workspace + Product 360 | **COVERED_BUT_HIDDEN** | absorbée | Exposer **Produits** |
+| 18 | CatalogApprovalView — approbation catalogue | Catalog Workspace | **COVERED_BUT_HIDDEN** | absorbée | Exposer **Approbations** si le workflow reste opérationnel |
+| 19 | SourcingView — sourcing | Sourcing Workspace | **COVERED_BUT_HIDDEN** | N2 Opérations | Exposer **Sourcing** clairement |
+| 20 | SourcingScannerView — scanner / candidats | Sourcing Workspace | **COVERED_BUT_HIDDEN** | vue interne | Exposer **Scanner / Candidats** dans Sourcing, pas nécessairement N1 |
+| 21 | SuppliersView — fournisseurs / partenaires | Legacy `/admin/suppliers` | **LEGACY_REQUIRED** | hors Canonical | Exposer **Fournisseurs** jusqu'à vraie absorption multi-familles |
+| 22 | PricingView — construction prix | Pricing Workspace | **COVERED** | visible comme Atelier économique | Garder **Atelier économique** |
+| 23 | PricingWorkshopView — coûts/config | Pricing Workspace | **COVERED_BUT_HIDDEN** | vue interne | Exposer **Coûts / Construction** comme N2 |
+| 24 | PricingStrategyView — stratégie | Pricing Workspace | **COVERED_BUT_HIDDEN** | vue interne | Exposer **Prix & contribution / Stratégie** |
+| 25 | EconomicFlowView — carte économique | Pricing Workspace | **COVERED_BUT_HIDDEN** | vue interne | Exposer **Carte économique** ou l'intégrer clairement à Atelier |
+| 26 | SimulatorView — simulation | Legacy `/admin/simulator` | **LEGACY_REQUIRED** | hors Canonical | Exposer **Simulation** ; staging en particulier |
+| 27 | ActionCenterView — signaux / actions | Action Center | **COVERED_BUT_HIDDEN** | parent Dashboard | Exposer **Action Center** explicitement |
+| 28 | ProblemsView — exceptions | Action Center / signals | **COVERED** | absorbée | Ne pas recréer Problems ; montrer ses signaux via Action Center |
+| 29 | SharedCartsView — partages | Legacy `/admin/shared-carts` + doctrine Client 360/Commerce | **PARTIAL** | peu visible | Exposer **Partages** tant que la couverture Canonical n'est pas prouvée |
+| 30 | SettingsView — paramètres | Canonical Settings | **COVERED** | utilitaire | Garder **Paramètres** |
+
+### Synthèse quantitative
+
+Sur les 30 besoins historiques :
+
+- **5 COVERED**
+- **14 COVERED_BUT_HIDDEN**
+- **5 PARTIAL**
+- **6 LEGACY_REQUIRED**
+
+Le risque dominant n'est donc pas la perte brute de fonctionnalités mais la **perte de visibilité** : presque la moitié des besoins sont absorbés mais devenus difficiles à découvrir.
+
+## 12. Ce que la nouvelle navigation doit absolument montrer
+
+La nouvelle sidebar ne doit pas être le reflet direct des runtimes. Elle doit être la carte de capacités suivante.
+
+### PILOTAGE
+- Dashboard
+- Activité
+- Ventes
+- Retards
+- Prévisions
+- Action Center
+
+### COMMERCE
+- Commandes
+- Clients
+- Partages
+- Litiges
+- Remboursements
+- Wallet
+
+### CATALOGUE
+- Produits
+- Catégories
+- Approbations
+- Sourcing
+- Scanner / Candidats
+- Fournisseurs
+
+### OPÉRATIONS
+- Vue d'ensemble
+- Hub / Relais
+- Inventaire
+- Expéditions / Transit
+- Douane
+- Logistique
+
+### FINANCE
+- Vue Finance
+- Factures
+- Comptabilité
+- Économie
+- Coûts
+- Prévisions financières
+- Atelier économique
+
+### MARCHÉS
+- Accès pays
+- Autonomie marché
+- Catalogue pays
+- Équipe / réseau selon capabilities disponibles
+
+### CONFIGURATION
+- Paramètres
+- Simulation
+- Reset / Seed (staging uniquement)
+
+## 13. Règle d'implémentation de la navigation
+
+Une entrée visible peut pointer vers :
+
+1. une route Canonical complète ;
+2. un N2 Canonical ;
+3. une section locale du workspace ;
+4. un Entity 360 ;
+5. une route Legacy temporaire si le besoin est encore **LEGACY_REQUIRED**.
+
+Cela évite le faux choix entre :
+- « revenir à 30 pages Legacy » ;
+- ou « n'afficher que 7 domaines ».
+
+La bonne solution est une **navigation riche au-dessus d'une architecture consolidée**.
+
+## 14. Gate de couverture à créer
+
+Avant toute suppression d'une route Legacy, une table générée doit vérifier :
+
+```
+legacy_need
+canonical_destination
+coverage_status
+proof
+navigation_entry
+rollback_path
+```
+
+Une route Legacy ne devient supprimable que lorsque :
+
+```
+coverage_status == COVERED
+AND proof != null
+AND navigation_entry != null
+```
+
+Pour les besoins volontairement fusionnés dans un autre écran, `navigation_entry` peut viser une rubrique ou une ancre et non une page autonome.
+
+## 15. Prochaine étape recommandée
+
+1. Ne pas modifier immédiatement les routes de cutover.
+2. Construire la nouvelle **carte de navigation riche** à partir de cette matrice.
+3. Réintroduire visuellement les besoins `LEGACY_REQUIRED` au lieu de les cacher.
+4. Auditer en priorité :
+   - Sales ;
+   - Transitaire ;
+   - Douane ;
+   - Suppliers ;
+   - Simulator ;
+   - Shared carts ;
+   - Costing / Economic / Pilotage financier.
+5. Ajouter Reset / Seed uniquement sur staging.
+6. Une fois la navigation visible, mesurer la couverture écran par écran avant toute nouvelle purge Legacy.
