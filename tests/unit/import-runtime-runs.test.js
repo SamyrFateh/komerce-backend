@@ -154,6 +154,30 @@ describe('import runtime run projection', () => {
     expect(projection.status).toBe('FAILED');
   });
 
+  test('un run échoué pendant le pull marque Import brut FAILED au lieu de rester RUNNING', () => {
+    const projection = runs.buildProjection({
+      run: baseRun({
+        status: 'FAILED',
+        source_total: 0,
+        failure_reason: 'supplier_source_empty',
+        finished_at: T1,
+        stages: {
+          SOURCE_CONNECTED: { started_at: T0, finished_at: T1 },
+        },
+        intake: {},
+      }),
+      rows: [],
+      sourceProof: null,
+    });
+    expect(projection.status).toBe('FAILED');
+    expect(projection.current_stage).toBe('RAW_IMPORT');
+    expect(stage(projection, 'SOURCE_CONNECTED').status).toBe('COMPLETED');
+    expect(stage(projection, 'RAW_IMPORT')).toMatchObject({
+      status: 'FAILED',
+      reason: 'supplier_source_empty',
+    });
+  });
+
   test('run COMPLETED seulement lorsque le catalogue a absorbé tous les certifiés', () => {
     const rows = rows3().map((row, index) => candidate(index + 1, {
       state: 'imported_to_catalog',

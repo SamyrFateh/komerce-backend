@@ -107,6 +107,11 @@
 .kir-source-feedback{margin-bottom:10px;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:700}
 .kir-source-feedback.is-ok{background:#ecfdf3;border:1px solid #abefc6;color:#067647}
 .kir-source-feedback.is-error{background:#fff1f3;border:1px solid #fecdd6;color:#c01048}
+.kir-run-failure{
+  display:flex;align-items:center;gap:10px;margin:0 0 12px;padding:9px 11px;border-radius:9px;
+  background:#fff1f3;border:1px solid #fecdd6;color:#9f1239;font-size:11px
+}
+.kir-run-failure strong{font-weight:850}.kir-run-failure span{color:#be123c}
 
 /* Pipeline is the visual anchor, like the mock. */
 .kir-stage-card{

@@ -315,6 +315,64 @@ test('import opérateur borné peut produire la première certification sans aut
   );
 });
 
+test('import opérateur distingue une source fournisseur vide', async () => {
+  mockSourceQueries(sourceRow({
+    autopilot_enabled: false,
+    production_enabled: false,
+    production_certified_capture_id: null,
+    production_certified_at: null,
+  }));
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog.mockResolvedValue({
+    status: 400,
+    body: { error: 'Aucun produit valide trouvé', invalid: [], run_ref: 'KIR-000002' },
+  });
+
+  await expect(autopilot.runSourceImportNow('api:cj', { actorId: 'operator-1' }))
+    .rejects.toMatchObject({
+      status: 400,
+      code: 'SUPPLIER_SOURCE_EMPTY',
+      details: { run_ref: 'KIR-000002', connector_total: 0, rejected: 0 },
+    });
+});
+
+test('import opérateur distingue un lot fournisseur entièrement rejeté', async () => {
+  mockSourceQueries(sourceRow({
+    autopilot_enabled: false,
+    production_enabled: false,
+    production_certified_capture_id: null,
+    production_certified_at: null,
+  }));
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog.mockResolvedValue({
+    status: 400,
+    body: {
+      error: 'Aucun produit valide trouvé',
+      invalid: [{ errors: ['product_name requis'] }, { errors: ['currency requise'] }],
+      run_ref: 'KIR-000003',
+    },
+  });
+
+  await expect(autopilot.runSourceImportNow('api:cj'))
+    .rejects.toMatchObject({
+      status: 400,
+      code: 'NO_VALID_SUPPLIER_PRODUCT',
+      details: { run_ref: 'KIR-000003', connector_total: 2, rejected: 2 },
+    });
+});
+
 test('import opérateur reste fail-closed si Discovery/Sync/Import ne sont pas autorisés', async () => {
   mockSourceQueries(sourceRow({
     autopilot_enabled: false,

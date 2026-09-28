@@ -43,7 +43,7 @@ jest.mock('../../services/suppliers/connectors/ebay-connector', () => ({
   fetchProducts: (...args) => mockEbayFetch(...args),
 }));
 
-const { connectorCatalog, apiConnectorOptions, dispatchToConnector } = require('../../services/sourcing-import-dispatch');
+const { connectorCatalog, sourceAutomationDescriptor, apiConnectorOptions, dispatchToConnector } = require('../../services/sourcing-import-dispatch');
 
 describe('sourcing-import-dispatch', () => {
   beforeEach(() => jest.clearAllMocks());
@@ -174,6 +174,14 @@ describe('sourcing-import-dispatch', () => {
       size: 3,
     }));
     expect(JSON.stringify(mockEbayFetch.mock.calls[0][0])).not.toContain('never-forward');
+  });
+
+  it('borne l’import live AliExpress sur le pays de sourcing éprouvé AE', () => {
+    expect(sourceAutomationDescriptor('aliexpress')).toMatchObject({
+      adapter: 'aliexpress',
+      connector_ready: true,
+      pull_options: { page: 1, size: 20, country_code: 'AE' },
+    });
   });
 
   it('délègue AliExpress par le même contrat commun sans credential venant de la requête', async () => {

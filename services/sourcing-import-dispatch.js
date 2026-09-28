@@ -75,7 +75,7 @@ const CONNECTORS = Object.freeze({
       label: 'AliExpress Dropshipper API',
       reason: aliexpressModule.INACTIVE_REASON,
       supplierName: 'AliExpress',
-      automation: Object.freeze({ page: 1, size: 20 }),
+      automation: Object.freeze({ page: 1, size: 20, country_code: 'AE' }),
     },
   },
 });
