@@ -26961,6 +26961,10 @@
                     "events": {
                       "type": "string",
                       "x-observed": true
+                    },
+                    "source_ref": {
+                      "type": "string",
+                      "x-observed": true
                     }
                   }
                 }
@@ -27113,12 +27117,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Enveloppe sendAction standard",
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "ok": {
-                      "type": "boolean",
+                      "type": "string",
                       "x-observed": true
                     },
                     "action": {
@@ -27126,7 +27130,7 @@
                       "x-observed": true
                     },
                     "result": {
-                      "type": "object",
+                      "type": "string",
                       "x-observed": true
                     }
                   }
