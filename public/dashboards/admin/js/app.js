@@ -85,6 +85,7 @@
     // ══ CT — Sourcing / Pricing ══
     { path: '/admin/sourcing',          view: 'SourcingView',          label: 'Sourcing',              icon: '🔎', shell: 'ct', section: 'SOURCING',  roles: ['admin','sourcing'] },
     { path: '/admin/sourcing-scanner',  view: 'SourcingScannerView',   label: 'Scanner catalogue',     icon: '📡', shell: 'ct', section: 'SOURCING',  roles: ['admin','sourcing'] },
+    { path: '/admin/providers',          view: 'ProvidersView',          label: 'Fournisseurs catalogue', icon: '🔌', shell: 'ct', section: 'SOURCING',  roles: ['admin','sourcing'] },
     { path: '/admin/pricing',           view: 'PricingView',           label: 'Construction du Prix',  icon: '🧮', shell: 'ct', section: 'PRICING',   roles: ['admin','sourcing','finance'] },
     { path: '/admin/pricing-workshop',  view: 'PricingWorkshopView',   label: 'Config des coûts',      icon: '⚙️', shell: 'ct', section: 'PRICING',   roles: ['admin'] },
     { path: '/admin/pricing-strategy',  view: 'PricingStrategyView',   label: 'Stratégie de prix',     icon: '📈', shell: 'ct', section: 'PRICING',   roles: ['admin','sourcing','finance'] },
