@@ -143,11 +143,12 @@ describe('continuité catégories et sous-catégories desktop', () => {
     expect(index).toMatch(/<nav class="k-cats" id="k-cats" aria-label="Catégories du catalogue"><\/nav>/);
     expect(index).not.toMatch(/\/boutique\/categories\/.+\.(?:jpg|webp)/);
     [
-      'all', 'soldes', 'mode', 'maison',
+      'all', 'mode', 'maison',
       'tech', 'bricolage', 'creations', 'auto',
     ].forEach((name) => {
       expect(schema).toContain(`/boutique/categories/${name}-v2.webp`);
     });
+    expect(schema).toContain('/boutique/categories/cat-soldes-badge-v2.svg');
     expect(visuals).toContain('/boutique/categories/cat-soldes-badge-v2.svg?v=1');
     expect(schema).toContain("sectionEmoji: '%'");
     expect(schema).not.toContain("sectionEmoji: '🏷️'");
