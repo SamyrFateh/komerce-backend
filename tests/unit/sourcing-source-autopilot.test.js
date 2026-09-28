@@ -10,6 +10,7 @@ const mockQuery = jest.fn();
 const mockGetClient = jest.fn();
 const mockDispatch = jest.fn();
 const mockImportCatalog = jest.fn();
+const mockDiscoverSourcePlan = jest.fn();
 
 jest.mock('../../db', () => ({
   query: (...args) => mockQuery(...args),
@@ -24,10 +25,14 @@ jest.mock('../../services/sourcing-import-dispatch', () => ({
       label: 'CJdropshipping API',
       connector_ready: true,
       reason: null,
+      discovery_mode: 'static',
+      discovery_version: 'cj-catalog-page-v1',
+      discovery_ready: true,
       pull_options: { page: 1, size: 20, include_commandable_units: true },
       supports_full_snapshot: true,
     },
   ])),
+  discoverSourcePlan: (...args) => mockDiscoverSourcePlan(...args),
   dispatchToConnector: (...args) => mockDispatch(...args),
 }));
 
@@ -76,6 +81,14 @@ function mockSourceQueries(row = sourceRow()) {
 beforeEach(() => {
   jest.clearAllMocks();
   process.env.KOMERCE_SOURCE_AUTOPILOT = '1';
+  mockDiscoverSourcePlan.mockResolvedValue({
+    status: 'READY',
+    provider: 'cj',
+    strategy: 'provider-static',
+    version: 'cj-catalog-page-v1',
+    pull_options: { page: 1, size: 20, include_commandable_units: true },
+    evidence: { source: 'provider_registry' },
+  });
 });
 
 afterAll(() => {
@@ -155,6 +168,11 @@ test('source ON exécute le pull borné via le registry sans branche fournisseur
 
   const result = await autopilot.runSourceOnce('api:cj', { reason: 'test' });
 
+  expect(mockDiscoverSourcePlan).toHaveBeenCalledWith('cj', {
+    page: 1,
+    size: 20,
+    include_commandable_units: true,
+  });
   expect(result).toMatchObject({ status: 'ok', source_ref: 'api:cj', accepted: 3, created: 2, updated: 1 });
   expect(mockImportCatalog).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -299,6 +317,15 @@ test('import opérateur borné peut produire la première certification sans aut
     run_ref: 'KIR-000001',
     pipeline_status: 'CANONICAL_RESOLVED',
     accepted: 20,
+    discovery: {
+      status: 'READY',
+      version: 'cj-catalog-page-v1',
+    },
+  });
+  expect(mockDiscoverSourcePlan).toHaveBeenCalledWith('cj', {
+    page: 1,
+    size: 20,
+    include_commandable_units: true,
   });
 
   expect(mockImportCatalog).toHaveBeenCalledWith(
@@ -371,6 +398,38 @@ test('import opérateur distingue un lot fournisseur entièrement rejeté', asyn
       code: 'NO_VALID_SUPPLIER_PRODUCT',
       details: { run_ref: 'KIR-000003', connector_total: 2, rejected: 2 },
     });
+});
+
+test('import opérateur n’atteint jamais l’orchestrateur si Discovery ne produit pas un plan READY', async () => {
+  mockSourceQueries(sourceRow({
+    autopilot_enabled: false,
+    production_enabled: false,
+    production_certified_capture_id: null,
+    production_certified_at: null,
+  }));
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  const error = new Error('aucune surface fournisseur');
+  error.code = 'SOURCE_DISCOVERY_EMPTY';
+  mockDiscoverSourcePlan.mockRejectedValue(error);
+
+  await expect(autopilot.runSourceImportNow('api:cj'))
+    .rejects.toMatchObject({
+      status: 502,
+      code: 'SOURCE_DISCOVERY_EMPTY',
+    });
+
+  expect(mockImportCatalog).not.toHaveBeenCalled();
+  expect(mockQuery.mock.calls.some(([sql, params]) =>
+    String(sql).includes('INSERT INTO sourcing_captures')
+      && params[2] === 'failed'
+      && String(params[4]).includes('discovery_plan')
+  )).toBe(true);
 });
 
 test('import opérateur reste fail-closed si Discovery/Sync/Import ne sont pas autorisés', async () => {
