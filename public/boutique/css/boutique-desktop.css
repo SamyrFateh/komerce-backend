@@ -397,6 +397,12 @@
     display: inline-flex;
     align-items: center;
   }
+  .k-sec-subchip-object {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 3px var(--border-text-06)) saturate(1.02) contrast(1.04);
+  }
 
   .k-sec-subchip-all:not(.active) {
     color: var(--text-muted);
