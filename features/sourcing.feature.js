@@ -93,7 +93,7 @@ module.exports = {
       'migrations/226_sourcing_observation_foundation.sql',
       'migrations/227_sourcing_resolution_foundation.sql',
       'migrations/238_sourcing_source_autopilot.sql',
-      'migrations/254_provider_control_policy.sql',
+      'migrations/255_provider_control_policy.sql',
     ],
     scripts: [
       'scripts/sourcing-shadow-proof-staging.js',
