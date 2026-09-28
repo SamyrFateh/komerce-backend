@@ -62,6 +62,7 @@
         Object.freeze({ id: 'operations-workspace', label: 'Hub / Relais', href: '/admin/workspaces/operations', roles: Object.freeze(['admin', 'agent_hub', 'agent_relais', 'market_operator']) }),
         Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: Object.freeze(['admin', 'agent_hub', 'agent_transitaire', 'market_operator']) }),
         Object.freeze({ id: 'sourcing-workspace', label: 'Sourcing', href: '/admin/workspaces/sourcing', roles: Object.freeze(['admin', 'sourcing']) }),
+        Object.freeze({ id: 'import-runtime', label: 'Import live', href: '/admin/import-runtime', roles: Object.freeze(['admin', 'sourcing']) }),
       ]),
     }),
     Object.freeze({
@@ -104,6 +105,7 @@
     'operations-workspace': 'operations',
     'shipping-customs-workspace': 'operations',
     'sourcing-workspace': 'operations',
+    'import-runtime': 'operations',
     finance: 'finance',
     'accounting-workspace': 'finance',
     settings: 'settings',
@@ -119,6 +121,7 @@
     'operations-workspace': 'operations-workspace',
     'shipping-customs-workspace': 'shipping-customs-workspace',
     'sourcing-workspace': 'sourcing-workspace',
+    'import-runtime': 'import-runtime',
     finance: 'finance-overview',
     'accounting-workspace': 'accounting-workspace',
   });
