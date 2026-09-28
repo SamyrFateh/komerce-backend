@@ -1,0 +1,583 @@
+/*
+ * KOMERCE CANONICAL — LEGACY WARM THEME V1
+ *
+ * Presentation-only bridge: restores the warmer Legacy Admin palette and
+ * stronger typographic hierarchy without changing Canonical structure,
+ * navigation, permissions, data or business semantics.
+ */
+:root {
+  --kmc-legacy-bg: #f8f9fa;
+  --kmc-legacy-card: #ffffff;
+  --kmc-legacy-soft: #f3f4f6;
+  --kmc-legacy-soft-strong: #e9ecef;
+  --kmc-legacy-line: #e5e7eb;
+  --kmc-legacy-ink: #111827;
+  --kmc-legacy-ink-2: #374151;
+  --kmc-legacy-muted: #6b7280;
+  --kmc-legacy-faint: #9ca3af;
+  --kmc-legacy-orange: #f5a623;
+  --kmc-legacy-orange-strong: #e8941a;
+  --kmc-legacy-orange-soft: #fffbf2;
+  --kmc-legacy-green: #16a34a;
+  --kmc-legacy-green-soft: #f0fdf4;
+  --kmc-legacy-blue: #2563eb;
+  --kmc-legacy-blue-soft: #eff6ff;
+  --kmc-legacy-red: #e8552a;
+  --kmc-legacy-red-soft: #fff5f3;
+  --kmc-legacy-violet: #7c3aed;
+
+  --kmc-canon-bg: var(--kmc-legacy-bg);
+  --kmc-canon-card: var(--kmc-legacy-card);
+  --kmc-canon-ink: var(--kmc-legacy-ink);
+  --kmc-canon-text: var(--kmc-legacy-ink-2);
+  --kmc-canon-muted: var(--kmc-legacy-muted);
+  --kmc-canon-line: var(--kmc-legacy-line);
+  --kmc-canon-line-strong: #d1d5db;
+  --kmc-canon-blue: var(--kmc-legacy-orange);
+  --kmc-canon-blue-soft: var(--kmc-legacy-orange-soft);
+  --kmc-canon-green: var(--kmc-legacy-green);
+  --kmc-canon-green-soft: var(--kmc-legacy-green-soft);
+  --kmc-canon-orange: var(--kmc-legacy-orange);
+  --kmc-canon-orange-soft: var(--kmc-legacy-orange-soft);
+  --kmc-canon-red: var(--kmc-legacy-red);
+  --kmc-canon-red-soft: var(--kmc-legacy-red-soft);
+  --kmc-canon-violet: var(--kmc-legacy-violet);
+  --kmc-canon-violet-soft: #f5f3ff;
+  --kmc-canon-yellow: var(--kmc-legacy-orange);
+  --kmc-canon-yellow-soft: var(--kmc-legacy-orange-soft);
+  --kmc-canon-pink: var(--kmc-legacy-red);
+  --kmc-canon-pink-soft: var(--kmc-legacy-red-soft);
+
+  --kmc-ink: var(--kmc-legacy-ink);
+  --kmc-muted: var(--kmc-legacy-muted);
+  --kmc-paper: var(--kmc-legacy-bg);
+  --kmc-card: var(--kmc-legacy-card);
+  --kmc-line: var(--kmc-legacy-line);
+  --kmc-line-strong: #d1d5db;
+  --kmc-navy: var(--kmc-legacy-ink);
+  --kmc-amber: var(--kmc-legacy-orange);
+  --kmc-amber-strong: var(--kmc-legacy-orange-strong);
+  --kmc-blue: var(--kmc-legacy-blue);
+  --kmc-blue-soft: var(--kmc-legacy-blue-soft);
+  --kmc-teal: var(--kmc-legacy-green);
+  --kmc-teal-soft: var(--kmc-legacy-green-soft);
+  --kmc-coral: var(--kmc-legacy-red);
+  --kmc-coral-soft: var(--kmc-legacy-red-soft);
+  --kmc-positive: var(--kmc-legacy-green);
+  --kmc-positive-soft: var(--kmc-legacy-green-soft);
+  --kmc-warning: var(--kmc-legacy-orange-strong);
+  --kmc-warning-soft: var(--kmc-legacy-orange-soft);
+  --kmc-critical: var(--kmc-legacy-red);
+  --kmc-critical-soft: var(--kmc-legacy-red-soft);
+}
+
+body[data-admin-generation="canonical"],
+body.kmc-shell-v4 {
+  color: var(--kmc-legacy-ink-2);
+  background: var(--kmc-legacy-bg);
+}
+
+body.kmc-shell-v4 > .kmc-admin-navigation,
+.kmc-admin-navigation {
+  background: #ffffff;
+  color: var(--kmc-legacy-ink);
+  border-right: 1px solid var(--kmc-legacy-line);
+  border-bottom-color: var(--kmc-legacy-line);
+  box-shadow: 2px 0 12px rgb(17 24 39 / 0.045);
+}
+
+body.kmc-shell-v4 .kmc-admin-navigation-identity {
+  border-bottom-color: var(--kmc-legacy-line);
+}
+
+body.kmc-shell-v4 .kmc-admin-home,
+body.kmc-shell-v4 .kmc-admin-home-label,
+.kmc-admin-home {
+  color: var(--kmc-legacy-ink);
+  font-weight: 900;
+}
+
+.kmc-admin-home-mark {
+  color: #1c1611;
+  background: var(--kmc-legacy-orange);
+  box-shadow: 0 2px 7px rgb(245 166 35 / 0.22);
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link,
+.kmc-admin-primary-link {
+  color: var(--kmc-legacy-muted);
+  font-weight: 750;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link:hover,
+body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible,
+.kmc-admin-primary-link:hover,
+.kmc-admin-primary-link:focus-visible {
+  color: var(--kmc-legacy-ink);
+  background: var(--kmc-legacy-soft);
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active,
+.kmc-admin-primary-link.is-active {
+  color: var(--kmc-legacy-orange-strong);
+  background: var(--kmc-legacy-orange-soft);
+  font-weight: 850;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active::after,
+.kmc-admin-primary-link.is-active::after {
+  background: var(--kmc-legacy-orange);
+}
+
+.kmc-admin-primary-icon {
+  color: currentColor;
+}
+
+body.kmc-shell-v4 .kmc-admin-utility-nav {
+  border-top-color: var(--kmc-legacy-line);
+}
+
+body.kmc-shell-v4 .kmc-admin-settings-link,
+body.kmc-shell-v4 .kmc-admin-logout {
+  color: var(--kmc-legacy-muted);
+  font-weight: 750;
+}
+
+body.kmc-shell-v4 .kmc-admin-settings-link:hover,
+body.kmc-shell-v4 .kmc-admin-settings-link:focus-visible,
+body.kmc-shell-v4 .kmc-admin-logout:hover,
+body.kmc-shell-v4 .kmc-admin-logout:focus-visible {
+  color: var(--kmc-legacy-ink);
+  background: var(--kmc-legacy-soft);
+}
+
+body.kmc-shell-v4 .kmc-admin-settings-link.is-active {
+  color: var(--kmc-legacy-orange-strong);
+  background: var(--kmc-legacy-orange-soft);
+}
+
+.kmc-admin-topbar {
+  border-bottom: 3px solid var(--kmc-legacy-orange);
+  background: rgb(255 255 255 / 0.98);
+  box-shadow: 0 1px 0 rgb(17 24 39 / 0.02);
+}
+
+.kmc-admin-search {
+  border-color: var(--kmc-legacy-line);
+  background: var(--kmc-legacy-soft);
+}
+
+.kmc-admin-search:focus-within {
+  border-color: var(--kmc-legacy-orange);
+  box-shadow: 0 0 0 3px rgb(245 166 35 / 0.12);
+}
+
+.kmc-admin-search-input {
+  color: var(--kmc-legacy-ink-2);
+  font-weight: 550;
+}
+
+.kmc-admin-topbar .kmc-admin-market-select,
+.kmc-admin-topbar .kmc-admin-account {
+  color: var(--kmc-legacy-ink-2);
+  border-color: var(--kmc-legacy-line);
+  background: #fff;
+  font-weight: 700;
+}
+
+.kmc-admin-domain-tabs {
+  border-bottom-color: var(--kmc-legacy-line);
+  background: rgb(255 255 255 / 0.98);
+}
+
+.kmc-admin-domain-tab {
+  color: var(--kmc-legacy-muted);
+  font-weight: 750;
+}
+
+.kmc-admin-domain-tab:hover,
+.kmc-admin-domain-tab:focus-visible,
+.kmc-admin-domain-tab.is-active {
+  color: var(--kmc-legacy-orange-strong);
+}
+
+.kmc-admin-domain-tab.is-active {
+  font-weight: 850;
+}
+
+.kmc-admin-domain-tab.is-active::after {
+  height: 3px;
+  background: var(--kmc-legacy-orange);
+}
+
+.kmc-dashboard-title,
+.kmc-workspace-title,
+.kmc-access-hero h1,
+.canonical-boot h1 {
+  color: var(--kmc-legacy-ink);
+  font-weight: 900;
+}
+
+.kmc-dashboard-description,
+.kmc-workspace-subtitle,
+.kmc-access-hero p {
+  color: var(--kmc-legacy-muted);
+  font-weight: 500;
+}
+
+.kmc-dashboard-header .canonical-eyebrow,
+.kmc-workspace-kicker,
+.kmc-access-kicker {
+  color: var(--kmc-legacy-orange-strong);
+  background: var(--kmc-legacy-orange-soft);
+  font-weight: 850;
+}
+
+.kmc-workspace-kicker::before {
+  background: var(--kmc-legacy-orange);
+}
+
+.kmc-section,
+.kmc-decision-surface-card,
+.kmc-alert-panel,
+.kmc-chart-panel,
+.kmc-access-panel,
+.kmc-access-operator,
+.kmc-entity-card,
+.kmc-settings-section,
+.kmc-table-wrap,
+.kmc-workspace-table-wrap,
+.kmc-filter-bar,
+.kmc-market-context {
+  border-color: var(--kmc-legacy-line);
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(17 24 39 / 0.025);
+}
+
+.kmc-section-title,
+.kmc-chart-title,
+.kmc-alert-panel-title,
+.kmc-decision-dashboard-section-title,
+.kmc-card-title,
+.kmc-settings-section h2,
+.kmc-settings-section h3 {
+  color: var(--kmc-legacy-ink);
+  font-weight: 850;
+}
+
+.kmc-section-title::before {
+  background: var(--kmc-legacy-orange);
+  box-shadow: 0 0 0 3px rgb(245 166 35 / 0.10);
+}
+
+.kmc-section-description,
+.kmc-chart-description,
+.kmc-decision-dashboard-section-copy {
+  color: var(--kmc-legacy-muted);
+  font-weight: 500;
+}
+
+.kmc-decision-card,
+.kmc-summary-card,
+.kmc-progress-card,
+.kmc-ranked-row,
+.kmc-priority-row,
+.kmc-info-row,
+.kmc-metric-card {
+  border-color: var(--kmc-legacy-line);
+  background: #fff;
+}
+
+.kmc-decision-card-label,
+.kmc-summary-card-label,
+.kmc-metric-label,
+.kmc-progress-card-label,
+.kmc-ranked-row-label,
+.kmc-priority-row-label {
+  color: var(--kmc-legacy-ink-2);
+  font-weight: 800;
+}
+
+.kmc-decision-card-value,
+.kmc-summary-card-value,
+.kmc-metric-value,
+.kmc-progress-card-value {
+  color: var(--kmc-legacy-ink);
+  font-weight: 900;
+}
+
+.kmc-metric-card:nth-child(5n + 1) {
+  --metric-accent: var(--kmc-legacy-orange-strong);
+  --metric-soft: var(--kmc-legacy-orange-soft);
+}
+.kmc-metric-card:nth-child(5n + 2) {
+  --metric-accent: var(--kmc-legacy-blue);
+  --metric-soft: var(--kmc-legacy-blue-soft);
+}
+.kmc-metric-card:nth-child(5n + 3) {
+  --metric-accent: var(--kmc-legacy-green);
+  --metric-soft: var(--kmc-legacy-green-soft);
+}
+.kmc-metric-card:nth-child(5n + 4) {
+  --metric-accent: var(--kmc-legacy-red);
+  --metric-soft: var(--kmc-legacy-red-soft);
+}
+.kmc-metric-card:nth-child(5n + 5) {
+  --metric-accent: var(--kmc-legacy-violet);
+  --metric-soft: #f5f3ff;
+}
+
+.kmc-workspace-action,
+.kmc-access-button.is-primary {
+  color: #1c1611;
+  border-color: var(--kmc-legacy-orange);
+  background: var(--kmc-legacy-orange);
+  box-shadow: none;
+  font-weight: 800;
+}
+
+.kmc-workspace-action:hover:not(:disabled),
+.kmc-access-button.is-primary:hover:not(:disabled) {
+  color: #1c1611;
+  border-color: var(--kmc-legacy-orange-strong);
+  background: var(--kmc-legacy-orange-strong);
+  box-shadow: none;
+}
+
+.kmc-workspace-action.is-secondary,
+.kmc-access-button:not(.is-primary):not(.is-danger) {
+  color: var(--kmc-legacy-ink-2);
+  border-color: var(--kmc-legacy-line);
+  background: #fff;
+  font-weight: 750;
+}
+
+.kmc-filter-label,
+.kmc-data-table th,
+.kmc-workspace-table th {
+  color: var(--kmc-legacy-muted);
+  font-weight: 800;
+}
+
+.kmc-data-table th,
+.kmc-workspace-table th {
+  background: var(--kmc-legacy-soft);
+}
+
+.kmc-data-table td,
+.kmc-workspace-table td {
+  color: var(--kmc-legacy-ink-2);
+  font-weight: 500;
+}
+
+.kmc-data-table tbody tr:hover,
+.kmc-workspace-table tbody tr:hover {
+  background: var(--kmc-legacy-soft);
+}
+
+.kmc-alert-title,
+.kmc-alert-action,
+.kmc-entity-title,
+.kmc-entity-card strong {
+  font-weight: 800;
+}
+
+.kmc-workspace-nav-link,
+.kmc-admin-back {
+  color: var(--kmc-legacy-ink-2);
+  border-color: var(--kmc-legacy-line);
+  background: #fff;
+  font-weight: 750;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible,
+body.kmc-shell-v4 .kmc-admin-home:focus-visible,
+body.kmc-shell-v4 .kmc-admin-settings-link:focus-visible,
+body.kmc-shell-v4 .kmc-admin-logout:focus-visible,
+.kmc-admin-domain-tab:focus-visible,
+.kmc-admin-search-input:focus-visible,
+.kmc-admin-topbar .kmc-admin-market-select:focus-visible,
+.kmc-workspace-action:focus-visible,
+.kmc-workspace-nav-link:focus-visible,
+.kmc-access-button:focus-visible {
+  outline-color: var(--kmc-legacy-orange);
+}
+
+@media (max-width: 980px) {
+  body.kmc-shell-v4 > .kmc-admin-navigation {
+    background: #fff;
+  }
+}
+
+
+/* V1.1 — accents Legacy renforcés : plus visibles sans charger les surfaces. */
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active,
+.kmc-admin-primary-link.is-active {
+  box-shadow: inset 3px 0 0 var(--kmc-legacy-orange);
+}
+
+.kmc-dashboard-header,
+.kmc-workspace-header,
+.kmc-access-hero {
+  position: relative;
+}
+
+.kmc-dashboard-header::before,
+.kmc-workspace-header::before,
+.kmc-access-hero::before {
+  content: "";
+  display: block;
+  width: 42px;
+  height: 4px;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  background: var(--kmc-legacy-orange);
+}
+
+.kmc-section,
+.kmc-decision-surface-card,
+.kmc-alert-panel,
+.kmc-chart-panel {
+  border-top-color: color-mix(in srgb, var(--kmc-legacy-orange) 42%, var(--kmc-legacy-line));
+}
+
+.kmc-section-title::before {
+  width: 5px;
+  height: 16px;
+  box-shadow: 0 0 0 4px rgb(245 166 35 / 0.14);
+}
+
+.kmc-metric-card {
+  border-top-width: 4px;
+}
+
+.kmc-metric-card:nth-child(5n + 1) {
+  background: linear-gradient(145deg, #fff7e8 0%, #ffffff 62%);
+}
+
+.kmc-workspace-action,
+.kmc-access-button.is-primary {
+  box-shadow: 0 3px 10px rgb(245 166 35 / 0.24);
+}
+
+.kmc-dashboard-header .canonical-eyebrow,
+.kmc-workspace-kicker,
+.kmc-access-kicker {
+  border: 1px solid rgb(245 166 35 / 0.28);
+}
+
+.kmc-admin-domain-tab.is-active {
+  background: linear-gradient(180deg, transparent 0%, rgb(245 166 35 / 0.07) 100%);
+}
+
+.kmc-data-table th:first-child,
+.kmc-workspace-table th:first-child {
+  border-left: 3px solid var(--kmc-legacy-orange);
+}
+
+
+/* V1.2 — données sémantiques : la couleur exprime le contexte métier. */
+.kmc-decision-card.is-positive .kmc-decision-card-value,
+.kmc-summary-card.is-positive .kmc-summary-card-metric-value,
+.kmc-progress-card.is-positive .kmc-progress-value,
+.kmc-ranked-row.is-positive .kmc-ranked-value,
+.kmc-info-row.is-positive .kmc-info-title,
+.kmc-priority-row.is-positive .kmc-priority-title,
+.kmc-metric-card.is-positive .kmc-metric-value,
+.kmc-workspace-feedback.is-positive,
+.kmc-market-decision-hero.is-positive .kmc-market-decision-title,
+.kmc-market-decision-hero.is-positive .kmc-market-decision-metric-value {
+  color: var(--kmc-legacy-green);
+}
+
+.kmc-decision-card.is-warning .kmc-decision-card-value,
+.kmc-summary-card.is-warning .kmc-summary-card-metric-value,
+.kmc-progress-card.is-warning .kmc-progress-value,
+.kmc-ranked-row.is-warning .kmc-ranked-value,
+.kmc-info-row.is-warning .kmc-info-title,
+.kmc-priority-row.is-warning .kmc-priority-title,
+.kmc-metric-card.is-warning .kmc-metric-value,
+.kmc-market-decision-hero.is-warning .kmc-market-decision-title,
+.kmc-market-decision-hero.is-warning .kmc-market-decision-metric-value {
+  color: var(--kmc-legacy-orange-strong);
+}
+
+.kmc-decision-card.is-critical .kmc-decision-card-value,
+.kmc-summary-card.is-critical .kmc-summary-card-metric-value,
+.kmc-progress-card.is-critical .kmc-progress-value,
+.kmc-ranked-row.is-critical .kmc-ranked-value,
+.kmc-info-row.is-critical .kmc-info-title,
+.kmc-priority-row.is-critical .kmc-priority-title,
+.kmc-metric-card.is-critical .kmc-metric-value,
+.kmc-workspace-feedback.is-critical,
+.kmc-market-decision-hero.is-critical .kmc-market-decision-title,
+.kmc-market-decision-hero.is-critical .kmc-market-decision-metric-value {
+  color: var(--kmc-legacy-red);
+}
+
+.kmc-decision-card.is-positive,
+.kmc-summary-card.is-positive,
+.kmc-progress-card.is-positive,
+.kmc-ranked-row.is-positive,
+.kmc-priority-row.is-positive,
+.kmc-info-row.is-positive {
+  border-left: 4px solid var(--kmc-legacy-green);
+}
+
+.kmc-decision-card.is-warning,
+.kmc-summary-card.is-warning,
+.kmc-progress-card.is-warning,
+.kmc-ranked-row.is-warning,
+.kmc-priority-row.is-warning,
+.kmc-info-row.is-warning {
+  border-left: 4px solid var(--kmc-legacy-orange);
+}
+
+.kmc-decision-card.is-critical,
+.kmc-summary-card.is-critical,
+.kmc-progress-card.is-critical,
+.kmc-ranked-row.is-critical,
+.kmc-priority-row.is-critical,
+.kmc-info-row.is-critical {
+  border-left: 4px solid var(--kmc-legacy-red);
+}
+
+.kmc-decision-delta.is-positive,
+.kmc-priority-row.is-positive .kmc-priority-badge {
+  color: var(--kmc-legacy-green);
+  background: var(--kmc-legacy-green-soft);
+}
+
+.kmc-decision-delta.is-warning,
+.kmc-priority-row.is-warning .kmc-priority-badge {
+  color: var(--kmc-legacy-orange-strong);
+  background: var(--kmc-legacy-orange-soft);
+}
+
+.kmc-decision-delta.is-critical,
+.kmc-priority-row.is-critical .kmc-priority-badge {
+  color: var(--kmc-legacy-red);
+  background: var(--kmc-legacy-red-soft);
+}
+
+.kmc-market-decision-hero.is-positive {
+  border-left-color: var(--kmc-legacy-green);
+  background: var(--kmc-legacy-green-soft);
+}
+
+.kmc-market-decision-hero.is-warning {
+  border-left-color: var(--kmc-legacy-orange);
+  background: var(--kmc-legacy-orange-soft);
+}
+
+.kmc-market-decision-hero.is-critical {
+  border-left-color: var(--kmc-legacy-red);
+  background: var(--kmc-legacy-red-soft);
+}
+
+/* Les valeurs neutres restent noires : pas de couleur sans signification. */
+.kmc-decision-card:not(.is-positive):not(.is-warning):not(.is-critical) .kmc-decision-card-value,
+.kmc-summary-card:not(.is-positive):not(.is-warning):not(.is-critical) .kmc-summary-card-metric-value,
+.kmc-metric-card:not(.is-positive):not(.is-warning):not(.is-critical) .kmc-metric-value {
+  color: var(--kmc-legacy-ink);
+}
