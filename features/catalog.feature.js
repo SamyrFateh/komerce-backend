@@ -44,6 +44,7 @@ module.exports = {
       'modal produit catalogue : un fetch Product Detail, un etat de selection SKU, deux compositions responsive mobile/desktop',
       'raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique',
       'contrat de revue du texte incruste dans les medias fournisseur : preuve attachee a la source et variante, traduction FR revue sans dependance IA specifique (verification pure, sans publication automatique)',
+      'projection par lot KIR : préparation Catalogue, publication et visibilité par marché depuis les produits réellement promus ; lecture seule, sans automatiser une décision',
       'projection live Sources -> Raffinerie -> Boutique dans le Workspace Catalogue : observation des sources, du pipeline et du buyer-effective sans reprendre l autorite de mutation Sourcing ni de pricing marche',
       'glossaire metier EN->FR (catalog_glossary)',
       'mémoire terminologique externe sourcée et filtrée par corpus (catalog_terminology_reference), avec priorité au glossaire Komerce',
@@ -219,6 +220,7 @@ module.exports = {
       'services/boutique-taxonomy-admin.js',
       'services/catalog-workspace.js',
       'services/catalog-live-flow.js',
+      'services/catalog-run-progress.js',
       'services/catalog-workspace-live-composer.js',
     ],
     schemas: [
@@ -517,6 +519,7 @@ module.exports = {
       'tests/unit/admin-catalog-workspace-route.test.js',
       'tests/unit/catalog-workspace.test.js',
       'tests/unit/catalog-live-flow.test.js',
+      'tests/unit/catalog-run-progress.test.js',
       'tests/unit/sourcing-import-dispatch.test.js',
       'tests/unit/boutique-taxonomy-admin.test.js',
       'tests/unit/canonical-catalog-workspace-boundary.test.js',
@@ -618,6 +621,7 @@ module.exports = {
       'GET /api/integrations/aliexpress/status',
     ],
     internalApi: [
+      { fn: 'readRunProgress', file: 'services/catalog-run-progress.js' },
       { fn: 'createDraftFromSourcingCandidate', file: 'services/product-admin-service.js' },
       { fn: 'createDraftProductFromSourcingCandidate', file: 'services/catalog-candidate-product-service.js' },
       { fn: 'applyPrice', file: 'services/catalog-product-mutation-service.js' },
