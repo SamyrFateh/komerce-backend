@@ -73,6 +73,8 @@ router.get('/', async (req, res, next) => {
               'label',         bs.label,
               'short_label',   COALESCE(bs.short_label, bs.label),
               'icon',          bs.icon,
+              'image_url',     bs.image_url,
+              'image_alt',     bs.image_alt,
               'display_order', bs.display_order
             ) ORDER BY bs.display_order
           ) FILTER (WHERE bs.key IS NOT NULL AND bs.is_active = TRUE),
