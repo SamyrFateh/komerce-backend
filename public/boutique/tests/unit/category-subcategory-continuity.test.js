@@ -145,7 +145,7 @@ describe('continuité catégories et sous-catégories desktop', () => {
     ].forEach((name) => {
       expect(schema).toContain(`/boutique/categories/${name}-v2.webp`);
     });
-    expect(visuals).toContain('/boutique/categories/cat-soldes-percent-v1.svg?v=1');
+    expect(visuals).toContain('/boutique/categories/cat-soldes-badge-v2.svg?v=1');
     expect(schema).toContain("sectionEmoji: '%'");
     expect(schema).not.toContain("sectionEmoji: '🏷️'");
   });
