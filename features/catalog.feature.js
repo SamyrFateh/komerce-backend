@@ -701,6 +701,8 @@ module.exports = {
       test: 'tests/unit/certification-accounting.test.js' },
     { statement: 'Gate C compose les fixtures CJ et AliExpress dans les seams réels adapter → V2 → raffinerie → pré-promotion sans réseau fournisseur ni IA payante',
       test: 'tests/unit/gate-c-provider-composition.test.js' },
+    { statement: 'Gate C compose pour CJ et AliExpress le réordonnancement, interruption/reprise et disparition/retour avec les vrais seams de réconciliation SKU, checkpoint et lifecycle candidat',
+      test: 'tests/unit/gate-c-lifecycle-composition.test.js' },
     'les datasets E2E 700 et 712 restent des corpus historiques de preuve de non-régression ; aucun nombre ni fournisseur ne définit la certification canonique',
     'le pool AliExpress staging ne dépasse jamais 500 références propres en stock et ne peut pas s exécuter en production',
     'les access/refresh tokens fournisseur sont persistés chiffrés ; l App Secret reste uniquement en variable serveur et aucun token n est exposé au navigateur',
