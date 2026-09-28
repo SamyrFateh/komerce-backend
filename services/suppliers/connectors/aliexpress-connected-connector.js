@@ -5,8 +5,8 @@
  * @layer         service
  * @criticality   medium
  * @inputs        AliExpress sourcing filters + managed OAuth session
- * @outputs       normalized_supplier_product_v2, authenticated AliExpress DS calls
- * @depends       services/suppliers/connectors/aliexpress-connector.js, services/suppliers/aliexpress-oauth.js
+ * @outputs       normalized_supplier_product_v2, authenticated AliExpress DS calls, discovery acquisition plan
+ * @depends       services/suppliers/connectors/aliexpress-connector.js, services/suppliers/aliexpress-oauth.js, services/suppliers/aliexpress-discovery.js
  * @used-by       services/sourcing-import-dispatch.js, scripts/aliexpress-500-catalog-sync.js
  * @db-read       supplier_oauth_connections
  * @db-write      supplier_oauth_connections
@@ -19,6 +19,7 @@
 
 const baseConnector = require('./aliexpress-connector');
 const oauth = require('../aliexpress-oauth');
+const discovery = require('../aliexpress-discovery');
 
 function cleanCredential(value) {
   return String(value || '').trim();
@@ -81,6 +82,19 @@ async function fetchProducts(options = {}) {
   });
 }
 
+async function discoverAcquisitionPlan(options = {}) {
+  const env = await managedRuntimeEnv(options);
+  return discovery.discoverAcquisitionPlan({
+    countryCode: options.countryCode || options.country_code || discovery.DEFAULT_COUNTRY_CODE,
+    pageSize: options.size || options.page_size || discovery.DEFAULT_PAGE_SIZE,
+    maxProbes: options.maxProbes,
+    invokeTop: (method, params) => baseConnector.invokeTop(method, params, {
+      ...options,
+      env,
+    }),
+  });
+}
+
 const IS_ACTIVE = isRuntimeConfigured(process.env);
 const INACTIVE_REASON = inactiveReason(process.env);
 
@@ -95,4 +109,5 @@ module.exports = {
   managedRuntimeEnv,
   invokeTop,
   fetchProducts,
+  discoverAcquisitionPlan,
 };
