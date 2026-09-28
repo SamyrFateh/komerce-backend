@@ -98,7 +98,7 @@ describe('continuité catégories et sous-catégories desktop', () => {
     expect(desktopShelf).toContain('min-height: 94px;');
   });
 
-  test('préfère la photo catalogue réelle et conserve seulement un fallback canonique', () => {
+  test('préfère le visuel canonique stable et conserve les fallbacks historiques', () => {
     const fallbackVisualKeys = [
       'mode-cutout:femme', 'mode-cutout:homme', 'mode-cutout:enfant', 'mode-cutout:beaute',
       'sub-maison-confort', 'sub-maison-cuisine', 'sub-maison-deco', 'sub-maison-enfants',
@@ -115,17 +115,20 @@ describe('continuité catégories et sous-catégories desktop', () => {
     expect(desktopShelf).toContain('.k-subcutout-icon--all .k-shelf-object--all');
     expect(desktopShelf).toContain('color: var(--catalog-nav-muted);');
     expect(desktopShelf).toContain('color: var(--catalog-nav-strong);');
-    expect(subcat).toContain('getShelfSubcategoryProductImage');
+    expect(subcat).toContain('canonicalImage');
+    expect(subcat).toContain('data-shelf-media="canonical"');
+    expect(schema).toContain('_SUBCATEGORY_IMAGES');
+    expect(desktopShelf).toContain('.k-sec-subchip-object');
     expect(desktopShelf).toContain('.k-shelf-emoji-fallback');
     expect(desktopShelf).not.toContain('grayscale(1)');
     expect(desktopShelf).not.toContain('sepia(.58)');
     expect(desktopShelf).not.toContain('hue-rotate(62deg)');
   });
 
-  test('réutilise les mêmes photos produit naturelles dans le pager mobile', () => {
+  test('réutilise les visuels canoniques versionnés dans le pager mobile', () => {
     expect(subcat).toContain('getShelfSubcategoryProductImage');
     expect(subcat).toContain('renderShelfProductPhoto');
-    expect(subcat).toContain('data-shelf-media=\"product\"');
+    expect(subcat).toContain('data-shelf-media="canonical"');
     expect(interactions).toMatch(/\.k-flat-subcat-tab\s*\{[^}]*flex-direction:\s*column[^}]*background:\s*transparent[^}]*border:\s*0/s);
     expect(interactions).toMatch(/\.k-flat-subcat-object\s*\{[^}]*object-fit:contain[^}]*saturate\(1\.02\)[^}]*contrast\(1\.04\)/s);
     expect(interactions).not.toMatch(/\.k-flat-subcat-object[^}]*grayscale\(1\)/s);
@@ -142,5 +145,8 @@ describe('continuité catégories et sous-catégories desktop', () => {
     ].forEach((name) => {
       expect(schema).toContain(`/boutique/categories/${name}-v2.webp`);
     });
+    expect(visuals).toContain('/boutique/categories/cat-soldes-percent-v1.svg?v=1');
+    expect(schema).toContain("sectionEmoji: '%'");
+    expect(schema).not.toContain("sectionEmoji: '🏷️'");
   });
 });
