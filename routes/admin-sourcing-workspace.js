@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_session, sourcing_global_grant, business_references, action_payloads
  * @outputs       global_sourcing_projection, sourcing_action_results, source_autopilot_switch_results
- * @depends       middleware/auth.js, middleware/require-sourcing-global-authority.js, services/sourcing-workspace.js, services/sourcing-integrity-service.js, services/sourcing-catalog-change-observation.js
+ * @depends       middleware/auth.js, middleware/require-sourcing-global-authority.js, services/import-runtime-runs.js, services/sourcing-workspace.js, services/sourcing-integrity-service.js, services/sourcing-catalog-change-observation.js
  * @used-by       bootstrap/api-routes.js, canonical sourcing workspace
  * @db-read       none
  * @db-write      none
@@ -25,6 +25,7 @@ const workspace = require('../services/sourcing-workspace');
 const sourcingHealth = require('../services/sourcing-integrity-service');
 const catalogChangeObservation = require('../services/sourcing-catalog-change-observation');
 const providerPolicy = require('../services/sourcing-provider-control-policy');
+const importRuns = require('../services/import-runtime-runs');
 
 const router = express.Router();
 const guard = [authenticate, requireRole(['admin', 'sourcing']), requireSourcingGlobalAuthority];
@@ -76,6 +77,56 @@ router.get('/', async (req, res, next) => {
       sourcingHealth.buildHealthDashboard(),
     ]);
     res.json({ ...payload, health });
+  } catch (err) { handleError(err, res, next); }
+});
+
+const RUN_REF_RE = /^KIR-\d{6,}$/;
+
+function runNotFound(res) {
+  return res.status(404).json({
+    error: 'Run d’import introuvable',
+    code: 'import_run_not_found',
+  });
+}
+
+router.get('/import-runs', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store');
+    res.json({ runs: await importRuns.listRuns({ limit: req.query.limit }) });
+  } catch (err) { handleError(err, res, next); }
+});
+
+router.get('/import-runs/:runRef', async (req, res, next) => {
+  try {
+    if (!RUN_REF_RE.test(req.params.runRef)) return runNotFound(res);
+    const run = await importRuns.getRun(req.params.runRef);
+    if (!run) return runNotFound(res);
+    res.set('Cache-Control', 'no-store');
+    res.json(run);
+  } catch (err) { handleError(err, res, next); }
+});
+
+router.get('/import-runs/:runRef/items/:supplierProductId', async (req, res, next) => {
+  try {
+    if (!RUN_REF_RE.test(req.params.runRef)) return runNotFound(res);
+    const trace = await importRuns.getProductTrace(
+      req.params.runRef,
+      req.params.supplierProductId
+    );
+    if (!trace) {
+      return res.status(404).json({
+        error: 'Produit introuvable dans ce run',
+        code: 'import_run_item_not_found',
+      });
+    }
+    res.set('Cache-Control', 'no-store');
+    res.json(trace);
+  } catch (err) { handleError(err, res, next); }
+});
+
+router.post('/import-runs/replay', async (req, res, next) => {
+  try {
+    sendAction(res, 'replay_import', await workspace.replayImport(req.body, req.user));
   } catch (err) { handleError(err, res, next); }
 });
 

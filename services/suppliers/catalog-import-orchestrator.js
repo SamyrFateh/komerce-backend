@@ -10,6 +10,7 @@
  * @used-by       routes/sourcing-scanner.js
  * @db-read       none
  * @db-write      supplier_catalog_imports
+ * @db-write-via:import-runtime-runs import_runtime_runs
  * @db-write-via:sourcing-provider-control-policy sourcing_sources
  * @db-txn        resolve_before_behavior_change
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md, docs/doctrine/DOCTRINE_SOURCE_SHADOW_INGESTION.md, provider_runtime_certification_requires_canonical_resolved_api_capture
@@ -43,6 +44,7 @@ const {
 const { buildNormalizedSourceContractSnapshot } = require('./normalized-product');
 const { getRuleNumber } = require('../../utils/rules');
 const { importJsonCatalog } = require('./catalog-import-json');
+const importRuns = require('../import-runtime-runs');
 
 /**
  * Agrège les raisons de rejet d'un tableau d'entrées invalides en compte par
@@ -111,21 +113,36 @@ async function importCatalog(body, userId, dispatchToConnector) {
     return importJsonCatalog(b, userId);
   }
 
+  // Run de suivi : projection fail-open, jamais autorité métier.
+  const runtimeRun = await importRuns.safe(() => importRuns.startRun({
+    provider: supplierName,
+    sourceType,
+    sourceRef: sourceType === 'api' ? supplierId : null,
+    mode: b.mode,
+    actorId: userId || null,
+  }));
+  const runHook = (fn) => runtimeRun
+    ? importRuns.safe(() => fn(runtimeRun.id))
+    : Promise.resolve(null);
+
   // 1. Dispatcher vers le connecteur → NormalizedSupplierProduct[]
   let connectorResult;
   try {
     connectorResult = await dispatchToConnector(b);
+    await runHook((id) => importRuns.markStage(id, 'SOURCE_CONNECTED', { finished: true }));
   } catch (err) {
-    return { status: 400, body: { error: err.message } };
+    await runHook((id) => importRuns.failRun(id, `connector_failed: ${err.message}`));
+    return { status: 400, body: { error: err.message, run_ref: runtimeRun?.run_ref || null } };
   }
 
   const products = connectorResult.products || [];
   const invalidFromConnector = connectorResult.invalid || [];
 
   if (!products.length) {
+    await runHook((id) => importRuns.failRun(id, 'no_valid_product'));
     return {
       status: 400,
-      body: { error: 'Aucun produit valide trouvé', invalid: invalidFromConnector },
+      body: { error: 'Aucun produit valide trouvé', invalid: invalidFromConnector, run_ref: runtimeRun?.run_ref || null },
     };
   }
 
@@ -137,6 +154,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
     : 0;
 
   if (invalidPct > maxInvalidPct && sourceType !== 'api') {
+    await runHook((id) => importRuns.failRun(id, 'invalid_ratio_above_threshold'));
     return {
       status: 400,
       body: {
@@ -163,6 +181,11 @@ async function importCatalog(body, userId, dispatchToConnector) {
     [supplierName, sourceType, b.source_filename || null, b.notes || null, products.length, userId || null]
   );
   const importId = importRes.rows[0].id;
+  await runHook((id) => importRuns.attachImport(id, {
+    importId,
+    sourceTotal: totalFromConnector,
+  }));
+  await runHook((id) => importRuns.markStage(id, 'RAW_IMPORT', { started: true }));
 
   // PR 2 — shadow dual-write : aucune erreur de cette couche ne peut bloquer
   // le chemin historique sourcing_candidates. Le résumé est exposé pour preuve.
@@ -183,6 +206,14 @@ async function importCatalog(body, userId, dispatchToConnector) {
       reason: String(errShadow.message || 'Shadow ingestion failed').slice(0, 300),
     };
   }
+
+  await runHook((id) => importRuns.attachImport(id, {
+    importId,
+    sourceTotal: totalFromConnector,
+    sourceRef: sourceType === 'api' ? (shadowIngestion?.source_id || supplierId) : null,
+  }));
+  await runHook((id) => importRuns.markStage(id, 'RAW_IMPORT', { finished: true }));
+  await runHook((id) => importRuns.markStage(id, 'REFINERY', { started: true }));
 
   // 4. Pour chaque NormalizedSupplierProduct : raffiner et persister.
   const results = {
@@ -255,6 +286,8 @@ async function importCatalog(body, userId, dispatchToConnector) {
     }
   }
 
+  await runHook((id) => importRuns.markStage(id, 'REFINERY', { finished: true }));
+
   // DSC-E3 — Archivage des candidats disparus, full snapshot uniquement.
   if (b.is_full_snapshot) {
     const importedIds = products
@@ -292,6 +325,23 @@ async function importCatalog(body, userId, dispatchToConnector) {
         : 'PARTIAL_BLOCKED')
     : 'CATALOG_IMPORT_RECORDED';
 
+  const duplicateCount = invalidFromConnector.filter(
+    (row) => row?.reason_code === importRuns.DUPLICATE_CODE
+  ).length;
+
+  await runHook((id) => importRuns.recordIntake(id, {
+    recorded_at: new Date().toISOString(),
+    accepted,
+    duplicates: duplicateCount,
+    rejected: Math.max(0, results.errors.length - duplicateCount) + results.auto_rejected,
+    quarantined: 0,
+    deferred: results.deferred,
+    ready_for_refinery: results.ready_for_refinery,
+    certification_blocked: results.certification_blocked,
+    pipeline_status: pipelineStatus,
+    capture_id: sourceType === 'api' ? (shadowIngestion?.capture_id || null) : null,
+  }));
+
   // Provider runtime authority is produced only by a real, fully resolved API run.
   // Failure to persist this proof never lies about certification: Production simply remains locked.
   if (sourceType === 'api' && pipelineStatus === 'CANONICAL_RESOLVED') {
@@ -302,9 +352,12 @@ async function importCatalog(body, userId, dispatchToConnector) {
     }).catch(() => null);
   }
 
+  await runHook((id) => importRuns.syncRun(id));
+
   return {
     status: 200,
     body: {
+      run_ref: runtimeRun?.run_ref || null,
       pipeline_status: pipelineStatus,
       canonical_resolved: sourceType === 'api' ? canonicalResolved : null,
       import_id: importId,
