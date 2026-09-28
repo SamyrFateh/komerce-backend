@@ -371,11 +371,31 @@ async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operato
     );
 
     if (result.status >= 400) {
+      const body = result.body || {};
+      const invalid = Array.isArray(body.invalid) ? body.invalid : [];
+      const noValidProduct = result.status === 400 && body.error === 'Aucun produit valide trouvé';
+      if (noValidProduct) {
+        const rejected = invalid.length;
+        const sourceEmpty = rejected === 0;
+        throw new SourcingSourceAutopilotError(
+          result.status,
+          sourceEmpty
+            ? 'Aucun produit valide trouvé · la source a retourné 0 produit'
+            : `Aucun produit valide trouvé · ${rejected} produit(s) rejeté(s)`,
+          sourceEmpty ? 'SUPPLIER_SOURCE_EMPTY' : 'NO_VALID_SUPPLIER_PRODUCT',
+          {
+            run_ref: body.run_ref || null,
+            connector_total: rejected,
+            rejected,
+            reject_reasons: body.reject_reasons || null,
+          }
+        );
+      }
       throw new SourcingSourceAutopilotError(
         result.status,
-        result.body?.error || 'Import source refusé',
-        result.body?.code || 'sourcing_source_import_failed',
-        result.body || null
+        body.error || 'Import source refusé',
+        body.code || 'sourcing_source_import_failed',
+        body
       );
     }
 
