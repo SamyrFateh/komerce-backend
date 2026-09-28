@@ -351,3 +351,89 @@
     transition: none;
   }
 }
+
+
+/* Sourcing candidate table: keep the viewport stable.
+ * The action cluster used to force a max-content table wider than the shell,
+ * leaving the horizontal scrollbar at the bottom of a long candidate list.
+ */
+.kmc-sourcing-workspace {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.kmc-sourcing-workspace .kmc-section,
+.kmc-sourcing-workspace .kmc-section-body,
+.kmc-sourcing-workspace .kmc-workspace-table-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.kmc-sourcing-workspace .kmc-sourcing-candidates-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.kmc-sourcing-candidates-table th:nth-child(1),
+.kmc-sourcing-candidates-table td:nth-child(1) { width: 12%; }
+
+.kmc-sourcing-candidates-table th:nth-child(2),
+.kmc-sourcing-candidates-table td:nth-child(2) { width: 12%; }
+
+.kmc-sourcing-candidates-table th:nth-child(3),
+.kmc-sourcing-candidates-table td:nth-child(3) { width: 24%; }
+
+.kmc-sourcing-candidates-table th:nth-child(4),
+.kmc-sourcing-candidates-table td:nth-child(4) { width: 10%; }
+
+.kmc-sourcing-candidates-table th:nth-child(5),
+.kmc-sourcing-candidates-table td:nth-child(5) { width: 8%; }
+
+.kmc-sourcing-candidates-table th:nth-child(6),
+.kmc-sourcing-candidates-table td:nth-child(6) { width: 9%; }
+
+.kmc-sourcing-candidates-table th:nth-child(7),
+.kmc-sourcing-candidates-table td:nth-child(7) { width: 25%; }
+
+.kmc-sourcing-candidates-table th,
+.kmc-sourcing-candidates-table td {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.kmc-sourcing-candidates-table td:nth-child(4),
+.kmc-sourcing-candidates-table td:nth-child(5),
+.kmc-sourcing-candidates-table td:nth-child(6) {
+  white-space: nowrap;
+}
+
+.kmc-sourcing-candidates-table td:last-child {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 5px;
+}
+
+.kmc-sourcing-candidates-table td:last-child .kmc-workspace-action,
+.kmc-sourcing-candidates-table td:last-child .kmc-workspace-nav-link {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 5px 8px;
+  font-size: 10px;
+}
+
+@media (max-width: 1180px) {
+  .kmc-sourcing-workspace .kmc-sourcing-candidates-table {
+    min-width: 980px;
+    table-layout: fixed;
+  }
+
+  .kmc-sourcing-workspace .kmc-workspace-table-wrap {
+    overflow-x: auto;
+    scrollbar-gutter: stable both-edges;
+  }
+}
