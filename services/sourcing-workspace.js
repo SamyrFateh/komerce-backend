@@ -268,6 +268,10 @@ async function importCatalog(body, actor) {
   };
 }
 
+async function replayImport(body, actor) {
+  return importCatalog({ ...(body || {}), mode: 'replay' }, actor);
+}
+
 async function updateCandidate(candidateRef, body, actor) {
   const candidate = await resolveCandidateRef(candidateRef);
   const row = await candidateActions.updateCandidate(candidate.id, body || {}, actor?.id || null);
@@ -339,6 +343,7 @@ module.exports = {
   buildWorkspace,
   updatePortfolioProduct,
   importCatalog,
+  replayImport,
   updateCandidate,
   scanCandidate,
   watchlistCandidate,
