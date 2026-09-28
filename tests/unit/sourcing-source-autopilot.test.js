@@ -266,6 +266,71 @@ test('shadow incomplet ne peut jamais etre annonce comme un autopilot ok', async
   )).toBe(true);
 });
 
+test('import opérateur borné peut produire la première certification sans autopilot ni Production ON', async () => {
+  mockSourceQueries(sourceRow({
+    autopilot_enabled: false,
+    production_enabled: false,
+    production_certified_capture_id: null,
+    production_certified_at: null,
+  }));
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog.mockResolvedValue({
+    status: 200,
+    body: {
+      run_ref: 'KIR-000001',
+      pipeline_status: 'CANONICAL_RESOLVED',
+      canonical_resolved: true,
+      accepted: 20, created: 20, updated: 0, rejected: 0,
+    },
+  });
+
+  await expect(autopilot.runSourceImportNow('api:cj', {
+    actorId: 'operator-1',
+    reason: 'operator_import_live',
+  })).resolves.toMatchObject({
+    status: 'certified',
+    source_ref: 'api:cj',
+    run_ref: 'KIR-000001',
+    pipeline_status: 'CANONICAL_RESOLVED',
+    accepted: 20,
+  });
+
+  expect(mockImportCatalog).toHaveBeenCalledWith(
+    expect.objectContaining({
+      source_type: 'api',
+      supplier_id: 'cj',
+      supplier_name: 'CJdropshipping',
+      page: 1,
+      size: 20,
+      is_full_snapshot: false,
+    }),
+    'operator-1',
+    expect.any(Function)
+  );
+});
+
+test('import opérateur reste fail-closed si Discovery/Sync/Import ne sont pas autorisés', async () => {
+  mockSourceQueries(sourceRow({
+    autopilot_enabled: false,
+    import_enabled: false,
+    production_enabled: false,
+    production_certified_capture_id: null,
+    production_certified_at: null,
+  }));
+
+  await expect(autopilot.runSourceImportNow('api:cj'))
+    .rejects.toMatchObject({ status: 409, code: 'provider_preproduction_capability_policy_off' });
+
+  expect(mockImportCatalog).not.toHaveBeenCalled();
+  expect(mockGetClient).not.toHaveBeenCalled();
+});
+
 test('activation modifie uniquement autopilot_enabled et peut rester sans premier run en test', async () => {
   mockSourceQueries();
 
