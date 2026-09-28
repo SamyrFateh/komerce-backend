@@ -407,3 +407,86 @@ body:has(.kmc-admin-market-select) .kmc-market-context {
     padding-bottom: 5px;
   }
 }
+
+
+/* Staging-only admin tools.
+ * Injectés uniquement après confirmation serveur de KOMERCE_ENV=staging.
+ */
+.kmc-admin-staging-tools {
+  margin: 7px 14px 2px;
+  padding: 10px;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  background: #fffaf3;
+}
+
+.kmc-admin-staging-badge {
+  margin-bottom: 7px;
+  color: #c97808;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.kmc-admin-staging-action {
+  width: 100%;
+  min-height: 30px;
+  margin-top: 5px;
+  padding: 6px 9px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  text-align: left;
+  cursor: pointer;
+}
+
+.kmc-admin-staging-action:hover:not(:disabled) {
+  border-color: #f5a623;
+  background: #fffbf2;
+}
+
+.kmc-admin-staging-action.is-danger {
+  color: #c2412d;
+  border-color: #fecaca;
+  background: #fff5f3;
+}
+
+.kmc-admin-staging-action.is-danger:hover:not(:disabled) {
+  border-color: #c2412d;
+  background: #fff0ed;
+}
+
+.kmc-admin-staging-action.is-seed {
+  color: #15803d;
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.kmc-admin-staging-action.is-seed:hover:not(:disabled) {
+  border-color: #15803d;
+}
+
+.kmc-admin-staging-action:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.kmc-admin-staging-status {
+  min-height: 14px;
+  margin-top: 7px;
+  color: #6b7280;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.kmc-admin-staging-status.is-success {
+  color: #15803d;
+}
+
+.kmc-admin-staging-status.is-error {
+  color: #c2412d;
+}
