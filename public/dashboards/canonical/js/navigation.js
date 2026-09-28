@@ -307,6 +307,111 @@
     return createLink(doc, space, space.href, space.id === activeSpaceId, 'kmc-admin-secondary-link');
   }
 
+  function runtimeIsStaging(payload) {
+    return String(payload && payload.komerce_env || '').trim().toLowerCase() === 'staging';
+  }
+
+  async function postStagingAdminAction(path, body) {
+    const response = await global.fetch(path, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    let payload = {};
+    try { payload = await response.json(); } catch (_) { /* réponse non JSON */ }
+    if (!response.ok) {
+      throw new Error(payload.error || payload.message || `HTTP ${response.status}`);
+    }
+    return payload;
+  }
+
+  async function mountStagingAdminTools(doc, configurationGroup) {
+    if (!configurationGroup || typeof global.fetch !== 'function') return false;
+
+    try {
+      // Fail closed: les outils destructifs ne sont projetés que lorsque
+      // le serveur lui-même déclare KOMERCE_ENV=staging.
+      const response = await global.fetch('/health', {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) return false;
+      const runtime = await response.json();
+      if (!runtimeIsStaging(runtime)) return false;
+
+      const tools = doc.createElement('div');
+      tools.className = 'kmc-admin-staging-tools';
+      tools.setAttribute('data-staging-tools', 'true');
+
+      const badge = textNode(doc, 'div', 'kmc-admin-staging-badge', 'STAGING');
+      tools.appendChild(badge);
+
+      const reset = textNode(doc, 'button', 'kmc-admin-staging-action is-danger', 'Reset commandes');
+      reset.type = 'button';
+      reset.setAttribute('data-admin-action', 'reset-orders');
+
+      const seed = textNode(doc, 'button', 'kmc-admin-staging-action is-seed', 'Seed test');
+      seed.type = 'button';
+      seed.setAttribute('data-admin-action', 'seed-test');
+
+      const status = textNode(doc, 'div', 'kmc-admin-staging-status', '');
+      status.setAttribute('aria-live', 'polite');
+
+      reset.addEventListener('click', async () => {
+        const confirmFn = typeof global.confirm === 'function' ? global.confirm.bind(global) : null;
+        if (!confirmFn || !confirmFn('Supprimer toutes les commandes et données de session de test sur STAGING ?')) return;
+        reset.disabled = true;
+        seed.disabled = true;
+        status.className = 'kmc-admin-staging-status';
+        status.textContent = 'Reset en cours…';
+        try {
+          const result = await postStagingAdminAction('/api/admin/reset', { mode: 'orders', confirm: true });
+          status.className = 'kmc-admin-staging-status is-success';
+          status.textContent = result.message || 'Reset terminé.';
+        } catch (error) {
+          status.className = 'kmc-admin-staging-status is-error';
+          status.textContent = error.message || 'Échec du reset.';
+        } finally {
+          reset.disabled = false;
+          seed.disabled = false;
+        }
+      });
+
+      seed.addEventListener('click', async () => {
+        const confirmFn = typeof global.confirm === 'function' ? global.confirm.bind(global) : null;
+        if (!confirmFn || !confirmFn('Injecter les données de test sur STAGING ?')) return;
+        reset.disabled = true;
+        seed.disabled = true;
+        status.className = 'kmc-admin-staging-status';
+        status.textContent = 'Seed en cours…';
+        try {
+          const result = await postStagingAdminAction('/api/admin/seed-test', { confirm: true });
+          status.className = 'kmc-admin-staging-status is-success';
+          status.textContent = result.message || 'Seed terminé.';
+        } catch (error) {
+          status.className = 'kmc-admin-staging-status is-error';
+          status.textContent = error.message || 'Échec du seed.';
+        } finally {
+          reset.disabled = false;
+          seed.disabled = false;
+        }
+      });
+
+      tools.appendChild(reset);
+      tools.appendChild(seed);
+      tools.appendChild(status);
+      configurationGroup.appendChild(tools);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function roleLabel(user) {
     if (!user || !user.role) return 'Admin';
     if (user.role === 'market_operator') return 'Responsable pays';
@@ -505,9 +610,15 @@
     const visibleDomains = visibleDomainsFor(user);
     if (role === 'admin') {
       primary.className += ' is-capability-map';
+      let configurationGroup = null;
       ADMIN_CAPABILITY_GROUPS.forEach(group => {
-        primary.appendChild(createAdminCapabilityGroup(doc, group, pathname));
+        const groupNode = createAdminCapabilityGroup(doc, group, pathname);
+        primary.appendChild(groupNode);
+        if (group.label === 'Configuration') configurationGroup = groupNode;
       });
+      // Intentionnellement asynchrone : le shell se rend immédiatement.
+      // Les outils staging apparaissent ensuite uniquement après preuve serveur.
+      void mountStagingAdminTools(doc, configurationGroup);
     } else {
       visibleDomains.forEach(domain => primary.appendChild(createDomainLink(doc, domain, activeDomainId, user)));
     }
@@ -571,6 +682,8 @@
     DOMAINS,
     SETTINGS_UTILITY,
     ADMIN_CAPABILITY_GROUPS,
+    runtimeIsStaging,
+    mountStagingAdminTools,
     SURFACE_TO_DOMAIN,
     SURFACE_TO_SPACE,
     BACK_TARGETS,
