@@ -151,6 +151,22 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     expect(header.children[0].children[1].className).toContain('is-capability-map');
   });
 
+  test('admin voit les 4 dashboards maîtres regroupés en tête de la sidebar', () => {
+    const env = loadNavigation('/admin/pilotage', 'pilotage');
+    const header = mountFor(env, '/admin/pilotage', 'pilotage', { role: 'admin' });
+    const primary = header.children[0].children[1];
+    const dashboardsGroup = primary.children[0];
+
+    expect(dashboardsGroup.children[0].textContent).toBe('Dashboards');
+    expect(dashboardsGroup.children.slice(1).map(link => link.textContent)).toEqual([
+      'Pilotage', 'Commerce', 'Opérations', 'Finance',
+    ]);
+    expect(dashboardsGroup.children.slice(1).map(link => link.href)).toEqual([
+      '/admin/pilotage', '/admin/commerce', '/admin/operations', '/admin/finance',
+    ]);
+    expect(dashboardsGroup.children[1].attributes['aria-current']).toBe('page');
+  });
+
   test('Paramètres apparaît dans la zone utilitaire pour admin uniquement', () => {
     const adminEnv = loadNavigation('/admin/pilotage', 'pilotage');
     const adminHeader = mountFor(adminEnv, '/admin/pilotage', 'pilotage', { role: 'admin' });
