@@ -420,6 +420,17 @@
     return fetchMutation(apiUrl('/hub/inventory/propose-all'), 'POST');
   }
 
+  // ── Canonical Provider Control Center ──────────────────────────────────────
+  function getSourcingWorkspace() {
+    return fetchJSON(apiUrl('/admin/workspaces/sourcing'));
+  }
+  function setSourcingSourceAutopilot(sourceRef, enabled) {
+    return fetchJSON(
+      apiUrl('/admin/workspaces/sourcing/sources/' + encodeURIComponent(sourceRef) + '/' + (enabled ? 'activate' : 'deactivate')),
+      { method: 'POST' }
+    );
+  }
+
   // ── Lot 4 — Sourcing Intelligence ─────────────────────────────────────────
 
   function getSourcingSynthesis() {
@@ -697,6 +708,9 @@
     getHubInventoryOpenParcels,
     hubInventoryScanAssign,
     hubInventoryProposeAll,
+
+    getSourcingWorkspace,
+    setSourcingSourceAutopilot,
 
     // Lot 4 — Sourcing Intelligence (3)
     getSourcingSynthesis,
