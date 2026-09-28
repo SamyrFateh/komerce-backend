@@ -106,6 +106,7 @@ async function loadRunCandidates(importId, queryable = db) {
             sc.product_name,
             sc.state,
             sc.product_id,
+            sc.rejected_reason,
             sc.raw_payload,
             sc.scan_result,
             sc.normalized_source_contract,
