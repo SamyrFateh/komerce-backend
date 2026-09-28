@@ -287,6 +287,10 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/health',              method: 'get',    schema: null },
   // LOT 4E — Canonical Sourcing Workspace (global central actions)
   { prefix: '/api/admin/workspaces/sourcing', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/import-runs', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/import-runs/{runRef}', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/import-runs/{runRef}/items/{supplierProductId}', method: 'get', schema: null },
+  { prefix: '/api/admin/workspaces/sourcing/import-runs/replay', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/imports', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe', method: 'post', schema: null },
   { prefix: '/api/admin/workspaces/sourcing/products/{productRef}/update', method: 'post', schema: null },
@@ -461,6 +465,10 @@ const KNOWN_RESPONSES = {
   '/api/admin/workspaces/pricing/cost-components/{key}/toggle': { post: { fields: ['ok','action','result'], source: 'test' } },
   // LOT 4E — réponses Sourcing Workspace consommées par Canonical.
   '/api/admin/workspaces/sourcing': { get: { fields: ['scope','summary','portfolio','imports','candidates','suppliers','connectors','sources'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/import-runs': { get: { fields: ['runs'], source: 'test' } },
+  '/api/admin/workspaces/sourcing/import-runs/{runRef}': { get: { fields: ['run_ref','mode','status','failure_reason','provider','source_type','import_ref','started_at','finished_at','updated_at','current_stage','processed','progress_pct','accounting','stages','current_item','recent_items','events'], source: 'service-read' } },
+  '/api/admin/workspaces/sourcing/import-runs/{runRef}/items/{supplierProductId}': { get: { fields: ['run_ref','provider','import_ref','candidate_ref','supplier_product_id','refinery','canonical_category','product_ref','certification','catalogue_status'], source: 'service-read' } },
+  '/api/admin/workspaces/sourcing/import-runs/replay': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/sourcing/imports': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/sourcing/products/{productRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
