@@ -681,7 +681,9 @@ CREATE TABLE public.boutique_subcategories (
     short_label text,
     icon text DEFAULT 'âœ¨'::text NOT NULL,
     display_order integer DEFAULT 99 NOT NULL,
-    is_active boolean DEFAULT true NOT NULL
+    is_active boolean DEFAULT true NOT NULL,
+    image_url text,
+    image_alt text
 );
 
 
