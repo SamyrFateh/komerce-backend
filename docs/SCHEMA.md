@@ -639,7 +639,7 @@ The canonical boutique taxonomy owns stable navigation imagery at subcategory le
 - These fields are presentation metadata only; they do not change product taxonomy matching or sourcing identity.
 
 
-### Provider control policy (migration 254)
+### Provider control policy (migration 255)
 
 - `sourcing_sources.discovery_enabled`: autorisation opérateur explicite de découverte automatique; défaut OFF.
 - `sourcing_sources.sync_enabled`: autorisation opérateur explicite de synchronisation fournisseur; défaut OFF.
@@ -649,7 +649,7 @@ The canonical boutique taxonomy owns stable navigation imagery at subcategory le
 <!-- schema-pending
 object: sourcing_provider_control_events
 kind: table
-migration: 254
+migration: 255
 section: ### 4.10 Sourcing et fournisseurs
 role: Journal append-only des changements Discovery Sync Import Production avec avant/après, opérateur, motif et horodatage.
 -->
