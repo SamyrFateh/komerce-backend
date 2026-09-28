@@ -661,3 +661,15 @@ role: Journal append-only des changements Discovery Sync Import Production avec 
 - La certification n'est jamais saisie manuellement : elle est écrite uniquement après un import API dont la comptabilité sourcing est équilibrée, dont toutes les identités shadow sont résolues et dont aucun produit n'a échoué.
 - `production_enabled=true` reste impossible sans ces deux champs.
 
+### Import runtime runs (migration 257)
+
+Projection opérationnelle d'un import réel pour l'écran live `/admin/import-runtime`. La table ne duplique pas la comptabilité métier : elle conserve seulement l'identité du run, son rattachement à l'import, les horodatages des jalons et un snapshot d'intake ; les compteurs sont recalculés depuis les autorités Sourcing/Certification existantes.
+
+<!-- schema-pending
+object: import_runtime_runs
+kind: table
+migration: 257
+section: ### 4.10 Sourcing et fournisseurs
+role: Identite et chronologie d'un run d'import reel Sourcing vers Catalogue, avec business ref KIR et projection live fail-closed.
+-->
+
