@@ -50,6 +50,10 @@ function sourceRow(overrides = {}) {
     continuity: 'recurring',
     status: 'active',
     autopilot_enabled: true,
+    discovery_enabled: true,
+    sync_enabled: true,
+    import_enabled: true,
+    production_enabled: true,
     ...overrides,
   };
 }
@@ -102,6 +106,16 @@ test('source autopilot OFF ne déclenche jamais le connecteur', async () => {
 
   await expect(autopilot.runSourceOnce('api:cj'))
     .resolves.toEqual({ status: 'skipped', source_ref: 'api:cj', reason: 'autopilot_off' });
+
+  expect(mockImportCatalog).not.toHaveBeenCalled();
+  expect(mockGetClient).not.toHaveBeenCalled();
+});
+
+test('une capacité fournisseur OFF bloque explicitement l\'autopilot avant tout connecteur', async () => {
+  mockSourceQueries(sourceRow({ production_enabled: false }));
+
+  await expect(autopilot.runSourceOnce('api:cj'))
+    .resolves.toEqual({ status: 'skipped', source_ref: 'api:cj', reason: 'provider_capability_policy_off' });
 
   expect(mockImportCatalog).not.toHaveBeenCalled();
   expect(mockGetClient).not.toHaveBeenCalled();
@@ -249,6 +263,15 @@ test('activation modifie uniquement autopilot_enabled et peut rester sans premie
   const update = mockQuery.mock.calls.find(([sql]) => String(sql).includes('UPDATE sourcing_sources'));
   expect(update[0]).toContain('autopilot_enabled = $2');
   expect(update[1]).toEqual(['api:cj', true]);
+});
+
+test('activation refuse fail-closed si une capacité fournisseur est OFF', async () => {
+  mockSourceQueries(sourceRow({ import_enabled: false }));
+
+  await expect(autopilot.setSourceActive('api:cj', true, { runNow: false }))
+    .rejects.toMatchObject({ status: 409, code: 'provider_capability_policy_off' });
+
+  expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('UPDATE sourcing_sources'))).toBe(false);
 });
 
 test('activation refuse fail-closed si le runtime global est OFF', async () => {
