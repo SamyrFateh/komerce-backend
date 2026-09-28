@@ -142,7 +142,8 @@ describe('shop-schema — chargement DB', () => {
     expect(custom.railBadge).toEqual({ kind: 'text', text: '🧩' });
     expect(schema.getDbKeysForCategory('Custom')).toEqual(['Custom', 'AliasCustom']);
     expect(schema.getSubcategories('AliasCustom')[0]).toEqual({
-      key: 'Sub', label: 'Sous-catégorie', shortLabel: 'Sous', icon: '⭐', dbKeys: ['SubAlias'],
+      key: 'Sub', label: 'Sous-catégorie', shortLabel: 'Sous', icon: '⭐',
+      imageUrl: null, imageAlt: 'Sous-catégorie', dbKeys: ['SubAlias'],
     });
     expect(schema.matchesSubcategory('Custom', 'Sub', 'SubAlias')).toBe(true);
     expect(schema.getCategoryByKey('Deals').railBadge).toEqual({ kind: 'svg', svg: '<svg></svg>' });
