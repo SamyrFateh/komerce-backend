@@ -61,6 +61,7 @@
       const error = new Error(payload?.error || `HTTP ${res.status}`);
       error.code = payload?.code || null;
       error.status = res.status;
+      error.details = payload?.details || null;
       throw error;
     }
     return payload;
@@ -78,11 +79,30 @@
     if (status === 'FAILED') return 'is-failed';
     return 'is-pending';
   }
+  function failureLabel(reason) {
+    const labels = {
+      no_valid_product: 'Aucun produit valide',
+      supplier_source_empty: 'Source vide',
+      no_valid_supplier_product: 'Produits reçus non valides',
+      accounting_unbalanced: 'Accounting déséquilibré',
+    };
+    return labels[String(reason || '')] || reason || 'Échec';
+  }
   function stageDetail(stage) {
-    if (stage.status === 'FAILED') return stage.reason || 'Échec';
+    if (stage.status === 'FAILED') return failureLabel(stage.reason);
     if (stage.status === 'PENDING') return 'En attente';
     if (stage.key === 'SOURCE_CONNECTED') return stage.metrics?.provider || 'Connectée';
     return `${num(stage.processed)} / ${num(stage.total)}`;
+  }
+  function sourceActionErrorMessage(error) {
+    const details = error?.details || {};
+    if (Number(details.connector_total) === 0) {
+      return `${error.message} · feed fournisseur vide`;
+    }
+    if (details.connector_total != null) {
+      return `${error.message} · ${num(details.rejected)} rejeté(s) sur ${num(details.connector_total)}`;
+    }
+    return error?.message || 'Action refusée';
   }
   function zeroRun() {
     return {
@@ -226,6 +246,8 @@
 
         ${sourcePanelMarkup(workspace, run)}
 
+        ${run.status === 'FAILED' ? `<div class="kir-run-failure"><strong>Run en échec</strong><span>${esc(failureLabel(run.failure_reason))}</span></div>` : ''}
+
         <section class="kir-stage-card" aria-label="Pipeline d'import">
           ${stages.map(stage => `
             <article class="kir-stage ${stageClass(stage.status)}">
@@ -321,7 +343,7 @@
       actionFeedback = { ok:true, message: successMessage };
       return result;
     } catch (error) {
-      actionFeedback = { ok:false, message: error.message || 'Action refusée' };
+      actionFeedback = { ok:false, message: sourceActionErrorMessage(error) };
       throw error;
     } finally {
       mutationBusy = false;
