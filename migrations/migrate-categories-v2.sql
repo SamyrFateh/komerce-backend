@@ -34,7 +34,7 @@ VALUES
   ('all',                    'Tout',                  'Tout',    '🔥', '{}',                              NULL,    0, true,  false),
 
   -- Filtre transverse : Soldes
-  ('Soldes',                 'Soldes',                'Soldes',  '🏷️', '{}',                              'promo', 1, true,  true),
+  ('Soldes',                 'Soldes',                'Soldes',  '%', '{}',                               'promo', 1, true,  true),
 
   -- Pilier 1 : Mode & Beauté
   ('Mode & Beauté',          'Mode & Beauté',         'Mode',    '👗', '{"Mode","Beauté","Sport","Enfant"}', NULL,  2, true,  true),
