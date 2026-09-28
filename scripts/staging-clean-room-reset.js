@@ -125,10 +125,21 @@ async function reset() {
       );
     }
 
-    if (existingRuntimeTables.length) {
+    // Do not CASCADE: sourcing_sources references sourcing_captures for certification
+    // evidence. CASCADE would truncate the preserved provider configuration itself.
+    const truncatableRuntimeTables = existingRuntimeTables.filter(
+      table => table !== 'sourcing_captures'
+    );
+    if (truncatableRuntimeTables.length) {
       await client.query(
-        `TRUNCATE TABLE ${existingRuntimeTables.join(', ')} RESTART IDENTITY CASCADE`
+        `TRUNCATE TABLE ${truncatableRuntimeTables.join(', ')} RESTART IDENTITY`
       );
+    }
+
+    // Captures are deleted only after observations/resolution facts are gone.
+    // DELETE follows the FK without touching the preserved sourcing_sources table.
+    if (existingRuntimeTables.includes('sourcing_captures')) {
+      await client.query('DELETE FROM sourcing_captures');
     }
 
     let deletedProducts = 0;
