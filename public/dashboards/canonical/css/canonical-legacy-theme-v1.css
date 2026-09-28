@@ -581,3 +581,283 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active,
 .kmc-metric-card:not(.is-positive):not(.is-warning):not(.is-critical) .kmc-metric-value {
   color: var(--kmc-legacy-ink);
 }
+
+
+/* V1.3 — Legacy formatting parity.
+ * Même structure visuelle que l'ancien Admin : proportions, espacements,
+ * cartes, hiérarchie de titres. Le poids typographique reste volontairement
+ * modéré : on appuie seulement les éléments qui doivent guider la lecture.
+ */
+:root {
+  --kmc-shell-sidebar-width: 220px;
+  --kmc-shell-topbar-height: 56px;
+  --kmc-radius-sm: 8px;
+  --kmc-radius-md: 10px;
+  --kmc-radius-lg: 12px;
+  --kmc-shadow-card: none;
+  --kmc-shadow-card-hover: none;
+}
+
+html,
+body,
+body[data-admin-generation="canonical"],
+body.kmc-shell-v4 {
+  background: #f8f9fa !important;
+}
+
+body.kmc-shell-v4 > .kmc-admin-navigation {
+  width: 220px;
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  box-shadow: none;
+}
+
+body.kmc-shell-v4 .kmc-admin-navigation-inner {
+  padding: 0;
+}
+
+body.kmc-shell-v4 .kmc-admin-navigation-identity {
+  min-height: 72px;
+  padding: 20px 18px 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+body.kmc-shell-v4 .kmc-admin-home {
+  min-height: auto;
+  padding: 0;
+}
+
+body.kmc-shell-v4 .kmc-admin-home-label {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-nav {
+  padding: 10px 0;
+  gap: 0;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link {
+  min-height: 38px;
+  padding: 9px 18px;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active {
+  color: var(--kmc-legacy-orange-strong);
+  background: var(--kmc-legacy-orange-soft);
+  font-weight: 650;
+  box-shadow: inset 2px 0 0 var(--kmc-legacy-orange);
+}
+
+body.kmc-shell-v4 .kmc-admin-utility-nav {
+  padding: 14px 18px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.kmc-admin-topbar {
+  height: 56px;
+  padding: 0 24px;
+  border-bottom: 3px solid var(--kmc-legacy-orange);
+  background: #fff;
+  box-shadow: none;
+}
+
+body.kmc-shell-v4 #canonical-admin-root,
+body.kmc-shell-v4 #market-autonomy-root,
+body.kmc-shell-v4 #market-catalog-root {
+  width: min(1480px, calc(100% - 48px));
+  margin: 0 auto;
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+
+.kmc-dashboard,
+.kmc-workspace,
+.kmc-operations-workspace,
+.kmc-client-index,
+.kmc-access-shell {
+  gap: 14px;
+}
+
+.kmc-dashboard-header,
+.kmc-workspace-header,
+.kmc-access-hero {
+  padding: 0 4px 2px;
+}
+
+.kmc-dashboard-title,
+.kmc-workspace-title,
+.kmc-access-hero h1 {
+  color: #111827;
+  font-size: clamp(28px, 2.4vw, 34px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.kmc-dashboard-description,
+.kmc-workspace-subtitle,
+.kmc-access-hero p {
+  margin-top: 6px;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.kmc-dashboard-header .canonical-eyebrow,
+.kmc-workspace-kicker,
+.kmc-access-kicker {
+  color: var(--kmc-legacy-orange-strong);
+  background: var(--kmc-legacy-orange-soft);
+  border: 1px solid rgb(245 166 35 / 0.25);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+}
+
+.kmc-section,
+.kmc-alert-panel,
+.kmc-chart-panel,
+.kmc-decision-surface-card,
+.kmc-access-panel,
+.kmc-access-operator,
+.kmc-entity-card,
+.kmc-settings-section {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.kmc-section-header,
+.kmc-chart-header {
+  padding: 14px 18px 0;
+}
+
+.kmc-section-body,
+.kmc-chart-slot {
+  padding: 16px 18px 18px;
+}
+
+.kmc-section-title,
+.kmc-chart-title,
+.kmc-alert-panel-title,
+.kmc-decision-dashboard-section-title {
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.kmc-section-description,
+.kmc-chart-description,
+.kmc-decision-dashboard-section-copy {
+  margin-top: 4px;
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.kmc-decision-card,
+.kmc-summary-card,
+.kmc-progress-card,
+.kmc-ranked-row,
+.kmc-priority-row,
+.kmc-info-row,
+.kmc-metric-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.kmc-decision-card,
+.kmc-summary-card,
+.kmc-metric-card {
+  min-height: 96px;
+  padding: 16px 18px;
+}
+
+.kmc-decision-card-label,
+.kmc-summary-card-label,
+.kmc-metric-label,
+.kmc-progress-card-label {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.kmc-decision-card-value,
+.kmc-summary-card-value,
+.kmc-summary-card-metric-value,
+.kmc-metric-value,
+.kmc-progress-card-value,
+.kmc-progress-value {
+  color: #111827;
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.kmc-table-wrap,
+.kmc-workspace-table-wrap {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: none;
+}
+
+.kmc-data-table th,
+.kmc-workspace-table th {
+  color: #9ca3af;
+  background: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.kmc-data-table td,
+.kmc-workspace-table td {
+  color: #374151;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.kmc-data-table tbody tr:hover,
+.kmc-workspace-table tbody tr:hover {
+  background: #f3f4f6;
+}
+
+.kmc-workspace-action,
+.kmc-access-button.is-primary {
+  min-height: 34px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+@media (max-width: 980px) {
+  :root { --kmc-shell-sidebar-width: 72px; }
+}
+
+@media (max-width: 680px) {
+  body.kmc-shell-v4 #canonical-admin-root,
+  body.kmc-shell-v4 #market-autonomy-root,
+  body.kmc-shell-v4 #market-catalog-root {
+    width: calc(100% - 24px);
+    padding-top: 16px;
+  }
+
+  .kmc-dashboard-title,
+  .kmc-workspace-title,
+  .kmc-access-hero h1 {
+    font-size: 26px;
+  }
+}
