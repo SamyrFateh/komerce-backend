@@ -1,31 +1,75 @@
 #!/usr/bin/env node
 /**
  * @komerce-arch
- * @role          staging-full-catalog-reset
- * @domain        catalog
+ * @role          staging-clean-room-reset
+ * @domain        catalog,sourcing
  * @layer         script
  * @criticality   high
  * @inputs        staging DATABASE_URL
- * @outputs       empty staging catalogue while preserving sourcing pool
+ * @outputs       empty staging operational catalogue+sourcing pipeline
  * @depends       db.js
  * @used-by       .github/workflows/staging-catalog-ops.yml
- * @db-read       products, sourcing_candidates, orders
- * @db-write      products, sourcing_candidates, orders
+ * @db-read       products, orders, supplier_catalog_imports, sourcing_*
+ * @db-write      products, orders, supplier_catalog_imports, sourcing_*
  * @db-txn        yes
- * @doctrine      staging_only, catalog_rebuild_from_canonical_sourcing
- * @impact-areas  staging-catalog, staging-orders, sourcing-promotion-links
- * @version       2026-09
+ * @doctrine      staging_only, clean_room_e2e, preserve_configuration_not_test_data
+ * @impact-areas  staging-catalog, staging-orders, sourcing, certification, import-runtime
+ * @version       2026-09-v2
  */
 'use strict';
 
 const db = require('../db');
 
+const ROOT_TABLES = Object.freeze([
+  'orders',
+  'products',
+  'supplier_catalog_imports',
+  'import_runtime_runs',
+  'sourcing_captures',
+  'sourcing_commercial_principals',
+]);
+
+const ZERO_TABLES = Object.freeze([
+  'orders',
+  'products',
+  'supplier_catalog_imports',
+  'sourcing_candidates',
+  'sourcing_candidate_events',
+  'import_runtime_runs',
+  'sourcing_captures',
+  'sourcing_observations',
+  'sourcing_observation_evidence',
+  'sourcing_commercial_principals',
+  'sourcing_source_principal_refs',
+  'sourcing_canonical_entities',
+  'sourcing_canonical_entity_refs',
+  'sourcing_match_proposals',
+  'sourcing_resolution_decisions',
+  'sourcing_resolution_bindings',
+  'sourcing_identity_constraints',
+]);
+
+const PRESERVE_TABLES = Object.freeze([
+  'sourcing_sources',
+  'sourcing_source_provides',
+  'sourcing_source_execution_modes',
+  'sourcing_merge_policies',
+  'sourcing_global_access_grants',
+]);
+
+const RESET_SEQUENCES = Object.freeze([
+  'product_ref_seq',
+  'catalog_import_ref_seq',
+  'sourcing_candidate_ref_seq',
+  'import_runtime_run_ref_seq',
+]);
+
 function assertStaging() {
   if (String(process.env.KOMERCE_ENV || '').toLowerCase() !== 'staging') {
     throw new Error('REFUS: KOMERCE_ENV=staging requis');
   }
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('REFUS: reset catalogue interdit avec NODE_ENV=production');
+  if (String(process.env.NODE_ENV || '').toLowerCase() === 'production') {
+    throw new Error('REFUS: clean-room reset interdit avec NODE_ENV=production');
   }
   if (process.env.KOMERCE_ALLOW_FULL_CATALOG_RESET !== '1') {
     throw new Error('KOMERCE_ALLOW_FULL_CATALOG_RESET=1 requis');
@@ -33,69 +77,97 @@ function assertStaging() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL requis');
 }
 
-async function tableExists(client, name) {
-  const { rows: [row] } = await client.query('SELECT to_regclass($1) IS NOT NULL AS ok', [`public.${name}`]);
+async function objectExists(client, kind, name) {
+  const fn = kind === 'sequence' ? 'to_regclass' : 'to_regclass';
+  const { rows: [row] } = await client.query(
+    `SELECT ${fn}($1) IS NOT NULL AS ok`,
+    [`public.${name}`]
+  );
   return Boolean(row?.ok);
+}
+
+async function requireObjects(client) {
+  for (const table of [...ROOT_TABLES, ...ZERO_TABLES, ...PRESERVE_TABLES]) {
+    if (!(await objectExists(client, 'table', table))) {
+      throw new Error(`REFUS: table staging requise absente: ${table}`);
+    }
+  }
+  for (const sequence of RESET_SEQUENCES) {
+    if (!(await objectExists(client, 'sequence', sequence))) {
+      throw new Error(`REFUS: séquence staging requise absente: ${sequence}`);
+    }
+  }
+}
+
+async function counts(client, tables) {
+  const result = {};
+  for (const table of tables) {
+    const { rows: [row] } = await client.query(`SELECT COUNT(*)::int AS count FROM ${table}`);
+    result[table] = row.count;
+  }
+  return result;
+}
+
+async function resetSequences(client) {
+  for (const sequence of RESET_SEQUENCES) {
+    await client.query('SELECT setval($1::regclass, 1, false)', [sequence]);
+  }
 }
 
 async function reset() {
   assertStaging();
   const client = await db.getClient();
+
   try {
     await client.query('BEGIN');
+    await requireObjects(client);
 
-    const { rows: [before] } = await client.query(
-      `SELECT
-         (SELECT COUNT(*)::int FROM products) AS products,
-         (SELECT COUNT(*)::int FROM products WHERE is_active=TRUE) AS active_products,
-         (SELECT COUNT(*)::int FROM sourcing_candidates) AS sourcing_candidates,
-         (SELECT COUNT(*)::int FROM sourcing_candidates WHERE product_id IS NOT NULL) AS linked_candidates,
-         (SELECT COUNT(*)::int FROM orders) AS orders`
+    const before = {
+      operational: await counts(client, ZERO_TABLES),
+      preserved: await counts(client, PRESERVE_TABLES),
+    };
+
+    // Clean-room staging reset:
+    // - root business/test data are truncated,
+    // - CASCADE removes all dependent operational projections,
+    // - configuration/authority tables are intentionally not roots.
+    //
+    // TRUNCATE is required because observation/resolution audit tables are
+    // append-only and correctly reject DELETE mutations.
+    await client.query(
+      `TRUNCATE TABLE ${ROOT_TABLES.join(', ')} RESTART IDENTITY CASCADE`
     );
 
-    // Staging transactions are disposable. Clearing orders first avoids
-    // historical product FK restrictions while leaving sourcing/import evidence intact.
-    await client.query('TRUNCATE TABLE orders CASCADE');
+    // Business-reference sequences are standalone sequences, not necessarily
+    // OWNED BY the tables above; reset them explicitly for a readable clean run.
+    await resetSequences(client);
 
-    for (const table of ['basket_items', 'baskets', 'recipients']) {
-      if (await tableExists(client, table)) await client.query(`DELETE FROM ${table}`);
+    const after = {
+      operational: await counts(client, ZERO_TABLES),
+      preserved: await counts(client, PRESERVE_TABLES),
+    };
+
+    const residual = Object.entries(after.operational).filter(([, count]) => count !== 0);
+    if (residual.length) {
+      throw new Error(`Reset incomplet: ${JSON.stringify(Object.fromEntries(residual))}`);
     }
 
-    // Preserve the sourcing pool but make previously promoted candidates eligible
-    // for a clean re-promotion after the catalogue is rebuilt.
-    const candidates = await client.query(
-      `UPDATE sourcing_candidates
-          SET product_id = NULL,
-              state = CASE WHEN state = 'imported_to_catalog' THEN 'scanned' ELSE state END,
-              updated_at = NOW()
-        WHERE product_id IS NOT NULL
-        RETURNING id`
-    );
-
-    const products = await client.query('DELETE FROM products RETURNING id');
-
-    const { rows: [after] } = await client.query(
-      `SELECT
-         (SELECT COUNT(*)::int FROM products) AS products,
-         (SELECT COUNT(*)::int FROM products WHERE is_active=TRUE) AS active_products,
-         (SELECT COUNT(*)::int FROM sourcing_candidates) AS sourcing_candidates,
-         (SELECT COUNT(*)::int FROM sourcing_candidates WHERE product_id IS NOT NULL) AS linked_candidates,
-         (SELECT COUNT(*)::int FROM orders) AS orders`
-    );
-
-    if (after.products !== 0 || after.active_products !== 0 || after.linked_candidates !== 0 || after.orders !== 0) {
-      throw new Error(`Reset incomplet: ${JSON.stringify(after)}`);
-    }
-    if (after.sourcing_candidates !== before.sourcing_candidates) {
-      throw new Error(`Pool sourcing altéré: avant=${before.sourcing_candidates}, après=${after.sourcing_candidates}`);
+    for (const table of PRESERVE_TABLES) {
+      if (after.preserved[table] !== before.preserved[table]) {
+        throw new Error(
+          `Configuration altérée: ${table} avant=${before.preserved[table]} après=${after.preserved[table]}`
+        );
+      }
     }
 
     await client.query('COMMIT');
+
     const result = {
+      mode: 'CLEAN_ROOM',
       before,
-      reset_candidates: candidates.rowCount,
-      deleted_products: products.rowCount,
       after,
+      reset_sequences: RESET_SEQUENCES,
+      invariant: 'operational_zero_configuration_preserved',
     };
     console.log(`[full-staging-catalog-reset] ${JSON.stringify(result)}`);
     return result;
@@ -117,4 +189,11 @@ if (require.main === module) {
     });
 }
 
-module.exports = { assertStaging, reset };
+module.exports = {
+  ROOT_TABLES,
+  ZERO_TABLES,
+  PRESERVE_TABLES,
+  RESET_SEQUENCES,
+  assertStaging,
+  reset,
+};
