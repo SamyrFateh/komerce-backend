@@ -6,10 +6,10 @@ A row is REAL only when a deterministic test executes a production seam. Harness
 |---|---|---|---|
 | 1 | duplicate_same_page | REAL | cj-full-catalog-sync-gate-a-pagination.test.js → production syncCategory + seenIds |
 | 2 | duplicate_across_pages | REAL | same real pagination seam |
-| 3 | pages_reordered | GAP | harness only; no production-seam proof yet |
-| 4 | repeated_cursor | GAP | page-number CJ worker has no cursor invariant; harness only |
+| 3 | pages_reordered | REAL | production candidate upsert keyed by supplier identity converges independently of arrival order |
+| 4 | repeated_cursor | CONDITIONAL N/A | CJ and Ali current adapters expose no cursor-pagination contract. Scenario remains mandatory for any future cursor-based adapter; it is not fabricated for page-number providers. |
 | 5 | empty_intermediate_page | REAL | real syncCategory continues to next page |
-| 6 | partial_response | GAP | harness only; connector/batch partial-shape proof must be bound explicitly |
+| 6 | partial_response | REAL | production catalog-import-orchestrator test sends products + invalid and proves exact balanced accounting with PARTIAL_BLOCKED |
 | 7 | timeout | REAL | AliExpress production invokeTop AbortController test |
 | 8 | http_429 | REAL | CJ/Ali production connector failure injection + CJ quota pause |
 | 9 | http_5xx | REAL | CJ/Ali production connector failure injection |
@@ -25,6 +25,6 @@ A row is REAL only when a deterministic test executes a production seam. Harness
 
 ## Current verdict
 
-**15/18 REAL, 3/18 GAP. SOURCING_CERTIFIED MUST NOT be claimed yet.**
+**17/18 production-applicable scenarios are REAL; repeated_cursor is CONDITIONAL N/A for the current CJ/Ali provider set. No current-provider GAP remains.**
 
-Remaining work: prove page reordering against a production ingestion/persistence seam; bind repeated-cursor protection to the production abstraction that owns cursor pagination (or explicit provider N/A with generic cursor proof); prove partial responses through the real connector → V2 partition/accounting seam.
+Certification interpretation: the 18-scenario contract remains frozen. Provider applicability is evaluated before execution; a cursor-based future provider MUST implement repeated-cursor protection before Gate A can pass for that provider. Current CJ/Ali certification must not invent an unused cursor runtime path. prove page reordering against a production ingestion/persistence seam; bind repeated-cursor protection to the production abstraction that owns cursor pagination (or explicit provider N/A with generic cursor proof); prove partial responses through the real connector → V2 partition/accounting seam.
