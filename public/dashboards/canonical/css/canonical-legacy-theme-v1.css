@@ -408,3 +408,69 @@ body.kmc-shell-v4 .kmc-admin-logout:focus-visible,
     background: #fff;
   }
 }
+
+
+/* V1.1 — accents Legacy renforcés : plus visibles sans charger les surfaces. */
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active,
+.kmc-admin-primary-link.is-active {
+  box-shadow: inset 3px 0 0 var(--kmc-legacy-orange);
+}
+
+.kmc-dashboard-header,
+.kmc-workspace-header,
+.kmc-access-hero {
+  position: relative;
+}
+
+.kmc-dashboard-header::before,
+.kmc-workspace-header::before,
+.kmc-access-hero::before {
+  content: "";
+  display: block;
+  width: 42px;
+  height: 4px;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  background: var(--kmc-legacy-orange);
+}
+
+.kmc-section,
+.kmc-decision-surface-card,
+.kmc-alert-panel,
+.kmc-chart-panel {
+  border-top-color: color-mix(in srgb, var(--kmc-legacy-orange) 42%, var(--kmc-legacy-line));
+}
+
+.kmc-section-title::before {
+  width: 5px;
+  height: 16px;
+  box-shadow: 0 0 0 4px rgb(245 166 35 / 0.14);
+}
+
+.kmc-metric-card {
+  border-top-width: 4px;
+}
+
+.kmc-metric-card:nth-child(5n + 1) {
+  background: linear-gradient(145deg, #fff7e8 0%, #ffffff 62%);
+}
+
+.kmc-workspace-action,
+.kmc-access-button.is-primary {
+  box-shadow: 0 3px 10px rgb(245 166 35 / 0.24);
+}
+
+.kmc-dashboard-header .canonical-eyebrow,
+.kmc-workspace-kicker,
+.kmc-access-kicker {
+  border: 1px solid rgb(245 166 35 / 0.28);
+}
+
+.kmc-admin-domain-tab.is-active {
+  background: linear-gradient(180deg, transparent 0%, rgb(245 166 35 / 0.07) 100%);
+}
+
+.kmc-data-table th:first-child,
+.kmc-workspace-table th:first-child {
+  border-left: 3px solid var(--kmc-legacy-orange);
+}
