@@ -19,25 +19,16 @@
 const db = require('../db');
 const primary = require('./aliexpress-500-catalog-sync');
 const importer = require('../services/suppliers/catalog-import-orchestrator');
+const discovery = require('../services/suppliers/aliexpress-discovery');
 
 const SURFACE_ID = 'feed-category-v1';
 
 function plan(feeds, categories) {
-  const fs = feeds.slice(0, 80);
-  const cs = categories.slice(0, 48);
-  const out = [];
-  for (let page = 1; page <= 2; page++) {
-    for (const feed of fs) out.push({ feed, page, categoryId: null, categoryName: null });
-  }
-  for (const category of cs) {
-    for (const feed of fs.slice(0, 3)) out.push({ feed, page: 1, categoryId: category.id, categoryName: category.name });
-  }
-  return out;
+  return discovery.planSlots(feeds, categories);
 }
 
 function isEmptyResultError(error) {
-  const message = String(error?.message || error || '');
-  return /\bresult\s+is\s+empty\b|\bempty\s+result\b/i.test(message);
+  return discovery.isEmptyResultError(error);
 }
 
 async function countClean() {
