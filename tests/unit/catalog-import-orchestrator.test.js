@@ -100,11 +100,28 @@ describe('importCatalog', () => {
   });
 
   test('rejette si le connecteur ne retourne aucun produit', async () => {
-    const dispatch = jest.fn().mockResolvedValue({ products: [], invalid: [{ row: 1, error: 'champ manquant' }] });
+    const dispatch = jest.fn().mockResolvedValue({ products: [], invalid: [{ row: 1, error: 'champ manquant' }], total: 1 });
     const result = await importCatalog({ supplier_name: 'Acme', source_type: 'csv' }, 1, dispatch);
     expect(result.status).toBe(400);
     expect(result.body.error).toMatch(/Aucun produit valide/);
     expect(result.body.invalid).toEqual([{ row: 1, error: 'champ manquant' }]);
+    expect(result.body).toMatchObject({ code: 'NO_VALID_SUPPLIER_PRODUCT', connector_total: 1, rejected: 1 });
+  });
+
+  test('distingue explicitement une source fournisseur vide', async () => {
+    const dispatch = jest.fn().mockResolvedValue({ products: [], invalid: [], total: 0, total_records: 0 });
+    const result = await importCatalog({
+      supplier_name: 'AliExpress', source_type: 'api', supplier_id: 'aliexpress',
+    }, 1, dispatch);
+    expect(result).toMatchObject({
+      status: 400,
+      body: {
+        code: 'SUPPLIER_SOURCE_EMPTY',
+        connector_total: 0,
+        rejected: 0,
+      },
+    });
+    expect(result.body.error).toMatch(/source a retourné 0 produit/);
   });
 
   test('source API sans identifiant fournisseur est refusee avant dispatch et avant toute ecriture', async () => {
