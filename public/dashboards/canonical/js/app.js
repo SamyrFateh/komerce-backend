@@ -33,6 +33,7 @@
     CATALOG_WORKSPACE: 'catalog-workspace',
     ACCOUNTING_WORKSPACE: 'accounting-workspace',
     SOURCING_WORKSPACE: 'sourcing-workspace',
+    IMPORT_RUNTIME: 'import-runtime',
     PRICING_WORKSPACE: 'pricing-workspace',
     ACTION_CENTER: 'action-center',
     ORDER_360: 'order-360',
@@ -166,6 +167,7 @@
     if (path === '/admin/workspaces/sourcing' || path === '/admin-next/workspaces/sourcing') {
       return SURFACES.SOURCING_WORKSPACE;
     }
+    if (path === '/admin/import-runtime') return SURFACES.IMPORT_RUNTIME;
     if (path === '/admin/workspaces/pricing' || path === '/admin-next/workspaces/pricing') {
       return SURFACES.PRICING_WORKSPACE;
     }
@@ -428,6 +430,16 @@
     });
   }
 
+  function renderImportRuntime(root, user) {
+    if (!global.KomerceCanonicalImportRuntime) throw new Error('canonical_import_runtime_module_missing');
+    return global.KomerceCanonicalImportRuntime.mount({
+      root,
+      user,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+    });
+  }
+
   function renderPricingWorkspace(root, user, adminContext, requestedMarket) {
     return canonicalMount(
       global.KomerceCanonicalPricingWorkspace,
@@ -663,6 +675,7 @@
     if (surface === SURFACES.CATALOG_WORKSPACE) return renderCatalogWorkspace(root, user, adminContext);
     if (surface === SURFACES.ACCOUNTING_WORKSPACE) return renderFinanceAccountingWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.SOURCING_WORKSPACE) return renderSourcingWorkspace(root, user);
+    if (surface === SURFACES.IMPORT_RUNTIME) return renderImportRuntime(root, user);
     if (surface === SURFACES.PRICING_WORKSPACE) return renderPricingWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.ACTION_CENTER) return renderActionCenter(root, user);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
@@ -692,7 +705,7 @@
     }
 
     const surface = surfaceForPath(global.location.pathname);
-    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.ACTION_CENTER || surface === SURFACES.SETTINGS)
+    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.IMPORT_RUNTIME || surface === SURFACES.ACTION_CENTER || surface === SURFACES.SETTINGS)
       ? null
       : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
@@ -765,6 +778,7 @@
     renderShippingCustomsWorkspace,
     renderCatalogWorkspace,
     renderSourcingWorkspace,
+    renderImportRuntime,
     renderPricingWorkspace,
     renderActionCenter,
     renderFinanceAccountingWorkspace,
