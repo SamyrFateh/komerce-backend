@@ -10,6 +10,7 @@ const mockCsvFetch = jest.fn();
 const mockManualFetch = jest.fn();
 const mockCjFetch = jest.fn();
 const mockAliExpressFetch = jest.fn();
+const mockAliExpressDiscover = jest.fn();
 const mockEbayFetch = jest.fn();
 
 jest.mock('../../services/suppliers/connectors/csv-connector', () => ({
@@ -35,6 +36,7 @@ jest.mock('../../services/suppliers/connectors/aliexpress-connected-connector', 
   IS_ACTIVE: true,
   INACTIVE_REASON: null,
   fetchProducts: (...args) => mockAliExpressFetch(...args),
+  discoverAcquisitionPlan: (...args) => mockAliExpressDiscover(...args),
 }));
 
 jest.mock('../../services/suppliers/connectors/ebay-connector', () => ({
@@ -43,10 +45,27 @@ jest.mock('../../services/suppliers/connectors/ebay-connector', () => ({
   fetchProducts: (...args) => mockEbayFetch(...args),
 }));
 
-const { connectorCatalog, sourceAutomationDescriptor, apiConnectorOptions, dispatchToConnector } = require('../../services/sourcing-import-dispatch');
+const { connectorCatalog, sourceAutomationDescriptor, discoverSourcePlan, apiConnectorOptions, dispatchToConnector } = require('../../services/sourcing-import-dispatch');
 
 describe('sourcing-import-dispatch', () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockAliExpressDiscover.mockResolvedValue({
+      status: 'READY',
+      provider: 'aliexpress',
+      strategy: 'feed-category',
+      version: 'aliexpress-ds-discovery-v1',
+      pull_options: {
+        page: 2,
+        size: 20,
+        country_code: 'AE',
+        sort: 'volumeDesc',
+        feed_name: 'Hot sale',
+        category_id: '21',
+      },
+      evidence: { probes: 2, probe_product_count: 20 },
+    });
+  });
 
   it('délègue la source manual par défaut sans réinterpréter le payload', async () => {
     const expected = [{ supplier_sku: 'SKU-1' }];
@@ -176,11 +195,40 @@ describe('sourcing-import-dispatch', () => {
     expect(JSON.stringify(mockEbayFetch.mock.calls[0][0])).not.toContain('never-forward');
   });
 
-  it('borne l’import live AliExpress sur le pays de sourcing éprouvé AE', () => {
+  it('déclare AliExpress en Discovery runtime au lieu de figer son feed/pays dans le runner', () => {
     expect(sourceAutomationDescriptor('aliexpress')).toMatchObject({
       adapter: 'aliexpress',
       connector_ready: true,
-      pull_options: { page: 1, size: 20, country_code: 'AE' },
+      discovery_mode: 'runtime',
+      discovery_version: 'aliexpress-ds-discovery-v1',
+      discovery_ready: true,
+      pull_options: { size: 20 },
+    });
+    expect(sourceAutomationDescriptor('aliexpress').pull_options).not.toHaveProperty('feed_name');
+    expect(sourceAutomationDescriptor('aliexpress').pull_options).not.toHaveProperty('country_code');
+  });
+
+  it('résout le plan AliExpress via le vrai Discovery du connecteur', async () => {
+    await expect(discoverSourcePlan('aliexpress', { size: 20 })).resolves.toMatchObject({
+      status: 'READY',
+      version: 'aliexpress-ds-discovery-v1',
+      pull_options: {
+        page: 2,
+        country_code: 'AE',
+        feed_name: 'Hot sale',
+        category_id: '21',
+      },
+    });
+    expect(mockAliExpressDiscover).toHaveBeenCalledWith({ size: 20 });
+  });
+
+  it('les sources à surface stable produisent elles aussi un plan Discovery explicite', async () => {
+    await expect(discoverSourcePlan('cj')).resolves.toMatchObject({
+      status: 'READY',
+      provider: 'cj',
+      strategy: 'provider-static',
+      version: 'cj-catalog-page-v1',
+      pull_options: { page: 1, size: 20, include_commandable_units: true },
     });
   });
 
