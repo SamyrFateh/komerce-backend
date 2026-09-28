@@ -48,7 +48,7 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     const html = read(relative);
     const theme = html.indexOf('/dashboards/canonical/css/canonical-theme-v2.css?v=1901');
     const shell = html.indexOf('/dashboards/canonical/css/canonical-shell-v4.css?v=2101');
-    const v3 = html.indexOf('/dashboards/canonical/js/navigation-policy-v3.js?v=2001');
+    const v3 = html.indexOf('/dashboards/canonical/js/navigation-policy-v3.js?v=260928-3');
     const v4 = html.indexOf('/dashboards/canonical/js/navigation-policy-v4.js?v=2501');
     const sync = html.indexOf('/dashboards/canonical/js/navigation-shell-v4-sync.js?v=2101');
     expect(theme).toBeGreaterThanOrEqual(0);
