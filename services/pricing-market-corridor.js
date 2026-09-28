@@ -365,14 +365,17 @@ function projectCorridorEconomics(corridor = {}, economics = {}) {
   };
 }
 
-async function buildMarketCorridor({ market, productRef }) {
+async function buildMarketCorridorForProduct({ market, product, executor = db }) {
   requireMarket(market);
-  const product = await resolveProduct(productRef);
+  if (!product || !product.id || !product.product_ref) {
+    throw new PricingMarketCorridorError(400, 'pricing_market_corridor_product_required', 'Produit résolu requis.');
+  }
+
   const [localRows, globalRows, localDecision, activePricing] = await Promise.all([
-    loadLocalObservations(market.id, product),
-    loadGlobalReference(product),
-    loadLocalDecision(market.id, product.id),
-    resolveActiveProductMarketPricing(db, { marketId: market.id, product }),
+    loadLocalObservations(market.id, product, executor),
+    loadGlobalReference(product, executor),
+    loadLocalDecision(market.id, product.id, executor),
+    resolveActiveProductMarketPricing(executor, { marketId: market.id, product }),
   ]);
 
   const effectivePriceKmf = activePricing?.effective_unit_price_kmf || finitePositive(product.price_kmf);
@@ -424,7 +427,7 @@ async function buildMarketCorridor({ market, productRef }) {
     },
     selected: {
       source: activePricing ? 'LOCAL_ACTIVE' : 'GLOBAL_BASE',
-      buyer_effective: true,
+      buyer_effective: Boolean(activePricing),
       local_amount: activePricing?.local_amount ?? null,
       local_currency: activePricing?.local_currency ?? null,
       price_kmf: effectivePriceKmf,
@@ -433,6 +436,12 @@ async function buildMarketCorridor({ market, productRef }) {
     candidate,
     generated_at: new Date().toISOString(),
   };
+}
+
+async function buildMarketCorridor({ market, productRef }) {
+  requireMarket(market);
+  const product = await resolveProduct(productRef);
+  return buildMarketCorridorForProduct({ market, product, executor: db });
 }
 
 function normalizeObservationInput(body = {}) {
@@ -552,6 +561,7 @@ module.exports = {
   purchaseCeilings,
   projectSkuViability,
   projectCorridorEconomics,
+  buildMarketCorridorForProduct,
   buildMarketCorridor,
   recordMarketObservation,
   deactivateMarketObservation,
