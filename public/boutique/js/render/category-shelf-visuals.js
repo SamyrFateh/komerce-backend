@@ -17,7 +17,7 @@ export const KOMERCE_SHOWCASE_V1_MODE = '/boutique/categories/komerce-showcase-v
 
 export const KOMERCE_CATEGORY_CUTOUTS = Object.freeze({
   all: '/boutique/categories/cat-all-v3.webp?v=1',
-  soldes: '/boutique/categories/cat-soldes-v3.webp?v=1',
+  soldes: '/boutique/categories/cat-soldes-percent-v1.svg?v=1',
   mode: '/boutique/categories/cat-mode-v3.webp?v=1',
   maison: '/boutique/categories/cat-maison-v3.webp?v=1',
   tech: '/boutique/categories/cat-tech-v3.webp?v=1',
