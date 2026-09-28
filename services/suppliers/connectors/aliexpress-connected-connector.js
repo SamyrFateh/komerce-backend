@@ -9,7 +9,7 @@
  * @depends       services/suppliers/connectors/aliexpress-connector.js, services/suppliers/aliexpress-oauth.js
  * @used-by       services/sourcing-import-dispatch.js, scripts/aliexpress-500-catalog-sync.js
  * @db-read       supplier_oauth_connections
- * @db-write      supplier_oauth_connections (token refresh only)
+ * @db-write      supplier_oauth_connections
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  catalog, sourcing, supplier-import

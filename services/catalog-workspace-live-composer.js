@@ -8,7 +8,7 @@
  * @outputs       catalog_workspace_with_live_flow_and_business_truth
  * @depends       services/catalog-workspace.js, services/catalog-live-flow.js
  * @used-by       routes/admin-catalog-workspace.js
- * @db-read       delegated
+ * @db-read       none
  * @db-write      none
  * @db-txn        delegated
  * @doctrine      catalog_composes_live_sourcing_projection_without_stealing_sourcing_mutation_authority, dashboard_exposes_business_truth
