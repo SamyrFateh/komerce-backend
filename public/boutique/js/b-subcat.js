@@ -170,16 +170,19 @@ import {
       '</div>' +
       '<div class="k-flat-subcat-tabs" id="k-flat-subcat-tabs">' +
         subs.map(function(s) {
-          const photo = getShelfSubcategoryProductImage(state.products, fs.cat, s.key);
+          const canonicalImage = s.imageUrl || null;
+          const photo = canonicalImage ? null : getShelfSubcategoryProductImage(state.products, fs.cat, s.key);
           const visual = getShelfSubcategoryVisual(fs.cat, s.key);
-          const object = photo
-            ? renderShelfProductPhoto(photo, 'k-shelf-object--subcategory k-flat-subcat-object')
-            : visual
+          const object = canonicalImage
+            ? renderShelfProductPhoto(canonicalImage, 'k-shelf-object--subcategory k-flat-subcat-object')
+            : photo
+              ? renderShelfProductPhoto(photo, 'k-shelf-object--subcategory k-flat-subcat-object')
+              : visual
               ? renderShelfUse(visual, 'k-shelf-object--subcategory k-flat-subcat-object')
               : '<span class="k-shelf-emoji-fallback">' + sanitize(s.icon || '✨') + '</span>';
           return '<button class="k-flat-subcat-tab" data-flat-sub="' + s.key + '"' +
             (visual ? ' data-shelf-visual="' + sanitize(visual) + '"' : '') +
-            (photo ? ' data-shelf-media="product"' : '') + '>' +
+            (canonicalImage ? ' data-shelf-media="canonical"' : (photo ? ' data-shelf-media="product"' : '')) + '>' +
             '<span class="k-flat-subcat-tab-icon" aria-hidden="true">' + object + '</span>' +
             '<span class="k-flat-subcat-tab-label">' + sanitize(s.label) + '</span>' +
           '</button>';
