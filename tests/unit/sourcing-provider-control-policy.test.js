@@ -1,4 +1,11 @@
 'use strict';
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
 jest.mock('../../db',()=>({getClient:jest.fn()}));
 const db=require('../../db');
 const policy=require('../../services/sourcing-provider-control-policy');
