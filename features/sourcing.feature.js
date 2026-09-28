@@ -56,6 +56,7 @@ module.exports = {
       'santé opérationnelle read-only et snapshot d autorité finale Sourcing sans inventer de tendance',
       'scan de candidat (pricing-engine) et décision garder / watchlist / rejeter',
       'cycle de vie du candidat : raw_imported → normalized → scanned → imported_to_catalog / rejected / watchlist',
+      'suivi du lot après import : consomme la projection Catalogue et visibilité marché sans mutation ni changement du statut import',
       'transformation candidat → produit (déclenchement, pas la fiche catalogue elle-même)',
       'journal d\'événements candidat (audit, correction manuelle, scan, décision)',
       'persistence lifecycle des sourcing_candidates issus des imports catalog via frontière owner dédiée',
@@ -81,6 +82,10 @@ module.exports = {
     'admin margin/rail (economic-engine, routes/sourcing.js) — homonymes, domaines disjoints.',
 
   files: {
+    dash: [
+      'dashboards/canonical/js/import-runtime.js',
+      'dashboards/canonical/css/import-runtime.css',
+    ],
     middleware: [
       'middleware/require-sourcing-global-authority.js',
     ],
@@ -186,6 +191,7 @@ module.exports = {
       'tests/unit/sourcing-observation-foundation-migration.test.js',
       'tests/unit/sourcing-resolution-foundation-migration.test.js',
       'tests/unit/import-runtime-runs.test.js',
+      'tests/unit/import-runtime-journey.test.js',
       'tests/unit/admin-import-runtime-runs-route.test.js',
       'tests/unit/admin-import-runtime-live.test.js',
     ],

@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        import_lifecycle_hooks, sourcing_candidates, provider_runtime_certification_proof
  * @outputs       import_runtime_run_projection, product_trace
- * @depends       db.js, services/sourcing-certification.js
+ * @depends       db.js, services/sourcing-certification.js, services/catalog-run-progress.js
  * @used-by       services/suppliers/catalog-import-orchestrator.js, services/sourcing-candidate-actions.js, routes/admin-sourcing-workspace.js
  * @db-read       import_runtime_runs, sourcing_candidates, supplier_catalog_imports, sourcing_sources, products
  * @db-write      import_runtime_runs
@@ -18,6 +18,7 @@
 'use strict';
 
 const db = require('../db');
+const { readRunProgress } = require('./catalog-run-progress');
 const {
   evaluateSourcingCandidateOutcome,
   reconcileSourcingCounts,
@@ -483,12 +484,24 @@ async function loadProof(sourceRef, q = db) {
   return row || null;
 }
 
-async function project(run, q = db) {
+async function project(run, q = db, includeDownstream = false) {
   const [rows, proof] = await Promise.all([
     loadRows(run.id, q),
     loadProof(run.source_ref, q),
   ]);
-  return buildProjection({ run, rows, sourceProof: proof });
+  const projection = buildProjection({ run, rows, sourceProof: proof });
+  if (includeDownstream) {
+    const refs = rows.filter(row => row.state === 'imported_to_catalog' && row.product_ref)
+      .map(row => row.product_ref);
+    try {
+      projection.downstream = await readRunProgress(refs, q);
+    } catch (_) {
+      // An unavailable downstream observation must not turn a completed import
+      // into a failed run, nor fabricate zeroes for unknown counts.
+      projection.downstream = { available: false };
+    }
+  }
+  return projection;
 }
 
 async function getRun(runRef, q = db) {
@@ -496,7 +509,7 @@ async function getRun(runRef, q = db) {
     `${RUN_SELECT} WHERE r.run_ref = $1`,
     [runRef]
   );
-  return run ? project(run, q) : null;
+  return run ? project(run, q, true) : null;
 }
 
 async function listRuns({ limit = 10 } = {}, q = db) {

@@ -260,3 +260,19 @@
   .kir-grid{grid-template-columns:1fr}.kir-wide{grid-column:auto}
   .kir-reconcile{justify-content:flex-start}
 }
+
+/* The lot crosses independent business blocks; import completion stays local. */
+.kir-journey{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px;align-items:start}
+.kir-journey-block{min-width:0;background:var(--kir-card);border:1px solid var(--kir-line);border-top:3px solid var(--kir-blue);border-radius:12px;padding:16px}
+.kir-journey-block.is-done{border-top-color:var(--kir-green)}
+.kir-journey-step{color:var(--kir-muted);font-size:11px;font-weight:800}
+.kir-journey-block h2{font-size:20px;line-height:1.25;margin:10px 0;color:var(--kir-text)}
+.kir-journey-block p{font-size:12px;color:var(--kir-muted);line-height:1.5;margin:8px 0}
+.kir-journey-block>strong{display:block;font-size:12px;margin:12px 0}
+.kir-journey-block a,.kir-journey-block summary{color:#175cd3;font-size:12px;cursor:pointer;overflow-wrap:anywhere}
+.kir-journey-block summary{padding:4px 0}
+.kir-journey-block ul{list-style:none;margin:10px 0 0;padding:0;max-height:280px;overflow:auto}
+.kir-journey-block li{padding:8px 0;border-top:1px solid var(--kir-line-soft)}
+.kir-journey-block li span{display:block;font-size:11px;color:var(--kir-muted);margin-top:4px}
+.kir-journey-block .kir-table-wrap{margin-top:10px}
+@media(max-width:1050px){.kir-journey{grid-template-columns:1fr}}

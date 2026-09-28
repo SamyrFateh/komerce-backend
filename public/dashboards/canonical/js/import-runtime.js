@@ -214,6 +214,48 @@
         </div>
       </section>`;
   }
+  function journeyMarkup(run) {
+    if (!run.run_ref) return '';
+    const a = run.accounting || {};
+    const d = run.downstream;
+    const known = d?.available === true;
+    const c = known ? d.catalog : null;
+    const md = known ? (d.market_decisions || {}) : {};
+    const catalogue = (run.stages || []).find(stage => stage.key === 'CATALOGUE');
+    const labels = { preparing:'À préparer', ready:'Prêt à valider', published:'Publié', other:'À examiner' };
+    return `<section class="kir-journey" aria-label="Parcours du lot">
+      <article class="kir-journey-block ${run.status === 'COMPLETED' ? 'is-done' : ''}">
+        <span class="kir-journey-step">01 · Import & Raffinerie</span>
+        <h2>${num(catalogue?.processed)} / ${num(catalogue?.total)} transmis</h2>
+        <p>${num(run.processed)} / ${num(a.source_total)} traités · ${num(a.deferred)} différés · ${num(a.rejected)} rejetés</p>
+        <strong>${run.status === 'COMPLETED' ? 'Import terminé' : run.status === 'FAILED' ? 'Import à examiner' : 'Import en cours'}</strong>
+        <a href="#kir-import-detail">Voir les jalons de l’import ↓</a>
+      </article>
+      <article class="kir-journey-block">
+        <span class="kir-journey-step">02 · Catalogue</span>
+        <h2>${known ? num(c.received) + ' produits reçus' : 'État indisponible'}</h2>
+        <p>${known ? num(c.preparing) + ' à préparer · ' + num(c.ready) + ' prêts · ' + num(c.published) + ' publiés' : 'La progression sera relue au prochain rafraîchissement.'}</p>
+        ${known ? `<strong>${c.preparing ? 'Préparer les fiches françaises' : c.ready ? 'Validation marché attendue' : c.received ? 'Suivre les décisions marché' : 'En attente de produits promus'}</strong>
+          ${c.other || c.missing ? `<p>${num(c.other)} à examiner · ${num(c.missing)} introuvables</p>` : ''}
+          <details data-kir-detail="catalog"><summary>Voir les produits du lot</summary>
+            <ul>${d.items.map(item => `<li><a href="/admin/products/${encodeURIComponent(item.product_ref)}">${esc(item.name || item.product_ref)}</a><span>${labels[item.stage]}${item.reason ? ' · ' + esc(item.reason) : ''}</span></li>`).join('')}</ul>
+          </details>` : ''}
+      </article>
+      <article class="kir-journey-block">
+        <span class="kir-journey-step">03 · Marchés & Boutique</span>
+        <h2>${known ? num(d.visible_products) + ' visibles en boutique' : 'État indisponible'}</h2>
+        <p>${known ? num(md.awaiting_validation) + ' nouveaux à valider · ' + num(md.published_undecided) + ' publiés sans décision pays' : 'Aucun compteur supposé.'}</p>
+        ${known ? `<p>${num(d.exposed_products)} produits exposés sur au moins un marché</p>` : ''}
+        ${known ? `<strong>${d.markets.length ? 'Visibilité vérifiée par pays' : 'Aucun marché actif'}</strong>
+          <details data-kir-detail="markets"><summary>Voir les marchés du lot</summary>
+            <div class="kir-table-wrap"><table class="kir-table"><thead><tr><th>Marché</th><th>Nouveaux à valider</th><th>Publiés sans décision</th><th>Exposés</th><th>Visibles</th><th>Masqués</th></tr></thead>
+            <tbody>${d.markets.map(m => `<tr><td>${esc(m.name)} (${esc(m.code)})</td><td>${num(m.awaiting_validation)}</td><td>${num(m.published_undecided)}</td><td>${num(m.exposed)}</td><td>${num(m.visible)}</td><td>${num(m.hidden)}</td></tr>`).join('')}</tbody></table></div>
+            <p>Une exposition autorisée ne garantit pas la visibilité : le prix local et la disponibilité doivent aussi être prêts.</p>
+          </details>` : ''}
+      </article>
+    </section>`;
+  }
+
   function render(root, payload, workspace = null) {
     const run = payload || zeroRun();
     const idle = !run.run_ref;
@@ -226,6 +268,7 @@
     const current = run.current_item || null;
     const balanced = num(a.unaccounted) === 0 && num(a.overflow) === 0;
 
+    const openDetails = new Set(Array.from(root.querySelectorAll?.('details[data-kir-detail][open]') || []).map(el => el.getAttribute('data-kir-detail')));
     root.className = 'kmc-import-runtime';
     root.innerHTML = `
       <section class="kir-page">
@@ -233,10 +276,10 @@
           <div>
             <div class="kir-eyebrow">SOURCING · EXÉCUTION</div>
             <div class="kir-title-row">
-              <h1>Suivi d’import</h1>
+              <h1>Suivi du lot</h1>
               ${run.status === 'RUNNING' ? '<span class="kir-live">● LIVE</span>' : ''}
             </div>
-            <p>Source → raffinerie → taxonomie → certification → catalogue</p>
+            <p>Import & Raffinerie → Catalogue → Marchés & Boutique</p>
           </div>
           <div class="kir-run-meta">
             <span>RUN</span>
@@ -245,11 +288,13 @@
           </div>
         </header>
 
+        ${journeyMarkup(run)}
+
         ${sourcePanelMarkup(workspace, run)}
 
         ${run.status === 'FAILED' ? `<div class="kir-run-failure"><strong>Run en échec</strong><span>${esc(failureLabel(run.failure_reason))}</span></div>` : ''}
 
-        <section class="kir-stage-card" aria-label="Pipeline d'import">
+        <section id="kir-import-detail" class="kir-stage-card" aria-label="Pipeline d'import">
           ${stages.map(stage => `
             <article class="kir-stage ${stageClass(stage.status)}">
               <div class="kir-stage-track"></div>
@@ -278,7 +323,7 @@
 
         <section class="kir-progress-card">
           <div class="kir-progress-head">
-            <strong>Progression globale</strong>
+            <strong>Progression de l’import</strong>
             <span>${progress}% · ${num(run.processed)} / ${total || 0}</span>
           </div>
           <div class="kir-progress"><i style="width:${Math.max(0,Math.min(100,progress))}%"></i></div>
@@ -323,6 +368,9 @@
           <span>RÉCONCILIATION <strong class="${balanced?'ok':'warn'}">${balanced?'ÉQUILIBRÉE':'À VÉRIFIER'}</strong></span>
         </footer>
       </section>`;
+    root.querySelectorAll?.('details[data-kir-detail]').forEach(el => {
+      el.open = openDetails.has(el.getAttribute('data-kir-detail'));
+    });
   }
 
   async function resolveRun() {
