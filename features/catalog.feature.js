@@ -329,6 +329,7 @@ module.exports = {
       'tests/unit/catalog-certification-gate-b.test.js',
       'tests/unit/gate-b-publication-torture.test.js',
       'tests/unit/gate-b-physical-bounds.test.js',
+      'tests/unit/gate-b-semantic-torture.test.js',
       'tests/unit/catalog-sync-checkpoint-gate-a.test.js',
       'tests/unit/gate-a-provider-failure-injection.test.js',
       'tests/unit/gate-a-v2-drift-torture.test.js',
