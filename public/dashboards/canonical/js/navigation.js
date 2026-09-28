@@ -70,6 +70,71 @@
   // la zone utilitaire, réservé à l'autorité globale.
   const SETTINGS_UTILITY = Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: Object.freeze(['admin']) });
 
+  // Rich admin map — restores capability discoverability without recreating
+  // the historical 30-runtime architecture. Admin only: other roles keep the
+  // role-filtered domain navigation above.
+  const ADMIN_CAPABILITY_GROUPS = Object.freeze([
+    Object.freeze({
+      label: 'Pilotage',
+      items: Object.freeze([
+        Object.freeze({ id: 'dashboard', label: 'Dashboard', href: '/admin/pilotage' }),
+        Object.freeze({ id: 'health', label: 'Activité / Santé', href: '/admin/sante' }),
+        Object.freeze({ id: 'sales', label: 'Ventes', href: '/admin/sales' }),
+        Object.freeze({ id: 'action-center', label: 'Action Center', href: '/admin/action-center' }),
+        Object.freeze({ id: 'forecast', label: 'Prévisions', href: '/admin/pilotage-fin?legacy=1' }),
+      ]),
+    }),
+    Object.freeze({
+      label: 'Commerce',
+      items: Object.freeze([
+        Object.freeze({ id: 'commerce', label: 'Commerce', href: '/admin/commerce' }),
+        Object.freeze({ id: 'orders-overview', label: 'Commandes', href: '/admin/orders' }),
+        Object.freeze({ id: 'clients', label: 'Clients', href: '/admin/clients' }),
+        Object.freeze({ id: 'shared-carts', label: 'Partages', href: '/admin/shared-carts' }),
+      ]),
+    }),
+    Object.freeze({
+      label: 'Catalogue',
+      items: Object.freeze([
+        Object.freeze({ id: 'catalog', label: 'Produits & catalogue', href: '/admin/workspaces/catalog' }),
+        Object.freeze({ id: 'sourcing-workspace', label: 'Sourcing', href: '/admin/workspaces/sourcing' }),
+        Object.freeze({ id: 'suppliers', label: 'Fournisseurs', href: '/admin/suppliers' }),
+      ]),
+    }),
+    Object.freeze({
+      label: 'Opérations',
+      items: Object.freeze([
+        Object.freeze({ id: 'operations-overview', label: 'Vue opérations', href: '/admin/operations' }),
+        Object.freeze({ id: 'operations-workspace', label: 'Hub / Relais', href: '/admin/workspaces/operations' }),
+        Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs' }),
+        Object.freeze({ id: 'transit', label: 'Transit', href: '/admin/transitaire' }),
+        Object.freeze({ id: 'customs', label: 'Douane', href: '/admin/customs' }),
+      ]),
+    }),
+    Object.freeze({
+      label: 'Finance',
+      items: Object.freeze([
+        Object.freeze({ id: 'finance-overview', label: 'Vue finance', href: '/admin/finance' }),
+        Object.freeze({ id: 'accounting-workspace', label: 'Comptabilité', href: '/admin/workspaces/accounting' }),
+        Object.freeze({ id: 'pricing-workspace', label: 'Atelier économique', href: '/admin/workspaces/pricing' }),
+        Object.freeze({ id: 'costing', label: 'Coûts', href: '/admin/costing?legacy=1' }),
+        Object.freeze({ id: 'economic', label: 'Économie', href: '/admin/economic?legacy=1' }),
+      ]),
+    }),
+    Object.freeze({
+      label: 'Marchés',
+      items: Object.freeze([
+        Object.freeze({ id: 'markets', label: 'Accès & marchés', href: '/dashboards/canonical/access.html' }),
+      ]),
+    }),
+    Object.freeze({
+      label: 'Configuration',
+      items: Object.freeze([
+        Object.freeze({ id: 'simulator', label: 'Simulation', href: '/admin/simulator' }),
+      ]),
+    }),
+  ]);
+
   function visibleSpacesFor(domain, role) {
     if (!domain || !Array.isArray(domain.spaces)) return Object.freeze([]);
     return Object.freeze(domain.spaces.filter(space => (space.roles || []).includes(role)));
@@ -219,6 +284,23 @@
   function createDomainLink(doc, domain, activeDomainId, user) {
     const href = Array.isArray(domain.spaces) ? landingForDomain(domain, user) : hrefFor(domain, user);
     return createLink(doc, domain, href, domain.id === activeDomainId, 'kmc-admin-primary-link');
+  }
+
+  function createAdminCapabilityGroup(doc, group, pathname) {
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-admin-capability-group';
+
+    const label = textNode(doc, 'div', 'kmc-admin-capability-group-label', group.label);
+    wrap.appendChild(label);
+
+    const currentPath = String(pathname || '').split('?')[0];
+    group.items.forEach(item => {
+      const targetPath = String(item.href || '').split('?')[0];
+      const isActive = currentPath === targetPath;
+      const link = createLink(doc, item, item.href, isActive, 'kmc-admin-primary-link kmc-admin-capability-link');
+      wrap.appendChild(link);
+    });
+    return wrap;
   }
 
   function createSpaceLink(doc, space, activeSpaceId) {
@@ -421,7 +503,14 @@
     primary.className = 'kmc-admin-primary-nav';
     primary.setAttribute('aria-label', 'Navigation Komerce');
     const visibleDomains = visibleDomainsFor(user);
-    visibleDomains.forEach(domain => primary.appendChild(createDomainLink(doc, domain, activeDomainId, user)));
+    if (role === 'admin') {
+      primary.className += ' is-capability-map';
+      ADMIN_CAPABILITY_GROUPS.forEach(group => {
+        primary.appendChild(createAdminCapabilityGroup(doc, group, pathname));
+      });
+    } else {
+      visibleDomains.forEach(domain => primary.appendChild(createDomainLink(doc, domain, activeDomainId, user)));
+    }
 
     const utilities = doc.createElement('div');
     utilities.className = 'kmc-admin-utility-nav';
@@ -481,6 +570,7 @@
   const api = Object.freeze({
     DOMAINS,
     SETTINGS_UTILITY,
+    ADMIN_CAPABILITY_GROUPS,
     SURFACE_TO_DOMAIN,
     SURFACE_TO_SPACE,
     BACK_TARGETS,

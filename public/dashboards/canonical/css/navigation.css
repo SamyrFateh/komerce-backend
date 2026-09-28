@@ -354,3 +354,56 @@ body:has(.kmc-admin-market-select) .kmc-market-context {
 @media (prefers-reduced-motion: reduce) {
   .kmc-admin-primary-link { transition: none; }
 }
+
+
+/* Rich capability map — admin-only discoverability layer. */
+.kmc-admin-primary-nav.is-capability-map {
+  gap: 0;
+  padding: 8px 0 10px;
+}
+
+.kmc-admin-capability-group {
+  padding: 4px 0 6px;
+}
+
+.kmc-admin-capability-group + .kmc-admin-capability-group {
+  margin-top: 2px;
+}
+
+.kmc-admin-capability-group-label {
+  padding: 8px 18px 5px;
+  color: #9ca3af;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.kmc-admin-capability-link {
+  min-height: 32px;
+  padding-top: 7px;
+  padding-bottom: 7px;
+  font-size: 12px;
+}
+
+.kmc-admin-capability-link.is-active {
+  font-weight: 650;
+}
+
+@media (max-height: 820px) {
+  .kmc-admin-capability-group {
+    padding-bottom: 3px;
+  }
+
+  .kmc-admin-capability-group-label {
+    padding-top: 6px;
+    padding-bottom: 4px;
+  }
+
+  .kmc-admin-capability-link {
+    min-height: 29px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+}
