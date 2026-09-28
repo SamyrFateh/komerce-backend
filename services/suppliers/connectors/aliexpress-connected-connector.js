@@ -5,8 +5,8 @@
  * @layer         service
  * @criticality   medium
  * @inputs        AliExpress sourcing filters + managed OAuth session
- * @outputs       normalized_supplier_product_v2, authenticated AliExpress DS calls
- * @depends       services/suppliers/connectors/aliexpress-connector.js, services/suppliers/aliexpress-oauth.js
+ * @outputs       normalized_supplier_product_v2, authenticated AliExpress DS calls, discovery acquisition plan
+ * @depends       services/suppliers/connectors/aliexpress-connector.js, services/suppliers/aliexpress-oauth.js, services/suppliers/aliexpress-discovery.js
  * @used-by       services/sourcing-import-dispatch.js, scripts/aliexpress-500-catalog-sync.js
  * @db-read       supplier_oauth_connections
  * @db-write      supplier_oauth_connections
