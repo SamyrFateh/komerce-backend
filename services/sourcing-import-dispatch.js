@@ -5,13 +5,13 @@
  * @layer         service
  * @criticality   medium
  * @inputs        supplier_import_payload
- * @outputs       normalized_supplier_products, connector_catalog, source_automation_catalog
+ * @outputs       normalized_supplier_products, connector_catalog, source_automation_catalog, acquisition_discovery_plan
  * @depends       services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/connectors/noon-connector.js, services/suppliers/connectors/cj-connector.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/allegro-connector.js, services/suppliers/connectors/ebay-connector.js
  * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js, services/sourcing-source-autopilot.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      single_connector_dispatch_authority, source_autopull_is_registry_metadata_not_provider_branching
+ * @doctrine      single_connector_dispatch_authority, source_autopull_is_registry_metadata_not_provider_branching, discovery_plan_precedes_import
  * @impact-areas  sourcing, supplier-import
  * @version       2026-09
  */
@@ -47,6 +47,7 @@ const CONNECTORS = Object.freeze({
       label: 'CJdropshipping API',
       reason: cjModule.INACTIVE_REASON,
       supplierName: 'CJdropshipping',
+      discovery: Object.freeze({ mode: 'static', version: 'cj-catalog-page-v1' }),
       automation: Object.freeze({ page: 1, size: 20, include_commandable_units: true }),
     },
     allegro: {
@@ -56,6 +57,7 @@ const CONNECTORS = Object.freeze({
       label: 'Allegro Sandbox (seller test offers)',
       get reason() { return allegroModule.INACTIVE_REASON; },
       supplierName: 'Allegro Sandbox',
+      discovery: Object.freeze({ mode: 'static', version: 'allegro-sandbox-offers-v1' }),
       automation: Object.freeze({}),
     },
     ebay: {
@@ -75,7 +77,8 @@ const CONNECTORS = Object.freeze({
       label: 'AliExpress Dropshipper API',
       reason: aliexpressModule.INACTIVE_REASON,
       supplierName: 'AliExpress',
-      automation: Object.freeze({ page: 1, size: 20, country_code: 'AE' }),
+      discovery: Object.freeze({ mode: 'runtime', version: 'aliexpress-ds-discovery-v1' }),
+      automation: Object.freeze({ size: 20 }),
     },
   },
 });
@@ -104,6 +107,10 @@ function sourceAutomationCatalog() {
       label: entry.label,
       connector_ready: Boolean(entry.active),
       reason: entry.active ? null : (entry.reason || 'connecteur inactif'),
+      discovery_mode: entry.discovery?.mode || null,
+      discovery_version: entry.discovery?.version || null,
+      discovery_ready: entry.discovery?.mode === 'static'
+        || typeof entry.module?.discoverAcquisitionPlan === 'function',
       pull_options: { ...entry.automation },
       supports_full_snapshot: entry.supportsFullSnapshot !== false,
     }));
@@ -112,6 +119,53 @@ function sourceAutomationCatalog() {
 function sourceAutomationDescriptor(adapter) {
   const key = String(adapter || '').trim().toLowerCase();
   return sourceAutomationCatalog().find((entry) => entry.adapter === key) || null;
+}
+
+async function discoverSourcePlan(adapter, options = {}) {
+  const key = String(adapter || '').trim().toLowerCase();
+  const entry = CONNECTORS.api[key];
+  if (!entry || !entry.automation) {
+    const error = new Error(`Discovery non configuré pour la source "${key || 'unknown'}"`);
+    error.code = 'SOURCE_DISCOVERY_NOT_CONFIGURED';
+    throw error;
+  }
+  if (!entry.active) {
+    const error = new Error(entry.reason || `Connecteur ${key} inactif`);
+    error.code = 'SOURCE_CONNECTOR_NOT_READY';
+    throw error;
+  }
+
+  const baseOptions = { ...entry.automation, ...options };
+  if (entry.discovery?.mode === 'runtime') {
+    if (!entry.module || typeof entry.module.discoverAcquisitionPlan !== 'function') {
+      const error = new Error(`Discovery runtime absent pour la source "${key}"`);
+      error.code = 'SOURCE_DISCOVERY_RUNTIME_MISSING';
+      throw error;
+    }
+    const plan = await entry.module.discoverAcquisitionPlan(baseOptions);
+    if (!plan || plan.status !== 'READY' || !plan.pull_options) {
+      const error = new Error(`Discovery runtime sans plan exploitable pour "${key}"`);
+      error.code = 'SOURCE_DISCOVERY_PLAN_NOT_READY';
+      error.details = plan || null;
+      throw error;
+    }
+    return plan;
+  }
+
+  if (entry.discovery?.mode === 'static') {
+    return {
+      status: 'READY',
+      provider: key,
+      strategy: 'provider-static',
+      version: entry.discovery.version || 'static-v1',
+      pull_options: baseOptions,
+      evidence: { source: 'provider_registry' },
+    };
+  }
+
+  const error = new Error(`Mode Discovery inconnu pour la source "${key}"`);
+  error.code = 'SOURCE_DISCOVERY_MODE_UNKNOWN';
+  throw error;
 }
 
 function apiConnectorOptions(body = {}) {
@@ -169,6 +223,7 @@ module.exports = {
   connectorCatalog,
   sourceAutomationCatalog,
   sourceAutomationDescriptor,
+  discoverSourcePlan,
   apiConnectorOptions,
   dispatchToConnector,
 };
