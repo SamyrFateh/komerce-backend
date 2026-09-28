@@ -653,3 +653,11 @@ migration: 255
 section: ### 4.10 Sourcing et fournisseurs
 role: Journal append-only des changements Discovery Sync Import Production avec avant/après, opérateur, motif et horodatage.
 -->
+
+### Provider runtime certification (migration 256)
+
+- `sourcing_sources.production_certified_capture_id`: référence la capture `complete` exacte ayant produit une preuve runtime fournisseur `CANONICAL_RESOLVED`; NULL tant qu'aucune preuve réelle n'existe.
+- `sourcing_sources.production_certified_at`: horodatage durable de cette certification runtime; NULL par défaut.
+- La certification n'est jamais saisie manuellement : elle est écrite uniquement après un import API dont la comptabilité sourcing est équilibrée, dont toutes les identités shadow sont résolues et dont aucun produit n'a échoué.
+- `production_enabled=true` reste impossible sans ces deux champs.
+
