@@ -343,6 +343,8 @@
       actionFeedback = { ok:true, message: successMessage };
       return result;
     } catch (error) {
+      const failedRunRef = error?.details?.run_ref || null;
+      if (failedRunRef) selectedRunRef = failedRunRef;
       actionFeedback = { ok:false, message: sourceActionErrorMessage(error) };
       throw error;
     } finally {
