@@ -247,6 +247,9 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     ? 'PENDING'
     : (catalogued >= certified && certified > 0 ? 'COMPLETED' : 'RUNNING');
 
+  const persistedFailureReason = run.failure_reason || null;
+  const failedRun = run.status === 'FAILED';
+
   function stage(key, status, processed, total, extra = {}) {
     const stored = storedStages[key] || {};
     return {
@@ -319,8 +322,28 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     ),
   ];
 
+  if (failedRun) {
+    const failedStageKey = !sourceDone
+      ? 'SOURCE_CONNECTED'
+      : !rawDone
+        ? 'RAW_IMPORT'
+        : !refineryDone
+          ? 'REFINERY'
+          : !taxonomyDone
+            ? 'TAXONOMY'
+            : certificationStatus !== 'COMPLETED'
+              ? 'CERTIFICATION'
+              : 'CATALOGUE';
+    const failedStage = stages.find((item) => item.key === failedStageKey);
+    if (failedStage) {
+      failedStage.status = 'FAILED';
+      failedStage.reason = persistedFailureReason || failedStage.reason || 'run_failed';
+      failedStage.finished_at = iso(run.finished_at) || iso(run.updated_at);
+    }
+  }
+
   let status = run.status === 'FAILED' ? 'FAILED' : 'RUNNING';
-  let failureReason = run.failure_reason || null;
+  let failureReason = persistedFailureReason;
   const failedStage = stages.find((s) => s.status === 'FAILED');
   if (status !== 'FAILED' && failedStage) {
     status = 'FAILED';
