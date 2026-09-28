@@ -112,10 +112,8 @@ async function discoverAcquisitionPlan({
   const size = Math.max(1, Math.min(Number(pageSize) || DEFAULT_PAGE_SIZE, 50));
   const probesLimit = Math.max(1, Math.min(Number(maxProbes) || DEFAULT_MAX_PROBES, 100));
 
-  const [feedPayload, categoryPayload] = await Promise.all([
-    invokeTop('aliexpress.ds.feedname.get', {}),
-    invokeTop('aliexpress.ds.category.get', {}),
-  ]);
+  const feedPayload = await invokeTop('aliexpress.ds.feedname.get', {});
+  const categoryPayload = await invokeTop('aliexpress.ds.category.get', {});
   const feeds = feedNames(feedPayload);
   const categoryRows = categories(categoryPayload);
   const slots = planSlots(feeds, categoryRows);
@@ -128,8 +126,18 @@ async function discoverAcquisitionPlan({
     );
   }
 
+  const firstPageFeeds = slots.filter((slot) => !slot.categoryId && slot.page === 1);
+  const categorySlots = slots.filter((slot) => Boolean(slot.categoryId));
+  const laterFeedPages = slots.filter((slot) => !slot.categoryId && slot.page > 1);
+  const primaryBudget = Math.max(1, Math.ceil(probesLimit / 2));
+  const probeSlots = [
+    ...firstPageFeeds.slice(0, primaryBudget),
+    ...categorySlots.slice(0, Math.max(0, probesLimit - primaryBudget)),
+    ...laterFeedPages,
+  ].slice(0, probesLimit);
+
   let probes = 0;
-  for (const slot of slots.slice(0, probesLimit)) {
+  for (const slot of probeSlots) {
     let payload;
     try {
       // eslint-disable-next-line no-await-in-loop
