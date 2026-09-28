@@ -208,7 +208,7 @@ describe('importCatalog', () => {
     scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
     scanner.scanCandidate.mockResolvedValue(makeScan());
     shadow.recordCatalogImportObservationsShadow.mockResolvedValue({
-      status: 'recorded', capture_id: 'capture-api-2',
+      status: 'recorded', source_id: 'api:aliexpress', capture_id: 'capture-api-2',
       resolution: { status: 'resolved', review_required: 0, deferred_parent: 0 },
     });
 
@@ -218,6 +218,11 @@ describe('importCatalog', () => {
 
     expect(result.body.pipeline_status).toBe('CANONICAL_RESOLVED');
     expect(result.body.canonical_resolved).toBe(true);
+    expect(db.query.mock.calls.some(([sql, params]) =>
+      String(sql).includes('production_certified_capture_id')
+      && params[0] === 'api:aliexpress'
+      && params[1] === 'capture-api-2'
+    )).toBe(true);
   });
 
   // ── ING-2 : seuil fichier malade (ING-I4) ────────────────────────────────
