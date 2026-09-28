@@ -160,7 +160,7 @@
     }
 
     const table = doc.createElement('table');
-    table.className = 'kmc-workspace-table';
+    table.className = 'kmc-workspace-table kmc-sourcing-candidates-table';
     table.innerHTML = '<thead><tr><th>Référence</th><th>Fournisseur</th><th>Produit</th><th>Prix achat</th><th>État</th><th>Décision</th><th></th></tr></thead>';
     const tbody = doc.createElement('tbody');
 
@@ -446,7 +446,7 @@
   }
 
   function renderPayload(rootNode, ui, doc, payload, context) {
-    rootNode.className = 'kmc-operations-workspace';
+    rootNode.className = 'kmc-operations-workspace kmc-sourcing-workspace';
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc));
     const metrics = doc.createElement('section');
