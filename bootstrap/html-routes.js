@@ -287,6 +287,7 @@ function mountHtmlRoutes(app, rootDir) {
   // Legacy 1 reste accessible pour les témoins et les capacités non encore
   // prouvées absorbées par une surface Canonical.
   const ADMIN_DASHBOARD_PATHS = [
+    '/admin/import-runtime',
     '/admin/control-tower',
     '/admin/costing',
     '/admin/customs',
