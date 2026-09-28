@@ -12,6 +12,7 @@
  * @db-write      sourcing_candidates, sourcing_candidate_events
  * @db-write-via:catalog-candidate-product-service products
  * @db-write-via:catalog-promotion catalog_media, product_variants, product_skus, product_sku_media
+ * @db-write-via:import-runtime-runs import_runtime_runs
  * @db-txn        promoteCandidate : transaction dédiée
  * @doctrine      single_sourcing_candidate_mutation_authority, catalog_promotion_owner_respected, engine_price_is_not_market_decision, explicit_human_price_required_before_promotion
  * @impact-areas  sourcing, catalog, economic-engine
@@ -25,6 +26,7 @@ const scanner = require('./supplier-catalog-scanner');
 const pricingEngine = require('./pricing-engine');
 const { createDraftProductFromSourcingCandidate } = require('./catalog-candidate-product-service');
 const { promoteCatalog } = require('./catalog-promotion');
+const importRuns = require('./import-runtime-runs');
 
 class SourcingCandidateActionError extends Error {
   constructor(status, message, code = null, details = null) {
@@ -269,6 +271,9 @@ async function promoteCandidate(id, body = {}, actorId = null) {
   } finally {
     client.release();
   }
+
+  // Projection live uniquement : recalcul après commit, jamais bloquant.
+  await importRuns.safe(() => importRuns.syncRunsForImport(candidate?.import_id));
 
   const enrichment = {
     status: 'source_only',
