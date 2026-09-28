@@ -424,6 +424,14 @@
   function getSourcingWorkspace() {
     return fetchJSON(apiUrl('/admin/workspaces/sourcing'));
   }
+  function getImportRuntimeRuns() {
+    return fetchJSON(apiUrl('/admin/workspaces/sourcing/import-runs'));
+  }
+  function getImportRuntimeRun(runRef) {
+    return fetchJSON(
+      apiUrl('/admin/workspaces/sourcing/import-runs/' + encodeURIComponent(runRef))
+    );
+  }
   function setSourcingSourceAutopilot(sourceRef, enabled) {
     return fetchJSON(
       apiUrl('/admin/workspaces/sourcing/sources/' + encodeURIComponent(sourceRef) + '/' + (enabled ? 'activate' : 'deactivate')),
@@ -717,6 +725,8 @@
     hubInventoryProposeAll,
 
     getSourcingWorkspace,
+    getImportRuntimeRuns,
+    getImportRuntimeRun,
     setSourcingSourceAutopilot,
     setSourcingSourceCapability,
 
