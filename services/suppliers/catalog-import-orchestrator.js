@@ -333,7 +333,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
     recorded_at: new Date().toISOString(),
     accepted,
     duplicates: duplicateCount,
-    rejected: Math.max(0, invalidFromConnector.length - duplicateCount) + results.auto_rejected,
+    rejected: Math.max(0, results.errors.length - duplicateCount) + results.auto_rejected,
     quarantined: 0,
     deferred: results.deferred,
     ready_for_refinery: results.ready_for_refinery,
