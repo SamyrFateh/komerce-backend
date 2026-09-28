@@ -703,6 +703,8 @@ module.exports = {
       test: 'tests/unit/gate-c-provider-composition.test.js' },
     { statement: 'Gate C compose pour CJ et AliExpress le réordonnancement, interruption/reprise et disparition/retour avec les vrais seams de réconciliation SKU, checkpoint et lifecycle candidat',
       test: 'tests/unit/gate-c-lifecycle-composition.test.js' },
+    { statement: 'le contrat de certification pipeline 18+16+12=46 est figé dans un manifeste machine-readable ; tout drift de version, scénario, provider ou matrice de preuve doit échouer fermé',
+      test: 'tests/unit/pipeline-certification-manifest.test.js' },
     'les datasets E2E 700 et 712 restent des corpus historiques de preuve de non-régression ; aucun nombre ni fournisseur ne définit la certification canonique',
     'le pool AliExpress staging ne dépasse jamais 500 références propres en stock et ne peut pas s exécuter en production',
     'les access/refresh tokens fournisseur sont persistés chiffrés ; l App Secret reste uniquement en variable serveur et aucun token n est exposé au navigateur',
