@@ -190,6 +190,7 @@
         </div>
 
         <div class="kir-source-foot">
+          <span>Discovery · ${source.discovery_ready ? esc(source.discovery_mode || 'prêt') : 'indisponible'}</span>
           <span>${source.runtime_enabled ? 'Runtime actif' : 'Runtime autopilot OFF'}</span>
           <span>Dernier passage · ${source.last_capture_at ? time(source.last_capture_at) : 'jamais'}</span>
         </div>

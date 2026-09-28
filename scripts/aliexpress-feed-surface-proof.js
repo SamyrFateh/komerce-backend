@@ -1,36 +1,9 @@
 'use strict';
 const connected = require('../services/suppliers/connectors/aliexpress-connected-connector');
 const base = require('../services/suppliers/connectors/aliexpress-connector');
+const discovery = require('../services/suppliers/aliexpress-discovery');
 
-const asArray = (v) => Array.isArray(v) ? v : (v == null ? [] : [v]);
-const unwrap = (p = {}) => p?.resp_result?.result || p?.result?.result || p?.result || p || {};
-
-function feedNames(payload) {
-  const r = unwrap(payload);
-  return asArray(r?.promos?.promo || r?.promos || r?.promo)
-    .map((x) => String(x?.promo_name || x?.feed_name || '').trim())
-    .filter(Boolean);
-}
-
-function categories(payload) {
-  const r = unwrap(payload);
-  return asArray(r?.categories?.category || r?.categories || r?.category)
-    .map((x) => ({ id: String(x?.category_id || '').trim(), name: String(x?.category_name || '').trim() }))
-    .filter((x) => /^\d+$/.test(x.id));
-}
-
-function productIds(payload) {
-  const out = new Set();
-  function walk(v, depth = 0) {
-    if (!v || typeof v !== 'object' || depth > 10) return;
-    if (Array.isArray(v)) return v.forEach((x) => walk(x, depth + 1));
-    const id = String(v.product_id || v.itemId || '').trim();
-    if (/^\d{5,20}$/.test(id)) out.add(id);
-    Object.values(v).forEach((x) => walk(x, depth + 1));
-  }
-  walk(payload);
-  return [...out];
-}
+const { feedNames, categories, productIds } = discovery;
 
 async function run() {
   const env = await connected.managedRuntimeEnv();

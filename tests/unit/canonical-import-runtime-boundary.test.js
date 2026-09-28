@@ -34,7 +34,7 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260928-6');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260928-7');
   expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260928-6');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-runs');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
@@ -64,6 +64,7 @@ test('import runtime pilots configured sources without inventing client authorit
   expect(source).toContain('production_runtime_certified');
   expect(source).toContain('sourceCanImportNow');
   expect(source).toContain('sourceCanStartAutopilot');
+  expect(source).toContain('Discovery ·');
   expect(source).toContain("error?.details?.run_ref");
   expect(source).toContain('selectedRunRef = failedRunRef');
   expect(css).toContain('.kir-source-panel');
