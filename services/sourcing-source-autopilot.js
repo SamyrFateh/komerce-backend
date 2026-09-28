@@ -114,6 +114,9 @@ async function listSources(q = db) {
       supplier_name: automation?.supplier_name || null,
       connector_ready: Boolean(automation?.connector_ready),
       connector_reason: automation?.connector_ready ? null : (automation?.reason || 'connecteur non enregistré'),
+      discovery_ready: Boolean(automation?.discovery_ready),
+      discovery_mode: automation?.discovery_mode || null,
+      discovery_version: automation?.discovery_version || null,
       runtime_enabled: runtimeEnabled(),
     };
   });
@@ -179,14 +182,72 @@ async function releaseSourceLock(client, sourceRef) {
   ).catch(() => {});
 }
 
-function buildImportBody(source, automation, reason) {
+function discoverySummary(plan) {
+  return {
+    status: plan?.status || null,
+    provider: plan?.provider || null,
+    strategy: plan?.strategy || null,
+    version: plan?.version || null,
+    pull_options: plan?.pull_options || null,
+    evidence: plan?.evidence || null,
+  };
+}
+
+async function resolveDiscoveryPlan(sourceRef, source, automation, { reason = 'scheduled' } = {}) {
+  if (!automation?.discovery_ready) {
+    throw new SourcingSourceAutopilotError(
+      409,
+      'Discovery runtime non configuré pour cette source',
+      'sourcing_discovery_not_ready'
+    );
+  }
+
+  try {
+    const plan = await importDispatch.discoverSourcePlan(
+      source.adapter_type,
+      automation.pull_options || {}
+    );
+    if (!plan || plan.status !== 'READY' || !plan.pull_options) {
+      throw new Error('Discovery sans plan READY exploitable');
+    }
+    await recordSyntheticCapture(sourceRef, 'complete', {
+      kind: 'discovery_plan',
+      reason,
+      discovery: discoverySummary(plan),
+    });
+    return plan;
+  } catch (error) {
+    await recordSyntheticCapture(sourceRef, 'failed', {
+      kind: 'discovery_plan',
+      reason,
+      code: error?.code || 'SOURCE_DISCOVERY_FAILED',
+      error: boundedError(error),
+      details: error?.details || null,
+    }).catch(() => {});
+    throw new SourcingSourceAutopilotError(
+      502,
+      `Discovery fournisseur en échec · ${boundedError(error)}`,
+      error?.code || 'SOURCE_DISCOVERY_FAILED',
+      error?.details || null
+    );
+  }
+}
+
+function buildImportBody(source, automation, reason, discoveryPlan) {
+  if (!discoveryPlan?.pull_options) {
+    throw new SourcingSourceAutopilotError(
+      409,
+      'Import interdit sans plan Discovery READY',
+      'sourcing_discovery_plan_required'
+    );
+  }
   return {
     source_type: 'api',
     supplier_id: source.adapter_type,
     supplier_name: automation.supplier_name,
-    notes: `source-autopilot:${reason || 'scheduled'}`,
+    notes: `source-autopilot:${reason || 'scheduled'};discovery=${discoveryPlan.version || 'unknown'}`,
     is_full_snapshot: false,
-    ...automation.pull_options,
+    ...discoveryPlan.pull_options,
   };
 }
 
@@ -251,12 +312,13 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
       300000
     );
 
+    const discoveryPlan = await resolveDiscoveryPlan(sourceRef, source, automation, { reason });
     let result;
     let transientRetries = 0;
     while (true) {
       // eslint-disable-next-line no-await-in-loop
       result = await catalogImport.importCatalog(
-        buildImportBody(source, automation, reason),
+        buildImportBody(source, automation, reason, discoveryPlan),
         null,
         importDispatch.dispatchToConnector
       );
@@ -323,7 +385,12 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
       outcome: 'exception',
       error: boundedError(err),
     }).catch(() => {});
-    return { status: 'failed', source_ref: sourceRef, code: 'autopilot_exception', error: boundedError(err) };
+    return {
+      status: 'failed',
+      source_ref: sourceRef,
+      code: err?.code || 'autopilot_exception',
+      error: boundedError(err),
+    };
   } finally {
     if (locked) await releaseSourceLock(lockClient, sourceRef);
     lockClient.release();
@@ -364,8 +431,9 @@ async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operato
       throw new SourcingSourceAutopilotError(409, 'Un import est déjà en cours pour cette source', 'sourcing_source_already_running');
     }
 
+    const discoveryPlan = await resolveDiscoveryPlan(sourceRef, source, automation, { reason });
     const result = await catalogImport.importCatalog(
-      buildImportBody(source, automation, reason),
+      buildImportBody(source, automation, reason, discoveryPlan),
       actorId,
       importDispatch.dispatchToConnector
     );
@@ -410,6 +478,7 @@ async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operato
       updated: body.updated || 0,
       rejected: body.rejected || 0,
       canonical_resolved: Boolean(body.canonical_resolved),
+      discovery: discoverySummary(discoveryPlan),
     };
   } finally {
     if (locked) await releaseSourceLock(lockClient, sourceRef);
@@ -499,6 +568,8 @@ module.exports = {
   _descriptorSourceRef: descriptorSourceRef,
   _automationBySourceRef: automationBySourceRef,
   _buildImportBody: buildImportBody,
+  _resolveDiscoveryPlan: resolveDiscoveryPlan,
+  _discoverySummary: discoverySummary,
   _recordSyntheticCapture: recordSyntheticCapture,
   _isTransientImportResult: isTransientImportResult,
 };
