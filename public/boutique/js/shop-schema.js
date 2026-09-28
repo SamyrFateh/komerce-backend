@@ -92,6 +92,15 @@ const _CATEGORY_IMAGES = {
 // historique contient encore plusieurs libellés métier. Ce pont reste ici,
 // dans la source de vérité taxonomique, pour que toutes les surfaces filtrent
 // les mêmes ensembles sans heuristique sur le nom des produits.
+const _SUBCATEGORY_IMAGES = Object.freeze({
+  'Mode & Beauté': { Femme:'/boutique/categories/subcutouts/sub-mode-femme-v1.webp', Homme:'/boutique/categories/subcutouts/sub-mode-homme-v1.webp', Enfant:'/boutique/categories/subcutouts/sub-mode-enfant-v1.webp', Beauté:'/boutique/categories/subcutouts/sub-mode-beaute-v1.webp' },
+  Maison: { Confort:'/boutique/categories/subcutouts/sub-maison-confort-v1.webp', Cuisine:'/boutique/categories/subcutouts/sub-maison-cuisine-v1.webp', Déco:'/boutique/categories/subcutouts/sub-maison-deco-v1.webp', Enfants:'/boutique/categories/subcutouts/sub-maison-enfants-v1.webp' },
+  Tech: { Phones:'/boutique/categories/subcutouts/sub-tech-phones-v1.webp', Ordi:'/boutique/categories/subcutouts/sub-tech-ordi-v1.webp', Audio:'/boutique/categories/subcutouts/sub-tech-audio-v1.webp', Montres:'/boutique/categories/subcutouts/sub-tech-montres-v1.webp', Gaming:'/boutique/categories/subcutouts/sub-tech-gaming-v1.webp' },
+  Bricolage: { Outillage:'/boutique/categories/subcutouts/sub-brico-outillage-v1.webp', Electricité:'/boutique/categories/subcutouts/sub-brico-electricite-v1.webp', Sécurité:'/boutique/categories/subcutouts/sub-brico-securite-v1.webp' },
+  'Créations personnelles': { Cérémonie:'/boutique/categories/subcutouts/sub-perso-ceremonie-v1.webp', Cadeau:'/boutique/categories/subcutouts/sub-perso-cadeau-v1.webp', Impression:'/boutique/categories/subcutouts/sub-perso-impression-v1.webp' },
+  Auto: { Filtres:'/boutique/categories/subcutouts/sub-auto-filtres-v1.webp', Freinage:'/boutique/categories/subcutouts/sub-auto-freinage-v1.webp', Éclairage:'/boutique/categories/subcutouts/sub-auto-eclairage-v1.webp', Moto:'/boutique/categories/subcutouts/sub-auto-moto-v1.webp' },
+});
+
 const _SUBCATEGORY_DB_KEY_ALIASES = {
   Tech: {
     Phones:  ['Phones', 'Téléphones'],
@@ -124,7 +133,7 @@ const _FALLBACK_CATEGORIES = [
   },
   {
     key: 'Soldes', label: 'Soldes', shortLabel: 'Soldes',
-    type: NAV_TYPES.COMMERCIAL_FILTER, sectionEmoji: '🏷️', iconSvg: _ICON_SVGS.Soldes,
+    type: NAV_TYPES.COMMERCIAL_FILTER, sectionEmoji: '%', iconSvg: _ICON_SVGS.Soldes,
     image: _CATEGORY_IMAGES.Soldes, dbKeys: [], filterType: 'promo', filter: { promo: true },
     displayOrder: 1, showInRail: true, showInSections: true, showInMobileRail: true,
     subcategories: [],
@@ -248,7 +257,7 @@ function _buildFromRows(rows) {
         label:      s.label,
         shortLabel: s.short_label || s.shortLabel || s.label,
         icon:       s.icon || '✨',
-        imageUrl:   s.image_url || s.imageUrl || null,
+        imageUrl:   s.image_url || s.imageUrl || _SUBCATEGORY_IMAGES[row.key]?.[s.key] || null,
         imageAlt:   s.image_alt || s.imageAlt || s.label || s.key,
         dbKeys:     Array.isArray(s.db_keys) ? s.db_keys : Array.isArray(s.dbKeys) ? s.dbKeys : [s.key],
       })) : [],
