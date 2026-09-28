@@ -309,6 +309,13 @@ async function promoteCandidate(candidateRef, body, actor) {
   };
 }
 
+async function runSourceImportNow(sourceRef, actor) {
+  return sourceAutopilot.runSourceImportNow(sourceRef, {
+    actorId: actor?.id || null,
+    reason: 'operator_import_live',
+  });
+}
+
 async function setSourceAutopilot(sourceRef, enabled) {
   return sourceAutopilot.setSourceActive(sourceRef, Boolean(enabled), { runNow: Boolean(enabled) });
 }
@@ -349,6 +356,7 @@ module.exports = {
   watchlistCandidate,
   rejectCandidate,
   promoteCandidate,
+  runSourceImportNow,
   setSourceAutopilot,
   createSupplier,
   updateSupplier,
