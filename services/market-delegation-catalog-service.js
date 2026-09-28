@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated market operator, market code, product exposure decision
  * @outputs       product exposure read model, auditable exposure mutations
- * @depends       services/market-delegation-team-service.js, services/market-delegation-service.js, services/catalog-market-exposure-service.js, services/catalog-approval.js
+ * @depends       services/market-delegation-team-service.js, services/market-delegation-service.js, services/catalog-market-exposure-service.js, services/catalog-approval.js, services/market-ready-to-sell-projection.js
  * @used-by       routes/market-delegation-catalog.js
  * @db-read       products
  * @db-write      none
@@ -24,6 +24,7 @@ const { audit } = require('./market-delegation-service');
 const { resolveActiveAssignmentByMarketCode, resolveAuthorization } = require('./market-delegation-team-service');
 const exposureService = require('./catalog-market-exposure-service');
 const catalogApproval = require('./catalog-approval');
+const readyToSellProjection = require('./market-ready-to-sell-projection');
 
 function requireExecutor(executor) {
   if (!executor || typeof executor.query !== 'function') {
@@ -49,6 +50,17 @@ async function listReviewQueue(executor, { marketId, limit = 100 }) {
     requireExecutor(executor),
     { limit }
   );
+}
+
+async function listReadyToSell(executor, { market, capabilities, reviewQueue, exposure, limit = 100 }) {
+  return readyToSellProjection.buildReadyToSell({
+    executor: requireExecutor(executor),
+    market,
+    capabilities,
+    reviewQueue,
+    exposure,
+    limit,
+  });
 }
 
 function summarizeExposure(rows) {
@@ -221,6 +233,7 @@ module.exports = {
   resolveAuthorization,
   listExposure,
   listReviewQueue,
+  listReadyToSell,
   summarizeExposure,
   setExposure,
   validateForMarket,
