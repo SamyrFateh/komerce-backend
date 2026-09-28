@@ -75,9 +75,17 @@
   // role-filtered domain navigation above.
   const ADMIN_CAPABILITY_GROUPS = Object.freeze([
     Object.freeze({
+      label: 'Dashboards',
+      items: Object.freeze([
+        Object.freeze({ id: 'dashboard-pilotage', label: 'Pilotage', href: '/admin/pilotage' }),
+        Object.freeze({ id: 'dashboard-commerce', label: 'Commerce', href: '/admin/commerce' }),
+        Object.freeze({ id: 'dashboard-operations', label: 'Opérations', href: '/admin/operations' }),
+        Object.freeze({ id: 'dashboard-finance', label: 'Finance', href: '/admin/finance' }),
+      ]),
+    }),
+    Object.freeze({
       label: 'Pilotage',
       items: Object.freeze([
-        Object.freeze({ id: 'dashboard', label: 'Dashboard', href: '/admin/pilotage' }),
         Object.freeze({ id: 'health', label: 'Activité / Santé', href: '/admin/sante' }),
         Object.freeze({ id: 'sales', label: 'Ventes', href: '/admin/sales' }),
         Object.freeze({ id: 'action-center', label: 'Action Center', href: '/admin/action-center' }),
@@ -87,7 +95,6 @@
     Object.freeze({
       label: 'Commerce',
       items: Object.freeze([
-        Object.freeze({ id: 'commerce', label: 'Commerce', href: '/admin/commerce' }),
         Object.freeze({ id: 'orders-overview', label: 'Commandes', href: '/admin/orders' }),
         Object.freeze({ id: 'clients', label: 'Clients', href: '/admin/clients' }),
         Object.freeze({ id: 'shared-carts', label: 'Partages', href: '/admin/shared-carts' }),
@@ -104,7 +111,6 @@
     Object.freeze({
       label: 'Opérations',
       items: Object.freeze([
-        Object.freeze({ id: 'operations-overview', label: 'Vue opérations', href: '/admin/operations' }),
         Object.freeze({ id: 'operations-workspace', label: 'Hub / Relais', href: '/admin/workspaces/operations' }),
         Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs' }),
         Object.freeze({ id: 'transit', label: 'Transit', href: '/admin/transitaire' }),
@@ -114,7 +120,6 @@
     Object.freeze({
       label: 'Finance',
       items: Object.freeze([
-        Object.freeze({ id: 'finance-overview', label: 'Vue finance', href: '/admin/finance' }),
         Object.freeze({ id: 'accounting-workspace', label: 'Comptabilité', href: '/admin/workspaces/accounting' }),
         Object.freeze({ id: 'pricing-workspace', label: 'Atelier économique', href: '/admin/workspaces/pricing' }),
         Object.freeze({ id: 'costing', label: 'Coûts', href: '/admin/costing?legacy=1' }),
