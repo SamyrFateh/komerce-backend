@@ -16,6 +16,7 @@ const desktop = fs.readFileSync(path.resolve(__dirname, '../../css/boutique-desk
 const interactions = fs.readFileSync(path.resolve(__dirname, '../../css/interactions.css'), 'utf8');
 const visuals = fs.readFileSync(path.resolve(__dirname, '../../js/render/category-shelf-visuals.js'), 'utf8');
 const subcat = fs.readFileSync(path.resolve(__dirname, '../../js/b-subcat.js'), 'utf8');
+const homeController = fs.readFileSync(path.resolve(__dirname, '../../js/controllers/home-controller.js'), 'utf8');
 const index = fs.readFileSync(path.resolve(__dirname, '../../index.html'), 'utf8');
 const schema = fs.readFileSync(path.resolve(__dirname, '../../js/shop-schema.js'), 'utf8');
 
@@ -117,6 +118,8 @@ describe('continuité catégories et sous-catégories desktop', () => {
     expect(desktopShelf).toContain('color: var(--catalog-nav-strong);');
     expect(subcat).toContain('canonicalImage');
     expect(subcat).toContain('data-shelf-media="canonical"');
+    expect(homeController).toContain('const canonicalImage = sub.imageUrl || null;');
+    expect(homeController).toContain('data-shelf-media="canonical"');
     expect(schema).toContain('_SUBCATEGORY_IMAGES');
     expect(desktop).toContain('.k-sec-subchip-object');
     expect(desktopShelf).toContain('.k-shelf-emoji-fallback');
