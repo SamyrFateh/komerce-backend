@@ -28,7 +28,7 @@ import { getCategorySectionEmoji, getSectionOrder, getSubcategories, matchesSubc
 import { getPromoProducts, partitionProductsByCategory } from '../product-store.js';
 import { sanitize } from '../b-utils.js';
 import { state } from '../b-store.js';
-import { getShelfCategoryVisual, renderShelfUse } from './category-shelf-visuals.js';
+import { getShelfCategoryVisual, renderShelfProductPhoto, renderShelfUse } from './category-shelf-visuals.js';
 
 function renderSectionVisual(category, fallbackEmoji = '') {
   const visual = getShelfCategoryVisual(category);
@@ -192,7 +192,9 @@ export function renderHomeSections({
         const isActive = activeSub === s.key;
         railHtml += '<button class="k-sec-subchip' + (isActive ? ' active' : '') +
           '" type="button" data-sec-cat="' + catAttr + '" data-sec-sub="' + sanitize(s.key) + '">' +
-          (s.icon ? '<span class="k-sec-subchip-icon">' + s.icon + '</span>' : '') +
+          (s.imageUrl
+            ? '<span class="k-sec-subchip-icon">' + renderShelfProductPhoto(s.imageUrl, 'k-sec-subchip-object') + '</span>'
+            : (s.icon ? '<span class="k-sec-subchip-icon">' + s.icon + '</span>' : '')) +
           '<span class="k-sec-subchip-label">' + sanitize(s.label || s.key) + '</span>' +
           '</button>';
       }
