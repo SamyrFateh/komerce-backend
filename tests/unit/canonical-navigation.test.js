@@ -105,10 +105,25 @@ function mountFor(env, pathname, surface, user, extra = {}) {
   });
 }
 
-function primaryIdsOf(header) {
+function primaryLinksOf(header) {
   const inner = header.children[0];
   const primary = inner.children[1];
-  return primary.children.map(link => link.attributes['data-dashboard']);
+  if (!String(primary.className || '').includes('is-capability-map')) return primary.children;
+  const links = [];
+  primary.children.forEach(group => {
+    (group.children || []).forEach(node => {
+      if (node && node.attributes && node.attributes['data-dashboard']) links.push(node);
+    });
+  });
+  return links;
+}
+
+function findPrimaryLink(header, id) {
+  return primaryLinksOf(header).find(link => link.attributes['data-dashboard'] === id);
+}
+
+function primaryIdsOf(header) {
+  return primaryLinksOf(header).map(link => link.attributes['data-dashboard']);
 }
 
 function utilitiesOf(header) {
@@ -130,9 +145,10 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = mountFor(env, '/admin/pilotage', 'pilotage', { role: 'admin' });
 
-    expect(primaryIdsOf(header)).toEqual([
+    expect(env.api.visibleDomainsFor({ role: 'admin' }).map(domain => domain.id)).toEqual([
       'dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'finance',
     ]);
+    expect(header.children[0].children[1].className).toContain('is-capability-map');
   });
 
   test('Paramètres apparaît dans la zone utilitaire pour admin uniquement', () => {
@@ -163,7 +179,7 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     const inner = header.children[0];
     const identity = inner.children[0];
     const primary = inner.children[1];
-    const pricing = primary.children.find(link => link.attributes['data-dashboard'] === 'pricing');
+    const pricing = findPrimaryLink(header, 'pricing-workspace');
 
     expect(identity.children).toHaveLength(1);
     expect(identity.children[0].children[0].textContent).toBe('KOMERCE');
@@ -178,14 +194,15 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     const inner = header.children[0];
     const identity = inner.children[0];
     const primary = inner.children[1];
-    const orders = primary.children.find(link => link.attributes['data-dashboard'] === 'orders');
+    const orders = findPrimaryLink(header, 'orders-overview');
 
     expect(identity.children[1].textContent).toBe('← Retour');
     expect(identity.children[1].href).toBe('/admin/commerce');
-    expect(orders.attributes['aria-current']).toBe('page');
+    expect(orders.attributes['aria-current']).toBeUndefined();
+    expect(env.api.activePrimarySurface('order-360')).toBe('orders');
     // Order-360 reste un vrai drill-down Entity 360, pas un domaine N1 promu :
     // seuls les 7 domaines canoniques du mock apparaissent, dans l'ordre.
-    expect(primary.children.map(link => link.textContent)).toEqual([
+    expect(env.api.visibleDomainsFor({ role: 'admin' }).map(domain => domain.label)).toEqual([
       'Dashboard', 'Atelier économique', 'Catalogue', 'Commandes', 'Marchés', 'Opérations', 'Finance',
     ]);
   });
@@ -193,7 +210,7 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
   test('Marchés pointe vers la gestion des accès pour admin et vers autonomie marché pour market_operator', () => {
     const adminEnv = loadNavigation('/dashboards/canonical/access.html', 'market-access');
     const adminHeader = mountFor(adminEnv, '/dashboards/canonical/access.html', 'market-access', { role: 'admin' });
-    const adminMarkets = adminHeader.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'markets');
+    const adminMarkets = findPrimaryLink(adminHeader, 'markets');
     expect(adminMarkets.href).toBe('/dashboards/canonical/access.html');
     expect(adminMarkets.attributes['aria-current']).toBe('page');
 
@@ -206,7 +223,7 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
   test('Catalogue reste global pour admin et devient Catalogue pays pour market_operator', () => {
     const adminEnv = loadNavigation('/admin/pilotage', 'pilotage');
     const adminHeader = mountFor(adminEnv, '/admin/pilotage', 'pilotage', { role: 'admin' });
-    const adminCatalog = adminHeader.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'catalog');
+    const adminCatalog = findPrimaryLink(adminHeader, 'catalog');
     expect(adminCatalog.href).toBe('/admin/workspaces/catalog');
 
     const operatorEnv = loadNavigation('/dashboards/canonical/market-catalog.html', 'market-catalog');
@@ -229,8 +246,8 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     const env = loadNavigation('/admin/workspaces/shipping-customs', 'shipping-customs-workspace');
     const header = mountFor(env, '/admin/workspaces/shipping-customs', 'shipping-customs-workspace', { role: 'admin' });
 
-    const operations = header.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'operations');
-    expect(operations.attributes['aria-current']).toBe('page');
+    const shippingCustoms = findPrimaryLink(header, 'shipping-customs-workspace');
+    expect(shippingCustoms.attributes['aria-current']).toBe('page');
 
     const n2 = secondaryNav(header);
     expect(n2.className).toBe('kmc-admin-secondary-nav');
@@ -333,7 +350,10 @@ describe('canonical admin navigation — filtrage par rôle des domaines N1 (doc
   ])('%s voit exactement ses domaines N1 — jamais un domaine qui 403', (role, expected) => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = mountFor(env, '/admin/pilotage', 'pilotage', { role });
-    expect(primaryIdsOf(header)).toEqual(expected);
+    const renderedOrCanonical = role === 'admin'
+      ? env.api.visibleDomainsFor({ role }).map(domain => domain.id)
+      : primaryIdsOf(header);
+    expect(renderedOrCanonical).toEqual(expected);
   });
 
   test('chaque rôle connu voit au moins Dashboard, toujours en premier', () => {
