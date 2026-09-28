@@ -18,6 +18,7 @@ const {
   requestTimeoutMs,
   extractProductId,
   normalizeDsProduct,
+  unwrapDsResult,
   flattenFeedProducts,
   fetchProducts,
 } = require('../../services/suppliers/connectors/aliexpress-connector');
@@ -293,6 +294,49 @@ describe('aliexpress-connector', () => {
         },
       },
     })).toEqual([{ product_id: 1 }, { product_id: 2 }]);
+  });
+
+  test('déroule la vraie enveloppe resp_result.result et récupère les produits même si la clé de liste change', () => {
+    const payload = {
+      resp_result: {
+        result: {
+          current_page_no: 1,
+          total_record_count: 2,
+          products: {
+            traffic_product_d_t_o: [
+              { product_id: '4000102715995', product_title: 'Speaker' },
+              { itemId: '4000102715996', product_title: 'Cable' },
+            ],
+          },
+        },
+      },
+    };
+
+    expect(unwrapDsResult(payload)).toMatchObject({ current_page_no: 1, total_record_count: 2 });
+    expect(flattenFeedProducts(payload)).toEqual([
+      expect.objectContaining({ product_id: '4000102715995', product_title: 'Speaker' }),
+      expect.objectContaining({ product_id: '4000102715996', product_title: 'Cable' }),
+    ]);
+  });
+
+  test('récupère récursivement les ids fournisseur si AliExpress renomme encore le conteneur du feed', () => {
+    const payload = {
+      resp_result: {
+        result: {
+          opaque_bucket: {
+            rows: [
+              { meta: 'x', itemId: '4000102715995' },
+              { nested: { product_id: '4000102715996', product_title: 'Cable' } },
+            ],
+          },
+        },
+      },
+    };
+
+    expect(flattenFeedProducts(payload).map((item) => item.product_id)).toEqual([
+      '4000102715995',
+      '4000102715996',
+    ]);
   });
 
   test('fetchProducts utilise /sync puis partitionne un lot real-shaped entre accepté et rejeté', async () => {
