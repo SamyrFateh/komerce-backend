@@ -2,8 +2,8 @@
   "generatedAt": "2026-09-27T13:55:27.297Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 654,
-    "protected": 599,
+    "total": 655,
+    "protected": 600,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
