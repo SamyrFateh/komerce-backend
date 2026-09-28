@@ -303,5 +303,8 @@ jobs:
           if [ -n "${PROMOTE_SUMMARY:-}" ]; then note="$note\n\n\`$PROMOTE_SUMMARY\`"; fi
           if [ -n "${SOI_REPLAY_DRY_RUN_SUMMARY:-}" ]; then note="$note\n\n\`$SOI_REPLAY_DRY_RUN_SUMMARY\`"; fi
           if [ -n "${PREPARE_FR_DRY_RUN_SUMMARY:-}" ]; then note="$note\n\n\`$PREPARE_FR_DRY_RUN_SUMMARY\`"; fi
+          if [ -n "${PURGE_M038_SUMMARY:-}" ]; then note="$note\n\n\`$PURGE_M038_SUMMARY\`"; fi
+          if [ -n "${FULL_CATALOG_RESET_SUMMARY:-}" ]; then note="$note\n\n\`$FULL_CATALOG_RESET_SUMMARY\`"; fi
+          if [ -n "${CLEAN_ROOM_RESET_SUMMARY:-}" ]; then note="$note\n\n\`$CLEAN_ROOM_RESET_SUMMARY\`"; fi
           gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$note"
           gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
