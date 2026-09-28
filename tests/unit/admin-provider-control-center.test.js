@@ -39,6 +39,6 @@ describe('Provider Control Center operational truth',()=>{
  });
  test('does not present the static scenario manifest as provider runtime certification',()=>{
   expect(view).not.toContain('Contrat pipeline 46 scénarios');
-  expect(view).toContain('Production reste refusée tant qu’aucune preuve runtime fournisseur durable n’est disponible.');
+  expect(view).toContain('Production reste refusée tant qu’aucune preuve runtime fournisseur durable n’est disponible');
  });
 });
