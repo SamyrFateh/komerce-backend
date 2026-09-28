@@ -153,7 +153,7 @@
 
 /* KPI strip mirrors the large compact tiles from the mock. */
 .kir-metrics{
-  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:14px
 }
 .kir-metric{
   position:relative;background:var(--kir-card);border:1px solid var(--kir-line);
