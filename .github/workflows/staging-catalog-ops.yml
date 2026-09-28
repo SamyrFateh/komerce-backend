@@ -15,6 +15,7 @@ on:
           - aliexpress-promote-drafts
           - aliexpress-soi-replay-dry-run
           - aliexpress-prepare-fr-dry-run
+          - purge-m038-legacy
       limit:
         description: 'Nombre maximum de candidats/promotions pour ce run'
         required: false
@@ -42,7 +43,8 @@ jobs:
         github.event.issue.title == '[staging-op] aliexpress-draft-audit' ||
         github.event.issue.title == '[staging-op] aliexpress-promote-drafts' ||
         github.event.issue.title == '[staging-op] aliexpress-soi-replay-dry-run' ||
-        github.event.issue.title == '[staging-op] aliexpress-prepare-fr-dry-run'))
+        github.event.issue.title == '[staging-op] aliexpress-prepare-fr-dry-run' ||
+        github.event.issue.title == '[staging-op] purge-m038-legacy'))
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -73,12 +75,13 @@ jobs:
               '[staging-op] aliexpress-promote-drafts') operation='aliexpress-promote-drafts' ;;
               '[staging-op] aliexpress-soi-replay-dry-run') operation='aliexpress-soi-replay-dry-run'; limit='500' ;;
               '[staging-op] aliexpress-prepare-fr-dry-run') operation='aliexpress-prepare-fr-dry-run'; limit='500' ;;
+              '[staging-op] purge-m038-legacy') operation='purge-m038-legacy'; limit='1' ;;
               *) echo '::error::Opération non autorisée'; exit 1 ;;
             esac
           fi
 
           case "$operation" in
-            aliexpress-refinery-rescan-dry-run|aliexpress-refinery-rescan|aliexpress-draft-audit|aliexpress-promote-drafts|aliexpress-soi-replay-dry-run|aliexpress-prepare-fr-dry-run) ;;
+            aliexpress-refinery-rescan-dry-run|aliexpress-refinery-rescan|aliexpress-draft-audit|aliexpress-promote-drafts|aliexpress-soi-replay-dry-run|aliexpress-prepare-fr-dry-run|purge-m038-legacy) ;;
             *) echo '::error::Opération non autorisée'; exit 1 ;;
           esac
           if ! [[ "$limit" =~ ^[0-9]+$ ]] || [ "$limit" -lt 1 ] || [ "$limit" -gt 500 ]; then
@@ -194,6 +197,19 @@ jobs:
           compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-7000)"
           echo "summary=$compact" >> "$GITHUB_OUTPUT"
 
+      - name: Purge exact Migration 038 legacy catalogue
+        id: purge_m038
+        if: steps.operation.outputs.operation == 'purge-m038-legacy'
+        shell: bash
+        env:
+          KOMERCE_ALLOW_M038_PURGE: '1'
+        run: |
+          set -euo pipefail
+          output="$(timeout 300s node scripts/purge-m038-staging.js)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-7000)"
+          echo "summary=$compact" >> "$GITHUB_OUTPUT"
+
       - name: Write operation summary
         if: always()
         shell: bash
@@ -207,6 +223,7 @@ jobs:
           PROMOTE_SUMMARY: ${{ steps.promote.outputs.summary }}
           SOI_REPLAY_DRY_RUN_SUMMARY: ${{ steps.soi_replay_dry_run.outputs.summary }}
           PREPARE_FR_DRY_RUN_SUMMARY: ${{ steps.enrich_fr_dry_run.outputs.summary }}
+          PURGE_M038_SUMMARY: ${{ steps.purge_m038.outputs.summary }}
         run: |
           {
             echo '## Komerce staging catalog operation'
@@ -220,6 +237,7 @@ jobs:
             if [ -n "${PROMOTE_SUMMARY:-}" ]; then echo "- promotion: \`${PROMOTE_SUMMARY}\`"; fi
             if [ -n "${SOI_REPLAY_DRY_RUN_SUMMARY:-}" ]; then echo "- SOI replay dry-run: \`${SOI_REPLAY_DRY_RUN_SUMMARY}\`"; fi
             if [ -n "${PREPARE_FR_DRY_RUN_SUMMARY:-}" ]; then echo "- FR preparation dry-run (0 AI API): \`${PREPARE_FR_DRY_RUN_SUMMARY}\`"; fi
+            if [ -n "${PURGE_M038_SUMMARY:-}" ]; then echo "- purge M038: \`${PURGE_M038_SUMMARY}\`"; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Close successful command issue
@@ -236,6 +254,7 @@ jobs:
           PROMOTE_SUMMARY: ${{ steps.promote.outputs.summary }}
           SOI_REPLAY_DRY_RUN_SUMMARY: ${{ steps.soi_replay_dry_run.outputs.summary }}
           PREPARE_FR_DRY_RUN_SUMMARY: ${{ steps.enrich_fr_dry_run.outputs.summary }}
+          PURGE_M038_SUMMARY: ${{ steps.purge_m038.outputs.summary }}
         run: |
           set -euo pipefail
           note="Staging catalog operation \`$OPERATION\` completed successfully."
