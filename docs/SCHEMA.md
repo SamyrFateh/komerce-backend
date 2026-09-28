@@ -628,3 +628,12 @@ migration: 233
 section: ### 4.2 Logistique colis (5 tables)
 role: Journal append-only de custody, transitions physiques, lineage SPLIT/MERGE/REPACK et constats physiques HUB-001.
 -->
+
+### boutique_subcategories canonical imagery
+
+The canonical boutique taxonomy owns stable navigation imagery at subcategory level.
+
+- `boutique_subcategories.image_url`: versioned canonical visual used by boutique subcategory navigation; independent from supplier/product ingestion.
+- `boutique_subcategories.image_alt`: descriptive alternative text for the canonical subcategory visual.
+- Source migration: `252_boutique_subcategory_canonical_images.sql`.
+- These fields are presentation metadata only; they do not change product taxonomy matching or sourcing identity.
