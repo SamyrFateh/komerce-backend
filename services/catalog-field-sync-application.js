@@ -9,7 +9,7 @@
  * @depends       db.js, services/catalog-field-sync-decision.js
  * @used-by       tests/integration/catalog-field-sync-application-real-db.test.js
  * @db-read       products, catalog_field_overrides, catalog_field_sync_state
- * @db-write      products (name, description, images, image_url uniquement), catalog_field_sync_state
+ * @db-write      products, catalog_field_sync_state
  * @db-txn        owned (BEGIN/COMMIT/ROLLBACK ; verrou FOR UPDATE sur la ligne products ciblée)
  * @doctrine      docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md
  * @impact-areas  catalog, sourcing
