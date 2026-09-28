@@ -118,7 +118,7 @@ describe('continuité catégories et sous-catégories desktop', () => {
     expect(subcat).toContain('canonicalImage');
     expect(subcat).toContain('data-shelf-media="canonical"');
     expect(schema).toContain('_SUBCATEGORY_IMAGES');
-    expect(desktopShelf).toContain('.k-sec-subchip-object');
+    expect(desktop).toContain('.k-sec-subchip-object');
     expect(desktopShelf).toContain('.k-shelf-emoji-fallback');
     expect(desktopShelf).not.toContain('grayscale(1)');
     expect(desktopShelf).not.toContain('sepia(.58)');
