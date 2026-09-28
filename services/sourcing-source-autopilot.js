@@ -4,15 +4,15 @@
  * @domain        sourcing
  * @layer         service
  * @criticality   high
- * @inputs        sourcing_sources_autopilot_switch, connector_automation_registry
+ * @inputs        sourcing_sources_autopilot_switch, connector_automation_registry, provider_capability_policy, provider_runtime_certification_evidence
  * @outputs       recurring_source_imports, source_runtime_projection
- * @depends       db.js, services/sourcing-import-dispatch.js, services/suppliers/catalog-import-orchestrator.js, services/sourcing-observation-shadow-service.js
+ * @depends       db.js, services/sourcing-import-dispatch.js, services/suppliers/catalog-import-orchestrator.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js
  * @used-by       services/sourcing-workspace.js, scripts/sourcing-source-autopilot.js
  * @db-read       sourcing_sources, sourcing_captures
  * @db-write      sourcing_sources, sourcing_captures
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates, sourcing_sources, sourcing_source_provides, sourcing_captures, sourcing_observations
  * @db-txn        advisory_lock_per_source
- * @doctrine      source_on_means_active_recurring_acquisition, source_lifecycle_is_not_autopilot_authority, provider_agnostic_runner, bounded_pull, fail_closed_connector_readiness
+ * @doctrine      source_on_means_active_recurring_acquisition, source_lifecycle_is_not_autopilot_authority, provider_agnostic_runner, bounded_pull, fail_closed_connector_readiness, production_requires_runtime_certification
  * @impact-areas  sourcing, catalog, supplier-import
  * @version       2026-09
  */
@@ -87,6 +87,7 @@ async function listSources(q = db) {
             s.status,
             s.autopilot_enabled,
             s.discovery_enabled, s.sync_enabled, s.import_enabled, s.production_enabled,
+            s.production_certified_at,
             s.updated_at,
             last_capture.status AS last_capture_status,
             last_capture.completed_at AS last_capture_at,
@@ -108,6 +109,7 @@ async function listSources(q = db) {
     const automation = automationBySourceRef(row.source_ref);
     return {
       ...row,
+      production_runtime_certified: Boolean(row.production_certified_at),
       label: automation?.label || row.adapter_type,
       supplier_name: automation?.supplier_name || null,
       connector_ready: Boolean(automation?.connector_ready),
@@ -119,7 +121,7 @@ async function listSources(q = db) {
 
 async function requireSource(sourceRef, q = db) {
   const { rows: [row] } = await q.query(
-    `SELECT source_id AS source_ref, adapter_type, acquisition, continuity, status, autopilot_enabled, discovery_enabled, sync_enabled, import_enabled, production_enabled
+    `SELECT source_id AS source_ref, adapter_type, acquisition, continuity, status, autopilot_enabled, discovery_enabled, sync_enabled, import_enabled, production_enabled, production_certified_capture_id, production_certified_at
        FROM sourcing_sources
       WHERE source_id = $1`,
     [sourceRef]
@@ -381,6 +383,8 @@ async function runActiveSources({ limit = DEFAULT_BATCH_LIMIT, reason = 'schedul
       WHERE status = 'active'
         AND autopilot_enabled = true
         AND discovery_enabled = true AND sync_enabled = true AND import_enabled = true AND production_enabled = true
+        AND production_certified_capture_id IS NOT NULL
+        AND production_certified_at IS NOT NULL
         AND acquisition = 'pull'
         AND continuity = 'recurring'
       ORDER BY updated_at ASC, source_id ASC

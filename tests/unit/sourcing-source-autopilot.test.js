@@ -54,6 +54,8 @@ function sourceRow(overrides = {}) {
     sync_enabled: true,
     import_enabled: true,
     production_enabled: true,
+    production_certified_capture_id: 'capture-certified',
+    production_certified_at: '2026-09-28T12:00:00Z',
     ...overrides,
   };
 }
@@ -113,6 +115,16 @@ test('source autopilot OFF ne déclenche jamais le connecteur', async () => {
 
 test('une capacité fournisseur OFF bloque explicitement l\'autopilot avant tout connecteur', async () => {
   mockSourceQueries(sourceRow({ production_enabled: false }));
+
+  await expect(autopilot.runSourceOnce('api:cj'))
+    .resolves.toEqual({ status: 'skipped', source_ref: 'api:cj', reason: 'provider_capability_policy_off' });
+
+  expect(mockImportCatalog).not.toHaveBeenCalled();
+  expect(mockGetClient).not.toHaveBeenCalled();
+});
+
+test('production ON sans preuve runtime reste bloquée avant tout connecteur', async () => {
+  mockSourceQueries(sourceRow({ production_certified_capture_id: null, production_certified_at: null }));
 
   await expect(autopilot.runSourceOnce('api:cj'))
     .resolves.toEqual({ status: 'skipped', source_ref: 'api:cj', reason: 'provider_capability_policy_off' });

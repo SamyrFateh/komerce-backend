@@ -94,6 +94,7 @@ module.exports = {
       'migrations/227_sourcing_resolution_foundation.sql',
       'migrations/238_sourcing_source_autopilot.sql',
       'migrations/255_provider_control_policy.sql',
+      'migrations/256_provider_runtime_certification.sql',
     ],
     scripts: [
       'scripts/sourcing-shadow-proof-staging.js',
@@ -317,6 +318,7 @@ module.exports = {
     'le Golden E2E est read-only et termine toujours par HARD_STOP ou BLOCKED_SUPPLIER_IDENTITY sans placeOrder',
     'l autopilot est une autorisation opérateur distincte du lifecycle source ; il reste false par défaut et ne démarre jamais une source historique implicitement',
     'le runner autopilot ne contient aucune branche fournisseur et n execute que des pulls bornés déclarés par le registry connecteur',
+    'Production ne peut être autorisée que si un import API réel a atteint CANONICAL_RESOLVED et a persisté le capture_id complete correspondant sur la source',
     { statement: 'la certification Sourcing est provider-independent : TEST/PRIORITY produit READY_FOR_REFINERY certifié ; WATCH/AVOID/LOSS reste une issue DEFERRED explicite ; import, quarantaine, rejet et archivage exigent identité, provenance et raison/lien requis',
       test: 'tests/unit/sourcing-certification.test.js' },
     { statement: 'Gate A SOURCING_CERTIFIED exige les 18 scénarios de torture déterministes, sans réseau ni IA payante, sans corruption, doublon ou perte silencieuse et avec provenance préservée',
