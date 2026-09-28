@@ -321,6 +321,8 @@ jobs:
             if [ -n "${REFINERY_AUDIT_SUMMARY:-}" ]; then echo "- refinery audit: \`${REFINERY_AUDIT_SUMMARY}\`"; fi
             if [ -n "${AUDIT_SUMMARY:-}" ]; then echo "- audit: \`${AUDIT_SUMMARY}\`"; fi
             if [ -n "${PROMOTE_SUMMARY:-}" ]; then echo "- promotion: \`${PROMOTE_SUMMARY}\`"; fi
+            if [ -n "${PROMOTE_RUN_DRY_SUMMARY:-}" ]; then echo "- exact-run audit: \`${PROMOTE_RUN_DRY_SUMMARY}\`"; fi
+            if [ -n "${PROMOTE_RUN_SUMMARY:-}" ]; then echo "- exact-run promotion: \`${PROMOTE_RUN_SUMMARY}\`"; fi
             if [ -n "${SOI_REPLAY_DRY_RUN_SUMMARY:-}" ]; then echo "- SOI replay dry-run: \`${SOI_REPLAY_DRY_RUN_SUMMARY}\`"; fi
             if [ -n "${PREPARE_FR_DRY_RUN_SUMMARY:-}" ]; then echo "- FR preparation dry-run (0 AI API): \`${PREPARE_FR_DRY_RUN_SUMMARY}\`"; fi
             if [ -n "${PURGE_M038_SUMMARY:-}" ]; then echo "- purge M038: \`${PURGE_M038_SUMMARY}\`"; fi
