@@ -67,6 +67,7 @@ module.exports = {
     '../admin/js/views/PricingWorkshopView.js',
     '../admin/js/views/ProblemsView.js',
     '../admin/js/views/ProductsView.js',
+    '../admin/js/views/ProvidersView.js',
     '../admin/js/views/SalesView.js',
     '../admin/js/views/SanteView.js',
     '../admin/js/views/SettingsView.js',
