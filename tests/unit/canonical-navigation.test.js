@@ -198,7 +198,8 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
 
     expect(identity.children[1].textContent).toBe('← Retour');
     expect(identity.children[1].href).toBe('/admin/commerce');
-    expect(orders.attributes['aria-current']).toBe('page');
+    expect(orders.attributes['aria-current']).toBeUndefined();
+    expect(env.api.activePrimarySurface('order-360')).toBe('orders');
     // Order-360 reste un vrai drill-down Entity 360, pas un domaine N1 promu :
     // seuls les 7 domaines canoniques du mock apparaissent, dans l'ordre.
     expect(env.api.visibleDomainsFor({ role: 'admin' }).map(domain => domain.label)).toEqual([
@@ -245,8 +246,8 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     const env = loadNavigation('/admin/workspaces/shipping-customs', 'shipping-customs-workspace');
     const header = mountFor(env, '/admin/workspaces/shipping-customs', 'shipping-customs-workspace', { role: 'admin' });
 
-    const operations = findPrimaryLink(header, 'operations-overview');
-    expect(operations.attributes['aria-current']).toBe('page');
+    const shippingCustoms = findPrimaryLink(header, 'shipping-customs-workspace');
+    expect(shippingCustoms.attributes['aria-current']).toBe('page');
 
     const n2 = secondaryNav(header);
     expect(n2.className).toBe('kmc-admin-secondary-nav');
