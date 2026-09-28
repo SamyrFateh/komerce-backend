@@ -474,3 +474,110 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active,
 .kmc-workspace-table th:first-child {
   border-left: 3px solid var(--kmc-legacy-orange);
 }
+
+
+/* V1.2 — données sémantiques : la couleur exprime le contexte métier. */
+.kmc-decision-card.is-positive .kmc-decision-card-value,
+.kmc-summary-card.is-positive .kmc-summary-card-metric-value,
+.kmc-progress-card.is-positive .kmc-progress-value,
+.kmc-ranked-row.is-positive .kmc-ranked-value,
+.kmc-info-row.is-positive .kmc-info-title,
+.kmc-priority-row.is-positive .kmc-priority-title,
+.kmc-metric-card.is-positive .kmc-metric-value,
+.kmc-workspace-feedback.is-positive,
+.kmc-market-decision-hero.is-positive .kmc-market-decision-title,
+.kmc-market-decision-hero.is-positive .kmc-market-decision-metric-value {
+  color: var(--kmc-legacy-green);
+}
+
+.kmc-decision-card.is-warning .kmc-decision-card-value,
+.kmc-summary-card.is-warning .kmc-summary-card-metric-value,
+.kmc-progress-card.is-warning .kmc-progress-value,
+.kmc-ranked-row.is-warning .kmc-ranked-value,
+.kmc-info-row.is-warning .kmc-info-title,
+.kmc-priority-row.is-warning .kmc-priority-title,
+.kmc-metric-card.is-warning .kmc-metric-value,
+.kmc-market-decision-hero.is-warning .kmc-market-decision-title,
+.kmc-market-decision-hero.is-warning .kmc-market-decision-metric-value {
+  color: var(--kmc-legacy-orange-strong);
+}
+
+.kmc-decision-card.is-critical .kmc-decision-card-value,
+.kmc-summary-card.is-critical .kmc-summary-card-metric-value,
+.kmc-progress-card.is-critical .kmc-progress-value,
+.kmc-ranked-row.is-critical .kmc-ranked-value,
+.kmc-info-row.is-critical .kmc-info-title,
+.kmc-priority-row.is-critical .kmc-priority-title,
+.kmc-metric-card.is-critical .kmc-metric-value,
+.kmc-workspace-feedback.is-critical,
+.kmc-market-decision-hero.is-critical .kmc-market-decision-title,
+.kmc-market-decision-hero.is-critical .kmc-market-decision-metric-value {
+  color: var(--kmc-legacy-red);
+}
+
+.kmc-decision-card.is-positive,
+.kmc-summary-card.is-positive,
+.kmc-progress-card.is-positive,
+.kmc-ranked-row.is-positive,
+.kmc-priority-row.is-positive,
+.kmc-info-row.is-positive {
+  border-left: 4px solid var(--kmc-legacy-green);
+}
+
+.kmc-decision-card.is-warning,
+.kmc-summary-card.is-warning,
+.kmc-progress-card.is-warning,
+.kmc-ranked-row.is-warning,
+.kmc-priority-row.is-warning,
+.kmc-info-row.is-warning {
+  border-left: 4px solid var(--kmc-legacy-orange);
+}
+
+.kmc-decision-card.is-critical,
+.kmc-summary-card.is-critical,
+.kmc-progress-card.is-critical,
+.kmc-ranked-row.is-critical,
+.kmc-priority-row.is-critical,
+.kmc-info-row.is-critical {
+  border-left: 4px solid var(--kmc-legacy-red);
+}
+
+.kmc-decision-delta.is-positive,
+.kmc-priority-row.is-positive .kmc-priority-badge {
+  color: var(--kmc-legacy-green);
+  background: var(--kmc-legacy-green-soft);
+}
+
+.kmc-decision-delta.is-warning,
+.kmc-priority-row.is-warning .kmc-priority-badge {
+  color: var(--kmc-legacy-orange-strong);
+  background: var(--kmc-legacy-orange-soft);
+}
+
+.kmc-decision-delta.is-critical,
+.kmc-priority-row.is-critical .kmc-priority-badge {
+  color: var(--kmc-legacy-red);
+  background: var(--kmc-legacy-red-soft);
+}
+
+.kmc-market-decision-hero.is-positive {
+  border-left-color: var(--kmc-legacy-green);
+  background: var(--kmc-legacy-green-soft);
+}
+
+.kmc-market-decision-hero.is-warning {
+  border-left-color: var(--kmc-legacy-orange);
+  background: var(--kmc-legacy-orange-soft);
+}
+
+.kmc-market-decision-hero.is-critical {
+  border-left-color: var(--kmc-legacy-red);
+  background: var(--kmc-legacy-red-soft);
+}
+
+/* Les valeurs neutres restent noires : pas de couleur sans signification. */
+.kmc-decision-card:not(.is-positive):not(.is-warning):not(.is-critical) .kmc-decision-card-value,
+.kmc-summary-card:not(.is-positive):not(.is-warning):not(.is-critical) .kmc-summary-card-metric-value,
+.kmc-metric-card:not(.is-positive):not(.is-warning):not(.is-critical) .kmc-metric-value {
+  color: var(--kmc-legacy-ink);
+}
