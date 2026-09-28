@@ -430,6 +430,13 @@
       { method: 'POST' }
     );
   }
+  function setSourcingSourceCapability(sourceRef, capability, enabled, reason) {
+    return fetchMutation(
+      apiUrl('/admin/workspaces/sourcing/sources/' + encodeURIComponent(sourceRef) + '/capabilities/' + encodeURIComponent(capability)),
+      'POST',
+      { enabled: Boolean(enabled), reason }
+    );
+  }
 
   // ── Lot 4 — Sourcing Intelligence ─────────────────────────────────────────
 
@@ -711,6 +718,7 @@
 
     getSourcingWorkspace,
     setSourcingSourceAutopilot,
+    setSourcingSourceCapability,
 
     // Lot 4 — Sourcing Intelligence (3)
     getSourcingSynthesis,
