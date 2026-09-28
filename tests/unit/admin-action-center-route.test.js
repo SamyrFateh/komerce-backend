@@ -211,6 +211,27 @@ test('market route accepts market code only as route locator, never body/query a
   expect(mockResolveAuthorization).not.toHaveBeenCalled();
 });
 
+test('market_operator is denied on every global Action Center route — role scope, not just missing grant', async () => {
+  mockUser = { id: 'operator-cm', role: 'market_operator' };
+
+  const list = await request(app()).get('/api/admin/action-center');
+  const generate = await request(app()).post('/api/admin/action-center/generate').send({ types: ['x'] });
+  const acknowledge = await request(app()).post('/api/admin/action-center/signals/KSG-000001/acknowledge').send({});
+  const snooze = await request(app()).post('/api/admin/action-center/signals/KSG-000001/snooze').send({ hours: 24 });
+  const resolve = await request(app()).post('/api/admin/action-center/signals/KSG-000001/resolve').send({});
+
+  for (const res of [list, generate, acknowledge, snooze, resolve]) {
+    expect(res.status).toBe(403);
+  }
+  // Refusé par requireRole(['admin']) avant même le grant — aucun de ces
+  // effets de bord globaux ne doit s'exécuter pour un market_operator.
+  expect(mockWorkspace.buildWorkspace).not.toHaveBeenCalled();
+  expect(mockWorkspace.generateSignals).not.toHaveBeenCalled();
+  expect(mockWorkspace.acknowledge).not.toHaveBeenCalled();
+  expect(mockWorkspace.snooze).not.toHaveBeenCalled();
+  expect(mockWorkspace.resolve).not.toHaveBeenCalled();
+});
+
 test('global acknowledge uses URL signal_ref and NULL market scope by default', async () => {
   mockWorkspace.acknowledge.mockResolvedValue({ signal_ref: 'KSG-000001', status: 'acknowledged' });
   const res = await request(app()).post('/api/admin/action-center/signals/KSG-000001/acknowledge').send({});
