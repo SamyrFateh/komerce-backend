@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 624
-- Files with full headers: 579
+- Scanned code files: 636
+- Files with full headers: 591
 - Files with lite headers: 45
-- Files with any headers: 624
+- Files with any headers: 636
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1491
-- Edges: 7432
-- DB tables: 181
-- Doctrines: 499
-- Impact areas: 187
-- Unresolved code edges: 746
+- Graph nodes: 1511
+- Edges: 7527
+- DB tables: 173
+- Doctrines: 512
+- Impact areas: 190
+- Unresolved code edges: 756
 - Tables multi-écrivains directs (>=2): 76
 - Avertissements db-write / db-write-via en chevauchement: 8
 
@@ -32,22 +32,22 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - bootstrap: 2
 - boutique: 22
 - business-rules: 1
-- catalog: 115
+- catalog: 121
 - checkout: 3
-- customs: 6
+- customs: 7
 - dashboard: 27
 - decision-signals: 12
 - documents: 15
 - economic-engine: 56
 - incident-management: 5
-- infrastructure: 22
+- infrastructure: 23
 - inventory: 2
 - local-stock: 4
 - logistics: 47
 - loyalty: 3
 - market: 3
 - market-autonomy: 4
-- market-delegation: 27
+- market-delegation: 28
 - notification: 21
 - operations: 11
 - orders: 30
@@ -61,7 +61,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - shared: 1
 - shared-cart: 25
 - shared-cart-modal: 7
-- sourcing: 27
+- sourcing: 30
 - supplier-connectivity: 3
 - tracking: 1
 - unsold-resolution: 1
@@ -84,10 +84,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - manual-test: 1
 - middleware: 25
 - presenter: 1
-- route: 129
+- route: 130
 - route-manifest: 1
 - schema: 1
-- service: 318
+- service: 328
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -106,7 +106,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - ui-state: 1
 - util: 31
 - util-ui: 1
-- utility: 1
+- utility: 2
 - validators: 1
 - view-model: 7
 
@@ -346,6 +346,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/cash-deposit-service.js — payment-cash-deposit-service (payment, high, full)
 - services/catalog-approval.js — catalog-approval-queue (catalog, high, full)
 - services/catalog-candidate-product-service.js — catalog-candidate-product-owner (catalog, high, full)
+- services/catalog-certification-gate-b.js — catalog-certification-gate-b (catalog, high, full)
+- services/catalog-certification.js — catalog-certification (catalog, high, full)
 - services/catalog-change-intake.js — catalog-change-intake-contract (catalog, high, full)
 - services/catalog-eligibility.js — catalog-eligibility (catalog, high, full)
 - services/catalog-enrichment.js — catalog-enrichment (catalog, high, full)
@@ -374,6 +376,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/cost-component-admin-service.js — economic-engine-cost-component-admin-service (economic-engine, high, full)
 - services/cost-component-market-service.js — economic-engine-market-cost-component-service (economic-engine, high, full)
 - services/customs-classification.js — customs-classification (customs, high, full)
+- services/customs-dynamic-category-classifier.js — customs-dynamic-category-classifier (customs, high, full)
 - services/dashboard-admin-context.js — canonical-admin-context-resolver (admin-dashboard, high, full)
 - services/dashboard-cache.js — dashboard-dashboard-cache (dashboard, high, full)
 - services/dashboard-clients-queries.js — dashboard-dashboard-clients-queries (dashboard, high, full)
@@ -447,6 +450,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pickup-collection-service.js — pickup-collection-service (logistics, high, full)
 - services/pickup-exceptional-collection-service.js — pickup-exceptional-collection-service (logistics, high, full)
 - services/pickup-secret-service.js — pickup-secret-service (logistics, high, full)
+- services/pipeline-certification-gate-c.js — e2e-certification-gate-c (catalog, high, full)
+- services/pipeline-certification-scenario-core.js — pipeline-certification-scenario-core (catalog, high, full)
 - services/pricing-apply.js — economic-engine-pricing-apply (economic-engine, high, full)
 - services/pricing-cdr.js — economic-engine-pricing-cdr (economic-engine, high, full)
 - services/pricing-cost-explainability.js — economic-engine-pricing-cost-explainability (economic-engine, high, full)
@@ -497,6 +502,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/sourcing-catalog-change-sku-identity-proof.js — sourcing-catalog-change-sku-identity-proof (sourcing, high, full)
 - services/sourcing-catalog-change-unit-resolution-proof.js — sourcing-catalog-change-unit-resolution-proof (sourcing, high, full)
 - services/sourcing-catalog-product-linkage.js — sourcing-catalog-product-linkage (sourcing, high, full)
+- services/sourcing-certification-gate-a-fixture-harness.js — sourcing-gate-a-fixture-harness (sourcing, high, full)
+- services/sourcing-certification-gate-a.js — sourcing-certification-gate-a (sourcing, high, full)
+- services/sourcing-certification.js — sourcing-certification (sourcing, high, full)
 - services/sourcing-golden-e2e-service.js — sourcing-golden-e2e-read-model (sourcing, high, full)
 - services/sourcing-integrity-service.js — sourcing-integrity-health-service (sourcing, high, full)
 - services/sourcing-observation-shadow-service.js — sourcing-observation-shadow-owner (sourcing, high, full)
@@ -518,6 +526,8 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/suppliers/canonical-unit-purchasing-gate.js — canonical-unit-purchasing-hard-stop-gate (purchasing, high, full)
 - services/suppliers/connectors/allegro-connector.js — allegro-sandbox-source-connector (catalog, high, full)
 - services/suppliers/connectors/ebay-connector.js — ebay-sandbox-browse-connector (catalog, high, full)
+- services/suppliers/discovery-semantic-relevance.js — supplier-discovery-semantic-relevance (catalog, high, full)
+- services/suppliers/e2e-isolated-runtime.js — isolated-e2e-runtime-guard (catalog, high, full)
 - services/suppliers/json-source-pipeline.js — json-source-pipeline (catalog, high, full)
 - services/suppliers/media-normalizer.js — catalog-media-normalizer (catalog, high, full)
 - services/suppliers/normalized-product.js — catalog-normalized-product (catalog, high, full)
@@ -543,6 +553,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - utils/auth-session-policy.js — auth-session-policy (auth, high, full)
 - utils/auth-session.js — auth-session-proof (auth, high, full)
 - utils/auth-token-policy.js — auth-token-policy (auth, high, full)
+- utils/certification-accounting.js — certification-batch-accounting (infrastructure, high, full)
 - utils/documents/customs-invoice-html.js — customs-invoice-html (documents, high, full)
 - utils/name-normalize.js — name-normalize (shared, high, full)
 - utils/parcels.js — logistics-parcels (logistics, high, full)
@@ -671,7 +682,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/customs-shipment-service.js -> customs_shipment_parcels
 - WRITE routes/admin-customs-shipments.js -> customs_shipments
 - WRITE services/customs-shipment-service.js -> customs_shipments
-- WRITE services/catalog-field-sync-application.js -> description
 - WRITE routes/admin/delete-order-cascade.js -> disputes
 - WRITE services/dispute-mutation-service.js -> disputes
 - WRITE services/pricing-risk-period.js -> economic_risk_cost_events
@@ -693,8 +703,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/hub-physical-identity.js -> hub_physical_unit_placements
 - WRITE services/hub-physical-identity.js -> hub_physical_units
 - WRITE services/hub-physical-identity.js -> hub_purchase_allocations
-- WRITE services/catalog-field-sync-application.js -> image_url uniquement)
-- WRITE services/catalog-field-sync-application.js -> images
 - WRITE services/incident-escalation.js -> incidents
 - WRITE services/incident-service.js -> incidents
 - WRITE services/incident-write-service.js -> incidents
@@ -721,6 +729,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/market-settlement-service.js -> market_settlement_events
 - WRITE services/market-settlement-service.js -> market_settlements
 - WRITE services/market-delegation-team-service.js -> market_team_invitations
+- WRITE services/market-delegation-service.js -> membership_capabilities
+- WRITE services/payment-mobile-money.js -> mobile_money_transactions
+- WRITE services/notification-service.js -> notification_log
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -851,9 +862,9 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - alerts: 20 écrivains directs — services/admin-order-refund.js, services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/notification-service.js, services/notifications/notification-service.js, services/order-payment-confirmation.js, services/payment-cash-confirm.js, services/payment-mobile-money.js, services/payment-paypal.js, services/payment-stripe.js, services/pickup-authorization-service.js, services/pickup-collection-service.js, services/pickup-exceptional-collection-service.js, services/product-publication-guard.js, services/purchasing-cancel-service.js, services/purchasing-trigger-service.js, services/repair-ordered-without-purchase-orders.js, services/scan-operations.js, utils/alerts.js, utils/parcelSync.js
 - parcels: 15 écrivains directs — routes/admin-customs-shipments.js, routes/admin/system.js, routes/carriers.js, routes/parcels.js, routes/transitaire-api.js, services/auto-parcel.js, services/parcel-auto-create-service.js, services/parcel-mutation-service.js, services/parcel-operations.js, services/parcel-security.js, services/parcelOptimizationService.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, utils/parcelSync.js
 - parcel_items: 10 écrivains directs — routes/admin/system.js, routes/parcels.js, services/auto-parcel.js, services/parcel-auto-create-service.js, services/parcel-item-mutation-service.js, services/parcel-operations.js, services/parcelOptimizationService.js, services/scan-engine.js, services/simulator/cleanup.js, services/simulator/state-advancer.js
+- products: 10 écrivains directs — routes/admin/system.js, services/catalog-approval.js, services/catalog-candidate-product-service.js, services/catalog-enrichment.js, services/catalog-field-sync-application.js, services/catalog-overrides.js, services/catalog-product-mutation-service.js, services/hub-operations.js, services/product-admin-service.js, services/product-stock-service.js
 - scans: 10 écrivains directs — routes/admin/delete-order-cascade.js, routes/transit-dashboard.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/scan-operations.js, services/scan-write-service.js, services/simulator/cleanup.js, services/simulator/state-advancer.js, services/verify-qr-collection.js, utils/parcelSync.js
 - notification_log: 9 écrivains directs — services/notification-service.js, services/notifications/internals.js, services/notifications/loyalty.js, services/notifications/misc.js, services/notifications/notification-service.js, services/notifications/order.js, services/notifications/otp-auth.js, services/notifications/parcel.js, services/simulator/state-advancer.js
-- products: 9 écrivains directs — routes/admin/system.js, services/catalog-approval.js, services/catalog-candidate-product-service.js, services/catalog-enrichment.js, services/catalog-overrides.js, services/catalog-product-mutation-service.js, services/hub-operations.js, services/product-admin-service.js, services/product-stock-service.js
 - order_items: 7 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/scan-engine.js
 - order_status_history: 7 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js, routes/orders/cancel.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-status-machine.js
 - finance_config: 6 écrivains directs — bootstrap/startup-migrations.js, routes/admin-costing.js, routes/admin-finance-config.js, services/economic-config.js, services/economic-engine-queries.js, services/pricing-rates.js
@@ -873,6 +884,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - product_skus: 4 écrivains directs — services/catalog-promotion.js, services/catalog-stock-sync-application.js, services/product-sku-service.js, services/product-stock-service.js
 - product_variants: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/product-stock-service.js, services/product-variant-service.js
 - sourcing_candidates: 4 écrivains directs — routes/sourcing-scanner.js, services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js, services/suppliers/catalog-import-json.js
+- supplier_oauth_connections: 4 écrivains directs — routes/integrations-aliexpress.js, services/suppliers/aliexpress-oauth.js, services/suppliers/allegro-sandbox-client.js, services/suppliers/connectors/aliexpress-connected-connector.js
 - wallet_transactions: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
 - wallets: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
 - cash_collections: 3 écrivains directs — services/cash-operations.js, services/confirm-pickup-cash-payment.js, services/payment-cash-confirm.js
@@ -883,7 +895,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - relais: 3 écrivains directs — routes/admin/system.js, services/relais-mutation-service.js, services/routing.js
 - sms_log: 3 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js
 - sourcing_captures: 3 écrivains directs — services/sourcing-catalog-change-observation.js, services/sourcing-observation-shadow-service.js, services/sourcing-source-autopilot.js
-- supplier_oauth_connections: 3 écrivains directs — routes/integrations-aliexpress.js, services/suppliers/aliexpress-oauth.js, services/suppliers/allegro-sandbox-client.js
 - wallet_consumptions: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - wallet_credit_lots: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - business_rules: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
@@ -926,6 +937,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - uses: admin-dashboards -> routes/economic.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
 - uses: admin-flows -> services/order-status-machine.js (admin-flows)
+- uses: AliExpress and CJ discovery/stress pipelines -> services/suppliers/discovery-semantic-relevance.js (AliExpress and CJ discovery/stress pipelines)
 - uses: all-boutique-js-modules -> public/boutique/js/b-store.js (all-boutique-js-modules)
 - uses: all-boutique-js-modules -> public/boutique/js/b-utils.js (all-boutique-js-modules)
 - uses: Allocation & Custody) -> services/outbox-producer.js (Allocation & Custody))
@@ -1040,7 +1052,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/b-komerce.js -> wallet API (wallet API)
 - depends: public/boutique/js/b-passkey-enrollment.js -> browser WebAuthn API (browser WebAuthn API)
 - depends: public/boutique/js/b-passkey-login.js -> browser WebAuthn API (browser WebAuthn API)
-- depends: public/boutique/js/b-passkey-step-up.js -> browser WebAuthn API (browser WebAuthn API)
 
 ## Files Still Without Headers Or Aggregation
 

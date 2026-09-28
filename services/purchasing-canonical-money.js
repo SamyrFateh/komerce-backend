@@ -8,7 +8,7 @@
  * @outputs       supplier native unit price + currency snapshot
  * @depends       services/sourcing-canonical-unit-product-sku-resolution.js, services/suppliers/supplier-order-identity.js
  * @used-by       services/purchasing-trigger-service.js, routes/purchasing.js
- * @db-read       product_skus, delegated_to_sourcing_resolver
+ * @db-read       product_skus
  * @db-write      none
  * @db-txn        participates_in_caller_transaction
  * @doctrine      docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md
