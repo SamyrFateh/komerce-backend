@@ -12,7 +12,7 @@ const draft = (ref, overrides = {}) => ({
   ...overrides,
 });
 const marketCounts = (overrides = {}) => ({
-  awaiting_validation: 0, hidden: 0, exposed_refs: [], visible_refs: [], ...overrides,
+  awaiting_validation: 0, published_undecided: 0, hidden: 0, exposed_refs: [], visible_refs: [], ...overrides,
 });
 
 test('partitions drafts, readiness, publications and other lifecycle without inventing publication', async () => {
@@ -35,18 +35,20 @@ test('scopes every market to the cohort and counts unique visible products inste
   const q = { query: jest.fn()
     .mockResolvedValueOnce({ rows: [draft('A'), draft('B', { is_active: true })] })
     .mockResolvedValueOnce({ rows: [{ code:'KM', name:'Comores' }, { code:'CM', name:'Cameroun' }] })
-    .mockResolvedValueOnce({ rows: [marketCounts({ awaiting_validation:1, exposed_refs:['B'], visible_refs:['B'] })] })
-    .mockResolvedValueOnce({ rows: [marketCounts({ hidden:1, exposed_refs:['B'] })] }) };
+    .mockResolvedValueOnce({ rows: [marketCounts({ awaiting_validation:1, published_undecided:1, exposed_refs:['B'], visible_refs:['B'] })] })
+    .mockResolvedValueOnce({ rows: [marketCounts({ published_undecided:1, hidden:1, exposed_refs:['B'] })] }) };
   const result = await readRunProgress(['A','B'], q);
   expect(result.visible_products).toBe(1);
   expect(result.exposed_products).toBe(1);
+  expect(result.market_decisions).toEqual({ awaiting_validation:1, published_undecided:2 });
   expect(result.markets).toEqual([
-    { code:'KM', name:'Comores', awaiting_validation:1, hidden:0, exposed:1, visible:1 },
-    { code:'CM', name:'Cameroun', awaiting_validation:0, hidden:1, exposed:1, visible:0 },
+    { code:'KM', name:'Comores', awaiting_validation:1, published_undecided:1, hidden:0, exposed:1, visible:1 },
+    { code:'CM', name:'Cameroun', awaiting_validation:0, published_undecided:1, hidden:1, exposed:1, visible:0 },
   ]);
   for (const [sql, params] of q.query.mock.calls.slice(2)) {
     expect(params[0]).toEqual(['A','B']);
     expect(params[2]).toEqual(['A']);
+    expect(params[3]).toEqual(['B']);
     expect(sql).toContain(publicCatalogVisibilitySql('p', { marketCodeParamIndex: 2 }));
     expect(sql).toContain('pme.product_id IS NULL');
   }

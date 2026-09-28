@@ -220,6 +220,7 @@
     const d = run.downstream;
     const known = d?.available === true;
     const c = known ? d.catalog : null;
+    const md = known ? (d.market_decisions || {}) : {};
     const catalogue = (run.stages || []).find(stage => stage.key === 'CATALOGUE');
     const labels = { preparing:'À préparer', ready:'Prêt à valider', published:'Publié', other:'À examiner' };
     return `<section class="kir-journey" aria-label="Parcours du lot">
@@ -243,11 +244,12 @@
       <article class="kir-journey-block">
         <span class="kir-journey-step">03 · Marchés & Boutique</span>
         <h2>${known ? num(d.visible_products) + ' visibles en boutique' : 'État indisponible'}</h2>
-        <p>${known ? num(d.exposed_products) + ' produits exposés sur au moins un marché' : 'Aucun compteur supposé.'}</p>
+        <p>${known ? num(md.awaiting_validation) + ' nouveaux à valider · ' + num(md.published_undecided) + ' publiés sans décision pays' : 'Aucun compteur supposé.'}</p>
+        ${known ? `<p>${num(d.exposed_products)} produits exposés sur au moins un marché</p>` : ''}
         ${known ? `<strong>${d.markets.length ? 'Visibilité vérifiée par pays' : 'Aucun marché actif'}</strong>
           <details data-kir-detail="markets"><summary>Voir les marchés du lot</summary>
-            <div class="kir-table-wrap"><table class="kir-table"><thead><tr><th>Marché</th><th>À valider</th><th>Exposés</th><th>Visibles</th><th>Masqués</th></tr></thead>
-            <tbody>${d.markets.map(m => `<tr><td>${esc(m.name)} (${esc(m.code)})</td><td>${num(m.awaiting_validation)}</td><td>${num(m.exposed)}</td><td>${num(m.visible)}</td><td>${num(m.hidden)}</td></tr>`).join('')}</tbody></table></div>
+            <div class="kir-table-wrap"><table class="kir-table"><thead><tr><th>Marché</th><th>Nouveaux à valider</th><th>Publiés sans décision</th><th>Exposés</th><th>Visibles</th><th>Masqués</th></tr></thead>
+            <tbody>${d.markets.map(m => `<tr><td>${esc(m.name)} (${esc(m.code)})</td><td>${num(m.awaiting_validation)}</td><td>${num(m.published_undecided)}</td><td>${num(m.exposed)}</td><td>${num(m.visible)}</td><td>${num(m.hidden)}</td></tr>`).join('')}</tbody></table></div>
             <p>Une exposition autorisée ne garantit pas la visibilité : le prix local et la disponibilité doivent aussi être prêts.</p>
           </details>` : ''}
       </article>

@@ -69,10 +69,15 @@ async function readRunProgress(productRefs, executor = db) {
   const exposed = new Set();
   const visible = new Set();
   const readyRefs = items.filter(item => item.stage === 'ready').map(item => item.product_ref);
+  const publishedRefs = items.filter(item => item.stage === 'published').map(item => item.product_ref);
+  let awaitingValidationDecisions = 0;
+  let publishedUndecidedDecisions = 0;
   for (const market of activeMarkets) {
     const { rows: [counts] } = await executor.query(`
       SELECT COUNT(*) FILTER (WHERE pme.product_id IS NULL
                AND p.product_ref = ANY($3::text[]))::int AS awaiting_validation,
+             COUNT(*) FILTER (WHERE pme.product_id IS NULL
+               AND p.product_ref = ANY($4::text[]))::int AS published_undecided,
              COUNT(*) FILTER (WHERE pme.commercial_exposure = 'DISABLED')::int AS hidden,
              ARRAY(SELECT p2.product_ref FROM products p2
                JOIN product_market_exposure e ON e.product_id = p2.id
@@ -85,12 +90,15 @@ async function readRunProgress(productRefs, executor = db) {
         FROM products p
         LEFT JOIN product_market_exposure pme ON pme.product_id = p.id
           AND pme.market_id = (SELECT id FROM markets WHERE code = $2)
-       WHERE p.product_ref = ANY($1::text[])`, [refs, market.code, readyRefs]);
+       WHERE p.product_ref = ANY($1::text[])`, [refs, market.code, readyRefs, publishedRefs]);
     counts.exposed_refs.forEach(ref => exposed.add(ref));
     counts.visible_refs.forEach(ref => visible.add(ref));
+    awaitingValidationDecisions += Number(counts.awaiting_validation || 0);
+    publishedUndecidedDecisions += Number(counts.published_undecided || 0);
     markets.push({
       code: market.code, name: market.name,
       awaiting_validation: counts.awaiting_validation,
+      published_undecided: counts.published_undecided,
       hidden: counts.hidden,
       exposed: counts.exposed_refs.length,
       visible: counts.visible_refs.length,
@@ -98,6 +106,10 @@ async function readRunProgress(productRefs, executor = db) {
   }
   return {
     available: true, observed_at: new Date().toISOString(), catalog, items, markets,
+    market_decisions: {
+      awaiting_validation: awaitingValidationDecisions,
+      published_undecided: publishedUndecidedDecisions,
+    },
     exposed_products: exposed.size, visible_products: visible.size,
   };
 }

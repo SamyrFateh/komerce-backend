@@ -54,12 +54,14 @@ test('renders separate blocks and escapes product/market content with preserved 
   renderer()(root, {...base, downstream:{available:true,
     catalog:{received:15,preparing:15,ready:0,published:0,other:0,missing:0},
     items:[{product_ref:'P/1',name:'<img src=x>',stage:'preparing',reason:'<review>'}],
-    markets:[{name:'<Comores>',code:'KM',awaiting_validation:0,hidden:0,exposed:0,visible:0}],
+    market_decisions:{awaiting_validation:0,published_undecided:15},
+    markets:[{name:'<Comores>',code:'KM',awaiting_validation:0,published_undecided:15,hidden:0,exposed:0,visible:0}],
     visible_products:0,exposed_products:0,
   }});
   expect(root.innerHTML).toContain('15 / 15 transmis');
   expect(root.innerHTML).toContain('15 à préparer · 0 prêts · 0 publiés');
   expect(root.innerHTML).toContain('0 visibles en boutique');
+  expect(root.innerHTML).toContain('0 nouveaux à valider · 15 publiés sans décision pays');
   expect(root.innerHTML).toContain('Import terminé');
   expect(root.innerHTML).toContain('Progression de l’import');
   expect(root.innerHTML).toContain('/admin/products/P%2F1');
