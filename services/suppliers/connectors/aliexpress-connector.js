@@ -410,10 +410,52 @@ function normalizeDsProduct(detailResult = {}, feed = {}) {
   };
 }
 
+function unwrapDsResult(payload = {}) {
+  return payload?.resp_result?.result
+    || payload?.result?.result
+    || payload?.result
+    || payload?.resp_result
+    || payload
+    || {};
+}
+
 function flattenFeedProducts(payload = {}) {
-  const result = payload.result || payload;
+  const result = unwrapDsResult(payload);
   const products = result?.products || {};
-  return toArray(products.integer || products.product || products.products);
+  const direct = toArray(
+    products.integer
+    || products.product
+    || products.products
+    || products.traffic_product_d_t_o
+    || products.selection_search_product
+  );
+  if (direct.length) {
+    return direct.map((item) => {
+      const id = extractProductId(item?.product_id ?? item?.itemId);
+      return id && !item.product_id ? { ...item, product_id: id } : item;
+    });
+  }
+
+  // The live DS feed has changed envelope/list keys across Open Platform
+  // responses. Keep the same fail-closed contract as the proven sourcing
+  // scripts: recover only objects carrying a valid supplier product id.
+  const out = [];
+  const seen = new Set();
+  function walk(value, depth = 0) {
+    if (!value || typeof value !== 'object' || depth > 10) return;
+    if (Array.isArray(value)) {
+      value.forEach((item) => walk(item, depth + 1));
+      return;
+    }
+    const id = extractProductId(value.product_id ?? value.itemId);
+    if (id && !seen.has(id)) {
+      seen.add(id);
+      out.push(value.product_id ? value : { ...value, product_id: id });
+    }
+    Object.values(value).forEach((item) => walk(item, depth + 1));
+  }
+  walk(result);
+  return out;
 }
 
 async function fetchFeed(options = {}) {
@@ -427,7 +469,7 @@ async function fetchFeed(options = {}) {
     sort: options.sort,
     feed_name: options.feedName || options.feed_name || DEFAULT_FEED_NAME,
   }, options);
-  return payload.result || payload;
+  return unwrapDsResult(payload);
 }
 
 async function fetchProductDetail(productId, options = {}) {
@@ -518,6 +560,7 @@ module.exports = {
   buildSkuAttr,
   rawSupplierUnitRef,
   normalizeDsProduct,
+  unwrapDsResult,
   flattenFeedProducts,
   fetchFeed,
   fetchProductDetail,
