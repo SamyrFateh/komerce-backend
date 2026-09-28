@@ -33,6 +33,7 @@ const pricingEngine = require('../pricing-engine');
 const eligibility = require('../catalog-eligibility');
 const sourcingCandidateImport = require('../sourcing-candidate-import-service');
 const sourcingObservationShadow = require('../sourcing-observation-shadow-service');
+const providerPolicy = require('../sourcing-provider-control-policy');
 const {
   SOURCING_CERTIFICATION_VERSION,
   decisionOutcome,
@@ -289,6 +290,16 @@ async function importCatalog(body, userId, dispatchToConnector) {
         ? 'CANONICAL_RESOLVED'
         : 'PARTIAL_BLOCKED')
     : 'CATALOG_IMPORT_RECORDED';
+
+  // Provider runtime authority is produced only by a real, fully resolved API run.
+  // Failure to persist this proof never lies about certification: Production simply remains locked.
+  if (sourceType === 'api' && pipelineStatus === 'CANONICAL_RESOLVED') {
+    await providerPolicy.recordRuntimeCertification({
+      sourceRef: shadowIngestion?.source_id || null,
+      captureId: shadowIngestion?.capture_id || null,
+      pipelineStatus,
+    }).catch(() => null);
+  }
 
   return {
     status: 200,
