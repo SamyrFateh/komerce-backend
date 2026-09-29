@@ -24,6 +24,13 @@
   if (root) root.KomerceCanonicalClientIndex = api;
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createCanonicalClientIndex() {
   const GLOBAL_ENDPOINT = '/api/admin/entities/clients';
+
+  function contextualHref(path, returnTo, label) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    return nav && typeof nav.withReturnTo === 'function'
+      ? nav.withReturnTo(path, returnTo, label)
+      : path;
+  }
   // GAP 3 / LOT A (A3) : le endpoint marché legacy (/api/admin/entities/clients/market/:code,
   // gated requireAdmin) est remplacé par le endpoint DELEGATION
   // (/api/market-delegation/markets/:marketCode/clients, gated
@@ -185,7 +192,7 @@
       ].forEach(value => tr.appendChild(text(doc, 'td', '', value)));
       const actionCell = doc.createElement('td');
       const link = text(doc, 'a', 'kmc-entity-nav-link', 'Client 360');
-      link.setAttribute('href', `/admin/clients/${encodeURIComponent(row.phone)}`);
+      link.setAttribute('href', contextualHref(`/admin/clients/${encodeURIComponent(row.phone)}`, '/admin/clients', 'Retour aux clients'));
       actionCell.appendChild(link);
       tr.appendChild(actionCell);
       tbody.appendChild(tr);
