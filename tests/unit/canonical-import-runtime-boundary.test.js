@@ -94,9 +94,12 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('Production reste OFF');
   expect(source).toContain('runtimeCertificationBlocked');
   expect(source).toContain('runtimeCertificationBlockMessage');
+  expect(source).toContain('runtimeCertificationBlockTitle');
+  expect(source).toContain('non activé automatiquement');
+  expect(source).toContain('variantes en double');
+  expect(source).toContain('Corrigez le produit en erreur puis relancez l’activation automatique');
+  expect(source).toContain('Voir le détail technique →');
   expect(source).toContain('provider_runtime_status');
-  expect(source).toContain('Source automatique bloquée');
-  expect(source).toContain('continuent vers le Catalogue');
   expect(source).toContain('Source OFF · preuve runtime à corriger puis relancer');
   expect(css).toContain('Legacy Admin visual parity');
   expect(css).toContain('--kir-orange:var(--kmc-legacy-orange');
