@@ -25,6 +25,13 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createCatalogWorkspace() {
   const ENDPOINT = '/api/admin/workspaces/catalog';
 
+  function contextualHref(path, returnTo, label) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    return nav && typeof nav.withReturnTo === 'function'
+      ? nav.withReturnTo(path, returnTo, label)
+      : path;
+  }
+
   function text(doc, tag, className, value) {
     const node = doc.createElement(tag);
     if (className) node.className = className;
@@ -368,7 +375,7 @@
       const actions = doc.createElement('td');
 
       const detail = text(doc, 'a', 'kmc-workspace-nav-link', 'Product 360');
-      detail.href = `/admin/products/${encodeURIComponent(row.product_ref)}`;
+      detail.href = contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`, '/admin/workspaces/catalog', 'Retour au catalogue');
       actions.appendChild(detail);
 
       const deactivate = makeButton(doc, 'Sortir du catalogue', 'deactivate-product', true);
