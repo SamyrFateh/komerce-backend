@@ -26,6 +26,14 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createOrdersDecision() {
   'use strict';
 
+
+  function contextualHref(path, returnTo, label) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    return nav && typeof nav.withReturnTo === 'function'
+      ? nav.withReturnTo(path, returnTo, label)
+      : path;
+  }
+
   const LIFECYCLE_LABELS = Object.freeze({
     pending: 'En attente',
     confirmed: 'Confirmée',
@@ -186,7 +194,7 @@
       helper: [row.status, row.payment_mode, row.total_kmf != null ? `${base.formatNumber(row.total_kmf, 0)} KMF` : null]
         .filter(Boolean).join(' · '),
       tone: 'warning',
-      href: row.reference ? `/admin/orders/${encodeURIComponent(row.reference)}` : undefined,
+      href: row.reference ? contextualHref(`/admin/orders/${encodeURIComponent(row.reference)}`, '/admin/orders', 'Retour aux commandes') : undefined,
       actionLabel: row.reference ? 'Ouvrir →' : undefined,
     }));
   }
@@ -205,7 +213,7 @@
         row.problem,
       ].filter(Boolean).join(' · '),
       tone: 'critical',
-      href: row.reference ? `/admin/orders/${encodeURIComponent(row.reference)}` : undefined,
+      href: row.reference ? contextualHref(`/admin/orders/${encodeURIComponent(row.reference)}`, '/admin/orders', 'Retour aux commandes') : undefined,
       actionLabel: row.reference ? 'Ouvrir →' : undefined,
     }));
   }
