@@ -182,6 +182,18 @@ Les compteurs de tête doivent être décisionnels :
 Le bouton **Exposer** n'est actif que si les gates serveur du marché sont verts.
 L'UI n'invente aucun readiness local.
 
+### 8.2 File « Prêts à vendre »
+
+Le responsable pays ne reçoit jamais une fiche brute à retravailler. La file commerciale est située **après** la préparation/certification Catalogue : titre et description client, catégorie, média et guards de première publication sont déjà satisfaits.
+
+Pour chaque produit encore non décisionnel sur le marché, la surface projette la **borne basse observée**, le **prix proposé**, la **borne haute observée**, l’état économique et la maturité du corridor. L’action humaine devient **Mettre en vente**.
+
+Le prix reste une décision humaine locale. Le corridor est une aide à la décision, jamais un gate implicite. Toute activation est revalidée côté serveur par le moteur économique.
+
+L'approbation en masse ne prend que les lignes intégralement vertes au prix proposé. Dès qu'un prix est modifié manuellement, la ligne sort du bulk et repasse en validation individuelle.
+
+La séquence acheteur reste fail-closed : **publication globale si nécessaire → prix local autorisé/LOCAL_ACTIVE → exposition ENABLED → visibilité Boutique**. Une étape incomplète ne rend jamais le produit achetable.
+
 L'absence de décision d'exposition reste `DISABLED` (fail-closed). Une
 publication globale ne crée jamais implicitement une exposition pays.
 
