@@ -135,7 +135,7 @@
 /* Legacy Admin visual parity — Import/Sourcing keeps the canonical structure,
  * but uses the same warm palette, density and card treatment as the legacy dashboards. */
 .kmc-import-runtime{
-  --kir-bg:var(--kmc-legacy-bg,#f8f9fa);
+  --kir-bg:#fff;
   --kir-card:var(--kmc-legacy-card,#fff);
   --kir-line:var(--kmc-legacy-line,#e5e7eb);
   --kir-line-soft:var(--kmc-legacy-soft-strong,#e9ecef);
@@ -151,7 +151,7 @@
   --kir-orange:var(--kmc-legacy-orange,#f5a623);
   --kir-orange-strong:var(--kmc-legacy-orange-strong,#c97808);
   --kir-orange-soft:var(--kmc-legacy-orange-soft,#fffbf2);
-  background:var(--kir-bg);
+  background:#fff;
   color:var(--kir-text);
   padding:24px 0 42px;
 }
@@ -235,3 +235,165 @@
 .kir-live-activation.is-failed .kir-live-beacon,.kir-live-activation.is-failed .kir-live-progress>span{background:var(--kir-red)}
 
 @media(max-width:900px){.kmc-import-runtime{padding:18px 0 34px}}
+
+
+/* Persistent lot flow — keep technical continuity visible after the live animation.
+ * Same Legacy language: white cards, warm accent, no decorative gradients/shadows. */
+.kir-run-flow{
+  margin:0 0 12px;
+  padding:13px 14px 12px;
+  border:1px solid var(--kir-line);
+  border-left:4px solid var(--kir-orange);
+  border-radius:10px;
+  background:#fff;
+  box-shadow:none;
+}
+.kir-run-flow.is-live{border-left-color:var(--kir-orange)}
+.kir-run-flow.is-waiting{border-left-color:var(--kir-orange);background:var(--kir-orange-soft)}
+.kir-run-flow.is-complete{border-left-color:var(--kir-green)}
+.kir-run-flow.is-empty{border-left-color:var(--kir-orange)}
+.kir-run-flow.is-failed{border-left-color:var(--kir-red);background:var(--kir-red-soft)}
+.kir-run-flow-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.kir-run-flow-head>div{min-width:0}
+.kir-run-flow-head .kir-section-kicker{margin:0 0 3px}
+.kir-run-flow-head strong{display:block;font-size:14px;line-height:1.2;color:var(--kir-text)}
+.kir-run-flow-head small{display:block;margin-top:3px;font-size:10.5px;line-height:1.4;color:var(--kir-muted)}
+.kir-run-flow-head em{font-size:11px;font-style:normal;font-weight:900;color:var(--kir-orange-strong)}
+.kir-run-flow-head>a{white-space:nowrap;color:var(--kir-orange-strong);text-decoration:none;font-size:10.5px;font-weight:800}
+.kir-run-flow-progress{height:4px;margin:10px 0 12px;border-radius:999px;background:#eee9df;overflow:hidden}
+.kir-run-flow-progress>span{display:block;height:100%;border-radius:inherit;background:var(--kir-orange);transition:width .25s ease}
+.kir-run-flow.is-complete .kir-run-flow-progress>span{background:var(--kir-green)}
+.kir-run-flow.is-failed .kir-run-flow-progress>span{background:var(--kir-red)}
+.kir-run-flow-track{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0}
+.kir-run-flow-step{position:relative;display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:7px;min-width:0;padding-right:10px}
+.kir-run-flow-step:not(:last-child)::after{content:"";position:absolute;left:24px;right:0;top:12px;height:1px;background:#d9dde3;z-index:0}
+.kir-run-flow-marker{position:relative;z-index:1;display:grid;place-items:center;width:24px;height:24px;border:1px solid #d2d7de;border-radius:50%;background:#fff;color:#8b95a5;font-size:9px;font-weight:900}
+.kir-run-flow-step>div{position:relative;z-index:1;min-width:0;background:inherit}
+.kir-run-flow-step strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:#596579}
+.kir-run-flow-step small{display:block;margin-top:1px;font-size:9px;color:#9aa3af}
+.kir-run-flow-step.is-completed .kir-run-flow-marker{border-color:#afd5bc;background:var(--kir-green-soft);color:var(--kir-green)}
+.kir-run-flow-step.is-completed::after{background:#afd5bc}
+.kir-run-flow-step.is-completed strong{color:var(--kir-green)}
+.kir-run-flow-step.is-running .kir-run-flow-marker{border-color:#efc06a;background:var(--kir-orange-soft);color:var(--kir-orange-strong);animation:kir-source-pulse .9s infinite alternate}
+.kir-run-flow-step.is-running strong,.kir-run-flow-step.is-waiting strong{color:var(--kir-orange-strong)}
+.kir-run-flow-step.is-waiting .kir-run-flow-marker{border-color:#efc06a;background:#fff4d9;color:var(--kir-orange-strong)}
+.kir-run-flow-step.is-failed .kir-run-flow-marker{border-color:#e7b2aa;background:var(--kir-red-soft);color:var(--kir-red)}
+.kir-run-flow-step.is-failed strong{color:var(--kir-red)}
+
+/* Source switches: two-line mini cards instead of one long crowded pill. */
+.kir-source-control{grid-template-columns:230px minmax(0,1fr) auto;align-items:stretch;padding:10px 12px}
+.kir-source-control-list{align-items:stretch;gap:7px}
+.kir-source-pill{
+  display:grid;
+  grid-template-columns:auto minmax(125px,1fr) auto;
+  align-items:center;
+  gap:8px;
+  min-width:225px;
+  padding:7px 8px;
+  border-radius:9px;
+}
+.kir-source-copy{display:grid;gap:1px;min-width:0}
+.kir-source-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px}
+.kir-source-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8.5px;color:var(--kir-muted)}
+.kir-source-readiness,.kir-source-last{display:none}
+.kir-source-switch{align-self:center}
+
+/* Recent lots read as compact tabs, not another dashboard layer. */
+.kir-lot-strip{margin-bottom:12px}
+.kir-lot-strip-scroll{gap:6px}
+.kir-lot-chip{min-width:175px;padding:9px 10px;border-radius:8px}
+.kir-lot-chip small{font-size:9.5px}
+.kir-lot-chip.is-selected{box-shadow:inset 3px 0 0 var(--kir-orange)}
+.kir-lot-all{border-radius:8px}
+
+@media(max-width:1050px){
+  .kir-run-flow-track{grid-template-columns:repeat(3,1fr);row-gap:11px}
+  .kir-run-flow-step:nth-child(3)::after{display:none}
+  .kir-source-control{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .kir-run-flow-head{display:grid;gap:7px}
+  .kir-run-flow-track{grid-template-columns:1fr 1fr;row-gap:10px}
+  .kir-run-flow-step:nth-child(2n)::after{display:none}
+  .kir-run-flow-step:nth-child(3)::after{display:block}
+  .kir-source-pill{min-width:205px}
+}
+
+
+/* Real-run accounting: facts from the server projection, not browser inference. */
+.kir-run-truth{
+  margin:0 0 12px;
+  padding:11px 12px 10px;
+  border:1px solid var(--kir-line);
+  border-radius:10px;
+  background:#fff;
+}
+.kir-run-truth-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:8px}
+.kir-run-truth-head .kir-section-kicker{margin:0}
+.kir-run-truth-head strong{font-size:12px;color:var(--kir-text)}
+.kir-run-truth-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.kir-run-truth-grid>div{padding:8px 9px;border:1px solid var(--kir-line);border-radius:8px;background:#fff}
+.kir-run-truth-grid span{display:block;font-size:8.5px;line-height:1.2;text-transform:uppercase;letter-spacing:.035em;color:var(--kir-muted);font-weight:800}
+.kir-run-truth-grid strong{display:block;margin-top:4px;font-size:18px;line-height:1;color:var(--kir-text);font-weight:900}
+.kir-run-truth-grid>div:nth-child(5){border-color:#f0c36c;background:var(--kir-orange-soft)}
+.kir-run-truth-grid>div:nth-child(5) strong{color:var(--kir-orange-strong)}
+.kir-run-truth-grid>div:nth-child(6){border-color:#bbdfc5;background:var(--kir-green-soft)}
+.kir-run-truth-grid>div:nth-child(6) strong{color:var(--kir-green)}
+.kir-run-truth p{margin:8px 1px 0;font-size:10.5px;line-height:1.45;color:var(--kir-muted)}
+
+/* Make the active rail unmistakably live. */
+@keyframes kir-live-ring{
+  0%,100%{box-shadow:0 0 0 0 rgb(245 166 35 / .14);transform:scale(1)}
+  50%{box-shadow:0 0 0 8px rgb(245 166 35 / .24);transform:scale(1.08)}
+}
+@keyframes kir-live-bar{
+  0%{filter:brightness(.92)}
+  50%{filter:brightness(1.25)}
+  100%{filter:brightness(.92)}
+}
+.kir-run-flow.is-live{
+  border-color:#f0c36c;
+  border-left-color:var(--kir-orange);
+  background:#fff;
+}
+.kir-run-flow.is-live .kir-run-flow-marker,
+.kir-run-flow-step.is-running .kir-run-flow-marker{
+  border-color:var(--kir-orange);
+  background:#fff7e8;
+  color:var(--kir-orange-strong);
+  animation:kir-live-ring 1s ease-in-out infinite;
+}
+.kir-run-flow.is-live .kir-run-flow-progress>span,
+.kir-run-flow-step.is-running~* .kir-run-flow-progress>span{
+  background:var(--kir-orange);
+  animation:kir-live-bar 1s ease-in-out infinite;
+}
+.kir-source-pill.is-live{
+  border-color:var(--kir-orange);
+  background:#fff8eb;
+}
+.kir-source-pill.is-live .kir-source-dot{
+  width:9px;height:9px;
+  background:var(--kir-orange);
+  box-shadow:0 0 0 4px rgb(245 166 35 / .20);
+  animation:kir-live-ring .95s ease-in-out infinite;
+}
+.kir-source-switch.is-live{
+  background:var(--kir-orange);
+  color:#fff;
+}
+.kir-source-switch.is-live .kir-source-switch-knob{box-shadow:0 0 0 3px rgb(255 255 255 / .45)}
+
+@media (prefers-reduced-motion:reduce){
+  .kir-run-flow.is-live .kir-run-flow-marker,
+  .kir-run-flow-step.is-running .kir-run-flow-marker,
+  .kir-run-flow.is-live .kir-run-flow-progress>span,
+  .kir-source-pill.is-live .kir-source-dot{animation:none}
+}
+@media(max-width:900px){
+  .kir-run-truth-grid{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:620px){
+  .kir-run-truth-grid{grid-template-columns:repeat(2,1fr)}
+  .kir-run-truth-head{display:grid}
+}

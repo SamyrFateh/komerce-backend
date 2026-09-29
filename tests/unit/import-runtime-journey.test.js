@@ -72,7 +72,10 @@ const payload = {
   ],
   selected:{
     run_ref:'KIR-000004',provider:'AliExpress',status:'COMPLETED',
-    accounting:{source_total:19},
+    accounting:{
+      source_total:19,accepted:19,refined:15,taxonomized:15,certified:15,catalogued:1,
+      awaiting_catalogue_promotion:14,rejected:0,quarantined:0,deferred:4,certification_blocked:0,
+    },
     business:{
       run_ref:'KIR-000004',business_status:'ACTION_REQUIRED',promoted_products:15,
       decisions:{catalogue:3,commercial:12,exceptions:0,approved_for_sale:0,not_retained:0},
@@ -87,7 +90,7 @@ const payload = {
   },
 };
 
-test('niveau 1 montre uniquement décisions ouvertes et lots récents', () => {
+test('niveau 1 garde le flux réel visible et les décisions ouvertes séparées', () => {
   const ui = cockpit();
   const node = root();
   ui.render(node, payload);
@@ -106,9 +109,16 @@ test('niveau 1 montre uniquement décisions ouvertes et lots récents', () => {
   expect(node.innerHTML).toContain('Clôture');
   expect(node.innerHTML).toContain('KIR-000003');
   expect(node.innerHTML).toContain('Clos');
-  expect(node.innerHTML).not.toContain('Raffinerie');
-  expect(node.innerHTML).not.toContain('Taxonomie');
-  expect(node.innerHTML).not.toContain('Certification');
+  expect(node.innerHTML).toContain('FLUX DU LOT');
+  expect(node.innerHTML).toContain('Raffinerie');
+  expect(node.innerHTML).toContain('Taxonomie');
+  expect(node.innerHTML).toContain('Certification');
+  expect(node.innerHTML).toContain('VÉRITÉ DU RUN');
+  expect(node.innerHTML).toContain('Certifiées sourcing');
+  expect(node.innerHTML).toContain('15</strong>');
+  expect(node.innerHTML).toContain('Catalogue');
+  expect(node.innerHTML).toContain('1</strong>');
+  expect(node.innerHTML).toContain('14 produit(s) certifié(s) sourcing ne sont pas encore matérialisés au Catalogue');
   expect(node.innerHTML).not.toContain('&lt;Produit&gt;');
 });
 

@@ -27,6 +27,15 @@
   let mountedRoot = null;
   let lastPayload = null;
 
+  const RUN_STAGE_DEFS = Object.freeze([
+    ['SOURCE_CONNECTED', 'Source'],
+    ['RAW_IMPORT', 'Import'],
+    ['REFINERY', 'Raffinerie'],
+    ['TAXONOMY', 'Taxonomie'],
+    ['CERTIFICATION', 'Certification'],
+    ['CATALOGUE', 'Catalogue'],
+  ]);
+
   function esc(value) {
     return String(value == null ? '' : value)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -63,17 +72,36 @@
   }
 
   function activationStages() {
-    const defs = [
-      ['SOURCE_CONNECTED', 'Source'], ['RAW_IMPORT', 'Import'], ['REFINERY', 'Raffinerie'],
-      ['TAXONOMY', 'Taxonomie'], ['CERTIFICATION', 'Certification'], ['CATALOGUE', 'Catalogue'],
-    ];
     const actual = new Map((activationState?.run?.stages || []).map(stage => [stage.key, stage]));
-    return defs.map(([key, label], index) => ({
+    return RUN_STAGE_DEFS.map(([key, label], index) => ({
       key, label,
       status: actual.get(key)?.status || (index === 0 && !activationState?.done && !activationState?.error ? 'RUNNING' : 'PENDING'),
       processed: num(actual.get(key)?.processed),
       total: num(actual.get(key)?.total),
+      reason: actual.get(key)?.reason || null,
     }));
+  }
+
+  function flowStageMeta(stage) {
+    if (stage.key === 'CATALOGUE' && stage.reason === 'awaiting_explicit_operator_promotion') {
+      return { state:'waiting', label:'À valider' };
+    }
+    if (stage.status === 'COMPLETED') return { state:'completed', label:'Terminé' };
+    if (stage.status === 'FAILED') return { state:'failed', label:'Bloqué' };
+    if (stage.status === 'RUNNING') return { state:'running', label:'En cours' };
+    return { state:'pending', label:'En attente' };
+  }
+
+  function flowTrack(stages) {
+    return `<div class="kir-run-flow-track">${stages.map((stage, index) => {
+      const meta = flowStageMeta(stage);
+      const count = stage.total ? `${stage.processed}/${stage.total}` : meta.label;
+      const marker = meta.state === 'completed' ? '✓' : meta.state === 'failed' ? '!' : String(index + 1);
+      return `<div class="kir-run-flow-step is-${meta.state}">
+        <span class="kir-run-flow-marker">${marker}</span>
+        <div><strong>${esc(stage.label)}</strong><small>${esc(count)}</small></div>
+      </div>`;
+    }).join('')}</div>`;
   }
 
   function activationStrip(sourceControls) {
@@ -81,30 +109,105 @@
     const source = (sourceControls || []).find(item => item.source_ref === activationState.sourceRef) || {};
     const label = source.label || source.supplier_name || activationState.label || activationState.sourceRef;
     const stages = activationStages();
-    const done = stages.filter(stage => stage.status === 'COMPLETED').length;
+    const completed = stages.filter(stage => stage.status === 'COMPLETED').length;
     const running = stages.some(stage => stage.status === 'RUNNING');
-    const progress = Math.max(7, Math.min(100, Math.round(((done + (running ? .45 : 0)) / stages.length) * 100)));
+    const progress = Math.max(6, Math.min(100, Math.round(((completed + (running ? .45 : 0)) / stages.length) * 100)));
     const noResult = activationState.outcome === 'empty'
       || ['no_valid_product', 'supplier_source_empty', 'all_supplier_products_invalid'].includes(String(activationState.run?.failure_reason || ''));
     const failed = !noResult && (Boolean(activationState.error)
       || activationState.outcome === 'failed'
       || stages.some(stage => stage.status === 'FAILED'));
     const title = failed
-      ? 'Activation interrompue'
+      ? 'Passage interrompu'
       : noResult
-        ? 'Passage terminé · aucun résultat'
-        : activationState.done ? 'Alimentation activée' : 'Activation en direct';
+        ? 'Passage terminé sans résultat'
+        : activationState.done ? 'Premier passage terminé' : 'Passage en direct';
     const helper = failed
       ? (activationState.error || 'Le premier passage automatique a échoué.')
       : noResult
-        ? `${label} · ${activationState.runRef || 'nouveau lot'} · aucun produit exploitable retourné`
+        ? `${label} · ${activationState.runRef || 'nouveau lot'} · aucun produit exploitable`
         : activationState.runRef
-          ? `${label} · ${activationState.runRef} · progression réelle du run`
+          ? `${label} · ${activationState.runRef} · le même lot avance de bout en bout`
           : `${label} · préparation de la source et création du premier lot`;
-    return `<section class="kir-live-activation ${failed ? 'is-failed' : noResult ? 'is-empty' : activationState.done ? 'is-complete' : 'is-live'}" aria-live="polite">
-      <div class="kir-live-activation-head"><div><span class="kir-live-beacon"></span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div><em>${progress}%</em></div>
-      <div class="kir-live-progress"><span style="width:${progress}%"></span></div>
-      <div class="kir-live-stages">${stages.map(stage => `<div class="kir-live-stage is-${String(stage.status).toLowerCase()}"><span></span><strong>${esc(stage.label)}</strong>${stage.total ? `<small>${stage.processed}/${stage.total}</small>` : ''}</div>`).join('')}</div>
+    return `<section class="kir-run-flow ${failed ? 'is-failed' : noResult ? 'is-empty' : activationState.done ? 'is-complete' : 'is-live'}" aria-live="polite">
+      <div class="kir-run-flow-head">
+        <div><span class="kir-section-kicker">FLUX DU LOT</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
+        <em>${progress}%</em>
+      </div>
+      <div class="kir-run-flow-progress"><span style="width:${progress}%"></span></div>
+      ${flowTrack(stages)}
+    </section>`;
+  }
+
+  function persistentRunFlow(run, sourceControls) {
+    if (activationState) return activationStrip(sourceControls);
+    if (!run) return '';
+
+    const actual = new Map((run.stages || []).map(stage => [stage.key, stage]));
+    const stages = RUN_STAGE_DEFS.map(([key, label]) => {
+      const stage = actual.get(key) || {};
+      return {
+        key, label,
+        status:stage.status || 'PENDING',
+        processed:num(stage.processed),
+        total:num(stage.total),
+        reason:stage.reason || null,
+      };
+    });
+    const failed = run.status === 'FAILED' || stages.some(stage => stage.status === 'FAILED');
+    const catalogueWaiting = stages.some(stage => stage.key === 'CATALOGUE'
+      && stage.reason === 'awaiting_explicit_operator_promotion');
+    const automaticDone = stages
+      .filter(stage => stage.key !== 'CATALOGUE')
+      .every(stage => stage.status === 'COMPLETED');
+    const progress = Math.max(0, Math.min(100, num(run.progress_pct) || Math.round(
+      (stages.filter(stage => stage.status === 'COMPLETED').length / stages.length) * 100
+    )));
+    const title = failed
+      ? 'Passage interrompu'
+      : automaticDone && catalogueWaiting
+        ? 'Import automatique terminé'
+        : run.status === 'COMPLETED'
+          ? 'Parcours du lot terminé'
+          : 'Passage en cours';
+    const helper = failed
+      ? (run.failure_reason || 'Une étape du lot est bloquée.')
+      : catalogueWaiting
+        ? `${run.run_ref} · ${run.provider || 'Source'} · ${num(run.accounting?.awaiting_catalogue_promotion)} certifié(s) attendent la promotion Catalogue`
+        : `${run.run_ref} · ${run.provider || 'Source'} · parcours conservé à l’écran`;
+    const tone = failed ? 'is-failed' : catalogueWaiting ? 'is-waiting' : run.status === 'COMPLETED' ? 'is-complete' : 'is-live';
+
+    return `<section class="kir-run-flow ${tone}" aria-label="Parcours du lot ${esc(run.run_ref)}">
+      <div class="kir-run-flow-head">
+        <div><span class="kir-section-kicker">FLUX DU LOT</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
+        <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Historique →</a>
+      </div>
+      <div class="kir-run-flow-progress"><span style="width:${progress}%"></span></div>
+      ${flowTrack(stages)}
+    </section>`;
+  }
+
+  function runTruthStrip(run) {
+    const a = run?.accounting || {};
+    const values = [
+      ['Entrées source', num(a.source_total)],
+      ['Acceptées', num(a.accepted)],
+      ['Raffinées', num(a.refined)],
+      ['Taxonomisées', num(a.taxonomized)],
+      ['Certifiées sourcing', num(a.certified)],
+      ['Catalogue', num(a.catalogued)],
+    ];
+    const awaiting = num(a.awaiting_catalogue_promotion);
+    const blockers = num(a.rejected) + num(a.quarantined) + num(a.deferred) + num(a.certification_blocked);
+    const explanation = awaiting > 0
+      ? `${awaiting} produit(s) certifié(s) sourcing ne sont pas encore matérialisés au Catalogue. Ils n’ont pas disparu : le compteur Catalogue ne compte que les promotions réellement effectuées.`
+      : blockers > 0
+        ? `${blockers} produit(s) sont hors du chemin Catalogue pour une raison explicite (rejet, quarantaine, différé ou certification bloquée).`
+        : 'Tous les produits du lot sont comptabilisés dans le parcours réel.';
+    return `<section class="kir-run-truth" aria-label="Comptabilité réelle du lot">
+      <div class="kir-run-truth-head"><span class="kir-section-kicker">VÉRITÉ DU RUN</span><strong>Ce qui s’est réellement passé</strong></div>
+      <div class="kir-run-truth-grid">${values.map(([label, value]) => `<div><span>${esc(label)}</span><strong>${value}</strong></div>`).join('')}</div>
+      <p>${esc(explanation)}</p>
     </section>`;
   }
 
@@ -241,9 +344,10 @@
                 : enabled ? 'Actif' : 'Prêt';
           return `<div class="kir-source-pill is-${stateTone}" title="${esc(readiness)}">
             <span class="kir-source-dot" aria-hidden="true"></span>
-            <span class="kir-source-name">${esc(source.label || source.supplier_name || source.source_ref)}</span>
-            <small class="kir-source-last">${esc(last)}</small>
-            <em class="kir-source-readiness">${esc(readiness)}</em>
+            <div class="kir-source-copy">
+              <span class="kir-source-name">${esc(source.label || source.supplier_name || source.source_ref)}</span>
+              <small>${esc(readiness)} · ${esc(last)}</small>
+            </div>
             <button type="button"
               class="kir-source-switch is-${stateTone}"
               role="switch"
@@ -594,13 +698,14 @@
       </header>
 
       ${sourceControlStrip(sourceControls)}
-      ${activationStrip(sourceControls)}
+      ${persistentRunFlow(run, sourceControls)}
+      ${runTruthStrip(run)}
       ${lotStrip(lots, run.run_ref)}
 
       <section class="kir-lot-summary">
-        <div><span>Produits transmis</span><strong>${num(lot.promoted_products)}</strong></div>
-        <div><span>Décisions finales</span><strong>${num(lot.closure?.decided_products)} / ${num(lot.closure?.total_products)}</strong></div>
-        <div><span>Reste à décider</span><strong>${num(lot.closure?.remaining_products)}</strong></div>
+        <div><span>Déjà au Catalogue</span><strong>${num(run.accounting?.catalogued)}</strong></div>
+        <div><span>À promouvoir</span><strong>${num(run.accounting?.awaiting_catalogue_promotion)}</strong></div>
+        <div><span>Décisions commerciales</span><strong>${num(lot.closure?.remaining_products)}</strong></div>
         <div><span>Clôture</span><strong>${lot.business_status === 'NO_RESULT' ? 'Sans objet' : lot.closure?.eligible ? 'Prête' : 'En attente'}</strong></div>
       </section>
 
