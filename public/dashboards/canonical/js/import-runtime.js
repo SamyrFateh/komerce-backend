@@ -101,7 +101,7 @@
         : activationState.runRef
           ? `${label} · ${activationState.runRef} · progression réelle du run`
           : `${label} · préparation de la source et création du premier lot`;
-    return `<section class="kir-live-activation ${failed ? 'is-failed' : activationState.done ? 'is-complete' : 'is-live'}" aria-live="polite">
+    return `<section class="kir-live-activation ${failed ? 'is-failed' : noResult ? 'is-empty' : activationState.done ? 'is-complete' : 'is-live'}" aria-live="polite">
       <div class="kir-live-activation-head"><div><span class="kir-live-beacon"></span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div><em>${progress}%</em></div>
       <div class="kir-live-progress"><span style="width:${progress}%"></span></div>
       <div class="kir-live-stages">${stages.map(stage => `<div class="kir-live-stage is-${String(stage.status).toLowerCase()}"><span></span><strong>${esc(stage.label)}</strong>${stage.total ? `<small>${stage.processed}/${stage.total}</small>` : ''}</div>`).join('')}</div>
@@ -160,6 +160,7 @@
     if (!res.ok) {
       const error = new Error(body?.error || `HTTP ${res.status}`);
       error.code = body?.code || null;
+      error.details = body?.details || null;
       throw error;
     }
     return body;
@@ -655,17 +656,32 @@
             }, 5000);
           }
         } catch (error) {
-          if (!enabled && activationState?.sourceRef === sourceRef) {
+          const emptyPass = !enabled
+            && ['SUPPLIER_SOURCE_EMPTY', 'NO_VALID_SUPPLIER_PRODUCT'].includes(error.code);
+          if (emptyPass && activationState?.sourceRef === sourceRef) {
+            activationState.runRef = error.details?.run_ref || activationState.runRef;
+            activationState.outcome = 'empty';
+            activationState.done = true;
+            activationState.error = null;
+            stopActivationPolling();
+            if (activationState.runRef) {
+              try { activationState.run = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(activationState.runRef)}`); } catch (_) {}
+              if (params().run !== activationState.runRef) global.history.pushState({}, '', urlFor(activationState.runRef));
+            }
+            await refresh({ preserve:true });
+          } else if (!enabled && activationState?.sourceRef === sourceRef) {
             activationState.error = error.message;
             activationState.done = true;
             stopActivationPolling();
             render(root, lastPayload || payload);
+            const main = root.querySelector?.('.kir-main');
+            if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
           } else {
             button.disabled = false;
             button.removeAttribute('aria-busy');
+            const main = root.querySelector?.('.kir-main');
+            if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
           }
-          const main = root.querySelector?.('.kir-main');
-          if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
         }
       });
     });
