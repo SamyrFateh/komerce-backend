@@ -14,8 +14,9 @@ describe('PR enforcement — targeted repair rerun', () => {
   test('reads previous run evidence but stays read-only', () => {
     expect(workflow).toContain('actions: read');
     expect(workflow).toContain('name: Detect safe targeted unit-test repair');
-    expect(workflow).toContain('PREVIOUS_HEAD: ${{ github.event.before }}');
     expect(workflow).toContain('actions/workflows/pr-enforcement.yml/runs');
+    expect(workflow).toContain('r.head_sha !== head');
+    expect(workflow).toContain('PREVIOUS_HEAD="${PREVIOUS_META#* }"');
     expect(workflow).toContain('actions/jobs/$BACKEND_JOB_ID/logs');
   });
 
