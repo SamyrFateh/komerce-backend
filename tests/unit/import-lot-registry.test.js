@@ -81,3 +81,21 @@ test('un produit Catalogue à finaliser remonte comme action et non comme détai
   expect(lot.products[0]).toMatchObject({ action:'CATALOGUE', reason:'Préparer la fiche française' });
   expect(lot.business_status).toBe(BUSINESS_STATUS.ACTION_REQUIRED);
 });
+
+
+test('ancien run FAILED sans donnée métier est archivé et ne devient pas une fausse action', () => {
+  const lot = buildLot(run({
+    run_ref:'KIR-000001',
+    status:'FAILED',
+    source_total:0,
+    intake:{ quarantined:0, certification_blocked:0 },
+  }), [], [], 1);
+  expect(lot.business_status).toBe(BUSINESS_STATUS.ARCHIVED);
+  expect(lot.decisions).toMatchObject({ catalogue:0, commercial:0, exceptions:0 });
+  expect(lot.closure.remaining_products).toBe(0);
+});
+
+test('run FAILED avec empreinte métier reste réellement à débloquer', () => {
+  const lot = buildLot(run({ status:'FAILED', source_total:1 }), [product('A')], [], 1);
+  expect(lot.business_status).toBe(BUSINESS_STATUS.BLOCKED);
+});

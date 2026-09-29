@@ -77,3 +77,30 @@
   .kir-lot-strip{grid-template-columns:1fr}.kir-lot-all{padding:10px}.kir-lot-summary{grid-template-columns:1fr 1fr}
   .kir-actions{grid-template-columns:1fr}.kir-history-stages{grid-template-columns:1fr}.kir-history-events>div{grid-template-columns:1fr}
 }
+
+
+/* Business journey — canonical lower half: only useful management states. */
+.kir-business-journey{margin-top:14px;background:#fff;border:1px solid var(--kir-line);border-radius:12px;padding:14px}
+.kir-business-journey-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:12px}
+.kir-business-journey-head .kir-section-kicker{margin:0}.kir-business-journey-head strong{font-size:13px}
+.kir-business-journey-track{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.kir-business-step{position:relative;display:grid;gap:6px;min-height:66px;padding:11px 12px;border:1px solid var(--kir-line);border-radius:10px;background:#fbfcfe;color:inherit;text-decoration:none}
+.kir-business-step:not(:last-child):after{content:'→';position:absolute;right:-8px;top:50%;transform:translate(50%,-50%);z-index:2;width:18px;height:18px;display:grid;place-items:center;border-radius:50%;background:var(--kir-bg);color:#94a3b8;font-size:10px;font-weight:900}
+.kir-business-step span{font-size:10px;color:var(--kir-muted);font-weight:800;text-transform:uppercase;letter-spacing:.025em}
+.kir-business-step strong{font-size:15px;line-height:1.15}.kir-business-step.is-positive{border-color:#b7ebcf;background:#f6fcf8}.kir-business-step.is-warning{border-color:#f4d18c;background:#fffbf3}.kir-business-step.is-blue{border-color:#bed7fb;background:#f7faff}
+.kir-business-step:hover{box-shadow:0 5px 14px rgba(15,23,42,.05);transform:translateY(-1px)}
+
+.kir-closure-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px}
+.kir-closure-summary>div{background:#fff;border:1px solid var(--kir-line);border-radius:11px;padding:12px 14px}
+.kir-closure-summary span{display:block;font-size:10px;color:var(--kir-muted);font-weight:800;text-transform:uppercase;letter-spacing:.025em}
+.kir-closure-summary strong{display:block;margin-top:5px;font-size:20px;line-height:1;font-weight:850}
+
+@media(max-width:900px){
+  .kir-business-journey-track{grid-template-columns:repeat(2,1fr)}
+  .kir-business-step:not(:last-child):after{display:none}
+  .kir-closure-summary{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:620px){
+  .kir-business-journey-track{grid-template-columns:1fr}
+  .kir-closure-summary{grid-template-columns:1fr 1fr}
+}

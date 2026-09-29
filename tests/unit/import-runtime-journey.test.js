@@ -81,9 +81,14 @@ test('niveau 1 montre uniquement décisions ouvertes et lots récents', () => {
   ui.render(node, payload);
   expect(node.innerHTML).toContain('Décisions ouvertes');
   expect(node.innerHTML).toContain('3</div>');
-  expect(node.innerHTML).toContain('Fiches à finaliser');
+  expect(node.innerHTML).toContain('Validation Catalogue requise');
   expect(node.innerHTML).toContain('12</div>');
   expect(node.innerHTML).toContain('Décisions de mise en vente');
+  expect(node.innerHTML).toContain('PARCOURS MÉTIER');
+  expect(node.innerHTML).toContain('Prêts à vendre');
+  expect(node.innerHTML).toContain('En vente');
+  expect(node.innerHTML).toContain('Non retenus');
+  expect(node.innerHTML).toContain('Clôture');
   expect(node.innerHTML).toContain('KIR-000003');
   expect(node.innerHTML).toContain('Clos');
   expect(node.innerHTML).not.toContain('Raffinerie');
@@ -101,5 +106,6 @@ test('drill-down Catalogue montre seulement les produits qui exigent cette déci
   expect(ui.urlFor('KIR-000004','catalogue')).toContain('view=catalogue');
   expect(ui.urlFor('KIR-000004','commercial')).toContain('view=commercial');
   expect(ui.urlFor('KIR-000004','exceptions')).toContain('view=exceptions');
+  expect(ui.urlFor('KIR-000004','closure')).toContain('view=closure');
   expect(original).toBeDefined();
 });
