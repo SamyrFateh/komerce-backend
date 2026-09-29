@@ -229,6 +229,8 @@
 .kir-live-stage.is-running strong{color:var(--kir-orange-strong)}
 .kir-live-activation.is-complete{border-color:#bbdfc5;background:linear-gradient(180deg,var(--kir-green-soft),#fff)}
 .kir-live-activation.is-complete .kir-live-beacon,.kir-live-activation.is-complete .kir-live-progress>span{background:var(--kir-green)}
+.kir-live-activation.is-empty{border-color:#f0c36c;background:linear-gradient(180deg,var(--kir-orange-soft),#fff)}
+.kir-live-activation.is-empty .kir-live-beacon,.kir-live-activation.is-empty .kir-live-progress>span{background:var(--kir-orange)}
 .kir-live-activation.is-failed{border-color:#efc7bf;background:linear-gradient(180deg,var(--kir-red-soft),#fff)}
 .kir-live-activation.is-failed .kir-live-beacon,.kir-live-activation.is-failed .kir-live-progress>span{background:var(--kir-red)}
 
