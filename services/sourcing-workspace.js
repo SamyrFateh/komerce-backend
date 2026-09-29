@@ -236,6 +236,45 @@ async function buildWorkspace() {
   };
 }
 
+function projectSourceControl(source) {
+  const capabilities = {
+    discovery: Boolean(source.discovery_enabled),
+    sync: Boolean(source.sync_enabled),
+    import: Boolean(source.import_enabled),
+    production: Boolean(source.production_enabled),
+  };
+  const blockers = [];
+  if (!source.runtime_enabled) blockers.push('Runtime autopilot désactivé');
+  if (source.status !== 'active') blockers.push('Source inactive');
+  if (!source.connector_ready) blockers.push(source.connector_reason || 'Connecteur non prêt');
+  if (!source.discovery_ready) blockers.push('Discovery non prête');
+  if (!capabilities.discovery) blockers.push('Discovery OFF');
+  if (!capabilities.sync) blockers.push('Sync OFF');
+  if (!capabilities.import) blockers.push('Import OFF');
+  if (!capabilities.production) blockers.push('Production OFF');
+  if (!source.production_runtime_certified) blockers.push('Certification runtime manquante');
+
+  return {
+    source_ref: source.source_ref,
+    label: source.label || source.adapter_type || source.source_ref,
+    supplier_name: source.supplier_name || null,
+    autopilot_enabled: Boolean(source.autopilot_enabled),
+    autopilot_ready: blockers.length === 0,
+    blocker: blockers[0] || null,
+    runtime_enabled: Boolean(source.runtime_enabled),
+    connector_ready: Boolean(source.connector_ready),
+    production_runtime_certified: Boolean(source.production_runtime_certified),
+    capabilities,
+    last_capture_status: source.last_capture_status || null,
+    last_capture_at: source.last_capture_at || null,
+  };
+}
+
+async function listSourceControls() {
+  const sources = await sourceAutopilot.listSources();
+  return sources.map(projectSourceControl);
+}
+
 async function updatePortfolioProduct(productRef, body, actor) {
   const product = await resolveProductRef(productRef);
   const result = await sourcingMutations.updateProduct(product.id, body || {});
@@ -348,6 +387,8 @@ module.exports = {
   resolveCandidateRef,
   resolvePartnerRef,
   buildWorkspace,
+  projectSourceControl,
+  listSourceControls,
   updatePortfolioProduct,
   importCatalog,
   replayImport,
