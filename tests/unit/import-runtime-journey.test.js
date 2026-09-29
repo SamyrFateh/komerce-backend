@@ -161,8 +161,10 @@ test('un PARTIAL_BLOCKED explique le gate runtime sans nier les produits certifi
 
   expect(node.innerHTML).toContain('Certification runtime incomplète');
   expect(node.innerHTML).toContain('20 entrée(s) · 19 acceptée(s) · 1 rejetée(s) · 7 différée(s) · 12 certifiée(s) sourcing · Production reste OFF');
-  expect(node.innerHTML).toContain('Certification runtime fournisseur refusée sur ce passage');
+  expect(node.innerHTML).toContain('Blocage certification runtime');
+  expect(node.innerHTML).toContain('1 produit(s) invalide(s) empêchent la preuve runtime complète');
   expect(node.innerHTML).toContain('media absent: 1');
+  expect(node.innerHTML).toContain('7 différé(s) restent comptabilisés et ne bloquent pas à eux seuls');
   expect(node.innerHTML).toContain('À corriger');
   expect(node.innerHTML).not.toContain('Passage interrompu');
 });
