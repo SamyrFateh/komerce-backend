@@ -163,12 +163,14 @@
     const decisions = decisionItems(payload, base);
     if (decisions.length) {
       const host = doc.createElement('div');
+      host.className = 'kmc-cockpit-decisions';
       decisionUi.DecisionStrip.render(host, { items: decisions });
       dashboard.appendChild(host);
     }
 
     const kpis = cardSection(doc, 'Indicateurs clés', 'La santé du marché à partir des KPI canoniques prouvés.', 'pilotage-kpis');
-    const projected = base.projectMetrics(payload);
+
+    kpis.section.className += ' is-cockpit-truth';    const projected = base.projectMetrics(payload);
     const labels = { 'ca-encaisse': 'CA encaissé', 'commandes-actives': 'Commandes actives', 'marge-consolidee': 'Marge consolidée', 'alertes-critiques': 'Alertes critiques', 'completude-couts': 'Complétude coûts' };
     ui.MetricStrip.render(kpis.body, { items: Object.entries(projected).map(([key, item]) => ({ key, label: labels[key] || key, ...item })) });
     dashboard.appendChild(kpis.section);
@@ -183,7 +185,8 @@
     const stages = flowStages(payload, base);
     if (stages.length) {
       const flow = cardSection(doc, 'Boucle économique', 'Du prix estimé au recalibrage : suivre la chaîne de vérité économique.', 'pilotage-flow');
-      decisionUi.FlowStrip.render(flow.body, { stages });
+
+      flow.section.className += ' is-cockpit-flow';      decisionUi.FlowStrip.render(flow.body, { stages });
       dashboard.appendChild(flow.section);
     }
 
