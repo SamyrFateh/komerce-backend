@@ -15,9 +15,13 @@ const {
   formatTopTimestamp,
   buildTopRequest,
   invokeTop,
+  invokeTopWithThrottleRetry,
   requestTimeoutMs,
   detailIntervalMs,
+  throttleRetryAttempts,
+  rateLimitWaitSeconds,
   DEFAULT_DETAIL_INTERVAL_MS,
+  DEFAULT_THROTTLE_RETRY_ATTEMPTS,
   extractProductId,
   normalizeDsProduct,
   unwrapDsResult,
@@ -204,6 +208,62 @@ describe('aliexpress-connector', () => {
     expect(detailIntervalMs({ NODE_ENV:'production' })).toBe(1050);
     expect(detailIntervalMs({ NODE_ENV:'production', ALIEXPRESS_DETAIL_INTERVAL_MS:'1500' })).toBe(1500);
     expect(detailIntervalMs({ NODE_ENV:'test' })).toBe(0);
+  });
+
+  test('borne et reconnaît explicitement le throttle fournisseur', () => {
+    expect(DEFAULT_THROTTLE_RETRY_ATTEMPTS).toBe(3);
+    expect(throttleRetryAttempts({})).toBe(3);
+    expect(throttleRetryAttempts({ ALIEXPRESS_THROTTLE_RETRY_ATTEMPTS:'99' })).toBe(8);
+    expect(rateLimitWaitSeconds(new Error(
+      'Api access frequency exceeds the limit. this ban will last 1 seconds'
+    ))).toBe(1);
+    expect(rateLimitWaitSeconds(new Error('Invalid app key'))).toBeNull();
+  });
+
+  test('retente un throttle AliExpress à la frontière connecteur sans créer un second passage', async () => {
+    const sleepFn = jest.fn().mockResolvedValue(undefined);
+    const fetchImpl = jest.fn()
+      .mockResolvedValueOnce(response({
+        error_response: {
+          sub_msg: 'Api access frequency exceeds the limit. this ban will last 1 seconds',
+        },
+      }))
+      .mockResolvedValueOnce(response({
+        aliexpress_ds_product_get_response: detailResult,
+      }));
+
+    const result = await fetchProducts({
+      fetchImpl,
+      sleepFn,
+      env: {
+        ...credentials,
+        NODE_ENV:'production',
+        ALIEXPRESS_THROTTLE_RETRY_ATTEMPTS:'2',
+      },
+      productIds:['4000102715995'],
+      countryCode:'AE',
+    });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(sleepFn).toHaveBeenCalledWith(2000);
+    expect(result.products).toHaveLength(1);
+    expect(result.products[0].supplier_product_id).toBe('4000102715995');
+  });
+
+  test('wrapper TOP résilient ne retente jamais une erreur non-throttle', async () => {
+    const fetchImpl = jest.fn().mockResolvedValue(response({
+      error_response: { sub_msg:'Invalid app key' },
+    }));
+    const sleepFn = jest.fn();
+
+    await expect(invokeTopWithThrottleRetry(
+      'aliexpress.ds.feedname.get',
+      {},
+      { fetchImpl, sleepFn, env:{ ...credentials, ALIEXPRESS_THROTTLE_RETRY_ATTEMPTS:'3' } }
+    )).rejects.toThrow(/Invalid app key/);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(sleepFn).not.toHaveBeenCalled();
   });
 
   test('extrait un product id depuis un id brut ou une URL AliExpress', () => {
