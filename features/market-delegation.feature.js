@@ -217,6 +217,7 @@ module.exports = {
       'physical_offers: R',
       'product_market_exposure: R',
       'product_market_price_drafts: R',
+      'products: R',
       'disputes: R',
       'market_settlements: R',  // mutations via market-settlement/market-settlement-service
       'economic_structure_cost_events: R',  // mutations via economic-engine/pricing-period-structure
