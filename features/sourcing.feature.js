@@ -82,10 +82,7 @@ module.exports = {
     'admin margin/rail (economic-engine, routes/sourcing.js) — homonymes, domaines disjoints.',
 
   files: {
-    dash: [
-      'dashboards/canonical/js/import-runtime.js',
-      'dashboards/canonical/css/import-runtime.css',
-    ],
+    dash: [],
     middleware: [
       'middleware/require-sourcing-global-authority.js',
     ],
@@ -248,6 +245,7 @@ module.exports = {
       'POST /api/admin/sourcing/candidates/:id/reject',
       'POST /api/admin/sourcing/candidates/:id/watchlist',
       'GET /api/admin/workspaces/sourcing',
+      'GET /api/admin/workspaces/sourcing/import-cockpit',
       'POST /api/admin/workspaces/sourcing/imports',
       'POST /api/admin/workspaces/sourcing/sources/:sourceRef/catalog-changes/observe',
       'POST /api/admin/workspaces/sourcing/sources/:sourceRef/capabilities/:capability',
