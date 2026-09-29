@@ -434,11 +434,36 @@ async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operato
     }
 
     const discoveryPlan = await resolveDiscoveryPlan(sourceRef, source, automation, { reason });
-    const result = await catalogImport.importCatalog(
-      buildImportBody(source, automation, reason, discoveryPlan),
-      actorId,
-      importDispatch.dispatchToConnector
+    const maxTransientRetries = boundedNonNegativeInt(
+      process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES,
+      DEFAULT_TRANSIENT_RETRIES,
+      10
     );
+    const transientRetryDelayMs = boundedNonNegativeInt(
+      process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS,
+      DEFAULT_TRANSIENT_RETRY_DELAY_MS,
+      300000
+    );
+    let result;
+    let transientRetries = 0;
+    while (true) {
+      // Operator/certification imports must have the same transient resilience
+      // as scheduled autopilot runs. Otherwise a provider throttle during the
+      // first ON transition fails immediately while the scheduled rail retries.
+      // eslint-disable-next-line no-await-in-loop
+      result = await catalogImport.importCatalog(
+        buildImportBody(source, automation, reason, discoveryPlan),
+        actorId,
+        importDispatch.dispatchToConnector
+      );
+      if (!isTransientImportResult(result) || transientRetries >= maxTransientRetries) break;
+      transientRetries += 1;
+      const delay = transientRetryDelayMs * (2 ** (transientRetries - 1));
+      if (delay > 0) {
+        // eslint-disable-next-line no-await-in-loop
+        await sleep(delay);
+      }
+    }
 
     if (result.status >= 400) {
       const body = result.body || {};
@@ -458,14 +483,17 @@ async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operato
             connector_total: rejected,
             rejected,
             reject_reasons: body.reject_reasons || null,
+            transient_retries: transientRetries,
           }
         );
       }
       throw new SourcingSourceAutopilotError(
         result.status,
         body.error || 'Import source refusé',
-        body.code || 'sourcing_source_import_failed',
-        body
+        isTransientImportResult(result)
+          ? 'transient_import_retry_exhausted'
+          : (body.code || 'sourcing_source_import_failed'),
+        { ...body, transient_retries: transientRetries }
       );
     }
 
@@ -480,6 +508,7 @@ async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operato
       updated: body.updated || 0,
       rejected: body.rejected || 0,
       canonical_resolved: Boolean(body.canonical_resolved),
+      transient_retries: transientRetries,
       discovery: discoverySummary(discoveryPlan),
     };
   } finally {
