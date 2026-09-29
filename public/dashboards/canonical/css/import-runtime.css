@@ -561,3 +561,674 @@
   color:#7a5514;
   font-weight:500;
 }
+
+
+/* Legacy dashboard exact presentation — final authority for Import Cockpit.
+ * Values mirror the historical back-office design tokens without importing
+ * or referencing any Legacy runtime asset.
+ * Functional structure stays Canonical; rendering follows the old BO. */
+.kmc-import-runtime{
+  --kir-bg:#F8FAFC;
+  --kir-card:#FFFFFF;
+  --kir-line:#E2E8F0;
+  --kir-line-strong:#CBD5E1;
+  --kir-text:#0F172A;
+  --kir-muted:#475569;
+  --kir-faint:#94A3B8;
+  --kir-orange:#F59E0B;
+  --kir-orange-strong:#D97706;
+  --kir-orange-soft:#FFF7ED;
+  --kir-green:#16A34A;
+  --kir-green-soft:#ECFDF3;
+  --kir-blue:#2563EB;
+  --kir-blue-soft:#EFF6FF;
+  --kir-red:#DC2626;
+  --kir-red-soft:#FEF2F2;
+  width:100%;
+  min-height:calc(100vh - var(--kmc-shell-topbar-height) - var(--kmc-shell-tabs-height));
+  padding:0;
+  color:var(--kir-text);
+  background:transparent;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter","Helvetica Neue",Arial,sans-serif;
+  font-size:14px;
+  line-height:1.5;
+  font-weight:400;
+}
+.kmc-import-runtime *{box-shadow:none}
+.kir-page{
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding:0;
+  display:grid;
+  gap:16px;
+}
+
+/* Page header: same restrained hierarchy as Legacy "Tableau de bord". */
+.kir-hero{
+  min-height:58px;
+  margin:0;
+  padding:2px 2px 8px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:24px;
+  background:transparent;
+  border:0;
+}
+.kir-hero::before{display:none}
+.kir-eyebrow{
+  display:block;
+  margin:0 0 4px;
+  color:#94A3B8;
+  background:none;
+  border:0;
+  font-size:10px;
+  line-height:1.2;
+  font-weight:600;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.kir-hero h1{
+  margin:0;
+  color:#0F172A;
+  font-size:20px;
+  line-height:1.2;
+  font-weight:600;
+  letter-spacing:-.015em;
+}
+.kir-hero p{
+  margin:5px 0 0;
+  color:#64748B;
+  font-size:12px;
+  line-height:1.45;
+  font-weight:400;
+}
+.kir-hero-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  padding-top:3px;
+}
+.kir-status-large{
+  display:inline-flex;
+  align-items:center;
+  min-height:26px;
+  padding:3px 9px;
+  border-radius:999px;
+  font-size:11px;
+  line-height:1;
+  font-weight:600;
+}
+.kir-global-link,.kir-subtle-link,.kir-row-action,.kir-back{
+  color:#D97706;
+  font-size:12px;
+  font-weight:500;
+  text-decoration:none;
+}
+
+/* Shared Legacy card surface. */
+.kir-source-control,
+.kir-run-flow,
+.kir-run-truth,
+.kir-lot-summary>div,
+.kir-action-card,
+.kir-business-journey,
+.kir-neutral-panel,
+.kir-closed-panel,
+.kir-exception-banner,
+.kir-table-wrap,
+.kir-closure-summary,
+.kir-history-stages,
+.kir-history-events{
+  border:1px solid #E2E8F0;
+  background:#fff;
+  box-shadow:none;
+}
+
+/* Source control = normal Legacy card, source tiles = restrained inline controls. */
+.kir-source-control{
+  margin:0;
+  padding:14px 16px;
+  grid-template-columns:220px minmax(0,1fr) auto;
+  gap:16px;
+  border-radius:12px;
+  border-top:1px solid #E2E8F0;
+}
+.kir-source-control-title{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:2px;
+}
+.kir-section-kicker{
+  margin:0;
+  color:#94A3B8;
+  background:none;
+  border:0;
+  font-size:10px;
+  line-height:1.2;
+  font-weight:600;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+}
+.kir-source-control-title strong{
+  color:#0F172A;
+  font-size:13px;
+  line-height:1.3;
+  font-weight:600;
+}
+.kir-source-control-title small{
+  color:#64748B;
+  font-size:10px;
+  line-height:1.35;
+  font-weight:400;
+}
+.kir-source-control-list{
+  display:flex;
+  align-items:stretch;
+  gap:8px;
+}
+.kir-source-pill{
+  min-width:225px;
+  max-width:280px;
+  padding:8px 10px;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  gap:8px;
+  border:1px solid #E2E8F0;
+  border-radius:8px;
+  background:#fff;
+}
+.kir-source-pill.is-on{
+  border-color:#BBF7D0;
+  background:#F0FDF4;
+}
+.kir-source-pill.is-live{
+  border-color:#F59E0B;
+  background:#FFF7ED;
+}
+.kir-source-pill.is-blocked{
+  border-color:#FECACA;
+  background:#FEF2F2;
+}
+.kir-source-dot{
+  width:7px;
+  height:7px;
+}
+.kir-source-name{
+  color:#0F172A;
+  font-size:11px;
+  line-height:1.25;
+  font-weight:600;
+}
+.kir-source-copy small{
+  color:#94A3B8;
+  font-size:9px;
+  line-height:1.25;
+  font-weight:400;
+}
+.kir-source-switch{
+  min-width:50px;
+  min-height:24px;
+  padding:2px 6px;
+  border-radius:999px;
+  font-size:9px;
+  line-height:1;
+  font-weight:600;
+}
+.kir-source-switch.is-on{background:#DCFCE7;color:#14532D;border-color:#BBF7D0}
+.kir-source-switch.is-off,.kir-source-switch.is-prep{background:#F8FAFC;color:#64748B;border-color:#E2E8F0}
+.kir-source-switch.is-live{background:#F59E0B;color:#fff;border-color:#F59E0B}
+
+/* Run flow = Legacy card + light status rail. */
+.kir-run-flow{
+  margin:0;
+  padding:16px 18px 15px;
+  border-radius:12px;
+  border-left:1px solid #E2E8F0;
+}
+.kir-run-flow.is-live{
+  border-color:#F4B860;
+  background:#fff;
+}
+.kir-run-flow.is-waiting,
+.kir-run-flow.is-certification-blocked{
+  border-color:#F4B860;
+  background:#FFFBEB;
+}
+.kir-run-flow.is-complete{border-color:#BBF7D0;background:#fff}
+.kir-run-flow.is-failed{border-color:#FECACA;background:#FEF2F2}
+.kir-run-flow-head{
+  align-items:center;
+  gap:16px;
+}
+.kir-run-flow-head strong{
+  color:#0F172A;
+  font-size:14px;
+  line-height:1.3;
+  font-weight:600;
+}
+.kir-run-flow-head small{
+  margin-top:3px;
+  color:#64748B;
+  font-size:11px;
+  line-height:1.4;
+  font-weight:400;
+}
+.kir-run-flow-head em{
+  color:#D97706;
+  font-size:12px;
+  font-weight:600;
+}
+.kir-run-flow-progress{
+  height:3px;
+  margin:12px 0 14px;
+  background:#E2E8F0;
+}
+.kir-run-flow-progress>span{background:#F59E0B}
+.kir-run-flow-track{gap:0}
+.kir-run-flow-step{
+  grid-template-columns:24px minmax(0,1fr);
+  gap:8px;
+  padding-right:10px;
+}
+.kir-run-flow-marker{
+  width:24px;
+  height:24px;
+  border:1px solid #CBD5E1;
+  background:#fff;
+  color:#64748B;
+  font-size:9px;
+  font-weight:600;
+}
+.kir-run-flow-step:not(:last-child)::after{
+  top:12px;
+  background:#E2E8F0;
+}
+.kir-run-flow-step strong{
+  color:#475569;
+  font-size:10px;
+  font-weight:600;
+}
+.kir-run-flow-step small{
+  color:#94A3B8;
+  font-size:9px;
+  font-weight:400;
+}
+.kir-run-flow-step.is-completed .kir-run-flow-marker{
+  border-color:#BBF7D0;
+  background:#DCFCE7;
+  color:#14532D;
+}
+.kir-run-flow-step.is-completed strong{color:#15803D}
+.kir-run-flow-step.is-running .kir-run-flow-marker{
+  border-color:#F59E0B;
+  background:#FFF7ED;
+  color:#D97706;
+}
+.kir-run-flow-step.is-running strong,
+.kir-run-flow-step.is-waiting strong,
+.kir-run-flow-step.is-blocked strong{color:#D97706}
+.kir-run-flow-step.is-waiting .kir-run-flow-marker,
+.kir-run-flow-step.is-blocked .kir-run-flow-marker{
+  border-color:#F4B860;
+  background:#FEF3C7;
+  color:#92400E;
+}
+.kir-run-flow-step.is-failed .kir-run-flow-marker{
+  border-color:#FECACA;
+  background:#FEE2E2;
+  color:#991B1B;
+}
+.kir-run-flow-step.is-failed strong{color:#DC2626}
+
+/* Exact Legacy KPI language: no parent card, six independent cards. */
+.kir-run-truth{
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+}
+.kir-run-truth.is-certification-blocked{
+  border:0;
+  background:transparent;
+}
+.kir-run-truth-head{
+  margin:0 2px 9px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.kir-run-truth-head strong{
+  color:#475569;
+  font-size:12px;
+  font-weight:600;
+}
+.kir-run-truth-grid{
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:12px;
+}
+.kir-run-truth-grid>div{
+  min-height:88px;
+  padding:14px 16px;
+  border:1px solid #E2E8F0;
+  border-radius:12px;
+  background:#fff;
+}
+.kir-run-truth-grid>div:nth-child(5),
+.kir-run-truth-grid>div:nth-child(6){
+  border-color:#E2E8F0;
+  background:#fff;
+}
+.kir-run-truth-grid span{
+  color:#94A3B8;
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.05em;
+}
+.kir-run-truth-grid strong{
+  margin-top:5px;
+  color:#0F172A;
+  font-size:23px;
+  line-height:1.15;
+  font-weight:700;
+  letter-spacing:-.02em;
+}
+.kir-run-truth-grid>div:nth-child(2) strong,
+.kir-run-truth-grid>div:nth-child(5) strong{color:#16A34A}
+.kir-run-truth-grid>div:nth-child(4) strong{color:#2563EB}
+.kir-run-truth-grid>div:nth-child(6) strong{color:#0F172A}
+.kir-run-truth p{
+  margin:8px 2px 0;
+  color:#64748B;
+  font-size:10.5px;
+  line-height:1.45;
+  font-weight:400;
+}
+.kir-run-truth.is-certification-blocked p{color:#92400E;font-weight:400}
+
+/* Recent runs = thin navigation rail. */
+.kir-lot-strip{
+  margin:0;
+  min-height:46px;
+  gap:8px;
+}
+.kir-lot-strip-scroll{gap:8px}
+.kir-lot-chip{
+  min-width:165px;
+  min-height:44px;
+  padding:7px 10px;
+  border:1px solid #E2E8F0;
+  border-radius:8px;
+  background:#fff;
+}
+.kir-lot-chip.is-selected{
+  border-color:#F4B860;
+  background:#FFF7ED;
+  box-shadow:inset 2px 0 0 #F59E0B;
+}
+.kir-lot-ref{
+  color:#0F172A;
+  font-size:11px;
+  font-weight:600;
+}
+.kir-lot-chip small{
+  color:#94A3B8;
+  font-size:9px;
+  font-weight:400;
+}
+.kir-status{
+  font-size:9px;
+  font-weight:600;
+}
+.kir-lot-all{
+  min-height:44px;
+  padding:0 14px;
+  border:1px solid #E2E8F0;
+  border-radius:8px;
+  background:#fff;
+  color:#475569;
+  font-size:10px;
+  font-weight:600;
+}
+
+/* Four business KPIs = same cards as Legacy top row. */
+.kir-lot-summary{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:16px;
+  margin:0;
+  border:0;
+  background:transparent;
+}
+.kir-lot-summary>div{
+  min-height:96px;
+  padding:16px 18px;
+  border:1px solid #E2E8F0;
+  border-radius:12px;
+  border-top:1px solid #E2E8F0;
+  background:#fff;
+}
+.kir-lot-summary span{
+  color:#94A3B8;
+  font-size:10px;
+  line-height:1.2;
+  font-weight:600;
+  letter-spacing:.05em;
+}
+.kir-lot-summary strong{
+  margin-top:6px;
+  color:#0F172A;
+  font-size:24px;
+  line-height:1.15;
+  font-weight:700;
+  letter-spacing:-.02em;
+}
+.kir-lot-summary>div:nth-child(1) strong{color:#16A34A}
+.kir-lot-summary>div:nth-child(2) strong{color:#F59E0B}
+.kir-lot-summary>div:nth-child(3) strong{color:#2563EB}
+.kir-lot-summary>div:nth-child(4) strong{color:#0F172A}
+
+/* Main actions follow Legacy card/table hierarchy. */
+.kir-main{display:grid;gap:14px}
+.kir-decision-intro{
+  min-height:48px;
+  padding:0 2px;
+  align-items:flex-end;
+}
+.kir-decision-intro h2,
+.kir-drill-head h2{
+  margin:3px 0 0;
+  color:#475569;
+  font-size:14px;
+  line-height:1.3;
+  font-weight:600;
+  letter-spacing:0;
+}
+.kir-decision-intro p,
+.kir-drill-head p{
+  margin-top:4px;
+  color:#64748B;
+  font-size:11px;
+  line-height:1.45;
+  font-weight:400;
+}
+.kir-actions{
+  display:grid;
+  gap:10px;
+}
+.kir-action-card{
+  min-height:74px;
+  padding:13px 16px;
+  grid-template-columns:52px minmax(0,1fr) auto;
+  gap:14px;
+  border-radius:12px;
+  border-left-width:4px;
+}
+.kir-action-card.is-warning{border-left-color:#F59E0B}
+.kir-action-card.is-blue{border-left-color:#2563EB}
+.kir-action-card.is-critical{border-left-color:#DC2626}
+.kir-action-count{
+  color:#0F172A;
+  font-size:24px;
+  font-weight:700;
+}
+.kir-action-card.is-warning .kir-action-count{color:#F59E0B}
+.kir-action-card.is-blue .kir-action-count{color:#2563EB}
+.kir-action-card.is-critical .kir-action-count{color:#DC2626}
+.kir-action-copy strong{
+  color:#0F172A;
+  font-size:13px;
+  font-weight:600;
+}
+.kir-action-copy span{
+  margin-top:2px;
+  color:#64748B;
+  font-size:11px;
+  font-weight:400;
+}
+.kir-action-arrow{
+  color:#D97706;
+  font-size:16px;
+  font-weight:500;
+}
+
+.kir-neutral-panel,
+.kir-closed-panel,
+.kir-exception-banner{
+  padding:13px 15px;
+  border-radius:8px;
+  color:#475569;
+  font-size:12px;
+  font-weight:400;
+}
+.kir-neutral-panel{background:#fff}
+.kir-closed-panel{border-color:#BBF7D0;background:#F0FDF4}
+.kir-exception-banner{border-color:#FECACA;background:#FEF2F2;color:#991B1B}
+
+/* Business journey mirrors the Legacy second KPI strip: one white rail, internal dividers. */
+.kir-business-journey{
+  padding:0;
+  border-radius:12px;
+  overflow:hidden;
+}
+.kir-business-journey-head{
+  min-height:42px;
+  padding:11px 16px 9px;
+  border-bottom:1px solid #E2E8F0;
+}
+.kir-business-journey-head strong{
+  color:#475569;
+  font-size:12px;
+  font-weight:600;
+}
+.kir-business-journey-track{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:0;
+}
+.kir-business-step{
+  min-height:78px;
+  padding:13px 16px;
+  border:0;
+  border-radius:0;
+  background:#fff;
+}
+.kir-business-step+.kir-business-step{border-left:1px solid #E2E8F0}
+.kir-business-step span{
+  color:#94A3B8;
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.04em;
+}
+.kir-business-step strong{
+  margin-top:5px;
+  color:#0F172A;
+  font-size:16px;
+  font-weight:700;
+}
+.kir-business-step.is-positive strong{color:#16A34A}
+.kir-business-step.is-warning strong{color:#F59E0B}
+.kir-business-step.is-blue strong{color:#2563EB}
+
+/* Tables copy Legacy density exactly. */
+.kir-table-wrap{
+  border-radius:12px;
+  overflow:hidden;
+}
+.kir-table{
+  width:100%;
+  background:#fff;
+  font-size:12px;
+}
+.kir-table th{
+  padding:11px 14px;
+  color:#94A3B8;
+  background:#fff;
+  border-bottom:1px solid #E2E8F0;
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+}
+.kir-table td{
+  padding:12px 14px;
+  color:#475569;
+  border-bottom:1px solid #E2E8F0;
+  font-size:12px;
+  font-weight:400;
+}
+.kir-table tbody tr:hover{background:#F8FAFC}
+.kir-table td a:first-child{color:#0F172A;font-weight:500}
+.kir-table td small{color:#94A3B8;font-size:9px}
+
+.kir-closure-summary{
+  border-radius:12px;
+  overflow:hidden;
+}
+.kir-closure-summary>div{
+  padding:14px 16px;
+  border-right:1px solid #E2E8F0;
+}
+.kir-closure-summary>div:last-child{border-right:0}
+.kir-closure-summary span{color:#94A3B8;font-size:10px;font-weight:600}
+.kir-closure-summary strong{font-size:20px;font-weight:700}
+
+.kir-empty{
+  padding:26px 18px;
+  color:#94A3B8;
+  background:#fff;
+  border:1px dashed #CBD5E1;
+  border-radius:12px;
+  font-size:12px;
+}
+
+/* Keep live animation readable without turning the page into a neon surface. */
+@keyframes kir-legacy-live-ring{
+  0%,100%{box-shadow:0 0 0 0 rgb(245 158 11 / .15);transform:scale(1)}
+  50%{box-shadow:0 0 0 6px rgb(245 158 11 / .18);transform:scale(1.06)}
+}
+.kir-run-flow-step.is-running .kir-run-flow-marker,
+.kir-source-pill.is-live .kir-source-dot{
+  animation:kir-legacy-live-ring 1s ease-in-out infinite;
+}
+
+@media(max-width:1180px){
+  .kir-source-control{grid-template-columns:1fr}
+  .kir-run-truth-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .kir-lot-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:720px){
+  .kir-page{gap:12px}
+  .kir-hero{display:grid;gap:8px}
+  .kir-hero-actions{justify-content:flex-start}
+  .kir-run-truth-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kir-lot-summary{grid-template-columns:1fr}
+  .kir-business-journey-track{grid-template-columns:1fr}
+  .kir-business-step+.kir-business-step{border-left:0;border-top:1px solid #E2E8F0}
+}
+@media(prefers-reduced-motion:reduce){
+  .kir-run-flow-step.is-running .kir-run-flow-marker,
+  .kir-source-pill.is-live .kir-source-dot{animation:none}
+}

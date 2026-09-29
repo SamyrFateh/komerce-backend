@@ -34,9 +34,9 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-14');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-12');
-  expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=260929-2');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-15');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-13');
+  expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=260929-3');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
   expect(source).not.toMatch(/\b(?:ImportRuntimeView|KmcApi|ApiClient)\b/);
@@ -83,7 +83,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('persistentRunFlow');
   expect(source).toContain('Import automatique terminé');
   expect(source).toContain('parcours conservé à l’écran');
-  expect(source).toContain('VÉRITÉ DU RUN');
+  expect(source).toContain('SUIVI DU LOT');
   expect(source).toContain('Certifiées sourcing');
   expect(source).toContain('awaiting_catalogue_promotion');
   expect(source).toContain('Ils n’ont pas disparu');
@@ -109,6 +109,10 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(css).toContain('font-size:24px');
   expect(css).toContain('.kir-run-flow.is-certification-blocked');
   expect(css).toContain('.kir-run-flow-step.is-blocked');
+  expect(css).toContain('Legacy dashboard exact presentation');
+  expect(css).toContain('--kir-bg:#F8FAFC');
+  expect(css).toContain('grid-template-columns:repeat(4,minmax(0,1fr))');
+  expect(css).toContain('border-radius:12px');
   expect(source).not.toContain("api('/api/admin/workspaces/sourcing')");
   expect(source).not.toContain("'/capabilities/'");
   expect(source).not.toContain("'/import-now'");

@@ -268,7 +268,7 @@
           ? `${blockers} produit(s) sont hors du chemin Catalogue pour une raison explicite (rejet, quarantaine, différé ou certification bloquée).`
           : 'Tous les produits du lot sont comptabilisés dans le parcours réel.';
     return `<section class="kir-run-truth ${certificationBlocked ? 'is-certification-blocked' : ''}" aria-label="Comptabilité réelle du lot">
-      <div class="kir-run-truth-head"><span class="kir-section-kicker">VÉRITÉ DU RUN</span><strong>Ce qui s’est réellement passé</strong></div>
+      <div class="kir-run-truth-head"><span class="kir-section-kicker">SUIVI DU LOT</span><strong>Ce qui s’est réellement passé</strong></div>
       <div class="kir-run-truth-grid">${values.map(([label, value]) => `<div><span>${esc(label)}</span><strong>${value}</strong></div>`).join('')}</div>
       <p>${esc(explanation)}</p>
     </section>`;
@@ -753,9 +753,9 @@
     root.innerHTML = `<section class="kir-page">
       <header class="kir-hero">
         <div>
-          <span class="kir-eyebrow">OPÉRATIONS · COCKPIT DES IMPORTS</span>
-          <h1>${esc(run.run_ref)}</h1>
-          <p>${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s) · import ${lot.business_status === 'NO_RESULT' ? 'sans résultat' : run.status === 'COMPLETED' ? 'terminé' : run.status === 'FAILED' ? 'en échec' : 'en cours'}</p>
+          <span class="kir-eyebrow">OPÉRATIONS</span>
+          <h1>Cockpit des imports</h1>
+          <p>${esc(run.run_ref)} · ${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s) · import ${lot.business_status === 'NO_RESULT' ? 'sans résultat' : run.status === 'COMPLETED' ? 'terminé' : run.status === 'FAILED' ? 'en échec' : 'en cours'}</p>
         </div>
         <div class="kir-hero-actions">
           <span class="kir-status-large is-${businessTone(lot.business_status)}">${esc(status)}</span>
