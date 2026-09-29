@@ -35,6 +35,8 @@ const MIN_REQUEST_TIMEOUT_MS = 100;
 const MAX_REQUEST_TIMEOUT_MS = 120000;
 const DEFAULT_DETAIL_INTERVAL_MS = 1050;
 const MAX_DETAIL_INTERVAL_MS = 10000;
+const DEFAULT_THROTTLE_RETRY_ATTEMPTS = 3;
+const MAX_THROTTLE_RETRY_ATTEMPTS = 8;
 
 function requestTimeoutMs(env = process.env) {
   const parsed = Number.parseInt(env?.ALIEXPRESS_API_TIMEOUT_MS, 10);
@@ -52,6 +54,45 @@ function detailIntervalMs(env = process.env) {
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms) || 0)));
 }
+
+function throttleRetryAttempts(env = process.env) {
+  const parsed = Number.parseInt(env?.ALIEXPRESS_THROTTLE_RETRY_ATTEMPTS, 10);
+  if (!Number.isInteger(parsed)) return DEFAULT_THROTTLE_RETRY_ATTEMPTS;
+  return Math.min(MAX_THROTTLE_RETRY_ATTEMPTS, Math.max(1, parsed));
+}
+
+function rateLimitWaitSeconds(error) {
+  const message = String(error?.message || error || '');
+  if (!/frequency of app access|frequency exceeds(?: the)? limit|exceeds the limit|rate.?limit|too many requests|ban will last/i.test(message)) {
+    return null;
+  }
+  const match = message.match(/(?:last|for)\s+(\d+)\s+seconds?/i)
+    || message.match(/(\d+)\s+seconds?/i);
+  return match ? Math.max(1, Number(match[1]) || 1) : 1;
+}
+
+async function invokeTopWithThrottleRetry(method, businessParams = {}, options = {}) {
+  const env = options.env || process.env;
+  const attempts = throttleRetryAttempts(env);
+  const sleepFn = options.sleepFn || sleep;
+  let lastError = null;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      return await invokeTop(method, businessParams, options);
+    } catch (error) {
+      lastError = error;
+      const waitSeconds = rateLimitWaitSeconds(error);
+      if (waitSeconds == null || attempt >= attempts) throw error;
+      const waitMs = (waitSeconds + 1) * 1000;
+      console.warn(`[AliExpress] throttle ${method} attempt=${attempt}/${attempts} wait_ms=${waitMs}`);
+      // eslint-disable-next-line no-await-in-loop
+      await sleepFn(waitMs);
+    }
+  }
+  throw lastError;
+}
+
 
 
 function isConfigured(env = process.env) {
@@ -473,7 +514,7 @@ function flattenFeedProducts(payload = {}) {
 }
 
 async function fetchFeed(options = {}) {
-  const payload = await invokeTop('aliexpress.ds.recommend.feed.get', {
+  const payload = await invokeTopWithThrottleRetry('aliexpress.ds.recommend.feed.get', {
     country: String(options.countryCode || options.country_code || 'KM').toUpperCase(),
     target_currency: TARGET_CURRENCY,
     target_language: TARGET_LANGUAGE,
@@ -487,7 +528,7 @@ async function fetchFeed(options = {}) {
 }
 
 async function fetchProductDetail(productId, options = {}) {
-  const payload = await invokeTop('aliexpress.ds.product.get', {
+  const payload = await invokeTopWithThrottleRetry('aliexpress.ds.product.get', {
     product_id: productId,
     ship_to_country: String(options.countryCode || options.country_code || 'KM').toUpperCase(),
     target_currency: TARGET_CURRENCY,
@@ -560,8 +601,11 @@ module.exports = {
   MAX_PAGE_SIZE,
   DEFAULT_REQUEST_TIMEOUT_MS,
   DEFAULT_DETAIL_INTERVAL_MS,
+  DEFAULT_THROTTLE_RETRY_ATTEMPTS,
   requestTimeoutMs,
   detailIntervalMs,
+  throttleRetryAttempts,
+  rateLimitWaitSeconds,
   IS_ACTIVE,
   INACTIVE_REASON,
   isConfigured,
@@ -570,6 +614,7 @@ module.exports = {
   signTopParams,
   buildTopRequest,
   invokeTop,
+  invokeTopWithThrottleRetry,
   extractProductId,
   buildSkuAttr,
   rawSupplierUnitRef,
