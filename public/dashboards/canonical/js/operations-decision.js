@@ -251,6 +251,9 @@
 
     const dashboard = doc.createElement('article');
     dashboard.className = 'kmc-dashboard kmc-decision-dashboard';
+    if (typeof globalThis !== 'undefined' && globalThis.KomerceCanonicalCockpitPattern) {
+      globalThis.KomerceCanonicalCockpitPattern.decorateDashboard(dashboard, 'operations');
+    }
     dashboard.setAttribute('data-dashboard-id', 'operations');
     dashboard.setAttribute('data-dashboard-visual', 'decision-first-v1');
 
