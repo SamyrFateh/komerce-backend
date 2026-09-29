@@ -50,9 +50,11 @@ jest.mock('../../services/import-lot-registry', () => ({
 }));
 
 const mockReplay = jest.fn();
+const mockListSourceControls = jest.fn();
 jest.mock('../../services/sourcing-workspace', () => ({
   SourcingWorkspaceError: class extends Error {},
   replayImport: (...args) => mockReplay(...args),
+  listSourceControls: (...args) => mockListSourceControls(...args),
 }));
 jest.mock('../../services/sourcing-catalog-change-observation', () => ({}));
 jest.mock('../../services/sourcing-integrity-service', () => ({}));
@@ -75,6 +77,7 @@ describe('import runtime run routes', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSourcingAllowed = true;
+    mockListSourceControls.mockResolvedValue([]);
   });
 
   test('récupère un run par business ref', async () => {
@@ -113,8 +116,17 @@ describe('import runtime run routes', () => {
       { run_ref:'KIR-000003', business_status:'CLOSED', decisions:{ commercial:0 } },
     ]);
     mockRuns.getRun.mockResolvedValue({ run_ref:'KIR-000004', status:'COMPLETED' });
+    mockListSourceControls.mockResolvedValue([{
+      source_ref:'api:aliexpress',
+      label:'AliExpress',
+      autopilot_enabled:true,
+      autopilot_ready:true,
+    }]);
     const response = await request(app()).get('/api/admin/workspaces/sourcing/import-cockpit?run=KIR-000004');
     expect(response.status).toBe(200);
+    expect(response.body.source_controls).toEqual([
+      expect.objectContaining({ source_ref:'api:aliexpress', autopilot_enabled:true, autopilot_ready:true }),
+    ]);
     expect(response.body.lots).toHaveLength(2);
     expect(response.body.selected).toMatchObject({
       run_ref:'KIR-000004',
