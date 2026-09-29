@@ -4,6 +4,16 @@
 > Remplace la représentation du shell définie dans `ADMIN_NAVIGATION_DOCTRINE_V2.md`.
 > Les règles d'autorité, de rôle, de capability et de Market ID de V2 restent valides sauf contradiction explicite ci-dessous.
 
+
+## Retour des drill-downs
+
+- une page principale ou un workspace N2 n'affiche pas de bouton Retour redondant ;
+- un vrai drill-down / Entity 360 affiche toujours un retour vers son parent métier ;
+- lorsqu'un drill-down est ouvert depuis un contexte plus précis, ce contexte est transporté par un `return_to` interne validé et prime sur le parent générique ;
+- `return_to` n'accepte que des chemins internes `/admin/**` ou `/dashboards/canonical/**` ; une valeur externe ou ambiguë est ignorée ;
+- le libellé du retour doit nommer le parent utile : `Retour au lot`, `Retour au catalogue`, `Retour à la commande`, etc. ;
+- `history.back()` n'est jamais l'autorité de navigation : le retour reste déterministe, partageable et robuste après refresh.
+
 ## 1. Décision produit
 
 Komerce adopte un **shell hybride unique** pour toutes les surfaces Canonical :
