@@ -645,6 +645,7 @@ module.exports = {
       'economic-engine (prix produit, valorisation commerciale transport et audit price_history propriétaire)',
       'customs (classification fournisseur dynamique consommée depuis customs_categories ; le catalogue ne connaît aucune clé de catégorie douanière en dur)',
       'market-autonomy (résolution buyer du prix LOCAL_ACTIVE par marché ; le catalogue reste propriétaire du produit global ; la projection commerciale lit ce statut sans l écrire)',
+      'market (lecture du référentiel des marchés actifs pour projeter l assortiment commercial sans posséder la décision pays)',
       'sourcing (persistence lifecycle sourcing_candidates et sourcing_candidate_events via sourcing-candidate-import-service ; catalog n execute plus de SQL direct sur ces tables)',
       'supplier-connectivity (Supplier Order Identity canonique : catalog persiste et valide l’identité commandable via services/suppliers/supplier-order-identity.js ; aucun payload fournisseur n’est réinterprété par heuristique)',
       'purchasing (scripts/allegro-sandbox-check.js compose l adapter Allegro fulfillment possédé par Purchasing pour la preuve sandbox ; aucune autorité Purchasing n est recopiée dans Catalogue)',
