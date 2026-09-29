@@ -113,7 +113,7 @@ test('niveau 1 garde le flux réel visible et les décisions ouvertes séparées
   expect(node.innerHTML).toContain('Raffinerie');
   expect(node.innerHTML).toContain('Taxonomie');
   expect(node.innerHTML).toContain('Certification');
-  expect(node.innerHTML).toContain('VÉRITÉ DU RUN');
+  expect(node.innerHTML).toContain('SUIVI DU LOT');
   expect(node.innerHTML).toContain('Certifiées sourcing');
   expect(node.innerHTML).toContain('15</strong>');
   expect(node.innerHTML).toContain('Catalogue');
