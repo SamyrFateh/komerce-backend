@@ -38,6 +38,7 @@ const mockCalls = {
   rejectCandidate: jest.fn(),
   promoteCandidate: jest.fn(),
   runSourceImportNow: jest.fn(),
+  activateSourceAutopilot: jest.fn(),
   setSourceAutopilot: jest.fn(),
   createSupplier: jest.fn(),
   updateSupplier: jest.fn(),
@@ -56,6 +57,7 @@ jest.mock('../../services/sourcing-workspace', () => ({
   rejectCandidate: (...args) => mockCalls.rejectCandidate(...args),
   promoteCandidate: (...args) => mockCalls.promoteCandidate(...args),
   runSourceImportNow: (...args) => mockCalls.runSourceImportNow(...args),
+  activateSourceAutopilot: (...args) => mockCalls.activateSourceAutopilot(...args),
   setSourceAutopilot: (...args) => mockCalls.setSourceAutopilot(...args),
   createSupplier: (...args) => mockCalls.createSupplier(...args),
   updateSupplier: (...args) => mockCalls.updateSupplier(...args),
@@ -94,7 +96,8 @@ beforeEach(() => {
   mockCalls.scanCandidate.mockResolvedValue({ candidate_ref: 'KSC-000001', state: 'scanned' });
   mockCalls.promoteCandidate.mockResolvedValue({ candidate_ref: 'KSC-000001', product_ref: 'KPR-000002' });
   mockCalls.runSourceImportNow.mockResolvedValue({ source_ref: 'api:cj', run_ref: 'KIR-000001', pipeline_status: 'CANONICAL_RESOLVED' });
-  mockCalls.setSourceAutopilot.mockResolvedValue({ source_ref: 'api:cj', autopilot_enabled: true });
+  mockCalls.activateSourceAutopilot.mockResolvedValue({ source_ref: 'api:cj', autopilot_enabled: true, prepared: true });
+  mockCalls.setSourceAutopilot.mockResolvedValue({ source_ref: 'api:cj', autopilot_enabled: false });
   mockCalls.createSupplier.mockResolvedValue({ partner_ref: 'KPT-000001', name: 'Supplier' });
   mockCalls.recordUnitStockChange.mockResolvedValue({ status: 'recorded', capture_id: 'capture-1', observations: 1, application_status: 'NOT_EVALUATED' });
 });
@@ -161,17 +164,27 @@ test('import-now délègue la source métier et l’acteur authentifié', async 
   expect(res.body.result.run_ref).toBe('KIR-000001');
 });
 
-test.each([
-  ['activate', true],
-  ['deactivate', false],
-])('interrupteur source %s délègue uniquement la référence métier', async (action, enabled) => {
-  mockCalls.setSourceAutopilot.mockResolvedValueOnce({ source_ref: 'api:cj', autopilot_enabled: enabled });
+test('interrupteur source ON orchestre la préparation avec l’acteur authentifié', async () => {
   const res = await request(app())
-    .post(`/api/admin/workspaces/sourcing/sources/api%3Acj/${action}`)
+    .post('/api/admin/workspaces/sourcing/sources/api%3Acj/activate')
     .send({});
   expect(res.status).toBe(200);
-  expect(mockCalls.setSourceAutopilot).toHaveBeenCalledWith('api:cj', enabled);
-  expect(res.body.action).toBe(`${action === 'activate' ? 'activate' : 'deactivate'}_source_autopilot`);
+  expect(mockCalls.activateSourceAutopilot).toHaveBeenCalledWith(
+    'api:cj',
+    expect.objectContaining({ id:'central-sourcing', role:'admin' })
+  );
+  expect(mockCalls.setSourceAutopilot).not.toHaveBeenCalled();
+  expect(res.body.action).toBe('activate_source_autopilot');
+});
+
+test('interrupteur source OFF coupe directement l’autopilot sans relancer', async () => {
+  const res = await request(app())
+    .post('/api/admin/workspaces/sourcing/sources/api%3Acj/deactivate')
+    .send({});
+  expect(res.status).toBe(200);
+  expect(mockCalls.setSourceAutopilot).toHaveBeenCalledWith('api:cj', false);
+  expect(mockCalls.activateSourceAutopilot).not.toHaveBeenCalled();
+  expect(res.body.action).toBe('deactivate_source_autopilot');
 });
 
 test('création fournisseur reste dans la frontière sourcing', async () => {
