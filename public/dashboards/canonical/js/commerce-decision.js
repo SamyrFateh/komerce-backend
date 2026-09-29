@@ -355,7 +355,8 @@
 
     const kpis = cardSection(doc, 'Indicateurs clés', 'Les valeurs commerciales réellement fournies par la source canonique.', 'commerce-kpis');
 
-    kpis.section.className += ' is-cockpit-truth';    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
+    kpis.section.className += ' is-cockpit-truth';
+    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
     dashboard.appendChild(kpis.section);
 
     const topGrid = doc.createElement('div');
@@ -377,7 +378,8 @@
 
     const funnel = cardSection(doc, 'Funnel commandes', 'Progression réelle des commandes sans taux recalculé côté navigateur.', 'commerce-funnel');
 
-      funnel.section.className += ' is-cockpit-flow';    decisionUi.Funnel.render(funnel.body, { stages: funnelStages(payload, base) });
+      funnel.section.className += ' is-cockpit-flow';
+    decisionUi.Funnel.render(funnel.body, { stages: funnelStages(payload, base) });
     dashboard.appendChild(funnel.section);
 
     const profitability = profitabilityItems(payload, base);
