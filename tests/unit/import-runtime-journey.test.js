@@ -38,6 +38,7 @@ test('une panne aval ne transforme jamais un import terminé en faux zéro', asy
 
 function cockpit() {
   const context = {
+    URLSearchParams,
     window: {
       location:{ pathname:'/admin/import-runtime', search:'?run=KIR-000004' },
       history:{ pushState:jest.fn() },
