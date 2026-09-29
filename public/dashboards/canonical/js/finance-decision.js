@@ -349,12 +349,14 @@
     const decisions = decisionItems(payload, base);
     if (decisions.length) {
       const host = doc.createElement('div');
+      host.className = 'kmc-cockpit-decisions';
       decisionUi.DecisionStrip.render(host, { items: decisions });
       dashboard.appendChild(host);
     }
 
     const kpis = cardSection(doc, 'Indicateurs financiers', 'Valeurs canoniques de la période sélectionnée.', 'finance-kpis');
-    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
+
+    kpis.section.className += ' is-cockpit-truth';    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
     dashboard.appendChild(kpis.section);
 
     const overview = overviewCards(payload, base);
@@ -374,7 +376,8 @@
     const trend = trendItems(payload, base);
     if (trend.length) {
       const section = cardSection(doc, 'Trajectoire financière', 'Périodes et taux de couverture fournis par le backend.', 'finance-trend');
-      decisionUi.RankedList.render(section.body, { items: trend });
+
+      section.section.className += ' is-cockpit-flow';      decisionUi.RankedList.render(section.body, { items: trend });
       dashboard.appendChild(section.section);
     }
 
