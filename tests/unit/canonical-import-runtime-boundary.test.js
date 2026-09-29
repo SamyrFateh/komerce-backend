@@ -90,10 +90,10 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('ACTIVATION_POLL_MS = 900');
   expect(source).toContain("NO_RESULT:'Sans résultat'");
   expect(source).toContain('Passage terminé sans résultat');
-  expect(source).toContain('Certification runtime incomplète');
   expect(source).toContain('sourcing_source_certification_incomplete');
   expect(source).toContain('Production reste OFF');
   expect(source).toContain('runtimeCertificationBlocked');
+  expect(source).toContain('runtimeCertificationBlockMessage');
   expect(source).toContain('provider_runtime_status');
   expect(source).toContain('Source automatique bloquée');
   expect(source).toContain('continuent vers le Catalogue');
