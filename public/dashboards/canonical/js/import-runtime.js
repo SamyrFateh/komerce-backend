@@ -731,7 +731,10 @@
     const lots = Array.isArray(payload?.lots) ? payload.lots : [];
     const run = payload?.selected || null;
     const { view } = params();
-    root.className = 'kmc-import-runtime';
+    root.className = 'kmc-import-runtime kmc-domain-cockpit';
+    root.setAttribute?.('data-cockpit-pattern', 'v1');
+    root.setAttribute?.('data-cockpit-domain', 'imports');
+    root.setAttribute?.('data-cockpit-language', 'legacy');
 
     if (!run) {
       root.innerHTML = `<section class="kir-page">
@@ -779,7 +782,10 @@
   }
 
   function renderLoading(root) {
-    root.className = 'kmc-import-runtime';
+    root.className = 'kmc-import-runtime kmc-domain-cockpit';
+    root.setAttribute?.('data-cockpit-pattern', 'v1');
+    root.setAttribute?.('data-cockpit-domain', 'imports');
+    root.setAttribute?.('data-cockpit-language', 'legacy');
     root.innerHTML = `<section class="kir-page kir-loading">
       <div class="kir-skeleton kir-skeleton-title"></div>
       <div class="kir-skeleton kir-skeleton-lots"></div>
