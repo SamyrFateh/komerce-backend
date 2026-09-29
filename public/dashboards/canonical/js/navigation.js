@@ -239,6 +239,16 @@
     return null;
   }
 
+  function withReturnTo(path, returnTo, label = 'Retour') {
+    const target = safeReturnTarget(returnTo);
+    if (!target) return String(path || '');
+    const q = new URLSearchParams();
+    q.set('return_to', target);
+    if (label) q.set('return_label', String(label));
+    const base = String(path || '');
+    return base + (base.includes('?') ? '&' : '?') + q.toString();
+  }
+
   function resolveBackTarget(surface, search) {
     let requestedHref = null;
     let requestedLabel = null;
@@ -729,6 +739,7 @@
     SURFACE_TO_SPACE,
     BACK_TARGETS,
     safeReturnTarget,
+    withReturnTo,
     resolveBackTarget,
     visibleDomainsFor,
     visibleSpacesFor,
