@@ -328,6 +328,8 @@ module.exports = {
     'un filtre pays du DashboardSchema est présentationnel : canonical ne charge jamais un agrégat global pour le filtrer ensuite côté client',
       'market est l\'unité de délégation business ; corridor reste une dimension technique/logistique sans autorité',
     'le cockpit Démo / Staging ne possède aucune transition : il délègue à la route orders et lit les notifications/documents réellement persistés',
+    { statement: 'un cockpit Canonical montre situation, décisions et exceptions ; les étapes techniques saines restent dans le drill-down et la clôture KIR est projetée côté serveur depuis des décisions terminales',
+      test: 'tests/unit/import-lot-registry.test.js' },
   ],
 
   // ── Vérification gouvernance ───────────────────────────────────────────
