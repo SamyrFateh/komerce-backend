@@ -399,6 +399,49 @@ test('import opérateur borné peut produire la première certification sans aut
   );
 });
 
+test('import opérateur/certification retente un throttle fournisseur transitoire', async () => {
+  process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES = '1';
+  process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS = '0';
+  mockSourceQueries(sourceRow({
+    autopilot_enabled: false,
+    production_enabled: false,
+    production_certified_capture_id: null,
+    production_certified_at: null,
+  }));
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog
+    .mockResolvedValueOnce({
+      status: 400,
+      body: { error: '[AliExpress] aliexpress.ds.product.get échoué (200): Api access frequency exceeds the limit. this ban will last 1 seconds' },
+    })
+    .mockResolvedValueOnce({
+      status: 200,
+      body: {
+        run_ref: 'KIR-000010',
+        pipeline_status: 'CANONICAL_RESOLVED',
+        canonical_resolved: true,
+        accepted: 1, created: 1, updated: 0, rejected: 0,
+      },
+    });
+
+  const result = await autopilot.runSourceImportNow('api:cj', { actorId:'operator-1' });
+
+  expect(mockImportCatalog).toHaveBeenCalledTimes(2);
+  expect(result).toMatchObject({
+    status:'certified',
+    run_ref:'KIR-000010',
+    transient_retries:1,
+  });
+  delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES;
+  delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS;
+});
+
 test('import opérateur distingue une source fournisseur vide', async () => {
   mockSourceQueries(sourceRow({
     autopilot_enabled: false,
