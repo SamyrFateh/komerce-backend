@@ -114,4 +114,4 @@ async function readRunProgress(productRefs, executor = db) {
   };
 }
 
-module.exports = { readRunProgress };
+module.exports = { productProgress, readRunProgress };
