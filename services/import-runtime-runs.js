@@ -415,6 +415,15 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     processed,
     progress_pct: progressPct,
     accounting,
+    diagnostics: {
+      pipeline_status: intake.pipeline_status || null,
+      canonical_resolved: intake.canonical_resolved === true,
+      reject_reasons: intake.reject_reasons && typeof intake.reject_reasons === 'object'
+        ? intake.reject_reasons
+        : {},
+      runtime_certified: proofOk,
+      certification_reason: certificationReason,
+    },
     stages,
     current_item: recentItems[0] || null,
     recent_items: recentItems,

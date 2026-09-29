@@ -121,6 +121,45 @@ describe('import runtime run projection', () => {
     expect(stage(projection, 'CATALOGUE').status).toBe('PENDING');
   });
 
+  test('PARTIAL_BLOCKED distingue la certification runtime des certifications produit', () => {
+    const projection = runs.buildProjection({
+      run: baseRun({
+        source_total: 3,
+        intake: {
+          recorded_at: T1,
+          accepted: 2,
+          duplicates: 0,
+          rejected: 1,
+          quarantined: 0,
+          deferred: 0,
+          ready_for_refinery: 2,
+          certification_blocked: 0,
+          pipeline_status: 'PARTIAL_BLOCKED',
+          canonical_resolved: true,
+          reject_reasons: { 'media absent': 1 },
+          capture_id: 'cap-partial',
+        },
+      }),
+      rows: [candidate(1), candidate(2)],
+      sourceProof: null,
+    });
+    expect(stage(projection, 'CERTIFICATION')).toMatchObject({
+      status: 'FAILED',
+      reason: 'pipeline_partial_blocked',
+      metrics: expect.objectContaining({ certified: 2, runtime_certified: false }),
+    });
+    expect(projection.accounting).toMatchObject({
+      source_total: 3, accepted: 2, rejected: 1, certified: 2,
+    });
+    expect(projection.diagnostics).toEqual({
+      pipeline_status: 'PARTIAL_BLOCKED',
+      canonical_resolved: true,
+      reject_reasons: { 'media absent': 1 },
+      runtime_certified: false,
+      certification_reason: 'pipeline_partial_blocked',
+    });
+  });
+
   test('preuve runtime + accounting équilibré terminent la certification', () => {
     const projection = runs.buildProjection({
       run: baseRun(),

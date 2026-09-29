@@ -86,6 +86,9 @@
     if (stage.key === 'CATALOGUE' && stage.reason === 'awaiting_explicit_operator_promotion') {
       return { state:'waiting', label:'À valider' };
     }
+    if (stage.key === 'CERTIFICATION' && stage.status === 'FAILED' && stage.reason === 'pipeline_partial_blocked') {
+      return { state:'blocked', label:'À corriger' };
+    }
     if (stage.status === 'COMPLETED') return { state:'completed', label:'Terminé' };
     if (stage.status === 'FAILED') return { state:'failed', label:'Bloqué' };
     if (stage.status === 'RUNNING') return { state:'running', label:'En cours' };
@@ -95,13 +98,50 @@
   function flowTrack(stages) {
     return `<div class="kir-run-flow-track">${stages.map((stage, index) => {
       const meta = flowStageMeta(stage);
-      const count = stage.total ? `${stage.processed}/${stage.total}` : meta.label;
+      const count = stage.total
+        ? (meta.state === 'blocked' || meta.state === 'failed' || meta.state === 'waiting'
+          ? `${meta.label} · ${stage.processed}/${stage.total}`
+          : `${stage.processed}/${stage.total}`)
+        : meta.label;
       const marker = meta.state === 'completed' ? '✓' : meta.state === 'failed' ? '!' : String(index + 1);
       return `<div class="kir-run-flow-step is-${meta.state}">
         <span class="kir-run-flow-marker">${marker}</span>
         <div><strong>${esc(stage.label)}</strong><small>${esc(count)}</small></div>
       </div>`;
     }).join('')}</div>`;
+  }
+
+  function runtimeCertificationBlocked(run) {
+    const certification = (run?.stages || []).find(stage => stage.key === 'CERTIFICATION') || {};
+    return certification.status === 'FAILED'
+      && (
+        certification.reason === 'pipeline_partial_blocked'
+        || run?.diagnostics?.pipeline_status === 'PARTIAL_BLOCKED'
+      );
+  }
+
+  function runtimeCertificationSummary(run) {
+    const a = run?.accounting || {};
+    const parts = [
+      `${num(a.source_total)} entrée(s)`,
+      `${num(a.accepted)} acceptée(s)`,
+    ];
+    if (num(a.rejected) > 0) parts.push(`${num(a.rejected)} rejetée(s)`);
+    if (num(a.deferred) > 0) parts.push(`${num(a.deferred)} différée(s)`);
+    if (num(a.certification_blocked) > 0) parts.push(`${num(a.certification_blocked)} bloquée(s) contrat`);
+    parts.push(`${num(a.certified)} certifiée(s) sourcing`);
+    return parts.join(' · ') + ' · Production reste OFF';
+  }
+
+  function certificationReasonDetail(run) {
+    const reasons = run?.diagnostics?.reject_reasons || {};
+    const entries = Object.entries(reasons)
+      .filter(([, count]) => num(count) > 0)
+      .sort((a, b) => num(b[1]) - num(a[1]))
+      .slice(0, 3);
+    return entries.length
+      ? entries.map(([reason, count]) => `${reason}: ${num(count)}`).join(' · ')
+      : '';
   }
 
   function activationStrip(sourceControls) {
@@ -111,25 +151,37 @@
     const stages = activationStages();
     const completed = stages.filter(stage => stage.status === 'COMPLETED').length;
     const running = stages.some(stage => stage.status === 'RUNNING');
-    const progress = Math.max(6, Math.min(100, Math.round(((completed + (running ? .45 : 0)) / stages.length) * 100)));
+    const projectedProgress = num(activationState.run?.progress_pct);
+    const progress = projectedProgress > 0
+      ? Math.max(6, Math.min(100, projectedProgress))
+      : Math.max(6, Math.min(100, Math.round(((completed + (running ? .45 : 0)) / stages.length) * 100)));
     const noResult = activationState.outcome === 'empty'
       || ['no_valid_product', 'supplier_source_empty', 'all_supplier_products_invalid'].includes(String(activationState.run?.failure_reason || ''));
-    const failed = !noResult && (Boolean(activationState.error)
+    const certificationBlocked = activationState.outcome === 'certification_incomplete'
+      || runtimeCertificationBlocked(activationState.run);
+    const failed = !noResult && !certificationBlocked && (Boolean(activationState.error)
       || activationState.outcome === 'failed'
       || stages.some(stage => stage.status === 'FAILED'));
-    const title = failed
-      ? 'Passage interrompu'
-      : noResult
-        ? 'Passage terminé sans résultat'
-        : activationState.done ? 'Premier passage terminé' : 'Passage en direct';
-    const helper = failed
-      ? (activationState.error || 'Le premier passage automatique a échoué.')
-      : noResult
-        ? `${label} · ${activationState.runRef || 'nouveau lot'} · aucun produit exploitable`
-        : activationState.runRef
-          ? `${label} · ${activationState.runRef} · le même lot avance de bout en bout`
-          : `${label} · préparation de la source et création du premier lot`;
-    return `<section class="kir-run-flow ${failed ? 'is-failed' : noResult ? 'is-empty' : activationState.done ? 'is-complete' : 'is-live'}" aria-live="polite">
+    const title = certificationBlocked
+      ? 'Certification runtime incomplète'
+      : failed
+        ? 'Passage interrompu'
+        : noResult
+          ? 'Passage terminé sans résultat'
+          : activationState.done ? 'Premier passage terminé' : 'Passage en direct';
+    const helper = certificationBlocked
+      ? runtimeCertificationSummary(activationState.run)
+      : failed
+        ? (activationState.error || 'Le premier passage automatique a échoué.')
+        : noResult
+          ? `${label} · ${activationState.runRef || 'nouveau lot'} · aucun produit exploitable`
+          : activationState.runRef
+            ? `${label} · ${activationState.runRef} · le même lot avance de bout en bout`
+            : `${label} · préparation de la source et création du premier lot`;
+    const tone = certificationBlocked
+      ? 'is-certification-blocked'
+      : failed ? 'is-failed' : noResult ? 'is-empty' : activationState.done ? 'is-complete' : 'is-live';
+    return `<section class="kir-run-flow ${tone}" aria-live="polite">
       <div class="kir-run-flow-head">
         <div><span class="kir-section-kicker">FLUX DU LOT</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
         <em>${progress}%</em>
@@ -154,7 +206,8 @@
         reason:stage.reason || null,
       };
     });
-    const failed = run.status === 'FAILED' || stages.some(stage => stage.status === 'FAILED');
+    const certificationBlocked = runtimeCertificationBlocked(run);
+    const failed = !certificationBlocked && (run.status === 'FAILED' || stages.some(stage => stage.status === 'FAILED'));
     const catalogueWaiting = stages.some(stage => stage.key === 'CATALOGUE'
       && stage.reason === 'awaiting_explicit_operator_promotion');
     const automaticDone = stages
@@ -163,19 +216,25 @@
     const progress = Math.max(0, Math.min(100, num(run.progress_pct) || Math.round(
       (stages.filter(stage => stage.status === 'COMPLETED').length / stages.length) * 100
     )));
-    const title = failed
-      ? 'Passage interrompu'
-      : automaticDone && catalogueWaiting
-        ? 'Import automatique terminé'
-        : run.status === 'COMPLETED'
-          ? 'Parcours du lot terminé'
-          : 'Passage en cours';
-    const helper = failed
-      ? (run.failure_reason || 'Une étape du lot est bloquée.')
-      : catalogueWaiting
-        ? `${run.run_ref} · ${run.provider || 'Source'} · ${num(run.accounting?.awaiting_catalogue_promotion)} certifié(s) attendent la promotion Catalogue`
-        : `${run.run_ref} · ${run.provider || 'Source'} · parcours conservé à l’écran`;
-    const tone = failed ? 'is-failed' : catalogueWaiting ? 'is-waiting' : run.status === 'COMPLETED' ? 'is-complete' : 'is-live';
+    const title = certificationBlocked
+      ? 'Certification runtime incomplète'
+      : failed
+        ? 'Passage interrompu'
+        : automaticDone && catalogueWaiting
+          ? 'Import automatique terminé'
+          : run.status === 'COMPLETED'
+            ? 'Parcours du lot terminé'
+            : 'Passage en cours';
+    const helper = certificationBlocked
+      ? runtimeCertificationSummary(run)
+      : failed
+        ? (run.failure_reason || 'Une étape du lot est bloquée.')
+        : catalogueWaiting
+          ? `${run.run_ref} · ${run.provider || 'Source'} · ${num(run.accounting?.awaiting_catalogue_promotion)} certifié(s) attendent la promotion Catalogue`
+          : `${run.run_ref} · ${run.provider || 'Source'} · parcours conservé à l’écran`;
+    const tone = certificationBlocked
+      ? 'is-certification-blocked'
+      : failed ? 'is-failed' : catalogueWaiting ? 'is-waiting' : run.status === 'COMPLETED' ? 'is-complete' : 'is-live';
 
     return `<section class="kir-run-flow ${tone}" aria-label="Parcours du lot ${esc(run.run_ref)}">
       <div class="kir-run-flow-head">
@@ -199,12 +258,16 @@
     ];
     const awaiting = num(a.awaiting_catalogue_promotion);
     const blockers = num(a.rejected) + num(a.quarantined) + num(a.deferred) + num(a.certification_blocked);
-    const explanation = awaiting > 0
-      ? `${awaiting} produit(s) certifié(s) sourcing ne sont pas encore matérialisés au Catalogue. Ils n’ont pas disparu : le compteur Catalogue ne compte que les promotions réellement effectuées.`
-      : blockers > 0
-        ? `${blockers} produit(s) sont hors du chemin Catalogue pour une raison explicite (rejet, quarantaine, différé ou certification bloquée).`
-        : 'Tous les produits du lot sont comptabilisés dans le parcours réel.';
-    return `<section class="kir-run-truth" aria-label="Comptabilité réelle du lot">
+    const certificationBlocked = runtimeCertificationBlocked(run);
+    const reasonDetail = certificationReasonDetail(run);
+    const explanation = certificationBlocked
+      ? `Certification runtime fournisseur refusée sur ce passage : ${runtimeCertificationSummary(run)}.${reasonDetail ? ' Motifs : ' + reasonDetail + '.' : ''} Les produits certifiés sourcing restent tracés ; c’est l’activation Production de la source qui reste verrouillée.`
+      : awaiting > 0
+        ? `${awaiting} produit(s) certifié(s) sourcing ne sont pas encore matérialisés au Catalogue. Ils n’ont pas disparu : le compteur Catalogue ne compte que les promotions réellement effectuées.`
+        : blockers > 0
+          ? `${blockers} produit(s) sont hors du chemin Catalogue pour une raison explicite (rejet, quarantaine, différé ou certification bloquée).`
+          : 'Tous les produits du lot sont comptabilisés dans le parcours réel.';
+    return `<section class="kir-run-truth ${certificationBlocked ? 'is-certification-blocked' : ''}" aria-label="Comptabilité réelle du lot">
       <div class="kir-run-truth-head"><span class="kir-section-kicker">VÉRITÉ DU RUN</span><strong>Ce qui s’est réellement passé</strong></div>
       <div class="kir-run-truth-grid">${values.map(([label, value]) => `<div><span>${esc(label)}</span><strong>${value}</strong></div>`).join('')}</div>
       <p>${esc(explanation)}</p>
@@ -321,7 +384,7 @@
       <div class="kir-source-control-title">
         <span class="kir-section-kicker">SOURCING</span>
         <strong>Alimentation automatique</strong>
-        <small>OFF → ON prépare automatiquement la source, certifie un premier import réel puis active l’autopilot.</small>
+        <small>OFF → ON prépare la source, certifie le rail fournisseur sur un premier import réel puis active l’autopilot.</small>
       </div>
       <div class="kir-source-control-list">
         ${sources.map(source => {
@@ -770,9 +833,11 @@
         } catch (error) {
           const emptyPass = !enabled
             && ['SUPPLIER_SOURCE_EMPTY', 'NO_VALID_SUPPLIER_PRODUCT'].includes(error.code);
-          if (emptyPass && activationState?.sourceRef === sourceRef) {
+          const certificationIncomplete = !enabled
+            && error.code === 'sourcing_source_certification_incomplete';
+          if ((emptyPass || certificationIncomplete) && activationState?.sourceRef === sourceRef) {
             activationState.runRef = error.details?.run_ref || activationState.runRef;
-            activationState.outcome = 'empty';
+            activationState.outcome = emptyPass ? 'empty' : 'certification_incomplete';
             activationState.done = true;
             activationState.error = null;
             stopActivationPolling();
