@@ -332,6 +332,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
     (row) => row?.reason_code === importRuns.DUPLICATE_CODE
   ).length;
 
+  const rejectReasons = aggregateReasons(results.errors);
   await runHook((id) => importRuns.recordIntake(id, {
     recorded_at: new Date().toISOString(),
     accepted,
@@ -342,6 +343,8 @@ async function importCatalog(body, userId, dispatchToConnector) {
     ready_for_refinery: results.ready_for_refinery,
     certification_blocked: results.certification_blocked,
     pipeline_status: pipelineStatus,
+    canonical_resolved: sourceType === 'api' ? canonicalResolved : null,
+    reject_reasons: rejectReasons,
     capture_id: sourceType === 'api' ? (shadowIngestion?.capture_id || null) : null,
   }));
 
@@ -373,7 +376,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
       errors: results.errors,
       accepted,
       rejected: results.errors.length,
-      reject_reasons: aggregateReasons(results.errors),
+      reject_reasons: rejectReasons,
       unmapped_columns: connectorResult.unmapped_columns || [],
       source_certification: {
         certification_version: SOURCING_CERTIFICATION_VERSION,
