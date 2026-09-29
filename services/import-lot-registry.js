@@ -141,15 +141,17 @@ function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
   };
 }
 
-async function listLots({ limit = 12 } = {}, executor = db) {
+async function readLots({ limit = 12, runRef = null } = {}, executor = db) {
   const safeLimit = Math.min(Math.max(Number(limit) || 12, 1), 30);
+  const requestedRun = runRef == null ? null : String(runRef);
   const { rows: runs } = await executor.query(
     `SELECT id::text AS id, run_ref, provider, mode, status, source_total, intake,
             started_at, finished_at, updated_at
        FROM import_runtime_runs
+      WHERE ($2::text IS NULL OR run_ref = $2)
       ORDER BY started_at DESC
       LIMIT $1`,
-    [safeLimit]
+    [safeLimit, requestedRun]
   );
   if (!runs.length) return [];
 
@@ -232,10 +234,20 @@ async function listLots({ limit = 12 } = {}, executor = db) {
   });
 }
 
+async function listLots(options = {}, executor = db) {
+  return readLots(options, executor);
+}
+
+async function getLot(runRef, executor = db) {
+  const lots = await readLots({ limit: 1, runRef }, executor);
+  return lots[0] || null;
+}
+
 module.exports = {
   BUSINESS_STATUS,
   sourceExceptionCount,
   classifyProduct,
   buildLot,
   listLots,
+  getLot,
 };
