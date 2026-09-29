@@ -84,14 +84,24 @@
     const done = stages.filter(stage => stage.status === 'COMPLETED').length;
     const running = stages.some(stage => stage.status === 'RUNNING');
     const progress = Math.max(7, Math.min(100, Math.round(((done + (running ? .45 : 0)) / stages.length) * 100)));
-    const failed = Boolean(activationState.error) || stages.some(stage => stage.status === 'FAILED');
-    const title = failed ? 'Activation interrompue' : activationState.done ? 'Alimentation activée' : 'Activation en direct';
+    const noResult = activationState.outcome === 'empty'
+      || ['no_valid_product', 'supplier_source_empty', 'all_supplier_products_invalid'].includes(String(activationState.run?.failure_reason || ''));
+    const failed = !noResult && (Boolean(activationState.error)
+      || activationState.outcome === 'failed'
+      || stages.some(stage => stage.status === 'FAILED'));
+    const title = failed
+      ? 'Activation interrompue'
+      : noResult
+        ? 'Passage terminé · aucun résultat'
+        : activationState.done ? 'Alimentation activée' : 'Activation en direct';
     const helper = failed
-      ? activationState.error
-      : activationState.runRef
-        ? `${label} · ${activationState.runRef} · progression réelle du run`
-        : `${label} · préparation de la source et création du premier lot`;
-    return `<section class="kir-live-activation ${failed ? 'is-failed' : activationState.done ? 'is-complete' : 'is-live'}" aria-live="polite">
+      ? (activationState.error || 'Le premier passage automatique a échoué.')
+      : noResult
+        ? `${label} · ${activationState.runRef || 'nouveau lot'} · aucun produit exploitable retourné`
+        : activationState.runRef
+          ? `${label} · ${activationState.runRef} · progression réelle du run`
+          : `${label} · préparation de la source et création du premier lot`;
+    return `<section class="kir-live-activation ${failed ? 'is-failed' : noResult ? 'is-empty' : activationState.done ? 'is-complete' : 'is-live'}" aria-live="polite">
       <div class="kir-live-activation-head"><div><span class="kir-live-beacon"></span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div><em>${progress}%</em></div>
       <div class="kir-live-progress"><span style="width:${progress}%"></span></div>
       <div class="kir-live-stages">${stages.map(stage => `<div class="kir-live-stage is-${String(stage.status).toLowerCase()}"><span></span><strong>${esc(stage.label)}</strong>${stage.total ? `<small>${stage.processed}/${stage.total}</small>` : ''}</div>`).join('')}</div>
@@ -150,6 +160,7 @@
     if (!res.ok) {
       const error = new Error(body?.error || `HTTP ${res.status}`);
       error.code = body?.code || null;
+      error.details = body?.details || null;
       throw error;
     }
     return body;
@@ -161,6 +172,7 @@
       ACTION_REQUIRED:'Décisions attendues',
       BLOCKED:'À débloquer',
       CLOSED:'Clos',
+      NO_RESULT:'Sans résultat',
       ARCHIVED:'Archivé',
       UNKNOWN:'État indisponible',
     })[status] || status || 'État indisponible';
@@ -172,6 +184,7 @@
       ACTION_REQUIRED:'warning',
       BLOCKED:'critical',
       CLOSED:'positive',
+      NO_RESULT:'neutral',
       ARCHIVED:'neutral',
       UNKNOWN:'neutral',
     })[status] || 'neutral';
@@ -354,9 +367,11 @@
 
     const noAction = lot.business_status === 'CLOSED'
       ? `<section class="kir-closed-panel"><span>✓</span><div><strong>Lot clos</strong><p>Tous les produits transmis ont une décision terminale. Aucun geste opérateur n’est attendu.</p></div></section>`
-      : cards.length === 0
-        ? '<section class="kir-neutral-panel">Aucune action calculable pour le moment. La vérité aval est en cours de lecture.</section>'
-        : '';
+      : lot.business_status === 'NO_RESULT'
+        ? '<section class="kir-neutral-panel"><strong>Passage terminé sans résultat.</strong>&nbsp; La source n’a retourné aucun produit exploitable ; le lot reste visible pour garder la trace du passage.</section>'
+        : cards.length === 0
+          ? '<section class="kir-neutral-panel">Aucune action calculable pour le moment. La vérité aval est en cours de lecture.</section>'
+          : '';
 
     return `
       <section class="kir-decision-intro">
@@ -369,7 +384,7 @@
       </section>
       ${cards.length ? '<section class="kir-actions">' + cards.join('') + '</section>' : ''}
       ${noAction}
-      ${businessJourney(run)}
+      ${lot.business_status === 'NO_RESULT' ? '' : businessJourney(run)}
     `;
   }
 
@@ -563,7 +578,7 @@
         <div>
           <span class="kir-eyebrow">OPÉRATIONS · COCKPIT DES IMPORTS</span>
           <h1>${esc(run.run_ref)}</h1>
-          <p>${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s) · import ${run.status === 'COMPLETED' ? 'terminé' : run.status === 'FAILED' ? 'en échec' : 'en cours'}</p>
+          <p>${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s) · import ${lot.business_status === 'NO_RESULT' ? 'sans résultat' : run.status === 'COMPLETED' ? 'terminé' : run.status === 'FAILED' ? 'en échec' : 'en cours'}</p>
         </div>
         <div class="kir-hero-actions">
           <span class="kir-status-large is-${businessTone(lot.business_status)}">${esc(status)}</span>
@@ -579,7 +594,7 @@
         <div><span>Produits transmis</span><strong>${num(lot.promoted_products)}</strong></div>
         <div><span>Décisions finales</span><strong>${num(lot.closure?.decided_products)} / ${num(lot.closure?.total_products)}</strong></div>
         <div><span>Reste à décider</span><strong>${num(lot.closure?.remaining_products)}</strong></div>
-        <div><span>Clôture</span><strong>${lot.closure?.eligible ? 'Prête' : 'En attente'}</strong></div>
+        <div><span>Clôture</span><strong>${lot.business_status === 'NO_RESULT' ? 'Sans objet' : lot.closure?.eligible ? 'Prête' : 'En attente'}</strong></div>
       </section>
 
       <main class="kir-main">${renderBody(run, view, lots)}</main>
@@ -610,7 +625,7 @@
           const source = (payload?.source_controls || []).find(item => item.source_ref === sourceRef) || {};
           activationState = {
             sourceRef, label:source.label || source.supplier_name || sourceRef, done:false, error:null,
-            baselineRunRefs:(payload?.lots || []).map(lot => lot.run_ref), runRef:null, run:null,
+            baselineRunRefs:(payload?.lots || []).map(lot => lot.run_ref), runRef:null, run:null, outcome:null,
           };
           render(root, payload);
           startActivationPolling();
@@ -625,6 +640,7 @@
             const result = response?.result || {};
             const responseRunRef = result?.certification_run?.run_ref || result?.first_run?.run_ref || null;
             if (responseRunRef) activationState.runRef = responseRunRef;
+            activationState.outcome = result?.first_run?.status || result?.certification_run?.status || null;
             if (activationState.runRef) {
               try { activationState.run = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(activationState.runRef)}`); } catch (_) {}
             }
@@ -640,17 +656,32 @@
             }, 5000);
           }
         } catch (error) {
-          if (!enabled && activationState?.sourceRef === sourceRef) {
+          const emptyPass = !enabled
+            && ['SUPPLIER_SOURCE_EMPTY', 'NO_VALID_SUPPLIER_PRODUCT'].includes(error.code);
+          if (emptyPass && activationState?.sourceRef === sourceRef) {
+            activationState.runRef = error.details?.run_ref || activationState.runRef;
+            activationState.outcome = 'empty';
+            activationState.done = true;
+            activationState.error = null;
+            stopActivationPolling();
+            if (activationState.runRef) {
+              try { activationState.run = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(activationState.runRef)}`); } catch (_) {}
+              if (params().run !== activationState.runRef) global.history.pushState({}, '', urlFor(activationState.runRef));
+            }
+            await refresh({ preserve:true });
+          } else if (!enabled && activationState?.sourceRef === sourceRef) {
             activationState.error = error.message;
             activationState.done = true;
             stopActivationPolling();
             render(root, lastPayload || payload);
+            const main = root.querySelector?.('.kir-main');
+            if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
           } else {
             button.disabled = false;
             button.removeAttribute('aria-busy');
+            const main = root.querySelector?.('.kir-main');
+            if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
           }
-          const main = root.querySelector?.('.kir-main');
-          if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
         }
       });
     });

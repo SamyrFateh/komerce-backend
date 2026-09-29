@@ -255,6 +255,29 @@ test('erreur fournisseur transitoire persistante devient retry_pending et non fa
   delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS;
 });
 
+test('passage autopilot vide conserve la référence KIR pour le cockpit', async () => {
+  mockSourceQueries();
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog.mockResolvedValue({
+    status: 400,
+    body: { error: 'Aucun produit valide trouvé', invalid: [], run_ref: 'KIR-000099' },
+  });
+
+  const result = await autopilot.runSourceOnce('api:cj', { reason: 'test' });
+
+  expect(result).toMatchObject({
+    status: 'empty',
+    source_ref: 'api:cj',
+    run_ref: 'KIR-000099',
+  });
+});
+
 test('shadow incomplet ne peut jamais etre annonce comme un autopilot ok', async () => {
   mockSourceQueries();
   const lockClient = {

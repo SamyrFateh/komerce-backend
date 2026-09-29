@@ -345,6 +345,7 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
       return {
         status: retryPending ? 'retry_pending' : (empty ? 'empty' : 'failed'),
         source_ref: sourceRef,
+        run_ref: result.body?.run_ref || null,
         code: retryPending ? 'transient_import_retry_pending' : (empty ? null : 'import_failed'),
         error: result.body?.error || null,
         transient_retries: transientRetries,
@@ -369,6 +370,7 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
     return {
       status: partial ? 'partial' : 'ok',
       source_ref: sourceRef,
+      run_ref: body.run_ref || null,
       supplier_name: automation.supplier_name,
       accepted: body.accepted || 0,
       created: body.created || 0,

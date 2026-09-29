@@ -83,6 +83,31 @@ test('un produit Catalogue à finaliser remonte comme action et non comme détai
 });
 
 
+
+test('un passage fournisseur vide reste visible comme Sans résultat', () => {
+  const lot = buildLot(run({
+    run_ref:'KIR-000005',
+    status:'FAILED',
+    source_total:0,
+    failure_reason:'supplier_source_empty',
+    intake:{ quarantined:0, certification_blocked:0 },
+  }), [], [], 1);
+  expect(lot.business_status).toBe(BUSINESS_STATUS.NO_RESULT);
+  expect(lot.failure_reason).toBe('supplier_source_empty');
+  expect(lot.closure.remaining_products).toBe(0);
+});
+
+test('les anciens no_valid_product sans empreinte restent aussi visibles', () => {
+  const lot = buildLot(run({
+    run_ref:'KIR-000006',
+    status:'FAILED',
+    source_total:0,
+    failure_reason:'no_valid_product',
+    intake:{ quarantined:0, certification_blocked:0 },
+  }), [], [], 1);
+  expect(lot.business_status).toBe(BUSINESS_STATUS.NO_RESULT);
+});
+
 test('ancien run FAILED sans donnée métier est archivé et ne devient pas une fausse action', () => {
   const lot = buildLot(run({
     run_ref:'KIR-000001',

@@ -26,6 +26,7 @@ const BUSINESS_STATUS = Object.freeze({
   ACTION_REQUIRED: 'ACTION_REQUIRED',
   BLOCKED: 'BLOCKED',
   CLOSED: 'CLOSED',
+  NO_RESULT: 'NO_RESULT',
   ARCHIVED: 'ARCHIVED',
   UNKNOWN: 'UNKNOWN',
 });
@@ -118,8 +119,13 @@ function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
     || promoted.length > 0
     || exceptions > 0;
 
+  const emptyPass = run.status === 'FAILED'
+    && !hasBusinessFootprint
+    && ['no_valid_product', 'supplier_source_empty', 'all_supplier_products_invalid'].includes(String(run.failure_reason || ''));
+
   let businessStatus = BUSINESS_STATUS.ACTION_REQUIRED;
-  if (run.status === 'FAILED' && !hasBusinessFootprint) businessStatus = BUSINESS_STATUS.ARCHIVED;
+  if (emptyPass) businessStatus = BUSINESS_STATUS.NO_RESULT;
+  else if (run.status === 'FAILED' && !hasBusinessFootprint) businessStatus = BUSINESS_STATUS.ARCHIVED;
   else if (run.status === 'FAILED') businessStatus = BUSINESS_STATUS.BLOCKED;
   else if (run.status === 'RUNNING') businessStatus = BUSINESS_STATUS.RUNNING;
   else if (closureEligible) businessStatus = BUSINESS_STATUS.CLOSED;
@@ -130,6 +136,7 @@ function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
     provider: run.provider,
     mode: run.mode,
     technical_status: run.status,
+    failure_reason: run.failure_reason || null,
     business_status: businessStatus,
     source_total: positiveInt(run.source_total),
     promoted_products: promoted.length,
@@ -157,7 +164,7 @@ async function readLots({ limit = 12, runRef = null } = {}, executor = db) {
   const safeLimit = Math.min(Math.max(Number(limit) || 12, 1), 30);
   const requestedRun = runRef == null ? null : String(runRef);
   const { rows: runs } = await executor.query(
-    `SELECT id::text AS id, run_ref, provider, mode, status, source_total, intake,
+    `SELECT id::text AS id, run_ref, provider, mode, status, source_total, intake, failure_reason,
             started_at, finished_at, updated_at
        FROM import_runtime_runs
       WHERE ($2::text IS NULL OR run_ref = $2)
