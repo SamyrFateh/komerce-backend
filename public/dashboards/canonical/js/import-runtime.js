@@ -141,15 +141,38 @@
       : '';
   }
 
+  function runtimeCertificationBlockTitle(run) {
+    const provider = run?.provider || 'Source';
+    return `${provider} non activé automatiquement`;
+  }
+
   function runtimeCertificationBlockMessage(run) {
     const a = run?.accounting || {};
-    const reasonDetail = certificationReasonDetail(run);
+    const reasons = run?.diagnostics?.reject_reasons || {};
+    const rejected = Math.max(1, num(a.rejected));
+    const certified = num(a.certified);
     const deferred = num(a.deferred);
-    const rejected = num(a.rejected);
-    if (reasonDetail) {
-      return `${rejected || 1} produit(s) invalide(s) empêchent uniquement l’activation automatique de la source. Motif: ${reasonDetail}. Les ${num(a.certified)} produit(s) certifié(s) continuent vers le Catalogue ; ${deferred} différé(s) restent comptabilisés.`;
+    const duplicateVariants = Object.entries(reasons)
+      .filter(([reason]) => /combinaison d['’]options dupliquée/i.test(String(reason || '')))
+      .reduce((sum, [, count]) => sum + num(count), 0);
+    const missingMedia = Object.entries(reasons)
+      .filter(([reason]) => /media absent/i.test(String(reason || '')))
+      .reduce((sum, [, count]) => sum + num(count), 0);
+
+    let issue = `${rejected} produit${rejected > 1 ? 's' : ''} présente${rejected > 1 ? 'nt' : ''} des données à corriger`;
+    if (duplicateVariants > 0) {
+      issue = rejected > 1 ? `${rejected} produits contiennent des variantes en double` : '1 produit contient des variantes en double';
+    } else if (missingMedia > 0) {
+      issue = rejected > 1 ? `${rejected} produits n’ont pas d’image exploitable` : '1 produit n’a pas d’image exploitable';
     }
-    return `La preuve runtime fournisseur reste incomplète. Le lot continue avec ${num(a.certified)} produit(s) certifié(s), mais la source automatique reste OFF.`;
+
+    const parts = [
+      `${issue}.`,
+      `${certified} produit${certified > 1 ? 's' : ''} valide${certified > 1 ? 's' : ''} continue${certified > 1 ? 'nt' : ''} vers le Catalogue.`,
+    ];
+    if (deferred > 0) parts.push(`${deferred} produit${deferred > 1 ? 's' : ''} ont été mis de côté pour revue.`);
+    parts.push('Corrigez le produit en erreur puis relancez l’activation automatique.');
+    return parts.join(' ');
   }
 
   function activationStrip(sourceControls) {
@@ -279,7 +302,7 @@
               : 'neutral';
         return `<div class="is-${tone}"><span>${esc(label)}</span><strong>${value}</strong></div>`;
       }).join('')}</div>
-      ${providerGateBlocked ? `<div class="kir-runtime-alert"><strong>Source automatique bloquée</strong><span>${esc(runtimeCertificationBlockMessage(run))}</span></div>` : ''}
+      ${providerGateBlocked ? `<div class="kir-runtime-alert"><strong>${esc(runtimeCertificationBlockTitle(run))}</strong><span>${esc(runtimeCertificationBlockMessage(run))}</span><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le détail technique →</a></div>` : ''}
       <p>${esc(lotExplanation)}</p>
     </section>`;
   }

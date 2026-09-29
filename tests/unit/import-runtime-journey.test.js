@@ -181,10 +181,14 @@ test('un PARTIAL_BLOCKED bloque seulement la source et laisse le lot aller au Ca
 
   expect(node.innerHTML).toContain('Import automatique terminé');
   expect(node.innerHTML).toContain('12 certifié(s) attendent la promotion Catalogue');
-  expect(node.innerHTML).toContain('Source automatique bloquée');
-  expect(node.innerHTML).toContain('1 produit(s) invalide(s) empêchent uniquement l’activation automatique de la source');
-  expect(node.innerHTML).toContain("combinaison d'options dupliquée");
-  expect(node.innerHTML).toContain('Les 12 produit(s) certifié(s) continuent vers le Catalogue');
+  expect(node.innerHTML).toContain('AliExpress non activé automatiquement');
+  expect(node.innerHTML).toContain('1 produit contient des variantes en double.');
+  expect(node.innerHTML).toContain('12 produits valides continuent vers le Catalogue.');
+  expect(node.innerHTML).toContain('7 produits ont été mis de côté pour revue.');
+  expect(node.innerHTML).toContain('Corrigez le produit en erreur puis relancez l’activation automatique.');
+  expect(node.innerHTML).toContain('Voir le détail technique →');
+  expect(node.innerHTML).not.toContain('sellable_units[4]');
+  expect(node.innerHTML).not.toContain("combinaison d'options dupliquée");
   expect(node.innerHTML).toContain('12 produit(s) certifié(s) sourcing attendent maintenant la promotion Catalogue');
   expect(node.innerHTML).toContain('À valider · 0/12');
   expect(node.innerHTML).not.toContain('Passage interrompu');
