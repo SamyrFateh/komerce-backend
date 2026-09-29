@@ -34,8 +34,8 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-15');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-14');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-16');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-15');
   expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=260929-4');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
@@ -94,6 +94,10 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('sourcing_source_certification_incomplete');
   expect(source).toContain('Production reste OFF');
   expect(source).toContain('runtimeCertificationBlocked');
+  expect(source).toContain('provider_runtime_status');
+  expect(source).toContain('Source automatique bloquée');
+  expect(source).toContain('continuent vers le Catalogue');
+  expect(source).toContain('Source OFF · preuve runtime à corriger puis relancer');
   expect(css).toContain('Legacy Admin visual parity');
   expect(css).toContain('--kir-orange:var(--kmc-legacy-orange');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-runs/');
@@ -114,6 +118,11 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(css).toContain('grid-template-columns:repeat(4,minmax(0,1fr))');
   expect(css).toContain('border-radius:12px');
   expect(css).toContain('Signal hierarchy V2');
+  expect(css).toContain('V2 semantic signal hierarchy');
+  expect(css).toContain('.kir-runtime-alert');
+  expect(css).toContain('--kir-bg:#fff');
+  expect(css).toContain('border-left:4px solid #16A34A');
+  expect(css).toContain('border-left:4px solid #DC2626');
   expect(css).toContain('border-left:4px solid #16A34A');
   expect(css).toContain('background:#FFFFFF');
   expect(css).toContain('border-left:4px solid #DC2626');
