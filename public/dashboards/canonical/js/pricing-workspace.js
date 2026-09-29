@@ -25,6 +25,13 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createPricingWorkspace() {
   const ENDPOINT = '/api/admin/workspaces/pricing';
 
+  function contextualHref(path, returnTo, label) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    return nav && typeof nav.withReturnTo === 'function'
+      ? nav.withReturnTo(path, returnTo, label)
+      : path;
+  }
+
   function endpointFor(context) {
     return context && context.requestedMarket
       ? `${ENDPOINT}/market/${encodeURIComponent(context.requestedMarket)}`
@@ -408,7 +415,7 @@
       const tr = doc.createElement('tr');
       const productCell = doc.createElement('td');
       const link = text(doc, 'a', 'kmc-workspace-nav-link', `${row.product_ref} · ${row.name}`);
-      link.href = `/admin/products/${encodeURIComponent(row.product_ref)}`;
+      link.href = contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`, '/admin/workspaces/pricing', 'Retour à l’atelier économique');
       productCell.appendChild(link);
       tr.appendChild(productCell);
       tr.appendChild(td(doc, row.category));

@@ -61,8 +61,8 @@
         Object.freeze({ id: 'operations-overview', label: 'Vue d’ensemble', href: '/admin/operations', roles: Object.freeze(['admin', 'market_operator']) }),
         Object.freeze({ id: 'operations-workspace', label: 'Hub / Relais', href: '/admin/workspaces/operations', roles: Object.freeze(['admin', 'agent_hub', 'agent_relais', 'market_operator']) }),
         Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: Object.freeze(['admin', 'agent_hub', 'agent_transitaire', 'market_operator']) }),
+        Object.freeze({ id: 'import-runtime', label: 'Cockpit imports', href: '/admin/import-runtime', roles: Object.freeze(['admin', 'sourcing']) }),
         Object.freeze({ id: 'sourcing-workspace', label: 'Sourcing', href: '/admin/workspaces/sourcing', roles: Object.freeze(['admin', 'sourcing']) }),
-        Object.freeze({ id: 'import-runtime', label: 'Import live', href: '/admin/import-runtime', roles: Object.freeze(['admin', 'sourcing']) }),
       ]),
     }),
     Object.freeze({
@@ -79,7 +79,7 @@
     admin: '/admin/pilotage',
     market_operator: '/admin/pilotage',
     finance: '/admin/workspaces/accounting',
-    sourcing: '/admin/workspaces/sourcing',
+    sourcing: '/admin/import-runtime',
     agent_hub: '/admin/workspaces/operations',
     agent_relais: '/admin/workspaces/operations',
     agent_transitaire: '/admin/workspaces/shipping-customs',

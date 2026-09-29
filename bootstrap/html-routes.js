@@ -196,9 +196,8 @@ function mountHtmlRoutes(app, rootDir) {
     });
   });
 
-  // LOT 4K — ProductsView, CategoriesView et CatalogApprovalView sont
-  // prouvés absorbés par le Catalog Workspace Canonical. Les anciens pathnames
-  // deviennent des points d'entrée de compatibilité ; ?legacy=1 garde Legacy 1.
+  // LOT 4K — anciennes entrées Catalogue définitivement absorbées.
+  // Ces aliases convergent sans rollback vers le Workspace Canonical.
   const CATALOG_CANONICAL_ENTRYPOINTS = Object.freeze([
     '/admin/products',
     '/admin/categories',
@@ -206,23 +205,20 @@ function mountHtmlRoutes(app, rootDir) {
   ]);
 
   CATALOG_CANONICAL_ENTRYPOINTS.forEach(routePath => {
-    app.get(routePath, (req, res) => {
-      if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+    app.get(routePath, (_req, res) => {
       res.redirect(302, '/admin/workspaces/catalog');
     });
   });
 
-  // LOT 4L — SourcingView et SourcingScannerView sont prouvés absorbés
-  // par le Sourcing Workspace Canonical. SuppliersView reste Legacy car il
-  // administre aussi des familles de partenaires hors partner_type=sourcing.
+  // LOT 4L — anciennes entrées Sourcing définitivement absorbées.
+  // SuppliersView reste Legacy car il administre aussi des familles hors sourcing.
   const SOURCING_CANONICAL_ENTRYPOINTS = Object.freeze([
     '/admin/sourcing',
     '/admin/sourcing-scanner',
   ]);
 
   SOURCING_CANONICAL_ENTRYPOINTS.forEach(routePath => {
-    app.get(routePath, (req, res) => {
-      if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+    app.get(routePath, (_req, res) => {
       res.redirect(302, '/admin/workspaces/sourcing');
     });
   });

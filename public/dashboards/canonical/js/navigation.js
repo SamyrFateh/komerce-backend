@@ -222,13 +222,55 @@
   });
 
   const BACK_TARGETS = Object.freeze({
-    'action-center': '/admin/pilotage',
-    'order-360': '/admin/commerce',
-    'client-index': '/admin/commerce',
-    'client-360': '/admin/clients',
-    'product-360': '/admin/workspaces/catalog',
-    demo: '/admin/pilotage',
+    'action-center': Object.freeze({ href:'/admin/pilotage', label:'Retour au pilotage' }),
+    'order-360': Object.freeze({ href:'/admin/commerce', label:'Retour au commerce' }),
+    'client-index': Object.freeze({ href:'/admin/commerce', label:'Retour au commerce' }),
+    'client-360': Object.freeze({ href:'/admin/clients', label:'Retour aux clients' }),
+    'product-360': Object.freeze({ href:'/admin/workspaces/catalog', label:'Retour au catalogue' }),
+    demo: Object.freeze({ href:'/admin/pilotage', label:'Retour au pilotage' }),
   });
+
+  function safeReturnTarget(value) {
+    const target = String(value || '').trim();
+    if (!target || !target.startsWith('/') || target.startsWith('//') || target.includes('\\')) return null;
+    const pathname = target.split(/[?#]/, 1)[0];
+    if (pathname === '/admin' || pathname.startsWith('/admin/')) return target;
+    if (pathname.startsWith('/dashboards/canonical/')) return target;
+    return null;
+  }
+
+  function withReturnTo(path, returnTo, label = 'Retour') {
+    const target = safeReturnTarget(returnTo);
+    if (!target) return String(path || '');
+    const q = new URLSearchParams();
+    q.set('return_to', target);
+    if (label) q.set('return_label', String(label));
+    const base = String(path || '');
+    return base + (base.includes('?') ? '&' : '?') + q.toString();
+  }
+
+  function resolveBackTarget(surface, search) {
+    let requestedHref = null;
+    let requestedLabel = null;
+    try {
+      const query = new URLSearchParams(String(search || '').replace(/^\?/, ''));
+      requestedHref = safeReturnTarget(query.get('return_to'));
+      const rawLabel = String(query.get('return_label') || '').trim();
+      requestedLabel = rawLabel && rawLabel.length <= 48 ? rawLabel : null;
+    } catch (_) {
+      requestedHref = null;
+      requestedLabel = null;
+    }
+    if (requestedHref) {
+      return Object.freeze({
+        href: requestedHref,
+        label: requestedLabel || 'Retour',
+        contextual: true,
+      });
+    }
+    const fallback = BACK_TARGETS[surface];
+    return fallback ? Object.freeze({ ...fallback, contextual:false }) : null;
+  }
 
   function textNode(doc, tagName, className, value) {
     const node = doc.createElement(tagName);
@@ -599,13 +641,17 @@
     home.appendChild(textNode(doc, 'span', 'kmc-admin-home-label', 'KOMERCE'));
     identity.appendChild(home);
 
-    const backTarget = BACK_TARGETS[surface];
+    const backTarget = resolveBackTarget(
+      surface,
+      options.search != null ? options.search : (global.location && global.location.search) || ''
+    );
     if (backTarget) {
       const back = doc.createElement('a');
       back.className = 'kmc-admin-back';
-      back.href = backTarget;
-      back.setAttribute('aria-label', 'Retour à la vue précédente');
-      back.textContent = '← Retour';
+      back.href = backTarget.href;
+      back.setAttribute('aria-label', backTarget.label);
+      back.setAttribute('data-back-context', backTarget.contextual ? 'contextual' : 'canonical');
+      back.textContent = `← ${backTarget.label}`;
       identity.appendChild(back);
     }
 
@@ -692,6 +738,9 @@
     SURFACE_TO_DOMAIN,
     SURFACE_TO_SPACE,
     BACK_TARGETS,
+    safeReturnTarget,
+    withReturnTo,
+    resolveBackTarget,
     visibleDomainsFor,
     visibleSpacesFor,
     landingForDomain,

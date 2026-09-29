@@ -315,15 +315,11 @@ describe('bootstrap/html-routes', () => {
       '/admin/products',
       '/admin/categories',
       '/admin/catalog-approval',
-    ])('%s?legacy=1 conserve le rollback Legacy 1', (routePath) => {
+    ])('%s?legacy=1 ne ressuscite plus une surface Catalogue absorbée', (routePath) => {
       const res = fakeRes();
       app._routes[routePath]({ query: { legacy: '1' } }, res);
-      expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
-      expect(res.sendFile).toHaveBeenCalledWith(
-        require('path').join(PUBLIC_DIR, 'dashboards', 'admin', 'index.html'),
-        expect.any(Function)
-      );
-      expect(res.redirect).not.toHaveBeenCalled();
+      expect(res.redirect).toHaveBeenCalledWith(302, '/admin/workspaces/catalog');
+      expect(res.sendFile).not.toHaveBeenCalled();
     });
 
     test.each([
@@ -339,15 +335,11 @@ describe('bootstrap/html-routes', () => {
     test.each([
       '/admin/sourcing',
       '/admin/sourcing-scanner',
-    ])('%s?legacy=1 conserve le rollback Legacy 1', (routePath) => {
+    ])('%s?legacy=1 ne ressuscite plus une surface Sourcing absorbée', (routePath) => {
       const res = fakeRes();
       app._routes[routePath]({ query: { legacy: '1' } }, res);
-      expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
-      expect(res.sendFile).toHaveBeenCalledWith(
-        require('path').join(PUBLIC_DIR, 'dashboards', 'admin', 'index.html'),
-        expect.any(Function)
-      );
-      expect(res.redirect).not.toHaveBeenCalled();
+      expect(res.redirect).toHaveBeenCalledWith(302, '/admin/workspaces/sourcing');
+      expect(res.sendFile).not.toHaveBeenCalled();
     });
 
     test('/admin/suppliers reste Legacy 1 : la vue couvre des partenaires hors sourcing', () => {

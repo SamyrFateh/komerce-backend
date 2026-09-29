@@ -83,17 +83,11 @@
     { path: '/admin/invoices',         view: 'InvoicesView',         label: 'Factures',               icon: '📄', shell: 'ct', section: 'PILOTAGE' },
 
     // ══ CT — Sourcing / Pricing ══
-    { path: '/admin/sourcing',          view: 'SourcingView',          label: 'Sourcing',              icon: '🔎', shell: 'ct', section: 'SOURCING',  roles: ['admin','sourcing'] },
-    { path: '/admin/import-runtime',    view: 'ImportRuntimeView',     label: 'Import & suivi',        icon: '⏱️', shell: 'bo', section: 'OPÉRATIONS', roles: ['admin','sourcing'] },
-    { path: '/admin/sourcing-scanner',  view: 'SourcingScannerView',   label: 'Scanner catalogue',     icon: '📡', shell: 'ct', section: 'SOURCING',  roles: ['admin','sourcing'] },
     { path: '/admin/providers',          view: 'ProvidersView',          label: 'Fournisseurs catalogue', icon: '🔌', shell: 'ct', section: 'SOURCING',  roles: ['admin','sourcing'] },
     { path: '/admin/pricing',           view: 'PricingView',           label: 'Construction du Prix',  icon: '🧮', shell: 'ct', section: 'PRICING',   roles: ['admin','sourcing','finance'] },
     { path: '/admin/pricing-workshop',  view: 'PricingWorkshopView',   label: 'Config des coûts',      icon: '⚙️', shell: 'ct', section: 'PRICING',   roles: ['admin'] },
     { path: '/admin/pricing-strategy',  view: 'PricingStrategyView',   label: 'Stratégie de prix',     icon: '📈', shell: 'ct', section: 'PRICING',   roles: ['admin','sourcing','finance'] },
     { path: '/admin/economic-flow',     view: 'EconomicFlowView',      label: 'Carte économique',      icon: '🔭', shell: 'ct', section: 'PRICING',   roles: ['admin','sourcing','finance'] },
-    { path: '/admin/categories',        view: 'CategoriesView',        label: 'Catégories boutique',   icon: '🏷️', shell: 'ct', section: 'CATALOGUE', roles: ['admin'] },
-    { path: '/admin/products',          view: 'ProductsView',          label: 'Produits boutique',     icon: '🛍️', shell: 'ct', section: 'CATALOGUE', roles: ['admin'] },
-    { path: '/admin/catalog-approval',  view: 'CatalogApprovalView',   label: 'File d\'approbation',   icon: '✅', shell: 'ct', section: 'CATALOGUE', roles: ['admin'] },
 
     // ══ BO — Opérations ══
     { path: '/admin/problems',         view: 'ProblemsView',         label: 'Problèmes',              icon: '⚠️', shell: 'bo', section: 'OPÉRATIONS' },

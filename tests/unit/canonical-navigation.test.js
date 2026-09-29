@@ -212,7 +212,7 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     const primary = inner.children[1];
     const orders = findPrimaryLink(header, 'orders-overview');
 
-    expect(identity.children[1].textContent).toBe('← Retour');
+    expect(identity.children[1].textContent).toBe('← Retour au commerce');
     expect(identity.children[1].href).toBe('/admin/commerce');
     expect(orders.attributes['aria-current']).toBeUndefined();
     expect(env.api.activePrimarySurface('order-360')).toBe('orders');
@@ -221,6 +221,42 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     expect(env.api.visibleDomainsFor({ role: 'admin' }).map(domain => domain.label)).toEqual([
       'Dashboard', 'Atelier économique', 'Catalogue', 'Commandes', 'Marchés', 'Opérations', 'Finance',
     ]);
+  });
+
+  test('un drill-down respecte le parent métier explicite return_to plutôt que son fallback générique', () => {
+    const env = loadNavigation('/admin/products/P-1', 'product-360', {
+      window: {
+        location: {
+          pathname: '/admin/products/P-1',
+          search: '?return_to=%2Fadmin%2Fimport-runtime%3Frun%3DKIR-000004%26view%3Dcatalogue&return_label=Retour+au+lot',
+          href: 'https://komerce.test/admin/products/P-1',
+        },
+      },
+    });
+    const header = mountFor(env, '/admin/products/P-1', 'product-360', { role: 'admin' });
+    const back = header.children[0].children[0].children[1];
+
+    expect(back.textContent).toBe('← Retour au lot');
+    expect(back.href).toBe('/admin/import-runtime?run=KIR-000004&view=catalogue');
+    expect(back.attributes['data-back-context']).toBe('contextual');
+  });
+
+  test('return_to externe ou ambigu est refusé et retombe sur le parent canonique', () => {
+    const env = loadNavigation('/admin/products/P-1', 'product-360', {
+      window: {
+        location: {
+          pathname: '/admin/products/P-1',
+          search: '?return_to=https%3A%2F%2Fevil.example%2Fphish&return_label=Retour',
+          href: 'https://komerce.test/admin/products/P-1',
+        },
+      },
+    });
+    const header = mountFor(env, '/admin/products/P-1', 'product-360', { role: 'admin' });
+    const back = header.children[0].children[0].children[1];
+
+    expect(back.textContent).toBe('← Retour au catalogue');
+    expect(back.href).toBe('/admin/workspaces/catalog');
+    expect(back.attributes['data-back-context']).toBe('canonical');
   });
 
   test('Marchés pointe vers la gestion des accès pour admin et vers autonomie marché pour market_operator', () => {
@@ -319,7 +355,7 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     expect(operations.href).toBe('/admin/workspaces/shipping-customs');
   });
 
-  test('sourcing n’a que Sourcing — le domaine Opérations mène directement dessus, sans N2', () => {
+  test('le contrat de base sourcing reste minimal ; la policy V3 ajoute Cockpit imports + Sourcing', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = mountFor(env, '/admin/pilotage', 'pilotage', { role: 'sourcing' });
     expect(secondaryNav(header)).toBeUndefined();

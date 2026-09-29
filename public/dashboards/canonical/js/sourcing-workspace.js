@@ -25,6 +25,13 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createSourcingWorkspace() {
   const ENDPOINT = '/api/admin/workspaces/sourcing';
 
+  function contextualHref(path, returnTo, label) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    return nav && typeof nav.withReturnTo === 'function'
+      ? nav.withReturnTo(path, returnTo, label)
+      : path;
+  }
+
   function text(doc, tag, className, value) {
     const node = doc.createElement(tag);
     if (className) node.className = className;
@@ -182,7 +189,7 @@
       const actions = doc.createElement('td');
       if (row.product_ref) {
         const product = text(doc, 'a', 'kmc-workspace-nav-link', 'Product 360');
-        product.href = `/admin/products/${encodeURIComponent(row.product_ref)}`;
+        product.href = contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`, '/admin/workspaces/sourcing', 'Retour au sourcing');
         actions.appendChild(product);
       }
 
@@ -323,7 +330,7 @@
       tr.appendChild(td(doc, row.lifecycle_status));
       const actions = doc.createElement('td');
       const detail = text(doc, 'a', 'kmc-workspace-nav-link', 'Product 360');
-      detail.href = `/admin/products/${encodeURIComponent(row.product_ref)}`;
+      detail.href = contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`, '/admin/workspaces/sourcing', 'Retour au sourcing');
       actions.appendChild(detail);
       const edit = makeButton(doc, 'Modifier sourcing', 'update-sourcing-product', true);
       edit.addEventListener('click', () => {

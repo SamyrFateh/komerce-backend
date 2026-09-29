@@ -52,7 +52,7 @@
         admin: '/admin/pilotage',
         market_operator: '/admin/pilotage',
         finance: '/admin/workspaces/accounting',
-        sourcing: '/admin/workspaces/sourcing',
+        sourcing: '/admin/import-runtime',
         agent_hub: '/admin/workspaces/operations',
         agent_relais: '/admin/workspaces/operations',
         agent_transitaire: '/admin/workspaces/shipping-customs',

@@ -207,7 +207,6 @@
   function getCustomsShipment(id)              { return fetchJSON(apiUrl('/admin/customs-shipments/' + id)); }
   function getCustomsRatesEffective()          { return fetchJSON(apiUrl('/admin/customs-shipments/rates/effective')); }
   function createCustomsShipment(body)         { return fetchMutation(apiUrl('/admin/customs-shipments'), 'POST', body); }
-  function getCustomsCategories(params)        { return fetchJSON(apiUrl('/admin/customs-categories', params)); }
 
   // Suppliers / Partners
   function getPartners(params)                 { return fetchJSON(apiUrl('/admin/partners', params)); }
@@ -424,14 +423,6 @@
   function getSourcingWorkspace() {
     return fetchJSON(apiUrl('/admin/workspaces/sourcing'));
   }
-  function getImportRuntimeRuns() {
-    return fetchJSON(apiUrl('/admin/workspaces/sourcing/import-runs'));
-  }
-  function getImportRuntimeRun(runRef) {
-    return fetchJSON(
-      apiUrl('/admin/workspaces/sourcing/import-runs/' + encodeURIComponent(runRef))
-    );
-  }
   function setSourcingSourceAutopilot(sourceRef, enabled) {
     return fetchJSON(
       apiUrl('/admin/workspaces/sourcing/sources/' + encodeURIComponent(sourceRef) + '/' + (enabled ? 'activate' : 'deactivate')),
@@ -446,84 +437,6 @@
     );
   }
 
-  // ── Lot 4 — Sourcing Intelligence ─────────────────────────────────────────
-
-  function getSourcingSynthesis() {
-    return fetchJSON(apiUrl('/admin/sourcing/synthesis'));
-  }
-
-  function getSourcingAnalysis(params) {
-    return fetchJSON(apiUrl('/admin/sourcing/analysis', params));
-  }
-
-  function updateSourcingProduct(id, body) {
-    return fetchMutation(
-      apiUrl('/admin/sourcing/products/' + encodeURIComponent(id)),
-      'PUT',
-      body
-    );
-  }
-
-  // ── Lot 4 — Scanner catalogue fournisseur ─────────────────────────────────
-
-  function getSourcingCatalogs(params) {
-    return fetchJSON(apiUrl('/admin/sourcing/catalogs', params));
-  }
-
-  function getSourcingCandidates(params) {
-    return fetchJSON(apiUrl('/admin/sourcing/candidates', params));
-  }
-
-  function getSourcingCandidate(id) {
-    return fetchJSON(
-      apiUrl('/admin/sourcing/candidates/' + encodeURIComponent(id))
-    );
-  }
-
-  function updateSourcingCandidate(id, body) {
-    return fetchMutation(
-      apiUrl('/admin/sourcing/candidates/' + encodeURIComponent(id)),
-      'PUT',
-      body
-    );
-  }
-
-  function importSourcingCatalog(body) {
-    return fetchMutation(
-      apiUrl('/admin/sourcing/catalogs/import'),
-      'POST',
-      body
-    );
-  }
-
-  function scanSourcingCandidate(id) {
-    return fetchMutation(
-      apiUrl('/admin/sourcing/candidates/' + encodeURIComponent(id) + '/scan'),
-      'POST'
-    );
-  }
-
-  function importSourcingProduct(id) {
-    return fetchMutation(
-      apiUrl('/admin/sourcing/candidates/' + encodeURIComponent(id) + '/import-product'),
-      'POST'
-    );
-  }
-
-  function watchlistSourcingCandidate(id) {
-    return fetchMutation(
-      apiUrl('/admin/sourcing/candidates/' + encodeURIComponent(id) + '/watchlist'),
-      'POST'
-    );
-  }
-
-  function rejectSourcingCandidate(id, body) {
-    return fetchMutation(
-      apiUrl('/admin/sourcing/candidates/' + encodeURIComponent(id) + '/reject'),
-      'POST',
-      body
-    );
-  }
   // ── Lot 6 — Settings ──────────────────────────────────────────────────────
 
   /** Toutes les règles groupées par catégorie. Retourne { categories } */
@@ -682,7 +595,6 @@
     getCustomsShipment,
     getCustomsRatesEffective,
     createCustomsShipment,
-    getCustomsCategories,
     getPartners,
     getPartnersLogistique,
     getPartnersStats,
@@ -725,26 +637,10 @@
     hubInventoryProposeAll,
 
     getSourcingWorkspace,
-    getImportRuntimeRuns,
-    getImportRuntimeRun,
     setSourcingSourceAutopilot,
     setSourcingSourceCapability,
 
-    // Lot 4 — Sourcing Intelligence (3)
-    getSourcingSynthesis,
-    getSourcingAnalysis,
-    updateSourcingProduct,
 
-    // Lot 4 — Scanner catalogue (9)
-    getSourcingCatalogs,
-    getSourcingCandidates,
-    getSourcingCandidate,
-    updateSourcingCandidate,
-    importSourcingCatalog,
-    scanSourcingCandidate,
-    importSourcingProduct,
-    watchlistSourcingCandidate,
-    rejectSourcingCandidate,
     // Lot 6 — Settings (9)
     getSettings,
     getSettingRule,
