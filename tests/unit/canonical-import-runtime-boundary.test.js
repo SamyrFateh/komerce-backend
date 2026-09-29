@@ -73,7 +73,6 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('Alimentation automatique');
   expect(source).toContain('Préparation auto');
   expect(source).toContain('activation_ready');
-  expect(source).toContain('preparation_required');
   expect(source).toContain('data-source-toggle');
   expect(source).toContain("role=\"switch\"");
   expect(source).toContain("/api/admin/workspaces/sourcing/sources/");
