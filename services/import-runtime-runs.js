@@ -201,6 +201,7 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     taxonomized,
     certified,
     catalogued,
+    awaiting_catalogue_promotion: Math.max(0, certified - catalogued),
     unaccounted: rec.unaccounted,
     overflow: rec.overflow,
   };
