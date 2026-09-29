@@ -534,3 +534,30 @@
 @media(max-width:1350px){
   .kir-page{max-width:calc(100% - 24px)}
 }
+
+
+/* Runtime certification is a fail-closed provider gate, not a generic crash.
+ * Keep it visible in Legacy warning orange while preserving red for true failures. */
+.kir-run-flow.is-certification-blocked{
+  border-color:#f0c36c;
+  border-left-color:var(--kir-orange);
+  background:#fffaf0;
+}
+.kir-run-flow.is-certification-blocked .kir-run-flow-progress>span{
+  background:var(--kir-orange);
+}
+.kir-run-flow-step.is-blocked .kir-run-flow-marker{
+  border-color:#e8aa36;
+  background:#fff4d9;
+  color:#9a5a00;
+}
+.kir-run-flow-step.is-blocked strong{color:#9a5a00}
+.kir-run-flow-step.is-blocked small{color:#b7791f}
+.kir-run-truth.is-certification-blocked{
+  border-color:#f0c36c;
+  background:#fffdf8;
+}
+.kir-run-truth.is-certification-blocked p{
+  color:#7a5514;
+  font-weight:500;
+}
