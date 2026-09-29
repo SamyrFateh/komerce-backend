@@ -161,9 +161,9 @@
 
     let issue = `${rejected} produit${rejected > 1 ? 's' : ''} présente${rejected > 1 ? 'nt' : ''} des données à corriger`;
     if (duplicateVariants > 0) {
-      issue = `${rejected} produit${rejected > 1 ? 's' : ''} contient${rejected > 1 ? 'iennent' : ''} des variantes en double`;
+      issue = rejected > 1 ? `${rejected} produits contiennent des variantes en double` : '1 produit contient des variantes en double';
     } else if (missingMedia > 0) {
-      issue = `${rejected} produit${rejected > 1 ? 's' : ''} n’a${rejected > 1 ? 'ont' : ''} pas d’image exploitable`;
+      issue = rejected > 1 ? `${rejected} produits n’ont pas d’image exploitable` : '1 produit n’a pas d’image exploitable';
     }
 
     const parts = [
