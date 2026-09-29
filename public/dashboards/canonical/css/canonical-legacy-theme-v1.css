@@ -861,3 +861,59 @@ body.kmc-shell-v4 #market-catalog-root {
     font-size: 26px;
   }
 }
+
+
+/* V1.4 — exact Legacy typography parity.
+ * The Legacy Admin uses the native system stack; avoid synthetic Inter-heavy
+ * weights that make Canonical look rounder/thicker than the reference UI. */
+body[data-admin-generation="canonical"],
+body.kmc-shell-v4,
+body[data-admin-generation="canonical"] button,
+body[data-admin-generation="canonical"] input,
+body[data-admin-generation="canonical"] select,
+body[data-admin-generation="canonical"] textarea,
+body.kmc-shell-v4 button,
+body.kmc-shell-v4 input,
+body.kmc-shell-v4 select,
+body.kmc-shell-v4 textarea {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+body[data-admin-generation="canonical"],
+body.kmc-shell-v4 {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 400;
+  background: #fff !important;
+}
+
+body.kmc-shell-v4 .kmc-admin-home-label {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link {
+  font-size: 13px;
+  font-weight: 400;
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active {
+  font-weight: 600;
+}
+
+.kmc-admin-domain-tab {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.kmc-admin-domain-tab.is-active {
+  font-weight: 600;
+}
+
+.kmc-admin-search-input,
+.kmc-admin-topbar .kmc-admin-market-select,
+.kmc-admin-topbar .kmc-admin-account {
+  font-size: 12px;
+  font-weight: 400;
+}
