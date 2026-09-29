@@ -93,9 +93,15 @@
 
     const nav = doc.createElement('nav');
     nav.className = 'kmc-workspace-nav';
-    const catalog = text(doc, 'a', 'kmc-workspace-nav-link', 'Catalogue Workspace →');
+    const cockpit = text(doc, 'a', 'kmc-workspace-nav-link', 'Cockpit des imports');
+    cockpit.href = '/admin/import-runtime';
+    nav.appendChild(cockpit);
+    const catalog = text(doc, 'a', 'kmc-workspace-nav-link', 'Catalogue global →');
     catalog.href = '/admin/workspaces/catalog';
     nav.appendChild(catalog);
+    const diagnostic = text(doc, 'a', 'kmc-workspace-nav-link', 'Diagnostic technique');
+    diagnostic.href = '/admin/workspaces/sourcing?diagnostic=1';
+    nav.appendChild(diagnostic);
     header.appendChild(nav);
 
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
@@ -252,16 +258,19 @@
     const slot = createSection(
       rootNode,
       ui,
-      'Imports fournisseur',
-      'CSV et saisie manuelle passent par les connecteurs et l’orchestrateur existants. Le Workspace ne recode pas la raffinerie.'
+      'Lancer un import',
+      'Cette surface déclenche l’ingestion. Le suivi, les anciens lots et leur clôture se pilotent ensuite dans le Cockpit des imports.'
     );
 
     const bar = doc.createElement('div');
     bar.className = 'kmc-workspace-section-actions';
     const manual = makeButton(doc, 'Import manuel', 'manual-import');
     const csv = makeButton(doc, 'Import CSV', 'csv-import', true);
+    const cockpit = text(doc, 'a', 'kmc-workspace-nav-link', 'Ouvrir le Cockpit →');
+    cockpit.href = '/admin/import-runtime';
     bar.appendChild(manual);
     bar.appendChild(csv);
+    bar.appendChild(cockpit);
     slot.appendChild(bar);
 
     manual.addEventListener('click', () => {
@@ -276,7 +285,7 @@
       runAction(context, manual, {
         url: `${ENDPOINT}/imports`,
         body: { supplier_name: supplier.trim(), source_type: 'manual', items },
-        successMessage: `Import ${supplier.trim()} terminé.`,
+        successMessage: `Import ${supplier.trim()} lancé. Suivez désormais son KIR dans le Cockpit.`,
       });
     });
 
@@ -288,32 +297,9 @@
       runAction(context, csv, {
         url: `${ENDPOINT}/imports`,
         body: { supplier_name: supplier.trim(), source_type: 'csv', csv_text: csvText },
-        successMessage: `Import CSV ${supplier.trim()} terminé.`,
+        successMessage: `Import CSV ${supplier.trim()} lancé. Suivez désormais son KIR dans le Cockpit.`,
       });
     });
-
-    const rows = payload.imports || [];
-    if (!rows.length) {
-      slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun import récent.'));
-      return;
-    }
-    const table = doc.createElement('table');
-    table.className = 'kmc-workspace-table';
-    table.innerHTML = '<thead><tr><th>Batch</th><th>Fournisseur</th><th>Source</th><th>État</th><th>Candidats</th><th>Promus</th><th>Date</th></tr></thead>';
-    const tbody = doc.createElement('tbody');
-    rows.forEach(row => {
-      const tr = doc.createElement('tr');
-      tr.appendChild(td(doc, row.import_ref));
-      tr.appendChild(td(doc, row.supplier_name));
-      tr.appendChild(td(doc, row.source_type));
-      tr.appendChild(td(doc, row.status || 'COMPLETED'));
-      tr.appendChild(td(doc, row.candidates_count ?? row.total_items));
-      tr.appendChild(td(doc, row.imported_count));
-      tr.appendChild(td(doc, row.imported_at ? new Date(row.imported_at).toLocaleString('fr-FR') : '—'));
-      tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
-    slot.appendChild(wrapTable(doc, table));
   }
 
   function renderPortfolio(rootNode, ui, doc, payload, context) {

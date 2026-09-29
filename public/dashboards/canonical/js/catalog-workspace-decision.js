@@ -92,11 +92,11 @@
     const summary = payload && payload.summary ? payload.summary : {};
     const curation = payload && payload.curation ? payload.curation : {};
     return [
-      { key: 'published', label: 'Produits publiés', value: base.metricItems(summary, curation)[0].value, tone: 'neutral' },
+      { key: 'approved', label: 'Approuvés vente', value: String(Number(summary.commercial_approved) || 0), tone: 'neutral' },
       { key: 'approval', label: 'À curater', value: String(Number(summary.approval_pending) || 0), tone: Number(summary.approval_pending) > 0 ? 'warning' : 'neutral' },
       { key: 'review', label: 'À relire', value: String(Number(summary.needs_review) || 0), tone: Number(summary.needs_review) > 0 ? 'warning' : 'neutral' },
-      { key: 'categories', label: 'Catégories actives', value: String(Number(summary.categories) || 0), tone: 'neutral' },
-      { key: 'fill', label: 'Cap utilisé', value: curation.fill_pct == null ? '—' : `${curation.fill_pct} %`, tone: curation.at_cap ? 'critical' : 'neutral' },
+      { key: 'lots', label: 'KIR clos contributeurs', value: String(Number(summary.commercial_closed_lots) || 0), tone: 'neutral' },
+      { key: 'markets', label: 'Marchés servis', value: String(Number(summary.commercial_markets) || 0), tone: 'neutral' },
     ];
   }
 
@@ -115,7 +115,7 @@
     return activeProducts(payload).map(row => ({
       title: row.name || row.product_ref || 'Produit',
       helper: [row.category, row.subcategory, row.content_source].filter(Boolean).join(' · '),
-      value: row.needs_review ? 'À relire' : 'Publiée',
+      value: row.needs_review ? 'À relire' : 'Approuvé vente',
       tone: row.needs_review ? 'warning' : 'positive',
       href: row.product_ref ? `/admin/products/${encodeURIComponent(row.product_ref)}` : undefined,
       actionLabel: 'Product 360 →',
@@ -155,9 +155,9 @@
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'CATALOGUE · VUE D’ENSEMBLE'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Catalogue curaté'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir la santé de la sélection globale avant d’agir dans le workspace de curation.'));
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'CATALOGUE · GLOBAL'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Catalogue global commercial'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Assortiment approuvé issu des KIR clos. Les produits encore en préparation restent dans le cockpit et les files d’action.'));
     host.appendChild(header);
 
     const decisions = decisionItems(payload);
@@ -173,7 +173,7 @@
 
     const grid = doc.createElement('div');
     grid.className = 'kmc-decision-dashboard-grid-2';
-    const products = cardSection(doc, 'Sélection publiée', 'Les références actives et leur état de relecture.', 'catalog-products');
+    const products = cardSection(doc, 'Assortiment commercial', 'Produits approuvés à la vente provenant de lots clos.', 'catalog-products');
     decisionUi.RankedList.render(products.body, { items: productItems(payload) });
     grid.appendChild(products.section);
     const categories = cardSection(doc, 'Santé de la taxonomie', 'Catégories globales actives et présence dans les rails.', 'catalog-categories');

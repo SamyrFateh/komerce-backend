@@ -6,13 +6,13 @@
  * @criticality   high
  * @inputs        authenticated_central_actor, product_ref, category_key, catalog_action_payload
  * @outputs       catalog_work_queue, delegated_catalog_mutations
- * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/boutique-taxonomy-admin.js
+ * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js
  * @used-by       routes/admin-catalog-workspace.js
- * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories
+ * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts
  * @db-write      none
  * @db-write-via  product-admin-service, catalog-approval, boutique-taxonomy-admin
  * @db-txn        delegated_to_domain_authority
- * @doctrine      workspace_acts_dashboard_observes, global_catalog_not_market_scoped, reuse_domain_mutation_authorities, product_ref_is_public_identity, curated_catalog_cap_from_business_rules
+ * @doctrine      workspace_acts_dashboard_observes, global_catalog_not_market_scoped, commercial_catalog_is_union_of_approved_products_from_closed_kirs, reuse_domain_mutation_authorities, product_ref_is_public_identity
  * @impact-areas  admin-dashboard, catalog, boutique
  * @version       2026-09
  */
@@ -24,6 +24,7 @@ const { getRuleNumber } = require('../utils/rules');
 const productAdmin = require('./product-admin-service');
 const catalogApproval = require('./catalog-approval');
 const taxonomy = require('./boutique-taxonomy-admin');
+const commercialAssortment = require('./catalog-commercial-assortment');
 
 const CATALOG_CAP_FALLBACK = 120;
 const APPROVAL_CONTENT_SOURCES = Object.freeze(['connector_raw', 'ai_enriched', 'manual']);
@@ -249,18 +250,32 @@ async function buildWorkspace(query = {}) {
     querySummary(),
     queryCatalogCap(),
     taxonomy.listCategories(),
-    // "Sélection publiée" est une projection dédiée du catalogue actif.
-    // Ne jamais paginer tous les candidats puis filtrer côté client : avec un
-    // gros backlog de curation, des produits publiés disparaîtraient du top 200.
-    queryProducts({ ...query, status: 'active' }),
+    commercialAssortment.listCommercialAssortment({
+      search: query.search,
+      category: query.category,
+      limit: query.limit || 200,
+    }),
     queryApprovalQueue({ limit: approvalLimit, offset: approvalOffset }),
     queryApprovalBreakdown(),
   ]);
   const approvalTotal = Number(summary.approval_pending) || 0;
+  const commercialSummary = {
+    approved_products: products.length,
+    closed_lots: [...new Set(products.flatMap(row => row.source_lots || []))].length,
+    markets: [...new Set(products.flatMap(row => row.approved_markets || []))].length,
+  };
+  const commercialCurationSummary = { ...summary, active_products: commercialSummary.approved_products };
   return {
-    scope: { mode: 'global_catalog', label: 'Catalogue commun Komerce' },
-    summary: { ...summary, categories: categories.filter(row => row.is_active).length },
-    curation: buildCurationState(summary, catalogCap),
+    scope: { mode: 'global_commercial_catalog', label: 'Catalogue global commercial' },
+    summary: {
+      ...summary,
+      categories: categories.filter(row => row.is_active).length,
+      commercial_approved: commercialSummary.approved_products,
+      commercial_closed_lots: commercialSummary.closed_lots,
+      commercial_markets: commercialSummary.markets,
+    },
+    commercial: commercialSummary,
+    curation: buildCurationState(commercialCurationSummary, catalogCap),
     categories,
     products,
     approval,
