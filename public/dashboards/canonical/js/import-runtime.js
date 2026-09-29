@@ -144,6 +144,20 @@
       : '';
   }
 
+  function runtimeCertificationBlockMessage(run) {
+    const a = run?.accounting || {};
+    const reasonDetail = certificationReasonDetail(run);
+    const deferred = num(a.deferred);
+    const rejected = num(a.rejected);
+    if (reasonDetail) {
+      return `${rejected || 1} produit(s) invalide(s) empêchent la preuve runtime complète. Motif: ${reasonDetail}. ${deferred} différé(s) restent comptabilisés et ne bloquent pas à eux seuls.`;
+    }
+    if (run?.diagnostics?.canonical_resolved !== true) {
+      return `La capture fournisseur n’a pas obtenu une résolution canonique complète. ${deferred} différé(s) restent tracés ; Production reste verrouillée tant que la preuve runtime n’est pas complète.`;
+    }
+    return `La preuve runtime fournisseur n’est pas complète. ${deferred} différé(s) restent tracés ; Production reste verrouillée.`;
+  }
+
   function activationStrip(sourceControls) {
     if (!activationState) return '';
     const source = (sourceControls || []).find(item => item.source_ref === activationState.sourceRef) || {};
@@ -261,7 +275,7 @@
     const certificationBlocked = runtimeCertificationBlocked(run);
     const reasonDetail = certificationReasonDetail(run);
     const explanation = certificationBlocked
-      ? `Certification runtime fournisseur refusée sur ce passage : ${runtimeCertificationSummary(run)}.${reasonDetail ? ' Motifs : ' + reasonDetail + '.' : ''} Les produits certifiés sourcing restent tracés ; c’est l’activation Production de la source qui reste verrouillée.`
+      ? runtimeCertificationBlockMessage(run)
       : awaiting > 0
         ? `${awaiting} produit(s) certifié(s) sourcing ne sont pas encore matérialisés au Catalogue. Ils n’ont pas disparu : le compteur Catalogue ne compte que les promotions réellement effectuées.`
         : blockers > 0
@@ -269,8 +283,14 @@
           : 'Tous les produits du lot sont comptabilisés dans le parcours réel.';
     return `<section class="kir-run-truth ${certificationBlocked ? 'is-certification-blocked' : ''}" aria-label="Comptabilité réelle du lot">
       <div class="kir-run-truth-head"><span class="kir-section-kicker">SUIVI DU LOT</span><strong>Ce qui s’est réellement passé</strong></div>
-      <div class="kir-run-truth-grid">${values.map(([label, value]) => `<div><span>${esc(label)}</span><strong>${value}</strong></div>`).join('')}</div>
-      <p>${esc(explanation)}</p>
+      <div class="kir-run-truth-grid">${values.map(([label, value], index) => {
+        const tone = index === 0 ? 'neutral'
+          : index >= 1 && index <= 4 && value > 0 ? 'healthy'
+            : index === 5 && value > 0 ? 'healthy'
+              : 'neutral';
+        return `<div class="is-${tone}"><span>${esc(label)}</span><strong>${value}</strong></div>`;
+      }).join('')}</div>
+      ${certificationBlocked ? `<div class="kir-runtime-alert"><strong>Blocage certification runtime</strong><span>${esc(explanation)}</span></div>` : `<p>${esc(explanation)}</p>`}
     </section>`;
   }
 
@@ -393,18 +413,27 @@
           const activationReady = source.activation_ready === true;
           const live = activationState?.sourceRef === source.source_ref ? activationState : null;
           const busy = Boolean(live && !live.done && !live.error);
-          const displayEnabled = enabled || Boolean(live && !live.error);
-          const canToggle = !live && (enabled || activationReady);
-          const stateTone = busy ? 'live' : displayEnabled && ready ? 'on' : displayEnabled ? 'warning' : !activationReady ? 'blocked' : ready ? 'off' : 'prep';
+          const activationBlocked = Boolean(live && live.done && (live.outcome === 'certification_incomplete' || live.outcome === 'failed'));
+          const displayEnabled = enabled || busy;
+          const canToggle = (!live || live.done) && (enabled || activationReady);
+          const stateTone = activationBlocked
+            ? 'blocked'
+            : busy ? 'live'
+              : displayEnabled && ready ? 'on'
+                : displayEnabled ? 'warning'
+                  : !activationReady ? 'blocked'
+                    : ready ? 'off' : 'prep';
           const stateLabel = displayEnabled ? 'ON' : 'OFF';
           const last = source.last_capture_at ? fmtDate(source.last_capture_at) : 'Jamais';
-          const readiness = busy
-            ? (live.runRef ? `Lot ${live.runRef} en cours` : 'Démarrage du premier import…')
-            : !activationReady
-              ? (source.blocker || 'Source non activable')
-              : !ready
-                ? 'Préparation automatique au clic'
-                : enabled ? 'Actif' : 'Prêt';
+          const readiness = activationBlocked
+            ? 'Certification runtime incomplète — corriger puis relancer'
+            : busy
+              ? (live.runRef ? `Lot ${live.runRef} en cours` : 'Démarrage du premier import…')
+              : !activationReady
+                ? (source.blocker || 'Source non activable')
+                : !ready
+                  ? 'Préparation automatique au clic'
+                  : enabled ? 'Actif' : 'Prêt';
           return `<div class="kir-source-pill is-${stateTone}" title="${esc(readiness)}">
             <span class="kir-source-dot" aria-hidden="true"></span>
             <div class="kir-source-copy">
