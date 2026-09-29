@@ -341,6 +341,59 @@ test('shadow incomplet ne peut jamais etre annonce comme un autopilot ok', async
   )).toBe(true);
 });
 
+test('le rail opérateur transmet exactement les ids prouvés par Discovery à l’import', async () => {
+  mockSourceQueries(sourceRow({
+    autopilot_enabled: false,
+    production_enabled: false,
+    production_certified_capture_id: null,
+    production_certified_at: null,
+  }));
+  mockDiscoverSourcePlan.mockResolvedValueOnce({
+    status:'READY',
+    provider:'aliexpress',
+    strategy:'feed-category',
+    version:'aliexpress-ds-discovery-v1',
+    pull_options:{
+      product_ids:['100000000001','100000000002'],
+      page:1,
+      size:20,
+      country_code:'AE',
+      feed_name:'Hot sale',
+    },
+    evidence:{ probe_product_count:2 },
+  });
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog.mockResolvedValue({
+    status:200,
+    body:{
+      run_ref:'KIR-000011',
+      pipeline_status:'CANONICAL_RESOLVED',
+      canonical_resolved:true,
+      accepted:2, created:2, updated:0, rejected:0,
+    },
+  });
+
+  await autopilot.runSourceImportNow('api:cj', { actorId:'operator-1' });
+
+  expect(mockImportCatalog).toHaveBeenCalledWith(
+    expect.objectContaining({
+      product_ids:['100000000001','100000000002'],
+      page:1,
+      size:20,
+      country_code:'AE',
+      feed_name:'Hot sale',
+    }),
+    'operator-1',
+    expect.any(Function)
+  );
+});
+
 test('import opérateur borné peut produire la première certification sans autopilot ni Production ON', async () => {
   mockSourceQueries(sourceRow({
     autopilot_enabled: false,
