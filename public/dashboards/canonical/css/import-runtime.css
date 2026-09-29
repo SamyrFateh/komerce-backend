@@ -130,3 +130,106 @@
 .kir-live-stages{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}.kir-live-stage{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:5px;min-width:0}.kir-live-stage>span{width:7px;height:7px;border-radius:50%;background:#cbd5e1}.kir-live-stage strong{overflow:hidden;text-overflow:ellipsis;font-size:9.5px;white-space:nowrap;color:#64748b}.kir-live-stage small{grid-column:2;font-size:8.5px;color:#94a3b8}.kir-live-stage.is-completed>span{background:#13b76a}.kir-live-stage.is-completed strong{color:#067647}.kir-live-stage.is-running>span{background:#1f7ae0;animation:kir-live-beat .72s infinite alternate}.kir-live-stage.is-running strong{color:#175cd3}.kir-live-stage.is-failed>span{background:#d92d20}.kir-live-stage.is-failed strong{color:#b42318}
 @media(max-width:900px){.kir-source-control{grid-template-columns:1fr}.kir-source-control-title{min-width:0}.kir-live-stages{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:620px){.kir-live-stages{grid-template-columns:repeat(2,1fr)}.kir-live-activation-head{align-items:flex-start}.kir-live-activation-head small{grid-column:1/-1}}
+
+
+/* Legacy Admin visual parity — Import/Sourcing keeps the canonical structure,
+ * but uses the same warm palette, density and card treatment as the legacy dashboards. */
+.kmc-import-runtime{
+  --kir-bg:var(--kmc-legacy-bg,#f8f9fa);
+  --kir-card:var(--kmc-legacy-card,#fff);
+  --kir-line:var(--kmc-legacy-line,#e5e7eb);
+  --kir-line-soft:var(--kmc-legacy-soft-strong,#e9ecef);
+  --kir-text:var(--kmc-legacy-ink,#111827);
+  --kir-muted:var(--kmc-legacy-muted,#6b7280);
+  --kir-faint:var(--kmc-legacy-faint,#9ca3af);
+  --kir-blue:var(--kmc-legacy-blue,#1d4ed8);
+  --kir-blue-soft:var(--kmc-legacy-blue-soft,#eff6ff);
+  --kir-green:var(--kmc-legacy-green,#15803d);
+  --kir-green-soft:var(--kmc-legacy-green-soft,#f0fdf4);
+  --kir-red:var(--kmc-legacy-red,#c2412d);
+  --kir-red-soft:var(--kmc-legacy-red-soft,#fff5f3);
+  --kir-orange:var(--kmc-legacy-orange,#f5a623);
+  --kir-orange-strong:var(--kmc-legacy-orange-strong,#c97808);
+  --kir-orange-soft:var(--kmc-legacy-orange-soft,#fffbf2);
+  background:var(--kir-bg);
+  color:var(--kir-text);
+  padding:24px 0 42px;
+}
+.kir-page{max-width:1480px;margin:0 auto}
+.kir-hero{position:relative;padding-top:12px;margin-bottom:16px}
+.kir-hero::before{content:"";position:absolute;top:0;left:0;width:42px;height:4px;border-radius:999px;background:var(--kir-orange)}
+.kir-eyebrow,.kir-section-kicker{color:var(--kir-orange-strong);letter-spacing:.08em;font-weight:850}
+.kir-hero h1{color:var(--kir-text);font-size:28px;font-weight:900}
+.kir-hero p,.kir-decision-intro p,.kir-drill-head p{color:var(--kir-muted)}
+.kir-global-link,.kir-subtle-link,.kir-back,.kir-row-action{color:var(--kir-orange-strong)}
+.kir-global-link{border-color:var(--kir-line);border-radius:8px;background:#fff;font-weight:750}
+.kir-global-link:hover,.kir-subtle-link:hover,.kir-back:hover,.kir-row-action:hover{color:#9a5a00}
+.kir-status-large,.kir-status{border-radius:999px}
+.kir-status-large.is-positive,.kir-status.is-positive{background:var(--kir-green-soft);color:var(--kir-green)}
+.kir-status-large.is-warning,.kir-status.is-warning{background:var(--kir-orange-soft);color:var(--kir-orange-strong)}
+.kir-status-large.is-critical,.kir-status.is-critical{background:var(--kir-red-soft);color:var(--kir-red)}
+.kir-status-large.is-live,.kir-status.is-live{background:var(--kir-orange-soft);color:var(--kir-orange-strong)}
+.kir-status-large.is-neutral,.kir-status.is-neutral{background:var(--kmc-legacy-soft,#f3f4f6);color:var(--kmc-legacy-ink-2,#374151)}
+
+.kir-source-control,.kir-lot-chip,.kir-lot-all,.kir-lot-summary>div,.kir-outcome>div,
+.kir-action-card,.kir-business-journey,.kir-business-step,.kir-closure-summary>div,
+.kir-table-wrap,.kir-history-stage,.kir-history-events,.kir-empty,.kir-neutral-panel{
+  border-color:var(--kir-line);
+  background:#fff;
+  box-shadow:none;
+}
+.kir-source-control,.kir-lot-chip,.kir-lot-all,.kir-lot-summary>div,.kir-outcome>div,
+.kir-action-card,.kir-business-journey,.kir-business-step,.kir-closure-summary>div,
+.kir-table-wrap,.kir-history-stage,.kir-history-events{border-radius:10px}
+.kir-source-control{border-top-color:color-mix(in srgb,var(--kir-orange) 46%,var(--kir-line))}
+.kir-lot-chip.is-selected{border-color:var(--kir-orange);background:var(--kir-orange-soft);box-shadow:inset 3px 0 0 var(--kir-orange)}
+.kir-lot-ref{color:var(--kir-text)}
+.kir-lot-summary strong,.kir-outcome strong,.kir-closure-summary strong{color:var(--kir-text);font-weight:900}
+.kir-lot-summary>div{border-top:3px solid color-mix(in srgb,var(--kir-orange) 72%,var(--kir-line))}
+.kir-decision-intro h2,.kir-drill-head h2,.kir-business-journey-head strong{color:var(--kir-text);font-weight:850}
+.kir-action-card{border-left-color:#9ca3af;transition:border-color .12s,background .12s}
+.kir-action-card:hover{transform:none;box-shadow:none;background:var(--kmc-legacy-soft,#f3f4f6)}
+.kir-action-card.is-warning{border-left-color:var(--kir-orange)}
+.kir-action-card.is-blue{border-left-color:var(--kmc-legacy-blue,#1d4ed8)}
+.kir-action-card.is-critical{border-left-color:var(--kir-red)}
+.kir-action-count,.kir-action-copy strong{color:var(--kir-text)}
+.kir-action-arrow{color:var(--kir-orange-strong)}
+.kir-closed-panel{background:var(--kir-green-soft);border-color:#bbdfc5}
+.kir-closed-panel>span{background:var(--kir-green)}
+.kir-neutral-panel{background:var(--kmc-legacy-soft,#f3f4f6);color:var(--kir-muted)}
+.kir-business-step{background:#fff}
+.kir-business-step.is-warning{border-color:#f0c36c;background:var(--kir-orange-soft)}
+.kir-business-step.is-positive{border-color:#bbdfc5;background:var(--kir-green-soft)}
+.kir-business-step.is-blue{border-color:#c7d7f4;background:var(--kir-blue-soft)}
+.kir-business-step:hover{transform:none;box-shadow:none;border-color:var(--kir-orange)}
+.kir-business-step:not(:last-child):after{background:var(--kir-bg)}
+.kir-table th{background:var(--kmc-legacy-soft,#f3f4f6);color:var(--kir-muted)}
+.kir-table th:first-child{border-left:3px solid var(--kir-orange)}
+.kir-table td{color:var(--kmc-legacy-ink-2,#374151);border-top-color:var(--kir-line-soft)}
+.kir-table td a:first-child{color:var(--kir-orange-strong)}
+.kir-table tbody tr:hover{background:var(--kmc-legacy-soft,#f3f4f6)}
+.kir-history-dot.is-done{background:var(--kir-green)}.kir-history-dot.is-failed{background:var(--kir-red)}
+.kir-error,.kir-exception-banner{background:var(--kir-red-soft);border-color:#efc7bf;color:var(--kir-red)}
+
+.kir-source-pill{border-color:var(--kir-line);background:var(--kmc-legacy-soft,#f3f4f6)}
+.kir-source-pill.is-on{background:var(--kir-green-soft);border-color:#bbdfc5}
+.kir-source-pill.is-warning{background:var(--kir-orange-soft);border-color:#f0c36c}
+.kir-source-pill.is-prep{background:var(--kir-blue-soft);border-color:#c7d7f4}
+.kir-source-pill.is-live{background:var(--kir-orange-soft);border-color:#f0c36c;box-shadow:0 0 0 2px rgb(245 166 35 / .08)}
+.kir-source-pill.is-live .kir-source-dot{background:var(--kir-orange);box-shadow:0 0 0 3px rgb(245 166 35 / .14)}
+.kir-source-switch.is-live{background:#fff0cf;color:var(--kir-orange-strong)}
+.kir-source-readiness{color:var(--kmc-legacy-ink-2,#374151)}
+
+.kir-live-activation{border-color:#f0c36c;background:linear-gradient(180deg,var(--kir-orange-soft),#fff);box-shadow:none}
+.kir-live-activation-head em{color:var(--kir-orange-strong)}
+.kir-live-beacon{background:var(--kir-orange);box-shadow:0 0 0 4px rgb(245 166 35 / .12)}
+.kir-live-progress{background:#f3ead8}
+.kir-live-progress>span{background:linear-gradient(90deg,var(--kir-orange-strong),var(--kir-orange))}
+.kir-live-stage.is-running>span{background:var(--kir-orange)}
+.kir-live-stage.is-running strong{color:var(--kir-orange-strong)}
+.kir-live-activation.is-complete{border-color:#bbdfc5;background:linear-gradient(180deg,var(--kir-green-soft),#fff)}
+.kir-live-activation.is-complete .kir-live-beacon,.kir-live-activation.is-complete .kir-live-progress>span{background:var(--kir-green)}
+.kir-live-activation.is-failed{border-color:#efc7bf;background:linear-gradient(180deg,var(--kir-red-soft),#fff)}
+.kir-live-activation.is-failed .kir-live-beacon,.kir-live-activation.is-failed .kir-live-progress>span{background:var(--kir-red)}
+
+@media(max-width:900px){.kmc-import-runtime{padding:18px 0 34px}}
