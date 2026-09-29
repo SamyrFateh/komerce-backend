@@ -274,7 +274,8 @@
 
     const kpis = cardSection(doc, 'État opérationnel', 'Les KPI disponibles sont affichés tels que fournis par la source canonique.', 'operations-kpis');
 
-    kpis.section.className += ' is-cockpit-truth';    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
+    kpis.section.className += ' is-cockpit-truth';
+    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
     dashboard.appendChild(kpis.section);
 
     const summaries = workspaceSummary(payload, base);
