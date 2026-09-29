@@ -19,8 +19,11 @@
 
 (function initCanonicalImportCockpit(global) {
   const POLL_MS = 10000;
+  const ACTIVATION_POLL_MS = 900;
   const VIEWS = new Set(['overview', 'catalogue', 'commercial', 'exceptions', 'history', 'registry', 'closure']);
   let timer = null;
+  let activationTimer = null;
+  let activationState = null;
   let mountedRoot = null;
   let lastPayload = null;
 
@@ -44,6 +47,87 @@
     });
   }
 
+  function normalizedName(value) {
+    return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+  }
+
+  function activationSourceMatches(source, lot) {
+    const wanted = normalizedName(source?.supplier_name || source?.label || source?.source_ref);
+    const provider = normalizedName(lot?.provider);
+    return Boolean(wanted && provider && (wanted.includes(provider) || provider.includes(wanted)));
+  }
+
+  function stopActivationPolling() {
+    if (activationTimer && typeof global.clearInterval === 'function') global.clearInterval(activationTimer);
+    activationTimer = null;
+  }
+
+  function activationStages() {
+    const defs = [
+      ['SOURCE_CONNECTED', 'Source'], ['RAW_IMPORT', 'Import'], ['REFINERY', 'Raffinerie'],
+      ['TAXONOMY', 'Taxonomie'], ['CERTIFICATION', 'Certification'], ['CATALOGUE', 'Catalogue'],
+    ];
+    const actual = new Map((activationState?.run?.stages || []).map(stage => [stage.key, stage]));
+    return defs.map(([key, label], index) => ({
+      key, label,
+      status: actual.get(key)?.status || (index === 0 && !activationState?.done && !activationState?.error ? 'RUNNING' : 'PENDING'),
+      processed: num(actual.get(key)?.processed),
+      total: num(actual.get(key)?.total),
+    }));
+  }
+
+  function activationStrip(sourceControls) {
+    if (!activationState) return '';
+    const source = (sourceControls || []).find(item => item.source_ref === activationState.sourceRef) || {};
+    const label = source.label || source.supplier_name || activationState.label || activationState.sourceRef;
+    const stages = activationStages();
+    const done = stages.filter(stage => stage.status === 'COMPLETED').length;
+    const running = stages.some(stage => stage.status === 'RUNNING');
+    const progress = Math.max(7, Math.min(100, Math.round(((done + (running ? .45 : 0)) / stages.length) * 100)));
+    const failed = Boolean(activationState.error) || stages.some(stage => stage.status === 'FAILED');
+    const title = failed ? 'Activation interrompue' : activationState.done ? 'Alimentation activée' : 'Activation en direct';
+    const helper = failed
+      ? activationState.error
+      : activationState.runRef
+        ? `${label} · ${activationState.runRef} · progression réelle du run`
+        : `${label} · préparation de la source et création du premier lot`;
+    return `<section class="kir-live-activation ${failed ? 'is-failed' : activationState.done ? 'is-complete' : 'is-live'}" aria-live="polite">
+      <div class="kir-live-activation-head"><div><span class="kir-live-beacon"></span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div><em>${progress}%</em></div>
+      <div class="kir-live-progress"><span style="width:${progress}%"></span></div>
+      <div class="kir-live-stages">${stages.map(stage => `<div class="kir-live-stage is-${String(stage.status).toLowerCase()}"><span></span><strong>${esc(stage.label)}</strong>${stage.total ? `<small>${stage.processed}/${stage.total}</small>` : ''}</div>`).join('')}</div>
+    </section>`;
+  }
+
+  function attachActivationRun(payload) {
+    if (!activationState || activationState.runRef) return;
+    const source = (payload?.source_controls || []).find(item => item.source_ref === activationState.sourceRef) || null;
+    const baseline = new Set(activationState.baselineRunRefs || []);
+    const lot = (payload?.lots || []).find(item => !baseline.has(item.run_ref) && activationSourceMatches(source, item));
+    if (lot?.run_ref) activationState.runRef = lot.run_ref;
+  }
+
+  async function pollActivation() {
+    if (!activationState || activationState.done || activationState.error) return;
+    try {
+      const { run } = params();
+      const q = new URLSearchParams({ limit:'12' });
+      if (run) q.set('run', run);
+      const payload = await api('/api/admin/workspaces/sourcing/import-cockpit?' + q.toString());
+      attachActivationRun(payload);
+      lastPayload = payload;
+      if (activationState.runRef) activationState.run = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(activationState.runRef)}`);
+      if (mountedRoot) render(mountedRoot, payload);
+    } catch (_) {
+      // Feedback live best-effort: l'activation serveur reste l'autorité.
+    }
+  }
+
+  function startActivationPolling() {
+    stopActivationPolling();
+    if (typeof global.setInterval !== 'function') return;
+    activationTimer = global.setInterval(pollActivation, ACTIVATION_POLL_MS);
+    pollActivation();
+  }
   function params() {
     const query = new URLSearchParams(global.location.search);
     const run = query.get('run') || null;
@@ -128,25 +212,20 @@
           const enabled = source.autopilot_enabled === true;
           const ready = source.autopilot_ready === true;
           const activationReady = source.activation_ready === true;
-          const canToggle = enabled || activationReady;
-          const stateTone = enabled && ready
-            ? 'on'
-            : enabled
-              ? 'warning'
-              : !activationReady
-                ? 'blocked'
-                : ready
-                  ? 'off'
-                  : 'prep';
-          const stateLabel = enabled ? 'ON' : 'OFF';
+          const live = activationState?.sourceRef === source.source_ref ? activationState : null;
+          const busy = Boolean(live && !live.done && !live.error);
+          const displayEnabled = enabled || Boolean(live && !live.error);
+          const canToggle = !live && (enabled || activationReady);
+          const stateTone = busy ? 'live' : displayEnabled && ready ? 'on' : displayEnabled ? 'warning' : !activationReady ? 'blocked' : ready ? 'off' : 'prep';
+          const stateLabel = displayEnabled ? 'ON' : 'OFF';
           const last = source.last_capture_at ? fmtDate(source.last_capture_at) : 'Jamais';
-          const readiness = !activationReady
-            ? (source.blocker || 'Source non activable')
-            : !ready
-              ? 'Préparation automatique au clic'
-              : enabled
-                ? 'Actif'
-                : 'Prêt';
+          const readiness = busy
+            ? (live.runRef ? `Lot ${live.runRef} en cours` : 'Démarrage du premier import…')
+            : !activationReady
+              ? (source.blocker || 'Source non activable')
+              : !ready
+                ? 'Préparation automatique au clic'
+                : enabled ? 'Actif' : 'Prêt';
           return `<div class="kir-source-pill is-${stateTone}" title="${esc(readiness)}">
             <span class="kir-source-dot" aria-hidden="true"></span>
             <span class="kir-source-name">${esc(source.label || source.supplier_name || source.source_ref)}</span>
@@ -155,11 +234,12 @@
             <button type="button"
               class="kir-source-switch is-${stateTone}"
               role="switch"
-              aria-checked="${enabled ? 'true' : 'false'}"
+              aria-checked="${displayEnabled ? 'true' : 'false'}"
               aria-label="${enabled ? 'Désactiver' : 'Activer'} le sourcing automatique ${esc(source.label || source.source_ref)}"
               data-source-toggle
               data-source-ref="${esc(source.source_ref)}"
               data-source-enabled="${enabled ? '1' : '0'}"
+              ${busy ? 'aria-busy="true"' : ''}
               ${canToggle ? '' : 'disabled'}>
               <span class="kir-source-switch-knob"></span>
               <strong>${stateLabel}</strong>
@@ -468,10 +548,11 @@
       root.innerHTML = `<section class="kir-page">
         <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · IMPORTS</span><h1>Cockpit des imports</h1><p>Aucun lot disponible.</p></div></header>
         ${sourceControlStrip(sourceControls)}
+        ${activationStrip(sourceControls)}
         ${lotStrip(lots, null)}
       </section>`;
       bindNavigation(root);
-      bindSourceControls(root);
+      bindSourceControls(root, payload);
       return;
     }
 
@@ -491,6 +572,7 @@
       </header>
 
       ${sourceControlStrip(sourceControls)}
+      ${activationStrip(sourceControls)}
       ${lotStrip(lots, run.run_ref)}
 
       <section class="kir-lot-summary">
@@ -503,7 +585,7 @@
       <main class="kir-main">${renderBody(run, view, lots)}</main>
     </section>`;
     bindNavigation(root);
-    bindSourceControls(root);
+    bindSourceControls(root, payload);
   }
 
   function renderLoading(root) {
@@ -516,31 +598,63 @@
     </section>`;
   }
 
-  function bindSourceControls(root) {
+  function bindSourceControls(root, payload) {
     root.querySelectorAll?.('[data-source-toggle]').forEach(button => {
       button.addEventListener('click', async () => {
         const sourceRef = button.getAttribute('data-source-ref');
         const enabled = button.getAttribute('data-source-enabled') === '1';
         if (!sourceRef || button.disabled) return;
-        button.disabled = true;
-        button.setAttribute('aria-busy', 'true');
         const action = enabled ? 'deactivate' : 'activate';
+
+        if (!enabled) {
+          const source = (payload?.source_controls || []).find(item => item.source_ref === sourceRef) || {};
+          activationState = {
+            sourceRef, label:source.label || source.supplier_name || sourceRef, done:false, error:null,
+            baselineRunRefs:(payload?.lots || []).map(lot => lot.run_ref), runRef:null, run:null,
+          };
+          render(root, payload);
+          startActivationPolling();
+        } else {
+          button.disabled = true;
+          button.setAttribute('aria-busy', 'true');
+        }
+
         try {
-          await api(`/api/admin/workspaces/sourcing/sources/${encodeURIComponent(sourceRef)}/${action}`, {
-            method:'POST',
-            body:{},
-          });
+          const response = await api(`/api/admin/workspaces/sourcing/sources/${encodeURIComponent(sourceRef)}/${action}`, { method:'POST', body:{} });
+          if (!enabled && activationState?.sourceRef === sourceRef) {
+            const result = response?.result || {};
+            const responseRunRef = result?.certification_run?.run_ref || result?.first_run?.run_ref || null;
+            if (responseRunRef) activationState.runRef = responseRunRef;
+            if (activationState.runRef) {
+              try { activationState.run = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(activationState.runRef)}`); } catch (_) {}
+            }
+            activationState.done = true;
+            stopActivationPolling();
+            if (activationState.runRef && params().run !== activationState.runRef) global.history.pushState({}, '', urlFor(activationState.runRef));
+          }
           await refresh({ preserve:true });
+          if (!enabled && activationState && typeof global.setTimeout === 'function') {
+            global.setTimeout(() => {
+              activationState = null;
+              if (mountedRoot && lastPayload) render(mountedRoot, lastPayload);
+            }, 5000);
+          }
         } catch (error) {
-          button.disabled = false;
-          button.removeAttribute('aria-busy');
+          if (!enabled && activationState?.sourceRef === sourceRef) {
+            activationState.error = error.message;
+            activationState.done = true;
+            stopActivationPolling();
+            render(root, lastPayload || payload);
+          } else {
+            button.disabled = false;
+            button.removeAttribute('aria-busy');
+          }
           const main = root.querySelector?.('.kir-main');
           if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
         }
       });
     });
   }
-
   function bindNavigation(root) {
     root.querySelectorAll?.('[data-cockpit-nav]').forEach(link => {
       link.addEventListener('click', event => {
@@ -566,6 +680,7 @@
     if (run) query.set('run', run);
     try {
       const payload = await api('/api/admin/workspaces/sourcing/import-cockpit?' + query.toString());
+      attachActivationRun(payload);
       lastPayload = payload;
       render(mountedRoot, payload);
     } catch (error) {
@@ -583,6 +698,8 @@
     if (!options.root) throw new Error('canonical_import_runtime_root_missing');
     mountedRoot = options.root;
     lastPayload = null;
+    activationState = null;
+    stopActivationPolling();
     renderLoading(mountedRoot);
     if (timer) clearInterval(timer);
     global.addEventListener?.('popstate', () => refresh({ preserve:true }), { once:false });
