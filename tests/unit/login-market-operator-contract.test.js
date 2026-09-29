@@ -44,7 +44,7 @@ test('landingFor() résout la destination ergonomique pour les 7 rôles internes
   expect(landingFor({ role: 'admin' })).toBe('/admin/pilotage');
   expect(landingFor({ role: 'market_operator' })).toBe('/admin/pilotage');
   expect(landingFor({ role: 'finance' })).toBe('/admin/workspaces/accounting');
-  expect(landingFor({ role: 'sourcing' })).toBe('/admin/workspaces/sourcing');
+  expect(landingFor({ role: 'sourcing' })).toBe('/admin/import-runtime');
   expect(landingFor({ role: 'agent_hub' })).toBe('/admin/workspaces/operations');
   expect(landingFor({ role: 'agent_relais' })).toBe('/admin/workspaces/operations');
   expect(landingFor({ role: 'agent_transitaire' })).toBe('/admin/workspaces/shipping-customs');
