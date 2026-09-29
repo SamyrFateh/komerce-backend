@@ -34,8 +34,8 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-12');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-11');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-13');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-12');
   expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=260929-2');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
@@ -90,6 +90,10 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('ACTIVATION_POLL_MS = 900');
   expect(source).toContain("NO_RESULT:'Sans résultat'");
   expect(source).toContain('Passage terminé sans résultat');
+  expect(source).toContain('Certification runtime incomplète');
+  expect(source).toContain('sourcing_source_certification_incomplete');
+  expect(source).toContain('Production reste OFF');
+  expect(source).toContain('runtimeCertificationBlocked');
   expect(css).toContain('Legacy Admin visual parity');
   expect(css).toContain('--kir-orange:var(--kmc-legacy-orange');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-runs/');
@@ -103,6 +107,8 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(css).toContain('Legacy cockpit parity — typography');
   expect(css).toContain('font-weight:700');
   expect(css).toContain('font-size:24px');
+  expect(css).toContain('.kir-run-flow.is-certification-blocked');
+  expect(css).toContain('.kir-run-flow-step.is-blocked');
   expect(source).not.toContain("api('/api/admin/workspaces/sourcing')");
   expect(source).not.toContain("'/capabilities/'");
   expect(source).not.toContain("'/import-now'");
