@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_acts_dashboard_observes, dashboard_no_business_recompute, decision_first_dashboard_visuals, global_sourcing_not_market_scoped, browser_never_recomputes_health_truth
+ * @doctrine      workspace_acts_dashboard_observes, dashboard_no_business_recompute, decision_first_dashboard_visuals, global_sourcing_not_market_scoped, technical_health_is_diagnostic_only, browser_never_recomputes_health_truth
  * @impact-areas  admin-dashboard, sourcing, catalog, purchasing
  * @version       2026-09
  */
@@ -303,7 +303,12 @@
           ...options,
           ui: decorateUi(options && options.ui, decisionUi, options && options.document),
         })).then(result => {
-          renderHealth(options && options.root, options && options.ui, options && options.document, result && result.health);
+          const search = options?.locationSearch
+            ?? (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
+          const diagnostics = new URLSearchParams(search || '').get('diagnostic') === '1';
+          if (diagnostics) {
+            renderHealth(options && options.root, options && options.ui, options && options.document, result && result.health);
+          }
           return result;
         });
       },
