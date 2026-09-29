@@ -35,7 +35,8 @@ test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
   expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-12');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-10');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-11');
+  expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=260929-2');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
   expect(source).not.toMatch(/\b(?:ImportRuntimeView|KmcApi|ApiClient)\b/);
@@ -99,6 +100,9 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(css).toContain('Real-run accounting');
   expect(css).toContain('@keyframes kir-live-ring');
   expect(css).toContain('--kir-bg:#fff');
+  expect(css).toContain('Legacy cockpit parity — typography');
+  expect(css).toContain('font-weight:700');
+  expect(css).toContain('font-size:24px');
   expect(source).not.toContain("api('/api/admin/workspaces/sourcing')");
   expect(source).not.toContain("'/capabilities/'");
   expect(source).not.toContain("'/import-now'");
