@@ -924,7 +924,7 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active {
  * grammar as the historical back-office: slate page, white cards, 12px
  * radii, native system text, 220px white sidebar and restrained accents. */
 :root {
-  --kmc-legacy-bg:#F8FAFC;
+  --kmc-legacy-bg:#FFFFFF;
   --kmc-legacy-card:#FFFFFF;
   --kmc-legacy-line:#E2E8F0;
   --kmc-legacy-line-strong:#CBD5E1;
@@ -950,7 +950,7 @@ html,
 body,
 body[data-admin-generation="canonical"],
 body.kmc-shell-v4 {
-  background:#F8FAFC !important;
+  background:#FFFFFF !important;
   color:#0F172A;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter","Helvetica Neue",Arial,sans-serif;
   font-size:14px;
@@ -1135,4 +1135,16 @@ body.kmc-shell-v4 #market-catalog-root{
   body.kmc-shell-v4 > .kmc-admin-navigation{width:58px}
   .kmc-admin-topbar{height:52px;padding-inline:12px}
   .kmc-admin-domain-tabs{padding-inline:12px}
+}
+
+
+/* V1.6 — the historical admin canvas is white.
+ * Contrast comes from card borders, semantic accents and status surfaces,
+ * not from a grey page wash. */
+body.kmc-shell-v4,
+body[data-admin-generation="canonical"],
+body.kmc-shell-v4 #canonical-admin-root,
+body.kmc-shell-v4 #market-autonomy-root,
+body.kmc-shell-v4 #market-catalog-root{
+  background:#FFFFFF !important;
 }
