@@ -235,3 +235,86 @@
 .kir-live-activation.is-failed .kir-live-beacon,.kir-live-activation.is-failed .kir-live-progress>span{background:var(--kir-red)}
 
 @media(max-width:900px){.kmc-import-runtime{padding:18px 0 34px}}
+
+
+/* Persistent lot flow — keep technical continuity visible after the live animation.
+ * Same Legacy language: white cards, warm accent, no decorative gradients/shadows. */
+.kir-run-flow{
+  margin:0 0 12px;
+  padding:13px 14px 12px;
+  border:1px solid var(--kir-line);
+  border-left:4px solid var(--kir-orange);
+  border-radius:10px;
+  background:#fff;
+  box-shadow:none;
+}
+.kir-run-flow.is-live{border-left-color:var(--kir-orange)}
+.kir-run-flow.is-waiting{border-left-color:var(--kir-orange);background:var(--kir-orange-soft)}
+.kir-run-flow.is-complete{border-left-color:var(--kir-green)}
+.kir-run-flow.is-empty{border-left-color:var(--kir-orange)}
+.kir-run-flow.is-failed{border-left-color:var(--kir-red);background:var(--kir-red-soft)}
+.kir-run-flow-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.kir-run-flow-head>div{min-width:0}
+.kir-run-flow-head .kir-section-kicker{margin:0 0 3px}
+.kir-run-flow-head strong{display:block;font-size:14px;line-height:1.2;color:var(--kir-text)}
+.kir-run-flow-head small{display:block;margin-top:3px;font-size:10.5px;line-height:1.4;color:var(--kir-muted)}
+.kir-run-flow-head em{font-size:11px;font-style:normal;font-weight:900;color:var(--kir-orange-strong)}
+.kir-run-flow-head>a{white-space:nowrap;color:var(--kir-orange-strong);text-decoration:none;font-size:10.5px;font-weight:800}
+.kir-run-flow-progress{height:4px;margin:10px 0 12px;border-radius:999px;background:#eee9df;overflow:hidden}
+.kir-run-flow-progress>span{display:block;height:100%;border-radius:inherit;background:var(--kir-orange);transition:width .25s ease}
+.kir-run-flow.is-complete .kir-run-flow-progress>span{background:var(--kir-green)}
+.kir-run-flow.is-failed .kir-run-flow-progress>span{background:var(--kir-red)}
+.kir-run-flow-track{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:0}
+.kir-run-flow-step{position:relative;display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:7px;min-width:0;padding-right:10px}
+.kir-run-flow-step:not(:last-child)::after{content:"";position:absolute;left:24px;right:0;top:12px;height:1px;background:#d9dde3;z-index:0}
+.kir-run-flow-marker{position:relative;z-index:1;display:grid;place-items:center;width:24px;height:24px;border:1px solid #d2d7de;border-radius:50%;background:#fff;color:#8b95a5;font-size:9px;font-weight:900}
+.kir-run-flow-step>div{position:relative;z-index:1;min-width:0;background:inherit}
+.kir-run-flow-step strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:#596579}
+.kir-run-flow-step small{display:block;margin-top:1px;font-size:9px;color:#9aa3af}
+.kir-run-flow-step.is-completed .kir-run-flow-marker{border-color:#afd5bc;background:var(--kir-green-soft);color:var(--kir-green)}
+.kir-run-flow-step.is-completed::after{background:#afd5bc}
+.kir-run-flow-step.is-completed strong{color:var(--kir-green)}
+.kir-run-flow-step.is-running .kir-run-flow-marker{border-color:#efc06a;background:var(--kir-orange-soft);color:var(--kir-orange-strong);animation:kir-source-pulse .9s infinite alternate}
+.kir-run-flow-step.is-running strong,.kir-run-flow-step.is-waiting strong{color:var(--kir-orange-strong)}
+.kir-run-flow-step.is-waiting .kir-run-flow-marker{border-color:#efc06a;background:#fff4d9;color:var(--kir-orange-strong)}
+.kir-run-flow-step.is-failed .kir-run-flow-marker{border-color:#e7b2aa;background:var(--kir-red-soft);color:var(--kir-red)}
+.kir-run-flow-step.is-failed strong{color:var(--kir-red)}
+
+/* Source switches: two-line mini cards instead of one long crowded pill. */
+.kir-source-control{grid-template-columns:230px minmax(0,1fr) auto;align-items:stretch;padding:10px 12px}
+.kir-source-control-list{align-items:stretch;gap:7px}
+.kir-source-pill{
+  display:grid;
+  grid-template-columns:auto minmax(125px,1fr) auto;
+  align-items:center;
+  gap:8px;
+  min-width:225px;
+  padding:7px 8px;
+  border-radius:9px;
+}
+.kir-source-copy{display:grid;gap:1px;min-width:0}
+.kir-source-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px}
+.kir-source-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8.5px;color:var(--kir-muted)}
+.kir-source-readiness,.kir-source-last{display:none}
+.kir-source-switch{align-self:center}
+
+/* Recent lots read as compact tabs, not another dashboard layer. */
+.kir-lot-strip{margin-bottom:12px}
+.kir-lot-strip-scroll{gap:6px}
+.kir-lot-chip{min-width:175px;padding:9px 10px;border-radius:8px}
+.kir-lot-chip small{font-size:9.5px}
+.kir-lot-chip.is-selected{box-shadow:inset 3px 0 0 var(--kir-orange)}
+.kir-lot-all{border-radius:8px}
+
+@media(max-width:1050px){
+  .kir-run-flow-track{grid-template-columns:repeat(3,1fr);row-gap:11px}
+  .kir-run-flow-step:nth-child(3)::after{display:none}
+  .kir-source-control{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  .kir-run-flow-head{display:grid;gap:7px}
+  .kir-run-flow-track{grid-template-columns:1fr 1fr;row-gap:10px}
+  .kir-run-flow-step:nth-child(2n)::after{display:none}
+  .kir-run-flow-step:nth-child(3)::after{display:block}
+  .kir-source-pill{min-width:205px}
+}
