@@ -66,8 +66,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          EVENT_ACTION: ${{ github.event.action }}
-          PREVIOUS_HEAD: ${{ github.event.before }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           GOLDEN_SCOPE: ${{ steps.scope.outputs.golden }}
         shell: bash
@@ -77,31 +75,31 @@ jobs:
           echo "unit_repair_files=" >> "$GITHUB_OUTPUT"
           echo "unit_repair_reason=normal-full-run" >> "$GITHUB_OUTPUT"
 
-          if [ "$EVENT_ACTION" != "synchronize" ] || [ -z "${PREVIOUS_HEAD:-}" ]; then
-            exit 0
-          fi
-          if ! git fetch --no-tags --depth=1 origin "$PREVIOUS_HEAD"; then
-            echo "Previous PR head unavailable; full CI retained."
-            exit 0
-          fi
-
-          RUNS_URL="https://api.github.com/repos/$REPOSITORY/actions/workflows/pr-enforcement.yml/runs?event=pull_request&status=completed&head_sha=$PREVIOUS_HEAD&per_page=20"
+          RUNS_URL="https://api.github.com/repos/$REPOSITORY/actions/workflows/pr-enforcement.yml/runs?event=pull_request&status=completed&per_page=50"
           if ! curl -fsSL             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             "$RUNS_URL" > /tmp/previous-runs.json; then
             echo "Previous workflow metadata unavailable; full CI retained."
             exit 0
           fi
 
-          PREVIOUS_RUN_ID="$(node -e '
+          PREVIOUS_META="$(node -e '
             const fs=require("fs");
             const data=JSON.parse(fs.readFileSync("/tmp/previous-runs.json","utf8"));
             const pr=String(process.env.PR_NUMBER||"");
+            const head=String(process.env.HEAD_SHA||"");
             const run=(data.workflow_runs||[]).find(r =>
-              (r.pull_requests||[]).some(p => String(p.number)===pr)
+              r.head_sha !== head
+              && (r.pull_requests||[]).some(p => String(p.number)===pr)
             );
-            process.stdout.write(run ? String(run.id) : "");
+            process.stdout.write(run ? String(run.id)+" "+String(run.head_sha||"") : "");
           ')"
-          if [ -z "$PREVIOUS_RUN_ID" ]; then
-            echo "No completed PR-enforcement run found for previous head; full CI retained."
+          PREVIOUS_RUN_ID="${PREVIOUS_META%% *}"
+          PREVIOUS_HEAD="${PREVIOUS_META#* }"
+          if [ -z "$PREVIOUS_RUN_ID" ] || [ -z "$PREVIOUS_HEAD" ] || [ "$PREVIOUS_HEAD" = "$PREVIOUS_META" ]; then
+            echo "No completed prior PR-enforcement run found; full CI retained."
+            exit 0
+          fi
+          if ! git fetch --no-tags --depth=1 origin "$PREVIOUS_HEAD"; then
+            echo "Previous PR head unavailable; full CI retained."
             exit 0
           fi
 
