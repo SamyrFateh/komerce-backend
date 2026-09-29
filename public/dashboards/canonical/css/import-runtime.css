@@ -2137,3 +2137,38 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
   .kir-run-flow-step.is-running .kir-run-flow-marker,
   .kir-source-pill.is-live .kir-source-dot{animation:none}
 }
+
+
+/* Human-readable provider gate message: one sentence, one secondary drill-down. */
+.kir-runtime-alert{
+  grid-template-columns:max-content minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  padding:12px 14px;
+}
+.kir-runtime-alert strong{
+  font-size:12px;
+  line-height:1.35;
+}
+.kir-runtime-alert span{
+  color:#7F1D1D;
+  font-size:12px;
+  line-height:1.45;
+}
+.kir-runtime-alert a{
+  color:#B91C1C;
+  font-size:11px;
+  font-weight:600;
+  white-space:nowrap;
+  text-decoration:none;
+}
+.kir-runtime-alert a:hover,
+.kir-runtime-alert a:focus-visible{
+  text-decoration:underline;
+}
+@media(max-width:980px){
+  .kir-runtime-alert{
+    grid-template-columns:1fr;
+    align-items:start;
+  }
+}
