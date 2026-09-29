@@ -34,8 +34,8 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-19');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-18');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-20');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-19');
   expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=260929-4');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
@@ -128,6 +128,11 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(css).toContain('border-left:4px solid #DC2626');
   expect(css).toContain('V3 Legacy clean authority');
   expect(css).toContain('V4 FINAL — automatic pipeline');
+  expect(css).toContain('V5 FINAL interaction authority');
+  expect(css).toContain('.kir-run-flow.is-live .kir-run-flow-marker');
+  expect(css).toContain('animation:none !important');
+  expect(source).toContain('automaticPipelineDone');
+  expect(source).toContain('le traitement automatique a atteint le Catalogue');
   expect(css).toContain('.kir-run-flow-manual');
   expect(css).toContain('grid-template-columns:repeat(6,minmax(0,1fr))');
   expect(css).toContain('animation:none !important');
