@@ -50,10 +50,10 @@ describe('CI targeted unit repair classifier', () => {
 
   test('extracts exact failing Jest unit files from logs', () => {
     const log = [
-      'PASS tests/unit/ok.test.js',
-      'FAIL tests/unit/canonical-dashboard-boundary.test.js',
-      '  ● suite › case',
-      'FAIL tests/unit/import-runtime-journey.test.js',
+      '2026-09-29T17:12:09.0000000Z PASS tests/unit/ok.test.js',
+      '2026-09-29T17:13:52.0000000Z FAIL tests/unit/canonical-dashboard-boundary.test.js',
+      '2026-09-29T17:13:52.1000000Z   ● suite › case',
+      '2026-09-29T17:13:53.0000000Z FAIL tests/unit/import-runtime-journey.test.js',
     ].join('\n');
     expect(extractFailedUnitTests(log)).toEqual([
       'tests/unit/canonical-dashboard-boundary.test.js',
