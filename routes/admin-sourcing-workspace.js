@@ -111,9 +111,13 @@ router.get('/import-cockpit', async (req, res, next) => {
     const selected = selectedRef ? await importRuns.getRun(selectedRef) : null;
     if (selectedRef && !selected) return runNotFound(res);
 
+    const visibleLots = selectedLot && !lots.some(lot => lot.run_ref === selectedLot.run_ref)
+      ? [selectedLot, ...lots]
+      : lots;
+
     res.set('Cache-Control', 'no-store');
     res.json({
-      lots,
+      lots: visibleLots,
       selected: selected ? { ...selected, business: selectedLot } : null,
     });
   } catch (err) { handleError(err, res, next); }
