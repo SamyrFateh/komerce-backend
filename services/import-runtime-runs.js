@@ -368,6 +368,13 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     }
   }
 
+  const catalogueStage = stages.find((item) => item.key === 'CATALOGUE');
+  const catalogueAwaitingDecision = catalogueStage?.status === 'RUNNING'
+    && catalogueStage?.reason === 'awaiting_explicit_operator_promotion';
+  const automaticStagesCompleted = stages
+    .filter((item) => item.key !== 'CATALOGUE')
+    .every((item) => item.status === 'COMPLETED');
+
   let status = failedRun ? 'FAILED' : 'RUNNING';
   let failureReason = failedRun ? persistedFailureReason : null;
   const failedStage = stages.find((s) => s.status === 'FAILED');
@@ -376,9 +383,15 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     failureReason = failedStage.reason || 'stage_failed';
   } else if (
     status !== 'FAILED'
-    && stages.every((s) => s.status === 'COMPLETED')
     && balanced
+    && (
+      stages.every((s) => s.status === 'COMPLETED')
+      || (automaticStagesCompleted && catalogueAwaitingDecision)
+    )
   ) {
+    // The automatic import is finished once the certified cohort has reached
+    // the Catalogue decision boundary. Human promotion is a business action,
+    // not a reason to keep the runtime "RUNNING".
     status = 'COMPLETED';
   }
 
@@ -393,7 +406,9 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     if (item.total > 0) return sum + Math.min(1, item.processed / item.total);
     return sum + 0.15;
   }, 0);
-  const progressPct = Math.min(100, Math.round((stageProgress / STAGE_KEYS.length) * 100));
+  const progressPct = status === 'COMPLETED' && catalogueAwaitingDecision
+    ? 100
+    : Math.min(100, Math.round((stageProgress / STAGE_KEYS.length) * 100));
 
   const recentItems = [...rows]
     .sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
