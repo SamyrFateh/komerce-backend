@@ -117,6 +117,9 @@
   }
 
   function flowTrack(stages) {
+    // Une seule étape est « courante » : la première étape réellement en cours.
+    // Elle seule porte .is-current (et donc l'animation) ; les autres restent statiques.
+    const currentIndex = stages.findIndex(stage => flowStageMeta(stage).state === 'running');
     return `<div class="kir-run-flow-track">${stages.map((stage, index) => {
       const meta = flowStageMeta(stage);
       const count = stage.total
@@ -127,7 +130,7 @@
             : `${stage.processed}/${stage.total}`)
         : meta.label;
       const marker = meta.state === 'completed' ? '✓' : meta.state === 'failed' ? '!' : String(index + 1);
-      return `<div class="kir-run-flow-step is-${meta.state} ${meta.reached_boundary ? 'has-manual-action' : ''}">
+      return `<div class="kir-run-flow-step is-${meta.state} ${meta.reached_boundary ? 'has-manual-action' : ''} ${index === currentIndex ? 'is-current' : ''}" ${index === currentIndex ? 'aria-current="step"' : ''}>
         <span class="kir-run-flow-marker">${marker}</span>
         <div><strong>${esc(stage.label)}</strong><small>${esc(count)}</small>${meta.manual_label ? `<em class="kir-run-flow-manual">${esc(meta.manual_label)}</em>` : ''}</div>
       </div>`;

@@ -2415,3 +2415,43 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 @media(max-width:720px){
   .kmc-import-runtime .kir-run-truth-grid,.kmc-import-runtime .kir-lot-summary{grid-template-columns:1fr}
 }
+
+/* ==========================================================================
+ * ANIMATION CIBLÉE — seule l'étape courante du pipeline « respire ».
+ * Ce bloc doit rester le DERNIER du fichier.
+ * Le JS pose .is-current sur une seule étape (la première en cours).
+ * ========================================================================== */
+@keyframes kir-current-step{
+  0%,100%{box-shadow:0 0 0 3px rgb(22 163 74 / .10)}
+  50%{box-shadow:0 0 0 7px rgb(22 163 74 / .20)}
+}
+/* 1. Tout est statique par défaut : marqueurs, barre, pastilles, points */
+.kmc-import-runtime .kir-run-flow .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow.is-live .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-step.is-running .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-step.is-pending .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-step.is-waiting .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-step.is-completed .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-step.has-manual-action .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-progress>span,
+.kmc-import-runtime .kir-status-large.is-live::before,
+.kmc-import-runtime .kir-source-pill.is-live .kir-source-dot{
+  animation:none !important;
+}
+/* 2. Seule l'étape courante anime son marqueur */
+.kmc-import-runtime .kir-run-flow-step.is-current .kir-run-flow-marker{
+  border-color:#16A34A;
+  background:#F0FDF4;
+  color:#15803D;
+  animation:kir-current-step 1.15s ease-in-out infinite !important;
+}
+/* 3. Le point de la source ne bat que si « Source » est l'étape courante,
+      ou s'il n'y a pas encore de flux affiché (activation en préparation) */
+.kmc-import-runtime .kir-page:has(.kir-run-flow-step.is-current:first-child) .kir-source-pill.is-live .kir-source-dot,
+.kmc-import-runtime .kir-page:not(:has(.kir-run-flow)) .kir-source-pill.is-live .kir-source-dot{
+  animation:kir-current-step 1.15s ease-in-out infinite !important;
+}
+@media (prefers-reduced-motion:reduce){
+  .kmc-import-runtime .kir-run-flow-step.is-current .kir-run-flow-marker,
+  .kmc-import-runtime .kir-page .kir-source-pill.is-live .kir-source-dot{animation:none !important}
+}
