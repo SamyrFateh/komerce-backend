@@ -27,6 +27,7 @@ const {
   resolveAuthorization,
   listExposure,
   listReviewQueue,
+  listReadyToSell,
   summarizeExposure,
   setExposure,
   validateForMarket,
@@ -84,13 +85,27 @@ router.get('/markets/:marketCode/catalog/exposure', authenticate, async (req, re
         listExposure(client, { marketId: authz.market_id }),
         listReviewQueue(client, { marketId: authz.market_id, limit: 100 }),
       ]);
+      const readyToSell = await listReadyToSell(client, {
+        market: {
+          id: authz.market_id,
+          code: authz.market_code,
+          name: authz.market_name,
+          currency: authz.currency,
+        },
+        capabilities: authz.capabilities,
+        reviewQueue,
+        exposure,
+        limit: 100,
+      });
       return {
         authz,
         exposure,
         reviewQueue,
+        readyToSell,
         summary: {
           ...summarizeExposure(exposure),
           incoming_products: reviewQueue.total,
+          ready_to_sell: readyToSell.summary.ready,
         },
       };
     });
@@ -100,6 +115,7 @@ router.get('/markets/:marketCode/catalog/exposure', authenticate, async (req, re
       actor_capabilities: result.authz.capabilities,
       summary: result.summary,
       review_queue: result.reviewQueue,
+      ready_to_sell: result.readyToSell,
       exposure: result.exposure,
     });
   } catch (error) {

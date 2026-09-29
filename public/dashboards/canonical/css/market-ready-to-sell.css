@@ -1,0 +1,28 @@
+/* Catalogue pays — dernière décision commerciale avant Boutique */
+.kmc-ready-section { display: grid; gap: 14px; }
+.kmc-ready-head { display: flex; justify-content: space-between; gap: 24px; align-items: end; }
+.kmc-ready-summary { display: grid; justify-items: end; gap: 2px; color: #64748b; font-size: 12px; }
+.kmc-ready-summary strong { color: #0f172a; font-size: 20px; }
+.kmc-ready-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #dbe5f0; border-radius: 12px; background: #f8fbff; }
+.kmc-ready-bulk { min-width: 220px; }
+.kmc-ready-row.is-positive { background: linear-gradient(90deg, rgba(22,163,74,.045), transparent 28%); }
+.kmc-ready-row.is-warning { background: linear-gradient(90deg, rgba(217,119,6,.04), transparent 28%); }
+.kmc-ready-row.is-critical { background: linear-gradient(90deg, rgba(220,38,38,.04), transparent 28%); }
+.kmc-ready-table th:nth-child(3), .kmc-ready-table th:nth-child(4), .kmc-ready-table th:nth-child(5),
+.kmc-ready-table td:nth-child(3), .kmc-ready-table td:nth-child(4), .kmc-ready-table td:nth-child(5) { text-align: center; }
+.kmc-ready-price-bound { white-space: nowrap; font-weight: 750; color: #475569; }
+.kmc-ready-price-editor { display: inline-grid; grid-template-columns: minmax(92px,130px) auto; align-items: stretch; border: 1px solid #cbd5e1; border-radius: 10px; overflow: hidden; background: #fff; }
+.kmc-ready-price-editor:focus-within { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+.kmc-ready-price-editor input { width: 100%; min-width: 0; border: 0; outline: 0; padding: 9px 10px; text-align: right; font: inherit; font-weight: 850; color: #0f172a; background: transparent; }
+.kmc-ready-price-editor span { display: grid; place-items: center; padding: 0 9px; border-left: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-size: 11px; font-weight: 800; }
+.kmc-ready-status { display: inline-flex; width: fit-content; padding: 5px 8px; border-radius: 999px; font-size: 11px; font-weight: 850; white-space: nowrap; }
+.kmc-ready-status.is-positive { background: #ecfdf5; color: #047857; }
+.kmc-ready-status.is-warning { background: #fffbeb; color: #a15c00; }
+.kmc-ready-status.is-critical { background: #fef2f2; color: #b91c1c; }
+.kmc-ready-status.is-neutral { background: #f1f5f9; color: #475569; }
+.kmc-ready-evidence { display: block; margin-top: 5px; color: #64748b; font-size: 10px; }
+.kmc-ready-table .kmc-market-product-line img { object-fit: cover; border-radius: 10px; background: #f8fafc; }
+@media (max-width: 900px) {
+  .kmc-ready-head { display: grid; }
+  .kmc-ready-summary { justify-items: start; }
+}

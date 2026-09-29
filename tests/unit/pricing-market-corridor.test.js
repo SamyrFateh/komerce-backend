@@ -9,6 +9,10 @@ jest.mock('../../utils/currency', () => ({ projectAmount: jest.fn() }));
 jest.mock('../../services/market-local-price-resolution-service', () => ({ resolveActiveProductMarketPricing: jest.fn() }));
 
 const corridor = require('../../services/pricing-market-corridor');
+const db = require('../../db');
+const pricingEngine = require('../../services/pricing-engine');
+const pricingCdr = require('../../services/pricing-cdr');
+const localPricing = require('../../services/market-local-price-resolution-service');
 
 describe('pricing-market-corridor', () => {
   test('absence de preuve locale reste explicitement sans corridor pays', () => {
@@ -145,4 +149,45 @@ describe('pricing-market-corridor', () => {
       });
     });
   });
+});
+
+
+test('buildMarketCorridorForProduct accepte un candidat résolu sans relâcher la route active-only', async () => {
+  const product = {
+    id: '11111111-1111-1111-1111-111111111111',
+    product_ref: 'KPR-CANDIDATE',
+    name: 'Produit certifié',
+    category: 'phones',
+    price_kmf: 2000,
+    cost_kmf: 700,
+    is_active: false,
+  };
+  db.query
+    .mockResolvedValueOnce({ rows: [] })
+    .mockResolvedValueOnce({ rows: [] })
+    .mockResolvedValueOnce({ rows: [] });
+  localPricing.resolveActiveProductMarketPricing.mockResolvedValueOnce(null);
+  pricingCdr.loadGlobalConfig.mockResolvedValueOnce({});
+  pricingEngine.recommend.mockResolvedValueOnce({
+    purchase_cost_kmf: 700,
+    variable_cost_outside_purchase_kmf: 300,
+    variable_cost_complete_kmf: 1000,
+    fully_loaded_cost_reference_kmf: 1200,
+    contribution_kmf: 1000,
+    minimum_safe_price_kmf: 1100,
+    target_margin_pct: 30,
+    safety_margin_pct: 10,
+    strategy_risk: 'contributive',
+    data_quality: 'ok',
+  });
+
+  const result = await corridor.buildMarketCorridorForProduct({
+    market: { id: '22222222-2222-2222-2222-222222222222', code: 'KM', name: 'Comores', currency: 'KMF' },
+    product,
+    executor: db,
+  });
+
+  expect(result.product.product_ref).toBe('KPR-CANDIDATE');
+  expect(result.selected.source).toBe('GLOBAL_BASE');
+  expect(result.selected.buyer_effective).toBe(false);
 });

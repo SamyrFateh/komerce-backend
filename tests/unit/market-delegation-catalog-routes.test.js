@@ -43,10 +43,12 @@ describe('market-delegation catalog routes', () => {
     expect(routeSource).not.toMatch(/requiredCapability:\s*['"]catalog\.expose['"]/);
   });
 
-  test('GET renvoie le résumé marché et la file simple des nouveaux produits', () => {
+  test('GET renvoie le résumé marché, la file certifiée et la projection Prêts à vendre', () => {
     expect(routeSource).toContain('summarizeExposure');
     expect(routeSource).toContain('listReviewQueue');
+    expect(routeSource).toContain('listReadyToSell');
     expect(routeSource).toMatch(/incoming_products:\s*reviewQueue\.total/);
+    expect(routeSource).toMatch(/ready_to_sell:\s*result\.readyToSell/);
     expect(routeSource).toMatch(/review_queue:\s*result\.reviewQueue/);
   });
 

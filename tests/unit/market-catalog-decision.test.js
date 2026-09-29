@@ -75,8 +75,8 @@ describe('Catalogue pays decision-first', () => {
     expect(source).not.toMatch(/source_hash/i);
     expect(source).not.toMatch(/supplier_order_identity/i);
     expect(source).not.toMatch(/content_source/i);
-    expect(source).toContain('Valider pour ce marché');
-    expect(source).toContain('Ne pas retenir');
+    expect(source).toContain('renderReadyToSell(payload, marketCode)');
+    expect(source).not.toContain('renderIncomingProducts(payload, marketCode)');
   });
 
   test('la page charge les primitives partagées et ne recalcule plus le résumé à partir du tableau', () => {
@@ -89,10 +89,10 @@ describe('Catalogue pays decision-first', () => {
     expect(source).toContain('projection.metricItems(payload)');
     expect(decisionSource).toContain('payload.summary || {}');
     expect(source).not.toMatch(/rows\.filter\([^\n]+commercial_exposure/);
-    expect(source).toContain('Valider pour ce marché');
-    expect(source).toContain('Ne pas retenir');
-    expect(source).toContain('renderIncomingProducts(payload, marketCode)');
+    expect(source).toContain('renderReadyToSell(payload, marketCode)');
+    expect(source).not.toContain('renderIncomingProducts(payload, marketCode)');
     expect(source).toContain('Garder masqué');
+    expect(html).toContain('/dashboards/canonical/js/market-ready-to-sell.js?v=260929-1');
     expect(source).not.toMatch(/[?&]market_id=|body\.market_id|body\.marketId/);
   });
 });
