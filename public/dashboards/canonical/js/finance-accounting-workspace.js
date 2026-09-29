@@ -26,6 +26,13 @@
   const ENDPOINT_PREFIX = '/api/admin/workspaces/accounting/market/';
   const MARKET_CODE = /^[A-Z]{2}$/;
 
+  function contextualHref(path, returnTo, label) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    return nav && typeof nav.withReturnTo === 'function'
+      ? nav.withReturnTo(path, returnTo, label)
+      : path;
+  }
+
   function endpointFor(marketCode, suffix = '', filters = null) {
     const code = String(marketCode || '').trim().toUpperCase();
     if (!MARKET_CODE.test(code)) throw new Error('canonical_accounting_workspace_market_required');
@@ -325,7 +332,7 @@
       const tr = doc.createElement('tr');
       const orderCell = doc.createElement('td');
       const link = text(doc, 'a', 'kmc-workspace-link', row.order_ref);
-      link.setAttribute('href', `/admin/orders/${encodeURIComponent(row.order_ref)}`);
+      link.setAttribute('href', contextualHref(`/admin/orders/${encodeURIComponent(row.order_ref)}`, '/admin/workspaces/accounting', 'Retour à la comptabilité'));
       orderCell.appendChild(link);
       tr.appendChild(orderCell);
       [row.client_name, row.relais_name, formatKmf(row.total_kmf), row.status, formatDate(row.created_at)].forEach(value => {
@@ -375,7 +382,7 @@
       tr.appendChild(invoiceCell);
       const orderCell = doc.createElement('td');
       const link = text(doc, 'a', 'kmc-workspace-link', row.order_ref);
-      link.setAttribute('href', `/admin/orders/${encodeURIComponent(row.order_ref)}`);
+      link.setAttribute('href', contextualHref(`/admin/orders/${encodeURIComponent(row.order_ref)}`, '/admin/workspaces/accounting', 'Retour à la comptabilité'));
       orderCell.appendChild(link);
       tr.appendChild(orderCell);
       const amount = row.payment_mode === 'stripe_eur' || row.payment_mode === 'paypal_eur'
