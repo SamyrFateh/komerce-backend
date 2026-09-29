@@ -84,7 +84,12 @@
 
   function flowStageMeta(stage) {
     if (stage.key === 'CATALOGUE' && stage.reason === 'awaiting_explicit_operator_promotion') {
-      return { state:'waiting', label:'À valider' };
+      return {
+        state:'completed',
+        label:'Terminé',
+        manual_label:`${num(stage.total)} à valider`,
+        reached_boundary:true,
+      };
     }
     if (stage.status === 'COMPLETED') return { state:'completed', label:'Terminé' };
     if (stage.status === 'FAILED') return { state:'failed', label:'Bloqué' };
@@ -96,14 +101,16 @@
     return `<div class="kir-run-flow-track">${stages.map((stage, index) => {
       const meta = flowStageMeta(stage);
       const count = stage.total
-        ? (meta.state === 'blocked' || meta.state === 'failed' || meta.state === 'waiting'
-          ? `${meta.label} · ${stage.processed}/${stage.total}`
-          : `${stage.processed}/${stage.total}`)
+        ? (meta.reached_boundary
+          ? `${stage.total}/${stage.total}`
+          : meta.state === 'failed'
+            ? `${meta.label} · ${stage.processed}/${stage.total}`
+            : `${stage.processed}/${stage.total}`)
         : meta.label;
       const marker = meta.state === 'completed' ? '✓' : meta.state === 'failed' ? '!' : String(index + 1);
-      return `<div class="kir-run-flow-step is-${meta.state}">
+      return `<div class="kir-run-flow-step is-${meta.state} ${meta.reached_boundary ? 'has-manual-action' : ''}">
         <span class="kir-run-flow-marker">${marker}</span>
-        <div><strong>${esc(stage.label)}</strong><small>${esc(count)}</small></div>
+        <div><strong>${esc(stage.label)}</strong><small>${esc(count)}</small>${meta.manual_label ? `<em class="kir-run-flow-manual">${esc(meta.manual_label)}</em>` : ''}</div>
       </div>`;
     }).join('')}</div>`;
   }
@@ -213,8 +220,8 @@
             : `${label} · préparation de la source et création du premier lot`;
     const tone = failed ? 'is-failed'
       : noResult ? 'is-empty'
-        : catalogueWaiting || providerGateBlocked ? 'is-waiting'
-          : activationState.done ? 'is-complete' : 'is-live';
+        : catalogueWaiting || providerGateBlocked || activationState.done ? 'is-complete has-manual-action'
+          : 'is-live';
     return `<section class="kir-run-flow ${tone}" aria-live="polite">
       <div class="kir-run-flow-head">
         <div><span class="kir-section-kicker">FLUX DU LOT</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
@@ -262,13 +269,13 @@
         ? `${run.run_ref} · ${run.provider || 'Source'} · ${num(run.accounting?.awaiting_catalogue_promotion)} certifié(s) attendent la promotion Catalogue`
         : `${run.run_ref} · ${run.provider || 'Source'} · parcours conservé à l’écran`;
     const tone = failed ? 'is-failed'
-      : catalogueWaiting ? 'is-waiting'
-        : run.status === 'COMPLETED' ? 'is-complete' : 'is-live';
+      : catalogueWaiting || run.status === 'COMPLETED' ? 'is-complete has-manual-action'
+        : 'is-live';
 
     return `<section class="kir-run-flow ${tone}" aria-label="Parcours du lot ${esc(run.run_ref)}">
       <div class="kir-run-flow-head">
         <div><span class="kir-section-kicker">FLUX DU LOT</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
-        <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Historique →</a>
+        <em>${progress}%</em>
       </div>
       <div class="kir-run-flow-progress"><span style="width:${progress}%"></span></div>
       ${flowTrack(stages)}
