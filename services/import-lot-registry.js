@@ -26,6 +26,7 @@ const BUSINESS_STATUS = Object.freeze({
   ACTION_REQUIRED: 'ACTION_REQUIRED',
   BLOCKED: 'BLOCKED',
   CLOSED: 'CLOSED',
+  ARCHIVED: 'ARCHIVED',
   UNKNOWN: 'UNKNOWN',
 });
 
@@ -112,8 +113,14 @@ function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
     && exceptions === 0
     && terminal === promoted.length;
 
+  const hasBusinessFootprint = positiveInt(run.source_total) > 0
+    || candidates.length > 0
+    || promoted.length > 0
+    || exceptions > 0;
+
   let businessStatus = BUSINESS_STATUS.ACTION_REQUIRED;
-  if (run.status === 'FAILED') businessStatus = BUSINESS_STATUS.BLOCKED;
+  if (run.status === 'FAILED' && !hasBusinessFootprint) businessStatus = BUSINESS_STATUS.ARCHIVED;
+  else if (run.status === 'FAILED') businessStatus = BUSINESS_STATUS.BLOCKED;
   else if (run.status === 'RUNNING') businessStatus = BUSINESS_STATUS.RUNNING;
   else if (closureEligible) businessStatus = BUSINESS_STATUS.CLOSED;
   else if (!run.status) businessStatus = BUSINESS_STATUS.UNKNOWN;
