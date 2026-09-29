@@ -34,8 +34,8 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-11');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-9');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-12');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-10');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
   expect(source).not.toMatch(/\b(?:ImportRuntimeView|KmcApi|ApiClient)\b/);
@@ -82,9 +82,13 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('persistentRunFlow');
   expect(source).toContain('Import automatique terminé');
   expect(source).toContain('parcours conservé à l’écran');
+  expect(source).toContain('VÉRITÉ DU RUN');
+  expect(source).toContain('Certifiées sourcing');
+  expect(source).toContain('awaiting_catalogue_promotion');
+  expect(source).toContain('Ils n’ont pas disparu');
   expect(source).toContain('ACTIVATION_POLL_MS = 900');
   expect(source).toContain("NO_RESULT:'Sans résultat'");
-  expect(source).toContain('Passage terminé · aucun résultat');
+  expect(source).toContain('Passage terminé sans résultat');
   expect(css).toContain('Legacy Admin visual parity');
   expect(css).toContain('--kir-orange:var(--kmc-legacy-orange');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-runs/');
@@ -92,6 +96,9 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(css).toContain('.kir-run-flow-progress');
   expect(css).toContain('.kir-run-flow-step.is-running');
   expect(css).toContain('two-line mini cards');
+  expect(css).toContain('Real-run accounting');
+  expect(css).toContain('@keyframes kir-live-ring');
+  expect(css).toContain('--kir-bg:#fff');
   expect(source).not.toContain("api('/api/admin/workspaces/sourcing')");
   expect(source).not.toContain("'/capabilities/'");
   expect(source).not.toContain("'/import-now'");
