@@ -121,7 +121,7 @@ function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
 
   const emptyPass = run.status === 'FAILED'
     && !hasBusinessFootprint
-    && ['no_valid_product', 'supplier_source_empty'].includes(String(run.failure_reason || ''));
+    && ['no_valid_product', 'supplier_source_empty', 'all_supplier_products_invalid'].includes(String(run.failure_reason || ''));
 
   let businessStatus = BUSINESS_STATUS.ACTION_REQUIRED;
   if (emptyPass) businessStatus = BUSINESS_STATUS.NO_RESULT;
