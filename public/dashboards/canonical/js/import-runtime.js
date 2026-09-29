@@ -140,11 +140,10 @@
                   : 'prep';
           const stateLabel = enabled ? 'ON' : 'OFF';
           const last = source.last_capture_at ? fmtDate(source.last_capture_at) : 'Jamais';
-          const preparation = Array.isArray(source.preparation_required) ? source.preparation_required : [];
           const readiness = !activationReady
             ? (source.blocker || 'Source non activable')
             : !ready
-              ? `Préparation auto · ${preparation.join(' → ') || 'pré-certification'}`
+              ? 'Préparation automatique au clic'
               : enabled
                 ? 'Actif'
                 : 'Prêt';
