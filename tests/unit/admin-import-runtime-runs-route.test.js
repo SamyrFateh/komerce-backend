@@ -40,6 +40,15 @@ jest.mock('../../services/import-runtime-runs', () => ({
   getProductTrace: (...args) => mockRuns.getProductTrace(...args),
 }));
 
+const mockRegistry = {
+  listLots: jest.fn(),
+  getLot: jest.fn(),
+};
+jest.mock('../../services/import-lot-registry', () => ({
+  listLots: (...args) => mockRegistry.listLots(...args),
+  getLot: (...args) => mockRegistry.getLot(...args),
+}));
+
 const mockReplay = jest.fn();
 jest.mock('../../services/sourcing-workspace', () => ({
   SourcingWorkspaceError: class extends Error {},
@@ -96,6 +105,32 @@ describe('import runtime run routes', () => {
     const response = await request(app()).get(BASE);
     expect(response.status).toBe(200);
     expect(response.body.runs).toHaveLength(1);
+  });
+
+  test('cockpit agrège registre de lots et détail sélectionné sans calcul client', async () => {
+    mockRegistry.listLots.mockResolvedValue([
+      { run_ref:'KIR-000004', business_status:'ACTION_REQUIRED', decisions:{ commercial:15 } },
+      { run_ref:'KIR-000003', business_status:'CLOSED', decisions:{ commercial:0 } },
+    ]);
+    mockRuns.getRun.mockResolvedValue({ run_ref:'KIR-000004', status:'COMPLETED' });
+    const response = await request(app()).get('/api/admin/workspaces/sourcing/import-cockpit?run=KIR-000004');
+    expect(response.status).toBe(200);
+    expect(response.body.lots).toHaveLength(2);
+    expect(response.body.selected).toMatchObject({
+      run_ref:'KIR-000004',
+      business:{ business_status:'ACTION_REQUIRED', decisions:{ commercial:15 } },
+    });
+    expect(response.headers['cache-control']).toBe('no-store');
+  });
+
+  test('cockpit sait ouvrir un ancien KIR hors de la fenêtre récente', async () => {
+    mockRegistry.listLots.mockResolvedValue([{ run_ref:'KIR-000004' }]);
+    mockRegistry.getLot.mockResolvedValue({ run_ref:'KIR-000001', business_status:'CLOSED' });
+    mockRuns.getRun.mockResolvedValue({ run_ref:'KIR-000001', status:'COMPLETED' });
+    const response = await request(app()).get('/api/admin/workspaces/sourcing/import-cockpit?run=KIR-000001');
+    expect(response.status).toBe(200);
+    expect(mockRegistry.getLot).toHaveBeenCalledWith('KIR-000001');
+    expect(response.body.selected.business.business_status).toBe('CLOSED');
   });
 
   test('autorité sourcing globale obligatoire', async () => {
