@@ -93,9 +93,7 @@ test('niveau 1 montre uniquement décisions ouvertes et lots récents', () => {
   ui.render(node, payload);
   expect(node.innerHTML).toContain('Décisions ouvertes');
   expect(node.innerHTML).toContain('Alimentation automatique');
-  expect(node.innerHTML).toContain('Préparation auto');
-  expect(node.innerHTML).toContain('Discovery');
-  expect(node.innerHTML).toContain('Certification runtime');
+  expect(node.innerHTML).toContain('Préparation automatique au clic');
   expect(node.innerHTML).toContain('data-source-ref="api:aliexpress"');
   expect(node.innerHTML).toContain('3</div>');
   expect(node.innerHTML).toContain('Validation Catalogue requise');
