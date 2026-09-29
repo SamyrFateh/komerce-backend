@@ -8,7 +8,7 @@
  * @outputs       ready_to_sell_queue, observed_price_corridor, proposed_local_price, bulk_eligibility
  * @depends       db.js, services/pricing-market-corridor.js, services/market-local-price-resolution-service.js
  * @used-by       services/market-delegation-catalog-service.js
- * @db-read       products, product_market_price_drafts, product_skus, product_variants
+ * @db-read       products, product_market_price_drafts
  * @db-write      none
  * @db-txn        none
  * @doctrine      certified_catalog_readiness_before_market_decision, corridor_is_observation_not_gate, local_human_decides_price, bulk_only_for_green_rows, missing_market_price_never_becomes_buyer_effective
