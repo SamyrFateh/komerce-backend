@@ -470,7 +470,7 @@
         </div>
         <div class="kir-hero-actions">
           <span class="kir-status-large is-${businessTone(lot.business_status)}">${esc(status)}</span>
-          <a href="/admin/workspaces/catalog" class="kir-global-link">Catalogue global →</a>
+          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref, view), 'Retour au lot')}" class="kir-global-link">Catalogue global →</a>
         </div>
       </header>
 
@@ -574,5 +574,5 @@
     timer = setInterval(() => refresh({ preserve:true }), POLL_MS);
   }
 
-  global.KomerceCanonicalImportRuntime = Object.freeze({ mount, render, businessLabel, urlFor });
+  global.KomerceCanonicalImportRuntime = Object.freeze({ mount, render, businessLabel, urlFor, withReturnTo });
 })(typeof window !== 'undefined' ? window : globalThis);
