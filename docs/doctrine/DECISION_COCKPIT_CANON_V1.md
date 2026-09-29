@@ -64,7 +64,7 @@ Les rejets/différés amont restent traçables dans le lot mais ne polluent pas 
 
 ## Frontières
 
-- **Cockpit Import** : point d’entrée du parcours Sourcing → Catalogue. Il montre le registre KIR, les actions ouvertes, la clôture et un **contrôle compact ON/OFF de l’autopilot des sources**. Il ne réplique jamais les capacités détaillées Discovery/Sync/Import/Production : celles-ci restent dans le Workspace Sourcing.
+- **Cockpit Import** : point d’entrée du parcours Sourcing → Catalogue. Il montre le registre KIR, les actions ouvertes, la clôture et un **contrôle compact ON/OFF de l’autopilot des sources**. Le passage OFF → ON orchestre les autorités existantes : autorisation Discovery/Sync/Import, premier import réel certifiant, autorisation Production puis autopilot. Aucun garde-fou n’est contourné. Le cockpit n’expose pas ces capacités comme une console technique ; il montre seulement « préparation automatique » ou le blocker réellement non automatisable.
 - **Sourcing Workspace** : configuration détaillée des sources, fournisseurs, candidats, corrections, capacités provider et déclenchements manuels. Il ne duplique pas l'historique KIR ; la santé d'architecture n'apparaît qu'en diagnostic explicite.
 - **Catalogue Workspace** : curation Catalogue et **Catalogue global commercial**. Il ne réaffiche ni Raffinerie, ni sources LIVE, ni pipeline d'import.
 - **Marché / Prêts à vendre** : décision commerciale locale, corridor et prix.
