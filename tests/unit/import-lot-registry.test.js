@@ -57,8 +57,31 @@ test('lot clos seulement lorsque chaque produit promu a une décision terminale 
   ];
   const lot = buildLot(run(), candidates, markets, 1);
   expect(lot.business_status).toBe(BUSINESS_STATUS.CLOSED);
-  expect(lot.closure).toEqual({ eligible:true, decided_products:2, total_products:2, remaining_products:0 });
+  expect(lot.closure).toEqual({
+    eligible:true,
+    decided_products:2,
+    total_products:2,
+    awaiting_catalogue_promotion:0,
+    remaining_products:0,
+  });
   expect(lot.decisions).toMatchObject({ approved_for_sale:1, not_retained:1, catalogue:0, commercial:0, exceptions:0 });
+});
+
+test('import terminé reste action requise tant que des certifiés attendent la promotion Catalogue', () => {
+  const lot = buildLot(run({
+    source_total:20,
+    intake:{
+      ready_for_refinery:12,
+      quarantined:0,
+      certification_blocked:0,
+    },
+  }), [], [], 1);
+  expect(lot.business_status).toBe(BUSINESS_STATUS.ACTION_REQUIRED);
+  expect(lot.closure).toMatchObject({
+    eligible:false,
+    awaiting_catalogue_promotion:12,
+    remaining_products:12,
+  });
 });
 
 test('une quarantaine ou un produit encore à décider interdit la clôture', () => {
