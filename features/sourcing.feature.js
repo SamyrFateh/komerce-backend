@@ -178,6 +178,7 @@ module.exports = {
       'tests/unit/admin-sourcing-workspace-route.test.js',
       'tests/unit/sourcing-workspace.test.js',
       'tests/unit/sourcing-source-autopilot.test.js',
+      'tests/unit/sourcing-workspace-source-control.test.js',
       'tests/unit/aliexpress-discovery.test.js',
       'tests/unit/sourcing-provider-control-policy.test.js',
       'tests/unit/sourcing-certification.test.js',

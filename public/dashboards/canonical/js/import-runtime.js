@@ -51,8 +51,16 @@
     return { run, view: VIEWS.has(requestedView) ? requestedView : 'overview' };
   }
 
-  async function api(path) {
-    const res = await global.fetch(path, { credentials:'include', headers:{ Accept:'application/json' } });
+  async function api(path, options = {}) {
+    const res = await global.fetch(path, {
+      method: options.method || 'GET',
+      credentials:'include',
+      headers:{
+        Accept:'application/json',
+        ...(options.body == null ? {} : { 'Content-Type':'application/json' }),
+      },
+      body: options.body == null ? undefined : JSON.stringify(options.body),
+    });
     let body = null;
     try { body = await res.json(); } catch (_) { body = null; }
     if (!res.ok) {
@@ -90,6 +98,53 @@
     if (runRef) q.set('run', runRef);
     if (view && view !== 'overview') q.set('view', view);
     return '/admin/import-runtime' + (q.toString() ? '?' + q.toString() : '');
+  }
+
+  function sourceControlStrip(sourceControls) {
+    const sources = Array.isArray(sourceControls) ? sourceControls : [];
+    if (!sources.length) {
+      return `<section class="kir-source-control">
+        <div class="kir-source-control-title"><span class="kir-section-kicker">SOURCING</span><strong>Aucune source récurrente configurée</strong></div>
+        <a href="/admin/workspaces/sourcing" class="kir-subtle-link">Configurer les sources →</a>
+      </section>`;
+    }
+
+    return `<section class="kir-source-control" aria-label="Contrôle sourcing">
+      <div class="kir-source-control-title">
+        <span class="kir-section-kicker">SOURCING</span>
+        <strong>Alimentation automatique</strong>
+        <small>Le switch pilote l’autopilot de la source. ON déclenche aussi un premier passage immédiatement.</small>
+      </div>
+      <div class="kir-source-control-list">
+        ${sources.map(source => {
+          const enabled = source.autopilot_enabled === true;
+          const ready = source.autopilot_ready === true;
+          const canToggle = enabled || ready;
+          const stateTone = enabled && ready ? 'on' : enabled ? 'warning' : 'off';
+          const stateLabel = enabled ? 'ON' : 'OFF';
+          const last = source.last_capture_at ? fmtDate(source.last_capture_at) : 'Jamais';
+          const title = !ready && !enabled ? (source.blocker || 'Source non prête') : enabled && !ready ? (source.blocker || 'Autopilot actif mais source à vérifier') : '';
+          return `<div class="kir-source-pill is-${stateTone}" title="${esc(title)}">
+            <span class="kir-source-dot" aria-hidden="true"></span>
+            <span class="kir-source-name">${esc(source.label || source.supplier_name || source.source_ref)}</span>
+            <small>${esc(last)}</small>
+            <button type="button"
+              class="kir-source-switch is-${stateTone}"
+              role="switch"
+              aria-checked="${enabled ? 'true' : 'false'}"
+              aria-label="${enabled ? 'Désactiver' : 'Activer'} le sourcing automatique ${esc(source.label || source.source_ref)}"
+              data-source-toggle
+              data-source-ref="${esc(source.source_ref)}"
+              data-source-enabled="${enabled ? '1' : '0'}"
+              ${canToggle ? '' : 'disabled'}>
+              <span class="kir-source-switch-knob"></span>
+              <strong>${stateLabel}</strong>
+            </button>
+          </div>`;
+        }).join('')}
+      </div>
+      <a href="/admin/workspaces/sourcing" class="kir-subtle-link">Sources →</a>
+    </section>`;
   }
 
   function lotStrip(lots, selectedRef) {
@@ -358,6 +413,7 @@
   }
 
   function render(root, payload) {
+    const sourceControls = Array.isArray(payload?.source_controls) ? payload.source_controls : [];
     const lots = Array.isArray(payload?.lots) ? payload.lots : [];
     const run = payload?.selected || null;
     const { view } = params();
@@ -366,9 +422,11 @@
     if (!run) {
       root.innerHTML = `<section class="kir-page">
         <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · IMPORTS</span><h1>Cockpit des imports</h1><p>Aucun lot disponible.</p></div></header>
+        ${sourceControlStrip(sourceControls)}
         ${lotStrip(lots, null)}
       </section>`;
       bindNavigation(root);
+      bindSourceControls(root);
       return;
     }
 
@@ -387,6 +445,7 @@
         </div>
       </header>
 
+      ${sourceControlStrip(sourceControls)}
       ${lotStrip(lots, run.run_ref)}
 
       <section class="kir-lot-summary">
@@ -399,6 +458,7 @@
       <main class="kir-main">${renderBody(run, view, lots)}</main>
     </section>`;
     bindNavigation(root);
+    bindSourceControls(root);
   }
 
   function renderLoading(root) {
@@ -409,6 +469,31 @@
       <div class="kir-skeleton kir-skeleton-summary"></div>
       <div class="kir-skeleton kir-skeleton-main"></div>
     </section>`;
+  }
+
+  function bindSourceControls(root) {
+    root.querySelectorAll?.('[data-source-toggle]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const sourceRef = button.getAttribute('data-source-ref');
+        const enabled = button.getAttribute('data-source-enabled') === '1';
+        if (!sourceRef || button.disabled) return;
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        const action = enabled ? 'deactivate' : 'activate';
+        try {
+          await api(`/api/admin/workspaces/sourcing/sources/${encodeURIComponent(sourceRef)}/${action}`, {
+            method:'POST',
+            body:{},
+          });
+          await refresh({ preserve:true });
+        } catch (error) {
+          button.disabled = false;
+          button.removeAttribute('aria-busy');
+          const main = root.querySelector?.('.kir-main');
+          if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
+        }
+      });
+    });
   }
 
   function bindNavigation(root) {

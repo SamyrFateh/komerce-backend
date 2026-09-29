@@ -26880,6 +26880,10 @@
                   "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
+                    "source_controls": {
+                      "type": "string",
+                      "x-observed": true
+                    },
                     "lots": {
                       "type": "string",
                       "x-observed": true
