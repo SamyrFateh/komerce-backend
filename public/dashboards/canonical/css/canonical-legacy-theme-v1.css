@@ -917,3 +917,222 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active {
   font-size: 12px;
   font-weight: 400;
 }
+
+
+/* V1.5 — Legacy Admin parity, measured from the reference dashboard.
+ * Keep Canonical navigation semantics, but render it with the same visual
+ * grammar as the historical back-office: slate page, white cards, 12px
+ * radii, native system text, 220px white sidebar and restrained accents. */
+:root {
+  --kmc-legacy-bg:#F8FAFC;
+  --kmc-legacy-card:#FFFFFF;
+  --kmc-legacy-line:#E2E8F0;
+  --kmc-legacy-line-strong:#CBD5E1;
+  --kmc-legacy-ink:#0F172A;
+  --kmc-legacy-ink-2:#475569;
+  --kmc-legacy-muted:#64748B;
+  --kmc-legacy-faint:#94A3B8;
+  --kmc-legacy-orange:#F59E0B;
+  --kmc-legacy-orange-strong:#D97706;
+  --kmc-legacy-orange-soft:#FFF7ED;
+  --kmc-legacy-green:#16A34A;
+  --kmc-legacy-green-soft:#ECFDF3;
+  --kmc-legacy-blue:#2563EB;
+  --kmc-legacy-blue-soft:#EFF6FF;
+  --kmc-legacy-red:#DC2626;
+  --kmc-legacy-red-soft:#FEF2F2;
+  --kmc-shell-sidebar-width:220px;
+  --kmc-shell-topbar-height:64px;
+  --kmc-shell-tabs-height:40px;
+}
+
+html,
+body,
+body[data-admin-generation="canonical"],
+body.kmc-shell-v4 {
+  background:#F8FAFC !important;
+  color:#0F172A;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter","Helvetica Neue",Arial,sans-serif;
+  font-size:14px;
+  line-height:1.5;
+  font-weight:400;
+}
+
+body.kmc-shell-v4 > .kmc-admin-navigation{
+  width:220px;
+  background:#fff;
+  color:#0F172A;
+  border-right:1px solid #E2E8F0;
+  box-shadow:none;
+}
+body.kmc-shell-v4 .kmc-admin-navigation-inner{padding:0}
+body.kmc-shell-v4 .kmc-admin-navigation-identity{
+  min-height:96px;
+  padding:18px 22px 16px;
+  border-bottom:1px solid #E2E8F0;
+  align-items:flex-start;
+}
+body.kmc-shell-v4 .kmc-admin-home{
+  position:relative;
+  min-height:58px;
+  padding:0;
+  display:block;
+}
+body.kmc-shell-v4 .kmc-admin-home-mark{display:none}
+body.kmc-shell-v4 .kmc-admin-home-label{
+  display:block;
+  width:max-content;
+  margin-top:2px;
+  color:transparent;
+  background:linear-gradient(90deg,#0F172A 0 38%,#F59E0B 38% 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:23px;
+  line-height:1.1;
+  font-weight:400;
+  letter-spacing:-.02em;
+}
+body.kmc-shell-v4 .kmc-admin-home::after{
+  content:"BACK-OFFICE ADMIN";
+  display:block;
+  margin-top:6px;
+  color:#94A3B8;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  font-size:9px;
+  line-height:1;
+  font-weight:500;
+  letter-spacing:.12em;
+}
+body.kmc-shell-v4 .kmc-admin-primary-nav{
+  padding:14px 0;
+  gap:0;
+}
+body.kmc-shell-v4 .kmc-admin-primary-link{
+  min-height:38px;
+  height:38px;
+  padding:0 22px;
+  gap:12px;
+  color:#64748B;
+  border-radius:0;
+  font-size:13px;
+  font-weight:400;
+}
+body.kmc-shell-v4 .kmc-admin-primary-link:hover,
+body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible{
+  color:#0F172A;
+  background:#F8FAFC;
+}
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active{
+  color:#D97706;
+  background:#FFF7ED;
+  font-weight:500;
+  box-shadow:inset 2px 0 0 #F59E0B;
+}
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active::after{display:none}
+body.kmc-shell-v4 .kmc-admin-primary-icon{
+  width:18px;
+  flex-basis:18px;
+  color:currentColor;
+  font-size:13px;
+}
+body.kmc-shell-v4 .kmc-admin-utility-nav{
+  padding:14px 22px 18px;
+  border-top:1px solid #E2E8F0;
+}
+body.kmc-shell-v4 .kmc-admin-settings-link,
+body.kmc-shell-v4 .kmc-admin-logout{
+  min-height:32px;
+  padding:0;
+  color:#64748B;
+  font-size:12px;
+  font-weight:400;
+}
+
+.kmc-admin-topbar{
+  height:64px;
+  padding:0 24px;
+  border-bottom:3px solid #F59E0B;
+  background:#fff;
+  box-shadow:none;
+  backdrop-filter:none;
+}
+.kmc-admin-search{
+  width:min(470px,50%);
+  height:34px;
+  padding:0 11px;
+  border:1px solid #E2E8F0;
+  border-radius:8px;
+  background:#F8FAFC;
+}
+.kmc-admin-search:focus-within{
+  border-color:#F59E0B;
+  box-shadow:0 0 0 2px rgb(245 158 11 / .10);
+}
+.kmc-admin-search-input{
+  color:#475569;
+  font-size:12px;
+  font-weight:400;
+}
+.kmc-admin-topbar .kmc-admin-market-select,
+.kmc-admin-topbar .kmc-admin-account{
+  min-height:34px;
+  color:#475569;
+  border:1px solid #E2E8F0;
+  border-radius:8px;
+  background:#fff;
+  font-size:12px;
+  font-weight:400;
+}
+
+.kmc-admin-domain-tabs{
+  min-height:40px;
+  padding:0 24px;
+  gap:24px;
+  border-bottom:1px solid #E2E8F0;
+  background:#fff;
+  backdrop-filter:none;
+}
+.kmc-admin-domain-tab{
+  min-height:40px;
+  color:#64748B;
+  font-size:12px;
+  font-weight:400;
+}
+.kmc-admin-domain-tab:hover,
+.kmc-admin-domain-tab:focus-visible,
+.kmc-admin-domain-tab.is-active{
+  color:#D97706;
+}
+.kmc-admin-domain-tab.is-active{font-weight:600}
+.kmc-admin-domain-tab.is-active::after{
+  height:2px;
+  background:#F59E0B;
+}
+
+body.kmc-shell-v4 #canonical-admin-root,
+body.kmc-shell-v4 #market-autonomy-root,
+body.kmc-shell-v4 #market-catalog-root{
+  width:min(1480px,calc(100% - 48px));
+  margin:0 auto;
+  padding-top:20px;
+  padding-bottom:28px;
+}
+
+@media(max-width:980px){
+  :root{--kmc-shell-sidebar-width:72px}
+  body.kmc-shell-v4 > .kmc-admin-navigation{width:72px}
+  body.kmc-shell-v4 .kmc-admin-navigation-identity{padding:14px 8px;align-items:center;justify-content:center}
+  body.kmc-shell-v4 .kmc-admin-home-label,
+  body.kmc-shell-v4 .kmc-admin-home::after{display:none}
+}
+@media(max-width:680px){
+  :root{
+    --kmc-shell-sidebar-width:58px;
+    --kmc-shell-topbar-height:52px;
+    --kmc-shell-tabs-height:40px;
+  }
+  body.kmc-shell-v4 > .kmc-admin-navigation{width:58px}
+  .kmc-admin-topbar{height:52px;padding-inline:12px}
+  .kmc-admin-domain-tabs{padding-inline:12px}
+}
