@@ -34,8 +34,8 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-5');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-4');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-6');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-5');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
   expect(source).not.toMatch(/\b(?:ImportRuntimeView|KmcApi|ApiClient)\b/);
@@ -67,11 +67,17 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('Non retenus');
   expect(source).toContain('Clôture du lot');
   expect(source).toContain('Catalogue global');
+  expect(source).toContain('Alimentation automatique');
+  expect(source).toContain('data-source-toggle');
+  expect(source).toContain("role=\"switch\"");
+  expect(source).toContain("/api/admin/workspaces/sourcing/sources/");
+  expect(source).toContain("const action = enabled ? 'deactivate' : 'activate'");
   expect(source).not.toContain("api('/api/admin/workspaces/sourcing')");
   expect(source).not.toContain("'/capabilities/'");
   expect(source).not.toContain("'/import-now'");
   expect(source).not.toContain('sourceCanStartAutopilot');
   expect(css).toContain('.kir-lot-strip');
   expect(css).toContain('.kir-action-card');
+  expect(css).toContain('.kir-source-switch');
   expect(css).not.toContain('.kir-source-panel');
 });
