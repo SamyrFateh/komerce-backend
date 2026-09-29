@@ -139,7 +139,10 @@ async function importCatalog(body, userId, dispatchToConnector) {
   const invalidFromConnector = connectorResult.invalid || [];
 
   if (!products.length) {
-    await runHook((id) => importRuns.failRun(id, 'no_valid_product'));
+    const failureReason = invalidFromConnector.length > 0
+      ? 'all_supplier_products_invalid'
+      : 'supplier_source_empty';
+    await runHook((id) => importRuns.failRun(id, failureReason));
     return {
       status: 400,
       body: { error: 'Aucun produit valide trouvé', invalid: invalidFromConnector, run_ref: runtimeRun?.run_ref || null },
