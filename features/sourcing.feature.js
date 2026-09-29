@@ -82,10 +82,7 @@ module.exports = {
     'admin margin/rail (economic-engine, routes/sourcing.js) — homonymes, domaines disjoints.',
 
   files: {
-    dash: [
-      'dashboards/canonical/js/import-runtime.js',
-      'dashboards/canonical/css/import-runtime.css',
-    ],
+    dash: [],
     middleware: [
       'middleware/require-sourcing-global-authority.js',
     ],
@@ -191,7 +188,6 @@ module.exports = {
       'tests/unit/sourcing-observation-foundation-migration.test.js',
       'tests/unit/sourcing-resolution-foundation-migration.test.js',
       'tests/unit/import-runtime-runs.test.js',
-      'tests/unit/import-runtime-journey.test.js',
       'tests/unit/admin-import-runtime-runs-route.test.js',
       'tests/unit/admin-import-runtime-live.test.js',
     ],
@@ -229,9 +225,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED',
-    authedRoutesDetected: 23,
-    totalRoutes: 23,
-    note: 'Toutes les routes /api/admin/sourcing/* exigent authenticate + role admin (requireAdminOrFounder).',
+    authedRoutesDetected: 24,
+    totalRoutes: 24,
+    note: 'Les routes Sourcing Canonical, dont le cockpit KIR, restent derrière authenticate + rôle sourcing/admin + autorité sourcing globale.',
   },
 
   contract: {
@@ -248,6 +244,7 @@ module.exports = {
       'POST /api/admin/sourcing/candidates/:id/reject',
       'POST /api/admin/sourcing/candidates/:id/watchlist',
       'GET /api/admin/workspaces/sourcing',
+      'GET /api/admin/workspaces/sourcing/import-cockpit',
       'POST /api/admin/workspaces/sourcing/imports',
       'POST /api/admin/workspaces/sourcing/sources/:sourceRef/catalog-changes/observe',
       'POST /api/admin/workspaces/sourcing/sources/:sourceRef/capabilities/:capability',

@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_session, sourcing_global_grant, business_references, action_payloads
  * @outputs       global_sourcing_projection, sourcing_action_results, source_autopilot_switch_results
- * @depends       middleware/auth.js, middleware/require-sourcing-global-authority.js, services/import-runtime-runs.js, services/sourcing-workspace.js, services/sourcing-integrity-service.js, services/sourcing-catalog-change-observation.js
+ * @depends       middleware/auth.js, middleware/require-sourcing-global-authority.js, services/import-runtime-runs.js, services/import-lot-registry.js, services/sourcing-workspace.js, services/sourcing-integrity-service.js, services/sourcing-catalog-change-observation.js
  * @used-by       bootstrap/api-routes.js, canonical sourcing workspace
  * @db-read       none
  * @db-write      none
@@ -26,6 +26,7 @@ const sourcingHealth = require('../services/sourcing-integrity-service');
 const catalogChangeObservation = require('../services/sourcing-catalog-change-observation');
 const providerPolicy = require('../services/sourcing-provider-control-policy');
 const importRuns = require('../services/import-runtime-runs');
+const importLotRegistry = require('../services/import-lot-registry');
 
 const router = express.Router();
 const guard = [authenticate, requireRole(['admin', 'sourcing']), requireSourcingGlobalAuthority];
@@ -93,6 +94,32 @@ router.get('/import-runs', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store');
     res.json({ runs: await importRuns.listRuns({ limit: req.query.limit }) });
+  } catch (err) { handleError(err, res, next); }
+});
+
+router.get('/import-cockpit', async (req, res, next) => {
+  try {
+    const requestedRun = req.query.run ? String(req.query.run) : null;
+    if (requestedRun && !RUN_REF_RE.test(requestedRun)) return runNotFound(res);
+
+    const lots = await importLotRegistry.listLots({ limit: req.query.limit || 12 });
+    const selectedRef = requestedRun || lots[0]?.run_ref || null;
+    let selectedLot = selectedRef ? lots.find(lot => lot.run_ref === selectedRef) : null;
+    if (selectedRef && !selectedLot) selectedLot = await importLotRegistry.getLot(selectedRef);
+    if (selectedRef && !selectedLot) return runNotFound(res);
+
+    const selected = selectedRef ? await importRuns.getRun(selectedRef) : null;
+    if (selectedRef && !selected) return runNotFound(res);
+
+    const visibleLots = selectedLot && !lots.some(lot => lot.run_ref === selectedLot.run_ref)
+      ? [selectedLot, ...lots]
+      : lots;
+
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      lots: visibleLots,
+      selected: selected ? { ...selected, business: selectedLot } : null,
+    });
   } catch (err) { handleError(err, res, next); }
 });
 

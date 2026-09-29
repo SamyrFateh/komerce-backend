@@ -196,6 +196,7 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     rejected,
     quarantined,
     deferred,
+    certification_blocked: certificationBlocked,
     refined,
     taxonomized,
     certified,

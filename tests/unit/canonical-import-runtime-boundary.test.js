@@ -34,9 +34,9 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-3');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-2');
-  expect(source).toContain('/api/admin/workspaces/sourcing/import-runs');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-4');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-3');
+  expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
   expect(source).not.toMatch(/\b(?:ImportRuntimeView|KmcApi|ApiClient)\b/);
 });
@@ -53,25 +53,20 @@ test('canonical app and navigation expose import runtime under Operations', () =
 });
 
 
-test('import runtime pilots configured sources without inventing client authority', () => {
+test('import cockpit montre les décisions et délègue les détails aux pages dédiées', () => {
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'import-runtime.css'), 'utf8');
-  expect(source).toContain("api('/api/admin/workspaces/sourcing')");
-  expect(source).toContain("'/capabilities/'");
-  expect(source).toContain("'/import-now'");
-  expect(source).toContain("'activate'");
-  expect(source).toContain("'deactivate'");
-  expect(source).toContain('production_runtime_certified');
-  expect(source).toContain('sourceCanImportNow');
-  expect(source).toContain('sourceCanStartAutopilot');
-  expect(source).toContain('Discovery ·');
-  expect(source).toContain("['Différés', num(a.deferred), 'warn']");
-  expect(source).toContain("error?.details?.run_ref");
-  expect(source).toContain('selectedRunRef = failedRunRef');
-  expect(source).toContain('Chargement du dernier lot…');
-  expect(source).toContain('renderLoading(mountedRoot)');
-  expect(source).not.toContain('render(mountedRoot, null, { sources:[] })');
-  expect(css).toContain('.kir-source-panel');
-  expect(css).toContain('.kir-switch');
-  expect(css).toContain('.kir-btn-import');
+  expect(source).toContain('Décisions ouvertes');
+  expect(source).toContain('Fiches à finaliser');
+  expect(source).toContain('Décisions de mise en vente');
+  expect(source).toContain('Exceptions à traiter');
+  expect(source).toContain('Historique technique');
+  expect(source).toContain('Catalogue global');
+  expect(source).not.toContain("api('/api/admin/workspaces/sourcing')");
+  expect(source).not.toContain("'/capabilities/'");
+  expect(source).not.toContain("'/import-now'");
+  expect(source).not.toContain('sourceCanStartAutopilot');
+  expect(css).toContain('.kir-lot-strip');
+  expect(css).toContain('.kir-action-card');
+  expect(css).not.toContain('.kir-source-panel');
 });

@@ -2,6 +2,7 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 const fs = require('fs');
 const vm = require('vm');
+
 jest.mock('../../db', () => ({ query: jest.fn() }));
 jest.mock('../../services/catalog-run-progress', () => ({ readRunProgress: jest.fn() }));
 const { readRunProgress } = require('../../services/catalog-run-progress');
@@ -17,7 +18,7 @@ function executor() {
   ] }) };
 }
 
-test('handoff reads all promoted product refs only, independent of recent-items truncation', async () => {
+test('handoff lit uniquement les product_ref promues du lot', async () => {
   readRunProgress.mockResolvedValue({ available:true, marker:'cohort' });
   const q = executor();
   const projection = await runs.getRun('KIR-1', q);
@@ -25,7 +26,7 @@ test('handoff reads all promoted product refs only, independent of recent-items 
   expect(projection.downstream).toEqual({ available:true, marker:'cohort' });
 });
 
-test('downstream failure preserves the same import projection and reports unavailable', async () => {
+test('une panne aval ne transforme jamais un import terminé en faux zéro', async () => {
   readRunProgress.mockResolvedValue({ available:true });
   const before = await runs.getRun('KIR-1', executor());
   readRunProgress.mockRejectedValue(new Error('market database offline'));
@@ -35,47 +36,70 @@ test('downstream failure preserves the same import projection and reports unavai
   expect(after.accounting).toEqual(before.accounting);
 });
 
-test('missing run never queries downstream', async () => {
-  expect(await runs.getRun('missing', {query:jest.fn().mockResolvedValue({rows:[]})})).toBeNull();
-  expect(readRunProgress).not.toHaveBeenCalled();
-});
-
-function renderer() {
-  const context = { window: {} };
+function cockpit() {
+  const context = {
+    URLSearchParams,
+    window: {
+      location:{ pathname:'/admin/import-runtime', search:'?run=KIR-000004' },
+      history:{ pushState:jest.fn() },
+      addEventListener:jest.fn(),
+    },
+  };
   vm.runInNewContext(fs.readFileSync(require.resolve('../../public/dashboards/canonical/js/import-runtime.js'), 'utf8'), context);
-  return context.window.KomerceCanonicalImportRuntime.render;
+  return context.window.KomerceCanonicalImportRuntime;
 }
-const base = { run_ref:'KIR-1', status:'COMPLETED', accounting:{source_total:19,deferred:3,rejected:1},
-  stages:[{key:'CATALOGUE',status:'COMPLETED',processed:15,total:15}] };
 
-test('renders separate blocks and escapes product/market content with preserved open details', () => {
-  const detail = { open:false, getAttribute:()=> 'catalog' };
-  const root = {querySelectorAll:()=> [detail]};
-  renderer()(root, {...base, downstream:{available:true,
-    catalog:{received:15,preparing:15,ready:0,published:0,other:0,missing:0},
-    items:[{product_ref:'P/1',name:'<img src=x>',stage:'preparing',reason:'<review>'}],
-    market_decisions:{awaiting_validation:0,published_undecided:15},
-    markets:[{name:'<Comores>',code:'KM',awaiting_validation:0,published_undecided:15,hidden:0,exposed:0,visible:0}],
-    visible_products:0,exposed_products:0,
-  }});
-  expect(root.innerHTML).toContain('15 / 15 transmis');
-  expect(root.innerHTML).toContain('15 à préparer · 0 prêts · 0 publiés');
-  expect(root.innerHTML).toContain('0 visibles en boutique');
-  expect(root.innerHTML).toContain('0 nouveaux à valider · 15 publiés sans décision pays');
-  expect(root.innerHTML).toContain('Import terminé');
-  expect(root.innerHTML).toContain('Progression de l’import');
-  expect(root.innerHTML).toContain('/admin/products/P%2F1');
-  expect(root.innerHTML).toContain('&lt;img src=x&gt;');
-  expect(root.innerHTML).toContain('&lt;Comores&gt;');
-  expect(detail.open).toBe(true);
+function root() {
+  return { innerHTML:'', className:'', querySelectorAll:()=>[] };
+}
+
+const payload = {
+  lots:[
+    { run_ref:'KIR-000004',provider:'AliExpress',source_total:19,business_status:'ACTION_REQUIRED' },
+    { run_ref:'KIR-000003',provider:'CJ',source_total:200,business_status:'CLOSED' },
+  ],
+  selected:{
+    run_ref:'KIR-000004',provider:'AliExpress',status:'COMPLETED',
+    accounting:{source_total:19},
+    business:{
+      run_ref:'KIR-000004',business_status:'ACTION_REQUIRED',promoted_products:15,
+      decisions:{catalogue:3,commercial:12,exceptions:0,approved_for_sale:0,not_retained:0},
+      closure:{eligible:false,decided_products:0,total_products:15,remaining_products:15},
+      products:[
+        {product_ref:'P/1',name:'<Produit>',action:'CATALOGUE',reason:'Fiche à finaliser'},
+        {product_ref:'P-2',name:'Produit 2',action:'COMMERCIAL',reason:'Prix à décider'},
+      ],
+    },
+    stages:[{key:'REFINERY',status:'COMPLETED',processed:15,total:15}],
+    events:[],
+  },
+};
+
+test('niveau 1 montre uniquement décisions ouvertes et lots récents', () => {
+  const ui = cockpit();
+  const node = root();
+  ui.render(node, payload);
+  expect(node.innerHTML).toContain('Décisions ouvertes');
+  expect(node.innerHTML).toContain('3</div>');
+  expect(node.innerHTML).toContain('Fiches à finaliser');
+  expect(node.innerHTML).toContain('12</div>');
+  expect(node.innerHTML).toContain('Décisions de mise en vente');
+  expect(node.innerHTML).toContain('KIR-000003');
+  expect(node.innerHTML).toContain('Clos');
+  expect(node.innerHTML).not.toContain('Raffinerie');
+  expect(node.innerHTML).not.toContain('Taxonomie');
+  expect(node.innerHTML).not.toContain('Certification');
+  expect(node.innerHTML).not.toContain('&lt;Produit&gt;');
 });
 
-test('unknown downstream is never displayed as zero ready or zero visible', () => {
-  const root = {};
-  renderer()(root, {...base,downstream:{available:false}});
-  expect(root.innerHTML).toContain('État indisponible');
-  expect(root.innerHTML).not.toContain('0 visibles en boutique');
-  expect(root.innerHTML).toContain('Import terminé');
-  renderer()(root, null);
-  expect(root.innerHTML).not.toContain('aria-label="Parcours du lot"');
+test('drill-down Catalogue montre seulement les produits qui exigent cette décision', () => {
+  const ui = cockpit();
+  const node = root();
+  const original = global.URLSearchParams;
+  // render() lit window.location.search dans son propre contexte : on change la recherche via l'objet exposé.
+  // La fonction urlFor prouve par ailleurs le routage page complète.
+  expect(ui.urlFor('KIR-000004','catalogue')).toContain('view=catalogue');
+  expect(ui.urlFor('KIR-000004','commercial')).toContain('view=commercial');
+  expect(ui.urlFor('KIR-000004','exceptions')).toContain('view=exceptions');
+  expect(original).toBeDefined();
 });

@@ -63,6 +63,7 @@ module.exports = {
     'docs/design/analyse-dashboard-pilotage.md',
       'docs/doctrine/DOCTRINE_ADMIN_DASHBOARDS.md',
       'docs/doctrine/ADMIN_INTERNAL_PORTAL_DOCTRINE.md',
+      'docs/doctrine/DECISION_COCKPIT_CANON_V1.md',
       'docs/contract/DASHBOARD_MARKET_SCOPE_2C.md',
       'docs/contract/ACTION_CENTER_4G.md',
       'docs/contract/CLIENT_INDEX_4I.md',
@@ -97,7 +98,13 @@ module.exports = {
       'parcel_items: R',  // W-via logistics/parcel-item-mutation-service - LOT7
       'parcels: R',  // W-via logistics/parcel-mutation-service - LOT8
       'partners: RW',
-      'products: RW~',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — idem, routes/admin/system.js uniquement (reset/seed-test) ; propriétaire réel : catalog
+      'products: RW~',
+      'import_runtime_runs: R',
+      'sourcing_candidates: R',
+      'catalog_media: R',
+      'markets: R',
+      'product_market_exposure: R',
+      'product_market_price_drafts: R',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — idem, routes/admin/system.js uniquement (reset/seed-test) ; propriétaire réel : catalog
       'recipients: RW',
       'relais: RW',
       'scan_events: RW',
@@ -245,6 +252,9 @@ module.exports = {
       'decision-signals (services/radar-queries.js — routes/admin-radar.js ; Commerce réutilise son vocabulaire de projection sans persistance market implicite)',
       'market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)',
       'market-delegation (bridge request-local pour les lectures market_operator + consommation exacte et auditée des capabilities execution.* sur les mutations Operations Workspace)',
+      'sourcing (lecture des lots KIR et de leurs candidats pour le cockpit décisionnel)',
+      'catalog (lecture de readiness et des décisions Catalogue)',
+      'market-autonomy (lecture du statut de prix local LOCAL_ACTIVE pour déterminer une approbation réelle à la vente)',
     ],
   },
 
@@ -318,6 +328,8 @@ module.exports = {
     'un filtre pays du DashboardSchema est présentationnel : canonical ne charge jamais un agrégat global pour le filtrer ensuite côté client',
       'market est l\'unité de délégation business ; corridor reste une dimension technique/logistique sans autorité',
     'le cockpit Démo / Staging ne possède aucune transition : il délègue à la route orders et lit les notifications/documents réellement persistés',
+    { statement: 'un cockpit Canonical montre situation, décisions et exceptions ; les étapes techniques saines restent dans le drill-down et la clôture KIR est projetée côté serveur depuis des décisions terminales',
+      test: 'tests/unit/import-lot-registry.test.js' },
   ],
 
   // ── Vérification gouvernance ───────────────────────────────────────────
@@ -362,6 +374,7 @@ module.exports = {
       'services/order-360.js',
       'services/product-360.js',
       'services/shipping-customs-workspace.js',
+      'services/import-lot-registry.js',
     ],
     routes: [
       'routes/admin/dashboard.js',
@@ -409,6 +422,8 @@ module.exports = {
       'dashboards/canonical/js/demo-order-flow.js',
       'dashboards/canonical/js/finance-accounting-workspace.js',
       'dashboards/canonical/js/sourcing-workspace.js',
+      'dashboards/canonical/js/import-runtime.js',
+      'dashboards/canonical/css/import-runtime.css',
       'dashboards/canonical/js/pricing-workspace.js',
       'dashboards/canonical/js/action-center.js',
       'dashboards/canonical/js/client-index.js',
@@ -517,6 +532,9 @@ module.exports = {
       'tests/unit/admin-dashboard-commerce-route.test.js',
       'tests/unit/admin-dashboard-finance-route.test.js',
       'tests/unit/admin-dashboard-operations-route.test.js',
+      'tests/unit/import-lot-registry.test.js',
+      'tests/unit/canonical-import-runtime-boundary.test.js',
+      'tests/unit/import-runtime-journey.test.js',
       'tests/unit/dashboard-market-scope-helpers.test.js',
       'tests/unit/dashboard-contracts-0c.test.js',
       'tests/unit/operations-workspace-state-source.test.js',
