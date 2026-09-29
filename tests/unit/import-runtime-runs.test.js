@@ -124,7 +124,9 @@ describe('import runtime run projection', () => {
       status: 'RUNNING',
       reason: 'awaiting_explicit_operator_promotion',
     });
-    expect(projection.status).toBe('RUNNING');
+    expect(projection.status).toBe('COMPLETED');
+    expect(projection.progress_pct).toBe(100);
+    expect(projection.current_stage).toBe('CATALOGUE');
     expect(projection.diagnostics).toMatchObject({
       provider_runtime_status: 'PENDING',
       provider_runtime_reason: 'provider_runtime_proof_missing',
@@ -172,7 +174,9 @@ describe('import runtime run projection', () => {
       processed: 0,
       total: 2,
     });
-    expect(projection.status).toBe('RUNNING');
+    expect(projection.status).toBe('COMPLETED');
+    expect(projection.progress_pct).toBe(100);
+    expect(projection.current_stage).toBe('CATALOGUE');
     expect(projection.accounting).toMatchObject({
       source_total: 3, accepted: 2, rejected: 1, certified: 2,
       awaiting_catalogue_promotion: 2,
@@ -197,7 +201,8 @@ describe('import runtime run projection', () => {
     expect(stage(projection, 'CERTIFICATION').status).toBe('COMPLETED');
     expect(stage(projection, 'CATALOGUE').status).toBe('RUNNING');
     expect(projection.accounting.awaiting_catalogue_promotion).toBe(3);
-    expect(projection.status).toBe('RUNNING');
+    expect(projection.status).toBe('COMPLETED');
+    expect(projection.progress_pct).toBe(100);
   });
 
   test('preuve d’une autre capture bloque uniquement le rail fournisseur', () => {
@@ -240,8 +245,9 @@ describe('import runtime run projection', () => {
       rows: [candidate(1), candidate(2)],
       sourceProof: null,
     });
-    expect(projection.status).toBe('RUNNING');
+    expect(projection.status).toBe('COMPLETED');
     expect(projection.failure_reason).toBeNull();
+    expect(projection.progress_pct).toBe(100);
     expect(stage(projection, 'CERTIFICATION').status).toBe('COMPLETED');
     expect(stage(projection, 'CATALOGUE').status).toBe('RUNNING');
     expect(projection.current_stage).toBe('CATALOGUE');
@@ -285,7 +291,7 @@ describe('import runtime run projection', () => {
     });
   });
 
-  test('run COMPLETED seulement lorsque le catalogue a absorbé tous les certifiés', () => {
+  test('run automatique est déjà COMPLETED à la frontière de décision Catalogue', () => {
     const rows = rows3().map((row, index) => candidate(index + 1, {
       state: 'imported_to_catalog',
       product_ref: `KP-${index + 1}`,
