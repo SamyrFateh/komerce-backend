@@ -397,3 +397,140 @@
   .kir-run-truth-grid{grid-template-columns:repeat(2,1fr)}
   .kir-run-truth-head{display:grid}
 }
+
+
+/* Legacy cockpit parity — typography and emphasis copied from the Legacy Admin,
+ * not reinterpreted. Moderate 400/600/700 weights only; semantic color carries
+ * hierarchy instead of synthetic 850/900 bold. */
+.kmc-import-runtime{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  font-size:14px;
+  line-height:1.5;
+  background:#fff;
+}
+.kmc-import-runtime button,
+.kmc-import-runtime input,
+.kmc-import-runtime select,
+.kmc-import-runtime textarea{
+  font-family:inherit;
+}
+.kir-page{max-width:1280px}
+.kir-hero{padding-top:10px;margin-bottom:18px}
+.kir-hero::before{width:34px;height:3px}
+.kir-eyebrow,.kir-section-kicker{
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.09em;
+}
+.kir-hero h1{
+  font-size:24px;
+  line-height:1.15;
+  font-weight:700;
+  letter-spacing:-.02em;
+  color:#1e293b;
+}
+.kir-hero p,.kir-decision-intro p,.kir-drill-head p{
+  margin-top:4px;
+  font-size:13px;
+  line-height:1.45;
+  font-weight:400;
+  color:#64748b;
+}
+.kir-status-large,.kir-status{font-weight:600}
+.kir-status-large{font-size:11px}
+.kir-status{font-size:10px}
+.kir-global-link,.kir-subtle-link,.kir-back,.kir-row-action{font-weight:600}
+
+.kir-source-control{
+  padding:12px 14px;
+  gap:16px;
+  border-color:#e2e8f0;
+  border-top:1px solid #e2e8f0;
+}
+.kir-source-control-title{gap:1px}
+.kir-source-control-title strong{font-size:13px;font-weight:600;color:#1e293b}
+.kir-source-control-title small{font-size:10.5px;line-height:1.35;color:#64748b}
+.kir-source-pill{
+  min-width:245px;
+  padding:8px 9px;
+  border-color:#e2e8f0;
+  background:#fff;
+}
+.kir-source-name{font-size:12px;font-weight:600;color:#1e293b}
+.kir-source-copy small{font-size:10px;color:#94a3b8}
+.kir-source-switch{font-size:10px;font-weight:600}
+.kir-source-switch strong{font-weight:600}
+
+.kir-lot-ref{font-size:12px;font-weight:700}
+.kir-lot-chip small{font-size:10px}
+.kir-lot-all{font-size:11px;font-weight:600}
+
+.kir-run-flow{
+  padding:14px 16px 13px;
+  border-color:#e2e8f0;
+}
+.kir-run-flow-head strong{font-size:14px;font-weight:600;color:#1e293b}
+.kir-run-flow-head small{font-size:11px;color:#64748b}
+.kir-run-flow-head em,.kir-run-flow-head>a{font-weight:600}
+.kir-run-flow-step strong{font-size:11px;font-weight:600}
+.kir-run-flow-step small{font-size:9.5px}
+.kir-run-flow-marker{font-weight:700}
+
+.kir-run-truth{
+  padding:12px 14px 11px;
+  border-color:#e2e8f0;
+}
+.kir-run-truth-head strong{font-size:13px;font-weight:600;color:#334155}
+.kir-run-truth-grid>div{padding:10px 11px;border-color:#e2e8f0}
+.kir-run-truth-grid span{font-size:9.5px;font-weight:600;color:#64748b}
+.kir-run-truth-grid strong{font-size:21px;font-weight:700;color:#1e293b}
+.kir-run-truth p{font-size:11px;color:#64748b}
+
+.kir-lot-summary>div,.kir-outcome>div{
+  padding:13px 15px;
+  border-color:#e2e8f0;
+  border-top-width:1px;
+}
+.kir-lot-summary span,.kir-outcome span{
+  font-size:10px;
+  font-weight:600;
+  color:#64748b;
+}
+.kir-lot-summary strong,.kir-outcome strong,.kir-closure-summary strong{
+  margin-top:5px;
+  font-size:22px;
+  font-weight:700;
+  color:#1e293b;
+}
+.kir-lot-summary>div:nth-child(1) strong{color:#16a34a}
+.kir-lot-summary>div:nth-child(2) strong{color:#f59e0b}
+.kir-lot-summary>div:nth-child(3) strong{color:#2563eb}
+
+.kir-decision-intro h2,.kir-drill-head h2{
+  font-size:18px;
+  line-height:1.25;
+  font-weight:700;
+  letter-spacing:-.01em;
+  color:#334155;
+}
+.kir-action-card{padding:14px 16px}
+.kir-action-count{font-size:26px;font-weight:700}
+.kir-action-copy strong{font-size:13px;font-weight:600}
+.kir-action-copy span{font-size:11.5px}
+.kir-action-arrow{font-size:18px}
+.kir-business-journey-head strong{font-size:13px;font-weight:600}
+.kir-business-step span{font-size:10px;font-weight:600}
+.kir-business-step strong{font-weight:700}
+
+.kir-table{font-size:13px}
+.kir-table th{font-size:10px;font-weight:600;background:#fff;color:#94a3b8}
+.kir-table td{font-size:12px;font-weight:400;color:#475569}
+.kir-table td a:first-child{font-weight:600}
+
+.kir-empty{font-size:13px;color:#94a3b8;background:#fff}
+.kir-neutral-panel,.kir-closed-panel,.kir-exception-banner{font-weight:400}
+.kir-closed-panel strong{font-weight:600}
+
+@media(max-width:1350px){
+  .kir-page{max-width:calc(100% - 24px)}
+}
