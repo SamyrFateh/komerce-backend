@@ -147,6 +147,9 @@
 
     const dashboard = doc.createElement('article');
     dashboard.className = 'kmc-dashboard kmc-decision-dashboard';
+    if (typeof globalThis !== 'undefined' && globalThis.KomerceCanonicalCockpitPattern) {
+      globalThis.KomerceCanonicalCockpitPattern.decorateDashboard(dashboard, 'pilotage');
+    }
     dashboard.setAttribute('data-dashboard-id', 'pilotage');
     dashboard.setAttribute('data-dashboard-visual', 'decision-first-v1');
 
