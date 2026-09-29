@@ -168,6 +168,7 @@ async function discoverAcquisitionPlan({
       strategy: 'feed-category',
       version: 'aliexpress-ds-discovery-v1',
       pull_options: {
+        product_ids: ids.slice(0, size),
         page: slot.page,
         size,
         country_code: country,
