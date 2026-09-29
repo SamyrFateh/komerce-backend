@@ -122,6 +122,51 @@ test('niveau 1 garde le flux réel visible et les décisions ouvertes séparées
   expect(node.innerHTML).not.toContain('&lt;Produit&gt;');
 });
 
+test('un PARTIAL_BLOCKED explique le gate runtime sans nier les produits certifiés', () => {
+  const ui = cockpit();
+  const node = root();
+  const partial = JSON.parse(JSON.stringify(payload));
+  partial.selected.status = 'FAILED';
+  partial.selected.failure_reason = 'pipeline_partial_blocked';
+  partial.selected.accounting = {
+    source_total:20,accepted:19,refined:19,taxonomized:12,certified:12,catalogued:0,
+    awaiting_catalogue_promotion:12,rejected:1,quarantined:0,deferred:7,certification_blocked:0,
+  };
+  partial.selected.diagnostics = {
+    pipeline_status:'PARTIAL_BLOCKED',
+    canonical_resolved:true,
+    reject_reasons:{'media absent':1},
+    runtime_certified:false,
+    certification_reason:'pipeline_partial_blocked',
+  };
+  partial.selected.stages = [
+    {key:'SOURCE_CONNECTED',status:'COMPLETED',processed:1,total:1},
+    {key:'RAW_IMPORT',status:'COMPLETED',processed:20,total:20},
+    {key:'REFINERY',status:'COMPLETED',processed:19,total:12},
+    {key:'TAXONOMY',status:'COMPLETED',processed:12,total:12},
+    {key:'CERTIFICATION',status:'FAILED',processed:0,total:12,reason:'pipeline_partial_blocked'},
+    {key:'CATALOGUE',status:'PENDING',processed:0,total:12},
+  ];
+  partial.selected.business = {
+    ...partial.selected.business,
+    business_status:'BLOCKED',
+    promoted_products:0,
+    decisions:{catalogue:0,commercial:0,exceptions:0,approved_for_sale:0,not_retained:0},
+    closure:{eligible:false,decided_products:0,total_products:0,remaining_products:0},
+    products:[],
+  };
+  partial.lots[0].business_status = 'BLOCKED';
+
+  ui.render(node, partial);
+
+  expect(node.innerHTML).toContain('Certification runtime incomplète');
+  expect(node.innerHTML).toContain('20 entrée(s) · 19 acceptée(s) · 1 rejetée(s) · 7 différée(s) · 12 certifiée(s) sourcing · Production reste OFF');
+  expect(node.innerHTML).toContain('Certification runtime fournisseur refusée sur ce passage');
+  expect(node.innerHTML).toContain('media absent: 1');
+  expect(node.innerHTML).toContain('À corriger');
+  expect(node.innerHTML).not.toContain('Passage interrompu');
+});
+
 test('drill-down Catalogue montre seulement les produits qui exigent cette décision', () => {
   const ui = cockpit();
   const node = root();
