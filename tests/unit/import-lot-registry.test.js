@@ -120,6 +120,18 @@ test('ancien run FAILED sans donnée métier est archivé et ne devient pas une 
   expect(lot.closure.remaining_products).toBe(0);
 });
 
+test('un échec connecteur sans produit reste visible comme bloqué', () => {
+  const lot = buildLot(run({
+    run_ref:'KIR-000007',
+    status:'FAILED',
+    source_total:0,
+    failure_reason:'connector_failed: [AliExpress] Api access frequency exceeds the limit',
+    intake:{ quarantined:0, certification_blocked:0 },
+  }), [], [], 1);
+  expect(lot.business_status).toBe(BUSINESS_STATUS.BLOCKED);
+  expect(lot.failure_reason).toMatch(/frequency exceeds/);
+});
+
 test('run FAILED avec empreinte métier reste réellement à débloquer', () => {
   const lot = buildLot(run({ status:'FAILED', source_total:1 }), [product('A')], [], 1);
   expect(lot.business_status).toBe(BUSINESS_STATUS.BLOCKED);
