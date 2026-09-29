@@ -39,7 +39,7 @@ function fakeRes() {
   };
 }
 
-test('la route détaillée Product 360 est Canonical mais /admin/products reste Legacy 1', () => {
+test('Product 360 et l’index produits convergent définitivement vers Canonical', () => {
   const app = fakeApp();
   mountHtmlRoutes(app, ROOT);
   const detailRes = fakeRes();
@@ -56,7 +56,8 @@ test('la route détaillée Product 360 est Canonical mais /admin/products reste 
 
   const legacyRes = fakeRes();
   app._routes['/admin/products']({ query: { legacy: '1' } }, legacyRes);
-  expect(legacyRes.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+  expect(legacyRes.redirect).toHaveBeenCalledWith(302, '/admin/workspaces/catalog');
+  expect(legacyRes.sendFile).not.toHaveBeenCalled();
 });
 
 test('le runtime charge Product 360 sans dépendance ProductsView ni endpoint CRUD legacy', () => {
