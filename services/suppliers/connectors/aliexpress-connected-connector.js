@@ -68,7 +68,7 @@ async function managedRuntimeEnv(options = {}) {
 
 async function invokeTop(method, businessParams = {}, options = {}) {
   const env = await managedRuntimeEnv(options);
-  return baseConnector.invokeTop(method, businessParams, {
+  return baseConnector.invokeTopWithThrottleRetry(method, businessParams, {
     ...options,
     env,
   });
@@ -88,7 +88,7 @@ async function discoverAcquisitionPlan(options = {}) {
     countryCode: options.countryCode || options.country_code || discovery.DEFAULT_COUNTRY_CODE,
     pageSize: options.size || options.page_size || discovery.DEFAULT_PAGE_SIZE,
     maxProbes: options.maxProbes,
-    invokeTop: (method, params) => baseConnector.invokeTop(method, params, {
+    invokeTop: (method, params) => baseConnector.invokeTopWithThrottleRetry(method, params, {
       ...options,
       env,
     }),
