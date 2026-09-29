@@ -85,7 +85,7 @@
     const running = stages.some(stage => stage.status === 'RUNNING');
     const progress = Math.max(7, Math.min(100, Math.round(((done + (running ? .45 : 0)) / stages.length) * 100)));
     const noResult = activationState.outcome === 'empty'
-      || ['no_valid_product', 'supplier_source_empty'].includes(String(activationState.run?.failure_reason || ''));
+      || ['no_valid_product', 'supplier_source_empty', 'all_supplier_products_invalid'].includes(String(activationState.run?.failure_reason || ''));
     const failed = !noResult && (Boolean(activationState.error)
       || activationState.outcome === 'failed'
       || stages.some(stage => stage.status === 'FAILED'));
