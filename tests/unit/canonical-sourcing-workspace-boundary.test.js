@@ -91,3 +91,19 @@ test('service Canonical délègue les moteurs au lieu de réimplémenter leur SQ
   expect(service).not.toContain('INSERT INTO sourcing_candidate_events');
   expect(service).not.toContain('UPDATE products SET');
 });
+
+
+test('Sourcing ne duplique plus le registre KIR et garde la santé technique en diagnostic', () => {
+  const source = fs.readFileSync(path.join(CANONICAL, 'js', 'sourcing-workspace.js'), 'utf8');
+  const decision = fs.readFileSync(path.join(CANONICAL, 'js', 'sourcing-workspace-decision.js'), 'utf8');
+
+  expect(source).toContain('Lancer un import');
+  expect(source).toContain('Cockpit des imports');
+  expect(source).not.toContain('Aucun import récent.');
+  expect(source).not.toContain("const rows = payload.imports || []");
+  expect(source).toContain('/admin/import-runtime');
+
+  expect(decision).toContain("get('diagnostic') === '1'");
+  expect(decision).toContain('renderHealth');
+  expect(source).toContain('?diagnostic=1');
+});
