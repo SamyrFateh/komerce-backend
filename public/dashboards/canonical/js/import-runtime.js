@@ -204,6 +204,18 @@
     return parts.join(' ');
   }
 
+  function automaticPipelineDone(run, stages) {
+    const list = Array.isArray(stages) ? stages : [];
+    if (run?.status === 'FAILED' || list.some(stage => stage.status === 'FAILED')) return false;
+    const catalogue = list.find(stage => stage.key === 'CATALOGUE') || {};
+    const automaticStages = list.filter(stage => stage.key !== 'CATALOGUE');
+    const upstreamDone = automaticStages.length > 0
+      && automaticStages.every(stage => stage.status === 'COMPLETED');
+    const catalogueReached = catalogue.status === 'COMPLETED'
+      || catalogue.reason === 'awaiting_explicit_operator_promotion';
+    return run?.status === 'COMPLETED' || (upstreamDone && catalogueReached);
+  }
+
   function activationStrip(sourceControls) {
     if (!activationState) return '';
     const source = (sourceControls || []).find(item => item.source_ref === activationState.sourceRef) || {};
@@ -212,9 +224,12 @@
     const completed = stages.filter(stage => stage.status === 'COMPLETED').length;
     const running = stages.some(stage => stage.status === 'RUNNING');
     const projectedProgress = num(activationState.run?.progress_pct);
-    const progress = projectedProgress > 0
-      ? Math.max(6, Math.min(100, projectedProgress))
-      : Math.max(6, Math.min(100, Math.round(((completed + (running ? .45 : 0)) / stages.length) * 100)));
+    const automaticDone = automaticPipelineDone(activationState.run, stages);
+    const progress = automaticDone
+      ? 100
+      : projectedProgress > 0
+        ? Math.max(6, Math.min(100, projectedProgress))
+        : Math.max(6, Math.min(100, Math.round(((completed + (running ? .45 : 0)) / stages.length) * 100)));
     const noResult = activationState.outcome === 'empty'
       || ['no_valid_product', 'supplier_source_empty', 'all_supplier_products_invalid'].includes(String(activationState.run?.failure_reason || ''));
     const providerGateBlocked = activationState.outcome === 'certification_incomplete'
@@ -228,7 +243,7 @@
       ? 'Passage interrompu'
       : noResult
         ? 'Passage terminé sans résultat'
-        : providerGateBlocked || catalogueWaiting
+        : automaticDone || providerGateBlocked || catalogueWaiting
           ? 'Import automatique terminé'
           : activationState.done ? 'Premier passage terminé' : 'Passage en direct';
     const helper = failed
@@ -237,12 +252,17 @@
         ? `${label} · ${activationState.runRef || 'nouveau lot'} · aucun produit exploitable`
         : providerGateBlocked
           ? `${label} · ${num(activationState.run?.accounting?.certified)} certifié(s) poursuivent vers le Catalogue · source automatique OFF`
-          : activationState.runRef
-            ? `${label} · ${activationState.runRef} · le même lot avance de bout en bout`
-            : `${label} · préparation de la source et création du premier lot`;
+          : automaticDone && catalogueWaiting
+            ? `${label} · le traitement automatique a atteint le Catalogue · ${num(activationState.run?.accounting?.awaiting_catalogue_promotion)} à valider`
+            : automaticDone
+              ? `${label} · le traitement automatique a atteint le Catalogue`
+              : activationState.runRef
+                ? `${label} · ${activationState.runRef} · le même lot avance de bout en bout`
+                : `${label} · préparation de la source et création du premier lot`;
     const tone = failed ? 'is-failed'
       : noResult ? 'is-empty'
-        : catalogueWaiting || providerGateBlocked || activationState.done ? 'is-complete has-manual-action'
+        : automaticDone || catalogueWaiting || providerGateBlocked || activationState.done
+          ? `is-complete ${catalogueWaiting ? 'has-manual-action' : ''}`.trim()
           : 'is-live';
     return `<section class="kir-run-flow ${tone}" aria-live="polite">
       <div class="kir-run-flow-head">

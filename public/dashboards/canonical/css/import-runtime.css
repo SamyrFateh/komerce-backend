@@ -2343,6 +2343,32 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
   }
 }
 
+
+/* V5 FINAL interaction authority.
+ * Only the stage that is truly RUNNING may pulse.
+ * Parent live state must never animate every stage or the whole progress bar. */
+.kir-run-flow.is-live .kir-run-flow-marker,
+.kir-run-flow.is-live .kir-run-flow-progress>span,
+.kir-source-pill.is-live .kir-source-dot,
+.kir-source-switch[aria-busy="true"] .kir-source-switch-knob,
+.kir-run-flow-step.is-completed .kir-run-flow-marker,
+.kir-run-flow-step.is-pending .kir-run-flow-marker,
+.kir-run-flow-step.has-manual-action .kir-run-flow-marker{
+  animation:none !important;
+}
+.kir-run-flow.is-live .kir-run-flow-progress>span{
+  filter:none !important;
+}
+.kir-run-flow-step.is-running .kir-run-flow-marker{
+  animation:kir-v3-live-marker 1.15s ease-in-out infinite !important;
+}
+.kir-run-flow-step.is-running strong{
+  color:#15803D;
+}
+.kir-run-flow-step.is-running small{
+  color:#15803D;
+}
+
 /* ==========================================================================
  * MOCK-FIDELITY — cockpit canonique (aligné sur le mock 1672×941)
  * Dernier bloc du fichier : ne pas ajouter de couche après celui-ci.
@@ -2356,9 +2382,10 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 .kmc-import-runtime .kir-status-large .kir-ico svg{width:24px;height:24px}
 
 /* Flux du lot — bordure gauche et pourcentage ORANGE (action manuelle) */
-.kmc-import-runtime .kir-run-flow.is-complete,
-.kmc-import-runtime .kir-run-flow.is-complete.has-manual-action{border:1px solid #E2E8F0;border-left:4px solid #F59E0B}
-.kmc-import-runtime .kir-run-flow-head em{color:#F59E0B !important;font-size:17px;font-weight:700}
+.kmc-import-runtime .kir-run-flow.is-complete{border:1px solid #E2E8F0;border-left:4px solid #16A34A}
+.kmc-import-runtime .kir-run-flow.is-complete.has-manual-action{border-left-color:#F59E0B}
+.kmc-import-runtime .kir-run-flow-head em{font-size:17px;font-weight:700}
+.kmc-import-runtime .kir-run-flow.is-complete.has-manual-action .kir-run-flow-head em{color:#F59E0B !important}
 .kmc-import-runtime .kir-run-flow-manual{border-color:#FCD9A0;background:#FFF7E6;color:#B45309}
 
 /* Suivi du lot — 6 cartes, bordure uniforme, SANS filet haut */
