@@ -380,7 +380,7 @@
       <div class="kir-source-control-title">
         <span class="kir-section-kicker">SOURCING</span>
         <strong>Alimentation automatique</strong>
-        <small>OFF → ON prépare automatiquement la source, certifie un premier import réel puis active l’autopilot.</small>
+        <small>OFF → ON prépare la source, certifie le rail fournisseur sur un premier import réel puis active l’autopilot.</small>
       </div>
       <div class="kir-source-control-list">
         ${sources.map(source => {
