@@ -102,6 +102,7 @@ describe('import runtime run projection', () => {
       taxonomized: 3,
       certified: 3,
       catalogued: 0,
+      awaiting_catalogue_promotion: 3,
       unaccounted: 0,
       overflow: 0,
     });
@@ -128,6 +129,7 @@ describe('import runtime run projection', () => {
     });
     expect(stage(projection, 'CERTIFICATION').status).toBe('COMPLETED');
     expect(stage(projection, 'CATALOGUE').status).toBe('RUNNING');
+    expect(projection.accounting.awaiting_catalogue_promotion).toBe(3);
     expect(projection.status).toBe('RUNNING');
   });
 
