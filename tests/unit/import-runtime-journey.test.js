@@ -118,7 +118,7 @@ test('niveau 1 garde le flux réel visible et les décisions ouvertes séparées
   expect(node.innerHTML).toContain('15</strong>');
   expect(node.innerHTML).toContain('Catalogue');
   expect(node.innerHTML).toContain('1</strong>');
-  expect(node.innerHTML).toContain('14 produit(s) certifié(s) sourcing ne sont pas encore matérialisés au Catalogue');
+  expect(node.innerHTML).toContain('14 produit(s) certifié(s) sourcing attendent maintenant la promotion Catalogue. Ils n’ont pas disparu.');
   expect(node.innerHTML).not.toContain('&lt;Produit&gt;');
 });
 
@@ -168,7 +168,7 @@ test('un PARTIAL_BLOCKED bloque seulement la source et laisse le lot aller au Ca
   expect(node.innerHTML).toContain('12 certifié(s) attendent la promotion Catalogue');
   expect(node.innerHTML).toContain('Source automatique bloquée');
   expect(node.innerHTML).toContain('1 produit(s) invalide(s) empêchent uniquement l’activation automatique de la source');
-  expect(node.innerHTML).toContain("combinaison d&#39;options dupliquée");
+  expect(node.innerHTML).toContain("combinaison d'options dupliquée");
   expect(node.innerHTML).toContain('Les 12 produit(s) certifié(s) continuent vers le Catalogue');
   expect(node.innerHTML).toContain('12 produit(s) certifié(s) sourcing attendent maintenant la promotion Catalogue');
   expect(node.innerHTML).toContain('À valider · 0/12');
