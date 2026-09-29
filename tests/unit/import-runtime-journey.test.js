@@ -118,16 +118,16 @@ test('niveau 1 garde le flux réel visible et les décisions ouvertes séparées
   expect(node.innerHTML).toContain('15</strong>');
   expect(node.innerHTML).toContain('Catalogue');
   expect(node.innerHTML).toContain('1</strong>');
-  expect(node.innerHTML).toContain('14 produit(s) certifié(s) sourcing ne sont pas encore matérialisés au Catalogue');
+  expect(node.innerHTML).toContain('14 produit(s) certifié(s) sourcing attendent maintenant la promotion Catalogue. Ils n’ont pas disparu.');
   expect(node.innerHTML).not.toContain('&lt;Produit&gt;');
 });
 
-test('un PARTIAL_BLOCKED explique le gate runtime sans nier les produits certifiés', () => {
+test('un PARTIAL_BLOCKED bloque seulement la source et laisse le lot aller au Catalogue', () => {
   const ui = cockpit();
   const node = root();
   const partial = JSON.parse(JSON.stringify(payload));
-  partial.selected.status = 'FAILED';
-  partial.selected.failure_reason = 'pipeline_partial_blocked';
+  partial.selected.status = 'RUNNING';
+  partial.selected.failure_reason = null;
   partial.selected.accounting = {
     source_total:20,accepted:19,refined:19,taxonomized:12,certified:12,catalogued:0,
     awaiting_catalogue_promotion:12,rejected:1,quarantined:0,deferred:7,certification_blocked:0,
@@ -135,37 +135,47 @@ test('un PARTIAL_BLOCKED explique le gate runtime sans nier les produits certifi
   partial.selected.diagnostics = {
     pipeline_status:'PARTIAL_BLOCKED',
     canonical_resolved:true,
-    reject_reasons:{'media absent':1},
+    reject_reasons:{"sellable_units[4] : combinaison d'options dupliquée":1},
     runtime_certified:false,
-    certification_reason:'pipeline_partial_blocked',
+    provider_runtime_status:'BLOCKED',
+    provider_runtime_reason:'pipeline_partial_blocked',
+    certification_reason:null,
   };
   partial.selected.stages = [
     {key:'SOURCE_CONNECTED',status:'COMPLETED',processed:1,total:1},
     {key:'RAW_IMPORT',status:'COMPLETED',processed:20,total:20},
     {key:'REFINERY',status:'COMPLETED',processed:19,total:12},
     {key:'TAXONOMY',status:'COMPLETED',processed:12,total:12},
-    {key:'CERTIFICATION',status:'FAILED',processed:0,total:12,reason:'pipeline_partial_blocked'},
-    {key:'CATALOGUE',status:'PENDING',processed:0,total:12},
+    {key:'CERTIFICATION',status:'COMPLETED',processed:12,total:12,reason:null},
+    {key:'CATALOGUE',status:'RUNNING',processed:0,total:12,reason:'awaiting_explicit_operator_promotion'},
   ];
   partial.selected.business = {
     ...partial.selected.business,
-    business_status:'BLOCKED',
+    business_status:'ACTION_REQUIRED',
+    technical_status:'RUNNING',
+    failure_reason:null,
+    provider_runtime_blocked:true,
     promoted_products:0,
     decisions:{catalogue:0,commercial:0,exceptions:0,approved_for_sale:0,not_retained:0},
     closure:{eligible:false,decided_products:0,total_products:0,remaining_products:0},
     products:[],
   };
-  partial.lots[0].business_status = 'BLOCKED';
+  partial.lots[0].business_status = 'ACTION_REQUIRED';
 
   ui.render(node, partial);
 
-  expect(node.innerHTML).toContain('Certification runtime incomplète');
-  expect(node.innerHTML).toContain('20 entrée(s) · 19 acceptée(s) · 1 rejetée(s) · 7 différée(s) · 12 certifiée(s) sourcing · Production reste OFF');
-  expect(node.innerHTML).toContain('Certification runtime fournisseur refusée sur ce passage');
-  expect(node.innerHTML).toContain('media absent: 1');
-  expect(node.innerHTML).toContain('À corriger');
+  expect(node.innerHTML).toContain('Import automatique terminé');
+  expect(node.innerHTML).toContain('12 certifié(s) attendent la promotion Catalogue');
+  expect(node.innerHTML).toContain('Source automatique bloquée');
+  expect(node.innerHTML).toContain('1 produit(s) invalide(s) empêchent uniquement l’activation automatique de la source');
+  expect(node.innerHTML).toContain("combinaison d'options dupliquée");
+  expect(node.innerHTML).toContain('Les 12 produit(s) certifié(s) continuent vers le Catalogue');
+  expect(node.innerHTML).toContain('12 produit(s) certifié(s) sourcing attendent maintenant la promotion Catalogue');
+  expect(node.innerHTML).toContain('À valider · 0/12');
   expect(node.innerHTML).not.toContain('Passage interrompu');
+  expect(node.innerHTML).not.toContain('À corriger');
 });
+
 
 test('drill-down Catalogue montre seulement les produits qui exigent cette décision', () => {
   const ui = cockpit();

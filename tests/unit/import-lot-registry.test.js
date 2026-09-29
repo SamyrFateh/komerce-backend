@@ -120,6 +120,27 @@ test('ancien run FAILED sans donnée métier est archivé et ne devient pas une 
   expect(lot.closure.remaining_products).toBe(0);
 });
 
+test('ancien pipeline_partial_blocked reste une action de lot et non un blocage métier', () => {
+  const lot = buildLot(run({
+    run_ref:'KIR-000008',
+    status:'FAILED',
+    source_total:20,
+    failure_reason:'pipeline_partial_blocked',
+    intake:{
+      accepted:19,
+      rejected:1,
+      deferred:7,
+      ready_for_refinery:12,
+      quarantined:0,
+      certification_blocked:0,
+    },
+  }), [], [], 1);
+  expect(lot.business_status).toBe(BUSINESS_STATUS.ACTION_REQUIRED);
+  expect(lot.technical_status).toBe('RUNNING');
+  expect(lot.failure_reason).toBeNull();
+  expect(lot.provider_runtime_blocked).toBe(true);
+});
+
 test('un échec connecteur sans produit reste visible comme bloqué', () => {
   const lot = buildLot(run({
     run_ref:'KIR-000007',

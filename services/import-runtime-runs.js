@@ -228,30 +228,52 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
       && String(sourceProof.capture_id) === String(intake.capture_id)
   );
 
+  // Product certification belongs to the lot. Provider runtime certification
+  // belongs to the source rail. They must never block each other.
   let certificationStatus = 'PENDING';
   let certificationReason = null;
   if (taxonomyDone) {
     if (!balanced) {
       certificationStatus = 'FAILED';
       certificationReason = 'accounting_unbalanced';
-    } else if (run.source_type !== 'api') {
-      certificationReason = 'provider_runtime_certification_unavailable_for_source_type';
-    } else if (intake.pipeline_status !== 'CANONICAL_RESOLVED') {
+    } else if (certified < readyForRefinery) {
       certificationStatus = 'FAILED';
-      certificationReason = `pipeline_${String(intake.pipeline_status || 'unknown').toLowerCase()}`;
-    } else if (!proofOk) {
-      certificationReason = 'provider_runtime_proof_missing';
+      certificationReason = 'sourcing_certification_incomplete';
     } else {
       certificationStatus = 'COMPLETED';
     }
   }
 
+  let providerRuntimeStatus = run.source_type === 'api' ? 'PENDING' : 'NOT_APPLICABLE';
+  let providerRuntimeReason = run.source_type === 'api'
+    ? null
+    : 'provider_runtime_certification_unavailable_for_source_type';
+  if (run.source_type === 'api' && intakeRecorded) {
+    if (intake.pipeline_status !== 'CANONICAL_RESOLVED') {
+      providerRuntimeStatus = 'BLOCKED';
+      providerRuntimeReason = `pipeline_${String(intake.pipeline_status || 'unknown').toLowerCase()}`;
+    } else if (!proofOk) {
+      providerRuntimeStatus = 'PENDING';
+      providerRuntimeReason = 'provider_runtime_proof_missing';
+    } else {
+      providerRuntimeStatus = 'CERTIFIED';
+      providerRuntimeReason = null;
+    }
+  }
+
   const catalogueStatus = certificationStatus !== 'COMPLETED'
     ? 'PENDING'
-    : (catalogued >= certified && certified > 0 ? 'COMPLETED' : 'RUNNING');
+    : certified === 0
+      ? 'COMPLETED'
+      : (catalogued >= certified ? 'COMPLETED' : 'RUNNING');
 
   const persistedFailureReason = run.failure_reason || null;
-  const failedRun = run.status === 'FAILED';
+  const legacyProviderRuntimeFailure = run.status === 'FAILED'
+    && persistedFailureReason === 'pipeline_partial_blocked'
+    && taxonomyDone
+    && balanced
+    && certified >= readyForRefinery;
+  const failedRun = run.status === 'FAILED' && !legacyProviderRuntimeFailure;
 
   function stage(key, status, processed, total, extra = {}) {
     const stored = storedStages[key] || {};
@@ -307,6 +329,7 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
         reason: certificationReason,
         metrics: {
           certified,
+          provider_runtime_status: providerRuntimeStatus,
           runtime_certified: proofOk,
           pipeline_status: intake.pipeline_status || null,
         },
@@ -345,8 +368,8 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     }
   }
 
-  let status = run.status === 'FAILED' ? 'FAILED' : 'RUNNING';
-  let failureReason = persistedFailureReason;
+  let status = failedRun ? 'FAILED' : 'RUNNING';
+  let failureReason = failedRun ? persistedFailureReason : null;
   const failedStage = stages.find((s) => s.status === 'FAILED');
   if (status !== 'FAILED' && failedStage) {
     status = 'FAILED';
@@ -422,6 +445,8 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
         ? intake.reject_reasons
         : {},
       runtime_certified: proofOk,
+      provider_runtime_status: providerRuntimeStatus,
+      provider_runtime_reason: providerRuntimeReason,
       certification_reason: certificationReason,
     },
     stages,

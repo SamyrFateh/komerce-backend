@@ -126,8 +126,16 @@ function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
   const connectorFailure = run.status === 'FAILED'
     && String(run.failure_reason || '').startsWith('connector_failed:');
 
+  // Compatibility for runs created before provider runtime certification was
+  // separated from product certification. A PARTIAL_BLOCKED provider proof is
+  // a source-level gate, not a reason to block the business lot.
+  const providerRuntimeOnlyFailure = run.status === 'FAILED'
+    && String(run.failure_reason || '') === 'pipeline_partial_blocked'
+    && positiveInt(run.intake?.ready_for_refinery) > 0;
+
   let businessStatus = BUSINESS_STATUS.ACTION_REQUIRED;
   if (emptyPass) businessStatus = BUSINESS_STATUS.NO_RESULT;
+  else if (providerRuntimeOnlyFailure) businessStatus = BUSINESS_STATUS.ACTION_REQUIRED;
   else if (connectorFailure) businessStatus = BUSINESS_STATUS.BLOCKED;
   else if (run.status === 'FAILED' && !hasBusinessFootprint) businessStatus = BUSINESS_STATUS.ARCHIVED;
   else if (run.status === 'FAILED') businessStatus = BUSINESS_STATUS.BLOCKED;
@@ -139,8 +147,9 @@ function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
     run_ref: run.run_ref,
     provider: run.provider,
     mode: run.mode,
-    technical_status: run.status,
-    failure_reason: run.failure_reason || null,
+    technical_status: providerRuntimeOnlyFailure ? 'RUNNING' : run.status,
+    failure_reason: providerRuntimeOnlyFailure ? null : (run.failure_reason || null),
+    provider_runtime_blocked: providerRuntimeOnlyFailure,
     business_status: businessStatus,
     source_total: positiveInt(run.source_total),
     promoted_products: promoted.length,
