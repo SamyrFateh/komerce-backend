@@ -108,20 +108,32 @@ describe('import runtime run projection', () => {
     });
   });
 
-  test('certification reste fail-closed sans preuve runtime de la capture du run', () => {
+  test('certification produit avance même si la preuve runtime fournisseur manque', () => {
     const projection = runs.buildProjection({
       run: baseRun(),
       rows: rows3(),
       sourceProof: null,
     });
     expect(stage(projection, 'CERTIFICATION')).toMatchObject({
-      status: 'PENDING',
-      reason: 'provider_runtime_proof_missing',
+      status: 'COMPLETED',
+      reason: null,
+      processed: 3,
+      total: 3,
     });
-    expect(stage(projection, 'CATALOGUE').status).toBe('PENDING');
+    expect(stage(projection, 'CATALOGUE')).toMatchObject({
+      status: 'RUNNING',
+      reason: 'awaiting_explicit_operator_promotion',
+    });
+    expect(projection.status).toBe('RUNNING');
+    expect(projection.diagnostics).toMatchObject({
+      provider_runtime_status: 'PENDING',
+      provider_runtime_reason: 'provider_runtime_proof_missing',
+      runtime_certified: false,
+      certification_reason: null,
+    });
   });
 
-  test('PARTIAL_BLOCKED distingue la certification runtime des certifications produit', () => {
+  test('PARTIAL_BLOCKED bloque la source mais laisse le lot continuer vers Catalogue', () => {
     const projection = runs.buildProjection({
       run: baseRun({
         source_total: 3,
@@ -144,19 +156,35 @@ describe('import runtime run projection', () => {
       sourceProof: null,
     });
     expect(stage(projection, 'CERTIFICATION')).toMatchObject({
-      status: 'FAILED',
-      reason: 'pipeline_partial_blocked',
-      metrics: expect.objectContaining({ certified: 2, runtime_certified: false }),
+      status: 'COMPLETED',
+      reason: null,
+      processed: 2,
+      total: 2,
+      metrics: expect.objectContaining({
+        certified: 2,
+        provider_runtime_status: 'BLOCKED',
+        runtime_certified: false,
+      }),
     });
+    expect(stage(projection, 'CATALOGUE')).toMatchObject({
+      status: 'RUNNING',
+      reason: 'awaiting_explicit_operator_promotion',
+      processed: 0,
+      total: 2,
+    });
+    expect(projection.status).toBe('RUNNING');
     expect(projection.accounting).toMatchObject({
       source_total: 3, accepted: 2, rejected: 1, certified: 2,
+      awaiting_catalogue_promotion: 2,
     });
     expect(projection.diagnostics).toEqual({
       pipeline_status: 'PARTIAL_BLOCKED',
       canonical_resolved: true,
       reject_reasons: { 'media absent': 1 },
       runtime_certified: false,
-      certification_reason: 'pipeline_partial_blocked',
+      provider_runtime_status: 'BLOCKED',
+      provider_runtime_reason: 'pipeline_partial_blocked',
+      certification_reason: null,
     });
   });
 
@@ -172,13 +200,51 @@ describe('import runtime run projection', () => {
     expect(projection.status).toBe('RUNNING');
   });
 
-  test('preuve d’une autre capture est refusée', () => {
+  test('preuve d’une autre capture bloque uniquement le rail fournisseur', () => {
     const projection = runs.buildProjection({
       run: baseRun(),
       rows: rows3(),
       sourceProof: { certified_at: T1, capture_id: 'cap-other' },
     });
-    expect(stage(projection, 'CERTIFICATION').status).toBe('PENDING');
+    expect(stage(projection, 'CERTIFICATION').status).toBe('COMPLETED');
+    expect(stage(projection, 'CATALOGUE').status).toBe('RUNNING');
+    expect(projection.diagnostics).toMatchObject({
+      provider_runtime_status: 'PENDING',
+      provider_runtime_reason: 'provider_runtime_proof_missing',
+      runtime_certified: false,
+    });
+  });
+
+  test('ancien FAILED pipeline_partial_blocked est re-projeté comme lot vivant', () => {
+    const projection = runs.buildProjection({
+      run: baseRun({
+        status: 'FAILED',
+        failure_reason: 'pipeline_partial_blocked',
+        finished_at: T1,
+        source_total: 3,
+        intake: {
+          recorded_at: T1,
+          accepted: 2,
+          duplicates: 0,
+          rejected: 1,
+          quarantined: 0,
+          deferred: 0,
+          ready_for_refinery: 2,
+          certification_blocked: 0,
+          pipeline_status: 'PARTIAL_BLOCKED',
+          canonical_resolved: true,
+          reject_reasons: { 'media absent': 1 },
+          capture_id: 'cap-partial',
+        },
+      }),
+      rows: [candidate(1), candidate(2)],
+      sourceProof: null,
+    });
+    expect(projection.status).toBe('RUNNING');
+    expect(projection.failure_reason).toBeNull();
+    expect(stage(projection, 'CERTIFICATION').status).toBe('COMPLETED');
+    expect(stage(projection, 'CATALOGUE').status).toBe('RUNNING');
+    expect(projection.current_stage).toBe('CATALOGUE');
   });
 
   test('accounting déséquilibré fait échouer la certification', () => {
