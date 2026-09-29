@@ -356,7 +356,8 @@
 
     const kpis = cardSection(doc, 'Indicateurs financiers', 'Valeurs canoniques de la période sélectionnée.', 'finance-kpis');
 
-    kpis.section.className += ' is-cockpit-truth';    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
+    kpis.section.className += ' is-cockpit-truth';
+    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
     dashboard.appendChild(kpis.section);
 
     const overview = overviewCards(payload, base);
@@ -377,7 +378,7 @@
     if (trend.length) {
       const section = cardSection(doc, 'Trajectoire financière', 'Périodes et taux de couverture fournis par le backend.', 'finance-trend');
 
-      section.section.className += ' is-cockpit-flow';      decisionUi.RankedList.render(section.body, { items: trend });
+      decisionUi.RankedList.render(section.body, { items: trend });
       dashboard.appendChild(section.section);
     }
 
