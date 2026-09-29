@@ -1,489 +1,369 @@
 /**
  * @komerce-arch
- * @role          canonical-import-runtime
- * @domain        sourcing
+ * @role          canonical-import-decision-cockpit
+ * @domain        admin-dashboard
  * @layer         ui-workspace
- * @criticality   medium
- * @inputs        /api/admin/workspaces/sourcing, /api/admin/workspaces/sourcing/import-runs*, source control actions
- * @outputs       live canonical sourcing-to-catalogue runtime
+ * @criticality   high
+ * @inputs        /api/admin/workspaces/sourcing/import-cockpit
+ * @outputs       decision_first_lot_registry, lot_drill_down_navigation
  * @depends       none
  * @used-by       public/dashboards/canonical/js/app.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      canonical_only, api_only, server_truth, no_legacy_import
- * @impact-areas  sourcing, catalog, certification, admin-dashboard
- * @version       2026-09-v2-source-controls
+ * @doctrine      situation_then_decision_then_exception_then_drilldown, dashboard_never_recomputes_business_truth, technical_pipeline_hidden_unless_requested, one_card_one_complete_page
+ * @impact-areas  admin-dashboard, sourcing, catalog, market-delegation, pricing
+ * @version       2026-09-v3-decision-cockpit
  */
 'use strict';
 
-(function initCanonicalImportRuntime(global) {
-  const POLL_MS = 3000;
-  const STAGES = Object.freeze([
-    ['SOURCE_CONNECTED', 'Source connectée'],
-    ['RAW_IMPORT', 'Import brut'],
-    ['REFINERY', 'Raffinerie'],
-    ['TAXONOMY', 'Taxonomie'],
-    ['CERTIFICATION', 'Certification'],
-    ['CATALOGUE', 'Catalogue'],
-  ]);
+(function initCanonicalImportCockpit(global) {
+  const POLL_MS = 10000;
+  const VIEWS = new Set(['overview', 'catalogue', 'commercial', 'exceptions', 'history']);
   let timer = null;
   let mountedRoot = null;
-  let selectedRunRef = null;
-  let mutationBusy = false;
-  let actionFeedback = null;
+  let lastPayload = null;
 
   function esc(value) {
     return String(value == null ? '' : value)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
+
   function num(value) {
     const n = Number(value);
     return Number.isFinite(n) ? n : 0;
   }
-  function time(value) {
+
+  function fmtDate(value) {
     if (!value) return '—';
     const d = new Date(value);
-    return Number.isNaN(d.getTime()) ? '—' : d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString('fr-FR', {
+      day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit',
+    });
   }
-  async function api(path, options = {}) {
-    const init = {
-      method: options.method || 'GET',
-      credentials:'include',
-      headers:{ Accept:'application/json', ...(options.body ? { 'Content-Type':'application/json' } : {}) },
-    };
-    if (options.body) init.body = JSON.stringify(options.body);
-    const res = await global.fetch(path, init);
-    let payload = null;
-    try { payload = await res.json(); } catch (_) { payload = null; }
+
+  function params() {
+    const query = new URLSearchParams(global.location.search);
+    const run = query.get('run') || null;
+    const requestedView = query.get('view') || 'overview';
+    return { run, view: VIEWS.has(requestedView) ? requestedView : 'overview' };
+  }
+
+  async function api(path) {
+    const res = await global.fetch(path, { credentials:'include', headers:{ Accept:'application/json' } });
+    let body = null;
+    try { body = await res.json(); } catch (_) { body = null; }
     if (!res.ok) {
-      const error = new Error(payload?.error || `HTTP ${res.status}`);
-      error.code = payload?.code || null;
-      error.status = res.status;
-      error.details = payload?.details || null;
+      const error = new Error(body?.error || `HTTP ${res.status}`);
+      error.code = body?.code || null;
       throw error;
     }
-    return payload;
-  }
-  function stageRows(run) {
-    const map = new Map((run?.stages || []).map(stage => [stage.key, stage]));
-    return STAGES.map(([key,label], index) => ({
-      key, label, index,
-      ...(map.get(key) || { status:'PENDING', processed:0, total:0 }),
-    }));
-  }
-  function stageClass(status) {
-    if (status === 'COMPLETED') return 'is-done';
-    if (status === 'RUNNING') return 'is-live';
-    if (status === 'FAILED') return 'is-failed';
-    return 'is-pending';
-  }
-  function failureLabel(reason) {
-    const labels = {
-      no_valid_product: 'Aucun produit valide',
-      supplier_source_empty: 'Source vide',
-      no_valid_supplier_product: 'Produits reçus non valides',
-      accounting_unbalanced: 'Accounting déséquilibré',
-    };
-    return labels[String(reason || '')] || reason || 'Échec';
-  }
-  function stageDetail(stage) {
-    if (stage.status === 'FAILED') return failureLabel(stage.reason);
-    if (stage.status === 'PENDING') return 'En attente';
-    if (stage.key === 'SOURCE_CONNECTED') return stage.metrics?.provider || 'Connectée';
-    return `${num(stage.processed)} / ${num(stage.total)}`;
-  }
-  function sourceActionErrorMessage(error) {
-    const details = error?.details || {};
-    if (Number(details.connector_total) === 0) {
-      return `${error.message} · feed fournisseur vide`;
-    }
-    if (details.connector_total != null) {
-      return `${error.message} · ${num(details.rejected)} rejeté(s) sur ${num(details.connector_total)}`;
-    }
-    return error?.message || 'Action refusée';
-  }
-  function zeroRun() {
-    return {
-      run_ref:null, status:'IDLE', provider:null, mode:null, started_at:null, current_stage:null,
-      accounting:{ source_total:0, accepted:0, duplicates:0, rejected:0, quarantined:0, deferred:0, certified:0, published:0, unaccounted:0, overflow:0 },
-      stages:[], events:[], recent_items:[], current_item:null, processed:0, progress_pct:0,
-    };
+    return body;
   }
 
-  function sourceCanImportNow(source) {
-    return Boolean(
-      source?.status === 'active'
-      && source?.connector_ready
-      && source?.discovery_enabled
-      && source?.sync_enabled
-      && source?.import_enabled
-    );
+  function businessLabel(status) {
+    return ({
+      RUNNING:'Import en cours',
+      ACTION_REQUIRED:'Décisions attendues',
+      BLOCKED:'À débloquer',
+      CLOSED:'Clos',
+      UNKNOWN:'État indisponible',
+    })[status] || status || 'État indisponible';
   }
 
-  function sourceCanStartAutopilot(source) {
-    return Boolean(
-      sourceCanImportNow(source)
-      && source?.runtime_enabled
-      && source?.production_runtime_certified
-      && source?.production_enabled
-    );
+  function businessTone(status) {
+    return ({
+      RUNNING:'live',
+      ACTION_REQUIRED:'warning',
+      BLOCKED:'critical',
+      CLOSED:'positive',
+      UNKNOWN:'neutral',
+    })[status] || 'neutral';
   }
 
-  function sourceControlMarkup(source, run) {
-    const ref = esc(source.source_ref || '');
-    const label = esc(source.label || source.supplier_name || source.adapter_type || source.source_ref || 'Source');
-    const supplier = esc(source.supplier_name || source.adapter_type || 'Source API');
-    const certified = Boolean(source.production_runtime_certified);
-    const runningHere = Boolean(run?.status === 'RUNNING' && run?.source_ref && run.source_ref === source.source_ref);
-    const importReady = sourceCanImportNow(source) && !runningHere;
-    const autoOn = Boolean(source.autopilot_enabled);
-    const autoReady = autoOn || sourceCanStartAutopilot(source);
-    const capabilities = [
-      ['discovery','Découverte','discovery_enabled'],
-      ['sync','Sync','sync_enabled'],
-      ['import','Import','import_enabled'],
-      ['production','Production','production_enabled'],
-    ];
-
-    return `
-      <article class="kir-source-card ${runningHere ? 'is-running' : ''}" data-source-ref="${ref}">
-        <div class="kir-source-head">
-          <div>
-            <div class="kir-source-name">${label}</div>
-            <div class="kir-source-sub">${supplier}</div>
-          </div>
-          <div class="kir-source-badges">
-            <span class="kir-source-state ${source.connector_ready ? 'is-ok' : 'is-blocked'}">● ${source.connector_ready ? 'Connectée' : 'Bloquée'}</span>
-            <span class="kir-source-cert ${certified ? 'is-certified' : ''}">${certified ? 'Certifiée' : 'À certifier'}</span>
-          </div>
-        </div>
-
-        <div class="kir-source-switches">
-          ${capabilities.map(([cap,labelText,key]) => {
-            const on = Boolean(source[key]);
-            const locked = cap === 'production' && !certified && !on;
-            return `<button type="button"
-              class="kir-switch ${on ? 'is-on' : ''}"
-              role="switch"
-              aria-checked="${on ? 'true' : 'false'}"
-              data-source-capability="${cap}"
-              data-source-ref="${ref}"
-              data-current="${on ? '1' : '0'}"
-              ${locked ? 'disabled title="Certification runtime requise avant Production"' : ''}>
-              <i></i><span>${labelText}</span>
-            </button>`;
-          }).join('')}
-        </div>
-
-        <div class="kir-source-actions">
-          <button type="button" class="kir-btn kir-btn-import"
-            data-source-import="${ref}" ${importReady ? '' : 'disabled'}>
-            ${runningHere ? 'Import en cours…' : 'Importer maintenant'}
-          </button>
-          <button type="button" class="kir-btn ${autoOn ? 'kir-btn-stop' : 'kir-btn-auto'}"
-            data-source-autopilot="${ref}" data-current="${autoOn ? '1' : '0'}"
-            ${autoReady ? '' : 'disabled'}>
-            ${autoOn ? 'Arrêter autopilot' : 'Démarrer autopilot'}
-          </button>
-        </div>
-
-        <div class="kir-source-foot">
-          <span>Discovery · ${source.discovery_ready ? esc(source.discovery_mode || 'prêt') : 'indisponible'}</span>
-          <span>${source.runtime_enabled ? 'Runtime actif' : 'Runtime autopilot OFF'}</span>
-          <span>Dernier passage · ${source.last_capture_at ? time(source.last_capture_at) : 'jamais'}</span>
-        </div>
-      </article>`;
+  function urlFor(runRef, view = 'overview') {
+    const q = new URLSearchParams();
+    if (runRef) q.set('run', runRef);
+    if (view && view !== 'overview') q.set('view', view);
+    return '/admin/import-runtime' + (q.toString() ? '?' + q.toString() : '');
   }
 
-  function sourcePanelMarkup(workspace, run) {
-    const sources = Array.isArray(workspace?.sources) ? workspace.sources : [];
-    return `
-      <section class="kir-source-panel">
-        <div class="kir-source-panel-head">
-          <div>
-            <h2>Sources configurées</h2>
-            <p>Déclenchement opérateur, capacités autorisées et autopilot par fournisseur.</p>
-          </div>
-          <span>${sources.length} source${sources.length > 1 ? 's' : ''}</span>
-        </div>
-        ${actionFeedback ? `<div class="kir-source-feedback ${actionFeedback.ok ? 'is-ok' : 'is-error'}">${esc(actionFeedback.message)}</div>` : ''}
-        <div class="kir-source-list">
-          ${sources.length ? sources.map(source => sourceControlMarkup(source, run)).join('') : '<div class="kir-empty">Aucune source récurrente configurée.</div>'}
-        </div>
-      </section>`;
+  function lotStrip(lots, selectedRef) {
+    const cards = (lots || []).map(lot => {
+      const active = lot.run_ref === selectedRef;
+      return `<a class="kir-lot-chip ${active ? 'is-selected' : ''}" href="${urlFor(lot.run_ref)}" data-cockpit-nav>
+        <span class="kir-lot-ref">${esc(lot.run_ref)}</span>
+        <strong class="kir-status is-${businessTone(lot.business_status)}">${esc(businessLabel(lot.business_status))}</strong>
+        <small>${esc(lot.provider || 'Source')} · ${num(lot.source_total)} entrée(s)</small>
+      </a>`;
+    }).join('');
+    return `<nav class="kir-lot-strip" aria-label="Lots d'import récents">
+      <div class="kir-lot-strip-scroll">${cards || '<span class="kir-empty-inline">Aucun lot importé.</span>'}</div>
+      <a class="kir-lot-all" href="${urlFor(selectedRef, 'history')}" data-cockpit-nav>Historique</a>
+    </nav>`;
   }
-  function journeyMarkup(run) {
-    if (!run.run_ref) return '';
-    const a = run.accounting || {};
-    const d = run.downstream;
-    const known = d?.available === true;
-    const c = known ? d.catalog : null;
-    const md = known ? (d.market_decisions || {}) : {};
-    const catalogue = (run.stages || []).find(stage => stage.key === 'CATALOGUE');
-    const labels = { preparing:'À préparer', ready:'Prêt à valider', published:'Publié', other:'À examiner' };
-    return `<section class="kir-journey" aria-label="Parcours du lot">
-      <article class="kir-journey-block ${run.status === 'COMPLETED' ? 'is-done' : ''}">
-        <span class="kir-journey-step">01 · Import & Raffinerie</span>
-        <h2>${num(catalogue?.processed)} / ${num(catalogue?.total)} transmis</h2>
-        <p>${num(run.processed)} / ${num(a.source_total)} traités · ${num(a.deferred)} différés · ${num(a.rejected)} rejetés</p>
-        <strong>${run.status === 'COMPLETED' ? 'Import terminé' : run.status === 'FAILED' ? 'Import à examiner' : 'Import en cours'}</strong>
-        <a href="#kir-import-detail">Voir les jalons de l’import ↓</a>
-      </article>
-      <article class="kir-journey-block">
-        <span class="kir-journey-step">02 · Catalogue</span>
-        <h2>${known ? num(c.received) + ' produits reçus' : 'État indisponible'}</h2>
-        <p>${known ? num(c.preparing) + ' à préparer · ' + num(c.ready) + ' prêts · ' + num(c.published) + ' publiés' : 'La progression sera relue au prochain rafraîchissement.'}</p>
-        ${known ? `<strong>${c.preparing ? 'Préparer les fiches françaises' : c.ready ? 'Validation marché attendue' : c.received ? 'Suivre les décisions marché' : 'En attente de produits promus'}</strong>
-          ${c.other || c.missing ? `<p>${num(c.other)} à examiner · ${num(c.missing)} introuvables</p>` : ''}
-          <details data-kir-detail="catalog"><summary>Voir les produits du lot</summary>
-            <ul>${d.items.map(item => `<li><a href="/admin/products/${encodeURIComponent(item.product_ref)}">${esc(item.name || item.product_ref)}</a><span>${labels[item.stage]}${item.reason ? ' · ' + esc(item.reason) : ''}</span></li>`).join('')}</ul>
-          </details>` : ''}
-      </article>
-      <article class="kir-journey-block">
-        <span class="kir-journey-step">03 · Marchés & Boutique</span>
-        <h2>${known ? num(d.visible_products) + ' visibles en boutique' : 'État indisponible'}</h2>
-        <p>${known ? num(md.awaiting_validation) + ' nouveaux à valider · ' + num(md.published_undecided) + ' publiés sans décision pays' : 'Aucun compteur supposé.'}</p>
-        ${known ? `<p>${num(d.exposed_products)} produits exposés sur au moins un marché</p>` : ''}
-        ${known ? `<strong>${d.markets.length ? 'Visibilité vérifiée par pays' : 'Aucun marché actif'}</strong>
-          <details data-kir-detail="markets"><summary>Voir les marchés du lot</summary>
-            <div class="kir-table-wrap"><table class="kir-table"><thead><tr><th>Marché</th><th>Nouveaux à valider</th><th>Publiés sans décision</th><th>Exposés</th><th>Visibles</th><th>Masqués</th></tr></thead>
-            <tbody>${d.markets.map(m => `<tr><td>${esc(m.name)} (${esc(m.code)})</td><td>${num(m.awaiting_validation)}</td><td>${num(m.published_undecided)}</td><td>${num(m.exposed)}</td><td>${num(m.visible)}</td><td>${num(m.hidden)}</td></tr>`).join('')}</tbody></table></div>
-            <p>Une exposition autorisée ne garantit pas la visibilité : le prix local et la disponibilité doivent aussi être prêts.</p>
-          </details>` : ''}
-      </article>
+
+  function outcomeSummary(lot) {
+    const d = lot?.decisions || {};
+    const closure = lot?.closure || {};
+    return `<section class="kir-outcome" aria-label="Décisions du lot">
+      <div><span>Approuvés vente</span><strong>${num(d.approved_for_sale)}</strong></div>
+      <div><span>Non retenus</span><strong>${num(d.not_retained)}</strong></div>
+      <div><span>Décidés</span><strong>${num(closure.decided_products)} / ${num(closure.total_products)}</strong></div>
     </section>`;
   }
 
-  function render(root, payload, workspace = null) {
-    const run = payload || zeroRun();
-    const idle = !run.run_ref;
+  function actionCard({ key, count, title, helper, tone, href }) {
+    return `<a class="kir-action-card is-${tone}" href="${href}" data-cockpit-nav>
+      <div class="kir-action-count">${count}</div>
+      <div class="kir-action-copy">
+        <strong>${esc(title)}</strong>
+        <span>${esc(helper)}</span>
+      </div>
+      <span class="kir-action-arrow">→</span>
+    </a>`;
+  }
+
+  function renderOverview(run) {
+    const lot = run.business || {};
+    const d = lot.decisions || {};
+    const cards = [];
+    if (num(d.catalogue) > 0) cards.push(actionCard({
+      key:'catalogue', count:num(d.catalogue), tone:'warning',
+      title:'Fiches à finaliser',
+      helper:'Une action Catalogue est réellement nécessaire avant décision commerciale.',
+      href:urlFor(run.run_ref, 'catalogue'),
+    }));
+    if (num(d.commercial) > 0) cards.push(actionCard({
+      key:'commercial', count:num(d.commercial), tone:'blue',
+      title:'Décisions de mise en vente',
+      helper:'Produits certifiés prêts pour prix / exposition marché.',
+      href:urlFor(run.run_ref, 'commercial'),
+    }));
+    if (num(d.exceptions) > 0) cards.push(actionCard({
+      key:'exceptions', count:num(d.exceptions), tone:'critical',
+      title:'Exceptions à traiter',
+      helper:'Uniquement les écarts qui empêchent le lot d’avancer ou de se clore.',
+      href:urlFor(run.run_ref, 'exceptions'),
+    }));
+
+    const noAction = lot.business_status === 'CLOSED'
+      ? `<section class="kir-closed-panel"><span>✓</span><div><strong>Lot clos</strong><p>Tous les produits transmis ont une décision terminale. Aucun geste opérateur n’est attendu.</p></div></section>`
+      : cards.length === 0
+        ? '<section class="kir-neutral-panel">Aucune action calculable pour le moment. La vérité aval est en cours de lecture.</section>'
+        : '';
+
+    return `
+      <section class="kir-decision-intro">
+        <div>
+          <span class="kir-section-kicker">À FAIRE MAINTENANT</span>
+          <h2>${cards.length ? 'Décisions ouvertes' : lot.business_status === 'CLOSED' ? 'Aucune décision ouverte' : 'Situation du lot'}</h2>
+          <p>Le cockpit masque les étapes automatiques lorsqu’elles sont saines. Seules les décisions humaines et exceptions remontent ici.</p>
+        </div>
+        <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav class="kir-subtle-link">Voir l’historique technique →</a>
+      </section>
+      ${cards.length ? '<section class="kir-actions">' + cards.join('') + '</section>' : ''}
+      ${noAction}
+      ${outcomeSummary(lot)}
+    `;
+  }
+
+  function productRows(run, action) {
+    const rows = (run.business?.products || []).filter(item => item.action === action);
+    if (!rows.length) return '<div class="kir-empty">Aucun produit dans cette file.</div>';
+    return `<div class="kir-table-wrap"><table class="kir-table">
+      <thead><tr><th>Produit</th><th>Pourquoi ici ?</th><th>Action</th></tr></thead>
+      <tbody>${rows.map(item => `<tr>
+        <td><a href="/admin/products/${encodeURIComponent(item.product_ref)}">${esc(item.name || item.product_ref)}</a><small>${esc(item.product_ref)}</small></td>
+        <td>${esc(item.reason || 'Décision attendue')}</td>
+        <td><a class="kir-row-action" href="/admin/products/${encodeURIComponent(item.product_ref)}">Ouvrir →</a></td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+
+  function drillHeader(run, title, copy) {
+    return `<div class="kir-drill-head">
+      <div>
+        <a href="${urlFor(run.run_ref)}" data-cockpit-nav class="kir-back">← Retour au lot</a>
+        <span class="kir-section-kicker">${esc(run.run_ref)}</span>
+        <h2>${esc(title)}</h2>
+        <p>${esc(copy)}</p>
+      </div>
+    </div>`;
+  }
+
+  function renderCatalogue(run) {
+    return drillHeader(
+      run,
+      'Fiches à finaliser',
+      'Uniquement les produits pour lesquels le Catalogue exige encore une intervention. Les produits déjà prêts ne sont pas affichés.'
+    ) + productRows(run, 'CATALOGUE');
+  }
+
+  function renderCommercial(run) {
+    const rows = (run.business?.products || []).filter(item => item.action === 'COMMERCIAL');
+    const list = rows.length ? `<div class="kir-table-wrap"><table class="kir-table">
+      <thead><tr><th>Produit</th><th>Décision attendue</th><th>Destination</th></tr></thead>
+      <tbody>${rows.map(item => `<tr>
+        <td><a href="/admin/products/${encodeURIComponent(item.product_ref)}">${esc(item.name || item.product_ref)}</a><small>${esc(item.product_ref)}</small></td>
+        <td>${esc(item.reason || 'Prix / exposition à décider')}</td>
+        <td><a class="kir-row-action" href="/dashboards/canonical/market-catalog.html">Prêts à vendre →</a></td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : '<div class="kir-empty">Aucune décision commerciale ouverte.</div>';
+    return drillHeader(
+      run,
+      'Décisions de mise en vente',
+      'Ces produits ont déjà franchi la préparation amont. Le geste restant est commercial : prix local et mise en vente.'
+    ) + list;
+  }
+
+  function renderExceptions(run) {
     const a = run.accounting || {};
-    const stages = stageRows(run);
-    const total = num(a.source_total);
-    const progress = num(run.progress_pct);
-    const events = Array.isArray(run.events) ? run.events.slice(0,6) : [];
-    const recent = Array.isArray(run.recent_items) ? run.recent_items.slice(0,8) : [];
-    const current = run.current_item || null;
-    const balanced = num(a.unaccounted) === 0 && num(a.overflow) === 0;
+    const rows = (run.business?.products || []).filter(item => item.action === 'EXCEPTION');
+    const source = [
+      num(a.quarantined) ? `${num(a.quarantined)} en quarantaine` : null,
+      num(a.certification_blocked) ? `${num(a.certification_blocked)} certification(s) bloquée(s)` : null,
+      run.status === 'FAILED' ? 'run technique en échec' : null,
+    ].filter(Boolean);
+    return drillHeader(
+      run,
+      'Exceptions à traiter',
+      'Cette page ne montre pas les contrôles réussis : uniquement ce qui empêche une décision finale ou la clôture.'
+    ) + (source.length ? `<div class="kir-exception-banner">${source.map(esc).join(' · ')}</div>` : '') +
+      (rows.length ? productRows(run, 'EXCEPTION') : source.length ? '' : '<div class="kir-empty">Aucune exception ouverte.</div>');
+  }
 
-    const openDetails = new Set(Array.from(root.querySelectorAll?.('details[data-kir-detail][open]') || []).map(el => el.getAttribute('data-kir-detail')));
+  function renderHistory(run) {
+    const stages = Array.isArray(run.stages) ? run.stages : [];
+    const events = Array.isArray(run.events) ? run.events : [];
+    return drillHeader(
+      run,
+      'Historique technique',
+      'Preuve du parcours automatique. Cette information explique le lot mais n’occupe jamais le niveau de pilotage.'
+    ) + `
+      <section class="kir-history-stages">
+        ${stages.map(stage => `<div class="kir-history-stage">
+          <span class="kir-history-dot is-${stage.status === 'COMPLETED' ? 'done' : stage.status === 'FAILED' ? 'failed' : 'pending'}"></span>
+          <div><strong>${esc(stage.key)}</strong><small>${esc(stage.status)} · ${num(stage.processed)} / ${num(stage.total)}</small></div>
+        </div>`).join('')}
+      </section>
+      <div class="kir-history-events">
+        ${events.length ? events.map(event => `<div><time>${fmtDate(event.at)}</time><span>${esc(event.stage)} · ${esc(event.kind)}</span></div>`).join('') : '<div class="kir-empty">Aucun événement technique enregistré.</div>'}
+      </div>`;
+  }
+
+  function renderBody(run, view) {
+    if (view === 'catalogue') return renderCatalogue(run);
+    if (view === 'commercial') return renderCommercial(run);
+    if (view === 'exceptions') return renderExceptions(run);
+    if (view === 'history') return renderHistory(run);
+    return renderOverview(run);
+  }
+
+  function render(root, payload) {
+    const lots = Array.isArray(payload?.lots) ? payload.lots : [];
+    const run = payload?.selected || null;
+    const { view } = params();
     root.className = 'kmc-import-runtime';
-    root.innerHTML = `
-      <section class="kir-page">
-        <header class="kir-hero">
-          <div>
-            <div class="kir-eyebrow">SOURCING · EXÉCUTION</div>
-            <div class="kir-title-row">
-              <h1>Suivi du lot</h1>
-              ${run.status === 'RUNNING' ? '<span class="kir-live">● LIVE</span>' : ''}
-            </div>
-            <p>Import & Raffinerie → Catalogue → Marchés & Boutique</p>
-          </div>
-          <div class="kir-run-meta">
-            <span>RUN</span>
-            <strong>${esc(run.run_ref || 'Aucun run')}</strong>
-            <small>${idle ? 'Le prochain import apparaîtra ici automatiquement.' : `${esc(run.provider || '—')} · ${esc(run.mode || 'normal')} · ${time(run.started_at)}`}</small>
-          </div>
-        </header>
 
-        ${journeyMarkup(run)}
-
-        ${sourcePanelMarkup(workspace, run)}
-
-        ${run.status === 'FAILED' ? `<div class="kir-run-failure"><strong>Run en échec</strong><span>${esc(failureLabel(run.failure_reason))}</span></div>` : ''}
-
-        <section id="kir-import-detail" class="kir-stage-card" aria-label="Pipeline d'import">
-          ${stages.map(stage => `
-            <article class="kir-stage ${stageClass(stage.status)}">
-              <div class="kir-stage-track"></div>
-              <div class="kir-stage-dot">${stage.status === 'COMPLETED' ? '✓' : stage.status === 'FAILED' ? '!' : stage.index + 1}</div>
-              <div class="kir-stage-copy">
-                <strong>${esc(stage.label)}</strong>
-                <span>${esc(stageDetail(stage))}</span>
-              </div>
-            </article>`).join('')}
-        </section>
-
-        <section class="kir-metrics">
-          ${[
-            ['Source total', total, 'neutral'],
-            ['Acceptés', num(a.accepted), 'good'],
-            ['Doublons', num(a.duplicates), 'info'],
-            ['Rejetés', num(a.rejected), 'bad'],
-            ['Différés', num(a.deferred), 'warn'],
-            ['Quarantaine', num(a.quarantined), 'warn'],
-            ['Certifiés', num(a.certified), 'good'],
-          ].map(([label,value,tone]) => `
-            <article class="kir-metric kir-${tone}">
-              <span>${label}</span><strong>${value}</strong>
-            </article>`).join('')}
-        </section>
-
-        <section class="kir-progress-card">
-          <div class="kir-progress-head">
-            <strong>Progression de l’import</strong>
-            <span>${progress}% · ${num(run.processed)} / ${total || 0}</span>
-          </div>
-          <div class="kir-progress"><i style="width:${Math.max(0,Math.min(100,progress))}%"></i></div>
-        </section>
-
-        <section class="kir-grid">
-          <article class="kir-panel">
-            <div class="kir-panel-head"><h2>Activité du run</h2><span>actualisé ${new Date().toLocaleTimeString('fr-FR')}</span></div>
-            <div class="kir-activity">
-              ${events.length ? events.map(ev => `
-                <div class="kir-event">
-                  <time>${time(ev.at)}</time><i></i>
-                  <div><strong>${esc(STAGES.find(([key]) => key === ev.stage)?.[1] || ev.stage || 'Événement')}</strong><span>${esc(ev.kind || '')}</span></div>
-                </div>`).join('') : '<div class="kir-empty">Aucune activité pour le moment.</div>'}
-            </div>
-          </article>
-
-          <article class="kir-panel">
-            <div class="kir-panel-head"><h2>Produit en cours</h2><span>${esc(run.current_stage || '—')}</span></div>
-            ${current ? `
-              <div class="kir-product">
-                ${current.image_url ? `<img src="${esc(current.image_url)}" alt="">` : '<div class="kir-product-placeholder">▦</div>'}
-                <div><strong>${esc(current.product_name || current.supplier_product_id || current.candidate_ref || 'Produit')}</strong>
-                <span>ID source · ${esc(current.supplier_product_id || '—')}</span>
-                <span>Catégorie · ${esc(current.komerce_category || 'À déterminer')}</span></div>
-              </div>` : '<div class="kir-empty">Aucun produit en traitement.</div>'}
-          </article>
-
-          <article class="kir-panel kir-wide">
-            <div class="kir-panel-head"><h2>Derniers produits traités</h2><span>${recent.length} affichés</span></div>
-            <div class="kir-table-wrap"><table class="kir-table">
-              <thead><tr><th>Produit</th><th>ID source</th><th>Étape</th><th>Catégorie</th><th>Actualisé</th></tr></thead>
-              <tbody>${recent.length ? recent.map(row => `
-                <tr><td>${esc(row.product_name || row.candidate_ref || '—')}</td><td>${esc(row.supplier_product_id || '—')}</td><td>${esc(STAGES.find(([key]) => key === row.stage)?.[1] || row.stage || '—')}</td><td>${esc(row.komerce_category || '—')}</td><td>${time(row.updated_at)}</td></tr>`).join('') : '<tr><td colspan="5" class="kir-empty-cell">Aucun produit traité.</td></tr>'}</tbody>
-            </table></div>
-          </article>
-        </section>
-
-        <footer class="kir-reconcile">
-          <span>UNACCOUNTED <strong class="${num(a.unaccounted)===0?'ok':'ko'}">${num(a.unaccounted)}</strong></span>
-          <span>OVERFLOW <strong class="${num(a.overflow)===0?'ok':'ko'}">${num(a.overflow)}</strong></span>
-          <span>RÉCONCILIATION <strong class="${balanced?'ok':'warn'}">${balanced?'ÉQUILIBRÉE':'À VÉRIFIER'}</strong></span>
-        </footer>
+    if (!run) {
+      root.innerHTML = `<section class="kir-page">
+        <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · IMPORTS</span><h1>Cockpit des imports</h1><p>Aucun lot disponible.</p></div></header>
+        ${lotStrip(lots, null)}
       </section>`;
-    root.querySelectorAll?.('details[data-kir-detail]').forEach(el => {
-      el.open = openDetails.has(el.getAttribute('data-kir-detail'));
-    });
-  }
-
-  async function resolveRun() {
-    const requested = new URLSearchParams(global.location.search).get('run') || selectedRunRef;
-    if (requested) return api('/api/admin/workspaces/sourcing/import-runs/' + encodeURIComponent(requested));
-    const list = await api('/api/admin/workspaces/sourcing/import-runs');
-    const first = Array.isArray(list?.runs) ? list.runs[0] : null;
-    if (!first) return null;
-    selectedRunRef = first.run_ref;
-    return api('/api/admin/workspaces/sourcing/import-runs/' + encodeURIComponent(first.run_ref));
-  }
-
-  async function mutateSource(path, body, successMessage) {
-    mutationBusy = true;
-    actionFeedback = null;
-    try {
-      const result = await api(path, { method:'POST', body: body || {} });
-      const runRef = result?.result?.run_ref || result?.result?.first_run?.run_ref || null;
-      if (runRef) selectedRunRef = runRef;
-      actionFeedback = { ok:true, message: successMessage };
-      return result;
-    } catch (error) {
-      const failedRunRef = error?.details?.run_ref || null;
-      if (failedRunRef) selectedRunRef = failedRunRef;
-      actionFeedback = { ok:false, message: sourceActionErrorMessage(error) };
-      throw error;
-    } finally {
-      mutationBusy = false;
-      await refresh();
-    }
-  }
-
-  function bindSourceControls(root) {
-    root.querySelectorAll('[data-source-capability]').forEach(button => {
-      button.addEventListener('click', async () => {
-        const ref = button.getAttribute('data-source-ref');
-        const capability = button.getAttribute('data-source-capability');
-        const enabled = button.getAttribute('data-current') !== '1';
-        button.disabled = true;
-        try {
-          await mutateSource(
-            '/api/admin/workspaces/sourcing/sources/' + encodeURIComponent(ref) + '/capabilities/' + encodeURIComponent(capability),
-            { enabled, reason:'Pilotage depuis Import live' },
-            `${capability} ${enabled ? 'activé' : 'désactivé'} pour la source.`
-          );
-        } catch (_) {}
-      });
-    });
-
-    root.querySelectorAll('[data-source-import]').forEach(button => {
-      button.addEventListener('click', async () => {
-        const ref = button.getAttribute('data-source-import');
-        button.disabled = true;
-        button.textContent = 'Démarrage…';
-        try {
-          await mutateSource(
-            '/api/admin/workspaces/sourcing/sources/' + encodeURIComponent(ref) + '/import-now',
-            {},
-            'Import opérateur lancé. Le run apparaît dans le pipeline live.'
-          );
-        } catch (_) {}
-      });
-    });
-
-    root.querySelectorAll('[data-source-autopilot]').forEach(button => {
-      button.addEventListener('click', async () => {
-        const ref = button.getAttribute('data-source-autopilot');
-        const active = button.getAttribute('data-current') === '1';
-        button.disabled = true;
-        try {
-          await mutateSource(
-            '/api/admin/workspaces/sourcing/sources/' + encodeURIComponent(ref) + '/' + (active ? 'deactivate' : 'activate'),
-            {},
-            active ? 'Autopilot arrêté pour cette source.' : 'Autopilot démarré pour cette source.'
-          );
-        } catch (_) {}
-      });
-    });
-  }
-
-  async function refresh() {
-    if (!mountedRoot || !document.contains(mountedRoot) || global.location.pathname !== '/admin/import-runtime') {
-      if (timer) clearInterval(timer);
-      timer = null;
+      bindNavigation(root);
       return;
     }
-    if (mutationBusy) return;
-    try {
-      const [run, workspace] = await Promise.all([
-        resolveRun(),
-        api('/api/admin/workspaces/sourcing'),
-      ]);
-      render(mountedRoot, run, workspace);
-      bindSourceControls(mountedRoot);
-    } catch (error) {
-      mountedRoot.innerHTML = '<div class="kir-error">Suivi indisponible · ' + esc(error.message) + '</div>';
-    }
+
+    const lot = run.business || {};
+    const status = businessLabel(lot.business_status);
+    root.innerHTML = `<section class="kir-page">
+      <header class="kir-hero">
+        <div>
+          <span class="kir-eyebrow">OPÉRATIONS · COCKPIT DES IMPORTS</span>
+          <h1>${esc(run.run_ref)}</h1>
+          <p>${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s) · import ${run.status === 'COMPLETED' ? 'terminé' : run.status === 'FAILED' ? 'en échec' : 'en cours'}</p>
+        </div>
+        <div class="kir-hero-actions">
+          <span class="kir-status-large is-${businessTone(lot.business_status)}">${esc(status)}</span>
+          <a href="/admin/workspaces/catalog" class="kir-global-link">Catalogue global →</a>
+        </div>
+      </header>
+
+      ${lotStrip(lots, run.run_ref)}
+
+      <section class="kir-lot-summary">
+        <div><span>Produits transmis</span><strong>${num(lot.promoted_products)}</strong></div>
+        <div><span>Décisions finales</span><strong>${num(lot.closure?.decided_products)} / ${num(lot.closure?.total_products)}</strong></div>
+        <div><span>Reste à décider</span><strong>${num(lot.closure?.remaining_products)}</strong></div>
+        <div><span>Clôture</span><strong>${lot.closure?.eligible ? 'Prête' : 'En attente'}</strong></div>
+      </section>
+
+      <main class="kir-main">${renderBody(run, view)}</main>
+    </section>`;
+    bindNavigation(root);
   }
 
   function renderLoading(root) {
     root.className = 'kmc-import-runtime';
-    root.innerHTML = '<section class="kir-page"><div class="kir-empty">Chargement du dernier lot…</div></section>';
+    root.innerHTML = `<section class="kir-page kir-loading">
+      <div class="kir-skeleton kir-skeleton-title"></div>
+      <div class="kir-skeleton kir-skeleton-lots"></div>
+      <div class="kir-skeleton kir-skeleton-summary"></div>
+      <div class="kir-skeleton kir-skeleton-main"></div>
+    </section>`;
+  }
+
+  function bindNavigation(root) {
+    root.querySelectorAll?.('[data-cockpit-nav]').forEach(link => {
+      link.addEventListener('click', event => {
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        const href = link.getAttribute('href');
+        if (!href) return;
+        global.history.pushState({}, '', href);
+        refresh({ preserve:true });
+      });
+    });
+  }
+
+  async function refresh({ preserve = false } = {}) {
+    if (!mountedRoot || !global.document.contains(mountedRoot) || global.location.pathname !== '/admin/import-runtime') {
+      if (timer) clearInterval(timer);
+      timer = null;
+      return;
+    }
+    if (!preserve && !lastPayload) renderLoading(mountedRoot);
+    const { run } = params();
+    const query = new URLSearchParams({ limit:'12' });
+    if (run) query.set('run', run);
+    try {
+      const payload = await api('/api/admin/workspaces/sourcing/import-cockpit?' + query.toString());
+      lastPayload = payload;
+      render(mountedRoot, payload);
+    } catch (error) {
+      if (lastPayload) {
+        render(mountedRoot, lastPayload);
+        const main = mountedRoot.querySelector?.('.kir-main');
+        if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Actualisation impossible · ${esc(error.message)}</div>`);
+      } else {
+        mountedRoot.innerHTML = `<div class="kir-error">Cockpit indisponible · ${esc(error.message)}</div>`;
+      }
+    }
   }
 
   async function mount(options = {}) {
     if (!options.root) throw new Error('canonical_import_runtime_root_missing');
     mountedRoot = options.root;
-    selectedRunRef = null;
+    lastPayload = null;
     renderLoading(mountedRoot);
     if (timer) clearInterval(timer);
-    await refresh();
-    timer = setInterval(refresh, POLL_MS);
+    global.addEventListener?.('popstate', () => refresh({ preserve:true }), { once:false });
+    await refresh({ preserve:true });
+    timer = setInterval(() => refresh({ preserve:true }), POLL_MS);
   }
 
-  global.KomerceCanonicalImportRuntime = Object.freeze({ mount, render, sourceCanImportNow, sourceCanStartAutopilot });
+  global.KomerceCanonicalImportRuntime = Object.freeze({ mount, render, businessLabel, urlFor });
 })(typeof window !== 'undefined' ? window : globalThis);
