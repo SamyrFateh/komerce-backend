@@ -13,7 +13,7 @@ function read(relative) {
 
 test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
-  expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=2501');
+  expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=2501');
 });
 
@@ -52,8 +52,11 @@ test('Catalogue ne crée plus de navigation parallèle au shell Canonical', () =
 });
 
 test('la vue business lit uniquement le Workspace Catalogue canonique', () => {
-  const source = read('public/dashboards/canonical/js/catalog-control-tower.js');
-  expect(source).toContain('/api/admin/workspaces/catalog');
-  expect(source).not.toContain("'/api/products");
-  expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
+  const tower = read('public/dashboards/canonical/js/catalog-control-tower.js');
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+  expect(workspace).toContain("const ENDPOINT = '/api/admin/workspaces/catalog'");
+  expect(tower).not.toContain('/api/admin/workspaces/catalog');
+  expect(workspace).not.toContain("'/api/products");
+  expect(tower).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
+  expect(workspace).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
 });
