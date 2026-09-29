@@ -44,12 +44,28 @@ jest.mock('../../services/boutique-taxonomy-admin', () => ({
   deactivateSubcategory: jest.fn(),
 }));
 
+const mockListCommercialAssortment = jest.fn();
+jest.mock('../../services/catalog-commercial-assortment', () => ({
+  listCommercialAssortment: (...args) => mockListCommercialAssortment(...args),
+}));
+
 const workspace = require('../../services/catalog-workspace');
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetRuleNumber.mockResolvedValue(120);
   mockListCategories.mockResolvedValue([{ key: 'Maison', label: 'Maison', is_active: true, subcategories: [] }]);
+  mockListCommercialAssortment.mockResolvedValue([{
+    product_ref: 'KPR-000001',
+    name: 'Produit',
+    category: 'Maison',
+    price_kmf: 5000,
+    stock: 3,
+    is_active: true,
+    is_available: true,
+    source_lots: ['KIR-000004'],
+    approved_markets: ['KM'],
+  }]);
   mockQuery.mockImplementation(async sql => {
     const text = String(sql);
     if (text.includes('COUNT(*)::int AS total_products')) {
@@ -93,7 +109,7 @@ beforeEach(() => {
 
 test('projection Catalogue ne sort que les identités métier et expose le cap de curation', async () => {
   const payload = await workspace.buildWorkspace({});
-  expect(payload.scope).toEqual({ mode: 'global_catalog', label: 'Catalogue commun Komerce' });
+  expect(payload.scope).toEqual({ mode: 'global_commercial_catalog', label: 'Catalogue global commercial' });
   expect(payload.products[0].product_ref).toBe('KPR-000001');
   expect(payload.approval[0].product_ref).toBe('KPR-000002');
   expect(payload.approval[0]).toEqual(expect.objectContaining({
@@ -118,6 +134,16 @@ test('projection Catalogue ne sort que les identités métier et expose le cap d
   }));
   expect(JSON.stringify(payload)).not.toContain('internal-uuid');
   expect(payload.summary.categories).toBe(1);
+  expect(payload.summary).toEqual(expect.objectContaining({
+    commercial_approved: 1,
+    commercial_closed_lots: 1,
+    commercial_markets: 1,
+  }));
+  expect(payload.products[0]).toEqual(expect.objectContaining({
+    source_lots: ['KIR-000004'],
+    approved_markets: ['KM'],
+  }));
+  expect(mockListCommercialAssortment).toHaveBeenCalledWith(expect.objectContaining({ limit: 200 }));
   expect(mockGetRuleNumber).toHaveBeenCalledWith('CATALOG_CAP_MVP', 120);
   expect(payload.approval_page).toEqual({
     total: 1,
