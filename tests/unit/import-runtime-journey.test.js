@@ -107,5 +107,12 @@ test('drill-down Catalogue montre seulement les produits qui exigent cette déci
   expect(ui.urlFor('KIR-000004','commercial')).toContain('view=commercial');
   expect(ui.urlFor('KIR-000004','exceptions')).toContain('view=exceptions');
   expect(ui.urlFor('KIR-000004','closure')).toContain('view=closure');
+  const productHref = ui.withReturnTo(
+    '/admin/products/P-1',
+    ui.urlFor('KIR-000004','catalogue'),
+    'Retour au lot'
+  );
+  expect(productHref).toContain('return_to=%2Fadmin%2Fimport-runtime%3Frun%3DKIR-000004%26view%3Dcatalogue');
+  expect(productHref).toContain('return_label=Retour+au+lot');
   expect(original).toBeDefined();
 });
