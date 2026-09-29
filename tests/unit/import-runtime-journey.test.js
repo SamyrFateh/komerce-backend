@@ -141,7 +141,7 @@ test('un PARTIAL_BLOCKED bloque seulement la source et laisse le lot aller au Ca
   const ui = cockpit();
   const node = root();
   const partial = JSON.parse(JSON.stringify(payload));
-  partial.selected.status = 'RUNNING';
+  partial.selected.status = 'COMPLETED';
   partial.selected.failure_reason = null;
   partial.selected.accounting = {
     source_total:20,accepted:19,refined:19,taxonomized:12,certified:12,catalogued:0,
@@ -180,6 +180,8 @@ test('un PARTIAL_BLOCKED bloque seulement la source et laisse le lot aller au Ca
   ui.render(node, partial);
 
   expect(node.innerHTML).toContain('Import automatique terminé');
+  expect(node.innerHTML).toContain('Décisions attendues');
+  expect(node.innerHTML).not.toContain('Import en cours');
   expect(node.innerHTML).toContain('12 certifié(s) attendent la promotion Catalogue');
   expect(node.innerHTML).toContain('AliExpress non activé automatiquement');
   expect(node.innerHTML).toContain('1 produit contient des variantes en double.');
