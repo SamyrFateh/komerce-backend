@@ -191,7 +191,7 @@ router.post('/sources/:sourceRef/import-now', async (req, res, next) => {
 });
 
 router.post('/sources/:sourceRef/activate', async (req, res, next) => {
-  try { sendAction(res, 'activate_source_autopilot', await workspace.setSourceAutopilot(req.params.sourceRef, true)); }
+  try { sendAction(res, 'activate_source_autopilot', await workspace.activateSourceAutopilot(req.params.sourceRef, req.user)); }
   catch (err) { handleError(err, res, next); }
 });
 
