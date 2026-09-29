@@ -109,10 +109,26 @@ function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
   const sourceExceptions = sourceExceptionCount(run);
   const exceptions = sourceExceptions + productExceptions;
   const terminal = approved + notRetained;
-  const importComplete = run.status === 'COMPLETED';
-  const expectedCatalogueProducts = positiveInt(run.intake?.ready_for_refinery);
+
+  const intake = run.intake || {};
+  const sourceTotal = positiveInt(run.source_total);
+  const accountedAtIntake = positiveInt(intake.ready_for_refinery)
+    + positiveInt(intake.duplicates)
+    + positiveInt(intake.rejected)
+    + positiveInt(intake.deferred)
+    + positiveInt(intake.quarantined)
+    + positiveInt(intake.certification_blocked);
+  const automaticImportComplete = run.status === 'COMPLETED'
+    || (
+      run.status === 'RUNNING'
+      && Boolean(intake.recorded_at)
+      && sourceTotal > 0
+      && accountedAtIntake === sourceTotal
+    );
+
+  const expectedCatalogueProducts = positiveInt(intake.ready_for_refinery);
   const awaitingCataloguePromotion = Math.max(0, expectedCatalogueProducts - promoted.length);
-  const closureEligible = importComplete
+  const closureEligible = automaticImportComplete
     && awaitingCataloguePromotion === 0
     && exceptions === 0
     && terminal === promoted.length;
@@ -142,15 +158,18 @@ function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
   else if (connectorFailure) businessStatus = BUSINESS_STATUS.BLOCKED;
   else if (run.status === 'FAILED' && !hasBusinessFootprint) businessStatus = BUSINESS_STATUS.ARCHIVED;
   else if (run.status === 'FAILED') businessStatus = BUSINESS_STATUS.BLOCKED;
-  else if (run.status === 'RUNNING') businessStatus = BUSINESS_STATUS.RUNNING;
   else if (closureEligible) businessStatus = BUSINESS_STATUS.CLOSED;
+  else if (automaticImportComplete) businessStatus = BUSINESS_STATUS.ACTION_REQUIRED;
+  else if (run.status === 'RUNNING') businessStatus = BUSINESS_STATUS.RUNNING;
   else if (!run.status) businessStatus = BUSINESS_STATUS.UNKNOWN;
 
   return {
     run_ref: run.run_ref,
     provider: run.provider,
     mode: run.mode,
-    technical_status: providerRuntimeOnlyFailure ? 'RUNNING' : run.status,
+    technical_status: providerRuntimeOnlyFailure
+      ? 'RUNNING'
+      : (automaticImportComplete ? 'COMPLETED' : run.status),
     failure_reason: providerRuntimeOnlyFailure ? null : (run.failure_reason || null),
     provider_runtime_blocked: providerRuntimeOnlyFailure,
     business_status: businessStatus,
