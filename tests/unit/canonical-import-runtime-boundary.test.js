@@ -67,6 +67,9 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('Non retenus');
   expect(source).toContain('Clôture du lot');
   expect(source).toContain('Catalogue global');
+  expect(source).toContain('withReturnTo');
+  expect(source).toContain('return_to');
+  expect(source).toContain('Retour au lot');
   expect(source).toContain('Alimentation automatique');
   expect(source).toContain('data-source-toggle');
   expect(source).toContain("role=\"switch\"");
