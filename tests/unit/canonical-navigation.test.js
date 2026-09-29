@@ -355,15 +355,13 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     expect(operations.href).toBe('/admin/workspaces/shipping-customs');
   });
 
-  test('sourcing entre par le Cockpit imports puis garde Sourcing en drill-down N2', () => {
+  test('le contrat de base sourcing reste minimal ; la policy V3 ajoute Cockpit imports + Sourcing', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = mountFor(env, '/admin/pilotage', 'pilotage', { role: 'sourcing' });
-    const n2 = secondaryNav(header);
-    expect(n2).toBeDefined();
-    expect(n2.children.map(link => link.attributes['data-dashboard'])).toEqual(['import-runtime', 'sourcing-workspace']);
+    expect(secondaryNav(header)).toBeUndefined();
 
     const operations = header.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'operations');
-    expect(operations.href).toBe('/admin/import-runtime');
+    expect(operations.href).toBe('/admin/workspaces/sourcing');
   });
 });
 
