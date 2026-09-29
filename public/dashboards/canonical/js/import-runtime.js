@@ -173,7 +173,7 @@
     const helper = failed
       ? (run.failure_reason || 'Une étape du lot est bloquée.')
       : catalogueWaiting
-        ? `${run.run_ref} · ${run.provider || 'Source'} · la suite attend une validation Catalogue`
+        ? `${run.run_ref} · ${run.provider || 'Source'} · ${num(run.accounting?.awaiting_catalogue_promotion)} certifié(s) attendent la promotion Catalogue`
         : `${run.run_ref} · ${run.provider || 'Source'} · parcours conservé à l’écran`;
     const tone = failed ? 'is-failed' : catalogueWaiting ? 'is-waiting' : run.status === 'COMPLETED' ? 'is-complete' : 'is-live';
 
@@ -184,6 +184,30 @@
       </div>
       <div class="kir-run-flow-progress"><span style="width:${progress}%"></span></div>
       ${flowTrack(stages)}
+    </section>`;
+  }
+
+  function runTruthStrip(run) {
+    const a = run?.accounting || {};
+    const values = [
+      ['Entrées source', num(a.source_total)],
+      ['Acceptées', num(a.accepted)],
+      ['Raffinées', num(a.refined)],
+      ['Taxonomisées', num(a.taxonomized)],
+      ['Certifiées sourcing', num(a.certified)],
+      ['Catalogue', num(a.catalogued)],
+    ];
+    const awaiting = num(a.awaiting_catalogue_promotion);
+    const blockers = num(a.rejected) + num(a.quarantined) + num(a.deferred) + num(a.certification_blocked);
+    const explanation = awaiting > 0
+      ? `${awaiting} produit(s) certifié(s) sourcing ne sont pas encore matérialisés au Catalogue. Ils n’ont pas disparu : le compteur Catalogue ne compte que les promotions réellement effectuées.`
+      : blockers > 0
+        ? `${blockers} produit(s) sont hors du chemin Catalogue pour une raison explicite (rejet, quarantaine, différé ou certification bloquée).`
+        : 'Tous les produits du lot sont comptabilisés dans le parcours réel.';
+    return `<section class="kir-run-truth" aria-label="Comptabilité réelle du lot">
+      <div class="kir-run-truth-head"><span class="kir-section-kicker">VÉRITÉ DU RUN</span><strong>Ce qui s’est réellement passé</strong></div>
+      <div class="kir-run-truth-grid">${values.map(([label, value]) => `<div><span>${esc(label)}</span><strong>${value}</strong></div>`).join('')}</div>
+      <p>${esc(explanation)}</p>
     </section>`;
   }
 
@@ -675,12 +699,13 @@
 
       ${sourceControlStrip(sourceControls)}
       ${persistentRunFlow(run, sourceControls)}
+      ${runTruthStrip(run)}
       ${lotStrip(lots, run.run_ref)}
 
       <section class="kir-lot-summary">
-        <div><span>Produits transmis</span><strong>${num(lot.promoted_products)}</strong></div>
-        <div><span>Décisions finales</span><strong>${num(lot.closure?.decided_products)} / ${num(lot.closure?.total_products)}</strong></div>
-        <div><span>Reste à décider</span><strong>${num(lot.closure?.remaining_products)}</strong></div>
+        <div><span>Déjà au Catalogue</span><strong>${num(run.accounting?.catalogued)}</strong></div>
+        <div><span>À promouvoir</span><strong>${num(run.accounting?.awaiting_catalogue_promotion)}</strong></div>
+        <div><span>Décisions commerciales</span><strong>${num(lot.closure?.remaining_products)}</strong></div>
         <div><span>Clôture</span><strong>${lot.business_status === 'NO_RESULT' ? 'Sans objet' : lot.closure?.eligible ? 'Prête' : 'En attente'}</strong></div>
       </section>
 
