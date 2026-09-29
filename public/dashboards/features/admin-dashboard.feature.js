@@ -9,8 +9,7 @@ module.exports = {
   // l'était pas lors du premier passage O1.5). Vérifié empiriquement sur dashboards/admin/js/** :
   // 0 accès DB direct (aucun .query/SQL — grep vide), 0 header @komerce-arch (fichiers
   // frontend, hors du schéma @db-write backend). Les seules mutations observées sont des
-  // appels HTTP POST/PUT/DELETE (CategoriesView.js, ProductsView.js, CatalogApprovalView.js,
-  // CustomsView.js) vers des routes API possédées par catalog/customs/orders — la mutation
+  // appels HTTP POST/PUT/DELETE (CustomsView.js) vers des routes API possédées par catalog/customs/orders — la mutation
   // elle-même (le INSERT/UPDATE réel) est exécutée et possédée côté backend par ces
   // features, pas ici. Verdict : projection/ui-shell au sens de FEATURE_DOCTRINE.md
   // §Schéma de classification (0 table propre, 0 cycle de vie propre, 0 service actif
@@ -30,7 +29,7 @@ module.exports = {
     verdict: 'projection/ui-shell',
     rationale: [
       '0 accès DB direct dans dashboards/admin/js/** (grep .query/SQL/INSERT/UPDATE/DELETE : aucun résultat)',
-      'les mutations HTTP observées (POST/PUT/DELETE dans CategoriesView.js, ProductsView.js, CatalogApprovalView.js, CustomsView.js) ciblent des routes API possédées par catalog/customs/orders — la mutation réelle est backend, pas ici',
+      'les mutations HTTP observées (POST/PUT/DELETE dans les vues Legacy restantes, notamment CustomsView.js) ciblent des routes API possédées par catalog/customs/orders — la mutation réelle est backend, pas ici',
       'aucune table propriétaire, aucune migration, aucun cycle de vie propre — ne remplit aucun des 5 signaux de FEATURE_DOCTRINE.md §Les cinq signaux pour un business-feature',
       'conserve un manifest propre (pas un rattachement classique) car shell SPA entier dans un dépôt séparé (`dash`), sans fichier backend unique où l\'attacher',
     ],
@@ -44,12 +43,9 @@ module.exports = {
     '../admin/js/components/KpiCard.js',
     '../admin/js/components/UI.js',
     '../admin/js/filters-store.js',
-    '../admin/js/product-card-model.admin.js',
     '../admin/js/utils.js',
     '../admin/js/views/AccountingView.js',
     '../admin/js/views/ActionCenterView.js',
-    '../admin/js/views/CategoriesView.js',
-    '../admin/js/views/CatalogApprovalView.js',
     '../admin/js/views/ClientsView.js',
     '../admin/js/views/ControlTowerView.js',
     '../admin/js/views/CostingView.js',
@@ -66,7 +62,6 @@ module.exports = {
     '../admin/js/views/PricingView.js',
     '../admin/js/views/PricingWorkshopView.js',
     '../admin/js/views/ProblemsView.js',
-    '../admin/js/views/ProductsView.js',
     '../admin/js/views/ProvidersView.js',
     '../../../tests/unit/admin-provider-control-center.test.js',
     '../admin/js/views/SalesView.js',
@@ -74,8 +69,6 @@ module.exports = {
     '../admin/js/views/SettingsView.js',
     '../admin/js/views/SharedCartsView.js',
     '../admin/js/views/SimulatorView.js',
-    '../admin/js/views/SourcingScannerView.js',
-    '../admin/js/views/SourcingView.js',
     '../admin/js/views/SuppliersView.js',
     '../admin/js/views/TransitaireView.js',
     '../admin/portal-pilotage.js',
