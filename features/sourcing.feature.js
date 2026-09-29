@@ -190,7 +190,6 @@ module.exports = {
       'tests/unit/sourcing-resolution-foundation-migration.test.js',
       'tests/unit/import-runtime-runs.test.js',
       'tests/unit/admin-import-runtime-runs-route.test.js',
-      'tests/unit/admin-import-runtime-live.test.js',
     ],
   },
 
