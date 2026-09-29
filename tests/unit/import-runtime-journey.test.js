@@ -90,6 +90,21 @@ const payload = {
   },
 };
 
+test('état vide garde une ossature Legacy claire et actionnable', () => {
+  const ui = cockpit();
+  const node = root();
+  ui.render(node, {
+    source_controls: payload.source_controls,
+    lots: [],
+    selected: null,
+  });
+  expect(node.innerHTML).toContain('Cockpit des imports');
+  expect(node.innerHTML).toContain('Pilotez les sources et suivez chaque lot de bout en bout.');
+  expect(node.innerHTML).toContain('Aucun lot importé');
+  expect(node.innerHTML).toContain('Activez une source pour lancer un premier passage réel');
+  expect(node.innerHTML).toContain('Tous les lots');
+});
+
 test('niveau 1 garde le flux réel visible et les décisions ouvertes séparées', () => {
   const ui = cockpit();
   const node = root();

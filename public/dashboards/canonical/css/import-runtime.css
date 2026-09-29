@@ -1609,3 +1609,531 @@ body.kmc-shell-v4:has(.kmc-import-runtime) #canonical-admin-root{
   .kir-run-flow-step.is-running .kir-run-flow-marker,
   .kir-source-pill.is-live .kir-source-dot{animation:none}
 }
+
+
+/* V3 Legacy clean authority — measured against the historical BO.
+ * White page, larger native text, neutral source cards, almost no tinted fills.
+ * Color is signal only: green health, red failure, amber human decision. */
+body.kmc-shell-v4:has(.kmc-import-runtime){
+  --kmc-shell-sidebar-width:220px;
+  padding-left:220px;
+  background:#fff !important;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) > .kmc-admin-navigation{
+  width:220px;
+  background:#fff;
+  color:#0F172A;
+  border-right:1px solid #E2E8F0;
+  box-shadow:none;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-navigation-inner{
+  padding:0;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-navigation-identity{
+  min-height:96px;
+  padding:18px 22px 16px;
+  border-bottom:1px solid #E2E8F0;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-nav{
+  padding:14px 0;
+  gap:0;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-link{
+  min-height:40px;
+  height:40px;
+  padding:0 22px;
+  gap:12px;
+  color:#64748B;
+  border-radius:0;
+  font-size:14px;
+  font-weight:400;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-link:hover,
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-link:focus-visible{
+  color:#0F172A;
+  background:#F8FAFC;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-link.is-active{
+  color:#D97706;
+  background:#FFF7ED;
+  font-weight:500;
+  box-shadow:inset 2px 0 0 #F59E0B;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-primary-icon{
+  color:currentColor;
+  font-size:14px;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-utility-nav{
+  padding:14px 22px 18px;
+  border-top:1px solid #E2E8F0;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-settings-link,
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
+  color:#64748B;
+  font-size:13px;
+}
+
+/* Legacy content begins close to the sidebar; no narrow centered island. */
+body.kmc-shell-v4:has(.kmc-import-runtime) #canonical-admin-root{
+  width:auto !important;
+  max-width:none !important;
+  margin:0 !important;
+  padding:20px 24px 32px !important;
+  background:#fff !important;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-topbar{
+  padding-inline:24px;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tabs{
+  padding-inline:24px;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
+  font-size:13px;
+  font-weight:400;
+}
+
+/* Typography floor: the Legacy used 16px body and 12/14px supporting text. */
+.kmc-import-runtime{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Inter","Helvetica Neue",Arial,sans-serif;
+  font-size:16px;
+  line-height:1.5;
+  color:#0F172A;
+  background:#fff !important;
+}
+.kir-page{
+  max-width:none;
+  gap:18px;
+  background:#fff;
+}
+.kir-hero{
+  min-height:70px;
+  padding:2px 0 8px;
+  margin:0;
+}
+.kir-eyebrow,
+.kir-section-kicker{
+  color:#94A3B8;
+  font-size:12px;
+  font-weight:600;
+  letter-spacing:.07em;
+}
+.kir-hero h1{
+  margin-top:3px;
+  color:#0F172A;
+  font-size:24px;
+  line-height:1.2;
+  font-weight:600;
+  letter-spacing:-.015em;
+}
+.kir-hero p{
+  margin-top:6px;
+  color:#64748B;
+  font-size:14px;
+  line-height:1.45;
+}
+.kir-global-link,
+.kir-subtle-link,
+.kir-row-action,
+.kir-back{
+  font-size:13px;
+  font-weight:500;
+}
+
+/* Source controller: white like the Legacy, never blue/grey wallpaper. */
+.kir-source-control{
+  grid-template-columns:240px minmax(0,1fr) auto;
+  gap:18px;
+  padding:16px 18px;
+  border:1px solid #E2E8F0;
+  border-radius:12px;
+  background:#fff !important;
+  box-shadow:0 1px 2px rgb(15 23 42 / .04);
+}
+.kir-source-control-title strong{
+  color:#0F172A;
+  font-size:15px;
+  font-weight:600;
+}
+.kir-source-control-title small{
+  margin-top:2px;
+  color:#64748B;
+  font-size:12px;
+  line-height:1.45;
+}
+.kir-source-control-list{
+  gap:10px;
+}
+.kir-source-pill,
+.kir-source-pill.is-off,
+.kir-source-pill.is-prep,
+.kir-source-pill.is-warning{
+  min-width:245px;
+  max-width:315px;
+  min-height:60px;
+  padding:10px 12px;
+  border:1px solid #DCE3EA;
+  border-radius:9px;
+  background:#fff !important;
+  box-shadow:none !important;
+}
+.kir-source-pill.is-on,
+.kir-source-pill.is-live{
+  border-color:#86EFAC;
+  background:#fff !important;
+  box-shadow:inset 3px 0 0 #16A34A !important;
+}
+.kir-source-pill.is-blocked{
+  border-color:#FCA5A5;
+  background:#fff !important;
+  box-shadow:inset 3px 0 0 #DC2626 !important;
+}
+.kir-source-name{
+  color:#0F172A;
+  font-size:14px;
+  line-height:1.25;
+  font-weight:600;
+}
+.kir-source-copy small{
+  margin-top:2px;
+  color:#64748B;
+  font-size:11px;
+  line-height:1.35;
+}
+.kir-source-dot{
+  width:8px;
+  height:8px;
+  background:#94A3B8;
+}
+.kir-source-pill.is-off .kir-source-dot,
+.kir-source-pill.is-prep .kir-source-dot,
+.kir-source-pill.is-warning .kir-source-dot{
+  background:#94A3B8;
+  box-shadow:none;
+}
+.kir-source-switch,
+.kir-source-switch.is-off,
+.kir-source-switch.is-prep{
+  min-width:54px;
+  min-height:26px;
+  padding:2px 7px;
+  border:1px solid #CBD5E1;
+  background:#fff !important;
+  color:#64748B;
+  font-size:10px;
+  font-weight:600;
+}
+.kir-source-switch.is-on,
+.kir-source-switch.is-live{
+  border-color:#16A34A;
+  background:#fff !important;
+  color:#15803D;
+}
+.kir-source-switch.is-blocked{
+  border-color:#DC2626;
+  background:#fff !important;
+  color:#B91C1C;
+}
+.kir-source-switch-knob{
+  box-shadow:none !important;
+}
+
+/* Run card: no pale orange/blue field. White card + semantic line/marker only. */
+.kir-run-flow,
+.kir-run-flow.is-live,
+.kir-run-flow.is-complete,
+.kir-run-flow.is-waiting,
+.kir-run-flow.is-certification-blocked,
+.kir-run-flow.is-failed{
+  padding:17px 18px 16px;
+  border-radius:12px;
+  background:#fff !important;
+  box-shadow:0 1px 3px rgb(15 23 42 / .05);
+}
+.kir-run-flow.is-live,
+.kir-run-flow.is-complete{
+  border:1px solid #BBF7D0;
+  border-left:4px solid #16A34A;
+}
+.kir-run-flow.is-waiting{
+  border:1px solid #E2E8F0;
+  border-left:4px solid #F59E0B;
+}
+.kir-run-flow.is-certification-blocked,
+.kir-run-flow.is-failed{
+  border:1px solid #FCA5A5;
+  border-left:4px solid #DC2626;
+}
+.kir-run-flow-head strong{
+  color:#0F172A !important;
+  font-size:16px;
+  font-weight:600;
+}
+.kir-run-flow-head small{
+  color:#64748B;
+  font-size:12px;
+}
+.kir-run-flow-head em{
+  font-size:13px;
+  font-weight:600;
+}
+.kir-run-flow.is-live .kir-run-flow-head em,
+.kir-run-flow.is-complete .kir-run-flow-head em{color:#15803D}
+.kir-run-flow.is-waiting .kir-run-flow-head em{color:#B45309}
+.kir-run-flow.is-certification-blocked .kir-run-flow-head em,
+.kir-run-flow.is-failed .kir-run-flow-head em{color:#B91C1C}
+.kir-run-flow-progress,
+.kir-run-flow.is-live .kir-run-flow-progress,
+.kir-run-flow.is-complete .kir-run-flow-progress,
+.kir-run-flow.is-waiting .kir-run-flow-progress,
+.kir-run-flow.is-certification-blocked .kir-run-flow-progress,
+.kir-run-flow.is-failed .kir-run-flow-progress{
+  height:4px;
+  margin:13px 0 15px;
+  background:#E5E7EB !important;
+}
+.kir-run-flow-progress>span,
+.kir-run-flow.is-live .kir-run-flow-progress>span,
+.kir-run-flow.is-complete .kir-run-flow-progress>span{
+  background:#16A34A !important;
+  box-shadow:none !important;
+  animation:none !important;
+}
+.kir-run-flow.is-waiting .kir-run-flow-progress>span{
+  background:#16A34A !important;
+}
+.kir-run-flow.is-certification-blocked .kir-run-flow-progress>span,
+.kir-run-flow.is-failed .kir-run-flow-progress>span{
+  background:#DC2626 !important;
+}
+.kir-run-flow-marker{
+  width:26px;
+  height:26px;
+  font-size:10px;
+}
+.kir-run-flow-step strong{
+  font-size:12px;
+  font-weight:600;
+}
+.kir-run-flow-step small{
+  margin-top:1px;
+  font-size:10px;
+}
+.kir-run-flow-step.is-pending .kir-run-flow-marker{
+  border-color:#CBD5E1;
+  background:#fff;
+  color:#94A3B8;
+}
+.kir-run-flow-step.is-pending strong,
+.kir-run-flow-step.is-pending small{
+  color:#94A3B8;
+}
+.kir-run-flow-step.is-completed .kir-run-flow-marker{
+  border-color:#16A34A;
+  background:#16A34A;
+  color:#fff;
+}
+.kir-run-flow-step.is-completed strong{color:#166534}
+.kir-run-flow-step.is-running .kir-run-flow-marker{
+  border:2px solid #16A34A;
+  background:#fff;
+  color:#15803D;
+  box-shadow:0 0 0 4px rgb(22 163 74 / .10);
+}
+.kir-run-flow-step.is-running strong,
+.kir-run-flow-step.is-running small{color:#15803D}
+.kir-run-flow-step.is-waiting .kir-run-flow-marker{
+  border-color:#F59E0B;
+  background:#fff;
+  color:#B45309;
+}
+.kir-run-flow-step.is-waiting strong,
+.kir-run-flow-step.is-waiting small{color:#B45309}
+.kir-run-flow-step.is-failed .kir-run-flow-marker,
+.kir-run-flow-step.is-blocked .kir-run-flow-marker{
+  border-color:#DC2626;
+  background:#fff;
+  color:#B91C1C;
+}
+.kir-run-flow-step.is-failed strong,
+.kir-run-flow-step.is-failed small,
+.kir-run-flow-step.is-blocked strong,
+.kir-run-flow-step.is-blocked small{color:#B91C1C}
+
+/* KPI cards: white body, color only on number/top rule. */
+.kir-run-truth-grid{
+  gap:14px;
+}
+.kir-run-truth-grid>div{
+  min-height:96px;
+  padding:16px 17px;
+  border:1px solid #E2E8F0 !important;
+  border-top:3px solid #E2E8F0 !important;
+  border-radius:12px;
+  background:#fff !important;
+  box-shadow:0 1px 2px rgb(15 23 42 / .035);
+}
+.kir-run-truth-grid>div.is-healthy{
+  border-top-color:#16A34A !important;
+}
+.kir-run-truth-grid span,
+.kir-lot-summary span{
+  color:#94A3B8;
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.05em;
+}
+.kir-run-truth-grid strong{
+  margin-top:6px;
+  font-size:26px;
+  font-weight:700;
+}
+.kir-run-truth-grid>div.is-healthy strong{color:#15803D}
+.kir-run-truth p{
+  color:#64748B;
+  font-size:12px;
+}
+.kir-runtime-alert{
+  background:#fff !important;
+}
+
+.kir-lot-summary{
+  gap:16px;
+}
+.kir-lot-summary>div{
+  min-height:104px;
+  padding:17px 18px;
+  border:1px solid #E2E8F0;
+  border-top:3px solid #E2E8F0;
+  background:#fff !important;
+  box-shadow:0 1px 2px rgb(15 23 42 / .035);
+}
+.kir-lot-summary>div:nth-child(1){border-top-color:#16A34A}
+.kir-lot-summary>div:nth-child(2){border-top-color:#F59E0B}
+.kir-lot-summary>div:nth-child(3){border-top-color:#2563EB}
+.kir-lot-summary strong{
+  margin-top:7px;
+  font-size:26px;
+}
+
+/* Selected lot is white; selection is a narrow accent, never a blue tile. */
+.kir-lot-chip,
+.kir-lot-chip.is-selected{
+  min-height:50px;
+  padding:9px 12px;
+  border:1px solid #E2E8F0;
+  border-radius:8px;
+  background:#fff !important;
+}
+.kir-lot-chip.is-selected{
+  border-color:#F4B860;
+  box-shadow:inset 3px 0 0 #F59E0B !important;
+}
+.kir-lot-chip.is-selected .kir-lot-ref{color:#0F172A}
+.kir-lot-ref{
+  font-size:12px;
+}
+.kir-lot-chip small{
+  font-size:10px;
+}
+.kir-lot-all{
+  min-height:50px;
+  padding:0 16px;
+  background:#fff;
+  font-size:11px;
+}
+
+/* Empty state gets a deliberate Legacy card instead of a tiny floating line. */
+.kir-empty-launch{
+  min-height:92px;
+  padding:18px 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  border:1px solid #E2E8F0;
+  border-radius:12px;
+  background:#fff;
+}
+.kir-empty-launch-copy{
+  display:grid;
+  gap:4px;
+}
+.kir-empty-launch strong{
+  color:#0F172A;
+  font-size:15px;
+  font-weight:600;
+}
+.kir-empty-launch span{
+  color:#64748B;
+  font-size:13px;
+}
+.kir-empty-inline{
+  color:#64748B;
+  font-size:13px;
+}
+
+/* Main action/decision surfaces: white. Amber/red/blue only as a narrow edge. */
+.kir-action-card,
+.kir-action-card.is-warning,
+.kir-action-card.is-blue,
+.kir-action-card.is-critical,
+.kir-business-step,
+.kir-business-step.is-warning,
+.kir-business-step.is-blue,
+.kir-business-step.is-positive,
+.kir-neutral-panel,
+.kir-closed-panel,
+.kir-exception-banner{
+  background:#fff !important;
+}
+.kir-action-copy strong{
+  font-size:14px;
+}
+.kir-action-copy span,
+.kir-decision-intro p,
+.kir-drill-head p{
+  font-size:12px;
+}
+.kir-decision-intro h2,
+.kir-drill-head h2{
+  font-size:16px;
+}
+.kir-business-journey-head strong{
+  font-size:13px;
+}
+.kir-business-step span{
+  font-size:11px;
+}
+.kir-business-step strong{
+  font-size:17px;
+}
+
+/* No animated glowing bars; only the live marker breathes. */
+@keyframes kir-v3-live-marker{
+  0%,100%{box-shadow:0 0 0 3px rgb(22 163 74 / .08)}
+  50%{box-shadow:0 0 0 7px rgb(22 163 74 / .15)}
+}
+.kir-run-flow-step.is-running .kir-run-flow-marker,
+.kir-source-pill.is-live .kir-source-dot{
+  animation:kir-v3-live-marker 1.15s ease-in-out infinite;
+}
+
+@media(max-width:1180px){
+  body.kmc-shell-v4:has(.kmc-import-runtime){
+    --kmc-shell-sidebar-width:176px;
+    padding-left:176px;
+  }
+  body.kmc-shell-v4:has(.kmc-import-runtime) > .kmc-admin-navigation{width:176px}
+  .kir-source-control{grid-template-columns:1fr}
+  .kir-source-pill{max-width:none}
+}
+@media(max-width:720px){
+  .kmc-import-runtime{font-size:15px}
+  body.kmc-shell-v4:has(.kmc-import-runtime) #canonical-admin-root{padding:14px 12px 24px !important}
+  .kir-hero h1{font-size:22px}
+  .kir-empty-launch{align-items:flex-start;flex-direction:column}
+}
+@media(prefers-reduced-motion:reduce){
+  .kir-run-flow-step.is-running .kir-run-flow-marker,
+  .kir-source-pill.is-live .kir-source-dot{animation:none}
+}
