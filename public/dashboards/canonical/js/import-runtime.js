@@ -98,7 +98,11 @@
   function flowTrack(stages) {
     return `<div class="kir-run-flow-track">${stages.map((stage, index) => {
       const meta = flowStageMeta(stage);
-      const count = stage.total ? `${stage.processed}/${stage.total}` : meta.label;
+      const count = stage.total
+        ? (meta.state === 'blocked' || meta.state === 'failed' || meta.state === 'waiting'
+          ? `${meta.label} · ${stage.processed}/${stage.total}`
+          : `${stage.processed}/${stage.total}`)
+        : meta.label;
       const marker = meta.state === 'completed' ? '✓' : meta.state === 'failed' ? '!' : String(index + 1);
       return `<div class="kir-run-flow-step is-${meta.state}">
         <span class="kir-run-flow-marker">${marker}</span>
