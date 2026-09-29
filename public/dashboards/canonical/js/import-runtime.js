@@ -100,6 +100,14 @@
     return '/admin/import-runtime' + (q.toString() ? '?' + q.toString() : '');
   }
 
+  function withReturnTo(path, returnTo, label = 'Retour au lot') {
+    const separator = String(path || '').includes('?') ? '&' : '?';
+    const q = new URLSearchParams();
+    q.set('return_to', returnTo);
+    q.set('return_label', label);
+    return `${path}${separator}${q.toString()}`;
+  }
+
   function sourceControlStrip(sourceControls) {
     const sources = Array.isArray(sourceControls) ? sourceControls : [];
     if (!sources.length) {
@@ -184,7 +192,7 @@
         label:'En vente',
         value:String(num(d.approved_for_sale)),
         tone:num(d.approved_for_sale) > 0 ? 'positive' : 'neutral',
-        href:'/admin/workspaces/catalog',
+        href:withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au lot'),
         external:true,
       },
       {
@@ -269,16 +277,24 @@
     `;
   }
 
-  function productRows(run, action) {
+  function productRows(run, action, view) {
     const rows = (run.business?.products || []).filter(item => item.action === action);
     if (!rows.length) return '<div class="kir-empty">Aucun produit dans cette file.</div>';
+    const returnTo = urlFor(run.run_ref, view);
     return `<div class="kir-table-wrap"><table class="kir-table">
       <thead><tr><th>Produit</th><th>Pourquoi ici ?</th><th>Action</th></tr></thead>
-      <tbody>${rows.map(item => `<tr>
-        <td><a href="/admin/products/${encodeURIComponent(item.product_ref)}">${esc(item.name || item.product_ref)}</a><small>${esc(item.product_ref)}</small></td>
+      <tbody>${rows.map(item => {
+        const productHref = withReturnTo(
+          `/admin/products/${encodeURIComponent(item.product_ref)}`,
+          returnTo,
+          'Retour au lot'
+        );
+        return `<tr>
+        <td><a href="${productHref}">${esc(item.name || item.product_ref)}</a><small>${esc(item.product_ref)}</small></td>
         <td>${esc(item.reason || 'Décision attendue')}</td>
-        <td><a class="kir-row-action" href="/admin/products/${encodeURIComponent(item.product_ref)}">Ouvrir →</a></td>
-      </tr>`).join('')}</tbody>
+        <td><a class="kir-row-action" href="${productHref}">Ouvrir →</a></td>
+      </tr>`;
+      }).join('')}</tbody>
     </table></div>`;
   }
 
@@ -298,18 +314,31 @@
       run,
       'Validation Catalogue requise',
       'Uniquement les produits pour lesquels le Catalogue exige encore une intervention. Les produits déjà prêts ne sont pas affichés.'
-    ) + productRows(run, 'CATALOGUE');
+    ) + productRows(run, 'CATALOGUE', 'catalogue');
   }
 
   function renderCommercial(run) {
     const rows = (run.business?.products || []).filter(item => item.action === 'COMMERCIAL');
     const list = rows.length ? `<div class="kir-table-wrap"><table class="kir-table">
       <thead><tr><th>Produit</th><th>Décision attendue</th><th>Destination</th></tr></thead>
-      <tbody>${rows.map(item => `<tr>
-        <td><a href="/admin/products/${encodeURIComponent(item.product_ref)}">${esc(item.name || item.product_ref)}</a><small>${esc(item.product_ref)}</small></td>
+      <tbody>${rows.map(item => {
+        const returnTo = urlFor(run.run_ref, 'commercial');
+        const productHref = withReturnTo(
+          `/admin/products/${encodeURIComponent(item.product_ref)}`,
+          returnTo,
+          'Retour au lot'
+        );
+        const marketHref = withReturnTo(
+          '/dashboards/canonical/market-catalog.html',
+          returnTo,
+          'Retour au lot'
+        );
+        return `<tr>
+        <td><a href="${productHref}">${esc(item.name || item.product_ref)}</a><small>${esc(item.product_ref)}</small></td>
         <td>${esc(item.reason || 'Prix / exposition à décider')}</td>
-        <td><a class="kir-row-action" href="/dashboards/canonical/market-catalog.html">Prêts à vendre →</a></td>
-      </tr>`).join('')}</tbody>
+        <td><a class="kir-row-action" href="${marketHref}">Prêts à vendre →</a></td>
+      </tr>`;
+      }).join('')}</tbody>
     </table></div>` : '<div class="kir-empty">Aucune décision commerciale ouverte.</div>';
     return drillHeader(
       run,
@@ -331,7 +360,7 @@
       'Exceptions à traiter',
       'Cette page ne montre pas les contrôles réussis : uniquement ce qui empêche une décision finale ou la clôture.'
     ) + (source.length ? `<div class="kir-exception-banner">${source.map(esc).join(' · ')}</div>` : '') +
-      (rows.length ? productRows(run, 'EXCEPTION') : source.length ? '' : '<div class="kir-empty">Aucune exception ouverte.</div>');
+      (rows.length ? productRows(run, 'EXCEPTION', 'exceptions') : source.length ? '' : '<div class="kir-empty">Aucune exception ouverte.</div>');
   }
 
   function renderRegistry(run, lots) {
