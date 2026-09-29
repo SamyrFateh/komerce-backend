@@ -64,10 +64,12 @@ Les rejets/différés amont restent traçables dans le lot mais ne polluent pas 
 
 ## Frontières
 
-- **Cockpit Import** : registre des lots, actions ouvertes, clôture, drill-down.
-- **Sourcing Workspace** : sources, fournisseurs, candidats et corrections.
-- **Catalogue Workspace** : assortiment global et curation Catalogue.
+- **Cockpit Import** : registre des lots, actions ouvertes, clôture et historique KIR. Il ne pilote pas les sources.
+- **Sourcing Workspace** : sources, fournisseurs, candidats, corrections et déclenchement d'import. Il ne duplique pas l'historique KIR ; la santé d'architecture n'apparaît qu'en diagnostic explicite.
+- **Catalogue Workspace** : curation Catalogue et **Catalogue global commercial**. Il ne réaffiche ni Raffinerie, ni sources LIVE, ni pipeline d'import.
 - **Marché / Prêts à vendre** : décision commerciale locale, corridor et prix.
+
+Le **Catalogue global commercial** est la somme dédupliquée des produits ayant reçu une décision positive de vente dans un KIR clos. Une simple ligne `products.is_active`, une publication globale ou une exposition sans prix local actif ne suffisent pas.
 
 Une même information n'est pas reproduite dans plusieurs surfaces au même niveau.
 
