@@ -402,7 +402,7 @@ describe('canonical admin app — defaultLandingSurface (docs/admin-nav-capabili
     expect(env.api.defaultLandingSurface({ role: 'admin' })).toBe('/admin/pilotage');
     expect(env.api.defaultLandingSurface({ role: 'market_operator' })).toBe('/admin/pilotage');
     expect(env.api.defaultLandingSurface({ role: 'finance' })).toBe('/admin/workspaces/accounting');
-    expect(env.api.defaultLandingSurface({ role: 'sourcing' })).toBe('/admin/workspaces/sourcing');
+    expect(env.api.defaultLandingSurface({ role: 'sourcing' })).toBe('/admin/import-runtime');
     expect(env.api.defaultLandingSurface({ role: 'agent_hub' })).toBe('/admin/workspaces/operations');
     expect(env.api.defaultLandingSurface({ role: 'agent_relais' })).toBe('/admin/workspaces/operations');
     expect(env.api.defaultLandingSurface({ role: 'agent_transitaire' })).toBe('/admin/workspaces/shipping-customs');
@@ -419,7 +419,7 @@ describe('canonical admin app — defaultLandingSurface (docs/admin-nav-capabili
     ['admin', '/admin/pilotage'],
     ['market_operator', '/admin/pilotage'],
     ['finance', '/admin/workspaces/accounting'],
-    ['sourcing', '/admin/workspaces/sourcing'],
+    ['sourcing', '/admin/import-runtime'],
     ['agent_hub', '/admin/workspaces/operations'],
     ['agent_relais', '/admin/workspaces/operations'],
     ['agent_transitaire', '/admin/workspaces/shipping-customs'],
