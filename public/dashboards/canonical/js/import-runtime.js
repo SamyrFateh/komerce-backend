@@ -470,11 +470,16 @@
     }
   }
 
+  function renderLoading(root) {
+    root.className = 'kmc-import-runtime';
+    root.innerHTML = '<section class="kir-page"><div class="kir-empty">Chargement du dernier lot…</div></section>';
+  }
+
   async function mount(options = {}) {
     if (!options.root) throw new Error('canonical_import_runtime_root_missing');
     mountedRoot = options.root;
     selectedRunRef = null;
-    render(mountedRoot, null, { sources:[] });
+    renderLoading(mountedRoot);
     if (timer) clearInterval(timer);
     await refresh();
     timer = setInterval(refresh, POLL_MS);
