@@ -465,8 +465,14 @@
         <small>${esc(lot.provider || 'Source')} · ${num(lot.source_total)} entrée(s)</small>
       </a>`;
     }).join('');
-    return `<nav class="kir-lot-strip" aria-label="Lots d'import récents">
-      <div class="kir-lot-strip-scroll">${cards || '<span class="kir-empty-inline">Aucun lot importé.</span>'}</div>
+    const empty = `<div class="kir-empty-launch">
+      <div class="kir-empty-launch-copy">
+        <strong>Aucun lot importé</strong>
+        <span>Activez une source pour lancer un premier passage réel et suivre sa progression ici.</span>
+      </div>
+    </div>`;
+    return `<nav class="kir-lot-strip ${cards ? '' : 'is-empty'}" aria-label="Lots d'import récents">
+      <div class="kir-lot-strip-scroll">${cards || empty}</div>
       <a class="kir-lot-all" href="${urlFor(selectedRef, 'registry')}" data-cockpit-nav>Tous les lots</a>
     </nav>`;
   }
@@ -762,7 +768,7 @@
 
     if (!run) {
       root.innerHTML = `<section class="kir-page">
-        <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · IMPORTS</span><h1>Cockpit des imports</h1><p>Aucun lot disponible.</p></div></header>
+        <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · IMPORTS</span><h1>Cockpit des imports</h1><p>Pilotez les sources et suivez chaque lot de bout en bout.</p></div></header>
         ${sourceControlStrip(sourceControls)}
         ${activationStrip(sourceControls)}
         ${lotStrip(lots, null)}
