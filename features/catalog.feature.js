@@ -324,9 +324,6 @@ module.exports = {
     ],
     dash: [
       'dashboards/admin/js/views/SuppliersView.js',
-      'dashboards/admin/js/views/SourcingView.js',
-      'dashboards/admin/js/views/SourcingScannerView.js',
-      'dashboards/admin/js/views/CatalogApprovalView.js',
     ],
     tests: [
       'tests/unit/catalog-certification-gate-b.test.js',
