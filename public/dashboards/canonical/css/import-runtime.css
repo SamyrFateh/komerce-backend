@@ -2342,3 +2342,29 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
     display:none;
   }
 }
+
+
+/* V5 FINAL interaction authority.
+ * Only the stage that is truly RUNNING may pulse.
+ * Parent live state must never animate every stage or the whole progress bar. */
+.kir-run-flow.is-live .kir-run-flow-marker,
+.kir-run-flow.is-live .kir-run-flow-progress>span,
+.kir-source-pill.is-live .kir-source-dot,
+.kir-source-switch[aria-busy="true"] .kir-source-switch-knob,
+.kir-run-flow-step.is-completed .kir-run-flow-marker,
+.kir-run-flow-step.is-pending .kir-run-flow-marker,
+.kir-run-flow-step.has-manual-action .kir-run-flow-marker{
+  animation:none !important;
+}
+.kir-run-flow.is-live .kir-run-flow-progress>span{
+  filter:none !important;
+}
+.kir-run-flow-step.is-running .kir-run-flow-marker{
+  animation:kir-v3-live-marker 1.15s ease-in-out infinite !important;
+}
+.kir-run-flow-step.is-running strong{
+  color:#15803D;
+}
+.kir-run-flow-step.is-running small{
+  color:#15803D;
+}
