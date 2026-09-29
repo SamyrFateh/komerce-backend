@@ -80,7 +80,12 @@ function classifyProduct(row, marketRows, activeMarketCount) {
 }
 
 function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
-  const promoted = candidates.filter(row => row.state === 'imported_to_catalog' && row.product_ref);
+  const promotedMap = new Map();
+  for (const row of candidates) {
+    if (row.state !== 'imported_to_catalog' || !row.product_ref) continue;
+    if (!promotedMap.has(String(row.product_ref))) promotedMap.set(String(row.product_ref), row);
+  }
+  const promoted = [...promotedMap.values()];
   const marketByProduct = new Map();
   for (const row of marketDecisionRows) {
     const key = String(row.product_id);
