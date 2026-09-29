@@ -1232,3 +1232,178 @@
   .kir-run-flow-step.is-running .kir-run-flow-marker,
   .kir-source-pill.is-live .kir-source-dot{animation:none}
 }
+
+
+/* V2 status hierarchy — white Legacy canvas, healthy green, failures red.
+ * The page stays white; attention comes from semantic edges, markers and values. */
+body.kmc-shell-v4:has(.kmc-import-runtime),
+body[data-admin-generation="canonical"]:has(.kmc-import-runtime){
+  background:#fff !important;
+}
+body.kmc-shell-v4:has(.kmc-import-runtime) #canonical-admin-root{
+  background:#fff !important;
+}
+.kmc-import-runtime{
+  --kir-bg:#fff;
+  background:#fff !important;
+}
+.kir-page{background:#fff}
+
+.kir-source-control,
+.kir-run-flow,
+.kir-run-truth-grid>div,
+.kir-lot-summary>div,
+.kir-action-card,
+.kir-business-journey,
+.kir-neutral-panel,
+.kir-closed-panel,
+.kir-exception-banner,
+.kir-table-wrap,
+.kir-closure-summary,
+.kir-history-stages,
+.kir-history-events{
+  border-color:#DCE3EA;
+  background:#fff;
+  box-shadow:0 1px 2px rgb(15 23 42 / .035);
+}
+
+.kir-source-pill.is-on,
+.kir-source-pill.is-live{
+  border-color:#86EFAC;
+  background:#F0FDF4;
+}
+.kir-source-pill.is-live .kir-source-dot,
+.kir-source-pill.is-on .kir-source-dot{
+  background:#16A34A;
+}
+.kir-source-switch.is-live,
+.kir-source-switch.is-on{
+  border-color:#86EFAC;
+  background:#DCFCE7;
+  color:#166534;
+}
+
+.kir-run-flow.is-live{
+  border-color:#86EFAC;
+  border-left:4px solid #16A34A;
+  background:#fff;
+}
+.kir-run-flow.is-complete{
+  border-color:#86EFAC;
+  border-left:4px solid #16A34A;
+  background:#fff;
+}
+.kir-run-flow.is-live .kir-run-flow-head em,
+.kir-run-flow.is-complete .kir-run-flow-head em{
+  color:#15803D;
+}
+.kir-run-flow-progress>span,
+.kir-run-flow.is-live .kir-run-flow-progress>span,
+.kir-run-flow.is-complete .kir-run-flow-progress>span{
+  background:#16A34A;
+}
+.kir-run-flow-step.is-running .kir-run-flow-marker{
+  border-color:#22C55E;
+  background:#DCFCE7;
+  color:#166534;
+}
+.kir-run-flow-step.is-running strong{color:#15803D}
+.kir-run-flow-step.is-completed::after{background:#86EFAC}
+
+.kir-run-flow.is-certification-blocked{
+  border-color:#FCA5A5;
+  border-left:4px solid #DC2626;
+  background:#fff;
+}
+.kir-run-flow.is-certification-blocked .kir-run-flow-head strong,
+.kir-run-flow.is-certification-blocked .kir-run-flow-head em{
+  color:#B91C1C;
+}
+.kir-run-flow.is-certification-blocked .kir-run-flow-progress>span{
+  background:#16A34A;
+}
+.kir-run-flow-step.is-blocked .kir-run-flow-marker{
+  border-color:#EF4444;
+  background:#FEE2E2;
+  color:#991B1B;
+  box-shadow:0 0 0 4px rgb(220 38 38 / .10);
+}
+.kir-run-flow-step.is-blocked strong{color:#B91C1C}
+.kir-run-flow-step.is-blocked small{color:#DC2626}
+
+.kir-run-truth.is-certification-blocked{background:#fff}
+.kir-run-truth-grid>div.is-healthy{
+  border-color:#BBF7D0;
+  border-top:3px solid #16A34A;
+  background:#fff;
+}
+.kir-run-truth-grid>div.is-healthy strong{color:#15803D}
+.kir-run-truth-grid>div.is-neutral{
+  border-top:3px solid #E2E8F0;
+  background:#fff;
+}
+.kir-runtime-alert{
+  margin:10px 0 0;
+  padding:10px 12px;
+  display:grid;
+  grid-template-columns:max-content minmax(0,1fr);
+  gap:10px;
+  align-items:start;
+  border:1px solid #FECACA;
+  border-left:4px solid #DC2626;
+  border-radius:8px;
+  background:#FFF;
+  color:#7F1D1D;
+}
+.kir-runtime-alert strong{
+  color:#B91C1C;
+  font-size:11px;
+  font-weight:700;
+  white-space:nowrap;
+}
+.kir-runtime-alert span{
+  color:#7F1D1D;
+  font-size:10.5px;
+  line-height:1.45;
+}
+
+.kir-run-flow.is-waiting{
+  border-color:#FCD34D;
+  border-left:4px solid #F59E0B;
+  background:#fff;
+}
+.kir-run-flow.is-waiting .kir-run-flow-progress>span{background:#F59E0B}
+.kir-run-flow.is-waiting .kir-run-flow-head em{color:#B45309}
+
+.kir-run-flow.is-failed{
+  border-color:#FCA5A5;
+  border-left:4px solid #DC2626;
+  background:#fff;
+}
+.kir-run-flow.is-failed .kir-run-flow-progress>span{background:#DC2626}
+
+.kir-lot-chip.is-selected{
+  border-color:#F59E0B;
+  background:#fff;
+  box-shadow:inset 3px 0 0 #F59E0B;
+}
+.kir-business-step.is-positive{box-shadow:inset 0 3px 0 #16A34A}
+.kir-business-step.is-warning{box-shadow:inset 0 3px 0 #F59E0B}
+.kir-business-step.is-blue{box-shadow:inset 0 3px 0 #2563EB}
+
+@keyframes kir-healthy-live-ring{
+  0%,100%{box-shadow:0 0 0 0 rgb(22 163 74 / .12);transform:scale(1)}
+  50%{box-shadow:0 0 0 7px rgb(22 163 74 / .20);transform:scale(1.06)}
+}
+.kir-run-flow-step.is-running .kir-run-flow-marker,
+.kir-source-pill.is-live .kir-source-dot{
+  animation:kir-healthy-live-ring 1s ease-in-out infinite;
+}
+
+@media(max-width:720px){
+  .kir-runtime-alert{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  .kir-run-flow-step.is-running .kir-run-flow-marker,
+  .kir-source-pill.is-live .kir-source-dot{animation:none}
+}
