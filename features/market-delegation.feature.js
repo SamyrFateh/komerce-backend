@@ -305,7 +305,7 @@ module.exports = {
       { fn: 'listStructureEvents', file: 'services/market-delegation-structure-event-service.js' },
       { fn: 'recordStructureEvent', file: 'services/market-delegation-structure-event-service.js' },
     ],
-    consumes: ['market', 'auth', 'auth-identity', 'infrastructure', 'logistics', 'catalog', 'providers-services', 'orders', 'settlement', 'economic-engine', 'dashboard'],
+    consumes: ['market', 'auth', 'auth-identity', 'infrastructure', 'logistics', 'catalog', 'providers-services', 'orders', 'settlement', 'economic-engine', 'market-autonomy', 'dashboard'],
   },
 
   authority: 'backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées, ni la vérité monétaire du settlement.',
