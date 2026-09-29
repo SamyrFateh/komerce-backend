@@ -102,7 +102,10 @@ router.get('/import-cockpit', async (req, res, next) => {
     const requestedRun = req.query.run ? String(req.query.run) : null;
     if (requestedRun && !RUN_REF_RE.test(requestedRun)) return runNotFound(res);
 
-    const lots = await importLotRegistry.listLots({ limit: req.query.limit || 12 });
+    const [lots, sourceControls] = await Promise.all([
+      importLotRegistry.listLots({ limit: req.query.limit || 12 }),
+      workspace.listSourceControls(),
+    ]);
     const selectedRef = requestedRun || lots[0]?.run_ref || null;
     let selectedLot = selectedRef ? lots.find(lot => lot.run_ref === selectedRef) : null;
     if (selectedRef && !selectedLot) selectedLot = await importLotRegistry.getLot(selectedRef);
@@ -117,6 +120,7 @@ router.get('/import-cockpit', async (req, res, next) => {
 
     res.set('Cache-Control', 'no-store');
     res.json({
+      source_controls: sourceControls,
       lots: visibleLots,
       selected: selected ? { ...selected, business: selectedLot } : null,
     });
