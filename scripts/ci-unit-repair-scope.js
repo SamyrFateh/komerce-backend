@@ -35,7 +35,7 @@ function diffFiles(base, head) {
 
 function extractFailedUnitTests(logText) {
   const out = new Set();
-  const re = /(?:^|\n)FAIL\s+(tests\/unit\/[A-Za-z0-9._/-]+\.(?:test|spec)\.(?:js|cjs|mjs|ts))/gi;
+  const re = /\bFAIL\s+(tests\/unit\/[A-Za-z0-9._/-]+\.(?:test|spec)\.(?:js|cjs|mjs|ts))/gi;
   let match;
   while ((match = re.exec(String(logText || ''))) !== null) out.add(norm(match[1]));
   return [...out].sort();
