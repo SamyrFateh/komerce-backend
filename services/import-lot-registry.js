@@ -123,8 +123,12 @@ function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
     && !hasBusinessFootprint
     && ['no_valid_product', 'supplier_source_empty', 'all_supplier_products_invalid'].includes(String(run.failure_reason || ''));
 
+  const connectorFailure = run.status === 'FAILED'
+    && String(run.failure_reason || '').startsWith('connector_failed:');
+
   let businessStatus = BUSINESS_STATUS.ACTION_REQUIRED;
   if (emptyPass) businessStatus = BUSINESS_STATUS.NO_RESULT;
+  else if (connectorFailure) businessStatus = BUSINESS_STATUS.BLOCKED;
   else if (run.status === 'FAILED' && !hasBusinessFootprint) businessStatus = BUSINESS_STATUS.ARCHIVED;
   else if (run.status === 'FAILED') businessStatus = BUSINESS_STATUS.BLOCKED;
   else if (run.status === 'RUNNING') businessStatus = BUSINESS_STATUS.RUNNING;
