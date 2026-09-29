@@ -19,7 +19,7 @@
 
 (function initCanonicalImportCockpit(global) {
   const POLL_MS = 10000;
-  const VIEWS = new Set(['overview', 'catalogue', 'commercial', 'exceptions', 'history', 'registry']);
+  const VIEWS = new Set(['overview', 'catalogue', 'commercial', 'exceptions', 'history', 'registry', 'closure']);
   let timer = null;
   let mountedRoot = null;
   let lastPayload = null;
@@ -69,6 +69,7 @@
       ACTION_REQUIRED:'Décisions attendues',
       BLOCKED:'À débloquer',
       CLOSED:'Clos',
+      ARCHIVED:'Archivé',
       UNKNOWN:'État indisponible',
     })[status] || status || 'État indisponible';
   }
@@ -79,6 +80,7 @@
       ACTION_REQUIRED:'warning',
       BLOCKED:'critical',
       CLOSED:'positive',
+      ARCHIVED:'neutral',
       UNKNOWN:'neutral',
     })[status] || 'neutral';
   }
@@ -91,7 +93,8 @@
   }
 
   function lotStrip(lots, selectedRef) {
-    const cards = (lots || []).map(lot => {
+    const visibleLots = (lots || []).filter(lot => lot.business_status !== 'ARCHIVED' || lot.run_ref === selectedRef);
+    const cards = visibleLots.map(lot => {
       const active = lot.run_ref === selectedRef;
       return `<a class="kir-lot-chip ${active ? 'is-selected' : ''}" href="${urlFor(lot.run_ref)}" data-cockpit-nav>
         <span class="kir-lot-ref">${esc(lot.run_ref)}</span>
@@ -105,13 +108,54 @@
     </nav>`;
   }
 
-  function outcomeSummary(lot) {
-    const d = lot?.decisions || {};
-    const closure = lot?.closure || {};
-    return `<section class="kir-outcome" aria-label="Décisions du lot">
-      <div><span>Approuvés vente</span><strong>${num(d.approved_for_sale)}</strong></div>
-      <div><span>Non retenus</span><strong>${num(d.not_retained)}</strong></div>
-      <div><span>Décidés</span><strong>${num(closure.decided_products)} / ${num(closure.total_products)}</strong></div>
+  function businessJourney(run) {
+    const lot = run.business || {};
+    const d = lot.decisions || {};
+    const closure = lot.closure || {};
+    const items = [
+      {
+        label:'Catalogue',
+        value:num(d.catalogue) > 0 ? `${num(d.catalogue)} à valider` : 'Validé',
+        tone:num(d.catalogue) > 0 ? 'warning' : 'positive',
+        href:urlFor(run.run_ref, 'catalogue'),
+      },
+      {
+        label:'Prêts à vendre',
+        value:num(d.commercial) > 0 ? `${num(d.commercial)} à décider` : '0',
+        tone:num(d.commercial) > 0 ? 'blue' : 'neutral',
+        href:urlFor(run.run_ref, 'commercial'),
+      },
+      {
+        label:'En vente',
+        value:String(num(d.approved_for_sale)),
+        tone:num(d.approved_for_sale) > 0 ? 'positive' : 'neutral',
+        href:'/admin/workspaces/catalog',
+        external:true,
+      },
+      {
+        label:'Non retenus',
+        value:String(num(d.not_retained)),
+        tone:num(d.not_retained) > 0 ? 'neutral' : 'neutral',
+        href:urlFor(run.run_ref, 'closure'),
+      },
+      {
+        label:'Clôture',
+        value:closure.eligible ? 'Clos' : `${num(closure.remaining_products)} à décider`,
+        tone:closure.eligible ? 'positive' : 'warning',
+        href:urlFor(run.run_ref, 'closure'),
+      },
+    ];
+    return `<section class="kir-business-journey" aria-label="Parcours métier du lot">
+      <div class="kir-business-journey-head">
+        <span class="kir-section-kicker">PARCOURS MÉTIER</span>
+        <strong>Du Catalogue à la clôture</strong>
+      </div>
+      <div class="kir-business-journey-track">
+        ${items.map(item => `<a class="kir-business-step is-${item.tone}" href="${item.href}" ${item.external ? '' : 'data-cockpit-nav'}>
+          <span>${item.label}</span>
+          <strong>${item.value}</strong>
+        </a>`).join('')}
+      </div>
     </section>`;
   }
 
@@ -132,7 +176,7 @@
     const cards = [];
     if (num(d.catalogue) > 0) cards.push(actionCard({
       key:'catalogue', count:num(d.catalogue), tone:'warning',
-      title:'Fiches à finaliser',
+      title:'Validation Catalogue requise',
       helper:'Une action Catalogue est réellement nécessaire avant décision commerciale.',
       href:urlFor(run.run_ref, 'catalogue'),
     }));
@@ -166,7 +210,7 @@
       </section>
       ${cards.length ? '<section class="kir-actions">' + cards.join('') + '</section>' : ''}
       ${noAction}
-      ${outcomeSummary(lot)}
+      ${businessJourney(run)}
     `;
   }
 
@@ -197,7 +241,7 @@
   function renderCatalogue(run) {
     return drillHeader(
       run,
-      'Fiches à finaliser',
+      'Validation Catalogue requise',
       'Uniquement les produits pour lesquels le Catalogue exige encore une intervention. Les produits déjà prêts ne sont pas affichés.'
     ) + productRows(run, 'CATALOGUE');
   }
@@ -255,6 +299,35 @@
     </table></div>` : '<div class="kir-empty">Aucun lot dans le registre.</div>');
   }
 
+  function renderClosure(run) {
+    const lot = run.business || {};
+    const d = lot.decisions || {};
+    const closure = lot.closure || {};
+    const pending = (lot.products || []).filter(item => item.action);
+    const pendingRows = pending.length ? `<div class="kir-table-wrap"><table class="kir-table">
+      <thead><tr><th>Produit</th><th>Décision restante</th><th>Destination</th></tr></thead>
+      <tbody>${pending.map(item => `<tr>
+        <td>${esc(item.name || item.product_ref)}<small>${esc(item.product_ref)}</small></td>
+        <td>${esc(item.reason || 'Décision requise')}</td>
+        <td><a class="kir-row-action" href="${item.action === 'CATALOGUE' ? urlFor(run.run_ref, 'catalogue') : item.action === 'COMMERCIAL' ? urlFor(run.run_ref, 'commercial') : urlFor(run.run_ref, 'exceptions')}" data-cockpit-nav>Ouvrir →</a></td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : '<div class="kir-empty">Aucune décision restante.</div>';
+
+    return drillHeader(
+      run,
+      closure.eligible ? 'Lot clos' : 'Clôture du lot',
+      'La clôture est une vérité métier : chaque produit transmis doit être soit approuvé à la vente, soit explicitement non retenu, sans exception ouverte.'
+    ) + `
+      <section class="kir-closure-summary">
+        <div><span>Approuvés vente</span><strong>${num(d.approved_for_sale)}</strong></div>
+        <div><span>Non retenus</span><strong>${num(d.not_retained)}</strong></div>
+        <div><span>Reste à décider</span><strong>${num(closure.remaining_products)}</strong></div>
+        <div><span>Statut</span><strong>${closure.eligible ? 'CLOS' : 'EN ATTENTE'}</strong></div>
+      </section>
+      ${pendingRows}
+    `;
+  }
+
   function renderHistory(run) {
     const stages = Array.isArray(run.stages) ? run.stages : [];
     const events = Array.isArray(run.events) ? run.events : [];
@@ -280,6 +353,7 @@
     if (view === 'exceptions') return renderExceptions(run);
     if (view === 'history') return renderHistory(run);
     if (view === 'registry') return renderRegistry(run, lots);
+    if (view === 'closure') return renderClosure(run);
     return renderOverview(run);
   }
 
