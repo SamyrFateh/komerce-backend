@@ -54,6 +54,18 @@ function root() {
 }
 
 const payload = {
+  source_controls:[
+    {
+      source_ref:'api:aliexpress',
+      label:'AliExpress',
+      autopilot_enabled:false,
+      autopilot_ready:false,
+      activation_ready:true,
+      blocker:'Préparation automatique requise',
+      preparation_required:['Discovery','Sync','Import','Certification runtime','Production'],
+      last_capture_at:'2026-09-29T00:07:00Z',
+    },
+  ],
   lots:[
     { run_ref:'KIR-000004',provider:'AliExpress',source_total:19,business_status:'ACTION_REQUIRED' },
     { run_ref:'KIR-000003',provider:'CJ',source_total:200,business_status:'CLOSED' },
@@ -80,6 +92,9 @@ test('niveau 1 montre uniquement décisions ouvertes et lots récents', () => {
   const node = root();
   ui.render(node, payload);
   expect(node.innerHTML).toContain('Décisions ouvertes');
+  expect(node.innerHTML).toContain('Alimentation automatique');
+  expect(node.innerHTML).toContain('Préparation automatique au clic');
+  expect(node.innerHTML).toContain('data-source-ref="api:aliexpress"');
   expect(node.innerHTML).toContain('3</div>');
   expect(node.innerHTML).toContain('Validation Catalogue requise');
   expect(node.innerHTML).toContain('12</div>');

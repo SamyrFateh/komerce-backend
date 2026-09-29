@@ -121,21 +121,37 @@
       <div class="kir-source-control-title">
         <span class="kir-section-kicker">SOURCING</span>
         <strong>Alimentation automatique</strong>
-        <small>Le switch pilote l’autopilot de la source. ON déclenche aussi un premier passage immédiatement.</small>
+        <small>OFF → ON prépare automatiquement la source, certifie un premier import réel puis active l’autopilot.</small>
       </div>
       <div class="kir-source-control-list">
         ${sources.map(source => {
           const enabled = source.autopilot_enabled === true;
           const ready = source.autopilot_ready === true;
-          const canToggle = enabled || ready;
-          const stateTone = enabled && ready ? 'on' : enabled ? 'warning' : 'off';
+          const activationReady = source.activation_ready === true;
+          const canToggle = enabled || activationReady;
+          const stateTone = enabled && ready
+            ? 'on'
+            : enabled
+              ? 'warning'
+              : !activationReady
+                ? 'blocked'
+                : ready
+                  ? 'off'
+                  : 'prep';
           const stateLabel = enabled ? 'ON' : 'OFF';
           const last = source.last_capture_at ? fmtDate(source.last_capture_at) : 'Jamais';
-          const title = !ready && !enabled ? (source.blocker || 'Source non prête') : enabled && !ready ? (source.blocker || 'Autopilot actif mais source à vérifier') : '';
-          return `<div class="kir-source-pill is-${stateTone}" title="${esc(title)}">
+          const readiness = !activationReady
+            ? (source.blocker || 'Source non activable')
+            : !ready
+              ? 'Préparation automatique au clic'
+              : enabled
+                ? 'Actif'
+                : 'Prêt';
+          return `<div class="kir-source-pill is-${stateTone}" title="${esc(readiness)}">
             <span class="kir-source-dot" aria-hidden="true"></span>
             <span class="kir-source-name">${esc(source.label || source.supplier_name || source.source_ref)}</span>
-            <small>${esc(last)}</small>
+            <small class="kir-source-last">${esc(last)}</small>
+            <em class="kir-source-readiness">${esc(readiness)}</em>
             <button type="button"
               class="kir-source-switch is-${stateTone}"
               role="switch"

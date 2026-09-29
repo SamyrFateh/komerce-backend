@@ -6,13 +6,14 @@
  * @criticality   high
  * @inputs        business_references, sourcing_action_payloads, authenticated_actor
  * @outputs       global_sourcing_projection, sourcing_mutation_result
- * @depends       db.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
+ * @depends       db.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/sourcing-provider-control-policy.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
  * @used-by       routes/admin-sourcing-workspace.js
  * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats, sourcing_sources, sourcing_captures
  * @db-write-via:sourcing-mutations products
  * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates
  * @db-write-via:sourcing-source-autopilot sourcing_sources, sourcing_captures
+ * @db-write-via:sourcing-provider-control-policy sourcing_sources, sourcing_provider_control_events
  * @db-write-via:partner-admin-service partners
  * @db-txn        delegated_to_domain_authorities
  * @doctrine      global_sourcing_authority, browser_business_refs_only, sourcing_partners_only, source_autopilot_authority_delegated, workspace_orchestrates_not_reimplements
@@ -28,6 +29,7 @@ const sourcingMutations = require('./sourcing-mutations');
 const candidateActions = require('./sourcing-candidate-actions');
 const importDispatch = require('./sourcing-import-dispatch');
 const sourceAutopilot = require('./sourcing-source-autopilot');
+const providerPolicy = require('./sourcing-provider-control-policy');
 const catalogImport = require('./suppliers/catalog-import-orchestrator');
 const partnerAdmin = require('./partner-admin-service');
 
@@ -243,24 +245,30 @@ function projectSourceControl(source) {
     import: Boolean(source.import_enabled),
     production: Boolean(source.production_enabled),
   };
-  const blockers = [];
-  if (!source.runtime_enabled) blockers.push('Runtime autopilot désactivé');
-  if (source.status !== 'active') blockers.push('Source inactive');
-  if (!source.connector_ready) blockers.push(source.connector_reason || 'Connecteur non prêt');
-  if (!source.discovery_ready) blockers.push('Discovery non prête');
-  if (!capabilities.discovery) blockers.push('Discovery OFF');
-  if (!capabilities.sync) blockers.push('Sync OFF');
-  if (!capabilities.import) blockers.push('Import OFF');
-  if (!capabilities.production) blockers.push('Production OFF');
-  if (!source.production_runtime_certified) blockers.push('Certification runtime manquante');
+  const hardBlockers = [];
+  if (!source.runtime_enabled) hardBlockers.push('Runtime autopilot désactivé');
+  if (source.status !== 'active') hardBlockers.push('Source inactive');
+  if (!source.connector_ready) hardBlockers.push(source.connector_reason || 'Connecteur non prêt');
+  if (!source.discovery_ready) hardBlockers.push('Discovery non prête');
 
+  const preparationRequired = [];
+  if (!capabilities.discovery) preparationRequired.push('Discovery');
+  if (!capabilities.sync) preparationRequired.push('Sync');
+  if (!capabilities.import) preparationRequired.push('Import');
+  if (!source.production_runtime_certified) preparationRequired.push('Certification runtime');
+  if (!capabilities.production) preparationRequired.push('Production');
+
+  const autopilotReady = hardBlockers.length === 0 && preparationRequired.length === 0;
   return {
     source_ref: source.source_ref,
     label: source.label || source.adapter_type || source.source_ref,
     supplier_name: source.supplier_name || null,
     autopilot_enabled: Boolean(source.autopilot_enabled),
-    autopilot_ready: blockers.length === 0,
-    blocker: blockers[0] || null,
+    autopilot_ready: autopilotReady,
+    activation_ready: hardBlockers.length === 0,
+    blocker: hardBlockers[0] || (autopilotReady ? null : 'Préparation automatique requise'),
+    hard_blockers: hardBlockers,
+    preparation_required: preparationRequired,
     runtime_enabled: Boolean(source.runtime_enabled),
     connector_ready: Boolean(source.connector_ready),
     production_runtime_certified: Boolean(source.production_runtime_certified),
@@ -355,6 +363,64 @@ async function runSourceImportNow(sourceRef, actor) {
   });
 }
 
+async function activateSourceAutopilot(sourceRef, actor) {
+  const sources = await sourceAutopilot.listSources();
+  const source = sources.find(row => row.source_ref === sourceRef);
+  if (!source) throw new SourcingWorkspaceError(404, 'Source sourcing introuvable', 'sourcing_source_not_found');
+
+  const projected = projectSourceControl(source);
+  if (!projected.activation_ready) {
+    throw new SourcingWorkspaceError(
+      409,
+      projected.hard_blockers[0] || 'Source non activable',
+      'sourcing_source_activation_blocked',
+      { blockers: projected.hard_blockers }
+    );
+  }
+
+  const reason = 'cockpit_autopilot_activation';
+  const enabledDuringPreparation = [];
+  for (const capability of ['discovery', 'sync', 'import']) {
+    if (projected.capabilities[capability]) continue;
+    await providerPolicy.setCapability(sourceRef, capability, true, actor, reason);
+    enabledDuringPreparation.push(capability);
+  }
+
+  let current = await sourceAutopilot.requireSource(sourceRef);
+  let certificationRun = null;
+  if (!providerPolicy.hasRuntimeCertification(current)) {
+    certificationRun = await sourceAutopilot.runSourceImportNow(sourceRef, {
+      actorId: actor?.id || null,
+      reason: 'autopilot_activation_certification',
+    });
+    if (certificationRun.status !== 'certified') {
+      throw new SourcingWorkspaceError(
+        409,
+        'Le premier import n’a pas produit une certification runtime exploitable',
+        'sourcing_source_certification_incomplete',
+        certificationRun
+      );
+    }
+    current = await sourceAutopilot.requireSource(sourceRef);
+  }
+
+  if (!current.production_enabled) {
+    await providerPolicy.setCapability(sourceRef, 'production', true, actor, reason);
+    enabledDuringPreparation.push('production');
+  }
+
+  const state = await sourceAutopilot.setSourceActive(sourceRef, true, {
+    runNow: certificationRun == null,
+  });
+
+  return {
+    ...state,
+    prepared: enabledDuringPreparation.length > 0 || certificationRun != null,
+    enabled_capabilities: enabledDuringPreparation,
+    certification_run: certificationRun,
+  };
+}
+
 async function setSourceAutopilot(sourceRef, enabled) {
   return sourceAutopilot.setSourceActive(sourceRef, Boolean(enabled), { runNow: Boolean(enabled) });
 }
@@ -398,6 +464,7 @@ module.exports = {
   rejectCandidate,
   promoteCandidate,
   runSourceImportNow,
+  activateSourceAutopilot,
   setSourceAutopilot,
   createSupplier,
   updateSupplier,
