@@ -365,13 +365,20 @@
       href:urlFor(run.run_ref, 'exceptions'),
     }));
 
+    const connectorBlocked = lot.business_status === 'BLOCKED'
+      && String(lot.failure_reason || '').startsWith('connector_failed:');
+    const connectorMessage = connectorBlocked
+      ? String(lot.failure_reason || '').replace(/^connector_failed:\s*/i, '')
+      : null;
     const noAction = lot.business_status === 'CLOSED'
       ? `<section class="kir-closed-panel"><span>✓</span><div><strong>Lot clos</strong><p>Tous les produits transmis ont une décision terminale. Aucun geste opérateur n’est attendu.</p></div></section>`
       : lot.business_status === 'NO_RESULT'
         ? '<section class="kir-neutral-panel"><strong>Passage terminé sans résultat.</strong>&nbsp; La source n’a retourné aucun produit exploitable ; le lot reste visible pour garder la trace du passage.</section>'
-        : cards.length === 0
-          ? '<section class="kir-neutral-panel">Aucune action calculable pour le moment. La vérité aval est en cours de lecture.</section>'
-          : '';
+        : connectorBlocked
+          ? `<section class="kir-exception-banner"><strong>Connexion fournisseur interrompue.</strong> ${esc(connectorMessage || 'Le fournisseur n’a pas pu être interrogé.')}</section>`
+          : cards.length === 0
+            ? '<section class="kir-neutral-panel">Aucune action calculable pour le moment. La vérité aval est en cours de lecture.</section>'
+            : '';
 
     return `
       <section class="kir-decision-intro">
@@ -384,7 +391,7 @@
       </section>
       ${cards.length ? '<section class="kir-actions">' + cards.join('') + '</section>' : ''}
       ${noAction}
-      ${lot.business_status === 'NO_RESULT' ? '' : businessJourney(run)}
+      ${lot.business_status === 'NO_RESULT' || (connectorBlocked && num(lot.promoted_products) === 0) ? '' : businessJourney(run)}
     `;
   }
 

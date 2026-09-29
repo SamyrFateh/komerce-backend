@@ -69,6 +69,7 @@ describe('aliexpress-source-discovery', () => {
       strategy: 'feed-category',
       version: 'aliexpress-ds-discovery-v1',
       pull_options: {
+        product_ids: ['100000000001', '100000000002'],
         page: 1,
         size: 20,
         country_code: 'AE',
@@ -147,5 +148,6 @@ describe('aliexpress-source-discovery', () => {
     const plan = await discovery.discoverAcquisitionPlan({ invokeTop, maxProbes: 3 });
     expect(probes).toBe(2);
     expect(plan.pull_options.feed_name).toBe('B');
+    expect(plan.pull_options.product_ids).toEqual(['100000000003']);
   });
 });

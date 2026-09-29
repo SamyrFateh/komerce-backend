@@ -222,6 +222,40 @@ test('erreur fournisseur transitoire est retentée puis peut réussir sans casse
   delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS;
 });
 
+test('limitation de fréquence AliExpress est reconnue comme transitoire', async () => {
+  process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES = '1';
+  process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS = '0';
+  mockSourceQueries();
+  const lockClient = {
+    query: jest.fn()
+      .mockResolvedValueOnce({ rows: [{ locked: true }] })
+      .mockResolvedValueOnce({ rows: [{ pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  };
+  mockGetClient.mockResolvedValue(lockClient);
+  mockImportCatalog
+    .mockResolvedValueOnce({
+      status: 400,
+      body: { error: '[AliExpress] aliexpress.ds.product.get échoué (200): Api access frequency exceeds the limit. this ban will last 1 seconds' },
+    })
+    .mockResolvedValueOnce({
+      status: 200,
+      body: {
+        run_ref: 'KIR-000008',
+        accepted: 1, created: 1, updated: 0, rejected: 0,
+        pipeline_status: 'CANONICAL_RESOLVED',
+        shadow_ingestion: { status: 'recorded' },
+      },
+    });
+
+  const result = await autopilot.runSourceOnce('api:cj', { reason: 'test' });
+
+  expect(mockImportCatalog).toHaveBeenCalledTimes(2);
+  expect(result).toMatchObject({ status:'ok', run_ref:'KIR-000008', transient_retries:1 });
+  delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES;
+  delete process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS;
+});
+
 test('erreur fournisseur transitoire persistante devient retry_pending et non failed critique', async () => {
   process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRIES = '2';
   process.env.KOMERCE_SOURCE_AUTOPILOT_TRANSIENT_RETRY_DELAY_MS = '0';

@@ -16,6 +16,8 @@ const {
   buildTopRequest,
   invokeTop,
   requestTimeoutMs,
+  detailIntervalMs,
+  DEFAULT_DETAIL_INTERVAL_MS,
   extractProductId,
   normalizeDsProduct,
   unwrapDsResult,
@@ -195,6 +197,13 @@ describe('aliexpress-connector', () => {
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(fetchImpl.mock.calls[0][1].signal).toBeDefined();
+  });
+
+  test('cadence les détails AliExpress en production mais pas sous Jest', () => {
+    expect(DEFAULT_DETAIL_INTERVAL_MS).toBe(1050);
+    expect(detailIntervalMs({ NODE_ENV:'production' })).toBe(1050);
+    expect(detailIntervalMs({ NODE_ENV:'production', ALIEXPRESS_DETAIL_INTERVAL_MS:'1500' })).toBe(1500);
+    expect(detailIntervalMs({ NODE_ENV:'test' })).toBe(0);
   });
 
   test('extrait un product id depuis un id brut ou une URL AliExpress', () => {

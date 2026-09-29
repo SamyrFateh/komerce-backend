@@ -160,7 +160,7 @@ function isTransientImportResult(result) {
   const status = Number(result?.status || 0);
   const message = String(result?.body?.error || '');
   return status >= 500
-    || /(?:HTTP\s*)?429|too many requests|rate.?limit|timeout|timed out|temporar(?:y|ily) unavailable|bad gateway|gateway timeout|service unavailable|ECONNRESET|ECONNREFUSED|EAI_AGAIN|ENOTFOUND/i.test(message);
+    || /(?:HTTP\s*)?429|too many requests|rate.?limit|frequency exceeds(?: the)? limit|ban will last|timeout|timed out|temporar(?:y|ily) unavailable|bad gateway|gateway timeout|service unavailable|ECONNRESET|ECONNREFUSED|EAI_AGAIN|ENOTFOUND/i.test(message);
 }
 
 function sleep(ms) {
