@@ -25,6 +25,13 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createOrder360() {
   const ENDPOINT_PREFIX = '/api/admin/entities/orders/';
 
+  function contextualHref(path, returnTo, label) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    return nav && typeof nav.withReturnTo === 'function'
+      ? nav.withReturnTo(path, returnTo, label)
+      : path;
+  }
+
   function referenceFromPath(pathname) {
     const match = String(pathname || '').match(/^\/admin\/orders\/([^/]+)$/);
     if (!match) return null;
@@ -78,7 +85,7 @@
     ];
     const clientPhone = order.customer && order.customer.phone;
     if (clientPhone) {
-      links.splice(1, 0, [`/admin/clients/${encodeURIComponent(clientPhone)}`, 'Client 360']);
+      links.splice(1, 0, [contextualHref(`/admin/clients/${encodeURIComponent(clientPhone)}`, `/admin/orders/${encodeURIComponent(order.reference)}`, 'Retour à la commande'), 'Client 360']);
     }
     links.forEach(([href, label]) => {
       const link = text(doc, 'a', 'kmc-entity-nav-link', label);
@@ -102,7 +109,7 @@
     ];
   }
 
-  function productDrills(items) {
+  function productDrills(items, orderReference) {
     const seen = new Set();
     return (Array.isArray(items) ? items : []).filter(row => {
       if (!row || !row.product_ref || seen.has(row.product_ref)) return false;
@@ -112,7 +119,7 @@
       level: 'info',
       title: row.product_name || row.product_ref,
       message: row.product_ref,
-      href: `/admin/products/${encodeURIComponent(row.product_ref)}`,
+      href: contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`, `/admin/orders/${encodeURIComponent(orderReference)}`, 'Retour à la commande'),
       actionLabel: 'Product 360',
     }));
   }
@@ -178,7 +185,7 @@
     ui.AlertPanel.render(products, {
       title: 'Produits de la commande',
       emptyText: 'Aucune référence produit navigable.',
-      items: productDrills(payload.items),
+      items: productDrills(payload.items, payload.order.reference),
     });
 
     renderTableSection(rootNode, ui, doc, {
