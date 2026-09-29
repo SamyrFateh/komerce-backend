@@ -19,7 +19,7 @@
 
 (function initCanonicalImportCockpit(global) {
   const POLL_MS = 10000;
-  const VIEWS = new Set(['overview', 'catalogue', 'commercial', 'exceptions', 'history']);
+  const VIEWS = new Set(['overview', 'catalogue', 'commercial', 'exceptions', 'history', 'registry']);
   let timer = null;
   let mountedRoot = null;
   let lastPayload = null;
@@ -101,7 +101,7 @@
     }).join('');
     return `<nav class="kir-lot-strip" aria-label="Lots d'import récents">
       <div class="kir-lot-strip-scroll">${cards || '<span class="kir-empty-inline">Aucun lot importé.</span>'}</div>
-      <a class="kir-lot-all" href="${urlFor(selectedRef, 'history')}" data-cockpit-nav>Historique</a>
+      <a class="kir-lot-all" href="${urlFor(selectedRef, 'registry')}" data-cockpit-nav>Tous les lots</a>
     </nav>`;
   }
 
@@ -235,6 +235,26 @@
       (rows.length ? productRows(run, 'EXCEPTION') : source.length ? '' : '<div class="kir-empty">Aucune exception ouverte.</div>');
   }
 
+  function renderRegistry(run, lots) {
+    const rows = Array.isArray(lots) ? lots : [];
+    return drillHeader(
+      run,
+      'Registre des lots',
+      'Historique métier des KIR récents. Un lot clos reste consultable ; un lot ouvert remonte la décision qui manque.'
+    ) + (rows.length ? `<div class="kir-table-wrap"><table class="kir-table">
+      <thead><tr><th>Lot</th><th>Source</th><th>État métier</th><th>Décisions finales</th><th>Approuvés vente</th><th>Reste</th><th></th></tr></thead>
+      <tbody>${rows.map(lot => `<tr>
+        <td><a href="${urlFor(lot.run_ref)}" data-cockpit-nav>${esc(lot.run_ref)}</a><small>${fmtDate(lot.started_at)}</small></td>
+        <td>${esc(lot.provider || '—')}</td>
+        <td><span class="kir-status is-${businessTone(lot.business_status)}">${esc(businessLabel(lot.business_status))}</span></td>
+        <td>${num(lot.closure?.decided_products)} / ${num(lot.closure?.total_products)}</td>
+        <td>${num(lot.decisions?.approved_for_sale)}</td>
+        <td>${num(lot.closure?.remaining_products)}</td>
+        <td><a class="kir-row-action" href="${urlFor(lot.run_ref)}" data-cockpit-nav>Ouvrir →</a></td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : '<div class="kir-empty">Aucun lot dans le registre.</div>');
+  }
+
   function renderHistory(run) {
     const stages = Array.isArray(run.stages) ? run.stages : [];
     const events = Array.isArray(run.events) ? run.events : [];
@@ -254,11 +274,12 @@
       </div>`;
   }
 
-  function renderBody(run, view) {
+  function renderBody(run, view, lots) {
     if (view === 'catalogue') return renderCatalogue(run);
     if (view === 'commercial') return renderCommercial(run);
     if (view === 'exceptions') return renderExceptions(run);
     if (view === 'history') return renderHistory(run);
+    if (view === 'registry') return renderRegistry(run, lots);
     return renderOverview(run);
   }
 
@@ -301,7 +322,7 @@
         <div><span>Clôture</span><strong>${lot.closure?.eligible ? 'Prête' : 'En attente'}</strong></div>
       </section>
 
-      <main class="kir-main">${renderBody(run, view)}</main>
+      <main class="kir-main">${renderBody(run, view, lots)}</main>
     </section>`;
     bindNavigation(root);
   }
@@ -336,8 +357,8 @@
       return;
     }
     if (!preserve && !lastPayload) renderLoading(mountedRoot);
-    const { run } = params();
-    const query = new URLSearchParams({ limit:'12' });
+    const { run, view } = params();
+    const query = new URLSearchParams({ limit: view === 'registry' ? '30' : '12' });
     if (run) query.set('run', run);
     try {
       const payload = await api('/api/admin/workspaces/sourcing/import-cockpit?' + query.toString());
