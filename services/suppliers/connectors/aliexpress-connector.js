@@ -33,12 +33,26 @@ const TARGET_LANGUAGE = 'EN';
 const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 const MIN_REQUEST_TIMEOUT_MS = 100;
 const MAX_REQUEST_TIMEOUT_MS = 120000;
+const DEFAULT_DETAIL_INTERVAL_MS = 1050;
+const MAX_DETAIL_INTERVAL_MS = 10000;
 
 function requestTimeoutMs(env = process.env) {
   const parsed = Number.parseInt(env?.ALIEXPRESS_API_TIMEOUT_MS, 10);
   if (!Number.isInteger(parsed)) return DEFAULT_REQUEST_TIMEOUT_MS;
   return Math.min(MAX_REQUEST_TIMEOUT_MS, Math.max(MIN_REQUEST_TIMEOUT_MS, parsed));
 }
+
+function detailIntervalMs(env = process.env) {
+  if (String(env?.NODE_ENV || '').toLowerCase() === 'test') return 0;
+  const parsed = Number.parseInt(env?.ALIEXPRESS_DETAIL_INTERVAL_MS, 10);
+  if (!Number.isInteger(parsed)) return DEFAULT_DETAIL_INTERVAL_MS;
+  return Math.min(MAX_DETAIL_INTERVAL_MS, Math.max(0, parsed));
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, Math.max(0, Number(ms) || 0)));
+}
+
 
 function isConfigured(env = process.env) {
   return Boolean(env?.[APP_KEY_ENV] && env?.[APP_SECRET_ENV] && env?.[SESSION_ENV]);
@@ -482,19 +496,6 @@ async function fetchProductDetail(productId, options = {}) {
   return payload;
 }
 
-async function mapWithConcurrency(items, limit, mapper) {
-  const out = new Array(items.length);
-  let cursor = 0;
-  async function worker() {
-    while (cursor < items.length) {
-      const index = cursor++;
-      out[index] = await mapper(items[index], index);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, () => worker()));
-  return out;
-}
-
 async function fetchProducts(options = {}) {
   const env = options.env || process.env;
   if (!isConfigured(env)) throw new Error(`[${SUPPLIER_NAME}] ${inactiveReason(env)}`);
@@ -518,10 +519,21 @@ async function fetchProducts(options = {}) {
   }
 
   const feedById = new Map(feedItems.map((item) => [String(item.product_id), item]));
-  const details = await mapWithConcurrency(productIds, 4, async (productId) => ({
-    productId,
-    payload: await fetchProductDetail(productId, { ...options, env }),
-  }));
+  const intervalMs = detailIntervalMs(env);
+  const details = [];
+  for (let index = 0; index < productIds.length; index += 1) {
+    // AliExpress DS can temporarily ban product.get when calls are bursty.
+    // Discovery/feed and detail hydration therefore share a deliberately
+    // paced rail in production instead of firing four detail calls at once.
+    if (intervalMs > 0 && (index > 0 || feedMeta)) {
+      // eslint-disable-next-line no-await-in-loop
+      await sleep(intervalMs);
+    }
+    const productId = productIds[index];
+    // eslint-disable-next-line no-await-in-loop
+    const payload = await fetchProductDetail(productId, { ...options, env });
+    details.push({ productId, payload });
+  }
   const normalized = details.map(({ productId, payload }) => normalizeDsProduct(payload, feedById.get(String(productId)) || {}));
   const { valid, invalid } = partitionValid(normalized);
 
@@ -547,7 +559,9 @@ module.exports = {
   DEFAULT_FEED_NAME,
   MAX_PAGE_SIZE,
   DEFAULT_REQUEST_TIMEOUT_MS,
+  DEFAULT_DETAIL_INTERVAL_MS,
   requestTimeoutMs,
+  detailIntervalMs,
   IS_ACTIVE,
   INACTIVE_REASON,
   isConfigured,
