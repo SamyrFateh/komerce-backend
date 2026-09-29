@@ -34,8 +34,8 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-9');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-7');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260929-10');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260929-8');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
   expect(source).not.toMatch(/\b(?:ImportRuntimeView|KmcApi|ApiClient)\b/);
@@ -80,6 +80,10 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('Activation en direct');
   expect(source).toContain('progression réelle du run');
   expect(source).toContain('ACTIVATION_POLL_MS = 900');
+  expect(source).toContain("NO_RESULT:'Sans résultat'");
+  expect(source).toContain('Passage terminé · aucun résultat');
+  expect(css).toContain('Legacy Admin visual parity');
+  expect(css).toContain('--kir-orange:var(--kmc-legacy-orange');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-runs/');
   expect(css).toContain('.kir-live-activation');
   expect(css).toContain('.kir-live-progress');
