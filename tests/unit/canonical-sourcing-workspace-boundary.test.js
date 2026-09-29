@@ -49,8 +49,9 @@ test('URL Sourcing et anciens points d?entr?e convergent selon le cutover 4L', (
 
     const rollbackRes = fakeRes();
     app._routes[routePath]({ query: { legacy: '1' } }, rollbackRes);
-    expect(rollbackRes.setHeader)
-      .toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+    expect(rollbackRes.redirect)
+      .toHaveBeenCalledWith(302, '/admin/workspaces/sourcing');
+    expect(rollbackRes.sendFile).not.toHaveBeenCalled();
   }
 
   const suppliersRes = fakeRes();
