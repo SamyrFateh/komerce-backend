@@ -226,9 +226,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED',
-    authedRoutesDetected: 23,
-    totalRoutes: 23,
-    note: 'Toutes les routes /api/admin/sourcing/* exigent authenticate + role admin (requireAdminOrFounder).',
+    authedRoutesDetected: 24,
+    totalRoutes: 24,
+    note: 'Les routes Sourcing Canonical, dont le cockpit KIR, restent derrière authenticate + rôle sourcing/admin + autorité sourcing globale.',
   },
 
   contract: {
