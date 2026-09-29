@@ -110,7 +110,10 @@ function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
   const exceptions = sourceExceptions + productExceptions;
   const terminal = approved + notRetained;
   const importComplete = run.status === 'COMPLETED';
+  const expectedCatalogueProducts = positiveInt(run.intake?.ready_for_refinery);
+  const awaitingCataloguePromotion = Math.max(0, expectedCatalogueProducts - promoted.length);
   const closureEligible = importComplete
+    && awaitingCataloguePromotion === 0
     && exceptions === 0
     && terminal === promoted.length;
 
@@ -167,7 +170,11 @@ function buildLot(run, candidates, marketDecisionRows, activeMarketCount) {
       eligible: closureEligible,
       decided_products: terminal,
       total_products: promoted.length,
-      remaining_products: Math.max(0, promoted.length - terminal),
+      awaiting_catalogue_promotion: awaitingCataloguePromotion,
+      remaining_products: Math.max(
+        awaitingCataloguePromotion,
+        promoted.length - terminal
+      ),
     },
     products,
   };
