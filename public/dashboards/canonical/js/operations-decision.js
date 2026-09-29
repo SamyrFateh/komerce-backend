@@ -267,12 +267,14 @@
     const decisions = decisionItems(payload, base);
     if (decisions.length) {
       const host = doc.createElement('div');
+      host.className = 'kmc-cockpit-decisions';
       decisionUi.DecisionStrip.render(host, { items: decisions });
       dashboard.appendChild(host);
     }
 
     const kpis = cardSection(doc, 'État opérationnel', 'Les KPI disponibles sont affichés tels que fournis par la source canonique.', 'operations-kpis');
-    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
+
+    kpis.section.className += ' is-cockpit-truth';    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
     dashboard.appendChild(kpis.section);
 
     const summaries = workspaceSummary(payload, base);
