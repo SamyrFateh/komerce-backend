@@ -20,10 +20,12 @@
 (function initCanonicalImportCockpit(global) {
   const POLL_MS = 10000;
   const ACTIVATION_POLL_MS = 900;
+  const COMMAND_POLL_MS = 2000;
   const VIEWS = new Set(['overview', 'catalogue', 'commercial', 'exceptions', 'history', 'registry', 'closure']);
   let timer = null;
   let activationTimer = null;
   let activationState = null;
+  let commandState = null;
   let mountedRoot = null;
   let lastPayload = null;
 
@@ -35,6 +37,23 @@
     ['CERTIFICATION', 'Certification'],
     ['CATALOGUE', 'Catalogue'],
   ]);
+
+  // Niveau 1 : quatre étapes que l'utilisateur comprend. Les six étapes réelles du moteur
+  // restent la vérité (projection serveur) ; ici on ne fait que les regrouper à l'affichage.
+  const CONTROL_STAGES = Object.freeze(['REFINERY', 'TAXONOMY', 'CERTIFICATION']);
+  const USER_STEPS = Object.freeze([
+    { key:'SOURCE', label:'Source', stages:['SOURCE_CONNECTED'], drill:'SOURCE_CONNECTED' },
+    { key:'RECEIVED', label:'Produits reçus', stages:['RAW_IMPORT'], drill:'RAW_IMPORT' },
+    { key:'CONTROL', label:'Contrôle automatique', stages:CONTROL_STAGES, drill:'CONTROL' },
+    { key:'CATALOGUE', label:'Catalogue', stages:['CATALOGUE'], drill:'CATALOGUE' },
+  ]);
+  const USER_STAGE_LABELS = Object.freeze({
+    SOURCE_CONNECTED:'Source', RAW_IMPORT:'Produits reçus',
+    REFINERY:'Contrôle automatique', TAXONOMY:'Contrôle automatique', CERTIFICATION:'Contrôle automatique',
+    CATALOGUE:'Catalogue', CONTROL:'Contrôle automatique',
+  });
+  function userStageLabel(key) { return USER_STAGE_LABELS[key] || key || 'Étape'; }
+  function userStageKey(key) { return CONTROL_STAGES.includes(key) ? 'CONTROL' : key; }
 
 
   const ICON_PATHS = {
@@ -51,6 +70,10 @@
     clock:'<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M12 6.5V12l3.5 2" stroke="#fff"/>',
     copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
     reject:'<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="m8.5 8.5 7 7M15.5 8.5l-7 7" stroke="#fff"/>',
+    refresh:'<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/><path d="M3 12A9 9 0 0 1 18.5 5.8L21 8"/><path d="M21 3v5h-5"/>',
+    stop:'<rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor" stroke="none"/>',
+    play:'<path d="M7 4.5v15l13-7.5z" fill="currentColor" stroke="none"/>',
+    handoff:'<path d="M3 12h13"/><path d="m11 6 6 6-6 6"/><path d="M21 5v14"/>',
     alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="currentColor" stroke="none"/><path d="M12 9v4M12 17h.01" stroke="#fff"/>',
   };
   function ico(name) {
@@ -118,23 +141,67 @@
     return { state:'pending', label:'En attente' };
   }
 
-  function flowTrack(stages, runRef = null) {
-    // Une seule étape est « courante » : la première étape réellement en cours.
-    // Elle seule porte .is-current (et donc l'animation) ; les autres restent statiques.
-    const currentIndex = stages.findIndex(stage => flowStageMeta(stage).state === 'running');
-    return `<div class="kir-run-flow-track">${stages.map((stage, index) => {
-      const meta = flowStageMeta(stage);
-      const count = stage.total
-        ? (meta.reached_boundary
-          ? `${stage.total}/${stage.total}`
-          : meta.state === 'failed'
-            ? `${meta.label} · ${stage.processed}/${stage.total}`
-            : `${stage.processed}/${stage.total}`)
-        : meta.label;
-      const marker = meta.state === 'failed' ? '!' : String(index + 1);
-      const className = `kir-run-flow-step is-${meta.state} ${meta.reached_boundary ? 'has-manual-action' : ''} ${index === currentIndex ? 'is-current' : ''}`;
-      const attrs = `${index === currentIndex ? ' aria-current="step"' : ''}${runRef ? ` href="${stageUrl(runRef, stage.key)}" data-cockpit-nav` : ''}`;
-      const body = `<span class="kir-run-flow-marker">${marker}</span><div><strong>${esc(stage.label)}</strong><small>${esc(count)}</small>${meta.manual_label ? `<em class="kir-run-flow-manual">${esc(meta.manual_label)}</em>` : ''}</div>`;
+  // Remise au Catalogue, vue du Sourcing : « prêts » = produits attendus à l'issue du contrôle,
+  // « transmis » = produits certifiés, « écart » = prêts non certifiés. La promotion manuelle
+  // et tout ce qui est commercial relèvent du cockpit Catalogue, pas d'ici.
+  function handoffFacts(stages, accounting) {
+    const list = Array.isArray(stages) ? stages : [];
+    const certification = list.find(stage => stage.key === 'CERTIFICATION') || {};
+    const certified = num(accounting?.certified);
+    const controlDone = certification.status === 'COMPLETED';
+    const settled = controlDone || certification.status === 'FAILED';
+    const ready = Math.max(num(certification.total), certified);
+    return { controlDone, settled, ready, certified, gap: settled ? Math.max(0, ready - certified) : 0 };
+  }
+
+  // Regroupe les étapes réelles en étapes utilisateur. Aucun chiffre n'est recalculé :
+  // on lit ce que la projection serveur expose déjà.
+  function userSteps(stages, { runStatus = null, accounting = null } = {}) {
+    const byKey = new Map((stages || []).map(stage => [stage.key, stage]));
+    return USER_STEPS.map((def, index) => {
+      const subs = def.stages.map(key => byKey.get(key)).filter(Boolean);
+      const metas = subs.map(flowStageMeta);
+      const anyFailed = metas.some(meta => meta.state === 'failed');
+      const anyRunning = metas.some(meta => meta.state === 'running');
+      const allDone = subs.length === def.stages.length && metas.every(meta => meta.state === 'completed');
+      const someDone = metas.some(meta => meta.state === 'completed');
+      const handoff = handoffFacts(stages, accounting);
+      const attention = def.key === 'CATALOGUE' && !anyFailed && handoff.settled && handoff.gap > 0;
+      const delivered = def.key === 'CATALOGUE' && !anyFailed && handoff.controlDone && handoff.gap === 0;
+      let state = anyFailed ? 'failed'
+        : attention ? 'attention'
+          : delivered ? 'completed'
+          : def.key === 'CATALOGUE' ? 'pending'
+          : allDone ? 'completed'
+            : anyRunning ? 'running'
+              : someDone && (!runStatus || runStatus === 'RUNNING') ? 'running'
+                : 'pending';
+      const active = subs.find((stage, i) => metas[i].state === 'running') || subs.find((stage, i) => metas[i].state !== 'completed') || subs[subs.length - 1] || {};
+      let count;
+      if (state === 'failed') count = 'Bloqué';
+      else if (def.key === 'RECEIVED') {
+        const total = num(accounting?.source_total) || num(active.total);
+        count = state === 'running' ? `${num(active.processed)}/${num(active.total)}` : state === 'completed' ? `${total} reçus` : 'En attente';
+      } else if (def.key === 'CONTROL') {
+        count = state === 'running' ? `${num(active.processed)}/${num(active.total)}` : state === 'completed' ? 'Terminé' : 'En attente';
+      } else if (def.key === 'CATALOGUE') {
+        count = attention ? `${handoff.gap} à traiter` : state === 'completed' ? `${handoff.certified} transmis` : 'En attente';
+      } else {
+        count = state === 'completed' ? 'Connectée' : state === 'running' ? 'Connexion…' : 'En attente';
+      }
+      return { ...def, index, state, count };
+    });
+  }
+
+  function flowTrack(stages, runRef = null, opts = {}) {
+    // Une seule étape est « courante » : la première réellement en cours. Elle seule respire.
+    const steps = userSteps(stages, opts);
+    const currentIndex = steps.findIndex(step => step.state === 'running');
+    return `<div class="kir-run-flow-track">${steps.map((step, index) => {
+      const marker = step.state === 'failed' ? '!' : step.state === 'attention' ? '!' : String(index + 1);
+      const className = `kir-run-flow-step is-${step.state} ${step.state === 'attention' ? 'has-manual-action' : ''} ${index === currentIndex ? 'is-current' : ''}`;
+      const attrs = `${index === currentIndex ? ' aria-current="step"' : ''}${runRef ? ` href="${stageUrl(runRef, step.drill)}" data-cockpit-nav` : ''}`;
+      const body = `<span class="kir-run-flow-marker">${marker}</span><div><strong>${esc(step.label)}</strong><small>${esc(step.count)}</small></div>`;
       return runRef
         ? `<a class="${className}"${attrs}>${body}</a>`
         : `<div class="${className}"${attrs}>${body}</div>`;
@@ -255,9 +322,9 @@
       : noResult
         ? `${label} · ${activationState.runRef || 'nouveau lot'} · aucun produit exploitable`
         : providerGateBlocked
-          ? `${label} · ${num(activationState.run?.accounting?.certified)} certifié(s) poursuivent vers le Catalogue · source automatique OFF`
+          ? `${label} · ${num(activationState.run?.accounting?.certified)} produit(s) poursuivent vers le Catalogue · alimentation automatique arrêtée`
           : automaticDone && catalogueWaiting
-            ? `${label} · le traitement automatique a atteint le Catalogue · ${num(activationState.run?.accounting?.awaiting_catalogue_promotion)} à valider`
+            ? `${label} · ${num(activationState.run?.accounting?.awaiting_catalogue_promotion)} produit(s) prêt(s) pour le Catalogue`
             : automaticDone
               ? `${label} · le traitement automatique a atteint le Catalogue`
               : activationState.runRef
@@ -274,7 +341,7 @@
         <em>${progress}%</em>
       </div>
       <div class="kir-run-flow-progress"><span style="width:${progress}%"></span></div>
-      ${flowTrack(stages, activationState?.runRef || null)}
+      ${flowTrack(stages, activationState?.runRef || null, { runStatus:'RUNNING', accounting:activationState?.run?.accounting })}
     </section>`;
   }
 
@@ -309,7 +376,7 @@
     const helper = failed
       ? (run.failure_reason || 'Une étape du lot est bloquée.')
       : catalogueWaiting
-        ? `${run.run_ref} · ${run.provider || 'Source'} · ${num(run.accounting?.awaiting_catalogue_promotion)} certifié(s) attendent la promotion Catalogue`
+        ? `${run.run_ref} · ${run.provider || 'Source'} · ${num(run.accounting?.awaiting_catalogue_promotion)} produit(s) prêt(s) pour le Catalogue`
         : `${run.run_ref} · ${run.provider || 'Source'} · parcours conservé à l’écran`;
     const tone = failed ? 'is-failed'
       : catalogueWaiting || run.status === 'COMPLETED' ? 'is-complete has-manual-action'
@@ -319,7 +386,7 @@
       <div class="kir-run-flow-head">
         <div><span class="kir-section-kicker">FLUX DU LOT</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
       </div>
-      ${flowTrack(stages, run.run_ref)}
+      ${flowTrack(stages, run.run_ref, { runStatus:run.status, accounting:run.accounting })}
     </section>`;
   }
 
@@ -331,12 +398,13 @@
 
   // Ligne « Progression globale » : % pondéré par étapes (service) + ratio réel de l'étape active.
   function runProgressRow(run) {
+    if (run?.status !== 'RUNNING') return '';
     const pct = runProgressPct(run);
     const list = Array.isArray(run?.stages) ? run.stages : [];
     const active = list.find(stage => stage.status === 'RUNNING' && num(stage.total) > 0);
     const detail = active
-      ? `${stageLabel(active.key)} · ${num(active.processed)} / ${num(active.total)}`
-      : run?.status === 'COMPLETED' ? 'Traitement automatique terminé' : '';
+      ? `${userStageLabel(active.key)} · ${num(active.processed)} / ${num(active.total)}`
+      : '';
     return `<section class="kir-run-progress" aria-label="Progression globale">
       <strong>Progression globale</strong>
       <div class="kir-run-progress-track"><span style="width:${pct}%"></span></div>
@@ -345,31 +413,60 @@
     </section>`;
   }
 
-  function runTruthStrip(run) {
+  // Résultat du lot en langage utilisateur. Chaque chiffre vient de la comptabilité serveur ;
+  // « à examiner » ne regroupe que ce qui attend réellement une décision humaine.
+  function sourcingOutcome(run) {
     const a = run?.accounting || {};
-    const awaiting = num(a.awaiting_catalogue_promotion);
-    const values = [
-      ['Entrées source', num(a.source_total), 'file', 'SOURCE_CONNECTED', 'neutral', 'produits récupérés'],
-      ['Acceptées', num(a.accepted), 'accepted', 'RAW_IMPORT', num(a.accepted) > 0 ? 'healthy' : 'neutral', 'produits acceptés'],
-      ['Doublons', num(a.duplicates), 'copy', 'RAW_IMPORT', 'neutral', 'détectés'],
-      ['Rejetées', num(a.rejected), 'reject', 'RAW_IMPORT', num(a.rejected) > 0 ? 'critical' : 'neutral', 'produits'],
-      ['En quarantaine', num(a.quarantined), 'alert', 'RAW_IMPORT', num(a.quarantined) > 0 ? 'warning' : 'neutral', 'produits'],
+    const stages = Array.isArray(run?.stages) ? run.stages : [];
+    const raw = stages.find(stage => stage.key === 'RAW_IMPORT') || {};
+    const h = handoffFacts(stages, a);
+    const received = num(a.source_total);
+    const discarded = num(a.duplicates) + num(a.rejected);
+    const toReview = num(a.quarantined) + num(a.deferred) + num(a.certification_blocked) + h.gap;
+    return {
+      received, discarded, toReview,
+      certified:h.certified, ready:h.ready, gap:h.gap, controlDone:h.controlDone, settled:h.settled,
+      unaccounted:num(a.unaccounted) + num(a.overflow),
+      rawDone:raw.status === 'COMPLETED',
+    };
+  }
+
+  function runTruthStrip(run) {
+    const o = sourcingOutcome(run);
+    const tiles = [
+      ['Produits reçus', o.received, 'file', stageUrl(run.run_ref, 'RAW_IMPORT'), 'is-received', 'de la source'],
+      ['Remis au Catalogue', o.certified, 'accepted', stageUrl(run.run_ref, 'CATALOGUE'), 'is-delivered', 'produits'],
+      ['Écartés automatiquement', o.discarded, 'reject', stageUrl(run.run_ref, 'RAW_IMPORT'), 'is-discarded', 'selon les règles'],
+      ['À examiner', o.toReview, 'alert', urlFor(run.run_ref, 'exceptions'), o.toReview > 0 ? 'is-review is-attention' : 'is-review', o.toReview > 0 ? 'attendent une décision' : 'rien à décider'],
     ];
-    const blockers = num(a.rejected) + num(a.quarantined) + num(a.deferred) + num(a.certification_blocked);
     const providerGateBlocked = runtimeCertificationBlocked(run);
-    const lotExplanation = awaiting > 0
-      ? `${awaiting} produit(s) certifié(s) sourcing attendent maintenant la promotion Catalogue. Ils n’ont pas disparu.`
-      : blockers > 0
-        ? `${blockers} produit(s) sont hors du chemin Catalogue pour une raison explicite (rejet, quarantaine, différé ou certification produit bloquée).`
-        : 'Tous les produits du lot sont comptabilisés dans le parcours réel.';
-    return `<section class="kir-run-truth ${providerGateBlocked ? 'has-provider-gate' : ''}" aria-label="Comptabilité réelle du lot">
-      <div class="kir-run-truth-head"><span class="kir-section-kicker">SUIVI DU LOT</span><strong>Ce qui s’est réellement passé</strong><small>Cliquez sur une étape pour ouvrir son détail.</small></div>
-      <div class="kir-run-truth-grid">${values.map(([label, value, icon, stageKey, tone, sub]) => {
-        const href = stageUrl(run.run_ref, stageKey);
-        return `<a class="is-${tone}" href="${href}" data-cockpit-nav aria-label="${esc(label)} — ouvrir le détail">${ico(icon)}<span>${esc(label)}</span><strong>${value}</strong><small>${esc(sub)}</small></a>`;
-      }).join('')}</div>
-      ${providerGateBlocked ? `<div class="kir-runtime-alert"><strong>${ico('alert')}${esc(runtimeCertificationBlockTitle(run))}</strong><span>${esc(runtimeCertificationBlockMessage(run))}</span><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le détail technique →</a></div>` : ''}
-      <p>${esc(lotExplanation)}</p>
+    const proof = !o.rawDone || o.received === 0 ? ''
+      : o.unaccounted > 0
+        ? `<p class="kir-run-proof is-bad">${ico('alert')}${o.received - Math.min(o.received, o.unaccounted)}/${o.received} produits comptabilisés · ${o.unaccounted} à retrouver</p>`
+        : `<p class="kir-run-proof is-ok"><b aria-hidden="true">✓</b>${o.received}/${o.received} produits comptabilisés</p>`;
+    return `<section class="kir-run-truth ${providerGateBlocked ? 'has-provider-gate' : ''}" aria-label="Résultat du lot">
+      <div class="kir-run-truth-head"><span class="kir-section-kicker">RÉSULTAT DU LOT</span>${proof}</div>
+      <div class="kir-run-truth-grid is-four">${tiles.map(([label, value, icon, href, cls, sub]) =>
+        `<a class="${cls}" href="${href}" data-cockpit-nav aria-label="${esc(label)} — ouvrir le détail">${ico(icon)}<span>${esc(label)}</span><strong>${value}</strong><small>${esc(sub)}</small></a>`
+      ).join('')}</div>
+      ${providerGateBlocked ? `<div class="kir-runtime-alert"><strong>${ico('alert')}${esc(runtimeCertificationBlockTitle(run))}</strong><span>${esc(runtimeCertificationBlockMessage(run))}</span><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le détail →</a></div>` : ''}
+    </section>`;
+  }
+
+  // La fin du Sourcing est une remise propre au Catalogue. Ni prix, ni marché, ni mise en vente ici.
+  function catalogueHandoff(run) {
+    const o = sourcingOutcome(run);
+    if (!o.settled) return '';
+    const clean = o.gap === 0;
+    const line = clean
+      ? `${o.certified} certifié${o.certified > 1 ? 's' : ''} · ${o.certified} transmis · 0 écart`
+      : `${o.ready} prêt${o.ready > 1 ? 's' : ''} · ${o.certified} transmis · ${o.gap} nécessite${o.gap > 1 ? 'nt' : ''} une action`;
+    return `<section class="kir-handoff ${clean ? 'is-clean' : 'is-attention'}" aria-label="Passage au Catalogue">
+      ${ico('handoff')}
+      <div><span class="kir-section-kicker">PASSAGE AU CATALOGUE</span><strong>${esc(line)}</strong></div>
+      ${clean
+        ? '<em class="kir-handoff-state"><b aria-hidden="true">✓</b>Terminé</em>'
+        : `<a class="kir-handoff-action" href="${urlFor(run.run_ref, 'exceptions')}" data-cockpit-nav>Traiter →</a>`}
     </section>`;
   }
 
@@ -569,6 +666,34 @@
     </section>`;
   }
 
+  // Trois gestes humains, branchés sur les commandes existantes (import-now / deactivate / activate).
+  function commandBar(run, sourceControls) {
+    const source = (Array.isArray(sourceControls) ? sourceControls : []).find(item => item.source_ref === run?.source_ref);
+    if (!source) return '';
+    const ref = esc(source.source_ref);
+    const enabled = source.autopilot_enabled === true;
+    const restarting = Boolean(activationState && activationState.sourceRef === source.source_ref && !activationState.done && !activationState.error);
+    const pending = commandState?.sourceRef === source.source_ref ? commandState.action : restarting ? 'restart' : null;
+    const running = run?.status === 'RUNNING';
+    const active = enabled || restarting;
+    const busyLabel = { update:'Mise à jour…', stop:'Arrêt…', restart:'Redémarrage…' };
+    const button = (command, label, icon, disabled = false, title = '') => {
+      const isBusy = pending === command;
+      return `<button type="button" class="kir-cmd kir-cmd-${command} ${isBusy ? 'is-busy' : ''}" data-source-command="${command}" data-source-ref="${ref}"
+        ${pending || disabled ? 'disabled' : ''} ${isBusy ? 'aria-busy="true"' : ''} ${title ? `title="${esc(title)}"` : ''}>${isBusy ? '<i class="kir-spin" aria-hidden="true"></i>' : ico(icon)}<span>${isBusy ? busyLabel[command] : label}</span></button>`;
+    };
+    const update = button('update', 'Mettre à jour maintenant', 'refresh', running && !pending, running ? 'Une mise à jour est déjà en cours' : '');
+    const stop = button('stop', 'Arrêter', 'stop');
+    const restart = button('restart', 'Redémarrer', 'play', !restarting && source.activation_ready !== true, source.blocker || '');
+    const last = source.last_capture_at ? `Dernière mise à jour ${fmtDate(source.last_capture_at)}` : 'Aucune mise à jour pour l’instant';
+    const state = pending === 'update' || running ? 'Mise à jour en cours' : active ? 'Alimentation automatique active' : 'Alimentation automatique arrêtée';
+    return `<section class="kir-command-bar ${active ? 'is-active' : 'is-stopped'}" aria-label="Commandes de la source">
+      <div class="kir-command-state"><span class="kir-source-dot" aria-hidden="true"></span>
+        <div><strong>${esc(source.label || source.supplier_name || source.source_ref)}</strong><small>${esc(state)} · ${esc(last)}</small></div></div>
+      <div class="kir-command-actions">${active ? update + stop : restart + update}</div>
+    </section>`;
+  }
+
   function lotStrip(lots, selectedRef) {
     const visibleLots = (lots || []).filter(lot => lot.business_status !== 'ARCHIVED' || lot.run_ref === selectedRef);
     const cards = visibleLots.map(lot => {
@@ -591,57 +716,6 @@
     </nav>`;
   }
 
-  function businessJourney(run) {
-    const lot = run.business || {};
-    const d = lot.decisions || {};
-    const closure = lot.closure || {};
-    const items = [
-      {
-        label:'Catalogue',
-        value:num(d.catalogue) > 0 ? `${num(d.catalogue)} à valider` : 'Validé',
-        tone:num(d.catalogue) > 0 ? 'warning' : 'positive',
-        href:urlFor(run.run_ref, 'catalogue'),
-      },
-      {
-        label:'Prêts à vendre',
-        value:num(d.commercial) > 0 ? `${num(d.commercial)} à décider` : '0',
-        tone:num(d.commercial) > 0 ? 'blue' : 'neutral',
-        href:urlFor(run.run_ref, 'commercial'),
-      },
-      {
-        label:'En vente',
-        value:String(num(d.approved_for_sale)),
-        tone:num(d.approved_for_sale) > 0 ? 'positive' : 'neutral',
-        href:withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au lot'),
-        external:true,
-      },
-      {
-        label:'Non retenus',
-        value:String(num(d.not_retained)),
-        tone:num(d.not_retained) > 0 ? 'neutral' : 'neutral',
-        href:urlFor(run.run_ref, 'closure'),
-      },
-      {
-        label:'Clôture',
-        value:closure.eligible ? 'Clos' : `${num(closure.remaining_products)} à décider`,
-        tone:closure.eligible ? 'positive' : 'warning',
-        href:urlFor(run.run_ref, 'closure'),
-      },
-    ];
-    return `<section class="kir-business-journey" aria-label="Parcours métier du lot">
-      <div class="kir-business-journey-head">
-        <span class="kir-section-kicker">PARCOURS MÉTIER</span>
-        <strong>Du Catalogue à la clôture</strong>
-      </div>
-      <div class="kir-business-journey-track">
-        ${items.map(item => `<a class="kir-business-step is-${item.tone}" href="${item.href}" ${item.external ? '' : 'data-cockpit-nav'}>
-          <span>${item.label}</span>
-          <strong>${item.value}</strong>
-        </a>`).join('')}
-      </div>
-    </section>`;
-  }
-
   function actionCard({ key, count, title, helper, tone, href }) {
     return `<a class="kir-action-card is-${tone}" href="${href}" data-cockpit-nav>
       <div class="kir-action-count">${count}</div>
@@ -655,11 +729,11 @@
 
   const CHANGE_KIND_LABELS = { created:'nouveau', updated:'mis à jour' };
   const ITEM_OUTCOME_LABELS = {
-    ready_for_refinery:'raffiné',
-    deferred:'différé',
-    auto_rejected:'rejeté (exclusion)',
-    certification_blocked:'bloqué (contrat)',
-    error:'erreur',
+    ready_for_refinery:'accepté',
+    deferred:'mis de côté',
+    auto_rejected:'écarté',
+    certification_blocked:'à examiner',
+    error:'à examiner',
     processed:'traité',
   };
 
@@ -748,16 +822,44 @@
     return stageUrl(run.run_ref, item?.stage || run.current_stage);
   }
 
+  // N1 : uniquement les événements qui aident à comprendre. Les étapes internes terminées
+  // normalement (raffinage, classement…) ne produisent aucune ligne ; elles restent au détail.
+  function humanEvent(run, event) {
+    const stage = (run.stages || []).find(item => item.key === event.stage) || {};
+    const a = run.accounting || {};
+    if (event.kind === 'ITEM_FINISHED') return { label:liveEventLabel(event), detail:liveEventDetail(run, event), started:false };
+    const started = event.kind === 'STAGE_STARTED';
+    const finished = event.kind === 'STAGE_FINISHED';
+    const plural = (n, one, many) => `${n} ${n > 1 ? many : one}`;
+    if (event.stage === 'SOURCE_CONNECTED' && finished) return { label:'Source connectée', detail:run.provider || '', started:false };
+    if (event.stage === 'RAW_IMPORT' && finished) {
+      return { label:`${plural(num(a.source_total), 'produit reçu', 'produits reçus')}`, detail:num(a.duplicates) > 0 ? plural(num(a.duplicates), 'doublon écarté', 'doublons écartés') : '', started:false };
+    }
+    if (event.stage === 'REFINERY' && started) return { label:'Contrôle automatique démarré', detail:'', started:true };
+    if (event.stage === 'CERTIFICATION' && finished) {
+      return { label:`Contrôle terminé pour ${plural(num(stage.processed), 'produit', 'produits')}`, detail:durationLabel(stage.started_at, stage.finished_at), started:false };
+    }
+    if (event.stage === 'CATALOGUE' && finished) {
+      return stage.reason === 'awaiting_explicit_operator_promotion'
+        ? { label:`${plural(num(stage.total), 'produit prêt', 'produits prêts')} pour le Catalogue`, detail:'', started:false }
+        : { label:`${plural(num(stage.processed), 'produit remis', 'produits remis')} au Catalogue`, detail:'', started:false };
+    }
+    return null;
+  }
+
   function renderLiveActivity(run) {
     const events = Array.isArray(run.events) ? run.events : [];
-    const items = events.slice(0, 8);
+    const items = events
+      .map(event => ({ event, human:humanEvent(run, event) }))
+      .filter(entry => entry.human)
+      .slice(0, 8);
     return `<section class="kir-live-panel kir-live-activity" aria-label="Activité en temps réel">
       <header><div>${ico('clock')}<strong>Activité en temps réel</strong></div><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Tout voir →</a></header>
       <div class="kir-live-event-list">
-        ${items.length ? items.map(event => `<a href="${stageUrl(run.run_ref, event.stage)}" data-cockpit-nav class="kir-live-event ${event.kind === 'STAGE_STARTED' ? 'is-started' : 'is-finished'}">
+        ${items.length ? items.map(({ event, human }) => `<a href="${stageUrl(run.run_ref, userStageKey(event.stage))}" data-cockpit-nav class="kir-live-event ${human.started ? 'is-started' : 'is-finished'}">
           <time title="${esc(fmtDate(event.at))}">${fmtClock(event.at)}</time>
           <span class="kir-live-event-marker"></span>
-          <div><strong>${esc(liveEventLabel(event))}</strong>${liveEventDetail(run, event) ? `<small>${esc(liveEventDetail(run, event))}</small>` : ''}</div>
+          <div><strong>${esc(human.label)}</strong>${human.detail ? `<small>${esc(human.detail)}</small>` : ''}</div>
         </a>`).join('') : '<div class="kir-empty-inline">Aucun événement enregistré pour ce lot.</div>'}
       </div>
     </section>`;
@@ -787,9 +889,8 @@
           <h3>${esc(item.product_name || item.supplier_product_id || 'Produit')}</h3>
           <p><span>Source :</span> ${esc(item.supplier_product_id || '—')}</p>
           <p><span>Catégorie :</span> ${esc(item.komerce_category || 'À déterminer')}</p>
-          ${item.purchase_price != null ? `<p><span>Prix source :</span> ${esc(fmtPrice(item.purchase_price, item.currency))}</p>` : ''}
           <div class="kir-current-status">
-            <span class="kir-current-chip ${item.in_progress ? 'is-live' : ''}">${item.in_progress ? '<i class="kir-spin" aria-hidden="true"></i>' : ''}${esc(item.in_progress ? `En cours — ${stageLabel(item.stage)}` : `${stageLabel(item.stage)} · ${item.state || 'traité'}`)}</span>
+            <span class="kir-current-chip ${item.in_progress ? 'is-live' : ''}">${item.in_progress ? '<i class="kir-spin" aria-hidden="true"></i>' : ''}${esc(item.in_progress ? `En cours — ${userStageLabel(item.stage)}` : (ITEM_OUTCOME_LABELS[item.outcome] || 'Traité').replace(/^./, c => c.toUpperCase()))}</span>
             ${[CHANGE_KIND_LABELS[item.change_kind], item.duration_ms != null ? fmtMs(item.duration_ms) : ''].filter(Boolean).length ? `<small>${esc([CHANGE_KIND_LABELS[item.change_kind], item.duration_ms != null ? fmtMs(item.duration_ms) : ''].filter(Boolean).join(' · '))}</small>` : ''}
           </div>
         </div>
@@ -813,7 +914,7 @@
             <td class="kir-live-seq">${esc(item.seq != null ? item.seq : index + 1)}</td>
             <td class="kir-live-thumb">${item.image_url ? `<img src="${esc(item.image_url)}" alt="" loading="lazy">` : ico('box')}</td>
             <td><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>${esc(item.product_name || item.product_ref || 'Produit')}</a>${item.supplier_product_id ? `<small class="kir-live-sub">${esc(item.supplier_product_id)}</small>` : ''}</td>
-            <td><a class="kir-stage-link" href="${stageUrl(run.run_ref, item.stage)}" data-cockpit-nav>${esc(stageLabel(item.stage))}</a></td>
+            <td><a class="kir-stage-link" href="${stageUrl(run.run_ref, userStageKey(item.stage))}" data-cockpit-nav>${esc(userStageLabel(item.stage))}</a></td>
             <td>${status}</td>
             <td class="kir-live-time">${esc(time)}</td>
           </tr>`;
@@ -830,23 +931,24 @@
       ${renderRecentItems(run)}`;
   }
 
-  function decisionCards(run) {
+  function decisionCards(run, only = null) {
     const lot = run.business || {};
     const d = lot.decisions || {};
     const cards = [];
-    if (num(d.catalogue) > 0) cards.push(actionCard({
+    const wants = key => !only || only.includes(key);
+    if (wants('catalogue') && num(d.catalogue) > 0) cards.push(actionCard({
       key:'catalogue', count:num(d.catalogue), tone:'warning',
       title:'Validation Catalogue requise',
       helper:'Le run automatique est terminé ; cette validation est une décision métier distincte.',
       href:urlFor(run.run_ref, 'catalogue'),
     }));
-    if (num(d.commercial) > 0) cards.push(actionCard({
+    if (wants('commercial') && num(d.commercial) > 0) cards.push(actionCard({
       key:'commercial', count:num(d.commercial), tone:'blue',
       title:'Décisions de mise en vente',
       helper:'Produits certifiés prêts pour prix / exposition marché.',
       href:urlFor(run.run_ref, 'commercial'),
     }));
-    if (num(d.exceptions) > 0) cards.push(actionCard({
+    if (wants('exceptions') && num(d.exceptions) > 0) cards.push(actionCard({
       key:'exceptions', count:num(d.exceptions), tone:'critical',
       title:'Exceptions à traiter',
       helper:'Uniquement les écarts qui empêchent le lot d’avancer ou de se clore.',
@@ -856,14 +958,16 @@
     return cards;
   }
 
+  // N1 : seules les exceptions demandent ici une décision. La remise au Catalogue a son bloc
+    // dédié ; prix / mise en vente appartiennent au futur cockpit Catalogue (drill-down seulement).
   function renderDecisionTop(run) {
-    const cards = decisionCards(run);
+    const cards = decisionCards(run, ['exceptions']);
     if (!cards.length) return '';
     return `<section class="kir-decision-top" aria-label="Décisions attendues">
       <div class="kir-decision-intro">
         <div>
-          <span class="kir-section-kicker">DÉCISIONS / EXCEPTIONS</span>
-          <h2>Ce qui demande une action</h2>
+          <span class="kir-section-kicker">À EXAMINER</span>
+          <h2>Ce qui vous attend</h2>
         </div>
         <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav class="kir-subtle-link">Historique du run →</a>
       </div>
@@ -871,36 +975,20 @@
     </section>`;
   }
 
+  // Écran calme : rien à afficher quand rien n'est à décider. Seuls un lot sans résultat ou une
+  // connexion fournisseur interrompue justifient un message.
   function renderDecisions(run) {
     const lot = run.business || {};
-    const cards = decisionCards(run);
     const connectorBlocked = lot.business_status === 'BLOCKED'
       && String(lot.failure_reason || '').startsWith('connector_failed:');
-    const connectorMessage = connectorBlocked
-      ? String(lot.failure_reason || '').replace(/^connector_failed:\s*/i, '')
-      : null;
-    const noAction = lot.business_status === 'CLOSED'
-      ? `<section class="kir-closed-panel"><span>✓</span><div><strong>Lot clos</strong><p>Tous les produits transmis ont une décision terminale. Aucun geste opérateur n’est attendu.</p></div></section>`
-      : lot.business_status === 'NO_RESULT'
-        ? '<section class="kir-neutral-panel"><strong>Passage terminé sans résultat.</strong>&nbsp; La source n’a retourné aucun produit exploitable ; le lot reste visible pour garder la trace du passage.</section>'
-        : connectorBlocked
-          ? `<section class="kir-exception-banner"><strong>Connexion fournisseur interrompue.</strong> ${esc(connectorMessage || 'Le fournisseur n’a pas pu être interrogé.')}</section>`
-          : cards.length === 0
-            ? '<section class="kir-neutral-panel">Aucune décision opérateur ouverte pour le moment.</section>'
-            : '';
-
-    return `
-      ${cards.length ? '' : `<section class="kir-decision-intro">
-        <div>
-          <span class="kir-section-kicker">DÉCISIONS / EXCEPTIONS</span>
-          <h2>${lot.business_status === 'CLOSED' ? 'Aucune décision ouverte' : 'Situation du lot'}</h2>
-          <p>Le cockpit montre le flux réel. Les décisions manuelles apparaissent après la frontière automatique, sans faire croire que l’import tourne encore.</p>
-        </div>
-        <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav class="kir-subtle-link">Historique du run →</a>
-      </section>`}
-      ${noAction}
-      ${lot.business_status === 'NO_RESULT' || (connectorBlocked && num(lot.promoted_products) === 0) ? '' : businessJourney(run)}
-    `;
+    if (lot.business_status === 'NO_RESULT') {
+      return '<section class="kir-neutral-panel"><strong>Passage terminé sans résultat.</strong>&nbsp; La source n’a retourné aucun produit exploitable ; le lot reste visible pour garder la trace du passage.</section>';
+    }
+    if (connectorBlocked) {
+      const message = String(lot.failure_reason || '').replace(/^connector_failed:\s*/i, '');
+      return `<section class="kir-exception-banner"><strong>Connexion fournisseur interrompue.</strong> ${esc(message || 'Le fournisseur n’a pas pu être interrogé.')}</section>`;
+    }
+    return '';
   }
 
   function renderOverview(run) {
@@ -1046,7 +1134,8 @@
     const stages = Array.isArray(run.stages) ? run.stages : [];
     const events = Array.isArray(run.events) ? run.events : [];
     const selectedStage = new URLSearchParams(global.location.search).get('stage');
-    const selectedLabel = selectedStage ? stageLabel(selectedStage) : null;
+    const selectedLabel = selectedStage ? (selectedStage === 'CONTROL' ? 'Contrôle automatique' : stageLabel(selectedStage)) : null;
+    const inSelection = key => !selectedStage || selectedStage === key || (selectedStage === 'CONTROL' && CONTROL_STAGES.includes(key));
     return drillHeader(
       run,
       selectedLabel ? `Détail — ${selectedLabel}` : 'Historique du run',
@@ -1055,14 +1144,14 @@
         : 'Preuve du parcours automatique. Cette information explique le lot sans remonter de plomberie technique au niveau 1.'
     ) + `
       <section class="kir-history-stages">
-        ${stages.map(stage => `<a class="kir-history-stage ${selectedStage === stage.key ? 'is-selected' : ''}" href="${stageUrl(run.run_ref, stage.key)}" data-cockpit-nav>
+        ${stages.map(stage => `<a class="kir-history-stage ${selectedStage && inSelection(stage.key) ? 'is-selected' : ''}" href="${stageUrl(run.run_ref, stage.key)}" data-cockpit-nav>
           <span class="kir-history-dot is-${stage.status === 'COMPLETED' ? 'done' : stage.status === 'FAILED' ? 'failed' : 'pending'}"></span>
           <div><strong>${esc(stageLabel(stage.key))}</strong><small>${esc(stage.status)} · ${num(stage.processed)} / ${num(stage.total)}</small></div>
         </a>`).join('')}
       </section>
       <div class="kir-history-events">
         ${events.length ? events
-          .filter(event => !selectedStage || event.stage === selectedStage)
+          .filter(event => inSelection(event.stage))
           .map(event => `<div><time>${fmtDate(event.at)}</time><span>${esc(liveEventLabel(event))}</span></div>`).join('') : '<div class="kir-empty">Aucun événement enregistré.</div>'}
       </div>`;
   }
@@ -1115,22 +1204,17 @@
         </div>
       </header>
 
+      ${commandBar(run, sourceControls)}
       ${persistentRunFlow(run, sourceControls)}
       ${runTruthStrip(run)}
+      ${catalogueHandoff(run)}
       ${activationState ? '' : runProgressRow(run)}
       ${view === 'overview' ? renderDecisionTop(run) : ''}
       ${view === 'overview' ? renderLiveCore(run) : ''}
 
       <div class="kir-secondary" data-cockpit-zone="secondary">
-      ${sourceControlStrip(sourceControls, run)}
+      ${(sourceControls || []).some(item => item.source_ref === run.source_ref) ? '' : sourceControlStrip(sourceControls, run)}
       ${lotStrip(lots, run.run_ref)}
-
-      <section class="kir-lot-summary">
-        <div>${ico('bookmark')}<span>Déjà au Catalogue</span><strong>${num(run.accounting?.catalogued)}</strong></div>
-        <div>${ico('chart')}<span>À promouvoir</span><strong>${num(run.accounting?.awaiting_catalogue_promotion)}</strong></div>
-        <div>${ico('list')}<span>Décisions commerciales</span><strong>${num(lot.closure?.remaining_products)}</strong></div>
-        <div>${ico('flag')}<span>Clôture</span><strong>${lot.business_status === 'NO_RESULT' ? 'Sans objet' : lot.closure?.eligible ? 'Prête' : 'En attente'}</strong></div>
-      </section>
       </div>
 
       <main class="kir-main">${renderBody(run, view, lots)}</main>
@@ -1152,77 +1236,115 @@
     </section>`;
   }
 
+  // Même mécanique que l'interrupteur historique : activer = activationState + polling live,
+  // désactiver = POST deactivate. Les boutons Redémarrer / Arrêter l'appellent tel quel.
+  async function toggleSource(root, payload, sourceRef, enabled, button) {
+    const action = enabled ? 'deactivate' : 'activate';
+
+    if (!enabled) {
+      const source = (payload?.source_controls || []).find(item => item.source_ref === sourceRef) || {};
+      activationState = {
+        sourceRef, label:source.label || source.supplier_name || sourceRef, done:false, error:null,
+        baselineRunRefs:(payload?.lots || []).map(lot => lot.run_ref), runRef:null, run:null, outcome:null,
+      };
+      render(root, payload);
+      startActivationPolling();
+    } else {
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+    }
+
+    try {
+      const response = await api(`/api/admin/workspaces/sourcing/sources/${encodeURIComponent(sourceRef)}/${action}`, { method:'POST', body:{} });
+      if (!enabled && activationState?.sourceRef === sourceRef) {
+        const result = response?.result || {};
+        const responseRunRef = result?.certification_run?.run_ref || result?.first_run?.run_ref || null;
+        if (responseRunRef) activationState.runRef = responseRunRef;
+        activationState.outcome = result?.first_run?.status || result?.certification_run?.status || null;
+        if (activationState.runRef) {
+          try { activationState.run = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(activationState.runRef)}`); } catch (_) {}
+        }
+        activationState.done = true;
+        stopActivationPolling();
+        if (activationState.runRef && params().run !== activationState.runRef) global.history.pushState({}, '', urlFor(activationState.runRef));
+      }
+      await refresh({ preserve:true });
+      if (!enabled && activationState && typeof global.setTimeout === 'function') {
+        global.setTimeout(() => {
+          activationState = null;
+          if (mountedRoot && lastPayload) render(mountedRoot, lastPayload);
+        }, 5000);
+      }
+    } catch (error) {
+      const emptyPass = !enabled
+        && ['SUPPLIER_SOURCE_EMPTY', 'NO_VALID_SUPPLIER_PRODUCT'].includes(error.code);
+      const certificationIncomplete = !enabled
+        && error.code === 'sourcing_source_certification_incomplete';
+      if ((emptyPass || certificationIncomplete) && activationState?.sourceRef === sourceRef) {
+        activationState.runRef = error.details?.run_ref || activationState.runRef;
+        activationState.outcome = emptyPass ? 'empty' : 'certification_incomplete';
+        activationState.done = true;
+        activationState.error = null;
+        stopActivationPolling();
+        if (activationState.runRef) {
+          try { activationState.run = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(activationState.runRef)}`); } catch (_) {}
+          if (params().run !== activationState.runRef) global.history.pushState({}, '', urlFor(activationState.runRef));
+        }
+        await refresh({ preserve:true });
+      } else if (!enabled && activationState?.sourceRef === sourceRef) {
+        activationState.error = error.message;
+        activationState.done = true;
+        stopActivationPolling();
+        render(root, lastPayload || payload);
+        const main = root.querySelector?.('.kir-main');
+        if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
+      } else {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        const main = root.querySelector?.('.kir-main');
+        if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
+      }
+    }
+  }
+
+  // Mettre à jour maintenant : réinterroge la source (endpoint existant import-now).
+  async function updateSourceNow(root, sourceRef) {
+    commandState = { sourceRef, action:'update' };
+    if (mountedRoot && lastPayload) render(mountedRoot, lastPayload);
+    const poll = typeof global.setInterval === 'function'
+      ? global.setInterval(() => { refresh({ preserve:true }); }, COMMAND_POLL_MS) : null;
+    try {
+      await api(`/api/admin/workspaces/sourcing/sources/${encodeURIComponent(sourceRef)}/import-now`, { method:'POST', body:{} });
+    } catch (error) {
+      const main = root.querySelector?.('.kir-main');
+      if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Mise à jour · ${esc(error.message)}</div>`);
+    } finally {
+      if (poll && typeof global.clearInterval === 'function') global.clearInterval(poll);
+      commandState = null;
+      await refresh({ preserve:true });
+    }
+  }
+
   function bindSourceControls(root, payload) {
     root.querySelectorAll?.('[data-source-toggle]').forEach(button => {
+      button.addEventListener('click', () => {
+        const sourceRef = button.getAttribute('data-source-ref');
+        if (!sourceRef || button.disabled) return;
+        toggleSource(root, payload, sourceRef, button.getAttribute('data-source-enabled') === '1', button);
+      });
+    });
+    root.querySelectorAll?.('[data-source-command]').forEach(button => {
       button.addEventListener('click', async () => {
         const sourceRef = button.getAttribute('data-source-ref');
-        const enabled = button.getAttribute('data-source-enabled') === '1';
+        const command = button.getAttribute('data-source-command');
         if (!sourceRef || button.disabled) return;
-        const action = enabled ? 'deactivate' : 'activate';
-
-        if (!enabled) {
-          const source = (payload?.source_controls || []).find(item => item.source_ref === sourceRef) || {};
-          activationState = {
-            sourceRef, label:source.label || source.supplier_name || sourceRef, done:false, error:null,
-            baselineRunRefs:(payload?.lots || []).map(lot => lot.run_ref), runRef:null, run:null, outcome:null,
-          };
-          render(root, payload);
-          startActivationPolling();
-        } else {
-          button.disabled = true;
-          button.setAttribute('aria-busy', 'true');
-        }
-
-        try {
-          const response = await api(`/api/admin/workspaces/sourcing/sources/${encodeURIComponent(sourceRef)}/${action}`, { method:'POST', body:{} });
-          if (!enabled && activationState?.sourceRef === sourceRef) {
-            const result = response?.result || {};
-            const responseRunRef = result?.certification_run?.run_ref || result?.first_run?.run_ref || null;
-            if (responseRunRef) activationState.runRef = responseRunRef;
-            activationState.outcome = result?.first_run?.status || result?.certification_run?.status || null;
-            if (activationState.runRef) {
-              try { activationState.run = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(activationState.runRef)}`); } catch (_) {}
-            }
-            activationState.done = true;
-            stopActivationPolling();
-            if (activationState.runRef && params().run !== activationState.runRef) global.history.pushState({}, '', urlFor(activationState.runRef));
-          }
-          await refresh({ preserve:true });
-          if (!enabled && activationState && typeof global.setTimeout === 'function') {
-            global.setTimeout(() => {
-              activationState = null;
-              if (mountedRoot && lastPayload) render(mountedRoot, lastPayload);
-            }, 5000);
-          }
-        } catch (error) {
-          const emptyPass = !enabled
-            && ['SUPPLIER_SOURCE_EMPTY', 'NO_VALID_SUPPLIER_PRODUCT'].includes(error.code);
-          const certificationIncomplete = !enabled
-            && error.code === 'sourcing_source_certification_incomplete';
-          if ((emptyPass || certificationIncomplete) && activationState?.sourceRef === sourceRef) {
-            activationState.runRef = error.details?.run_ref || activationState.runRef;
-            activationState.outcome = emptyPass ? 'empty' : 'certification_incomplete';
-            activationState.done = true;
-            activationState.error = null;
-            stopActivationPolling();
-            if (activationState.runRef) {
-              try { activationState.run = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(activationState.runRef)}`); } catch (_) {}
-              if (params().run !== activationState.runRef) global.history.pushState({}, '', urlFor(activationState.runRef));
-            }
-            await refresh({ preserve:true });
-          } else if (!enabled && activationState?.sourceRef === sourceRef) {
-            activationState.error = error.message;
-            activationState.done = true;
-            stopActivationPolling();
-            render(root, lastPayload || payload);
-            const main = root.querySelector?.('.kir-main');
-            if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
-          } else {
-            button.disabled = false;
-            button.removeAttribute('aria-busy');
-            const main = root.querySelector?.('.kir-main');
-            if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Sourcing · ${esc(error.message)}</div>`);
-          }
+        if (command === 'update') return updateSourceNow(root, sourceRef);
+        if (command === 'restart') return toggleSource(root, payload, sourceRef, false, button);
+        if (command === 'stop') {
+          commandState = { sourceRef, action:'stop' };
+          if (mountedRoot && lastPayload) render(mountedRoot, lastPayload);
+          try { await toggleSource(root, payload, sourceRef, true, button); }
+          finally { commandState = null; if (mountedRoot && lastPayload) render(mountedRoot, lastPayload); }
         }
       });
     });

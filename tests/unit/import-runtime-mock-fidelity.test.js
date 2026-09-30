@@ -15,7 +15,7 @@ const css = fs.readFileSync(path.join(CANONICAL, 'css', 'import-runtime.css'), '
 
 describe('import-runtime — étape courante unique', () => {
   test('le JS désigne une seule étape courante (première étape en cours)', () => {
-    expect(source).toContain("stages.findIndex(stage => flowStageMeta(stage).state === 'running')");
+    expect(source).toContain("steps.findIndex(step => step.state === 'running')");
     expect(source).toContain("index === currentIndex ? 'is-current' : ''");
     expect(source).toContain('aria-current="step"');
   });
@@ -45,13 +45,37 @@ describe('import-runtime — fidélité visuelle au mock', () => {
     expect(source).toContain("ico('alert')");
   });
 
-  test('les 5 KPI du cockpit (entrées, acceptées, doublons, rejetées, quarantaine) sont réels et cliquables', () => {
-    expect(css).toContain('.kmc-import-runtime .kir-run-truth-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) !important');
-    for (const label of ['Entrées source', 'Acceptées', 'Doublons', 'Rejetées', 'En quarantaine']) {
+  test('les 4 résultats du cockpit (reçus, remis, écartés, à examiner) sont réels et cliquables', () => {
+    expect(css).toContain('.kmc-import-runtime .kir-run-truth-grid.is-four{grid-template-columns:repeat(4,minmax(0,1fr)) !important}');
+    for (const label of ['Produits reçus', 'Remis au Catalogue', 'Écartés automatiquement', 'À examiner']) {
       expect(source).toContain(`['${label}'`);
     }
+    for (const gone of ['Entrées source', "['Acceptées'", "['Doublons'", "['En quarantaine'"]) {
+      expect(source).not.toContain(gone);
+    }
     expect(source).toContain('num(a.duplicates)');
+    expect(source).toContain('produits comptabilisés');
     expect(source).not.toContain('Temps restant');
+  });
+
+  test('le pipeline N1 a quatre étapes ; les six étapes réelles restent la source de vérité', () => {
+    for (const label of ["'Source'", "'Produits reçus'", "'Contrôle automatique'", "'Catalogue'"]) {
+      expect(source).toContain(`label:${label}`);
+    }
+    expect(source).toContain("const CONTROL_STAGES = Object.freeze(['REFINERY', 'TAXONOMY', 'CERTIFICATION'])");
+    expect(css).toContain('.kmc-import-runtime .kir-run-flow .kir-run-flow-track{grid-template-columns:repeat(4,minmax(0,1fr))}');
+  });
+
+  test('trois commandes humaines, sur les endpoints existants, avec leur présence visuelle', () => {
+    for (const label of ['Mettre à jour maintenant', "'Arrêter'", "'Redémarrer'", 'Mise à jour…', 'Arrêt…', 'Redémarrage…']) {
+      expect(source).toContain(label);
+    }
+    expect(source).toContain('/import-now');
+    expect(source).toContain("enabled ? 'deactivate' : 'activate'");
+    expect(source).not.toMatch(/\/(stop|restart|reset)['`"]/);
+    expect(css).toContain('.kmc-import-runtime .kir-cmd-update{background:#1D5CD6');
+    expect(css).toContain('.kmc-import-runtime .kir-cmd-stop{background:#3A1218');
+    expect(css).toContain('.kmc-import-runtime .kir-cmd-restart{background:#0F3D2A');
   });
 
   test('l’activité est en phrases métier, sans libellé technique ; le produit courant reste honnête', () => {

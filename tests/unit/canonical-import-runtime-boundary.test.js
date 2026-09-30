@@ -57,15 +57,11 @@ test('canonical app and navigation expose import runtime under the Live domain',
 test('import cockpit montre les décisions et délègue les détails aux pages dédiées', () => {
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'import-runtime.css'), 'utf8');
-  expect(source).toContain('Ce qui demande une action');
+  expect(source).toContain('Ce qui vous attend');
   expect(source).toContain('Validation Catalogue requise');
   expect(source).toContain('Décisions de mise en vente');
   expect(source).toContain('Exceptions à traiter');
   expect(source).toContain('Historique du run');
-  expect(source).toContain('PARCOURS MÉTIER');
-  expect(source).toContain('Prêts à vendre');
-  expect(source).toContain('En vente');
-  expect(source).toContain('Non retenus');
   expect(source).toContain('Clôture du lot');
   expect(source).toContain('Catalogue →');
   expect(source).toContain('withReturnTo');
@@ -83,10 +79,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('persistentRunFlow');
   expect(source).toContain('Import automatique terminé');
   expect(source).toContain('parcours conservé à l’écran');
-  expect(source).toContain('SUIVI DU LOT');
-  expect(source).toContain("['En quarantaine'");
   expect(source).toContain('awaiting_catalogue_promotion');
-  expect(source).toContain('Ils n’ont pas disparu');
   expect(source).toContain('ACTIVATION_POLL_MS = 900');
   expect(source).toContain("NO_RESULT:'Sans résultat'");
   expect(source).toContain('Passage terminé sans résultat');
@@ -98,7 +91,11 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('non activé automatiquement');
   expect(source).toContain('variantes en double');
   expect(source).toContain('Corrigez le produit en erreur puis relancez l’activation automatique');
-  expect(source).toContain('Voir le détail technique →');
+  expect(source).toContain('Voir le détail →');
+  expect(source).toContain('RÉSULTAT DU LOT');
+  expect(source).toContain("['Écartés automatiquement'");
+  expect(source).toContain('PASSAGE AU CATALOGUE');
+  expect(source).not.toContain('PARCOURS MÉTIER');
   expect(source).toContain('provider_runtime_status');
   expect(source).toContain('Source OFF · preuve runtime à corriger puis relancer');
   expect(css).toContain('Legacy Admin visual parity');

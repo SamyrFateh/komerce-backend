@@ -3047,3 +3047,78 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
 .kmc-import-runtime .kir-page .kir-source-control .kir-source-control-title strong{color:#E4ECF6 !important}
 .kmc-import-runtime .kir-page .kir-source-control .kir-section-kicker{color:#8094AB !important}
 .kmc-import-runtime .kir-page .kir-source-control .kir-subtle-link{color:#4C9DFF !important}
+
+/* --- Cockpit Sourcing : sens métier (4 étapes, 4 résultats, remise Catalogue, commandes) ---
+   Vert = terminé · Bleu = en cours · Orange = décision humaine attendue · Rouge = bloqué.
+   Une seule étape respire (.is-current). */
+.kmc-import-runtime .kir-run-flow .kir-run-flow-track{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-attention .kir-run-flow-marker{background:#3A2606;border-color:#F59E0B;color:#FFC766}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-attention strong,
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-attention small{color:#FFC766}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-failed small{color:#FF9DAA}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-completed small{color:#7FE0B0}
+
+.kmc-import-runtime .kir-run-truth-grid.is-four{grid-template-columns:repeat(4,minmax(0,1fr)) !important}
+.kmc-import-runtime .kir-run-truth-grid.is-four>a:nth-child(1) .kir-ico{background:#12305A;color:#4C9DFF}
+.kmc-import-runtime .kir-run-truth-grid.is-four>a:nth-child(1) strong{color:#F3F7FC}
+.kmc-import-runtime .kir-run-truth-grid.is-four>a:nth-child(2) .kir-ico{background:#0F3B2A;color:#1ED784}
+.kmc-import-runtime .kir-run-truth-grid.is-four>a:nth-child(2) strong{color:#1ED784}
+.kmc-import-runtime .kir-run-truth-grid.is-four>a:nth-child(3) .kir-ico{background:#1A2A3D;color:#8FA3BA}
+.kmc-import-runtime .kir-run-truth-grid.is-four>a:nth-child(3) strong{color:#C4D2E3}
+.kmc-import-runtime .kir-run-truth-grid.is-four>a:nth-child(4) .kir-ico{background:#1A2A3D;color:#8FA3BA}
+.kmc-import-runtime .kir-run-truth-grid.is-four>a:nth-child(4) strong{color:#C4D2E3}
+.kmc-import-runtime .kir-run-truth-grid.is-four>a.is-attention{border-color:#8A5A12 !important}
+.kmc-import-runtime .kir-run-truth-grid.is-four>a.is-attention .kir-ico{background:#4A2E0B;color:#F59E0B}
+.kmc-import-runtime .kir-run-truth-grid.is-four>a.is-attention strong{color:#F59E0B}
+.kmc-import-runtime .kir-run-truth-head .kir-run-proof{margin:0 0 0 auto;display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.kmc-import-runtime .kir-run-proof.is-ok{color:#7FE0B0}
+.kmc-import-runtime .kir-run-proof.is-ok b{color:#1ED784}
+.kmc-import-runtime .kir-run-proof.is-bad{color:#FF9DAA}
+.kmc-import-runtime .kir-run-proof .kir-ico svg{width:16px;height:16px}
+
+.kmc-import-runtime .kir-handoff{
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:16px;
+  margin:0 0 14px;padding:14px 20px;border-radius:10px;background:#0A1625;border:1px solid #1D3148;border-left-width:4px
+}
+.kmc-import-runtime .kir-handoff.is-clean{border-left-color:#1ED784}
+.kmc-import-runtime .kir-handoff.is-attention{border-color:#8A5A12;border-left-color:#F59E0B}
+.kmc-import-runtime .kir-handoff .kir-ico svg{width:28px;height:28px}
+.kmc-import-runtime .kir-handoff.is-clean .kir-ico{color:#1ED784}
+.kmc-import-runtime .kir-handoff.is-attention .kir-ico{color:#F59E0B}
+.kmc-import-runtime .kir-handoff .kir-section-kicker{color:#8094AB;margin:0 0 3px}
+.kmc-import-runtime .kir-handoff strong{display:block;font-size:19px;font-weight:650;color:#F3F7FC}
+.kmc-import-runtime .kir-handoff-state{font-style:normal;font-weight:650;font-size:16px;color:#1ED784}
+.kmc-import-runtime .kir-handoff-state b{margin-right:6px}
+.kmc-import-runtime .kir-handoff-action{padding:10px 18px;border-radius:8px;background:#4A2E0B;border:1px solid #F59E0B;color:#FFD08A;font-weight:650;text-decoration:none}
+
+.kmc-import-runtime .kir-command-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  margin:0 0 14px;padding:14px 20px;border-radius:10px;background:#0A1625;border:1px solid #1D3148
+}
+.kmc-import-runtime .kir-command-state{display:flex;align-items:center;gap:14px;min-width:0}
+.kmc-import-runtime .kir-command-state strong{display:block;font-size:17px;font-weight:650;color:#F3F7FC}
+.kmc-import-runtime .kir-command-state small{display:block;margin-top:2px;font-size:13.5px;color:#8FA3BA}
+.kmc-import-runtime .kir-command-bar .kir-source-dot{width:12px;height:12px;border-radius:50%;flex:0 0 12px;background:#526781;box-shadow:none}
+.kmc-import-runtime .kir-command-bar.is-active .kir-source-dot{background:#1ED784}
+.kmc-import-runtime .kir-command-actions{display:flex;gap:12px;flex-wrap:wrap}
+.kmc-import-runtime .kir-cmd{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:0 26px;
+  border-radius:10px;border:1px solid transparent;font:inherit;font-size:16px;font-weight:650;cursor:pointer;
+  transition:background .15s,border-color .15s
+}
+.kmc-import-runtime .kir-cmd .kir-ico svg{width:22px;height:22px}
+.kmc-import-runtime .kir-cmd:disabled{opacity:.55;cursor:default}
+.kmc-import-runtime .kir-cmd-update{background:#1D5CD6;border-color:#3F86F5;color:#fff}
+.kmc-import-runtime .kir-cmd-update:hover:not(:disabled){background:#2A6BE6}
+.kmc-import-runtime .kir-cmd-stop{background:#3A1218;border-color:#7A2430;color:#FF9DA8}
+.kmc-import-runtime .kir-cmd-stop:hover:not(:disabled){background:#4A1620}
+.kmc-import-runtime .kir-cmd-restart{background:#0F3D2A;border-color:#1E9E63;color:#7DF0B5}
+.kmc-import-runtime .kir-cmd-restart:hover:not(:disabled){background:#134A33}
+.kmc-import-runtime .kir-command-bar.is-stopped .kir-cmd-update{background:#0E2445;border-color:#2F5FB0;color:#BBD6FF}
+.kmc-import-runtime .kir-cmd .kir-spin{width:18px;height:18px}
+@media(max-width:760px){
+  .kmc-import-runtime .kir-run-truth-grid.is-four{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  .kmc-import-runtime .kir-handoff{grid-template-columns:auto minmax(0,1fr)}
+  .kmc-import-runtime .kir-command-actions{width:100%}
+  .kmc-import-runtime .kir-cmd{flex:1 1 100%}
+}
