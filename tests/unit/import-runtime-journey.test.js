@@ -112,13 +112,13 @@ test('niveau 1 : quatre étapes sans compteur, quatre résultats, aucun jargon i
   const node = root();
   ui.render(node, payload);
   const html = node.innerHTML;
-  expect(html).toContain('FLUX DU LOT');
-  for (const label of ['Source', 'Produits reçus', 'Contrôle automatique', 'Catalogue']) expect(html).toContain(`<strong>${label}</strong>`);
+  expect(html).toContain('FLUX DU PASSAGE');
+  for (const label of ['Source', 'Produits reçus', 'Contrôle automatique', 'Remise Catalogue']) expect(html).toContain(`<strong>${label}</strong>`);
   for (const jargon of ['Raffinerie', 'Taxonomie', 'Certification', 'certifié(s) sourcing', 'preuve runtime']) expect(html).not.toContain(jargon);
   // Le pipeline ne répète aucun compteur : uniquement des états.
-  const flow = html.slice(html.indexOf('kir-run-flow-track'), html.indexOf('RÉSULTAT DU LOT'));
+  const flow = html.slice(html.indexOf('kir-run-flow-track'), html.indexOf('RÉSULTAT DU PASSAGE'));
   expect(flow).not.toMatch(/\d+\s*\/\s*\d+/);
-  expect(html).toContain('RÉSULTAT DU LOT');
+  expect(html).toContain('RÉSULTAT DU PASSAGE');
   for (const label of ['Produits reçus', 'Prêts pour le Catalogue', 'Écartés automatiquement', 'Action requise']) expect(html).toContain(`<span>${label}</span>`);
   for (const gone of ['Remis au Catalogue', 'À examiner', 'Entrées source', 'Acceptées', 'Doublons', 'En quarantaine', 'Rejetées']) expect(html).not.toContain(`<span>${gone}</span>`);
   for (const commercial of ['PARCOURS MÉTIER', 'Prêts à vendre', 'En vente', 'Décisions de mise en vente', 'Décisions commerciales', 'Clôture', 'Prix source', 'Décisions attendues']) {
@@ -183,7 +183,7 @@ const CALM_STAGES = [
   { key:'REFINERY', status:'COMPLETED', processed:12, total:12 },
   { key:'TAXONOMY', status:'COMPLETED', processed:12, total:12 },
   { key:'CERTIFICATION', status:'COMPLETED', processed:12, total:12 },
-  { key:'CATALOGUE', status:'RUNNING', processed:0, total:12, reason:'awaiting_explicit_operator_promotion' },
+  { key:'CATALOGUE', status:'RUNNING', processed:0, total:12, reason:'automatic_catalogue_handoff_pending' },
 ];
 
 // Base = CAS A : 20 reçus, 12 prêts, 1 écarté, 7 DEFERRED, 0 action requise, rien au Catalogue.
@@ -214,7 +214,7 @@ test('CAS A : 20 reçus / 12 prêts / 1 écarté / 0 action ; remise en attente,
   expect(tile(html, 'Action requise')).toBe('0');
   expect(html).toContain('20/20 produits comptabilisés');
   expect(html).toContain('PASSAGE AU CATALOGUE');
-  expect(html).toContain('En attente de remise');
+  expect(html).toContain('Remise automatique en attente');
   expect(html).toContain('kir-handoff is-waiting');
   for (const forbidden of ['12 transmis', '7 à examiner', 'Décisions attendues', 'kir-handoff is-clean', 'Remise terminée', 'remis au Catalogue']) {
     expect(html).not.toContain(forbidden);
@@ -222,7 +222,7 @@ test('CAS A : 20 reçus / 12 prêts / 1 écarté / 0 action ; remise en attente,
   // Écran calme : ni orange, ni rouge, ni alerte, ni barre de progression.
   for (const noise of ['is-attention', 'is-failed', 'kir-runtime-alert', 'Progression globale', 'Ce qui vous attend']) expect(html).not.toContain(noise);
   expect(html).toContain('Terminé</span>');
-  expect(stepClass(html, 'Catalogue')).toContain('is-pending');
+  expect(stepClass(html, 'Remise Catalogue')).toContain('is-running');
   expect(stepClass(html, 'Contrôle automatique')).toContain('is-completed');
 });
 
@@ -230,9 +230,9 @@ test('CAS B : certified = catalogued = 12 → « ✓ Remise terminée », étape
   const html = render(scenario({ catalogued:12, awaiting_catalogue_promotion:0 }));
   expect(html).toContain('kir-handoff is-clean');
   expect(html).toContain('Remise terminée');
-  expect(stepClass(html, 'Catalogue')).toContain('is-completed');
+  expect(stepClass(html, 'Remise Catalogue')).toContain('is-completed');
   expect(html).not.toContain('12/12');
-  expect(html).not.toContain('En attente de remise');
+  expect(html).not.toContain('Remise automatique en attente');
 });
 
 test('CAS C : 12 prêts, 9 au Catalogue, aucune intervention → « 3 restent à remettre », pas d’action requise', () => {
@@ -385,10 +385,10 @@ test('drill-down Catalogue montre seulement les produits qui exigent cette déci
   const productHref = ui.withReturnTo(
     '/admin/products/P-1',
     ui.urlFor('KIR-000004','catalogue'),
-    'Retour au lot'
+    'Retour au passage'
   );
   expect(productHref).toContain('return_to=%2Fadmin%2Fimport-runtime%3Frun%3DKIR-000004%26view%3Dcatalogue');
-  expect(productHref).toContain('return_label=Retour+au+lot');
+  expect(productHref).toContain('return_label=Retour+au+passage');
   expect(original).toBeDefined();
 });
 
@@ -476,7 +476,7 @@ test('CAS F : jamais « COMPLETED · 0 / 12 » — le détail technique dit « �
   expect(html).not.toMatch(/0\s*\/\s*12/);
   expect(html).toContain('✓ Terminé');
   // Sans provenance « contrôle » : retour au lot.
-  expect(drill('history', '', p)).toContain('← Retour au lot');
+  expect(drill('history', '', p)).toContain('← Retour au passage');
 });
 
 test('Source : la source utilisée, sans catalogue de produits', () => {
@@ -491,7 +491,7 @@ test('Catalogue : uniquement la frontière de remise, ni prix, ni marché, ni ve
   const body = html.slice(html.indexOf('kir-drill-head'));
   expect(body).toContain('3 restent à remettre');
   for (const commercial of ['Prix', 'marché', 'Prêts à vendre', 'En vente', 'Décisions commerciales']) expect(body).not.toContain(commercial);
-  expect(drill('handoff')).toContain('En attente de remise');
+  expect(drill('handoff')).toContain('Remise automatique en attente');
 });
 
 // ── Navigation canonique : vues exclusives ────────────────────────────────────
@@ -510,9 +510,9 @@ test('CAS A : LIVE = un seul cockpit — ni registre, ni rail KIR permanent, ni 
   expect(html).toContain('kir-domain-nav');
   expect((html.match(/kir-run-truth-grid/g) || []).length).toBe(1);
   // Sélecteur compact : précédent · liste · suivant · Tous les passages.
-  expect(html).toContain('data-lot-select');
-  expect(html).toContain('← lot précédent');
-  expect(html).toContain('lot suivant →');
+  expect(html).toContain('data-passage-select');
+  expect(html).toContain('← passage précédent');
+  expect(html).toContain('passage suivant →');
   expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=passages"`);
 });
 
@@ -552,10 +552,10 @@ test('CAS C : une ligne de Passages rouvre LIVE sur ce KIR (ligne entière cliqu
 
 test('CAS D : « Produits reçus 20 » = vue exclusive, sans le cockpit au-dessus', () => {
   const html = drill('population', 'kind=received', null, { kind:'received', total:20, items:[popItem(1)], unlisted:[{ label:'Écartés dès la réception (voir Écartés automatiquement)', count:19 }] });
-  for (const gone of ['kir-run-flow', 'kir-run-truth', 'kir-command-bar', 'kir-live-hero', 'kir-lot-picker']) expect(html).not.toContain(gone);
+  for (const gone of ['kir-run-flow', 'kir-run-truth', 'kir-command-bar', 'kir-live-hero', 'kir-passage-picker']) expect(html).not.toContain(gone);
   expect(html).toContain('Produits reçus · 20');
   expect(html).toContain(`Sourcing</a><i aria-hidden="true">›</i><a href="/admin/import-runtime?run=${RUN}" data-cockpit-nav>${RUN}</a><i aria-hidden="true">›</i><span aria-current="page">Produits reçus`);
-  expect(html).toContain('← Retour au lot');
+  expect(html).toContain('← Retour au passage');
 });
 
 test('CAS E/F : Prêts (12) et Action requise (3) — vues exclusives avec exactement leurs objets', () => {
