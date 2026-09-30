@@ -4832,6 +4832,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/css/live-ops-shell.css",
+        "resolvedPath": "public/dashboards/canonical/css/live-ops-shell.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/pricing-workspace.js",
         "resolvedPath": "public/dashboards/canonical/js/pricing-workspace.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5492,6 +5499,13 @@
         "category": "tests",
         "declared": "tests/e2e/import-runtime-cockpit.spec.js",
         "resolvedPath": "tests/e2e/import-runtime-cockpit.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/live-ops-shell.spec.js",
+        "resolvedPath": "tests/e2e/live-ops-shell.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -40880,7 +40894,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1717
+        "filesObserved": 1718
       },
       "boutique": {
         "filesObserved": 214,

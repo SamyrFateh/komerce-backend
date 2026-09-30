@@ -6122,7 +6122,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 97,
+            "count": 98,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6482,6 +6482,11 @@
               {
                 "declared": "dashboards/canonical/css/import-runtime.css",
                 "resolvedPath": "public/dashboards/canonical/css/import-runtime.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/live-ops-shell.css",
+                "resolvedPath": "public/dashboards/canonical/css/live-ops-shell.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6892,7 +6897,7 @@
             ]
           },
           "tests": {
-            "count": 132,
+            "count": 133,
             "files": [
               {
                 "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
@@ -6902,6 +6907,11 @@
               {
                 "declared": "tests/e2e/import-runtime-cockpit.spec.js",
                 "resolvedPath": "tests/e2e/import-runtime-cockpit.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/live-ops-shell.spec.js",
+                "resolvedPath": "tests/e2e/live-ops-shell.spec.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7557,7 +7567,7 @@
             ]
           }
         },
-        "totalFiles": 281,
+        "totalFiles": 283,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
