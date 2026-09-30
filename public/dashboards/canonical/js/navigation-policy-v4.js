@@ -28,6 +28,7 @@
     orders: '◇',
     markets: '◎',
     operations: '◈',
+    live: '◉',
     finance: '▤',
     settings: '⚙',
   });
@@ -335,6 +336,8 @@
     const domainId = currentDomain(surface);
 
     doc.body?.classList?.add('kmc-shell-v4');
+    // Cockpits Live : coque entièrement noire (sidebar, barre du haut, onglets, contenu).
+    doc.body?.classList?.toggle?.('kmc-shell-live', domainId === 'live');
     header.setAttribute('data-navigation-policy', 'v4');
     header.setAttribute('data-shell', 'hybrid-sidebar-tabs');
     header.setAttribute('data-canonical-shell-role', 'navigation');

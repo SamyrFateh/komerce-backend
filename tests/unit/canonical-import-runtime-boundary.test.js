@@ -42,7 +42,7 @@ test('canonical import runtime is loaded without legacy dependency', () => {
   expect(source).not.toMatch(/\b(?:ImportRuntimeView|KmcApi|ApiClient)\b/);
 });
 
-test('canonical app and navigation expose import runtime under Operations', () => {
+test('canonical app and navigation expose import runtime under the Live domain', () => {
   const app = fs.readFileSync(path.join(CANONICAL, 'js', 'app.js'), 'utf8');
   const nav = fs.readFileSync(path.join(CANONICAL, 'js', 'navigation-policy-v3.js'), 'utf8');
   expect(app).toContain("IMPORT_RUNTIME: 'import-runtime'");
@@ -50,7 +50,7 @@ test('canonical app and navigation expose import runtime under Operations', () =
   expect(app).toContain('KomerceCanonicalImportRuntime');
   expect(nav).toContain("id: 'import-runtime'");
   expect(nav).toContain("href: '/admin/import-runtime'");
-  expect(nav).toContain("'import-runtime': 'operations'");
+  expect(nav).toContain("'import-runtime': 'live'");
 });
 
 

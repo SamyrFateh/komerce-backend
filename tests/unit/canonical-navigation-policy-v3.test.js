@@ -40,7 +40,7 @@ describe('Canonical Navigation Policy V3.1', () => {
   test('Catalogue global reste une autorité admin ; le responsable pays pilote via Marchés', () => {
     const nav = loadPolicy();
     expect(domainIds(nav, 'admin')).toEqual([
-      'dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'finance',
+      'dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'live', 'finance',
     ]);
     expect(domainIds(nav, 'market_operator')).toEqual([
       'dashboard', 'pricing', 'orders', 'markets', 'operations', 'finance',
@@ -51,7 +51,7 @@ describe('Canonical Navigation Policy V3.1', () => {
   test('les rôles spécialisés ne reçoivent jamais un faux Dashboard', () => {
     const nav = loadPolicy();
     expect(domainIds(nav, 'finance')).toEqual(['finance']);
-    expect(domainIds(nav, 'sourcing')).toEqual(['operations']);
+    expect(domainIds(nav, 'sourcing')).toEqual(['live']);
     expect(domainIds(nav, 'agent_hub')).toEqual(['operations']);
     expect(domainIds(nav, 'agent_relais')).toEqual(['operations', 'finance']);
     expect(domainIds(nav, 'agent_transitaire')).toEqual(['operations']);
@@ -64,8 +64,11 @@ describe('Canonical Navigation Policy V3.1', () => {
   test('N2 Opérations reflète exactement les guards de lecture serveur', () => {
     const nav = loadPolicy();
     expect(spaceIds(nav, 'operations', 'admin')).toEqual([
-      'operations-overview', 'operations-workspace', 'shipping-customs-workspace', 'import-runtime',
+      'operations-overview', 'operations-workspace', 'shipping-customs-workspace',
     ]);
+    expect(spaceIds(nav, 'live', 'admin')).toEqual(['import-runtime']);
+    expect(spaceIds(nav, 'live', 'sourcing')).toEqual(['import-runtime']);
+    expect(spaceIds(nav, 'live', 'agent_hub')).toEqual([]);
     expect(spaceIds(nav, 'operations', 'market_operator')).toEqual([
       'operations-overview', 'operations-workspace', 'shipping-customs-workspace',
     ]);
@@ -74,7 +77,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     ]);
     expect(spaceIds(nav, 'operations', 'agent_relais')).toEqual(['operations-workspace']);
     expect(spaceIds(nav, 'operations', 'agent_transitaire')).toEqual(['shipping-customs-workspace']);
-    expect(spaceIds(nav, 'operations', 'sourcing')).toEqual(['import-runtime']);
+    expect(spaceIds(nav, 'operations', 'sourcing')).toEqual([]);
   });
 
   test('N2 Finance reflète Comptabilité terrain et vue pays', () => {
@@ -89,7 +92,9 @@ describe('Canonical Navigation Policy V3.1', () => {
     const nav = loadPolicy();
     const operations = nav.DOMAINS.find(item => item.id === 'operations');
     const finance = nav.DOMAINS.find(item => item.id === 'finance');
-    expect(nav.landingForDomain(operations, { role: 'sourcing' })).toBe('/admin/import-runtime');
+    const live = nav.DOMAINS.find(item => item.id === 'live');
+    expect(nav.landingForDomain(live, { role: 'sourcing' })).toBe('/admin/import-runtime');
+    expect(nav.landingForDomain(operations, { role: 'sourcing' })).toBeNull();
     expect(nav.landingForDomain(operations, { role: 'agent_hub' })).toBe('/admin/workspaces/operations');
     expect(nav.landingForDomain(operations, { role: 'agent_relais' })).toBe('/admin/workspaces/operations');
     expect(nav.landingForDomain(operations, { role: 'agent_transitaire' })).toBe('/admin/workspaces/shipping-customs');
@@ -125,7 +130,7 @@ describe('Canonical Navigation Policy V3.1', () => {
   test('les surfaces techniques restent parentées aux rubriques métier', () => {
     const nav = loadPolicy();
     expect(nav.activePrimarySurface('sourcing-workspace')).toBe('catalog');
-    expect(nav.activePrimarySurface('import-runtime')).toBe('operations');
+    expect(nav.activePrimarySurface('import-runtime')).toBe('live');
     expect(nav.activeSpaceFor('import-runtime')).toBe('import-runtime');
     expect(nav.activePrimarySurface('shipping-customs-workspace')).toBe('operations');
     expect(nav.activePrimarySurface('accounting-workspace')).toBe('finance');

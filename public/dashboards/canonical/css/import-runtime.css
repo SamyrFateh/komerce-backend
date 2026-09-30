@@ -3042,3 +3042,8 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
 .kmc-import-runtime .kir-live-table .kir-status{font-weight:400}
 .kmc-import-runtime .kir-live-table th.kir-live-time-col,
 .kmc-import-runtime .kir-live-table td.kir-live-time{text-align:right}
+
+.kmc-import-runtime .kir-page .kir-source-control{background:#0A1625 !important;border:1px solid #1D3148 !important;box-shadow:none !important}
+.kmc-import-runtime .kir-page .kir-source-control .kir-source-control-title strong{color:#E4ECF6 !important}
+.kmc-import-runtime .kir-page .kir-source-control .kir-section-kicker{color:#8094AB !important}
+.kmc-import-runtime .kir-page .kir-source-control .kir-subtle-link{color:#4C9DFF !important}
