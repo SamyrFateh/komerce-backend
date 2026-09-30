@@ -3186,3 +3186,8 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
 .kmc-import-runtime .kir-passage-row{cursor:pointer}
 .kmc-import-runtime .kir-passage-row:hover,.kmc-import-runtime .kir-passage-row:focus{background:#0F2036;outline:none}
 .kmc-import-runtime .kir-passage-action{color:#FFD08A}
+
+.kmc-import-runtime .kir-passage-pagination{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-top:14px;color:#7D91A8;font-size:14px}
+.kmc-import-runtime .kir-passage-pagination a{color:#7FB2FF;text-decoration:none;font-weight:650}
+.kmc-import-runtime .kir-passage-pagination a:last-child{text-align:right}
+.kmc-import-runtime .kir-passage-pagination>span:nth-child(2){text-align:center}
