@@ -481,7 +481,7 @@ describe('import runtime — drill-downs : populations et compteurs cohérents',
     expect(runs.POPULATION_KINDS).toEqual(['received', 'ready', 'discarded']);
   });
 
-  test('CAS F : une étape COMPLETED n’affiche jamais un compteur incohérent (0 / 12, 19 / 12)', () => {
+  test('CAS F : une étape COMPLETED conserve la mesure observée ; l’UI masque le ratio si ce n’est pas sa preuve de complétion', () => {
     const rows = ready(12, { scan_at: null });
     const projection = runs.buildProjection({
       run: baseRun({
@@ -495,8 +495,9 @@ describe('import runtime — drill-downs : populations et compteurs cohérents',
     });
     const refinery = projection.stages.find((s) => s.key === 'REFINERY');
     expect(refinery.status).toBe('COMPLETED');
-    expect(refinery.processed).toBe(refinery.total);
-    for (const s of projection.stages.filter((x) => x.status === 'COMPLETED')) expect(s.processed).toBe(s.total);
+    expect(refinery.processed).toBe(0);
+    expect(refinery.total).toBe(12);
+    expect(refinery.metrics).not.toHaveProperty('observed');
     for (const s of projection.stages) expect(s.processed).toBeLessThanOrEqual(s.total || s.processed);
   });
 });
