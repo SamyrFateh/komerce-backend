@@ -46,7 +46,6 @@ const { getRuleNumber } = require('../../utils/rules');
 const { importJsonCatalog } = require('./catalog-import-json');
 const importRuns = require('../import-runtime-runs');
 const itemEvents = require('../import-runtime-item-events');
-const candidateActions = require('../sourcing-candidate-actions');
 
 /**
  * Agrège les raisons de rejet d'un tableau d'entrées invalides en compte par
@@ -229,7 +228,6 @@ async function importCatalog(body, userId, dispatchToConnector) {
     deferred: 0,
     errors: [...invalidFromConnector],
   };
-  const readyCandidateIds = [];
   let itemSeq = 0;
   for (const product of products) {
     // Télémétrie best-effort : début/fin de traitement par produit (jamais bloquante pour l'import).
@@ -291,7 +289,6 @@ async function importCatalog(body, userId, dispatchToConnector) {
         if (outcome === 'ready_for_refinery') {
           if (String(normalizedSourceContract?.schema_version || '') === '2') {
             results.ready_for_refinery += 1;
-            if (upsertedRow?.id) readyCandidateIds.push(upsertedRow.id);
           } else {
             results.certification_blocked += 1;
           }
@@ -376,45 +373,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
     }).catch(() => null);
   }
 
-  // Remise automatique Sourcing → Catalogue.
-  // Un candidat SOURCING_CERTIFIED devient un brouillon Catalogue inactif et
-  // non disponible. Aucun prix marché n'est exigé ici : le gate de publication
-  // possède cette décision. On synchronise le runtime une seule fois à la fin.
-  const catalogueHandoff = {
-    attempted: 0,
-    catalogued: 0,
-    already_catalogued: 0,
-    failed: [],
-  };
-  for (const candidateId of [...new Set(readyCandidateIds)]) {
-    catalogueHandoff.attempted += 1;
-    try {
-      // eslint-disable-next-line no-await-in-loop
-      await candidateActions.promoteCandidate(
-        candidateId,
-        { enrichment_mode: 'source_only' },
-        userId || null,
-        { syncRuntime: false }
-      );
-      catalogueHandoff.catalogued += 1;
-    } catch (error) {
-      if (error?.code === 'candidate_already_promoted') {
-        catalogueHandoff.already_catalogued += 1;
-        continue;
-      }
-      catalogueHandoff.failed.push({
-        candidate_id: candidateId,
-        code: error?.code || 'catalogue_handoff_failed',
-        error: String(error?.message || error).slice(0, 300),
-      });
-    }
-  }
-
-  if (catalogueHandoff.failed.length > 0) {
-    await runHook((id) => importRuns.failRun(id, `catalogue_handoff_failed:${catalogueHandoff.failed.length}`));
-  } else {
-    await runHook((id) => importRuns.syncRun(id));
-  }
+  await runHook((id) => importRuns.syncRun(id));
 
   return {
     status: 200,
@@ -442,7 +401,6 @@ async function importCatalog(body, userId, dispatchToConnector) {
         deferred: results.deferred,
         ...sourceCertificationAccounting,
       },
-      catalogue_handoff: catalogueHandoff,
       shadow_ingestion: shadowIngestion,
     },
   };
