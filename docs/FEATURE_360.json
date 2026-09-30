@@ -6119,6 +6119,10 @@
           "test": "tests/unit/import-lot-registry.test.js"
         },
         {
+          "statement": "drill-downs du cockpit Sourcing : un clic sur un chiffre ouvre les produits qui le composent (population reçus / prêts / écartés, action requise = liste filtrée), un clic sur une étape ouvre sa vue métier (Source, Contrôle automatique en Préparation / Classement / Validation, frontière Catalogue sans prix ni vente) ; les six étapes du moteur ne vivent que dans le Détail technique du passage, atteint par un lien secondaire, et une étape COMPLETED n'y affiche jamais un ratio incohérent",
+          "test": "tests/unit/import-runtime-journey.test.js"
+        },
+        {
           "statement": "cockpit Sourcing = interface d'exception : pipeline Source → Produits reçus → Contrôle automatique → Catalogue en états seulement (aucun compteur, les six étapes réelles restent en drill-down) ; quatre résultats (reçus = source_total, prêts = certified, écartés automatiquement, Action requise) plus la preuve de comptage serveur ; certified n'est jamais présenté comme remis : PASSAGE AU CATALOGUE dit seulement En attente de remise / N restent à remettre / Remise terminée depuis catalogued ; DEFERRED et rejet conforme ne sont pas une Action requise ; Action requise est dérivée côté serveur (action_required, action_items, sourcing_status) et ouvre la liste filtrée produit · raison · action ; le statut du header est un statut Sourcing (LIVE / Terminé / Action requise / Bloqué), jamais un statut aval prix/marché/vente ; après intervention le cockpit relit la projection seul (poll, focus) ; les commandes Mettre à jour / Arrêter / Redémarrer réutilisent import-now, deactivate et activate",
           "test": "tests/unit/import-runtime-journey.test.js"
         }
@@ -26640,6 +26644,10 @@
       },
       "authority": "backend-core — tout changement du cycle de vie candidat (states, transitions) doit être validé par le propriétaire de routes/sourcing-scanner.js",
       "invariants": [
+        {
+          "statement": "GET /import-runs/:runRef/population?kind=received|ready|discarded expose les produits qui composent un chiffre du cockpit ; ce qui n'existe qu'en compteur d'intake est restitué en groupes explicites, jamais inventé ; une étape COMPLETED a toujours processed = total (le compteur brut reste dans metrics.observed)",
+          "test": "tests/unit/import-runtime-runs.test.js"
+        },
         {
           "statement": "la projection d'un run expose action_required / action_items / sourcing_status : seuls quarantaine, certification bloquée et anomalie de comptage demandent une action humaine ; DEFERRED, rejet conforme et exceptions aval Catalogue ne comptent jamais ; la liste d'items a toujours la longueur du compteur",
           "test": "tests/unit/import-runtime-runs.test.js"

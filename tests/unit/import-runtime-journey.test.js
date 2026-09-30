@@ -389,3 +389,105 @@ test('drill-down Catalogue montre seulement les produits qui exigent cette déci
   expect(productHref).toContain('return_label=Retour+au+lot');
   expect(original).toBeDefined();
 });
+
+// ── Drill-downs cohérents avec le N1 ──────────────────────────────────────────
+const RUN = 'KIR-000004';
+const popItem = (i, over = {}) => ({ candidate_ref:`KSC-${i}`, supplier_product_id:`SP-${i}`, product_name:`Produit ${i}`, image_url:null, issue_key:'ready', issue_label:'Prêt', ...over });
+const drill = (view, extra, data, population = null) => {
+  const p = data || scenario();
+  if (population) p.population = population;
+  return render(p, `?run=${RUN}&view=${view}${extra ? '&' + extra : ''}`);
+};
+
+test('les grandes cartes et les étapes ouvrent des vues métier, jamais la grille des six étapes', () => {
+  const html = render(scenario());
+  expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=population&kind=received"`);
+  expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=population&kind=ready"`);
+  expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=population&kind=discarded"`);
+  expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=exceptions"`);
+  // Pipeline : Source → source, Reçus → population, Contrôle → vue métier, Catalogue → frontière.
+  expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=source"`);
+  expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=control"`);
+  expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=handoff"`);
+  const tiles = html.slice(html.indexOf('kir-run-truth-grid'), html.indexOf('PASSAGE AU CATALOGUE') > 0 ? html.indexOf('PASSAGE AU CATALOGUE') : undefined);
+  expect(tiles).not.toContain('view=history');
+});
+
+test('CAS A : « Produits reçus 20 » liste les produits (pas les six étapes techniques)', () => {
+  const items = Array.from({ length: 18 }, (_, i) => popItem(i + 1, { issue_key:'ready', issue_label:'Prêt pour le Catalogue' }));
+  const html = drill('population', 'kind=received', null, { kind:'received', total:20, items, unlisted:[{ label:'Écartés dès la réception (voir Écartés automatiquement)', count:2 }] });
+  expect((html.match(/data-population-item/g) || []).length).toBe(18);
+  expect(html).toContain('Produits reçus · 20');
+  expect(html).toContain('2 × Écartés dès la réception');
+  expect(html).toContain('Produit 1');
+  expect(html).toContain('SP-1');
+  for (const tech of ['Raffinerie', 'Taxonomie', 'kir-history-stages', 'Détail technique']) expect(html.slice(html.indexOf('kir-drill-head'))).not.toContain(tech);
+});
+
+test('CAS B : « Prêts pour le Catalogue 12 » = exactement les 12 certified avec l’état de remise, sans action', () => {
+  const items = [...Array.from({ length: 9 }, (_, i) => popItem(i + 1)), ...Array.from({ length: 3 }, (_, i) => popItem(20 + i, { issue_key:'catalogued', issue_label:'Remis' }))];
+  const html = drill('population', 'kind=ready', null, { kind:'ready', total:12, items, unlisted:[] });
+  expect((html.match(/data-population-item/g) || []).length).toBe(12);
+  expect((html.match(/>Remis</g) || []).length).toBe(3);
+  expect(html).not.toContain('kir-row-action');
+  expect(html).not.toContain('data-action-choose');
+});
+
+test('CAS C : « Écartés automatiquement 3 » = les produits + raison, aucune CTA de correction, pas d’alarme', () => {
+  const items = [popItem(1, { issue_key:'discarded', issue_label:'Doublon', reason:'Déjà présent' }), popItem(2, { issue_key:'discarded', issue_label:'Exclu par règle', reason:'Écarté par une règle Komerce' })];
+  const html = drill('population', 'kind=discarded', null, { kind:'discarded', total:3, items, unlisted:[{ label:'Produit non retenu à la réception', count:1 }] });
+  expect((html.match(/data-population-item/g) || []).length).toBe(2);
+  expect(html).toContain('Doublon');
+  expect(html).toContain('Exclu par règle');
+  expect(html).toContain('1 × Produit non retenu');
+  expect(html).toContain('un produit correctement écarté n’est pas une erreur');
+  for (const alarm of ['kir-row-action', 'Corriger', 'is-failed', 'kir-error']) expect(html.slice(html.indexOf('kir-drill-head'))).not.toContain(alarm);
+});
+
+test('CAS D : « Action requise 3 » = exactement les 3 objets, avec image, raison et action', () => {
+  const withImage = ITEMS.map((item, i) => ({ ...item, image_url:`https://img.test/${i}.jpg` }));
+  const html = drill('exceptions', '', scenario({ quarantined:3, action_required:3 }, { sourcing_status:'ACTION_REQUIRED', action_items:withImage }));
+  const list = html.slice(html.indexOf('data-action-list'));
+  expect((list.match(/kir-row-action/g) || []).length).toBe(3);
+  expect((list.match(/kir-action-thumb/g) || []).length).toBe(3);
+  for (const s of ['Image inexploitable', 'Classement ambigu', 'Donnée obligatoire manquante']) expect(list).toContain(s);
+  expect(list).not.toContain('view=history');
+});
+
+test('CAS E : « Contrôle automatique » = Préparation / Classement / Validation + lien secondaire vers le détail technique', () => {
+  const html = drill('control');
+  for (const label of ['Préparation', 'Classement', 'Validation']) expect(html).toContain(`<strong>${label}</strong>`);
+  expect(html).toContain('Voir le détail technique →');
+  expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=history&from=control"`);
+  const body = html.slice(html.indexOf('kir-drill-head'));
+  for (const tech of ['Raffinerie', 'Taxonomie', 'Certification', 'REFINERY', 'COMPLETED']) expect(body).not.toContain(tech);
+  expect((body.match(/✓ Terminé/g) || []).length).toBe(3);
+});
+
+test('CAS F : jamais « COMPLETED · 0 / 12 » — le détail technique dit « ✓ Terminé » pour une étape terminée', () => {
+  const p = scenario();
+  p.selected.stages = p.selected.stages.map(stage => stage.key === 'REFINERY' ? { ...stage, status:'COMPLETED', processed:0, total:12 } : stage);
+  const html = drill('history', 'from=control', p);
+  expect(html).toContain('Détail technique du passage');
+  expect(html).toContain('← Retour au contrôle automatique');
+  expect(html).not.toMatch(/COMPLETED\s*·/);
+  expect(html).not.toMatch(/0\s*\/\s*12/);
+  expect(html).toContain('✓ Terminé');
+  // Sans provenance « contrôle » : retour au lot.
+  expect(drill('history', '', p)).toContain('← Retour au lot');
+});
+
+test('Source : la source utilisée, sans catalogue de produits', () => {
+  const html = drill('source');
+  const body = html.slice(html.indexOf('kir-drill-head'));
+  for (const label of ['Source utilisée', 'Connexion', 'Dernière interrogation', 'Alimentation automatique']) expect(body).toContain(label);
+  expect(body).not.toContain('data-population-item');
+});
+
+test('Catalogue : uniquement la frontière de remise, ni prix, ni marché, ni vente', () => {
+  const html = drill('handoff', '', scenario({ catalogued:9, awaiting_catalogue_promotion:3 }), { kind:'ready', total:12, items:[popItem(1)], unlisted:[] });
+  const body = html.slice(html.indexOf('kir-drill-head'));
+  expect(body).toContain('3 restent à remettre');
+  for (const commercial of ['Prix', 'marché', 'Prêts à vendre', 'En vente', 'Décisions commerciales']) expect(body).not.toContain(commercial);
+  expect(drill('handoff')).toContain('En attente de remise');
+});

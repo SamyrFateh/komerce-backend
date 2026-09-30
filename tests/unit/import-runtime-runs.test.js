@@ -435,3 +435,68 @@ describe('import runtime — Action requise (interface d’exception)', () => {
     expect(blocked.sourcing_status).toBe('BLOCKED');
   });
 });
+
+describe('import runtime — drill-downs : populations et compteurs cohérents', () => {
+  const intake = (over = {}) => ({
+    recorded_at: T1, accepted: 12, duplicates: 2, rejected: 1, quarantined: 0, deferred: 5,
+    ready_for_refinery: 12, certification_blocked: 0, pipeline_status: 'CANONICAL_RESOLVED', capture_id: 'cap-1',
+    ...over,
+  });
+  const ready = (n, over = {}) => Array.from({ length: n }, (_, i) => candidate(i + 1, over));
+  const rejectedRow = (i, over = {}) => candidate(300 + i, { state: 'rejected', rejected_reason: 'excluded by rule', ...over });
+  const deferredRows = (n) => Array.from({ length: n }, (_, i) => candidate(100 + i, { state: 'watchlist' }));
+
+  test('CAS A : « Produits reçus » = tous les produits persistés + le reste en groupe explicite', () => {
+    const rows = [...ready(12), ...deferredRows(5), rejectedRow(1)];
+    const pop = runs.buildPopulation({ kind: 'received', rows, intake: intake(), sourceTotal: 20 });
+    expect(pop.total).toBe(20);
+    expect(pop.items).toHaveLength(18);
+    expect(pop.unlisted).toEqual([{ label: 'Écartés dès la réception (voir Écartés automatiquement)', count: 2 }]);
+    expect(pop.items.map((i) => i.issue_label)).toEqual(expect.arrayContaining(['Prêt pour le Catalogue', 'Mis de côté', 'Écarté']));
+    expect(JSON.stringify(pop)).not.toMatch(/REFINERY|TAXONOMY|CERTIFICATION/);
+  });
+
+  test('CAS B : « Prêts pour le Catalogue » = exactement les produits certified, avec l’état de remise', () => {
+    const rows = [...ready(9), ...ready(3).map((r, i) => ({ ...r, candidate_ref: `KSC-C${i}`, supplier_product_id: `SC-${i}`, state: 'imported_to_catalog', product_ref: `P-${i}` })), ...deferredRows(5)];
+    const pop = runs.buildPopulation({ kind: 'ready', rows, intake: intake(), sourceTotal: 20 });
+    const projection = runs.buildProjection({ run: baseRun({ source_total: 20, intake: intake() }), rows });
+    expect(pop.total).toBe(projection.accounting.certified);
+    expect(pop.items).toHaveLength(12);
+    expect(pop.items.filter((i) => i.issue_label === 'Remis')).toHaveLength(3);
+    expect(pop.items.filter((i) => i.issue_label === 'Prêt')).toHaveLength(9);
+  });
+
+  test('CAS C : « Écartés automatiquement » = produits écartés + raison lisible, sans CTA de correction', () => {
+    const rows = [...ready(12), rejectedRow(1), rejectedRow(2, { rejected_reason: 'doublon' }), ...deferredRows(5)];
+    const pop = runs.buildPopulation({ kind: 'discarded', rows, intake: intake({ duplicates: 1, rejected: 2 }), sourceTotal: 20 });
+    expect(pop.total).toBe(3);
+    expect(pop.items.map((i) => i.issue_label).sort()).toEqual(['Doublon', 'Exclu par règle']);
+    expect(pop.unlisted).toEqual([{ label: 'Produit non retenu à la réception', count: 1 }]);
+    expect(pop.items.every((i) => i.reason && !('action' in i) && !('action_label' in i))).toBe(true);
+    expect(pop.items.length + pop.unlisted.reduce((n, u) => n + u.count, 0)).toBe(pop.total);
+  });
+
+  test('kind inconnu → null (la route répond 400)', () => {
+    expect(runs.buildPopulation({ kind: 'history', rows: [] })).toBeNull();
+    expect(runs.POPULATION_KINDS).toEqual(['received', 'ready', 'discarded']);
+  });
+
+  test('CAS F : une étape COMPLETED n’affiche jamais un compteur incohérent (0 / 12, 19 / 12)', () => {
+    const rows = ready(12, { scan_at: null });
+    const projection = runs.buildProjection({
+      run: baseRun({
+        source_total: 20,
+        intake: intake(),
+        stages: {
+          SOURCE_CONNECTED: { finished_at: T0 }, RAW_IMPORT: { finished_at: T0 }, REFINERY: { finished_at: T1 },
+        },
+      }),
+      rows,
+    });
+    const refinery = projection.stages.find((s) => s.key === 'REFINERY');
+    expect(refinery.status).toBe('COMPLETED');
+    expect(refinery.processed).toBe(refinery.total);
+    for (const s of projection.stages.filter((x) => x.status === 'COMPLETED')) expect(s.processed).toBe(s.total);
+    for (const s of projection.stages) expect(s.processed).toBeLessThanOrEqual(s.total || s.processed);
+  });
+});

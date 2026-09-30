@@ -137,6 +137,20 @@ router.get('/import-runs/:runRef', async (req, res, next) => {
   } catch (err) { handleError(err, res, next); }
 });
 
+router.get('/import-runs/:runRef/population', async (req, res, next) => {
+  try {
+    if (!RUN_REF_RE.test(req.params.runRef)) return runNotFound(res);
+    const kind = String(req.query.kind || '');
+    if (!importRuns.POPULATION_KINDS.includes(kind)) {
+      return res.status(400).json({ error: 'Population inconnue', code: 'import_population_kind_invalid' });
+    }
+    const population = await importRuns.getPopulation(req.params.runRef, kind);
+    if (!population) return runNotFound(res);
+    res.set('Cache-Control', 'no-store');
+    res.json(population);
+  } catch (err) { handleError(err, res, next); }
+});
+
 router.get('/import-runs/:runRef/items/:supplierProductId', async (req, res, next) => {
   try {
     if (!RUN_REF_RE.test(req.params.runRef)) return runNotFound(res);
