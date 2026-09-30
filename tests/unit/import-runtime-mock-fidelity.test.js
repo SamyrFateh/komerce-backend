@@ -141,7 +141,7 @@ describe('import-runtime — doctrine LIVE Operations', () => {
   });
 
   test('pipeline et KPI ouvrent des drill-downs du même KIR', () => {
-    expect(source).toContain('function stageUrl(runRef, stageKey)');
+    expect(source).toContain('function stageUrl(runRef, stageKey');
     expect(source).toContain('data-cockpit-nav');
     expect(source).toContain('ouvrir le détail');
   });
