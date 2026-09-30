@@ -187,7 +187,7 @@
       const words = def.key === 'SOURCE'
         ? { completed:'Connectée', running:'Connexion…', pending:'En attente', failed:'Bloquée' }
         : def.key === 'CATALOGUE'
-          ? { completed:handoff.certified === 0 ? 'Terminé' : 'Remise terminée', running:'En cours', pending:'En attente', failed:'Bloqué' }
+          ? { completed:handoff.certified === 0 ? 'Aucun produit à remettre' : 'Remise terminée', running:'Remise automatique', pending:'En attente', failed:'Bloqué' }
           : { completed:'Terminé', running:'En cours', pending:'En attente', failed:'Bloqué', attention:'Action requise' };
       return { ...def, index, state, count:words[state] || 'En attente' };
     });
@@ -452,7 +452,7 @@
     </section>`;
   }
 
-  // Passage au Catalogue : uniquement l'état de la remise (les chiffres sont déjà au résultat du lot).
+  // Passage au Catalogue : uniquement l'état de la remise (les chiffres sont déjà au résultat du passage).
   function catalogueHandoff(run) {
     const h = sourcingOutcome(run).handoff;
     if (!h.controlDone || h.certified === 0) return '';
@@ -1229,14 +1229,15 @@
     const h = sourcingOutcome(run).handoff;
     const status = !h.controlDone || h.certified === 0 ? 'Rien n’est encore prêt à remettre'
       : h.complete ? '✓ Remise terminée'
-        : h.catalogued === 0 ? `Remise automatique · ${num(stage.processed)} / ${num(stage.total)}`
-          : `${h.remaining} ${h.remaining > 1 ? 'restent' : 'reste'} à remettre`;
+        : h.catalogued === 0 ? 'Remise automatique en cours'
+          : `${h.remaining} ${h.remaining > 1 ? 'restent' : 'reste'} à remettre automatiquement`;
     const list = population && population.kind === 'ready' && population.items?.length
       ? `<div class="kir-table-wrap"><table class="kir-table" data-population-list="ready">
           <thead><tr><th>Produit</th><th>Identifiant source</th><th>Remise</th></tr></thead><tbody>${populationRows(run, population, 'ready')}</tbody></table></div>`
       : '';
-    return drillHeader(run, 'Catalogue', 'La frontière Sourcing → Catalogue : où en est la remise des produits prêts.')
-      + `<div class="kir-simple-list">${statusRow('Passage au Catalogue', [h.complete ? 'completed' : 'pending', status])}</div>${list}`;
+    const state = h.complete ? 'completed' : h.controlDone && h.certified > 0 ? 'running' : 'pending';
+    return drillHeader(run, 'Remise Catalogue', 'La frontière Sourcing → Catalogue : matérialisation automatique des produits certifiés en brouillons Catalogue.')
+      + `<div class="kir-simple-list">${statusRow('Remise au Catalogue', [state, status])}</div>${list}`;
   }
 
   // Détail technique : preuve / diagnostic. Volontairement hors du parcours métier.
