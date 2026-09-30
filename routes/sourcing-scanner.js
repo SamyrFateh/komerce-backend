@@ -6,12 +6,13 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/suppliers/catalog-import-orchestrator.js, services/sourcing-import-dispatch.js, services/sourcing-candidate-actions.js
+ * @depends       db.js, middleware/auth.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/suppliers/catalog-import-orchestrator.js, services/sourcing-import-dispatch.js, services/sourcing-candidate-actions.js, services/sourcing-catalogue-handoff.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       sourcing_candidate_events, sourcing_candidates, supplier_catalog_imports
  * @db-write      sourcing_candidates
  * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports
+ * @db-write-via:sourcing-catalogue-handoff sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media, import_runtime_runs
  * @db-txn        candidate_mutations_delegated_to_shared_authority
  * @doctrine      legacy_http_contract_preserved, single_sourcing_candidate_mutation_authority, DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  sourcing, catalog
