@@ -388,7 +388,7 @@ test('drill-down Catalogue montre seulement les produits qui exigent cette déci
     'Retour au passage'
   );
   expect(productHref).toContain('return_to=%2Fadmin%2Fimport-runtime%3Frun%3DKIR-000004%26view%3Dcatalogue');
-  expect(productHref).toContain('return_label=Retour+au+lot');
+  expect(productHref).toContain('return_label=Retour+au+passage');
   expect(original).toBeDefined();
 });
 
@@ -549,11 +549,12 @@ const PASSAGES = [
 ];
 const inMain = html => html.slice(html.indexOf('<main class="kir-main">'));
 
-test('CAS A : LIVE = un seul cockpit — ni registre, ni rail KIR permanent, ni bloc Sources dessous', () => {
+test('CAS A : SUIVI = un seul cockpit — ni registre, ni rail KIR permanent, ni bloc Sources dessous', () => {
   const html = render(scenario());
-  for (const gone of ['kir-lot-strip', 'kir-lot-chip', 'kir-secondary', 'kir-source-control', 'data-source-toggle', 'Registre des passages', 'Tous les passages']) {
+  for (const gone of ['kir-lot-strip', 'kir-lot-chip', 'kir-secondary', 'kir-source-control', 'data-source-toggle', 'Registre des passages']) {
     expect(html).not.toContain(gone);
   }
+  expect(html).toContain('Tous les passages →');
   expect(html).toContain('kir-domain-nav');
   expect((html.match(/kir-run-truth-grid/g) || []).length).toBe(1);
   // Sélecteur compact : précédent · liste · suivant · Tous les passages.
