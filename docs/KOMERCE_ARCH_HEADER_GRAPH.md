@@ -13,10 +13,10 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1539
-- Edges: 7636
+- Graph nodes: 1541
+- Edges: 7650
 - DB tables: 176
-- Doctrines: 530
+- Doctrines: 532
 - Impact areas: 191
 - Unresolved code edges: 764
 - Tables multi-écrivains directs (>=2): 76
@@ -748,6 +748,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/market-delegation-team-service.js -> assignment_memberships (via market-delegation-service)
 - WRITE services/finance-accounting-workspace.js -> cash_deposits (via cash-deposit-service)
 - WRITE services/sourcing-candidate-actions.js -> catalog_media (via catalog-promotion)
+- WRITE services/sourcing-source-autopilot.js -> catalog_media (via sourcing-candidate-actions)
 - WRITE services/sourcing-workspace.js -> catalog_media (via sourcing-candidate-actions)
 - WRITE services/shipping-customs-workspace.js -> customs_shipment_parcels (via customs-shipment-service)
 - WRITE services/shipping-customs-workspace.js -> customs_shipments (via customs-shipment-service)
@@ -760,6 +761,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/hub-operations.js -> hub_physical_units (via hub-physical-identity)
 - WRITE services/hub-operations.js -> hub_purchase_allocations (via hub-physical-identity)
 - WRITE services/sourcing-candidate-actions.js -> import_runtime_runs (via import-runtime-runs)
+- WRITE services/sourcing-source-autopilot.js -> import_runtime_runs (via sourcing-candidate-actions)
 - WRITE services/suppliers/catalog-import-orchestrator.js -> import_runtime_runs (via import-runtime-runs)
 - WRITE routes/admin/system.js -> incidents (via incident-write-service)
 - WRITE routes/admin/users.js -> incidents (via incident-write-service)
@@ -858,8 +860,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/operations-workspace.js -> parcel_items (via parcel-auto-create-service)
 - WRITE services/pickup-collection-recorder.js -> parcel_items (via parcelSync)
 - WRITE services/pickup-collection-service.js -> parcel_items (via pickup-collection-recorder)
-- WRITE services/pickup-exceptional-collection-service.js -> parcel_items (via pickup-collection-recorder)
-- WRITE routes/hub-dashboard.js -> parcels (via parcel-mutation-service)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 

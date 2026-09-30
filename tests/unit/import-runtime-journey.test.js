@@ -453,7 +453,7 @@ test('AGRÉGAT → POPULATION → OBJET : une ligne produit ouvre son détail da
   expect(html).toContain('Produit 1');
   expect(html).toContain('Prêt pour le Catalogue');
   expect(html).toContain('SP-1');
-  expect(html).toContain('← Retour à produits reçus');
+  expect(html).toContain('← Retour à Produits reçus');
   expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=population&kind=received"`);
   expect(html).toContain('Aucune fiche Catalogue créée à ce stade.');
 });
@@ -475,7 +475,7 @@ test('OBJET remis au Catalogue : ouvre la fiche Catalogue avec retour exact vers
   expect(html).toContain('Remis au Catalogue');
   expect(html).toContain('Ouvrir la fiche Catalogue →');
   expect(html).toContain('return_to=%2Fadmin%2Fimport-runtime%3Frun%3DKIR-000004%26view%3Ditem%26kind%3Dready%26item%3DSP-1');
-  expect(html).toContain('return_label=Retour+au+produit+du+passage');
+  expect(html).toContain('return_label=Retour+au+produit+Sourcing');
 });
 
 test('CAS B : « Prêts pour le Catalogue 12 » = exactement les 12 certified avec l’état de remise, sans action', () => {
@@ -528,7 +528,7 @@ test('CAS F : une étape terminée n’affiche jamais un faux ratio ; la remise 
   expect(html).toContain('✓ Terminé');
   expect(html).toContain('Remise automatique · 0 / 12');
   // Sans provenance « contrôle » : retour au passage.
-  expect(drill('history', '', p)).toContain('← Retour au passage');
+  expect(drill('history', '', p)).toContain('← Retour au suivi');
 });
 
 test('Source : la source utilisée, sans catalogue de produits', () => {
@@ -584,7 +584,8 @@ test('CAS B : « Tous les passages » remplace le cockpit par la vue Passages (S
   const html = render(p, `?run=${RUN}&view=passages`);
   for (const gone of ['kir-run-flow', 'kir-run-truth', 'kir-command-bar', 'kir-live-hero', 'kir-handoff']) expect(html).not.toContain(gone);
   expect(html).toContain('Historique des passages');
-  expect(html).toContain('Sourcing</a><i aria-hidden="true">›</i><span aria-current="page">Passages');
+  expect(html).toContain('<span class="kir-crumb-domain">Sourcing</span><i aria-hidden="true">›</i><span aria-current="page">Passages');
+  expect(html).not.toContain('kir-back');
   for (const col of ['Passage', 'Source', 'Date / heure', 'État Sourcing', 'Produits reçus', 'Prêts Catalogue', 'Écartés', 'Action requise', 'Remise Catalogue']) expect(html).toContain(`<th>${col}</th>`);
   for (const gone of ['Décisions finales', 'Approuvés vente', 'Reste']) expect(html).not.toContain(gone);
   expect((html.match(/data-row-href/g) || []).length).toBe(3);
@@ -607,8 +608,9 @@ test('CAS D : « Produits reçus 20 » = vue exclusive, sans le cockpit au-dessu
   const html = drill('population', 'kind=received', null, { kind:'received', total:20, items:[popItem(1)], unlisted:[{ label:'Écartés dès la réception (voir Écartés automatiquement)', count:19 }] });
   for (const gone of ['kir-run-flow', 'kir-run-truth', 'kir-command-bar', 'kir-live-hero', 'kir-lot-picker']) expect(html).not.toContain(gone);
   expect(html).toContain('Produits reçus · 20');
-  expect(html).toContain(`Sourcing</a><i aria-hidden="true">›</i><a href="/admin/import-runtime?run=${RUN}" data-cockpit-nav>${RUN}</a><i aria-hidden="true">›</i><span aria-current="page">Produits reçus`);
-  expect(html).toContain('← Retour au passage');
+  expect(html).toContain(`<span class="kir-crumb-domain">Sourcing</span><i aria-hidden="true">›</i><a href="/admin/import-runtime?run=${RUN}" data-cockpit-nav>Suivi</a><i aria-hidden="true">›</i><span aria-current="page">Produits reçus`);
+  expect(html).toContain('← Retour au suivi');
+  expect(html).not.toContain(`data-cockpit-nav>${RUN}</a><i`);
 });
 
 test('CAS E/F : Prêts (12) et Action requise (3) — vues exclusives avec exactement leurs objets', () => {
@@ -652,5 +654,129 @@ test('aucune donnée aval (prix, marché, vente, clôture) dans les vues Sourcin
   const views = [render(scenario()), render(p, `?run=${RUN}&view=passages`), drill('sources'), drill('control'), drill('history'), drill('source')];
   for (const html of views) {
     for (const downstream of ['Approuvés vente', 'Décisions finales', 'Clôture du lot', 'Prêts à vendre', 'Décisions commerciales', 'exposition marché']) expect(html).not.toContain(downstream);
+  }
+});
+
+// ── Audit navigation : parent unique et évident pour chaque écran ─────────────
+const crumbText = html => (html.match(/<nav class="kir-breadcrumb"[^>]*>([\s\S]*?)<\/nav>/) || [])[1]
+  ?.replace(/<i aria-hidden="true">›<\/i>/g, ' > ').replace(/<[^>]+>/g, '') || '';
+const backOf = html => { const m = html.match(/<a href="([^"]+)" data-cockpit-nav class="kir-back">([^<]+)<\/a>/); return m ? { href:m[1].replace(/&amp;/g, '&'), label:m[2] } : null; };
+const SUIVI = `/admin/import-runtime?run=${RUN}`;
+const TRACE = { run_ref:RUN, supplier_product_id:'SP-1', product_name:'Produit 1', product_ref:'P-1', refinery:{ done:true }, canonical_category:'maison', certification:{ outcome:'catalog_imported', sourcing_certified:true, reasons:[] }, catalogue_status:'imported_to_catalog' };
+const withTrace = () => { const p = scenario(); p.item_trace = TRACE; return p; };
+
+test('audit : chaque vue du Suivi a pour parent « Suivi » (breadcrumb Sourcing > Suivi > vue, retour au suivi)', () => {
+  const cases = [
+    ['source', '', 'Sourcing > Suivi > Source'],
+    ['control', '', 'Sourcing > Suivi > Contrôle automatique'],
+    ['handoff', '', 'Sourcing > Suivi > Remise Catalogue'],
+    ['exceptions', '', 'Sourcing > Suivi > Action requise'],
+    ['population', 'kind=received', 'Sourcing > Suivi > Produits reçus'],
+    ['population', 'kind=ready', 'Sourcing > Suivi > Prêts pour le Catalogue'],
+    ['population', 'kind=discarded', 'Sourcing > Suivi > Écartés automatiquement'],
+    ['history', '', 'Sourcing > Suivi > Détail technique'],
+  ];
+  for (const [view, extra, crumbs] of cases) {
+    const html = drill(view, extra);
+    expect(crumbText(html)).toBe(crumbs);
+    expect(backOf(html)).toEqual({ href:SUIVI, label:'← Retour au suivi' });
+    expect(html).toMatch(/is-active[^>]*>Suivi</);
+    // Le KIR est un contexte (pastille), jamais un niveau du fil d'Ariane.
+    expect(crumbText(html)).not.toContain(RUN);
+    expect(html).toContain(`Passage ${RUN}`);
+    expect(html).not.toContain('Retour au passage');
+    expect(html).not.toContain('Retour au cockpit');
+  }
+});
+
+test('audit : Passages et Sources sont des vues de 1er niveau — onglet actif, aucun bouton retour', () => {
+  const p = scenario(); p.passages = PASSAGES;
+  const passages = render(p, `?run=${RUN}&view=passages`);
+  const sources = drill('sources');
+  expect(passages).toMatch(/is-active[^>]*>Passages</);
+  expect(sources).toMatch(/is-active[^>]*>Sources</);
+  for (const html of [passages, sources]) {
+    expect(backOf(html)).toBeNull();
+    expect(html).not.toContain('Retour au passage');
+    expect(html).toContain(`href="${SUIVI}" data-cockpit-nav `); // Suivi reste accessible par l'onglet
+  }
+  expect(crumbText(sources)).toBe('Sourcing > Sources');
+});
+
+test('audit : produit = Sourcing > Suivi > population > Produit, retour à sa population (jamais au passage)', () => {
+  for (const [kind, label] of [['received', 'Produits reçus'], ['ready', 'Prêts pour le Catalogue'], ['discarded', 'Écartés automatiquement']]) {
+    const html = render(withTrace(), `?run=${RUN}&view=item&kind=${kind}&item=SP-1`);
+    expect(crumbText(html)).toBe(`Sourcing > Suivi > ${label} > Produit`);
+    expect(backOf(html)).toEqual({ href:`/admin/import-runtime?run=${RUN}&view=population&kind=${kind}`, label:`← Retour à ${label}` });
+  }
+});
+
+test('audit : produit ouvert depuis Remise Catalogue revient à Remise Catalogue', () => {
+  const population = { kind:'ready', total:1, items:[popItem(1)], unlisted:[] };
+  const list = drill('handoff', '', null, population);
+  expect(list).toContain(`href="/admin/import-runtime?run=${RUN}&view=item&kind=ready&item=SP-1&origin=handoff"`);
+  const html = render(withTrace(), `?run=${RUN}&view=item&kind=ready&item=SP-1&origin=handoff`);
+  expect(crumbText(html)).toBe('Sourcing > Suivi > Remise Catalogue > Produit');
+  expect(backOf(html)).toEqual({ href:`/admin/import-runtime?run=${RUN}&view=handoff`, label:'← Retour à Remise Catalogue' });
+});
+
+test('audit : sortie Catalogue = return_to exact vers l’objet Sourcing d’origine, label contextuel', () => {
+  const html = render(withTrace(), `?run=${RUN}&view=item&kind=ready&item=SP-1&origin=handoff`);
+  const href = (html.match(/href="(\/admin\/products\/P-1[^"]+)"/) || [])[1].replace(/&amp;/g, '&');
+  const q = new URLSearchParams(href.split('?')[1]);
+  expect(q.get('return_to')).toBe(`/admin/import-runtime?run=${RUN}&view=item&kind=ready&item=SP-1&origin=handoff`);
+  expect(q.get('return_label')).toBe('Retour au produit Sourcing');
+  // Hero : retour au Suivi ; Action requise → Sourcing : retour à Action requise.
+  const live = render(scenario());
+  expect(live).toContain('return_label=Retour+au+suivi');
+  expect(live).not.toContain('return_label=Retour+au+passage');
+  const exc = drill('exceptions', '', scenario({ quarantined:3, action_required:3 }, { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }));
+  expect(exc).toContain('return_label=Retour+%C3%A0+Action+requise');
+  expect(exc).toContain(`return_to=%2Fadmin%2Fimport-runtime%3Frun%3D${RUN}%26view%3Dexceptions`);
+});
+
+test('audit : détail technique — contrôle, produit ou suivi selon l’origine réelle, contexte conservé sur les étapes', () => {
+  const control = drill('history', 'from=control');
+  expect(crumbText(control)).toBe('Sourcing > Suivi > Contrôle automatique > Détail technique');
+  expect(backOf(control)).toEqual({ href:`${SUIVI}&view=control`, label:'← Retour au contrôle automatique' });
+  expect(control).toContain(`view=history&stage=TAXONOMY&from=control`);
+
+  const fromItem = render(scenario(), `?run=${RUN}&view=history&from=item&item=SP-1&kind=ready&origin=handoff`);
+  expect(crumbText(fromItem)).toBe('Sourcing > Suivi > Remise Catalogue > Produit > Détail technique');
+  expect(backOf(fromItem)).toEqual({ href:`/admin/import-runtime?run=${RUN}&view=item&kind=ready&item=SP-1&origin=handoff`, label:'← Retour au produit' });
+  expect(fromItem).toContain('from=item&item=SP-1&kind=ready&origin=handoff');
+
+  // Depuis le produit : le lien de preuve transporte le contexte.
+  const item = render(withTrace(), `?run=${RUN}&view=item&kind=received&item=SP-1`);
+  expect(item).toContain(`view=history&from=item&item=SP-1&kind=received`);
+});
+
+test('audit : filtres de Passages lus depuis l’URL (Back / Forward / rechargement) et conservés par la pagination', () => {
+  const p = scenario(); p.passages = PASSAGES; p.passages_page = { offset:50, next_offset:100 };
+  const html = render(p, `?run=${RUN}&view=passages&offset=50&f_source=CJ&f_state=ACTION_REQUIRED&f_period=week&f_q=0004`);
+  expect(html).toMatch(/<option value="CJ" selected>/);
+  expect(html).toMatch(/<option value="ACTION_REQUIRED" selected>/);
+  expect(html).toMatch(/<option value="week" selected>/);
+  expect(html).toContain('value="0004"');
+  expect((html.match(/data-row-href/g) || []).length).toBe(1); // KIR-000004 (CJ, Action requise)
+  const pagers = [...html.matchAll(/href="([^"]*view=passages[^"]*offset=[^"]*)"/g)].map(m => m[1].replace(/&amp;/g, '&'));
+  for (const href of pagers) expect(href).toContain('f_source=CJ&f_state=ACTION_REQUIRED&f_period=week&f_q=0004');
+  // URL sans filtre : retour aux valeurs par défaut (l'URL fait foi).
+  const clean = render(p, `?run=${RUN}&view=passages`);
+  expect((clean.match(/data-row-href/g) || []).length).toBe(3);
+});
+
+test('audit : aucune occurrence de « Retour au passage » ni « Retour au cockpit » dans aucune vue rendue', () => {
+  const p = scenario(); p.passages = PASSAGES; p.item_trace = TRACE;
+  const pop = { kind:'ready', total:1, items:[popItem(1)], unlisted:[] };
+  const htmls = [
+    render(scenario()), render(p, `?run=${RUN}&view=passages`), drill('sources'), drill('source'), drill('control'),
+    drill('handoff', '', null, pop), drill('exceptions'), drill('history'), drill('history', 'from=control'),
+    drill('population', 'kind=received', null, pop), render(p, `?run=${RUN}&view=item&kind=received&item=SP-1`),
+  ];
+  for (const html of htmls) {
+    expect(html).not.toContain('Retour au passage');
+    expect(html).not.toContain('Retour au cockpit');
+    expect(html).not.toContain('Retour au produit du passage');
   }
 });

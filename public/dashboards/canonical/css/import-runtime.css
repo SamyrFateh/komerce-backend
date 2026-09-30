@@ -3196,3 +3196,7 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
 .kmc-import-runtime .kir-population-item-link:hover{text-decoration:underline;color:#fff}
 .kmc-import-runtime .kir-item-actions{margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .kmc-import-runtime .kir-item-note{color:#7D91A8;font-size:14px}
+
+/* --- Navigation : le KIR est un contexte, pas un niveau --- */
+.kmc-import-runtime .kir-crumb-domain{color:#7D91A8}
+.kmc-import-runtime .kir-drill-context{display:inline-block;margin:0 0 6px 14px;padding:2px 10px;border:1px solid #1D3148;border-radius:999px;font-size:12.5px;color:#9FB2C8;background:#0A1625}

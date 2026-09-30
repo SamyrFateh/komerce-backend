@@ -379,6 +379,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - un produit publie a toujours passe product-publication-guard.js
 - [object Object]
 - [object Object]
+- [object Object]
 - jamais de creation produit par formulaire vide : tout entre par un connecteur (le manuel EST un connecteur)
 - la donnee source ne se perd jamais : raw_payload reste le brut integral et normalized_source_contract preserve separement le mapping V2 valide
 - une structure riche connue ne doit pas etre aplatie puis reconstruite par heuristique ; une source pauvre reste pauvre honnêtement
@@ -439,14 +440,14 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 407 fichier(s) déclaré(s), boutique: 33 fichier(s)
+**Implementation** : 408 fichier(s) déclaré(s), boutique: 33 fichier(s)
   - boutique : 39
   - ci : 24
   - config : 1
   - dash : 1
   - docs : 16
   - middleware : 1
-  - migrations : 21
+  - migrations : 22
   - routes : 7
   - schemas : 4
   - scripts : 31
@@ -549,6 +550,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - un filtre pays du DashboardSchema est présentationnel : canonical ne charge jamais un agrégat global pour le filtrer ensuite côté client
 - market est l'unité de délégation business ; corridor reste une dimension technique/logistique sans autorité
 - le cockpit Démo / Staging ne possède aucune transition : il délègue à la route orders et lit les notifications/documents réellement persistés
+- [object Object]
 - [object Object]
 - [object Object]
 - [object Object]
@@ -2354,6 +2356,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
 - un candidat exclu (rejet manuel ou auto-exclusion douane/légale) n'est jamais ré-importable (ING-5 verrou 1)
 - une devise hors whitelist (AED, EUR, USD, KMF, PLN ; PLN exige un taux explicite) ne produit jamais de purchase_price_kmf faux (ING-5 verrou 2)
 - un candidat déjà importé (état imported_to_catalog + product_id) ne peut pas être ré-importé
@@ -2409,13 +2412,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 100 fichier(s) déclaré(s)
+**Implementation** : 101 fichier(s) déclaré(s)
   - middleware : 1
   - migrations : 12
   - routes : 2
   - scripts : 7
   - services : 31
-  - tests : 47
+  - tests : 48
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="sourcing"]_
 

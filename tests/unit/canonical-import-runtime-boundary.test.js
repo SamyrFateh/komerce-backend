@@ -34,8 +34,8 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260930-11');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260930-11');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260930-12');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260930-12');
   expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=260929-4');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
@@ -69,7 +69,8 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('return_to');
   expect(source).toContain("q.set('view', 'item')");
   expect(source).toContain('/items/');
-  expect(source).toContain('Retour au passage');
+  expect(source).toContain('Retour au suivi');
+  expect(source).not.toContain('Retour au passage');
   expect(source).toContain('Alimentation automatique');
   expect(source).toContain('Préparation auto');
   expect(source).toContain('activation_ready');
