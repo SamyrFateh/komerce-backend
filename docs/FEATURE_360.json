@@ -6119,7 +6119,7 @@
           "test": "tests/unit/import-lot-registry.test.js"
         },
         {
-          "statement": "cockpit Sourcing N1 : quatre étapes utilisateur (Source, Produits reçus, Contrôle automatique, Catalogue) agrègent à l'affichage les six étapes réelles sans jamais les modifier ; quatre résultats seulement (reçus, remis, écartés, à examiner) plus la preuve de comptage serveur ; un rejet conforme ou une reprise réussie ne sont pas des incidents ; prix, marché et mise en vente restent hors du cockpit Sourcing ; les commandes Mettre à jour / Arrêter / Redémarrer réutilisent import-now, deactivate et activate",
+          "statement": "cockpit Sourcing = interface d'exception : pipeline Source → Produits reçus → Contrôle automatique → Catalogue en états seulement (aucun compteur, les six étapes réelles restent en drill-down) ; quatre résultats (reçus = source_total, prêts = certified, écartés automatiquement, Action requise) plus la preuve de comptage serveur ; certified n'est jamais présenté comme remis : PASSAGE AU CATALOGUE dit seulement En attente de remise / N restent à remettre / Remise terminée depuis catalogued ; DEFERRED et rejet conforme ne sont pas une Action requise ; Action requise est dérivée côté serveur (action_required, action_items, sourcing_status) et ouvre la liste filtrée produit · raison · action ; le statut du header est un statut Sourcing (LIVE / Terminé / Action requise / Bloqué), jamais un statut aval prix/marché/vente ; après intervention le cockpit relit la projection seul (poll, focus) ; les commandes Mettre à jour / Arrêter / Redémarrer réutilisent import-now, deactivate et activate",
           "test": "tests/unit/import-runtime-journey.test.js"
         }
       ],
@@ -26640,6 +26640,10 @@
       },
       "authority": "backend-core — tout changement du cycle de vie candidat (states, transitions) doit être validé par le propriétaire de routes/sourcing-scanner.js",
       "invariants": [
+        {
+          "statement": "la projection d'un run expose action_required / action_items / sourcing_status : seuls quarantaine, certification bloquée et anomalie de comptage demandent une action humaine ; DEFERRED, rejet conforme et exceptions aval Catalogue ne comptent jamais ; la liste d'items a toujours la longueur du compteur",
+          "test": "tests/unit/import-runtime-runs.test.js"
+        },
         "un candidat exclu (rejet manuel ou auto-exclusion douane/légale) n'est jamais ré-importable (ING-5 verrou 1)",
         "une devise hors whitelist (AED, EUR, USD, KMF, PLN ; PLN exige un taux explicite) ne produit jamais de purchase_price_kmf faux (ING-5 verrou 2)",
         "un candidat déjà importé (état imported_to_catalog + product_id) ne peut pas être ré-importé",

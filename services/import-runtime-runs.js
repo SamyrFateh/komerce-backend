@@ -161,6 +161,56 @@ function verdictOf(row = {}) {
   });
 }
 
+// « Action requise » = ce que Komerce ne peut pas résoudre seul (quarantaine, contrat de certification
+// bloqué, anomalie de comptage). DEFERRED (WATCH / AVOID / LOSS), les rejets conformes et les doublons
+// sont des issues comptabilisées, jamais une intervention humaine. Dérivation serveur : le navigateur
+// n'interprète aucun compteur.
+const ACTION_ITEM_CAP = 50;
+
+function reasonText(row, verdict) {
+  const parts = [row.promotion_status, row.rejected_reason, ...(verdict?.reasons || [])];
+  for (const value of [row.promotion_reasons, row.findings]) {
+    if (value == null) continue;
+    try { parts.push(typeof value === 'string' ? value : JSON.stringify(value)); } catch (_) { /* ignoré */ }
+  }
+  return parts.filter(Boolean).join(' ').toLowerCase();
+}
+
+function actionKindFor(text) {
+  if (/image|m[eé]dia|photo/.test(text)) return { reason: 'Image inexploitable', action: 'fix', action_label: 'Corriger' };
+  if (/cat[eé]gor|taxonom|classement|ambigu/.test(text)) return { reason: 'Classement ambigu', action: 'choose', action_label: 'Choisir' };
+  if (/manquant|missing|obligatoire|required/.test(text)) return { reason: 'Donnée obligatoire manquante', action: 'complete', action_label: 'Compléter' };
+  return { reason: 'Produit à examiner', action: 'examine', action_label: 'Examiner' };
+}
+
+function buildActionItems({ rows, verdicts, quarantined, certificationBlocked, anomaly }) {
+  const listed = [];
+  rows.forEach((row, index) => {
+    const verdict = verdicts[index];
+    const blocked = !verdict.outcome_valid
+      && (verdict.outcome === 'ready_for_refinery' || verdict.outcome === 'catalog_imported');
+    if (verdict.outcome !== 'quarantined' && !blocked) return;
+    listed.push({
+      candidate_ref: row.candidate_ref || null,
+      supplier_product_id: row.supplier_product_id || null,
+      product_name: row.product_name || null,
+      image_url: row.image_url || null,
+      ...actionKindFor(reasonText(row, verdict)),
+    });
+  });
+  const expected = quarantined + certificationBlocked;
+  while (listed.length < expected) {
+    listed.push({ candidate_ref: null, supplier_product_id: null, product_name: null, image_url: null, ...actionKindFor('') });
+  }
+  for (let i = 0; i < anomaly; i += 1) {
+    listed.push({
+      candidate_ref: null, supplier_product_id: null, product_name: null, image_url: null,
+      reason: 'Anomalie de comptage', action: 'examine', action_label: 'Examiner',
+    });
+  }
+  return { count: listed.length, items: listed.slice(0, ACTION_ITEM_CAP) };
+}
+
 function buildProjection({ run, rows = [], sourceProof = null, items = [], now = Date.now() }) {
   const intake = run.intake || {};
   const storedStages = run.stages || {};
@@ -398,6 +448,20 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
     status = 'COMPLETED';
   }
 
+  const actionRequired = buildActionItems({
+    rows,
+    verdicts,
+    quarantined,
+    certificationBlocked,
+    anomaly: intakeRecorded ? rec.unaccounted + rec.overflow : 0,
+  });
+  accounting.action_required = actionRequired.count;
+  const sourcingStatus = status === 'FAILED' && actionRequired.count === 0
+    ? 'BLOCKED'
+    : status === 'RUNNING'
+      ? 'RUNNING'
+      : actionRequired.count > 0 ? 'ACTION_REQUIRED' : 'DONE';
+
   const current = stages.find((s) => s.status !== 'COMPLETED') || stages[stages.length - 1];
   const processed = Math.min(
     sourceTotal,
@@ -501,6 +565,8 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
     run_ref: run.run_ref,
     mode: run.mode,
     status,
+    sourcing_status: sourcingStatus,
+    action_items: actionRequired.items,
     failure_reason: failureReason,
     provider: run.provider,
     source_type: run.source_type,

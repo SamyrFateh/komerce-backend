@@ -3122,3 +3122,17 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
   .kmc-import-runtime .kir-command-actions{width:100%}
   .kmc-import-runtime .kir-cmd{flex:1 1 100%}
 }
+
+/* --- Interface d'exception : remise en attente, liste Action requise --- */
+.kmc-import-runtime .kir-handoff.is-waiting{border-color:#1D3148;border-left-color:#526781}
+.kmc-import-runtime .kir-handoff.is-waiting .kir-ico{color:#8FA3BA}
+.kmc-import-runtime .kir-handoff.is-clean strong b{color:#1ED784}
+.kmc-import-runtime .kir-run-truth-grid.is-four>a.is-attention small{color:#FFC766;font-weight:650}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-attention .kir-run-flow-marker{background:#3A2606;border-color:#F59E0B;color:#FFC766}
+.kmc-import-runtime .kir-action-thumb{width:44px;height:34px;object-fit:contain;background:#fff;border-radius:5px;margin-right:12px;vertical-align:middle}
+.kmc-import-runtime .kir-table[data-action-list]{width:100%;border-collapse:collapse;background:#0A1625;color:#E4ECF6}
+.kmc-import-runtime .kir-table[data-action-list] th{background:#0B1828;color:#9FB2C8;font-weight:500;text-align:left;padding:12px 16px;font-size:14px;text-transform:none;letter-spacing:0}
+.kmc-import-runtime .kir-table[data-action-list] td{padding:12px 16px;border-top:1px solid #1D3148;font-size:16px;color:#E4ECF6;vertical-align:middle}
+.kmc-import-runtime .kir-table[data-action-list] td small{display:block;color:#7D91A8;font-size:12.5px}
+.kmc-import-runtime .kir-table[data-action-list] .kir-row-action{display:inline-block;padding:8px 16px;border-radius:8px;background:#4A2E0B;border:1px solid #F59E0B;color:#FFD08A;font:inherit;font-weight:650;text-decoration:none;cursor:pointer}
+.kmc-import-runtime .kir-table[data-action-list] .kir-row-action:disabled{opacity:.55;cursor:default}

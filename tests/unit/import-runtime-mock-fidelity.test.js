@@ -45,9 +45,9 @@ describe('import-runtime — fidélité visuelle au mock', () => {
     expect(source).toContain("ico('alert')");
   });
 
-  test('les 4 résultats du cockpit (reçus, remis, écartés, à examiner) sont réels et cliquables', () => {
+  test('les 4 résultats du cockpit (reçus, prêts, écartés, action requise) sont réels et cliquables', () => {
     expect(css).toContain('.kmc-import-runtime .kir-run-truth-grid.is-four{grid-template-columns:repeat(4,minmax(0,1fr)) !important}');
-    for (const label of ['Produits reçus', 'Remis au Catalogue', 'Écartés automatiquement', 'À examiner']) {
+    for (const label of ['Produits reçus', 'Prêts pour le Catalogue', 'Écartés automatiquement', 'Action requise']) {
       expect(source).toContain(`['${label}'`);
     }
     for (const gone of ['Entrées source', "['Acceptées'", "['Doublons'", "['En quarantaine'"]) {
