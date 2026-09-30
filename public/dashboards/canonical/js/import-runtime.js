@@ -1009,7 +1009,7 @@
       ${renderRecentItems(run)}`;
   }
 
-  // Écran calme : rien à afficher quand rien n'est à décider. Seuls un lot sans résultat ou une
+  // Écran calme : rien à afficher quand rien n'est à décider. Seuls un passage sans résultat ou une
   // connexion fournisseur interrompue justifient un message.
   function renderDecisions(run) {
     const lot = run.business || {};
@@ -1242,7 +1242,7 @@
     </nav>`;
   }
 
-  // Changer de lot sans rail permanent : précédent · liste compacte · suivant · tous les passages.
+  // Changer de passage sans rail permanent : précédent · liste compacte · suivant · tous les passages.
   function passagePicker(run, runNav, lots) {
     const list = (lots || []).filter(lot => lot.business_status !== 'ARCHIVED' || lot.run_ref === run.run_ref);
     if (!list.some(lot => lot.run_ref === run.run_ref)) {
@@ -1250,19 +1250,22 @@
     }
     const older = runNav?.older_ref ? { run_ref:runNav.older_ref } : null;
     const newer = runNav?.newer_ref ? { run_ref:runNav.newer_ref } : null;
-    const step = (lot, label) => lot
-      ? `<a class="kir-passage-step" href="${urlFor(lot.run_ref)}" data-cockpit-nav>${label}</a>`
-      : `<span class="kir-lot-step is-off">${label}</span>`;
+    const stepHref = ref => params().origin === 'passages'
+      ? passageLiveUrl(ref, params().passagesOffset)
+      : urlFor(ref);
+    const step = (passage, label) => passage
+      ? `<a class="kir-passage-step" href="${stepHref(passage.run_ref)}" data-cockpit-nav>${label}</a>`
+      : `<span class="kir-passage-step is-off">${label}</span>`;
     return `<div class="kir-passage-picker">
       ${step(older, '← passage précédent')}
-      <select data-passage-select aria-label="Choisir un passage">${list.map(lot =>
-        `<option value="${esc(lot.run_ref)}" ${lot.run_ref === run.run_ref ? 'selected' : ''}>Passage ${esc(lot.run_ref)}${lot.provider ? ' · ' + esc(lot.provider) : ''}</option>`).join('')}</select>
+      <select data-passage-select aria-label="Choisir un passage">${list.map(passage =>
+        `<option value="${esc(passage.run_ref)}" ${passage.run_ref === run.run_ref ? 'selected' : ''}>Passage ${esc(passage.run_ref)}${passage.provider ? ' · ' + esc(passage.provider) : ''}</option>`).join('')}</select>
       ${step(newer, 'passage suivant →')}
-      <a class="kir-lot-all" href="${passagesUrl(run.run_ref)}" data-cockpit-nav>Tous les passages →</a>
+      <a class="kir-passage-all" href="${passagesUrl(run.run_ref, params().origin === 'passages' ? params().passagesOffset : 0)}" data-cockpit-nav>Tous les passages →</a>
     </div>`;
   }
 
-    // Passages : l'historique des runs, uniquement la vérité Sourcing. Toute la ligne ouvre Live sur ce lot.
+    // Passages : l'historique des runs, uniquement la vérité Sourcing. Toute la ligne ouvre Live sur ce passage.
   const passageFilters = { source:'', state:'', period:'all', q:'' };
   const PASSAGE_PERIODS = Object.freeze({ all:'Toute la période', today:'Aujourd’hui', week:'7 derniers jours' });
 
