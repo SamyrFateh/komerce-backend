@@ -92,6 +92,10 @@ La cause structurelle actuelle est dans `promoteCandidate()` :
 
 Donc un produit propre et certifié Sourcing **ne peut pas être remis au Catalogue sans décision de prix humaine** dans le modèle actuel.
 
+Le parcours opérateur actuel contient en plus une couture cassée vérifiable : dans `public/dashboards/canonical/js/sourcing-workspace.js`, le bouton **Promouvoir** appelle `POST .../candidates/:candidateRef/promote` sans body `price_kmf`. Le backend répond donc `400 candidate_explicit_price_required`. Ce bouton ne peut pas achever le handoff tel qu'il est câblé aujourd'hui.
+
+Le Catalogue Canonical ne répare pas cette couture : sa file d'approbation part de `products lifecycle_status='candidate'`, donc elle ne voit qu'un candidat **après** `imported_to_catalog`. Les candidats Sourcing certifiés mais non promus ne sont pas encore dans cette file.
+
 C'est une tension avec la séparation de domaines retenue pour le cockpit :
 - Sourcing doit remettre un produit propre ;
 - le prix et l'exposition appartiennent au domaine Catalogue/économique.
