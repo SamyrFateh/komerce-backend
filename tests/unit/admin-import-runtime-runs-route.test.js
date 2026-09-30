@@ -32,12 +32,15 @@ const mockRuns = {
   getRun: jest.fn(),
   listRuns: jest.fn(),
   getProductTrace: jest.fn(),
+  getPopulation: jest.fn(),
 };
 
 jest.mock('../../services/import-runtime-runs', () => ({
   getRun: (...args) => mockRuns.getRun(...args),
   listRuns: (...args) => mockRuns.listRuns(...args),
   getProductTrace: (...args) => mockRuns.getProductTrace(...args),
+  getPopulation: (...args) => mockRuns.getPopulation(...args),
+  POPULATION_KINDS: ['received', 'ready', 'discarded'],
 }));
 
 const mockRegistry = {
@@ -101,6 +104,26 @@ describe('import runtime run routes', () => {
     );
     expect(response.status).toBe(404);
     expect(mockRuns.getRun).not.toHaveBeenCalled();
+  });
+
+  test('population : les produits qui composent un chiffre du cockpit', async () => {
+    mockRuns.getPopulation.mockResolvedValue({ kind: 'ready', total: 12, items: [], unlisted: [] });
+    const response = await request(app()).get(`${BASE}/KIR-000001/population?kind=ready`);
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ kind: 'ready', total: 12 });
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(mockRuns.getPopulation).toHaveBeenCalledWith('KIR-000001', 'ready');
+  });
+
+  test('population : kind inconnu → 400, run absent → 404, ref mal formée → 404 sans appel', async () => {
+    const bad = await request(app()).get(`${BASE}/KIR-000001/population?kind=history`);
+    expect(bad.status).toBe(400);
+    expect(bad.body.code).toBe('import_population_kind_invalid');
+    mockRuns.getPopulation.mockResolvedValue(null);
+    expect((await request(app()).get(`${BASE}/KIR-999999/population?kind=received`)).status).toBe(404);
+    mockRuns.getPopulation.mockClear();
+    expect((await request(app()).get(`${BASE}/not-a-ref/population?kind=received`)).status).toBe(404);
+    expect(mockRuns.getPopulation).not.toHaveBeenCalled();
   });
 
   test('liste les runs récents', async () => {
