@@ -26,6 +26,7 @@ jest.mock('../../services/supplier-catalog-scanner');
 jest.mock('../../services/pricing-engine');
 jest.mock('../../services/catalog-eligibility');
 jest.mock('../../services/sourcing-observation-shadow-service');
+jest.mock('../../services/suppliers/catalog-import-json');
 
 const db = require('../../db');
 const scanner = require('../../services/supplier-catalog-scanner');
@@ -33,6 +34,8 @@ const pricingEngine = require('../../services/pricing-engine');
 const eligibility = require('../../services/catalog-eligibility');
 const shadow = require('../../services/sourcing-observation-shadow-service');
 
+const jsonImport = require('../../services/suppliers/catalog-import-json');
+const providerPolicy = require('../../services/sourcing-provider-control-policy');
 const importRuns = require('../../services/import-runtime-runs');
 const itemEvents = require('../../services/import-runtime-item-events');
 
@@ -226,6 +229,39 @@ describe('importCatalog', () => {
       && params[0] === 'api:aliexpress'
       && params[1] === 'capture-api-2'
     )).toBe(true);
+  });
+
+  test('source JSON : délègue au rail transactionnel dédié', async () => {
+    jsonImport.importJsonCatalog.mockResolvedValue({ status: 200, body: { via: 'json' } });
+    const body = { supplier_name: 'Acme', source_type: 'json' };
+    const result = await importCatalog(body, 'u1', jest.fn());
+    expect(jsonImport.importJsonCatalog).toHaveBeenCalledWith(body, 'u1');
+    expect(result).toEqual({ status: 200, body: { via: 'json' } });
+  });
+
+  test('API résolue : un échec d’enregistrement de la certification runtime n’interrompt pas l’import', async () => {
+    jest.clearAllMocks();
+    jest.spyOn(providerPolicy, 'recordRuntimeCertification').mockRejectedValue(new Error('policy down'));
+    const dispatch = jest.fn().mockResolvedValue({
+      products: [makeV2Product({ supplier_name: 'AliExpress', supplier_product_id: '1005006471612405', product_name: 'Produit' })],
+      invalid: [],
+    });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-api-3' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) return Promise.resolve({ rows: [{ id: 'candidate-api-3', data_sources: {}, was_updated: false }] });
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    scanner.scanCandidate.mockResolvedValue(makeScan());
+    shadow.recordCatalogImportObservationsShadow.mockResolvedValue({
+      status: 'recorded', source_id: 'api:aliexpress', capture_id: 'capture-api-3',
+      resolution: { status: 'resolved', review_required: 0, deferred_parent: 0 },
+    });
+    const result = await importCatalog({ supplier_name: 'AliExpress', source_type: 'api', supplier_id: 'aliexpress' }, 1, dispatch);
+    expect(result.status).toBe(200);
+    expect(result.body.pipeline_status).toBe('CANONICAL_RESOLVED');
+    expect(providerPolicy.recordRuntimeCertification).toHaveBeenCalled();
+    providerPolicy.recordRuntimeCertification.mockRestore();
   });
 
   // ── ING-2 : seuil fichier malade (ING-I4) ────────────────────────────────
