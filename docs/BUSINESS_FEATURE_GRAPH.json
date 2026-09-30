@@ -29581,6 +29581,18 @@
               {
                 "sourceFileId": "tests/unit/catalog-import-orchestrator.test.js",
                 "targetFile": "services/sourcing-observation-shadow-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-import-orchestrator.test.js",
+                "targetFile": "services/sourcing-provider-control-policy.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-import-orchestrator.test.js",
+                "targetFile": "services/import-runtime-runs.js"
+              },
+              {
+                "sourceFileId": "tests/unit/catalog-import-orchestrator.test.js",
+                "targetFile": "services/import-runtime-item-events.js"
               }
             ]
           },
