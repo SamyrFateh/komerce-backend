@@ -112,13 +112,13 @@ test('niveau 1 : quatre étapes sans compteur, quatre résultats, aucun jargon i
   const node = root();
   ui.render(node, payload);
   const html = node.innerHTML;
-  expect(html).toContain('FLUX DU LOT');
+  expect(html).toContain('FLUX DU PASSAGE');
   for (const label of ['Source', 'Produits reçus', 'Contrôle automatique', 'Catalogue']) expect(html).toContain(`<strong>${label}</strong>`);
   for (const jargon of ['Raffinerie', 'Taxonomie', 'Certification', 'certifié(s) sourcing', 'preuve runtime']) expect(html).not.toContain(jargon);
   // Le pipeline ne répète aucun compteur : uniquement des états.
-  const flow = html.slice(html.indexOf('kir-run-flow-track'), html.indexOf('RÉSULTAT DU LOT'));
+  const flow = html.slice(html.indexOf('kir-run-flow-track'), html.indexOf('RÉSULTAT DU PASSAGE'));
   expect(flow).not.toMatch(/\d+\s*\/\s*\d+/);
-  expect(html).toContain('RÉSULTAT DU LOT');
+  expect(html).toContain('RÉSULTAT DU PASSAGE');
   for (const label of ['Produits reçus', 'Prêts pour le Catalogue', 'Écartés automatiquement', 'Action requise']) expect(html).toContain(`<span>${label}</span>`);
   for (const gone of ['Remis au Catalogue', 'À examiner', 'Entrées source', 'Acceptées', 'Doublons', 'En quarantaine', 'Rejetées']) expect(html).not.toContain(`<span>${gone}</span>`);
   for (const commercial of ['PARCOURS MÉTIER', 'Prêts à vendre', 'En vente', 'Décisions de mise en vente', 'Décisions commerciales', 'Clôture', 'Prix source', 'Décisions attendues']) {
@@ -385,10 +385,10 @@ test('drill-down Catalogue montre seulement les produits qui exigent cette déci
   const productHref = ui.withReturnTo(
     '/admin/products/P-1',
     ui.urlFor('KIR-000004','catalogue'),
-    'Retour au lot'
+    'Retour au passage'
   );
   expect(productHref).toContain('return_to=%2Fadmin%2Fimport-runtime%3Frun%3DKIR-000004%26view%3Dcatalogue');
-  expect(productHref).toContain('return_label=Retour+au+lot');
+  expect(productHref).toContain('return_label=Retour+au+passage');
   expect(original).toBeDefined();
 });
 
@@ -424,6 +424,53 @@ test('CAS A : « Produits reçus 20 » liste les produits (pas les six étapes t
   expect(html).toContain('Produit 1');
   expect(html).toContain('SP-1');
   for (const tech of ['Raffinerie', 'Taxonomie', 'kir-history-stages', 'Détail technique']) expect(html.slice(html.indexOf('kir-drill-head'))).not.toContain(tech);
+});
+
+test('AGRÉGAT → POPULATION → OBJET : une ligne produit ouvre son détail dans le même passage', () => {
+  const population = { kind:'received', total:1, items:[popItem(1, { issue_key:'ready', issue_label:'Prêt pour le Catalogue' })], unlisted:[] };
+  const populationHtml = drill('population', 'kind=received', null, population);
+  expect(populationHtml).toContain(`href="/admin/import-runtime?run=${RUN}&view=item&kind=received&item=SP-1"`);
+
+  const p = scenario();
+  p.item_trace = {
+    run_ref:RUN,
+    provider:'AliExpress',
+    supplier_product_id:'SP-1',
+    product_name:'Produit 1',
+    image_url:null,
+    refinery:{ done:true, scanned_at:'2026-09-30T10:00:00Z' },
+    canonical_category:'maison',
+    product_ref:null,
+    certification:{ outcome:'ready_for_refinery', sourcing_certified:true, reasons:[] },
+    catalogue_status:'scanned',
+  };
+  const html = render(p, `?run=${RUN}&view=item&kind=received&item=SP-1`);
+  expect(html).toContain('Produit 1');
+  expect(html).toContain('Prêt pour le Catalogue');
+  expect(html).toContain('SP-1');
+  expect(html).toContain('← Retour à produits reçus');
+  expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=population&kind=received"`);
+  expect(html).toContain('Aucune fiche Catalogue créée à ce stade.');
+});
+
+test('OBJET remis au Catalogue : ouvre la fiche Catalogue avec retour exact vers l’objet du passage', () => {
+  const p = scenario({ catalogued:1 });
+  p.item_trace = {
+    run_ref:RUN,
+    provider:'AliExpress',
+    supplier_product_id:'SP-1',
+    product_name:'Produit 1',
+    refinery:{ done:true },
+    canonical_category:'maison',
+    product_ref:'KPR-000001',
+    certification:{ outcome:'catalog_imported', sourcing_certified:true, reasons:[] },
+    catalogue_status:'imported_to_catalog',
+  };
+  const html = render(p, `?run=${RUN}&view=item&kind=ready&item=SP-1`);
+  expect(html).toContain('Remis au Catalogue');
+  expect(html).toContain('Ouvrir la fiche Catalogue →');
+  expect(html).toContain('return_to=%2Fadmin%2Fimport-runtime%3Frun%3DKIR-000004%26view%3Ditem%26kind%3Dready%26item%3DSP-1');
+  expect(html).toContain('return_label=Retour+au+produit+du+passage');
 });
 
 test('CAS B : « Prêts pour le Catalogue 12 » = exactement les 12 certified avec l’état de remise, sans action', () => {
@@ -476,7 +523,7 @@ test('CAS F : jamais « COMPLETED · 0 / 12 » — le détail technique dit « �
   expect(html).not.toMatch(/0\s*\/\s*12/);
   expect(html).toContain('✓ Terminé');
   // Sans provenance « contrôle » : retour au lot.
-  expect(drill('history', '', p)).toContain('← Retour au lot');
+  expect(drill('history', '', p)).toContain('← Retour au passage');
 });
 
 test('Source : la source utilisée, sans catalogue de produits', () => {
@@ -502,24 +549,25 @@ const PASSAGES = [
 ];
 const inMain = html => html.slice(html.indexOf('<main class="kir-main">'));
 
-test('CAS A : LIVE = un seul cockpit — ni registre, ni rail KIR permanent, ni bloc Sources dessous', () => {
+test('CAS A : SUIVI = un seul cockpit — ni registre, ni rail KIR permanent, ni bloc Sources dessous', () => {
   const html = render(scenario());
-  for (const gone of ['kir-lot-strip', 'kir-lot-chip', 'kir-secondary', 'kir-source-control', 'data-source-toggle', 'Registre des lots', 'Tous les lots']) {
+  for (const gone of ['kir-lot-strip', 'kir-lot-chip', 'kir-secondary', 'kir-source-control', 'data-source-toggle', 'Registre des passages']) {
     expect(html).not.toContain(gone);
   }
+  expect(html).toContain('Tous les passages →');
   expect(html).toContain('kir-domain-nav');
   expect((html.match(/kir-run-truth-grid/g) || []).length).toBe(1);
   // Sélecteur compact : précédent · liste · suivant · Tous les passages.
   expect(html).toContain('data-lot-select');
-  expect(html).toContain('← lot précédent');
-  expect(html).toContain('lot suivant →');
+  expect(html).toContain('← passage précédent');
+  expect(html).toContain('passage suivant →');
   expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=passages"`);
 });
 
-test('domaine : Live / Passages / Sources, l\'onglet actif suit la vue', () => {
+test('domaine : Suivi / Passages / Sources, l\'onglet actif suit la vue', () => {
   const html = render(scenario());
-  expect(html).toMatch(/kir-domain-nav[\s\S]*is-active[^>]*>Live/);
-  for (const label of ['Live', 'Passages', 'Sources']) expect(html).toContain(`>${label}</a>`);
+  expect(html).toMatch(/kir-domain-nav[\s\S]*is-active[^>]*>Suivi/);
+  for (const label of ['Suivi', 'Passages', 'Sources']) expect(html).toContain(`>${label}</a>`);
   expect(drill('passages', '', scenario(), null)).toMatch(/is-active[^>]*>Passages/);
   expect(drill('sources')).toMatch(/is-active[^>]*>Sources/);
 });
@@ -555,7 +603,7 @@ test('CAS D : « Produits reçus 20 » = vue exclusive, sans le cockpit au-dessu
   for (const gone of ['kir-run-flow', 'kir-run-truth', 'kir-command-bar', 'kir-live-hero', 'kir-lot-picker']) expect(html).not.toContain(gone);
   expect(html).toContain('Produits reçus · 20');
   expect(html).toContain(`Sourcing</a><i aria-hidden="true">›</i><a href="/admin/import-runtime?run=${RUN}" data-cockpit-nav>${RUN}</a><i aria-hidden="true">›</i><span aria-current="page">Produits reçus`);
-  expect(html).toContain('← Retour au lot');
+  expect(html).toContain('← Retour au passage');
 });
 
 test('CAS E/F : Prêts (12) et Action requise (3) — vues exclusives avec exactement leurs objets', () => {

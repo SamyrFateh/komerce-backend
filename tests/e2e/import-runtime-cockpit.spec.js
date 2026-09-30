@@ -357,14 +357,36 @@ async function mountLive(page, data) {
     if (url.pathname.endsWith('/import-passages')) {
       state.calls.push('passages');
       const offset = Number(url.searchParams.get('offset') || 0);
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ passages: state.passages || [], offset, next_offset:null }) });
+      const pageData = state.passagePages?.[offset] || { passages:state.passages || [], next_offset:null };
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ passages:pageData.passages || [], offset, next_offset:pageData.next_offset ?? null }) });
     }
     if (url.pathname.endsWith('/population')) {
       const kind = url.searchParams.get('kind');
       state.calls.push(`population:${kind}`);
       return route.fulfill({ contentType: 'application/json', body: JSON.stringify(state.populations?.[kind] || { kind, total: 0, items: [], unlisted: [] }) });
     }
-    if (url.pathname.endsWith('/import-cockpit')) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(state.payload) });
+    if (/\/import-runs\/[^/]+\/items\/[^/]+$/.test(url.pathname)) {
+      const supplierProductId = decodeURIComponent(url.pathname.split('/').pop());
+      state.calls.push(`item:${supplierProductId}`);
+      const trace = state.traces?.[supplierProductId];
+      return trace
+        ? route.fulfill({ contentType:'application/json', body:JSON.stringify(trace) })
+        : route.fulfill({ status:404, contentType:'application/json', body:JSON.stringify({ error:'Produit introuvable' }) });
+    }
+    if (url.pathname.endsWith('/import-cockpit')) {
+      const requested = url.searchParams.get('run');
+      if (!requested || requested === state.payload.selected?.run_ref) {
+        return route.fulfill({ contentType:'application/json', body:JSON.stringify(state.payload) });
+      }
+      const next = JSON.parse(JSON.stringify(state.payload));
+      const lot = (next.lots || []).find((item) => item.run_ref === requested);
+      if (lot) {
+        next.selected.run_ref = requested;
+        next.selected.provider = lot.provider || next.selected.provider;
+        next.selected.business = { ...(next.selected.business || {}), ...lot, run_ref:requested };
+      }
+      return route.fulfill({ contentType:'application/json', body:JSON.stringify(next) });
+    }
     if (req.method() === 'POST' && url.pathname.includes('/sources/')) {
       const action = url.pathname.split('/').pop();
       state.calls.push(action);
@@ -450,9 +472,38 @@ test.describe('Cockpit imports — drill-downs cohérents avec le N1', () => {
     await page.locator('.kir-run-truth-grid > a.is-received').click();
     await expect(page.locator('[data-population-item]')).toHaveCount(12);
     await expect(page.locator('.kir-history-stages')).toHaveCount(0);
-    await expect(page.locator('.kir-back')).toContainText('Retour au lot');
+    await expect(page.locator('.kir-back')).toContainText('Retour au passage');
     await page.screenshot({ path: 'test-results/import-runtime-cockpit-population.png' });
     expect(state.calls).toContain('population:received');
+  });
+
+  test('AGRÉGAT → POPULATION → OBJET → retour navigateur : le contexte du passage est conservé', async ({ page }) => {
+    const state = await mountLive(page, calmPayload);
+    state.populations = { received:pop('received', 1, 1, { issue_label:'Prêt pour le Catalogue' }) };
+    state.traces = {
+      'SP-0': {
+        run_ref:'KIR-000009', provider:'AliExpress', supplier_product_id:'SP-0', product_name:'Coque 1',
+        refinery:{ done:true, scanned_at:iso(20) }, canonical_category:'accessoires',
+        product_ref:null, certification:{ outcome:'ready_for_refinery', sourcing_certified:true, reasons:[] },
+        catalogue_status:'scanned',
+      },
+    };
+
+    await page.locator('.kir-run-truth-grid > a.is-received').click();
+    await expect(page.locator('[data-population-item]')).toHaveCount(1);
+    await page.locator('.kir-population-item-link').click();
+    await expect(page).toHaveURL(/view=item.*kind=received.*item=SP-0/);
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Coque 1');
+    await expect(page.locator('.kir-main')).toContainText('Prêt pour le Catalogue');
+    await expect(page.locator('.kir-back')).toContainText('Retour à produits reçus');
+
+    await page.goBack();
+    await expect(page).toHaveURL(/view=population.*kind=received/);
+    await expect(page.locator('[data-population-item]')).toHaveCount(1);
+    await page.goBack();
+    await expect(page).toHaveURL(/run=KIR-000009$/);
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    expect(state.calls).toEqual(expect.arrayContaining(['population:received', 'item:SP-0']));
   });
 
   test('clic sur « Contrôle automatique » : Préparation / Classement / Validation, détail technique en lien secondaire, retour au contrôle', async ({ page }) => {
@@ -466,6 +517,11 @@ test.describe('Cockpit imports — drill-downs cohérents avec le N1', () => {
     await expect(page.locator('.kir-back')).toContainText('Retour au contrôle automatique');
     await expect(page.locator('.kir-history-stages')).toContainText('Terminé');
     await expect(page.locator('.kir-history-stages')).not.toContainText(/COMPLETED|0 \/ 12/);
+    await page.locator('.kir-history-stage', { hasText:'Raffinerie' }).click();
+    await expect(page).toHaveURL(/view=history.*stage=REFINERY.*from=control/);
+    await expect(page.locator('.kir-back')).toContainText('Retour au contrôle automatique');
+    await page.locator('.kir-back').click();
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Contrôle automatique');
   });
 
   test('clic sur « Source » et « Catalogue » : vues dédiées', async ({ page }) => {
@@ -496,6 +552,8 @@ test.describe('Cockpit imports — navigation canonique (vues exclusives)', () =
     const state = await mountLive(page, withLots());
     state.passages = passages;
     await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    await expect(page.locator('.kir-run-flow')).toContainText('FLUX DU PASSAGE');
+    await expect(page.locator('.kir-run-truth')).toContainText('RÉSULTAT DU PASSAGE');
     await expect(page.locator('.kir-lot-strip, .kir-source-control, .kir-secondary')).toHaveCount(0);
     await page.getByText('Tous les passages →').click();
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Historique des passages');
@@ -507,6 +565,11 @@ test.describe('Cockpit imports — navigation canonique (vues exclusives)', () =
     await expect(page.locator('.kir-run-truth')).toHaveCount(1);
     await expect(page).toHaveURL(/run=KIR-000008/);
     await expect(page.locator('.kir-passage-row')).toHaveCount(0);
+
+    // Le retour navigateur ramène exactement à la liste qui a ouvert le passage.
+    await page.goBack();
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Historique des passages');
+    await expect(page.locator('.kir-passage-row')).toHaveCount(2);
   });
 
   test('filtres de Passages : source, état et recherche', async ({ page }) => {
@@ -523,24 +586,59 @@ test.describe('Cockpit imports — navigation canonique (vues exclusives)', () =
     await expect(page.locator('.kir-passage-row')).toHaveCount(1);
   });
 
-  test('sélecteur de lot compact : précédent, liste, suivant', async ({ page }) => {
+  test('sélecteur de passage compact : précédent, liste, suivant', async ({ page }) => {
     await mountLive(page, withLots());
     await expect(page.locator('[data-lot-select] option')).toHaveCount(2);
-    await page.getByText('← lot précédent').click();
+    await page.getByText('← passage précédent').click();
     await expect(page).toHaveURL(/run=KIR-000008/);
   });
 
-  test('onglets Sources et Live : vue exclusive puis retour au cockpit', async ({ page }) => {
+  test('onglets Sources et Suivi : vue exclusive puis retour au cockpit', async ({ page }) => {
     await mountLive(page, withLots());
     await page.locator('.kir-domain-nav a', { hasText: 'Sources' }).click();
     await expect(page.locator('.kir-source-control')).toHaveCount(1);
     await expect(page.locator('.kir-run-truth')).toHaveCount(0);
-    await page.locator('.kir-domain-nav a', { hasText: 'Live' }).click();
+    await page.locator('.kir-domain-nav a', { hasText: 'Suivi' }).click();
     await expect(page.locator('.kir-run-truth')).toHaveCount(1);
     await expect(page.locator('.kir-source-control')).toHaveCount(0);
   });
 
-  test('Contrôle automatique → détail technique (6 étapes) → retour au contrôle automatique → retour au lot', async ({ page }) => {
+  test('historique navigateur : Suivi → Passages → Sources → retour arrière restaure chaque vue exclusive', async ({ page }) => {
+    const state = await mountLive(page, withLots());
+    state.passages = passages;
+
+    await page.locator('.kir-domain-nav a', { hasText:'Passages' }).click();
+    await expect(page.locator('.kir-passage-row')).toHaveCount(2);
+    await page.locator('.kir-domain-nav a', { hasText:'Sources' }).click();
+    await expect(page.locator('.kir-source-control')).toHaveCount(1);
+
+    await page.goBack();
+    await expect(page.locator('.kir-passage-row')).toHaveCount(2);
+    await expect(page.locator('.kir-run-truth')).toHaveCount(0);
+    await page.goBack();
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    await page.goForward();
+    await expect(page.locator('.kir-passage-row')).toHaveCount(2);
+  });
+
+  test('pagination Passages : plus anciens puis plus récents sans perdre le KIR de contexte', async ({ page }) => {
+    const state = await mountLive(page, withLots());
+    state.passagePages = {
+      0:{ passages, next_offset:50 },
+      50:{ passages:[{ ...passages[1], run_ref:'KIR-000001' }], next_offset:null },
+    };
+    await page.getByText('Tous les passages →').click();
+    await expect(page.locator('.kir-passage-row')).toHaveCount(2);
+    await page.getByText('Passages plus anciens →').click();
+    await expect(page).toHaveURL(/view=passages.*offset=50/);
+    await expect(page.locator('.kir-passage-row')).toHaveCount(1);
+    await expect(page.locator('.kir-passage-row')).toContainText('KIR-000001');
+    await page.getByText('← Passages plus récents').click();
+    await expect(page).not.toHaveURL(/offset=50/);
+    await expect(page.locator('.kir-passage-row')).toHaveCount(2);
+  });
+
+  test('Contrôle automatique → détail technique (6 étapes) → retour au contrôle automatique → retour au passage', async ({ page }) => {
     await mountLive(page, withLots());
     await page.locator('.kir-run-flow-step', { hasText: 'Contrôle automatique' }).click();
     await expect(page.locator('.kir-run-truth')).toHaveCount(0);

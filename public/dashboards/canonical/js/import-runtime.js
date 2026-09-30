@@ -23,7 +23,7 @@
   const COMMAND_POLL_MS = 2000;
   // Une vue = une question. Live / Passages / Sources sont les trois vues du domaine ; les autres sont des
   // vues secondaires du lot courant. Une vue remplace la précédente, elle ne s'empile jamais dessous.
-  const VIEWS = new Set(['overview', 'exceptions', 'history', 'population', 'source', 'control', 'handoff', 'passages', 'sources']);
+  const VIEWS = new Set(['overview', 'exceptions', 'history', 'population', 'item', 'source', 'control', 'handoff', 'passages', 'sources']);
   const LEGACY_VIEWS = Object.freeze({ registry:'passages' });
   const POPULATION_KINDS = Object.freeze(['received', 'ready', 'discarded']);
   let timer = null;
@@ -161,7 +161,7 @@
   }
 
   // Le pipeline ne montre que l'état du parcours, jamais un compteur (les chiffres vivent dans
-  // « Résultat du lot »). Vert = terminé · bleu = travaille · orange = intervention humaine
+  // « Résultat du passage »). Vert = terminé · bleu = travaille · orange = intervention humaine
   // attendue · rouge = Komerce ne peut plus avancer.
   function userSteps(stages, { runStatus = null, accounting = null } = {}) {
     const byKey = new Map((stages || []).map(stage => [stage.key, stage]));
@@ -327,7 +327,7 @@
     const helper = failed
       ? (activationState.error || 'Le premier passage automatique a échoué.')
       : noResult
-        ? `${label} · ${activationState.runRef || 'nouveau lot'} · aucun produit exploitable`
+        ? `${label} · ${activationState.runRef || 'nouveau passage'} · aucun produit exploitable`
         : providerGateBlocked
           ? `${label} · alimentation automatique arrêtée`
           : automaticDone && catalogueWaiting
@@ -335,8 +335,8 @@
             : automaticDone
               ? `${label} · le traitement automatique a atteint le Catalogue`
               : activationState.runRef
-                ? `${label} · ${activationState.runRef} · le même lot avance de bout en bout`
-                : `${label} · préparation de la source et création du premier lot`;
+                ? `${label} · ${activationState.runRef} · le même passage avance de bout en bout`
+                : `${label} · préparation de la source et création du premier passage`;
     const tone = failed ? 'is-failed'
       : noResult ? 'is-empty'
         : automaticDone || catalogueWaiting || providerGateBlocked || activationState.done
@@ -344,7 +344,7 @@
           : 'is-live';
     return `<section class="kir-run-flow ${tone}" aria-live="polite">
       <div class="kir-run-flow-head">
-        <div><span class="kir-section-kicker">FLUX DU LOT</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
+        <div><span class="kir-section-kicker">FLUX DU PASSAGE</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
         <em>${progress}%</em>
       </div>
       <div class="kir-run-flow-progress"><span style="width:${progress}%"></span></div>
@@ -378,10 +378,10 @@
       : automaticDone && catalogueWaiting
         ? 'Import automatique terminé'
         : run.status === 'COMPLETED'
-          ? 'Parcours du lot terminé'
+          ? 'Passage terminé'
           : 'Passage en cours';
     const helper = failed
-      ? (run.failure_reason || 'Une étape du lot est bloquée.')
+      ? (run.failure_reason || 'Une étape du passage est bloquée.')
       : catalogueWaiting
         ? `${run.run_ref} · ${run.provider || 'Source'}`
         : `${run.run_ref} · ${run.provider || 'Source'} · parcours conservé à l’écran`;
@@ -389,9 +389,9 @@
       : catalogueWaiting || run.status === 'COMPLETED' ? 'is-complete has-manual-action'
         : 'is-live';
 
-    return `<section class="kir-run-flow ${tone}" aria-label="Parcours du lot ${esc(run.run_ref)}">
+    return `<section class="kir-run-flow ${tone}" aria-label="Parcours du passage ${esc(run.run_ref)}">
       <div class="kir-run-flow-head">
-        <div><span class="kir-section-kicker">FLUX DU LOT</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
+        <div><span class="kir-section-kicker">FLUX DU PASSAGE</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
       </div>
       ${flowTrack(stages, run.run_ref, { runStatus:run.status, accounting:run.accounting })}
     </section>`;
@@ -420,7 +420,7 @@
     </section>`;
   }
 
-  // Résultat du lot : quatre chiffres, chacun lu tel quel dans la comptabilité serveur.
+  // Résultat du passage : quatre chiffres, chacun lu tel quel dans la comptabilité serveur.
   function sourcingOutcome(run) {
     const a = run?.accounting || {};
     const stages = Array.isArray(run?.stages) ? run.stages : [];
@@ -452,8 +452,8 @@
       : o.unaccounted > 0
         ? `<p class="kir-run-proof is-bad">${ico('alert')}${o.received - Math.min(o.received, o.unaccounted)}/${o.received} produits comptabilisés · ${o.unaccounted} produit${o.unaccounted > 1 ? 's' : ''} à retrouver</p>`
         : `<p class="kir-run-proof is-ok"><b aria-hidden="true">✓</b>${o.received}/${o.received} produits comptabilisés</p>`;
-    return `<section class="kir-run-truth" aria-label="Résultat du lot">
-      <div class="kir-run-truth-head"><span class="kir-section-kicker">RÉSULTAT DU LOT</span>${proof}</div>
+    return `<section class="kir-run-truth" aria-label="Résultat du passage">
+      <div class="kir-run-truth-head"><span class="kir-section-kicker">RÉSULTAT DU PASSAGE</span>${proof}</div>
       <div class="kir-run-truth-grid is-four">${tiles.map(([label, value, icon, href, cls, sub]) =>
         `<a class="${cls}" href="${href}" data-cockpit-nav aria-label="${esc(label)} — ouvrir le détail">${ico(icon)}<span>${esc(label)}</span><strong>${value}</strong><small>${esc(sub)}</small></a>`
       ).join('')}</div>
@@ -514,6 +514,7 @@
       run,
       view: VIEWS.has(requestedView) ? requestedView : 'overview',
       kind: POPULATION_KINDS.includes(kind) ? kind : 'received',
+      item: query.get('item') || null,
       from: query.get('from') || null,
       offset: Math.max(0, Number(query.get('offset')) || 0),
     };
@@ -592,11 +593,12 @@
     return '/admin/import-runtime?' + q.toString();
   }
 
-    function stageUrl(runRef, stageKey) {
+    function stageUrl(runRef, stageKey, from = null) {
     const q = new URLSearchParams();
     if (runRef) q.set('run', runRef);
     q.set('view', 'history');
     if (stageKey) q.set('stage', stageKey);
+    if (from) q.set('from', from);
     return '/admin/import-runtime?' + q.toString();
   }
 
@@ -607,6 +609,15 @@
     if (runRef) q.set('run', runRef);
     q.set('view', 'population');
     q.set('kind', kind);
+    return '/admin/import-runtime?' + q.toString();
+  }
+
+  function itemUrl(runRef, supplierProductId, kind = 'received') {
+    const q = new URLSearchParams();
+    if (runRef) q.set('run', runRef);
+    q.set('view', 'item');
+    q.set('kind', POPULATION_KINDS.includes(kind) ? kind : 'received');
+    if (supplierProductId) q.set('item', supplierProductId);
     return '/admin/import-runtime?' + q.toString();
   }
 
@@ -643,7 +654,7 @@
     return RUN_STAGE_DEFS.find(([stageKey]) => stageKey === key)?.[1] || key || 'Étape';
   }
 
-  function withReturnTo(path, returnTo, label = 'Retour au lot') {
+  function withReturnTo(path, returnTo, label = 'Retour au passage') {
     const separator = String(path || '').includes('?') ? '&' : '?';
     const q = new URLSearchParams();
     q.set('return_to', returnTo);
@@ -693,7 +704,7 @@
           const readiness = providerGateBlocked
             ? 'Source OFF · preuve runtime à corriger puis relancer'
             : busy
-              ? (live.runRef ? `Lot ${live.runRef} en cours` : 'Démarrage du premier import…')
+              ? (live.runRef ? `Passage ${live.runRef} en cours` : 'Démarrage du premier import…')
               : !activationReady
                 ? (source.blocker || 'Source non activable')
                 : !ready
@@ -799,13 +810,13 @@
     }).join('');
     const empty = `<div class="kir-empty-launch">
       <div class="kir-empty-launch-copy">
-        <strong>Aucun lot importé</strong>
+        <strong>Aucun passage importé</strong>
         <span>Activez une source pour lancer un premier passage réel et suivre sa progression ici.</span>
       </div>
     </div>`;
-    return `<nav class="kir-lot-strip ${cards ? '' : 'is-empty'}" aria-label="Lots d'import récents">
+    return `<nav class="kir-lot-strip ${cards ? '' : 'is-empty'}" aria-label="Passages d'import récents">
       <div class="kir-lot-strip-scroll">${cards || empty}</div>
-      <a class="kir-lot-all" href="${urlFor(selectedRef, 'registry')}" data-cockpit-nav>Tous les lots</a>
+      <a class="kir-lot-all" href="${urlFor(selectedRef, 'registry')}" data-cockpit-nav>Tous les passages</a>
     </nav>`;
   }
 
@@ -898,7 +909,7 @@
       return withReturnTo(
         `/admin/products/${encodeURIComponent(item.product_ref)}`,
         urlFor(run.run_ref),
-        'Retour au lot'
+        'Retour au passage'
       );
     }
     return stageUrl(run.run_ref, item?.stage || run.current_stage);
@@ -942,7 +953,7 @@
           <time title="${esc(fmtDate(event.at))}">${fmtClock(event.at)}</time>
           <span class="kir-live-event-marker"></span>
           <div><strong>${esc(human.label)}</strong>${human.detail ? `<small>${esc(human.detail)}</small>` : ''}</div>
-        </a>`).join('') : '<div class="kir-empty-inline">Aucun événement enregistré pour ce lot.</div>'}
+        </a>`).join('') : '<div class="kir-empty-inline">Aucun événement enregistré pour ce passage.</div>'}
       </div>
     </section>`;
   }
@@ -957,7 +968,7 @@
   function renderCurrentItem(run) {
     const item = run.current_item || null;
     if (!item) {
-      return `<section class="kir-live-panel kir-current-item"><header><strong>${esc(currentItemTitle(run))}</strong></header><div class="kir-current-empty">Aucun produit pour ce lot.</div></section>`;
+      return `<section class="kir-live-panel kir-current-item"><header><strong>${esc(currentItemTitle(run))}</strong></header><div class="kir-current-empty">Aucun produit pour ce passage.</div></section>`;
     }
     const href = itemHref(run, item);
     const image = item.image_url
@@ -1020,7 +1031,7 @@
     const connectorBlocked = lot.business_status === 'BLOCKED'
       && String(lot.failure_reason || '').startsWith('connector_failed:');
     if (lot.business_status === 'NO_RESULT') {
-      return '<section class="kir-neutral-panel"><strong>Passage terminé sans résultat.</strong>&nbsp; La source n’a retourné aucun produit exploitable ; le lot reste visible pour garder la trace du passage.</section>';
+      return '<section class="kir-neutral-panel"><strong>Passage terminé sans résultat.</strong>&nbsp; La source n’a retourné aucun produit exploitable ; le passage reste visible pour garder sa trace.</section>';
     }
     if (connectorBlocked) {
       const message = String(lot.failure_reason || '').replace(/^connector_failed:\s*/i, '');
@@ -1044,6 +1055,7 @@
     if (view === 'sources') return [live, leaf('Sources')];
     const path = [live, lot].filter(Boolean);
     if (view === 'population') return [...path, leaf(POPULATION_CRUMBS[kind] || 'Produits reçus')];
+    if (view === 'item') return [...path, { label:POPULATION_CRUMBS[kind] || 'Produits reçus', href:populationUrl(run?.run_ref, kind) }, leaf('Produit')];
     if (view === 'exceptions') return [...path, leaf('Action requise')];
     if (view === 'source') return [...path, leaf('Source')];
     if (view === 'control') return [...path, leaf('Contrôle automatique')];
@@ -1064,7 +1076,7 @@
   }
 
   function drillHeader(run, title, copy, back = null) {
-    const target = back || { href:urlFor(run.run_ref), label:'← Retour au lot' };
+    const target = back || { href:urlFor(run.run_ref), label:'← Retour au passage' };
     return `<div class="kir-drill-head">
       <div>
         ${breadcrumb(run)}
@@ -1081,7 +1093,7 @@
     const back = urlFor(run.run_ref, 'exceptions');
     const workspace = withReturnTo('/admin/workspaces/sourcing', back, 'Retour au cockpit');
     const rows = items.map(item => {
-      const title = item.product_name || item.supplier_product_id || (item.reason === 'Anomalie de comptage' ? 'Comptage du lot' : 'Produit à examiner');
+      const title = item.product_name || item.supplier_product_id || (item.reason === 'Anomalie de comptage' ? 'Comptage du passage' : 'Produit à examiner');
       const control = item.action === 'choose' && item.candidate_ref
         ? `<button type="button" class="kir-row-action" data-action-choose data-candidate-ref="${esc(item.candidate_ref)}">${esc(item.action_label)}</button>`
         : `<a class="kir-row-action" href="${workspace}">${esc(item.action_label)} →</a>`;
@@ -1119,7 +1131,7 @@
     const auto = source ? (source.autopilot_enabled === true ? 'Activé (ON)' : 'Arrêté (OFF)') : '—';
     const last = source?.last_capture_at ? fmtDate(source.last_capture_at) : 'Aucune interrogation enregistrée';
     const blocker = source && source.autopilot_enabled !== true && source.blocker ? source.blocker : '';
-    return drillHeader(run, 'Source', 'La source utilisée par ce lot.') + `<div class="kir-simple-list">
+    return drillHeader(run, 'Source', 'La source utilisée par ce passage.') + `<div class="kir-simple-list">
       ${statusRow('Source utilisée', [state, run.provider || source?.label || 'Source'])}
       ${statusRow('Connexion', [state, state === 'completed' ? 'Connectée' : text])}
       ${statusRow('Dernière interrogation', ['completed', last])}
@@ -1152,20 +1164,55 @@
       <p class="kir-technical-link"><a href="${technicalUrl(run.run_ref, 'control')}" data-cockpit-nav>Voir le détail technique →</a></p>`;
   }
 
-  function populationRows(population) {
+  function populationRows(run, population, kind = 'received') {
     const items = Array.isArray(population?.items) ? population.items : [];
     return items.map(item => {
       const title = item.product_name || item.supplier_product_id || 'Produit sans titre';
+      const href = item.supplier_product_id ? itemUrl(run.run_ref, item.supplier_product_id, kind) : null;
+      const titleHtml = href
+        ? `<a class="kir-population-item-link" href="${href}" data-cockpit-nav>${esc(title)}</a>`
+        : `<strong>${esc(title)}</strong>`;
       return `<tr data-population-item>
-        <td>${item.image_url ? `<img class="kir-action-thumb" src="${esc(item.image_url)}" alt="" loading="lazy">` : '<span class="kir-action-thumb is-empty"></span>'}<strong>${esc(title)}</strong></td>
+        <td>${item.image_url ? `<img class="kir-action-thumb" src="${esc(item.image_url)}" alt="" loading="lazy">` : '<span class="kir-action-thumb is-empty"></span>'}${titleHtml}</td>
         <td>${esc(item.supplier_product_id || '—')}</td>
         <td><span class="kir-issue is-${esc(item.issue_key || 'control')}">${esc(item.issue_label || '—')}</span>${item.reason ? `<small>${esc(item.reason)}</small>` : ''}</td>
       </tr>`;
     }).join('');
   }
 
-  const POPULATION_COPY = Object.freeze({
-    received: ['Produits reçus', 'Les produits envoyés par la source pour ce lot et leur situation actuelle. Consultation : aucune action n’est nécessaire.', 'Situation'],
+  function traceSituation(trace) {
+    const outcome = trace?.certification?.outcome;
+    if (trace?.product_ref || trace?.catalogue_status === 'imported_to_catalog') return ['completed', 'Remis au Catalogue'];
+    if (outcome === 'quarantined') return ['attention', 'Action requise'];
+    if (outcome === 'rejected' || outcome === 'archived') return ['completed', 'Écarté'];
+    if (outcome === 'deferred') return ['pending', 'Mis de côté'];
+    if (trace?.certification?.sourcing_certified) return ['completed', 'Prêt pour le Catalogue'];
+    return ['pending', 'En contrôle'];
+  }
+
+  function renderItemView(run, trace, kind) {
+    const back = { href:populationUrl(run.run_ref, kind), label:`← Retour à ${(POPULATION_CRUMBS[kind] || 'Produits reçus').toLowerCase()}` };
+    if (!trace) return drillHeader(run, 'Produit', 'Détail de l’objet sélectionné.', back) + '<div class="kir-empty">Produit introuvable dans ce passage.</div>';
+    const title = trace.product_name || trace.supplier_product_id || 'Produit';
+    const situation = traceSituation(trace);
+    const catalogue = trace.product_ref
+      ? `<a class="kir-subtle-link" href="${withReturnTo('/admin/products/' + encodeURIComponent(trace.product_ref), itemUrl(run.run_ref, trace.supplier_product_id, kind), 'Retour au produit du passage')}">Ouvrir la fiche Catalogue →</a>`
+      : '<span class="kir-item-note">Aucune fiche Catalogue créée à ce stade.</span>';
+    return drillHeader(run, title, 'Détail métier de ce produit dans le passage sélectionné.', back)
+      + `<div class="kir-simple-list">
+          ${statusRow('Situation', situation)}
+          ${statusRow('Identifiant source', ['completed', trace.supplier_product_id || '—'])}
+          ${statusRow('Préparation', [trace.refinery?.done ? 'completed' : 'pending', trace.refinery?.done ? '✓ Terminée' : 'En attente'])}
+          ${statusRow('Classement', [trace.canonical_category ? 'completed' : 'pending', trace.canonical_category || 'En attente'])}
+          ${statusRow('Validation Sourcing', [trace.certification?.sourcing_certified ? 'completed' : 'pending', trace.certification?.sourcing_certified ? '✓ Validée' : (trace.certification?.outcome || 'En attente')])}
+          ${statusRow('Catalogue', [trace.product_ref ? 'completed' : 'pending', trace.product_ref ? 'Remis' : 'Pas encore remis'])}
+        </div>
+        <div class="kir-item-actions">${catalogue}</div>
+        <p class="kir-technical-link"><a href="${technicalUrl(run.run_ref)}" data-cockpit-nav>Voir la preuve technique du passage →</a></p>`;
+  }
+
+    const POPULATION_COPY = Object.freeze({
+    received: ['Produits reçus', 'Les produits envoyés par la source pour ce passage et leur situation actuelle. Consultation : aucune action n’est nécessaire.', 'Situation'],
     ready: ['Prêts pour le Catalogue', 'Exactement les produits validés côté Sourcing et leur état de remise au Catalogue.', 'Remise'],
     discarded: ['Écartés automatiquement', 'Issues normales et auditables : un produit correctement écarté n’est pas une erreur.', 'Motif'],
   });
@@ -1175,7 +1222,7 @@
     if (!population || population.kind !== kind) {
       return drillHeader(run, title, copy) + '<div class="kir-empty">Chargement des produits…</div>';
     }
-    const rows = populationRows(population);
+    const rows = populationRows(run, population, kind);
     const unlisted = Array.isArray(population.unlisted) ? population.unlisted : [];
     const extra = unlisted.map(group => `<tr class="is-group" data-population-group><td colspan="2"><strong>${num(group.count)} × ${esc(group.label)}</strong></td><td><small>Comptés à la réception, sans fiche produit</small></td></tr>`).join('');
     return drillHeader(run, `${title} · ${num(population.total)}`, copy)
@@ -1194,7 +1241,7 @@
           : `${h.remaining} ${h.remaining > 1 ? 'restent' : 'reste'} à remettre`;
     const list = population && population.kind === 'ready' && population.items?.length
       ? `<div class="kir-table-wrap"><table class="kir-table" data-population-list="ready">
-          <thead><tr><th>Produit</th><th>Identifiant source</th><th>Remise</th></tr></thead><tbody>${populationRows(population)}</tbody></table></div>`
+          <thead><tr><th>Produit</th><th>Identifiant source</th><th>Remise</th></tr></thead><tbody>${populationRows(run, population, 'ready')}</tbody></table></div>`
       : '';
     return drillHeader(run, 'Catalogue', 'La frontière Sourcing → Catalogue : où en est la remise des produits prêts.')
       + `<div class="kir-simple-list">${statusRow('Passage au Catalogue', [h.complete ? 'completed' : 'pending', status])}</div>${list}`;
@@ -1221,7 +1268,7 @@
       back
     ) + `
       <section class="kir-history-stages">
-        ${stages.map(stage => `<a class="kir-history-stage ${selectedStage && inSelection(stage.key) ? 'is-selected' : ''}" href="${stageUrl(run.run_ref, stage.key)}" data-cockpit-nav>
+        ${stages.map(stage => `<a class="kir-history-stage ${selectedStage && inSelection(stage.key) ? 'is-selected' : ''}" href="${stageUrl(run.run_ref, stage.key, from)}" data-cockpit-nav>
           <span class="kir-history-dot is-${stage.status === 'COMPLETED' ? 'done' : stage.status === 'FAILED' ? 'failed' : 'pending'}"></span>
           <div><strong>${esc(stageLabel(stage.key))}</strong><small>${esc(stageText(stage))}</small></div>
         </a>`).join('')}
@@ -1233,12 +1280,12 @@
       </div>`;
   }
 
-  // Navigation du domaine : trois vues exclusives.
+  // Navigation du domaine : Suivi (passage sélectionné) / Passages / Sources.
   function domainNav(view, run) {
     const active = view === 'passages' ? 'passages' : view === 'sources' ? 'sources' : 'live';
     const tab = (key, label, href) => `<a class="${active === key ? 'is-active' : ''}" href="${href}" data-cockpit-nav ${active === key ? 'aria-current="page"' : ''}>${label}</a>`;
     return `<nav class="kir-domain-nav" aria-label="Domaine Sourcing"><strong>Sourcing</strong>
-      ${tab('live', 'Live', urlFor(run?.run_ref))}${tab('passages', 'Passages', urlFor(run?.run_ref, 'passages'))}${tab('sources', 'Sources', urlFor(run?.run_ref, 'sources'))}
+      ${tab('live', 'Suivi', urlFor(run?.run_ref))}${tab('passages', 'Passages', urlFor(run?.run_ref, 'passages'))}${tab('sources', 'Sources', urlFor(run?.run_ref, 'sources'))}
     </nav>`;
   }
 
@@ -1254,10 +1301,10 @@
       ? `<a class="kir-lot-step" href="${urlFor(lot.run_ref)}" data-cockpit-nav>${label}</a>`
       : `<span class="kir-lot-step is-off">${label}</span>`;
     return `<div class="kir-lot-picker">
-      ${step(older, '← lot précédent')}
+      ${step(older, '← passage précédent')}
       <select data-lot-select aria-label="Choisir un passage">${list.map(lot =>
         `<option value="${esc(lot.run_ref)}" ${lot.run_ref === run.run_ref ? 'selected' : ''}>${esc(lot.run_ref)}${lot.provider ? ' · ' + esc(lot.provider) : ''}</option>`).join('')}</select>
-      ${step(newer, 'lot suivant →')}
+      ${step(newer, 'passage suivant →')}
       <a class="kir-lot-all" href="${passagesUrl(run.run_ref)}" data-cockpit-nav>Tous les passages →</a>
     </div>`;
   }
@@ -1312,7 +1359,7 @@
     </nav>` : '';
     return `<div class="kir-drill-head"><div>
         ${breadcrumb(run)}
-        ${run ? `<a href="${urlFor(run.run_ref)}" data-cockpit-nav class="kir-back">← Retour au lot</a>` : ''}
+        ${run ? `<a href="${urlFor(run.run_ref)}" data-cockpit-nav class="kir-back">← Retour au passage</a>` : ''}
         <h2>Historique des passages</h2>
         <p>Les passages Sourcing : ce qui a été reçu, ce qui est prêt pour le Catalogue et ce qui demande une action.</p>
       </div></div>
@@ -1332,7 +1379,7 @@
   function renderSourcesView(run, sourceControls) {
     return `<div class="kir-drill-head"><div>
         ${breadcrumb(run)}
-        ${run ? `<a href="${urlFor(run.run_ref)}" data-cockpit-nav class="kir-back">← Retour au lot</a>` : ''}
+        ${run ? `<a href="${urlFor(run.run_ref)}" data-cockpit-nav class="kir-back">← Retour au passage</a>` : ''}
         <h2>Sources</h2>
         <p>Les fournisseurs branchés à Komerce et leur alimentation automatique.</p>
       </div></div>
@@ -1342,6 +1389,7 @@
 
   function renderBody(run, view, ctx = {}) {
     if (view === 'population') return renderPopulation(run, ctx.population, ctx.kind);
+    if (view === 'item') return renderItemView(run, ctx.itemTrace, ctx.kind);
     if (view === 'source') return renderSourceView(run, ctx.sourceControls);
     if (view === 'control') return renderControlView(run);
     if (view === 'handoff') return renderHandoffView(run, ctx.population);
@@ -1360,7 +1408,7 @@
     root.setAttribute?.('data-cockpit-domain', 'imports');
     root.setAttribute?.('data-cockpit-language', 'live-ops');
 
-    // Vues exclusives : Passages et Sources remplacent le cockpit, avec ou sans lot sélectionné.
+    // Vues exclusives : Passages et Sources remplacent le cockpit, avec ou sans passage sélectionné.
     if (view === 'passages' || view === 'sources') {
       root.innerHTML = `<section class="kir-page">
         ${domainNav(view, run)}
@@ -1387,13 +1435,13 @@
     if (view !== 'overview') {
       root.innerHTML = `<section class="kir-page">
         ${domainNav(view, run)}
-        <main class="kir-main">${renderBody(run, view, { population:payload?.population || null, kind, sourceControls })}</main>
+        <main class="kir-main">${renderBody(run, view, { population:payload?.population || null, itemTrace:payload?.item_trace || null, kind, sourceControls })}</main>
       </section>`;
       bindAll(root, payload);
       return;
     }
 
-    // LIVE : le cockpit du lot sélectionné, et rien d'autre.
+    // LIVE : le cockpit du passage sélectionné, et rien d'autre.
     root.innerHTML = `<section class="kir-page">
       ${domainNav('overview', run)}
       <header class="kir-hero kir-live-hero">
@@ -1406,7 +1454,7 @@
         <div class="kir-hero-actions kir-live-hero-actions">
           <div class="kir-live-time"><span>Démarré ${fmtDate(run.started_at)}</span><strong>${elapsedLabel(run.started_at, run.finished_at)}</strong></div>
           <span class="kir-status-large is-${sourcingStatusView(run).tone}">${ico('clock')}${esc(sourcingStatusView(run).label)}</span>
-          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au lot')}" class="kir-global-link">Catalogue →</a>
+          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au passage')}" class="kir-global-link">Catalogue →</a>
         </div>
       </header>
 
@@ -1642,7 +1690,7 @@
       return;
     }
     if (!preserve && !lastPayload) renderLoading(mountedRoot);
-    const { run, view, offset } = params();
+    const { run, view, offset, item, kind } = params();
     const query = new URLSearchParams({ limit:'12' });
     if (run) query.set('run', run);
     try {
@@ -1664,6 +1712,11 @@
         try {
           payload.population = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(payload.selected.run_ref)}/population?kind=${populationKind}`);
         } catch (_) { payload.population = null; }
+      }
+      if (view === 'item' && item && payload?.selected?.run_ref) {
+        try {
+          payload.item_trace = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(payload.selected.run_ref)}/items/${encodeURIComponent(item)}`);
+        } catch (_) { payload.item_trace = null; }
       }
       lastPayload = payload;
       // Ne pas casser une saisie de filtre en cours : le prochain rafraîchissement la reprendra.

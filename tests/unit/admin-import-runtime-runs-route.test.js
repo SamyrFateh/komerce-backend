@@ -120,6 +120,29 @@ describe('import runtime run routes', () => {
     expect(mockRuns.getPopulation).toHaveBeenCalledWith('KIR-000001', 'ready');
   });
 
+  test('objet d’un passage : expose identité produit et trace sans perdre le KIR', async () => {
+    mockRuns.getProductTrace.mockResolvedValue({
+      run_ref:'KIR-000001',
+      supplier_product_id:'SP-1',
+      product_name:'Coque test',
+      image_url:'https://img.test/coque.jpg',
+      canonical_category:'accessoires',
+      product_ref:null,
+      certification:{ outcome:'ready_for_refinery', sourcing_certified:true, reasons:[] },
+      catalogue_status:'scanned',
+    });
+    const response = await request(app()).get(`${BASE}/KIR-000001/items/SP-1`);
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      run_ref:'KIR-000001',
+      supplier_product_id:'SP-1',
+      product_name:'Coque test',
+      canonical_category:'accessoires',
+    });
+    expect(mockRuns.getProductTrace).toHaveBeenCalledWith('KIR-000001', 'SP-1');
+    expect(response.headers['cache-control']).toBe('no-store');
+  });
+
   test('population : kind inconnu → 400, run absent → 404, ref mal formée → 404 sans appel', async () => {
     const bad = await request(app()).get(`${BASE}/KIR-000001/population?kind=history`);
     expect(bad.status).toBe(400);
