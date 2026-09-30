@@ -300,7 +300,8 @@ async function updatePortfolioProduct(productRef, body, actor) {
 }
 
 async function importCatalog(body, actor) {
-  const result = await catalogImport.importCatalog(body || {}, actor?.id || null, importDispatch.dispatchToConnector);
+  let result = await catalogImport.importCatalog(body || {}, actor?.id || null, importDispatch.dispatchToConnector);
+  if (result.status < 400) result = await candidateActions.handoffImportResult(result, actor?.id || null);
   if (result.status >= 400) {
     throw new SourcingWorkspaceError(result.status, result.body?.error || 'Import refusé', 'sourcing_import_failed', stripInternalIds(result.body || {}));
   }
