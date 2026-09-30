@@ -593,17 +593,17 @@ test.describe('Cockpit imports — navigation canonique (vues exclusives)', () =
     await expect(page).toHaveURL(/run=KIR-000008/);
   });
 
-  test('onglets Sources et Live : vue exclusive puis retour au cockpit', async ({ page }) => {
+  test('onglets Sources et Suivi : vue exclusive puis retour au cockpit', async ({ page }) => {
     await mountLive(page, withLots());
     await page.locator('.kir-domain-nav a', { hasText: 'Sources' }).click();
     await expect(page.locator('.kir-source-control')).toHaveCount(1);
     await expect(page.locator('.kir-run-truth')).toHaveCount(0);
-    await page.locator('.kir-domain-nav a', { hasText: 'Live' }).click();
+    await page.locator('.kir-domain-nav a', { hasText: 'Suivi' }).click();
     await expect(page.locator('.kir-run-truth')).toHaveCount(1);
     await expect(page.locator('.kir-source-control')).toHaveCount(0);
   });
 
-  test('historique navigateur : Live → Passages → Sources → retour arrière restaure chaque vue exclusive', async ({ page }) => {
+  test('historique navigateur : Suivi → Passages → Sources → retour arrière restaure chaque vue exclusive', async ({ page }) => {
     const state = await mountLive(page, withLots());
     state.passages = passages;
 
