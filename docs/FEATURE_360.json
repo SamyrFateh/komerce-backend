@@ -6119,7 +6119,7 @@
           "test": "tests/unit/import-lot-registry.test.js"
         },
         {
-          "statement": "navigation canonique du domaine Sourcing à vues exclusives (une vue = une question) : Live, Passages et Sources remplacent la zone de travail sans jamais s'empiler sous le cockpit ; le KIR est présenté à l'opérateur comme un passage (jamais comme un lot) ; Live s'arrête à l'activité et change de passage par un sélecteur compact ; Passages est l'historique Sourcing pur dont chaque ligne rouvre Live ; un agrégat ouvre sa population, une ligne de population ouvre l'objet dans le même passage, puis éventuellement sa fiche Catalogue avec retour contextuel ; le navigateur Back/Forward et les preuves techniques conservent le parent métier réel ; aucune donnée aval (prix, marché, vente, clôture) n'est injectée dans ces vues",
+          "statement": "navigation canonique du domaine Sourcing à vues exclusives (une vue = une question) : Suivi, Passages et Sources remplacent la zone de travail sans jamais s'empiler sous le cockpit ; le KIR est présenté à l'opérateur comme un passage (jamais comme un lot) ; Suivi affiche le passage sélectionné et change de passage par un sélecteur compact ; Passages est l'historique Sourcing pur dont chaque ligne rouvre Suivi ; un agrégat ouvre sa population, une ligne de population ouvre l'objet dans le même passage, puis éventuellement sa fiche Catalogue avec retour contextuel ; le navigateur Back/Forward et les preuves techniques conservent le parent métier réel ; aucune donnée aval (prix, marché, vente, clôture) n'est injectée dans ces vues",
           "test": "tests/unit/import-runtime-journey.test.js"
         },
         {
