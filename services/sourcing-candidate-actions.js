@@ -201,7 +201,7 @@ function resolveEnrichmentMode(body = {}) {
   return mode;
 }
 
-async function promoteCandidate(id, body = {}, actorId = null) {
+async function promoteCandidate(id, body = {}, actorId = null, options = {}) {
   const enrichmentMode = resolveEnrichmentMode(body);
   const client = await db.getClient();
   let productId = null;
@@ -275,7 +275,11 @@ async function promoteCandidate(id, body = {}, actorId = null) {
   }
 
   // Projection live uniquement : recalcul après commit, jamais bloquant.
-  await importRuns.safe(() => importRuns.syncRunsForImport(candidate?.import_id));
+  // L'orchestrateur peut différer cette projection pour éviter un N+1 lors
+  // d'une remise automatique de plusieurs brouillons.
+  if (options.syncRuntime !== false) {
+    await importRuns.safe(() => importRuns.syncRunsForImport(candidate?.import_id));
+  }
 
   const enrichment = {
     status: 'source_only',
