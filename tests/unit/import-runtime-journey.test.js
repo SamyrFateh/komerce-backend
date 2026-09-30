@@ -216,7 +216,7 @@ test('CAS A : 20 reçus / 12 prêts / 1 écarté / 0 action ; remise en attente,
   expect(tile(html, 'Action requise')).toBe('0');
   expect(html).toContain('20/20 produits comptabilisés');
   expect(html).toContain('PASSAGE AU CATALOGUE');
-  expect(html).toContain('Remise automatique en attente');
+  expect(html).toContain('Remise automatique en cours');
   expect(html).toContain('kir-handoff is-waiting');
   for (const forbidden of ['12 transmis', '7 à examiner', 'Décisions attendues', 'kir-handoff is-clean', 'Remise terminée', 'remis au Catalogue']) {
     expect(html).not.toContain(forbidden);
@@ -237,7 +237,7 @@ test('CAS B : certified = catalogued = 12 → « ✓ Remise terminée », étape
   expect(html).toContain('Remise terminée');
   expect(stepClass(html, 'Remise Catalogue')).toContain('is-completed');
   expect(html).not.toContain('12/12');
-  expect(html).not.toContain('Remise automatique en attente');
+  expect(html).not.toContain('Remise automatique en cours');
 });
 
 test('CAS C : 12 prêts, 9 au Catalogue, aucune intervention → « 3 restent à remettre », pas d’action requise', () => {
