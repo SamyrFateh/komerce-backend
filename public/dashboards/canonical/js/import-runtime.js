@@ -49,6 +49,8 @@
     list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
     flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
     clock:'<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M12 6.5V12l3.5 2" stroke="#fff"/>',
+    copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+    reject:'<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="m8.5 8.5 7 7M15.5 8.5l-7 7" stroke="#fff"/>',
     alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="currentColor" stroke="none"/><path d="M12 9v4M12 17h.01" stroke="#fff"/>',
   };
   function ico(name) {
@@ -330,12 +332,11 @@
     const a = run?.accounting || {};
     const awaiting = num(a.awaiting_catalogue_promotion);
     const values = [
-      ['Entrées source', num(a.source_total), 'file', 'SOURCE_CONNECTED'],
-      ['Acceptées', num(a.accepted), 'accepted', 'RAW_IMPORT'],
-      ['Raffinées', num(a.refined), 'gear', 'REFINERY'],
-      ['Taxonomisées', num(a.taxonomized), 'tag', 'TAXONOMY'],
-      ['Certifiées sourcing', num(a.certified), 'shield', 'CERTIFICATION'],
-      ['Catalogue', num(a.catalogued), 'box', 'CATALOGUE'],
+      ['Entrées source', num(a.source_total), 'file', 'SOURCE_CONNECTED', 'neutral'],
+      ['Acceptées', num(a.accepted), 'accepted', 'RAW_IMPORT', num(a.accepted) > 0 ? 'healthy' : 'neutral'],
+      ['Doublons', num(a.duplicates), 'copy', 'RAW_IMPORT', 'neutral'],
+      ['Rejetées', num(a.rejected), 'reject', 'RAW_IMPORT', num(a.rejected) > 0 ? 'critical' : 'neutral'],
+      ['En quarantaine', num(a.quarantined), 'alert', 'RAW_IMPORT', num(a.quarantined) > 0 ? 'warning' : 'neutral'],
     ];
     const blockers = num(a.rejected) + num(a.quarantined) + num(a.deferred) + num(a.certification_blocked);
     const providerGateBlocked = runtimeCertificationBlocked(run);
@@ -346,14 +347,8 @@
         : 'Tous les produits du lot sont comptabilisés dans le parcours réel.';
     return `<section class="kir-run-truth ${providerGateBlocked ? 'has-provider-gate' : ''}" aria-label="Comptabilité réelle du lot">
       <div class="kir-run-truth-head"><span class="kir-section-kicker">SUIVI DU LOT</span><strong>Ce qui s’est réellement passé</strong><small>Cliquez sur une étape pour ouvrir son détail.</small></div>
-      <div class="kir-run-truth-grid">${values.map(([label, value, icon, stageKey], index) => {
-        const tone = index === 0 ? 'neutral'
-          : index >= 1 && index <= 4 && value > 0 ? 'healthy'
-            : index === 5 && value > 0 ? 'healthy'
-              : 'neutral';
-        const href = stageKey === 'CATALOGUE' && awaiting > 0
-          ? urlFor(run.run_ref, 'catalogue')
-          : stageUrl(run.run_ref, stageKey);
+      <div class="kir-run-truth-grid">${values.map(([label, value, icon, stageKey, tone]) => {
+        const href = stageUrl(run.run_ref, stageKey);
         return `<a class="is-${tone}" href="${href}" data-cockpit-nav aria-label="${esc(label)} — ouvrir le détail">${ico(icon)}<span>${esc(label)}</span><strong>${value}</strong></a>`;
       }).join('')}</div>
       ${providerGateBlocked ? `<div class="kir-runtime-alert"><strong>${ico('alert')}${esc(runtimeCertificationBlockTitle(run))}</strong><span>${esc(runtimeCertificationBlockMessage(run))}</span><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le détail technique →</a></div>` : ''}
@@ -722,7 +717,15 @@
     </section>`;
   }
 
-  function renderOverview(run) {
+  function renderLiveCore(run) {
+    return `<section class="kir-live-grid">
+        ${renderLiveActivity(run)}
+        ${renderCurrentItem(run)}
+      </section>
+      ${renderRecentItems(run)}`;
+  }
+
+  function renderDecisions(run) {
     const lot = run.business || {};
     const d = lot.decisions || {};
     const cards = [];
@@ -761,11 +764,6 @@
             : '';
 
     return `
-      <section class="kir-live-grid">
-        ${renderLiveActivity(run)}
-        ${renderCurrentItem(run)}
-      </section>
-      ${renderRecentItems(run)}
       <section class="kir-decision-intro">
         <div>
           <span class="kir-section-kicker">DÉCISIONS / EXCEPTIONS</span>
@@ -778,6 +776,10 @@
       ${noAction}
       ${lot.business_status === 'NO_RESULT' || (connectorBlocked && num(lot.promoted_products) === 0) ? '' : businessJourney(run)}
     `;
+  }
+
+  function renderOverview(run) {
+    return renderLiveCore(run) + renderDecisions(run);
   }
 
   function productRows(run, action, view) {
@@ -947,7 +949,7 @@
     if (view === 'history') return renderHistory(run);
     if (view === 'registry') return renderRegistry(run, lots);
     if (view === 'closure') return renderClosure(run);
-    return renderOverview(run);
+    return renderDecisions(run);
   }
 
   function render(root, payload) {
@@ -988,9 +990,12 @@
         </div>
       </header>
 
-      ${sourceControlStrip(sourceControls, run)}
       ${persistentRunFlow(run, sourceControls)}
       ${runTruthStrip(run)}
+      ${view === 'overview' ? renderLiveCore(run) : ''}
+
+      <div class="kir-secondary" data-cockpit-zone="secondary">
+      ${sourceControlStrip(sourceControls, run)}
       ${lotStrip(lots, run.run_ref)}
 
       <section class="kir-lot-summary">
@@ -999,6 +1004,7 @@
         <div>${ico('list')}<span>Décisions commerciales</span><strong>${num(lot.closure?.remaining_products)}</strong></div>
         <div>${ico('flag')}<span>Clôture</span><strong>${lot.business_status === 'NO_RESULT' ? 'Sans objet' : lot.closure?.eligible ? 'Prête' : 'En attente'}</strong></div>
       </section>
+      </div>
 
       <main class="kir-main">${renderBody(run, view, lots)}</main>
     </section>`;
