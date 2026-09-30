@@ -34,8 +34,8 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260930-4');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260930-4');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260930-5');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260930-5');
   expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=260929-4');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
@@ -57,10 +57,9 @@ test('canonical app and navigation expose import runtime under the Live domain',
 test('import cockpit montre les décisions et délègue les détails aux pages dédiées', () => {
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'import-runtime.css'), 'utf8');
-  expect(source).toContain('Ce qui vous attend');
-  expect(source).toContain('Validation Catalogue requise');
-  expect(source).toContain('Décisions de mise en vente');
-  expect(source).toContain('Exceptions à traiter');
+  expect(source).toContain('Action requise');
+  expect(source).toContain('PASSAGE AU CATALOGUE');
+  expect(source).toContain('En attente de remise');
   expect(source).toContain('Historique du run');
   expect(source).toContain('Clôture du lot');
   expect(source).toContain('Catalogue →');

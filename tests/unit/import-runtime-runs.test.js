@@ -344,3 +344,94 @@ test('projection live expose la référence métier source sans UUID interne', (
   expect(projection.source_ref).toBe('api:cj');
   expect(projection).not.toHaveProperty('id');
 });
+
+describe('import runtime — Action requise (interface d’exception)', () => {
+  const intake = (over = {}) => ({
+    recorded_at: T1, accepted: 12, duplicates: 0, rejected: 1, quarantined: 0, deferred: 7,
+    ready_for_refinery: 12, certification_blocked: 0, pipeline_status: 'CANONICAL_RESOLVED', capture_id: 'cap-1',
+    ...over,
+  });
+  const twelve = () => Array.from({ length: 12 }, (_, i) => candidate(i + 1));
+  const deferredRows = () => Array.from({ length: 7 }, (_, i) => candidate(100 + i, { state: 'watchlist' }));
+
+  test('CAS A/D : 20 reçus, 12 prêts, 1 rejet conforme, 7 DEFERRED → aucune action requise', () => {
+    const projection = runs.buildProjection({
+      run: baseRun({ source_total: 20, intake: intake() }),
+      rows: [...twelve(), ...deferredRows()],
+    });
+    expect(projection.accounting).toMatchObject({
+      source_total: 20, certified: 12, catalogued: 0, rejected: 1, deferred: 7, unaccounted: 0,
+    });
+    expect(projection.accounting.action_required).toBe(0);
+    expect(projection.action_items).toEqual([]);
+    expect(projection.sourcing_status).toBe('DONE');
+  });
+
+  test('CAS E : quarantaine + contrat bloqué → 3 éléments avec raison humaine et action', () => {
+    const rows = [
+      ...twelve(),
+      candidate(201, { state: 'quarantined', promotion_status: 'QUARANTINED_IMAGE_MISSING', product_name: 'Coque A' }),
+      candidate(202, { state: 'quarantined', findings: [{ code: 'CATEGORY_AMBIGUOUS' }], product_name: 'Coque B' }),
+      candidate(203, { state: 'scanned', normalized_source_contract: null, product_name: 'Coque C' }),
+    ];
+    const projection = runs.buildProjection({
+      run: baseRun({ source_total: 20, intake: intake({ quarantined: 2, certification_blocked: 1, deferred: 4 }) }),
+      rows,
+    });
+    expect(projection.accounting.action_required).toBe(3);
+    expect(projection.action_items.map((item) => [item.product_name, item.reason, item.action_label])).toEqual([
+      ['Coque A', 'Image inexploitable', 'Corriger'],
+      ['Coque B', 'Classement ambigu', 'Choisir'],
+      ['Coque C', 'Donnée obligatoire manquante', 'Compléter'],
+    ]);
+    expect(projection.action_items[0].candidate_ref).toBe('KSC-201');
+    expect(projection.sourcing_status).toBe('ACTION_REQUIRED');
+  });
+
+  test('CAS F : une correction est recalculée par la projection (3 → 2)', () => {
+    const before = [
+      ...twelve(),
+      candidate(201, { state: 'quarantined', promotion_status: 'QUARANTINED_IMAGE_MISSING' }),
+      candidate(202, { state: 'quarantined', findings: [{ code: 'CATEGORY_AMBIGUOUS' }] }),
+    ];
+    const run = baseRun({ source_total: 16, intake: intake({ quarantined: 2, deferred: 1 }) });
+    expect(runs.buildProjection({ run, rows: before }).accounting.action_required).toBe(2);
+    const after = runs.buildProjection({
+      run: baseRun({ source_total: 16, intake: intake({ quarantined: 1, deferred: 1, ready_for_refinery: 13, accepted: 13 }) }),
+      rows: [...twelve(), candidate(201), candidate(202, { state: 'quarantined', findings: [{ code: 'CATEGORY_AMBIGUOUS' }] })],
+    });
+    expect(after.accounting.action_required).toBe(1);
+    expect(after.action_items).toHaveLength(1);
+  });
+
+  test('anomalie de comptage réelle → vraie action requise (19/20, 1 à retrouver)', () => {
+    const projection = runs.buildProjection({
+      run: baseRun({ source_total: 20, intake: intake({ deferred: 6 }) }),
+      rows: [...twelve(), ...deferredRows().slice(0, 6)],
+    });
+    expect(projection.accounting.unaccounted).toBe(1);
+    expect(projection.accounting.action_required).toBe(1);
+    expect(projection.action_items[0]).toMatchObject({ reason: 'Anomalie de comptage', action_label: 'Examiner' });
+    expect(projection.sourcing_status).toBe('ACTION_REQUIRED');
+  });
+
+  test('le compteur reste vrai même si la liste ne peut pas nommer le produit', () => {
+    const projection = runs.buildProjection({
+      run: baseRun({ source_total: 14, intake: intake({ quarantined: 2, deferred: 0, rejected: 0 }) }),
+      rows: twelve(),
+    });
+    expect(projection.accounting.action_required).toBe(2);
+    expect(projection.action_items).toHaveLength(2);
+    expect(projection.action_items.every((item) => item.candidate_ref === null && item.action === 'examine')).toBe(true);
+  });
+
+  test('sourcing_status : LIVE tant que ça tourne, Bloqué seulement si Komerce ne peut plus avancer', () => {
+    const running = runs.buildProjection({ run: baseRun({ source_total: 0, intake: {} }), rows: [] });
+    expect(running.sourcing_status).toBe('RUNNING');
+    const blocked = runs.buildProjection({
+      run: baseRun({ status: 'FAILED', failure_reason: 'connector_failed: timeout', source_total: 0, intake: {} }),
+      rows: [],
+    });
+    expect(blocked.sourcing_status).toBe('BLOCKED');
+  });
+});

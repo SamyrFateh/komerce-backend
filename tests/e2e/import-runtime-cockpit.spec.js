@@ -28,7 +28,9 @@ const payload = {
     accounting: {
       source_total: 712, accepted: 456, duplicates: 23, rejected: 4, quarantined: 2, deferred: 0,
       certification_blocked: 0, refined: 300, taxonomized: 120, certified: 0, catalogued: 0, awaiting_catalogue_promotion: 0,
+      unaccounted: 0, overflow: 0, action_required: 0,
     },
+    sourcing_status: 'RUNNING', action_items: [],
     business: { run_ref: 'KIR-000009', business_status: 'RUNNING', promoted_products: 0,
       decisions: { catalogue: 0, commercial: 0, exceptions: 0 }, closure: { eligible: false, remaining_products: 0 }, products: [] },
     stages: [
@@ -209,10 +211,11 @@ Object.assign(completedPayload.selected, {
 });
 completedPayload.selected.accounting.awaiting_catalogue_promotion = 12;
 completedPayload.selected.accounting.certified = 12;
+completedPayload.selected.sourcing_status = 'DONE';
 // Tout va bien : même run, sans alerte de source.
 const calmPayload = JSON.parse(JSON.stringify(completedPayload));
 calmPayload.selected.diagnostics = {};
-calmPayload.selected.accounting = { ...calmPayload.selected.accounting, quarantined: 0, deferred: 0, certification_blocked: 0, unaccounted: 0, overflow: 0 };
+calmPayload.selected.accounting = { ...calmPayload.selected.accounting, quarantined: 0, deferred: 0, certification_blocked: 0, unaccounted: 0, overflow: 0, action_required: 0, catalogued: 12, awaiting_catalogue_promotion: 0 };
 
 test.describe('Cockpit imports — run terminé avec alerte et validation manuelle', () => {
   test.beforeEach(async ({ page }) => { await mountCockpit(page, completedPayload); });
@@ -246,18 +249,9 @@ test.describe('Cockpit imports — run terminé avec alerte et validation manuel
     expect(new Set(cards.map((c) => c.bg)).size).toBeGreaterThanOrEqual(3);
   });
 
-  test('l’alerte de certification reste sombre et lisible', async ({ page }) => {
-    const alert = page.locator('.kir-runtime-alert');
-    await expect(alert).toBeVisible();
-    const colors = await alert.evaluate((el) => ({
-      bg: getComputedStyle(el).backgroundColor,
-      title: getComputedStyle(el.querySelector('strong')).color,
-      text: getComputedStyle(el.querySelector('span')).color,
-    }));
-    const lum = (c) => c.match(/\d+/g).slice(0, 3).map(Number).reduce((a, b) => a + b, 0) / 3;
-    expect(lum(colors.bg)).toBeLessThan(80);
-    expect(lum(colors.title)).toBeGreaterThan(140);
-    expect(lum(colors.text)).toBeGreaterThan(140);
+  test('écran calme : la garde fournisseur ne crée aucune alerte au N1', async ({ page }) => {
+    await expect(page.locator('.kir-runtime-alert')).toHaveCount(0);
+    await expect(page.locator('.kir-handoff')).toContainText('En attente de remise');
   });
 
   test('capture de revue du run terminé', async ({ page }) => {
@@ -286,8 +280,8 @@ test.describe('Cockpit imports — tout va bien', () => {
     });
     expect(info.markers).toEqual(Array(4).fill('rgb(30, 215, 132)'));
     expect(info.handoffText).toContain('PASSAGE AU CATALOGUE');
-    expect(info.handoffText).toContain('12 certifiés · 12 transmis · 0 écart');
-    expect(info.handoffText).toContain('Terminé');
+    expect(info.handoffText).toContain('Remise terminée');
+    expect(info.handoffText).not.toContain('12/12');
     expect(info.handoffBorder).toBe('rgb(30, 215, 132)');
     expect(info.attention).toBe(0);
     expect(info.failed).toBe(0);
@@ -297,31 +291,51 @@ test.describe('Cockpit imports — tout va bien', () => {
   });
 });
 
-// Vrai problème : 3 produits prêts n'ont pas pu être certifiés → Komerce ne peut plus avancer seul.
-const problemPayload = JSON.parse(JSON.stringify(completedPayload));
-problemPayload.selected.accounting = { ...problemPayload.selected.accounting, certified: 9, awaiting_catalogue_promotion: 9 };
-problemPayload.selected.stages = problemPayload.selected.stages.map((stage) => stage.key === 'CERTIFICATION'
-  ? { ...stage, status: 'FAILED', processed: 9, total: 12 } : stage);
-problemPayload.selected.diagnostics = {};
+// Action requise : 3 vraies exceptions (CAS E) ; Komerce ne peut pas avancer seul.
+const ITEMS = [
+  { candidate_ref: 'KSC-1', product_name: 'Coque A', supplier_product_id: 'SP-1', reason: 'Image inexploitable', action: 'fix', action_label: 'Corriger' },
+  { candidate_ref: 'KSC-2', product_name: 'Coque B', supplier_product_id: 'SP-2', reason: 'Classement ambigu', action: 'choose', action_label: 'Choisir' },
+  { candidate_ref: 'KSC-3', product_name: 'Coque C', supplier_product_id: 'SP-3', reason: 'Donnée obligatoire manquante', action: 'complete', action_label: 'Compléter' },
+];
+const problemPayload = JSON.parse(JSON.stringify(calmPayload));
+problemPayload.selected.accounting = { ...problemPayload.selected.accounting, quarantined: 3, action_required: 3, catalogued: 0, awaiting_catalogue_promotion: 12 };
+problemPayload.selected.sourcing_status = 'ACTION_REQUIRED';
+problemPayload.selected.action_items = ITEMS;
 
-test.describe('Cockpit imports — vrai problème', () => {
-  test.beforeEach(async ({ page }) => { await mountCockpit(page, problemPayload); });
+test.describe('Cockpit imports — Action requise', () => {
+  test('« Action requise 3 → » orange, cliquable, header « Action requise », jamais « Décisions attendues »', async ({ page }) => {
+    await mountCockpit(page, problemPayload);
+    const tile = page.locator('.kir-run-truth-grid > a.is-review');
+    await expect(tile).toContainText('Action requise');
+    await expect(tile).toContainText('3');
+    await expect(tile).toContainText('Ouvrir la liste →');
+    const [r, g, b] = (await tile.evaluate((el) => getComputedStyle(el).borderTopColor)).match(/\d+/g).map(Number);
+    expect(r).toBeGreaterThan(g);
+    expect(g).toBeGreaterThan(b);
+    expect(r - b).toBeGreaterThan(90);
+    await expect(page.locator('.kir-status-large')).toContainText('Action requise');
+    await expect(page.locator('body')).not.toContainText('Décisions attendues');
+    await expect(page.locator('.kir-run-flow-step.is-attention')).toHaveCount(1);
+  });
 
-  test('étape rouge, remise orange « 12 prêts · 9 transmis · 3 nécessitent une action »', async ({ page }) => {
-    const info = await page.evaluate(() => {
-      const steps = [...document.querySelectorAll('.kir-run-flow-step')].map((step) => ({
-        cls: step.className, bg: getComputedStyle(step.querySelector('.kir-run-flow-marker')).backgroundColor,
-      }));
-      const h = document.querySelector('.kir-handoff');
-      return { steps, handoff: h.innerText.replace(/\s+/g, ' '), border: getComputedStyle(h).borderLeftColor, action: h.querySelector('a')?.textContent };
-    });
-    expect(info.steps[2].cls).toContain('is-failed');
-    expect(info.steps[2].bg).toBe('rgb(58, 21, 32)');
-    expect(info.steps[3].cls).toContain('is-attention');
-    expect(info.steps[3].bg).toBe('rgb(58, 38, 6)');
-    expect(info.handoff).toContain('12 prêts · 9 transmis · 3 nécessitent une action');
-    expect(info.border).toBe('rgb(245, 158, 11)');
-    expect(info.action).toContain('Traiter');
+  test('CAS A calme : 0 action, aucune carte orange', async ({ page }) => {
+    await mountCockpit(page, completedPayload);
+    await expect(page.locator('.is-attention')).toHaveCount(0);
+    await expect(page.locator('.kir-run-truth-grid > a.is-review')).toContainText('rien à faire');
+  });
+
+  test('la liste filtrée montre exactement les 3 produits : produit · raison · action', async ({ page }) => {
+    await mountCockpit(page, problemPayload);
+    await page.evaluate((data) => {
+      history.replaceState({}, '', '/admin/import-runtime?run=KIR-000009&view=exceptions');
+      window.KomerceCanonicalImportRuntime.render(document.getElementById('canonical-admin-root'), data);
+    }, problemPayload);
+    const body = page.locator('.kir-main');
+    for (const s of ['Coque A', 'Image inexploitable', 'Corriger', 'Coque B', 'Classement ambigu', 'Choisir', 'Coque C', 'Donnée obligatoire manquante', 'Compléter']) {
+      await expect(body).toContainText(s);
+    }
+    await expect(page.locator('.kir-row-action')).toHaveCount(3);
+    await page.screenshot({ path: 'test-results/import-runtime-cockpit-exceptions.png' });
   });
 });
 
@@ -393,5 +407,23 @@ test.describe('Cockpit imports — commandes opérateur', () => {
   test('capture de revue de la barre de commandes', async ({ page }) => {
     await mountLive(page, calm);
     await page.screenshot({ path: 'test-results/import-runtime-cockpit-commands.png' });
+  });
+});
+
+test.describe('Cockpit imports — CAS F : mise à jour automatique 3 → 2 → 1 → 0', () => {
+  test('sans rafraîchissement manuel, la zone orange disparaît à 0', async ({ page }) => {
+    const state = await mountLive(page, problemPayload);
+    const tile = page.locator('.kir-run-truth-grid > a.is-review strong');
+    await expect(tile).toHaveText('3');
+    for (const remaining of [2, 1, 0]) {
+      state.payload.selected.action_items = ITEMS.slice(3 - remaining);
+      state.payload.selected.accounting.action_required = remaining;
+      state.payload.selected.accounting.quarantined = remaining;
+      state.payload.selected.sourcing_status = remaining ? 'ACTION_REQUIRED' : 'DONE';
+      await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+      await expect(tile).toHaveText(String(remaining));
+    }
+    await expect(page.locator('.is-attention')).toHaveCount(0);
+    await expect(page.locator('.kir-status-large')).toContainText('Terminé');
   });
 });

@@ -316,6 +316,8 @@ module.exports = {
              'doit être validé par le propriétaire de routes/sourcing-scanner.js',
 
   invariants: [
+    { statement: 'la projection d\'un run expose action_required / action_items / sourcing_status : seuls quarantaine, certification bloquée et anomalie de comptage demandent une action humaine ; DEFERRED, rejet conforme et exceptions aval Catalogue ne comptent jamais ; la liste d\'items a toujours la longueur du compteur',
+      test: 'tests/unit/import-runtime-runs.test.js' },
     'un candidat exclu (rejet manuel ou auto-exclusion douane/légale) n\'est jamais ré-importable (ING-5 verrou 1)',
     'une devise hors whitelist (AED, EUR, USD, KMF, PLN ; PLN exige un taux explicite) ne produit jamais de purchase_price_kmf faux (ING-5 verrou 2)',
     'un candidat déjà importé (état imported_to_catalog + product_id) ne peut pas être ré-importé',

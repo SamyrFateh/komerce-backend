@@ -141,23 +141,28 @@
     return { state:'pending', label:'En attente' };
   }
 
-  // Remise au Catalogue, vue du Sourcing : « prêts » = produits attendus à l'issue du contrôle,
-  // « transmis » = produits certifiés, « écart » = prêts non certifiés. La promotion manuelle
-  // et tout ce qui est commercial relèvent du cockpit Catalogue, pas d'ici.
+  // Remise au Catalogue : certified = prêt côté Sourcing ; catalogued = réellement importé au Catalogue.
+  // Ces deux vérités ne se confondent jamais : « remis » ne se déduit JAMAIS de certified.
   function handoffFacts(stages, accounting) {
     const list = Array.isArray(stages) ? stages : [];
     const certification = list.find(stage => stage.key === 'CERTIFICATION') || {};
     const certified = num(accounting?.certified);
+    const catalogued = num(accounting?.catalogued);
     const controlDone = certification.status === 'COMPLETED';
-    const settled = controlDone || certification.status === 'FAILED';
-    const ready = Math.max(num(certification.total), certified);
-    return { controlDone, settled, ready, certified, gap: settled ? Math.max(0, ready - certified) : 0 };
+    return {
+      controlDone, certified, catalogued,
+      remaining: Math.max(0, certified - catalogued),
+      complete: controlDone && certified > 0 && catalogued >= certified,
+    };
   }
 
-  // Regroupe les étapes réelles en étapes utilisateur. Aucun chiffre n'est recalculé :
-  // on lit ce que la projection serveur expose déjà.
+  // Le pipeline ne montre que l'état du parcours, jamais un compteur (les chiffres vivent dans
+  // « Résultat du lot »). Vert = terminé · bleu = travaille · orange = intervention humaine
+  // attendue · rouge = Komerce ne peut plus avancer.
   function userSteps(stages, { runStatus = null, accounting = null } = {}) {
     const byKey = new Map((stages || []).map(stage => [stage.key, stage]));
+    const handoff = handoffFacts(stages, accounting);
+    const actionRequired = num(accounting?.action_required);
     return USER_STEPS.map((def, index) => {
       const subs = def.stages.map(key => byKey.get(key)).filter(Boolean);
       const metas = subs.map(flowStageMeta);
@@ -165,31 +170,29 @@
       const anyRunning = metas.some(meta => meta.state === 'running');
       const allDone = subs.length === def.stages.length && metas.every(meta => meta.state === 'completed');
       const someDone = metas.some(meta => meta.state === 'completed');
-      const handoff = handoffFacts(stages, accounting);
-      const attention = def.key === 'CATALOGUE' && !anyFailed && handoff.settled && handoff.gap > 0;
-      const delivered = def.key === 'CATALOGUE' && !anyFailed && handoff.controlDone && handoff.gap === 0;
-      let state = anyFailed ? 'failed'
-        : attention ? 'attention'
-          : delivered ? 'completed'
-          : def.key === 'CATALOGUE' ? 'pending'
-          : allDone ? 'completed'
-            : anyRunning ? 'running'
-              : someDone && (!runStatus || runStatus === 'RUNNING') ? 'running'
-                : 'pending';
-      const active = subs.find((stage, i) => metas[i].state === 'running') || subs.find((stage, i) => metas[i].state !== 'completed') || subs[subs.length - 1] || {};
-      let count;
-      if (state === 'failed') count = 'Bloqué';
-      else if (def.key === 'RECEIVED') {
-        const total = num(accounting?.source_total) || num(active.total);
-        count = state === 'running' ? `${num(active.processed)}/${num(active.total)}` : state === 'completed' ? `${total} reçus` : 'En attente';
+      const live = !runStatus || runStatus === 'RUNNING';
+      let state;
+      if (def.key === 'CATALOGUE') {
+        state = anyFailed ? 'failed'
+          : handoff.complete || (handoff.controlDone && handoff.certified === 0) ? 'completed'
+            : 'pending';
       } else if (def.key === 'CONTROL') {
-        count = state === 'running' ? `${num(active.processed)}/${num(active.total)}` : state === 'completed' ? 'Terminé' : 'En attente';
-      } else if (def.key === 'CATALOGUE') {
-        count = attention ? `${handoff.gap} à traiter` : state === 'completed' ? `${handoff.certified} transmis` : 'En attente';
+        // Une action humaine attendue prime sur « bloqué » : Komerce n'est pas coincé, il attend.
+        state = anyFailed && actionRequired === 0 ? 'failed'
+          : anyRunning ? 'running'
+            : actionRequired > 0 && (anyFailed || allDone || someDone) ? 'attention'
+              : allDone ? 'completed'
+                : someDone && live ? 'running'
+                  : 'pending';
       } else {
-        count = state === 'completed' ? 'Connectée' : state === 'running' ? 'Connexion…' : 'En attente';
+        state = anyFailed ? 'failed' : allDone ? 'completed' : anyRunning || (someDone && live) ? 'running' : 'pending';
       }
-      return { ...def, index, state, count };
+      const words = def.key === 'SOURCE'
+        ? { completed:'Connectée', running:'Connexion…', pending:'En attente', failed:'Bloquée' }
+        : def.key === 'CATALOGUE'
+          ? { completed:handoff.certified === 0 ? 'Terminé' : 'Remise terminée', running:'En cours', pending:'En attente', failed:'Bloqué' }
+          : { completed:'Terminé', running:'En cours', pending:'En attente', failed:'Bloqué', attention:'Action requise' };
+      return { ...def, index, state, count:words[state] || 'En attente' };
     });
   }
 
@@ -322,9 +325,9 @@
       : noResult
         ? `${label} · ${activationState.runRef || 'nouveau lot'} · aucun produit exploitable`
         : providerGateBlocked
-          ? `${label} · ${num(activationState.run?.accounting?.certified)} produit(s) poursuivent vers le Catalogue · alimentation automatique arrêtée`
+          ? `${label} · alimentation automatique arrêtée`
           : automaticDone && catalogueWaiting
-            ? `${label} · ${num(activationState.run?.accounting?.awaiting_catalogue_promotion)} produit(s) prêt(s) pour le Catalogue`
+            ? `${label} · le traitement automatique est terminé`
             : automaticDone
               ? `${label} · le traitement automatique a atteint le Catalogue`
               : activationState.runRef
@@ -376,7 +379,7 @@
     const helper = failed
       ? (run.failure_reason || 'Une étape du lot est bloquée.')
       : catalogueWaiting
-        ? `${run.run_ref} · ${run.provider || 'Source'} · ${num(run.accounting?.awaiting_catalogue_promotion)} produit(s) prêt(s) pour le Catalogue`
+        ? `${run.run_ref} · ${run.provider || 'Source'}`
         : `${run.run_ref} · ${run.provider || 'Source'} · parcours conservé à l’écran`;
     const tone = failed ? 'is-failed'
       : catalogueWaiting || run.status === 'COMPLETED' ? 'is-complete has-manual-action'
@@ -413,60 +416,57 @@
     </section>`;
   }
 
-  // Résultat du lot en langage utilisateur. Chaque chiffre vient de la comptabilité serveur ;
-  // « à examiner » ne regroupe que ce qui attend réellement une décision humaine.
+  // Résultat du lot : quatre chiffres, chacun lu tel quel dans la comptabilité serveur.
   function sourcingOutcome(run) {
     const a = run?.accounting || {};
     const stages = Array.isArray(run?.stages) ? run.stages : [];
     const raw = stages.find(stage => stage.key === 'RAW_IMPORT') || {};
     const h = handoffFacts(stages, a);
-    const received = num(a.source_total);
-    const discarded = num(a.duplicates) + num(a.rejected);
-    const toReview = num(a.quarantined) + num(a.deferred) + num(a.certification_blocked) + h.gap;
     return {
-      received, discarded, toReview,
-      certified:h.certified, ready:h.ready, gap:h.gap, controlDone:h.controlDone, settled:h.settled,
+      received:num(a.source_total),
+      ready:h.certified,
+      // Issues automatiques terminales : ni erreur ni intervention. DEFERRED reste une issue
+      // comptabilisée (preuve de comptage), il n'est pas présenté comme un écart à traiter.
+      discarded:num(a.duplicates) + num(a.rejected),
+      actionRequired:num(a.action_required),
       unaccounted:num(a.unaccounted) + num(a.overflow),
       rawDone:raw.status === 'COMPLETED',
+      handoff:h,
     };
   }
 
   function runTruthStrip(run) {
     const o = sourcingOutcome(run);
+    const open = o.actionRequired > 0;
     const tiles = [
       ['Produits reçus', o.received, 'file', stageUrl(run.run_ref, 'RAW_IMPORT'), 'is-received', 'de la source'],
-      ['Remis au Catalogue', o.certified, 'accepted', stageUrl(run.run_ref, 'CATALOGUE'), 'is-delivered', 'produits'],
+      ['Prêts pour le Catalogue', o.ready, 'accepted', stageUrl(run.run_ref, 'CERTIFICATION'), 'is-delivered', 'produits'],
       ['Écartés automatiquement', o.discarded, 'reject', stageUrl(run.run_ref, 'RAW_IMPORT'), 'is-discarded', 'selon les règles'],
-      ['À examiner', o.toReview, 'alert', urlFor(run.run_ref, 'exceptions'), o.toReview > 0 ? 'is-review is-attention' : 'is-review', o.toReview > 0 ? 'attendent une décision' : 'rien à décider'],
+      ['Action requise', o.actionRequired, 'alert', urlFor(run.run_ref, 'exceptions'), open ? 'is-review is-attention' : 'is-review', open ? 'Ouvrir la liste →' : 'rien à faire'],
     ];
-    const providerGateBlocked = runtimeCertificationBlocked(run);
     const proof = !o.rawDone || o.received === 0 ? ''
       : o.unaccounted > 0
-        ? `<p class="kir-run-proof is-bad">${ico('alert')}${o.received - Math.min(o.received, o.unaccounted)}/${o.received} produits comptabilisés · ${o.unaccounted} à retrouver</p>`
+        ? `<p class="kir-run-proof is-bad">${ico('alert')}${o.received - Math.min(o.received, o.unaccounted)}/${o.received} produits comptabilisés · ${o.unaccounted} produit${o.unaccounted > 1 ? 's' : ''} à retrouver</p>`
         : `<p class="kir-run-proof is-ok"><b aria-hidden="true">✓</b>${o.received}/${o.received} produits comptabilisés</p>`;
-    return `<section class="kir-run-truth ${providerGateBlocked ? 'has-provider-gate' : ''}" aria-label="Résultat du lot">
+    return `<section class="kir-run-truth" aria-label="Résultat du lot">
       <div class="kir-run-truth-head"><span class="kir-section-kicker">RÉSULTAT DU LOT</span>${proof}</div>
       <div class="kir-run-truth-grid is-four">${tiles.map(([label, value, icon, href, cls, sub]) =>
         `<a class="${cls}" href="${href}" data-cockpit-nav aria-label="${esc(label)} — ouvrir le détail">${ico(icon)}<span>${esc(label)}</span><strong>${value}</strong><small>${esc(sub)}</small></a>`
       ).join('')}</div>
-      ${providerGateBlocked ? `<div class="kir-runtime-alert"><strong>${ico('alert')}${esc(runtimeCertificationBlockTitle(run))}</strong><span>${esc(runtimeCertificationBlockMessage(run))}</span><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le détail →</a></div>` : ''}
     </section>`;
   }
 
-  // La fin du Sourcing est une remise propre au Catalogue. Ni prix, ni marché, ni mise en vente ici.
+  // Passage au Catalogue : uniquement l'état de la remise (les chiffres sont déjà au résultat du lot).
   function catalogueHandoff(run) {
-    const o = sourcingOutcome(run);
-    if (!o.settled) return '';
-    const clean = o.gap === 0;
-    const line = clean
-      ? `${o.certified} certifié${o.certified > 1 ? 's' : ''} · ${o.certified} transmis · 0 écart`
-      : `${o.ready} prêt${o.ready > 1 ? 's' : ''} · ${o.certified} transmis · ${o.gap} nécessite${o.gap > 1 ? 'nt' : ''} une action`;
-    return `<section class="kir-handoff ${clean ? 'is-clean' : 'is-attention'}" aria-label="Passage au Catalogue">
+    const h = sourcingOutcome(run).handoff;
+    if (!h.controlDone || h.certified === 0) return '';
+    const state = h.complete ? 'is-clean' : 'is-waiting';
+    const text = h.complete ? 'Remise terminée'
+      : h.catalogued === 0 ? 'En attente de remise'
+        : `${h.remaining} ${h.remaining > 1 ? 'restent' : 'reste'} à remettre`;
+    return `<section class="kir-handoff ${state}" aria-label="Passage au Catalogue">
       ${ico('handoff')}
-      <div><span class="kir-section-kicker">PASSAGE AU CATALOGUE</span><strong>${esc(line)}</strong></div>
-      ${clean
-        ? '<em class="kir-handoff-state"><b aria-hidden="true">✓</b>Terminé</em>'
-        : `<a class="kir-handoff-action" href="${urlFor(run.run_ref, 'exceptions')}" data-cockpit-nav>Traiter →</a>`}
+      <div><span class="kir-section-kicker">PASSAGE AU CATALOGUE</span><strong>${h.complete ? '<b aria-hidden="true">✓</b> ' : ''}${esc(text)}</strong></div>
     </section>`;
   }
 
@@ -538,6 +538,19 @@
       ARCHIVED:'Archivé',
       UNKNOWN:'État indisponible',
     })[status] || status || 'État indisponible';
+  }
+
+  // Statut du header : uniquement Sourcing. Le statut global du lot (prix, marché, mise en vente,
+  // décisions Catalogue) ne s'affiche jamais ici.
+  function sourcingStatusView(run) {
+    const status = run?.sourcing_status
+      || (run?.status === 'FAILED' ? 'BLOCKED' : run?.status === 'COMPLETED' ? 'DONE' : 'RUNNING');
+    return ({
+      RUNNING:{ label:'LIVE', tone:'live' },
+      DONE:{ label:'Terminé', tone:'positive' },
+      ACTION_REQUIRED:{ label:'Action requise', tone:'warning' },
+      BLOCKED:{ label:'Bloqué', tone:'critical' },
+    })[status] || { label:'Terminé', tone:'positive' };
   }
 
   function businessTone(status) {
@@ -717,13 +730,24 @@
     </section>`;
   }
 
+  // Pastille de lot : état du passage Sourcing seulement (jamais « décisions attendues » du Catalogue).
+  function lotChipView(lot) {
+    return ({
+      RUNNING:{ label:'En cours', tone:'live' },
+      BLOCKED:{ label:'Bloqué', tone:'critical' },
+      NO_RESULT:{ label:'Sans résultat', tone:'neutral' },
+      ARCHIVED:{ label:'Archivé', tone:'neutral' },
+      UNKNOWN:{ label:'État indisponible', tone:'neutral' },
+    })[lot?.business_status] || { label:'Terminé', tone:'positive' };
+  }
+
   function lotStrip(lots, selectedRef) {
     const visibleLots = (lots || []).filter(lot => lot.business_status !== 'ARCHIVED' || lot.run_ref === selectedRef);
     const cards = visibleLots.map(lot => {
       const active = lot.run_ref === selectedRef;
       return `<a class="kir-lot-chip ${active ? 'is-selected' : ''}" href="${urlFor(lot.run_ref)}" data-cockpit-nav>
         <span class="kir-lot-ref">${esc(lot.run_ref)}</span>
-        <strong class="kir-status is-${businessTone(lot.business_status)}">${esc(businessLabel(lot.business_status))}</strong>
+        <strong class="kir-status is-${lotChipView(lot).tone}">${esc(lotChipView(lot).label)}</strong>
         <small>${esc(lot.provider || 'Source')} · ${num(lot.source_total)} entrée(s)</small>
       </a>`;
     }).join('');
@@ -737,17 +761,6 @@
       <div class="kir-lot-strip-scroll">${cards || empty}</div>
       <a class="kir-lot-all" href="${urlFor(selectedRef, 'registry')}" data-cockpit-nav>Tous les lots</a>
     </nav>`;
-  }
-
-  function actionCard({ key, count, title, helper, tone, href }) {
-    return `<a class="kir-action-card is-${tone}" href="${href}" data-cockpit-nav>
-      <div class="kir-action-count">${count}</div>
-      <div class="kir-action-copy">
-        <strong>${esc(title)}</strong>
-        <span>${esc(helper)}</span>
-      </div>
-      <span class="kir-action-arrow">→</span>
-    </a>`;
   }
 
   const CHANGE_KIND_LABELS = { created:'nouveau', updated:'mis à jour' };
@@ -954,50 +967,6 @@
       ${renderRecentItems(run)}`;
   }
 
-  function decisionCards(run, only = null) {
-    const lot = run.business || {};
-    const d = lot.decisions || {};
-    const cards = [];
-    const wants = key => !only || only.includes(key);
-    if (wants('catalogue') && num(d.catalogue) > 0) cards.push(actionCard({
-      key:'catalogue', count:num(d.catalogue), tone:'warning',
-      title:'Validation Catalogue requise',
-      helper:'Le run automatique est terminé ; cette validation est une décision métier distincte.',
-      href:urlFor(run.run_ref, 'catalogue'),
-    }));
-    if (wants('commercial') && num(d.commercial) > 0) cards.push(actionCard({
-      key:'commercial', count:num(d.commercial), tone:'blue',
-      title:'Décisions de mise en vente',
-      helper:'Produits certifiés prêts pour prix / exposition marché.',
-      href:urlFor(run.run_ref, 'commercial'),
-    }));
-    if (wants('exceptions') && num(d.exceptions) > 0) cards.push(actionCard({
-      key:'exceptions', count:num(d.exceptions), tone:'critical',
-      title:'Exceptions à traiter',
-      helper:'Uniquement les écarts qui empêchent le lot d’avancer ou de se clore.',
-      href:urlFor(run.run_ref, 'exceptions'),
-    }));
-
-    return cards;
-  }
-
-  // N1 : seules les exceptions demandent ici une décision. La remise au Catalogue a son bloc
-    // dédié ; prix / mise en vente appartiennent au futur cockpit Catalogue (drill-down seulement).
-  function renderDecisionTop(run) {
-    const cards = decisionCards(run, ['exceptions']);
-    if (!cards.length) return '';
-    return `<section class="kir-decision-top" aria-label="Décisions attendues">
-      <div class="kir-decision-intro">
-        <div>
-          <span class="kir-section-kicker">À EXAMINER</span>
-          <h2>Ce qui vous attend</h2>
-        </div>
-        <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav class="kir-subtle-link">Historique du run →</a>
-      </div>
-      <section class="kir-actions">${cards.join('')}</section>
-    </section>`;
-  }
-
   // Écran calme : rien à afficher quand rien n'est à décider. Seuls un lot sans résultat ou une
   // connexion fournisseur interrompue justifient un message.
   function renderDecisions(run) {
@@ -1088,20 +1057,34 @@
     ) + list;
   }
 
+  // Action requise : la liste filtrée des éléments qui attendent réellement l'utilisateur
+  // (produit, raison compréhensible, action). Rien d'autre : ni logs, ni historique, ni vue technique.
   function renderExceptions(run) {
-    const a = run.accounting || {};
-    const rows = (run.business?.products || []).filter(item => item.action === 'EXCEPTION');
-    const source = [
-      num(a.quarantined) ? `${num(a.quarantined)} en quarantaine` : null,
-      num(a.certification_blocked) ? `${num(a.certification_blocked)} certification(s) bloquée(s)` : null,
-      run.status === 'FAILED' ? 'run technique en échec' : null,
-    ].filter(Boolean);
+    const items = Array.isArray(run.action_items) ? run.action_items : [];
+    const count = num(run.accounting?.action_required);
+    const back = urlFor(run.run_ref, 'exceptions');
+    const workspace = withReturnTo('/admin/workspaces/sourcing', back, 'Retour au cockpit');
+    const rows = items.map(item => {
+      const title = item.product_name || item.supplier_product_id || (item.reason === 'Anomalie de comptage' ? 'Comptage du lot' : 'Produit à examiner');
+      const control = item.action === 'choose' && item.candidate_ref
+        ? `<button type="button" class="kir-row-action" data-action-choose data-candidate-ref="${esc(item.candidate_ref)}">${esc(item.action_label)}</button>`
+        : `<a class="kir-row-action" href="${workspace}">${esc(item.action_label)} →</a>`;
+      return `<tr>
+        <td>${item.image_url ? `<img class="kir-action-thumb" src="${esc(item.image_url)}" alt="" loading="lazy">` : ''}<strong>${esc(title)}</strong>${item.supplier_product_id ? `<small>${esc(item.supplier_product_id)}</small>` : ''}</td>
+        <td>${esc(item.reason)}</td>
+        <td>${control}</td>
+      </tr>`;
+    }).join('');
     return drillHeader(
       run,
-      'Exceptions à traiter',
-      'Cette page ne montre pas les contrôles réussis : uniquement ce qui empêche une décision finale ou la clôture.'
-    ) + (source.length ? `<div class="kir-exception-banner">${source.map(esc).join(' · ')}</div>` : '') +
-      (rows.length ? productRows(run, 'EXCEPTION', 'exceptions') : source.length ? '' : '<div class="kir-empty">Aucune exception ouverte.</div>');
+      count > 0 ? `Action requise · ${count}` : 'Action requise',
+      count > 0
+        ? 'Uniquement ce que Komerce ne peut pas résoudre seul. Le cockpit se met à jour dès que la vérité change.'
+        : 'Komerce travaille seul. Aucune intervention n’est nécessaire.'
+    ) + (rows
+      ? `<div class="kir-table-wrap"><table class="kir-table" data-action-list>
+          <thead><tr><th>Produit</th><th>Pourquoi</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : '<div class="kir-empty">Aucune action requise.</div>');
   }
 
   function renderRegistry(run, lots) {
@@ -1212,7 +1195,6 @@
     }
 
     const lot = run.business || {};
-    const status = businessLabel(lot.business_status);
     root.innerHTML = `<section class="kir-page">
       <header class="kir-hero kir-live-hero">
         <div>
@@ -1222,7 +1204,7 @@
         </div>
         <div class="kir-hero-actions kir-live-hero-actions">
           <div class="kir-live-time"><span>Démarré ${fmtDate(run.started_at)}</span><strong>${elapsedLabel(run.started_at, run.finished_at)}</strong></div>
-          <span class="kir-status-large is-${businessTone(lot.business_status)}">${ico('clock')}${esc(status)}</span>
+          <span class="kir-status-large is-${sourcingStatusView(run).tone}">${ico('clock')}${esc(sourcingStatusView(run).label)}</span>
           <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref, view), 'Retour au lot')}" class="kir-global-link">Catalogue →</a>
         </div>
       </header>
@@ -1232,7 +1214,6 @@
       ${runTruthStrip(run)}
       ${catalogueHandoff(run)}
       ${activationState ? '' : runProgressRow(run)}
-      ${view === 'overview' ? renderDecisionTop(run) : ''}
       ${view === 'overview' ? renderLiveCore(run) : ''}
 
       <div class="kir-secondary" data-cockpit-zone="secondary">
@@ -1244,6 +1225,7 @@
     </section>`;
     bindNavigation(root);
     bindSourceControls(root, payload);
+    bindActionList(root);
   }
 
   function renderLoading(root) {
@@ -1372,6 +1354,30 @@
       });
     });
   }
+  // « Choisir » : le classement se règle sur place avec l'endpoint candidat existant ; la projection
+  // est ensuite relue (le compteur baisse sans rafraîchir la page).
+  function bindActionList(root) {
+    root.querySelectorAll?.('[data-action-choose]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const ref = button.getAttribute('data-candidate-ref');
+        if (!ref || button.disabled) return;
+        const category = global.prompt ? global.prompt('Catégorie Komerce pour ce produit', '') : null;
+        if (category == null || !String(category).trim()) return;
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        try {
+          await api(`/api/admin/workspaces/sourcing/candidates/${encodeURIComponent(ref)}/update`, { method:'POST', body:{ komerce_category:String(category).trim() } });
+          await refresh({ preserve:true });
+        } catch (error) {
+          button.disabled = false;
+          button.removeAttribute('aria-busy');
+          const main = root.querySelector?.('.kir-main');
+          if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Action · ${esc(error.message)}</div>`);
+        }
+      });
+    });
+  }
+
   function bindNavigation(root) {
     root.querySelectorAll?.('[data-cockpit-nav]').forEach(link => {
       link.addEventListener('click', event => {
@@ -1420,6 +1426,11 @@
     renderLoading(mountedRoot);
     if (timer) clearInterval(timer);
     global.addEventListener?.('popstate', () => refresh({ preserve:true }), { once:false });
+    // Retour sur l'onglet après une correction ailleurs : la vérité est relue immédiatement.
+    global.addEventListener?.('focus', () => refresh({ preserve:true }), { once:false });
+    global.document?.addEventListener?.('visibilitychange', () => {
+      if (global.document.visibilityState === 'visible') refresh({ preserve:true });
+    }, { once:false });
     await refresh({ preserve:true });
     timer = setInterval(() => refresh({ preserve:true }), POLL_MS);
   }
