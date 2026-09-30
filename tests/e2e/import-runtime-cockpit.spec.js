@@ -348,7 +348,7 @@ test.describe('Cockpit imports — Action requise', () => {
 
 // Commandes réelles : mount() + API simulée. Aucune mécanique parallèle : import-now / deactivate / activate.
 async function mountLive(page, data) {
-  const state = { payload: JSON.parse(JSON.stringify(data)), calls: [] };
+  const state = { payload: JSON.parse(JSON.stringify(data)), calls: [], cockpitDelayByRun: {} };
   await page.route(`${ORIGIN}/**`, async (route) => {
     const req = route.request();
     const url = new URL(req.url());
@@ -356,6 +356,12 @@ async function mountLive(page, data) {
       const links = CSS.map((n) => `<link rel="stylesheet" href="/dashboards/canonical/css/${n}.css">`).join('');
       return route.fulfill({ contentType: 'text/html', body: `<!doctype html><html lang="fr"><head><meta charset="utf-8">${links}</head>
         <body class="kmc-shell-v4"><main id="root"></main><script src="/dashboards/canonical/js/import-runtime.js"></script></body></html>` });
+    }
+    if (url.pathname === '/admin/products/P-42') {
+      return route.fulfill({ contentType:'text/html', body:`<!doctype html><html lang="fr"><head><meta charset="utf-8"></head>
+        <body><main id="canonical-admin-root"><h1>Produit Catalogue P-42</h1></main>
+        <script>window.KomerceCanonicalAdmin={surfaceForPath:()=> 'product-360'};window.KOMERCE_CANONICAL_AUTH_USER={role:'catalog_manager'};</script>
+        <script src="/dashboards/canonical/js/navigation.js"></script></body></html>` });
     }
     if (url.pathname.startsWith('/dashboards/canonical/')) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
@@ -382,6 +388,8 @@ async function mountLive(page, data) {
     }
     if (url.pathname.endsWith('/import-cockpit')) {
       const requested = url.searchParams.get('run');
+      const delay = Number(state.cockpitDelayByRun?.[requested] || 0);
+      if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
       if (!requested || requested === state.payload.selected?.run_ref) {
         return route.fulfill({ contentType:'application/json', body:JSON.stringify(state.payload) });
       }
@@ -722,7 +730,7 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
     await expect(page.locator('.kir-run-truth')).toHaveCount(1);
   });
 
-  test('5 Prêts → Produit → fiche Catalogue : return_to exact vers le produit Sourcing', async ({ page }) => {
+  test('5 Prêts → Produit → fiche Catalogue → bouton Retour → même produit Sourcing', async ({ page }) => {
     const state = await mountLive(page, calmPayload);
     state.populations = { ready:readyPop };
     state.traces = { 'SP-0':trace };
@@ -732,10 +740,18 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
     const link = page.locator('a[href^="/admin/products/P-42"]');
     await expect(link).toHaveCount(1);
     const href = new URL(await link.getAttribute('href'), 'http://x');
-    expect(href.searchParams.get('return_to')).toMatch(/^\/admin\/import-runtime\?run=KIR-000009&view=item&kind=ready&item=SP-0/);
+    const returnTo = href.searchParams.get('return_to');
+    expect(returnTo).toMatch(/^\/admin\/import-runtime\?run=KIR-000009&view=item&kind=ready&item=SP-0/);
     expect(href.searchParams.get('return_label')).toBe('Retour au produit Sourcing');
-    // Le return_to rouvre bien le produit, avec son retour vers Prêts.
-    await page.goto(`${ORIGIN}${href.searchParams.get('return_to')}`);
+
+    // Vrai aller-retour inter-domaine : la fiche Catalogue monte la navigation canonique,
+    // son bouton contextuel est cliqué, puis le cockpit rouvre exactement le produit source.
+    await link.click();
+    await expect(page).toHaveURL(/\/admin\/products\/P-42/);
+    await expect(page.locator('.kmc-admin-back')).toHaveText('← Retour au produit Sourcing');
+    await expect(page.locator('.kmc-admin-back')).toHaveAttribute('data-back-context', 'contextual');
+    await page.locator('.kmc-admin-back').click();
+    await expect(page).toHaveURL(`${ORIGIN}${returnTo}`);
     await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Coque 1');
     await expect(page.locator('.kir-back')).toHaveText('← Retour à Prêts pour le Catalogue');
@@ -772,6 +788,36 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
     await page.locator('.kir-domain-nav a', { hasText:'Suivi' }).click();
     await expect(page.locator('.kir-run-truth')).toHaveCount(1);
     await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Suivi');
+  });
+
+  test('11 réponse lente KIR-A après navigation KIR-B : aucun repaint du mauvais passage', async ({ page }) => {
+    const state = await mountLive(page, withLots());
+    state.cockpitDelayByRun['KIR-000009'] = 300;
+    state.cockpitDelayByRun['KIR-000008'] = 5;
+
+    const slowRead = page.waitForRequest((request) => {
+      const url = new URL(request.url());
+      return url.pathname.endsWith('/import-cockpit') && url.searchParams.get('run') === 'KIR-000009';
+    });
+    await page.locator('.kir-run-flow-step', { hasText:'Source' }).first().click();
+    await slowRead;
+
+    await page.evaluate(() => {
+      history.pushState({}, '', '/admin/import-runtime?run=KIR-000008');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    await expect(page).toHaveURL(/run=KIR-000008$/);
+    await expect(page.locator('[data-lot-select]')).toHaveValue('KIR-000008');
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+
+    // L'ancienne réponse Source/KIR-000009 termine après celle de KIR-000008 :
+    // elle doit être ignorée, pas repeindre l'URL courante.
+    await page.waitForTimeout(380);
+    await expect(page).toHaveURL(/run=KIR-000008$/);
+    await expect(page.locator('[data-lot-select]')).toHaveValue('KIR-000008');
+    await expect(page.locator('.kir-drill-head')).toHaveCount(0);
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
   });
 
   test('9 Back/Forward : Passages conserve ses filtres via l’URL', async ({ page }) => {
