@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-28T11:54:15.633Z",
+  "generatedAt": "2026-09-30T15:48:21.110Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 661,
-    "protected": 606,
+    "total": 662,
+    "protected": 607,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2271,6 +2271,14 @@
     },
     {
       "key": "GET /api/admin/workspaces/sourcing/import-runs/{runRef}/items/{supplierProductId}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/sourcing/import-runs/{runRef}/population",
       "level": "PROTECTED",
       "roles": [
         "admin",
