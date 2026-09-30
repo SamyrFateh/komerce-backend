@@ -4,17 +4,17 @@
  * @domain        sourcing
  * @layer         service
  * @criticality   high
- * @inputs        candidate_id_internal, validated_candidate_payload, actor_id
- * @outputs       candidate_mutation_result, promoted_catalog_product
- * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/catalog-candidate-product-service.js, services/catalog-promotion.js, services/catalog-enrichment.js
+ * @inputs        candidate_id_internal, import_id_internal, validated_candidate_payload, actor_id
+ * @outputs       candidate_mutation_result, inactive_catalog_draft, automatic_catalogue_handoff_summary
+ * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/catalog-candidate-product-service.js, services/catalog-promotion.js, services/catalog-enrichment.js, services/import-runtime-runs.js, services/sourcing-certification.js
  * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js
- * @db-read       sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports
+ * @db-read       sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, import_runtime_runs
  * @db-write      sourcing_candidates, sourcing_candidate_events
  * @db-write-via:catalog-candidate-product-service products
  * @db-write-via:catalog-promotion catalog_media, product_variants, product_skus, product_sku_media
  * @db-write-via:import-runtime-runs import_runtime_runs
  * @db-txn        promoteCandidate : transaction dédiée
- * @doctrine      single_sourcing_candidate_mutation_authority, catalog_promotion_owner_respected, engine_price_is_not_market_decision, explicit_human_price_required_before_promotion
+ * @doctrine      single_sourcing_candidate_mutation_authority, sourcing_certified_auto_handoff, catalog_promotion_owner_respected, engine_price_is_not_market_decision, draft_handoff_has_no_market_price, publication_requires_price
  * @impact-areas  sourcing, catalog, economic-engine
  * @version       2026-09
  */
@@ -27,6 +27,7 @@ const pricingEngine = require('./pricing-engine');
 const { createDraftProductFromSourcingCandidate } = require('./catalog-candidate-product-service');
 const { promoteCatalog } = require('./catalog-promotion');
 const importRuns = require('./import-runtime-runs');
+const certification = require('./sourcing-certification');
 
 class SourcingCandidateActionError extends Error {
   constructor(status, message, code = null, details = null) {
@@ -173,13 +174,14 @@ async function rejectCandidate(id, reason = '', actorId = null, q = db) {
   return { state: 'rejected', rejected_reason: text || null };
 }
 
-function requireExplicitPromotionPrice(body = {}) {
+function resolveDraftPrice(body = {}) {
+  if (body.price_kmf === undefined || body.price_kmf === null || body.price_kmf === '') return null;
   const explicitPrice = Number(body.price_kmf);
   if (!Number.isFinite(explicitPrice) || explicitPrice <= 0) {
     throw new SourcingCandidateActionError(
       400,
-      'Prix explicite requis avant promotion. La recommandation économique du moteur n’est pas une décision de marché.',
-      'candidate_explicit_price_required'
+      'price_kmf doit être strictement positif lorsqu’il est fourni. Un brouillon Catalogue peut rester sans prix jusqu’à sa publication.',
+      'candidate_price_invalid'
     );
   }
   return explicitPrice;
@@ -200,7 +202,7 @@ function resolveEnrichmentMode(body = {}) {
   return mode;
 }
 
-async function promoteCandidate(id, body = {}, actorId = null) {
+async function promoteCandidate(id, body = {}, actorId = null, options = {}) {
   const enrichmentMode = resolveEnrichmentMode(body);
   const client = await db.getClient();
   let productId = null;
@@ -233,10 +235,11 @@ async function promoteCandidate(id, body = {}, actorId = null) {
       }
     }
 
-    // Doctrine prix : le scan fournit des frontières et des références économiques,
-    // jamais le prix final. Une promotion vers le catalogue exige donc le prix
-    // choisi explicitement par l'opérateur. Aucun fallback test/recommandé/plancher.
-    const initialPrice = requireExplicitPromotionPrice(body);
+    // Doctrine prix : le passage Sourcing → Catalogue crée un brouillon inactif.
+    // Il n'a besoin d'aucun prix de vente. Si un prix explicite est fourni par un
+    // ancien appelant, on le conserve ; sinon NULL reste la vérité jusqu'au gate
+    // de publication, qui exige alors un prix marché valide.
+    const initialPrice = resolveDraftPrice(body);
 
     productId = await createDraftProductFromSourcingCandidate(client, {
       candidate,
@@ -260,7 +263,7 @@ async function promoteCandidate(id, body = {}, actorId = null) {
       [id, candidate.state, JSON.stringify({
         product_id: productId,
         price_kmf: initialPrice,
-        price_decision: 'EXPLICIT_HUMAN_INPUT',
+        price_decision: initialPrice == null ? 'DEFERRED_TO_PUBLICATION' : 'EXPLICIT_HUMAN_INPUT',
         enrichment_mode: enrichmentMode,
       }), actorId || null]
     );
@@ -273,7 +276,11 @@ async function promoteCandidate(id, body = {}, actorId = null) {
   }
 
   // Projection live uniquement : recalcul après commit, jamais bloquant.
-  await importRuns.safe(() => importRuns.syncRunsForImport(candidate?.import_id));
+  // L'orchestrateur peut différer cette projection pour éviter un N+1 lors
+  // d'une remise automatique de plusieurs brouillons.
+  if (options.syncRuntime !== false) {
+    await importRuns.safe(() => importRuns.syncRunsForImport(candidate?.import_id));
+  }
 
   const enrichment = {
     status: 'source_only',
@@ -287,19 +294,141 @@ async function promoteCandidate(id, body = {}, actorId = null) {
     promotion,
     enrichment,
     enrichment_mode: enrichmentMode,
-    price_decision: 'EXPLICIT_HUMAN_INPUT',
-    message: 'Produit créé en mode inactif — donnée source conservée, préparation éditoriale FR séparée et sans API IA avant publication.',
+    price_decision: initialPrice == null ? 'DEFERRED_TO_PUBLICATION' : 'EXPLICIT_HUMAN_INPUT',
+    message: initialPrice == null
+      ? 'Brouillon Catalogue créé sans prix et non publié — le prix sera exigé au moment de la publication.'
+      : 'Brouillon Catalogue créé avec prix explicite, toujours inactif jusqu’à publication.',
+  };
+}
+
+
+class SourcingCatalogueHandoffError extends Error {
+  constructor(message, details = null) {
+    super(message);
+    this.name = 'SourcingCatalogueHandoffError';
+    this.status = 500;
+    this.code = 'sourcing_catalogue_handoff_failed';
+    this.details = details;
+  }
+}
+
+async function catalogueHandoffCandidateRows(importId, q = db) {
+  const { rows } = await q.query(
+    `SELECT id, state, product_id, supplier_name, supplier_product_id,
+            raw_payload, normalized_source_contract, scan_result,
+            rejected_reason, promotion_status, promotion_reasons, findings
+       FROM sourcing_candidates
+      WHERE import_id = $1
+      ORDER BY created_at, id`,
+    [importId]
+  );
+  return rows;
+}
+
+async function failRunsForCatalogueHandoff(importId, count, q = db) {
+  const { rows } = await q.query(
+    `SELECT id
+       FROM import_runtime_runs
+      WHERE import_id = $1
+        AND status <> 'FAILED'`,
+    [importId]
+  );
+  for (const row of rows) {
+    // eslint-disable-next-line no-await-in-loop
+    await importRuns.failRun(row.id, `catalogue_handoff_failed:${count}`, q);
+  }
+}
+
+async function handoffCertifiedImport(importId, {
+  actorId = null,
+  q = db,
+  promote = promoteCandidate,
+} = {}) {
+  if (!importId) return { attempted:0, catalogued:0, already_catalogued:0, failed:[] };
+
+  const rows = await catalogueHandoffCandidateRows(importId, q);
+  const ready = [];
+  let alreadyCatalogued = 0;
+
+  for (const row of rows) {
+    const verdict = certification.evaluateSourcingCandidateOutcome(row);
+    if (!verdict.outcome_valid || !verdict.sourcing_certified) continue;
+    if (row.state === 'imported_to_catalog' && row.product_id) {
+      alreadyCatalogued += 1;
+      continue;
+    }
+    ready.push(row);
+  }
+
+  const summary = {
+    attempted: ready.length,
+    catalogued: 0,
+    already_catalogued: alreadyCatalogued,
+    failed: [],
+  };
+
+  for (const row of ready) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await promote(
+        row.id,
+        { enrichment_mode:'source_only' },
+        actorId,
+        { syncRuntime:false }
+      );
+      summary.catalogued += 1;
+    } catch (error) {
+      if (error?.code === 'candidate_already_promoted') {
+        summary.already_catalogued += 1;
+        continue;
+      }
+      summary.failed.push({
+        candidate_id: row.id,
+        supplier_product_id: row.supplier_product_id || null,
+        code: error?.code || 'catalogue_handoff_failed',
+        error: String(error?.message || error).slice(0, 300),
+      });
+    }
+  }
+
+  if (summary.failed.length) {
+    await failRunsForCatalogueHandoff(importId, summary.failed.length, q);
+    throw new SourcingCatalogueHandoffError(
+      `Remise automatique au Catalogue incomplète : ${summary.failed.length} produit(s) bloqué(s)`,
+      summary
+    );
+  }
+
+  await importRuns.syncRunsForImport(importId, q);
+  return summary;
+}
+
+async function handoffImportResult(result, actorId = null, options = {}) {
+  if (!result || Number(result.status) >= 400 || !result.body?.import_id) return result;
+  const summary = await handoffCertifiedImport(result.body.import_id, {
+    actorId,
+    ...options,
+  });
+  return {
+    ...result,
+    body: {
+      ...(result.body || {}),
+      catalogue_handoff: summary,
+    },
   };
 }
 
 module.exports = {
   SourcingCandidateActionError,
+  SourcingCatalogueHandoffError,
   requireCandidate,
   updateCandidate,
   scanCandidate,
   watchlistCandidate,
   rejectCandidate,
   promoteCandidate,
-  _requireExplicitPromotionPrice: requireExplicitPromotionPrice,
+  handoffCertifiedImport,
+  handoffImportResult,
+  _resolveDraftPrice: resolveDraftPrice,
   _resolveEnrichmentMode: resolveEnrichmentMode,
 };
