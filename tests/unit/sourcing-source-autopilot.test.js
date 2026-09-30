@@ -11,6 +11,7 @@ const mockGetClient = jest.fn();
 const mockDispatch = jest.fn();
 const mockImportCatalog = jest.fn();
 const mockDiscoverSourcePlan = jest.fn();
+const mockHandoffImportResult = jest.fn();
 
 jest.mock('../../db', () => ({
   query: (...args) => mockQuery(...args),
@@ -38,6 +39,10 @@ jest.mock('../../services/sourcing-import-dispatch', () => ({
 
 jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({
   importCatalog: (...args) => mockImportCatalog(...args),
+}));
+
+jest.mock('../../services/sourcing-catalogue-handoff', () => ({
+  handoffImportResult: (...args) => mockHandoffImportResult(...args),
 }));
 
 jest.mock('../../services/sourcing-observation-shadow-service', () => ({
@@ -81,6 +86,7 @@ function mockSourceQueries(row = sourceRow()) {
 beforeEach(() => {
   jest.clearAllMocks();
   process.env.KOMERCE_SOURCE_AUTOPILOT = '1';
+  mockHandoffImportResult.mockImplementation(async (result) => result);
   mockDiscoverSourcePlan.mockResolvedValue({
     status: 'READY',
     provider: 'cj',
