@@ -31,6 +31,7 @@ const importDispatch = require('./sourcing-import-dispatch');
 const sourceAutopilot = require('./sourcing-source-autopilot');
 const providerPolicy = require('./sourcing-provider-control-policy');
 const catalogImport = require('./suppliers/catalog-import-orchestrator');
+const catalogueHandoff = require('./sourcing-catalogue-handoff');
 const partnerAdmin = require('./partner-admin-service');
 
 class SourcingWorkspaceError extends Error {
@@ -300,7 +301,8 @@ async function updatePortfolioProduct(productRef, body, actor) {
 }
 
 async function importCatalog(body, actor) {
-  const result = await catalogImport.importCatalog(body || {}, actor?.id || null, importDispatch.dispatchToConnector);
+  let result = await catalogImport.importCatalog(body || {}, actor?.id || null, importDispatch.dispatchToConnector);
+  if (result.status < 400) result = await catalogueHandoff.handoffImportResult(result, actor?.id || null);
   if (result.status >= 400) {
     throw new SourcingWorkspaceError(result.status, result.body?.error || 'Import refusé', 'sourcing_import_failed', stripInternalIds(result.body || {}));
   }
