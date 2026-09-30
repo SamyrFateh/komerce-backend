@@ -141,12 +141,12 @@ afterEach(() => {
 });
 
 describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', () => {
-  test('admin voit exactement les 7 domaines N1, dans l’ordre canonique — Paramètres n’est plus dans le N1', () => {
+  test('admin voit exactement les 8 domaines N1, dans l’ordre canonique (Live après Opérations) — Paramètres n’est plus dans le N1', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = mountFor(env, '/admin/pilotage', 'pilotage', { role: 'admin' });
 
     expect(env.api.visibleDomainsFor({ role: 'admin' }).map(domain => domain.id)).toEqual([
-      'dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'finance',
+      'dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'live', 'finance',
     ]);
     expect(header.children[0].children[1].className).toContain('is-capability-map');
   });
@@ -217,9 +217,9 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     expect(orders.attributes['aria-current']).toBeUndefined();
     expect(env.api.activePrimarySurface('order-360')).toBe('orders');
     // Order-360 reste un vrai drill-down Entity 360, pas un domaine N1 promu :
-    // seuls les 7 domaines canoniques du mock apparaissent, dans l'ordre.
+    // seuls les domaines canoniques (7 du mock + Live opérationnel) apparaissent, dans l'ordre.
     expect(env.api.visibleDomainsFor({ role: 'admin' }).map(domain => domain.label)).toEqual([
-      'Dashboard', 'Atelier économique', 'Catalogue', 'Commandes', 'Marchés', 'Opérations', 'Finance',
+      'Dashboard', 'Atelier économique', 'Catalogue', 'Commandes', 'Marchés', 'Opérations', 'Live', 'Finance',
     ]);
   });
 
@@ -294,7 +294,7 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
 });
 
 describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4)', () => {
-  test('admin voit les 4 espaces Opérations dans l’ordre canonique, Expéditions & Douane actif', () => {
+  test('admin voit les 3 espaces Opérations dans l’ordre canonique, Expéditions & Douane actif (Sourcing live est dans Live)', () => {
     const env = loadNavigation('/admin/workspaces/shipping-customs', 'shipping-customs-workspace');
     const header = mountFor(env, '/admin/workspaces/shipping-customs', 'shipping-customs-workspace', { role: 'admin' });
 
@@ -304,7 +304,7 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     const n2 = secondaryNav(header);
     expect(n2.className).toBe('kmc-admin-secondary-nav');
     const ids = n2.children.map(link => link.attributes['data-dashboard']);
-    expect(ids).toEqual(['operations-overview', 'operations-workspace', 'shipping-customs-workspace', 'import-runtime']);
+    expect(ids).toEqual(['operations-overview', 'operations-workspace', 'shipping-customs-workspace']);
 
     const active = n2.children.find(link => link.attributes['data-dashboard'] === 'shipping-customs-workspace');
     expect(active.attributes['aria-current']).toBe('page');
@@ -355,13 +355,14 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     expect(operations.href).toBe('/admin/workspaces/shipping-customs');
   });
 
-  test('le rôle sourcing atterrit directement sur le cockpit live, sans écran de configuration dans Opérations', () => {
+  test('le rôle sourcing atterrit directement sur le domaine Live (cockpit), sans passer par Opérations', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = mountFor(env, '/admin/pilotage', 'pilotage', { role: 'sourcing' });
     expect(secondaryNav(header)).toBeUndefined();
 
-    const operations = header.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'operations');
-    expect(operations.href).toBe('/admin/import-runtime');
+    const live = header.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'live');
+    expect(live.href).toBe('/admin/import-runtime');
+    expect(header.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'operations')).toBeUndefined();
   });
 });
 
@@ -390,10 +391,10 @@ describe('canonical admin navigation — N2 domaine Finance (doctrine V2 §4)', 
 
 describe('canonical admin navigation — filtrage par rôle des domaines N1 (docs/admin-nav-capability-map.md + doctrine V2)', () => {
   test.each([
-    ['admin', ['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'finance']],
+    ['admin', ['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'live', 'finance']],
     ['market_operator', ['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'finance']],
     ['finance', ['dashboard', 'finance']],
-    ['sourcing', ['dashboard', 'operations']],
+    ['sourcing', ['dashboard', 'live']],
     ['agent_hub', ['dashboard', 'operations']],
     ['agent_relais', ['dashboard', 'operations', 'finance']],
     ['agent_transitaire', ['dashboard', 'operations']],

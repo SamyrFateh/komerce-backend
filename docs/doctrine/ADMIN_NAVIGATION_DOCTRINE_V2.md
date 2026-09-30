@@ -37,7 +37,8 @@ Ordre visuel stable :
 4. `Commandes`
 5. `Marchés`
 6. `Opérations`
-7. `Finance`
+7. `Live` — cockpits opérationnels temps réel (coque noire), visible des rôles `admin` et `sourcing`
+8. `Finance`
 
 `Paramètres` n'est plus un domaine métier. Il sort du flux principal et rejoint la zone utilitaire à droite.
 
@@ -129,6 +130,16 @@ Pour le Responsable pays, `Expéditions & Douane` est une responsabilité de **p
 Les actions physiques / spécialisées continuent d'être filtrées par capability et par rôle d'agent.
 
 `Sourcing` reste séparé tant que sa délégation pays n'est pas explicitement tranchée ; cette doctrine ne l'accorde pas implicitement au Responsable pays.
+
+### Domaine Live
+
+Cockpits opérationnels temps réel, tous sur le gabarit noir « Cockpit Live » (`docs/contract/CANONICAL_COCKPIT_PATTERN_V1.md`). Le domaine active `body.kmc-shell-live` : sidebar, barre du haut, onglets et contenu passent en noir (`css/live-ops-shell.css`), les écrans de gestion gardent la coque claire.
+
+Ordre canonique :
+
+1. `Sourcing live` → `/admin/import-runtime` (rôles `admin`, `sourcing`)
+
+Les cockpits Hub live et Relais live viendront comme espaces N2 de ce domaine. Les écrans d'exécution et de gestion (`Hub / Relais`, `Expéditions & Douane`) restent dans `Opérations`.
 
 ### Domaine Finance
 

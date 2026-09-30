@@ -52,6 +52,15 @@
         Object.freeze({ id: 'operations-overview', label: 'Vue d’ensemble', href: '/admin/operations', roles: Object.freeze(['admin', 'market_operator']) }),
         Object.freeze({ id: 'operations-workspace', label: 'Hub / Relais', href: '/admin/workspaces/operations', roles: Object.freeze(['admin', 'agent_hub', 'agent_relais', 'market_operator']) }),
         Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: Object.freeze(['admin', 'agent_hub', 'agent_transitaire', 'market_operator']) }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'live',
+      label: 'Live',
+      // Cockpits opérationnels temps réel (coque noire dédiée). Hub live et
+      // Relais live viendront ici comme espaces N2 ; les écrans de gestion
+      // restent dans Opérations.
+      spaces: Object.freeze([
         Object.freeze({ id: 'import-runtime', label: 'Sourcing live', href: '/admin/import-runtime', roles: Object.freeze(['admin', 'sourcing']) }),
       ]),
     }),
@@ -111,11 +120,16 @@
     Object.freeze({
       label: 'Opérations',
       items: Object.freeze([
-        Object.freeze({ id: 'import-runtime', label: 'Sourcing live', href: '/admin/import-runtime' }),
         Object.freeze({ id: 'operations-workspace', label: 'Hub / Relais', href: '/admin/workspaces/operations' }),
         Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs' }),
         Object.freeze({ id: 'transit', label: 'Transit', href: '/admin/transitaire' }),
         Object.freeze({ id: 'customs', label: 'Douane', href: '/admin/customs' }),
+      ]),
+    }),
+    Object.freeze({
+      label: 'Live',
+      items: Object.freeze([
+        Object.freeze({ id: 'import-runtime', label: 'Sourcing live', href: '/admin/import-runtime' }),
       ]),
     }),
     Object.freeze({
@@ -197,7 +211,7 @@
     'operations-workspace': 'operations',
     'shipping-customs-workspace': 'operations',
     'sourcing-workspace': 'catalog',
-    'import-runtime': 'operations',
+    'import-runtime': 'live',
 
     finance: 'finance',
     'accounting-workspace': 'finance',

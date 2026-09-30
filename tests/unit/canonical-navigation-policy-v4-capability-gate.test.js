@@ -91,3 +91,28 @@ describe('navigation-policy-v4 — capability gate (A2)', () => {
     expect(tabs.map(t => t.id)).not.toContain('clients');
   });
 });
+
+describe('navigation-policy-v4 — domaine Live (coque noire des cockpits opérationnels)', () => {
+  test('Sourcing live appartient au domaine Live, pas à Opérations', () => {
+    const nav = loadPolicy();
+    expect(nav.activePrimarySurface('import-runtime')).toBe('live');
+    const operationsTabs = nav._localTabsFor('operations', { role: 'admin' }, null).map(t => t.id);
+    expect(operationsTabs).not.toContain('import-runtime');
+    expect(nav._localTabsFor('live', { role: 'admin' }, null).map(t => t.id)).toEqual(['import-runtime']);
+  });
+
+  test('Live reste réservé aux rôles admin et sourcing (rôles inchangés)', () => {
+    const nav = loadPolicy();
+    expect(nav._localTabsFor('live', { role: 'sourcing' }, null).map(t => t.id)).toEqual(['import-runtime']);
+    for (const role of ['agent_hub', 'agent_relais', 'agent_transitaire', 'finance', 'market_operator', 'support']) {
+      expect(nav._localTabsFor('live', { role }, null)).toEqual([]);
+    }
+  });
+
+  test('le shell active body.kmc-shell-live uniquement pour le domaine Live', () => {
+    const source = require('fs').readFileSync(path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'navigation-policy-v4.js'), 'utf8');
+    expect(source).toContain("classList?.toggle?.('kmc-shell-live', domainId === 'live')");
+    expect(source).toContain("live: '◉'");
+  });
+});
+

@@ -6122,7 +6122,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 97,
+            "count": 101,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6485,6 +6485,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/live-ops-shell.css",
+                "resolvedPath": "public/dashboards/canonical/css/live-ops-shell.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/css/renderer.css",
                 "resolvedPath": "public/dashboards/canonical/css/renderer.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6537,6 +6542,21 @@
               {
                 "declared": "dashboards/canonical/js/import-runtime.js",
                 "resolvedPath": "public/dashboards/canonical/js/import-runtime.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/navigation-policy-v3.js",
+                "resolvedPath": "public/dashboards/canonical/js/navigation-policy-v3.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/navigation-policy-v4.js",
+                "resolvedPath": "public/dashboards/canonical/js/navigation-policy-v4.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/navigation.js",
+                "resolvedPath": "public/dashboards/canonical/js/navigation.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6892,7 +6912,7 @@
             ]
           },
           "tests": {
-            "count": 132,
+            "count": 134,
             "files": [
               {
                 "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
@@ -6902,6 +6922,11 @@
               {
                 "declared": "tests/e2e/import-runtime-cockpit.spec.js",
                 "resolvedPath": "tests/e2e/import-runtime-cockpit.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/live-ops-shell.spec.js",
+                "resolvedPath": "tests/e2e/live-ops-shell.spec.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7172,6 +7197,11 @@
               {
                 "declared": "tests/unit/canonical-navigation-policy-v3.test.js",
                 "resolvedPath": "tests/unit/canonical-navigation-policy-v3.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-navigation-policy-v4-capability-gate.test.js",
+                "resolvedPath": "tests/unit/canonical-navigation-policy-v4-capability-gate.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7557,7 +7587,7 @@
             ]
           }
         },
-        "totalFiles": 281,
+        "totalFiles": 287,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
