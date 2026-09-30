@@ -198,7 +198,7 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
 const done = { started_at: iso(20), finished_at: iso(19) };
 const completedPayload = JSON.parse(JSON.stringify(payload));
 Object.assign(completedPayload.selected, {
-  status: 'COMPLETED', progress_pct: 100, finished_at: iso(1),
+  status: 'RUNNING', progress_pct: 83, finished_at: null,
   diagnostics: { runtime_certified: false, pipeline_status: 'PARTIAL_BLOCKED' },
   stages: ['SOURCE_CONNECTED', 'RAW_IMPORT', 'REFINERY', 'TAXONOMY', 'CERTIFICATION', 'CATALOGUE'].map((key) => ({
     key,
@@ -215,15 +215,16 @@ Object.assign(completedPayload.selected, {
 });
 completedPayload.selected.accounting.awaiting_catalogue_promotion = 12;
 completedPayload.selected.accounting.certified = 12;
-completedPayload.selected.sourcing_status = 'DONE';
+completedPayload.selected.sourcing_status = 'RUNNING';
 // Tout va bien : même run, sans alerte de source.
 const calmPayload = JSON.parse(JSON.stringify(completedPayload));
 calmPayload.selected.diagnostics = {};
 calmPayload.selected.accounting = { ...calmPayload.selected.accounting, quarantined: 0, deferred: 0, certification_blocked: 0, unaccounted: 0, overflow: 0, action_required: 0, catalogued: 12, awaiting_catalogue_promotion: 0 };
 const calmCatalogue = calmPayload.selected.stages.find((stage) => stage.key === 'CATALOGUE');
 Object.assign(calmCatalogue, { status:'COMPLETED', processed:12, reason:null, finished_at:iso(1) });
+Object.assign(calmPayload.selected, { status:'COMPLETED', progress_pct:100, finished_at:iso(1), sourcing_status:'DONE' });
 
-test.describe('Cockpit imports — run terminé avec alerte et remise automatique', () => {
+test.describe('Cockpit imports — remise Catalogue automatique en cours', () => {
   test.beforeEach(async ({ page }) => { await mountCockpit(page, completedPayload); });
 
   test('pipeline du mock : grands cercles numérotés, libellé centré dessous, trait entre les cercles', async ({ page }) => {
