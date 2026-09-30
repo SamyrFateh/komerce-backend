@@ -20,6 +20,40 @@ describe('product-publication-guard', () => {
     expect(validatePublicationUpdate({ before: { is_active: false, is_available: false }, patch: {} })).toEqual({ ok: true });
   });
 
+  it('autorise un brouillon Catalogue sans prix tant qu’il reste inactif et indisponible', () => {
+    expect(validatePublicationUpdate({
+      before: {
+        name: 'Brouillon',
+        category: 'Maison',
+        price_kmf: null,
+        stock: 0,
+        is_active: false,
+        is_available: false,
+        lifecycle_status: 'candidate',
+      },
+      patch: {},
+    })).toEqual({ ok: true });
+  });
+
+  it('bloque l’activation d’un brouillon sans prix : le prix appartient au gate de publication', () => {
+    expect(validatePublicationUpdate({
+      before: {
+        name: 'Brouillon prêt',
+        description: 'Description suffisamment longue pour que seul le prix bloque la publication.',
+        category: 'Maison',
+        price_kmf: null,
+        stock: 1,
+        is_active: false,
+        is_available: false,
+        lifecycle_status: 'candidate',
+        content_source: 'manual',
+        source_locale: 'fr',
+      },
+      patch: { is_active: true },
+      context: { catalogMediaCount: 1 },
+    })).toMatchObject({ ok: false, code: 'invalid_price' });
+  });
+
   it('validatePublicationUpdate bloque publication sans nom, categorie, prix ou stock valide', () => {
     const base = { name: 'Riz', category: 'food', price_kmf: 1000, stock: 1, is_active: false, is_available: false };
 
