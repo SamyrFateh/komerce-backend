@@ -54,6 +54,14 @@ describe('import-runtime — fidélité visuelle au mock', () => {
     expect(source).not.toContain('Temps restant');
   });
 
+  test('l’activité est en phrases métier, sans libellé technique ; le produit courant reste honnête', () => {
+    expect(source).toContain('function liveEventDetail(run, event)');
+    expect(source).not.toContain('${esc(event.stage)} · ${esc(event.kind)}');
+    expect(source).toContain('Dernier produit mis à jour');
+    expect(source).not.toContain('Produit actuellement traité');
+    expect(source).not.toContain('produits traités</small>');
+  });
+
   test('la page reste transparente sur le fond noir (plus de carte blanche)', () => {
     expect(css).toContain('.kmc-import-runtime .kir-page{background:transparent !important');
   });
@@ -61,11 +69,13 @@ describe('import-runtime — fidélité visuelle au mock', () => {
   test('ordre canonique : pipeline → KPI → activité/objet courant → zone secondaire', () => {
     const flow = source.indexOf('${persistentRunFlow(run, sourceControls)}');
     const truth = source.indexOf('${runTruthStrip(run)}');
+    const progress = source.indexOf('${activationState ? \'\' : runProgressRow(run)}');
     const live = source.indexOf("${view === 'overview' ? renderLiveCore(run) : ''}");
     const secondary = source.indexOf('data-cockpit-zone="secondary"');
     expect(flow).toBeGreaterThan(-1);
     expect(truth).toBeGreaterThan(flow);
-    expect(live).toBeGreaterThan(truth);
+    expect(progress).toBeGreaterThan(truth);
+    expect(live).toBeGreaterThan(progress);
     expect(secondary).toBeGreaterThan(live);
   });
 

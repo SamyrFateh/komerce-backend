@@ -32,9 +32,9 @@ const payload = {
     business: { run_ref: 'KIR-000009', business_status: 'RUNNING', promoted_products: 0,
       decisions: { catalogue: 0, commercial: 0, exceptions: 0 }, closure: { eligible: false, remaining_products: 0 }, products: [] },
     stages: [
-      { key: 'SOURCE_CONNECTED', status: 'COMPLETED', processed: 1, total: 1 },
-      { key: 'RAW_IMPORT', status: 'COMPLETED', processed: 712, total: 712 },
-      { key: 'REFINERY', status: 'RUNNING', processed: 300, total: 456 },
+      { key: 'SOURCE_CONNECTED', status: 'COMPLETED', processed: 1, total: 1, started_at: iso(12), finished_at: iso(11) },
+      { key: 'RAW_IMPORT', status: 'COMPLETED', processed: 712, total: 712, started_at: iso(11), finished_at: iso(5) },
+      { key: 'REFINERY', status: 'RUNNING', processed: 300, total: 456, started_at: iso(5), finished_at: null },
       { key: 'TAXONOMY', status: 'PENDING', processed: 0, total: 0 },
       { key: 'CERTIFICATION', status: 'PENDING', processed: 0, total: 0 },
       { key: 'CATALOGUE', status: 'PENDING', processed: 0, total: 0 },
@@ -86,14 +86,15 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
     const tops = await page.evaluate(() => {
       const y = (sel) => document.querySelector(sel)?.getBoundingClientRect().top ?? null;
       return {
-        hero: y('.kir-hero'), flow: y('.kir-run-flow'), truth: y('.kir-run-truth'),
+        hero: y('.kir-hero'), flow: y('.kir-run-flow'), truth: y('.kir-run-truth'), progress: y('.kir-run-progress'),
         activity: y('.kir-live-activity'), current: y('.kir-current-item'),
         recent: y('.kir-recent-items'), secondary: y('.kir-secondary'),
       };
     });
     expect(tops.hero).toBeLessThan(tops.flow);
     expect(tops.flow).toBeLessThan(tops.truth);
-    expect(tops.truth).toBeLessThan(tops.activity);
+    expect(tops.truth).toBeLessThan(tops.progress);
+    expect(tops.progress).toBeLessThan(tops.activity);
     expect(Math.abs(tops.activity - tops.current)).toBeLessThan(4);
     expect(tops.activity).toBeLessThan(tops.recent);
     expect(tops.recent).toBeLessThan(tops.secondary);
@@ -115,11 +116,42 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
 
   test('rail de progression et étapes en attente restent sombres (pas de règle claire résiduelle)', async ({ page }) => {
     const colors = await page.evaluate(() => ({
-      track: getComputedStyle(document.querySelector('.kir-run-flow-progress')).backgroundColor,
+      track: getComputedStyle(document.querySelector('.kir-run-progress-track')).backgroundColor,
       pending: getComputedStyle(document.querySelector('.kir-run-flow-step.is-pending .kir-run-flow-marker')).backgroundColor,
     }));
     expect(colors.track).toBe('rgb(23, 38, 58)');
     expect(colors.pending).toBe('rgb(12, 25, 40)');
+  });
+
+  test('LIVE à côté du titre, progression globale avec le ratio réel de l’étape active', async ({ page }) => {
+    await expect(page.locator('.kir-live-titlerow .kir-live-badge')).toHaveText('LIVE');
+    await expect(page.locator('.kir-run-progress')).toContainText('64 %');
+    await expect(page.locator('.kir-run-progress')).toContainText('Raffinerie · 300 / 456');
+    await expect(page.locator('.kir-run-progress')).not.toContainText('produits traités');
+  });
+
+  test('activité : phrases métier avec durées réelles, aucun libellé technique', async ({ page }) => {
+    const text = await page.locator('.kir-live-activity').innerText();
+    expect(text).not.toMatch(/STAGE_|REFINERY|RAW_IMPORT/);
+    expect(text).toContain('23 doublon(s)');
+    expect(text).toMatch(/\d+ min \d{2} s|\d+ s/);
+    await expect(page.locator('.kir-current-item')).toContainText('Dernier produit mis à jour');
+  });
+
+  test('zone secondaire : contrôle Sourcing et synthèse restent lisibles sur fond sombre', async ({ page }) => {
+    const c = await page.evaluate(() => {
+      const cs = (sel) => getComputedStyle(document.querySelector(sel));
+      return {
+        controlBg: cs('.kir-secondary .kir-source-control').backgroundColor,
+        titleColor: cs('.kir-source-control-title strong').color,
+        closure: cs('.kir-lot-summary > div:nth-child(4) strong').color,
+      };
+    });
+    expect(c.controlBg).toBe('rgb(10, 22, 37)');
+    for (const color of [c.titleColor, c.closure]) {
+      const [r, g, b] = color.match(/\d+/g).map(Number);
+      expect((r + g + b) / 3).toBeGreaterThan(200);
+    }
   });
 
   test('cinq KPI réels, une seule étape courante, aucun débordement horizontal', async ({ page }) => {

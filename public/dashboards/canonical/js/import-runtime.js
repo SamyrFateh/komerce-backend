@@ -299,9 +299,6 @@
     const automaticDone = stages
       .filter(stage => stage.key !== 'CATALOGUE')
       .every(stage => stage.status === 'COMPLETED');
-    const progress = Math.max(0, Math.min(100, num(run.progress_pct) || Math.round(
-      (stages.filter(stage => stage.status === 'COMPLETED').length / stages.length) * 100
-    )));
     const title = failed
       ? 'Passage interrompu'
       : automaticDone && catalogueWaiting
@@ -321,10 +318,30 @@
     return `<section class="kir-run-flow ${tone}" aria-label="Parcours du lot ${esc(run.run_ref)}">
       <div class="kir-run-flow-head">
         <div><span class="kir-section-kicker">FLUX DU LOT</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
-        <em>${progress}%</em>
       </div>
-      <div class="kir-run-flow-progress"><span style="width:${progress}%"></span></div>
       ${flowTrack(stages, run.run_ref)}
+    </section>`;
+  }
+
+  function runProgressPct(run) {
+    const list = Array.isArray(run?.stages) ? run.stages : [];
+    const completed = list.filter(stage => stage.status === 'COMPLETED').length;
+    return Math.max(0, Math.min(100, num(run?.progress_pct) || Math.round((completed / RUN_STAGE_DEFS.length) * 100)));
+  }
+
+  // Ligne « Progression globale » : % pondéré par étapes (service) + ratio réel de l'étape active.
+  function runProgressRow(run) {
+    const pct = runProgressPct(run);
+    const list = Array.isArray(run?.stages) ? run.stages : [];
+    const active = list.find(stage => stage.status === 'RUNNING' && num(stage.total) > 0);
+    const detail = active
+      ? `${stageLabel(active.key)} · ${num(active.processed)} / ${num(active.total)}`
+      : run?.status === 'COMPLETED' ? 'Traitement automatique terminé' : '';
+    return `<section class="kir-run-progress" aria-label="Progression globale">
+      <strong>Progression globale</strong>
+      <div class="kir-run-progress-track"><span style="width:${pct}%"></span></div>
+      <em>${pct} %</em>
+      ${detail ? `<small>${esc(detail)}</small>` : ''}
     </section>`;
   }
 
@@ -332,11 +349,11 @@
     const a = run?.accounting || {};
     const awaiting = num(a.awaiting_catalogue_promotion);
     const values = [
-      ['Entrées source', num(a.source_total), 'file', 'SOURCE_CONNECTED', 'neutral'],
-      ['Acceptées', num(a.accepted), 'accepted', 'RAW_IMPORT', num(a.accepted) > 0 ? 'healthy' : 'neutral'],
-      ['Doublons', num(a.duplicates), 'copy', 'RAW_IMPORT', 'neutral'],
-      ['Rejetées', num(a.rejected), 'reject', 'RAW_IMPORT', num(a.rejected) > 0 ? 'critical' : 'neutral'],
-      ['En quarantaine', num(a.quarantined), 'alert', 'RAW_IMPORT', num(a.quarantined) > 0 ? 'warning' : 'neutral'],
+      ['Entrées source', num(a.source_total), 'file', 'SOURCE_CONNECTED', 'neutral', 'produits récupérés'],
+      ['Acceptées', num(a.accepted), 'accepted', 'RAW_IMPORT', num(a.accepted) > 0 ? 'healthy' : 'neutral', 'produits acceptés'],
+      ['Doublons', num(a.duplicates), 'copy', 'RAW_IMPORT', 'neutral', 'détectés'],
+      ['Rejetées', num(a.rejected), 'reject', 'RAW_IMPORT', num(a.rejected) > 0 ? 'critical' : 'neutral', 'produits'],
+      ['En quarantaine', num(a.quarantined), 'alert', 'RAW_IMPORT', num(a.quarantined) > 0 ? 'warning' : 'neutral', 'produits'],
     ];
     const blockers = num(a.rejected) + num(a.quarantined) + num(a.deferred) + num(a.certification_blocked);
     const providerGateBlocked = runtimeCertificationBlocked(run);
@@ -347,9 +364,9 @@
         : 'Tous les produits du lot sont comptabilisés dans le parcours réel.';
     return `<section class="kir-run-truth ${providerGateBlocked ? 'has-provider-gate' : ''}" aria-label="Comptabilité réelle du lot">
       <div class="kir-run-truth-head"><span class="kir-section-kicker">SUIVI DU LOT</span><strong>Ce qui s’est réellement passé</strong><small>Cliquez sur une étape pour ouvrir son détail.</small></div>
-      <div class="kir-run-truth-grid">${values.map(([label, value, icon, stageKey, tone]) => {
+      <div class="kir-run-truth-grid">${values.map(([label, value, icon, stageKey, tone, sub]) => {
         const href = stageUrl(run.run_ref, stageKey);
-        return `<a class="is-${tone}" href="${href}" data-cockpit-nav aria-label="${esc(label)} — ouvrir le détail">${ico(icon)}<span>${esc(label)}</span><strong>${value}</strong></a>`;
+        return `<a class="is-${tone}" href="${href}" data-cockpit-nav aria-label="${esc(label)} — ouvrir le détail">${ico(icon)}<span>${esc(label)}</span><strong>${value}</strong><small>${esc(sub)}</small></a>`;
       }).join('')}</div>
       ${providerGateBlocked ? `<div class="kir-runtime-alert"><strong>${ico('alert')}${esc(runtimeCertificationBlockTitle(run))}</strong><span>${esc(runtimeCertificationBlockMessage(run))}</span><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le détail technique →</a></div>` : ''}
       <p>${esc(lotExplanation)}</p>
@@ -643,6 +660,50 @@
     return stage;
   }
 
+  function fmtClock(value) {
+    if (!value) return '—';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
+
+  function durationLabel(startedAt, finishedAt) {
+    const start = startedAt ? new Date(startedAt).getTime() : NaN;
+    const end = finishedAt ? new Date(finishedAt).getTime() : NaN;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return '';
+    const seconds = Math.round((end - start) / 1000);
+    return seconds >= 60 ? `${Math.floor(seconds / 60)} min ${String(seconds % 60).padStart(2, '0')} s` : `${seconds} s`;
+  }
+
+  // Phrase métier construite uniquement à partir des métriques d'étape déjà projetées par le service.
+  function liveEventDetail(run, event) {
+    const stage = (run.stages || []).find(item => item.key === event.stage) || {};
+    const a = run.accounting || {};
+    const finished = event.kind === 'STAGE_FINISHED';
+    const done = num(stage.processed);
+    const total = num(stage.total);
+    let text = '';
+    if (event.stage === 'SOURCE_CONNECTED') {
+      text = run.provider ? `${run.provider} connecté` : '';
+    } else if (event.stage === 'RAW_IMPORT') {
+      text = finished
+        ? `${num(a.source_total)} produit(s) récupéré(s)${num(a.duplicates) > 0 ? ` · ${num(a.duplicates)} doublon(s)` : ''}`
+        : `${total} produit(s) à récupérer`;
+    } else if (event.stage === 'REFINERY') {
+      text = finished ? `${done} produit(s) raffiné(s)` : `${done} / ${total} raffinés`;
+    } else if (event.stage === 'TAXONOMY') {
+      text = finished ? `${done} produit(s) classé(s)` : `${done} / ${total} classés`;
+    } else if (event.stage === 'CERTIFICATION') {
+      text = finished ? `${done} produit(s) certifié(s)` : `${done} / ${total} certifiés`;
+    } else if (event.stage === 'CATALOGUE') {
+      text = stage.reason === 'awaiting_explicit_operator_promotion'
+        ? `${total} certifié(s) à valider`
+        : `${done} produit(s) au Catalogue`;
+    }
+    const duration = finished ? durationLabel(stage.started_at, stage.finished_at) : '';
+    return [text, duration].filter(Boolean).join(' · ');
+  }
+
   function itemHref(run, item) {
     if (item?.product_ref) {
       return withReturnTo(
@@ -660,10 +721,10 @@
     return `<section class="kir-live-panel kir-live-activity" aria-label="Activité en temps réel">
       <header><div><span class="kir-live-dot" aria-hidden="true"></span><strong>Activité en temps réel</strong></div><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Tout voir →</a></header>
       <div class="kir-live-event-list">
-        ${items.length ? items.map(event => `<a href="${stageUrl(run.run_ref, event.stage)}" data-cockpit-nav class="kir-live-event">
-          <time>${fmtDate(event.at)}</time>
+        ${items.length ? items.map(event => `<a href="${stageUrl(run.run_ref, event.stage)}" data-cockpit-nav class="kir-live-event ${event.kind === 'STAGE_FINISHED' ? 'is-finished' : 'is-started'}">
+          <time title="${esc(fmtDate(event.at))}">${fmtClock(event.at)}</time>
           <span class="kir-live-event-marker"></span>
-          <div><strong>${esc(liveEventLabel(event))}</strong><small>${esc(event.stage)} · ${esc(event.kind)}</small></div>
+          <div><strong>${esc(liveEventLabel(event))}</strong>${liveEventDetail(run, event) ? `<small>${esc(liveEventDetail(run, event))}</small>` : ''}</div>
         </a>`).join('') : '<div class="kir-empty-inline">Aucun événement enregistré pour ce lot.</div>'}
       </div>
     </section>`;
@@ -672,14 +733,14 @@
   function renderCurrentItem(run) {
     const item = run.current_item || null;
     if (!item) {
-      return `<section class="kir-live-panel kir-current-item"><header><strong>Produit actuellement traité</strong></header><div class="kir-current-empty">Aucun produit en cours.</div></section>`;
+      return `<section class="kir-live-panel kir-current-item"><header><strong>Dernier produit mis à jour</strong></header><div class="kir-current-empty">Aucun produit pour ce lot.</div></section>`;
     }
     const href = itemHref(run, item);
     const image = item.image_url
       ? `<img src="${esc(item.image_url)}" alt="" loading="lazy">`
       : `<div class="kir-current-image-placeholder">${ico('box')}</div>`;
-    return `<section class="kir-live-panel kir-current-item" aria-label="Produit actuellement traité">
-      <header><strong>Produit actuellement traité</strong><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>Voir le détail →</a></header>
+    return `<section class="kir-live-panel kir-current-item" aria-label="Dernier produit mis à jour">
+      <header><strong>Dernier produit mis à jour</strong><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>Voir le détail →</a></header>
       <a class="kir-current-item-body" href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>
         <div class="kir-current-image">${image}</div>
         <div class="kir-current-copy">
@@ -701,10 +762,11 @@
     return `<section class="kir-recent-items">
       <header><strong>Derniers produits traités</strong><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le parcours →</a></header>
       ${items.length ? `<div class="kir-live-table-wrap"><table class="kir-live-table">
-        <thead><tr><th>Produit</th><th>ID source</th><th>Étape</th><th>Catégorie</th><th>État</th><th>Mis à jour</th></tr></thead>
+        <thead><tr><th class="kir-live-thumb-col"><span class="kir-sr-only">Image</span></th><th>Produit</th><th>ID source</th><th>Étape</th><th>Catégorie</th><th>État</th><th>Mis à jour</th></tr></thead>
         <tbody>${items.map(item => {
           const href = itemHref(run, item);
           return `<tr data-stage="${esc(item.stage || '')}">
+            <td class="kir-live-thumb">${item.image_url ? `<img src="${esc(item.image_url)}" alt="" loading="lazy">` : ico('box')}</td>
             <td><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>${esc(item.product_name || item.product_ref || 'Produit')}</a></td>
             <td>${esc(item.supplier_product_id || '—')}</td>
             <td><a class="kir-stage-chip" href="${stageUrl(run.run_ref, item.stage)}" data-cockpit-nav>${esc(stageLabel(item.stage))}</a></td>
@@ -725,7 +787,7 @@
       ${renderRecentItems(run)}`;
   }
 
-  function renderDecisions(run) {
+  function decisionCards(run) {
     const lot = run.business || {};
     const d = lot.decisions || {};
     const cards = [];
@@ -748,6 +810,27 @@
       href:urlFor(run.run_ref, 'exceptions'),
     }));
 
+    return cards;
+  }
+
+  function renderDecisionTop(run) {
+    const cards = decisionCards(run);
+    if (!cards.length) return '';
+    return `<section class="kir-decision-top" aria-label="Décisions attendues">
+      <div class="kir-decision-intro">
+        <div>
+          <span class="kir-section-kicker">DÉCISIONS / EXCEPTIONS</span>
+          <h2>Ce qui demande une action</h2>
+        </div>
+        <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav class="kir-subtle-link">Historique du run →</a>
+      </div>
+      <section class="kir-actions">${cards.join('')}</section>
+    </section>`;
+  }
+
+  function renderDecisions(run) {
+    const lot = run.business || {};
+    const cards = decisionCards(run);
     const connectorBlocked = lot.business_status === 'BLOCKED'
       && String(lot.failure_reason || '').startsWith('connector_failed:');
     const connectorMessage = connectorBlocked
@@ -764,15 +847,14 @@
             : '';
 
     return `
-      <section class="kir-decision-intro">
+      ${cards.length ? '' : `<section class="kir-decision-intro">
         <div>
           <span class="kir-section-kicker">DÉCISIONS / EXCEPTIONS</span>
-          <h2>${cards.length ? 'Ce qui demande une action' : lot.business_status === 'CLOSED' ? 'Aucune décision ouverte' : 'Situation du lot'}</h2>
+          <h2>${lot.business_status === 'CLOSED' ? 'Aucune décision ouverte' : 'Situation du lot'}</h2>
           <p>Le cockpit montre le flux réel. Les décisions manuelles apparaissent après la frontière automatique, sans faire croire que l’import tourne encore.</p>
         </div>
         <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav class="kir-subtle-link">Historique du run →</a>
-      </section>
-      ${cards.length ? '<section class="kir-actions">' + cards.join('') + '</section>' : ''}
+      </section>`}
       ${noAction}
       ${lot.business_status === 'NO_RESULT' || (connectorBlocked && num(lot.promoted_products) === 0) ? '' : businessJourney(run)}
     `;
@@ -979,8 +1061,8 @@
     root.innerHTML = `<section class="kir-page">
       <header class="kir-hero kir-live-hero">
         <div>
-          <div class="kir-live-titleline"><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span><span class="kir-live-badge ${run.status === 'RUNNING' ? 'is-live' : ''}">${run.status === 'RUNNING' ? 'LIVE' : 'RUN'}</span></div>
-          <h1>Suivi d’import — Source → Catalogue</h1>
+          <div class="kir-live-titleline"><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span></div>
+          <div class="kir-live-titlerow"><h1>Suivi d’import — Source → Catalogue</h1><span class="kir-live-badge ${run.status === 'RUNNING' ? 'is-live' : ''}">${run.status === 'RUNNING' ? 'LIVE' : 'RUN'}</span></div>
           <p>${esc(run.run_ref)} · ${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s)</p>
         </div>
         <div class="kir-hero-actions kir-live-hero-actions">
@@ -992,6 +1074,8 @@
 
       ${persistentRunFlow(run, sourceControls)}
       ${runTruthStrip(run)}
+      ${activationState ? '' : runProgressRow(run)}
+      ${view === 'overview' ? renderDecisionTop(run) : ''}
       ${view === 'overview' ? renderLiveCore(run) : ''}
 
       <div class="kir-secondary" data-cockpit-zone="secondary">
