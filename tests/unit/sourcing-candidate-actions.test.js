@@ -91,9 +91,11 @@ describe('catalog candidate draft source locale', () => {
 
     await expect(candidateProductService.createDraftProductFromSourcingCandidate(q, {
       candidate,
-      initialPrice: 2500,
+      initialPrice: null,
     })).resolves.toBe('product-1');
 
+    expect(q.query.mock.calls[0][0]).toContain("FALSE, FALSE, 'candidate'");
+    expect(q.query.mock.calls[0][1][5]).toBeNull();
     expect(q.query.mock.calls[0][1][9]).toBe('pl-PL');
     expect(candidateProductService.sourceLocaleFromCandidate(candidate)).toBe('pl-PL');
     expect(candidateProductService.sourceLocaleFromCandidate({})).toBe('en');

@@ -67,6 +67,26 @@ Un candidat catalogue certifié satisfait simultanément les invariants suivants
 
 Chaque échec produit une raison structurée. Aucun fallback de type `Other`, aucune catégorie racine seule et aucune exception fournisseur ne peuvent transformer un produit incomplet en produit certifié.
 
+### 3.1 Remise Sourcing → Catalogue ≠ publication
+
+La remise d'un produit certifié par le Sourcing au Catalogue est **automatique**. Elle matérialise un brouillon canonique, elle ne publie pas le produit.
+
+Le brouillon issu de cette remise est obligatoirement :
+
+- `lifecycle_status = 'candidate'` ;
+- `is_active = false` ;
+- `is_available = false` ;
+- sans exposition marché ;
+- autorisé à conserver `price_kmf = NULL`.
+
+Aucun prix fictif, prix de test, prix recommandé ou prix économique de référence n'est copié silencieusement pour permettre cette remise.
+
+`imported_to_catalog` signifie donc **« brouillon Catalogue matérialisé et relié »**, jamais « publié », « visible », « vendable » ou « prix décidé ».
+
+Le prix de vente devient obligatoire uniquement lorsqu'une action de publication / activation / exposition cherche à rendre le produit visible ou vendable. À cette frontière, le moteur économique fournit ses contraintes et références, la décision de prix est prise par l'autorité compétente, puis `product-publication-guard` exige un `price_kmf > 0` ainsi que les autres invariants de publication.
+
+Cette séparation interdit qu'une décision commerciale aval bloque artificiellement un passage Sourcing propre.
+
 ## 4. Certification Sourcing
 
 Le miroir Sourcing est versionné par `services/sourcing-certification.js`.
@@ -187,6 +207,10 @@ Le gate 712 consomme donc le contrat Catalogue partagé et ajoute uniquement les
 > **INV-CAT-CERT-01 — Aucun produit n'est certifié sans identité source, contrat canonique, taxonomie boutique catégorie+sous-catégorie active, contenu prêt, média, unité commandable et Supplier Order Identity complète.**
 
 > **INV-SRC-CERT-01 — Toute entrée Sourcing aboutit à une issue explicite et traçable ; aucune source ne possède son propre chemin de certification.**
+
+> **INV-SRC-CAT-HANDOFF-01 — Tout candidat SOURCING_CERTIFIED est remis automatiquement au Catalogue comme brouillon inactif/non disponible ; aucun prix de vente n'est requis avant la publication.**
+
+> **INV-CAT-PUBLICATION-PRICE-01 — Un brouillon peut avoir price_kmf=NULL ; toute activation/publication exige un prix strictement positif validé à la frontière de publication.**
 
 > **INV-CERT-BATCH-01 — UNACCOUNTED=0 et OVERFLOW=0 sont des conditions bloquantes de certification batch.**
 
