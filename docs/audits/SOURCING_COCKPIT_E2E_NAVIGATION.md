@@ -18,20 +18,20 @@ Il ne s'agit pas de deux objets que l'utilisateur devrait apprendre. L'UI doit d
 
 | Départ | Clic | Vue attendue | Retour attendu |
 | --- | --- | --- | --- |
-| Live | Passages | Historique des passages, vue exclusive | navigateur ou Live |
-| Live | Sources | Inventaire fournisseurs/autopilot, vue exclusive | navigateur ou Live |
-| Passages | ligne KIR | Live du passage sélectionné | retour navigateur → même liste Passages |
-| Live | Produits reçus | population exacte reçue | Retour au passage |
-| Live | Prêts Catalogue | population exacte certified | Retour au passage |
-| Live | Écartés | population exacte écartée | Retour au passage |
-| Live | Action requise | objets exacts à traiter | Retour au passage |
+| Suivi | Passages | Historique des passages, vue exclusive | navigateur ou Suivi |
+| Suivi | Sources | Inventaire fournisseurs/autopilot, vue exclusive | navigateur ou Suivi |
+| Passages | ligne KIR | Suivi du passage sélectionné | retour navigateur → même liste Passages |
+| Suivi | Produits reçus | population exacte reçue | Retour au passage |
+| Suivi | Prêts Catalogue | population exacte certified | Retour au passage |
+| Suivi | Écartés | population exacte écartée | Retour au passage |
+| Suivi | Action requise | objets exacts à traiter | Retour au passage |
 | Population | produit | détail métier de l'objet dans le passage | retour à la population |
 | Objet | fiche Catalogue | produit Catalogue avec `return_to` vers l'objet du passage | retour contextuel |
-| Live | Source | état de la source de ce passage | Retour au passage |
-| Live | Contrôle automatique | Préparation / Classement / Validation | Retour au passage |
+| Suivi | Source | état de la source de ce passage | Retour au passage |
+| Suivi | Contrôle automatique | Préparation / Classement / Validation | Retour au passage |
 | Contrôle | Détail technique | six étapes backend | Retour au contrôle |
 | Détail technique | une étape | preuve filtrée de cette étape | Retour au contrôle si le détail vient du contrôle |
-| Live | Catalogue | frontière Sourcing → Catalogue | Retour au passage |
+| Suivi | Catalogue | frontière Sourcing → Catalogue | Retour au passage |
 
 Une vue secondaire **remplace** la vue précédente ; elle ne s'empile jamais dessous.
 
@@ -100,8 +100,8 @@ Cet audit ne contourne pas cette contrainte avec un faux prix. Une décision d'a
 
 ## 7. Scénarios E2E ajoutés
 
-- Live → Passages → KIR → retour navigateur → Passages.
-- Live → Sources → retour arrière → Passages → retour arrière → Live → avant.
+- Suivi → Passages → KIR → retour navigateur → Passages.
+- Suivi → Sources → retour arrière → Passages → retour arrière → Suivi → avant.
 - navigation KIR précédent/suivant.
 - pagination Passages anciens/récents.
 - Produits reçus → population → objet → retour population → retour passage.
