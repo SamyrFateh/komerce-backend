@@ -20,7 +20,7 @@
  *   ✓ POST /candidates/:id/scan : 404 si introuvable, sinon scan + UPDATE + event 'scan'
  *   ✓ POST /candidates/scan-batch : 400 si ni import_id ni ids fournis
  *   ✓ POST /candidates/:id/import-product : 404 introuvable, 409 si déjà importé,
- *     400 si aucun prix calculable, produit créé toujours is_active=FALSE
+ *     brouillon sans prix autorisé, produit créé toujours is_active=FALSE/is_available=FALSE
  *   ✓ POST /candidates/:id/reject et /watchlist : 404 si introuvable, sinon transition + event
  */
 
@@ -67,9 +67,14 @@ jest.mock('../../services/pricing-engine', () => ({
 }));
 
 const mockImportCatalog = jest.fn();
+const mockHandoffImportResult = jest.fn();
 jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({
   importCatalog: (...args) => mockImportCatalog(...args),
 }));
+jest.mock('../../services/sourcing-candidate-actions', () => {
+  const actual = jest.requireActual('../../services/sourcing-candidate-actions');
+  return { ...actual, handoffImportResult: (...args) => mockHandoffImportResult(...args) };
+});
 
 // Legacy catalog-enrichment stays isolated tooling. Promotion must not call it
 // implicitly: the canonical path is source_only + separate traced FR preparation.
@@ -102,6 +107,7 @@ beforeEach(() => {
   currentUser = { id: 'admin-1', role: 'admin' };
   mockSourcingAllowed = true;
   mockLoadGlobalConfig.mockResolvedValue({ finance: {} });
+  mockHandoffImportResult.mockImplementation(async (result) => result);
 
   app = express();
   app.use(express.json());
@@ -288,12 +294,23 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
     expect(res.status).toBe(409);
   });
 
-  it('400 si aucun prix calculable', async () => {
-    const client = makeClient([{ rows: [{ state: 'scanned', scan_result: {} }] }]);
+  it('sans prix crée un brouillon Catalogue inactif/non disponible et diffère le prix à la publication', async () => {
+    const client = makeClient([
+      { rows: [{ state:'scanned', scan_result:{}, product_name:'X', description:'desc EN', komerce_category:'mode', purchase_price_kmf:1000, normalized_source_contract:null }] },
+      { rows: [{ id:'prod-no-price' }] },
+      { rows: [] },
+      { rows: [] },
+    ]);
     mockGetClient.mockResolvedValue(client);
 
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
-    expect(res.status).toBe(400);
+
+    expect(res.status).toBe(200);
+    expect(res.body.product_id).toBe('prod-no-price');
+    expect(res.body.price_decision).toBe('DEFERRED_TO_PUBLICATION');
+    const insertCall = client.calls.find((call) => /INSERT INTO products/.test(call.sql));
+    expect(insertCall.sql).toMatch(/FALSE, FALSE, 'candidate'/);
+    expect(insertCall.params[5]).toBeNull();
   });
 
   it('crée le produit toujours en is_active=FALSE même avec un prix fourni explicitement', async () => {
@@ -314,7 +331,7 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
     expect(res.body.product_id).toBe('prod-1');
     expect(res.body.promotion).toEqual({ promoted: false, reason: 'v1_legacy' });
     const insertSql = client.calls.find((c) => /INSERT INTO products/.test(c.sql)).sql;
-    expect(insertSql).toMatch(/FALSE, 'candidate'/);
+    expect(insertSql).toMatch(/FALSE, FALSE, 'candidate'/);
     expect(client.calls.map((c) => c.sql.trim())).toContain('COMMIT');
     expect(client.release).toHaveBeenCalled();
   });
