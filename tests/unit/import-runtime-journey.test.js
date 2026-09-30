@@ -695,8 +695,10 @@ test('audit : Passages et Sources sont des vues de 1er niveau — onglet actif, 
   const sources = drill('sources');
   expect(passages).toMatch(/is-active[^>]*>Passages</);
   expect(sources).toMatch(/is-active[^>]*>Sources</);
+  // Passages : aucun retour. Sources : seulement « Retour au suivi » quand un passage est sélectionné.
+  expect(backOf(passages)).toBeNull();
+  expect(backOf(sources)).toEqual({ href:SUIVI, label:'← Retour au suivi' });
   for (const html of [passages, sources]) {
-    expect(backOf(html)).toBeNull();
     expect(html).not.toContain('Retour au passage');
     expect(html).toContain(`href="${SUIVI}" data-cockpit-nav `); // Suivi reste accessible par l'onglet
   }
@@ -779,4 +781,72 @@ test('audit : aucune occurrence de « Retour au passage » ni « Retour au cockp
     expect(html).not.toContain('Retour au cockpit');
     expect(html).not.toContain('Retour au produit du passage');
   }
+});
+
+// ── Vue Sources : synthèse + cartes opérateur ─────────────────────────────────
+const SOURCES = () => [
+  { source_ref:'api:aliexpress', label:'AliExpress Dropshipper API', autopilot_enabled:true, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:'2026-09-30T14:36:00Z' },
+  { source_ref:'api:cj', label:'CJ Dropshipping', autopilot_enabled:false, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:null },
+  { source_ref:'api:bigbuy', label:'BigBuy', autopilot_enabled:false, autopilot_ready:false, activation_ready:false, blocker:'Clé API manquante', production_runtime_certified:false, last_capture_at:null },
+];
+const sourcesView = (search = '') => { const p = scenario(); p.source_controls = SOURCES(); return render(p, `?${search}view=sources`); };
+
+test('Sources : synthèse compacte calculée depuis source_controls, une carte par fournisseur', () => {
+  const html = sourcesView(`run=${RUN}&`);
+  const summary = (html.match(/data-sources-summary>([\s\S]*?)<\/p>/) || [])[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  expect(summary).toBe('3 sources connectées 1 active 1 prête 0 en erreur 1 bloquée');
+  expect((html.match(/data-source-card=/g) || []).length).toBe(3);
+  expect(html).toContain('ACTIVE'); expect(html).toContain('PRÊTE'); expect(html).toContain('BLOQUÉE');
+});
+
+test('Sources : switch fidèle au payload, désactivé + raison visible si non activable, aria-label conservé', () => {
+  const html = sourcesView(`run=${RUN}&`);
+  const card = ref => html.split('<article').find(chunk => chunk.includes(`data-source-card="${ref}"`));
+  expect(card('api:aliexpress')).toMatch(/aria-checked="true"/);
+  expect(card('api:aliexpress')).toContain('aria-label="Désactiver le sourcing automatique AliExpress Dropshipper API"');
+  expect(card('api:aliexpress')).not.toMatch(/data-source-toggle[^>]*disabled/);
+  expect(card('api:cj')).toMatch(/aria-checked="false"/);
+  expect(card('api:cj')).toContain('aria-label="Activer le sourcing automatique CJ Dropshipping"');
+  expect(card('api:cj')).not.toMatch(/data-source-toggle[\s\S]*?disabled/);
+  expect(card('api:bigbuy')).toMatch(/data-source-toggle[\s\S]*?disabled/);
+  expect(card('api:bigbuy')).toContain('Clé API manquante');
+});
+
+test('Sources : « Voir le suivi » seulement si un dernier passage existe (jamais de faux CTA), aucun « Sources → »', () => {
+  const html = sourcesView(`run=${RUN}&`);
+  const card = ref => html.split('<article').find(chunk => chunk.includes(`data-source-card="${ref}"`));
+  expect(card('api:aliexpress')).toContain('Voir le suivi →');
+  expect(card('api:aliexpress')).toContain('href="/admin/import-runtime?run=KIR-000004"');
+  expect(card('api:cj')).toContain('href="/admin/import-runtime?run=KIR-000003"');
+  expect(card('api:bigbuy')).not.toContain('Voir le suivi');
+  expect(card('api:bigbuy')).toContain('Jamais');
+  expect(html).not.toContain('Sources →');
+  expect(html).not.toContain('Retour au passage');
+  expect(html).not.toContain('kir-source-pill');
+});
+
+test('Sources : retour au suivi présent avec un passage, absent sans passage ; le KIR n’est jamais un niveau du fil', () => {
+  const withRun = sourcesView(`run=${RUN}&`);
+  expect(backOf(withRun)).toEqual({ href:SUIVI, label:'← Retour au suivi' });
+  expect(withRun).toContain(`Passage courant : ${RUN}`);
+  expect(crumbText(withRun)).toBe('Sourcing > Sources');
+  expect(withRun).toContain('Pilotez les fournisseurs connectés et leur alimentation automatique.');
+  expect(withRun).toMatch(/is-active[^>]*>Sources</);
+  const p = scenario(); p.source_controls = SOURCES(); p.selected = null;
+  const noRun = render(p, '?view=sources');
+  expect(backOf(noRun)).toBeNull();
+  expect(noRun).not.toContain('Passage courant');
+  expect(noRun).not.toContain('Retour au suivi');
+});
+
+test('Sources : état d’erreur (preuve runtime) et liste vide sans carte fantôme', () => {
+  const p = scenario(); p.source_controls = SOURCES(); p.source_controls[1].last_capture_status = 'failed';
+  const html = render(p, `?run=${RUN}&view=sources`);
+  expect((html.match(/data-sources-summary>([\s\S]*?)<\/p>/) || [])[1]).toContain('<strong>1</strong> en erreur');
+  expect(html).toContain('ERREUR');
+  expect(html).toContain('Dernière préparation en échec.');
+  const empty = scenario(); empty.source_controls = [];
+  const none = render(empty, `?run=${RUN}&view=sources`);
+  expect(none).toContain('Aucune source récurrente configurée');
+  expect(none).not.toContain('data-source-card');
 });

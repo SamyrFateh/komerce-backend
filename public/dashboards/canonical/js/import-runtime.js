@@ -702,77 +702,117 @@
     return `${path}${separator}${q.toString()}`;
   }
 
-  function sourceControlStrip(sourceControls, selectedRun = null) {
+  // Dernier passage d'une source : le passage affiché s'il lui appartient, sinon le plus récent
+  // du même fournisseur (les passages n'exposent que le fournisseur). Jamais de donnée inventée.
+  function lastRunOfSource(source, lots, selectedRun) {
+    if (selectedRun?.source_ref && selectedRun.source_ref === source.source_ref) return selectedRun.run_ref;
+    const norm = value => String(value || '').trim().toLowerCase();
+    const names = [source.label, source.supplier_name, source.source_ref].map(norm).filter(Boolean);
+    const match = (Array.isArray(lots) ? lots : []).find(lot => {
+      const provider = norm(lot.provider);
+      return provider && names.some(name => name.includes(provider) || provider.includes(name));
+    });
+    return match?.run_ref || null;
+  }
+
+  // Lecture d'une source pour l'opérateur : badge, interrupteur et raison, sans nouvelle logique métier.
+  function sourceCardModel(source, selectedRun, lots) {
+    const enabled = source.autopilot_enabled === true;
+    const ready = source.autopilot_ready === true;
+    const activationReady = source.activation_ready === true;
+    const live = activationState?.sourceRef === source.source_ref ? activationState : null;
+    const busy = Boolean(live && !live.done && !live.error);
+    const selectedSourceMatches = selectedRun
+      && String(selectedRun.source_ref || '') === String(source.source_ref || '');
+    const providerGateBlocked = Boolean(
+      (live && live.done && live.outcome === 'certification_incomplete')
+      || (selectedSourceMatches && runtimeCertificationBlocked(selectedRun))
+    );
+    const captureFailed = /fail|error/i.test(String(source.last_capture_status || ''));
+    const displayEnabled = enabled || busy;
+    const canToggle = !busy && (enabled || activationReady);
+    let badge;
+    if (providerGateBlocked || (captureFailed && !displayEnabled)) badge = { key:'error', label:'ERREUR' };
+    else if (busy) badge = { key:'prep', label:'PRÉPARATION' };
+    else if (displayEnabled) badge = { key:'active', label:'ACTIVE' };
+    else if (!activationReady) badge = { key:'blocked', label:'BLOQUÉE' };
+    else if (!ready) badge = { key:'prep', label:'PRÉPARATION' };
+    else badge = { key:'ready', label:'PRÊTE' };
+    const reason = providerGateBlocked
+      ? 'Preuve runtime à corriger, puis relancer la source.'
+      : busy
+        ? (live.runRef ? `Passage ${live.runRef} en cours` : 'Démarrage du premier import…')
+        : !activationReady
+          ? (source.blocker || 'Source non activable')
+          : captureFailed && !displayEnabled
+            ? 'Dernière préparation en échec.'
+            : !ready && !displayEnabled
+              ? 'Préparation automatique au clic.'
+              : !ready
+                ? 'Préparation automatique requise.'
+                : '';
+    return {
+      enabled, displayEnabled, canToggle, busy, badge, reason,
+      name: source.label || source.supplier_name || source.source_ref,
+      lastRun: lastRunOfSource(source, lots, selectedRun),
+    };
+  }
+
+  function sourceCard(source, selectedRun, lots) {
+    const m = sourceCardModel(source, selectedRun, lots);
+    const prepared = source.last_capture_at ? fmtDate(source.last_capture_at) : 'Jamais';
+    const cert = source.production_runtime_certified ? 'Certifiée' : 'À certifier';
+    const name = esc(m.name);
+    return `<article class="kir-source-card is-${m.badge.key}${m.busy ? ' is-busy' : ''}" data-source-card="${esc(source.source_ref)}">
+      <header class="kir-source-card-head">
+        <h3>${name}</h3>
+        <span class="kir-source-badge is-${m.badge.key}">${m.badge.key === 'active' || m.busy ? '<i class="kir-source-dot" aria-hidden="true"></i>' : ''}${m.badge.label}</span>
+      </header>
+      <div class="kir-source-autopilot">
+        <div><strong>Alimentation automatique</strong><span class="kir-source-fact-label">${m.displayEnabled ? 'Active : le sourcing tourne seul' : 'Arrêtée : aucun import automatique'}</span></div>
+        <button type="button"
+          class="kir-source-switch is-${m.badge.key}"
+          role="switch"
+          aria-checked="${m.displayEnabled ? 'true' : 'false'}"
+          aria-label="${m.enabled ? 'Désactiver' : 'Activer'} le sourcing automatique ${name}"
+          data-source-toggle
+          data-source-ref="${esc(source.source_ref)}"
+          data-source-enabled="${m.enabled ? '1' : '0'}"
+          ${m.busy ? 'aria-busy="true"' : ''}
+          ${m.canToggle ? '' : 'disabled'}>
+          <span class="kir-source-switch-label">${m.displayEnabled ? 'ON' : 'OFF'}</span>
+          <span class="kir-source-switch-track" aria-hidden="true"><span class="kir-source-switch-knob"></span></span>
+        </button>
+      </div>
+      <dl class="kir-source-facts">
+        <div><dt>Dernière préparation</dt><dd>${esc(prepared)}</dd></div>
+        <div><dt>Dernier passage</dt><dd>${m.lastRun ? esc(m.lastRun) : 'Jamais'}</dd></div>
+        <div><dt>Certification runtime</dt><dd>${cert}</dd></div>
+      </dl>
+      ${m.reason ? `<p class="kir-source-reason" data-source-reason>${esc(m.reason)}</p>` : ''}
+      ${m.lastRun ? `<a class="kir-source-follow" href="${urlFor(m.lastRun)}" data-cockpit-nav>Voir le suivi →</a>` : ''}
+    </article>`;
+  }
+
+  // Vue Sources : synthèse compacte + une carte opérateur par fournisseur (données de source_controls).
+  function sourcesBoard(sourceControls, selectedRun = null, lots = []) {
     const sources = Array.isArray(sourceControls) ? sourceControls : [];
     if (!sources.length) {
-      return `<section class="kir-source-control">
-        <div class="kir-source-control-title"><span class="kir-section-kicker">SOURCING</span><strong>Aucune source récurrente configurée</strong></div>
-        <a href="/admin/workspaces/sourcing" class="kir-subtle-link">Configurer les sources →</a>
-      </section>`;
+      return `<section class="kir-sources-empty"><strong>Aucune source récurrente configurée</strong>
+        <span>Connectez un fournisseur pour alimenter automatiquement le Sourcing.</span></section>`;
     }
-
-    return `<section class="kir-source-control" aria-label="Contrôle sourcing">
-      <div class="kir-source-control-title">
-        <span class="kir-section-kicker">SOURCING</span>
-        <strong>Alimentation automatique</strong>
-        <small>OFF → ON prépare la source, certifie le rail fournisseur sur un premier import réel puis active l’autopilot.</small>
-      </div>
-      <div class="kir-source-control-list">
-        ${sources.map(source => {
-          const enabled = source.autopilot_enabled === true;
-          const ready = source.autopilot_ready === true;
-          const activationReady = source.activation_ready === true;
-          const live = activationState?.sourceRef === source.source_ref ? activationState : null;
-          const busy = Boolean(live && !live.done && !live.error);
-          const selectedSourceMatches = selectedRun
-            && String(selectedRun.source_ref || '') === String(source.source_ref || '');
-          const providerGateBlocked = Boolean(
-            (live && live.done && live.outcome === 'certification_incomplete')
-            || (selectedSourceMatches && runtimeCertificationBlocked(selectedRun))
-          );
-          const displayEnabled = enabled || busy;
-          const canToggle = !busy && (enabled || activationReady);
-          const stateTone = providerGateBlocked
-            ? 'blocked'
-            : busy ? 'live'
-              : displayEnabled && ready ? 'on'
-                : displayEnabled ? 'warning'
-                  : !activationReady ? 'blocked'
-                    : ready ? 'off' : 'prep';
-          const stateLabel = displayEnabled ? 'ON' : 'OFF';
-          const last = source.last_capture_at ? fmtDate(source.last_capture_at) : 'Jamais';
-          const readiness = providerGateBlocked
-            ? 'Source OFF · preuve runtime à corriger puis relancer'
-            : busy
-              ? (live.runRef ? `Passage ${live.runRef} en cours` : 'Démarrage du premier import…')
-              : !activationReady
-                ? (source.blocker || 'Source non activable')
-                : !ready
-                  ? 'Préparation automatique au clic'
-                  : enabled ? 'Actif' : 'Prêt';
-          return `<div class="kir-source-pill is-${stateTone}" title="${esc(readiness)}">
-            <span class="kir-source-dot" aria-hidden="true"></span>
-            <div class="kir-source-copy">
-              <span class="kir-source-name">${esc(source.label || source.supplier_name || source.source_ref)}</span>
-              <small>${esc(readiness)} · ${esc(last)}</small>
-            </div>
-            <button type="button"
-              class="kir-source-switch is-${stateTone}"
-              role="switch"
-              aria-checked="${displayEnabled ? 'true' : 'false'}"
-              aria-label="${enabled ? 'Désactiver' : 'Activer'} le sourcing automatique ${esc(source.label || source.source_ref)}"
-              data-source-toggle
-              data-source-ref="${esc(source.source_ref)}"
-              data-source-enabled="${enabled ? '1' : '0'}"
-              ${busy ? 'aria-busy="true"' : ''}
-              ${canToggle ? '' : 'disabled'}>
-              <span class="kir-source-switch-knob"></span>
-              <strong>${stateLabel}</strong>
-            </button>
-          </div>`;
-        }).join('')}
-      </div>
-      <a href="/admin/workspaces/sourcing" class="kir-subtle-link">Sources →</a>
+    const models = sources.map(source => sourceCardModel(source, selectedRun, lots));
+    const count = key => models.filter(m => m.badge.key === key).length;
+    const chips = [
+      [sources.length, sources.length > 1 ? 'sources connectées' : 'source connectée', ''],
+      [count('active'), count('active') > 1 ? 'actives' : 'active', 'is-active'],
+      [count('ready'), count('ready') > 1 ? 'prêtes' : 'prête', 'is-ready'],
+      [count('error'), 'en erreur', count('error') ? 'is-error' : ''],
+    ];
+    if (count('blocked')) chips.push([count('blocked'), count('blocked') > 1 ? 'bloquées' : 'bloquée', 'is-blocked']);
+    return `<section class="kir-sources-board" aria-label="Sources du Sourcing">
+      <p class="kir-sources-summary" data-sources-summary>${chips.map(([n, label, cls]) => `<span class="${cls}"><strong>${n}</strong> ${label}</span>`).join('')}</p>
+      <div class="kir-source-grid">${sources.map(source => sourceCard(source, selectedRun, lots)).join('')}</div>
     </section>`;
   }
 
@@ -1101,7 +1141,7 @@
       : { label:popLabel, href:populationUrl(ref, p.kind) };
     const itemCrumb = { label:'Produit', href:itemUrl(ref, p.item, p.kind, p.origin) };
     if (p.view === 'passages') return { crumbs:[domain, leaf('Passages')], back:null };
-    if (p.view === 'sources') return { crumbs:[domain, leaf('Sources')], back:null };
+    if (p.view === 'sources') return { crumbs:[domain, leaf('Sources')], back:ref ? backToSuivi : null };
     const tail = {
       population: { crumbs:[leaf(popLabel)], back:backToSuivi },
       exceptions: { crumbs:[leaf('Action requise')], back:backToSuivi },
@@ -1432,14 +1472,17 @@
         : '<div class="kir-empty">Chargement des passages…</div>'}`;
   }
 
-    // Sources : configuration et état des fournisseurs / autopilot (inventaire, pas de lot).
-  function renderSourcesView(run, sourceControls) {
-    return `<div class="kir-drill-head"><div>
+  // Sources : inventaire et pilotage des fournisseurs (vue de 1er niveau, pas de lot).
+  function renderSourcesView(run, sourceControls, lots) {
+    const { back } = viewNav(run, params());
+    return `<div class="kir-drill-head kir-sources-head"><div>
         ${breadcrumb(run)}
+        ${back ? `<a href="${back.href}" data-cockpit-nav class="kir-back">${esc(back.label)}</a>` : ''}
         <h2>Sources</h2>
-        <p>Les fournisseurs branchés à Komerce et leur alimentation automatique.</p>
+        <p>Pilotez les fournisseurs connectés et leur alimentation automatique.</p>
+        ${run?.run_ref ? `<p class="kir-sources-context">Passage courant : ${esc(run.run_ref)}</p>` : ''}
       </div></div>
-      ${sourceControlStrip(sourceControls, run)}
+      ${sourcesBoard(sourceControls, run, lots)}
       ${activationStrip(sourceControls)}`;
   }
 
@@ -1470,7 +1513,7 @@
     if (view === 'passages' || view === 'sources') {
       root.innerHTML = `<section class="kir-page">
         ${domainNav(view, run)}
-        <main class="kir-main">${view === 'passages' ? renderPassages(run, payload?.passages, payload?.passages_page) : renderSourcesView(run, sourceControls)}</main>
+        <main class="kir-main">${view === 'passages' ? renderPassages(run, payload?.passages, payload?.passages_page) : renderSourcesView(run, sourceControls, lots)}</main>
       </section>`;
       bindAll(root, payload);
       return;
