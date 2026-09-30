@@ -116,7 +116,7 @@
     return { state:'pending', label:'En attente' };
   }
 
-  function flowTrack(stages) {
+  function flowTrack(stages, runRef = null) {
     // Une seule étape est « courante » : la première étape réellement en cours.
     // Elle seule porte .is-current (et donc l'animation) ; les autres restent statiques.
     const currentIndex = stages.findIndex(stage => flowStageMeta(stage).state === 'running');
@@ -130,10 +130,12 @@
             : `${stage.processed}/${stage.total}`)
         : meta.label;
       const marker = meta.state === 'completed' ? '✓' : meta.state === 'failed' ? '!' : String(index + 1);
-      return `<div class="kir-run-flow-step is-${meta.state} ${meta.reached_boundary ? 'has-manual-action' : ''} ${index === currentIndex ? 'is-current' : ''}" ${index === currentIndex ? 'aria-current="step"' : ''}>
-        <span class="kir-run-flow-marker">${marker}</span>
-        <div><strong>${esc(stage.label)}</strong><small>${esc(count)}</small>${meta.manual_label ? `<em class="kir-run-flow-manual">${esc(meta.manual_label)}</em>` : ''}</div>
-      </div>`;
+      const className = `kir-run-flow-step is-${meta.state} ${meta.reached_boundary ? 'has-manual-action' : ''} ${index === currentIndex ? 'is-current' : ''}`;
+      const attrs = `${index === currentIndex ? ' aria-current="step"' : ''}${runRef ? ` href="${stageUrl(runRef, stage.key)}" data-cockpit-nav` : ''}`;
+      const body = `<span class="kir-run-flow-marker">${marker}</span><div><strong>${esc(stage.label)}</strong><small>${esc(count)}</small>${meta.manual_label ? `<em class="kir-run-flow-manual">${esc(meta.manual_label)}</em>` : ''}</div>`;
+      return runRef
+        ? `<a class="${className}"${attrs}>${body}</a>`
+        : `<div class="${className}"${attrs}>${body}</div>`;
     }).join('')}</div>`;
   }
 
@@ -270,7 +272,7 @@
         <em>${progress}%</em>
       </div>
       <div class="kir-run-flow-progress"><span style="width:${progress}%"></span></div>
-      ${flowTrack(stages)}
+      ${flowTrack(stages, activationState?.runRef || null)}
     </section>`;
   }
 
@@ -320,21 +322,21 @@
         <em>${progress}%</em>
       </div>
       <div class="kir-run-flow-progress"><span style="width:${progress}%"></span></div>
-      ${flowTrack(stages)}
+      ${flowTrack(stages, run.run_ref)}
     </section>`;
   }
 
   function runTruthStrip(run) {
     const a = run?.accounting || {};
-    const values = [
-      ['Entrées source', num(a.source_total), 'file'],
-      ['Acceptées', num(a.accepted), 'accepted'],
-      ['Raffinées', num(a.refined), 'gear'],
-      ['Taxonomisées', num(a.taxonomized), 'tag'],
-      ['Certifiées sourcing', num(a.certified), 'shield'],
-      ['Catalogue', num(a.catalogued), 'box'],
-    ];
     const awaiting = num(a.awaiting_catalogue_promotion);
+    const values = [
+      ['Entrées source', num(a.source_total), 'file', 'SOURCE_CONNECTED'],
+      ['Acceptées', num(a.accepted), 'accepted', 'RAW_IMPORT'],
+      ['Raffinées', num(a.refined), 'gear', 'REFINERY'],
+      ['Taxonomisées', num(a.taxonomized), 'tag', 'TAXONOMY'],
+      ['Certifiées sourcing', num(a.certified), 'shield', 'CERTIFICATION'],
+      ['Catalogue', num(a.catalogued), 'box', 'CATALOGUE'],
+    ];
     const blockers = num(a.rejected) + num(a.quarantined) + num(a.deferred) + num(a.certification_blocked);
     const providerGateBlocked = runtimeCertificationBlocked(run);
     const lotExplanation = awaiting > 0
@@ -343,13 +345,16 @@
         ? `${blockers} produit(s) sont hors du chemin Catalogue pour une raison explicite (rejet, quarantaine, différé ou certification produit bloquée).`
         : 'Tous les produits du lot sont comptabilisés dans le parcours réel.';
     return `<section class="kir-run-truth ${providerGateBlocked ? 'has-provider-gate' : ''}" aria-label="Comptabilité réelle du lot">
-      <div class="kir-run-truth-head"><span class="kir-section-kicker">SUIVI DU LOT</span><strong>Ce qui s’est réellement passé</strong></div>
-      <div class="kir-run-truth-grid">${values.map(([label, value, icon], index) => {
+      <div class="kir-run-truth-head"><span class="kir-section-kicker">SUIVI DU LOT</span><strong>Ce qui s’est réellement passé</strong><small>Cliquez sur une étape pour ouvrir son détail.</small></div>
+      <div class="kir-run-truth-grid">${values.map(([label, value, icon, stageKey], index) => {
         const tone = index === 0 ? 'neutral'
           : index >= 1 && index <= 4 && value > 0 ? 'healthy'
             : index === 5 && value > 0 ? 'healthy'
               : 'neutral';
-        return `<div class="is-${tone}">${ico(icon)}<span>${esc(label)}</span><strong>${value}</strong></div>`;
+        const href = stageKey === 'CATALOGUE' && awaiting > 0
+          ? urlFor(run.run_ref, 'catalogue')
+          : stageUrl(run.run_ref, stageKey);
+        return `<a class="is-${tone}" href="${href}" data-cockpit-nav aria-label="${esc(label)} — ouvrir le détail">${ico(icon)}<span>${esc(label)}</span><strong>${value}</strong></a>`;
       }).join('')}</div>
       ${providerGateBlocked ? `<div class="kir-runtime-alert"><strong>${ico('alert')}${esc(runtimeCertificationBlockTitle(run))}</strong><span>${esc(runtimeCertificationBlockMessage(run))}</span><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le détail technique →</a></div>` : ''}
       <p>${esc(lotExplanation)}</p>
@@ -443,6 +448,31 @@
     if (runRef) q.set('run', runRef);
     if (view && view !== 'overview') q.set('view', view);
     return '/admin/import-runtime' + (q.toString() ? '?' + q.toString() : '');
+  }
+
+  function stageUrl(runRef, stageKey) {
+    const q = new URLSearchParams();
+    if (runRef) q.set('run', runRef);
+    q.set('view', 'history');
+    if (stageKey) q.set('stage', stageKey);
+    return '/admin/import-runtime?' + q.toString();
+  }
+
+  function elapsedLabel(startedAt, finishedAt = null) {
+    const start = startedAt ? new Date(startedAt) : null;
+    const end = finishedAt ? new Date(finishedAt) : new Date();
+    if (!start || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return '—';
+    const seconds = Math.max(0, Math.floor((end.getTime() - start.getTime()) / 1000));
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const rest = seconds % 60;
+    return hours > 0
+      ? `${hours} h ${String(minutes).padStart(2, '0')} min`
+      : `${minutes} min ${String(rest).padStart(2, '0')} s`;
+  }
+
+  function stageLabel(key) {
+    return RUN_STAGE_DEFS.find(([stageKey]) => stageKey === key)?.[1] || key || 'Étape';
   }
 
   function withReturnTo(path, returnTo, label = 'Retour au lot') {
@@ -611,6 +641,87 @@
     </a>`;
   }
 
+  function liveEventLabel(event) {
+    const stage = stageLabel(event?.stage);
+    if (event?.kind === 'STAGE_FINISHED') return `${stage} terminé`;
+    if (event?.kind === 'STAGE_STARTED') return `${stage} démarré`;
+    return stage;
+  }
+
+  function itemHref(run, item) {
+    if (item?.product_ref) {
+      return withReturnTo(
+        `/admin/products/${encodeURIComponent(item.product_ref)}`,
+        urlFor(run.run_ref),
+        'Retour au lot'
+      );
+    }
+    return stageUrl(run.run_ref, item?.stage || run.current_stage);
+  }
+
+  function renderLiveActivity(run) {
+    const events = Array.isArray(run.events) ? run.events : [];
+    const items = events.slice(0, 6);
+    return `<section class="kir-live-panel kir-live-activity" aria-label="Activité en temps réel">
+      <header><div><span class="kir-live-dot" aria-hidden="true"></span><strong>Activité en temps réel</strong></div><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Tout voir →</a></header>
+      <div class="kir-live-event-list">
+        ${items.length ? items.map(event => `<a href="${stageUrl(run.run_ref, event.stage)}" data-cockpit-nav class="kir-live-event">
+          <time>${fmtDate(event.at)}</time>
+          <span class="kir-live-event-marker"></span>
+          <div><strong>${esc(liveEventLabel(event))}</strong><small>${esc(event.stage)} · ${esc(event.kind)}</small></div>
+        </a>`).join('') : '<div class="kir-empty-inline">Aucun événement enregistré pour ce lot.</div>'}
+      </div>
+    </section>`;
+  }
+
+  function renderCurrentItem(run) {
+    const item = run.current_item || null;
+    if (!item) {
+      return `<section class="kir-live-panel kir-current-item"><header><strong>Produit actuellement traité</strong></header><div class="kir-current-empty">Aucun produit en cours.</div></section>`;
+    }
+    const href = itemHref(run, item);
+    const image = item.image_url
+      ? `<img src="${esc(item.image_url)}" alt="" loading="lazy">`
+      : `<div class="kir-current-image-placeholder">${ico('box')}</div>`;
+    return `<section class="kir-live-panel kir-current-item" aria-label="Produit actuellement traité">
+      <header><strong>Produit actuellement traité</strong><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>Voir le détail →</a></header>
+      <a class="kir-current-item-body" href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>
+        <div class="kir-current-image">${image}</div>
+        <div class="kir-current-copy">
+          <span class="kir-current-stage">${esc(stageLabel(item.stage))}</span>
+          <h3>${esc(item.product_name || item.supplier_product_id || 'Produit')}</h3>
+          <dl>
+            <div><dt>ID source</dt><dd>${esc(item.supplier_product_id || '—')}</dd></div>
+            <div><dt>Catégorie</dt><dd>${esc(item.komerce_category || 'À déterminer')}</dd></div>
+            <div><dt>État</dt><dd>${esc(item.state || '—')}</dd></div>
+            <div><dt>Mis à jour</dt><dd>${fmtDate(item.updated_at)}</dd></div>
+          </dl>
+        </div>
+      </a>
+    </section>`;
+  }
+
+  function renderRecentItems(run) {
+    const items = Array.isArray(run.recent_items) ? run.recent_items : [];
+    return `<section class="kir-recent-items">
+      <header><strong>Derniers produits traités</strong><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le parcours →</a></header>
+      ${items.length ? `<div class="kir-live-table-wrap"><table class="kir-live-table">
+        <thead><tr><th>Produit</th><th>ID source</th><th>Étape</th><th>Catégorie</th><th>État</th><th>Mis à jour</th></tr></thead>
+        <tbody>${items.map(item => {
+          const href = itemHref(run, item);
+          return `<tr data-stage="${esc(item.stage || '')}">
+            <td><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>${esc(item.product_name || item.product_ref || 'Produit')}</a></td>
+            <td>${esc(item.supplier_product_id || '—')}</td>
+            <td><a class="kir-stage-chip" href="${stageUrl(run.run_ref, item.stage)}" data-cockpit-nav>${esc(stageLabel(item.stage))}</a></td>
+            <td>${esc(item.komerce_category || '—')}</td>
+            <td>${esc(item.state || '—')}</td>
+            <td>${fmtDate(item.updated_at)}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>` : '<div class="kir-empty-inline">Aucun produit récent.</div>'}
+    </section>`;
+  }
+
   function renderOverview(run) {
     const lot = run.business || {};
     const d = lot.decisions || {};
@@ -618,7 +729,7 @@
     if (num(d.catalogue) > 0) cards.push(actionCard({
       key:'catalogue', count:num(d.catalogue), tone:'warning',
       title:'Validation Catalogue requise',
-      helper:'Une action Catalogue est réellement nécessaire avant décision commerciale.',
+      helper:'Le run automatique est terminé ; cette validation est une décision métier distincte.',
       href:urlFor(run.run_ref, 'catalogue'),
     }));
     if (num(d.commercial) > 0) cards.push(actionCard({
@@ -646,17 +757,22 @@
         : connectorBlocked
           ? `<section class="kir-exception-banner"><strong>Connexion fournisseur interrompue.</strong> ${esc(connectorMessage || 'Le fournisseur n’a pas pu être interrogé.')}</section>`
           : cards.length === 0
-            ? '<section class="kir-neutral-panel">Aucune action calculable pour le moment. La vérité aval est en cours de lecture.</section>'
+            ? '<section class="kir-neutral-panel">Aucune décision opérateur ouverte pour le moment.</section>'
             : '';
 
     return `
+      <section class="kir-live-grid">
+        ${renderLiveActivity(run)}
+        ${renderCurrentItem(run)}
+      </section>
+      ${renderRecentItems(run)}
       <section class="kir-decision-intro">
         <div>
-          <span class="kir-section-kicker">À FAIRE MAINTENANT</span>
-          <h2>${cards.length ? 'Décisions ouvertes' : lot.business_status === 'CLOSED' ? 'Aucune décision ouverte' : 'Situation du lot'}</h2>
-          <p>Le cockpit masque les étapes automatiques lorsqu’elles sont saines. Seules les décisions humaines et exceptions remontent ici.</p>
+          <span class="kir-section-kicker">DÉCISIONS / EXCEPTIONS</span>
+          <h2>${cards.length ? 'Ce qui demande une action' : lot.business_status === 'CLOSED' ? 'Aucune décision ouverte' : 'Situation du lot'}</h2>
+          <p>Le cockpit montre le flux réel. Les décisions manuelles apparaissent après la frontière automatique, sans faire croire que l’import tourne encore.</p>
         </div>
-        <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav class="kir-subtle-link">Voir l’historique technique →</a>
+        <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav class="kir-subtle-link">Historique du run →</a>
       </section>
       ${cards.length ? '<section class="kir-actions">' + cards.join('') + '</section>' : ''}
       ${noAction}
@@ -802,19 +918,25 @@
   function renderHistory(run) {
     const stages = Array.isArray(run.stages) ? run.stages : [];
     const events = Array.isArray(run.events) ? run.events : [];
+    const selectedStage = new URLSearchParams(global.location.search).get('stage');
+    const selectedLabel = selectedStage ? stageLabel(selectedStage) : null;
     return drillHeader(
       run,
-      'Historique technique',
-      'Preuve du parcours automatique. Cette information explique le lot mais n’occupe jamais le niveau de pilotage.'
+      selectedLabel ? `Détail — ${selectedLabel}` : 'Historique du run',
+      selectedLabel
+        ? 'Vue ciblée depuis le cockpit live. Les compteurs restent ceux projetés par le backend.'
+        : 'Preuve du parcours automatique. Cette information explique le lot sans remonter de plomberie technique au niveau 1.'
     ) + `
       <section class="kir-history-stages">
-        ${stages.map(stage => `<div class="kir-history-stage">
+        ${stages.map(stage => `<a class="kir-history-stage ${selectedStage === stage.key ? 'is-selected' : ''}" href="${stageUrl(run.run_ref, stage.key)}" data-cockpit-nav>
           <span class="kir-history-dot is-${stage.status === 'COMPLETED' ? 'done' : stage.status === 'FAILED' ? 'failed' : 'pending'}"></span>
-          <div><strong>${esc(stage.key)}</strong><small>${esc(stage.status)} · ${num(stage.processed)} / ${num(stage.total)}</small></div>
-        </div>`).join('')}
+          <div><strong>${esc(stageLabel(stage.key))}</strong><small>${esc(stage.status)} · ${num(stage.processed)} / ${num(stage.total)}</small></div>
+        </a>`).join('')}
       </section>
       <div class="kir-history-events">
-        ${events.length ? events.map(event => `<div><time>${fmtDate(event.at)}</time><span>${esc(event.stage)} · ${esc(event.kind)}</span></div>`).join('') : '<div class="kir-empty">Aucun événement technique enregistré.</div>'}
+        ${events.length ? events
+          .filter(event => !selectedStage || event.stage === selectedStage)
+          .map(event => `<div><time>${fmtDate(event.at)}</time><span>${esc(liveEventLabel(event))}</span></div>`).join('') : '<div class="kir-empty">Aucun événement enregistré.</div>'}
       </div>`;
   }
 
@@ -836,7 +958,7 @@
     root.className = 'kmc-import-runtime kmc-domain-cockpit';
     root.setAttribute?.('data-cockpit-pattern', 'v1');
     root.setAttribute?.('data-cockpit-domain', 'imports');
-    root.setAttribute?.('data-cockpit-language', 'legacy');
+    root.setAttribute?.('data-cockpit-language', 'live-ops');
 
     if (!run) {
       root.innerHTML = `<section class="kir-page">
@@ -853,15 +975,16 @@
     const lot = run.business || {};
     const status = businessLabel(lot.business_status);
     root.innerHTML = `<section class="kir-page">
-      <header class="kir-hero">
+      <header class="kir-hero kir-live-hero">
         <div>
-          <span class="kir-eyebrow">OPÉRATIONS</span>
-          <h1>Cockpit des imports</h1>
-          <p>${esc(run.run_ref)} · ${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s) · import ${lot.business_status === 'NO_RESULT' ? 'sans résultat' : run.status === 'COMPLETED' ? 'terminé' : run.status === 'FAILED' ? 'en échec' : 'en cours'}</p>
+          <div class="kir-live-titleline"><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span><span class="kir-live-badge ${run.status === 'RUNNING' ? 'is-live' : ''}">${run.status === 'RUNNING' ? 'LIVE' : 'RUN'}</span></div>
+          <h1>Suivi d’import — Source → Catalogue</h1>
+          <p>${esc(run.run_ref)} · ${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s)</p>
         </div>
-        <div class="kir-hero-actions">
+        <div class="kir-hero-actions kir-live-hero-actions">
+          <div class="kir-live-time"><span>Démarré ${fmtDate(run.started_at)}</span><strong>${elapsedLabel(run.started_at, run.finished_at)}</strong></div>
           <span class="kir-status-large is-${businessTone(lot.business_status)}">${ico('clock')}${esc(status)}</span>
-          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref, view), 'Retour au lot')}" class="kir-global-link">Catalogue global →</a>
+          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref, view), 'Retour au lot')}" class="kir-global-link">Catalogue →</a>
         </div>
       </header>
 
@@ -887,7 +1010,7 @@
     root.className = 'kmc-import-runtime kmc-domain-cockpit';
     root.setAttribute?.('data-cockpit-pattern', 'v1');
     root.setAttribute?.('data-cockpit-domain', 'imports');
-    root.setAttribute?.('data-cockpit-language', 'legacy');
+    root.setAttribute?.('data-cockpit-language', 'live-ops');
     root.innerHTML = `<section class="kir-page kir-loading">
       <div class="kir-skeleton kir-skeleton-title"></div>
       <div class="kir-skeleton kir-skeleton-lots"></div>
