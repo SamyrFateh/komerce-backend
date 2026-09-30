@@ -26649,11 +26649,11 @@
       "authority": "backend-core — tout changement du cycle de vie candidat (states, transitions) doit être validé par le propriétaire de routes/sourcing-scanner.js",
       "invariants": [
         {
-          "statement": "GET /import-passages expose l'historique des runs KIR en vérité Sourcing seulement (reçus, prêts certified, écartés, action requise, remise déduite de catalogued) ; aucune donnée prix / marché / vente / clôture",
+          "statement": "GET /import-passages expose un historique paginé des runs KIR en vérité Sourcing seulement (reçus, prêts certified, écartés, action requise, remise déduite de catalogued), chargé en batch sans N+1 ; aucune donnée prix / marché / vente / clôture",
           "test": "tests/unit/import-runtime-runs.test.js"
         },
         {
-          "statement": "GET /import-runs/:runRef/population?kind=received|ready|discarded expose les produits qui composent un chiffre du cockpit ; ce qui n'existe qu'en compteur d'intake est restitué en groupes explicites, jamais inventé ; une étape COMPLETED a toujours processed = total (le compteur brut reste dans metrics.observed)",
+          "statement": "GET /import-runs/:runRef/population?kind=received|ready|discarded expose les produits qui composent un chiffre du cockpit ; ce qui n'existe qu'en compteur d'intake est restitué en groupes explicites, jamais inventé ; les métriques processed/total restent des observations backend et l'UI masque le ratio d'une étape COMPLETED lorsqu'il n'est pas sa preuve de complétion",
           "test": "tests/unit/import-runtime-runs.test.js"
         },
         {
