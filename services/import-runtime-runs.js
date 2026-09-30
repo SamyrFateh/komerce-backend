@@ -969,6 +969,8 @@ async function getProductTrace(runRef, supplierProductId, q = db) {
     import_ref: run.import_ref || null,
     candidate_ref: row.candidate_ref,
     supplier_product_id: row.supplier_product_id,
+    product_name: row.product_name || null,
+    image_url: row.image_url || null,
     refinery: {
       done: Boolean(row.scan_at),
       scanned_at: iso(row.scan_at),
