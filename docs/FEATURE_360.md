@@ -5,15 +5,15 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 ## Global scorecard
 
 - Features : **39**
-- Healthy : **35**
-- Attention : **4**
+- Healthy : **34**
+- Attention : **5**
 - Blocked : **0**
-- Business dependencies : **284**
+- Business dependencies : **289**
 - Direct cross-feature imports : **0**
 - Runtime cycles : **0**
 - Ambiguous ownership signals : **0**
 - Ontology gaps : **0**
-- Debt items (total) : **8**
+- Debt items (total) : **9**
 - Gate health — healthy : **36** · blocked : **2**
 
 ## Gate findings — intégrité de projection
@@ -28,14 +28,14 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 
 | Feature | Kind | Boundary | Governance | Owns | Consumes | Consumed by | Debt |
 |---|---|---|---|---|---|---|---|
-| admin-dashboard | projection | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | catalog, customs, dashboard, decision-signals, documents, economic-engine, inventory, logistics, orders, payments, sourcing | _aucune_ | 0 |
+| admin-dashboard | projection | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | catalog, customs, dashboard, decision-signals, documents, economic-engine, inventory, logistics, orders, payments | _aucune_ | 1 |
 | auth | technical-transversal | 🟢 HEALTHY | 🟢 HEALTHY | _aucune_ | auth-identity, infrastructure, notifications | auth-identity, auth-passkey, business-rules, catalog, customs, dashboard, decision-signals, documents, economic-engine, infrastructure, inventory, logistics, loyalty, market-delegation, notifications, orders, payments, platform-ops, providers-services, purchasing, settlement, shared-cart, sourcing, unsold-resolution, wallet | 0 |
 | auth-identity | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | otp_codes, revoked_tokens, user_pickup_authorizations, users | auth, auth-passkey, catalog, documents, infrastructure, logistics, loyalty, notifications, orders, platform-ops, wallet | auth, auth-passkey, business-rules, catalog, dashboard, documents, economic-engine, logistics, loyalty, market-delegation, notifications, orders, payments, platform-ops, providers-services, settlement, shared-cart, wallet | 0 |
 | auth-passkey | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | webauthn_challenges, webauthn_credentials | auth, auth-identity, infrastructure, platform-ops | auth-identity | 0 |
 | business-rules | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | business_rules, business_rules_history | auth, auth-identity, infrastructure | catalog, dashboard, decision-signals, economic-engine, logistics, orders, payments, platform-ops | 0 |
-| catalog | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, catalog_media, catalog_terminology_reference, product_attributes, product_content_profile, product_content_sections, product_market_exposure, product_sku_media, product_skus, product_variants, products, supplier_catalog_imports, supplier_catalog_sync_checkpoints, supplier_oauth_connections | auth, auth-identity, business-rules, economic-engine, external-provider-contracts, infrastructure, logistics, market-autonomy, notifications, orders, platform-ops, purchasing, shared-cart, sourcing, supplier-connectivity | admin-dashboard, auth-identity, customs, documents, economic-engine, infrastructure, inventory, local-stock, logistics, market-autonomy, market-delegation, market-operator-dashboard, orders, platform-ops, purchasing, recommendations, shared-cart, sourcing, unsold-resolution | 0 |
-| customs | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | customs_categories, customs_shipment_parcels, customs_shipments | auth, catalog, documents, economic-engine, infrastructure, logistics, orders | admin-dashboard, dashboard, documents, economic-engine, infrastructure, orders | 0 |
-| dashboard | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | order_incidents, partners | auth, auth-identity, business-rules, customs, decision-signals, documents, economic-engine, incident-management, infrastructure, inventory, local-stock, logistics, market, market-delegation, notifications, orders, payments, purchasing, shared-cart, wallet | admin-dashboard, economic-engine, infrastructure, market-delegation, sourcing | 0 |
+| catalog | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | boutique_categories, boutique_subcategories, catalog_enrichment_runs, catalog_field_overrides, catalog_media, catalog_terminology_reference, product_attributes, product_content_profile, product_content_sections, product_market_exposure, product_sku_media, product_skus, product_variants, products, supplier_catalog_imports, supplier_catalog_sync_checkpoints, supplier_oauth_connections | auth, auth-identity, business-rules, customs, economic-engine, external-provider-contracts, infrastructure, logistics, market, market-autonomy, notifications, orders, platform-ops, purchasing, shared-cart, sourcing, supplier-connectivity | admin-dashboard, auth-identity, customs, dashboard, documents, economic-engine, infrastructure, inventory, local-stock, logistics, market-autonomy, market-delegation, market-operator-dashboard, orders, platform-ops, purchasing, recommendations, shared-cart, sourcing, unsold-resolution | 0 |
+| customs | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | customs_categories, customs_shipment_parcels, customs_shipments | auth, catalog, documents, economic-engine, infrastructure, logistics, orders | admin-dashboard, catalog, dashboard, documents, economic-engine, infrastructure, orders | 0 |
+| dashboard | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | order_incidents, partners | auth, auth-identity, business-rules, catalog, customs, decision-signals, documents, economic-engine, incident-management, infrastructure, inventory, local-stock, logistics, market, market-autonomy, market-delegation, notifications, orders, payments, purchasing, shared-cart, sourcing, wallet | admin-dashboard, economic-engine, infrastructure, market-delegation, sourcing | 0 |
 | decision-signals | piloting-capability | 🟢 HEALTHY | 🟢 HEALTHY | signals | auth, business-rules, infrastructure, logistics, market-delegation | admin-dashboard, dashboard, incident-management | 0 |
 | documents | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | invoices, transaction_documents | auth, auth-identity, catalog, customs, infrastructure, logistics, orders, refunds, wallet | admin-dashboard, auth-identity, customs, dashboard, logistics, orders, payments, platform-ops, refunds, wallet | 0 |
 | economic-engine | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | charges, competitor_prices, cost_benchmarks, cost_component_events, cost_component_market_override_events, cost_component_market_overrides, cost_components, economic_risk_cost_events, economic_risk_watermark_events, economic_snapshots, economic_structure_cost_events, exchange_rates, finance_config, market_price_observation_events, market_price_observations, order_item_real_cost_allocations, price_history, pricing_category_dims, pricing_category_taxes, pricing_components, pricing_market_decision_policy_events, pricing_matrices_audit, pricing_maturity_disposition_events, pricing_strategies, pricing_strategy_history, risk_provisions | auth, auth-identity, business-rules, catalog, customs, dashboard, infrastructure, logistics, loyalty, market, market-autonomy, market-delegation, orders, platform-ops, refunds | admin-dashboard, catalog, customs, dashboard, infrastructure, loyalty, market-autonomy, market-delegation, orders, platform-ops, sourcing | 0 |
@@ -47,9 +47,9 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | local-stock | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | local_stock, local_stock_allocations | catalog, infrastructure, logistics, market | dashboard, orders, providers-services, recommendations | 0 |
 | logistics | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | carriers, hub_custody_events, hub_physical_unit_placements, hub_physical_units, hub_purchase_allocations, parcel_events, parcel_items, parcels, pickup_print_tokens, pickup_reveal_codes, pickup_verify_attempts, relais, scan_events, scans, shipments | auth, auth-identity, business-rules, catalog, documents, incident-management, infrastructure, loyalty, market, market-delegation, notifications, orders, payments, purchasing, refunds | admin-dashboard, auth-identity, catalog, customs, dashboard, decision-signals, documents, economic-engine, incident-management, infrastructure, inventory, local-stock, market-delegation, notifications, orders, payments, platform-ops, purchasing, recommendations | 0 |
 | loyalty | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | loyalty_rewards, loyalty_tiers | auth, auth-identity, economic-engine, infrastructure, notifications, orders | auth-identity, economic-engine, logistics, orders, payments | 0 |
-| market | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | currency_parities, markets, operator_market_scopes | infrastructure | dashboard, economic-engine, local-stock, logistics, market-autonomy, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, settlement | 0 |
-| market-autonomy | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | product_market_price_draft_events, product_market_price_drafts | catalog, economic-engine, infrastructure, market | catalog, economic-engine, market-operator-dashboard, orders, recommendations, shared-cart | 2 |
-| market-delegation | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | assignment_capability_ceiling, assignment_memberships, capability_registry, ceiling_template_capabilities, ceiling_templates, market_cash_control_policies, market_delegation_audit, market_operating_assignments, market_team_invitations, membership_capabilities | auth, auth-identity, catalog, dashboard, economic-engine, infrastructure, logistics, market, orders, providers-services, settlement | dashboard, decision-signals, economic-engine, logistics, market-operator-dashboard, payments, settlement | 0 |
+| market | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | currency_parities, markets, operator_market_scopes | infrastructure | catalog, dashboard, economic-engine, local-stock, logistics, market-autonomy, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, settlement | 0 |
+| market-autonomy | business-feature | 🟡 ATTENTION | 🟢 HEALTHY | product_market_price_draft_events, product_market_price_drafts | catalog, economic-engine, infrastructure, market | catalog, dashboard, economic-engine, market-delegation, market-operator-dashboard, orders, recommendations, shared-cart | 2 |
+| market-delegation | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | assignment_capability_ceiling, assignment_memberships, capability_registry, ceiling_template_capabilities, ceiling_templates, market_cash_control_policies, market_delegation_audit, market_operating_assignments, market_team_invitations, membership_capabilities | auth, auth-identity, catalog, dashboard, economic-engine, infrastructure, logistics, market, market-autonomy, orders, providers-services, settlement | dashboard, decision-signals, economic-engine, logistics, market-operator-dashboard, payments, settlement | 0 |
 | market-operator-dashboard | unclassified | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | catalog, infrastructure, market, market-autonomy, market-delegation | _aucune_ | 4 |
 | notifications | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | alerts, client_notifications, notification_log | auth, auth-identity, incident-management, infrastructure, logistics, orders, platform-ops | auth, auth-identity, catalog, dashboard, infrastructure, logistics, loyalty, orders, payments, purchasing, shared-cart | 0 |
 | orders | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | customs_history, disputes, order_comments, order_item_cost_imputations, order_items, order_status_history, orders, recipients, sms_log | auth, auth-identity, business-rules, catalog, customs, documents, economic-engine, infrastructure, local-stock, logistics, loyalty, market, market-autonomy, notifications, payments, platform-ops, purchasing, refunds, shared-cart, wallet | admin-dashboard, auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, logistics, loyalty, market-delegation, notifications, payments, platform-ops, purchasing, recommendations, refunds, shared-cart, unsold-resolution, wallet | 0 |
@@ -62,7 +62,7 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 | refunds | business-transversal | 🟢 HEALTHY | 🟢 HEALTHY | refunds | documents, infrastructure, orders, wallet | documents, economic-engine, logistics, orders, payments | 0 |
 | settlement | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | market_settlement_events, market_settlements | auth, auth-identity, infrastructure, market, market-delegation | market-delegation | 0 |
 | shared-cart | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | basket_items, baskets, cart_shares, shared_cart_events, shared_cart_items, shared_cart_saved_access, shared_carts | auth, auth-identity, catalog, infrastructure, market-autonomy, notifications, orders, platform-ops, recommendations | catalog, dashboard, infrastructure, orders | 0 |
-| sourcing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | sourcing_candidate_events, sourcing_candidates, sourcing_canonical_entities, sourcing_canonical_entity_refs, sourcing_captures, sourcing_match_proposals, sourcing_observation_evidence, sourcing_observations, sourcing_resolution_bindings, sourcing_resolution_decisions, sourcing_source_provides, sourcing_sources | auth, catalog, dashboard, economic-engine, infrastructure | admin-dashboard, catalog, purchasing | 0 |
+| sourcing | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | import_runtime_runs, sourcing_candidate_events, sourcing_candidates, sourcing_canonical_entities, sourcing_canonical_entity_refs, sourcing_captures, sourcing_match_proposals, sourcing_observation_evidence, sourcing_observations, sourcing_provider_control_events, sourcing_resolution_bindings, sourcing_resolution_decisions, sourcing_source_provides, sourcing_sources | auth, catalog, dashboard, economic-engine, infrastructure | catalog, dashboard, purchasing | 0 |
 | supplier-connectivity | integration-adapter | 🟡 ATTENTION | 🟢 HEALTHY | _aucune_ | _aucune_ | catalog, purchasing | 1 |
 | unsold-resolution | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | unsold_items | auth, catalog, infrastructure, orders | _aucune_ | 0 |
 | wallet | business-feature | 🟢 HEALTHY | 🟢 HEALTHY | wallet_consumptions, wallet_credit_lots, wallet_transactions, wallets | auth, auth-identity, documents, infrastructure, orders, platform-ops | auth-identity, dashboard, documents, infrastructure, orders, platform-ops, refunds | 0 |
@@ -89,21 +89,22 @@ _Projection déterministe de lecture au-dessus de la chaîne Feature First O2-O7
 
 **Exposes** : 0 internal API(s), 0 HTTP interface(s)
 
-**Consumes** : catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
+**Consumes** : catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED)
 **Consumed by** : _aucune_
 
 **Projections** : _aucune_
 
 **Technical context** : 0 primitive dependencies, 0 test-only, 0 composition-root
 
-**Boundary health** : 🟢 HEALTHY — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 0
+**Boundary health** : 🟡 ATTENTION — cross-feature imports: 0, runtime cycles: 0, unclassified: 0, declared-not-observed: 1
 **Governance health** : 🟢 HEALTHY — orphan files: 0, unresolved internal APIs: 0, declared-only deps: 0, ambiguous ownership: 0, ontology gaps: 0
 **Gate health** : 🟢 HEALTHY — gates: _aucun_, fail: 0, warn: 0
 
-**Architectural debt** : _aucune_
+**Architectural debt** (1) :
+- `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "sourcing" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 41 fichier(s) déclaré(s)
-  - js : 41
+**Implementation** : 37 fichier(s) déclaré(s)
+  - js : 37
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="admin-dashboard"]_
 
@@ -343,7 +344,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - modal produit catalogue : un fetch Product Detail, un etat de selection SKU, deux compositions responsive mobile/desktop
   - raffinerie catalogue : donnee source EN conservee, eligibilite douane/transport (catalog_exclusions), enrichissement FR, overrides traces, approbation humaine unique
   - contrat de revue du texte incruste dans les medias fournisseur : preuve attachee a la source et variante, traduction FR revue sans dependance IA specifique (verification pure, sans publication automatique)
-  - projection live Sources -> Raffinerie -> Boutique dans le Workspace Catalogue : observation des sources, du pipeline et du buyer-effective sans reprendre l autorite de mutation Sourcing ni de pricing marche
+  - projection par lot KIR : préparation Catalogue, publication et visibilité par marché depuis les produits réellement promus ; lecture seule, sans automatiser une décision
+  - Catalogue global commercial : projection read-only de l assortiment approuve a la vente, compose uniquement des produits issus de KIR clos et possedant exposition ENABLED + prix LOCAL_ACTIVE sur au moins un marche ; drafts et lots ouverts restent hors de cette lecture
   - glossaire metier EN->FR (catalog_glossary)
   - mémoire terminologique externe sourcée et filtrée par corpus (catalog_terminology_reference), avec priorité au glossaire Komerce
   - challenge FR cold-start permanent : 100 produits CJ jamais vus, source exacte, enrichissement TERMIUM incrémental, aucune dépendance IA runtime et seconde revue obligatoire
@@ -355,6 +357,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - source Allegro Sandbox vendeur : offres exactes V2 en PLN, OAuth refresh chiffré sous verrou, aucun achat automatique
   - source AliExpress de stress-test Raffinerie : Open Platform Drop Shipping api-sg, OAuth serveur géré et chiffré, feed/detail normalisés V2, aucune publication automatique
   - pool AliExpress staging borné à 500 références réellement en stock, dédupliqué et reprenable, alimenté exclusivement via la Raffinerie et sans publication automatique
+  - dataset E2E unifié 700 historique : 200 AliExpress validés + 500 CJ semantic-positive, cohabitant dans une base Railway isolée explicitement gardée, sans exposition marché ni publication automatique
+  - dataset E2E réconcilié 712 : 200 AliExpress + 500 CJ historiques certifiés + 12 CJ nouveaux uniques, matérialisés par identité fournisseur exacte, taxonomie boutique dynamique active, SKU/SOI complets et zéro exposition marché
+  - certification catalogue canonique v1 : provider-independent, versionnée et fail-closed ; un produit certifié possède source V2, taxonomie boutique catégorie+sous-catégorie active, média, SKU/SOI, contenu FR prêt, zéro exposition marché et publication guard PASS ; les datasets 700/712 sont des corpus de preuve et non la définition de la certification
+  - chaque sous-catégorie boutique commerciale active déclare une affinité douanière administrable ; le produit fournisseur réel garde priorité et l affinité ne sert qu en fallback de proximité pour éviter les catégories Komerce nulles sur un produit accepté
+  - un dataset E2E certifié peut être transféré vers le catalogue réel uniquement par replay des contrats fournisseur V2 via les autorités canoniques import/scan/promotion ; les identités déjà présentes sont laissées intactes et aucune exposition marché n est créée automatiquement
   - product_market_exposure : exposition commerciale produit x marché, fail-closed (absence de ligne = DISABLED), même patron que commercial_exposure sur physical_offers/services
   - migration 206 : snapshot de compatibilité produit x marché, reproduction exacte de publicCatalogVisibilitySql() croisée avec chaque marché actif — cutover, pas un all x all aveugle
   - services/catalog-public-view.js::publicCatalogVisibilitySql(alias, { marketCodeParam }) : le chemin de lecture storefront consulte désormais product_market_exposure quand un marché est fourni ; sans marché, comportement historique inchangé à l’identique
@@ -370,6 +377,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Invariants** :
 - un produit publie a toujours passe product-publication-guard.js
+- [object Object]
 - [object Object]
 - jamais de creation produit par formulaire vide : tout entre par un connecteur (le manuel EST un connecteur)
 - la donnee source ne se perd jamais : raw_payload reste le brut integral et normalized_source_contract preserve separement le mapping V2 valide
@@ -390,24 +398,33 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - aucune fiche candidate issue du pipeline ne passe lifecycle_status=active sans etre passee par la file d approbation, meme si needs_review est faux
 - le pool fournisseur CJ de la Raffinerie ne dépasse jamais 1000 références propres ; son alimentation ne publie aucun produit automatiquement
 - la source AliExpress reste une entrée de Raffinerie : elle ne crée ni ne publie jamais directement un produit canonique
+- aucune clé customs_categories ni règle de correspondance catégorie fournisseur ne doit être codée en dur dans supplier-catalog-scanner ; la configuration active vient de customs_categories
+- tout sourcing par requête destiné aux campagnes E2E doit porter une preuve discovery.semantic_relevance issue du gate canonique provider-independent ; une ligne hors requête ne compte jamais vers la cible
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- [object Object]
+- les datasets E2E 700 et 712 restent des corpus historiques de preuve de non-régression ; aucun nombre ni fournisseur ne définit la certification canonique
 - le pool AliExpress staging ne dépasse jamais 500 références propres en stock et ne peut pas s exécuter en production
 - les access/refresh tokens fournisseur sont persistés chiffrés ; l App Secret reste uniquement en variable serveur et aucun token n est exposé au navigateur
 
 **Owns** : `boutique_categories`, `boutique_subcategories`, `catalog_enrichment_runs`, `catalog_field_overrides`, `catalog_media`, `catalog_terminology_reference`, `product_attributes`, `product_content_profile`, `product_content_sections`, `product_market_exposure`, `product_sku_media`, `product_skus`, `product_variants`, `products`, `supplier_catalog_imports`, `supplier_catalog_sync_checkpoints`, `supplier_oauth_connections`
 
-**Exposes** : 9 internal API(s), 47 HTTP interface(s)
+**Exposes** : 10 internal API(s), 47 HTTP interface(s)
   - `applyPrice` (services/catalog-product-mutation-service.js) — resolved
   - `bulkAssignSourcingRail` (services/catalog-product-mutation-service.js) — resolved
   - `createDraftFromSourcingCandidate` (services/product-admin-service.js) — resolved
   - `createDraftProductFromSourcingCandidate` (services/catalog-candidate-product-service.js) — resolved
   - `maybeApplyCatalogProductRouteCanary` (services/catalog-product-route-canary.js) — resolved
   - `readCatalogProductSource` (services/catalog-product-source-read-service.js) — resolved
+  - `readRunProgress` (services/catalog-run-progress.js) — resolved
   - `replaceVariantsForSourcing` (services/catalog-product-mutation-service.js) — resolved
   - `resolveCatalogProductReadMode` (services/catalog-product-source-read-service.js) — resolved
   - `updateSourcingFields` (services/catalog-product-mutation-service.js) — resolved
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), external-provider-contracts (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), supplier-connectivity (DECLARED_AND_OBSERVED)
-**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), unsold-resolution (DECLARED_AND_OBSERVED)
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), external-provider-contracts (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), supplier-connectivity (DECLARED_AND_OBSERVED)
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), unsold-resolution (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -422,19 +439,19 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 360 fichier(s) déclaré(s), boutique: 33 fichier(s)
+**Implementation** : 407 fichier(s) déclaré(s), boutique: 33 fichier(s)
   - boutique : 39
   - ci : 24
   - config : 1
-  - dash : 4
-  - docs : 14
+  - dash : 1
+  - docs : 16
   - middleware : 1
-  - migrations : 19
+  - migrations : 21
   - routes : 7
   - schemas : 4
-  - scripts : 16
-  - services : 63
-  - tests : 167
+  - scripts : 31
+  - services : 69
+  - tests : 192
   - utils : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="catalog"]_
@@ -458,13 +475,15 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Invariants** :
 - la declaration est instrumentee, jamais optimisee pour reduire un cout
+- la classification fournisseur ne connaît aucune clé de catégorie métier en dur : elle score uniquement les customs_categories actives et leur classification_terms configuré
+- si le produit réel ne permet pas un classement suffisamment fiable, une affinité administrable portée par la sous-catégorie boutique peut fournir la catégorie douanière active la plus proche ; cette affinité ne prime jamais un match fournisseur medium/high
 
 **Owns** : `customs_categories`, `customs_shipment_parcels`, `customs_shipments`
 
 **Exposes** : 0 internal API(s), 20 HTTP interface(s)
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
-**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
+**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -476,12 +495,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 23 fichier(s) déclaré(s)
+**Implementation** : 27 fichier(s) déclaré(s)
   - dash : 2
-  - migrations : 6
+  - migrations : 8
   - routes : 3
-  - services : 3
-  - tests : 9
+  - services : 4
+  - tests : 10
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="customs"]_
 
@@ -530,13 +549,14 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - un filtre pays du DashboardSchema est présentationnel : canonical ne charge jamais un agrégat global pour le filtrer ensuite côté client
 - market est l'unité de délégation business ; corridor reste une dimension technique/logistique sans autorité
 - le cockpit Démo / Staging ne possède aucune transition : il délègue à la route orders et lit les notifications/documents réellement persistés
+- [object Object]
 
 **Owns** : `order_incidents`, `partners`
 **Writes (not owner)** : `invoices` (writer-not-owner), `order_comments` (writer-not-owner), `order_items` (writer-not-owner), `order_status_history` (writer-not-owner), `orders` (writer-not-owner), `products` (writer-not-owner), `recipients` (writer-not-owner), `relais` (writer-not-owner), `scan_events` (writer-not-owner), `sms_log` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)
 
 **Exposes** : 0 internal API(s), 89 HTTP interface(s)
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), business-rules (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), customs (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), documents (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), incident-management (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), inventory (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), wallet (DECLARED_AND_OBSERVED)
 **Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
@@ -549,13 +569,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 276 fichier(s) déclaré(s)
-  - dash : 98
+**Implementation** : 281 fichier(s) déclaré(s)
+  - dash : 97
   - middleware : 1
   - migrations : 2
   - routes : 24
-  - services : 24
-  - tests : 127
+  - services : 25
+  - tests : 132
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 
@@ -923,7 +943,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 345 fichier(s) déclaré(s)
+**Implementation** : 351 fichier(s) déclaré(s)
   - assets : 33
   - bootstrap : 9
   - ci : 24
@@ -933,10 +953,10 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - middleware : 6
   - migrations : 9
   - routes : 1
-  - scripts : 90
+  - scripts : 92
   - services : 2
-  - tests : 78
-  - utils : 4
+  - tests : 81
+  - utils : 5
   - validators : 1
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="infrastructure"]_
@@ -1298,7 +1318,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Exposes** : 0 internal API(s), 0 HTTP interface(s)
 
 **Consumes** : infrastructure (DECLARED_AND_OBSERVED)
-**Consumed by** : dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED)
+**Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), local-stock (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -1365,7 +1385,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Exposes** : 0 internal API(s), 0 HTTP interface(s)
 
 **Consumes** : catalog (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED)
-**Consumed by** : catalog (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED)
+**Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), market-delegation (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), recommendations (DECLARED_AND_OBSERVED), shared-cart (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -1415,6 +1435,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - un provider reste rattaché à son marché d’origine ; provider.manage ne permet jamais une réassignation cross-market et les mutations passent par providers-services, lifecycle owner
   - LOT 4 (écriture) : décision d’exposition produit x marché — capability catalog.expose, upsert auditable sur product_market_exposure (catalog, lifecycle owner), jamais de SQL direct
   - LOT 4B (validation simple marché) : un candidat catalogue déjà préparé et publiable peut être validé par le Responsable pays ; market-delegation délègue la première publication à catalog-approval puis active l’exposition du marché dans la même transaction, sans reprendre l’autorité lifecycle de products
+  - LOT 4C (prêt à vendre) : la décision pays part uniquement d’une fiche déjà publiable/certifiée ; la projection assemble corridor économique, prix proposé et état d’exposition sans écrire, puis l’UI compose les writers canoniques pricing + catalog ; le bulk est réservé aux lignes vertes
   - LOT 4 (cutover lecture) : catalog.expose LIVE — migration 206 (snapshot, catalog) préserve exactement la visibilité storefront existante au moment du cutover ; migration 207 (activation, market-delegation) ouvre le droit d’agir sans jamais toucher l’exposition elle-même ; séparation stricte entre les deux, vérifiée par test
   - LOT 7 (structure-event) : structure.event.record — un opérateur pays enregistre un fait MARKET_DIRECT de charge structurelle pour son propre marché via le writer canonique economic-engine (recordStructureCostEvent), jamais un GROUP, jamais un market_id choisi, jamais de SQL direct sur economic_structure_cost_events
   - migration 210 : promotion LIVE de structure.event.record backfillée sur les assignments actifs (ceiling) et les managers déjà reconnus (team.grant + team.revoke + network.read), jamais un élargissement aux viewers ; ne crée jamais d’événement économique
@@ -1486,6 +1507,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
 
 **Owns** : `assignment_capability_ceiling`, `assignment_memberships`, `capability_registry`, `ceiling_template_capabilities`, `ceiling_templates`, `market_cash_control_policies`, `market_delegation_audit`, `market_operating_assignments`, `market_team_invitations`, `membership_capabilities`
 
@@ -1502,7 +1524,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - `listExposure` (services/market-delegation-catalog-service.js) — resolved
   - _...23 de plus, voir FEATURE_360.json_
 
-**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED)
+**Consumes** : auth (DECLARED_AND_OBSERVED), auth-identity (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market (DECLARED_AND_OBSERVED), market-autonomy (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), providers-services (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED)
 **Consumed by** : dashboard (DECLARED_AND_OBSERVED), decision-signals (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), market-operator-dashboard (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), settlement (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
@@ -1515,12 +1537,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 77 fichier(s) déclaré(s)
+**Implementation** : 81 fichier(s) déclaré(s)
   - middleware : 3
   - migrations : 15
-  - routes : 11
-  - services : 13
-  - tests : 35
+  - routes : 12
+  - services : 14
+  - tests : 37
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="market-delegation"]_
 
@@ -2307,9 +2329,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - santé opérationnelle read-only et snapshot d autorité finale Sourcing sans inventer de tendance
   - scan de candidat (pricing-engine) et décision garder / watchlist / rejeter
   - cycle de vie du candidat : raw_imported → normalized → scanned → imported_to_catalog / rejected / watchlist
+  - suivi du lot après import : consomme la projection Catalogue et visibilité marché sans mutation ni changement du statut import
   - transformation candidat → produit (déclenchement, pas la fiche catalogue elle-même)
   - journal d'événements candidat (audit, correction manuelle, scan, décision)
   - persistence lifecycle des sourcing_candidates issus des imports catalog via frontière owner dédiée
+  - certification sourcing canonique v1 : chaque input fournisseur doit aboutir à une issue explicite et traçable, avec comptabilité batch UNACCOUNTED=0 / OVERFLOW=0 indépendante du fournisseur
 - _out_ :
   - connecteurs fournisseur eux-mêmes et normalisation NormalizedSupplierProduct (feature catalog, services/suppliers/connectors/* + services/supplier-catalog-scanner.js restent dans catalog — leur service principal reste l'entrée catalogue, pas la qualification)
   - orchestration d'import idempotent supplier_catalog_imports (feature catalog, services/suppliers/catalog-import-orchestrator.js)
@@ -2341,27 +2365,32 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - le Golden E2E est read-only et termine toujours par HARD_STOP ou BLOCKED_SUPPLIER_IDENTITY sans placeOrder
 - l autopilot est une autorisation opérateur distincte du lifecycle source ; il reste false par défaut et ne démarre jamais une source historique implicitement
 - le runner autopilot ne contient aucune branche fournisseur et n execute que des pulls bornés déclarés par le registry connecteur
+- [object Object]
+- Production ne peut être autorisée que si un import API réel a atteint CANONICAL_RESOLVED et a persisté le capture_id complete correspondant sur la source
+- [object Object]
+- [object Object]
+- [object Object]
 - le dashboard Sourcing affiche BROKEN uniquement lorsqu un invariant d intégrité est rompu ; ATTENTION couvre les exceptions opérationnelles bloquées
 - le dashboard ne fabrique aucune tendance sans historique persistant
 - le routage Hub et la destination physique restent hors autorité Sourcing et constituent le domaine suivant
 
-**Owns** : `sourcing_candidate_events`, `sourcing_candidates`, `sourcing_canonical_entities`, `sourcing_canonical_entity_refs`, `sourcing_captures`, `sourcing_match_proposals`, `sourcing_observation_evidence`, `sourcing_observations`, `sourcing_resolution_bindings`, `sourcing_resolution_decisions`, `sourcing_source_provides`, `sourcing_sources`
+**Owns** : `import_runtime_runs`, `sourcing_candidate_events`, `sourcing_candidates`, `sourcing_canonical_entities`, `sourcing_canonical_entity_refs`, `sourcing_captures`, `sourcing_match_proposals`, `sourcing_observation_evidence`, `sourcing_observations`, `sourcing_provider_control_events`, `sourcing_resolution_bindings`, `sourcing_resolution_decisions`, `sourcing_source_provides`, `sourcing_sources`
 
-**Exposes** : 22 internal API(s), 26 HTTP interface(s)
+**Exposes** : 24 internal API(s), 28 HTTP interface(s)
   - `applyCanonicalSourceReadSeam` (services/catalog-product-read-cutover-trial.js) — resolved
   - `archiveMissingCandidatesFromCatalogImport` (services/sourcing-candidate-import-service.js) — resolved
   - `buildFinalAuthoritySnapshot` (services/sourcing-integrity-service.js) — resolved
   - `buildHealthDashboard` (services/sourcing-integrity-service.js) — resolved
+  - `certifyGateA` (services/sourcing-certification-gate-a.js) — resolved
   - `collectCanonicalOfferProjectionById` (services/sourcing-canonical-offer-projection.js) — resolved
   - `collectCanonicalProductProjectionById` (services/sourcing-canonical-product-projection.js) — resolved
   - `collectCanonicalProductProjections` (services/sourcing-canonical-product-projection.js) — resolved
   - `collectCanonicalUnitProjectionById` (services/sourcing-canonical-unit-projection.js) — resolved
   - `collectCatalogProductReadCutoverTrial` (services/catalog-product-read-cutover-trial.js) — resolved
-  - `collectGoldenE2E` (services/sourcing-golden-e2e-service.js) — resolved
-  - _...12 de plus, voir FEATURE_360.json_
+  - _...14 de plus, voir FEATURE_360.json_
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), economic-engine (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED)
-**Consumed by** : admin-dashboard (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED)
+**Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED)
 
 **Projections** : _aucune_
 
@@ -2373,13 +2402,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 79 fichier(s) déclaré(s)
+**Implementation** : 100 fichier(s) déclaré(s)
   - middleware : 1
-  - migrations : 8
+  - migrations : 12
   - routes : 2
   - scripts : 7
-  - services : 24
-  - tests : 37
+  - services : 31
+  - tests : 47
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="sourcing"]_
 

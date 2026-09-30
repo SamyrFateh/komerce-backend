@@ -2926,3 +2926,119 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
 @media(prefers-reduced-motion:reduce){
   .kmc-import-runtime .kir-current-live::before{animation:none}
 }
+
+.kmc-import-runtime .kir-run-flow-step>div{background:#091625 !important;padding-right:8px;border-radius:4px}
+.kmc-import-runtime .kir-run-flow-step:hover>div{background:#0D1D2F !important}
+.kmc-import-runtime .kir-page .kir-runtime-alert{
+  background:#241218 !important;
+  border:1px solid #6B2530 !important;
+  border-left:4px solid #EF4444 !important;
+  box-shadow:none
+}
+.kmc-import-runtime .kir-page .kir-runtime-alert strong{color:#FCA5A5 !important}
+.kmc-import-runtime .kir-page .kir-runtime-alert span{color:#E7CFD3 !important}
+.kmc-import-runtime .kir-page .kir-runtime-alert a{color:#7FB8FF !important}
+
+.kmc-import-runtime .kir-run-flow .kir-run-flow-track{grid-template-columns:repeat(6,minmax(0,1fr));column-gap:0;padding-top:4px}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step{
+  display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;
+  padding:0 6px 6px;border-radius:10px
+}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step>div{
+  background:transparent !important;padding:0;display:flex;flex-direction:column;align-items:center;gap:3px;max-width:100%
+}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step:hover>div{background:transparent !important}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step:not(:last-child)::after{
+  content:"";position:absolute;top:20px;left:calc(50% + 26px);right:calc(-50% + 26px);width:auto;height:3px;border-radius:2px;
+  background:#2A3D55
+}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-completed:not(:last-child)::after{background:#1ED784}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-current:not(:last-child)::after{background:linear-gradient(90deg,#3F9BFF,#2A3D55)}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step .kir-run-flow-marker{
+  width:40px;height:40px;flex:0 0 40px;border-radius:50%;display:grid;place-items:center;
+  font-size:19px;font-weight:700;line-height:1;border-width:2px;border-style:solid;position:relative;z-index:1
+}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-completed .kir-run-flow-marker{background:#1ED784;border-color:#1ED784;color:#052414}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-pending .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-waiting .kir-run-flow-marker{background:#0C1928;border-color:#526781;color:#9FB2C8}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-current .kir-run-flow-marker{background:#0A57E8;border-color:#5CC0FF;color:#FFFFFF}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-failed .kir-run-flow-marker{background:#3A1520;border-color:#FB4F64;color:#FF9DAA}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step strong{font-size:15px;font-weight:650;color:#EAF1F9;white-space:normal;overflow:visible}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step small{font-size:12.5px;color:#7D91A8;margin:0}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-current strong,
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-current small{color:#76BDFF}
+
+.kmc-import-runtime .kir-run-truth-grid>a{
+  grid-template-columns:64px minmax(0,1fr);column-gap:16px;align-items:center;min-height:104px;padding:16px 18px;border-radius:10px
+}
+.kmc-import-runtime .kir-run-truth-grid>a .kir-ico{
+  grid-row:1 / span 3;width:64px;height:64px;padding:0;border-radius:12px;display:grid;place-items:center;
+  background:#12305A;color:#4C9DFF
+}
+.kmc-import-runtime .kir-run-truth-grid>a .kir-ico svg{width:34px;height:34px}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(2) .kir-ico{background:#0F3B2A;color:#1ED784}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(3) .kir-ico{background:#12305A;color:#4C9DFF}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(4) .kir-ico{background:#4A1420;color:#FB4F64}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(5) .kir-ico{background:#4A2E0B;color:#F59E0B}
+.kmc-import-runtime .kir-run-truth-grid>a span{font-size:12px;letter-spacing:.05em}
+.kmc-import-runtime .kir-run-truth-grid>a strong{font-size:34px;line-height:1.05;margin-top:2px;color:#F3F7FC}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(2) strong{color:#1ED784}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(3) strong{color:#4C9DFF}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(4) strong{color:#FB4F64}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(5) strong{color:#F59E0B}
+.kmc-import-runtime .kir-run-truth-grid>a small{font-size:14px;color:#9FB2C8}
+.kmc-import-runtime .kir-run-truth-grid>a span{font-size:13px;color:#C9D6E6;letter-spacing:.04em}
+
+.kmc-import-runtime .kir-live-panel>header,
+.kmc-import-runtime .kir-recent-items>header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:0}
+.kmc-import-runtime .kir-live-panel>header>div,
+.kmc-import-runtime .kir-recent-items>header>div{display:flex;align-items:center;gap:12px}
+.kmc-import-runtime .kir-live-panel>header .kir-ico,
+.kmc-import-runtime .kir-recent-items>header .kir-ico{color:#9FB2C8}
+.kmc-import-runtime .kir-live-panel>header .kir-ico svg,
+.kmc-import-runtime .kir-recent-items>header .kir-ico svg{width:26px;height:26px}
+.kmc-import-runtime .kir-live-panel>header strong,
+.kmc-import-runtime .kir-recent-items>header strong{font-size:20px;font-weight:650;color:#F3F7FC}
+.kmc-import-runtime .kir-live-panel>header a,
+.kmc-import-runtime .kir-recent-items>header a{font-size:15px;color:#4C9DFF}
+
+.kmc-import-runtime .kir-live-event{grid-template-columns:78px 24px minmax(0,1fr);column-gap:14px;padding:6px 20px}
+.kmc-import-runtime .kir-live-event time{font-size:15px;color:#B8C7DA;font-variant-numeric:tabular-nums}
+.kmc-import-runtime .kir-live-event strong{font-size:16.5px;font-weight:600;color:#F3F7FC}
+.kmc-import-runtime .kir-live-event small{font-size:14px;color:#8FA3BA}
+.kmc-import-runtime .kir-live-event.is-started strong{color:#4CB2FF}
+.kmc-import-runtime .kir-live-event-marker{width:14px;height:14px;background:#1ED784;border-color:#1ED784}
+.kmc-import-runtime .kir-live-event.is-started .kir-live-event-marker{background:#2F80ED;border-color:#2F80ED}
+
+.kmc-import-runtime .kir-current-item-body{display:grid;grid-template-columns:170px minmax(0,1fr);gap:26px;align-items:start;padding:8px 24px 24px}
+.kmc-import-runtime .kir-current-image{width:170px;height:165px;border-radius:8px;background:#fff;overflow:hidden}
+.kmc-import-runtime .kir-current-image img{width:100%;height:100%;object-fit:contain}
+.kmc-import-runtime .kir-current-copy h3{margin:0 0 10px;font-size:26px;line-height:1.15;font-weight:650;color:#F3F7FC}
+.kmc-import-runtime .kir-current-copy p{margin:4px 0;font-size:18px;color:#C4D2E3}
+.kmc-import-runtime .kir-current-copy p span{color:#9FB2C8}
+.kmc-import-runtime .kir-current-status{display:flex;align-items:center;gap:14px;margin-top:16px;flex-wrap:wrap}
+.kmc-import-runtime .kir-current-chip{display:inline-flex;align-items:center;gap:10px;padding:10px 18px;border-radius:6px;background:#12305A;color:#D7E9FF;font-size:16px}
+.kmc-import-runtime .kir-current-chip:not(.is-live){background:#0F3B2A;color:#BEEBD4}
+.kmc-import-runtime .kir-current-status small{font-size:14px;color:#8FA3BA}
+.kmc-import-runtime .kir-spin{width:16px;height:16px;border-radius:50%;border:2px solid #4C9DFF;border-right-color:transparent;display:inline-block;animation:kir-spin .9s linear infinite}
+@keyframes kir-spin{to{transform:rotate(360deg)}}
+
+.kmc-import-runtime .kir-live-table th{font-size:15px;font-weight:500;letter-spacing:0;text-transform:none;color:#9FB2C8;padding:10px 12px;background:#0B1828}
+.kmc-import-runtime .kir-live-table td{font-size:16px;color:#E4ECF6;padding:8px 12px}
+.kmc-import-runtime .kir-live-table td a{color:#E4ECF6;font-weight:500}
+.kmc-import-runtime .kir-live-table .kir-stage-link{color:#C4D2E3;text-decoration:none;font-weight:400}
+.kmc-import-runtime .kir-live-sub{display:block;font-size:12.5px;color:#7D91A8}
+.kmc-import-runtime .kir-live-thumb{width:64px}
+.kmc-import-runtime .kir-live-thumb img,
+.kmc-import-runtime .kir-live-thumb .kir-ico{width:40px;height:32px;border-radius:5px;background:#fff;object-fit:contain;display:grid;place-items:center}
+.kmc-import-runtime .kir-status{display:inline-flex;align-items:center;gap:8px;font-size:16px}
+.kmc-import-runtime .kir-status.is-live{color:#4C9DFF}
+.kmc-import-runtime .kir-status.is-done{color:#E4ECF6}
+.kmc-import-runtime .kir-status.is-done b{color:#1ED784;font-size:18px}
+.kmc-import-runtime .kir-live-time-col,.kmc-import-runtime .kir-live-time{text-align:right;font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){.kmc-import-runtime .kir-spin{animation:none}}
+.kmc-import-runtime .kir-live-table td a{text-decoration:none}
+.kmc-import-runtime .kir-live-table td a:hover{text-decoration:underline}
+.kmc-import-runtime .kir-live-table .kir-status{font-weight:400}
+.kmc-import-runtime .kir-live-table th.kir-live-time-col,
+.kmc-import-runtime .kir-live-table td.kir-live-time{text-align:right}

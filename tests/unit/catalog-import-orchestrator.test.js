@@ -26,12 +26,18 @@ jest.mock('../../services/supplier-catalog-scanner');
 jest.mock('../../services/pricing-engine');
 jest.mock('../../services/catalog-eligibility');
 jest.mock('../../services/sourcing-observation-shadow-service');
+jest.mock('../../services/suppliers/catalog-import-json');
 
 const db = require('../../db');
 const scanner = require('../../services/supplier-catalog-scanner');
 const pricingEngine = require('../../services/pricing-engine');
 const eligibility = require('../../services/catalog-eligibility');
 const shadow = require('../../services/sourcing-observation-shadow-service');
+
+const jsonImport = require('../../services/suppliers/catalog-import-json');
+const providerPolicy = require('../../services/sourcing-provider-control-policy');
+const importRuns = require('../../services/import-runtime-runs');
+const itemEvents = require('../../services/import-runtime-item-events');
 
 const { importCatalog } = require('../../services/suppliers/catalog-import-orchestrator');
 
@@ -223,6 +229,39 @@ describe('importCatalog', () => {
       && params[0] === 'api:aliexpress'
       && params[1] === 'capture-api-2'
     )).toBe(true);
+  });
+
+  test('source JSON : délègue au rail transactionnel dédié', async () => {
+    jsonImport.importJsonCatalog.mockResolvedValue({ status: 200, body: { via: 'json' } });
+    const body = { supplier_name: 'Acme', source_type: 'json' };
+    const result = await importCatalog(body, 'u1', jest.fn());
+    expect(jsonImport.importJsonCatalog).toHaveBeenCalledWith(body, 'u1');
+    expect(result).toEqual({ status: 200, body: { via: 'json' } });
+  });
+
+  test('API résolue : un échec d’enregistrement de la certification runtime n’interrompt pas l’import', async () => {
+    jest.clearAllMocks();
+    jest.spyOn(providerPolicy, 'recordRuntimeCertification').mockRejectedValue(new Error('policy down'));
+    const dispatch = jest.fn().mockResolvedValue({
+      products: [makeV2Product({ supplier_name: 'AliExpress', supplier_product_id: '1005006471612405', product_name: 'Produit' })],
+      invalid: [],
+    });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-api-3' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) return Promise.resolve({ rows: [{ id: 'candidate-api-3', data_sources: {}, was_updated: false }] });
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    scanner.scanCandidate.mockResolvedValue(makeScan());
+    shadow.recordCatalogImportObservationsShadow.mockResolvedValue({
+      status: 'recorded', source_id: 'api:aliexpress', capture_id: 'capture-api-3',
+      resolution: { status: 'resolved', review_required: 0, deferred_parent: 0 },
+    });
+    const result = await importCatalog({ supplier_name: 'AliExpress', source_type: 'api', supplier_id: 'aliexpress' }, 1, dispatch);
+    expect(result.status).toBe(200);
+    expect(result.body.pipeline_status).toBe('CANONICAL_RESOLVED');
+    expect(providerPolicy.recordRuntimeCertification).toHaveBeenCalled();
+    providerPolicy.recordRuntimeCertification.mockRestore();
   });
 
   // ── ING-2 : seuil fichier malade (ING-I4) ────────────────────────────────
@@ -684,3 +723,83 @@ describe('importCatalog', () => {
     expect(updateCalls).toHaveLength(0);
   });
 });
+
+describe('importCatalog — événements par produit (télémétrie best-effort)', () => {
+  const products = [
+    { supplier_product_id: 'sku-1', product_name: 'Savon' },
+    { supplier_product_id: 'sku-2', product_name: 'Crème' },
+  ];
+
+  function wire({ wasUpdated = false, upsertFails = false } = {}) {
+    jest.spyOn(importRuns, 'startRun').mockResolvedValue({ id: 'run-1', run_ref: 'KIR-000001' });
+    for (const fn of ['markStage', 'attachImport', 'failRun', 'completeRun', 'recordIntake', 'finishRun']) {
+      if (typeof importRuns[fn] === 'function') jest.spyOn(importRuns, fn).mockResolvedValue(null);
+    }
+    const start = jest.spyOn(itemEvents, 'startItem').mockImplementation(async (_run, { seq }) => ({ id: `ev-${seq}` }));
+    const finish = jest.spyOn(itemEvents, 'finishItem').mockResolvedValue({ id: 'x' });
+    db.query.mockImplementation((sql) => {
+      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-ev' }] });
+      if (sql.includes('INSERT INTO sourcing_candidates')) {
+        if (upsertFails) return Promise.reject(new Error('upsert boom'));
+        return Promise.resolve({ rows: [{ id: 'cand-ev', data_sources: {}, was_updated: wasUpdated }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
+    scanner.scanCandidate.mockResolvedValue(makeScan());
+    eligibility.checkEligibility.mockReturnValue(null);
+    return { start, finish };
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    pricingEngine.loadGlobalConfig.mockResolvedValue(CONFIG);
+    require('../../utils/rules').invalidateCache();
+  });
+  afterEach(() => jest.restoreAllMocks());
+
+  test('ouvre puis ferme un événement par produit avec le lien candidat et « created »', async () => {
+    const { start, finish } = wire();
+    const dispatch = jest.fn().mockResolvedValue({ products });
+    const result = await importCatalog({ supplier_name: 'Acme', source_type: 'manual' }, 'u1', dispatch);
+    expect(result.status).toBe(200);
+    expect(start).toHaveBeenCalledTimes(2);
+    expect(start.mock.calls.map(([, arg]) => arg.seq)).toEqual([1, 2]);
+    expect(finish).toHaveBeenCalledTimes(2);
+    expect(finish.mock.calls[0][0]).toBe('ev-1');
+    expect(finish.mock.calls[0][1]).toMatchObject({ candidateId: 'cand-ev', changeKind: 'created' });
+  });
+
+  test('un produit déjà connu est marqué « updated »', async () => {
+    const { finish } = wire({ wasUpdated: true });
+    const dispatch = jest.fn().mockResolvedValue({ products: [products[0]] });
+    await importCatalog({ supplier_name: 'Acme', source_type: 'manual' }, 'u1', dispatch);
+    expect(finish.mock.calls[0][1].changeKind).toBe('updated');
+  });
+
+  test('un produit en erreur ferme quand même son événement, sans candidat ni nature', async () => {
+    const { finish } = wire({ upsertFails: true });
+    const dispatch = jest.fn().mockResolvedValue({ products: [products[0]] });
+    const result = await importCatalog({ supplier_name: 'Acme', source_type: 'manual' }, 'u1', dispatch);
+    expect(result.body.errors).toHaveLength(1);
+    expect(finish.mock.calls[0][1]).toEqual({ outcome: 'error', candidateId: null, changeKind: null });
+  });
+
+  test('une exclusion absolue est tracée « auto_rejected »', async () => {
+    const { finish } = wire();
+    eligibility.checkEligibility.mockReturnValue({ layer: 'absolute', label: 'Interdit', match: { type: 'keyword', value: 'x' } });
+    const dispatch = jest.fn().mockResolvedValue({ products: [products[0]] });
+    await importCatalog({ supplier_name: 'Acme', source_type: 'manual' }, 'u1', dispatch);
+    expect(finish.mock.calls[0][1].outcome).toBe('auto_rejected');
+  });
+
+  test('une panne de la télémétrie ne fait jamais échouer l’import', async () => {
+    const { start } = wire();
+    start.mockRejectedValue(new Error('table absente'));
+    const dispatch = jest.fn().mockResolvedValue({ products });
+    const result = await importCatalog({ supplier_name: 'Acme', source_type: 'manual' }, 'u1', dispatch);
+    expect(result.status).toBe(200);
+    expect(result.body.created).toBe(2);
+  });
+});
+
