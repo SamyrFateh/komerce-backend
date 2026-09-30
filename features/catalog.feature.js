@@ -250,6 +250,7 @@ module.exports = {
       'migrations/218_supplier_oauth_connections.sql',
       'migrations/245_products_boutique_taxonomy.sql',
       'migrations/250_boutique_subcategory_customs_affinity.sql',
+      'migrations/259_products_draft_price_deferred.sql',
     ],
     config: [
       'config/import-profiles/komerce-test-dummyjson.v1.json',
@@ -678,6 +679,8 @@ module.exports = {
 
   invariants: [
     'un produit publie a toujours passe product-publication-guard.js',
+    { statement: 'un brouillon Catalogue issu du Sourcing peut exister sans price_kmf uniquement tant qu il reste lifecycle candidate, is_active=false et is_available=false ; le prix de vente strictement positif devient obligatoire au gate de publication, jamais à la remise Sourcing → Catalogue',
+      test: 'tests/unit/product-publication-guard.test.js' },
     { statement: 'le Catalogue global commercial ne contient que des produits issus de KIR clos avec au moins une approbation de vente reelle (exposition ENABLED + prix LOCAL_ACTIVE sur le meme marche) ; les lots ouverts, drafts et simples publications globales restent hors assortiment',
       test: 'tests/unit/catalog-commercial-assortment.test.js' },
     { statement: 'products.price_kmf/cost_kmf/unsold_price_kmf (numeric depuis la migration 215) conservent leurs centimes et v_shipment_density calcule une marge exacte au centime à travers sa chaîne à 5 tables',
