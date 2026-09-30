@@ -458,7 +458,7 @@
     if (!h.controlDone || h.certified === 0) return '';
     const state = h.complete ? 'is-clean' : 'is-waiting';
     const text = h.complete ? 'Remise terminée'
-      : h.catalogued === 0 ? 'Remise automatique en attente'
+      : h.catalogued === 0 ? 'Remise automatique en cours'
         : `${h.remaining} ${h.remaining > 1 ? 'restent' : 'reste'} à remettre automatiquement`;
     return `<section class="kir-handoff ${state}" aria-label="Passage au Catalogue">
       ${ico('handoff')}
