@@ -84,13 +84,19 @@ Le cockpit Commerce expose :
 
 ### Opérations
 
-Le cockpit Opérations expose :
+**Opérations ne contient que de l'opérationnel.**
 
-- état d'exécution ;
-- flux commande → colis → transit → relais ;
-- files de travail ;
-- retards/incidents ;
-- drill-down vers Hub / Relais et Expéditions & Douane.
+Une surface appartient à Opérations si elle répond à au moins une question immédiate : « que se passe-t-il maintenant ? », « où est le flux ? », « qu'est-ce qui bloque ? », « quelle action opérateur est attendue ? ».
+
+Le domaine expose :
+
+- **Sourcing live / Imports** : Source → Import brut → Raffinerie → Taxonomie → Certification → Catalogue ;
+- **Hub** et **Relais** : exécution terrain et files de travail ;
+- **Expéditions & Douane** : exécution logistique, transit et incidents ;
+- activité temps réel, progression, exceptions et décisions directement actionnables ;
+- drill-down depuis chaque étape, KPI, événement et objet traité.
+
+La configuration des sources, fournisseurs, règles, mappings, référentiels et paramètres n'appartient jamais à Opérations, même si elle sert ces flux. Elle reste dans les domaines de configuration ou les workspaces propriétaires.
 
 ### Finance
 
@@ -128,7 +134,31 @@ Il consomme la vérité globale et ajoute les vérités marché autorisées : pr
 
 ## Langage visuel
 
-Le langage graphique commun est celui du Back Office Legacy :
+Le langage visuel est désormais **bimodal**, selon la nature de la surface.
+
+### Cockpit LIVE — opérationnel temps réel
+
+Les écrans temps réel de **Sourcing / Import, Hub et Relais** partagent la même nomenclature :
+
+- fond marine / noir `#07111f` et cartes sombres à contraste élevé ;
+- pipeline horizontal comme héros de page ;
+- étape terminée = vert fixe avec coche ;
+- **une seule étape courante** = bleu, éventuellement animée ;
+- étape à venir = gris ;
+- décision humaine après une frontière automatique = orange fixe, sans remettre le run « en cours » ;
+- rouge uniquement pour un blocage ou une anomalie réelle ;
+- KPI, étape, événement, objet courant et lignes récentes sont des **zones de drill-down** ;
+- activité affichée en langage métier, jamais comme log technique brut ;
+- l'objet actuellement traité reste visible à côté du flux d'activité ;
+- le cockpit n'invente aucune vérité : il projette uniquement les faits fournis par le backend.
+
+La règle de lecture est simple :
+
+> **noir = exécution live / supervision opérationnelle.**
+
+### Gestion, décision et configuration
+
+Les surfaces de gestion, d'analyse, de référentiel et de configuration conservent le langage Back Office Legacy clair :
 
 - fond `#f8f9fa` / surfaces blanches ;
 - bordures fines grises ;
@@ -138,11 +168,10 @@ Le langage graphique commun est celui du Back Office Legacy :
 - orange pour attente/action ;
 - rouge pour blocage/critique ;
 - bleu uniquement pour information/contextualisation ;
-- titres anthracite, légèrement renforcés, jamais lourds ;
-- densité de données supérieure aux premières maquettes Canonical.
+- titres anthracite, légèrement renforcés ;
+- densité de données élevée.
 
-Le Legacy fournit la **lisibilité**, pas l'architecture.
-
+Le Legacy fournit la **lisibilité** ; le cockpit LIVE fournit la **présence opérationnelle**. Aucun des deux ne change l'autorité métier.
 ## Navigation
 
 La sidebar doit être une **carte des capacités**.
@@ -155,6 +184,8 @@ Un domaine peut contenir :
 - plusieurs workspaces d'action ;
 - des Entity 360 ;
 - des routes Legacy temporaires tant que leur absorption n'est pas prouvée.
+
+Pour **Opérations**, la navigation est volontairement plus stricte : seuls les cockpits et workspaces d'exécution y sont exposés. Les écrans de configuration sont parentés à leur domaine propriétaire et ne sont pas dupliqués dans Opérations.
 
 ## Contrat front
 

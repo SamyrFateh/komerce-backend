@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const CANONICAL = path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical');
 const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
@@ -70,5 +71,40 @@ describe('import-runtime — fidélité visuelle au mock', () => {
     expect(mock).toBeGreaterThan(v5);
     expect(anim).toBeGreaterThan(mock);
     expect(css.indexOf('/* ====', anim + 1)).toBe(-1);
+  });
+});
+
+describe('import-runtime — doctrine LIVE Operations', () => {
+  test('le JS reste syntaxiquement valide', () => {
+    expect(() => new vm.Script(source)).not.toThrow();
+  });
+
+  test('le niveau 1 expose activité, objet courant et produits récents sans recalcul métier', () => {
+    expect(source).toContain('function renderLiveActivity(run)');
+    expect(source).toContain('function renderCurrentItem(run)');
+    expect(source).toContain('function renderRecentItems(run)');
+    expect(source).toContain('run.current_item');
+    expect(source).toContain('run.recent_items');
+    expect(source).toContain('run.events');
+  });
+
+  test('pipeline et KPI ouvrent des drill-downs du même KIR', () => {
+    expect(source).toContain('function stageUrl(runRef, stageKey)');
+    expect(source).toContain('data-cockpit-nav');
+    expect(source).toContain('ouvrir le détail');
+  });
+
+  test('le cockpit live porte le langage noir dédié aux surfaces opérationnelles', () => {
+    expect(css).toContain('LIVE OPS dark authority');
+    expect(css).toContain('--kir-bg:#07111F');
+    expect(css).toContain('background:#07111F !important');
+    expect(source).toContain("data-cockpit-language', 'live-ops'");
+  });
+
+  test('la frontière Catalogue reste une décision manuelle distincte du runtime automatique', () => {
+    expect(source).toContain("reason === 'awaiting_explicit_operator_promotion'");
+    expect(source).toContain('manual_label');
+    expect(css).toContain('.kir-run-flow-manual');
+    expect(css).toContain('border-color:#8A5A0B');
   });
 });

@@ -34,8 +34,8 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260930-1');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260930-1');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260930-2');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260930-3');
   expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=260929-4');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
@@ -57,17 +57,17 @@ test('canonical app and navigation expose import runtime under Operations', () =
 test('import cockpit montre les décisions et délègue les détails aux pages dédiées', () => {
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'import-runtime.css'), 'utf8');
-  expect(source).toContain('Décisions ouvertes');
+  expect(source).toContain('Ce qui demande une action');
   expect(source).toContain('Validation Catalogue requise');
   expect(source).toContain('Décisions de mise en vente');
   expect(source).toContain('Exceptions à traiter');
-  expect(source).toContain('Historique technique');
+  expect(source).toContain('Historique du run');
   expect(source).toContain('PARCOURS MÉTIER');
   expect(source).toContain('Prêts à vendre');
   expect(source).toContain('En vente');
   expect(source).toContain('Non retenus');
   expect(source).toContain('Clôture du lot');
-  expect(source).toContain('Catalogue global');
+  expect(source).toContain('Catalogue →');
   expect(source).toContain('withReturnTo');
   expect(source).toContain('return_to');
   expect(source).toContain('Retour au lot');

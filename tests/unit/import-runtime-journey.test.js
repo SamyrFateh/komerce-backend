@@ -109,7 +109,7 @@ test('niveau 1 garde le flux réel visible et les décisions ouvertes séparées
   const ui = cockpit();
   const node = root();
   ui.render(node, payload);
-  expect(node.innerHTML).toContain('Décisions ouvertes');
+  expect(node.innerHTML).toContain('Ce qui demande une action');
   expect(node.innerHTML).toContain('Alimentation automatique');
   expect(node.innerHTML).toContain('Préparation automatique au clic');
   expect(node.innerHTML).toContain('data-source-ref="api:aliexpress"');
