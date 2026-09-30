@@ -338,9 +338,10 @@
                 : `${label} · préparation de la source et création du premier passage`;
     const tone = failed ? 'is-failed'
       : noResult ? 'is-empty'
-        : automaticDone || catalogueHandoffPending || providerGateBlocked || activationState.done
-          ? `is-complete ${catalogueHandoffPending ? 'has-manual-action' : ''}`.trim()
-          : 'is-live';
+        : catalogueHandoffPending ? 'is-live'
+          : automaticDone || providerGateBlocked || activationState.done
+            ? 'is-complete'
+            : 'is-live';
     return `<section class="kir-run-flow ${tone}" aria-live="polite">
       <div class="kir-run-flow-head">
         <div><span class="kir-section-kicker">FLUX DU PASSAGE</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
