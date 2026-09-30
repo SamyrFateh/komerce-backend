@@ -2364,6 +2364,10 @@
       "invariants": [
         "un produit publie a toujours passe product-publication-guard.js",
         {
+          "statement": "un brouillon Catalogue issu du Sourcing peut exister sans price_kmf uniquement tant qu il reste lifecycle candidate, is_active=false et is_available=false ; le prix de vente strictement positif devient obligatoire au gate de publication, jamais à la remise Sourcing → Catalogue",
+          "test": "tests/unit/product-publication-guard.test.js"
+        },
+        {
           "statement": "le Catalogue global commercial ne contient que des produits issus de KIR clos avec au moins une approbation de vente reelle (exposition ENABLED + prix LOCAL_ACTIVE sur le meme marche) ; les lots ouverts, drafts et simples publications globales restent hors assortiment",
           "test": "tests/unit/catalog-commercial-assortment.test.js"
         },
@@ -2859,7 +2863,7 @@
             ]
           },
           "migrations": {
-            "count": 21,
+            "count": 22,
             "files": [
               {
                 "declared": "migrations/098_catalog_refinery_foundation.sql",
@@ -2964,6 +2968,11 @@
               {
                 "declared": "migrations/250_boutique_subcategory_customs_affinity.sql",
                 "resolvedPath": "migrations/250_boutique_subcategory_customs_affinity.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/259_products_draft_price_deferred.sql",
+                "resolvedPath": "migrations/259_products_draft_price_deferred.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -4519,7 +4528,7 @@
             ]
           }
         },
-        "totalFiles": 407,
+        "totalFiles": 408,
         "boutiqueManifest": "modal-product",
         "boutiqueFiles": {
           "count": 33,
@@ -6119,8 +6128,12 @@
           "test": "tests/unit/import-lot-registry.test.js"
         },
         {
-          "statement": "navigation canonique du domaine Sourcing à vues exclusives (une vue = une question) : Suivi, Passages et Sources remplacent la zone de travail sans jamais s'empiler sous le cockpit ; le KIR est présenté à l'opérateur comme un passage (jamais comme un lot) ; Suivi affiche le passage sélectionné et change de passage par un sélecteur compact ; Passages est l'historique Sourcing pur dont chaque ligne rouvre Suivi ; un agrégat ouvre sa population, une ligne de population ouvre l'objet dans le même passage, puis éventuellement sa fiche Catalogue avec retour contextuel ; le navigateur Back/Forward et les preuves techniques conservent le parent métier réel ; aucune donnée aval (prix, marché, vente, clôture) n'est injectée dans ces vues",
+          "statement": "navigation Sourcing à parent unique : le fil d'Ariane est Sourcing › Suivi › vue (jamais Sourcing › KIR › vue) — le KIR est le contexte du Suivi (pastille Passage KIR), pas un niveau ; toute vue de drill-down du Suivi (Source, Produits reçus, Prêts, Écartés, Action requise, Contrôle, Remise Catalogue) revient par « Retour au suivi », un produit revient à sa population d'origine (ou à Remise Catalogue), un détail technique revient au contrôle ou au produit dont il provient, Passages et Sources n'ont aucun bouton retour ; l'onglet Suivi reste actif sur toutes les vues hors Passages/Sources ; la sortie vers une fiche Catalogue porte un return_to exact vers l'objet Sourcing d'origine ; les filtres et la pagination de Passages vivent dans l'URL (Back/Forward/rechargement) ; la navigation ne touche ni moteur, ni handoff, ni certification, ni données",
           "test": "tests/unit/import-runtime-journey.test.js"
+        },
+        {
+          "statement": "navigation canonique du domaine Sourcing à vues exclusives (une vue = une question) : Suivi, Passages et Sources remplacent la zone de travail sans jamais s'empiler sous le cockpit ; le KIR est présenté à l'opérateur comme un passage (jamais comme un lot) ; Suivi affiche le passage sélectionné et change de passage par un sélecteur compact ; Passages est l'historique Sourcing pur dont chaque ligne rouvre Suivi ; un agrégat ouvre sa population, une ligne de population ouvre l'objet dans le même passage, puis éventuellement sa fiche Catalogue avec retour contextuel ; le navigateur Back/Forward et les preuves techniques conservent le parent métier réel ; aucune donnée aval (prix, marché, vente, clôture) n'est injectée dans ces vues",
+          "test": "tests/e2e/import-runtime-cockpit.spec.js"
         },
         {
           "statement": "drill-downs du cockpit Sourcing : un clic sur un chiffre ouvre les produits qui le composent (population reçus / prêts / écartés, action requise = liste filtrée), un clic sur une étape ouvre sa vue métier (Source, Contrôle automatique en Préparation / Classement / Validation, frontière Catalogue sans prix ni vente) ; les six étapes du moteur ne vivent que dans le Détail technique du passage, atteint par un lien secondaire, et une étape COMPLETED n'y affiche jamais un ratio incohérent",
@@ -26664,6 +26677,10 @@
           "statement": "la projection d'un run expose action_required / action_items / sourcing_status : seuls quarantaine, certification bloquée et anomalie de comptage demandent une action humaine ; DEFERRED, rejet conforme et exceptions aval Catalogue ne comptent jamais ; la liste d'items a toujours la longueur du compteur",
           "test": "tests/unit/import-runtime-runs.test.js"
         },
+        {
+          "statement": "tout candidat SOURCING_CERTIFIED est remis automatiquement au Catalogue comme brouillon inactif/non disponible ; cette remise n exige aucun price_kmf et ne crée aucune exposition marché ; une décision de prix appartient au gate de publication",
+          "test": "tests/unit/sourcing-catalogue-handoff.test.js"
+        },
         "un candidat exclu (rejet manuel ou auto-exclusion douane/légale) n'est jamais ré-importable (ING-5 verrou 1)",
         "une devise hors whitelist (AED, EUR, USD, KMF, PLN ; PLN exige un taux explicite) ne produit jamais de purchase_price_kmf faux (ING-5 verrou 2)",
         "un candidat déjà importé (état imported_to_catalog + product_id) ne peut pas être ré-importé",
@@ -26996,7 +27013,7 @@
             ]
           },
           "tests": {
-            "count": 47,
+            "count": 48,
             "files": [
               {
                 "declared": "tests/integration/catalog-change-sku-identity-proof-real-db.test.js",
@@ -27134,6 +27151,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/sourcing-catalogue-handoff.test.js",
+                "resolvedPath": "tests/unit/sourcing-catalogue-handoff.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/sourcing-certification-gate-a-fixture-harness.test.js",
                 "resolvedPath": "tests/unit/sourcing-certification-gate-a-fixture-harness.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -27236,7 +27258,7 @@
             ]
           }
         },
-        "totalFiles": 100,
+        "totalFiles": 101,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

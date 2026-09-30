@@ -20,10 +20,10 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1539,
-    "edges": 7636,
+    "graphNodes": 1541,
+    "edges": 7650,
     "dbTables": 176,
-    "doctrines": 530,
+    "doctrines": 532,
     "impactAreas": 191,
     "unresolvedCodeEdges": 764,
     "dbWriteViaOverlapWarnings": 8,
@@ -25532,12 +25532,14 @@
       "purpose": null,
       "inputs": [
         "candidate_id_internal",
+        "import_id_internal",
         "validated_candidate_payload",
         "actor_id"
       ],
       "outputs": [
         "candidate_mutation_result",
-        "promoted_catalog_product"
+        "inactive_catalog_draft",
+        "automatic_catalogue_handoff_summary"
       ],
       "depends": [
         "db.js",
@@ -25545,7 +25547,9 @@
         "services/pricing-engine.js",
         "services/catalog-candidate-product-service.js",
         "services/catalog-promotion.js",
-        "services/catalog-enrichment.js"
+        "services/catalog-enrichment.js",
+        "services/import-runtime-runs.js",
+        "services/sourcing-certification.js"
       ],
       "usedBy": [
         "routes/sourcing-scanner.js",
@@ -25554,7 +25558,8 @@
       "dbRead": [
         "sourcing_candidates",
         "sourcing_candidate_events",
-        "supplier_catalog_imports"
+        "supplier_catalog_imports",
+        "import_runtime_runs"
       ],
       "dbWrite": [
         "sourcing_candidates",
@@ -25588,9 +25593,11 @@
       ],
       "doctrine": [
         "single_sourcing_candidate_mutation_authority",
+        "sourcing_certified_auto_handoff",
         "catalog_promotion_owner_respected",
         "engine_price_is_not_market_decision",
-        "explicit_human_price_required_before_promotion"
+        "draft_handoff_has_no_market_price",
+        "publication_requires_price"
       ],
       "impactAreas": [
         "sourcing",
@@ -26799,7 +26806,8 @@
         "services/sourcing-import-dispatch.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "services/sourcing-observation-shadow-service.js",
-        "services/sourcing-provider-control-policy.js"
+        "services/sourcing-provider-control-policy.js",
+        "services/sourcing-candidate-actions.js"
       ],
       "usedBy": [
         "services/sourcing-workspace.js",
@@ -26823,6 +26831,19 @@
             "sourcing_source_provides",
             "sourcing_captures",
             "sourcing_observations"
+          ]
+        },
+        {
+          "via": "sourcing-candidate-actions",
+          "tables": [
+            "sourcing_candidates",
+            "sourcing_candidate_events",
+            "products",
+            "catalog_media",
+            "product_variants",
+            "product_skus",
+            "product_sku_media",
+            "import_runtime_runs"
           ]
         }
       ],
@@ -33813,6 +33834,11 @@
       "doctrine": "market_scope_is_server_authority"
     },
     {
+      "id": "doctrine:sourcing_certified_auto_handoff",
+      "type": "doctrine",
+      "doctrine": "sourcing_certified_auto_handoff"
+    },
+    {
       "id": "doctrine:catalog_promotion_owner_respected",
       "type": "doctrine",
       "doctrine": "catalog_promotion_owner_respected"
@@ -33823,9 +33849,14 @@
       "doctrine": "engine_price_is_not_market_decision"
     },
     {
-      "id": "doctrine:explicit_human_price_required_before_promotion",
+      "id": "doctrine:draft_handoff_has_no_market_price",
       "type": "doctrine",
-      "doctrine": "explicit_human_price_required_before_promotion"
+      "doctrine": "draft_handoff_has_no_market_price"
+    },
+    {
+      "id": "doctrine:publication_requires_price",
+      "type": "doctrine",
+      "doctrine": "publication_requires_price"
     },
     {
       "id": "doctrine:docs/doctrine/DOCTRINE_CANONICAL_PRODUCT_OFFER_UNIT.md",
@@ -73698,6 +73729,18 @@
       "label": "services/catalog-enrichment.js"
     },
     {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "services/import-runtime-runs.js",
+      "type": "depends",
+      "label": "services/import-runtime-runs.js"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "services/sourcing-certification.js",
+      "type": "depends",
+      "label": "services/sourcing-certification.js"
+    },
+    {
       "from": "routes/sourcing-scanner.js",
       "to": "services/sourcing-candidate-actions.js",
       "type": "uses",
@@ -73726,6 +73769,12 @@
       "to": "db:supplier_catalog_imports",
       "type": "db-read",
       "label": "supplier_catalog_imports"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "db:import_runtime_runs",
+      "type": "db-read",
+      "label": "import_runtime_runs"
     },
     {
       "from": "services/sourcing-candidate-actions.js",
@@ -73789,6 +73838,12 @@
     },
     {
       "from": "services/sourcing-candidate-actions.js",
+      "to": "doctrine:sourcing_certified_auto_handoff",
+      "type": "doctrine",
+      "label": "sourcing_certified_auto_handoff"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
       "to": "doctrine:catalog_promotion_owner_respected",
       "type": "doctrine",
       "label": "catalog_promotion_owner_respected"
@@ -73801,9 +73856,15 @@
     },
     {
       "from": "services/sourcing-candidate-actions.js",
-      "to": "doctrine:explicit_human_price_required_before_promotion",
+      "to": "doctrine:draft_handoff_has_no_market_price",
       "type": "doctrine",
-      "label": "explicit_human_price_required_before_promotion"
+      "label": "draft_handoff_has_no_market_price"
+    },
+    {
+      "from": "services/sourcing-candidate-actions.js",
+      "to": "doctrine:publication_requires_price",
+      "type": "doctrine",
+      "label": "publication_requires_price"
     },
     {
       "from": "services/sourcing-candidate-actions.js",
@@ -75590,6 +75651,12 @@
       "label": "services/sourcing-provider-control-policy.js"
     },
     {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "services/sourcing-candidate-actions.js",
+      "type": "depends",
+      "label": "services/sourcing-candidate-actions.js"
+    },
+    {
       "from": "services/sourcing-workspace.js",
       "to": "services/sourcing-source-autopilot.js",
       "type": "uses",
@@ -75666,6 +75733,62 @@
       "type": "db-write-via",
       "label": "sourcing_observations",
       "via": "catalog-import-orchestrator"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:sourcing_candidates",
+      "type": "db-write-via",
+      "label": "sourcing_candidates",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:sourcing_candidate_events",
+      "type": "db-write-via",
+      "label": "sourcing_candidate_events",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:products",
+      "type": "db-write-via",
+      "label": "products",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:catalog_media",
+      "type": "db-write-via",
+      "label": "catalog_media",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:product_variants",
+      "type": "db-write-via",
+      "label": "product_variants",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:product_skus",
+      "type": "db-write-via",
+      "label": "product_skus",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:product_sku_media",
+      "type": "db-write-via",
+      "label": "product_sku_media",
+      "via": "sourcing-candidate-actions"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "db:import_runtime_runs",
+      "type": "db-write-via",
+      "label": "import_runtime_runs",
+      "via": "sourcing-candidate-actions"
     },
     {
       "from": "services/sourcing-source-autopilot.js",
@@ -106527,7 +106650,9 @@
         "services/pricing-engine.js",
         "services/catalog-candidate-product-service.js",
         "services/catalog-promotion.js",
-        "services/catalog-enrichment.js"
+        "services/catalog-enrichment.js",
+        "services/import-runtime-runs.js",
+        "services/sourcing-certification.js"
       ],
       "directUsedBy": [
         "routes/sourcing-scanner.js",
@@ -106537,7 +106662,8 @@
       "dbRead": [
         "sourcing_candidates",
         "sourcing_candidate_events",
-        "supplier_catalog_imports"
+        "supplier_catalog_imports",
+        "import_runtime_runs"
       ],
       "dbWrite": [
         "sourcing_candidates",
@@ -106568,9 +106694,11 @@
       ],
       "doctrines": [
         "single_sourcing_candidate_mutation_authority",
+        "sourcing_certified_auto_handoff",
         "catalog_promotion_owner_respected",
         "engine_price_is_not_market_decision",
-        "explicit_human_price_required_before_promotion"
+        "draft_handoff_has_no_market_price",
+        "publication_requires_price"
       ],
       "impactAreas": [
         "sourcing",
@@ -106588,9 +106716,11 @@
         "db:sourcing_candidates",
         "db:supplier_catalog_imports",
         "doctrine:catalog_promotion_owner_respected",
+        "doctrine:draft_handoff_has_no_market_price",
         "doctrine:engine_price_is_not_market_decision",
-        "doctrine:explicit_human_price_required_before_promotion",
+        "doctrine:publication_requires_price",
         "doctrine:single_sourcing_candidate_mutation_authority",
+        "doctrine:sourcing_certified_auto_handoff",
         "impact:catalog",
         "impact:economic-engine",
         "impact:sourcing",
@@ -106600,6 +106730,8 @@
         "services/catalog-promotion.js",
         "services/import-runtime-runs.js",
         "services/pricing-engine.js",
+        "services/sourcing-certification.js",
+        "services/sourcing-source-autopilot.js",
         "services/sourcing-workspace.js",
         "services/supplier-catalog-scanner.js"
       ]
@@ -107187,6 +107319,7 @@
         "impact:ci",
         "impact:sourcing",
         "services/import-runtime-runs.js",
+        "services/sourcing-candidate-actions.js",
         "services/suppliers/catalog-import-json.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "utils/certification-accounting.js"
@@ -107761,7 +107894,8 @@
         "services/sourcing-import-dispatch.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "services/sourcing-observation-shadow-service.js",
-        "services/sourcing-provider-control-policy.js"
+        "services/sourcing-provider-control-policy.js",
+        "services/sourcing-candidate-actions.js"
       ],
       "directUsedBy": [
         "services/sourcing-workspace.js",
@@ -107787,6 +107921,19 @@
             "sourcing_captures",
             "sourcing_observations"
           ]
+        },
+        {
+          "via": "sourcing-candidate-actions",
+          "tables": [
+            "sourcing_candidates",
+            "sourcing_candidate_events",
+            "products",
+            "catalog_media",
+            "product_variants",
+            "product_skus",
+            "product_sku_media",
+            "import_runtime_runs"
+          ]
         }
       ],
       "doctrines": [
@@ -107803,6 +107950,13 @@
         "supplier-import"
       ],
       "mustCheck": [
+        "db:catalog_media",
+        "db:import_runtime_runs",
+        "db:product_sku_media",
+        "db:product_skus",
+        "db:product_variants",
+        "db:products",
+        "db:sourcing_candidate_events",
         "db:sourcing_candidates",
         "db:sourcing_captures",
         "db:sourcing_observations",
@@ -107818,6 +107972,7 @@
         "impact:catalog",
         "impact:sourcing",
         "impact:supplier-import",
+        "services/sourcing-candidate-actions.js",
         "services/sourcing-import-dispatch.js",
         "services/sourcing-observation-shadow-service.js",
         "services/sourcing-provider-control-policy.js",

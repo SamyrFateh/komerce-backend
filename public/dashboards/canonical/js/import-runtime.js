@@ -508,6 +508,13 @@
       kind: POPULATION_KINDS.includes(kind) ? kind : 'received',
       item: query.get('item') || null,
       from: query.get('from') || null,
+      origin: query.get('origin') || null,
+      filters: {
+        source: query.get('f_source') || '',
+        state: query.get('f_state') || '',
+        period: ['today', 'week'].includes(query.get('f_period')) ? query.get('f_period') : 'all',
+        q: query.get('f_q') || '',
+      },
       offset: Math.max(0, Number(query.get('offset')) || 0),
     };
   }
@@ -577,20 +584,37 @@
     return '/admin/import-runtime' + (q.toString() ? '?' + q.toString() : '');
   }
 
-  function passagesUrl(runRef, offset = 0) {
+  // Les filtres de Passages vivent dans l'URL : Back / Forward / rechargement les retrouvent.
+  function passagesUrl(runRef, offset = 0, filters = null) {
     const q = new URLSearchParams();
     if (runRef) q.set('run', runRef);
     q.set('view', 'passages');
     if (offset > 0) q.set('offset', String(offset));
+    if (filters?.source) q.set('f_source', filters.source);
+    if (filters?.state) q.set('f_state', filters.state);
+    if (filters?.period && filters.period !== 'all') q.set('f_period', filters.period);
+    if (filters?.q) q.set('f_q', filters.q);
     return '/admin/import-runtime?' + q.toString();
   }
 
-    function stageUrl(runRef, stageKey, from = null) {
+  // Contexte d'origine d'un détail technique : il sert à savoir où revenir (contrôle, produit).
+  function carryContext(q, ctx) {
+    const c = typeof ctx === 'string' ? { from:ctx } : (ctx || {});
+    if (!c.from) return;
+    q.set('from', c.from);
+    if (c.from === 'item') {
+      if (c.item) q.set('item', c.item);
+      if (c.kind) q.set('kind', c.kind);
+      if (c.origin) q.set('origin', c.origin);
+    }
+  }
+
+    function stageUrl(runRef, stageKey, ctx = null) {
     const q = new URLSearchParams();
     if (runRef) q.set('run', runRef);
     q.set('view', 'history');
     if (stageKey) q.set('stage', stageKey);
-    if (from) q.set('from', from);
+    carryContext(q, ctx);
     return '/admin/import-runtime?' + q.toString();
   }
 
@@ -604,12 +628,14 @@
     return '/admin/import-runtime?' + q.toString();
   }
 
-  function itemUrl(runRef, supplierProductId, kind = 'received') {
+  // origin = 'handoff' quand le produit est ouvert depuis Remise Catalogue (le retour y revient).
+  function itemUrl(runRef, supplierProductId, kind = 'received', origin = null) {
     const q = new URLSearchParams();
     if (runRef) q.set('run', runRef);
     q.set('view', 'item');
     q.set('kind', POPULATION_KINDS.includes(kind) ? kind : 'received');
     if (supplierProductId) q.set('item', supplierProductId);
+    if (origin === 'handoff') q.set('origin', 'handoff');
     return '/admin/import-runtime?' + q.toString();
   }
 
@@ -621,11 +647,11 @@
     return stageUrl(runRef, drill);
   }
 
-  function technicalUrl(runRef, from = null) {
+  function technicalUrl(runRef, ctx = null) {
     const q = new URLSearchParams();
     if (runRef) q.set('run', runRef);
     q.set('view', 'history');
-    if (from) q.set('from', from);
+    carryContext(q, ctx);
     return '/admin/import-runtime?' + q.toString();
   }
 
@@ -646,7 +672,7 @@
     return RUN_STAGE_DEFS.find(([stageKey]) => stageKey === key)?.[1] || key || 'Étape';
   }
 
-  function withReturnTo(path, returnTo, label = 'Retour au passage') {
+  function withReturnTo(path, returnTo, label = 'Retour au suivi') {
     const separator = String(path || '').includes('?') ? '&' : '?';
     const q = new URLSearchParams();
     q.set('return_to', returnTo);
@@ -901,7 +927,7 @@
       return withReturnTo(
         `/admin/products/${encodeURIComponent(item.product_ref)}`,
         urlFor(run.run_ref),
-        'Retour au passage'
+        'Retour au suivi'
       );
     }
     return stageUrl(run.run_ref, item?.stage || run.current_stage);
@@ -1038,41 +1064,59 @@
 
   const POPULATION_CRUMBS = Object.freeze({ received:'Produits reçus', ready:'Prêts pour le Catalogue', discarded:'Écartés automatiquement' });
 
-  // Fil d'Ariane : toujours le contexte réel de la vue (Sourcing > KIR > vue).
-  function crumbsFor(run, view, kind, from) {
-    const live = { label:'Sourcing', href:urlFor(run?.run_ref) };
-    const lot = run ? { label:run.run_ref, href:urlFor(run.run_ref) } : null;
+  // Navigation d'une vue = fil d'Ariane + retour, calculés ensemble pour ne jamais diverger.
+  // Le KIR n'est PAS un niveau : c'est le contexte du Suivi. Chaque écran a un parent unique et évident.
+  function viewNav(run, p) {
+    const ref = run?.run_ref;
+    const domain = { label:'Sourcing', plain:true };
+    const suivi = { label:'Suivi', href:urlFor(ref) };
+    const backToSuivi = { href:suivi.href, label:'← Retour au suivi' };
     const leaf = label => ({ label });
-    if (view === 'passages') return [live, leaf('Passages')];
-    if (view === 'sources') return [live, leaf('Sources')];
-    const path = [live, lot].filter(Boolean);
-    if (view === 'population') return [...path, leaf(POPULATION_CRUMBS[kind] || 'Produits reçus')];
-    if (view === 'item') return [...path, { label:POPULATION_CRUMBS[kind] || 'Produits reçus', href:populationUrl(run?.run_ref, kind) }, leaf('Produit')];
-    if (view === 'exceptions') return [...path, leaf('Action requise')];
-    if (view === 'source') return [...path, leaf('Source')];
-    if (view === 'control') return [...path, leaf('Contrôle automatique')];
-    if (view === 'handoff') return [...path, leaf('Catalogue')];
-    if (view === 'history') {
-      return from === 'control'
-        ? [...path, { label:'Contrôle automatique', href:urlFor(run?.run_ref, 'control') }, leaf('Détail technique')]
-        : [...path, leaf('Détail technique')];
+    const popLabel = POPULATION_CRUMBS[p.kind] || 'Produits reçus';
+    // Population d'origine d'un produit : Remise Catalogue s'il en vient, sinon sa population.
+    const popCrumb = p.origin === 'handoff'
+      ? { label:'Remise Catalogue', href:urlFor(ref, 'handoff') }
+      : { label:popLabel, href:populationUrl(ref, p.kind) };
+    const itemCrumb = { label:'Produit', href:itemUrl(ref, p.item, p.kind, p.origin) };
+    if (p.view === 'passages') return { crumbs:[domain, leaf('Passages')], back:null };
+    if (p.view === 'sources') return { crumbs:[domain, leaf('Sources')], back:null };
+    const tail = {
+      population: { crumbs:[leaf(popLabel)], back:backToSuivi },
+      exceptions: { crumbs:[leaf('Action requise')], back:backToSuivi },
+      source: { crumbs:[leaf('Source')], back:backToSuivi },
+      control: { crumbs:[leaf('Contrôle automatique')], back:backToSuivi },
+      handoff: { crumbs:[leaf('Remise Catalogue')], back:backToSuivi },
+      item: { crumbs:[popCrumb, leaf('Produit')], back:{ href:popCrumb.href, label:`← Retour à ${popCrumb.label}` } },
+    }[p.view];
+    if (p.view === 'history') {
+      if (p.from === 'control') {
+        const control = { label:'Contrôle automatique', href:urlFor(ref, 'control') };
+        return { crumbs:[domain, suivi, control, leaf('Détail technique')], back:{ href:control.href, label:'← Retour au contrôle automatique' } };
+      }
+      if (p.from === 'item' && p.item) {
+        return { crumbs:[domain, suivi, popCrumb, itemCrumb, leaf('Détail technique')], back:{ href:itemCrumb.href, label:'← Retour au produit' } };
+      }
+      return { crumbs:[domain, suivi, leaf('Détail technique')], back:backToSuivi };
     }
-    return path;
+    if (!tail) return { crumbs:[domain, leaf('Suivi')], back:null };
+    return { crumbs:[domain, suivi, ...tail.crumbs], back:tail.back };
   }
 
   function breadcrumb(run) {
-    const { view, kind, from } = params();
-    return `<nav class="kir-breadcrumb" aria-label="Fil d’Ariane">${crumbsFor(run, view, kind, from).map(crumb =>
-      crumb.href ? `<a href="${crumb.href}" data-cockpit-nav>${esc(crumb.label)}</a>` : `<span aria-current="page">${esc(crumb.label)}</span>`
+    return `<nav class="kir-breadcrumb" aria-label="Fil d’Ariane">${viewNav(run, params()).crumbs.map(crumb =>
+      crumb.href ? `<a href="${crumb.href}" data-cockpit-nav>${esc(crumb.label)}</a>`
+        : crumb.plain ? `<span class="kir-crumb-domain">${esc(crumb.label)}</span>`
+          : `<span aria-current="page">${esc(crumb.label)}</span>`
     ).join('<i aria-hidden="true">›</i>')}</nav>`;
   }
 
-  function drillHeader(run, title, copy, back = null) {
-    const target = back || { href:urlFor(run.run_ref), label:'← Retour au passage' };
+  function drillHeader(run, title, copy) {
+    const { back } = viewNav(run, params());
     return `<div class="kir-drill-head">
       <div>
         ${breadcrumb(run)}
-        <a href="${target.href}" data-cockpit-nav class="kir-back">${esc(target.label)}</a>
+        ${back ? `<a href="${back.href}" data-cockpit-nav class="kir-back">${esc(back.label)}</a>` : ''}
+        <span class="kir-drill-context">Passage ${esc(run.run_ref)}${run.provider ? ' · ' + esc(run.provider) : ''}</span>
         <h2>${esc(title)}</h2>
         <p>${esc(copy)}</p>
       </div>
@@ -1083,7 +1127,7 @@
     const items = Array.isArray(run.action_items) ? run.action_items : [];
     const count = num(run.accounting?.action_required);
     const back = urlFor(run.run_ref, 'exceptions');
-    const workspace = withReturnTo('/admin/workspaces/sourcing', back, 'Retour au cockpit');
+    const workspace = withReturnTo('/admin/workspaces/sourcing', back, 'Retour à Action requise');
     const rows = items.map(item => {
       const title = item.product_name || item.supplier_product_id || (item.reason === 'Anomalie de comptage' ? 'Comptage du passage' : 'Produit à examiner');
       const control = item.action === 'choose' && item.candidate_ref
@@ -1156,11 +1200,11 @@
       <p class="kir-technical-link"><a href="${technicalUrl(run.run_ref, 'control')}" data-cockpit-nav>Voir le détail technique →</a></p>`;
   }
 
-  function populationRows(run, population, kind = 'received') {
+  function populationRows(run, population, kind = 'received', origin = null) {
     const items = Array.isArray(population?.items) ? population.items : [];
     return items.map(item => {
       const title = item.product_name || item.supplier_product_id || 'Produit sans titre';
-      const href = item.supplier_product_id ? itemUrl(run.run_ref, item.supplier_product_id, kind) : null;
+      const href = item.supplier_product_id ? itemUrl(run.run_ref, item.supplier_product_id, kind, origin) : null;
       const titleHtml = href
         ? `<a class="kir-population-item-link" href="${href}" data-cockpit-nav>${esc(title)}</a>`
         : `<strong>${esc(title)}</strong>`;
@@ -1183,14 +1227,14 @@
   }
 
   function renderItemView(run, trace, kind) {
-    const back = { href:populationUrl(run.run_ref, kind), label:`← Retour à ${(POPULATION_CRUMBS[kind] || 'Produits reçus').toLowerCase()}` };
-    if (!trace) return drillHeader(run, 'Produit', 'Détail de l’objet sélectionné.', back) + '<div class="kir-empty">Produit introuvable dans ce passage.</div>';
+    const { origin } = params();
+    if (!trace) return drillHeader(run, 'Produit', 'Détail de l’objet sélectionné.') + '<div class="kir-empty">Produit introuvable dans ce passage.</div>';
     const title = trace.product_name || trace.supplier_product_id || 'Produit';
     const situation = traceSituation(trace);
     const catalogue = trace.product_ref
-      ? `<a class="kir-subtle-link" href="${withReturnTo('/admin/products/' + encodeURIComponent(trace.product_ref), itemUrl(run.run_ref, trace.supplier_product_id, kind), 'Retour au produit du passage')}">Ouvrir la fiche Catalogue →</a>`
+      ? `<a class="kir-subtle-link" href="${withReturnTo('/admin/products/' + encodeURIComponent(trace.product_ref), itemUrl(run.run_ref, trace.supplier_product_id, kind, origin), 'Retour au produit Sourcing')}">Ouvrir la fiche Catalogue →</a>`
       : '<span class="kir-item-note">Aucune fiche Catalogue créée à ce stade.</span>';
-    return drillHeader(run, title, 'Détail métier de ce produit dans le passage sélectionné.', back)
+    return drillHeader(run, title, 'Détail métier de ce produit dans le passage sélectionné.')
       + `<div class="kir-simple-list">
           ${statusRow('Situation', situation)}
           ${statusRow('Identifiant source', ['completed', trace.supplier_product_id || '—'])}
@@ -1200,7 +1244,7 @@
           ${statusRow('Catalogue', [trace.product_ref ? 'completed' : 'pending', trace.product_ref ? 'Remis' : 'Pas encore remis'])}
         </div>
         <div class="kir-item-actions">${catalogue}</div>
-        <p class="kir-technical-link"><a href="${technicalUrl(run.run_ref)}" data-cockpit-nav>Voir la preuve technique du passage →</a></p>`;
+        <p class="kir-technical-link"><a href="${technicalUrl(run.run_ref, { from:'item', item:trace.supplier_product_id, kind, origin })}" data-cockpit-nav>Voir la preuve technique →</a></p>`;
   }
 
     const POPULATION_COPY = Object.freeze({
@@ -1233,7 +1277,7 @@
           : `${h.remaining} ${h.remaining > 1 ? 'restent' : 'reste'} à remettre automatiquement`;
     const list = population && population.kind === 'ready' && population.items?.length
       ? `<div class="kir-table-wrap"><table class="kir-table" data-population-list="ready">
-          <thead><tr><th>Produit</th><th>Identifiant source</th><th>Remise</th></tr></thead><tbody>${populationRows(run, population, 'ready')}</tbody></table></div>`
+          <thead><tr><th>Produit</th><th>Identifiant source</th><th>Remise</th></tr></thead><tbody>${populationRows(run, population, 'ready', 'handoff')}</tbody></table></div>`
       : '';
     const state = h.complete ? 'completed' : h.controlDone && h.certified > 0 ? 'running' : 'pending';
     return drillHeader(run, 'Remise Catalogue', 'La frontière Sourcing → Catalogue : matérialisation automatique des produits certifiés en brouillons Catalogue.')
@@ -1244,11 +1288,11 @@
   function renderHistory(run) {
     const stages = Array.isArray(run.stages) ? run.stages : [];
     const events = Array.isArray(run.events) ? run.events : [];
-    const { from } = params();
+    const { from, item, kind, origin } = params();
+    const ctx = { from, item, kind, origin };
     const selectedStage = new URLSearchParams(global.location.search).get('stage');
     const selectedLabel = selectedStage ? (selectedStage === 'CONTROL' ? 'Contrôle automatique' : stageLabel(selectedStage)) : null;
     const inSelection = key => !selectedStage || selectedStage === key || (selectedStage === 'CONTROL' && CONTROL_STAGES.includes(key));
-    const back = from === 'control' ? { href:urlFor(run.run_ref, 'control'), label:'← Retour au contrôle automatique' } : null;
     // Jamais « COMPLETED · 0 / 12 » : un ratio n'est montré que pendant le travail ; une étape terminée dit « Terminé ».
     const stageText = stage => stage.status === 'COMPLETED' ? '✓ Terminé'
       : stage.status === 'RUNNING' && stage.reason === 'automatic_catalogue_handoff_pending' ? `Remise automatique · ${num(stage.processed)} / ${num(stage.total)}`
@@ -1257,11 +1301,10 @@
     return drillHeader(
       run,
       selectedLabel ? `Détail technique — ${selectedLabel}` : 'Détail technique du passage',
-      'Preuve du parcours automatique, pour le diagnostic et l’audit. Cette information n’indique jamais quoi faire.',
-      back
+      'Preuve du parcours automatique, pour le diagnostic et l’audit. Cette information n’indique jamais quoi faire.'
     ) + `
       <section class="kir-history-stages">
-        ${stages.map(stage => `<a class="kir-history-stage ${selectedStage && inSelection(stage.key) ? 'is-selected' : ''}" href="${stageUrl(run.run_ref, stage.key, from)}" data-cockpit-nav>
+        ${stages.map(stage => `<a class="kir-history-stage ${selectedStage && inSelection(stage.key) ? 'is-selected' : ''}" href="${stageUrl(run.run_ref, stage.key, ctx)}" data-cockpit-nav>
           <span class="kir-history-dot is-${stage.status === 'COMPLETED' ? 'done' : stage.status === 'FAILED' ? 'failed' : 'pending'}"></span>
           <div><strong>${esc(stageLabel(stage.key))}</strong><small>${esc(stageText(stage))}</small></div>
         </a>`).join('')}
@@ -1346,13 +1389,12 @@
     const nextOffset = page?.next_offset == null ? null : Math.max(0, Number(page.next_offset) || 0);
     const previousOffset = Math.max(0, offset - 50);
     const pager = list ? `<nav class="kir-passage-pagination" aria-label="Pagination des passages">
-      ${offset > 0 ? `<a href="${passagesUrl(run?.run_ref, previousOffset)}" data-cockpit-nav>← Passages plus récents</a>` : '<span></span>'}
+      ${offset > 0 ? `<a href="${passagesUrl(run?.run_ref, previousOffset, passageFilters)}" data-cockpit-nav>← Passages plus récents</a>` : '<span></span>'}
       <span>${list.length ? `${offset + 1}–${offset + list.length}` : '0'}</span>
-      ${nextOffset != null ? `<a href="${passagesUrl(run?.run_ref, nextOffset)}" data-cockpit-nav>Passages plus anciens →</a>` : '<span></span>'}
+      ${nextOffset != null ? `<a href="${passagesUrl(run?.run_ref, nextOffset, passageFilters)}" data-cockpit-nav>Passages plus anciens →</a>` : '<span></span>'}
     </nav>` : '';
     return `<div class="kir-drill-head"><div>
         ${breadcrumb(run)}
-        ${run ? `<a href="${urlFor(run.run_ref)}" data-cockpit-nav class="kir-back">← Retour au passage</a>` : ''}
         <h2>Historique des passages</h2>
         <p>Les passages Sourcing : ce qui a été reçu, ce qui est prêt pour le Catalogue et ce qui demande une action.</p>
       </div></div>
@@ -1372,7 +1414,6 @@
   function renderSourcesView(run, sourceControls) {
     return `<div class="kir-drill-head"><div>
         ${breadcrumb(run)}
-        ${run ? `<a href="${urlFor(run.run_ref)}" data-cockpit-nav class="kir-back">← Retour au passage</a>` : ''}
         <h2>Sources</h2>
         <p>Les fournisseurs branchés à Komerce et leur alimentation automatique.</p>
       </div></div>
@@ -1395,7 +1436,9 @@
     const sourceControls = Array.isArray(payload?.source_controls) ? payload.source_controls : [];
     const lots = Array.isArray(payload?.lots) ? payload.lots : [];
     const run = payload?.selected || null;
-    const { view, kind } = params();
+    const { view, kind, filters } = params();
+    // L'URL fait foi pour les filtres de Passages (Back / Forward / rechargement).
+    if (view === 'passages') Object.assign(passageFilters, filters);
     root.className = 'kmc-import-runtime kmc-domain-cockpit';
     root.setAttribute?.('data-cockpit-pattern', 'v1');
     root.setAttribute?.('data-cockpit-domain', 'imports');
@@ -1447,7 +1490,7 @@
         <div class="kir-hero-actions kir-live-hero-actions">
           <div class="kir-live-time"><span>Démarré ${fmtDate(run.started_at)}</span><strong>${elapsedLabel(run.started_at, run.finished_at)}</strong></div>
           <span class="kir-status-large is-${sourcingStatusView(run).tone}">${ico('clock')}${esc(sourcingStatusView(run).label)}</span>
-          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au passage')}" class="kir-global-link">Catalogue →</a>
+          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au suivi')}" class="kir-global-link">Catalogue →</a>
         </div>
       </header>
 
@@ -1652,6 +1695,9 @@
     root.querySelectorAll?.('[data-passage-filter]').forEach(control => {
       control.addEventListener(control.tagName === 'INPUT' ? 'input' : 'change', () => {
         passageFilters[control.getAttribute('data-passage-filter')] = control.value;
+        // replaceState : le filtre fait partie de l'entrée d'historique courante sans la multiplier.
+        const here = params();
+        global.history.replaceState({}, '', passagesUrl(here.run, here.offset, passageFilters));
         const body = root.querySelector?.('[data-passages-body]');
         if (body) {
           body.innerHTML = passageRows(payload?.passages);
@@ -1716,7 +1762,9 @@
       const typing = global.document?.activeElement?.hasAttribute?.('data-passage-filter');
       if (!(typing && view === 'passages')) render(mountedRoot, payload);
     } catch (error) {
-      if (lastPayload) {
+      // Jamais réafficher le passage précédent sous l'URL d'un autre : le contexte suit le KIR demandé.
+      const sameRun = !run || lastPayload?.selected?.run_ref === run;
+      if (lastPayload && sameRun) {
         render(mountedRoot, lastPayload);
         const main = mountedRoot.querySelector?.('.kir-main');
         if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">Actualisation impossible · ${esc(error.message)}</div>`);

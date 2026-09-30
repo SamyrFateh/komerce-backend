@@ -2388,6 +2388,13 @@
       },
       {
         "feature": "catalog",
+        "category": "migrations",
+        "declared": "migrations/259_products_draft_price_deferred.sql",
+        "resolvedPath": "migrations/259_products_draft_price_deferred.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
         "category": "config",
         "declared": "config/import-profiles/komerce-test-dummyjson.v1.json",
         "resolvedPath": "config/import-profiles/komerce-test-dummyjson.v1.json",
@@ -15782,6 +15789,13 @@
         "category": "tests",
         "declared": "tests/unit/sourcing-candidate-actions.test.js",
         "resolvedPath": "tests/unit/sourcing-candidate-actions.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-catalogue-handoff.test.js",
+        "resolvedPath": "tests/unit/sourcing-catalogue-handoff.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -40387,6 +40401,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/sourcing-catalogue-handoff.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/integration/import-runtime-item-events-real-db.test.js",
                 "targetFile": "db.js"
               }
@@ -40922,7 +40940,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1722
+        "filesObserved": 1723
       },
       "boutique": {
         "filesObserved": 214,

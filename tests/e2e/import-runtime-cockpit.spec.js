@@ -258,7 +258,7 @@ test.describe('Cockpit imports — remise Catalogue automatique en cours', () =>
 
   test('écran calme : la garde fournisseur ne crée aucune alerte au N1', async ({ page }) => {
     await expect(page.locator('.kir-runtime-alert')).toHaveCount(0);
-    await expect(page.locator('.kir-handoff')).toContainText('Remise automatique en attente');
+    await expect(page.locator('.kir-handoff')).toContainText('Remise automatique en cours');
   });
 
   test('capture de revue du run terminé', async ({ page }) => {
@@ -479,7 +479,7 @@ test.describe('Cockpit imports — drill-downs cohérents avec le N1', () => {
     await page.locator('.kir-run-truth-grid > a.is-received').click();
     await expect(page.locator('[data-population-item]')).toHaveCount(12);
     await expect(page.locator('.kir-history-stages')).toHaveCount(0);
-    await expect(page.locator('.kir-back')).toContainText('Retour au passage');
+    await expect(page.locator('.kir-back')).toContainText('Retour au suivi');
     await page.screenshot({ path: 'test-results/import-runtime-cockpit-population.png' });
     expect(state.calls).toContain('population:received');
   });
@@ -502,7 +502,7 @@ test.describe('Cockpit imports — drill-downs cohérents avec le N1', () => {
     await expect(page).toHaveURL(/view=item.*kind=received.*item=SP-0/);
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Coque 1');
     await expect(page.locator('.kir-main')).toContainText('Prêt pour le Catalogue');
-    await expect(page.locator('.kir-back')).toContainText('Retour à produits reçus');
+    await expect(page.locator('.kir-back')).toContainText('Retour à Produits reçus');
 
     await page.goBack();
     await expect(page).toHaveURL(/view=population.*kind=received/);
@@ -538,7 +538,7 @@ test.describe('Cockpit imports — drill-downs cohérents avec le N1', () => {
     await expect(page.locator('[data-population-item]')).toHaveCount(0);
     await page.locator('.kir-back').click();
     await page.locator('.kir-run-flow-step', { hasText: 'Remise Catalogue' }).click();
-    await expect(page.locator('.kir-drill-head h2')).toHaveText('Catalogue');
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Remise Catalogue');
     await expect(page.locator('.kir-main')).toContainText('Remise terminée');
   });
 });
@@ -645,7 +645,7 @@ test.describe('Cockpit imports — navigation canonique (vues exclusives)', () =
     await expect(page.locator('.kir-passage-row')).toHaveCount(2);
   });
 
-  test('Contrôle automatique → détail technique (6 étapes) → retour au contrôle automatique → retour au passage', async ({ page }) => {
+  test('Contrôle automatique → détail technique (6 étapes) → retour au contrôle automatique → retour au suivi', async ({ page }) => {
     await mountLive(page, withLots());
     await page.locator('.kir-run-flow-step', { hasText: 'Contrôle automatique' }).click();
     await expect(page.locator('.kir-run-truth')).toHaveCount(0);
@@ -657,5 +657,138 @@ test.describe('Cockpit imports — navigation canonique (vues exclusives)', () =
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Contrôle automatique');
     await page.locator('.kir-back').click();
     await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+  });
+});
+
+test.describe('Cockpit imports — audit de navigation (parent unique par écran)', () => {
+  const passages = [
+    { run_ref:'KIR-000009', provider:'AliExpress', started_at:iso(10), sourcing_status:'DONE', state_label:'Terminé', source_total:712, certified:12, discarded:27, action_required:0, handoff_label:'Terminée' },
+    { run_ref:'KIR-000008', provider:'CJ', started_at:iso(50), sourcing_status:'DONE', state_label:'Terminé', source_total:20, certified:9, discarded:1, action_required:0, handoff_label:'Terminée' },
+  ];
+  const withLots = () => {
+    const data = JSON.parse(JSON.stringify(calmPayload));
+    data.lots = [{ run_ref:'KIR-000009', provider:'AliExpress', source_total:712, business_status:'RUNNING' }, { run_ref:'KIR-000008', provider:'CJ', source_total:20, business_status:'CLOSED' }];
+    data.run_nav = { older_ref:'KIR-000008', newer_ref:null };
+    return data;
+  };
+  const readyPop = { kind:'ready', total:1, unlisted:[], items:[{ candidate_ref:'KSC-0', supplier_product_id:'SP-0', product_name:'Coque 1', image_url:null, issue_key:'ready', issue_label:'Prêt pour le Catalogue' }] };
+  const trace = { run_ref:'KIR-000009', provider:'AliExpress', supplier_product_id:'SP-0', product_name:'Coque 1', refinery:{ done:true, scanned_at:iso(20) }, canonical_category:'accessoires', product_ref:'P-42', certification:{ outcome:'catalog_imported', sourcing_certified:true, reasons:[] }, catalogue_status:'imported_to_catalog' };
+  const crumb = (page) => page.locator('.kir-breadcrumb').innerText().then((s) => s.replace(/\s*›\s*/g, ' > ').replace(/\s+/g, ' ').trim());
+  const activeTab = (page) => expect(page.locator('.kir-domain-nav .is-active')).toHaveText(/Suivi|Passages|Sources/);
+
+  test('1-2-6 Suivi → Source / Contrôle / Remise Catalogue → Retour au suivi', async ({ page }) => {
+    await mountLive(page, calmPayload);
+    for (const [step, title, crumbs] of [['Source', 'Source', 'Sourcing > Suivi > Source'], ['Contrôle automatique', 'Contrôle automatique', 'Sourcing > Suivi > Contrôle automatique'], ['Remise Catalogue', 'Remise Catalogue', 'Sourcing > Suivi > Remise Catalogue']]) {
+      await page.locator('.kir-run-flow-step', { hasText:step }).first().click();
+      await expect(page.locator('.kir-drill-head h2')).toHaveText(title);
+      expect(await crumb(page)).toBe(crumbs);
+      await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Suivi');
+      await expect(page.locator('.kir-back')).toHaveText('← Retour au suivi');
+      await expect(page.locator('.kir-drill-context')).toContainText('KIR-000009');
+      await page.locator('.kir-back').click();
+      await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    }
+  });
+
+  test('3 Contrôle → Détail technique → Taxonomie → retour contrôle → retour suivi', async ({ page }) => {
+    await mountLive(page, calmPayload);
+    await page.locator('.kir-run-flow-step', { hasText:'Contrôle automatique' }).click();
+    await page.getByText('Voir le détail technique →').click();
+    await expect(page.locator('.kir-history-stage')).toHaveCount(6);
+    expect(await crumb(page)).toBe('Sourcing > Suivi > Contrôle automatique > Détail technique');
+    await page.locator('.kir-history-stage', { hasText:'Taxonomie' }).click();
+    await expect(page).toHaveURL(/view=history.*stage=TAXONOMY.*from=control/);
+    await expect(page.locator('.kir-back')).toHaveText('← Retour au contrôle automatique');
+    await page.locator('.kir-back').click();
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Contrôle automatique');
+    await page.locator('.kir-back').click();
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+  });
+
+  test('4 Produits reçus → Produit → retour population → retour suivi', async ({ page }) => {
+    const state = await mountLive(page, calmPayload);
+    state.populations = { received:{ ...readyPop, kind:'received' } };
+    state.traces = { 'SP-0':trace };
+    await page.locator('.kir-run-truth-grid > a.is-received').click();
+    expect(await crumb(page)).toBe('Sourcing > Suivi > Produits reçus');
+    await page.locator('.kir-population-item-link').click();
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Coque 1');
+    expect(await crumb(page)).toBe('Sourcing > Suivi > Produits reçus > Produit');
+    await expect(page.locator('.kir-back')).toHaveText('← Retour à Produits reçus');
+    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Suivi');
+    await page.locator('.kir-back').click();
+    await expect(page).toHaveURL(/view=population.*kind=received/);
+    await page.locator('.kir-back').click();
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+  });
+
+  test('5 Prêts → Produit → fiche Catalogue : return_to exact vers le produit Sourcing', async ({ page }) => {
+    const state = await mountLive(page, calmPayload);
+    state.populations = { ready:readyPop };
+    state.traces = { 'SP-0':trace };
+    await page.locator('.kir-run-truth-grid > a.is-delivered').click();
+    expect(await crumb(page)).toBe('Sourcing > Suivi > Prêts pour le Catalogue');
+    await page.locator('.kir-population-item-link').click();
+    const link = page.locator('a[href^="/admin/products/P-42"]');
+    await expect(link).toHaveCount(1);
+    const href = new URL(await link.getAttribute('href'), 'http://x');
+    expect(href.searchParams.get('return_to')).toMatch(/^\/admin\/import-runtime\?run=KIR-000009&view=item&kind=ready&item=SP-0/);
+    expect(href.searchParams.get('return_label')).toBe('Retour au produit Sourcing');
+    // Le return_to rouvre bien le produit, avec son retour vers Prêts.
+    await page.goto(`${ORIGIN}${href.searchParams.get('return_to')}`);
+    await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Coque 1');
+    await expect(page.locator('.kir-back')).toHaveText('← Retour à Prêts pour le Catalogue');
+  });
+
+  test('7 Passages → autre KIR → Suivi de ce KIR ; 10 précédent/suivant sans contexte périmé', async ({ page }) => {
+    const state = await mountLive(page, withLots());
+    state.passages = passages;
+    state.populations = { received:{ ...readyPop, kind:'received' } };
+    await page.locator('.kir-domain-nav a', { hasText:'Passages' }).click();
+    await expect(page.locator('.kir-back')).toHaveCount(0);
+    await page.locator('.kir-passage-row', { hasText:'KIR-000008' }).click();
+    await expect(page).toHaveURL(/run=KIR-000008/);
+    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Suivi');
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+
+    // Un drill-down ouvert sur un KIR ne suit pas le changement de KIR.
+    await page.locator('.kir-run-truth-grid > a.is-received').click();
+    await expect(page).toHaveURL(/run=KIR-000008.*view=population/);
+    await page.goto(`${ORIGIN}/admin/import-runtime?run=KIR-000009`);
+    await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+    await page.getByText('← passage précédent').click();
+    await expect(page).toHaveURL(/run=KIR-000008$/);
+    expect(page.url()).not.toMatch(/view=|kind=|item=|from=|stage=/);
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+  });
+
+  test('8 Suivi → Sources → Suivi : Sources sans bouton retour, onglet actif', async ({ page }) => {
+    await mountLive(page, withLots());
+    await page.locator('.kir-domain-nav a', { hasText:'Sources' }).click();
+    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Sources');
+    await expect(page.locator('.kir-back')).toHaveCount(0);
+    expect(await crumb(page)).toBe('Sourcing > Sources');
+    await page.locator('.kir-domain-nav a', { hasText:'Suivi' }).click();
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Suivi');
+  });
+
+  test('9 Back/Forward : Passages conserve ses filtres via l’URL', async ({ page }) => {
+    const state = await mountLive(page, withLots());
+    state.passages = passages;
+    await page.locator('.kir-domain-nav a', { hasText:'Passages' }).click();
+    await page.locator('[data-passage-filter="source"]').selectOption('CJ');
+    await expect(page.locator('.kir-passage-row')).toHaveCount(1);
+    await expect(page).toHaveURL(/view=passages.*f_source=CJ/);
+    await page.locator('.kir-passage-row').click();
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    await page.goBack();
+    await expect(page.locator('[data-passage-filter="source"]')).toHaveValue('CJ');
+    await expect(page.locator('.kir-passage-row')).toHaveCount(1);
+    await page.reload();
+    await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+    await expect(page.locator('[data-passage-filter="source"]')).toHaveValue('CJ');
+    await activeTab(page);
   });
 });
