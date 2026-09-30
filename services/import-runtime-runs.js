@@ -412,15 +412,14 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
 
   function stage(key, status, processed, total, extra = {}) {
     const stored = storedStages[key] || {};
-    // Un compteur n'est présenté que s'il représente la complétion : une étape COMPLETED a traité
-    // tout son périmètre (n / n) ; le compteur observé brut reste disponible dans metrics.observed.
+    // processed reste une observation backend : on ne fabrique jamais n/n pour rendre un statut lisible.
+    // L'UI masque simplement le ratio lorsqu'il n'est pas la preuve de complétion de l'étape.
     const observed = Number(processed || 0);
     const scope = Number(total || 0);
-    const completed = status === 'COMPLETED';
     return {
       key,
       status,
-      processed: completed ? scope : Math.min(observed, scope || observed),
+      processed: Math.min(observed, scope || observed),
       total: scope,
       started_at: iso(stored.started_at),
       finished_at: status === 'COMPLETED'
@@ -429,8 +428,6 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
       reason: stored.reason || null,
       metrics: {},
       ...extra,
-      ...(observed !== (completed ? scope : Math.min(observed, scope || observed))
-        ? { metrics: { ...(extra.metrics || {}), observed } } : {}),
     };
   }
 
@@ -744,6 +741,27 @@ async function loadRows(runId, q = db) {
   return rows;
 }
 
+async function loadRowsForRuns(runIds, q = db) {
+  if (!runIds.length) return new Map();
+  const { rows } = await q.query(
+    `SELECT r.id::text AS run_id, ${CANDIDATE_COLUMNS}
+       FROM import_runtime_runs r
+       JOIN sourcing_candidates sc ON sc.import_id = r.import_id
+       LEFT JOIN products p ON p.id = sc.product_id
+      WHERE r.id = ANY($1::uuid[])`,
+    [runIds]
+  );
+  const grouped = new Map(runIds.map((id) => [String(id), []]));
+  for (const row of rows) {
+    const key = String(row.run_id);
+    const item = { ...row };
+    delete item.run_id;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(item);
+  }
+  return grouped;
+}
+
 async function loadProof(sourceRef, q = db) {
   if (!sourceRef) return null;
   const { rows: [row] } = await q.query(
@@ -820,15 +838,45 @@ function buildPassage(run, rows) {
   };
 }
 
-async function listPassages({ limit = 30 } = {}, q = db) {
+async function listPassages({ limit = 30, offset = 0 } = {}, q = db) {
   const n = Math.max(1, Math.min(50, Number(limit) || 30));
-  const { rows: runs } = await q.query(`${RUN_SELECT} ORDER BY r.started_at DESC LIMIT $1`, [n]);
-  const passages = [];
-  for (const run of runs) {
-    const rows = await loadRows(run.id, q);
-    passages.push(buildPassage(run, rows));
-  }
-  return passages;
+  const start = Math.max(0, Number(offset) || 0);
+  const { rows: runsPlusOne } = await q.query(
+    `${RUN_SELECT} ORDER BY r.started_at DESC, r.run_ref DESC LIMIT $1 OFFSET $2`,
+    [n + 1, start]
+  );
+  const hasMore = runsPlusOne.length > n;
+  const runs = runsPlusOne.slice(0, n);
+  const grouped = await loadRowsForRuns(runs.map((run) => run.id), q);
+  return {
+    passages: runs.map((run) => buildPassage(run, grouped.get(String(run.id)) || [])),
+    offset: start,
+    next_offset: hasMore ? start + n : null,
+  };
+}
+
+async function getRunNeighbors(runRef, q = db) {
+  if (!runRef) return { older_ref: null, newer_ref: null };
+  const { rows: [row] } = await q.query(
+    `WITH target AS (
+       SELECT started_at, run_ref
+         FROM import_runtime_runs
+        WHERE run_ref = $1
+     )
+     SELECT
+       (SELECT r.run_ref
+          FROM import_runtime_runs r, target t
+         WHERE (r.started_at, r.run_ref) < (t.started_at, t.run_ref)
+         ORDER BY r.started_at DESC, r.run_ref DESC
+         LIMIT 1) AS older_ref,
+       (SELECT r.run_ref
+          FROM import_runtime_runs r, target t
+         WHERE (r.started_at, r.run_ref) > (t.started_at, t.run_ref)
+         ORDER BY r.started_at ASC, r.run_ref ASC
+         LIMIT 1) AS newer_ref`,
+    [runRef]
+  );
+  return row || { older_ref: null, newer_ref: null };
 }
 
 
@@ -958,4 +1006,5 @@ module.exports = {
   getPopulation,
   buildPassage,
   listPassages,
+  getRunNeighbors,
 };
