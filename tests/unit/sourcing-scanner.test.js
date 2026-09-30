@@ -71,9 +71,10 @@ const mockHandoffImportResult = jest.fn();
 jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({
   importCatalog: (...args) => mockImportCatalog(...args),
 }));
-jest.mock('../../services/sourcing-catalogue-handoff', () => ({
-  handoffImportResult: (...args) => mockHandoffImportResult(...args),
-}));
+jest.mock('../../services/sourcing-candidate-actions', () => {
+  const actual = jest.requireActual('../../services/sourcing-candidate-actions');
+  return { ...actual, handoffImportResult: (...args) => mockHandoffImportResult(...args) };
+});
 
 // Legacy catalog-enrichment stays isolated tooling. Promotion must not call it
 // implicitly: the canonical path is source_only + separate traced FR preparation.
