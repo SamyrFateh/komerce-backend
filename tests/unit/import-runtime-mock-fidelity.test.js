@@ -45,9 +45,38 @@ describe('import-runtime — fidélité visuelle au mock', () => {
     expect(source).toContain("ico('alert')");
   });
 
-  test('les 6 KPI du suivi de lot n’ont pas de filet haut coloré', () => {
-    expect(css).toContain('.kmc-import-runtime .kir-run-truth-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr))');
-    expect(css).toContain('border-top:1px solid #E2E8F0 !important');
+  test('les 5 KPI du cockpit (entrées, acceptées, doublons, rejetées, quarantaine) sont réels et cliquables', () => {
+    expect(css).toContain('.kmc-import-runtime .kir-run-truth-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) !important');
+    for (const label of ['Entrées source', 'Acceptées', 'Doublons', 'Rejetées', 'En quarantaine']) {
+      expect(source).toContain(`['${label}'`);
+    }
+    expect(source).toContain('num(a.duplicates)');
+    expect(source).not.toContain('Temps restant');
+  });
+
+  test('l’activité est en phrases métier, sans libellé technique ; le produit courant reste honnête', () => {
+    expect(source).toContain('function liveEventDetail(run, event)');
+    expect(source).not.toContain('${esc(event.stage)} · ${esc(event.kind)}');
+    expect(source).toContain('Dernier produit mis à jour');
+    expect(source).not.toContain('Produit actuellement traité');
+    expect(source).not.toContain('produits traités</small>');
+  });
+
+  test('la page reste transparente sur le fond noir (plus de carte blanche)', () => {
+    expect(css).toContain('.kmc-import-runtime .kir-page{background:transparent !important');
+  });
+
+  test('ordre canonique : pipeline → KPI → activité/objet courant → zone secondaire', () => {
+    const flow = source.indexOf('${persistentRunFlow(run, sourceControls)}');
+    const truth = source.indexOf('${runTruthStrip(run)}');
+    const progress = source.indexOf('${activationState ? \'\' : runProgressRow(run)}');
+    const live = source.indexOf("${view === 'overview' ? renderLiveCore(run) : ''}");
+    const secondary = source.indexOf('data-cockpit-zone="secondary"');
+    expect(flow).toBeGreaterThan(-1);
+    expect(truth).toBeGreaterThan(flow);
+    expect(progress).toBeGreaterThan(truth);
+    expect(live).toBeGreaterThan(progress);
+    expect(secondary).toBeGreaterThan(live);
   });
 
   test('les 4 cartes de synthèse ont un filet haut de 3px vert / orange / bleu / neutre', () => {

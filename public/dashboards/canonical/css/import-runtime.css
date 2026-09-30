@@ -2820,3 +2820,100 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
   .kmc-import-runtime .kir-live-badge.is-live::before,
   .kmc-import-runtime .kir-run-flow-step.is-current .kir-run-flow-marker{animation:none !important}
 }
+
+/* LIVE OPS cockpit v2 — ossature canonique noire (Sourcing, puis Hub / Relais).
+ * Ordre : en-tête → pipeline → KPI → activité + objet courant → derniers éléments → zone secondaire. */
+.kmc-import-runtime .kir-page{background:transparent !important;gap:14px}
+.kmc-import-runtime .kir-run-truth-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr)) !important;gap:12px}
+.kmc-import-runtime .kir-run-truth-grid>a.is-critical strong{color:#FF7B8D}
+.kmc-import-runtime .kir-run-truth-grid>a.is-critical .kir-ico{color:#FB4F64}
+.kmc-import-runtime .kir-run-truth-grid>a.is-warning strong{color:#FFC766}
+.kmc-import-runtime .kir-run-truth-grid>a.is-warning .kir-ico{color:#F59E0B}
+.kmc-import-runtime .kir-run-truth-grid>a.is-healthy .kir-ico{color:#1ED784}
+.kmc-import-runtime .kir-run-truth-grid>a .kir-ico svg{width:30px;height:30px}
+.kmc-import-runtime .kir-secondary{display:grid;gap:12px;margin-top:4px;padding-top:14px;border-top:1px solid #14263A}
+.kmc-import-runtime .kir-secondary:empty{display:none}
+.kmc-import-runtime .kir-secondary>*{margin-top:0;margin-bottom:0}
+/* Les règles claires à !important (spécificité 0,3,0) battaient le bloc dark : on remonte à 0,4,0. */
+.kmc-import-runtime .kir-run-flow .kir-run-flow-progress,
+.kmc-import-runtime .kir-run-flow.is-live .kir-run-flow-progress,
+.kmc-import-runtime .kir-run-flow.is-complete .kir-run-flow-progress,
+.kmc-import-runtime .kir-run-flow.is-failed .kir-run-flow-progress{background:#17263A !important}
+.kmc-import-runtime .kir-run-flow-step.is-pending .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-step.is-waiting .kir-run-flow-marker{background:#0C1928;border-color:#526781;color:#8DA2BA}
+.kmc-import-runtime .kir-run-truth-head{justify-content:flex-start}
+.kmc-import-runtime .kir-run-truth-head small{margin-left:auto}
+@media(max-width:1050px){
+  .kmc-import-runtime .kir-run-truth-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+}
+
+/* LIVE OPS cockpit v2.1 — titre + LIVE, progression globale, frise d'activité, lisibilité. */
+.kmc-import-runtime .kir-sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.kmc-import-runtime .kir-live-titlerow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.kmc-import-runtime .kir-live-titlerow h1{margin:0}
+.kmc-import-runtime .kir-run-progress{
+  display:grid;grid-template-columns:auto minmax(120px,1fr) auto auto;align-items:center;gap:16px;
+  padding:6px 2px
+}
+.kmc-import-runtime .kir-run-progress>strong{color:#EAF1F9;font-size:15px;font-weight:760}
+.kmc-import-runtime .kir-run-progress-track{height:10px;border-radius:999px;background:#17263A;overflow:hidden}
+.kmc-import-runtime .kir-run-progress-track>span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#1ED784,#2F80ED);transition:width .25s ease}
+.kmc-import-runtime .kir-run-progress>em{color:#F3F7FC;font-size:20px;font-style:normal;font-weight:780}
+.kmc-import-runtime .kir-run-progress>small{color:#8EA1B8;font-size:13px}
+.kmc-import-runtime .kir-run-truth-grid>a small{grid-column:2;margin-top:2px;color:#7D91A8;font-size:12px}
+.kmc-import-runtime .kir-decision-top{display:grid;gap:10px}
+.kmc-import-runtime .kir-decision-top .kir-decision-intro{margin:0}
+
+/* Frise d'activité : points verts pour l'étape terminée, bleu pour l'étape démarrée. */
+.kmc-import-runtime .kir-live-event-list{position:relative}
+.kmc-import-runtime .kir-live-event{grid-template-columns:78px 14px 1fr;position:relative}
+.kmc-import-runtime .kir-live-event time{font-size:12px;font-variant-numeric:tabular-nums}
+.kmc-import-runtime .kir-live-event strong{font-size:14px}
+.kmc-import-runtime .kir-live-event small{font-size:12px;color:#8094AB}
+.kmc-import-runtime .kir-live-event.is-finished .kir-live-event-marker{background:#1ED784;box-shadow:0 0 0 3px rgb(30 215 132 / .12)}
+.kmc-import-runtime .kir-live-event:not(:last-child)::before{
+  content:"";position:absolute;left:90px;top:21px;bottom:-5px;width:2px;background:#1B3A2E
+}
+.kmc-import-runtime .kir-live-event-marker{width:8px;height:8px}
+.kmc-import-runtime .kir-run-flow-head{margin-bottom:14px}
+.kmc-import-runtime .kir-live-table td:nth-child(2) a{color:#DDE9F5;font-weight:700;text-decoration:none}
+.kmc-import-runtime .kir-live-table td.kir-live-thumb a{color:inherit}
+
+/* Lisibilité : plus de 9–10 px. */
+.kmc-import-runtime .kir-live-panel>header strong,
+.kmc-import-runtime .kir-recent-items>header strong{font-size:15px}
+.kmc-import-runtime .kir-live-panel>header a,
+.kmc-import-runtime .kir-recent-items>header a{font-size:12px}
+.kmc-import-runtime .kir-current-stage{font-size:11px}
+.kmc-import-runtime .kir-current-copy h3{font-size:20px}
+.kmc-import-runtime .kir-current-copy dl>div{grid-template-columns:110px 1fr}
+.kmc-import-runtime .kir-current-copy dt{font-size:12px}
+.kmc-import-runtime .kir-current-copy dd{font-size:13px}
+.kmc-import-runtime .kir-live-table{font-size:13px}
+.kmc-import-runtime .kir-live-table th{font-size:11px;padding:9px 12px}
+.kmc-import-runtime .kir-live-table td{padding:8px 12px}
+.kmc-import-runtime .kir-live-thumb-col{width:56px}
+.kmc-import-runtime .kir-live-thumb{width:56px}
+.kmc-import-runtime .kir-live-thumb img,
+.kmc-import-runtime .kir-live-thumb .kir-ico{
+  display:grid;place-items:center;width:36px;height:36px;object-fit:contain;border:1px solid #21364F;border-radius:6px;background:#F7FAFC;color:#6E8298
+}
+.kmc-import-runtime .kir-live-thumb .kir-ico svg{width:18px;height:18px}
+@media(max-width:1050px){
+  .kmc-import-runtime .kir-run-progress{grid-template-columns:1fr auto}
+  .kmc-import-runtime .kir-run-progress>strong,
+  .kmc-import-runtime .kir-run-progress-track{grid-column:1 / -1}
+}
+
+/* Zone secondaire : les règles claires (spécificité/!important) battaient le bloc dark. */
+.kmc-import-runtime .kir-secondary .kir-source-control{background:#0A1625 !important;border-color:#1E3148 !important;box-shadow:none !important;color:#DCE7F5 !important}
+.kmc-import-runtime .kir-secondary .kir-source-control-title strong{color:#EAF1F9 !important}
+.kmc-import-runtime .kir-secondary .kir-source-control-title small,
+.kmc-import-runtime .kir-secondary .kir-source-pill small{color:#8094AB !important}
+.kmc-import-runtime .kir-secondary .kir-source-pill{background:#0C1A2A !important;border-color:#233950 !important;color:#D5E2F0 !important;box-shadow:none !important}
+.kmc-import-runtime .kir-secondary .kir-source-pill.is-on{background:#0A2A20 !important;border-color:#195D43 !important}
+.kmc-import-runtime .kir-secondary .kir-source-pill.is-live{background:#0D2741 !important;border-color:#2369A4 !important}
+.kmc-import-runtime .kir-secondary .kir-source-pill.is-warning{background:#2E230E !important;border-color:#76500B !important}
+.kmc-import-runtime .kir-secondary .kir-source-pill .kir-source-name{color:#EAF1F9 !important}
+.kmc-import-runtime .kir-secondary .kir-lot-summary>div strong{color:#EDF3FA !important}
+.kmc-import-runtime .kir-secondary .kir-lot-summary>div span{color:#8094AB !important}

@@ -129,10 +129,13 @@ test('niveau 1 garde le flux réel visible et les décisions ouvertes séparées
   expect(node.innerHTML).toContain('Taxonomie');
   expect(node.innerHTML).toContain('Certification');
   expect(node.innerHTML).toContain('SUIVI DU LOT');
-  expect(node.innerHTML).toContain('Certifiées sourcing');
-  expect(node.innerHTML).toContain('15</strong>');
+  expect(node.innerHTML).toContain('Entrées source');
+  expect(node.innerHTML).toContain('Acceptées');
+  expect(node.innerHTML).toContain('Doublons');
+  expect(node.innerHTML).toContain('Rejetées');
+  expect(node.innerHTML).toContain('En quarantaine');
+  expect(node.innerHTML).toContain('15/15');
   expect(node.innerHTML).toContain('Catalogue');
-  expect(node.innerHTML).toContain('1</strong>');
   expect(node.innerHTML).toContain('14 produit(s) certifié(s) sourcing attendent maintenant la promotion Catalogue. Ils n’ont pas disparu.');
   expect(node.innerHTML).not.toContain('&lt;Produit&gt;');
 });
