@@ -49,12 +49,12 @@
     { key:'SOURCE', label:'Source', stages:['SOURCE_CONNECTED'], drill:'SOURCE_CONNECTED' },
     { key:'RECEIVED', label:'Produits reçus', stages:['RAW_IMPORT'], drill:'RAW_IMPORT' },
     { key:'CONTROL', label:'Contrôle automatique', stages:CONTROL_STAGES, drill:'CONTROL' },
-    { key:'CATALOGUE', label:'Catalogue', stages:['CATALOGUE'], drill:'CATALOGUE' },
+    { key:'CATALOGUE', label:'Remise Catalogue', stages:['CATALOGUE'], drill:'CATALOGUE' },
   ]);
   const USER_STAGE_LABELS = Object.freeze({
     SOURCE_CONNECTED:'Source', RAW_IMPORT:'Produits reçus',
     REFINERY:'Contrôle automatique', TAXONOMY:'Contrôle automatique', CERTIFICATION:'Contrôle automatique',
-    CATALOGUE:'Catalogue', CONTROL:'Contrôle automatique',
+    CATALOGUE:'Remise Catalogue', CONTROL:'Contrôle automatique',
   });
   function userStageLabel(key) { return USER_STAGE_LABELS[key] || key || 'Étape'; }
   function userStageKey(key) { return CONTROL_STAGES.includes(key) ? 'CONTROL' : key; }
@@ -131,14 +131,6 @@
   }
 
   function flowStageMeta(stage) {
-    if (stage.key === 'CATALOGUE' && stage.reason === 'awaiting_explicit_operator_promotion') {
-      return {
-        state:'completed',
-        label:'Terminé',
-        manual_label:`${num(stage.total)} à valider`,
-        reached_boundary:true,
-      };
-    }
     if (stage.status === 'COMPLETED') return { state:'completed', label:'Terminé' };
     if (stage.status === 'FAILED') return { state:'failed', label:'Bloqué' };
     if (stage.status === 'RUNNING') return { state:'running', label:'En cours' };
@@ -179,7 +171,8 @@
       if (def.key === 'CATALOGUE') {
         state = anyFailed ? 'failed'
           : handoff.complete || (handoff.controlDone && handoff.certified === 0) ? 'completed'
-            : 'pending';
+            : anyRunning ? 'running'
+              : 'pending';
       } else if (def.key === 'CONTROL') {
         // Une action humaine attendue prime sur « bloqué » : Komerce n'est pas coincé, il attend.
         state = anyFailed && actionRequired === 0 ? 'failed'
@@ -286,12 +279,7 @@
     const list = Array.isArray(stages) ? stages : [];
     if (run?.status === 'FAILED' || list.some(stage => stage.status === 'FAILED')) return false;
     const catalogue = list.find(stage => stage.key === 'CATALOGUE') || {};
-    const automaticStages = list.filter(stage => stage.key !== 'CATALOGUE');
-    const upstreamDone = automaticStages.length > 0
-      && automaticStages.every(stage => stage.status === 'COMPLETED');
-    const catalogueReached = catalogue.status === 'COMPLETED'
-      || catalogue.reason === 'awaiting_explicit_operator_promotion';
-    return run?.status === 'COMPLETED' || (upstreamDone && catalogueReached);
+    return run?.status === 'COMPLETED' && catalogue.status === 'COMPLETED';
   }
 
   function activationStrip(sourceControls) {
@@ -315,23 +303,25 @@
     const failed = !noResult && !providerGateBlocked && (Boolean(activationState.error)
       || activationState.outcome === 'failed'
       || stages.some(stage => stage.status === 'FAILED'));
-    const catalogueWaiting = stages.some(stage => stage.key === 'CATALOGUE'
-      && stage.reason === 'awaiting_explicit_operator_promotion');
+    const catalogueHandoffPending = stages.some(stage => stage.key === 'CATALOGUE'
+      && stage.reason === 'automatic_catalogue_handoff_pending');
     const title = failed
       ? 'Passage interrompu'
       : noResult
         ? 'Passage terminé sans résultat'
-        : automaticDone || providerGateBlocked || catalogueWaiting
-          ? 'Import automatique terminé'
-          : activationState.done ? 'Premier passage terminé' : 'Passage en direct';
+        : catalogueHandoffPending
+          ? 'Remise au Catalogue en cours'
+          : automaticDone || providerGateBlocked
+            ? 'Import automatique terminé'
+            : activationState.done ? 'Premier passage terminé' : 'Passage en direct';
     const helper = failed
       ? (activationState.error || 'Le premier passage automatique a échoué.')
       : noResult
         ? `${label} · ${activationState.runRef || 'nouveau passage'} · aucun produit exploitable`
         : providerGateBlocked
           ? `${label} · alimentation automatique arrêtée`
-          : automaticDone && catalogueWaiting
-            ? `${label} · le traitement automatique est terminé`
+          : catalogueHandoffPending
+            ? `${label} · création automatique des brouillons Catalogue`
             : automaticDone
               ? `${label} · le traitement automatique a atteint le Catalogue`
               : activationState.runRef
@@ -339,9 +329,10 @@
                 : `${label} · préparation de la source et création du premier passage`;
     const tone = failed ? 'is-failed'
       : noResult ? 'is-empty'
-        : automaticDone || catalogueWaiting || providerGateBlocked || activationState.done
-          ? `is-complete ${catalogueWaiting ? 'has-manual-action' : ''}`.trim()
-          : 'is-live';
+        : catalogueHandoffPending ? 'is-live'
+          : automaticDone || providerGateBlocked || activationState.done
+            ? 'is-complete'
+            : 'is-live';
     return `<section class="kir-run-flow ${tone}" aria-live="polite">
       <div class="kir-run-flow-head">
         <div><span class="kir-section-kicker">FLUX DU PASSAGE</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
@@ -368,26 +359,27 @@
       };
     });
     const failed = run.status === 'FAILED' || stages.some(stage => stage.status === 'FAILED');
-    const catalogueWaiting = stages.some(stage => stage.key === 'CATALOGUE'
-      && stage.reason === 'awaiting_explicit_operator_promotion');
+    const catalogueHandoffPending = stages.some(stage => stage.key === 'CATALOGUE'
+      && stage.reason === 'automatic_catalogue_handoff_pending');
     const automaticDone = stages
       .filter(stage => stage.key !== 'CATALOGUE')
       .every(stage => stage.status === 'COMPLETED');
     const title = failed
       ? 'Passage interrompu'
-      : automaticDone && catalogueWaiting
-        ? 'Import automatique terminé'
+      : automaticDone && catalogueHandoffPending
+        ? 'Remise au Catalogue en cours'
         : run.status === 'COMPLETED'
-          ? 'Passage terminé'
+          ? 'Parcours du passage terminé'
           : 'Passage en cours';
     const helper = failed
       ? (run.failure_reason || 'Une étape du passage est bloquée.')
-      : catalogueWaiting
-        ? `${run.run_ref} · ${run.provider || 'Source'}`
+      : catalogueHandoffPending
+        ? `${run.run_ref} · création automatique des brouillons Catalogue`
         : `${run.run_ref} · ${run.provider || 'Source'} · parcours conservé à l’écran`;
     const tone = failed ? 'is-failed'
-      : catalogueWaiting || run.status === 'COMPLETED' ? 'is-complete has-manual-action'
-        : 'is-live';
+      : catalogueHandoffPending ? 'is-live'
+        : run.status === 'COMPLETED' ? 'is-complete'
+          : 'is-live';
 
     return `<section class="kir-run-flow ${tone}" aria-label="Parcours du passage ${esc(run.run_ref)}">
       <div class="kir-run-flow-head">
@@ -466,8 +458,8 @@
     if (!h.controlDone || h.certified === 0) return '';
     const state = h.complete ? 'is-clean' : 'is-waiting';
     const text = h.complete ? 'Remise terminée'
-      : h.catalogued === 0 ? 'En attente de remise'
-        : `${h.remaining} ${h.remaining > 1 ? 'restent' : 'reste'} à remettre`;
+      : h.catalogued === 0 ? 'Remise automatique en attente'
+        : `${h.remaining} ${h.remaining > 1 ? 'restent' : 'reste'} à remettre automatiquement`;
     return `<section class="kir-handoff ${state}" aria-label="Passage au Catalogue">
       ${ico('handoff')}
       <div><span class="kir-section-kicker">PASSAGE AU CATALOGUE</span><strong>${h.complete ? '<b aria-hidden="true">✓</b> ' : ''}${esc(text)}</strong></div>
@@ -896,8 +888,8 @@
     } else if (event.stage === 'CERTIFICATION') {
       text = finished ? `${done} produit(s) certifié(s)` : `${done} / ${total} certifiés`;
     } else if (event.stage === 'CATALOGUE') {
-      text = stage.reason === 'awaiting_explicit_operator_promotion'
-        ? `${total} certifié(s) à valider`
+      text = stage.reason === 'automatic_catalogue_handoff_pending'
+        ? `${done} / ${total} remis automatiquement`
         : `${done} produit(s) au Catalogue`;
     }
     const duration = finished ? durationLabel(stage.started_at, stage.finished_at) : '';
@@ -933,8 +925,8 @@
       return { label:`Contrôle terminé pour ${plural(num(stage.processed), 'produit', 'produits')}`, detail:durationLabel(stage.started_at, stage.finished_at), started:false };
     }
     if (event.stage === 'CATALOGUE' && finished) {
-      return stage.reason === 'awaiting_explicit_operator_promotion'
-        ? { label:`${plural(num(stage.total), 'produit prêt', 'produits prêts')} pour le Catalogue`, detail:'', started:false }
+      return stage.reason === 'automatic_catalogue_handoff_pending'
+        ? { label:`Remise automatique de ${plural(num(stage.processed), 'produit', 'produits')} au Catalogue`, detail:'', started:false }
         : { label:`${plural(num(stage.processed), 'produit remis', 'produits remis')} au Catalogue`, detail:'', started:false };
     }
     return null;
@@ -1237,7 +1229,7 @@
     const h = sourcingOutcome(run).handoff;
     const status = !h.controlDone || h.certified === 0 ? 'Rien n’est encore prêt à remettre'
       : h.complete ? '✓ Remise terminée'
-        : h.catalogued === 0 ? 'En attente de remise'
+        : h.catalogued === 0 ? `Remise automatique · ${num(stage.processed)} / ${num(stage.total)}`
           : `${h.remaining} ${h.remaining > 1 ? 'restent' : 'reste'} à remettre`;
     const list = population && population.kind === 'ready' && population.items?.length
       ? `<div class="kir-table-wrap"><table class="kir-table" data-population-list="ready">
@@ -1258,7 +1250,7 @@
     const back = from === 'control' ? { href:urlFor(run.run_ref, 'control'), label:'← Retour au contrôle automatique' } : null;
     // Jamais « COMPLETED · 0 / 12 » : un ratio n'est montré que pendant le travail ; une étape terminée dit « Terminé ».
     const stageText = stage => stage.status === 'COMPLETED' ? '✓ Terminé'
-      : stage.status === 'RUNNING' && stage.reason === 'awaiting_explicit_operator_promotion' ? 'En attente de remise'
+      : stage.status === 'RUNNING' && stage.reason === 'automatic_catalogue_handoff_pending' ? 'En attente de remise'
       : stage.status === 'RUNNING' ? `En cours · ${num(stage.processed)} / ${num(stage.total)}`
         : stage.status === 'FAILED' ? 'Bloqué' : 'En attente';
     return drillHeader(
