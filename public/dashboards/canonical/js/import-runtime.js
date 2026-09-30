@@ -515,10 +515,11 @@
       view: VIEWS.has(requestedView) ? requestedView : 'overview',
       kind: POPULATION_KINDS.includes(kind) ? kind : 'received',
       from: query.get('from') || null,
+      offset: Math.max(0, Number(query.get('offset')) || 0),
     };
   }
 
-  async function api(path, options = {}) {
+    async function api(path, options = {}) {
     const res = await global.fetch(path, {
       method: options.method || 'GET',
       credentials:'include',
@@ -583,7 +584,15 @@
     return '/admin/import-runtime' + (q.toString() ? '?' + q.toString() : '');
   }
 
-  function stageUrl(runRef, stageKey) {
+  function passagesUrl(runRef, offset = 0) {
+    const q = new URLSearchParams();
+    if (runRef) q.set('run', runRef);
+    q.set('view', 'passages');
+    if (offset > 0) q.set('offset', String(offset));
+    return '/admin/import-runtime?' + q.toString();
+  }
+
+    function stageUrl(runRef, stageKey) {
     const q = new URLSearchParams();
     if (runRef) q.set('run', runRef);
     q.set('view', 'history');
@@ -1234,12 +1243,13 @@
   }
 
   // Changer de lot sans rail permanent : précédent · liste compacte · suivant · tous les passages.
-  function lotPicker(run, lots) {
+  function lotPicker(run, runNav, lots) {
     const list = (lots || []).filter(lot => lot.business_status !== 'ARCHIVED' || lot.run_ref === run.run_ref);
-    if (!list.some(lot => lot.run_ref === run.run_ref)) list.unshift({ run_ref:run.run_ref, provider:run.provider, started_at:run.started_at });
-    const index = list.findIndex(lot => lot.run_ref === run.run_ref);
-    const older = list[index + 1] || null;
-    const newer = index > 0 ? list[index - 1] : null;
+    if (!list.some(lot => lot.run_ref === run.run_ref)) {
+      list.unshift({ run_ref:run.run_ref, provider:run.provider, started_at:run.started_at });
+    }
+    const older = runNav?.older_ref ? { run_ref:runNav.older_ref } : null;
+    const newer = runNav?.newer_ref ? { run_ref:runNav.newer_ref } : null;
     const step = (lot, label) => lot
       ? `<a class="kir-lot-step" href="${urlFor(lot.run_ref)}" data-cockpit-nav>${label}</a>`
       : `<span class="kir-lot-step is-off">${label}</span>`;
@@ -1248,11 +1258,11 @@
       <select data-lot-select aria-label="Choisir un passage">${list.map(lot =>
         `<option value="${esc(lot.run_ref)}" ${lot.run_ref === run.run_ref ? 'selected' : ''}>${esc(lot.run_ref)}${lot.provider ? ' · ' + esc(lot.provider) : ''}</option>`).join('')}</select>
       ${step(newer, 'lot suivant →')}
-      <a class="kir-lot-all" href="${urlFor(run.run_ref, 'passages')}" data-cockpit-nav>Tous les passages →</a>
+      <a class="kir-lot-all" href="${passagesUrl(run.run_ref)}" data-cockpit-nav>Tous les passages →</a>
     </div>`;
   }
 
-  // Passages : l'historique des runs, uniquement la vérité Sourcing. Toute la ligne ouvre Live sur ce lot.
+    // Passages : l'historique des runs, uniquement la vérité Sourcing. Toute la ligne ouvre Live sur ce lot.
   const passageFilters = { source:'', state:'', period:'all', q:'' };
   const PASSAGE_PERIODS = Object.freeze({ all:'Toute la période', today:'Aujourd’hui', week:'7 derniers jours' });
 
@@ -1287,30 +1297,38 @@
     }).join('');
   }
 
-  function renderPassages(run, passages) {
+  function renderPassages(run, passages, page = {}) {
     const list = Array.isArray(passages) ? passages : null;
     const providers = [...new Set((list || []).map(item => item.provider).filter(Boolean))];
     const option = (value, label, current) => `<option value="${esc(value)}" ${current === value ? 'selected' : ''}>${esc(label)}</option>`;
     const states = { '':'Tous les états', RUNNING:'LIVE', DONE:'Terminé', ACTION_REQUIRED:'Action requise', BLOCKED:'Bloqué' };
+    const offset = Math.max(0, Number(page?.offset) || 0);
+    const nextOffset = page?.next_offset == null ? null : Math.max(0, Number(page.next_offset) || 0);
+    const previousOffset = Math.max(0, offset - 50);
+    const pager = list ? `<nav class="kir-passage-pagination" aria-label="Pagination des passages">
+      ${offset > 0 ? `<a href="${passagesUrl(run?.run_ref, previousOffset)}" data-cockpit-nav>← Passages plus récents</a>` : '<span></span>'}
+      <span>${list.length ? `${offset + 1}–${offset + list.length}` : '0'}</span>
+      ${nextOffset != null ? `<a href="${passagesUrl(run?.run_ref, nextOffset)}" data-cockpit-nav>Passages plus anciens →</a>` : '<span></span>'}
+    </nav>` : '';
     return `<div class="kir-drill-head"><div>
         ${breadcrumb(run)}
         ${run ? `<a href="${urlFor(run.run_ref)}" data-cockpit-nav class="kir-back">← Retour au lot</a>` : ''}
         <h2>Historique des passages</h2>
-        <p>Les passages Sourcing récents : ce qui a été reçu, ce qui est prêt pour le Catalogue et ce qui demande une action.</p>
+        <p>Les passages Sourcing : ce qui a été reçu, ce qui est prêt pour le Catalogue et ce qui demande une action.</p>
       </div></div>
       <div class="kir-passage-filters" data-passage-filters>
         <select data-passage-filter="source" aria-label="Source">${option('', 'Toutes les sources', passageFilters.source)}${providers.map(name => option(name, name, passageFilters.source)).join('')}</select>
         <select data-passage-filter="state" aria-label="État">${Object.entries(states).map(([value, label]) => option(value, label, passageFilters.state)).join('')}</select>
         <select data-passage-filter="period" aria-label="Période">${Object.entries(PASSAGE_PERIODS).map(([value, label]) => option(value, label, passageFilters.period)).join('')}</select>
-        <input type="search" data-passage-filter="q" placeholder="Rechercher un passage" aria-label="Recherche" value="${esc(passageFilters.q)}">
+        <input type="search" data-passage-filter="q" placeholder="Rechercher sur cette page" aria-label="Recherche" value="${esc(passageFilters.q)}">
       </div>
       ${list ? `<div class="kir-table-wrap"><table class="kir-table" data-passages-table>
         <thead><tr><th>Passage</th><th>Source</th><th>Date / heure</th><th>État Sourcing</th><th>Produits reçus</th><th>Prêts Catalogue</th><th>Écartés</th><th>Action requise</th><th>Remise Catalogue</th></tr></thead>
-        <tbody data-passages-body>${passageRows(list)}</tbody></table></div>`
+        <tbody data-passages-body>${passageRows(list)}</tbody></table></div>${pager}`
         : '<div class="kir-empty">Chargement des passages…</div>'}`;
   }
 
-  // Sources : configuration et état des fournisseurs / autopilot (inventaire, pas de lot).
+    // Sources : configuration et état des fournisseurs / autopilot (inventaire, pas de lot).
   function renderSourcesView(run, sourceControls) {
     return `<div class="kir-drill-head"><div>
         ${breadcrumb(run)}
@@ -1346,7 +1364,7 @@
     if (view === 'passages' || view === 'sources') {
       root.innerHTML = `<section class="kir-page">
         ${domainNav(view, run)}
-        <main class="kir-main">${view === 'passages' ? renderPassages(run, payload?.passages) : renderSourcesView(run, sourceControls)}</main>
+        <main class="kir-main">${view === 'passages' ? renderPassages(run, payload?.passages, payload?.passages_page) : renderSourcesView(run, sourceControls)}</main>
       </section>`;
       bindAll(root, payload);
       return;
@@ -1355,16 +1373,17 @@
     if (!run) {
       root.innerHTML = `<section class="kir-page">
         ${domainNav('overview', null)}
-        <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span><h1>Suivi d’import — Source → Catalogue</h1><p>Aucun passage pour l’instant : activez une source pour lancer le premier.</p></div></header>
-        ${sourceControlStrip(sourceControls)}
-        ${activationStrip(sourceControls)}
-        ${lotStrip(lots, null)}
+        <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span><h1>Suivi d’import — Source → Catalogue</h1><p>Aucun passage pour l’instant.</p></div></header>
+        <div class="kir-empty-launch">
+          <div class="kir-empty-launch-copy"><strong>Aucun passage Sourcing</strong><span>Activez une source pour lancer le premier passage réel.</span></div>
+          <a class="kir-subtle-link" href="${urlFor(null, 'sources')}" data-cockpit-nav>Gérer les sources →</a>
+        </div>
       </section>`;
       bindAll(root, payload);
       return;
     }
 
-    // Vue secondaire : elle remplace entièrement le cockpit (jamais empilée dessous).
+        // Vue secondaire : elle remplace entièrement le cockpit (jamais empilée dessous).
     if (view !== 'overview') {
       root.innerHTML = `<section class="kir-page">
         ${domainNav(view, run)}
@@ -1381,7 +1400,7 @@
         <div>
           <div class="kir-live-titleline"><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span></div>
           <div class="kir-live-titlerow"><h1>Suivi d’import — Source → Catalogue</h1><span class="kir-live-badge ${run.status === 'RUNNING' ? 'is-live' : ''}">${run.status === 'RUNNING' ? 'LIVE' : 'RUN'}</span></div>
-          ${lotPicker(run, lots)}
+          ${lotPicker(run, payload?.run_nav || null, lots)}
           <p>${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s)</p>
         </div>
         <div class="kir-hero-actions kir-live-hero-actions">
@@ -1593,12 +1612,16 @@
       control.addEventListener(control.tagName === 'INPUT' ? 'input' : 'change', () => {
         passageFilters[control.getAttribute('data-passage-filter')] = control.value;
         const body = root.querySelector?.('[data-passages-body]');
-        if (body) { body.innerHTML = passageRows(payload?.passages); bindPassageRows(root); }
+        if (body) {
+          body.innerHTML = passageRows(payload?.passages);
+          bindPassageRows(root);
+          bindNavigation(body);
+        }
       });
     });
   }
 
-  function bindNavigation(root) {
+    function bindNavigation(root) {
     root.querySelectorAll?.('[data-cockpit-nav]').forEach(link => {
       link.addEventListener('click', event => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -1619,7 +1642,7 @@
       return;
     }
     if (!preserve && !lastPayload) renderLoading(mountedRoot);
-    const { run, view } = params();
+    const { run, view, offset } = params();
     const query = new URLSearchParams({ limit:'12' });
     if (run) query.set('run', run);
     try {
@@ -1627,7 +1650,14 @@
       attachActivationRun(payload);
       // Les populations (produits qui composent un chiffre) sont lues à la demande, à chaque rafraîchissement.
       if (view === 'passages') {
-        try { payload.passages = (await api('/api/admin/workspaces/sourcing/import-passages?limit=50')).passages || []; } catch (_) { payload.passages = []; }
+        try {
+          const page = await api(`/api/admin/workspaces/sourcing/import-passages?limit=50&offset=${offset}`);
+          payload.passages = page.passages || [];
+          payload.passages_page = page;
+        } catch (_) {
+          payload.passages = [];
+          payload.passages_page = { offset, next_offset:null };
+        }
       }
       const populationKind = view === 'population' ? params().kind : view === 'handoff' ? 'ready' : null;
       if (populationKind && payload?.selected?.run_ref) {
