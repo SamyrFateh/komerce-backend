@@ -78,7 +78,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('persistentRunFlow');
   expect(source).toContain('Import automatique terminé');
   expect(source).toContain('parcours conservé à l’écran');
-  expect(source).toContain('awaiting_catalogue_promotion');
+  expect(source).toContain('à remettre');
   expect(source).toContain('ACTIVATION_POLL_MS = 900');
   expect(source).toContain("NO_RESULT:'Sans résultat'");
   expect(source).toContain('Passage terminé sans résultat');
