@@ -4,17 +4,17 @@
  * @domain        sourcing
  * @layer         service
  * @criticality   high
- * @inputs        candidate_id_internal, validated_candidate_payload, actor_id
- * @outputs       candidate_mutation_result, promoted_catalog_product
- * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/catalog-candidate-product-service.js, services/catalog-promotion.js, services/catalog-enrichment.js
+ * @inputs        candidate_id_internal, import_id_internal, validated_candidate_payload, actor_id
+ * @outputs       candidate_mutation_result, inactive_catalog_draft, automatic_catalogue_handoff_summary
+ * @depends       db.js, services/supplier-catalog-scanner.js, services/pricing-engine.js, services/catalog-candidate-product-service.js, services/catalog-promotion.js, services/catalog-enrichment.js, services/import-runtime-runs.js, services/sourcing-certification.js
  * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js
- * @db-read       sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports
+ * @db-read       sourcing_candidates, sourcing_candidate_events, supplier_catalog_imports, import_runtime_runs
  * @db-write      sourcing_candidates, sourcing_candidate_events
  * @db-write-via:catalog-candidate-product-service products
  * @db-write-via:catalog-promotion catalog_media, product_variants, product_skus, product_sku_media
  * @db-write-via:import-runtime-runs import_runtime_runs
  * @db-txn        promoteCandidate : transaction dédiée
- * @doctrine      single_sourcing_candidate_mutation_authority, catalog_promotion_owner_respected, engine_price_is_not_market_decision, draft_handoff_has_no_market_price, publication_requires_price
+ * @doctrine      single_sourcing_candidate_mutation_authority, sourcing_certified_auto_handoff, catalog_promotion_owner_respected, engine_price_is_not_market_decision, draft_handoff_has_no_market_price, publication_requires_price
  * @impact-areas  sourcing, catalog, economic-engine
  * @version       2026-09
  */
