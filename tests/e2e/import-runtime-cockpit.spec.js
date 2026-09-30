@@ -565,6 +565,11 @@ test.describe('Cockpit imports — navigation canonique (vues exclusives)', () =
     await expect(page.locator('.kir-run-truth')).toHaveCount(1);
     await expect(page).toHaveURL(/run=KIR-000008/);
     await expect(page.locator('.kir-passage-row')).toHaveCount(0);
+
+    // Le retour navigateur ramène exactement à la liste qui a ouvert le passage.
+    await page.goBack();
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Historique des passages');
+    await expect(page.locator('.kir-passage-row')).toHaveCount(2);
   });
 
   test('filtres de Passages : source, état et recherche', async ({ page }) => {
