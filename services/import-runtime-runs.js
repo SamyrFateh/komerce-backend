@@ -288,7 +288,7 @@ async function getPopulation(runRef, kind, q = db) {
   if (!POPULATION_KINDS.includes(kind)) return null;
   const { rows: [run] } = await q.query(`${RUN_SELECT} WHERE r.run_ref = $1`, [runRef]);
   if (!run) return null;
-  const rows = run.import_id ? await loadRows(run.id, q) : [];
+  const rows = await loadRows(run.id, q);
   return buildPopulation({ kind, rows, intake: run.intake || {}, sourceTotal: run.source_total });
 }
 
@@ -412,15 +412,14 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
 
   function stage(key, status, processed, total, extra = {}) {
     const stored = storedStages[key] || {};
-    // Un compteur n'est présenté que s'il représente la complétion : une étape COMPLETED a traité
-    // tout son périmètre (n / n) ; le compteur observé brut reste disponible dans metrics.observed.
+    // processed reste une observation backend : on ne fabrique jamais n/n pour rendre un statut lisible.
+    // L'UI masque simplement le ratio lorsqu'il n'est pas la preuve de complétion de l'étape.
     const observed = Number(processed || 0);
     const scope = Number(total || 0);
-    const completed = status === 'COMPLETED';
     return {
       key,
       status,
-      processed: completed ? scope : Math.min(observed, scope || observed),
+      processed: Math.min(observed, scope || observed),
       total: scope,
       started_at: iso(stored.started_at),
       finished_at: status === 'COMPLETED'
@@ -429,8 +428,6 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
       reason: stored.reason || null,
       metrics: {},
       ...extra,
-      ...(observed !== (completed ? scope : Math.min(observed, scope || observed))
-        ? { metrics: { ...(extra.metrics || {}), observed } } : {}),
     };
   }
 
@@ -744,6 +741,27 @@ async function loadRows(runId, q = db) {
   return rows;
 }
 
+async function loadRowsForRuns(runIds, q = db) {
+  if (!runIds.length) return new Map();
+  const { rows } = await q.query(
+    `SELECT r.id::text AS run_id, ${CANDIDATE_COLUMNS}
+       FROM import_runtime_runs r
+       JOIN sourcing_candidates sc ON sc.import_id = r.import_id
+       LEFT JOIN products p ON p.id = sc.product_id
+      WHERE r.id = ANY($1::uuid[])`,
+    [runIds]
+  );
+  const grouped = new Map(runIds.map((id) => [String(id), []]));
+  for (const row of rows) {
+    const key = String(row.run_id);
+    const item = { ...row };
+    delete item.run_id;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(item);
+  }
+  return grouped;
+}
+
 async function loadProof(sourceRef, q = db) {
   if (!sourceRef) return null;
   const { rows: [row] } = await q.query(
@@ -790,6 +808,77 @@ async function getRun(runRef, q = db) {
   );
   return run ? project(run, q, true) : null;
 }
+
+// Passages : l'historique des runs KIR, uniquement la vérité Sourcing (jamais prix / marché / vente).
+const PASSAGE_STATE = Object.freeze({ RUNNING: 'LIVE', DONE: 'Terminé', ACTION_REQUIRED: 'Action requise', BLOCKED: 'Bloqué' });
+
+function handoffLabel(certified, catalogued) {
+  if (!certified) return '—';
+  if (catalogued >= certified) return 'Terminée';
+  if (catalogued === 0) return 'En attente';
+  return `${certified - catalogued} restent`;
+}
+
+function buildPassage(run, rows) {
+  const projection = buildProjection({ run, rows });
+  const a = projection.accounting;
+  return {
+    run_ref: run.run_ref,
+    provider: run.provider || null,
+    source_ref: run.source_ref || null,
+    started_at: iso(run.started_at),
+    sourcing_status: projection.sourcing_status,
+    state_label: PASSAGE_STATE[projection.sourcing_status] || 'Terminé',
+    source_total: a.source_total,
+    certified: a.certified,
+    discarded: a.duplicates + a.rejected,
+    action_required: a.action_required,
+    catalogued: a.catalogued,
+    handoff_label: handoffLabel(a.certified, a.catalogued),
+  };
+}
+
+async function listPassages({ limit = 30, offset = 0 } = {}, q = db) {
+  const n = Math.max(1, Math.min(50, Number(limit) || 30));
+  const start = Math.max(0, Number(offset) || 0);
+  const { rows: runsPlusOne } = await q.query(
+    `${RUN_SELECT} ORDER BY r.started_at DESC, r.run_ref DESC LIMIT $1 OFFSET $2`,
+    [n + 1, start]
+  );
+  const hasMore = runsPlusOne.length > n;
+  const runs = runsPlusOne.slice(0, n);
+  const grouped = await loadRowsForRuns(runs.map((run) => run.id), q);
+  return {
+    passages: runs.map((run) => buildPassage(run, grouped.get(String(run.id)) || [])),
+    offset: start,
+    next_offset: hasMore ? start + n : null,
+  };
+}
+
+async function getRunNeighbors(runRef, q = db) {
+  if (!runRef) return { older_ref: null, newer_ref: null };
+  const { rows: [row] } = await q.query(
+    `WITH target AS (
+       SELECT started_at, run_ref
+         FROM import_runtime_runs
+        WHERE run_ref = $1
+     )
+     SELECT
+       (SELECT r.run_ref
+          FROM import_runtime_runs r, target t
+         WHERE (r.started_at, r.run_ref) < (t.started_at, t.run_ref)
+         ORDER BY r.started_at DESC, r.run_ref DESC
+         LIMIT 1) AS older_ref,
+       (SELECT r.run_ref
+          FROM import_runtime_runs r, target t
+         WHERE (r.started_at, r.run_ref) > (t.started_at, t.run_ref)
+         ORDER BY r.started_at ASC, r.run_ref ASC
+         LIMIT 1) AS newer_ref`,
+    [runRef]
+  );
+  return row || { older_ref: null, newer_ref: null };
+}
+
 
 async function listRuns({ limit = 10 } = {}, q = db) {
   const n = Math.max(1, Math.min(50, Number(limit) || 10));
@@ -915,4 +1004,7 @@ module.exports = {
   POPULATION_KINDS,
   buildPopulation,
   getPopulation,
+  buildPassage,
+  listPassages,
+  getRunNeighbors,
 };

@@ -481,7 +481,7 @@ describe('import runtime — drill-downs : populations et compteurs cohérents',
     expect(runs.POPULATION_KINDS).toEqual(['received', 'ready', 'discarded']);
   });
 
-  test('CAS F : une étape COMPLETED n’affiche jamais un compteur incohérent (0 / 12, 19 / 12)', () => {
+  test('CAS F : une étape COMPLETED conserve la mesure observée ; l’UI masque le ratio si ce n’est pas sa preuve de complétion', () => {
     const rows = ready(12, { scan_at: null });
     const projection = runs.buildProjection({
       run: baseRun({
@@ -495,8 +495,82 @@ describe('import runtime — drill-downs : populations et compteurs cohérents',
     });
     const refinery = projection.stages.find((s) => s.key === 'REFINERY');
     expect(refinery.status).toBe('COMPLETED');
-    expect(refinery.processed).toBe(refinery.total);
-    for (const s of projection.stages.filter((x) => x.status === 'COMPLETED')) expect(s.processed).toBe(s.total);
+    expect(refinery.processed).toBe(0);
+    expect(refinery.total).toBe(12);
+    expect(refinery.metrics).not.toHaveProperty('observed');
     for (const s of projection.stages) expect(s.processed).toBeLessThanOrEqual(s.total || s.processed);
+  });
+});
+
+describe('import runtime — pagination des passages', () => {
+  test('charge une page en 2 requêtes (runs + candidats batch), jamais N+1', async () => {
+    const makeRun = (id, ref, startedAt) => ({
+      ...baseRun({ run_ref:ref, started_at:startedAt, source_total:3 }),
+      id,
+    });
+    const r1 = makeRun('00000000-0000-4000-8000-000000000001', 'KIR-000010', '2026-09-30T15:00:00Z');
+    const r2 = makeRun('00000000-0000-4000-8000-000000000002', 'KIR-000009', '2026-09-30T14:00:00Z');
+    const r3 = makeRun('00000000-0000-4000-8000-000000000003', 'KIR-000008', '2026-09-30T13:00:00Z');
+    const batchRows = [
+      ...rows3().map((row) => ({ ...row, run_id:r1.id })),
+      ...rows3().map((row) => ({ ...row, run_id:r2.id })),
+    ];
+    const q = {
+      query: jest.fn(async (sql, args) => {
+        if (String(sql).includes('ORDER BY r.started_at DESC')) {
+          expect(args).toEqual([3, 10]);
+          return { rows:[r1, r2, r3] };
+        }
+        if (String(sql).includes('ANY($1::uuid[])')) {
+          expect(args).toEqual([[r1.id, r2.id]]);
+          return { rows:batchRows };
+        }
+        throw new Error('unexpected query');
+      }),
+    };
+
+    const page = await runs.listPassages({ limit:2, offset:10 }, q);
+    expect(q.query).toHaveBeenCalledTimes(2);
+    expect(page.offset).toBe(10);
+    expect(page.next_offset).toBe(12);
+    expect(page.passages.map((item) => item.run_ref)).toEqual(['KIR-000010', 'KIR-000009']);
+  });
+
+  test('voisins d’un KIR sont lus indépendamment de la fenêtre des 12 lots récents', async () => {
+    const q = { query: jest.fn().mockResolvedValue({ rows:[{ older_ref:'KIR-000003', newer_ref:'KIR-000005' }] }) };
+    await expect(runs.getRunNeighbors('KIR-000004', q)).resolves.toEqual({
+      older_ref:'KIR-000003',
+      newer_ref:'KIR-000005',
+    });
+    expect(q.query).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('import runtime — passages (historique Sourcing)', () => {
+  const intake = (over = {}) => ({
+    recorded_at: T1, accepted: 12, duplicates: 0, rejected: 1, quarantined: 0, deferred: 7,
+    ready_for_refinery: 12, certification_blocked: 0, pipeline_status: 'CANONICAL_RESOLVED', capture_id: 'cap-1', ...over,
+  });
+  const twelve = (over = {}) => Array.from({ length: 12 }, (_, i) => candidate(i + 1, over));
+  const rest = () => Array.from({ length: 7 }, (_, i) => candidate(100 + i, { state: 'watchlist' }));
+
+  test('ligne Sourcing pure : reçus / prêts / écartés / action requise / remise — jamais de donnée aval', () => {
+    const passage = runs.buildPassage(baseRun({ run_ref: 'KIR-000006', source_total: 20, intake: intake() }), [...twelve(), ...rest()]);
+    expect(passage).toMatchObject({
+      run_ref: 'KIR-000006', source_total: 20, certified: 12, discarded: 1, action_required: 0,
+      catalogued: 0, handoff_label: 'En attente', state_label: 'Terminé', sourcing_status: 'DONE',
+    });
+    expect(Object.keys(passage).join(' ')).not.toMatch(/price|market|approved|commercial|closure|decisions/i);
+  });
+
+  test('remise terminée / restent / action requise', () => {
+    const done = runs.buildPassage(baseRun({ source_total: 20, intake: intake() }),
+      [...twelve({ state: 'imported_to_catalog', product_ref: 'P-1' }), ...rest()]);
+    expect(done.handoff_label).toBe('Terminée');
+    const rows = [...twelve(), ...rest(),
+      candidate(201, { state: 'quarantined', promotion_status: 'QUARANTINED_IMAGE_MISSING' })];
+    const action = runs.buildPassage(baseRun({ source_total: 20, intake: intake({ quarantined: 1, deferred: 6 }) }), rows);
+    expect(action.action_required).toBe(1);
+    expect(action.state_label).toBe('Action requise');
   });
 });

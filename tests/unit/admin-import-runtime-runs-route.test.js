@@ -33,6 +33,8 @@ const mockRuns = {
   listRuns: jest.fn(),
   getProductTrace: jest.fn(),
   getPopulation: jest.fn(),
+  listPassages: jest.fn(),
+  getRunNeighbors: jest.fn(),
 };
 
 jest.mock('../../services/import-runtime-runs', () => ({
@@ -40,6 +42,8 @@ jest.mock('../../services/import-runtime-runs', () => ({
   listRuns: (...args) => mockRuns.listRuns(...args),
   getProductTrace: (...args) => mockRuns.getProductTrace(...args),
   getPopulation: (...args) => mockRuns.getPopulation(...args),
+  listPassages: (...args) => mockRuns.listPassages(...args),
+  getRunNeighbors: (...args) => mockRuns.getRunNeighbors(...args),
   POPULATION_KINDS: ['received', 'ready', 'discarded'],
 }));
 
@@ -81,6 +85,7 @@ describe('import runtime run routes', () => {
     jest.clearAllMocks();
     mockSourcingAllowed = true;
     mockListSourceControls.mockResolvedValue([]);
+    mockRuns.getRunNeighbors.mockResolvedValue({ older_ref:null, newer_ref:null });
   });
 
   test('récupère un run par business ref', async () => {
@@ -126,6 +131,20 @@ describe('import runtime run routes', () => {
     expect(mockRuns.getPopulation).not.toHaveBeenCalled();
   });
 
+  test('passages : historique Sourcing des runs KIR', async () => {
+    mockRuns.listPassages.mockResolvedValue({
+      passages:[{ run_ref: 'KIR-000006', certified: 12, handoff_label: 'En attente' }],
+      offset:20,
+      next_offset:40,
+    });
+    const response = await request(app()).get('/api/admin/workspaces/sourcing/import-passages?limit=20&offset=20');
+    expect(response.status).toBe(200);
+    expect(response.body.passages).toHaveLength(1);
+    expect(response.body).toMatchObject({ offset:20, next_offset:40 });
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(mockRuns.listPassages).toHaveBeenCalledWith({ limit: '20', offset: '20' });
+  });
+
   test('liste les runs récents', async () => {
     mockRuns.listRuns.mockResolvedValue([{ run_ref: 'KIR-000002' }]);
     const response = await request(app()).get(BASE);
@@ -139,6 +158,7 @@ describe('import runtime run routes', () => {
       { run_ref:'KIR-000003', business_status:'CLOSED', decisions:{ commercial:0 } },
     ]);
     mockRuns.getRun.mockResolvedValue({ run_ref:'KIR-000004', status:'COMPLETED' });
+    mockRuns.getRunNeighbors.mockResolvedValue({ older_ref:'KIR-000003', newer_ref:'KIR-000005' });
     mockListSourceControls.mockResolvedValue([{
       source_ref:'api:aliexpress',
       label:'AliExpress',
@@ -151,6 +171,8 @@ describe('import runtime run routes', () => {
       expect.objectContaining({ source_ref:'api:aliexpress', autopilot_enabled:true, autopilot_ready:true }),
     ]);
     expect(response.body.lots).toHaveLength(2);
+    expect(response.body.run_nav).toEqual({ older_ref:'KIR-000003', newer_ref:'KIR-000005' });
+    expect(mockRuns.getRunNeighbors).toHaveBeenCalledWith('KIR-000004');
     expect(response.body.selected).toMatchObject({
       run_ref:'KIR-000004',
       business:{ business_status:'ACTION_REQUIRED', decisions:{ commercial:15 } },

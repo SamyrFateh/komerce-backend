@@ -21,7 +21,10 @@
   const POLL_MS = 10000;
   const ACTIVATION_POLL_MS = 900;
   const COMMAND_POLL_MS = 2000;
-  const VIEWS = new Set(['overview', 'catalogue', 'commercial', 'exceptions', 'history', 'registry', 'closure', 'population', 'source', 'control', 'handoff']);
+  // Une vue = une question. Live / Passages / Sources sont les trois vues du domaine ; les autres sont des
+  // vues secondaires du lot courant. Une vue remplace la précédente, elle ne s'empile jamais dessous.
+  const VIEWS = new Set(['overview', 'exceptions', 'history', 'population', 'source', 'control', 'handoff', 'passages', 'sources']);
+  const LEGACY_VIEWS = Object.freeze({ registry:'passages' });
   const POPULATION_KINDS = Object.freeze(['received', 'ready', 'discarded']);
   let timer = null;
   let activationTimer = null;
@@ -504,17 +507,19 @@
   function params() {
     const query = new URLSearchParams(global.location.search);
     const run = query.get('run') || null;
-    const requestedView = query.get('view') || 'overview';
+    const rawView = query.get('view') || 'overview';
+    const requestedView = LEGACY_VIEWS[rawView] || rawView;
     const kind = query.get('kind');
     return {
       run,
       view: VIEWS.has(requestedView) ? requestedView : 'overview',
       kind: POPULATION_KINDS.includes(kind) ? kind : 'received',
       from: query.get('from') || null,
+      offset: Math.max(0, Number(query.get('offset')) || 0),
     };
   }
 
-  async function api(path, options = {}) {
+    async function api(path, options = {}) {
     const res = await global.fetch(path, {
       method: options.method || 'GET',
       credentials:'include',
@@ -579,7 +584,15 @@
     return '/admin/import-runtime' + (q.toString() ? '?' + q.toString() : '');
   }
 
-  function stageUrl(runRef, stageKey) {
+  function passagesUrl(runRef, offset = 0) {
+    const q = new URLSearchParams();
+    if (runRef) q.set('run', runRef);
+    q.set('view', 'passages');
+    if (offset > 0) q.set('offset', String(offset));
+    return '/admin/import-runtime?' + q.toString();
+  }
+
+    function stageUrl(runRef, stageKey) {
     const q = new URLSearchParams();
     if (runRef) q.set('run', runRef);
     q.set('view', 'history');
@@ -1020,79 +1033,48 @@
     return renderLiveCore(run) + renderDecisions(run);
   }
 
-  function productRows(run, action, view) {
-    const rows = (run.business?.products || []).filter(item => item.action === action);
-    if (!rows.length) return '<div class="kir-empty">Aucun produit dans cette file.</div>';
-    const returnTo = urlFor(run.run_ref, view);
-    return `<div class="kir-table-wrap"><table class="kir-table">
-      <thead><tr><th>Produit</th><th>Pourquoi ici ?</th><th>Action</th></tr></thead>
-      <tbody>${rows.map(item => {
-        const productHref = withReturnTo(
-          `/admin/products/${encodeURIComponent(item.product_ref)}`,
-          returnTo,
-          'Retour au lot'
-        );
-        return `<tr>
-        <td><a href="${productHref}">${esc(item.name || item.product_ref)}</a><small>${esc(item.product_ref)}</small></td>
-        <td>${esc(item.reason || 'Décision attendue')}</td>
-        <td><a class="kir-row-action" href="${productHref}">Ouvrir →</a></td>
-      </tr>`;
-      }).join('')}</tbody>
-    </table></div>`;
+  const POPULATION_CRUMBS = Object.freeze({ received:'Produits reçus', ready:'Prêts pour le Catalogue', discarded:'Écartés automatiquement' });
+
+  // Fil d'Ariane : toujours le contexte réel de la vue (Sourcing > KIR > vue).
+  function crumbsFor(run, view, kind, from) {
+    const live = { label:'Sourcing', href:urlFor(run?.run_ref) };
+    const lot = run ? { label:run.run_ref, href:urlFor(run.run_ref) } : null;
+    const leaf = label => ({ label });
+    if (view === 'passages') return [live, leaf('Passages')];
+    if (view === 'sources') return [live, leaf('Sources')];
+    const path = [live, lot].filter(Boolean);
+    if (view === 'population') return [...path, leaf(POPULATION_CRUMBS[kind] || 'Produits reçus')];
+    if (view === 'exceptions') return [...path, leaf('Action requise')];
+    if (view === 'source') return [...path, leaf('Source')];
+    if (view === 'control') return [...path, leaf('Contrôle automatique')];
+    if (view === 'handoff') return [...path, leaf('Catalogue')];
+    if (view === 'history') {
+      return from === 'control'
+        ? [...path, { label:'Contrôle automatique', href:urlFor(run?.run_ref, 'control') }, leaf('Détail technique')]
+        : [...path, leaf('Détail technique')];
+    }
+    return path;
+  }
+
+  function breadcrumb(run) {
+    const { view, kind, from } = params();
+    return `<nav class="kir-breadcrumb" aria-label="Fil d’Ariane">${crumbsFor(run, view, kind, from).map(crumb =>
+      crumb.href ? `<a href="${crumb.href}" data-cockpit-nav>${esc(crumb.label)}</a>` : `<span aria-current="page">${esc(crumb.label)}</span>`
+    ).join('<i aria-hidden="true">›</i>')}</nav>`;
   }
 
   function drillHeader(run, title, copy, back = null) {
     const target = back || { href:urlFor(run.run_ref), label:'← Retour au lot' };
     return `<div class="kir-drill-head">
       <div>
+        ${breadcrumb(run)}
         <a href="${target.href}" data-cockpit-nav class="kir-back">${esc(target.label)}</a>
-        <span class="kir-section-kicker">${esc(run.run_ref)}</span>
         <h2>${esc(title)}</h2>
         <p>${esc(copy)}</p>
       </div>
     </div>`;
   }
 
-  function renderCatalogue(run) {
-    return drillHeader(
-      run,
-      'Validation Catalogue requise',
-      'Uniquement les produits pour lesquels le Catalogue exige encore une intervention. Les produits déjà prêts ne sont pas affichés.'
-    ) + productRows(run, 'CATALOGUE', 'catalogue');
-  }
-
-  function renderCommercial(run) {
-    const rows = (run.business?.products || []).filter(item => item.action === 'COMMERCIAL');
-    const list = rows.length ? `<div class="kir-table-wrap"><table class="kir-table">
-      <thead><tr><th>Produit</th><th>Décision attendue</th><th>Destination</th></tr></thead>
-      <tbody>${rows.map(item => {
-        const returnTo = urlFor(run.run_ref, 'commercial');
-        const productHref = withReturnTo(
-          `/admin/products/${encodeURIComponent(item.product_ref)}`,
-          returnTo,
-          'Retour au lot'
-        );
-        const marketHref = withReturnTo(
-          '/dashboards/canonical/market-catalog.html',
-          returnTo,
-          'Retour au lot'
-        );
-        return `<tr>
-        <td><a href="${productHref}">${esc(item.name || item.product_ref)}</a><small>${esc(item.product_ref)}</small></td>
-        <td>${esc(item.reason || 'Prix / exposition à décider')}</td>
-        <td><a class="kir-row-action" href="${marketHref}">Prêts à vendre →</a></td>
-      </tr>`;
-      }).join('')}</tbody>
-    </table></div>` : '<div class="kir-empty">Aucune décision commerciale ouverte.</div>';
-    return drillHeader(
-      run,
-      'Décisions de mise en vente',
-      'Ces produits ont déjà franchi la préparation amont. Le geste restant est commercial : prix local et mise en vente.'
-    ) + list;
-  }
-
-  // Action requise : la liste filtrée des éléments qui attendent réellement l'utilisateur
-  // (produit, raison compréhensible, action). Rien d'autre : ni logs, ni historique, ni vue technique.
   function renderExceptions(run) {
     const items = Array.isArray(run.action_items) ? run.action_items : [];
     const count = num(run.accounting?.action_required);
@@ -1119,55 +1101,6 @@
       ? `<div class="kir-table-wrap"><table class="kir-table" data-action-list>
           <thead><tr><th>Produit</th><th>Pourquoi</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`
       : '<div class="kir-empty">Aucune action requise.</div>');
-  }
-
-  function renderRegistry(run, lots) {
-    const rows = Array.isArray(lots) ? lots : [];
-    return drillHeader(
-      run,
-      'Registre des lots',
-      'Historique métier des KIR récents. Un lot clos reste consultable ; un lot ouvert remonte la décision qui manque.'
-    ) + (rows.length ? `<div class="kir-table-wrap"><table class="kir-table">
-      <thead><tr><th>Lot</th><th>Source</th><th>État métier</th><th>Décisions finales</th><th>Approuvés vente</th><th>Reste</th><th></th></tr></thead>
-      <tbody>${rows.map(lot => `<tr>
-        <td><a href="${urlFor(lot.run_ref)}" data-cockpit-nav>${esc(lot.run_ref)}</a><small>${fmtDate(lot.started_at)}</small></td>
-        <td>${esc(lot.provider || '—')}</td>
-        <td><span class="kir-status is-${businessTone(lot.business_status)}">${esc(businessLabel(lot.business_status))}</span></td>
-        <td>${num(lot.closure?.decided_products)} / ${num(lot.closure?.total_products)}</td>
-        <td>${num(lot.decisions?.approved_for_sale)}</td>
-        <td>${num(lot.closure?.remaining_products)}</td>
-        <td><a class="kir-row-action" href="${urlFor(lot.run_ref)}" data-cockpit-nav>Ouvrir →</a></td>
-      </tr>`).join('')}</tbody>
-    </table></div>` : '<div class="kir-empty">Aucun lot dans le registre.</div>');
-  }
-
-  function renderClosure(run) {
-    const lot = run.business || {};
-    const d = lot.decisions || {};
-    const closure = lot.closure || {};
-    const pending = (lot.products || []).filter(item => item.action);
-    const pendingRows = pending.length ? `<div class="kir-table-wrap"><table class="kir-table">
-      <thead><tr><th>Produit</th><th>Décision restante</th><th>Destination</th></tr></thead>
-      <tbody>${pending.map(item => `<tr>
-        <td>${esc(item.name || item.product_ref)}<small>${esc(item.product_ref)}</small></td>
-        <td>${esc(item.reason || 'Décision requise')}</td>
-        <td><a class="kir-row-action" href="${item.action === 'CATALOGUE' ? urlFor(run.run_ref, 'catalogue') : item.action === 'COMMERCIAL' ? urlFor(run.run_ref, 'commercial') : urlFor(run.run_ref, 'exceptions')}" data-cockpit-nav>Ouvrir →</a></td>
-      </tr>`).join('')}</tbody>
-    </table></div>` : '<div class="kir-empty">Aucune décision restante.</div>';
-
-    return drillHeader(
-      run,
-      closure.eligible ? 'Lot clos' : 'Clôture du lot',
-      'La clôture est une vérité métier : chaque produit transmis doit être soit approuvé à la vente, soit explicitement non retenu, sans exception ouverte.'
-    ) + `
-      <section class="kir-closure-summary">
-        <div><span>Approuvés vente</span><strong>${num(d.approved_for_sale)}</strong></div>
-        <div><span>Non retenus</span><strong>${num(d.not_retained)}</strong></div>
-        <div><span>Reste à décider</span><strong>${num(closure.remaining_products)}</strong></div>
-        <div><span>Statut</span><strong>${closure.eligible ? 'CLOS' : 'EN ATTENTE'}</strong></div>
-      </section>
-      ${pendingRows}
-    `;
   }
 
   function stateWords(status) {
@@ -1300,17 +1233,120 @@
       </div>`;
   }
 
-  function renderBody(run, view, lots, ctx = {}) {
+  // Navigation du domaine : trois vues exclusives.
+  function domainNav(view, run) {
+    const active = view === 'passages' ? 'passages' : view === 'sources' ? 'sources' : 'live';
+    const tab = (key, label, href) => `<a class="${active === key ? 'is-active' : ''}" href="${href}" data-cockpit-nav ${active === key ? 'aria-current="page"' : ''}>${label}</a>`;
+    return `<nav class="kir-domain-nav" aria-label="Domaine Sourcing"><strong>Sourcing</strong>
+      ${tab('live', 'Live', urlFor(run?.run_ref))}${tab('passages', 'Passages', urlFor(run?.run_ref, 'passages'))}${tab('sources', 'Sources', urlFor(run?.run_ref, 'sources'))}
+    </nav>`;
+  }
+
+  // Changer de lot sans rail permanent : précédent · liste compacte · suivant · tous les passages.
+  function lotPicker(run, runNav, lots) {
+    const list = (lots || []).filter(lot => lot.business_status !== 'ARCHIVED' || lot.run_ref === run.run_ref);
+    if (!list.some(lot => lot.run_ref === run.run_ref)) {
+      list.unshift({ run_ref:run.run_ref, provider:run.provider, started_at:run.started_at });
+    }
+    const older = runNav?.older_ref ? { run_ref:runNav.older_ref } : null;
+    const newer = runNav?.newer_ref ? { run_ref:runNav.newer_ref } : null;
+    const step = (lot, label) => lot
+      ? `<a class="kir-lot-step" href="${urlFor(lot.run_ref)}" data-cockpit-nav>${label}</a>`
+      : `<span class="kir-lot-step is-off">${label}</span>`;
+    return `<div class="kir-lot-picker">
+      ${step(older, '← lot précédent')}
+      <select data-lot-select aria-label="Choisir un passage">${list.map(lot =>
+        `<option value="${esc(lot.run_ref)}" ${lot.run_ref === run.run_ref ? 'selected' : ''}>${esc(lot.run_ref)}${lot.provider ? ' · ' + esc(lot.provider) : ''}</option>`).join('')}</select>
+      ${step(newer, 'lot suivant →')}
+      <a class="kir-lot-all" href="${passagesUrl(run.run_ref)}" data-cockpit-nav>Tous les passages →</a>
+    </div>`;
+  }
+
+    // Passages : l'historique des runs, uniquement la vérité Sourcing. Toute la ligne ouvre Live sur ce lot.
+  const passageFilters = { source:'', state:'', period:'all', q:'' };
+  const PASSAGE_PERIODS = Object.freeze({ all:'Toute la période', today:'Aujourd’hui', week:'7 derniers jours' });
+
+  function filteredPassages(passages) {
+    const now = Date.now();
+    const q = passageFilters.q.trim().toLowerCase();
+    return (passages || []).filter(item => {
+      if (passageFilters.source && item.provider !== passageFilters.source) return false;
+      if (passageFilters.state && item.sourcing_status !== passageFilters.state) return false;
+      if (passageFilters.period !== 'all') {
+        const age = now - new Date(item.started_at).getTime();
+        if (!(age >= 0) || age > (passageFilters.period === 'today' ? 86400000 : 7 * 86400000)) return false;
+      }
+      return !q || [item.run_ref, item.provider, item.state_label].some(value => String(value || '').toLowerCase().includes(q));
+    });
+  }
+
+  function passageRows(passages) {
+    const rows = filteredPassages(passages);
+    if (!rows.length) return '<tr><td colspan="9" class="kir-empty">Aucun passage ne correspond à ces filtres.</td></tr>';
+    return rows.map(item => {
+      const tone = ({ RUNNING:'live', DONE:'positive', ACTION_REQUIRED:'warning', BLOCKED:'critical' })[item.sourcing_status] || 'neutral';
+      return `<tr class="kir-passage-row" data-row-href="${urlFor(item.run_ref)}" tabindex="0">
+        <td><a href="${urlFor(item.run_ref)}" data-cockpit-nav>${esc(item.run_ref)}</a></td>
+        <td>${esc(item.provider || '—')}</td>
+        <td>${fmtDate(item.started_at)}</td>
+        <td><span class="kir-status is-${tone}">${esc(item.state_label)}</span></td>
+        <td>${num(item.source_total)}</td><td>${num(item.certified)}</td><td>${num(item.discarded)}</td>
+        <td>${num(item.action_required) > 0 ? `<strong class="kir-passage-action">${num(item.action_required)}</strong>` : '0'}</td>
+        <td>${esc(item.handoff_label || '—')}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderPassages(run, passages, page = {}) {
+    const list = Array.isArray(passages) ? passages : null;
+    const providers = [...new Set((list || []).map(item => item.provider).filter(Boolean))];
+    const option = (value, label, current) => `<option value="${esc(value)}" ${current === value ? 'selected' : ''}>${esc(label)}</option>`;
+    const states = { '':'Tous les états', RUNNING:'LIVE', DONE:'Terminé', ACTION_REQUIRED:'Action requise', BLOCKED:'Bloqué' };
+    const offset = Math.max(0, Number(page?.offset) || 0);
+    const nextOffset = page?.next_offset == null ? null : Math.max(0, Number(page.next_offset) || 0);
+    const previousOffset = Math.max(0, offset - 50);
+    const pager = list ? `<nav class="kir-passage-pagination" aria-label="Pagination des passages">
+      ${offset > 0 ? `<a href="${passagesUrl(run?.run_ref, previousOffset)}" data-cockpit-nav>← Passages plus récents</a>` : '<span></span>'}
+      <span>${list.length ? `${offset + 1}–${offset + list.length}` : '0'}</span>
+      ${nextOffset != null ? `<a href="${passagesUrl(run?.run_ref, nextOffset)}" data-cockpit-nav>Passages plus anciens →</a>` : '<span></span>'}
+    </nav>` : '';
+    return `<div class="kir-drill-head"><div>
+        ${breadcrumb(run)}
+        ${run ? `<a href="${urlFor(run.run_ref)}" data-cockpit-nav class="kir-back">← Retour au lot</a>` : ''}
+        <h2>Historique des passages</h2>
+        <p>Les passages Sourcing : ce qui a été reçu, ce qui est prêt pour le Catalogue et ce qui demande une action.</p>
+      </div></div>
+      <div class="kir-passage-filters" data-passage-filters>
+        <select data-passage-filter="source" aria-label="Source">${option('', 'Toutes les sources', passageFilters.source)}${providers.map(name => option(name, name, passageFilters.source)).join('')}</select>
+        <select data-passage-filter="state" aria-label="État">${Object.entries(states).map(([value, label]) => option(value, label, passageFilters.state)).join('')}</select>
+        <select data-passage-filter="period" aria-label="Période">${Object.entries(PASSAGE_PERIODS).map(([value, label]) => option(value, label, passageFilters.period)).join('')}</select>
+        <input type="search" data-passage-filter="q" placeholder="Rechercher sur cette page" aria-label="Recherche" value="${esc(passageFilters.q)}">
+      </div>
+      ${list ? `<div class="kir-table-wrap"><table class="kir-table" data-passages-table>
+        <thead><tr><th>Passage</th><th>Source</th><th>Date / heure</th><th>État Sourcing</th><th>Produits reçus</th><th>Prêts Catalogue</th><th>Écartés</th><th>Action requise</th><th>Remise Catalogue</th></tr></thead>
+        <tbody data-passages-body>${passageRows(list)}</tbody></table></div>${pager}`
+        : '<div class="kir-empty">Chargement des passages…</div>'}`;
+  }
+
+    // Sources : configuration et état des fournisseurs / autopilot (inventaire, pas de lot).
+  function renderSourcesView(run, sourceControls) {
+    return `<div class="kir-drill-head"><div>
+        ${breadcrumb(run)}
+        ${run ? `<a href="${urlFor(run.run_ref)}" data-cockpit-nav class="kir-back">← Retour au lot</a>` : ''}
+        <h2>Sources</h2>
+        <p>Les fournisseurs branchés à Komerce et leur alimentation automatique.</p>
+      </div></div>
+      ${sourceControlStrip(sourceControls, run)}
+      ${activationStrip(sourceControls)}`;
+  }
+
+  function renderBody(run, view, ctx = {}) {
     if (view === 'population') return renderPopulation(run, ctx.population, ctx.kind);
     if (view === 'source') return renderSourceView(run, ctx.sourceControls);
     if (view === 'control') return renderControlView(run);
     if (view === 'handoff') return renderHandoffView(run, ctx.population);
-    if (view === 'catalogue') return renderCatalogue(run);
-    if (view === 'commercial') return renderCommercial(run);
     if (view === 'exceptions') return renderExceptions(run);
     if (view === 'history') return renderHistory(run);
-    if (view === 'registry') return renderRegistry(run, lots);
-    if (view === 'closure') return renderClosure(run);
     return renderDecisions(run);
   }
 
@@ -1324,30 +1360,53 @@
     root.setAttribute?.('data-cockpit-domain', 'imports');
     root.setAttribute?.('data-cockpit-language', 'live-ops');
 
-    if (!run) {
+    // Vues exclusives : Passages et Sources remplacent le cockpit, avec ou sans lot sélectionné.
+    if (view === 'passages' || view === 'sources') {
       root.innerHTML = `<section class="kir-page">
-        <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · IMPORTS</span><h1>Cockpit des imports</h1><p>Pilotez les sources et suivez chaque lot de bout en bout.</p></div></header>
-        ${sourceControlStrip(sourceControls)}
-        ${activationStrip(sourceControls)}
-        ${lotStrip(lots, null)}
+        ${domainNav(view, run)}
+        <main class="kir-main">${view === 'passages' ? renderPassages(run, payload?.passages, payload?.passages_page) : renderSourcesView(run, sourceControls)}</main>
       </section>`;
-      bindNavigation(root);
-      bindSourceControls(root, payload);
+      bindAll(root, payload);
       return;
     }
 
-    const lot = run.business || {};
+    if (!run) {
+      root.innerHTML = `<section class="kir-page">
+        ${domainNav('overview', null)}
+        <header class="kir-hero"><div><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span><h1>Suivi d’import — Source → Catalogue</h1><p>Aucun passage pour l’instant.</p></div></header>
+        <div class="kir-empty-launch">
+          <div class="kir-empty-launch-copy"><strong>Aucun passage Sourcing</strong><span>Activez une source pour lancer le premier passage réel.</span></div>
+          <a class="kir-subtle-link" href="${urlFor(null, 'sources')}" data-cockpit-nav>Gérer les sources →</a>
+        </div>
+      </section>`;
+      bindAll(root, payload);
+      return;
+    }
+
+        // Vue secondaire : elle remplace entièrement le cockpit (jamais empilée dessous).
+    if (view !== 'overview') {
+      root.innerHTML = `<section class="kir-page">
+        ${domainNav(view, run)}
+        <main class="kir-main">${renderBody(run, view, { population:payload?.population || null, kind, sourceControls })}</main>
+      </section>`;
+      bindAll(root, payload);
+      return;
+    }
+
+    // LIVE : le cockpit du lot sélectionné, et rien d'autre.
     root.innerHTML = `<section class="kir-page">
+      ${domainNav('overview', run)}
       <header class="kir-hero kir-live-hero">
         <div>
           <div class="kir-live-titleline"><span class="kir-eyebrow">OPÉRATIONS · SOURCING</span></div>
           <div class="kir-live-titlerow"><h1>Suivi d’import — Source → Catalogue</h1><span class="kir-live-badge ${run.status === 'RUNNING' ? 'is-live' : ''}">${run.status === 'RUNNING' ? 'LIVE' : 'RUN'}</span></div>
-          <p>${esc(run.run_ref)} · ${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s)</p>
+          ${lotPicker(run, payload?.run_nav || null, lots)}
+          <p>${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s)</p>
         </div>
         <div class="kir-hero-actions kir-live-hero-actions">
           <div class="kir-live-time"><span>Démarré ${fmtDate(run.started_at)}</span><strong>${elapsedLabel(run.started_at, run.finished_at)}</strong></div>
           <span class="kir-status-large is-${sourcingStatusView(run).tone}">${ico('clock')}${esc(sourcingStatusView(run).label)}</span>
-          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref, view), 'Retour au lot')}" class="kir-global-link">Catalogue →</a>
+          <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref), 'Retour au lot')}" class="kir-global-link">Catalogue →</a>
         </div>
       </header>
 
@@ -1356,18 +1415,17 @@
       ${runTruthStrip(run)}
       ${catalogueHandoff(run)}
       ${activationState ? '' : runProgressRow(run)}
-      ${view === 'overview' ? renderLiveCore(run) : ''}
-
-      <div class="kir-secondary" data-cockpit-zone="secondary">
-      ${sourceControlStrip(sourceControls, run)}
-      ${lotStrip(lots, run.run_ref)}
-      </div>
-
-      <main class="kir-main">${renderBody(run, view, lots, { population:payload?.population || null, kind, sourceControls })}</main>
+      ${renderLiveCore(run)}
+      <main class="kir-main">${renderDecisions(run)}</main>
     </section>`;
+    bindAll(root, payload);
+  }
+
+  function bindAll(root, payload) {
     bindNavigation(root);
     bindSourceControls(root, payload);
     bindActionList(root);
+    bindPassages(root, payload);
     focusDrill(root);
   }
 
@@ -1531,7 +1589,39 @@
     else if (!head && typeof global.scrollTo === 'function') global.scrollTo(0, 0);
   }
 
-  function bindNavigation(root) {
+  function goto(href) {
+    global.history.pushState({}, '', href);
+    scrollToDrill = true;
+    refresh({ preserve:true });
+  }
+
+  function bindPassageRows(root) {
+    root.querySelectorAll?.('[data-row-href]').forEach(row => {
+      const open = () => goto(row.getAttribute('data-row-href'));
+      row.addEventListener('click', event => { if (!event.target.closest?.('a')) open(); });
+      row.addEventListener('keydown', event => { if (event.key === 'Enter') open(); });
+    });
+  }
+
+  function bindPassages(root, payload) {
+    root.querySelectorAll?.('[data-lot-select]').forEach(select => {
+      select.addEventListener('change', () => goto(urlFor(select.value)));
+    });
+    bindPassageRows(root);
+    root.querySelectorAll?.('[data-passage-filter]').forEach(control => {
+      control.addEventListener(control.tagName === 'INPUT' ? 'input' : 'change', () => {
+        passageFilters[control.getAttribute('data-passage-filter')] = control.value;
+        const body = root.querySelector?.('[data-passages-body]');
+        if (body) {
+          body.innerHTML = passageRows(payload?.passages);
+          bindPassageRows(root);
+          bindNavigation(body);
+        }
+      });
+    });
+  }
+
+    function bindNavigation(root) {
     root.querySelectorAll?.('[data-cockpit-nav]').forEach(link => {
       link.addEventListener('click', event => {
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -1552,13 +1642,23 @@
       return;
     }
     if (!preserve && !lastPayload) renderLoading(mountedRoot);
-    const { run, view } = params();
-    const query = new URLSearchParams({ limit: view === 'registry' ? '30' : '12' });
+    const { run, view, offset } = params();
+    const query = new URLSearchParams({ limit:'12' });
     if (run) query.set('run', run);
     try {
       const payload = await api('/api/admin/workspaces/sourcing/import-cockpit?' + query.toString());
       attachActivationRun(payload);
       // Les populations (produits qui composent un chiffre) sont lues à la demande, à chaque rafraîchissement.
+      if (view === 'passages') {
+        try {
+          const page = await api(`/api/admin/workspaces/sourcing/import-passages?limit=50&offset=${offset}`);
+          payload.passages = page.passages || [];
+          payload.passages_page = page;
+        } catch (_) {
+          payload.passages = [];
+          payload.passages_page = { offset, next_offset:null };
+        }
+      }
       const populationKind = view === 'population' ? params().kind : view === 'handoff' ? 'ready' : null;
       if (populationKind && payload?.selected?.run_ref) {
         try {
@@ -1566,7 +1666,9 @@
         } catch (_) { payload.population = null; }
       }
       lastPayload = payload;
-      render(mountedRoot, payload);
+      // Ne pas casser une saisie de filtre en cours : le prochain rafraîchissement la reprendra.
+      const typing = global.document?.activeElement?.hasAttribute?.('data-passage-filter');
+      if (!(typing && view === 'passages')) render(mountedRoot, payload);
     } catch (error) {
       if (lastPayload) {
         render(mountedRoot, lastPayload);

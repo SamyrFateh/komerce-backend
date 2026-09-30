@@ -3160,3 +3160,34 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
 .kmc-import-runtime .kir-technical-link{margin:8px 2px}
 .kmc-import-runtime .kir-technical-link a{color:#7D91A8;font-size:14px;text-decoration:none}
 .kmc-import-runtime .kir-technical-link a:hover{color:#B7C7DA;text-decoration:underline}
+
+/* --- Navigation du domaine : vues exclusives Live / Passages / Sources --- */
+.kmc-import-runtime .kir-domain-nav{display:flex;align-items:center;gap:6px;margin:0 0 18px;padding-bottom:12px;border-bottom:1px solid #1D3148}
+.kmc-import-runtime .kir-domain-nav strong{margin-right:14px;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:#9FB2C8}
+.kmc-import-runtime .kir-domain-nav a{padding:8px 18px;border-radius:9px;color:#B7C7DA;text-decoration:none;font-weight:650;font-size:15px;border:1px solid transparent}
+.kmc-import-runtime .kir-domain-nav a:hover{background:#0F2036}
+.kmc-import-runtime .kir-domain-nav a.is-active{background:#12233A;border-color:#2A4566;color:#fff}
+.kmc-import-runtime .kir-breadcrumb{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;font-size:14px;color:#7D91A8}
+.kmc-import-runtime .kir-breadcrumb a{color:#7FB2FF;text-decoration:none}
+.kmc-import-runtime .kir-breadcrumb a:hover{text-decoration:underline}
+.kmc-import-runtime .kir-breadcrumb i{font-style:normal;color:#4B6079}
+.kmc-import-runtime .kir-breadcrumb [aria-current]{color:#E4ECF6;font-weight:650}
+.kmc-import-runtime .kir-lot-picker{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 4px}
+.kmc-import-runtime .kir-lot-picker select{background:#0A1625;color:#E4ECF6;border:1px solid #2A4566;border-radius:9px;padding:7px 12px;font:inherit;font-weight:650}
+.kmc-import-runtime .kir-lot-step{color:#7FB2FF;text-decoration:none;font-size:14px}
+.kmc-import-runtime .kir-lot-step.is-off{color:#3B4B60;cursor:default}
+.kmc-import-runtime .kir-lot-picker .kir-lot-all{color:#B7C7DA;font-size:14px;text-decoration:none;margin-left:6px}
+.kmc-import-runtime .kir-passage-filters{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 14px}
+.kmc-import-runtime .kir-passage-filters select,.kmc-import-runtime .kir-passage-filters input{background:#0A1625;color:#E4ECF6;border:1px solid #2A4566;border-radius:9px;padding:9px 12px;font:inherit;min-width:170px}
+.kmc-import-runtime .kir-table[data-passages-table]{width:100%;border-collapse:collapse;background:#0A1625;color:#E4ECF6}
+.kmc-import-runtime .kir-table[data-passages-table] th{background:#0B1828;color:#9FB2C8;font-weight:500;text-align:left;padding:12px 16px;font-size:14px;text-transform:none;letter-spacing:0}
+.kmc-import-runtime .kir-table[data-passages-table] td{padding:13px 16px;border-top:1px solid #1D3148;font-size:16px;color:#E4ECF6}
+.kmc-import-runtime .kir-table[data-passages-table] td a{color:#E4ECF6;font-weight:700;text-decoration:none}
+.kmc-import-runtime .kir-passage-row{cursor:pointer}
+.kmc-import-runtime .kir-passage-row:hover,.kmc-import-runtime .kir-passage-row:focus{background:#0F2036;outline:none}
+.kmc-import-runtime .kir-passage-action{color:#FFD08A}
+
+.kmc-import-runtime .kir-passage-pagination{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-top:14px;color:#7D91A8;font-size:14px}
+.kmc-import-runtime .kir-passage-pagination a{color:#7FB2FF;text-decoration:none;font-weight:650}
+.kmc-import-runtime .kir-passage-pagination a:last-child{text-align:right}
+.kmc-import-runtime .kir-passage-pagination>span:nth-child(2){text-align:center}

@@ -90,7 +90,7 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
       return {
         hero: y('.kir-hero'), flow: y('.kir-run-flow'), truth: y('.kir-run-truth'), progress: y('.kir-run-progress'),
         activity: y('.kir-live-activity'), current: y('.kir-current-item'),
-        recent: y('.kir-recent-items'), secondary: y('.kir-secondary'),
+        recent: y('.kir-recent-items'), secondary: y('.kir-secondary, .kir-source-control, .kir-lot-strip'),
       };
     });
     expect(tops.hero).toBeLessThan(tops.flow);
@@ -99,7 +99,7 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
     expect(tops.progress).toBeLessThan(tops.activity);
     expect(Math.abs(tops.activity - tops.current)).toBeLessThan(4);
     expect(tops.activity).toBeLessThan(tops.recent);
-    expect(tops.recent).toBeLessThan(tops.secondary);
+    expect(tops.secondary).toBeNull();
     expect(tops.activity).toBeLessThan(941);
   });
 
@@ -159,9 +159,9 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
       };
     });
     expect(bar.restart).toBeNull();
-    // Commandes en haut (avant le flux) ; la section Sources en bas reste, sans être le seul endroit.
+    // Commandes en haut (avant le flux) ; l'inventaire des sources vit dans sa propre vue.
     expect(bar.barTop).toBeLessThan(bar.flowTop);
-    expect(bar.stripBelow).toBe(true);
+    expect(bar.stripBelow).toBe(false);
     expect(bar.label).toBe('Mettre à jour maintenant');
     expect(bar.update.bg).toBe('rgb(29, 92, 214)');
     expect(bar.stop.bg).toBe('rgb(58, 18, 24)');
@@ -354,6 +354,11 @@ async function mountLive(page, data) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
     }
+    if (url.pathname.endsWith('/import-passages')) {
+      state.calls.push('passages');
+      const offset = Number(url.searchParams.get('offset') || 0);
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ passages: state.passages || [], offset, next_offset:null }) });
+    }
     if (url.pathname.endsWith('/population')) {
       const kind = url.searchParams.get('kind');
       state.calls.push(`population:${kind}`);
@@ -472,5 +477,80 @@ test.describe('Cockpit imports — drill-downs cohérents avec le N1', () => {
     await page.locator('.kir-run-flow-step', { hasText: 'Catalogue' }).click();
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Catalogue');
     await expect(page.locator('.kir-main')).toContainText('Remise terminée');
+  });
+});
+
+test.describe('Cockpit imports — navigation canonique (vues exclusives)', () => {
+  const passages = [
+    { run_ref: 'KIR-000009', provider: 'AliExpress', started_at: iso(10), sourcing_status: 'DONE', state_label: 'Terminé', source_total: 712, certified: 12, discarded: 27, action_required: 0, handoff_label: 'Terminée' },
+    { run_ref: 'KIR-000008', provider: 'CJ', started_at: iso(50), sourcing_status: 'ACTION_REQUIRED', state_label: 'Action requise', source_total: 20, certified: 9, discarded: 1, action_required: 3, handoff_label: 'En attente' },
+  ];
+  const withLots = () => {
+    const data = JSON.parse(JSON.stringify(calmPayload));
+    data.lots = [{ run_ref: 'KIR-000009', provider: 'AliExpress', source_total: 712, business_status: 'RUNNING' }, { run_ref: 'KIR-000008', provider: 'CJ', source_total: 20, business_status: 'CLOSED' }];
+    data.run_nav = { older_ref:'KIR-000008', newer_ref:null };
+    return data;
+  };
+
+  test('LIVE → Tous les passages → ligne → LIVE ; le cockpit ne coexiste jamais avec Passages', async ({ page }) => {
+    const state = await mountLive(page, withLots());
+    state.passages = passages;
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    await expect(page.locator('.kir-lot-strip, .kir-source-control, .kir-secondary')).toHaveCount(0);
+    await page.getByText('Tous les passages →').click();
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Historique des passages');
+    await expect(page.locator('.kir-run-truth, .kir-run-flow, .kir-command-bar')).toHaveCount(0);
+    await expect(page.locator('.kir-passage-row')).toHaveCount(2);
+    await expect(page.locator('.kir-breadcrumb')).toContainText('Sourcing');
+    await page.screenshot({ path: 'test-results/import-runtime-cockpit-passages.png' });
+    await page.locator('.kir-passage-row', { hasText: 'KIR-000008' }).click();
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    await expect(page).toHaveURL(/run=KIR-000008/);
+    await expect(page.locator('.kir-passage-row')).toHaveCount(0);
+  });
+
+  test('filtres de Passages : source, état et recherche', async ({ page }) => {
+    const state = await mountLive(page, withLots());
+    state.passages = passages;
+    await page.getByText('Tous les passages →').click();
+    await page.locator('[data-passage-filter="source"]').selectOption('CJ');
+    await expect(page.locator('.kir-passage-row')).toHaveCount(1);
+    await page.locator('[data-passage-filter="source"]').selectOption('');
+    await page.locator('[data-passage-filter="state"]').selectOption('DONE');
+    await expect(page.locator('.kir-passage-row')).toHaveCount(1);
+    await page.locator('[data-passage-filter="state"]').selectOption('');
+    await page.locator('[data-passage-filter="q"]').fill('000008');
+    await expect(page.locator('.kir-passage-row')).toHaveCount(1);
+  });
+
+  test('sélecteur de lot compact : précédent, liste, suivant', async ({ page }) => {
+    await mountLive(page, withLots());
+    await expect(page.locator('[data-lot-select] option')).toHaveCount(2);
+    await page.getByText('← lot précédent').click();
+    await expect(page).toHaveURL(/run=KIR-000008/);
+  });
+
+  test('onglets Sources et Live : vue exclusive puis retour au cockpit', async ({ page }) => {
+    await mountLive(page, withLots());
+    await page.locator('.kir-domain-nav a', { hasText: 'Sources' }).click();
+    await expect(page.locator('.kir-source-control')).toHaveCount(1);
+    await expect(page.locator('.kir-run-truth')).toHaveCount(0);
+    await page.locator('.kir-domain-nav a', { hasText: 'Live' }).click();
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    await expect(page.locator('.kir-source-control')).toHaveCount(0);
+  });
+
+  test('Contrôle automatique → détail technique (6 étapes) → retour au contrôle automatique → retour au lot', async ({ page }) => {
+    await mountLive(page, withLots());
+    await page.locator('.kir-run-flow-step', { hasText: 'Contrôle automatique' }).click();
+    await expect(page.locator('.kir-run-truth')).toHaveCount(0);
+    await page.getByText('Voir le détail technique →').click();
+    await expect(page.locator('.kir-history-stage')).toHaveCount(6);
+    await expect(page.locator('.kir-breadcrumb')).toContainText('Contrôle automatique');
+    await page.screenshot({ path: 'test-results/import-runtime-cockpit-technical.png' });
+    await page.locator('.kir-back').click();
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Contrôle automatique');
+    await page.locator('.kir-back').click();
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
   });
 });
