@@ -190,7 +190,9 @@ const CALM_STAGES = [
 function scenario(accounting = {}, selected = {}) {
   const p = JSON.parse(JSON.stringify(payload));
   p.selected.status = 'RUNNING';
-  p.selected.sourcing_status = 'RUNNING';
+  // Le run global reste LIVE pendant la remise Catalogue, mais l'autorité
+  // Sourcing amont est déjà terminée.
+  p.selected.sourcing_status = 'DONE';
   p.selected.action_items = [];
   p.selected.accounting = {
     source_total:20, accepted:19, certified:12, catalogued:0, awaiting_catalogue_promotion:12,
@@ -219,10 +221,13 @@ test('CAS A : 20 reçus / 12 prêts / 1 écarté / 0 action ; remise en attente,
   for (const forbidden of ['12 transmis', '7 à examiner', 'Décisions attendues', 'kir-handoff is-clean', 'Remise terminée', 'remis au Catalogue']) {
     expect(html).not.toContain(forbidden);
   }
-  // Écran calme : ni orange, ni rouge, ni alerte, ni barre de progression.
-  for (const noise of ['is-attention', 'is-failed', 'kir-runtime-alert', 'Progression globale', 'Ce qui vous attend']) expect(html).not.toContain(noise);
+  // Écran calme : ni orange, ni rouge, ni alerte. La progression reste visible
+  // parce que la remise Catalogue automatique travaille encore réellement.
+  for (const noise of ['is-attention', 'is-failed', 'kir-runtime-alert', 'Ce qui vous attend']) expect(html).not.toContain(noise);
+  expect(html).toContain('Progression globale');
+  expect(html).toContain('Remise Catalogue · 0 / 12');
   expect(html).toContain('Terminé</span>');
-  expect(stepClass(html, 'Remise Catalogue')).toContain('is-pending');
+  expect(stepClass(html, 'Remise Catalogue')).toContain('is-running');
   expect(stepClass(html, 'Contrôle automatique')).toContain('is-completed');
 });
 
@@ -241,7 +246,7 @@ test('CAS C : 12 prêts, 9 au Catalogue, aucune intervention → « 3 restent à
   expect(tile(html, 'Action requise')).toBe('0');
   expect(html).not.toContain('is-attention');
   expect(html).not.toContain('Remise terminée');
-  expect(stepClass(html, 'Remise Catalogue')).toContain('is-pending');
+  expect(stepClass(html, 'Remise Catalogue')).toContain('is-running');
 });
 
 test('CAS D : 7 DEFERRED sans revue humaine → Action requise = 0, aucune carte orange', () => {
@@ -513,16 +518,16 @@ test('CAS E : « Contrôle automatique » = Préparation / Classement / Validati
   expect((body.match(/✓ Terminé/g) || []).length).toBe(3);
 });
 
-test('CAS F : jamais « COMPLETED · 0 / 12 » — le détail technique dit « ✓ Terminé » pour une étape terminée', () => {
+test('CAS F : une étape terminée n’affiche jamais un faux ratio ; la remise Catalogue en cours peut montrer son vrai 0 / 12', () => {
   const p = scenario();
   p.selected.stages = p.selected.stages.map(stage => stage.key === 'REFINERY' ? { ...stage, status:'COMPLETED', processed:0, total:12 } : stage);
   const html = drill('history', 'from=control', p);
   expect(html).toContain('Détail technique du passage');
   expect(html).toContain('← Retour au contrôle automatique');
   expect(html).not.toMatch(/COMPLETED\s*·/);
-  expect(html).not.toMatch(/0\s*\/\s*12/);
   expect(html).toContain('✓ Terminé');
-  // Sans provenance « contrôle » : retour au lot.
+  expect(html).toContain('Remise automatique · 0 / 12');
+  // Sans provenance « contrôle » : retour au passage.
   expect(drill('history', '', p)).toContain('← Retour au passage');
 });
 
@@ -538,7 +543,7 @@ test('Catalogue : uniquement la frontière de remise, ni prix, ni marché, ni ve
   const body = html.slice(html.indexOf('kir-drill-head'));
   expect(body).toContain('3 restent à remettre automatiquement');
   for (const commercial of ['Prix', 'marché', 'Prêts à vendre', 'En vente', 'Décisions commerciales']) expect(body).not.toContain(commercial);
-  expect(drill('handoff')).toContain('Remise automatique en attente');
+  expect(drill('handoff')).toContain('Remise automatique en cours');
 });
 
 // ── Navigation canonique : vues exclusives ────────────────────────────────────
