@@ -293,12 +293,23 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
     expect(res.status).toBe(409);
   });
 
-  it('400 si aucun prix calculable', async () => {
-    const client = makeClient([{ rows: [{ state: 'scanned', scan_result: {} }] }]);
+  it('sans prix crée un brouillon Catalogue inactif/non disponible et diffère le prix à la publication', async () => {
+    const client = makeClient([
+      { rows: [{ state:'scanned', scan_result:{}, product_name:'X', description:'desc EN', komerce_category:'mode', purchase_price_kmf:1000, normalized_source_contract:null }] },
+      { rows: [{ id:'prod-no-price' }] },
+      { rows: [] },
+      { rows: [] },
+    ]);
     mockGetClient.mockResolvedValue(client);
 
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
-    expect(res.status).toBe(400);
+
+    expect(res.status).toBe(200);
+    expect(res.body.product_id).toBe('prod-no-price');
+    expect(res.body.price_decision).toBe('DEFERRED_TO_PUBLICATION');
+    const insertCall = client.calls.find((call) => /INSERT INTO products/.test(call.sql));
+    expect(insertCall.sql).toMatch(/FALSE, FALSE, 'candidate'/);
+    expect(insertCall.params[5]).toBeNull();
   });
 
   it('crée le produit toujours en is_active=FALSE même avec un prix fourni explicitement', async () => {
@@ -319,7 +330,7 @@ describe('sourcing-scanner — POST /candidates/:id/import-product', () => {
     expect(res.body.product_id).toBe('prod-1');
     expect(res.body.promotion).toEqual({ promoted: false, reason: 'v1_legacy' });
     const insertSql = client.calls.find((c) => /INSERT INTO products/.test(c.sql)).sql;
-    expect(insertSql).toMatch(/FALSE, 'candidate'/);
+    expect(insertSql).toMatch(/FALSE, FALSE, 'candidate'/);
     expect(client.calls.map((c) => c.sql.trim())).toContain('COMMIT');
     expect(client.release).toHaveBeenCalled();
   });
