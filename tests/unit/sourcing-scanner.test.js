@@ -67,15 +67,9 @@ jest.mock('../../services/pricing-engine', () => ({
 }));
 
 const mockImportCatalog = jest.fn();
-const mockHandoffImportResult = jest.fn();
 jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({
   importCatalog: (...args) => mockImportCatalog(...args),
 }));
-jest.mock('../../services/sourcing-candidate-actions', () => {
-  const actual = jest.requireActual('../../services/sourcing-candidate-actions');
-  return { ...actual, handoffImportResult: (...args) => mockHandoffImportResult(...args) };
-});
-
 // Legacy catalog-enrichment stays isolated tooling. Promotion must not call it
 // implicitly: the canonical path is source_only + separate traced FR preparation.
 const mockEnrichAndApply = jest.fn();
@@ -107,7 +101,6 @@ beforeEach(() => {
   currentUser = { id: 'admin-1', role: 'admin' };
   mockSourcingAllowed = true;
   mockLoadGlobalConfig.mockResolvedValue({ finance: {} });
-  mockHandoffImportResult.mockImplementation(async (result) => result);
 
   app = express();
   app.use(express.json());
@@ -951,28 +944,36 @@ describe('sourcing-scanner — branches fallback défensifs (req.user sans id, v
     expect(mockQuery.mock.calls[1][1]).toContain(null);
   });
 
-  it('POST /candidates/:id/import-product : scan_result absent (candidat jamais scanné) → 400 pas de prix', async () => {
-    const client = makeClient([{ rows: [{ state: 'raw_imported' }] }]); // pas de scan_result du tout
+  it('POST /candidates/:id/import-product : un brouillon sans prix reste autorisé ; le prix n’est pas un gate Sourcing → Catalogue', async () => {
+    const client = makeClient([
+      { rows: [{ state:'scanned', scan_result:{}, product_name:'X', normalized_source_contract:null }] },
+      { rows: [{ id:'prod-no-price-fallback' }] },
+      { rows: [] },
+      { rows: [] },
+    ]);
     mockGetClient.mockResolvedValue(client);
-    const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product');
-    expect(res.status).toBe(400);
+    const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product').send({});
+    expect(res.status).toBe(200);
+    expect(res.body.price_decision).toBe('DEFERRED_TO_PUBLICATION');
   });
 
-  it('POST /candidates/:id/import-product : price_kmf absent du body → 400 (aucun fallback sur le scan, doctrine prix explicite)', async () => {
-    // Doctrine (services/sourcing-candidate-actions.js requireExplicitPromotionPrice) :
-    // le scan fournit des frontières économiques, jamais le prix final. Même si
-    // scan_result.test_price_kmf existe, il ne sert plus de repli implicite.
+  it('POST /candidates/:id/import-product : price_kmf absent ne reprend jamais un prix du scan', async () => {
     const client = makeClient([
-      { rows: [{ state: 'scanned', scan_result: { test_price_kmf: 7000 }, product_name: 'X', normalized_source_contract: null }] },
+      { rows: [{ state:'scanned', scan_result:{ test_price_kmf:7000, recommended_price_kmf:3000 }, product_name:'X', normalized_source_contract:null }] },
+      { rows: [{ id:'prod-no-price-scan' }] },
+      { rows: [] },
+      { rows: [] },
     ]);
     mockGetClient.mockResolvedValue(client);
 
     const res = await request(app).post('/api/admin/sourcing/candidates/c1/import-product').send({});
 
-    expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/Prix explicite requis/);
-    const insertCall = client.calls.find((c) => /INSERT INTO products/.test(c.sql));
-    expect(insertCall).toBeUndefined();
+    expect(res.status).toBe(200);
+    expect(res.body.price_decision).toBe('DEFERRED_TO_PUBLICATION');
+    const insertParams = client.calls.find((call) => /INSERT INTO products/.test(call.sql)).params;
+    expect(insertParams[5]).toBeNull();
+    expect(insertParams).not.toContain(7000);
+    expect(insertParams).not.toContain(3000);
   });
 
   it('POST /candidates/:id/import-product : price_kmf fourni explicitement dans le body → utilisé tel quel (jamais le scan)', async () => {
