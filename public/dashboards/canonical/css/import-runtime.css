@@ -2016,10 +2016,13 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 }
 
 /* Selected lot is white; selection is a narrow accent, never a blue tile. */
+.kir-lot-strip-scroll{padding-bottom:0}
 .kir-lot-chip,
 .kir-lot-chip.is-selected{
-  min-height:50px;
-  padding:9px 12px;
+  min-width:238px;
+  min-height:58px;
+  padding:9px 14px;
+  align-content:center;
   border:1px solid #E2E8F0;
   border-radius:8px;
   background:#fff !important;
@@ -2030,16 +2033,19 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
 }
 .kir-lot-chip.is-selected .kir-lot-ref{color:#0F172A}
 .kir-lot-ref{
-  font-size:12px;
+  font-size:15px;
+  font-weight:700;
 }
 .kir-lot-chip small{
-  font-size:10px;
+  font-size:12px;
+  color:#64748B;
 }
 .kir-lot-all{
-  min-height:50px;
-  padding:0 16px;
+  align-self:stretch;
+  min-height:58px;
+  padding:0 20px;
   background:#fff;
-  font-size:11px;
+  font-size:13px;
 }
 
 /* Empty state gets a deliberate Legacy card instead of a tiny floating line. */
