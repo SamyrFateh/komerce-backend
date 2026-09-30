@@ -28,6 +28,7 @@ const pricingEngine = require('../services/pricing-engine');
 const catalogImportOrchestrator = require('../services/suppliers/catalog-import-orchestrator');
 const importDispatch = require('../services/sourcing-import-dispatch');
 const candidateActions = require('../services/sourcing-candidate-actions');
+const catalogueHandoff = require('../services/sourcing-catalogue-handoff');
 const { authenticate } = require('../middleware/auth');
 const { requireSourcingGlobalAuthority } = require('../middleware/require-sourcing-global-authority');
 
@@ -59,11 +60,14 @@ router.get('/connectors', authenticate, requireAdminOrFounder, async (req, res, 
 
 router.post('/catalogs/import', authenticate, requireAdminOrFounder, async (req, res, next) => {
   try {
-    const result = await catalogImportOrchestrator.importCatalog(
+    let result = await catalogImportOrchestrator.importCatalog(
       req.body,
       req.user?.id,
       importDispatch.dispatchToConnector
     );
+    if (result.status < 400) {
+      result = await catalogueHandoff.handoffImportResult(result, req.user?.id || null);
+    }
     res.status(result.status).json(result.body);
   } catch (err) { next(err); }
 });
