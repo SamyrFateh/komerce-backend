@@ -330,6 +330,8 @@ module.exports = {
     'le cockpit Démo / Staging ne possède aucune transition : il délègue à la route orders et lit les notifications/documents réellement persistés',
     { statement: 'un cockpit Canonical montre situation, décisions et exceptions ; les étapes techniques saines restent dans le drill-down et la clôture KIR est projetée côté serveur depuis des décisions terminales',
       test: 'tests/unit/import-lot-registry.test.js' },
+    { statement: 'cockpit Sourcing N1 : quatre étapes utilisateur (Source, Produits reçus, Contrôle automatique, Catalogue) agrègent à l\'affichage les six étapes réelles sans jamais les modifier ; quatre résultats seulement (reçus, remis, écartés, à examiner) plus la preuve de comptage serveur ; un rejet conforme ou une reprise réussie ne sont pas des incidents ; prix, marché et mise en vente restent hors du cockpit Sourcing ; les commandes Mettre à jour / Arrêter / Redémarrer réutilisent import-now, deactivate et activate',
+      test: 'tests/unit/import-runtime-journey.test.js' },
   ],
 
   // ── Vérification gouvernance ───────────────────────────────────────────

@@ -550,6 +550,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - market est l'unité de délégation business ; corridor reste une dimension technique/logistique sans autorité
 - le cockpit Démo / Staging ne possède aucune transition : il délègue à la route orders et lit les notifications/documents réellement persistés
 - [object Object]
+- [object Object]
 
 **Owns** : `order_incidents`, `partners`
 **Writes (not owner)** : `invoices` (writer-not-owner), `order_comments` (writer-not-owner), `order_items` (writer-not-owner), `order_status_history` (writer-not-owner), `orders` (writer-not-owner), `products` (writer-not-owner), `recipients` (writer-not-owner), `relais` (writer-not-owner), `scan_events` (writer-not-owner), `sms_log` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)

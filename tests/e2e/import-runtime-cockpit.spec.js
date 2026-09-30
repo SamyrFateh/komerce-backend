@@ -24,7 +24,7 @@ const payload = {
   }],
   lots: [{ run_ref: 'KIR-000009', provider: 'AliExpress', source_total: 712, business_status: 'RUNNING' }],
   selected: {
-    run_ref: 'KIR-000009', provider: 'AliExpress', status: 'RUNNING', started_at: iso(12), progress_pct: 64,
+    run_ref: 'KIR-000009', provider: 'AliExpress', source_ref: 'api:aliexpress', status: 'RUNNING', started_at: iso(12), progress_pct: 64,
     accounting: {
       source_total: 712, accepted: 456, duplicates: 23, rejected: 4, quarantined: 2, deferred: 0,
       certification_blocked: 0, refined: 300, taxonomized: 120, certified: 0, catalogued: 0, awaiting_catalogue_promotion: 0,
@@ -126,37 +126,49 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
   test('LIVE à côté du titre, progression globale avec le ratio réel de l’étape active', async ({ page }) => {
     await expect(page.locator('.kir-live-titlerow .kir-live-badge')).toHaveText('LIVE');
     await expect(page.locator('.kir-run-progress')).toContainText('64 %');
-    await expect(page.locator('.kir-run-progress')).toContainText('Raffinerie · 300 / 456');
+    await expect(page.locator('.kir-run-progress')).toContainText('Contrôle automatique · 300 / 456');
     await expect(page.locator('.kir-run-progress')).not.toContainText('produits traités');
   });
 
   test('activité : phrases métier avec durées réelles, aucun libellé technique', async ({ page }) => {
     const text = await page.locator('.kir-live-activity').innerText();
-    expect(text).not.toMatch(/STAGE_|REFINERY|RAW_IMPORT/);
-    expect(text).toContain('23 doublon(s)');
-    expect(text).toMatch(/\d+ min \d{2} s|\d+ s/);
+    expect(text).not.toMatch(/STAGE_|REFINERY|RAW_IMPORT|Raffinerie|Taxonomie|Certification/);
+    expect(text).toContain('712 produits reçus');
+    expect(text).toContain('23 doublons écartés');
+    expect(text).toContain('Contrôle automatique démarré');
     await expect(page.locator('.kir-current-item')).toContainText('Dernier produit mis à jour');
   });
 
-  test('zone secondaire : contrôle Sourcing et synthèse restent lisibles sur fond sombre', async ({ page }) => {
-    const c = await page.evaluate(() => {
-      const cs = (sel) => getComputedStyle(document.querySelector(sel));
+  test('barre de commandes : Mettre à jour (bleu, généreux) puis Arrêter (rouge sombre) quand la source est active', async ({ page }) => {
+    const bar = await page.evaluate(() => {
+      const box = (sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { x: r.left, w: r.width, h: r.height, bg: getComputedStyle(el).backgroundColor, svg: Boolean(el.querySelector('svg')) };
+      };
       return {
-        controlBg: cs('.kir-secondary .kir-source-control').backgroundColor,
-        titleColor: cs('.kir-source-control-title strong').color,
-        closure: cs('.kir-lot-summary > div:nth-child(4) strong').color,
+        update: box('.kir-cmd-update'), stop: box('.kir-cmd-stop'), restart: box('.kir-cmd-restart'),
+        label: document.querySelector('.kir-cmd-update')?.textContent.trim(),
+        state: document.querySelector('.kir-command-state')?.textContent,
+        legacySwitch: Boolean(document.querySelector('[data-source-toggle]')),
       };
     });
-    expect(c.controlBg).toBe('rgb(10, 22, 37)');
-    for (const color of [c.titleColor, c.closure]) {
-      const [r, g, b] = color.match(/\d+/g).map(Number);
-      expect((r + g + b) / 3).toBeGreaterThan(200);
-    }
+    expect(bar.restart).toBeNull();
+    expect(bar.legacySwitch).toBe(false);
+    expect(bar.label).toBe('Mettre à jour maintenant');
+    expect(bar.update.bg).toBe('rgb(29, 92, 214)');
+    expect(bar.stop.bg).toBe('rgb(58, 18, 24)');
+    for (const b of [bar.update, bar.stop]) { expect(b.h).toBeGreaterThanOrEqual(48); expect(b.svg).toBe(true); }
+    expect(bar.update.w).toBeGreaterThan(bar.stop.w);
+    expect(bar.update.x).toBeLessThan(bar.stop.x);
+    expect(bar.state).toContain('Mise à jour en cours');
   });
 
-  test('cinq KPI réels, une seule étape courante, aucun débordement horizontal', async ({ page }) => {
-    await expect(page.locator('.kir-run-truth-grid > a')).toHaveCount(5);
+  test('quatre résultats réels, une seule étape courante, aucun débordement horizontal', async ({ page }) => {
+    await expect(page.locator('.kir-run-truth-grid > a')).toHaveCount(4);
     await expect(page.locator('.kir-run-flow-step.is-current')).toHaveCount(1);
+    await expect(page.locator('.kir-run-flow-step.is-current')).toContainText('Contrôle automatique');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);
   });
@@ -166,7 +178,7 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
       '.kir-run-flow-step, .kir-run-truth-grid > a, .kir-live-event',
       (els) => els.map((el) => el.getAttribute('href')),
     );
-    expect(hrefs.length).toBeGreaterThanOrEqual(13);
+    expect(hrefs.length).toBeGreaterThanOrEqual(10);
     for (const href of hrefs) expect(href).toContain('run=KIR-000009');
   });
 
@@ -192,6 +204,11 @@ Object.assign(completedPayload.selected, {
     purchase_price: 7.65, currency: 'USD', duration_ms: 1200, change_kind: 'created', updated_at: iso(1) },
 });
 completedPayload.selected.accounting.awaiting_catalogue_promotion = 12;
+completedPayload.selected.accounting.certified = 12;
+// Tout va bien : même run, sans alerte de source.
+const calmPayload = JSON.parse(JSON.stringify(completedPayload));
+calmPayload.selected.diagnostics = {};
+calmPayload.selected.accounting = { ...calmPayload.selected.accounting, quarantined: 0, deferred: 0, certification_blocked: 0, unaccounted: 0, overflow: 0 };
 
 test.describe('Cockpit imports — run terminé avec alerte et validation manuelle', () => {
   test.beforeEach(async ({ page }) => { await mountCockpit(page, completedPayload); });
@@ -203,7 +220,7 @@ test.describe('Cockpit imports — run terminé avec alerte et validation manuel
       return { size: m.width, sizeH: m.height, gap: l.top - m.bottom, dx: Math.abs((l.left + l.width / 2) - (m.left + m.width / 2)),
         text: step.querySelector('.kir-run-flow-marker').textContent.trim(), font: parseFloat(getComputedStyle(step.querySelector('strong')).fontSize) };
     }));
-    expect(steps.length).toBe(6);
+    expect(steps.length).toBe(4);
     steps.forEach((st, i) => {
       expect(st.size).toBeGreaterThanOrEqual(38);
       expect(st.sizeH).toBe(st.size);
@@ -220,9 +237,9 @@ test.describe('Cockpit imports — run terminé avec alerte et validation manuel
       const r = icon.getBoundingClientRect();
       return { w: r.width, h: r.height, bg: getComputedStyle(icon).backgroundColor, num: parseFloat(getComputedStyle(a.querySelector('strong')).fontSize) };
     }));
-    expect(cards).toHaveLength(5);
+    expect(cards).toHaveLength(4);
     for (const c of cards) { expect(c.w).toBeGreaterThanOrEqual(60); expect(c.h).toBeGreaterThanOrEqual(60); expect(c.num).toBeGreaterThanOrEqual(30); }
-    expect(new Set(cards.map((c) => c.bg)).size).toBeGreaterThanOrEqual(4);
+    expect(new Set(cards.map((c) => c.bg)).size).toBeGreaterThanOrEqual(3);
   });
 
   test('l’alerte de certification reste sombre et lisible', async ({ page }) => {
@@ -244,3 +261,133 @@ test.describe('Cockpit imports — run terminé avec alerte et validation manuel
   });
 });
 
+
+
+test.describe('Cockpit imports — tout va bien', () => {
+  test.beforeEach(async ({ page }) => { await mountCockpit(page, calmPayload); });
+
+  test('écran calme : étapes vertes, remise propre au Catalogue, rien d’orange ni de rouge', async ({ page }) => {
+    const info = await page.evaluate(() => {
+      const color = (sel) => getComputedStyle(document.querySelector(sel)).backgroundColor;
+      const h = document.querySelector('.kir-handoff');
+      return {
+        markers: [...document.querySelectorAll('.kir-run-flow-step .kir-run-flow-marker')].map((m) => getComputedStyle(m).backgroundColor),
+        handoffText: h?.innerText.replace(/\s+/g, ' '),
+        handoffBorder: h ? getComputedStyle(h).borderLeftColor : null,
+        attention: document.querySelectorAll('.is-attention').length,
+        failed: document.querySelectorAll('.is-failed').length,
+        progress: Boolean(document.querySelector('.kir-run-progress')),
+        text: document.body.innerText,
+      };
+    });
+    expect(info.markers).toEqual(Array(4).fill('rgb(30, 215, 132)'));
+    expect(info.handoffText).toContain('PASSAGE AU CATALOGUE');
+    expect(info.handoffText).toContain('12 certifiés · 12 transmis · 0 écart');
+    expect(info.handoffText).toContain('Terminé');
+    expect(info.handoffBorder).toBe('rgb(30, 215, 132)');
+    expect(info.attention).toBe(0);
+    expect(info.failed).toBe(0);
+    expect(info.progress).toBe(false);
+    expect(info.text).toContain('12/12 produits comptabilisés'.replace('12/12', '712/712'));
+    expect(info.text).not.toMatch(/Raffinerie|Taxonomie|Certification|USD|7[,.]65|Décisions commerciales|Prêts à vendre/);
+  });
+});
+
+// Vrai problème : 3 produits prêts n'ont pas pu être certifiés → Komerce ne peut plus avancer seul.
+const problemPayload = JSON.parse(JSON.stringify(completedPayload));
+problemPayload.selected.accounting = { ...problemPayload.selected.accounting, certified: 9, awaiting_catalogue_promotion: 9 };
+problemPayload.selected.stages = problemPayload.selected.stages.map((stage) => stage.key === 'CERTIFICATION'
+  ? { ...stage, status: 'FAILED', processed: 9, total: 12 } : stage);
+problemPayload.selected.diagnostics = {};
+
+test.describe('Cockpit imports — vrai problème', () => {
+  test.beforeEach(async ({ page }) => { await mountCockpit(page, problemPayload); });
+
+  test('étape rouge, remise orange « 12 prêts · 9 transmis · 3 nécessitent une action »', async ({ page }) => {
+    const info = await page.evaluate(() => {
+      const steps = [...document.querySelectorAll('.kir-run-flow-step')].map((step) => ({
+        cls: step.className, bg: getComputedStyle(step.querySelector('.kir-run-flow-marker')).backgroundColor,
+      }));
+      const h = document.querySelector('.kir-handoff');
+      return { steps, handoff: h.innerText.replace(/\s+/g, ' '), border: getComputedStyle(h).borderLeftColor, action: h.querySelector('a')?.textContent };
+    });
+    expect(info.steps[2].cls).toContain('is-failed');
+    expect(info.steps[2].bg).toBe('rgb(58, 21, 32)');
+    expect(info.steps[3].cls).toContain('is-attention');
+    expect(info.steps[3].bg).toBe('rgb(58, 38, 6)');
+    expect(info.handoff).toContain('12 prêts · 9 transmis · 3 nécessitent une action');
+    expect(info.border).toBe('rgb(245, 158, 11)');
+    expect(info.action).toContain('Traiter');
+  });
+});
+
+// Commandes réelles : mount() + API simulée. Aucune mécanique parallèle : import-now / deactivate / activate.
+async function mountLive(page, data) {
+  const state = { payload: JSON.parse(JSON.stringify(data)), calls: [] };
+  await page.route(`${ORIGIN}/**`, async (route) => {
+    const req = route.request();
+    const url = new URL(req.url());
+    if (url.pathname === '/admin/import-runtime') {
+      const links = CSS.map((n) => `<link rel="stylesheet" href="/dashboards/canonical/css/${n}.css">`).join('');
+      return route.fulfill({ contentType: 'text/html', body: `<!doctype html><html lang="fr"><head><meta charset="utf-8">${links}</head>
+        <body class="kmc-shell-v4"><main id="root"></main><script src="/dashboards/canonical/js/import-runtime.js"></script></body></html>` });
+    }
+    if (url.pathname.startsWith('/dashboards/canonical/')) {
+      const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
+      return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
+    }
+    if (url.pathname.endsWith('/import-cockpit')) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(state.payload) });
+    if (req.method() === 'POST' && url.pathname.includes('/sources/')) {
+      const action = url.pathname.split('/').pop();
+      state.calls.push(action);
+      if (action === 'import-now') { await new Promise((r) => setTimeout(r, 900)); return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, result: {} }) }); }
+      if (action === 'deactivate') { state.payload.source_controls[0].autopilot_enabled = false; return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true }) }); }
+      if (action === 'activate') { state.payload.source_controls[0].autopilot_enabled = true; return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, result: {} }) }); }
+    }
+    return route.fulfill({ status: 404, body: '' });
+  });
+  await page.setViewportSize({ width: 1672, height: 941 });
+  await page.goto(`${ORIGIN}/admin/import-runtime?run=KIR-000009`);
+  await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+  return state;
+}
+
+test.describe('Cockpit imports — commandes opérateur', () => {
+  const calm = calmPayload;
+
+  test('Mettre à jour maintenant : « Mise à jour… » pendant l’action, appelle import-now, boutons verrouillés', async ({ page }) => {
+    const state = await mountLive(page, calm);
+    const update = page.locator('.kir-cmd-update');
+    await update.click();
+    await expect(update).toContainText('Mise à jour…');
+    await expect(update).toBeDisabled();
+    await expect(page.locator('.kir-cmd-stop')).toBeDisabled();
+    await expect(page.locator('.kir-cmd-update')).toContainText('Mettre à jour maintenant', { timeout: 6000 });
+    expect(state.calls).toEqual(['import-now']);
+  });
+
+  test('Arrêter : « Arrêt… » puis la source arrêtée propose Redémarrer en premier', async ({ page }) => {
+    const state = await mountLive(page, calm);
+    await page.locator('.kir-cmd-stop').click();
+    await expect(page.locator('.kir-command-state')).toContainText('Alimentation automatique arrêtée', { timeout: 6000 });
+    expect(state.calls).toEqual(['deactivate']);
+    const order = await page.$$eval('.kir-command-actions .kir-cmd', (els) => els.map((el) => el.dataset.sourceCommand));
+    expect(order).toEqual(['restart', 'update']);
+    const bg = await page.$eval('.kir-cmd-restart', (el) => getComputedStyle(el).backgroundColor);
+    expect(bg).toBe('rgb(15, 61, 42)');
+  });
+
+  test('Redémarrer : réutilise activate (même mécanique que l’interrupteur historique)', async ({ page }) => {
+    const stopped = JSON.parse(JSON.stringify(calm));
+    stopped.source_controls[0].autopilot_enabled = false;
+    const state = await mountLive(page, stopped);
+    await page.locator('.kir-cmd-restart').click();
+    await expect.poll(() => state.calls.includes('activate')).toBe(true);
+    await expect(page.locator('.kir-command-state')).toContainText('Alimentation automatique active', { timeout: 8000 });
+  });
+
+  test('capture de revue de la barre de commandes', async ({ page }) => {
+    await mountLive(page, calm);
+    await page.screenshot({ path: 'test-results/import-runtime-cockpit-commands.png' });
+  });
+});

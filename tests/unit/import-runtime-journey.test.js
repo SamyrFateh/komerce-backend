@@ -105,39 +105,152 @@ test('état vide garde une ossature Legacy claire et actionnable', () => {
   expect(node.innerHTML).toContain('Tous les lots');
 });
 
-test('niveau 1 garde le flux réel visible et les décisions ouvertes séparées', () => {
+test('niveau 1 : quatre étapes, quatre résultats, aucun jargon interne ni sujet commercial', () => {
   const ui = cockpit();
   const node = root();
   ui.render(node, payload);
-  expect(node.innerHTML).toContain('Ce qui demande une action');
-  expect(node.innerHTML).toContain('Alimentation automatique');
-  expect(node.innerHTML).toContain('Préparation automatique au clic');
-  expect(node.innerHTML).toContain('data-source-ref="api:aliexpress"');
-  expect(node.innerHTML).toContain('3</div>');
-  expect(node.innerHTML).toContain('Validation Catalogue requise');
-  expect(node.innerHTML).toContain('12</div>');
-  expect(node.innerHTML).toContain('Décisions de mise en vente');
-  expect(node.innerHTML).toContain('PARCOURS MÉTIER');
-  expect(node.innerHTML).toContain('Prêts à vendre');
-  expect(node.innerHTML).toContain('En vente');
-  expect(node.innerHTML).toContain('Non retenus');
-  expect(node.innerHTML).toContain('Clôture');
-  expect(node.innerHTML).toContain('KIR-000003');
-  expect(node.innerHTML).toContain('Clos');
-  expect(node.innerHTML).toContain('FLUX DU LOT');
-  expect(node.innerHTML).toContain('Raffinerie');
-  expect(node.innerHTML).toContain('Taxonomie');
-  expect(node.innerHTML).toContain('Certification');
-  expect(node.innerHTML).toContain('SUIVI DU LOT');
-  expect(node.innerHTML).toContain('Entrées source');
-  expect(node.innerHTML).toContain('Acceptées');
-  expect(node.innerHTML).toContain('Doublons');
-  expect(node.innerHTML).toContain('Rejetées');
-  expect(node.innerHTML).toContain('En quarantaine');
-  expect(node.innerHTML).toContain('15/15');
-  expect(node.innerHTML).toContain('Catalogue');
-  expect(node.innerHTML).toContain('14 produit(s) certifié(s) sourcing attendent maintenant la promotion Catalogue. Ils n’ont pas disparu.');
-  expect(node.innerHTML).not.toContain('&lt;Produit&gt;');
+  const html = node.innerHTML;
+  expect(html).toContain('FLUX DU LOT');
+  for (const label of ['Source', 'Produits reçus', 'Contrôle automatique', 'Catalogue']) expect(html).toContain(`<strong>${label}</strong>`);
+  for (const jargon of ['Raffinerie', 'Taxonomie', 'Certification', 'certifié(s) sourcing', 'preuve runtime']) expect(html).not.toContain(jargon);
+  expect(html).toContain('RÉSULTAT DU LOT');
+  for (const label of ['Produits reçus', 'Remis au Catalogue', 'Écartés automatiquement', 'À examiner']) expect(html).toContain(`<span>${label}</span>`);
+  for (const gone of ['Entrées source', 'Acceptées', 'Doublons', 'En quarantaine', 'Rejetées']) expect(html).not.toContain(`<span>${gone}</span>`);
+  for (const commercial of ['PARCOURS MÉTIER', 'Prêts à vendre', 'En vente', 'Décisions de mise en vente', 'Décisions commerciales', 'Clôture', 'Prix source']) {
+    expect(html).not.toContain(commercial);
+  }
+  expect(html).toContain('KIR-000003');
+  expect(html).not.toContain('&lt;Produit&gt;');
+  // Sans étape de certification terminée, aucune remise Catalogue n'est affirmée.
+  expect(html).not.toContain('PASSAGE AU CATALOGUE');
+});
+
+test('commandes : source arrêtée → Redémarrer puis Mettre à jour ; source active → Mettre à jour puis Arrêter', () => {
+  const ui = cockpit();
+  const stopped = root();
+  const withSource = JSON.parse(JSON.stringify(payload));
+  withSource.selected.source_ref = 'api:aliexpress';
+  ui.render(stopped, withSource);
+  expect(stopped.innerHTML).toContain('Alimentation automatique arrêtée');
+  expect(stopped.innerHTML.indexOf('data-source-command="restart"')).toBeGreaterThan(-1);
+  expect(stopped.innerHTML.indexOf('data-source-command="restart"')).toBeLessThan(stopped.innerHTML.indexOf('data-source-command="update"'));
+  expect(stopped.innerHTML).not.toContain('data-source-command="stop"');
+
+  const active = root();
+  withSource.source_controls[0].autopilot_enabled = true;
+  ui.render(active, withSource);
+  expect(active.innerHTML).toContain('Alimentation automatique active');
+  expect(active.innerHTML.indexOf('data-source-command="update"')).toBeLessThan(active.innerHTML.indexOf('data-source-command="stop"'));
+  expect(active.innerHTML).not.toContain('data-source-command="restart"');
+  expect(active.innerHTML).toContain('Mettre à jour maintenant');
+});
+
+const CALM_STAGES = [
+  { key:'SOURCE_CONNECTED', status:'COMPLETED', processed:1, total:1 },
+  { key:'RAW_IMPORT', status:'COMPLETED', processed:20, total:20 },
+  { key:'REFINERY', status:'COMPLETED', processed:12, total:12 },
+  { key:'TAXONOMY', status:'COMPLETED', processed:12, total:12 },
+  { key:'CERTIFICATION', status:'COMPLETED', processed:12, total:12 },
+  { key:'CATALOGUE', status:'RUNNING', processed:0, total:12, reason:'awaiting_explicit_operator_promotion' },
+];
+
+function calmPayload(patch = {}) {
+  const p = JSON.parse(JSON.stringify(payload));
+  p.selected.status = 'COMPLETED';
+  p.selected.accounting = {
+    source_total:20, accepted:19, certified:12, catalogued:0, awaiting_catalogue_promotion:12,
+    duplicates:0, rejected:1, quarantined:0, deferred:7, certification_blocked:0, unaccounted:0, overflow:0,
+  };
+  p.selected.stages = CALM_STAGES;
+  p.selected.business = { ...p.selected.business, business_status:'ACTION_REQUIRED', decisions:{ catalogue:12, commercial:12, exceptions:0 } };
+  Object.assign(p.selected, patch);
+  return p;
+}
+
+test('scénario 20 / 12 / 1 / 7 : preuve de comptage et remise propre au Catalogue', () => {
+  const ui = cockpit();
+  const node = root();
+  ui.render(node, calmPayload());
+  const html = node.innerHTML;
+  expect(html).toMatch(/<span>Produits reçus<\/span><strong>20<\/strong>/);
+  expect(html).toMatch(/<span>Remis au Catalogue<\/span><strong>12<\/strong>/);
+  expect(html).toMatch(/<span>Écartés automatiquement<\/span><strong>1<\/strong>/);
+  expect(html).toMatch(/<span>À examiner<\/span><strong>7<\/strong>/);
+  expect(html).toContain('20/20 produits comptabilisés');
+  expect(html).toContain('PASSAGE AU CATALOGUE');
+  expect(html).toContain('12 certifiés · 12 transmis · 0 écart');
+  expect(html).toContain('Terminé');
+  expect(html).toContain('kir-handoff is-clean');
+  expect(html).toContain('12 transmis');
+  // Écran calme : ni barre de progression ni décision commerciale.
+  expect(html).not.toContain('Progression globale');
+  expect(html).not.toContain('Ce qui vous attend');
+});
+
+test('tout va bien : rien à examiner, aucune alerte, écran calme', () => {
+  const ui = cockpit();
+  const node = root();
+  const p = calmPayload();
+  p.selected.accounting = { ...p.selected.accounting, rejected:0, deferred:0, accepted:20 };
+  ui.render(node, p);
+  const html = node.innerHTML;
+  expect(html).toMatch(/<span>À examiner<\/span><strong>0<\/strong>/);
+  expect(html).toContain('rien à décider');
+  expect(html).not.toContain('kir-runtime-alert');
+  expect(html).not.toContain('is-attention');
+  expect(html).not.toContain('is-failed');
+});
+
+test('vrai problème : 12 prêts · 9 transmis · 3 nécessitent une action (étape rouge, remise orange)', () => {
+  const ui = cockpit();
+  const node = root();
+  const p = calmPayload();
+  p.selected.accounting = { ...p.selected.accounting, certified:9, rejected:0, deferred:0, accepted:20 };
+  p.selected.stages = CALM_STAGES.map(stage => stage.key === 'CERTIFICATION'
+    ? { ...stage, status:'FAILED', processed:9, total:12 } : stage);
+  ui.render(node, p);
+  const html = node.innerHTML;
+  expect(html).toContain('12 prêts · 9 transmis · 3 nécessitent une action');
+  expect(html).toContain('kir-handoff is-attention');
+  expect(html).toMatch(/<span>À examiner<\/span><strong>3<\/strong>/);
+  expect(html).toMatch(/is-failed[^>]*>\s*<span class="kir-run-flow-marker">!<\/span><div><strong>Contrôle automatique/);
+  expect(html).toContain('3 à traiter');
+});
+
+test('activité humaine : étapes internes silencieuses, phrases lisibles', () => {
+  const ui = cockpit();
+  const node = root();
+  const p = calmPayload();
+  p.selected.events = [
+    { kind:'STAGE_FINISHED', stage:'CERTIFICATION', at:'2026-09-30T10:00:05Z' },
+    { kind:'STAGE_FINISHED', stage:'TAXONOMY', at:'2026-09-30T10:00:04Z' },
+    { kind:'STAGE_STARTED', stage:'TAXONOMY', at:'2026-09-30T10:00:03Z' },
+    { kind:'STAGE_FINISHED', stage:'REFINERY', at:'2026-09-30T10:00:02Z' },
+    { kind:'STAGE_STARTED', stage:'REFINERY', at:'2026-09-30T10:00:01Z' },
+    { kind:'STAGE_FINISHED', stage:'RAW_IMPORT', at:'2026-09-30T10:00:00Z' },
+  ];
+  ui.render(node, p);
+  const html = node.innerHTML;
+  expect(html).toContain('Contrôle terminé pour 12 produits');
+  expect(html).toContain('Contrôle automatique démarré');
+  expect(html).toContain('20 produits reçus');
+  for (const raw of ['CERTIFICATION', 'TAXONOMY', 'REFINERY', 'STAGE_FINISHED', 'Taxonomie terminé', 'Raffinerie terminé']) {
+    expect(html).not.toContain(raw + '</strong>');
+  }
+  expect(html).not.toContain('Taxonomie');
+  expect(html).not.toContain('Raffinerie');
+});
+
+test('une exception ouverte fait apparaître « Ce qui vous attend » (et rien de commercial)', () => {
+  const ui = cockpit();
+  const node = root();
+  const p = calmPayload();
+  p.selected.business.decisions = { catalogue:12, commercial:12, exceptions:2 };
+  ui.render(node, p);
+  expect(node.innerHTML).toContain('Ce qui vous attend');
+  expect(node.innerHTML).toContain('Exceptions à traiter');
+  expect(node.innerHTML).not.toContain('Décisions de mise en vente');
+  expect(node.innerHTML).not.toContain('Validation Catalogue requise');
 });
 
 test('un PARTIAL_BLOCKED bloque seulement la source et laisse le lot aller au Catalogue', () => {
@@ -183,21 +296,19 @@ test('un PARTIAL_BLOCKED bloque seulement la source et laisse le lot aller au Ca
   ui.render(node, partial);
 
   expect(node.innerHTML).toContain('Import automatique terminé');
-  expect(node.innerHTML).toContain('Décisions attendues');
   expect(node.innerHTML).not.toContain('Import en cours');
-  expect(node.innerHTML).toContain('12 certifié(s) attendent la promotion Catalogue');
+  expect(node.innerHTML).toContain('12 produit(s) prêt(s) pour le Catalogue');
   expect(node.innerHTML).toContain('AliExpress non activé automatiquement');
   expect(node.innerHTML).toContain('1 produit contient des variantes en double.');
   expect(node.innerHTML).toContain('12 produits valides continuent vers le Catalogue.');
   expect(node.innerHTML).toContain('7 produits ont été mis de côté pour revue.');
   expect(node.innerHTML).toContain('Corrigez le produit en erreur puis relancez l’activation automatique.');
-  expect(node.innerHTML).toContain('Voir le détail technique →');
+  expect(node.innerHTML).toContain('Voir le détail →');
   expect(node.innerHTML).not.toContain('sellable_units[4]');
   expect(node.innerHTML).not.toContain("combinaison d'options dupliquée");
-  expect(node.innerHTML).toContain('12 produit(s) certifié(s) sourcing attendent maintenant la promotion Catalogue');
-  expect(node.innerHTML).toContain('12/12');
-  expect(node.innerHTML).toContain('12 à valider');
-  expect(node.innerHTML).toContain('has-manual-action');
+  expect(node.innerHTML).toContain('12 certifiés · 12 transmis · 0 écart');
+  expect(node.innerHTML).toContain('12 transmis');
+  expect(node.innerHTML).toContain('20/20 produits comptabilisés');
   expect(node.innerHTML).not.toContain('Passage interrompu');
   expect(node.innerHTML).not.toContain('À corriger');
   expect(node.innerHTML).not.toContain('is-running');
