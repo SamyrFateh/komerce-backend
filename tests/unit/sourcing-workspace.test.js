@@ -9,6 +9,7 @@
 const mockQuery = jest.fn();
 const mockListSources = jest.fn();
 const mockSetSourceActive = jest.fn();
+const mockHandoffImportResult = jest.fn();
 
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 jest.mock('../../services/sourcing-analysis', () => ({ getSynthesis: jest.fn(), getAnalysis: jest.fn() }));
@@ -23,6 +24,9 @@ jest.mock('../../services/sourcing-source-autopilot', () => ({
   setSourceActive: (...args) => mockSetSourceActive(...args),
 }));
 jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({ importCatalog: jest.fn() }));
+jest.mock('../../services/sourcing-catalogue-handoff', () => ({
+  handoffImportResult: (...args) => mockHandoffImportResult(...args),
+}));
 jest.mock('../../services/partner-admin-service', () => ({
   listPartners: jest.fn(), getStats: jest.fn(), createPartner: jest.fn(), updatePartner: jest.fn(),
 }));
@@ -32,6 +36,7 @@ const workspace = require('../../services/sourcing-workspace');
 beforeEach(() => {
   jest.clearAllMocks();
   mockListSources.mockResolvedValue([]);
+  mockHandoffImportResult.mockImplementation(async (result) => result);
 });
 
 test('product_ref est résolu côté serveur', async () => {
