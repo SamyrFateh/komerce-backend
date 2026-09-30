@@ -100,9 +100,11 @@ test('état vide garde une ossature Legacy claire et actionnable', () => {
   });
   expect(node.innerHTML).toContain('Suivi d’import');
   expect(node.innerHTML).toContain('Aucun passage pour l’instant');
-  expect(node.innerHTML).toContain('Aucun lot importé');
-  expect(node.innerHTML).toContain('Activez une source pour lancer un premier passage réel');
-  expect(node.innerHTML).toContain('Tous les lots');
+  expect(node.innerHTML).toContain('Aucun passage Sourcing');
+  expect(node.innerHTML).toContain('Activez une source pour lancer le premier passage réel');
+  expect(node.innerHTML).toContain('Gérer les sources →');
+  expect(node.innerHTML).not.toContain('kir-source-control');
+  expect(node.innerHTML).not.toContain('kir-lot-strip');
 });
 
 test('niveau 1 : quatre étapes sans compteur, quatre résultats, aucun jargon interne ni sujet commercial', () => {
@@ -525,6 +527,7 @@ test('domaine : Live / Passages / Sources, l\'onglet actif suit la vue', () => {
 test('CAS B : « Tous les passages » remplace le cockpit par la vue Passages (Sourcing pur)', () => {
   const p = scenario();
   p.passages = PASSAGES;
+  p.passages_page = { offset:0, next_offset:50 };
   const html = render(p, `?run=${RUN}&view=passages`);
   for (const gone of ['kir-run-flow', 'kir-run-truth', 'kir-command-bar', 'kir-live-hero', 'kir-handoff']) expect(html).not.toContain(gone);
   expect(html).toContain('Historique des passages');
@@ -535,6 +538,8 @@ test('CAS B : « Tous les passages » remplace le cockpit par la vue Passages (S
   expect(html).toContain('KIR-000004');
   expect(html).toContain('Action requise</span>');
   expect(html).toContain('Terminée');
+  expect(html).toContain('Passages plus anciens →');
+  expect(html).toContain(`view=passages&amp;offset=50`.replace('&amp;', '&'));
 });
 
 test('CAS C : une ligne de Passages rouvre LIVE sur ce KIR (ligne entière cliquable)', () => {
