@@ -23,6 +23,7 @@ const db = require('../db');
 const importDispatch = require('./sourcing-import-dispatch');
 const catalogImport = require('./suppliers/catalog-import-orchestrator');
 const providerPolicy = require('./sourcing-provider-control-policy');
+const catalogueHandoff = require('./sourcing-catalogue-handoff');
 const { buildSourceDescriptor } = require('./sourcing-observation-shadow-service');
 
 const LOCK_NAMESPACE = 'komerce:sourcing-source-autopilot';
@@ -322,6 +323,10 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
         null,
         importDispatch.dispatchToConnector
       );
+      if (Number(result?.status) < 400) {
+        // eslint-disable-next-line no-await-in-loop
+        result = await catalogueHandoff.handoffImportResult(result, null);
+      }
       if (!isTransientImportResult(result) || transientRetries >= maxTransientRetries) break;
       transientRetries += 1;
       const delay = transientRetryDelayMs * (2 ** (transientRetries - 1));
@@ -456,6 +461,10 @@ async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operato
         actorId,
         importDispatch.dispatchToConnector
       );
+      if (Number(result?.status) < 400) {
+        // eslint-disable-next-line no-await-in-loop
+        result = await catalogueHandoff.handoffImportResult(result, actorId);
+      }
       if (!isTransientImportResult(result) || transientRetries >= maxTransientRetries) break;
       transientRetries += 1;
       const delay = transientRetryDelayMs * (2 ** (transientRetries - 1));
