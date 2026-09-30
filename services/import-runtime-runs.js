@@ -536,11 +536,20 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
     anomaly: intakeRecorded ? rec.unaccounted + rec.overflow : 0,
   });
   accounting.action_required = actionRequired.count;
+  // sourcing_status décrit uniquement l'autorité Sourcing : une remise Catalogue
+  // automatique encore en cours ne transforme pas un Sourcing terminé en LIVE,
+  // et une vraie exception humaine reste visible même si le run global poursuit
+  // encore sa matérialisation Catalogue.
+  const sourcingStagesDone = stages
+    .filter((item) => item.key !== 'CATALOGUE')
+    .every((item) => item.status === 'COMPLETED');
   const sourcingStatus = status === 'FAILED' && actionRequired.count === 0
     ? 'BLOCKED'
-    : status === 'RUNNING'
-      ? 'RUNNING'
-      : actionRequired.count > 0 ? 'ACTION_REQUIRED' : 'DONE';
+    : actionRequired.count > 0
+      ? 'ACTION_REQUIRED'
+      : sourcingStagesDone
+        ? 'DONE'
+        : 'RUNNING';
 
   const current = stages.find((s) => s.status !== 'COMPLETED') || stages[stages.length - 1];
   const processed = Math.min(
