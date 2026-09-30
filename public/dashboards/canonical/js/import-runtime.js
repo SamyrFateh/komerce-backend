@@ -752,7 +752,7 @@
     const events = Array.isArray(run.events) ? run.events : [];
     const items = events.slice(0, 8);
     return `<section class="kir-live-panel kir-live-activity" aria-label="Activité en temps réel">
-      <header><div><span class="kir-live-dot" aria-hidden="true"></span><strong>Activité en temps réel</strong></div><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Tout voir →</a></header>
+      <header><div>${ico('clock')}<strong>Activité en temps réel</strong></div><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Tout voir →</a></header>
       <div class="kir-live-event-list">
         ${items.length ? items.map(event => `<a href="${stageUrl(run.run_ref, event.stage)}" data-cockpit-nav class="kir-live-event ${event.kind === 'STAGE_STARTED' ? 'is-started' : 'is-finished'}">
           <time title="${esc(fmtDate(event.at))}">${fmtClock(event.at)}</time>
@@ -780,21 +780,18 @@
       ? `<img src="${esc(item.image_url)}" alt="" loading="lazy">`
       : `<div class="kir-current-image-placeholder">${ico('box')}</div>`;
     return `<section class="kir-live-panel kir-current-item" aria-label="${esc(currentItemTitle(run))}">
-      <header><strong>${esc(currentItemTitle(run))}</strong><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>Voir le détail →</a></header>
+      <header><div>${ico('box')}<strong>${esc(currentItemTitle(run))}</strong></div><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>Voir le détail →</a></header>
       <a class="kir-current-item-body" href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>
         <div class="kir-current-image">${image}</div>
         <div class="kir-current-copy">
-          <span class="kir-current-stage">${esc(stageLabel(item.stage))}</span>${item.in_progress ? '<span class="kir-current-live">En cours…</span>' : ''}
           <h3>${esc(item.product_name || item.supplier_product_id || 'Produit')}</h3>
-          <dl>
-            <div><dt>ID source</dt><dd>${esc(item.supplier_product_id || '—')}</dd></div>
-            <div><dt>Catégorie</dt><dd>${esc(item.komerce_category || 'À déterminer')}</dd></div>
-            ${item.purchase_price != null ? `<div><dt>Prix source</dt><dd>${esc(fmtPrice(item.purchase_price, item.currency))}</dd></div>` : ''}
-            <div><dt>État</dt><dd>${esc(item.in_progress ? 'En cours de traitement' : (item.state || '—'))}</dd></div>
-            ${item.change_kind ? `<div><dt>Nature</dt><dd>${esc(CHANGE_KIND_LABELS[item.change_kind] || item.change_kind)}</dd></div>` : ''}
-            ${item.duration_ms != null ? `<div><dt>Durée</dt><dd>${esc(fmtMs(item.duration_ms))}</dd></div>` : ''}
-            <div><dt>Mis à jour</dt><dd>${fmtDate(item.updated_at)}</dd></div>
-          </dl>
+          <p><span>Source :</span> ${esc(item.supplier_product_id || '—')}</p>
+          <p><span>Catégorie :</span> ${esc(item.komerce_category || 'À déterminer')}</p>
+          ${item.purchase_price != null ? `<p><span>Prix source :</span> ${esc(fmtPrice(item.purchase_price, item.currency))}</p>` : ''}
+          <div class="kir-current-status">
+            <span class="kir-current-chip ${item.in_progress ? 'is-live' : ''}">${item.in_progress ? '<i class="kir-spin" aria-hidden="true"></i>' : ''}${esc(item.in_progress ? `En cours — ${stageLabel(item.stage)}` : `${stageLabel(item.stage)} · ${item.state || 'traité'}`)}</span>
+            ${[CHANGE_KIND_LABELS[item.change_kind], item.duration_ms != null ? fmtMs(item.duration_ms) : ''].filter(Boolean).length ? `<small>${esc([CHANGE_KIND_LABELS[item.change_kind], item.duration_ms != null ? fmtMs(item.duration_ms) : ''].filter(Boolean).join(' · '))}</small>` : ''}
+          </div>
         </div>
       </a>
     </section>`;
@@ -803,21 +800,22 @@
   function renderRecentItems(run) {
     const items = Array.isArray(run.recent_items) ? run.recent_items : [];
     return `<section class="kir-recent-items">
-      <header><strong>Derniers produits traités</strong><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le parcours →</a></header>
+      <header><div>${ico('list')}<strong>Derniers produits traités</strong></div><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le parcours →</a></header>
       ${items.length ? `<div class="kir-live-table-wrap"><table class="kir-live-table">
-        <thead><tr>${run.item_events ? '<th class="kir-live-seq-col">#</th>' : ''}<th class="kir-live-thumb-col"><span class="kir-sr-only">Image</span></th><th>Produit</th><th>ID source</th><th>Étape</th><th>Catégorie</th><th>État</th>${run.item_events ? '<th>Durée</th>' : ''}<th>Mis à jour</th></tr></thead>
-        <tbody>${items.map(item => {
+        <thead><tr><th class="kir-live-seq-col">#</th><th class="kir-live-thumb-col">Image</th><th>Titre (source)</th><th>Étape actuelle</th><th>Statut</th><th class="kir-live-time-col">Temps</th></tr></thead>
+        <tbody>${items.map((item, index) => {
           const href = itemHref(run, item);
+          const status = item.in_progress
+            ? '<span class="kir-status is-live"><i class="kir-spin" aria-hidden="true"></i>En cours…</span>'
+            : `<span class="kir-status is-done"><b aria-hidden="true">✓</b>${esc([CHANGE_KIND_LABELS[item.change_kind], ITEM_OUTCOME_LABELS[item.outcome] || item.state].filter(Boolean).join(' · ') || 'OK')}</span>`;
+          const time = item.duration_ms != null ? fmtMs(item.duration_ms) : fmtClock(item.updated_at);
           return `<tr data-stage="${esc(item.stage || '')}">
-            ${run.item_events ? `<td class="kir-live-seq">${esc(item.seq)}</td>` : ''}
+            <td class="kir-live-seq">${esc(item.seq != null ? item.seq : index + 1)}</td>
             <td class="kir-live-thumb">${item.image_url ? `<img src="${esc(item.image_url)}" alt="" loading="lazy">` : ico('box')}</td>
-            <td><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>${esc(item.product_name || item.product_ref || 'Produit')}</a></td>
-            <td>${esc(item.supplier_product_id || '—')}</td>
-            <td><a class="kir-stage-chip" href="${stageUrl(run.run_ref, item.stage)}" data-cockpit-nav>${esc(stageLabel(item.stage))}</a></td>
-            <td>${esc(item.komerce_category || '—')}</td>
-            <td>${esc(item.in_progress ? 'En cours…' : [CHANGE_KIND_LABELS[item.change_kind], item.state].filter(Boolean).join(' · ') || '—')}</td>
-            ${run.item_events ? `<td>${esc(item.duration_ms != null ? fmtMs(item.duration_ms) : '—')}</td>` : ''}
-            <td>${fmtDate(item.updated_at)}</td>
+            <td><a href="${href}" ${item.product_ref ? '' : 'data-cockpit-nav'}>${esc(item.product_name || item.product_ref || 'Produit')}</a>${item.supplier_product_id ? `<small class="kir-live-sub">${esc(item.supplier_product_id)}</small>` : ''}</td>
+            <td><a class="kir-stage-link" href="${stageUrl(run.run_ref, item.stage)}" data-cockpit-nav>${esc(stageLabel(item.stage))}</a></td>
+            <td>${status}</td>
+            <td class="kir-live-time">${esc(time)}</td>
           </tr>`;
         }).join('')}</tbody>
       </table></div>` : '<div class="kir-empty-inline">Aucun produit récent.</div>'}
