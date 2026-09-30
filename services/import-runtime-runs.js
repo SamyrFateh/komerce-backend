@@ -510,9 +510,6 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
   const catalogueStage = stages.find((item) => item.key === 'CATALOGUE');
   const catalogueHandoffPending = catalogueStage?.status === 'RUNNING'
     && catalogueStage?.reason === 'automatic_catalogue_handoff_pending';
-  const automaticStagesCompleted = stages
-    .filter((item) => item.key !== 'CATALOGUE')
-    .every((item) => item.status === 'COMPLETED');
 
   let status = failedRun ? 'FAILED' : 'RUNNING';
   let failureReason = failedRun ? persistedFailureReason : null;
@@ -523,14 +520,11 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
   } else if (
     status !== 'FAILED'
     && balanced
-    && (
-      stages.every((s) => s.status === 'COMPLETED')
-      || (automaticStagesCompleted && catalogueHandoffPending)
-    )
+    && stages.every((s) => s.status === 'COMPLETED')
   ) {
-    // Sourcing amont est terminé dès que la cohorte certifiée atteint la
-    // frontière Catalogue. La remise est désormais automatique et reste
-    // visible comme sous-état jusqu'à matérialisation du brouillon.
+    // La remise Sourcing → Catalogue fait partie du passage automatique.
+    // Le run n'est terminé que lorsque les brouillons Catalogue existent
+    // réellement ; un handoff encore en cours reste RUNNING.
     status = 'COMPLETED';
   }
 
@@ -559,9 +553,7 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
     if (item.total > 0) return sum + Math.min(1, item.processed / item.total);
     return sum + 0.15;
   }, 0);
-  const progressPct = status === 'COMPLETED' && catalogueHandoffPending
-    ? 100
-    : Math.min(100, Math.round((stageProgress / STAGE_KEYS.length) * 100));
+  const progressPct = Math.min(100, Math.round((stageProgress / STAGE_KEYS.length) * 100));
 
   const recentItems = [...rows]
     .sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))
