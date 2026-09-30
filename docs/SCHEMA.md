@@ -171,7 +171,7 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 object: catalog_terminology_reference
 kind: table
 migration: 243
-section: ## 4. Tables par domaine
+section: ### 4.5 Paniers et catalogue
 role: Mémoire terminologique externe sourcée EN→FR (TERMIUM Plus en premier), multi-contextes et multi-traductions. Import filtré par corpus réel, provenance/licence conservées. Référence uniquement : n'écrase jamais catalog_glossary.
 -->
 | `catalog_exclusions` | Éligibilité « ce que Komerce peut recevoir » (doctrine catalogue §3). Deux couches : `absolute` (douane/loi, définitif) et `restricted` (contrainte transport, ex. batteries lithium = maritime uniquement). Matching mots-clés sur la donnée source EN, étage ③ de la raffinerie. Migration 098, confirmée live. |
