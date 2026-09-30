@@ -502,6 +502,50 @@ describe('import runtime — drill-downs : populations et compteurs cohérents',
   });
 });
 
+describe('import runtime — pagination des passages', () => {
+  test('charge une page en 2 requêtes (runs + candidats batch), jamais N+1', async () => {
+    const makeRun = (id, ref, startedAt) => ({
+      ...baseRun({ run_ref:ref, started_at:startedAt, source_total:3 }),
+      id,
+    });
+    const r1 = makeRun('00000000-0000-4000-8000-000000000001', 'KIR-000010', '2026-09-30T15:00:00Z');
+    const r2 = makeRun('00000000-0000-4000-8000-000000000002', 'KIR-000009', '2026-09-30T14:00:00Z');
+    const r3 = makeRun('00000000-0000-4000-8000-000000000003', 'KIR-000008', '2026-09-30T13:00:00Z');
+    const batchRows = [
+      ...rows3().map((row) => ({ ...row, run_id:r1.id })),
+      ...rows3().map((row) => ({ ...row, run_id:r2.id })),
+    ];
+    const q = {
+      query: jest.fn(async (sql, args) => {
+        if (String(sql).includes('ORDER BY r.started_at DESC')) {
+          expect(args).toEqual([3, 10]);
+          return { rows:[r1, r2, r3] };
+        }
+        if (String(sql).includes('ANY($1::uuid[])')) {
+          expect(args).toEqual([[r1.id, r2.id]]);
+          return { rows:batchRows };
+        }
+        throw new Error('unexpected query');
+      }),
+    };
+
+    const page = await runs.listPassages({ limit:2, offset:10 }, q);
+    expect(q.query).toHaveBeenCalledTimes(2);
+    expect(page.offset).toBe(10);
+    expect(page.next_offset).toBe(12);
+    expect(page.passages.map((item) => item.run_ref)).toEqual(['KIR-000010', 'KIR-000009']);
+  });
+
+  test('voisins d’un KIR sont lus indépendamment de la fenêtre des 12 lots récents', async () => {
+    const q = { query: jest.fn().mockResolvedValue({ rows:[{ older_ref:'KIR-000003', newer_ref:'KIR-000005' }] }) };
+    await expect(runs.getRunNeighbors('KIR-000004', q)).resolves.toEqual({
+      older_ref:'KIR-000003',
+      newer_ref:'KIR-000005',
+    });
+    expect(q.query).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('import runtime — passages (historique Sourcing)', () => {
   const intake = (over = {}) => ({
     recorded_at: T1, accepted: 12, duplicates: 0, rejected: 1, quarantined: 0, deferred: 7,
