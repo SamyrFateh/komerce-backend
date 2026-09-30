@@ -100,7 +100,7 @@ router.get('/import-runs', async (req, res, next) => {
 router.get('/import-passages', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store');
-    res.json({ passages: await importRuns.listPassages({ limit: req.query.limit }) });
+    res.json(await importRuns.listPassages({ limit: req.query.limit, offset: req.query.offset }));
   } catch (err) { handleError(err, res, next); }
 });
 
@@ -118,7 +118,12 @@ router.get('/import-cockpit', async (req, res, next) => {
     if (selectedRef && !selectedLot) selectedLot = await importLotRegistry.getLot(selectedRef);
     if (selectedRef && !selectedLot) return runNotFound(res);
 
-    const selected = selectedRef ? await importRuns.getRun(selectedRef) : null;
+    const [selected, runNav] = selectedRef
+      ? await Promise.all([
+          importRuns.getRun(selectedRef),
+          importRuns.getRunNeighbors(selectedRef),
+        ])
+      : [null, { older_ref: null, newer_ref: null }];
     if (selectedRef && !selected) return runNotFound(res);
 
     const visibleLots = selectedLot && !lots.some(lot => lot.run_ref === selectedLot.run_ref)
@@ -129,6 +134,7 @@ router.get('/import-cockpit', async (req, res, next) => {
     res.json({
       source_controls: sourceControls,
       lots: visibleLots,
+      run_nav: runNav,
       selected: selected ? { ...selected, business: selectedLot } : null,
     });
   } catch (err) { handleError(err, res, next); }
