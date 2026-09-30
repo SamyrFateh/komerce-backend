@@ -151,11 +151,15 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
         update: box('.kir-cmd-update'), stop: box('.kir-cmd-stop'), restart: box('.kir-cmd-restart'),
         label: document.querySelector('.kir-cmd-update')?.textContent.trim(),
         state: document.querySelector('.kir-command-state')?.textContent,
-        legacySwitch: Boolean(document.querySelector('[data-source-toggle]')),
+        barTop: document.querySelector('.kir-command-bar')?.getBoundingClientRect().top,
+        flowTop: document.querySelector('.kir-run-flow')?.getBoundingClientRect().top,
+        stripBelow: Boolean(document.querySelector('.kir-secondary .kir-source-control')),
       };
     });
     expect(bar.restart).toBeNull();
-    expect(bar.legacySwitch).toBe(false);
+    // Commandes en haut (avant le flux) ; la section Sources en bas reste, sans être le seul endroit.
+    expect(bar.barTop).toBeLessThan(bar.flowTop);
+    expect(bar.stripBelow).toBe(true);
     expect(bar.label).toBe('Mettre à jour maintenant');
     expect(bar.update.bg).toBe('rgb(29, 92, 214)');
     expect(bar.stop.bg).toBe('rgb(58, 18, 24)');

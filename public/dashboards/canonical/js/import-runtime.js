@@ -666,9 +666,32 @@
     </section>`;
   }
 
+  // Source pilotée par le lot affiché. Le run n'expose pas toujours un source_ref identique à celui
+  // de la carte source : on retombe sur l'activation en cours, puis le fournisseur, puis l'unique
+  // source active. Jamais de barre manquante parce qu'une correspondance stricte a échoué.
+  function sourceForRun(run, sourceControls) {
+    const list = Array.isArray(sourceControls) ? sourceControls : [];
+    if (!run || !list.length) return null;
+    const norm = value => String(value || '').trim().toLowerCase();
+    const byRef = ref => ref ? list.find(item => item.source_ref === ref) : null;
+    const provider = norm(run.provider);
+    const byProvider = provider
+      ? list.filter(item => [item.label, item.supplier_name, item.source_ref].some(name => {
+        const n = norm(name);
+        return n && (n.includes(provider) || provider.includes(n));
+      }))
+      : [];
+    const enabled = list.filter(item => item.autopilot_enabled === true);
+    return byRef(run.source_ref)
+      || byRef(activationState?.sourceRef)
+      || (byProvider.length === 1 ? byProvider[0] : null)
+      || (enabled.length === 1 ? enabled[0] : null)
+      || (list.length === 1 ? list[0] : null);
+  }
+
   // Trois gestes humains, branchés sur les commandes existantes (import-now / deactivate / activate).
   function commandBar(run, sourceControls) {
-    const source = (Array.isArray(sourceControls) ? sourceControls : []).find(item => item.source_ref === run?.source_ref);
+    const source = sourceForRun(run, sourceControls);
     if (!source) return '';
     const ref = esc(source.source_ref);
     const enabled = source.autopilot_enabled === true;
@@ -1213,7 +1236,7 @@
       ${view === 'overview' ? renderLiveCore(run) : ''}
 
       <div class="kir-secondary" data-cockpit-zone="secondary">
-      ${(sourceControls || []).some(item => item.source_ref === run.source_ref) ? '' : sourceControlStrip(sourceControls, run)}
+      ${sourceControlStrip(sourceControls, run)}
       ${lotStrip(lots, run.run_ref)}
       </div>
 

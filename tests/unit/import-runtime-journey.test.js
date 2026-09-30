@@ -145,6 +145,34 @@ test('commandes : source arrêtée → Redémarrer puis Mettre à jour ; source 
   expect(active.innerHTML).toContain('Mettre à jour maintenant');
 });
 
+test('commandes visibles même si le run n\'expose pas le source_ref de la carte (fournisseur différent, source_ref vide)', () => {
+  const ui = cockpit();
+  for (const patch of [{ source_ref:null }, { source_ref:'autre-ref' }, { source_ref:undefined }]) {
+    const p = JSON.parse(JSON.stringify(payload));
+    Object.assign(p.selected, patch);
+    p.source_controls[0].label = 'AliExpress Dropshipper API';
+    p.source_controls[0].autopilot_enabled = true;
+    const node = root();
+    ui.render(node, p);
+    expect(node.innerHTML).toContain('data-source-command="update"');
+    expect(node.innerHTML).toContain('data-source-command="stop"');
+    // Les commandes précèdent le flux ; la section Sources basse est conservée.
+    expect(node.innerHTML.indexOf('kir-command-bar')).toBeLessThan(node.innerHTML.indexOf('kir-run-flow'));
+    expect(node.innerHTML).toContain('data-source-toggle');
+  }
+});
+
+test('deux sources sans correspondance claire : pas de commande devinée', () => {
+  const ui = cockpit();
+  const p = JSON.parse(JSON.stringify(payload));
+  p.selected.source_ref = null;
+  p.selected.provider = 'Inconnu';
+  p.source_controls.push({ ...p.source_controls[0], source_ref:'api:cj', label:'CJ' });
+  const node = root();
+  ui.render(node, p);
+  expect(node.innerHTML).not.toContain('data-source-command');
+});
+
 const CALM_STAGES = [
   { key:'SOURCE_CONNECTED', status:'COMPLETED', processed:1, total:1 },
   { key:'RAW_IMPORT', status:'COMPLETED', processed:20, total:20 },
