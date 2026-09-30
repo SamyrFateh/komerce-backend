@@ -59,7 +59,7 @@ describe('import-runtime — fidélité visuelle au mock', () => {
   });
 
   test('le pipeline N1 a quatre étapes ; les six étapes réelles restent la source de vérité', () => {
-    for (const label of ["'Source'", "'Produits reçus'", "'Contrôle automatique'", "'Catalogue'"]) {
+    for (const label of ["'Source'", "'Produits reçus'", "'Contrôle automatique'", "'Remise Catalogue'"]) {
       expect(source).toContain(`label:${label}`);
     }
     expect(source).toContain("const CONTROL_STAGES = Object.freeze(['REFINERY', 'TAXONOMY', 'CERTIFICATION'])");
