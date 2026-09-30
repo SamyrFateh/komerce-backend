@@ -21,6 +21,7 @@
 const db = require('../db');
 
 const RUNTIME_TABLES = Object.freeze([
+  'import_runtime_item_events',
   'import_runtime_runs',
   'sourcing_candidate_events',
   'supplier_catalog_import_rejections',

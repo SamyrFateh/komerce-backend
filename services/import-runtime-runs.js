@@ -18,6 +18,7 @@
 'use strict';
 
 const db = require('../db');
+const itemEvents = require('./import-runtime-item-events');
 const { readRunProgress } = require('./catalog-run-progress');
 const {
   evaluateSourcingCandidateOutcome,
@@ -34,6 +35,8 @@ const STAGE_KEYS = Object.freeze([
 ]);
 const RUN_MODES = Object.freeze(['normal', 'replay', 'reconstruction']);
 const DUPLICATE_CODE = 'DUPLICATE_SUPPLIER_PRODUCT_ID_IN_BATCH';
+// Un produit « en cours » sans fin depuis plus longtemps est considéré interrompu, pas en cours.
+const ITEM_STALE_MS = 10 * 60 * 1000;
 
 function normalizeMode(mode) {
   const value = String(mode || 'normal').trim().toLowerCase();
@@ -158,7 +161,7 @@ function verdictOf(row = {}) {
   });
 }
 
-function buildProjection({ run, rows = [], sourceProof = null }) {
+function buildProjection({ run, rows = [], sourceProof = null, items = [], now = Date.now() }) {
   const intake = run.intake || {};
   const storedStages = run.stages || {};
   const sourceTotal = Number(run.source_total || 0);
@@ -420,12 +423,46 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
       image_url: row.image_url || null,
       komerce_category: row.komerce_category || null,
       product_ref: row.product_ref || null,
+      purchase_price: row.purchase_price != null ? Number(row.purchase_price) : null,
+      currency: row.currency || null,
       stage: candidateStage(row),
       state: row.state,
       updated_at: iso(row.updated_at),
     }));
 
-  const events = stages
+  // Événements par produit (télémétrie de la boucle d'import) : présents seulement
+  // pour les runs réels ; les anciens runs / replays retombent sur le dernier candidat mis à jour.
+  const itemList = Array.isArray(items) ? items : [];
+  const hasItemEvents = itemList.length > 0;
+  const rowByProduct = new Map(
+    rows.filter((row) => row.supplier_product_id).map((row) => [row.supplier_product_id, row])
+  );
+  const itemViews = itemList.map((ev) => {
+    const row = rowByProduct.get(ev.supplier_product_id) || null;
+    const startedMs = new Date(ev.started_at).getTime();
+    const finishedMs = ev.finished_at ? new Date(ev.finished_at).getTime() : null;
+    const inProgress = !ev.finished_at && Number.isFinite(startedMs) && (now - startedMs) < ITEM_STALE_MS;
+    const price = ev.purchase_price != null ? ev.purchase_price : row?.purchase_price;
+    return {
+      seq: Number(ev.seq),
+      candidate_ref: row?.candidate_ref || null,
+      supplier_product_id: ev.supplier_product_id || null,
+      product_name: row?.product_name || ev.product_name || null,
+      image_url: row?.image_url || ev.image_url || null,
+      komerce_category: row?.komerce_category || null,
+      product_ref: row?.product_ref || null,
+      purchase_price: price != null ? Number(price) : null,
+      currency: ev.currency || row?.currency || null,
+      stage: inProgress ? 'REFINERY' : (row ? candidateStage(row) : (ev.stage || 'REFINERY')),
+      state: inProgress ? 'processing' : (row?.state || ev.outcome || null),
+      outcome: ev.outcome || null,
+      in_progress: inProgress,
+      duration_ms: finishedMs != null && Number.isFinite(startedMs) ? Math.max(0, finishedMs - startedMs) : null,
+      updated_at: iso(ev.finished_at || ev.started_at),
+    };
+  });
+
+  const stageEvents = stages
     .filter((s) => s.started_at || s.finished_at)
     .map((s) => ({
       stage: s.key,
@@ -434,6 +471,29 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
     }))
     .sort((a, b) => new Date(b.at) - new Date(a.at))
     .slice(0, 8);
+  const itemFeed = itemViews
+    .filter((item) => !item.in_progress && item.updated_at && item.duration_ms != null)
+    .slice(0, 6)
+    .map((item) => ({
+      stage: 'REFINERY',
+      at: item.updated_at,
+      kind: 'ITEM_FINISHED',
+      seq: item.seq,
+      product_name: item.product_name,
+      outcome: item.outcome,
+      duration_ms: item.duration_ms,
+    }));
+  const events = hasItemEvents
+    ? [...stageEvents, ...itemFeed].sort((a, b) => new Date(b.at) - new Date(a.at)).slice(0, 12)
+    : stageEvents;
+
+  const runningItem = status === 'RUNNING' ? itemViews.find((item) => item.in_progress) : null;
+  const currentItem = hasItemEvents
+    ? (runningItem || itemViews.find((item) => !item.in_progress) || null)
+    : (recentItems[0] || null);
+  const currentItemKind = !currentItem
+    ? null
+    : !hasItemEvents ? 'last_updated' : (runningItem ? 'in_progress' : 'last_processed');
 
   return {
     run_ref: run.run_ref,
@@ -465,8 +525,10 @@ function buildProjection({ run, rows = [], sourceProof = null }) {
       certification_reason: certificationReason,
     },
     stages,
-    current_item: recentItems[0] || null,
-    recent_items: recentItems,
+    current_item: currentItem,
+    current_item_kind: currentItemKind,
+    recent_items: hasItemEvents ? itemViews.slice(0, 10) : recentItems,
+    item_events: hasItemEvents,
     events,
   };
 }
@@ -497,6 +559,8 @@ const CANDIDATE_COLUMNS = `
   sc.supplier_product_id,
   sc.product_name,
   sc.image_url,
+  sc.purchase_price,
+  sc.currency,
   sc.komerce_category,
   sc.state,
   sc.scan_at,
@@ -540,7 +604,14 @@ async function project(run, q = db, includeDownstream = false) {
     loadRows(run.id, q),
     loadProof(run.source_ref, q),
   ]);
-  const projection = buildProjection({ run, rows, sourceProof: proof });
+  let items = [];
+  try {
+    items = await itemEvents.listRunItems(run.id, { limit: 12 }, q);
+  } catch (_) {
+    // Télémétrie optionnelle (table absente, base ancienne…) : le lot reste lisible sans.
+    items = [];
+  }
+  const projection = buildProjection({ run, rows, sourceProof: proof, items: Array.isArray(items) ? items : [] });
   if (includeDownstream) {
     const refs = rows.filter(row => row.state === 'imported_to_catalog' && row.product_ref)
       .map(row => row.product_ref);

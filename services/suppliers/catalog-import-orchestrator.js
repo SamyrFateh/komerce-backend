@@ -45,6 +45,7 @@ const { buildNormalizedSourceContractSnapshot } = require('./normalized-product'
 const { getRuleNumber } = require('../../utils/rules');
 const { importJsonCatalog } = require('./catalog-import-json');
 const importRuns = require('../import-runtime-runs');
+const itemEvents = require('../import-runtime-item-events');
 
 /**
  * Agrège les raisons de rejet d'un tableau d'entrées invalides en compte par
@@ -227,7 +228,13 @@ async function importCatalog(body, userId, dispatchToConnector) {
     deferred: 0,
     errors: [...invalidFromConnector],
   };
+  let itemSeq = 0;
   for (const product of products) {
+    // Télémétrie best-effort : début/fin de traitement par produit (jamais bloquante pour l'import).
+    itemSeq += 1;
+    const itemEvent = await runHook((id) => itemEvents.startItem(id, { seq: itemSeq, product }));
+    let itemOutcome = 'error';
+    let itemCandidateId = null;
     try {
       // PDC-1 : snapshot du mapping fournisseur → contrat normalisé. V1 = null.
       const normalizedSourceContract = buildNormalizedSourceContractSnapshot(product);
@@ -252,7 +259,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
       const autoState = isAbsoluteExclusion ? 'rejected' : 'scanned';
       const autoRejectedReason = isAbsoluteExclusion ? automaticRejectedReason(verdict) : null;
 
-      const { wasUpdated } = await sourcingCandidateImport.upsertCandidateFromCatalogImport(db, {
+      const { row: upsertedRow, wasUpdated } = await sourcingCandidateImport.upsertCandidateFromCatalogImport(db, {
         importId,
         supplierName,
         product,
@@ -265,6 +272,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
         userId,
       });
 
+      itemCandidateId = upsertedRow?.id || null;
       if (wasUpdated) {
         results.updated = (results.updated || 0) + 1;
       } else {
@@ -272,8 +280,10 @@ async function importCatalog(body, userId, dispatchToConnector) {
       }
       if (isAbsoluteExclusion) {
         results.auto_rejected += 1;
+        itemOutcome = 'auto_rejected';
       } else {
         const outcome = decisionOutcome(scan.sourcing_decision);
+        itemOutcome = outcome || 'processed';
         if (outcome === 'ready_for_refinery') {
           if (String(normalizedSourceContract?.schema_version || '') === '2') {
             results.ready_for_refinery += 1;
@@ -286,6 +296,9 @@ async function importCatalog(body, userId, dispatchToConnector) {
       }
     } catch (errOne) {
       results.errors.push({ product_name: product.product_name || '?', error: errOne.message });
+    }
+    if (itemEvent?.id) {
+      await runHook(() => itemEvents.finishItem(itemEvent.id, { outcome: itemOutcome, candidateId: itemCandidateId }));
     }
   }
 
