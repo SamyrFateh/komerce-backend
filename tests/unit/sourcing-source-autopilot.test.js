@@ -41,7 +41,7 @@ jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({
   importCatalog: (...args) => mockImportCatalog(...args),
 }));
 
-jest.mock('../../services/sourcing-catalogue-handoff', () => ({
+jest.mock('../../services/sourcing-candidate-actions', () => ({
   handoffImportResult: (...args) => mockHandoffImportResult(...args),
 }));
 
