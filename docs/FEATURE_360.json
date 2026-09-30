@@ -6122,7 +6122,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 98,
+            "count": 101,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6545,6 +6545,21 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/navigation-policy-v3.js",
+                "resolvedPath": "public/dashboards/canonical/js/navigation-policy-v3.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/navigation-policy-v4.js",
+                "resolvedPath": "public/dashboards/canonical/js/navigation-policy-v4.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/navigation.js",
+                "resolvedPath": "public/dashboards/canonical/js/navigation.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/pricing-workspace.js",
                 "resolvedPath": "public/dashboards/canonical/js/pricing-workspace.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6897,7 +6912,7 @@
             ]
           },
           "tests": {
-            "count": 133,
+            "count": 134,
             "files": [
               {
                 "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
@@ -7182,6 +7197,11 @@
               {
                 "declared": "tests/unit/canonical-navigation-policy-v3.test.js",
                 "resolvedPath": "tests/unit/canonical-navigation-policy-v3.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-navigation-policy-v4-capability-gate.test.js",
+                "resolvedPath": "tests/unit/canonical-navigation-policy-v4-capability-gate.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7567,7 +7587,7 @@
             ]
           }
         },
-        "totalFiles": 283,
+        "totalFiles": 287,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
