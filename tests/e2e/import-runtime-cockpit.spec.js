@@ -179,7 +179,7 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
     expect(overflow).toBeLessThanOrEqual(0);
   });
 
-  test('pipeline, KPI, événements et produit courant ouvrent un drill-down du même lot', async ({ page }) => {
+  test('pipeline, KPI, événements et produit courant ouvrent un drill-down du même passage', async ({ page }) => {
     const hrefs = await page.$$eval(
       '.kir-run-flow-step, .kir-run-truth-grid > a, .kir-live-event',
       (els) => els.map((el) => el.getAttribute('href')),
@@ -193,7 +193,7 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
   });
 });
 
-// État réel observé en production : run terminé, promotion Catalogue en attente,
+// État réel observé en production : run terminé, remise Catalogue automatique en attente,
 // alerte de certification runtime. Les lignes du pipeline ne doivent pas barrer les libellés.
 const done = { started_at: iso(20), finished_at: iso(19) };
 const completedPayload = JSON.parse(JSON.stringify(payload));
@@ -201,8 +201,12 @@ Object.assign(completedPayload.selected, {
   status: 'COMPLETED', progress_pct: 100, finished_at: iso(1),
   diagnostics: { runtime_certified: false, pipeline_status: 'PARTIAL_BLOCKED' },
   stages: ['SOURCE_CONNECTED', 'RAW_IMPORT', 'REFINERY', 'TAXONOMY', 'CERTIFICATION', 'CATALOGUE'].map((key) => ({
-    key, status: 'COMPLETED', processed: 12, total: 12, ...done,
-    ...(key === 'CATALOGUE' ? { reason: 'awaiting_explicit_operator_promotion', processed: 0 } : {}),
+    key,
+    status: key === 'CATALOGUE' ? 'RUNNING' : 'COMPLETED',
+    processed: key === 'CATALOGUE' ? 0 : 12,
+    total: 12,
+    ...done,
+    ...(key === 'CATALOGUE' ? { reason: 'automatic_catalogue_handoff_pending', finished_at: null } : {}),
   })),
   item_events: true,
   current_item_kind: 'last_processed',
@@ -216,8 +220,10 @@ completedPayload.selected.sourcing_status = 'DONE';
 const calmPayload = JSON.parse(JSON.stringify(completedPayload));
 calmPayload.selected.diagnostics = {};
 calmPayload.selected.accounting = { ...calmPayload.selected.accounting, quarantined: 0, deferred: 0, certification_blocked: 0, unaccounted: 0, overflow: 0, action_required: 0, catalogued: 12, awaiting_catalogue_promotion: 0 };
+const calmCatalogue = calmPayload.selected.stages.find((stage) => stage.key === 'CATALOGUE');
+Object.assign(calmCatalogue, { status:'COMPLETED', processed:12, reason:null, finished_at:iso(1) });
 
-test.describe('Cockpit imports — run terminé avec alerte et validation manuelle', () => {
+test.describe('Cockpit imports — run terminé avec alerte et remise automatique', () => {
   test.beforeEach(async ({ page }) => { await mountCockpit(page, completedPayload); });
 
   test('pipeline du mock : grands cercles numérotés, libellé centré dessous, trait entre les cercles', async ({ page }) => {
@@ -450,7 +456,7 @@ test.describe('Cockpit imports — drill-downs cohérents avec le N1', () => {
     await page.locator('.kir-run-truth-grid > a.is-received').click();
     await expect(page.locator('[data-population-item]')).toHaveCount(12);
     await expect(page.locator('.kir-history-stages')).toHaveCount(0);
-    await expect(page.locator('.kir-back')).toContainText('Retour au lot');
+    await expect(page.locator('.kir-back')).toContainText('Retour au passage');
     await page.screenshot({ path: 'test-results/import-runtime-cockpit-population.png' });
     expect(state.calls).toContain('population:received');
   });
@@ -474,7 +480,7 @@ test.describe('Cockpit imports — drill-downs cohérents avec le N1', () => {
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Source');
     await expect(page.locator('[data-population-item]')).toHaveCount(0);
     await page.locator('.kir-back').click();
-    await page.locator('.kir-run-flow-step', { hasText: 'Catalogue' }).click();
+    await page.locator('.kir-run-flow-step', { hasText: 'Remise Catalogue' }).click();
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Catalogue');
     await expect(page.locator('.kir-main')).toContainText('Remise terminée');
   });
@@ -523,10 +529,10 @@ test.describe('Cockpit imports — navigation canonique (vues exclusives)', () =
     await expect(page.locator('.kir-passage-row')).toHaveCount(1);
   });
 
-  test('sélecteur de lot compact : précédent, liste, suivant', async ({ page }) => {
+  test('sélecteur de passage compact : précédent, liste, suivant', async ({ page }) => {
     await mountLive(page, withLots());
-    await expect(page.locator('[data-lot-select] option')).toHaveCount(2);
-    await page.getByText('← lot précédent').click();
+    await expect(page.locator('[data-passage-select] option')).toHaveCount(2);
+    await page.getByText('← passage précédent').click();
     await expect(page).toHaveURL(/run=KIR-000008/);
   });
 
