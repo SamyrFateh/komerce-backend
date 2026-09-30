@@ -188,6 +188,7 @@ module.exports = {
       'tests/unit/sourcing-certification-gate-a.test.js',
       'tests/unit/sourcing-certification-gate-a-fixture-harness.test.js',
       'tests/unit/sourcing-candidate-actions.test.js',
+      'tests/unit/sourcing-catalogue-handoff.test.js',
       'tests/unit/require-sourcing-global-authority.test.js',
       'tests/unit/sourcing-observation-foundation-migration.test.js',
       'tests/unit/sourcing-resolution-foundation-migration.test.js',
