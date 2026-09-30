@@ -59,7 +59,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'import-runtime.css'), 'utf8');
   expect(source).toContain('Action requise');
   expect(source).toContain('PASSAGE AU CATALOGUE');
-  expect(source).toContain('Remise automatique en attente');
+  expect(source).toContain('Remise automatique en cours');
   expect(source).toContain('Détail technique du passage');
   expect(source).toContain('Historique des passages');
   expect(source).not.toContain('Clôture du lot');
