@@ -20,7 +20,7 @@
  *   ✓ POST /candidates/:id/scan : 404 si introuvable, sinon scan + UPDATE + event 'scan'
  *   ✓ POST /candidates/scan-batch : 400 si ni import_id ni ids fournis
  *   ✓ POST /candidates/:id/import-product : 404 introuvable, 409 si déjà importé,
- *     400 si aucun prix calculable, produit créé toujours is_active=FALSE
+ *     brouillon sans prix autorisé, produit créé toujours is_active=FALSE/is_available=FALSE
  *   ✓ POST /candidates/:id/reject et /watchlist : 404 si introuvable, sinon transition + event
  */
 
@@ -67,8 +67,12 @@ jest.mock('../../services/pricing-engine', () => ({
 }));
 
 const mockImportCatalog = jest.fn();
+const mockHandoffImportResult = jest.fn();
 jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({
   importCatalog: (...args) => mockImportCatalog(...args),
+}));
+jest.mock('../../services/sourcing-catalogue-handoff', () => ({
+  handoffImportResult: (...args) => mockHandoffImportResult(...args),
 }));
 
 // Legacy catalog-enrichment stays isolated tooling. Promotion must not call it
@@ -102,6 +106,7 @@ beforeEach(() => {
   currentUser = { id: 'admin-1', role: 'admin' };
   mockSourcingAllowed = true;
   mockLoadGlobalConfig.mockResolvedValue({ finance: {} });
+  mockHandoffImportResult.mockImplementation(async (result) => result);
 
   app = express();
   app.use(express.json());
