@@ -61,7 +61,8 @@ async function resolveActiveBoutiqueTaxonomy(q, candidate = {}) {
 }
 
 /**
- * Creates the inactive catalog draft produced by the sourcing promotion flow.
+ * Creates the inactive, unavailable catalog draft produced by the sourcing handoff flow.
+ * A draft may legitimately have no market price yet; publication owns that decision.
  *
  * The caller injects the transaction client so product creation remains in the
  * same atomic unit as catalog promotion + sourcing candidate state transition.
@@ -81,9 +82,9 @@ async function createDraftProductFromSourcingCandidate(q, {
        cost_kmf,
        price_kmf,
        weight_kg,
-       is_active, lifecycle_status,
+       is_active, is_available, lifecycle_status,
        name_source, description_source, source_locale, content_source
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, 'candidate', $8, $9, $10, 'connector_raw')
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, FALSE, 'candidate', $8, $9, $10, 'connector_raw')
      RETURNING id`,
     [
       candidate.product_name,
@@ -91,7 +92,7 @@ async function createDraftProductFromSourcingCandidate(q, {
       boutiqueTaxonomy.category,
       boutiqueTaxonomy.subcategory,
       candidate.purchase_price_kmf || 0,
-      initialPrice,
+      initialPrice == null ? null : initialPrice,
       weightKg,
       candidate.product_name,
       candidate.description || null,
