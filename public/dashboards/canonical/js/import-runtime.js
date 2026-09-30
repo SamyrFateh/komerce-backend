@@ -442,7 +442,7 @@
       ['Produits reçus', o.received, 'file', stageUrl(run.run_ref, 'RAW_IMPORT'), 'is-received', 'de la source'],
       ['Prêts pour le Catalogue', o.ready, 'accepted', stageUrl(run.run_ref, 'CERTIFICATION'), 'is-delivered', 'produits'],
       ['Écartés automatiquement', o.discarded, 'reject', stageUrl(run.run_ref, 'RAW_IMPORT'), 'is-discarded', 'selon les règles'],
-      ['Action requise', o.actionRequired, 'alert', urlFor(run.run_ref, 'exceptions'), open ? 'is-review is-attention' : 'is-review', open ? 'Ouvrir la liste →' : 'rien à faire'],
+      ['Action requise', o.actionRequired, 'alert', urlFor(run.run_ref, 'exceptions'), open ? 'is-review is-attention' : 'is-review', open ? 'Intervenir →' : 'rien à faire'],
     ];
     const proof = !o.rawDone || o.received === 0 ? ''
       : o.unaccounted > 0

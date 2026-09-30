@@ -251,6 +251,17 @@ test('CAS D : 7 DEFERRED sans revue humaine → Action requise = 0, aucune carte
   expect(html).not.toContain('différé');
 });
 
+test('CAS A bis : 20 reçus, 0 prêt, 8 deferred normaux → 0 action, pas de handoff, aucun orange', () => {
+  const html = render(scenario({ certified:0, catalogued:0, awaiting_catalogue_promotion:0, accepted:12, rejected:0, deferred:8, action_required:0 }));
+  expect(tile(html, 'Produits reçus')).toBe('20');
+  expect(tile(html, 'Prêts pour le Catalogue')).toBe('0');
+  expect(tile(html, 'Écartés automatiquement')).toBe('0');
+  expect(tile(html, 'Action requise')).toBe('0');
+  expect(html).not.toContain('PASSAGE AU CATALOGUE');
+  expect(html).not.toContain('Décisions attendues');
+  expect(html).not.toContain('is-attention');
+});
+
 const ITEMS = [
   { candidate_ref:'KSC-1', product_name:'Coque A', supplier_product_id:'SP-1', reason:'Image inexploitable', action:'fix', action_label:'Corriger' },
   { candidate_ref:'KSC-2', product_name:'Coque B', supplier_product_id:'SP-2', reason:'Classement ambigu', action:'choose', action_label:'Choisir' },
@@ -262,7 +273,7 @@ test('CAS E : 3 vraies exceptions → « Action requise 3 » orange cliquable, h
     { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }));
   expect(tile(html, 'Action requise')).toBe('3');
   expect(html).toContain('is-review is-attention');
-  expect(html).toContain('Ouvrir la liste →');
+  expect(html).toContain('Intervenir →');
   expect(html).toContain('href="/admin/import-runtime?run=KIR-000004&view=exceptions"');
   expect(html).toContain('Action requise</span>');
   expect(html).not.toContain('Décisions attendues');

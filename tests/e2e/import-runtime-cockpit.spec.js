@@ -308,7 +308,7 @@ test.describe('Cockpit imports — Action requise', () => {
     const tile = page.locator('.kir-run-truth-grid > a.is-review');
     await expect(tile).toContainText('Action requise');
     await expect(tile).toContainText('3');
-    await expect(tile).toContainText('Ouvrir la liste →');
+    await expect(tile).toContainText('Intervenir →');
     const [r, g, b] = (await tile.evaluate((el) => getComputedStyle(el).borderTopColor)).match(/\d+/g).map(Number);
     expect(r).toBeGreaterThan(g);
     expect(g).toBeGreaterThan(b);
