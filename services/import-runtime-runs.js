@@ -481,7 +481,7 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
       certified,
       {
         reason: catalogueStatus === 'RUNNING'
-          ? 'awaiting_explicit_operator_promotion'
+          ? 'automatic_catalogue_handoff_pending'
           : null,
       }
     ),
@@ -508,8 +508,8 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
   }
 
   const catalogueStage = stages.find((item) => item.key === 'CATALOGUE');
-  const catalogueAwaitingDecision = catalogueStage?.status === 'RUNNING'
-    && catalogueStage?.reason === 'awaiting_explicit_operator_promotion';
+  const catalogueHandoffPending = catalogueStage?.status === 'RUNNING'
+    && catalogueStage?.reason === 'automatic_catalogue_handoff_pending';
   const automaticStagesCompleted = stages
     .filter((item) => item.key !== 'CATALOGUE')
     .every((item) => item.status === 'COMPLETED');
@@ -525,12 +525,12 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
     && balanced
     && (
       stages.every((s) => s.status === 'COMPLETED')
-      || (automaticStagesCompleted && catalogueAwaitingDecision)
+      || (automaticStagesCompleted && catalogueHandoffPending)
     )
   ) {
-    // The automatic import is finished once the certified cohort has reached
-    // the Catalogue decision boundary. Human promotion is a business action,
-    // not a reason to keep the runtime "RUNNING".
+    // Sourcing amont est terminé dès que la cohorte certifiée atteint la
+    // frontière Catalogue. La remise est désormais automatique et reste
+    // visible comme sous-état jusqu'à matérialisation du brouillon.
     status = 'COMPLETED';
   }
 
@@ -559,7 +559,7 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
     if (item.total > 0) return sum + Math.min(1, item.processed / item.total);
     return sum + 0.15;
   }, 0);
-  const progressPct = status === 'COMPLETED' && catalogueAwaitingDecision
+  const progressPct = status === 'COMPLETED' && catalogueHandoffPending
     ? 100
     : Math.min(100, Math.round((stageProgress / STAGE_KEYS.length) * 100));
 
