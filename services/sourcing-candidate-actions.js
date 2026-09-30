@@ -208,6 +208,7 @@ async function promoteCandidate(id, body = {}, actorId = null, options = {}) {
   let productId = null;
   let candidate = null;
   let promotion = null;
+  let initialPrice = null;
   try {
     await client.query('BEGIN');
     candidate = await requireCandidate(id, client);
@@ -239,7 +240,7 @@ async function promoteCandidate(id, body = {}, actorId = null, options = {}) {
     // Il n'a besoin d'aucun prix de vente. Si un prix explicite est fourni par un
     // ancien appelant, on le conserve ; sinon NULL reste la vérité jusqu'au gate
     // de publication, qui exige alors un prix marché valide.
-    const initialPrice = resolveDraftPrice(body);
+    initialPrice = resolveDraftPrice(body);
 
     productId = await createDraftProductFromSourcingCandidate(client, {
       candidate,
