@@ -563,10 +563,10 @@ test('CAS A : LIVE = un seul cockpit — ni registre, ni rail KIR permanent, ni 
   expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=passages"`);
 });
 
-test('domaine : Live / Passages / Sources, l\'onglet actif suit la vue', () => {
+test('domaine : Suivi / Passages / Sources, l\'onglet actif suit la vue', () => {
   const html = render(scenario());
-  expect(html).toMatch(/kir-domain-nav[\s\S]*is-active[^>]*>Live/);
-  for (const label of ['Live', 'Passages', 'Sources']) expect(html).toContain(`>${label}</a>`);
+  expect(html).toMatch(/kir-domain-nav[\s\S]*is-active[^>]*>Suivi/);
+  for (const label of ['Suivi', 'Passages', 'Sources']) expect(html).toContain(`>${label}</a>`);
   expect(drill('passages', '', scenario(), null)).toMatch(/is-active[^>]*>Passages/);
   expect(drill('sources')).toMatch(/is-active[^>]*>Sources/);
 });
