@@ -673,3 +673,15 @@ section: ### 4.10 Sourcing et fournisseurs
 role: Identite et chronologie d'un run d'import reel Sourcing vers Catalogue, avec business ref KIR et projection live fail-closed.
 -->
 
+### Import runtime item events (migration 258)
+
+Télémétrie best-effort d'un import réel : un événement par produit traité (début, fin, issue, prix source affiché). Ce n'est pas une autorité métier : le cockpit `/admin/import-runtime` l'affiche pour montrer le produit en cours et les durées, et retombe sur la projection historique quand le run n'a aucun événement.
+
+<!-- schema-pending
+object: import_runtime_item_events
+kind: table
+migration: 258
+section: ### 4.10 Sourcing et fournisseurs
+role: Evenement par produit d'un run d'import (debut, fin, issue, prix source) pour le cockpit live, telemetrie best-effort sans autorite metier.
+-->
+

@@ -2917,3 +2917,12 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
 .kmc-import-runtime .kir-secondary .kir-source-pill .kir-source-name{color:#EAF1F9 !important}
 .kmc-import-runtime .kir-secondary .kir-lot-summary>div strong{color:#EDF3FA !important}
 .kmc-import-runtime .kir-secondary .kir-lot-summary>div span{color:#8094AB !important}
+
+/* Produit en cours (événements par produit) : pastille vivante + colonne # discrète. */
+.kmc-import-runtime .kir-current-live{display:inline-flex;align-items:center;gap:6px;margin-left:8px;padding:4px 8px;border-radius:999px;background:#0A2A20;color:#5EF0A8;font-size:11px;font-weight:800}
+.kmc-import-runtime .kir-current-live::before{content:"";width:6px;height:6px;border-radius:50%;background:#1ED784;animation:kir-current-step 1.15s ease-in-out infinite}
+.kmc-import-runtime .kir-live-seq-col,
+.kmc-import-runtime .kir-live-seq{width:44px;color:#6D829B;font-variant-numeric:tabular-nums}
+@media(prefers-reduced-motion:reduce){
+  .kmc-import-runtime .kir-current-live::before{animation:none}
+}

@@ -35,6 +35,7 @@ const ZERO_TABLES = Object.freeze([
   'supplier_catalog_imports',
   'sourcing_candidates',
   'sourcing_candidate_events',
+  'import_runtime_item_events',
   'import_runtime_runs',
   'sourcing_captures',
   'sourcing_observations',
