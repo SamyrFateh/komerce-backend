@@ -132,7 +132,6 @@ module.exports = {
       'services/sourcing-product-read-comparison.js',
       'services/catalog-product-read-cutover-trial.js',
       'services/sourcing-candidate-actions.js',
-      'services/sourcing-catalogue-handoff.js',
       'services/sourcing-workspace.js',
       'services/sourcing-source-autopilot.js',
       'services/suppliers/aliexpress-discovery.js',
