@@ -356,7 +356,8 @@ async function mountLive(page, data) {
     }
     if (url.pathname.endsWith('/import-passages')) {
       state.calls.push('passages');
-      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ passages: state.passages || [] }) });
+      const offset = Number(url.searchParams.get('offset') || 0);
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ passages: state.passages || [], offset, next_offset:null }) });
     }
     if (url.pathname.endsWith('/population')) {
       const kind = url.searchParams.get('kind');
@@ -487,6 +488,7 @@ test.describe('Cockpit imports — navigation canonique (vues exclusives)', () =
   const withLots = () => {
     const data = JSON.parse(JSON.stringify(calmPayload));
     data.lots = [{ run_ref: 'KIR-000009', provider: 'AliExpress', source_total: 712, business_status: 'RUNNING' }, { run_ref: 'KIR-000008', provider: 'CJ', source_total: 20, business_status: 'CLOSED' }];
+    data.run_nav = { older_ref:'KIR-000008', newer_ref:null };
     return data;
   };
 
