@@ -198,11 +198,15 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
 const done = { started_at: iso(20), finished_at: iso(19) };
 const completedPayload = JSON.parse(JSON.stringify(payload));
 Object.assign(completedPayload.selected, {
-  status: 'COMPLETED', progress_pct: 100, finished_at: iso(1),
+  status: 'RUNNING', progress_pct: 83, finished_at: null,
   diagnostics: { runtime_certified: false, pipeline_status: 'PARTIAL_BLOCKED' },
   stages: ['SOURCE_CONNECTED', 'RAW_IMPORT', 'REFINERY', 'TAXONOMY', 'CERTIFICATION', 'CATALOGUE'].map((key) => ({
-    key, status: 'COMPLETED', processed: 12, total: 12, ...done,
-    ...(key === 'CATALOGUE' ? { reason: 'awaiting_explicit_operator_promotion', processed: 0 } : {}),
+    key,
+    status: key === 'CATALOGUE' ? 'RUNNING' : 'COMPLETED',
+    processed: key === 'CATALOGUE' ? 0 : 12,
+    total: 12,
+    ...done,
+    ...(key === 'CATALOGUE' ? { reason: 'automatic_catalogue_handoff_pending', finished_at:null } : {}),
   })),
   item_events: true,
   current_item_kind: 'last_processed',
@@ -211,13 +215,16 @@ Object.assign(completedPayload.selected, {
 });
 completedPayload.selected.accounting.awaiting_catalogue_promotion = 12;
 completedPayload.selected.accounting.certified = 12;
-completedPayload.selected.sourcing_status = 'DONE';
+completedPayload.selected.sourcing_status = 'RUNNING';
 // Tout va bien : même run, sans alerte de source.
 const calmPayload = JSON.parse(JSON.stringify(completedPayload));
 calmPayload.selected.diagnostics = {};
 calmPayload.selected.accounting = { ...calmPayload.selected.accounting, quarantined: 0, deferred: 0, certification_blocked: 0, unaccounted: 0, overflow: 0, action_required: 0, catalogued: 12, awaiting_catalogue_promotion: 0 };
+const calmCatalogue = calmPayload.selected.stages.find((stage) => stage.key === 'CATALOGUE');
+Object.assign(calmCatalogue, { status:'COMPLETED', processed:12, reason:null, finished_at:iso(1) });
+Object.assign(calmPayload.selected, { status:'COMPLETED', progress_pct:100, finished_at:iso(1), sourcing_status:'DONE' });
 
-test.describe('Cockpit imports — run terminé avec alerte et validation manuelle', () => {
+test.describe('Cockpit imports — remise Catalogue automatique en cours', () => {
   test.beforeEach(async ({ page }) => { await mountCockpit(page, completedPayload); });
 
   test('pipeline du mock : grands cercles numérotés, libellé centré dessous, trait entre les cercles', async ({ page }) => {
@@ -251,7 +258,7 @@ test.describe('Cockpit imports — run terminé avec alerte et validation manuel
 
   test('écran calme : la garde fournisseur ne crée aucune alerte au N1', async ({ page }) => {
     await expect(page.locator('.kir-runtime-alert')).toHaveCount(0);
-    await expect(page.locator('.kir-handoff')).toContainText('En attente de remise');
+    await expect(page.locator('.kir-handoff')).toContainText('Remise automatique en attente');
   });
 
   test('capture de revue du run terminé', async ({ page }) => {
@@ -530,7 +537,7 @@ test.describe('Cockpit imports — drill-downs cohérents avec le N1', () => {
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Source');
     await expect(page.locator('[data-population-item]')).toHaveCount(0);
     await page.locator('.kir-back').click();
-    await page.locator('.kir-run-flow-step', { hasText: 'Catalogue' }).click();
+    await page.locator('.kir-run-flow-step', { hasText: 'Remise Catalogue' }).click();
     await expect(page.locator('.kir-drill-head h2')).toHaveText('Catalogue');
     await expect(page.locator('.kir-main')).toContainText('Remise terminée');
   });

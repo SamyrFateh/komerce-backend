@@ -59,7 +59,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'import-runtime.css'), 'utf8');
   expect(source).toContain('Action requise');
   expect(source).toContain('PASSAGE AU CATALOGUE');
-  expect(source).toContain('En attente de remise');
+  expect(source).toContain('Remise automatique en cours');
   expect(source).toContain('Détail technique du passage');
   expect(source).toContain('Historique des passages');
   expect(source).not.toContain('Clôture du lot');
@@ -80,8 +80,11 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('Passage en direct');
   expect(source).toContain('le même passage avance de bout en bout');
   expect(source).toContain('persistentRunFlow');
+  expect(source).toContain('Remise au Catalogue en cours');
   expect(source).toContain('Import automatique terminé');
   expect(source).toContain('parcours conservé à l’écran');
+  expect(source).toContain('automatic_catalogue_handoff_pending');
+  expect(source).not.toContain('awaiting_explicit_operator_promotion');
   expect(source).toContain('à remettre');
   expect(source).toContain('ACTIVATION_POLL_MS = 900');
   expect(source).toContain("NO_RESULT:'Sans résultat'");
@@ -133,13 +136,9 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(css).toContain('animation:none !important');
   expect(source).toContain('automaticPipelineDone');
   expect(source).toContain('le traitement automatique a atteint le Catalogue');
-  expect(css).toContain('.kir-run-flow-manual');
-  expect(css).toContain('grid-template-columns:repeat(6,minmax(0,1fr))');
+    expect(css).toContain('grid-template-columns:repeat(6,minmax(0,1fr))');
   expect(css).toContain('animation:none !important');
-  expect(source).toContain('reached_boundary:true');
-  expect(source).toContain('manual_label');
-  expect(source).toContain('has-manual-action');
-  expect(source).toContain('<em>${progress}%</em>');
+        expect(source).toContain('<em>${progress}%</em>');
   expect(css).toContain('font-size:16px');
   expect(css).toContain('padding:20px 24px 32px !important');
   expect(css).toContain('.kir-source-pill.is-prep');

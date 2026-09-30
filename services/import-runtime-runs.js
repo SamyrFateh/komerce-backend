@@ -481,7 +481,7 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
       certified,
       {
         reason: catalogueStatus === 'RUNNING'
-          ? 'awaiting_explicit_operator_promotion'
+          ? 'automatic_catalogue_handoff_pending'
           : null,
       }
     ),
@@ -508,11 +508,8 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
   }
 
   const catalogueStage = stages.find((item) => item.key === 'CATALOGUE');
-  const catalogueAwaitingDecision = catalogueStage?.status === 'RUNNING'
-    && catalogueStage?.reason === 'awaiting_explicit_operator_promotion';
-  const automaticStagesCompleted = stages
-    .filter((item) => item.key !== 'CATALOGUE')
-    .every((item) => item.status === 'COMPLETED');
+  const catalogueHandoffPending = catalogueStage?.status === 'RUNNING'
+    && catalogueStage?.reason === 'automatic_catalogue_handoff_pending';
 
   let status = failedRun ? 'FAILED' : 'RUNNING';
   let failureReason = failedRun ? persistedFailureReason : null;
@@ -523,14 +520,11 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
   } else if (
     status !== 'FAILED'
     && balanced
-    && (
-      stages.every((s) => s.status === 'COMPLETED')
-      || (automaticStagesCompleted && catalogueAwaitingDecision)
-    )
+    && stages.every((s) => s.status === 'COMPLETED')
   ) {
-    // The automatic import is finished once the certified cohort has reached
-    // the Catalogue decision boundary. Human promotion is a business action,
-    // not a reason to keep the runtime "RUNNING".
+    // La remise Sourcing → Catalogue fait partie du passage automatique.
+    // Le run n'est terminé que lorsque les brouillons Catalogue existent
+    // réellement ; un handoff encore en cours reste RUNNING.
     status = 'COMPLETED';
   }
 
@@ -542,11 +536,20 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
     anomaly: intakeRecorded ? rec.unaccounted + rec.overflow : 0,
   });
   accounting.action_required = actionRequired.count;
+  // sourcing_status décrit uniquement l'autorité Sourcing : une remise Catalogue
+  // automatique encore en cours ne transforme pas un Sourcing terminé en LIVE,
+  // et une vraie exception humaine reste visible même si le run global poursuit
+  // encore sa matérialisation Catalogue.
+  const sourcingStagesDone = stages
+    .filter((item) => item.key !== 'CATALOGUE')
+    .every((item) => item.status === 'COMPLETED');
   const sourcingStatus = status === 'FAILED' && actionRequired.count === 0
     ? 'BLOCKED'
-    : status === 'RUNNING'
-      ? 'RUNNING'
-      : actionRequired.count > 0 ? 'ACTION_REQUIRED' : 'DONE';
+    : actionRequired.count > 0
+      ? 'ACTION_REQUIRED'
+      : sourcingStagesDone
+        ? 'DONE'
+        : 'RUNNING';
 
   const current = stages.find((s) => s.status !== 'COMPLETED') || stages[stages.length - 1];
   const processed = Math.min(
@@ -559,9 +562,7 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
     if (item.total > 0) return sum + Math.min(1, item.processed / item.total);
     return sum + 0.15;
   }, 0);
-  const progressPct = status === 'COMPLETED' && catalogueAwaitingDecision
-    ? 100
-    : Math.min(100, Math.round((stageProgress / STAGE_KEYS.length) * 100));
+  const progressPct = Math.min(100, Math.round((stageProgress / STAGE_KEYS.length) * 100));
 
   const recentItems = [...rows]
     .sort((a, b) => new Date(b.updated_at || 0) - new Date(a.updated_at || 0))

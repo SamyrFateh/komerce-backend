@@ -113,7 +113,7 @@ test('niveau 1 : quatre étapes sans compteur, quatre résultats, aucun jargon i
   ui.render(node, payload);
   const html = node.innerHTML;
   expect(html).toContain('FLUX DU PASSAGE');
-  for (const label of ['Source', 'Produits reçus', 'Contrôle automatique', 'Catalogue']) expect(html).toContain(`<strong>${label}</strong>`);
+  for (const label of ['Source', 'Produits reçus', 'Contrôle automatique', 'Remise Catalogue']) expect(html).toContain(`<strong>${label}</strong>`);
   for (const jargon of ['Raffinerie', 'Taxonomie', 'Certification', 'certifié(s) sourcing', 'preuve runtime']) expect(html).not.toContain(jargon);
   // Le pipeline ne répète aucun compteur : uniquement des états.
   const flow = html.slice(html.indexOf('kir-run-flow-track'), html.indexOf('RÉSULTAT DU PASSAGE'));
@@ -183,13 +183,15 @@ const CALM_STAGES = [
   { key:'REFINERY', status:'COMPLETED', processed:12, total:12 },
   { key:'TAXONOMY', status:'COMPLETED', processed:12, total:12 },
   { key:'CERTIFICATION', status:'COMPLETED', processed:12, total:12 },
-  { key:'CATALOGUE', status:'RUNNING', processed:0, total:12, reason:'awaiting_explicit_operator_promotion' },
+  { key:'CATALOGUE', status:'RUNNING', processed:0, total:12, reason:'automatic_catalogue_handoff_pending' },
 ];
 
 // Base = CAS A : 20 reçus, 12 prêts, 1 écarté, 7 DEFERRED, 0 action requise, rien au Catalogue.
 function scenario(accounting = {}, selected = {}) {
   const p = JSON.parse(JSON.stringify(payload));
-  p.selected.status = 'COMPLETED';
+  p.selected.status = 'RUNNING';
+  // Le run global reste LIVE pendant la remise Catalogue, mais l'autorité
+  // Sourcing amont est déjà terminée.
   p.selected.sourcing_status = 'DONE';
   p.selected.action_items = [];
   p.selected.accounting = {
@@ -214,15 +216,18 @@ test('CAS A : 20 reçus / 12 prêts / 1 écarté / 0 action ; remise en attente,
   expect(tile(html, 'Action requise')).toBe('0');
   expect(html).toContain('20/20 produits comptabilisés');
   expect(html).toContain('PASSAGE AU CATALOGUE');
-  expect(html).toContain('En attente de remise');
+  expect(html).toContain('Remise automatique en cours');
   expect(html).toContain('kir-handoff is-waiting');
   for (const forbidden of ['12 transmis', '7 à examiner', 'Décisions attendues', 'kir-handoff is-clean', 'Remise terminée', 'remis au Catalogue']) {
     expect(html).not.toContain(forbidden);
   }
-  // Écran calme : ni orange, ni rouge, ni alerte, ni barre de progression.
-  for (const noise of ['is-attention', 'is-failed', 'kir-runtime-alert', 'Progression globale', 'Ce qui vous attend']) expect(html).not.toContain(noise);
+  // Écran calme : ni orange, ni rouge, ni alerte. La progression reste visible
+  // parce que la remise Catalogue automatique travaille encore réellement.
+  for (const noise of ['is-attention', 'is-failed', 'kir-runtime-alert', 'Ce qui vous attend']) expect(html).not.toContain(noise);
+  expect(html).toContain('Progression globale');
+  expect(html).toContain('Remise Catalogue · 0 / 12');
   expect(html).toContain('Terminé</span>');
-  expect(stepClass(html, 'Catalogue')).toContain('is-pending');
+  expect(stepClass(html, 'Remise Catalogue')).toContain('is-running');
   expect(stepClass(html, 'Contrôle automatique')).toContain('is-completed');
 });
 
@@ -230,18 +235,18 @@ test('CAS B : certified = catalogued = 12 → « ✓ Remise terminée », étape
   const html = render(scenario({ catalogued:12, awaiting_catalogue_promotion:0 }));
   expect(html).toContain('kir-handoff is-clean');
   expect(html).toContain('Remise terminée');
-  expect(stepClass(html, 'Catalogue')).toContain('is-completed');
+  expect(stepClass(html, 'Remise Catalogue')).toContain('is-completed');
   expect(html).not.toContain('12/12');
-  expect(html).not.toContain('En attente de remise');
+  expect(html).not.toContain('Remise automatique en cours');
 });
 
 test('CAS C : 12 prêts, 9 au Catalogue, aucune intervention → « 3 restent à remettre », pas d’action requise', () => {
   const html = render(scenario({ catalogued:9, awaiting_catalogue_promotion:3 }));
-  expect(html).toContain('3 restent à remettre');
+  expect(html).toContain('3 restent à remettre automatiquement');
   expect(tile(html, 'Action requise')).toBe('0');
   expect(html).not.toContain('is-attention');
   expect(html).not.toContain('Remise terminée');
-  expect(stepClass(html, 'Catalogue')).toContain('is-pending');
+  expect(stepClass(html, 'Remise Catalogue')).toContain('is-running');
 });
 
 test('CAS D : 7 DEFERRED sans revue humaine → Action requise = 0, aucune carte orange', () => {
@@ -513,16 +518,16 @@ test('CAS E : « Contrôle automatique » = Préparation / Classement / Validati
   expect((body.match(/✓ Terminé/g) || []).length).toBe(3);
 });
 
-test('CAS F : jamais « COMPLETED · 0 / 12 » — le détail technique dit « ✓ Terminé » pour une étape terminée', () => {
+test('CAS F : une étape terminée n’affiche jamais un faux ratio ; la remise Catalogue en cours peut montrer son vrai 0 / 12', () => {
   const p = scenario();
   p.selected.stages = p.selected.stages.map(stage => stage.key === 'REFINERY' ? { ...stage, status:'COMPLETED', processed:0, total:12 } : stage);
   const html = drill('history', 'from=control', p);
   expect(html).toContain('Détail technique du passage');
   expect(html).toContain('← Retour au contrôle automatique');
   expect(html).not.toMatch(/COMPLETED\s*·/);
-  expect(html).not.toMatch(/0\s*\/\s*12/);
   expect(html).toContain('✓ Terminé');
-  // Sans provenance « contrôle » : retour au lot.
+  expect(html).toContain('Remise automatique · 0 / 12');
+  // Sans provenance « contrôle » : retour au passage.
   expect(drill('history', '', p)).toContain('← Retour au passage');
 });
 
@@ -536,9 +541,9 @@ test('Source : la source utilisée, sans catalogue de produits', () => {
 test('Catalogue : uniquement la frontière de remise, ni prix, ni marché, ni vente', () => {
   const html = drill('handoff', '', scenario({ catalogued:9, awaiting_catalogue_promotion:3 }), { kind:'ready', total:12, items:[popItem(1)], unlisted:[] });
   const body = html.slice(html.indexOf('kir-drill-head'));
-  expect(body).toContain('3 restent à remettre');
+  expect(body).toContain('3 restent à remettre automatiquement');
   for (const commercial of ['Prix', 'marché', 'Prêts à vendre', 'En vente', 'Décisions commerciales']) expect(body).not.toContain(commercial);
-  expect(drill('handoff')).toContain('En attente de remise');
+  expect(drill('handoff')).toContain('Remise automatique en cours');
 });
 
 // ── Navigation canonique : vues exclusives ────────────────────────────────────
