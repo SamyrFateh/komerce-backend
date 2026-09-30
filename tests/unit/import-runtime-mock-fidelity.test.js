@@ -153,10 +153,10 @@ describe('import-runtime — doctrine LIVE Operations', () => {
     expect(source).toContain("data-cockpit-language', 'live-ops'");
   });
 
-  test('la frontière Catalogue reste une décision manuelle distincte du runtime automatique', () => {
-    expect(source).toContain("reason === 'awaiting_explicit_operator_promotion'");
-    expect(source).toContain('manual_label');
-    expect(css).toContain('.kir-run-flow-manual');
-    expect(css).toContain('border-color:#8A5A0B');
+  test('la frontière Catalogue est une remise automatique, sans décision prix ni CTA manuelle', () => {
+    expect(source).toContain("reason === 'automatic_catalogue_handoff_pending'");
+    expect(source).toContain('Remise automatique');
+    expect(source).not.toContain('manual_label');
+    expect(source).not.toContain('awaiting_explicit_operator_promotion');
   });
 });
