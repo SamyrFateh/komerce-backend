@@ -6119,6 +6119,10 @@
           "test": "tests/unit/import-lot-registry.test.js"
         },
         {
+          "statement": "navigation canonique du domaine Sourcing à vues exclusives (une vue = une question) : Live, Passages et Sources remplacent la zone de travail sans jamais s'empiler sous le cockpit ; Live s'arrête à l'activité (ni rail de lots, ni registre, ni inventaire des sources) et change de lot par un sélecteur compact ; Passages est l'historique Sourcing pur (reçus, prêts, écartés, action requise, remise) dont chaque ligne rouvre Live ; chaque vue secondaire porte son fil d'Ariane et un retour vers son parent réel ; aucune donnée aval (prix, marché, vente, clôture) dans ces vues",
+          "test": "tests/unit/import-runtime-journey.test.js"
+        },
+        {
           "statement": "drill-downs du cockpit Sourcing : un clic sur un chiffre ouvre les produits qui le composent (population reçus / prêts / écartés, action requise = liste filtrée), un clic sur une étape ouvre sa vue métier (Source, Contrôle automatique en Préparation / Classement / Validation, frontière Catalogue sans prix ni vente) ; les six étapes du moteur ne vivent que dans le Détail technique du passage, atteint par un lien secondaire, et une étape COMPLETED n'y affiche jamais un ratio incohérent",
           "test": "tests/unit/import-runtime-journey.test.js"
         },
@@ -26644,6 +26648,10 @@
       },
       "authority": "backend-core — tout changement du cycle de vie candidat (states, transitions) doit être validé par le propriétaire de routes/sourcing-scanner.js",
       "invariants": [
+        {
+          "statement": "GET /import-passages expose l'historique des runs KIR en vérité Sourcing seulement (reçus, prêts certified, écartés, action requise, remise déduite de catalogued) ; aucune donnée prix / marché / vente / clôture",
+          "test": "tests/unit/import-runtime-runs.test.js"
+        },
         {
           "statement": "GET /import-runs/:runRef/population?kind=received|ready|discarded expose les produits qui composent un chiffre du cockpit ; ce qui n'existe qu'en compteur d'intake est restitué en groupes explicites, jamais inventé ; une étape COMPLETED a toujours processed = total (le compteur brut reste dans metrics.observed)",
           "test": "tests/unit/import-runtime-runs.test.js"

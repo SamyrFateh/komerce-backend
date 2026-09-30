@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-30T15:48:21.110Z",
+  "generatedAt": "2026-09-30T16:32:40.454Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 662,
-    "protected": 607,
+    "total": 663,
+    "protected": 608,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2263,6 +2263,14 @@
     },
     {
       "key": "GET /api/admin/workspaces/sourcing/import-cockpit",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/sourcing/import-passages",
       "level": "PROTECTED",
       "roles": [
         "admin",

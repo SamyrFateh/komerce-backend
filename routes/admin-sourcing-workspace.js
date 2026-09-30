@@ -97,6 +97,13 @@ router.get('/import-runs', async (req, res, next) => {
   } catch (err) { handleError(err, res, next); }
 });
 
+router.get('/import-passages', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store');
+    res.json({ passages: await importRuns.listPassages({ limit: req.query.limit }) });
+  } catch (err) { handleError(err, res, next); }
+});
+
 router.get('/import-cockpit', async (req, res, next) => {
   try {
     const requestedRun = req.query.run ? String(req.query.run) : null;

@@ -98,8 +98,8 @@ test('état vide garde une ossature Legacy claire et actionnable', () => {
     lots: [],
     selected: null,
   });
-  expect(node.innerHTML).toContain('Cockpit des imports');
-  expect(node.innerHTML).toContain('Pilotez les sources et suivez chaque lot de bout en bout.');
+  expect(node.innerHTML).toContain('Suivi d’import');
+  expect(node.innerHTML).toContain('Aucun passage pour l’instant');
   expect(node.innerHTML).toContain('Aucun lot importé');
   expect(node.innerHTML).toContain('Activez une source pour lancer un premier passage réel');
   expect(node.innerHTML).toContain('Tous les lots');
@@ -158,9 +158,9 @@ test('commandes visibles même si le run n\'expose pas le source_ref de la carte
     ui.render(node, p);
     expect(node.innerHTML).toContain('data-source-command="update"');
     expect(node.innerHTML).toContain('data-source-command="stop"');
-    // Les commandes précèdent le flux ; la section Sources basse est conservée.
+    // Les commandes précèdent le flux ; l'inventaire des sources n'est plus sous le cockpit (vue Sources).
     expect(node.innerHTML.indexOf('kir-command-bar')).toBeLessThan(node.innerHTML.indexOf('kir-run-flow'));
-    expect(node.innerHTML).toContain('data-source-toggle');
+    expect(node.innerHTML).not.toContain('data-source-toggle');
   }
 });
 
@@ -490,4 +490,109 @@ test('Catalogue : uniquement la frontière de remise, ni prix, ni marché, ni ve
   expect(body).toContain('3 restent à remettre');
   for (const commercial of ['Prix', 'marché', 'Prêts à vendre', 'En vente', 'Décisions commerciales']) expect(body).not.toContain(commercial);
   expect(drill('handoff')).toContain('En attente de remise');
+});
+
+// ── Navigation canonique : vues exclusives ────────────────────────────────────
+const PASSAGES = [
+  { run_ref:'KIR-000006', provider:'AliExpress', started_at:'2026-09-30T14:35:00Z', sourcing_status:'DONE', state_label:'Terminé', source_total:20, certified:12, discarded:1, action_required:0, handoff_label:'En attente' },
+  { run_ref:'KIR-000005', provider:'AliExpress', started_at:'2026-09-30T14:06:00Z', sourcing_status:'DONE', state_label:'Terminé', source_total:20, certified:12, discarded:1, action_required:0, handoff_label:'Terminée' },
+  { run_ref:'KIR-000004', provider:'CJ', started_at:'2026-09-30T14:05:00Z', sourcing_status:'ACTION_REQUIRED', state_label:'Action requise', source_total:20, certified:9, discarded:1, action_required:3, handoff_label:'En attente' },
+];
+const inMain = html => html.slice(html.indexOf('<main class="kir-main">'));
+
+test('CAS A : LIVE = un seul cockpit — ni registre, ni rail KIR permanent, ni bloc Sources dessous', () => {
+  const html = render(scenario());
+  for (const gone of ['kir-lot-strip', 'kir-lot-chip', 'kir-secondary', 'kir-source-control', 'data-source-toggle', 'Registre des lots', 'Tous les lots']) {
+    expect(html).not.toContain(gone);
+  }
+  expect(html).toContain('kir-domain-nav');
+  expect((html.match(/kir-run-truth-grid/g) || []).length).toBe(1);
+  // Sélecteur compact : précédent · liste · suivant · Tous les passages.
+  expect(html).toContain('data-lot-select');
+  expect(html).toContain('← lot précédent');
+  expect(html).toContain('lot suivant →');
+  expect(html).toContain(`href="/admin/import-runtime?run=${RUN}&view=passages"`);
+});
+
+test('domaine : Live / Passages / Sources, l\'onglet actif suit la vue', () => {
+  const html = render(scenario());
+  expect(html).toMatch(/kir-domain-nav[\s\S]*is-active[^>]*>Live/);
+  for (const label of ['Live', 'Passages', 'Sources']) expect(html).toContain(`>${label}</a>`);
+  expect(drill('passages', '', scenario(), null)).toMatch(/is-active[^>]*>Passages/);
+  expect(drill('sources')).toMatch(/is-active[^>]*>Sources/);
+});
+
+test('CAS B : « Tous les passages » remplace le cockpit par la vue Passages (Sourcing pur)', () => {
+  const p = scenario();
+  p.passages = PASSAGES;
+  const html = render(p, `?run=${RUN}&view=passages`);
+  for (const gone of ['kir-run-flow', 'kir-run-truth', 'kir-command-bar', 'kir-live-hero', 'kir-handoff']) expect(html).not.toContain(gone);
+  expect(html).toContain('Historique des passages');
+  expect(html).toContain('Sourcing</a><i aria-hidden="true">›</i><span aria-current="page">Passages');
+  for (const col of ['Passage', 'Source', 'Date / heure', 'État Sourcing', 'Produits reçus', 'Prêts Catalogue', 'Écartés', 'Action requise', 'Remise Catalogue']) expect(html).toContain(`<th>${col}</th>`);
+  for (const gone of ['Décisions finales', 'Approuvés vente', 'Reste']) expect(html).not.toContain(gone);
+  expect((html.match(/data-row-href/g) || []).length).toBe(3);
+  expect(html).toContain('KIR-000004');
+  expect(html).toContain('Action requise</span>');
+  expect(html).toContain('Terminée');
+});
+
+test('CAS C : une ligne de Passages rouvre LIVE sur ce KIR (ligne entière cliquable)', () => {
+  const p = scenario();
+  p.passages = PASSAGES;
+  const html = render(p, `?run=${RUN}&view=passages`);
+  expect(html).toContain('data-row-href="/admin/import-runtime?run=KIR-000004"');
+  expect(html).toContain('<a href="/admin/import-runtime?run=KIR-000004" data-cockpit-nav>KIR-000004</a>');
+});
+
+test('CAS D : « Produits reçus 20 » = vue exclusive, sans le cockpit au-dessus', () => {
+  const html = drill('population', 'kind=received', null, { kind:'received', total:20, items:[popItem(1)], unlisted:[{ label:'Écartés dès la réception (voir Écartés automatiquement)', count:19 }] });
+  for (const gone of ['kir-run-flow', 'kir-run-truth', 'kir-command-bar', 'kir-live-hero', 'kir-lot-picker']) expect(html).not.toContain(gone);
+  expect(html).toContain('Produits reçus · 20');
+  expect(html).toContain(`Sourcing</a><i aria-hidden="true">›</i><a href="/admin/import-runtime?run=${RUN}" data-cockpit-nav>${RUN}</a><i aria-hidden="true">›</i><span aria-current="page">Produits reçus`);
+  expect(html).toContain('← Retour au lot');
+});
+
+test('CAS E/F : Prêts (12) et Action requise (3) — vues exclusives avec exactement leurs objets', () => {
+  const ready = drill('population', 'kind=ready', null, { kind:'ready', total:12, items:Array.from({ length:12 }, (_, i) => popItem(i + 1)), unlisted:[] });
+  expect((ready.match(/data-population-item/g) || []).length).toBe(12);
+  expect(ready).not.toContain('kir-run-truth');
+  const action = drill('exceptions', '', scenario({ quarantined:3, action_required:3 }, { sourcing_status:'ACTION_REQUIRED', action_items:ITEMS }));
+  expect((action.match(/kir-row-action/g) || []).length).toBe(3);
+  expect(action).not.toContain('kir-run-truth');
+  expect(action).toContain('Action requise · 3');
+});
+
+test('CAS G : Contrôle automatique = Préparation / Classement / Validation + lien détail technique', () => {
+  const html = drill('control');
+  expect(html).not.toContain('kir-run-flow');
+  for (const label of ['Préparation', 'Classement', 'Validation']) expect(html).toContain(`<strong>${label}</strong>`);
+  expect(html).toContain('Voir le détail technique →');
+  expect(html).toContain('Contrôle automatique</span>');
+});
+
+test('CAS H : détail technique = les 6 étapes backend, fil d’Ariane et retour au contrôle automatique', () => {
+  const html = drill('history', 'from=control');
+  const main = inMain(html);
+  expect((main.match(/kir-history-stage /g) || []).length).toBe(6);
+  for (const label of ['Raffinerie', 'Taxonomie', 'Certification']) expect(main).toContain(label);
+  expect(main).toContain('← Retour au contrôle automatique');
+  expect(main).toContain(`<a href="/admin/import-runtime?run=${RUN}&view=control" data-cockpit-nav>Contrôle automatique</a><i aria-hidden="true">›</i><span aria-current="page">Détail technique`);
+  expect(html).not.toContain('kir-run-truth');
+});
+
+test('Sources : inventaire des fournisseurs dans sa propre vue, plus sous le cockpit', () => {
+  const html = drill('sources');
+  expect(html).toContain('data-source-toggle');
+  expect(html).not.toContain('kir-run-truth');
+  expect(html).not.toContain('kir-command-bar');
+});
+
+test('aucune donnée aval (prix, marché, vente, clôture) dans les vues Sourcing', () => {
+  const p = scenario();
+  p.passages = PASSAGES;
+  const views = [render(scenario()), render(p, `?run=${RUN}&view=passages`), drill('sources'), drill('control'), drill('history'), drill('source')];
+  for (const html of views) {
+    for (const downstream of ['Approuvés vente', 'Décisions finales', 'Clôture du lot', 'Prêts à vendre', 'Décisions commerciales', 'exposition marché']) expect(html).not.toContain(downstream);
+  }
 });

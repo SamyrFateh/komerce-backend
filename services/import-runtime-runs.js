@@ -288,7 +288,7 @@ async function getPopulation(runRef, kind, q = db) {
   if (!POPULATION_KINDS.includes(kind)) return null;
   const { rows: [run] } = await q.query(`${RUN_SELECT} WHERE r.run_ref = $1`, [runRef]);
   if (!run) return null;
-  const rows = run.import_id ? await loadRows(run.id, q) : [];
+  const rows = await loadRows(run.id, q);
   return buildPopulation({ kind, rows, intake: run.intake || {}, sourceTotal: run.source_total });
 }
 
@@ -791,6 +791,47 @@ async function getRun(runRef, q = db) {
   return run ? project(run, q, true) : null;
 }
 
+// Passages : l'historique des runs KIR, uniquement la vérité Sourcing (jamais prix / marché / vente).
+const PASSAGE_STATE = Object.freeze({ RUNNING: 'LIVE', DONE: 'Terminé', ACTION_REQUIRED: 'Action requise', BLOCKED: 'Bloqué' });
+
+function handoffLabel(certified, catalogued) {
+  if (!certified) return '—';
+  if (catalogued >= certified) return 'Terminée';
+  if (catalogued === 0) return 'En attente';
+  return `${certified - catalogued} restent`;
+}
+
+function buildPassage(run, rows) {
+  const projection = buildProjection({ run, rows });
+  const a = projection.accounting;
+  return {
+    run_ref: run.run_ref,
+    provider: run.provider || null,
+    source_ref: run.source_ref || null,
+    started_at: iso(run.started_at),
+    sourcing_status: projection.sourcing_status,
+    state_label: PASSAGE_STATE[projection.sourcing_status] || 'Terminé',
+    source_total: a.source_total,
+    certified: a.certified,
+    discarded: a.duplicates + a.rejected,
+    action_required: a.action_required,
+    catalogued: a.catalogued,
+    handoff_label: handoffLabel(a.certified, a.catalogued),
+  };
+}
+
+async function listPassages({ limit = 30 } = {}, q = db) {
+  const n = Math.max(1, Math.min(50, Number(limit) || 30));
+  const { rows: runs } = await q.query(`${RUN_SELECT} ORDER BY r.started_at DESC LIMIT $1`, [n]);
+  const passages = [];
+  for (const run of runs) {
+    const rows = await loadRows(run.id, q);
+    passages.push(buildPassage(run, rows));
+  }
+  return passages;
+}
+
+
 async function listRuns({ limit = 10 } = {}, q = db) {
   const n = Math.max(1, Math.min(50, Number(limit) || 10));
   const { rows } = await q.query(
@@ -915,4 +956,6 @@ module.exports = {
   POPULATION_KINDS,
   buildPopulation,
   getPopulation,
+  buildPassage,
+  listPassages,
 };

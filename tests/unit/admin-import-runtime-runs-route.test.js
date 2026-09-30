@@ -33,6 +33,7 @@ const mockRuns = {
   listRuns: jest.fn(),
   getProductTrace: jest.fn(),
   getPopulation: jest.fn(),
+  listPassages: jest.fn(),
 };
 
 jest.mock('../../services/import-runtime-runs', () => ({
@@ -40,6 +41,7 @@ jest.mock('../../services/import-runtime-runs', () => ({
   listRuns: (...args) => mockRuns.listRuns(...args),
   getProductTrace: (...args) => mockRuns.getProductTrace(...args),
   getPopulation: (...args) => mockRuns.getPopulation(...args),
+  listPassages: (...args) => mockRuns.listPassages(...args),
   POPULATION_KINDS: ['received', 'ready', 'discarded'],
 }));
 
@@ -124,6 +126,15 @@ describe('import runtime run routes', () => {
     mockRuns.getPopulation.mockClear();
     expect((await request(app()).get(`${BASE}/not-a-ref/population?kind=received`)).status).toBe(404);
     expect(mockRuns.getPopulation).not.toHaveBeenCalled();
+  });
+
+  test('passages : historique Sourcing des runs KIR', async () => {
+    mockRuns.listPassages.mockResolvedValue([{ run_ref: 'KIR-000006', certified: 12, handoff_label: 'En attente' }]);
+    const response = await request(app()).get('/api/admin/workspaces/sourcing/import-passages?limit=20');
+    expect(response.status).toBe(200);
+    expect(response.body.passages).toHaveLength(1);
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(mockRuns.listPassages).toHaveBeenCalledWith({ limit: '20' });
   });
 
   test('liste les runs récents', async () => {

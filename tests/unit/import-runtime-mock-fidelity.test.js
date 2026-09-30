@@ -90,17 +90,16 @@ describe('import-runtime — fidélité visuelle au mock', () => {
     expect(css).toContain('.kmc-import-runtime .kir-page{background:transparent !important');
   });
 
-  test('ordre canonique : pipeline → KPI → activité/objet courant → zone secondaire', () => {
+  test('ordre canonique LIVE : pipeline → KPI → activité/objet courant, sans zone secondaire empilée', () => {
     const flow = source.indexOf('${persistentRunFlow(run, sourceControls)}');
     const truth = source.indexOf('${runTruthStrip(run)}');
     const progress = source.indexOf('${activationState ? \'\' : runProgressRow(run)}');
-    const live = source.indexOf("${view === 'overview' ? renderLiveCore(run) : ''}");
-    const secondary = source.indexOf('data-cockpit-zone="secondary"');
+    const live = source.indexOf('${renderLiveCore(run)}');
     expect(flow).toBeGreaterThan(-1);
     expect(truth).toBeGreaterThan(flow);
     expect(progress).toBeGreaterThan(truth);
     expect(live).toBeGreaterThan(progress);
-    expect(secondary).toBeGreaterThan(live);
+    expect(source).not.toContain('data-cockpit-zone="secondary"');
   });
 
   test('les 4 cartes de synthèse ont un filet haut de 3px vert / orange / bleu / neutre', () => {

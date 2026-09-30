@@ -316,6 +316,8 @@ module.exports = {
              'doit être validé par le propriétaire de routes/sourcing-scanner.js',
 
   invariants: [
+    { statement: 'GET /import-passages expose l\'historique des runs KIR en vérité Sourcing seulement (reçus, prêts certified, écartés, action requise, remise déduite de catalogued) ; aucune donnée prix / marché / vente / clôture',
+      test: 'tests/unit/import-runtime-runs.test.js' },
     { statement: 'GET /import-runs/:runRef/population?kind=received|ready|discarded expose les produits qui composent un chiffre du cockpit ; ce qui n\'existe qu\'en compteur d\'intake est restitué en groupes explicites, jamais inventé ; une étape COMPLETED a toujours processed = total (le compteur brut reste dans metrics.observed)',
       test: 'tests/unit/import-runtime-runs.test.js' },
     { statement: 'la projection d\'un run expose action_required / action_items / sourcing_status : seuls quarantaine, certification bloquée et anomalie de comptage demandent une action humaine ; DEFERRED, rejet conforme et exceptions aval Catalogue ne comptent jamais ; la liste d\'items a toujours la longueur du compteur',

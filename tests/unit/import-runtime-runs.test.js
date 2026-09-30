@@ -500,3 +500,32 @@ describe('import runtime — drill-downs : populations et compteurs cohérents',
     for (const s of projection.stages) expect(s.processed).toBeLessThanOrEqual(s.total || s.processed);
   });
 });
+
+describe('import runtime — passages (historique Sourcing)', () => {
+  const intake = (over = {}) => ({
+    recorded_at: T1, accepted: 12, duplicates: 0, rejected: 1, quarantined: 0, deferred: 7,
+    ready_for_refinery: 12, certification_blocked: 0, pipeline_status: 'CANONICAL_RESOLVED', capture_id: 'cap-1', ...over,
+  });
+  const twelve = (over = {}) => Array.from({ length: 12 }, (_, i) => candidate(i + 1, over));
+  const rest = () => Array.from({ length: 7 }, (_, i) => candidate(100 + i, { state: 'watchlist' }));
+
+  test('ligne Sourcing pure : reçus / prêts / écartés / action requise / remise — jamais de donnée aval', () => {
+    const passage = runs.buildPassage(baseRun({ run_ref: 'KIR-000006', source_total: 20, intake: intake() }), [...twelve(), ...rest()]);
+    expect(passage).toMatchObject({
+      run_ref: 'KIR-000006', source_total: 20, certified: 12, discarded: 1, action_required: 0,
+      catalogued: 0, handoff_label: 'En attente', state_label: 'Terminé', sourcing_status: 'DONE',
+    });
+    expect(Object.keys(passage).join(' ')).not.toMatch(/price|market|approved|commercial|closure|decisions/i);
+  });
+
+  test('remise terminée / restent / action requise', () => {
+    const done = runs.buildPassage(baseRun({ source_total: 20, intake: intake() }),
+      [...twelve({ state: 'imported_to_catalog', product_ref: 'P-1' }), ...rest()]);
+    expect(done.handoff_label).toBe('Terminée');
+    const rows = [...twelve(), ...rest(),
+      candidate(201, { state: 'quarantined', promotion_status: 'QUARANTINED_IMAGE_MISSING' })];
+    const action = runs.buildPassage(baseRun({ source_total: 20, intake: intake({ quarantined: 1, deferred: 6 }) }), rows);
+    expect(action.action_required).toBe(1);
+    expect(action.state_label).toBe('Action requise');
+  });
+});
