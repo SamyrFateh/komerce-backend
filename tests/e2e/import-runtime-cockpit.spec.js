@@ -51,7 +51,7 @@ const payload = {
   },
 };
 
-async function mountCockpit(page) {
+async function mountCockpit(page, data = payload) {
   await page.route(`${ORIGIN}/**`, async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname === '/admin/import-runtime') {
@@ -76,7 +76,7 @@ async function mountCockpit(page) {
   await page.evaluate((data) => {
     const root = document.getElementById('canonical-admin-root');
     window.KomerceCanonicalImportRuntime.render(root, data);
-  }, payload);
+  }, data);
 }
 
 test.describe('Cockpit imports — conformité au mock noir', () => {
@@ -174,3 +174,54 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
     await page.screenshot({ path: testInfo.outputPath('import-runtime-cockpit.png') });
   });
 });
+
+// État réel observé en production : run terminé, promotion Catalogue en attente,
+// alerte de certification runtime. Les lignes du pipeline ne doivent pas barrer les libellés.
+const done = { started_at: iso(20), finished_at: iso(19) };
+const completedPayload = JSON.parse(JSON.stringify(payload));
+Object.assign(completedPayload.selected, {
+  status: 'COMPLETED', progress_pct: 100, finished_at: iso(1),
+  diagnostics: { runtime_certified: false, pipeline_status: 'PARTIAL_BLOCKED' },
+  stages: ['SOURCE_CONNECTED', 'RAW_IMPORT', 'REFINERY', 'TAXONOMY', 'CERTIFICATION', 'CATALOGUE'].map((key) => ({
+    key, status: 'COMPLETED', processed: 12, total: 12, ...done,
+    ...(key === 'CATALOGUE' ? { reason: 'awaiting_explicit_operator_promotion', processed: 0 } : {}),
+  })),
+  item_events: true,
+  current_item_kind: 'last_processed',
+  current_item: { product_ref: 'P-1', product_name: 'Produit récent', supplier_product_id: 'SP-1', stage: 'TAXONOMY', state: 'deferred',
+    purchase_price: 7.65, currency: 'USD', duration_ms: 1200, change_kind: 'created', updated_at: iso(1) },
+});
+completedPayload.selected.accounting.awaiting_catalogue_promotion = 12;
+
+test.describe('Cockpit imports — run terminé avec alerte et validation manuelle', () => {
+  test.beforeEach(async ({ page }) => { await mountCockpit(page, completedPayload); });
+
+  test('les libellés du pipeline masquent le trait de liaison (jamais barrés)', async ({ page }) => {
+    const steps = await page.evaluate(() => [...document.querySelectorAll('.kir-run-flow-step')].map((step) => {
+      const label = step.querySelector(':scope > div');
+      const cs = getComputedStyle(label);
+      return { bg: cs.backgroundColor, text: label.textContent.trim().slice(0, 20) };
+    }));
+    expect(steps.length).toBeGreaterThanOrEqual(6);
+    for (const step of steps) expect(step.bg).toBe('rgb(9, 22, 37)');
+  });
+
+  test('l’alerte de certification reste sombre et lisible', async ({ page }) => {
+    const alert = page.locator('.kir-runtime-alert');
+    await expect(alert).toBeVisible();
+    const colors = await alert.evaluate((el) => ({
+      bg: getComputedStyle(el).backgroundColor,
+      title: getComputedStyle(el.querySelector('strong')).color,
+      text: getComputedStyle(el.querySelector('span')).color,
+    }));
+    const lum = (c) => c.match(/\d+/g).slice(0, 3).map(Number).reduce((a, b) => a + b, 0) / 3;
+    expect(lum(colors.bg)).toBeLessThan(80);
+    expect(lum(colors.title)).toBeGreaterThan(140);
+    expect(lum(colors.text)).toBeGreaterThan(140);
+  });
+
+  test('capture de revue du run terminé', async ({ page }) => {
+    await page.screenshot({ path: 'test-results/import-runtime-cockpit-completed.png', fullPage: false });
+  });
+});
+
