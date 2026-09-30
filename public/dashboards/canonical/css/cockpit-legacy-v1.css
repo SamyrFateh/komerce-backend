@@ -220,3 +220,268 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kmc-trust-footer {
     padding-top: 1px;
   }
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   V2 — direction validée par le Cockpit des imports
+   Hiérarchie: contexte -> flux -> vérité -> exceptions -> décisions.
+   Legacy visual language: white surfaces, fine borders, compact density.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+body.kmc-shell-v4 #canonical-admin-root {
+  background: var(--kmc-cockpit-bg);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit {
+  box-sizing: border-box;
+  max-width: none;
+  margin: 0;
+  padding: 20px 24px 28px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit > .kmc-dashboard-header {
+  position: relative;
+  margin: 0 0 4px;
+  padding: 0;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .canonical-eyebrow {
+  padding: 0;
+  color: #71819b;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .075em;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-dashboard-title {
+  font-size: clamp(27px, 2.15vw, 33px);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-dashboard-description {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+/* Barre de décisions — analogue au badge "Décisions attendues" du cockpit Import. */
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-cockpit-decisions {
+  margin: 3px 0 1px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card {
+  min-height: 82px;
+  gap: 7px;
+  padding: 11px 13px;
+  border-top-width: 1px;
+  border-left-width: 3px;
+  border-radius: 9px;
+  background: #fff;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card-icon {
+  width: 25px;
+  height: 25px;
+  border-radius: 7px;
+  font-size: 10px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card-heading {
+  gap: 8px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card-value-row {
+  align-items: center;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card-value {
+  font-size: clamp(20px, 1.65vw, 26px);
+}
+
+/* Sections: mêmes cartes blanches calmes que le Legacy. */
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-surface-card {
+  padding: 14px 16px 16px;
+  border-color: #dfe5ec;
+  border-radius: 10px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-dashboard-section-title {
+  margin-bottom: 3px;
+  color: #17233a;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-dashboard-section-copy {
+  margin: 0 0 10px;
+  color: #71819b;
+  font-size: 10px;
+}
+
+/* Le flux est le coeur du cockpit — même présence que "FLUX DU LOT". */
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-surface-card.is-cockpit-flow {
+  position: relative;
+  padding: 14px 18px 17px;
+  border-left: 3px solid var(--kmc-cockpit-orange);
+  background: #fff;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-surface-card.is-cockpit-flow::before {
+  content: 'FLUX';
+  display: block;
+  margin-bottom: 4px;
+  color: #71819b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-decision-dashboard-section-title {
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-flow-strip,
+body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-funnel {
+  margin-top: 7px;
+  padding: 11px 0 3px;
+  border-top: 3px solid #16a34a;
+  overflow-x: auto;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-flow-stage,
+body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-funnel-stage {
+  min-width: 130px;
+  padding: 7px 8px;
+  border: 0;
+  background: transparent;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-flow-stage-index {
+  width: 25px;
+  height: 25px;
+  color: #fff;
+  border: 0;
+  border-radius: 50%;
+  background: #16a34a;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-flow-arrow,
+body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-funnel-arrow {
+  color: #16a34a;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-flow-stage-label,
+body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-funnel-label {
+  color: #17233a;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+/* Suivi de vérité — équivalent visuel de "SUIVI DU LOT". */
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-surface-card.is-cockpit-truth::before {
+  content: 'SUIVI DE VÉRITÉ';
+  display: block;
+  margin-bottom: 4px;
+  color: #71819b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-truth .kmc-decision-dashboard-section-title {
+  margin-top: 0;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-metric-strip {
+  gap: 10px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-metric-card {
+  min-height: 74px;
+  padding: 11px 13px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-metric-value {
+  font-size: clamp(20px, 1.7vw, 27px);
+  font-weight: 700;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-metric-label {
+  color: #71819b;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+
+/* Les blocs aval sont volontairement plus calmes que le flux principal. */
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-summary-card {
+  min-height: 104px;
+  padding: 12px 13px;
+  border-radius: 9px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-summary-card-icon {
+  width: 27px;
+  height: 27px;
+  border-radius: 7px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-ranked-row,
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-priority-row,
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-info-row {
+  padding: 9px 11px;
+  border-radius: 8px;
+}
+
+/* Toolbar/context — même sobriété que la bande source du cockpit Imports. */
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-toolbar,
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-market-context {
+  border: 1px solid #dfe5ec;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: none;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-toolbar {
+  padding: 9px 12px;
+}
+
+/* Desktop: tout doit tenir proprement dans la largeur utile du shell. */
+@media (min-width: 1180px) {
+  body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  body.kmc-shell-v4 .kmc-domain-cockpit .kmc-summary-card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 1050px) {
+  body.kmc-shell-v4 .kmc-domain-cockpit {
+    padding: 16px;
+  }
+
+  body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  body.kmc-shell-v4 .kmc-domain-cockpit {
+    padding: 12px;
+  }
+
+  body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-strip {
+    grid-template-columns: 1fr;
+  }
+}
