@@ -17,6 +17,7 @@ jest.mock('../../services/sourcing-mutations', () => ({ updateProduct: jest.fn()
 jest.mock('../../services/sourcing-candidate-actions', () => ({
   updateCandidate: jest.fn(), scanCandidate: jest.fn(), watchlistCandidate: jest.fn(),
   rejectCandidate: jest.fn(), promoteCandidate: jest.fn(),
+  handoffImportResult: (...args) => mockHandoffImportResult(...args),
 }));
 jest.mock('../../services/sourcing-import-dispatch', () => ({ connectorCatalog: jest.fn(() => ({})), dispatchToConnector: jest.fn() }));
 jest.mock('../../services/sourcing-source-autopilot', () => ({
@@ -24,9 +25,6 @@ jest.mock('../../services/sourcing-source-autopilot', () => ({
   setSourceActive: (...args) => mockSetSourceActive(...args),
 }));
 jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({ importCatalog: jest.fn() }));
-jest.mock('../../services/sourcing-catalogue-handoff', () => ({
-  handoffImportResult: (...args) => mockHandoffImportResult(...args),
-}));
 jest.mock('../../services/partner-admin-service', () => ({
   listPartners: jest.fn(), getStats: jest.fn(), createPartner: jest.fn(), updatePartner: jest.fn(),
 }));
