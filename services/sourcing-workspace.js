@@ -6,14 +6,13 @@
  * @criticality   high
  * @inputs        business_references, sourcing_action_payloads, authenticated_actor
  * @outputs       global_sourcing_projection, sourcing_mutation_result
- * @depends       db.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/sourcing-provider-control-policy.js, services/sourcing-catalogue-handoff.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
+ * @depends       db.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/sourcing-provider-control-policy.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
  * @used-by       routes/admin-sourcing-workspace.js
  * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats, sourcing_sources, sourcing_captures
  * @db-write-via:sourcing-mutations products
  * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates
  * @db-write-via:sourcing-source-autopilot sourcing_sources, sourcing_captures
- * @db-write-via:sourcing-catalogue-handoff sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media, import_runtime_runs
  * @db-write-via:sourcing-provider-control-policy sourcing_sources, sourcing_provider_control_events
  * @db-write-via:partner-admin-service partners
  * @db-txn        delegated_to_domain_authorities
@@ -32,7 +31,6 @@ const importDispatch = require('./sourcing-import-dispatch');
 const sourceAutopilot = require('./sourcing-source-autopilot');
 const providerPolicy = require('./sourcing-provider-control-policy');
 const catalogImport = require('./suppliers/catalog-import-orchestrator');
-const catalogueHandoff = require('./sourcing-catalogue-handoff');
 const partnerAdmin = require('./partner-admin-service');
 
 class SourcingWorkspaceError extends Error {
@@ -303,7 +301,7 @@ async function updatePortfolioProduct(productRef, body, actor) {
 
 async function importCatalog(body, actor) {
   let result = await catalogImport.importCatalog(body || {}, actor?.id || null, importDispatch.dispatchToConnector);
-  if (result.status < 400) result = await catalogueHandoff.handoffImportResult(result, actor?.id || null);
+  if (result.status < 400) result = await candidateActions.handoffImportResult(result, actor?.id || null);
   if (result.status >= 400) {
     throw new SourcingWorkspaceError(result.status, result.body?.error || 'Import refusé', 'sourcing_import_failed', stripInternalIds(result.body || {}));
   }
