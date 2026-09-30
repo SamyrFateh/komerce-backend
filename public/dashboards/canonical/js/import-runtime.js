@@ -653,6 +653,7 @@
     </a>`;
   }
 
+  const CHANGE_KIND_LABELS = { created:'nouveau', updated:'mis à jour' };
   const ITEM_OUTCOME_LABELS = {
     ready_for_refinery:'raffiné',
     deferred:'différé',
@@ -707,7 +708,7 @@
   // Phrase métier construite uniquement à partir des métriques d'étape déjà projetées par le service.
   function liveEventDetail(run, event) {
     if (event.kind === 'ITEM_FINISHED') {
-      return [ITEM_OUTCOME_LABELS[event.outcome] || 'traité', fmtMs(event.duration_ms)].filter(Boolean).join(' · ');
+      return [CHANGE_KIND_LABELS[event.change_kind], ITEM_OUTCOME_LABELS[event.outcome] || 'traité', fmtMs(event.duration_ms)].filter(Boolean).join(' · ');
     }
     const stage = (run.stages || []).find(item => item.key === event.stage) || {};
     const a = run.accounting || {};
@@ -790,6 +791,7 @@
             <div><dt>Catégorie</dt><dd>${esc(item.komerce_category || 'À déterminer')}</dd></div>
             ${item.purchase_price != null ? `<div><dt>Prix source</dt><dd>${esc(fmtPrice(item.purchase_price, item.currency))}</dd></div>` : ''}
             <div><dt>État</dt><dd>${esc(item.in_progress ? 'En cours de traitement' : (item.state || '—'))}</dd></div>
+            ${item.change_kind ? `<div><dt>Nature</dt><dd>${esc(CHANGE_KIND_LABELS[item.change_kind] || item.change_kind)}</dd></div>` : ''}
             ${item.duration_ms != null ? `<div><dt>Durée</dt><dd>${esc(fmtMs(item.duration_ms))}</dd></div>` : ''}
             <div><dt>Mis à jour</dt><dd>${fmtDate(item.updated_at)}</dd></div>
           </dl>
@@ -813,7 +815,7 @@
             <td>${esc(item.supplier_product_id || '—')}</td>
             <td><a class="kir-stage-chip" href="${stageUrl(run.run_ref, item.stage)}" data-cockpit-nav>${esc(stageLabel(item.stage))}</a></td>
             <td>${esc(item.komerce_category || '—')}</td>
-            <td>${esc(item.in_progress ? 'En cours…' : (item.state || '—'))}</td>
+            <td>${esc(item.in_progress ? 'En cours…' : [CHANGE_KIND_LABELS[item.change_kind], item.state].filter(Boolean).join(' · ') || '—')}</td>
             ${run.item_events ? `<td>${esc(item.duration_ms != null ? fmtMs(item.duration_ms) : '—')}</td>` : ''}
             <td>${fmtDate(item.updated_at)}</td>
           </tr>`;

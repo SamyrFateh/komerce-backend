@@ -456,6 +456,7 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
       stage: inProgress ? 'REFINERY' : (row ? candidateStage(row) : (ev.stage || 'REFINERY')),
       state: inProgress ? 'processing' : (row?.state || ev.outcome || null),
       outcome: ev.outcome || null,
+      change_kind: ev.change_kind || null,
       in_progress: inProgress,
       duration_ms: finishedMs != null && Number.isFinite(startedMs) ? Math.max(0, finishedMs - startedMs) : null,
       updated_at: iso(ev.finished_at || ev.started_at),
@@ -481,6 +482,7 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
       seq: item.seq,
       product_name: item.product_name,
       outcome: item.outcome,
+      change_kind: item.change_kind,
       duration_ms: item.duration_ms,
     }));
   const events = hasItemEvents

@@ -58,7 +58,11 @@ describe('import-runtime-item-events service', () => {
     expect(await itemEvents.finishItem('ev-1', { outcome: 'deferred', candidateId: 'c-1' }, client)).toEqual({ id: 'ev-1' });
     const [sql, params] = client.query.mock.calls[0];
     expect(sql).toContain('GREATEST(NOW(), started_at)');
-    expect(params).toEqual(['ev-1', 'deferred', 'c-1']);
+    expect(params).toEqual(['ev-1', 'deferred', 'c-1', null]);
+    await itemEvents.finishItem('ev-1', { outcome: 'deferred', changeKind: 'updated' }, client);
+    expect(client.query.mock.calls[1][1][3]).toBe('updated');
+    await itemEvents.finishItem('ev-1', { outcome: 'deferred', changeKind: 'bogus' }, client);
+    expect(client.query.mock.calls[2][1][3]).toBeNull();
     expect(await itemEvents.finishItem(null, {}, client)).toBeNull();
     expect(await itemEvents.finishItem('ev-2', undefined, q([]))).toBeNull();
   });
@@ -88,13 +92,14 @@ describe('projection avec événements produit', () => {
   });
 
   test('un produit ouvert est « en cours » et porte prix et durée', () => {
-    const p = runs.buildProjection({ run, rows: [], items: [item(2), item(1, { outcome: 'deferred', finished_at: '2026-09-28T10:00:12.000Z' })], now: NOW });
+    const p = runs.buildProjection({ run, rows: [], items: [item(2), item(1, { outcome: 'deferred', change_kind: 'created', finished_at: '2026-09-28T10:00:12.000Z' })], now: NOW });
     expect(p.item_events).toBe(true);
     expect(p.current_item_kind).toBe('in_progress');
     expect(p.current_item.seq).toBe(2);
     expect(p.current_item.in_progress).toBe(true);
     expect(p.recent_items).toHaveLength(2);
-    expect(p.events.some((e) => e.kind === 'ITEM_FINISHED')).toBe(true);
+    expect(p.events.some((e) => e.kind === 'ITEM_FINISHED' && e.change_kind === 'created')).toBe(true);
+    expect(p.recent_items.find((i) => i.seq === 1).change_kind).toBe('created');
   });
 
   test('run terminé : le dernier produit fini devient « dernier traité »', () => {

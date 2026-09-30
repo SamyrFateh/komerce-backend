@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS import_runtime_item_events (
   currency            TEXT,
   stage               TEXT NOT NULL DEFAULT 'REFINERY',
   outcome             TEXT,
+  change_kind         TEXT CHECK (change_kind IS NULL OR change_kind IN ('created', 'updated')),
   started_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   finished_at         TIMESTAMPTZ,
   CONSTRAINT uq_import_runtime_item_events_run_seq UNIQUE (run_id, seq),

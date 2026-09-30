@@ -235,6 +235,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
     const itemEvent = await runHook((id) => itemEvents.startItem(id, { seq: itemSeq, product }));
     let itemOutcome = 'error';
     let itemCandidateId = null;
+    let itemChangeKind = null;
     try {
       // PDC-1 : snapshot du mapping fournisseur → contrat normalisé. V1 = null.
       const normalizedSourceContract = buildNormalizedSourceContractSnapshot(product);
@@ -273,6 +274,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
       });
 
       itemCandidateId = upsertedRow?.id || null;
+      itemChangeKind = wasUpdated ? 'updated' : 'created';
       if (wasUpdated) {
         results.updated = (results.updated || 0) + 1;
       } else {
@@ -298,7 +300,7 @@ async function importCatalog(body, userId, dispatchToConnector) {
       results.errors.push({ product_name: product.product_name || '?', error: errOne.message });
     }
     if (itemEvent?.id) {
-      await runHook(() => itemEvents.finishItem(itemEvent.id, { outcome: itemOutcome, candidateId: itemCandidateId }));
+      await runHook(() => itemEvents.finishItem(itemEvent.id, { outcome: itemOutcome, candidateId: itemCandidateId, changeKind: itemChangeKind }));
     }
   }
 

@@ -65,13 +65,15 @@ if (!hasIntegrationEnv) {
     it('start → finish → list : ordre décroissant, durée positive, issue enregistrée', async () => {
       const run = await newRun();
       const a = await itemEvents.startItem(run.id, { seq: 1, product: { supplier_product_id: 'P1', product_name: 'Un', purchase_price: 10, currency: 'EUR' } });
-      await itemEvents.finishItem(a.id, { outcome: 'ready_for_refinery' });
+      await itemEvents.finishItem(a.id, { outcome: 'ready_for_refinery', changeKind: 'updated' });
       await itemEvents.startItem(run.id, { seq: 2, product: { supplier_product_id: 'P2', product_name: 'Deux' } });
 
       const rows = await itemEvents.listRunItems(run.id);
       expect(rows.map((r) => r.seq)).toEqual([2, 1]);
       expect(rows[0].finished_at).toBeNull();
       expect(rows[1].outcome).toBe('ready_for_refinery');
+      expect(rows[1].change_kind).toBe('updated');
+      expect(rows[0].change_kind).toBeNull();
       expect(new Date(rows[1].finished_at) - new Date(rows[1].started_at)).toBeGreaterThanOrEqual(0);
       expect(Number(rows[1].purchase_price)).toBe(10);
     });
