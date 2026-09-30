@@ -211,6 +211,88 @@ function buildActionItems({ rows, verdicts, quarantined, certificationBlocked, a
   return { count: listed.length, items: listed.slice(0, ACTION_ITEM_CAP) };
 }
 
+// Populations : « quels objets composent ce chiffre ? ». Une carte du cockpit ouvre exactement les
+// produits qui la composent ; ce qui n'existe qu'en compteur d'intake (doublons / invalides refusés à
+// la réception, jamais persistés en candidat) est restitué en groupes explicites, jamais inventé.
+const POPULATION_KINDS = Object.freeze(['received', 'ready', 'discarded']);
+const POPULATION_CAP = 500;
+
+function discardKind(row, verdict) {
+  const text = reasonText(row, verdict);
+  if (/doublon|duplicate/.test(text)) return { issue: 'Doublon', reason: 'Déjà présent dans le catalogue ou dans ce lot' };
+  if (/exclu|excluded|r[eè]gle|rule|douane|custom|l[eé]gal|legal|interdit|prohib/.test(text)) {
+    return { issue: 'Exclu par règle', reason: 'Écarté par une règle Komerce' };
+  }
+  return { issue: 'Produit non retenu', reason: 'Ne correspond pas aux critères Komerce' };
+}
+
+function issueOf(row, verdict) {
+  if (verdict.outcome === 'catalog_imported' && row.product_ref) return { key: 'catalogued', label: 'Remis au Catalogue' };
+  if (verdict.outcome === 'deferred') return { key: 'deferred', label: 'Mis de côté' };
+  if (verdict.outcome === 'rejected' || verdict.outcome === 'archived') return { key: 'discarded', label: 'Écarté' };
+  if (verdict.outcome === 'quarantined'
+    || (!verdict.outcome_valid && (verdict.outcome === 'ready_for_refinery' || verdict.outcome === 'catalog_imported'))) {
+    return { key: 'action', label: 'Action requise' };
+  }
+  if (verdict.sourcing_certified) return { key: 'ready', label: 'Prêt pour le Catalogue' };
+  return { key: 'control', label: 'Prêt pour contrôle' };
+}
+
+function buildPopulation({ kind, rows = [], intake = {}, sourceTotal = 0 }) {
+  const verdicts = rows.map(verdictOf);
+  const entries = rows.map((row, index) => ({ row, verdict: verdicts[index], issue: issueOf(row, verdicts[index]) }));
+  const base = ({ row }) => ({
+    candidate_ref: row.candidate_ref || null,
+    supplier_product_id: row.supplier_product_id || null,
+    product_name: row.product_name || null,
+    image_url: row.image_url || null,
+  });
+  const duplicates = Number(intake.duplicates || 0);
+  const rejected = Number(intake.rejected || 0);
+  let items = [];
+  let total = 0;
+  const unlisted = [];
+
+  if (kind === 'received') {
+    total = Number(sourceTotal || 0);
+    items = entries.map((e) => ({ ...base(e), issue_key: e.issue.key, issue_label: e.issue.label }));
+    const missing = Math.max(0, total - rows.length);
+    if (missing > 0) unlisted.push({ label: 'Écartés dès la réception (voir Écartés automatiquement)', count: missing });
+  } else if (kind === 'ready') {
+    const ready = entries.filter((e) => e.verdict.outcome_valid && e.verdict.sourcing_certified);
+    total = ready.length;
+    items = ready.map((e) => ({
+      ...base(e),
+      issue_key: e.issue.key === 'catalogued' ? 'catalogued' : 'ready',
+      issue_label: e.issue.key === 'catalogued' ? 'Remis' : 'Prêt',
+    }));
+  } else if (kind === 'discarded') {
+    total = duplicates + rejected;
+    const gone = entries.filter((e) => e.issue.key === 'discarded');
+    items = gone.map((e) => {
+      const d = discardKind(e.row, e.verdict);
+      return { ...base(e), issue_key: 'discarded', issue_label: d.issue, reason: d.reason };
+    });
+    const remaining = Math.max(0, total - items.length);
+    const listedDuplicates = items.filter((item) => item.issue_label === 'Doublon').length;
+    const dup = Math.min(Math.max(0, duplicates - listedDuplicates), remaining);
+    if (dup > 0) unlisted.push({ label: 'Doublon', count: dup });
+    if (remaining - dup > 0) unlisted.push({ label: 'Produit non retenu à la réception', count: remaining - dup });
+  } else {
+    return null;
+  }
+  return { kind, total, listed: Math.min(items.length, POPULATION_CAP), items: items.slice(0, POPULATION_CAP), unlisted };
+}
+
+async function getPopulation(runRef, kind, q = db) {
+  if (!POPULATION_KINDS.includes(kind)) return null;
+  const { rows: [run] } = await q.query(`${RUN_SELECT} WHERE r.run_ref = $1`, [runRef]);
+  if (!run) return null;
+  const rows = run.import_id ? await loadRows(run.id, q) : [];
+  return buildPopulation({ kind, rows, intake: run.intake || {}, sourceTotal: run.source_total });
+}
+
+
 function buildProjection({ run, rows = [], sourceProof = null, items = [], now = Date.now() }) {
   const intake = run.intake || {};
   const storedStages = run.stages || {};
@@ -330,11 +412,16 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
 
   function stage(key, status, processed, total, extra = {}) {
     const stored = storedStages[key] || {};
+    // Un compteur n'est présenté que s'il représente la complétion : une étape COMPLETED a traité
+    // tout son périmètre (n / n) ; le compteur observé brut reste disponible dans metrics.observed.
+    const observed = Number(processed || 0);
+    const scope = Number(total || 0);
+    const completed = status === 'COMPLETED';
     return {
       key,
       status,
-      processed: Number(processed || 0),
-      total: Number(total || 0),
+      processed: completed ? scope : Math.min(observed, scope || observed),
+      total: scope,
       started_at: iso(stored.started_at),
       finished_at: status === 'COMPLETED'
         ? (iso(stored.finished_at) || iso(run.updated_at))
@@ -342,6 +429,8 @@ function buildProjection({ run, rows = [], sourceProof = null, items = [], now =
       reason: stored.reason || null,
       metrics: {},
       ...extra,
+      ...(observed !== (completed ? scope : Math.min(observed, scope || observed))
+        ? { metrics: { ...(extra.metrics || {}), observed } } : {}),
     };
   }
 
@@ -823,4 +912,7 @@ module.exports = {
   syncRun,
   syncRunsForImport,
   getProductTrace,
+  POPULATION_KINDS,
+  buildPopulation,
+  getPopulation,
 };

@@ -354,6 +354,11 @@ async function mountLive(page, data) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
       return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
     }
+    if (url.pathname.endsWith('/population')) {
+      const kind = url.searchParams.get('kind');
+      state.calls.push(`population:${kind}`);
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(state.populations?.[kind] || { kind, total: 0, items: [], unlisted: [] }) });
+    }
     if (url.pathname.endsWith('/import-cockpit')) return route.fulfill({ contentType: 'application/json', body: JSON.stringify(state.payload) });
     if (req.method() === 'POST' && url.pathname.includes('/sources/')) {
       const action = url.pathname.split('/').pop();
@@ -425,5 +430,47 @@ test.describe('Cockpit imports — CAS F : mise à jour automatique 3 → 2 → 
     }
     await expect(page.locator('.is-attention')).toHaveCount(0);
     await expect(page.locator('.kir-status-large')).toContainText('Terminé');
+  });
+});
+
+test.describe('Cockpit imports — drill-downs cohérents avec le N1', () => {
+  const pop = (kind, total, n, over = {}) => ({
+    kind, total, unlisted: [],
+    items: Array.from({ length: n }, (_, i) => ({ candidate_ref: `KSC-${i}`, supplier_product_id: `SP-${i}`, product_name: `Coque ${i + 1}`, image_url: null, issue_key: 'ready', issue_label: 'Prêt', ...over })),
+  });
+
+  test('clic sur « Produits reçus » : la liste des produits, pas la grille des six étapes', async ({ page }) => {
+    const state = await mountLive(page, calmPayload);
+    state.populations = { received: pop('received', 12, 12, { issue_label: 'Prêt pour le Catalogue' }) };
+    await page.locator('.kir-run-truth-grid > a.is-received').click();
+    await expect(page.locator('[data-population-item]')).toHaveCount(12);
+    await expect(page.locator('.kir-history-stages')).toHaveCount(0);
+    await expect(page.locator('.kir-back')).toContainText('Retour au lot');
+    await page.screenshot({ path: 'test-results/import-runtime-cockpit-population.png' });
+    expect(state.calls).toContain('population:received');
+  });
+
+  test('clic sur « Contrôle automatique » : Préparation / Classement / Validation, détail technique en lien secondaire, retour au contrôle', async ({ page }) => {
+    await mountLive(page, calmPayload);
+    await page.locator('.kir-run-flow-step', { hasText: 'Contrôle automatique' }).click();
+    await expect(page.locator('.kir-simple-row')).toHaveCount(3);
+    await expect(page.locator('.kir-main')).not.toContainText(/Raffinerie|Taxonomie|COMPLETED/);
+    await page.screenshot({ path: 'test-results/import-runtime-cockpit-control.png' });
+    await page.getByText('Voir le détail technique →').click();
+    await expect(page.locator('.kir-drill-head h2')).toContainText('Détail technique du passage');
+    await expect(page.locator('.kir-back')).toContainText('Retour au contrôle automatique');
+    await expect(page.locator('.kir-history-stages')).toContainText('Terminé');
+    await expect(page.locator('.kir-history-stages')).not.toContainText(/COMPLETED|0 \/ 12/);
+  });
+
+  test('clic sur « Source » et « Catalogue » : vues dédiées', async ({ page }) => {
+    await mountLive(page, calmPayload);
+    await page.locator('.kir-run-flow-step', { hasText: 'Source' }).first().click();
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Source');
+    await expect(page.locator('[data-population-item]')).toHaveCount(0);
+    await page.locator('.kir-back').click();
+    await page.locator('.kir-run-flow-step', { hasText: 'Catalogue' }).click();
+    await expect(page.locator('.kir-drill-head h2')).toHaveText('Catalogue');
+    await expect(page.locator('.kir-main')).toContainText('Remise terminée');
   });
 });

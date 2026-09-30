@@ -316,6 +316,8 @@ module.exports = {
              'doit être validé par le propriétaire de routes/sourcing-scanner.js',
 
   invariants: [
+    { statement: 'GET /import-runs/:runRef/population?kind=received|ready|discarded expose les produits qui composent un chiffre du cockpit ; ce qui n\'existe qu\'en compteur d\'intake est restitué en groupes explicites, jamais inventé ; une étape COMPLETED a toujours processed = total (le compteur brut reste dans metrics.observed)',
+      test: 'tests/unit/import-runtime-runs.test.js' },
     { statement: 'la projection d\'un run expose action_required / action_items / sourcing_status : seuls quarantaine, certification bloquée et anomalie de comptage demandent une action humaine ; DEFERRED, rejet conforme et exceptions aval Catalogue ne comptent jamais ; la liste d\'items a toujours la longueur du compteur',
       test: 'tests/unit/import-runtime-runs.test.js' },
     'un candidat exclu (rejet manuel ou auto-exclusion douane/légale) n\'est jamais ré-importable (ING-5 verrou 1)',
