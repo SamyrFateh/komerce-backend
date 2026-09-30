@@ -163,23 +163,27 @@ if (!hasIntegrationEnv) {
       expect(events[0]).toMatchObject({ event_type: 'rejected', old_state: 'raw_imported', new_state: 'rejected' });
     });
 
-    it('3 — PROMOTION SANS PRIX EXPLICITE : rejetée avant tout INSERT produit (doctrine explicit_human_price_required)', async () => {
+    it('3 — REMISE SANS PRIX : crée un brouillon Catalogue inactif/non disponible, prix différé à la publication', async () => {
       const id = await seedCandidate();
-      const before = await candidateRow(id);
 
-      await expect(promoteCandidate(id, {}, null)).rejects.toMatchObject({
-        code: 'candidate_explicit_price_required',
-      });
+      const result = await promoteCandidate(id, {}, null);
+      expect(result.product_id).toBeTruthy();
+      expect(result.price_decision).toBe('DEFERRED_TO_PUBLICATION');
+      productIds.push(result.product_id);
 
       const row = await candidateRow(id);
-      expect(row.state).toBe('raw_imported'); // inchangé
-      expect(row.product_id).toBeNull();
+      expect(row.state).toBe('imported_to_catalog');
+      expect(row.product_id).toBe(result.product_id);
 
       const { rows: products } = await db.query(
-        `SELECT id FROM products WHERE name = $1`,
-        [before.product_name]
+        `SELECT price_kmf, is_active, is_available, lifecycle_status FROM products WHERE id = $1`,
+        [result.product_id]
       );
-      expect(products).toHaveLength(0); // aucun produit fantôme créé
+      expect(products).toHaveLength(1);
+      expect(products[0].price_kmf).toBeNull();
+      expect(products[0].is_active).toBe(false);
+      expect(products[0].is_available).toBe(false);
+      expect(products[0].lifecycle_status).toBe('candidate');
     });
 
     it('4 — PROMOTION RÉUSSIE : transaction atomique — produit créé, candidat transitionné, événement journalisé', async () => {
@@ -195,12 +199,13 @@ if (!hasIntegrationEnv) {
       expect(row.product_id).toBe(result.product_id);
 
       const { rows: productRows } = await db.query(
-        `SELECT price_kmf, is_active, lifecycle_status FROM products WHERE id = $1`,
+        `SELECT price_kmf, is_active, is_available, lifecycle_status FROM products WHERE id = $1`,
         [result.product_id]
       );
       expect(productRows).toHaveLength(1);
       expect(Number(productRows[0].price_kmf)).toBe(45000);
       expect(productRows[0].is_active).toBe(false); // créé inactif — doctrine
+      expect(productRows[0].is_available).toBe(false);
       expect(productRows[0].lifecycle_status).toBe('candidate');
 
       const events = await eventsFor(id);
@@ -259,7 +264,7 @@ if (!hasIntegrationEnv) {
       const importId = await seedImportBatch('COMPLETED');
       const id = await seedCandidate({ importId });
 
-      const result = await promoteCandidate(id, { price_kmf: 15000, enrichment_mode: 'source_only' }, null);
+      const result = await promoteCandidate(id, { enrichment_mode: 'source_only' }, null);
       expect(result.product_id).toBeTruthy();
       productIds.push(result.product_id);
 
