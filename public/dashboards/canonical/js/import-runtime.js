@@ -1250,7 +1250,7 @@
     const back = from === 'control' ? { href:urlFor(run.run_ref, 'control'), label:'← Retour au contrôle automatique' } : null;
     // Jamais « COMPLETED · 0 / 12 » : un ratio n'est montré que pendant le travail ; une étape terminée dit « Terminé ».
     const stageText = stage => stage.status === 'COMPLETED' ? '✓ Terminé'
-      : stage.status === 'RUNNING' && stage.reason === 'automatic_catalogue_handoff_pending' ? 'En attente de remise'
+      : stage.status === 'RUNNING' && stage.reason === 'automatic_catalogue_handoff_pending' ? `Remise automatique · ${num(stage.processed)} / ${num(stage.total)}`
       : stage.status === 'RUNNING' ? `En cours · ${num(stage.processed)} / ${num(stage.total)}`
         : stage.status === 'FAILED' ? 'Bloqué' : 'En attente';
     return drillHeader(
