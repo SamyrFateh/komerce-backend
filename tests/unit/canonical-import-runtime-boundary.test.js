@@ -34,8 +34,8 @@ test('import runtime stable URL is served by Canonical generation', () => {
 test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
-  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260930-10');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260930-10');
+  expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260930-11');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260930-11');
   expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=260929-4');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
@@ -67,7 +67,9 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('Catalogue →');
   expect(source).toContain('withReturnTo');
   expect(source).toContain('return_to');
-  expect(source).toContain('Retour au lot');
+  expect(source).toContain("q.set('view', 'item')");
+  expect(source).toContain('/items/');
+  expect(source).toContain('Retour au passage');
   expect(source).toContain('Alimentation automatique');
   expect(source).toContain('Préparation auto');
   expect(source).toContain('activation_ready');
@@ -76,7 +78,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain("/api/admin/workspaces/sourcing/sources/");
   expect(source).toContain("const action = enabled ? 'deactivate' : 'activate'");
   expect(source).toContain('Passage en direct');
-  expect(source).toContain('le même lot avance de bout en bout');
+  expect(source).toContain('le même passage avance de bout en bout');
   expect(source).toContain('persistentRunFlow');
   expect(source).toContain('Import automatique terminé');
   expect(source).toContain('parcours conservé à l’écran');
@@ -93,7 +95,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('variantes en double');
   expect(source).toContain('Corrigez le produit en erreur puis relancez l’activation automatique');
   expect(source).toContain('Voir le détail →');
-  expect(source).toContain('RÉSULTAT DU LOT');
+  expect(source).toContain('RÉSULTAT DU PASSAGE');
   expect(source).toContain("['Écartés automatiquement'");
   expect(source).toContain('PASSAGE AU CATALOGUE');
   expect(source).not.toContain('PARCOURS MÉTIER');
