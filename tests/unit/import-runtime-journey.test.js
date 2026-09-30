@@ -189,8 +189,8 @@ const CALM_STAGES = [
 // Base = CAS A : 20 reçus, 12 prêts, 1 écarté, 7 DEFERRED, 0 action requise, rien au Catalogue.
 function scenario(accounting = {}, selected = {}) {
   const p = JSON.parse(JSON.stringify(payload));
-  p.selected.status = 'COMPLETED';
-  p.selected.sourcing_status = 'DONE';
+  p.selected.status = 'RUNNING';
+  p.selected.sourcing_status = 'RUNNING';
   p.selected.action_items = [];
   p.selected.accounting = {
     source_total:20, accepted:19, certified:12, catalogued:0, awaiting_catalogue_promotion:12,
