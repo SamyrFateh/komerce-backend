@@ -32,21 +32,21 @@
   let commandState = null;
   let mountedRoot = null;
   let lastPayload = null;
-  // Toute lecture asynchrone du cockpit reçoit un jeton. Seule la lecture la plus
-  // récente, pour l'URL toujours affichée, a le droit de publier un payload.
-  // Cela empêche une réponse lente de KIR-A de repeindre l'écran après navigation vers KIR-B.
-  let readEpoch = 0;
+  // Les refresh de navigation sont séquencés : seule la lecture la plus récente,
+  // pour l'URL toujours affichée, peut publier un payload. Le polling d'activation
+  // garde seulement son URL de départ afin de ne pas annuler un refresh de détail.
+  let refreshEpoch = 0;
 
   function currentRouteKey() {
     return `${global.location?.pathname || ''}${global.location?.search || ''}`;
   }
 
-  function beginRead() {
-    return { id: ++readEpoch, route:currentRouteKey() };
+  function beginRefreshRead() {
+    return { id: ++refreshEpoch, route:currentRouteKey() };
   }
 
-  function readStillCurrent(token) {
-    return Boolean(token) && token.id === readEpoch && token.route === currentRouteKey();
+  function refreshStillCurrent(token) {
+    return Boolean(token) && token.id === refreshEpoch && token.route === currentRouteKey();
   }
 
   const RUN_STAGE_DEFS = Object.freeze([
@@ -492,18 +492,19 @@
 
   async function pollActivation() {
     if (!activationState || activationState.done || activationState.error) return;
-    const token = beginRead();
+    const routeAtStart = currentRouteKey();
     try {
       const { run } = params();
       const q = new URLSearchParams({ limit:'12' });
       if (run) q.set('run', run);
       const payload = await api('/api/admin/workspaces/sourcing/import-cockpit?' + q.toString());
-      if (!readStillCurrent(token)) return;
+      if (routeAtStart !== currentRouteKey()) return;
       attachActivationRun(payload);
       if (activationState.runRef) {
         activationState.run = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(activationState.runRef)}`);
-        if (!readStillCurrent(token)) return;
+        if (routeAtStart !== currentRouteKey()) return;
       }
+      if (routeAtStart !== currentRouteKey()) return;
       lastPayload = payload;
       if (mountedRoot) render(mountedRoot, payload);
     } catch (_) {
@@ -1749,14 +1750,14 @@
       timer = null;
       return;
     }
-    const token = beginRead();
+    const token = beginRefreshRead();
     if (!preserve && !lastPayload) renderLoading(mountedRoot);
     const { run, view, offset, item, kind } = params();
     const query = new URLSearchParams({ limit:'12' });
     if (run) query.set('run', run);
     try {
       const payload = await api('/api/admin/workspaces/sourcing/import-cockpit?' + query.toString());
-      if (!readStillCurrent(token)) return;
+      if (!refreshStillCurrent(token)) return;
       attachActivationRun(payload);
       // Les populations (produits qui composent un chiffre) sont lues à la demande, à chaque rafraîchissement.
       if (view === 'passages') {
@@ -1768,29 +1769,29 @@
           payload.passages = [];
           payload.passages_page = { offset, next_offset:null };
         }
-        if (!readStillCurrent(token)) return;
+        if (!refreshStillCurrent(token)) return;
       }
       const populationKind = view === 'population' ? params().kind : view === 'handoff' ? 'ready' : null;
       if (populationKind && payload?.selected?.run_ref) {
         try {
           payload.population = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(payload.selected.run_ref)}/population?kind=${populationKind}`);
         } catch (_) { payload.population = null; }
-        if (!readStillCurrent(token)) return;
+        if (!refreshStillCurrent(token)) return;
       }
       if (view === 'item' && item && payload?.selected?.run_ref) {
         try {
           payload.item_trace = await api(`/api/admin/workspaces/sourcing/import-runs/${encodeURIComponent(payload.selected.run_ref)}/items/${encodeURIComponent(item)}`);
         } catch (_) { payload.item_trace = null; }
-        if (!readStillCurrent(token)) return;
+        if (!refreshStillCurrent(token)) return;
       }
-      if (!readStillCurrent(token)) return;
+      if (!refreshStillCurrent(token)) return;
       lastPayload = payload;
       // Ne pas casser une saisie de filtre en cours : le prochain rafraîchissement la reprendra.
       const typing = global.document?.activeElement?.hasAttribute?.('data-passage-filter');
       if (!(typing && view === 'passages')) render(mountedRoot, payload);
     } catch (error) {
       // Une erreur issue d'une lecture devenue obsolète ne doit ni repeindre l'écran ni afficher une alerte.
-      if (!readStillCurrent(token)) return;
+      if (!refreshStillCurrent(token)) return;
       // Jamais réafficher le passage précédent sous l'URL d'un autre : le contexte suit le KIR demandé.
       const sameRun = !run || lastPayload?.selected?.run_ref === run;
       if (lastPayload && sameRun) {
@@ -1808,7 +1809,7 @@
     mountedRoot = options.root;
     lastPayload = null;
     // Invalide toute lecture encore en vol d'un montage précédent.
-    readEpoch += 1;
+    refreshEpoch += 1;
     activationState = null;
     stopActivationPolling();
     renderLoading(mountedRoot);
