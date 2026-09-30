@@ -6,12 +6,12 @@
  * @criticality   high
  * @inputs        sourcing_sources_autopilot_switch, connector_automation_registry, provider_capability_policy, provider_runtime_certification_evidence
  * @outputs       recurring_source_imports, source_runtime_projection
- * @depends       db.js, services/sourcing-import-dispatch.js, services/suppliers/catalog-import-orchestrator.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-catalogue-handoff.js
+ * @depends       db.js, services/sourcing-import-dispatch.js, services/suppliers/catalog-import-orchestrator.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-candidate-actions.js
  * @used-by       services/sourcing-workspace.js, scripts/sourcing-source-autopilot.js
  * @db-read       sourcing_sources, sourcing_captures
  * @db-write      sourcing_sources, sourcing_captures
  * @db-write-via:catalog-import-orchestrator supplier_catalog_imports, sourcing_candidates, sourcing_sources, sourcing_source_provides, sourcing_captures, sourcing_observations
- * @db-write-via:sourcing-catalogue-handoff sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media, import_runtime_runs
+ * @db-write-via:sourcing-candidate-actions sourcing_candidates, sourcing_candidate_events, products, catalog_media, product_variants, product_skus, product_sku_media, import_runtime_runs
  * @db-txn        advisory_lock_per_source
  * @doctrine      source_on_means_active_recurring_acquisition, source_lifecycle_is_not_autopilot_authority, provider_agnostic_runner, bounded_pull, fail_closed_connector_readiness, production_requires_runtime_certification
  * @impact-areas  sourcing, catalog, supplier-import
@@ -24,7 +24,7 @@ const db = require('../db');
 const importDispatch = require('./sourcing-import-dispatch');
 const catalogImport = require('./suppliers/catalog-import-orchestrator');
 const providerPolicy = require('./sourcing-provider-control-policy');
-const catalogueHandoff = require('./sourcing-catalogue-handoff');
+const candidateActions = require('./sourcing-candidate-actions');
 const { buildSourceDescriptor } = require('./sourcing-observation-shadow-service');
 
 const LOCK_NAMESPACE = 'komerce:sourcing-source-autopilot';
@@ -326,7 +326,7 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
       );
       if (Number(result?.status) < 400) {
         // eslint-disable-next-line no-await-in-loop
-        result = await catalogueHandoff.handoffImportResult(result, null);
+        result = await candidateActions.handoffImportResult(result, null);
       }
       if (!isTransientImportResult(result) || transientRetries >= maxTransientRetries) break;
       transientRetries += 1;
@@ -464,7 +464,7 @@ async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operato
       );
       if (Number(result?.status) < 400) {
         // eslint-disable-next-line no-await-in-loop
-        result = await catalogueHandoff.handoffImportResult(result, actorId);
+        result = await candidateActions.handoffImportResult(result, actorId);
       }
       if (!isTransientImportResult(result) || transientRetries >= maxTransientRetries) break;
       transientRetries += 1;
