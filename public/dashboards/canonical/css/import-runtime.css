@@ -2926,3 +2926,15 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
 @media(prefers-reduced-motion:reduce){
   .kmc-import-runtime .kir-current-live::before{animation:none}
 }
+
+.kmc-import-runtime .kir-run-flow-step>div{background:#091625 !important;padding-right:8px;border-radius:4px}
+.kmc-import-runtime .kir-run-flow-step:hover>div{background:#0D1D2F !important}
+.kmc-import-runtime .kir-page .kir-runtime-alert{
+  background:#241218 !important;
+  border:1px solid #6B2530 !important;
+  border-left:4px solid #EF4444 !important;
+  box-shadow:none
+}
+.kmc-import-runtime .kir-page .kir-runtime-alert strong{color:#FCA5A5 !important}
+.kmc-import-runtime .kir-page .kir-runtime-alert span{color:#E7CFD3 !important}
+.kmc-import-runtime .kir-page .kir-runtime-alert a{color:#7FB8FF !important}
