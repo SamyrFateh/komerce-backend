@@ -124,8 +124,8 @@ describe('import runtime run projection', () => {
       status: 'RUNNING',
       reason: 'automatic_catalogue_handoff_pending',
     });
-    expect(projection.status).toBe('COMPLETED');
-    expect(projection.progress_pct).toBe(100);
+    expect(projection.status).toBe('RUNNING');
+    expect(projection.progress_pct).toBe(83);
     expect(projection.current_stage).toBe('CATALOGUE');
     expect(projection.diagnostics).toMatchObject({
       provider_runtime_status: 'PENDING',
@@ -174,8 +174,8 @@ describe('import runtime run projection', () => {
       processed: 0,
       total: 2,
     });
-    expect(projection.status).toBe('COMPLETED');
-    expect(projection.progress_pct).toBe(100);
+    expect(projection.status).toBe('RUNNING');
+    expect(projection.progress_pct).toBe(83);
     expect(projection.current_stage).toBe('CATALOGUE');
     expect(projection.accounting).toMatchObject({
       source_total: 3, accepted: 2, rejected: 1, certified: 2,
@@ -201,8 +201,8 @@ describe('import runtime run projection', () => {
     expect(stage(projection, 'CERTIFICATION').status).toBe('COMPLETED');
     expect(stage(projection, 'CATALOGUE').status).toBe('RUNNING');
     expect(projection.accounting.awaiting_catalogue_promotion).toBe(3);
-    expect(projection.status).toBe('COMPLETED');
-    expect(projection.progress_pct).toBe(100);
+    expect(projection.status).toBe('RUNNING');
+    expect(projection.progress_pct).toBe(83);
   });
 
   test('preuve d’une autre capture bloque uniquement le rail fournisseur', () => {
@@ -220,7 +220,7 @@ describe('import runtime run projection', () => {
     });
   });
 
-  test('ancien FAILED pipeline_partial_blocked est re-projeté comme lot vivant', () => {
+  test('ancien FAILED pipeline_partial_blocked est re-projeté comme passage vivant', () => {
     const projection = runs.buildProjection({
       run: baseRun({
         status: 'FAILED',
@@ -245,9 +245,9 @@ describe('import runtime run projection', () => {
       rows: [candidate(1), candidate(2)],
       sourceProof: null,
     });
-    expect(projection.status).toBe('COMPLETED');
+    expect(projection.status).toBe('RUNNING');
     expect(projection.failure_reason).toBeNull();
-    expect(projection.progress_pct).toBe(100);
+    expect(projection.progress_pct).toBe(83);
     expect(stage(projection, 'CERTIFICATION').status).toBe('COMPLETED');
     expect(stage(projection, 'CATALOGUE').status).toBe('RUNNING');
     expect(projection.current_stage).toBe('CATALOGUE');
@@ -291,7 +291,7 @@ describe('import runtime run projection', () => {
     });
   });
 
-  test('run automatique est déjà COMPLETED à la frontière de décision Catalogue', () => {
+  test('run automatique est COMPLETED seulement quand la remise Catalogue est réellement terminée', () => {
     const rows = rows3().map((row, index) => candidate(index + 1, {
       state: 'imported_to_catalog',
       product_ref: `KP-${index + 1}`,
