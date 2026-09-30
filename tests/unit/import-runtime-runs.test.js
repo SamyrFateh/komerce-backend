@@ -122,7 +122,7 @@ describe('import runtime run projection', () => {
     });
     expect(stage(projection, 'CATALOGUE')).toMatchObject({
       status: 'RUNNING',
-      reason: 'awaiting_explicit_operator_promotion',
+      reason: 'automatic_catalogue_handoff_pending',
     });
     expect(projection.status).toBe('COMPLETED');
     expect(projection.progress_pct).toBe(100);
@@ -135,7 +135,7 @@ describe('import runtime run projection', () => {
     });
   });
 
-  test('PARTIAL_BLOCKED bloque la source mais laisse le lot continuer vers Catalogue', () => {
+  test('PARTIAL_BLOCKED bloque la source mais laisse le passage continuer vers Catalogue', () => {
     const projection = runs.buildProjection({
       run: baseRun({
         source_total: 3,
@@ -170,7 +170,7 @@ describe('import runtime run projection', () => {
     });
     expect(stage(projection, 'CATALOGUE')).toMatchObject({
       status: 'RUNNING',
-      reason: 'awaiting_explicit_operator_promotion',
+      reason: 'automatic_catalogue_handoff_pending',
       processed: 0,
       total: 2,
     });
