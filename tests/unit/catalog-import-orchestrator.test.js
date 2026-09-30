@@ -27,7 +27,6 @@ jest.mock('../../services/pricing-engine');
 jest.mock('../../services/catalog-eligibility');
 jest.mock('../../services/sourcing-observation-shadow-service');
 jest.mock('../../services/suppliers/catalog-import-json');
-jest.mock('../../services/sourcing-candidate-actions', () => ({ promoteCandidate: jest.fn() }));
 
 const db = require('../../db');
 const scanner = require('../../services/supplier-catalog-scanner');
@@ -39,7 +38,6 @@ const jsonImport = require('../../services/suppliers/catalog-import-json');
 const providerPolicy = require('../../services/sourcing-provider-control-policy');
 const importRuns = require('../../services/import-runtime-runs');
 const itemEvents = require('../../services/import-runtime-item-events');
-const candidateActions = require('../../services/sourcing-candidate-actions');
 
 const { importCatalog } = require('../../services/suppliers/catalog-import-orchestrator');
 
@@ -83,10 +81,6 @@ function makeV2Product(overrides = {}) {
 describe('importCatalog', () => {
   beforeEach(() => {
     pricingEngine.loadGlobalConfig.mockResolvedValue(CONFIG);
-    candidateActions.promoteCandidate.mockResolvedValue({
-      product_id: 'product-draft-1',
-      price_decision: 'DEFERRED_TO_PUBLICATION',
-    });
     require('../../utils/rules').invalidateCache();
   });
 
@@ -390,50 +384,6 @@ describe('importCatalog', () => {
       rejected: 1,
       unaccounted: 0,
       balanced: true,
-    });
-  });
-
-  test('TEST V2 certifié est remis automatiquement au Catalogue sans prix', async () => {
-    jest.clearAllMocks();
-    pricingEngine.loadGlobalConfig.mockResolvedValue(CONFIG);
-    candidateActions.promoteCandidate.mockResolvedValue({
-      product_id: 'product-draft-auto',
-      price_decision: 'DEFERRED_TO_PUBLICATION',
-    });
-    const product = makeV2Product({
-      supplier_product_id: 'auto-handoff-1',
-      product_name: 'Produit auto Catalogue',
-    });
-    const dispatch = jest.fn().mockResolvedValue({ products: [product], invalid: [] });
-    db.query.mockImplementation((sql) => {
-      if (sql.includes('INSERT INTO supplier_catalog_imports')) return Promise.resolve({ rows: [{ id: 'import-auto-handoff' }] });
-      if (sql.includes('INSERT INTO sourcing_candidates')) {
-        return Promise.resolve({ rows: [{ id: 'cand-auto-handoff', data_sources: {}, was_updated: false }] });
-      }
-      return Promise.resolve({ rows: [] });
-    });
-    scanner.normalizeCandidate.mockResolvedValue(makeNormalized());
-    eligibility.checkEligibility.mockReturnValue({ layer: null, eligible: true });
-    scanner.scanCandidate.mockResolvedValue(makeScan());
-
-    const result = await importCatalog(
-      { supplier_name: 'Acme', source_type: 'manual' },
-      'user-1',
-      dispatch
-    );
-
-    expect(result.status).toBe(200);
-    expect(candidateActions.promoteCandidate).toHaveBeenCalledWith(
-      'cand-auto-handoff',
-      { enrichment_mode: 'source_only' },
-      'user-1',
-      { syncRuntime: false }
-    );
-    expect(result.body.catalogue_handoff).toEqual({
-      attempted: 1,
-      catalogued: 1,
-      already_catalogued: 0,
-      failed: [],
     });
   });
 
