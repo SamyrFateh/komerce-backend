@@ -304,7 +304,7 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     const n2 = secondaryNav(header);
     expect(n2.className).toBe('kmc-admin-secondary-nav');
     const ids = n2.children.map(link => link.attributes['data-dashboard']);
-    expect(ids).toEqual(['operations-overview', 'operations-workspace', 'shipping-customs-workspace', 'sourcing-workspace']);
+    expect(ids).toEqual(['operations-overview', 'operations-workspace', 'shipping-customs-workspace', 'import-runtime']);
 
     const active = n2.children.find(link => link.attributes['data-dashboard'] === 'shipping-customs-workspace');
     expect(active.attributes['aria-current']).toBe('page');
@@ -355,13 +355,13 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     expect(operations.href).toBe('/admin/workspaces/shipping-customs');
   });
 
-  test('le contrat de base sourcing reste minimal ; la policy V3 ajoute Cockpit imports + Sourcing', () => {
+  test('le rôle sourcing atterrit directement sur le cockpit live, sans écran de configuration dans Opérations', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = mountFor(env, '/admin/pilotage', 'pilotage', { role: 'sourcing' });
     expect(secondaryNav(header)).toBeUndefined();
 
     const operations = header.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'operations');
-    expect(operations.href).toBe('/admin/workspaces/sourcing');
+    expect(operations.href).toBe('/admin/import-runtime');
   });
 });
 
