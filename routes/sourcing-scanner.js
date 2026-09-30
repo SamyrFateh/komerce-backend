@@ -64,7 +64,7 @@ router.post('/catalogs/import', authenticate, requireAdminOrFounder, async (req,
       req.user?.id,
       importDispatch.dispatchToConnector
     );
-    if (result.status < 400) {
+    if (result.status < 400 && result.body?.import_id) {
       result = await candidateActions.handoffImportResult(result, req.user?.id || null);
     }
     res.status(result.status).json(result.body);
