@@ -196,14 +196,33 @@ completedPayload.selected.accounting.awaiting_catalogue_promotion = 12;
 test.describe('Cockpit imports — run terminé avec alerte et validation manuelle', () => {
   test.beforeEach(async ({ page }) => { await mountCockpit(page, completedPayload); });
 
-  test('les libellés du pipeline masquent le trait de liaison (jamais barrés)', async ({ page }) => {
+  test('pipeline du mock : grands cercles numérotés, libellé centré dessous, trait entre les cercles', async ({ page }) => {
     const steps = await page.evaluate(() => [...document.querySelectorAll('.kir-run-flow-step')].map((step) => {
-      const label = step.querySelector(':scope > div');
-      const cs = getComputedStyle(label);
-      return { bg: cs.backgroundColor, text: label.textContent.trim().slice(0, 20) };
+      const m = step.querySelector('.kir-run-flow-marker').getBoundingClientRect();
+      const l = step.querySelector(':scope > div').getBoundingClientRect();
+      return { size: m.width, sizeH: m.height, gap: l.top - m.bottom, dx: Math.abs((l.left + l.width / 2) - (m.left + m.width / 2)),
+        text: step.querySelector('.kir-run-flow-marker').textContent.trim(), font: parseFloat(getComputedStyle(step.querySelector('strong')).fontSize) };
     }));
-    expect(steps.length).toBeGreaterThanOrEqual(6);
-    for (const step of steps) expect(step.bg).toBe('rgb(9, 22, 37)');
+    expect(steps.length).toBe(6);
+    steps.forEach((st, i) => {
+      expect(st.size).toBeGreaterThanOrEqual(38);
+      expect(st.sizeH).toBe(st.size);
+      expect(st.gap).toBeGreaterThan(0);
+      expect(st.dx).toBeLessThan(3);
+      expect(st.text).toBe(String(i + 1));
+      expect(st.font).toBeGreaterThanOrEqual(14);
+    });
+  });
+
+  test('cartes KPI du mock : tuile d’icône colorée 64px et chiffre large', async ({ page }) => {
+    const cards = await page.evaluate(() => [...document.querySelectorAll('.kir-run-truth-grid>a')].map((a) => {
+      const icon = a.querySelector('.kir-ico');
+      const r = icon.getBoundingClientRect();
+      return { w: r.width, h: r.height, bg: getComputedStyle(icon).backgroundColor, num: parseFloat(getComputedStyle(a.querySelector('strong')).fontSize) };
+    }));
+    expect(cards).toHaveLength(5);
+    for (const c of cards) { expect(c.w).toBeGreaterThanOrEqual(60); expect(c.h).toBeGreaterThanOrEqual(60); expect(c.num).toBeGreaterThanOrEqual(30); }
+    expect(new Set(cards.map((c) => c.bg)).size).toBeGreaterThanOrEqual(4);
   });
 
   test('l’alerte de certification reste sombre et lisible', async ({ page }) => {

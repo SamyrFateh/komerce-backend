@@ -2938,3 +2938,53 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
 .kmc-import-runtime .kir-page .kir-runtime-alert strong{color:#FCA5A5 !important}
 .kmc-import-runtime .kir-page .kir-runtime-alert span{color:#E7CFD3 !important}
 .kmc-import-runtime .kir-page .kir-runtime-alert a{color:#7FB8FF !important}
+
+.kmc-import-runtime .kir-run-flow .kir-run-flow-track{grid-template-columns:repeat(6,minmax(0,1fr));column-gap:0;padding-top:4px}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step{
+  display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;
+  padding:0 6px 6px;border-radius:10px
+}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step>div{
+  background:transparent !important;padding:0;display:flex;flex-direction:column;align-items:center;gap:3px;max-width:100%
+}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step:hover>div{background:transparent !important}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step:not(:last-child)::after{
+  content:"";position:absolute;top:20px;left:calc(50% + 26px);right:calc(-50% + 26px);width:auto;height:3px;border-radius:2px;
+  background:#2A3D55
+}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-completed:not(:last-child)::after{background:#1ED784}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-current:not(:last-child)::after{background:linear-gradient(90deg,#3F9BFF,#2A3D55)}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step .kir-run-flow-marker{
+  width:40px;height:40px;flex:0 0 40px;border-radius:50%;display:grid;place-items:center;
+  font-size:19px;font-weight:700;line-height:1;border-width:2px;border-style:solid;position:relative;z-index:1
+}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-completed .kir-run-flow-marker{background:#1ED784;border-color:#1ED784;color:#052414}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-pending .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-waiting .kir-run-flow-marker{background:#0C1928;border-color:#526781;color:#9FB2C8}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-current .kir-run-flow-marker{background:#0A57E8;border-color:#5CC0FF;color:#FFFFFF}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-failed .kir-run-flow-marker{background:#3A1520;border-color:#FB4F64;color:#FF9DAA}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step strong{font-size:15px;font-weight:650;color:#EAF1F9;white-space:normal;overflow:visible}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step small{font-size:12.5px;color:#7D91A8;margin:0}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-current strong,
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-current small{color:#76BDFF}
+
+.kmc-import-runtime .kir-run-truth-grid>a{
+  grid-template-columns:64px minmax(0,1fr);column-gap:16px;align-items:center;min-height:104px;padding:16px 18px;border-radius:10px
+}
+.kmc-import-runtime .kir-run-truth-grid>a .kir-ico{
+  grid-row:1 / span 3;width:64px;height:64px;padding:0;border-radius:12px;display:grid;place-items:center;
+  background:#12305A;color:#4C9DFF
+}
+.kmc-import-runtime .kir-run-truth-grid>a .kir-ico svg{width:34px;height:34px}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(2) .kir-ico{background:#0F3B2A;color:#1ED784}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(3) .kir-ico{background:#12305A;color:#4C9DFF}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(4) .kir-ico{background:#4A1420;color:#FB4F64}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(5) .kir-ico{background:#4A2E0B;color:#F59E0B}
+.kmc-import-runtime .kir-run-truth-grid>a span{font-size:12px;letter-spacing:.05em}
+.kmc-import-runtime .kir-run-truth-grid>a strong{font-size:34px;line-height:1.05;margin-top:2px;color:#F3F7FC}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(2) strong{color:#1ED784}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(3) strong{color:#4C9DFF}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(4) strong{color:#FB4F64}
+.kmc-import-runtime .kir-run-truth-grid>a:nth-child(5) strong{color:#F59E0B}
+.kmc-import-runtime .kir-run-truth-grid>a small{font-size:14px;color:#9FB2C8}
+.kmc-import-runtime .kir-run-truth-grid>a span{font-size:13px;color:#C9D6E6;letter-spacing:.04em}

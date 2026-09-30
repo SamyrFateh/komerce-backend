@@ -131,7 +131,7 @@
             ? `${meta.label} · ${stage.processed}/${stage.total}`
             : `${stage.processed}/${stage.total}`)
         : meta.label;
-      const marker = meta.state === 'completed' ? '✓' : meta.state === 'failed' ? '!' : String(index + 1);
+      const marker = meta.state === 'failed' ? '!' : String(index + 1);
       const className = `kir-run-flow-step is-${meta.state} ${meta.reached_boundary ? 'has-manual-action' : ''} ${index === currentIndex ? 'is-current' : ''}`;
       const attrs = `${index === currentIndex ? ' aria-current="step"' : ''}${runRef ? ` href="${stageUrl(runRef, stage.key)}" data-cockpit-nav` : ''}`;
       const body = `<span class="kir-run-flow-marker">${marker}</span><div><strong>${esc(stage.label)}</strong><small>${esc(count)}</small>${meta.manual_label ? `<em class="kir-run-flow-manual">${esc(meta.manual_label)}</em>` : ''}</div>`;
