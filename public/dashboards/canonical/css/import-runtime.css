@@ -2172,3 +2172,313 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
     align-items:start;
   }
 }
+
+
+/* V4 FINAL — automatic pipeline is the visual hero.
+ * White Legacy canvas, strong green completion, amber only for the manual action. */
+.kir-run-flow{
+  padding:20px 20px 18px;
+  border-radius:12px;
+  background:#fff !important;
+  box-shadow:0 2px 8px rgb(15 23 42 / .055);
+}
+.kir-run-flow.is-complete,
+.kir-run-flow.is-complete.has-manual-action{
+  border:1px solid #DCE3EA;
+  border-left:4px solid #16A34A;
+  background:#fff !important;
+}
+.kir-run-flow-head{
+  align-items:flex-start;
+  gap:18px;
+}
+.kir-run-flow-head .kir-section-kicker{
+  color:#94A3B8;
+  font-size:12px;
+  letter-spacing:.06em;
+}
+.kir-run-flow-head strong{
+  margin-top:2px;
+  color:#0F172A !important;
+  font-size:20px;
+  line-height:1.18;
+  font-weight:700;
+  letter-spacing:-.015em;
+}
+.kir-run-flow-head small{
+  margin-top:5px;
+  color:#64748B;
+  font-size:12px;
+  line-height:1.45;
+}
+.kir-run-flow-head em{
+  color:#15803D !important;
+  font-size:15px;
+  line-height:1;
+  font-weight:700;
+  font-style:normal;
+  white-space:nowrap;
+}
+.kir-run-flow-progress{
+  height:5px !important;
+  margin:16px 0 18px !important;
+  border-radius:999px;
+  background:#E5E7EB !important;
+  overflow:hidden;
+}
+.kir-run-flow-progress>span,
+.kir-run-flow.is-complete .kir-run-flow-progress>span,
+.kir-run-flow.is-complete.has-manual-action .kir-run-flow-progress>span{
+  height:100%;
+  border-radius:999px;
+  background:#16A34A !important;
+  box-shadow:none !important;
+  animation:none !important;
+}
+.kir-run-flow-track{
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:0;
+  align-items:start;
+}
+.kir-run-flow-step{
+  min-width:0;
+  padding-right:14px;
+}
+.kir-run-flow-step::after{
+  top:15px;
+  left:34px;
+  right:0;
+  height:2px;
+  background:#CBD5E1;
+}
+.kir-run-flow-step.is-completed::after{
+  background:#16A34A;
+}
+.kir-run-flow-step:last-child::after{
+  display:none;
+}
+.kir-run-flow-marker{
+  width:30px;
+  height:30px;
+  flex:0 0 30px;
+  border-width:2px;
+  font-size:12px;
+  font-weight:700;
+}
+.kir-run-flow-step.is-completed .kir-run-flow-marker,
+.kir-run-flow-step.has-manual-action .kir-run-flow-marker{
+  border-color:#16A34A;
+  background:#16A34A;
+  color:#fff;
+  box-shadow:none;
+}
+.kir-run-flow-step strong{
+  color:#0F172A;
+  font-size:12px;
+  line-height:1.25;
+  font-weight:600;
+}
+.kir-run-flow-step.is-completed strong{
+  color:#0F172A;
+}
+.kir-run-flow-step small{
+  margin-top:2px;
+  color:#64748B;
+  font-size:10px;
+  line-height:1.25;
+}
+.kir-run-flow-manual{
+  width:max-content;
+  margin-top:5px;
+  padding:3px 8px;
+  display:inline-flex;
+  align-items:center;
+  border:1px solid #F5B85C;
+  border-radius:999px;
+  background:#FFF7ED;
+  color:#C25E00;
+  font-size:10px;
+  line-height:1.2;
+  font-weight:700;
+  font-style:normal;
+  white-space:nowrap;
+}
+
+/* Only the actual active pipeline stage pulses. Completed/manual states remain calm. */
+.kir-source-pill.is-live .kir-source-dot{
+  animation:none !important;
+}
+.kir-run-flow-step.is-completed .kir-run-flow-marker,
+.kir-run-flow-step.has-manual-action .kir-run-flow-marker,
+.kir-run-flow-step.is-waiting .kir-run-flow-marker{
+  animation:none !important;
+}
+.kir-run-flow-step.is-running .kir-run-flow-marker{
+  animation:kir-v3-live-marker 1.15s ease-in-out infinite !important;
+}
+
+@media(max-width:1100px){
+  .kir-run-flow-track{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    row-gap:16px;
+  }
+  .kir-run-flow-step:nth-child(3)::after,
+  .kir-run-flow-step:nth-child(6)::after{
+    display:none;
+  }
+}
+@media(max-width:720px){
+  .kir-run-flow{
+    padding:16px 14px;
+  }
+  .kir-run-flow-track{
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+  .kir-run-flow-step{
+    padding-right:0;
+  }
+  .kir-run-flow-step::after{
+    display:none;
+  }
+}
+
+
+/* V5 FINAL interaction authority.
+ * Only the stage that is truly RUNNING may pulse.
+ * Parent live state must never animate every stage or the whole progress bar. */
+.kir-run-flow.is-live .kir-run-flow-marker,
+.kir-run-flow.is-live .kir-run-flow-progress>span,
+.kir-source-pill.is-live .kir-source-dot,
+.kir-source-switch[aria-busy="true"] .kir-source-switch-knob,
+.kir-run-flow-step.is-completed .kir-run-flow-marker,
+.kir-run-flow-step.is-pending .kir-run-flow-marker,
+.kir-run-flow-step.has-manual-action .kir-run-flow-marker{
+  animation:none !important;
+}
+.kir-run-flow.is-live .kir-run-flow-progress>span{
+  filter:none !important;
+}
+.kir-run-flow-step.is-running .kir-run-flow-marker{
+  animation:kir-v3-live-marker 1.15s ease-in-out infinite !important;
+}
+.kir-run-flow-step.is-running strong{
+  color:#15803D;
+}
+.kir-run-flow-step.is-running small{
+  color:#15803D;
+}
+
+/* ==========================================================================
+ * MOCK-FIDELITY — cockpit canonique (aligné sur le mock 1672×941)
+ * Dernier bloc du fichier : ne pas ajouter de couche après celui-ci.
+ * ========================================================================== */
+.kmc-import-runtime .kir-ico{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;font-style:normal;line-height:0;color:#64748B}
+.kmc-import-runtime .kir-ico svg{display:block}
+
+/* Hero — pastille « Décisions attendues » */
+.kmc-import-runtime .kir-status-large{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border:0;border-radius:10px;background:#FFF3E0;color:#C2410C;font-size:13px;font-weight:700}
+.kmc-import-runtime .kir-status-large .kir-ico{color:#EA580C}
+.kmc-import-runtime .kir-status-large .kir-ico svg{width:24px;height:24px}
+
+/* Flux du lot — bordure gauche et pourcentage ORANGE (action manuelle) */
+.kmc-import-runtime .kir-run-flow.is-complete{border:1px solid #E2E8F0;border-left:4px solid #16A34A}
+.kmc-import-runtime .kir-run-flow.is-complete.has-manual-action{border-left-color:#F59E0B}
+.kmc-import-runtime .kir-run-flow-head em{font-size:17px;font-weight:700}
+.kmc-import-runtime .kir-run-flow.is-complete.has-manual-action .kir-run-flow-head em{color:#F59E0B !important}
+.kmc-import-runtime .kir-run-flow-manual{border-color:#FCD9A0;background:#FFF7E6;color:#B45309}
+
+/* Suivi du lot — 6 cartes, bordure uniforme, SANS filet haut */
+.kmc-import-runtime .kir-run-truth-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.kmc-import-runtime .kir-run-truth-grid>div{
+  display:grid;grid-template-columns:34px 1fr;grid-template-rows:auto auto;column-gap:14px;row-gap:2px;align-items:start;
+  min-height:86px;padding:16px 20px;background:#fff;
+  border:1px solid #E2E8F0 !important;border-top:1px solid #E2E8F0 !important;border-radius:10px;box-shadow:none}
+.kmc-import-runtime .kir-run-truth-grid>div::before,
+.kmc-import-runtime .kir-run-truth-grid>div::after{display:none !important}
+.kmc-import-runtime .kir-run-truth-grid>div .kir-ico{grid-row:1 / span 2;grid-column:1;align-self:start;padding-top:2px}
+.kmc-import-runtime .kir-run-truth-grid>div span{grid-column:2;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#475569}
+.kmc-import-runtime .kir-run-truth-grid>div strong{grid-column:2;font-size:30px;line-height:1.1;font-weight:800;color:#0F172A}
+.kmc-import-runtime .kir-run-truth-grid>div.is-healthy strong{color:#16A34A}
+.kmc-import-runtime .kir-run-truth-grid>div.is-healthy .kir-ico-accepted,
+.kmc-import-runtime .kir-run-truth-grid>div.is-healthy .kir-ico-shield{color:#16A34A}
+.kmc-import-runtime .kir-run-truth-grid>div .kir-ico-tag{color:#2563EB}
+
+/* Bandeau d'alerte */
+.kmc-import-runtime .kir-runtime-alert{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:0 18px;padding:14px 20px;border:1px solid #FECACA;border-left:4px solid #DC2626;border-radius:8px;background:#FEF2F2}
+.kmc-import-runtime .kir-runtime-alert>strong{display:inline-flex;align-items:center;gap:12px;color:#DC2626;font-size:14px;font-weight:700;padding-right:18px;border-right:1px solid #CBD5E1}
+.kmc-import-runtime .kir-runtime-alert>strong .kir-ico{color:#DC2626}
+.kmc-import-runtime .kir-runtime-alert>strong .kir-ico svg{width:22px;height:22px}
+.kmc-import-runtime .kir-runtime-alert>span{color:#475569;font-size:12.5px;line-height:1.55}
+.kmc-import-runtime .kir-runtime-alert>a{color:#DC2626;font-size:12px;font-weight:700;white-space:nowrap;text-decoration:none}
+
+/* Lot sélectionné */
+.kmc-import-runtime .kir-lot-chip.is-selected{border:1px solid #F59E0B;border-left:4px solid #F59E0B;background:#fff;border-radius:8px}
+
+/* 4 cartes de synthèse — filet haut 3px coloré + icône + valeur */
+.kmc-import-runtime .kir-lot-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.kmc-import-runtime .kir-lot-summary>div{
+  display:grid;grid-template-columns:34px 1fr;grid-template-rows:auto auto;column-gap:14px;row-gap:2px;align-items:start;
+  min-height:78px;padding:14px 20px;background:#fff;border:1px solid #E2E8F0;border-radius:10px;box-shadow:none}
+.kmc-import-runtime .kir-lot-summary>div:nth-child(1){border-top:3px solid #16A34A}
+.kmc-import-runtime .kir-lot-summary>div:nth-child(2){border-top:3px solid #F59E0B}
+.kmc-import-runtime .kir-lot-summary>div:nth-child(3){border-top:3px solid #2563EB}
+.kmc-import-runtime .kir-lot-summary>div:nth-child(4){border-top:3px solid #CBD5E1}
+.kmc-import-runtime .kir-lot-summary>div .kir-ico{grid-row:1 / span 2;grid-column:1;align-self:start;padding-top:2px}
+.kmc-import-runtime .kir-lot-summary>div:nth-child(1) .kir-ico{color:#16A34A}
+.kmc-import-runtime .kir-lot-summary>div:nth-child(2) .kir-ico{color:#F59E0B}
+.kmc-import-runtime .kir-lot-summary>div:nth-child(3) .kir-ico{color:#2563EB}
+.kmc-import-runtime .kir-lot-summary>div:nth-child(4) .kir-ico{color:#475569}
+.kmc-import-runtime .kir-lot-summary>div span{grid-column:2;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#475569}
+.kmc-import-runtime .kir-lot-summary>div strong{grid-column:2;margin:0;font-size:30px;line-height:1.1;font-weight:800}
+.kmc-import-runtime .kir-lot-summary>div:nth-child(4) strong{font-size:26px;color:#0F172A}
+
+@media(max-width:1100px){
+  .kmc-import-runtime .kir-run-truth-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .kmc-import-runtime .kir-lot-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kmc-import-runtime .kir-runtime-alert{grid-template-columns:1fr}
+  .kmc-import-runtime .kir-runtime-alert>strong{border-right:0;padding-right:0}
+}
+@media(max-width:720px){
+  .kmc-import-runtime .kir-run-truth-grid,.kmc-import-runtime .kir-lot-summary{grid-template-columns:1fr}
+}
+
+/* ==========================================================================
+ * ANIMATION CIBLÉE — seule l'étape courante du pipeline « respire ».
+ * Ce bloc doit rester le DERNIER du fichier.
+ * Le JS pose .is-current sur une seule étape (la première en cours).
+ * ========================================================================== */
+@keyframes kir-current-step{
+  0%,100%{box-shadow:0 0 0 3px rgb(22 163 74 / .10)}
+  50%{box-shadow:0 0 0 7px rgb(22 163 74 / .20)}
+}
+/* 1. Tout est statique par défaut : marqueurs, barre, pastilles, points */
+.kmc-import-runtime .kir-run-flow .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow.is-live .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-step.is-running .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-step.is-pending .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-step.is-waiting .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-step.is-completed .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-step.has-manual-action .kir-run-flow-marker,
+.kmc-import-runtime .kir-run-flow-progress>span,
+.kmc-import-runtime .kir-status-large.is-live::before,
+.kmc-import-runtime .kir-source-pill.is-live .kir-source-dot{
+  animation:none !important;
+}
+/* 2. Seule l'étape courante anime son marqueur */
+.kmc-import-runtime .kir-run-flow-step.is-current .kir-run-flow-marker{
+  border-color:#16A34A;
+  background:#F0FDF4;
+  color:#15803D;
+  animation:kir-current-step 1.15s ease-in-out infinite !important;
+}
+/* 3. Le point de la source ne bat que si « Source » est l'étape courante,
+      ou s'il n'y a pas encore de flux affiché (activation en préparation) */
+.kmc-import-runtime .kir-page:has(.kir-run-flow-step.is-current:first-child) .kir-source-pill.is-live .kir-source-dot,
+.kmc-import-runtime .kir-page:not(:has(.kir-run-flow)) .kir-source-pill.is-live .kir-source-dot{
+  animation:kir-current-step 1.15s ease-in-out infinite !important;
+}
+@media (prefers-reduced-motion:reduce){
+  .kmc-import-runtime .kir-run-flow-step.is-current .kir-run-flow-marker,
+  .kmc-import-runtime .kir-page .kir-source-pill.is-live .kir-source-dot{animation:none !important}
+}

@@ -36,6 +36,25 @@
     ['CATALOGUE', 'Catalogue'],
   ]);
 
+
+  const ICON_PATHS = {
+    file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+    accepted:'<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="m7.8 12.2 3 3 5.4-6.2" stroke="#fff"/>',
+    gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+    tag:'<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8z"/><circle cx="7" cy="7" r="1.2"/>',
+    shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+    box:'<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12"/>',
+    bookmark:'<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/><path d="m9.5 9 2 2 3.5-4"/>',
+    chart:'<path d="M12 20V10M18 20V4M6 20v-4"/>',
+    list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+    flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+    clock:'<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M12 6.5V12l3.5 2" stroke="#fff"/>',
+    alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="currentColor" stroke="none"/><path d="M12 9v4M12 17h.01" stroke="#fff"/>',
+  };
+  function ico(name) {
+    return `<i class="kir-ico kir-ico-${name}" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg></i>`;
+  }
+
   function esc(value) {
     return String(value == null ? '' : value)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -84,7 +103,12 @@
 
   function flowStageMeta(stage) {
     if (stage.key === 'CATALOGUE' && stage.reason === 'awaiting_explicit_operator_promotion') {
-      return { state:'waiting', label:'À valider' };
+      return {
+        state:'completed',
+        label:'Terminé',
+        manual_label:`${num(stage.total)} à valider`,
+        reached_boundary:true,
+      };
     }
     if (stage.status === 'COMPLETED') return { state:'completed', label:'Terminé' };
     if (stage.status === 'FAILED') return { state:'failed', label:'Bloqué' };
@@ -93,17 +117,22 @@
   }
 
   function flowTrack(stages) {
+    // Une seule étape est « courante » : la première étape réellement en cours.
+    // Elle seule porte .is-current (et donc l'animation) ; les autres restent statiques.
+    const currentIndex = stages.findIndex(stage => flowStageMeta(stage).state === 'running');
     return `<div class="kir-run-flow-track">${stages.map((stage, index) => {
       const meta = flowStageMeta(stage);
       const count = stage.total
-        ? (meta.state === 'blocked' || meta.state === 'failed' || meta.state === 'waiting'
-          ? `${meta.label} · ${stage.processed}/${stage.total}`
-          : `${stage.processed}/${stage.total}`)
+        ? (meta.reached_boundary
+          ? `${stage.total}/${stage.total}`
+          : meta.state === 'failed'
+            ? `${meta.label} · ${stage.processed}/${stage.total}`
+            : `${stage.processed}/${stage.total}`)
         : meta.label;
       const marker = meta.state === 'completed' ? '✓' : meta.state === 'failed' ? '!' : String(index + 1);
-      return `<div class="kir-run-flow-step is-${meta.state}">
+      return `<div class="kir-run-flow-step is-${meta.state} ${meta.reached_boundary ? 'has-manual-action' : ''} ${index === currentIndex ? 'is-current' : ''}" ${index === currentIndex ? 'aria-current="step"' : ''}>
         <span class="kir-run-flow-marker">${marker}</span>
-        <div><strong>${esc(stage.label)}</strong><small>${esc(count)}</small></div>
+        <div><strong>${esc(stage.label)}</strong><small>${esc(count)}</small>${meta.manual_label ? `<em class="kir-run-flow-manual">${esc(meta.manual_label)}</em>` : ''}</div>
       </div>`;
     }).join('')}</div>`;
   }
@@ -175,6 +204,18 @@
     return parts.join(' ');
   }
 
+  function automaticPipelineDone(run, stages) {
+    const list = Array.isArray(stages) ? stages : [];
+    if (run?.status === 'FAILED' || list.some(stage => stage.status === 'FAILED')) return false;
+    const catalogue = list.find(stage => stage.key === 'CATALOGUE') || {};
+    const automaticStages = list.filter(stage => stage.key !== 'CATALOGUE');
+    const upstreamDone = automaticStages.length > 0
+      && automaticStages.every(stage => stage.status === 'COMPLETED');
+    const catalogueReached = catalogue.status === 'COMPLETED'
+      || catalogue.reason === 'awaiting_explicit_operator_promotion';
+    return run?.status === 'COMPLETED' || (upstreamDone && catalogueReached);
+  }
+
   function activationStrip(sourceControls) {
     if (!activationState) return '';
     const source = (sourceControls || []).find(item => item.source_ref === activationState.sourceRef) || {};
@@ -183,9 +224,12 @@
     const completed = stages.filter(stage => stage.status === 'COMPLETED').length;
     const running = stages.some(stage => stage.status === 'RUNNING');
     const projectedProgress = num(activationState.run?.progress_pct);
-    const progress = projectedProgress > 0
-      ? Math.max(6, Math.min(100, projectedProgress))
-      : Math.max(6, Math.min(100, Math.round(((completed + (running ? .45 : 0)) / stages.length) * 100)));
+    const automaticDone = automaticPipelineDone(activationState.run, stages);
+    const progress = automaticDone
+      ? 100
+      : projectedProgress > 0
+        ? Math.max(6, Math.min(100, projectedProgress))
+        : Math.max(6, Math.min(100, Math.round(((completed + (running ? .45 : 0)) / stages.length) * 100)));
     const noResult = activationState.outcome === 'empty'
       || ['no_valid_product', 'supplier_source_empty', 'all_supplier_products_invalid'].includes(String(activationState.run?.failure_reason || ''));
     const providerGateBlocked = activationState.outcome === 'certification_incomplete'
@@ -199,7 +243,7 @@
       ? 'Passage interrompu'
       : noResult
         ? 'Passage terminé sans résultat'
-        : providerGateBlocked || catalogueWaiting
+        : automaticDone || providerGateBlocked || catalogueWaiting
           ? 'Import automatique terminé'
           : activationState.done ? 'Premier passage terminé' : 'Passage en direct';
     const helper = failed
@@ -208,13 +252,18 @@
         ? `${label} · ${activationState.runRef || 'nouveau lot'} · aucun produit exploitable`
         : providerGateBlocked
           ? `${label} · ${num(activationState.run?.accounting?.certified)} certifié(s) poursuivent vers le Catalogue · source automatique OFF`
-          : activationState.runRef
-            ? `${label} · ${activationState.runRef} · le même lot avance de bout en bout`
-            : `${label} · préparation de la source et création du premier lot`;
+          : automaticDone && catalogueWaiting
+            ? `${label} · le traitement automatique a atteint le Catalogue · ${num(activationState.run?.accounting?.awaiting_catalogue_promotion)} à valider`
+            : automaticDone
+              ? `${label} · le traitement automatique a atteint le Catalogue`
+              : activationState.runRef
+                ? `${label} · ${activationState.runRef} · le même lot avance de bout en bout`
+                : `${label} · préparation de la source et création du premier lot`;
     const tone = failed ? 'is-failed'
       : noResult ? 'is-empty'
-        : catalogueWaiting || providerGateBlocked ? 'is-waiting'
-          : activationState.done ? 'is-complete' : 'is-live';
+        : automaticDone || catalogueWaiting || providerGateBlocked || activationState.done
+          ? `is-complete ${catalogueWaiting ? 'has-manual-action' : ''}`.trim()
+          : 'is-live';
     return `<section class="kir-run-flow ${tone}" aria-live="polite">
       <div class="kir-run-flow-head">
         <div><span class="kir-section-kicker">FLUX DU LOT</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
@@ -262,13 +311,13 @@
         ? `${run.run_ref} · ${run.provider || 'Source'} · ${num(run.accounting?.awaiting_catalogue_promotion)} certifié(s) attendent la promotion Catalogue`
         : `${run.run_ref} · ${run.provider || 'Source'} · parcours conservé à l’écran`;
     const tone = failed ? 'is-failed'
-      : catalogueWaiting ? 'is-waiting'
-        : run.status === 'COMPLETED' ? 'is-complete' : 'is-live';
+      : catalogueWaiting || run.status === 'COMPLETED' ? 'is-complete has-manual-action'
+        : 'is-live';
 
     return `<section class="kir-run-flow ${tone}" aria-label="Parcours du lot ${esc(run.run_ref)}">
       <div class="kir-run-flow-head">
         <div><span class="kir-section-kicker">FLUX DU LOT</span><strong>${esc(title)}</strong><small>${esc(helper)}</small></div>
-        <a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Historique →</a>
+        <em>${progress}%</em>
       </div>
       <div class="kir-run-flow-progress"><span style="width:${progress}%"></span></div>
       ${flowTrack(stages)}
@@ -278,12 +327,12 @@
   function runTruthStrip(run) {
     const a = run?.accounting || {};
     const values = [
-      ['Entrées source', num(a.source_total)],
-      ['Acceptées', num(a.accepted)],
-      ['Raffinées', num(a.refined)],
-      ['Taxonomisées', num(a.taxonomized)],
-      ['Certifiées sourcing', num(a.certified)],
-      ['Catalogue', num(a.catalogued)],
+      ['Entrées source', num(a.source_total), 'file'],
+      ['Acceptées', num(a.accepted), 'accepted'],
+      ['Raffinées', num(a.refined), 'gear'],
+      ['Taxonomisées', num(a.taxonomized), 'tag'],
+      ['Certifiées sourcing', num(a.certified), 'shield'],
+      ['Catalogue', num(a.catalogued), 'box'],
     ];
     const awaiting = num(a.awaiting_catalogue_promotion);
     const blockers = num(a.rejected) + num(a.quarantined) + num(a.deferred) + num(a.certification_blocked);
@@ -295,14 +344,14 @@
         : 'Tous les produits du lot sont comptabilisés dans le parcours réel.';
     return `<section class="kir-run-truth ${providerGateBlocked ? 'has-provider-gate' : ''}" aria-label="Comptabilité réelle du lot">
       <div class="kir-run-truth-head"><span class="kir-section-kicker">SUIVI DU LOT</span><strong>Ce qui s’est réellement passé</strong></div>
-      <div class="kir-run-truth-grid">${values.map(([label, value], index) => {
+      <div class="kir-run-truth-grid">${values.map(([label, value, icon], index) => {
         const tone = index === 0 ? 'neutral'
           : index >= 1 && index <= 4 && value > 0 ? 'healthy'
             : index === 5 && value > 0 ? 'healthy'
               : 'neutral';
-        return `<div class="is-${tone}"><span>${esc(label)}</span><strong>${value}</strong></div>`;
+        return `<div class="is-${tone}">${ico(icon)}<span>${esc(label)}</span><strong>${value}</strong></div>`;
       }).join('')}</div>
-      ${providerGateBlocked ? `<div class="kir-runtime-alert"><strong>${esc(runtimeCertificationBlockTitle(run))}</strong><span>${esc(runtimeCertificationBlockMessage(run))}</span><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le détail technique →</a></div>` : ''}
+      ${providerGateBlocked ? `<div class="kir-runtime-alert"><strong>${ico('alert')}${esc(runtimeCertificationBlockTitle(run))}</strong><span>${esc(runtimeCertificationBlockMessage(run))}</span><a href="${urlFor(run.run_ref, 'history')}" data-cockpit-nav>Voir le détail technique →</a></div>` : ''}
       <p>${esc(lotExplanation)}</p>
     </section>`;
   }
@@ -811,7 +860,7 @@
           <p>${esc(run.run_ref)} · ${esc(run.provider || 'Source')} · ${num(run.accounting?.source_total)} entrée(s) · import ${lot.business_status === 'NO_RESULT' ? 'sans résultat' : run.status === 'COMPLETED' ? 'terminé' : run.status === 'FAILED' ? 'en échec' : 'en cours'}</p>
         </div>
         <div class="kir-hero-actions">
-          <span class="kir-status-large is-${businessTone(lot.business_status)}">${esc(status)}</span>
+          <span class="kir-status-large is-${businessTone(lot.business_status)}">${ico('clock')}${esc(status)}</span>
           <a href="${withReturnTo('/admin/workspaces/catalog', urlFor(run.run_ref, view), 'Retour au lot')}" class="kir-global-link">Catalogue global →</a>
         </div>
       </header>
@@ -822,10 +871,10 @@
       ${lotStrip(lots, run.run_ref)}
 
       <section class="kir-lot-summary">
-        <div><span>Déjà au Catalogue</span><strong>${num(run.accounting?.catalogued)}</strong></div>
-        <div><span>À promouvoir</span><strong>${num(run.accounting?.awaiting_catalogue_promotion)}</strong></div>
-        <div><span>Décisions commerciales</span><strong>${num(lot.closure?.remaining_products)}</strong></div>
-        <div><span>Clôture</span><strong>${lot.business_status === 'NO_RESULT' ? 'Sans objet' : lot.closure?.eligible ? 'Prête' : 'En attente'}</strong></div>
+        <div>${ico('bookmark')}<span>Déjà au Catalogue</span><strong>${num(run.accounting?.catalogued)}</strong></div>
+        <div>${ico('chart')}<span>À promouvoir</span><strong>${num(run.accounting?.awaiting_catalogue_promotion)}</strong></div>
+        <div>${ico('list')}<span>Décisions commerciales</span><strong>${num(lot.closure?.remaining_products)}</strong></div>
+        <div>${ico('flag')}<span>Clôture</span><strong>${lot.business_status === 'NO_RESULT' ? 'Sans objet' : lot.closure?.eligible ? 'Prête' : 'En attente'}</strong></div>
       </section>
 
       <main class="kir-main">${renderBody(run, view, lots)}</main>

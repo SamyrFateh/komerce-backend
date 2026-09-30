@@ -192,9 +192,12 @@ test('un PARTIAL_BLOCKED bloque seulement la source et laisse le lot aller au Ca
   expect(node.innerHTML).not.toContain('sellable_units[4]');
   expect(node.innerHTML).not.toContain("combinaison d'options dupliquée");
   expect(node.innerHTML).toContain('12 produit(s) certifié(s) sourcing attendent maintenant la promotion Catalogue');
-  expect(node.innerHTML).toContain('À valider · 0/12');
+  expect(node.innerHTML).toContain('12/12');
+  expect(node.innerHTML).toContain('12 à valider');
+  expect(node.innerHTML).toContain('has-manual-action');
   expect(node.innerHTML).not.toContain('Passage interrompu');
   expect(node.innerHTML).not.toContain('À corriger');
+  expect(node.innerHTML).not.toContain('is-running');
 });
 
 
