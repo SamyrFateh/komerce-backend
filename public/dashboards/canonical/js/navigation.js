@@ -63,7 +63,7 @@
       spaces: Object.freeze([
         Object.freeze({ id: 'import-runtime', label: 'Sourcing live', href: '/admin/import-runtime', roles: Object.freeze(['admin', 'sourcing']) }),
         Object.freeze({ id: 'hub-live', label: 'Hub live', href: '/admin/hub-live', roles: Object.freeze(['admin']) }),
-        Object.freeze({ id: 'relais-live', label: 'Relais live', href: '/admin/relais-live', roles: Object.freeze(['admin']) }),
+        Object.freeze({ id: 'relais-live', label: 'Relais live', href: '/admin/relais-live', roles: Object.freeze(['admin', 'agent_relais']) }),
       ]),
     }),
     Object.freeze({

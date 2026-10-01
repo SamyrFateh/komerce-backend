@@ -102,10 +102,11 @@ describe('navigation-policy-v4 — domaine Live (coque noire des cockpits opéra
     expect(nav.activePrimarySurface('hub-live')).toBe('live');
   });
 
-  test('Live reste réservé aux rôles admin et sourcing (rôles inchangés)', () => {
+  test('Live : admin, sourcing, et agent_relais pour son seul cockpit', () => {
     const nav = loadPolicy();
     expect(nav._localTabsFor('live', { role: 'sourcing' }, null).map(t => t.id)).toEqual(['import-runtime']);
-    for (const role of ['agent_hub', 'agent_relais', 'agent_transitaire', 'finance', 'market_operator', 'support']) {
+    expect(nav._localTabsFor('live', { role: 'agent_relais' }, null).map(t => t.id)).toEqual(['relais-live']);
+    for (const role of ['agent_hub', 'agent_transitaire', 'finance', 'market_operator', 'support']) {
       expect(nav._localTabsFor('live', { role }, null)).toEqual([]);
     }
   });
