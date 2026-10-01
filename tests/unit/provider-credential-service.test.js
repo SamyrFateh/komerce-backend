@@ -91,6 +91,23 @@ describe('état crédentiel (autorité backend, fail-closed)', () => {
   });
 });
 
+describe('contrat oauth : session serveur', () => {
+  const oauth = { mode: 'oauth', scope: 'platform', sessionKey: 'aliexpress', hasEnvironmentCredentials: false };
+  test('session absente → missing (À CONFIGURER), jamais utilisable', () => {
+    expect(svc.deriveCredentialState({ contract: oauth, vault: null, oauthConnected: false })).toBe('missing');
+    expect(svc.deriveCredentialState({ contract: oauth, vault: { last_test_status: 'ok' }, oauthConnected: false })).toBe('missing');
+  });
+  test('session connectée : à tester puis valide selon le test de connexion', () => {
+    expect(svc.deriveCredentialState({ contract: oauth, vault: null, oauthConnected: true })).toBe('untested');
+    expect(svc.deriveCredentialState({ contract: oauth, vault: null, oauthConnected: true, connectionTestStatus: 'ok' })).toBe('valid');
+    expect(svc.deriveCredentialState({ contract: oauth, vault: null, oauthConnected: true, connectionTestStatus: 'failed' })).toBe('invalid');
+  });
+  test('oauthSession : lecteur inconnu ou en erreur → non connecté (fail-closed)', async () => {
+    expect(await svc.oauthSession({ mode: 'api_key' })).toBeUndefined();
+    expect(await svc.oauthSession({ mode: 'oauth', sessionKey: 'inconnu' })).toEqual({ connected: false });
+  });
+});
+
 describe('assainisseur commun', () => {
   test('retire les secrets connus du texte', () => {
     const out = svc.redactSecrets('HTTP 401 key=sk-abc-123456 secret=zzzz9999', { api_key: 'sk-abc-123456', client_secret: 'zzzz9999' });

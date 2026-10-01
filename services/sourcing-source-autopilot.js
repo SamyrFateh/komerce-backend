@@ -120,10 +120,11 @@ async function listSources(q = db) {
       ORDER BY s.source_id`
   );
 
-  return rows.map((row) => {
+  return Promise.all(rows.map(async (row) => {
     const automation = automationBySourceRef(row.source_ref);
     const { credential_last_test_status: vaultTest, credential_in_vault: inVault, ...sourceRow } = row;
     const contract = importDispatch.authContract(row.adapter_type);
+    const session = await credentialService.oauthSession(contract);
     return {
       ...sourceRow,
       credential_in_vault: Boolean(inVault),
@@ -132,6 +133,7 @@ async function listSources(q = db) {
         vault: inVault ? { last_test_status: vaultTest } : null,
         connectionTestStatus: row.connection_test_status,
         productionCertified: Boolean(row.production_certified_at),
+        oauthConnected: session ? session.connected !== false : undefined,
       }),
       auth: contract ? { mode: contract.mode, scope: contract.scope, fields: contract.fields } : { mode: 'none', scope: null, fields: [] },
       production_runtime_certified: Boolean(row.production_certified_at),
@@ -145,7 +147,7 @@ async function listSources(q = db) {
       discovery_version: automation?.discovery_version || null,
       runtime_enabled: runtimeEnabled(),
     };
-  });
+  }));
 }
 
 async function requireSource(sourceRef, q = db) {

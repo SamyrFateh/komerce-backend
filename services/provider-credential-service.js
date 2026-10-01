@@ -384,9 +384,11 @@ async function linkOAuthSession(sourceRef, { sessionKey, accountLabel = null, ac
 async function resolveForRun(sourceRef, { q = db, env = process.env } = {}) {
   const { source, contract } = await loadSource(sourceRef, q);
   const row = await loadActiveRow(source, q);
+  const session = await oauthSession(contract, env);
   let state = deriveCredentialState({
     contract, vault: row, connectionTestStatus: source.connection_test_status,
     productionCertified: Boolean(source.production_certified_at),
+    oauthConnected: session ? session.connected !== false : undefined,
   });
   let credentials = null;
   if (row && row.auth_type !== 'oauth') {
@@ -397,9 +399,23 @@ async function resolveForRun(sourceRef, { q = db, env = process.env } = {}) {
 
 // ── Statut (jamais un secret, pas même masqué) ────────────────────────────────
 
+// Lecteurs de session OAuth serveur (aucun token : seulement l'état et les échéances).
+const OAUTH_SESSION_READERS = Object.freeze({
+  aliexpress: (env) => require('./suppliers/aliexpress-oauth').getConnectionStatus({ env }),
+});
+
+async function oauthSession(contract, env = process.env) {
+  if (!contract || contract.mode !== 'oauth') return undefined;
+  const reader = OAUTH_SESSION_READERS[contract.sessionKey];
+  if (!reader) return { connected: false };
+  try { return await reader(env); } catch (_) { return { connected: false }; }
+}
+
 // État crédentiel unique, autorité backend : valid | untested | invalid | missing | not_required.
-function deriveCredentialState({ contract, vault, connectionTestStatus, productionCertified = false }) {
+// `oauthConnected` (false = session absente) ne concerne que les contrats oauth.
+function deriveCredentialState({ contract, vault, connectionTestStatus, productionCertified = false, oauthConnected }) {
   if (!contract || contract.mode === 'none') return 'not_required';
+  if (contract.mode === 'oauth' && oauthConnected === false) return 'missing';
   if (vault) {
     if (vault.last_test_status === 'ok') return 'valid';
     if (vault.last_test_status === 'failed') return 'invalid';
@@ -414,11 +430,15 @@ function deriveCredentialState({ contract, vault, connectionTestStatus, producti
 async function status(sourceRef, { q = db, env = process.env } = {}) {
   const { source, contract } = await loadSource(sourceRef, q);
   const row = await loadActiveRow(source, q);
+  const session = await oauthSession(contract, env);
   const state = deriveCredentialState({
     contract, vault: row, connectionTestStatus: source.connection_test_status,
     productionCertified: Boolean(source.production_certified_at),
+    oauthConnected: session ? session.connected !== false : undefined,
   });
-  const expires = row?.refresh_expires_at || row?.access_expires_at || null;
+  // Session OAuth : échéances lues en direct (le refresh automatique les fait évoluer).
+  const expires = session?.refresh_expires_at || session?.access_expires_at
+    || row?.refresh_expires_at || row?.access_expires_at || null;
   const expired = Boolean(expires && new Date(expires).getTime() <= Date.now());
   const outdatedKey = Boolean(row?.key_version && row.key_version < currentKeyVersion(env));
   return {
@@ -431,7 +451,7 @@ async function status(sourceRef, { q = db, env = process.env } = {}) {
     last_test_status: row?.last_test_status || source.connection_test_status || null,
     expires_at: expires,
     rotation_required: state === 'invalid' || expired || outdatedKey,
-    provider_account_label: row?.provider_account_label || null,
+    provider_account_label: session?.provider_user_nick || row?.provider_account_label || null,
   };
 }
 
@@ -447,6 +467,7 @@ module.exports = {
   resolveForRun,
   linkOAuthSession,
   deriveCredentialState,
+  oauthSession,
   redactSecrets,
   _encryptEnvelope: encryptEnvelope,
   _decryptEnvelope: decryptEnvelope,
