@@ -88,9 +88,13 @@ async function mount(page, backend) {
       backend.calls.push('catalog');
       return json(route, { connectors: [
         { adapter: 'cj', name: 'CJdropshipping', label: 'CJdropshipping API', available: true, automatable: true, connection_mode: 'server_managed',
-          connect_path: null, can_test_connection: true, can_create: !backend.source, reason: null, existing_source_ref: backend.source ? 'api:cj' : null, existing_archived: Boolean(backend.source?.archived) },
+          connect_path: null, can_test_connection: true,
+          auth: { mode: 'api_key', scope: 'source', description: 'Renseignez la clé API permanente du compte CJdropshipping.',
+            fields: [{ key: 'api_key', label: 'Clé API CJdropshipping', secret: true, help: 'Clé API du compte fournisseur utilisée pour autoriser Komerce.' }] },
+          can_create: !backend.source, reason: null, existing_source_ref: backend.source ? 'api:cj' : null, existing_archived: Boolean(backend.source?.archived) },
         { adapter: 'ebay', name: 'eBay Sandbox', label: 'eBay Sandbox Browse API', available: true, automatable: false, connection_mode: 'server_managed',
-          connect_path: null, can_test_connection: true, can_create: false, reason: 'Autopilot non certifié', existing_source_ref: null },
+          connect_path: null, can_test_connection: true, auth: { mode: 'client_credentials', scope: 'platform', description: 'Identifiants gérés par Komerce', fields: [] },
+          can_create: false, reason: 'Autopilot non certifié', existing_source_ref: null },
       ] });
     }
     if (req.method() === 'POST' && p === base) {
@@ -186,8 +190,15 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     await expect(page.locator('.kir-sources-empty')).toBeVisible();
     await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Sources');
 
+    // Avant même de créer la source, le registre explique ce qu'il faudra fournir.
+    await page.locator('[data-add-source]').click();
+    await wizard(page).locator('[data-wizard-kind="api"]').click();
+    await expect(wizard(page).locator('[data-wizard-connector="cj"] [data-wizard-auth-requirement]'))
+      .toContainText('clé API permanente du compte CJdropshipping');
+    await wizard(page).locator('[data-wizard-create="cj"]').click();
+    await expect(wizard(page).locator('[data-wizard-created]')).toBeVisible();
+
     // A — ajout via l'assistant : fail-closed, aucun import déclenché.
-    await addCj(page);
     expect(backend.calls).toEqual(['catalog', 'create']);
     expect(backend.runs).toHaveLength(0);
     await expect(card(page).locator('.kir-source-badge')).toHaveText('CONNEXION À TESTER');
