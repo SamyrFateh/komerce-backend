@@ -77,12 +77,55 @@ test('product_ref est résolu côté serveur', async () => {
   expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('product_ref = $1'), ['KPR-000001']);
 });
 
+test('workspace Pricing conserve un produit non pricé à null', async () => {
+  mockQuery.mockImplementation(async sql => {
+    const source = String(sql);
+    if (source.includes('FROM products')) return { rows: [{
+      id: 'internal-product',
+      product_ref: 'KPR-UNPRICED',
+      name: 'Produit CJ',
+      category: 'vetements',
+      price_kmf: null,
+      cost_kmf: 1500,
+      weight_kg: 0.3,
+      volume_m3: null,
+      is_active: false,
+    }] };
+    if (source.includes('FROM competitor_prices')) return { rows: [{ count: 0 }] };
+    return { rows: [] };
+  });
+
+  const result = await workspace.buildWorkspace();
+
+  expect(result.products[0].price_kmf).toBeNull();
+});
+
 test('simulation convertit product_ref en id uniquement pour le moteur', async () => {
   mockQuery.mockResolvedValueOnce({ rows: [{ id: 'internal-product', product_ref: 'KPR-000001' }] });
   mockRecommend.mockResolvedValueOnce({ product_id: 'internal-product', recommended_price_kmf: 5000 });
   const result = await workspace.simulate({ product_ref: 'KPR-000001', channel: 'cash_relais' });
   expect(mockRecommend).toHaveBeenCalledWith({ product_id: 'internal-product', channel: 'cash_relais' });
   expect(result).toEqual({ recommended_price_kmf: 5000 });
+});
+
+test('simulation impact transmet null quand le produit n’a pas encore de prix', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [{
+    id: 'internal-product',
+    product_ref: 'KPR-UNPRICED',
+    name: 'Produit CJ',
+    category: 'vetements',
+    price_kmf: null,
+    cost_kmf: 3000,
+    weight_kg: 0.3,
+    volume_m3: 0.001,
+  }] });
+  mockLoadGlobalConfig.mockResolvedValueOnce({ finance: {}, categories: {}, provisions: [], charges: [], cost_benchmarks: [], components: [] });
+  mockFlow.mockResolvedValue({});
+
+  await workspace.simulateImpact({ product_ref: 'KPR-UNPRICED', overrides: [] });
+
+  expect(mockFlow.mock.calls[0][0].current_price_kmf).toBeNull();
+  expect(mockFlow.mock.calls[1][0].current_price_kmf).toBeNull();
 });
 
 test('simulation impact utilise le même moteur avant/après sans persister', async () => {
