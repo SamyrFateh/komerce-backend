@@ -65,6 +65,7 @@ function publicContract(providerId) {
       operator_must_obtain: [],
       operator_must_not_request: [],
       completion: null,
+      blocker: null,
     };
   }
 
@@ -85,6 +86,7 @@ function publicContract(providerId) {
       .slice(0, 12),
     operator_must_not_request: strings(onboarding.operator_must_not_request),
     completion: text(onboarding.completion, 800),
+    blocker: text(onboarding.blocker, 800),
   };
 }
 
@@ -96,6 +98,7 @@ function checkReady(providerId, auth = {}) {
   const contract = publicContract(providerId);
   const fail = (reason) => ({ ready: false, reason, contract });
 
+  if (contract.status === 'blocked') return fail('provider_onboarding_blocked');
   if (contract.status !== 'defined') return fail('provider_onboarding_not_defined');
   if (!ALLOWED_AUTHORITIES.has(contract.authority)) return fail('provider_onboarding_authority_missing');
   if (!contract.evidence_url) return fail('provider_onboarding_evidence_missing');
