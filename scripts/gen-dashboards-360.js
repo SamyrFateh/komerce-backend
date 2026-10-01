@@ -280,6 +280,28 @@ function parseApiClient() {
 }
 
 // ── 4. Lecture du contrat OpenAPI backend (statut de preuve par endpoint) ───
+function extractContractStatus(def) {
+  if (!def || typeof def !== 'object') return null;
+  if (def['x-contract-status']) return def['x-contract-status'];
+
+  const responses = def.responses || {};
+  const successCodes = Object.keys(responses).filter(c => /^2\\d\\d$/.test(c)).sort();
+  for (const code of successCodes) {
+    const content = responses[code] && responses[code].content;
+    if (!content) continue;
+    for (const media of Object.values(content)) {
+      const value = media && media.schema && media.schema['x-contract-status'];
+      if (value) return value;
+    }
+  }
+
+  return def.requestBody?.['x-contract-status'] || null;
+}
+
+function isProvenStatus(status) {
+  return status === 'test';
+}
+
 function parseOpenApiContract() {
   if (!fs.existsSync(OPENAPI_FILE)) return {};
   try {
@@ -288,7 +310,7 @@ function parseOpenApiContract() {
     for (const [route, methodsObj] of Object.entries(doc.paths || {})) {
       for (const [httpMethod, def] of Object.entries(methodsObj)) {
         const key = `${httpMethod.toUpperCase()} ${route}`;
-        status[key] = def['x-contract-status'] || 'UNKNOWN';
+        status[key] = isProvenStatus(extractContractStatus(def)) ? 'PROVEN' : 'UNKNOWN';
       }
     }
     return status;
