@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        runtime_context, operator_command_payload
  * @outputs       physical_unit_result, custody_side_effects
- * @depends       db, services/hub-physical-identity.js
+ * @depends       db, services/hub-physical-identity.js, services/hub-reference.js
  * @used-by       routes/hub.js, routes/scans.js
  * @db-read       business_rules, hub_physical_units, parcel_items, parcels, products, scan_events
  * @db-write      products, scan_events
@@ -14,7 +14,7 @@
  * @db-txn        operator_command_atomic
  * @doctrine      HUB-001 Physical Identity, Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR
  * @impact-areas  logistics, purchasing, incident-management
- * @version       2026-09
+ * @version       2026-10
  */
 
 'use strict';
@@ -24,11 +24,15 @@ const {
   HubPhysicalError,
   createPhysicalUnit,
   receiveSupplierPackage: receiveSupplierPackageCore,
+  receiveSupplierPackageArrival,
+  reconcileSupplierPackageContents,
   revalidateQuarantinedInbound,
   transitionPhysicalUnit,
   moveAllocationQuantity,
   recordPhysicalUnitOutcome,
 } = require('./hub-physical-identity');
+
+const { parseInboundTag, generatePhysicalReference } = require('./hub-reference');
 
 const REPACK_MIN_GAIN_FALLBACK_CM3 = 2000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -133,11 +137,47 @@ async function receiveParcel() {
 
 async function receiveSupplierPackageCommand(payload, userId) {
   try {
-    const reference = requireText(payload && payload.reference, 'reference', 200);
     const contents = payload && payload.contents;
-    if (!Array.isArray(contents) || contents.length === 0) {
-      throw badRequest('contents doit contenir au moins une allocation Purchase Order');
+    const inboundTag = payload && payload.komerce_inbound_tag
+      ? String(payload.komerce_inbound_tag).trim().toUpperCase()
+      : null;
+    const parsedPurchaseOrderId = inboundTag ? parseInboundTag(inboundTag) : null;
+
+    if (inboundTag && !parsedPurchaseOrderId) {
+      throw badRequest('komerce_inbound_tag invalide', 'HUB_INBOUND_TAG_INVALID');
     }
+
+    const externalRef = payload && (payload.tracking_ref || payload.external_ref)
+      ? String(payload.tracking_ref || payload.external_ref).trim()
+      : null;
+    const locationRef = payload && payload.location_ref ? String(payload.location_ref).trim() : null;
+
+    if (!Array.isArray(contents) || contents.length === 0) {
+      const reference = payload && payload.reference
+        ? requireText(payload.reference, 'reference', 200)
+        : generatePhysicalReference('SUPPLIER_PACKAGE');
+
+      const result = await withOperatorTransaction((client) => receiveSupplierPackageArrival(client, {
+        reference,
+        externalRef,
+        actorId: userId || null,
+        locationRef,
+        expectedPurchaseOrderId: parsedPurchaseOrderId,
+        inboundTag,
+      }));
+
+      return {
+        status: 201,
+        body: {
+          ...result,
+          reconciliation_mode: parsedPurchaseOrderId ? 'PRE_RECONCILED_TAG' : 'UNRECONCILED',
+        },
+      };
+    }
+
+    const reference = payload && payload.reference
+      ? requireText(payload.reference, 'reference', 200)
+      : generatePhysicalReference('SUPPLIER_PACKAGE');
     const normalizedContents = contents.map((item) => ({
       purchase_order_id: requireUuid(item && item.purchase_order_id, 'purchase_order_id'),
       quantity: Number(item && item.quantity),
@@ -148,9 +188,9 @@ async function receiveSupplierPackageCommand(payload, userId) {
 
     const result = await withOperatorTransaction((client) => receiveSupplierPackageCore(client, {
       reference,
-      externalRef: payload.external_ref ? String(payload.external_ref).trim() : null,
+      externalRef,
       actorId: userId || null,
-      locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
+      locationRef,
       contents: normalizedContents,
     }));
 
@@ -163,13 +203,43 @@ async function receiveSupplierPackageCommand(payload, userId) {
   }
 }
 
+async function reconcileSupplierPackageCommand(payload, userId) {
+  try {
+    const unitId = requireUuid(payload && payload.unit_id, 'unit_id');
+    const contents = payload && payload.contents;
+    if (!Array.isArray(contents) || contents.length === 0) {
+      throw badRequest('contents doit contenir au moins une ligne réellement constatée au déballage');
+    }
+    const normalizedContents = contents.map((item) => ({
+      purchase_order_id: requireUuid(item && item.purchase_order_id, 'purchase_order_id'),
+      quantity: Number(item && item.quantity),
+    }));
+    if (normalizedContents.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0)) {
+      throw badRequest('quantity doit être un entier strictement positif');
+    }
+
+    const result = await withOperatorTransaction((client) => reconcileSupplierPackageContents(client, {
+      unitId,
+      contents: normalizedContents,
+      actorId: userId || null,
+      locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
+    }));
+    return { status: result.quarantined ? 202 : 200, body: result };
+  } catch (error) {
+    return hubErrorResponse(error);
+  }
+}
+
+
 async function createOperatorUnitCommand(payload, userId) {
   try {
-    const reference = requireText(payload && payload.reference, 'reference', 200);
     const unitType = String(payload && payload.unit_type || '').trim().toUpperCase();
     if (!OPERATOR_CONTAINER_TYPES.has(unitType)) {
       throw badRequest('unit_type doit être HANDLING_UNIT ou MARKET_PARCEL');
     }
+    const reference = payload && payload.reference
+      ? requireText(payload.reference, 'reference', 200)
+      : generatePhysicalReference(unitType);
     const unit = await withOperatorTransaction((client) => createPhysicalUnit(client, {
       reference,
       unitType,
@@ -179,7 +249,7 @@ async function createOperatorUnitCommand(payload, userId) {
       initialState: 'RECEIVED',
       details: { operator_created: true },
     }));
-    return { status: 201, body: { physical_unit: unit } };
+    return { status: 201, body: { physical_unit: unit, label: { reference: unit.reference, kind: unitType === 'HANDLING_UNIT' ? 'KOM-ITEM' : 'KOM-BOX' } } };
   } catch (error) {
     return hubErrorResponse(error);
   }
@@ -420,6 +490,7 @@ async function recordSealPhoto(parcelId, userId, photoUrl, notes = null) {
 module.exports = {
   receiveParcel,
   receiveSupplierPackageCommand,
+  reconcileSupplierPackageCommand,
   createOperatorUnitCommand,
   transitionOperatorUnitCommand,
   moveAllocationCommand,

@@ -2,8 +2,8 @@
   "generatedAt": "2026-10-01T03:28:21.006Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 678,
-    "protected": 623,
+    "total": 679,
+    "protected": 624,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -4411,6 +4411,14 @@
     },
     {
       "key": "POST /api/scans/hub/receive",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "agent_hub"
+      ]
+    },
+    {
+      "key": "POST /api/scans/hub/reconcile",
       "level": "PROTECTED",
       "roles": [
         "admin",

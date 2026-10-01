@@ -3,8 +3,8 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 /**
  * Router routes/scans.js — façade mince.
- * HUB-002 : /api/scans/hub/receive délègue désormais à la boundary opérateur
- * qui ouvre une transaction et appelle HUB-001 receiveSupplierPackage().
+ * HUB-002 : /api/scans/hub/receive et /api/scans/hub/reconcile délèguent à la boundary opérateur,
+ * sans réinterpréter market/SOI côté route.
  */
 
 jest.mock('../../middleware/auth', () => ({
@@ -37,8 +37,10 @@ jest.mock('../../services/scan-operations', () => ({
 }));
 
 const mockReceiveSupplierPackageCommand = jest.fn();
+const mockReconcileSupplierPackageCommand = jest.fn();
 jest.mock('../../services/hub-operations', () => ({
   receiveSupplierPackageCommand: (...args) => mockReceiveSupplierPackageCommand(...args),
+  reconcileSupplierPackageCommand: (...args) => mockReconcileSupplierPackageCommand(...args),
 }));
 
 const express = require('express');
@@ -138,6 +140,32 @@ describe('scans — POST /hub/receive', () => {
     const res = await request(app).post('/api/scans/hub/receive').send({ reference: 'SUP-1', contents: [] });
     expect(res.status).toBe(403);
     expect(mockReceiveSupplierPackageCommand).not.toHaveBeenCalled();
+  });
+});
+
+describe('scans — POST /hub/reconcile', () => {
+  it('délègue le contenu réellement constaté à la boundary Hub', async () => {
+    const payload = {
+      unit_id: '00000000-0000-0000-0000-000000000401',
+      contents: [{ purchase_order_id: '00000000-0000-0000-0000-000000000301', quantity: 1 }],
+    };
+    mockReconcileSupplierPackageCommand.mockResolvedValueOnce({
+      status: 200,
+      body: { quarantined: false, unit: { id: payload.unit_id, state: 'IDENTIFIED' }, reconciliation_pending: false },
+    });
+
+    const res = await request(app).post('/api/scans/hub/reconcile').send(payload);
+
+    expect(res.status).toBe(200);
+    expect(mockReconcileSupplierPackageCommand).toHaveBeenCalledWith(payload, 'admin-1');
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  it('refuse un rôle non Hub avant toute réconciliation', async () => {
+    currentUser = { id: 'u1', role: 'client' };
+    const res = await request(app).post('/api/scans/hub/reconcile').send({ unit_id: VALID_ORDER_ID, contents: [] });
+    expect(res.status).toBe(403);
+    expect(mockReconcileSupplierPackageCommand).not.toHaveBeenCalled();
   });
 });
 

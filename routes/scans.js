@@ -21,7 +21,8 @@
  *
  * POST /api/scans             → scanOps.recordScan()
  * POST /api/scans/collect     → scanOps.collectParcel()
- * POST /api/scans/hub/receive → HUB-001 supplier package receiving
+ * POST /api/scans/hub/receive   → arrivée physique fournisseur (avec ou sans réconciliation amont)
+ * POST /api/scans/hub/reconcile → contenu constaté au déballage + réconciliation Purchase Order
  * GET  /api/scans/hub/pending → lecture seule legacy purchasing
  * POST /api/scans/verify-qr   → scanOps.verifyQr()
  * GET  /api/scans/:order_id   → lecture seule
@@ -61,7 +62,10 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
 });
 
 /**
- * HUB-002 — vraie réception terrain fournisseur.
+ * HUB-002 — arrivée terrain fournisseur.
+ *
+ * Le contenu détaillé est optionnel à l'arrivée : s'il manque, le colis reste
+ * RECEIVED avec reconciliation_pending=true jusqu'au déballage.
  *
  * Body canonique :
  * {
@@ -77,6 +81,13 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
 router.post('/hub/receive', requireAuth, requireRole(['admin', 'agent_hub']), async (req, res, next) => {
   try {
     const result = await hubOps.receiveSupplierPackageCommand(req.body || {}, req.user.id);
+    return res.status(result.status).json(result.body);
+  } catch (err) { next(err); }
+});
+
+router.post('/hub/reconcile', requireAuth, requireRole(['admin', 'agent_hub']), async (req, res, next) => {
+  try {
+    const result = await hubOps.reconcileSupplierPackageCommand(req.body || {}, req.user.id);
     return res.status(result.status).json(result.body);
   } catch (err) { next(err); }
 });

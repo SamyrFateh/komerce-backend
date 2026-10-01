@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 48,
-    "total_routes": 600,
+    "total_routes": 602,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -23195,6 +23195,55 @@
                       "x-observed": true
                     },
                     "message": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/scans/hub/reconcile": {
+      "post": {
+        "summary": "POST /api/scans/hub/reconcile",
+        "x-route-file": "routes/scans.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "quarantined": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "unit": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "allocations": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "operation_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "reconciliation_pending": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "incident": {
                       "type": "string",
                       "x-observed": true
                     }

@@ -1041,6 +1041,9 @@ const KNOWN_RESPONSES = {
   '/api/scans/hub/receive': {
     post: { fields: ['success','message'], source: 'route-read' }
   },
+  '/api/scans/hub/reconcile': {
+    post: { fields: ['quarantined','unit','allocations','operation_id','reconciliation_pending','incident'], source: 'route-read' }
+  },
   '/api/scans/hub/pending': {
     get: { fields: ['count','orders'], source: 'route-read' }
   },

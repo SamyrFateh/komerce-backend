@@ -112,6 +112,7 @@ module.exports = {
       'services/parcel-service.js',
       'services/hub-operations.js',
       'services/hub-physical-identity.js',
+      'services/hub-reference.js',
       'services/routing.js',
       'services/transport-rails.js',
     ],
@@ -188,6 +189,7 @@ module.exports = {
       'tests/unit/parcel-guards.test.js',
       'tests/unit/parcel-auto-create-service.test.js',
       'tests/unit/hub-operations.test.js',
+      'tests/unit/hub-reference.test.js',
       'tests/unit/parcels-route.test.js',
       'tests/unit/parcel-api-v2-read.test.js',
       'tests/unit/relais.test.js',
@@ -238,9 +240,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 74,
-    totalRoutes: 79,
-    note: "74/79 routes protégées. 5 routes publiques par design : GET /api/relais, /relais/public, /relais/:id (annuaire public des points relais) ; GET /api/tracking/:token et POST /api/tracking/:token/verify-pickup (capability token documenté — pas d'accès aux données client sans token valide).",
+    authedRoutesDetected: 75,
+    totalRoutes: 80,
+    note: "75/80 routes protégées. 5 routes publiques par design : GET /api/relais, /relais/public, /relais/:id (annuaire public des points relais) ; GET /api/tracking/:token et POST /api/tracking/:token/verify-pickup (capability token documenté — pas d'accès aux données client sans token valide).",
   },
   contract: {
     exposes: [
@@ -297,6 +299,7 @@ module.exports = {
       'POST /api/scans/collect',
       'GET /api/scans/hub/pending',
       'POST /api/scans/hub/receive',
+      'POST /api/scans/hub/reconcile',
       'POST /api/scans/verify-qr',
       'POST /api/tracking/:token/verify-pickup',
       'GET /api/transit',
