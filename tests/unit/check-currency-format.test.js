@@ -110,6 +110,22 @@ describe('check-currency-format — gate anti-dette devise', () => {
     expect(result.violations.map(v => v.column)).toEqual(['nouveau_total_kmf']);
   });
 
+  test('n’interprète pas une expression CHECK comme une déclaration de colonne', () => {
+    const root = makeRepo({
+      '211_ok.sql': `ALTER TABLE products ADD CONSTRAINT c CHECK (
+  price_kmf IS NOT NULL OR is_active = FALSE
+);`,
+    });
+    expect(runCheck({ root, print: false }).ok).toBe(true);
+  });
+
+  test('accepte un taux de change explicite dont le suffixe décrit l’unité du ratio', () => {
+    const root = makeRepo({
+      '211_ok.sql': 'ALTER TABLE finance_config ADD COLUMN taux_pln_kmf NUMERIC(18,6);',
+    });
+    expect(runCheck({ root, print: false }).ok).toBe(true);
+  });
+
   test('scanMigration remonte la ligne exacte, pour un message actionnable', () => {
     const root = makeRepo({ '211_ko.sql': 'CREATE TABLE t (\n  id UUID,\n  fee_eur NUMERIC(12,2)\n);' });
     const offenders = scanMigration(path.join(root, 'migrations', '211_ko.sql'));

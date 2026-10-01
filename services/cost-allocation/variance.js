@@ -100,7 +100,7 @@ function _variance(realValue, estimatedValue) {
   if (estimatedValue == null) return null;
   return {
     scope: 'N1+payment',
-    total_kmf: Math.round(realValue - estimatedValue),
+    total_kmf: realValue - estimatedValue,
     total_pct: estimatedValue > 0
       ? Number((((realValue - estimatedValue) / estimatedValue) * 100).toFixed(2))
       : null,
