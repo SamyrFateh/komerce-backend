@@ -201,6 +201,36 @@
   background: #fbfcff;
 }
 
+.kmc-workspace-table tbody tr.is-context-target {
+  background: #fff8e8;
+  box-shadow: inset 3px 0 0 #e18a00;
+}
+
+.kmc-workspace-row-detail-link {
+  display: block;
+  margin-top: 3px;
+  color: #225bb5;
+  font-size: 11px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.kmc-workspace-row-detail-link:hover,
+.kmc-workspace-row-detail-link:focus-visible {
+  text-decoration: underline;
+}
+
+.kmc-catalog-context-banner {
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid #f0cf91;
+  border-radius: 8px;
+  background: #fff8e8;
+  color: #6f4a00;
+  font-size: 12px;
+  font-weight: 750;
+}
+
 .kmc-workspace-table tbody tr:last-child td {
   border-bottom: 0;
 }
