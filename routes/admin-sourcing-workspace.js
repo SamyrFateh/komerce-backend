@@ -227,6 +227,31 @@ router.post('/sources/requests', async (req, res, next) => {
   catch (err) { handleError(err, res, next); }
 });
 
+router.patch('/sources/requests/:requestRef', async (req, res, next) => {
+  try { sendAction(res, 'update_source_request', await workspace.updateSourceRequest(req.params.requestRef, req.body)); }
+  catch (err) { handleError(err, res, next); }
+});
+
+router.delete('/sources/requests/:requestRef', async (req, res, next) => {
+  try { sendAction(res, 'delete_source_request', await workspace.deleteSourceRequest(req.params.requestRef)); }
+  catch (err) { handleError(err, res, next); }
+});
+
+router.patch('/sources/:sourceRef', async (req, res, next) => {
+  try { sendAction(res, 'update_source', await workspace.updateSource(req.params.sourceRef, req.body)); }
+  catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources/:sourceRef/archive', async (req, res, next) => {
+  try { sendAction(res, 'archive_source', await workspace.archiveSource(req.params.sourceRef, req.user)); }
+  catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources/:sourceRef/restore', async (req, res, next) => {
+  try { sendAction(res, 'restore_source', await workspace.restoreSource(req.params.sourceRef, req.user)); }
+  catch (err) { handleError(err, res, next); }
+});
+
 router.post('/sources/:sourceRef/test-connection', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store');

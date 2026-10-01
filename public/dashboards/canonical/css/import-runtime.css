@@ -3306,3 +3306,23 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
 .kmc-import-runtime .kir-wizard-field{display:grid;gap:5px;font-size:13px;color:#9FB2C8}
 .kmc-import-runtime .kir-wizard-field input{padding:9px 11px;border:1px solid #2A435E;border-radius:9px;background:#07101C;color:#E4ECF6;font-size:14px}
 @media(max-width:720px){.kmc-import-runtime .kir-sources-head{flex-direction:column}.kmc-import-runtime .kir-wizard{padding:16px}.kmc-import-runtime .kir-wizard-list li{flex-direction:column;align-items:flex-start}}
+
+/* Gestion des sources : menu ⋯, formulaire inline, confirmation, archivées */
+.kmc-import-runtime .kir-source-menu{position:relative;flex:none}
+.kmc-import-runtime .kir-source-menu summary{list-style:none;cursor:pointer;width:28px;height:28px;display:grid;place-items:center;border:1px solid #2A435E;border-radius:8px;color:#AFC0D4;font-weight:800;line-height:1}
+.kmc-import-runtime .kir-source-menu summary::-webkit-details-marker{display:none}
+.kmc-import-runtime .kir-source-menu[open] summary{background:#0D2741;color:#F1F6FC}
+.kmc-import-runtime .kir-source-menu-list{position:absolute;right:0;top:34px;z-index:5;display:flex;flex-direction:column;min-width:140px;padding:6px;border:1px solid #2A435E;border-radius:10px;background:#0B1827;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+.kmc-import-runtime .kir-source-menu-list button{background:transparent;border:0;color:#DCE7F3;text-align:left;padding:8px 10px;border-radius:6px;font:inherit;font-size:13px;cursor:pointer}
+.kmc-import-runtime .kir-source-menu-list button:hover{background:#12304D}
+.kmc-import-runtime .kir-manage-form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:1;min-width:0}
+.kmc-import-runtime .kir-manage-form input{flex:1;min-width:140px;padding:7px 10px;border:1px solid #2A435E;border-radius:8px;background:#07111F;color:#F1F6FC;font:inherit}
+.kmc-import-runtime .kir-manage-confirm{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0 0;padding:10px 12px;border:1px solid #6B4A12;border-radius:10px;background:#2A1E08}
+.kmc-import-runtime .kir-manage-confirm p{flex:1 1 100%;margin:0;color:#F2D9A0;font-size:13px}
+.kmc-import-runtime .kir-sources-archived{margin-top:18px;border:1px solid #1F3650;border-radius:12px;background:#0B1827}
+.kmc-import-runtime .kir-sources-archived summary{cursor:pointer;padding:12px 14px;color:#AFC0D4;font-weight:700}
+.kmc-import-runtime .kir-sources-archived ul{list-style:none;margin:0;padding:0 14px 12px}
+.kmc-import-runtime .kir-sources-archived li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid #16293F}
+.kmc-import-runtime .kir-sources-archived li div{display:flex;flex-direction:column;min-width:0}
+.kmc-import-runtime .kir-sources-archived li strong{color:#DCE7F3;overflow-wrap:anywhere}
+.kmc-import-runtime .kir-sources-archived li span{color:#7F93AB;font-size:12px}

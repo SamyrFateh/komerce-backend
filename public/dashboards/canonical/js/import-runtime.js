@@ -32,6 +32,8 @@
   let commandState = null;
   let prepareState = null;
   let wizardState = null;
+  // Gestion d'une source : renommage ou confirmation d'archivage en cours (une seule à la fois).
+  let manageState = null;
   let mountedRoot = null;
   let lastPayload = null;
   // Les refresh de navigation sont séquencés : seule la lecture la plus récente,
@@ -780,11 +782,34 @@
     const cert = source.production_runtime_certified ? 'Certifiée' : 'À certifier';
     const connection = source.connection?.verified ? 'Connectée ✓' : source.state === 'to_configure' ? 'À configurer' : 'À tester';
     const name = esc(m.name);
+    const renaming = manageState?.kind === 'rename' && manageState.ref === source.source_ref;
+    const archiving = manageState?.kind === 'archive' && manageState.ref === source.source_ref;
+    const title = renaming
+      ? `<form class="kir-manage-form" data-manage-form="rename-source" data-source-ref="${esc(source.source_ref)}">
+          <input type="text" data-manage-input maxlength="80" value="${esc(manageState.value)}" aria-label="Nom de la source" required>
+          <button type="submit" class="kir-wizard-primary">Enregistrer</button>
+          <button type="button" class="kir-wizard-secondary" data-manage-cancel>Annuler</button>
+        </form>`
+      : `<h3>${name}</h3>`;
+    const menu = m.busy || renaming ? '' : `<details class="kir-source-menu" data-source-menu>
+        <summary aria-label="Gérer la source ${name}">⋯</summary>
+        <div class="kir-source-menu-list">
+          <button type="button" data-manage-rename data-source-ref="${esc(source.source_ref)}">Renommer</button>
+          <button type="button" data-manage-archive data-source-ref="${esc(source.source_ref)}">Archiver</button>
+        </div></details>`;
+    const archiveBox = archiving
+      ? `<div class="kir-manage-confirm" role="alertdialog" data-archive-confirm>
+          <p>Archiver cette source ? ${m.enabled ? 'L’alimentation automatique sera arrêtée. ' : ''}L’historique des passages est conservé et la source reste restaurable.</p>
+          <button type="button" class="kir-wizard-primary" data-manage-archive-confirm data-source-ref="${esc(source.source_ref)}">Archiver</button>
+          <button type="button" class="kir-wizard-secondary" data-manage-cancel>Annuler</button>
+        </div>` : '';
     return `<article class="kir-source-card is-${m.badge.key}${m.busy ? ' is-busy' : ''}" data-source-card="${esc(source.source_ref)}" tabindex="-1">
       <header class="kir-source-card-head">
-        <h3>${name}</h3>
+        ${title}
         <span class="kir-source-badge is-${m.badge.key}">${m.badge.key === 'active' || m.busy ? '<i class="kir-source-dot" aria-hidden="true"></i>' : ''}${m.badge.label}</span>
+        ${menu}
       </header>
+      ${archiveBox}
       <div class="kir-source-autopilot">
         <div><strong>Alimentation automatique</strong><span class="kir-source-fact-label">${m.displayEnabled ? 'Active : le sourcing tourne seul' : 'Arrêtée : aucun import automatique'}</span></div>
         <button type="button"
@@ -815,11 +840,34 @@
 
   // Fournisseur demandé sans connecteur : jamais une source (aucun interrupteur, aucun test).
   function sourceRequestCard(request) {
+    const renaming = manageState?.kind === 'rename-request' && manageState.ref === request.request_ref;
+    const removing = manageState?.kind === 'remove-request' && manageState.ref === request.request_ref;
+    const title = renaming
+      ? `<form class="kir-manage-form" data-manage-form="rename-request" data-request-ref="${esc(request.request_ref)}">
+          <input type="text" data-manage-input maxlength="80" value="${esc(manageState.value)}" aria-label="Nom de la demande" required>
+          <button type="submit" class="kir-wizard-primary">Enregistrer</button>
+          <button type="button" class="kir-wizard-secondary" data-manage-cancel>Annuler</button>
+        </form>`
+      : `<h3>${esc(request.requested_label || request.provider_name)}</h3>`;
+    const menu = renaming ? '' : `<details class="kir-source-menu" data-request-menu>
+        <summary aria-label="Gérer la demande">⋯</summary>
+        <div class="kir-source-menu-list">
+          <button type="button" data-manage-rename-request data-request-ref="${esc(request.request_ref)}">Renommer</button>
+          <button type="button" data-manage-remove-request data-request-ref="${esc(request.request_ref)}">Retirer</button>
+        </div></details>`;
+    const removeBox = removing
+      ? `<div class="kir-manage-confirm" role="alertdialog" data-remove-confirm>
+          <p>Retirer cette demande ? Aucune source n’existe pour ce fournisseur : rien d’autre n’est supprimé.</p>
+          <button type="button" class="kir-wizard-primary" data-manage-remove-confirm data-request-ref="${esc(request.request_ref)}">Retirer</button>
+          <button type="button" class="kir-wizard-secondary" data-manage-cancel>Annuler</button>
+        </div>` : '';
     return `<article class="kir-source-card is-blocked" data-source-request-card="${esc(request.request_ref)}">
       <header class="kir-source-card-head">
-        <h3>${esc(request.requested_label || request.provider_name)}</h3>
+        ${title}
         <span class="kir-source-badge is-blocked">CONNECTEUR REQUIS</span>
+        ${menu}
       </header>
+      ${removeBox}
       <dl class="kir-source-facts">
         <div><dt>Fournisseur</dt><dd>${esc(request.provider_name)}</dd></div>
         ${request.reference_url ? `<div><dt>Référence</dt><dd>${esc(request.reference_url)}</dd></div>` : ''}
@@ -828,11 +876,24 @@
     </article>`;
   }
 
+  // Sources archivées : repliées, jamais comptées comme actives, restaurables.
+  function archivedSourcesSection(archived) {
+    if (!archived.length) return '';
+    return `<details class="kir-sources-archived" data-sources-archived>
+      <summary>Archivées (${archived.length})</summary>
+      <ul>${archived.map(source => `<li data-archived-source="${esc(source.source_ref)}">
+        <div><strong>${esc(source.label || source.source_ref)}</strong><span>Archivée · historique conservé</span></div>
+        <button type="button" class="kir-wizard-secondary" data-manage-restore data-source-ref="${esc(source.source_ref)}">Restaurer</button>
+      </li>`).join('')}</ul></details>`;
+  }
+
   // Vue Sources : synthèse compacte + une carte opérateur par fournisseur (données de source_controls).
   function sourcesBoard(sourceControls, selectedRun = null, lots = [], requests = []) {
-    const sources = Array.isArray(sourceControls) ? sourceControls : [];
+    const allSources = Array.isArray(sourceControls) ? sourceControls : [];
+    const archived = allSources.filter(source => source.state === 'archived' || source.archived === true);
+    const sources = allSources.filter(source => !archived.includes(source));
     const pending = Array.isArray(requests) ? requests : [];
-    if (!sources.length && !pending.length) {
+    if (!sources.length && !pending.length && !archived.length) {
       return `<section class="kir-sources-empty"><strong>Aucune source récurrente configurée</strong>
         <span>Ajoutez un fournisseur pour alimenter automatiquement le Sourcing.</span></section>`;
     }
@@ -848,6 +909,7 @@
     return `<section class="kir-sources-board" aria-label="Sources du Sourcing">
       <p class="kir-sources-summary" data-sources-summary>${chips.map(([n, label, cls]) => `<span class="${cls}"><strong>${n}</strong> ${label}</span>`).join('')}</p>
       <div class="kir-source-grid">${sources.map(source => sourceCard(source, selectedRun, lots)).join('')}${pending.map(sourceRequestCard).join('')}</div>
+      ${archivedSourcesSection(archived)}
     </section>`;
   }
 
@@ -855,7 +917,7 @@
   // de la carte source : on retombe sur l'activation en cours, puis le fournisseur, puis l'unique
   // source active. Jamais de barre manquante parce qu'une correspondance stricte a échoué.
   function sourceForRun(run, sourceControls) {
-    const list = Array.isArray(sourceControls) ? sourceControls : [];
+    const list = (Array.isArray(sourceControls) ? sourceControls : []).filter(item => item.state !== 'archived');
     if (!run || !list.length) return null;
     const norm = value => String(value || '').trim().toLowerCase();
     const byRef = ref => ref ? list.find(item => item.source_ref === ref) : null;
@@ -1542,7 +1604,7 @@
     const run = payload?.selected || null;
     const { view, kind, filters } = params();
     // L'assistant n'existe que sur la vue Sources.
-    if (view !== 'sources') wizardState = null;
+    if (view !== 'sources') { wizardState = null; manageState = null; }
     // L'URL fait foi pour les filtres de Passages (Back / Forward / rechargement).
     if (view === 'passages') Object.assign(passageFilters, filters);
     root.className = 'kmc-import-runtime kmc-domain-cockpit';
@@ -1615,6 +1677,7 @@
     bindNavigation(root);
     bindSourceControls(root, payload);
     bindWizard(root, payload);
+    bindManage(root, payload);
     bindActionList(root);
     bindPassages(root, payload);
     focusDrill(root);
@@ -1766,6 +1829,7 @@
   }
 
   function connectorStatusLine(connector) {
+    if (connector.existing_archived) return 'Archivée · restaurable';
     if (connector.existing_source_ref) return 'Déjà ajoutée';
     if (connector.available && connector.automatable) return 'Disponible · alimentation automatique possible';
     if (connector.available) return 'Connecteur présent · autopilot non certifié';
@@ -1941,7 +2005,9 @@
         <div class="kir-wizard-actions"><button type="button" class="kir-wizard-secondary" data-wizard-back>Retour</button><button type="button" class="kir-wizard-secondary" data-wizard-close>Fermer</button></div>`;
     } else if (w.step === 'provider') {
       const list = (w.catalog || []).map(connector => {
-        const action = connector.existing_source_ref
+        const action = connector.existing_archived
+          ? `<button type="button" class="kir-wizard-secondary" data-manage-restore data-source-ref="${esc(connector.existing_source_ref)}">Restaurer</button>`
+          : connector.existing_source_ref
           ? `<button type="button" class="kir-wizard-secondary" data-wizard-existing="${esc(connector.existing_source_ref)}">Voir la source existante</button>`
           : connector.can_create
             ? `<button type="button" class="kir-wizard-primary" data-wizard-create="${esc(connector.adapter)}" ${w.creating ? 'disabled' : ''}>${w.creating === connector.adapter ? 'Ajout…' : 'Ajouter'}</button>`
@@ -1974,6 +2040,68 @@
         <header class="kir-wizard-head"><h3>Ajouter une source</h3><button type="button" class="kir-wizard-close" data-wizard-close aria-label="Fermer">×</button></header>
         ${error}${body}
       </section></div>`;
+  }
+
+  // Gestion des sources : renommer, archiver / restaurer, modifier / retirer une demande.
+  // Aucune suppression de source : l'archive conserve captures, observations et KIR.
+  async function manageCall(path, method, body) {
+    try {
+      await api(`${WIZARD_BASE}${path}`, { method, body });
+      manageState = null;
+    } catch (error) {
+      manageState = null;
+      showCommandError('Gestion de la source', error.message);
+    }
+    await refresh({ preserve:true });
+    rerenderWizard();
+  }
+
+  function setManage(state) {
+    manageState = state;
+    rerenderWizard();
+    const input = mountedRoot?.querySelector?.('[data-manage-input]');
+    if (input) { input.focus?.(); input.select?.(); }
+  }
+
+  function bindManage(root, payload) {
+    const sources = Array.isArray(payload?.source_controls) ? payload.source_controls : [];
+    const requests = Array.isArray(payload?.source_requests) ? payload.source_requests : [];
+    const each = (selector, handler) => root.querySelectorAll?.(selector).forEach(node => node.addEventListener('click', event => {
+      event.preventDefault();
+      handler(node);
+    }));
+    each('[data-manage-rename]', node => {
+      const ref = node.getAttribute('data-source-ref');
+      const source = sources.find(item => item.source_ref === ref);
+      setManage({ kind:'rename', ref, value:source?.label || '' });
+    });
+    each('[data-manage-archive]', node => setManage({ kind:'archive', ref:node.getAttribute('data-source-ref') }));
+    each('[data-manage-archive-confirm]', node => manageCall(`/${encodeURIComponent(node.getAttribute('data-source-ref'))}/archive`, 'POST', {}));
+    each('[data-manage-restore]', async node => {
+      const ref = node.getAttribute('data-source-ref');
+      await manageCall(`/${encodeURIComponent(ref)}/restore`, 'POST', {});
+      if (wizardState) viewExistingSource(ref);
+    });
+    each('[data-manage-rename-request]', node => {
+      const ref = node.getAttribute('data-request-ref');
+      const request = requests.find(item => item.request_ref === ref);
+      setManage({ kind:'rename-request', ref, value:request?.requested_label || request?.provider_name || '' });
+    });
+    each('[data-manage-remove-request]', node => setManage({ kind:'remove-request', ref:node.getAttribute('data-request-ref') }));
+    each('[data-manage-remove-confirm]', node => manageCall(`/requests/${encodeURIComponent(node.getAttribute('data-request-ref'))}`, 'DELETE'));
+    each('[data-manage-cancel]', () => setManage(null));
+    root.querySelectorAll?.('[data-manage-form]').forEach(form => {
+      form.querySelector('[data-manage-input]')?.addEventListener('input', event => { if (manageState) manageState.value = event.target.value; });
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        const value = String(form.querySelector('[data-manage-input]')?.value || '').trim();
+        if (form.getAttribute('data-manage-form') === 'rename-request') {
+          manageCall(`/requests/${encodeURIComponent(form.getAttribute('data-request-ref'))}`, 'PATCH', { requested_label:value });
+        } else {
+          manageCall(`/${encodeURIComponent(form.getAttribute('data-source-ref'))}`, 'PATCH', { label:value });
+        }
+      });
+    });
   }
 
   function bindWizard(root, payload) {

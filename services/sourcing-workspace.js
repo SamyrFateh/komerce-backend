@@ -266,7 +266,8 @@ function projectSourceControl(source) {
   const captureFailed = /fail|error/i.test(String(source.last_capture_status || ''));
   const enabled = Boolean(source.autopilot_enabled);
   let state;
-  if (enabled && autopilotReady) state = 'active';
+  if (source.status !== 'active') state = 'archived';
+  else if (enabled && autopilotReady) state = 'active';
   else if (!source.connector_ready) state = 'to_configure';
   else if (hardBlockers.length > 0 || enabled) state = 'blocked';
   else if (captureFailed) state = 'error';
@@ -288,6 +289,8 @@ function projectSourceControl(source) {
     connector_ready: Boolean(source.connector_ready),
     production_runtime_certified: Boolean(source.production_runtime_certified),
     state,
+    archived: source.status !== 'active',
+    connector_label: source.connector_label || null,
     connection: {
       connector_ready: Boolean(source.connector_ready),
       verified: connectionVerified,
@@ -497,6 +500,37 @@ async function createSourceRequest(body, actor) {
   catch (err) { throw registryError(err); }
 }
 
+async function archiveSource(sourceRef, actor) {
+  try {
+    const result = await sourceRegistry.archiveSource(sourceRef, actor);
+    return { ...result, source: await sourceControlFor(sourceRef) };
+  } catch (err) { throw registryError(err); }
+}
+
+async function restoreSource(sourceRef, actor) {
+  try {
+    const result = await sourceRegistry.restoreSource(sourceRef, actor);
+    return { ...result, source: await sourceControlFor(sourceRef) };
+  } catch (err) { throw registryError(err); }
+}
+
+async function updateSource(sourceRef, body) {
+  try {
+    const result = await sourceRegistry.updateSource(sourceRef, body || {});
+    return { ...result, source: await sourceControlFor(sourceRef) };
+  } catch (err) { throw registryError(err); }
+}
+
+async function updateSourceRequest(requestRef, body) {
+  try { return await sourceRegistry.updateConnectorRequest(requestRef, body || {}); }
+  catch (err) { throw registryError(err); }
+}
+
+async function deleteSourceRequest(requestRef) {
+  try { return await sourceRegistry.deleteConnectorRequest(requestRef); }
+  catch (err) { throw registryError(err); }
+}
+
 async function listSourceRequests() {
   return sourceRegistry.listConnectorRequests();
 }
@@ -557,6 +591,11 @@ module.exports = {
   getSourceCatalog,
   createSource,
   createSourceRequest,
+  archiveSource,
+  restoreSource,
+  updateSource,
+  updateSourceRequest,
+  deleteSourceRequest,
   listSourceRequests,
   testSourceConnection,
   createSupplier,

@@ -21,13 +21,13 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1548,
-    "edges": 7667,
+    "edges": 7668,
     "dbTables": 177,
     "doctrines": 537,
     "impactAreas": 191,
     "unresolvedCodeEdges": 765,
     "dbWriteViaOverlapWarnings": 8,
-    "multiWriterTables": 76
+    "multiWriterTables": 77
   },
   "byDomain": {
     "infrastructure": 23,
@@ -26903,10 +26903,13 @@
       ],
       "dbWrite": [
         "sourcing_sources",
-        "sourcing_source_requests"
+        "sourcing_source_requests",
+        "sourcing_provider_control_events"
       ],
       "dbWriteVia": [],
-      "dbTxn": [],
+      "dbTxn": [
+        "lifecycle_transition_and_audit"
+      ],
       "doctrine": [
         "operator_owned_source_registry",
         "one_source_per_adapter",
@@ -75980,6 +75983,12 @@
     },
     {
       "from": "services/sourcing-source-registry.js",
+      "to": "db:sourcing_provider_control_events",
+      "type": "db-write",
+      "label": "sourcing_provider_control_events"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
       "to": "doctrine:operator_owned_source_registry",
       "type": "doctrine",
       "label": "operator_owned_source_registry"
@@ -108193,7 +108202,8 @@
       ],
       "dbWrite": [
         "sourcing_sources",
-        "sourcing_source_requests"
+        "sourcing_source_requests",
+        "sourcing_provider_control_events"
       ],
       "dbWriteVia": [],
       "doctrines": [
@@ -108209,6 +108219,7 @@
         "admin-dashboard"
       ],
       "mustCheck": [
+        "db:sourcing_provider_control_events",
         "db:sourcing_source_requests",
         "db:sourcing_sources",
         "doctrine:connection_test_is_not_certification",
@@ -112638,6 +112649,14 @@
       "writers": [
         "services/sourcing-catalog-change-observation.js",
         "services/sourcing-observation-shadow-service.js"
+      ]
+    },
+    {
+      "table": "sourcing_provider_control_events",
+      "writerCount": 2,
+      "writers": [
+        "services/sourcing-provider-control-policy.js",
+        "services/sourcing-source-registry.js"
       ]
     },
     {

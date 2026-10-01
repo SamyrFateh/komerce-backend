@@ -49,6 +49,11 @@ const mockCalls = {
   createSourceRequest: jest.fn(),
   testSourceConnection: jest.fn(),
   prepareSourceForCertification: jest.fn(),
+  archiveSource: jest.fn(),
+  restoreSource: jest.fn(),
+  updateSource: jest.fn(),
+  updateSourceRequest: jest.fn(),
+  deleteSourceRequest: jest.fn(),
 };
 
 jest.mock('../../services/sourcing-workspace', () => ({
@@ -70,6 +75,11 @@ jest.mock('../../services/sourcing-workspace', () => ({
   getSourceCatalog: (...args) => mockCalls.getSourceCatalog(...args),
   createSource: (...args) => mockCalls.createSource(...args),
   createSourceRequest: (...args) => mockCalls.createSourceRequest(...args),
+  archiveSource: (...args) => mockCalls.archiveSource(...args),
+  restoreSource: (...args) => mockCalls.restoreSource(...args),
+  updateSource: (...args) => mockCalls.updateSource(...args),
+  updateSourceRequest: (...args) => mockCalls.updateSourceRequest(...args),
+  deleteSourceRequest: (...args) => mockCalls.deleteSourceRequest(...args),
   testSourceConnection: (...args) => mockCalls.testSourceConnection(...args),
   prepareSourceForCertification: (...args) => mockCalls.prepareSourceForCertification(...args),
 }));
@@ -344,9 +354,64 @@ describe('registre opérateur des sources', () => {
       () => request(app()).post(`${BASE}/requests`).send({ provider_name: 'BigBuy' }),
       () => request(app()).post(`${BASE}/api%3Acj/test-connection`).send({}),
       () => request(app()).post(`${BASE}/api%3Acj/prepare`).send({}),
+      () => request(app()).post(`${BASE}/api%3Acj/archive`).send({}),
+      () => request(app()).post(`${BASE}/api%3Acj/restore`).send({}),
+      () => request(app()).patch(`${BASE}/api%3Acj`).send({ label: 'CJ' }),
+      () => request(app()).patch(`${BASE}/requests/r1`).send({ requested_label: 'BigBuy' }),
+      () => request(app()).delete(`${BASE}/requests/r1`),
     ]) {
       expect((await call()).status).toBe(403);
     }
     expect(mockCalls.createSource).not.toHaveBeenCalled();
   });
 });
+
+describe('routes archivage / mise à jour des sources', () => {
+  const BASE = '/api/admin/workspaces/sourcing/sources';
+  beforeEach(() => { jest.clearAllMocks(); });
+
+  test('archiver : POST, aucune route DELETE sur une source', async () => {
+    mockCalls.archiveSource.mockResolvedValue({ source_ref: 'api:cj', archived: true, changed: true });
+    const res = await request(app()).post(`${BASE}/${encodeURIComponent('api:cj')}/archive`).send({});
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ action: 'archive_source', result: { archived: true } });
+    expect(mockCalls.archiveSource).toHaveBeenCalledWith('api:cj', expect.objectContaining({ role: 'admin' }));
+    const del = await request(app()).delete(`${BASE}/${encodeURIComponent('api:cj')}`);
+    expect(del.status).toBe(404);
+  });
+
+  test('restaurer : n’active jamais l’autopilot', async () => {
+    mockCalls.restoreSource.mockResolvedValue({ source_ref: 'api:cj', archived: false, changed: true });
+    const res = await request(app()).post(`${BASE}/api%3Acj/restore`).send({});
+    expect(res.status).toBe(200);
+    expect(res.body.action).toBe('restore_source');
+    expect(mockCalls.activateSourceAutopilot).not.toHaveBeenCalled();
+    expect(mockCalls.setSourceAutopilot).not.toHaveBeenCalled();
+  });
+
+  test('renommer : PATCH transmet uniquement le corps à la couche workspace', async () => {
+    mockCalls.updateSource.mockResolvedValue({ source_ref: 'api:cj', label: 'CJ principal' });
+    const res = await request(app()).patch(`${BASE}/api%3Acj`).send({ label: 'CJ principal' });
+    expect(res.status).toBe(200);
+    expect(mockCalls.updateSource).toHaveBeenCalledWith('api:cj', { label: 'CJ principal' });
+  });
+
+  test('erreur métier : statut et code conservés', async () => {
+    mockCalls.archiveSource.mockRejectedValue(Object.assign(new Error('Source sourcing introuvable'), { status: 404, code: 'sourcing_source_not_found' }));
+    const res = await request(app()).post(`${BASE}/api%3Anope/archive`).send({});
+    expect(res.status).toBe(404);
+    expect(res.body).toMatchObject({ code: 'sourcing_source_not_found' });
+  });
+
+  test('demandes : PATCH et DELETE sont routés avant /:sourceRef', async () => {
+    mockCalls.updateSourceRequest.mockResolvedValue({ request_ref: 'r1', requested_label: 'BigBuy EU' });
+    mockCalls.deleteSourceRequest.mockResolvedValue({ request_ref: 'r1', deleted: true });
+    const patch = await request(app()).patch(`${BASE}/requests/r1`).send({ requested_label: 'BigBuy EU' });
+    expect(patch.body).toMatchObject({ action: 'update_source_request' });
+    const del = await request(app()).delete(`${BASE}/requests/r1`);
+    expect(del.body).toMatchObject({ action: 'delete_source_request', result: { deleted: true } });
+    expect(mockCalls.updateSource).not.toHaveBeenCalled();
+    expect(mockCalls.archiveSource).not.toHaveBeenCalled();
+  });
+});
+

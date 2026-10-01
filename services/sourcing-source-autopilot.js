@@ -97,6 +97,7 @@ async function listSources(q = db) {
             s.discovery_enabled, s.sync_enabled, s.import_enabled, s.production_enabled,
             s.production_certified_at,
             s.connection_test_status, s.connection_test_code, s.connection_tested_at,
+            s.display_name,
             s.updated_at,
             last_capture.status AS last_capture_status,
             last_capture.completed_at AS last_capture_at,
@@ -119,7 +120,8 @@ async function listSources(q = db) {
     return {
       ...row,
       production_runtime_certified: Boolean(row.production_certified_at),
-      label: automation?.label || row.adapter_type,
+      label: row.display_name || automation?.label || row.adapter_type,
+      connector_label: automation?.label || row.adapter_type,
       supplier_name: automation?.supplier_name || null,
       connector_ready: Boolean(automation?.connector_ready),
       connector_reason: automation?.connector_ready ? null : (automation?.reason || 'connecteur non enregistré'),

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-01T02:52:27.959Z",
+  "generatedAt": "2026-10-01T03:06:00.980Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 668,
-    "protected": 613,
+    "total": 673,
+    "protected": 618,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2342,6 +2342,14 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/archive",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/capabilities/{capability}",
       "level": "PROTECTED",
       "roles": [
@@ -2382,6 +2390,14 @@
       ]
     },
     {
+      "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/restore",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
       "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/test-connection",
       "level": "PROTECTED",
       "roles": [
@@ -2390,7 +2406,31 @@
       ]
     },
     {
+      "key": "PATCH /api/admin/workspaces/sourcing/sources/{sourceRef}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
       "key": "GET /api/admin/workspaces/sourcing/sources/catalog",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/workspaces/sourcing/sources/requests/{requestRef}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "PATCH /api/admin/workspaces/sourcing/sources/requests/{requestRef}",
       "level": "PROTECTED",
       "roles": [
         "admin",

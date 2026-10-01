@@ -653,6 +653,11 @@ section: ### 4.10 Sourcing et fournisseurs
 role: Fournisseurs demandés par l'opérateur sans connecteur Komerce (statut unique `connector_required`). Jamais une source : aucun autopilot, aucune capacité, aucune capture, aucun lien avec sourcing_sources. Unicité sur lower(btrim(provider_name)). Écrite exclusivement par services/sourcing-source-registry.js.
 -->
 
+### Cycle de vie des sources (migration 261)
+
+- `sourcing_sources.display_name`: libellé opérateur (affichage uniquement, NULL = libellé du connecteur, 1 à 80 caractères) ; jamais un identifiant.
+- `sourcing_provider_control_events.capability`: accepte désormais `lifecycle` (archivage / restauration d'une source ; `old_value`/`new_value` = « source active »). Une source archivée garde `status='disabled'` : captures, observations, KIR, capacités et certification restent intacts ; aucune ligne n'est supprimée.
+
 ### Provider control policy (migration 255)
 
 - `sourcing_sources.discovery_enabled`: autorisation opérateur explicite de découverte automatique; défaut OFF.

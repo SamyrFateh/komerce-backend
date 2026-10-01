@@ -100,6 +100,7 @@ module.exports = {
       'migrations/257_import_runtime_runs.sql',
       'migrations/258_import_runtime_item_events.sql',
       'migrations/260_sourcing_source_registry.sql',
+      'migrations/261_sourcing_source_lifecycle_update.sql',
     ],
     scripts: [
       'scripts/sourcing-shadow-proof-staging.js',
