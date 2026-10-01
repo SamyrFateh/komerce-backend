@@ -340,7 +340,7 @@ test('seed parser and provider offer id are strict', () => {
 });
 
 test('sourcing dispatch exposes runtime availability and refuses full-snapshot archival', async () => {
-  const config = jest.spyOn(client, 'configuration').mockImplementation(() => { throw new Error('disabled'); });
+  const config = jest.spyOn(client, 'platformConfiguration').mockImplementation(() => { throw new Error('disabled'); });
   expect(dispatch.connectorCatalog().api_suppliers.find(c => c.supplier === 'allegro')).toMatchObject({ active: false, reason: 'disabled' });
   await expect(dispatch.dispatchToConnector({ source_type: 'api', supplier_id: 'allegro' })).rejects.toThrow('disabled');
   config.mockReturnValue({});

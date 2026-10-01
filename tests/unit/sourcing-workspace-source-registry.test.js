@@ -13,6 +13,11 @@ const mockRegistryTest = jest.fn();
 const mockRegistryRequest = jest.fn();
 const mockRegistryList = jest.fn();
 const mockRegistryCatalog = jest.fn();
+const mockRegistryArchive = jest.fn();
+const mockRegistryRestore = jest.fn();
+const mockRegistryUpdate = jest.fn();
+const mockRegistryUpdateRequest = jest.fn();
+const mockRegistryDeleteRequest = jest.fn();
 
 class MockRegistryError extends Error {
   constructor(status, message, code, details = null) {
@@ -45,6 +50,11 @@ jest.mock('../../services/sourcing-source-registry', () => ({
   createConnectorRequest: (...args) => mockRegistryRequest(...args),
   listConnectorRequests: (...args) => mockRegistryList(...args),
   testSourceConnection: (...args) => mockRegistryTest(...args),
+  archiveSource: (...args) => mockRegistryArchive(...args),
+  restoreSource: (...args) => mockRegistryRestore(...args),
+  updateSource: (...args) => mockRegistryUpdate(...args),
+  updateConnectorRequest: (...args) => mockRegistryUpdateRequest(...args),
+  deleteConnectorRequest: (...args) => mockRegistryDeleteRequest(...args),
 }));
 jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({}));
 jest.mock('../../services/partner-admin-service', () => ({}));
@@ -64,6 +74,7 @@ const READY_SOURCE = Object.freeze({
   import_enabled: true,
   production_enabled: true,
   production_runtime_certified: true,
+  credential_status: 'valid',
 });
 
 const project = (overrides) => workspace.projectSourceControl({ ...READY_SOURCE, ...overrides });
@@ -90,10 +101,15 @@ describe('état canonique projeté par le backend', () => {
       .toMatchObject({ state: 'to_configure', autopilot_ready: false, activation_ready: false });
   });
 
-  test('BLOQUÉE : runtime autopilot désactivé ou source inactive', () => {
+  test('BLOQUÉE : runtime autopilot désactivé ou découverte non prête', () => {
     expect(project({ runtime_enabled: false })).toMatchObject({ state: 'blocked' });
-    expect(project({ status: 'disabled' })).toMatchObject({ state: 'blocked' });
     expect(project({ discovery_ready: false })).toMatchObject({ state: 'blocked' });
+  });
+
+  test('ARCHIVÉE : lifecycle inactif, jamais ACTIVE ni activable, même si l’autopilot était ON en base', () => {
+    expect(project({ status: 'disabled' })).toMatchObject({ state: 'archived', archived: true, activation_ready: false });
+    expect(project({ status: 'disabled', autopilot_enabled: true })).toMatchObject({ state: 'archived', autopilot_ready: false });
+    expect(project({ status: 'disabled' }).hard_blockers).toContain('Source inactive');
   });
 
   test('CONNEXION À TESTER : connecteur prêt, jamais testé, jamais certifié', () => {
@@ -127,6 +143,34 @@ describe('état canonique projeté par le backend', () => {
   });
 });
 
+describe('autorité crédentielle dans la projection (fail-closed)', () => {
+  test('sans identifiants : À CONFIGURER, jamais prête ni activable', () => {
+    const view = project({ credential_status: 'missing', production_runtime_certified: false, connection_test_status: null });
+    expect(view.state).toBe('to_configure');
+    expect(view.autopilot_ready).toBe(false);
+    expect(view.activation_ready).toBe(false);
+    expect(view.hard_blockers).toContain('Identifiants à configurer');
+  });
+
+  test('identifiants refusés : BLOQUÉE même si la source était certifiée et active', () => {
+    const view = project({ credential_status: 'invalid', autopilot_enabled: true });
+    expect(view.state).toBe('blocked');
+    expect(view.autopilot_ready).toBe(false);
+    expect(view.credential_status).toBe('invalid');
+  });
+
+  test('identifiants enregistrés mais non testés : À TESTER, pas prête', () => {
+    const view = project({ credential_status: 'untested', production_runtime_certified: false, connection_test_status: null });
+    expect(view.state).toBe('connection_to_test');
+    expect(view.autopilot_ready).toBe(false);
+  });
+
+  test('credential_status absent : traité comme manquant (échec fermé)', () => {
+    const { credential_status: _omit, ...legacy } = READY_SOURCE;
+    expect(workspace.projectSourceControl(legacy).autopilot_ready).toBe(false);
+  });
+});
+
 describe('création depuis l’interface', () => {
   test('listSourceControls reflète immédiatement la création, autopilot OFF et à tester', async () => {
     mockRegistryCreate.mockResolvedValue({ source_ref: 'api:cj', created: true });
@@ -134,7 +178,7 @@ describe('création depuis l’interface', () => {
       source_ref: 'api:cj', label: 'CJdropshipping API', status: 'active', autopilot_enabled: false,
       runtime_enabled: true, connector_ready: true, discovery_ready: true,
       discovery_enabled: false, sync_enabled: false, import_enabled: false, production_enabled: false,
-      production_runtime_certified: false,
+      production_runtime_certified: false, credential_status: 'untested',
     };
     mockListSources.mockResolvedValue([created]);
 
@@ -243,5 +287,48 @@ describe('préparer et certifier', () => {
   test('source inconnue : 404', async () => {
     mockListSources.mockResolvedValue([]);
     await expect(workspace.prepareSourceForCertification('api:ghost', {})).rejects.toMatchObject({ status: 404, code: 'sourcing_source_not_found' });
+  });
+});
+
+describe('archiver / restaurer / renommer depuis l’interface', () => {
+  const ARCHIVED = { ...READY_SOURCE, status: 'disabled' };
+
+  test('archiver : résultat du registre + carte relue en état archivé', async () => {
+    mockRegistryArchive.mockResolvedValue({ source_ref: 'api:cj', archived: true, changed: true });
+    mockListSources.mockResolvedValue([ARCHIVED]);
+    const result = await workspace.archiveSource('api:cj', { id: 3 });
+    expect(mockRegistryArchive).toHaveBeenCalledWith('api:cj', { id: 3 });
+    expect(result).toMatchObject({ archived: true, source: { source_ref: 'api:cj', state: 'archived' } });
+    expect(mockRunSourceImportNow).not.toHaveBeenCalled();
+    expect(mockSetSourceActive).not.toHaveBeenCalled();
+  });
+
+  test('restaurer : la source revient visible mais jamais active', async () => {
+    mockRegistryRestore.mockResolvedValue({ source_ref: 'api:cj', archived: false, changed: true });
+    mockListSources.mockResolvedValue([{ ...READY_SOURCE }]);
+    const result = await workspace.restoreSource('api:cj', { id: 3 });
+    expect(result.source).toMatchObject({ state: 'ready', autopilot_enabled: false });
+    expect(mockSetSourceActive).not.toHaveBeenCalled();
+  });
+
+  test('renommer : le libellé est relu depuis la source', async () => {
+    mockRegistryUpdate.mockResolvedValue({ source_ref: 'api:cj', label: 'CJ principal' });
+    mockListSources.mockResolvedValue([{ ...READY_SOURCE, label: 'CJ principal' }]);
+    const result = await workspace.updateSource('api:cj', { label: 'CJ principal' });
+    expect(result.source.label).toBe('CJ principal');
+  });
+
+  test('les erreurs du registre gardent statut HTTP et code', async () => {
+    mockRegistryArchive.mockRejectedValue(new MockRegistryError(404, 'Source sourcing introuvable', 'sourcing_source_not_found'));
+    await expect(workspace.archiveSource('api:nope')).rejects.toMatchObject({ status: 404, code: 'sourcing_source_not_found' });
+    mockRegistryUpdate.mockRejectedValue(new MockRegistryError(400, 'invalide', 'sourcing_source_label_invalid'));
+    await expect(workspace.updateSource('api:cj', { label: 'x' })).rejects.toMatchObject({ status: 400 });
+  });
+
+  test('demandes : modifier et retirer passent par le registre', async () => {
+    mockRegistryUpdateRequest.mockResolvedValue({ request_ref: 'r1', requested_label: 'BigBuy EU' });
+    mockRegistryDeleteRequest.mockResolvedValue({ request_ref: 'r1', deleted: true });
+    await expect(workspace.updateSourceRequest('r1', { requested_label: 'BigBuy EU' })).resolves.toMatchObject({ requested_label: 'BigBuy EU' });
+    await expect(workspace.deleteSourceRequest('r1')).resolves.toEqual({ request_ref: 'r1', deleted: true });
   });
 });

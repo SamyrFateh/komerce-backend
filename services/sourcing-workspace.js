@@ -28,6 +28,7 @@ const sourcingAnalysis = require('./sourcing-analysis');
 const sourcingMutations = require('./sourcing-mutations');
 const candidateActions = require('./sourcing-candidate-actions');
 const importDispatch = require('./sourcing-import-dispatch');
+const credentialService = require('./provider-credential-service');
 const sourceAutopilot = require('./sourcing-source-autopilot');
 const sourceRegistry = require('./sourcing-source-registry');
 const providerPolicy = require('./sourcing-provider-control-policy');
@@ -251,8 +252,13 @@ function projectSourceControl(source) {
   if (source.status !== 'active') hardBlockers.push('Source inactive');
   if (!source.connector_ready) hardBlockers.push(source.connector_reason || 'Connecteur non prêt');
   if (!source.discovery_ready) hardBlockers.push('Discovery non prête');
+  // Fail-closed : l'état crédentiel est décidé par le backend (coffre / session / repli serveur).
+  const credentialStatus = source.credential_status || 'missing';
+  if (credentialStatus === 'missing') hardBlockers.push('Identifiants à configurer');
+  if (credentialStatus === 'invalid') hardBlockers.push('Identifiants refusés ou expirés');
 
   const preparationRequired = [];
+  if (credentialStatus === 'untested') preparationRequired.push('Test de connexion');
   if (!capabilities.discovery) preparationRequired.push('Discovery');
   if (!capabilities.sync) preparationRequired.push('Sync');
   if (!capabilities.import) preparationRequired.push('Import');
@@ -266,8 +272,9 @@ function projectSourceControl(source) {
   const captureFailed = /fail|error/i.test(String(source.last_capture_status || ''));
   const enabled = Boolean(source.autopilot_enabled);
   let state;
-  if (enabled && autopilotReady) state = 'active';
-  else if (!source.connector_ready) state = 'to_configure';
+  if (source.status !== 'active') state = 'archived';
+  else if (enabled && autopilotReady) state = 'active';
+  else if (!source.connector_ready || credentialStatus === 'missing') state = 'to_configure';
   else if (hardBlockers.length > 0 || enabled) state = 'blocked';
   else if (captureFailed) state = 'error';
   else if (!connectionVerified) state = 'connection_to_test';
@@ -288,6 +295,8 @@ function projectSourceControl(source) {
     connector_ready: Boolean(source.connector_ready),
     production_runtime_certified: Boolean(source.production_runtime_certified),
     state,
+    archived: source.status !== 'active',
+    connector_label: source.connector_label || null,
     connection: {
       connector_ready: Boolean(source.connector_ready),
       verified: connectionVerified,
@@ -295,6 +304,9 @@ function projectSourceControl(source) {
       test_code: source.connection_test_code || null,
       tested_at: source.connection_tested_at || null,
     },
+    credential_status: credentialStatus,
+    credential_in_vault: Boolean(source.credential_in_vault),
+    auth: source.auth || { mode: 'none', scope: null, fields: [] },
     capabilities,
     last_capture_status: source.last_capture_status || null,
     last_capture_at: source.last_capture_at || null,
@@ -475,7 +487,7 @@ async function sourceControlFor(sourceRef) {
 }
 
 function registryError(err) {
-  if (err instanceof sourceRegistry.SourceRegistryError) {
+  if (err instanceof sourceRegistry.SourceRegistryError || err instanceof credentialService.ProviderCredentialError) {
     return new SourcingWorkspaceError(err.status, err.message, err.code, err.details);
   }
   return err;
@@ -497,6 +509,37 @@ async function createSourceRequest(body, actor) {
   catch (err) { throw registryError(err); }
 }
 
+async function archiveSource(sourceRef, actor) {
+  try {
+    const result = await sourceRegistry.archiveSource(sourceRef, actor);
+    return { ...result, source: await sourceControlFor(sourceRef) };
+  } catch (err) { throw registryError(err); }
+}
+
+async function restoreSource(sourceRef, actor) {
+  try {
+    const result = await sourceRegistry.restoreSource(sourceRef, actor);
+    return { ...result, source: await sourceControlFor(sourceRef) };
+  } catch (err) { throw registryError(err); }
+}
+
+async function updateSource(sourceRef, body) {
+  try {
+    const result = await sourceRegistry.updateSource(sourceRef, body || {});
+    return { ...result, source: await sourceControlFor(sourceRef) };
+  } catch (err) { throw registryError(err); }
+}
+
+async function updateSourceRequest(requestRef, body) {
+  try { return await sourceRegistry.updateConnectorRequest(requestRef, body || {}); }
+  catch (err) { throw registryError(err); }
+}
+
+async function deleteSourceRequest(requestRef) {
+  try { return await sourceRegistry.deleteConnectorRequest(requestRef); }
+  catch (err) { throw registryError(err); }
+}
+
 async function listSourceRequests() {
   return sourceRegistry.listConnectorRequests();
 }
@@ -504,6 +547,33 @@ async function listSourceRequests() {
 async function testSourceConnection(sourceRef) {
   try {
     const result = await sourceRegistry.testSourceConnection(sourceRef);
+    return { ...result, source: await sourceControlFor(sourceRef) };
+  } catch (err) { throw registryError(err); }
+}
+
+// Identifiants fournisseur : le navigateur envoie un secret, il ne le relit jamais. Toutes les
+// réponses ne portent que l'état (credential_status, dates, expiration) et la carte source.
+async function credentialStatus(sourceRef) {
+  try { return await credentialService.status(sourceRef); } catch (err) { throw registryError(err); }
+}
+
+async function configureCredentials(sourceRef, credentials, actor) {
+  try {
+    const result = await credentialService.configure(sourceRef, credentials, actor);
+    return { ...result, source: await sourceControlFor(sourceRef) };
+  } catch (err) { throw registryError(err); }
+}
+
+async function rotateCredentials(sourceRef, credentials, actor) {
+  try {
+    const result = await credentialService.rotate(sourceRef, credentials, actor);
+    return { ...result, status: await credentialService.status(sourceRef), source: await sourceControlFor(sourceRef) };
+  } catch (err) { throw registryError(err); }
+}
+
+async function revokeCredentials(sourceRef, actor) {
+  try {
+    const result = await credentialService.revoke(sourceRef, actor);
     return { ...result, source: await sourceControlFor(sourceRef) };
   } catch (err) { throw registryError(err); }
 }
@@ -534,6 +604,10 @@ async function setSupplierActive(partnerRef, isActive) {
 }
 
 module.exports = {
+  credentialStatus,
+  configureCredentials,
+  rotateCredentials,
+  revokeCredentials,
   SourcingWorkspaceError,
   stripInternalIds,
   resolveProductRef,
@@ -557,6 +631,11 @@ module.exports = {
   getSourceCatalog,
   createSource,
   createSourceRequest,
+  archiveSource,
+  restoreSource,
+  updateSource,
+  updateSourceRequest,
+  deleteSourceRequest,
   listSourceRequests,
   testSourceConnection,
   createSupplier,
