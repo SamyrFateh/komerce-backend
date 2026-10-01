@@ -140,6 +140,7 @@ test.describe('Sources — identifiants fournisseur', () => {
     await card(page).locator('[data-credentials-form] button[type="submit"]').click();
 
     await expect(card(page).locator('[data-credentials-status]')).toHaveText('Configurée');
+    await expect(card(page).locator('[data-credentials-notice]')).toHaveText('Identifiants enregistrés.');
     await expect(card(page).locator('.kir-source-badge')).toHaveText('CONNEXION À TESTER');
     await expect(card(page).locator('[data-credentials-open]')).toHaveText('Modifier les identifiants');
     expect(backend.requests[0]).toEqual({ credentials: { api_key: 'GOOD-cj-secret-123456' } });

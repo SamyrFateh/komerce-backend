@@ -436,6 +436,11 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     await page.route(`${ORIGIN}/**/prepare`, async (route) => { await new Promise((r) => setTimeout(r, 1200)); route.fallback(); });
     await card(page).locator('[data-source-step="prepare"]').click();
     await expect(card(page).locator('[data-source-menu]')).toHaveCount(0);
+    // La préparation est un passage de certification, pas une activation de l'autopilot :
+    // le switch reste fidèle à l'autorité backend (OFF) même pendant l'état busy.
+    await expect(card(page).locator('[data-source-toggle]')).toHaveAttribute('aria-checked', 'false');
+    await expect(card(page).locator('.kir-source-switch-label')).toHaveText('OFF');
+    await expect(card(page).locator('.kir-source-autopilot')).toContainText('Arrêtée : aucun import automatique');
   });
 });
 

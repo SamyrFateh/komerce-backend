@@ -752,7 +752,7 @@
       (live && live.done && live.outcome === 'certification_incomplete')
       || (selectedSourceMatches && runtimeCertificationBlocked(selectedRun))
     );
-    const displayEnabled = enabled || busy;
+    const displayEnabled = enabled;
     // L'interrupteur n'est actionnable que si le backend déclare la source prête (alignée sur
     // canRunAutomaticImport) ou déjà ON pour pouvoir l'arrêter.
     const canToggle = !busy && (enabled || source.autopilot_ready === true);
@@ -845,7 +845,7 @@
         // Remplacement refusé : l'ancienne connexion reste active, le formulaire reste ouvert (vide).
         credentialsState = { ref, open:true, saving:false, error:result.message || 'Identifiants refusés.', notice:null };
       } else {
-        credentialsState = { ref, open:false, saving:false, error:null, notice:mode === 'rotate' ? '✓ Connexion valide' : 'Identifiants enregistrés. Testez la connexion.' };
+        credentialsState = { ref, open:false, saving:false, error:null, notice:mode === 'rotate' ? '✓ Connexion valide' : 'Identifiants enregistrés.' };
       }
     } catch (error) {
       credentialsState = { ref, open:true, saving:false, error:error.message, notice:null };
