@@ -230,6 +230,8 @@ describe('canonical admin app — server AdminContext bootstrap', () => {
     expect(env.api.surfaceForPath('/admin/pilotage')).toBe(env.api.SURFACES.PILOTAGE);
     expect(env.api.surfaceForPath('/admin/hub-live')).toBe(env.api.SURFACES.HUB_LIVE);
     expect(typeof env.api.renderHubLive).toBe('function');
+    expect(env.api.surfaceForPath('/admin/relais-live')).toBe(env.api.SURFACES.RELAIS_LIVE);
+    expect(typeof env.api.renderRelayLive).toBe('function');
     expect(env.api.surfaceForPath('/admin/commerce')).toBe(env.api.SURFACES.COMMERCE);
     expect(env.api.surfaceForPath('/admin/operations')).toBe(env.api.SURFACES.OPERATIONS);
     expect(env.api.surfaceForPath('/admin/finance')).toBe(env.api.SURFACES.FINANCE);

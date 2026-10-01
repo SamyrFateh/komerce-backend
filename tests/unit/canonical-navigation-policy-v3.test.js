@@ -53,7 +53,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(domainIds(nav, 'finance')).toEqual(['finance']);
     expect(domainIds(nav, 'sourcing')).toEqual(['live']);
     expect(domainIds(nav, 'agent_hub')).toEqual(['operations', 'live']);
-    expect(domainIds(nav, 'agent_relais')).toEqual(['operations', 'finance']);
+    expect(domainIds(nav, 'agent_relais')).toEqual(['operations', 'live', 'finance']);
     expect(domainIds(nav, 'agent_transitaire')).toEqual(['operations']);
     expect(domainIds(nav, 'support')).toEqual([]);
     for (const role of ['finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support']) {
@@ -66,9 +66,10 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(spaceIds(nav, 'operations', 'admin')).toEqual([
       'operations-overview', 'operations-workspace', 'shipping-customs-workspace',
     ]);
-    expect(spaceIds(nav, 'live', 'admin')).toEqual(['import-runtime', 'hub-live']);
+    expect(spaceIds(nav, 'live', 'admin')).toEqual(['import-runtime', 'hub-live', 'relais-live']);
     expect(spaceIds(nav, 'live', 'sourcing')).toEqual(['import-runtime']);
     expect(spaceIds(nav, 'live', 'agent_hub')).toEqual(['hub-live']);
+    expect(spaceIds(nav, 'live', 'agent_relais')).toEqual(['relais-live']);
     expect(spaceIds(nav, 'operations', 'market_operator')).toEqual([
       'operations-overview', 'operations-workspace', 'shipping-customs-workspace',
     ]);

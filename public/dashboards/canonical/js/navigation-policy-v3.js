@@ -72,6 +72,7 @@
       spaces: Object.freeze([
         Object.freeze({ id: 'import-runtime', label: 'Sourcing live', href: '/admin/import-runtime', roles: Object.freeze(['admin', 'sourcing']) }),
         Object.freeze({ id: 'hub-live', label: 'Hub live', href: '/admin/hub-live', roles: Object.freeze(['admin', 'agent_hub']) }),
+        Object.freeze({ id: 'relais-live', label: 'Relais live', href: '/admin/relais-live', roles: Object.freeze(['admin', 'agent_relais']) }),
       ]),
     }),
     Object.freeze({
@@ -116,6 +117,7 @@
     'sourcing-workspace': 'catalog',
     'import-runtime': 'live',
     'hub-live': 'live',
+    'relais-live': 'live',
     finance: 'finance',
     'accounting-workspace': 'finance',
     settings: 'settings',
@@ -132,6 +134,7 @@
     'shipping-customs-workspace': 'shipping-customs-workspace',
     'import-runtime': 'import-runtime',
     'hub-live': 'hub-live',
+    'relais-live': 'relais-live',
     finance: 'finance-overview',
     'accounting-workspace': 'accounting-workspace',
   });

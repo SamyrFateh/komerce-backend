@@ -4846,6 +4846,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/relay-live.js",
+        "resolvedPath": "public/dashboards/canonical/js/relay-live.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/navigation.js",
         "resolvedPath": "public/dashboards/canonical/js/navigation.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5546,6 +5553,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/relay-live-journey.test.js",
+        "resolvedPath": "tests/unit/relay-live-journey.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/unit/import-runtime-mock-fidelity.test.js",
         "resolvedPath": "tests/unit/import-runtime-mock-fidelity.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5569,6 +5583,13 @@
         "category": "tests",
         "declared": "tests/e2e/hub-live-cockpit.spec.js",
         "resolvedPath": "tests/e2e/hub-live-cockpit.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/relais-live-cockpit.spec.js",
+        "resolvedPath": "tests/e2e/relais-live-cockpit.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -41040,7 +41061,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1733
+        "filesObserved": 1736
       },
       "boutique": {
         "filesObserved": 214,
