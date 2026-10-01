@@ -612,36 +612,47 @@ function runCheck(model) {
   return 1;
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
-const model = build();
+// ── Main ─────────────────────────────────────────────────────
+function main() {
+  const model = build();
 
-if (SAVE) {
-  const d = model.diagnostics;
-  const baselineData = {};
-  for (const key of RATCHET_KEYS) baselineData[key] = d[key];
-  baselineData.savedAt = new Date().toISOString();
-  fs.writeFileSync(BASELINE, JSON.stringify(baselineData, null, 2));
+  if (SAVE) {
+    const d = model.diagnostics;
+    const baselineData = {};
+    for (const key of RATCHET_KEYS) baselineData[key] = d[key];
+    baselineData.savedAt = new Date().toISOString();
+    fs.writeFileSync(BASELINE, JSON.stringify(baselineData, null, 2));
+    if (!fs.existsSync(DOCS)) fs.mkdirSync(DOCS, { recursive: true });
+    fs.writeFileSync(OUT_JSON, JSON.stringify(model, null, 2));
+    fs.writeFileSync(OUT_MD, renderMd(model));
+    console.log(`${GRN}${BLD}✔ Baseline Dashboards 360 figée${R} (${d.orphanRoutes.length} route(s) orpheline(s), ${d.missingApiMethods.length} méthode(s) absente(s), ${d.deadApiMethods.length} méthode(s) morte(s), ${d.doctrineViolations.length} violation(s) doctrine).`);
+    return 0;
+  }
+
+  if (CHECK) {
+    return runCheck(model);
+  }
+
   if (!fs.existsSync(DOCS)) fs.mkdirSync(DOCS, { recursive: true });
   fs.writeFileSync(OUT_JSON, JSON.stringify(model, null, 2));
   fs.writeFileSync(OUT_MD, renderMd(model));
-  console.log(`${GRN}${BLD}✔ Baseline Dashboards 360 figée${R} (${d.orphanRoutes.length} route(s) orpheline(s), ${d.missingApiMethods.length} méthode(s) absente(s), ${d.deadApiMethods.length} méthode(s) morte(s), ${d.doctrineViolations.length} violation(s) doctrine).`);
-  process.exit(0);
+  console.log(`${GRN}${BLD}✔ DASHBOARDS_360 généré${R} ${DIM}(${model.summary.modules} modules, ${model.summary.routes} routes, ${model.summary.apiMethodsExported} méthodes API)${R}`);
+  console.log(`${CYN}  docs/DASHBOARDS_360.md${R}  +  ${CYN}docs/DASHBOARDS_360.json${R}`);
+  if (model.summary.orphanRoutes || model.summary.missingApiMethods || model.summary.deadApiMethods || model.summary.doctrineViolations) {
+    console.log(`${YLW}  ⚠ ${model.summary.orphanRoutes} route(s) orpheline(s), ${model.summary.missingApiMethods} méthode(s) absente(s), ${model.summary.deadApiMethods} méthode(s) morte(s), ${model.summary.doctrineViolations} violation(s) doctrine — voir §3.${R}`);
+  }
+  if (model.summary.unprovenContracts) {
+    console.log(`${MAG}  ⚪ ${model.summary.unprovenContracts} contrat(s) non prouvé(s) réellement appelé(s) — voir §4.${R}`);
+  }
+  return 0;
 }
 
-if (CHECK) {
-  const code = runCheck(model);
-  process.exit(code);
-}
+if (require.main === module) process.exitCode = main();
 
-// génération
-if (!fs.existsSync(DOCS)) fs.mkdirSync(DOCS, { recursive: true });
-fs.writeFileSync(OUT_JSON, JSON.stringify(model, null, 2));
-fs.writeFileSync(OUT_MD, renderMd(model));
-console.log(`${GRN}${BLD}✔ DASHBOARDS_360 généré${R} ${DIM}(${model.summary.modules} modules, ${model.summary.routes} routes, ${model.summary.apiMethodsExported} méthodes API)${R}`);
-console.log(`${CYN}  docs/DASHBOARDS_360.md${R}  +  ${CYN}docs/DASHBOARDS_360.json${R}`);
-if (model.summary.orphanRoutes || model.summary.missingApiMethods || model.summary.deadApiMethods || model.summary.doctrineViolations) {
-  console.log(`${YLW}  ⚠ ${model.summary.orphanRoutes} route(s) orpheline(s), ${model.summary.missingApiMethods} méthode(s) absente(s), ${model.summary.deadApiMethods} méthode(s) morte(s), ${model.summary.doctrineViolations} violation(s) doctrine — voir §3.${R}`);
-}
-if (model.summary.unprovenContracts) {
-  console.log(`${MAG}  ⚪ ${model.summary.unprovenContracts} contrat(s) non prouvé(s) réellement appelé(s) — voir §4.${R}`);
-}
+module.exports = {
+  extractContractStatus,
+  isProvenStatus,
+  parseOpenApiContract,
+  build,
+  renderMd,
+};
