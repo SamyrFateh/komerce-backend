@@ -67,7 +67,7 @@ test('default pagination, malformed list, empty list and dynamic runtime availab
   spy.mockResolvedValueOnce({}); await expect(connector.fetchProducts()).rejects.toThrow('INVALID_OFFER_LIST');
   spy.mockResolvedValueOnce({ offers: [{ id: '1' }, { id: '2' }] });
   await expect(connector.fetchProducts({ size: 1 })).rejects.toThrow('INVALID_OFFER_LIST');
-  const configured = jest.spyOn(clientModule, 'configuration').mockImplementation(() => { throw new Error('disabled'); });
+  const configured = jest.spyOn(clientModule, 'platformConfiguration').mockImplementation(() => { throw new Error('disabled'); });
   expect(connector.IS_ACTIVE).toBe(false); expect(connector.INACTIVE_REASON).toBe('disabled');
   configured.mockReturnValue({}); expect(connector.IS_ACTIVE).toBe(true); expect(connector.INACTIVE_REASON).toBeNull();
   spy.mockRestore(); configured.mockRestore();

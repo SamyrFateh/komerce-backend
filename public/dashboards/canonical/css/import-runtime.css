@@ -3326,3 +3326,10 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
 .kmc-import-runtime .kir-sources-archived li div{display:flex;flex-direction:column;min-width:0}
 .kmc-import-runtime .kir-sources-archived li strong{color:#DCE7F3;overflow-wrap:anywhere}
 .kmc-import-runtime .kir-sources-archived li span{color:#7F93AB;font-size:12px}
+
+/* Identifiants fournisseur : formulaire dérivé du contrat auth, jamais prérempli */
+.kmc-import-runtime .kir-credentials{display:grid;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid #1B2D44}
+.kmc-import-runtime .kir-credentials-status{margin:0;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#9FB2C8}
+.kmc-import-runtime .kir-credentials-form{display:grid;gap:8px}
+.kmc-import-runtime .kir-credentials-form .kir-wizard-primary,.kmc-import-runtime .kir-credentials-form .kir-wizard-secondary{justify-self:start}
+.kmc-import-runtime .kir-credentials [data-credentials-open]{justify-self:start}

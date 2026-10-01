@@ -43,6 +43,24 @@ function configuration(env) {
   return { key: Buffer.from(raw, 'hex'), userAgent: env.ALLEGRO_SANDBOX_USER_AGENT.trim() };
 }
 
+// Prérequis plateforme (infrastructure) : activation du sandbox, User-Agent déclaré et clé de
+// chiffrement de la session OAuth. Les identifiants client (id/secret) peuvent venir du coffre
+// applicatif ; configuration() les exige encore pour les usages historiques (env).
+function platformConfiguration(env) {
+  if (env.KOMERCE_ALLOW_ALLEGRO_SANDBOX !== '1') throw new Error('ALLEGRO_SANDBOX_DISABLED');
+  for (const name of ['USER_AGENT', 'TOKEN_ENCRYPTION_KEY']) {
+    if (!env[`ALLEGRO_SANDBOX_${name}`]?.trim()) throw new Error(`ALLEGRO_SANDBOX_${name} requis`);
+  }
+  if (!/^[a-f0-9]{64}$/i.test(env.ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY.trim())) {
+    throw new Error('ALLEGRO_SANDBOX_TOKEN_ENCRYPTION_KEY: 32 octets hex requis');
+  }
+  return true;
+}
+
+function hasEnvironmentClientCredentials(env) {
+  return Boolean(env.ALLEGRO_SANDBOX_CLIENT_ID?.trim() && env.ALLEGRO_SANDBOX_CLIENT_SECRET?.trim());
+}
+
 function seedConfiguration(env) {
   const c = configuration(env);
   const runtime = String(env.KOMERCE_ENV || env.NODE_ENV || '').trim().toLowerCase();
@@ -625,6 +643,8 @@ function createClient({ env = process.env, dbImpl, fetchImpl = globalThis.fetch,
 const client = createClient();
 module.exports = {
   configuration,
+  platformConfiguration,
+  hasEnvironmentClientCredentials,
   seedConfiguration,
   safeProvider422Diagnostic,
   safeSettingRows, safeShippingRateRows, safeShippingRateDetail, safeDeliveryMethodRows, safeReturnPolicyRows,

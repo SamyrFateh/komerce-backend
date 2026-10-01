@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        connector_registry, operator_source_requests, authenticated_operator
  * @outputs       source_connector_catalog, registered_source, connector_required_request, connection_test_result
- * @depends       db.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js
+ * @depends       db.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/provider-credential-service.js
  * @used-by       services/sourcing-workspace.js
  * @db-read       sourcing_sources, sourcing_source_requests
  * @db-write      sourcing_sources, sourcing_source_requests, sourcing_provider_control_events
@@ -20,6 +20,7 @@
 const db = require('../db');
 const importDispatch = require('./sourcing-import-dispatch');
 const sourceAutopilot = require('./sourcing-source-autopilot');
+const credentialService = require('./provider-credential-service');
 
 class SourceRegistryError extends Error {
   constructor(status, message, code, details = null) {
@@ -228,22 +229,15 @@ async function testSourceConnection(sourceRef, q = db) {
     throw new SourceRegistryError(409, 'Source sans contrat d’autopull', 'sourcing_autopull_unavailable');
   }
 
-  const result = await importDispatch.testConnection(source.adapter_type);
-  const { rows } = await q.query(
-    `UPDATE sourcing_sources
-        SET connection_test_status = $2,
-            connection_test_code = $3,
-            connection_tested_at = NOW()
-      WHERE source_id = $1
-      RETURNING connection_tested_at`,
-    [source.source_ref, result.ok ? 'ok' : 'failed', result.ok ? null : result.code]
-  );
+  // Le test passe par l'autorité crédentielle : secrets du coffre côté serveur uniquement,
+  // résultat mémorisé (statut + code métier) sur la source et sur le credential.
+  const result = await credentialService.test(source.source_ref, { q });
   return {
-    source_ref: source.source_ref,
-    ok: Boolean(result.ok),
+    source_ref: result.source_ref,
+    ok: result.ok,
     code: result.code,
     message: result.message,
-    tested_at: rows[0]?.connection_tested_at || null,
+    tested_at: result.tested_at,
   };
 }
 

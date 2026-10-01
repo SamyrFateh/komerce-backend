@@ -34,6 +34,9 @@
   let wizardState = null;
   // Gestion d'une source : renommage ou confirmation d'archivage en cours (une seule à la fois).
   let manageState = null;
+  // Identifiants : jamais de valeur secrète en mémoire JS. Seul l'état d'affichage est gardé ;
+  // les champs sont lus dans le DOM au moment de l'envoi puis vidés.
+  let credentialsState = null;
   let mountedRoot = null;
   let lastPayload = null;
   // Les refresh de navigation sont séquencés : seule la lecture la plus récente,
@@ -731,7 +734,7 @@
     to_certify:{ key:'prep', label:'À CERTIFIER' },
   });
   const SOURCE_STATE_REASONS = Object.freeze({
-    to_configure:'Le connecteur n’est pas configuré sur ce serveur.',
+    to_configure:'Configurez la connexion fournisseur pour pouvoir tester la source.',
     connection_to_test:'Testez la connexion avant de préparer la source.',
     to_certify:'Préparez et certifiez la source pour pouvoir l’activer.',
     error:'Dernière préparation en échec.',
@@ -774,6 +777,99 @@
       name: source.label || source.supplier_name || source.source_ref,
       lastRun: lastRunOfSource(source, lots, selectedRun),
     };
+  }
+
+  // Formulaire d'identifiants dérivé du contrat `auth` publié par le backend (registre des
+  // connecteurs) : aucune branche par nom de fournisseur. Un secret n'est jamais relu ni
+  // prérempli ; le champ est toujours vide à l'ouverture.
+  function credentialFields(source) {
+    const auth = source?.auth || {};
+    if (!['api_key', 'client_credentials'].includes(auth.mode) || auth.scope !== 'source') return [];
+    return Array.isArray(auth.fields) ? auth.fields.filter(field => field && field.key) : [];
+  }
+
+  function credentialsConfigured(source) {
+    return !['missing', 'not_required'].includes(source?.credential_status || 'missing');
+  }
+
+  function credentialsPanel(source, { context = 'card' } = {}) {
+    const fields = credentialFields(source);
+    if (!fields.length) return '';
+    const ref = source.source_ref;
+    const st = credentialsState && credentialsState.ref === ref ? credentialsState : null;
+    const configured = credentialsConfigured(source);
+    const open = !configured || Boolean(st?.open);
+    const saving = Boolean(st?.saving);
+    const inVault = source.credential_in_vault === true;
+    const notice = st?.error
+      ? `<p class="kir-wizard-error" role="alert" data-credentials-error>${esc(st.error)}</p>`
+      : st?.notice ? `<p class="kir-wizard-ok" data-credentials-notice>${esc(st.notice)}</p>` : '';
+    const status = `<p class="kir-credentials-status" data-credentials-status>${configured ? 'Configurée' : 'À configurer'}</p>`;
+    if (!open) {
+      return `<section class="kir-credentials" data-credentials-panel="${esc(ref)}" data-credentials-context="${context}">
+        ${status}${notice}
+        <button type="button" class="kir-wizard-secondary" data-credentials-open data-source-ref="${esc(ref)}">Modifier les identifiants</button>
+      </section>`;
+    }
+    const inputs = fields.map(field => `<label class="kir-wizard-field">${esc(field.label || field.key)}
+        <input type="${field.secret ? 'password' : 'text'}" data-credential-field="${esc(field.key)}" value=""
+          autocomplete="${field.secret ? 'new-password' : 'off'}" autocapitalize="off" spellcheck="false" maxlength="4096" required ${saving ? 'disabled' : ''}>
+      </label>`).join('');
+    const submitLabel = saving ? 'Enregistrement…' : (configured ? 'Remplacer et tester' : 'Configurer la connexion');
+    return `<section class="kir-credentials" data-credentials-panel="${esc(ref)}" data-credentials-context="${context}">
+      ${status}${notice}
+      <form class="kir-credentials-form" data-credentials-form data-source-ref="${esc(ref)}" data-credentials-mode="${inVault ? 'rotate' : 'configure'}" autocomplete="off">
+        ${inputs}
+        <p class="kir-wizard-note">Les identifiants sont chiffrés côté serveur et ne sont plus jamais affichés.</p>
+        <button type="submit" class="kir-wizard-primary" ${saving ? 'disabled aria-busy="true"' : ''}>${submitLabel}</button>
+        ${configured ? `<button type="button" class="kir-wizard-secondary" data-credentials-cancel data-source-ref="${esc(ref)}" ${saving ? 'disabled' : ''}>Annuler</button>` : ''}
+      </form>
+    </section>`;
+  }
+
+  async function submitCredentials(form) {
+    const ref = form.getAttribute('data-source-ref');
+    const mode = form.getAttribute('data-credentials-mode') === 'rotate' ? 'rotate' : 'configure';
+    const credentials = {};
+    form.querySelectorAll('[data-credential-field]').forEach(input => {
+      credentials[input.getAttribute('data-credential-field')] = String(input.value || '').trim();
+      input.value = '';
+    });
+    credentialsState = { ref, open:true, saving:true, error:null, notice:null };
+    rerenderWizard();
+    try {
+      const path = mode === 'rotate' ? 'credentials/rotate' : 'credentials';
+      const response = await api(`${WIZARD_BASE}/${encodeURIComponent(ref)}/${path}`, { method:'POST', body:{ credentials } });
+      const result = response?.result || {};
+      if (mode === 'rotate' && result.ok === false) {
+        // Remplacement refusé : l'ancienne connexion reste active, le formulaire reste ouvert (vide).
+        credentialsState = { ref, open:true, saving:false, error:result.message || 'Identifiants refusés.', notice:null };
+      } else {
+        credentialsState = { ref, open:false, saving:false, error:null, notice:mode === 'rotate' ? '✓ Connexion valide' : 'Identifiants enregistrés. Testez la connexion.' };
+      }
+    } catch (error) {
+      credentialsState = { ref, open:true, saving:false, error:error.message, notice:null };
+    } finally {
+      Object.keys(credentials).forEach(key => { credentials[key] = ''; });
+    }
+    await refresh({ preserve:true });
+    rerenderWizard();
+  }
+
+  function bindCredentials(root) {
+    root.querySelectorAll?.('[data-credentials-open]').forEach(button => button.addEventListener('click', () => {
+      credentialsState = { ref:button.getAttribute('data-source-ref'), open:true, saving:false, error:null, notice:null };
+      rerenderWizard();
+    }));
+    root.querySelectorAll?.('[data-credentials-cancel]').forEach(button => button.addEventListener('click', () => {
+      credentialsState = null;
+      rerenderWizard();
+    }));
+    root.querySelectorAll?.('[data-credentials-form]').forEach(form => form.addEventListener('submit', event => {
+      event.preventDefault();
+      if (credentialsState?.saving) return;
+      submitCredentials(form);
+    }));
   }
 
   function sourceCard(source, selectedRun, lots) {
@@ -833,6 +929,7 @@
         <div><dt>Certification runtime</dt><dd>${cert}</dd></div>
       </dl>
       ${m.reason ? `<p class="kir-source-reason" data-source-reason>${esc(m.reason)}</p>` : ''}
+      ${m.busy ? '' : credentialsPanel(source, { context:'card' })}
       ${m.step ? `<button type="button" class="kir-source-step" data-source-step="${m.step.action}" data-source-ref="${esc(source.source_ref)}">${m.step.label}</button>` : ''}
       ${m.lastRun ? `<a class="kir-source-follow" href="${urlFor(m.lastRun)}" data-cockpit-nav>Voir le suivi →</a>` : ''}
     </article>`;
@@ -1598,13 +1695,22 @@
     return renderDecisions(run);
   }
 
+  // Un champ d'identifiant en cours de saisie ne doit jamais être effacé par un rafraîchissement
+  // périodique : on reporte le rendu (le payload reste mémorisé) jusqu'à l'envoi ou l'annulation.
+  function credentialInputInProgress(root) {
+    if (credentialsState?.saving) return false;
+    return Array.from(root?.querySelectorAll?.('[data-credential-field]') || [])
+      .some(input => String(input.value || '') !== '');
+  }
+
   function render(root, payload) {
+    if (credentialInputInProgress(root)) return;
     const sourceControls = Array.isArray(payload?.source_controls) ? payload.source_controls : [];
     const lots = Array.isArray(payload?.lots) ? payload.lots : [];
     const run = payload?.selected || null;
     const { view, kind, filters } = params();
     // L'assistant n'existe que sur la vue Sources.
-    if (view !== 'sources') { wizardState = null; manageState = null; }
+    if (view !== 'sources') { wizardState = null; manageState = null; credentialsState = null; }
     // L'URL fait foi pour les filtres de Passages (Back / Forward / rechargement).
     if (view === 'passages') Object.assign(passageFilters, filters);
     root.className = 'kmc-import-runtime kmc-domain-cockpit';
@@ -1678,6 +1784,7 @@
     bindSourceControls(root, payload);
     bindWizard(root, payload);
     bindManage(root, payload);
+    bindCredentials(root);
     bindActionList(root);
     bindPassages(root, payload);
     focusDrill(root);
@@ -1962,7 +2069,9 @@
     const connect = connector?.connection_mode === 'oauth'
       ? `<p class="kir-wizard-note">Reliez d’abord le compte fournisseur, puis testez la connexion.</p>
          <a class="kir-wizard-link" href="${esc(connector.connect_path || '#')}" target="_blank" rel="noopener" data-wizard-connect>Connecter le compte</a>`
-      : `<p class="kir-wizard-note">Les identifiants de ce fournisseur sont gérés côté serveur. Aucun secret n’est saisi ni affiché ici.</p>`;
+      : credentialFields(source).length
+        ? ''
+        : `<p class="kir-wizard-note">Les identifiants de ce fournisseur sont gérés côté serveur. Aucun secret n’est saisi ni affiché ici.</p>`;
     const result = w.testResult
       ? (w.testResult.ok
         ? '<p class="kir-wizard-ok" data-wizard-test-result>✓ Connexion valide</p>'
@@ -1981,7 +2090,7 @@
     } else action = '';
     const follow = w.firstRunRef ? `<a class="kir-wizard-link" href="${urlFor(w.firstRunRef)}" data-wizard-follow>Voir le suivi du premier passage →</a>` : '';
     return `<p class="kir-wizard-ok" data-wizard-created>Source ajoutée · ${name}</p>
-      <section class="kir-wizard-block"><h4>Connexion</h4>${connect}
+      <section class="kir-wizard-block"><h4>Connexion</h4>${connect}${source ? credentialsPanel(source, { context:'wizard' }) : ''}
         <button type="button" class="kir-wizard-secondary" data-wizard-test data-source-ref="${esc(w.sourceRef)}" ${w.testing || preparing ? 'disabled aria-busy="true"' : ''}>${w.testing ? 'Test en cours…' : 'Tester la connexion'}</button>
         ${result}</section>
       ${verified ? `<section class="kir-wizard-block"><h4>Préparation de la source</h4>${wizardChecklist(source)}${action}${follow}</section>` : ''}`;

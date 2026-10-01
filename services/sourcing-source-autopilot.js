@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        sourcing_sources_autopilot_switch, connector_automation_registry, provider_capability_policy, provider_runtime_certification_evidence
  * @outputs       recurring_source_imports, source_runtime_projection
- * @depends       db.js, services/sourcing-import-dispatch.js, services/suppliers/catalog-import-orchestrator.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-candidate-actions.js
+ * @depends       db.js, services/sourcing-import-dispatch.js, services/provider-credential-service.js, services/suppliers/catalog-import-orchestrator.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-candidate-actions.js
  * @used-by       services/sourcing-workspace.js, scripts/sourcing-source-autopilot.js
  * @db-read       sourcing_sources, sourcing_captures
  * @db-write      sourcing_sources, sourcing_captures
@@ -22,6 +22,7 @@
 const crypto = require('crypto');
 const db = require('../db');
 const importDispatch = require('./sourcing-import-dispatch');
+const credentialService = require('./provider-credential-service');
 const catalogImport = require('./suppliers/catalog-import-orchestrator');
 const providerPolicy = require('./sourcing-provider-control-policy');
 const candidateActions = require('./sourcing-candidate-actions');
@@ -98,11 +99,15 @@ async function listSources(q = db) {
             s.production_certified_at,
             s.connection_test_status, s.connection_test_code, s.connection_tested_at,
             s.display_name,
+            pc.last_test_status AS credential_last_test_status,
+            (pc.credential_ref IS NOT NULL) AS credential_in_vault,
             s.updated_at,
             last_capture.status AS last_capture_status,
             last_capture.completed_at AS last_capture_at,
             last_capture.stats AS last_capture_stats
        FROM sourcing_sources s
+       LEFT JOIN provider_credentials pc
+              ON pc.credential_ref = s.credential_ref AND pc.status = 'active'
        LEFT JOIN LATERAL (
          SELECT c.status, c.completed_at, c.stats
            FROM sourcing_captures c
@@ -115,10 +120,22 @@ async function listSources(q = db) {
       ORDER BY s.source_id`
   );
 
-  return rows.map((row) => {
+  return Promise.all(rows.map(async (row) => {
     const automation = automationBySourceRef(row.source_ref);
+    const { credential_last_test_status: vaultTest, credential_in_vault: inVault, ...sourceRow } = row;
+    const contract = importDispatch.authContract(row.adapter_type);
+    const session = await credentialService.oauthSession(contract);
     return {
-      ...row,
+      ...sourceRow,
+      credential_in_vault: Boolean(inVault),
+      credential_status: credentialService.deriveCredentialState({
+        contract,
+        vault: inVault ? { last_test_status: vaultTest } : null,
+        connectionTestStatus: row.connection_test_status,
+        productionCertified: Boolean(row.production_certified_at),
+        oauthConnected: session ? session.connected !== false : undefined,
+      }),
+      auth: contract ? { mode: contract.mode, scope: contract.scope, fields: contract.fields } : { mode: 'none', scope: null, fields: [] },
       production_runtime_certified: Boolean(row.production_certified_at),
       label: row.display_name || automation?.label || row.adapter_type,
       connector_label: automation?.label || row.adapter_type,
@@ -130,7 +147,7 @@ async function listSources(q = db) {
       discovery_version: automation?.discovery_version || null,
       runtime_enabled: runtimeEnabled(),
     };
-  });
+  }));
 }
 
 async function requireSource(sourceRef, q = db) {
@@ -262,6 +279,21 @@ function buildImportBody(source, automation, reason, discoveryPlan) {
   };
 }
 
+// Autorité crédentielle de l'exécution : les secrets du coffre sont déchiffrés ici, côté
+// serveur, et transmis au connecteur hors du corps d'import. Fail-closed : sans credential
+// valide, rien ne part chez le fournisseur.
+async function credentialAccess(source) {
+  try {
+    return await credentialService.resolveForRun(source.source_ref);
+  } catch (_) {
+    return { state: 'invalid', credentials: null, ok: false };
+  }
+}
+
+function dispatcherWith(credentials) {
+  return (body) => importDispatch.dispatchToConnector(body, { credentials });
+}
+
 async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
   if (!runtimeEnabled()) {
     return { status: 'skipped', source_ref: sourceRef, reason: 'runtime_disabled' };
@@ -306,6 +338,17 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
     };
   }
 
+  const access = await credentialAccess(source);
+  if (!access.ok) {
+    await recordSyntheticCapture(sourceRef, 'failed', {
+      autopilot: true,
+      reason,
+      code: 'CREDENTIALS_NOT_VALID',
+      credential_status: access.state,
+    });
+    return { status: 'failed', source_ref: sourceRef, code: 'credentials_not_valid', credential_status: access.state };
+  }
+
   const lockClient = await db.getClient();
   let locked = false;
   try {
@@ -331,7 +374,7 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
       result = await catalogImport.importCatalog(
         buildImportBody(source, automation, reason, discoveryPlan),
         null,
-        importDispatch.dispatchToConnector
+        dispatcherWith(access.credentials)
       );
       if (Number(result?.status) < 400) {
         // eslint-disable-next-line no-await-in-loop
@@ -439,6 +482,10 @@ async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operato
       'sourcing_connector_not_ready'
     );
   }
+  const access = await credentialAccess(source);
+  if (!access.ok) {
+    throw new SourcingSourceAutopilotError(409, 'Identifiants à configurer ou à tester', 'sourcing_credentials_not_valid');
+  }
 
   const lockClient = await db.getClient();
   let locked = false;
@@ -469,7 +516,7 @@ async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operato
       result = await catalogImport.importCatalog(
         buildImportBody(source, automation, reason, discoveryPlan),
         actorId,
-        importDispatch.dispatchToConnector
+        dispatcherWith(access.credentials)
       );
       if (Number(result?.status) < 400) {
         // eslint-disable-next-line no-await-in-loop
@@ -564,6 +611,9 @@ async function setSourceActive(sourceRef, active, { runNow = true } = {}) {
         automation.reason || 'Connecteur source non prêt',
         'sourcing_connector_not_ready'
       );
+    }
+    if (!(await credentialAccess(source)).ok) {
+      throw new SourcingSourceAutopilotError(409, 'Identifiants à configurer ou à tester', 'sourcing_credentials_not_valid');
     }
   }
 

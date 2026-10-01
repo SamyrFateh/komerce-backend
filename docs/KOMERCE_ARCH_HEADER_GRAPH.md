@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 643
-- Files with full headers: 598
+- Scanned code files: 644
+- Files with full headers: 599
 - Files with lite headers: 45
-- Files with any headers: 643
+- Files with any headers: 644
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1548
-- Edges: 7668
-- DB tables: 177
-- Doctrines: 537
+- Graph nodes: 1555
+- Edges: 7694
+- DB tables: 178
+- Doctrines: 542
 - Impact areas: 191
-- Unresolved code edges: 765
+- Unresolved code edges: 767
 - Tables multi-écrivains directs (>=2): 77
 - Avertissements db-write / db-write-via en chevauchement: 8
 
@@ -61,7 +61,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - shared: 1
 - shared-cart: 25
 - shared-cart-modal: 7
-- sourcing: 35
+- sourcing: 36
 - supplier-connectivity: 3
 - tracking: 1
 - unsold-resolution: 1
@@ -87,7 +87,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 130
 - route-manifest: 1
 - schema: 1
-- service: 335
+- service: 336
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -191,6 +191,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/pickup-secret-issuer.js — pickup-secret-issuer (logistics, critical, full)
 - services/pickup-secret-rotation-service.js — pickup-secret-partial-rotation (logistics, critical, full)
 - services/product-stock-service.js — catalog-product-stock-service (catalog, critical, full)
+- services/provider-credential-service.js — provider-credential-service (sourcing, critical, full)
 - services/purchasing-cancel-service.js — purchasing-cancel-service (purchasing, critical, full)
 - services/qr-collection-core.js — qr-collection-core (orders, critical, full)
 - services/receive-purchase-order.js — orders-receive-purchase-order (purchasing, critical, full)
@@ -882,6 +883,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - invoices: 5 écrivains directs — routes/admin/system.js, routes/documents.js, routes/invoices.js, services/invoice-service.js, services/order-payment-confirmation.js
 - purchase_orders: 5 écrivains directs — services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-receive-service.js, services/purchasing-trigger-service.js, services/receive-purchase-order.js
 - shared_carts: 5 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
+- sourcing_sources: 5 écrivains directs — services/provider-credential-service.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js
 - users: 5 écrivains directs — bootstrap/startup-migrations.js, routes/auth.js, routes/client-auth.js, routes/otp.js, services/user-mutation-service.js
 - basket_items: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
 - baskets: 4 écrivains directs — routes/admin/system.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-user-cleanup.js
@@ -890,7 +892,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - product_skus: 4 écrivains directs — services/catalog-promotion.js, services/catalog-stock-sync-application.js, services/product-sku-service.js, services/product-stock-service.js
 - product_variants: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/product-stock-service.js, services/product-variant-service.js
 - sourcing_candidates: 4 écrivains directs — routes/sourcing-scanner.js, services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js, services/suppliers/catalog-import-json.js
-- sourcing_sources: 4 écrivains directs — services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js
 - supplier_oauth_connections: 4 écrivains directs — routes/integrations-aliexpress.js, services/suppliers/aliexpress-oauth.js, services/suppliers/allegro-sandbox-client.js, services/suppliers/connectors/aliexpress-connected-connector.js
 - wallet_transactions: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
 - wallets: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
@@ -902,6 +903,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - relais: 3 écrivains directs — routes/admin/system.js, services/relais-mutation-service.js, services/routing.js
 - sms_log: 3 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js
 - sourcing_captures: 3 écrivains directs — services/sourcing-catalog-change-observation.js, services/sourcing-observation-shadow-service.js, services/sourcing-source-autopilot.js
+- sourcing_provider_control_events: 3 écrivains directs — services/provider-credential-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-registry.js
 - wallet_consumptions: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - wallet_credit_lots: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - business_rules: 2 écrivains directs — routes/admin-rules.js, utils/rules.js
@@ -923,7 +925,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - outbox_events: 2 écrivains directs — services/outbox-producer.js, services/outbox-worker.js
 - parcel_events: 2 écrivains directs — services/parcel-security.js, utils/parcelSync.js
 - partners: 2 écrivains directs — routes/admin/system.js, services/partner-admin-service.js
-- paypal_events_processed: 2 écrivains directs — services/payment-paypal-events.js, services/payment-paypal.js
 
 ## DB Write / Write-Via Overlap Warnings
 

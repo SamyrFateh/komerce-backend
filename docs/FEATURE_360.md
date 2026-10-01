@@ -2326,6 +2326,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Perimeter** :
 - _in_ :
   - ingestion catalogue fournisseur brut (dispatch CSV / saisie manuelle / API)
+  - coffre applicatif des identifiants fournisseur (Provider Credential Authority) : chiffrement serveur AES-256-GCM, configuration / test / remplacement / révocation depuis Sources, jamais relu par le navigateur ; le repli process.env reste actif pendant la transition
   - activation explicite Source ON/OFF pour l acquisition automatique récurrente : OFF par défaut, runner provider-agnostic, pull borné et lock distribué par source
   - shadow ingestion NormalizedSupplierProduct V2 vers Source/Capture/Observation, sans bascule d autorite
   - Candidate Retrieval et Resolution shadow des Observations vers Canonical Product/Offer/Unit sans Selection
@@ -2377,6 +2378,9 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - le Golden E2E est read-only et termine toujours par HARD_STOP ou BLOCKED_SUPPLIER_IDENTITY sans placeOrder
 - l autopilot est une autorisation opérateur distincte du lifecycle source ; il reste false par défaut et ne démarre jamais une source historique implicitement
 - le runner autopilot ne contient aucune branche fournisseur et n execute que des pulls bornés déclarés par le registry connecteur
+- [object Object]
+- [object Object]
+- [object Object]
 - [object Object]
 - Production ne peut être autorisée que si un import API réel a atteint CANONICAL_RESOLVED et a persisté le capture_id complete correspondant sur la source
 - [object Object]

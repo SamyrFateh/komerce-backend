@@ -46,6 +46,7 @@ module.exports = {
   perimeter: {
     in: [
       'ingestion catalogue fournisseur brut (dispatch CSV / saisie manuelle / API)',
+      'coffre applicatif des identifiants fournisseur (Provider Credential Authority) : chiffrement serveur AES-256-GCM, configuration / test / remplacement / révocation depuis Sources, jamais relu par le navigateur ; le repli process.env reste actif pendant la transition',
       'activation explicite Source ON/OFF pour l acquisition automatique récurrente : OFF par défaut, runner provider-agnostic, pull borné et lock distribué par source',
       'shadow ingestion NormalizedSupplierProduct V2 vers Source/Capture/Observation, sans bascule d autorite',
       'Candidate Retrieval et Resolution shadow des Observations vers Canonical Product/Offer/Unit sans Selection',
@@ -144,6 +145,7 @@ module.exports = {
       'services/import-runtime-runs.js',
       'services/import-runtime-item-events.js',
       'services/sourcing-source-registry.js',
+      'services/provider-credential-service.js',
     ],
     routes: [
       'routes/sourcing-scanner.js',
@@ -202,6 +204,9 @@ module.exports = {
       'tests/unit/sourcing-workspace-source-registry.test.js',
       'tests/unit/sourcing-import-dispatch-connection.test.js',
       'tests/integration/sourcing-source-registry-real-db.test.js',
+      'tests/unit/provider-credential-service.test.js',
+      'tests/unit/admin-sourcing-credentials-route.test.js',
+      'tests/integration/provider-credential-vault-real-db.test.js',
     ],
   },
 
@@ -352,6 +357,12 @@ module.exports = {
     'le Golden E2E est read-only et termine toujours par HARD_STOP ou BLOCKED_SUPPLIER_IDENTITY sans placeOrder',
     'l autopilot est une autorisation opérateur distincte du lifecycle source ; il reste false par défaut et ne démarre jamais une source historique implicitement',
     'le runner autopilot ne contient aucune branche fournisseur et n execute que des pulls bornés déclarés par le registry connecteur',
+    { statement: 'un secret fournisseur est chiffré côté serveur (AES-256-GCM, AAD provider + credential_ref + version + auth_type) et n est jamais relu, renvoyé, masqué ni journalisé ; la clé maître ne vit que dans Railway',
+      test: 'tests/integration/provider-credential-vault-real-db.test.js' },
+    { statement: 'sans credential valide (missing, untested, invalid) une source n est jamais autopilot-ready, activable, importable ni exécutée : l état crédentiel est décidé par le backend',
+      test: 'tests/unit/sourcing-source-autopilot.test.js' },
+    { statement: 'le remplacement d un credential est testé avant bascule atomique ; un refus fournisseur laisse l ancien credential actif et efface le nouveau secret',
+      test: 'tests/integration/provider-credential-vault-real-db.test.js' },
     { statement: 'aucun import opérateur ou autopilot ne peut appeler la raffinerie sans un plan Discovery READY produit par le connecteur ou son contrat de surface stable',
       test: 'tests/unit/sourcing-source-autopilot.test.js' },
     'Production ne peut être autorisée que si un import API réel a atteint CANONICAL_RESOLVED et a persisté le capture_id complete correspondant sur la source',
