@@ -30,6 +30,8 @@
   let activationTimer = null;
   let activationState = null;
   let commandState = null;
+  let prepareState = null;
+  let wizardState = null;
   let mountedRoot = null;
   let lastPayload = null;
   // Les refresh de navigation sont séquencés : seule la lecture la plus récente,
@@ -715,44 +717,58 @@
     return match?.run_ref || null;
   }
 
-  // Lecture d'une source pour l'opérateur : badge, interrupteur et raison, sans nouvelle logique métier.
+  // Libellés des états canoniques calculés par le backend (projectSourceControl). Le frontend ne
+  // recalcule jamais l'état : il le traduit. Un état inconnu est affiché BLOQUÉE (fail closed).
+  const SOURCE_STATE_VIEW = Object.freeze({
+    active:{ key:'active', label:'ACTIVE' },
+    ready:{ key:'ready', label:'PRÊTE' },
+    blocked:{ key:'blocked', label:'BLOQUÉE' },
+    error:{ key:'error', label:'ERREUR' },
+    to_configure:{ key:'blocked', label:'À CONFIGURER' },
+    connection_to_test:{ key:'prep', label:'CONNEXION À TESTER' },
+    to_certify:{ key:'prep', label:'À CERTIFIER' },
+  });
+  const SOURCE_STATE_REASONS = Object.freeze({
+    to_configure:'Le connecteur n’est pas configuré sur ce serveur.',
+    connection_to_test:'Testez la connexion avant de préparer la source.',
+    to_certify:'Préparez et certifiez la source pour pouvoir l’activer.',
+    error:'Dernière préparation en échec.',
+  });
+
+  // Lecture d'une source pour l'opérateur : badge, interrupteur et raison, issus de l'état backend.
   function sourceCardModel(source, selectedRun, lots) {
     const enabled = source.autopilot_enabled === true;
-    const ready = source.autopilot_ready === true;
-    const activationReady = source.activation_ready === true;
     const live = activationState?.sourceRef === source.source_ref ? activationState : null;
-    const busy = Boolean(live && !live.done && !live.error);
+    const preparing = Boolean(prepareState && prepareState.sourceRef === source.source_ref);
+    const busy = Boolean(live && !live.done && !live.error) || preparing;
     const selectedSourceMatches = selectedRun
       && String(selectedRun.source_ref || '') === String(source.source_ref || '');
     const providerGateBlocked = Boolean(
       (live && live.done && live.outcome === 'certification_incomplete')
       || (selectedSourceMatches && runtimeCertificationBlocked(selectedRun))
     );
-    const captureFailed = /fail|error/i.test(String(source.last_capture_status || ''));
     const displayEnabled = enabled || busy;
-    const canToggle = !busy && (enabled || activationReady);
+    // L'interrupteur n'est actionnable que si le backend déclare la source prête (alignée sur
+    // canRunAutomaticImport) ou déjà ON pour pouvoir l'arrêter.
+    const canToggle = !busy && (enabled || source.autopilot_ready === true);
+    const stateView = SOURCE_STATE_VIEW[source.state] || SOURCE_STATE_VIEW.blocked;
     let badge;
-    if (providerGateBlocked || (captureFailed && !displayEnabled)) badge = { key:'error', label:'ERREUR' };
+    if (providerGateBlocked) badge = SOURCE_STATE_VIEW.error;
     else if (busy) badge = { key:'prep', label:'PRÉPARATION' };
-    else if (displayEnabled) badge = { key:'active', label:'ACTIVE' };
-    else if (!activationReady) badge = { key:'blocked', label:'BLOQUÉE' };
-    else if (!ready) badge = { key:'prep', label:'PRÉPARATION' };
-    else badge = { key:'ready', label:'PRÊTE' };
+    else badge = stateView;
     const reason = providerGateBlocked
       ? 'Preuve runtime à corriger, puis relancer la source.'
       : busy
-        ? (live.runRef ? `Passage ${live.runRef} en cours` : 'Démarrage du premier import…')
-        : !activationReady
+        ? (live?.runRef ? `Passage ${live.runRef} en cours` : preparing ? 'Préparation : connexion fournisseur, premier passage, certification…' : 'Démarrage du premier import…')
+        : source.state === 'blocked' || !SOURCE_STATE_VIEW[source.state]
           ? (source.blocker || 'Source non activable')
-          : captureFailed && !displayEnabled
-            ? 'Dernière préparation en échec.'
-            : !ready && !displayEnabled
-              ? 'Préparation automatique au clic.'
-              : !ready
-                ? 'Préparation automatique requise.'
-                : '';
+          : (SOURCE_STATE_REASONS[source.state] || '');
+    const step = busy ? null
+      : source.state === 'connection_to_test' ? { action:'test', label:'Tester la connexion' }
+        : source.state === 'to_certify' ? { action:'prepare', label:'Préparer et certifier' }
+          : null;
     return {
-      enabled, displayEnabled, canToggle, busy, badge, reason,
+      enabled, displayEnabled, canToggle, busy, badge, reason, step,
       name: source.label || source.supplier_name || source.source_ref,
       lastRun: lastRunOfSource(source, lots, selectedRun),
     };
@@ -762,8 +778,9 @@
     const m = sourceCardModel(source, selectedRun, lots);
     const prepared = source.last_capture_at ? fmtDate(source.last_capture_at) : 'Jamais';
     const cert = source.production_runtime_certified ? 'Certifiée' : 'À certifier';
+    const connection = source.connection?.verified ? 'Connectée ✓' : source.state === 'to_configure' ? 'À configurer' : 'À tester';
     const name = esc(m.name);
-    return `<article class="kir-source-card is-${m.badge.key}${m.busy ? ' is-busy' : ''}" data-source-card="${esc(source.source_ref)}">
+    return `<article class="kir-source-card is-${m.badge.key}${m.busy ? ' is-busy' : ''}" data-source-card="${esc(source.source_ref)}" tabindex="-1">
       <header class="kir-source-card-head">
         <h3>${name}</h3>
         <span class="kir-source-badge is-${m.badge.key}">${m.badge.key === 'active' || m.busy ? '<i class="kir-source-dot" aria-hidden="true"></i>' : ''}${m.badge.label}</span>
@@ -785,21 +802,39 @@
         </button>
       </div>
       <dl class="kir-source-facts">
+        <div><dt>Connexion</dt><dd data-source-connection>${connection}</dd></div>
         <div><dt>Dernière préparation</dt><dd>${esc(prepared)}</dd></div>
         <div><dt>Dernier passage</dt><dd>${m.lastRun ? esc(m.lastRun) : 'Jamais'}</dd></div>
         <div><dt>Certification runtime</dt><dd>${cert}</dd></div>
       </dl>
       ${m.reason ? `<p class="kir-source-reason" data-source-reason>${esc(m.reason)}</p>` : ''}
+      ${m.step ? `<button type="button" class="kir-source-step" data-source-step="${m.step.action}" data-source-ref="${esc(source.source_ref)}">${m.step.label}</button>` : ''}
       ${m.lastRun ? `<a class="kir-source-follow" href="${urlFor(m.lastRun)}" data-cockpit-nav>Voir le suivi →</a>` : ''}
     </article>`;
   }
 
+  // Fournisseur demandé sans connecteur : jamais une source (aucun interrupteur, aucun test).
+  function sourceRequestCard(request) {
+    return `<article class="kir-source-card is-blocked" data-source-request-card="${esc(request.request_ref)}">
+      <header class="kir-source-card-head">
+        <h3>${esc(request.requested_label || request.provider_name)}</h3>
+        <span class="kir-source-badge is-blocked">CONNECTEUR REQUIS</span>
+      </header>
+      <dl class="kir-source-facts">
+        <div><dt>Fournisseur</dt><dd>${esc(request.provider_name)}</dd></div>
+        ${request.reference_url ? `<div><dt>Référence</dt><dd>${esc(request.reference_url)}</dd></div>` : ''}
+      </dl>
+      <p class="kir-source-reason" data-source-reason>Cette source est enregistrée mais ne peut pas encore alimenter Komerce automatiquement.</p>
+    </article>`;
+  }
+
   // Vue Sources : synthèse compacte + une carte opérateur par fournisseur (données de source_controls).
-  function sourcesBoard(sourceControls, selectedRun = null, lots = []) {
+  function sourcesBoard(sourceControls, selectedRun = null, lots = [], requests = []) {
     const sources = Array.isArray(sourceControls) ? sourceControls : [];
-    if (!sources.length) {
+    const pending = Array.isArray(requests) ? requests : [];
+    if (!sources.length && !pending.length) {
       return `<section class="kir-sources-empty"><strong>Aucune source récurrente configurée</strong>
-        <span>Connectez un fournisseur pour alimenter automatiquement le Sourcing.</span></section>`;
+        <span>Ajoutez un fournisseur pour alimenter automatiquement le Sourcing.</span></section>`;
     }
     const models = sources.map(source => sourceCardModel(source, selectedRun, lots));
     const count = key => models.filter(m => m.badge.key === key).length;
@@ -812,7 +847,7 @@
     if (count('blocked')) chips.push([count('blocked'), count('blocked') > 1 ? 'bloquées' : 'bloquée', 'is-blocked']);
     return `<section class="kir-sources-board" aria-label="Sources du Sourcing">
       <p class="kir-sources-summary" data-sources-summary>${chips.map(([n, label, cls]) => `<span class="${cls}"><strong>${n}</strong> ${label}</span>`).join('')}</p>
-      <div class="kir-source-grid">${sources.map(source => sourceCard(source, selectedRun, lots)).join('')}</div>
+      <div class="kir-source-grid">${sources.map(source => sourceCard(source, selectedRun, lots)).join('')}${pending.map(sourceRequestCard).join('')}</div>
     </section>`;
   }
 
@@ -1475,7 +1510,7 @@
   }
 
   // Sources : inventaire et pilotage des fournisseurs (vue de 1er niveau, pas de lot).
-  function renderSourcesView(run, sourceControls, lots) {
+  function renderSourcesView(run, sourceControls, lots, requests = []) {
     const { back } = viewNav(run, params());
     return `<div class="kir-drill-head kir-sources-head"><div>
         ${breadcrumb(run)}
@@ -1483,9 +1518,11 @@
         <h2>Sources</h2>
         <p>Pilotez les fournisseurs connectés et leur alimentation automatique.</p>
         ${run?.run_ref ? `<p class="kir-sources-context">Passage courant : ${esc(run.run_ref)}</p>` : ''}
-      </div></div>
-      ${sourcesBoard(sourceControls, run, lots)}
-      ${activationStrip(sourceControls)}`;
+      </div>
+      <button type="button" class="kir-add-source" data-add-source>+ Ajouter une source</button></div>
+      ${sourcesBoard(sourceControls, run, lots, requests)}
+      ${activationStrip(sourceControls)}
+      ${wizardMarkup(sourceControls)}`;
   }
 
   function renderBody(run, view, ctx = {}) {
@@ -1504,6 +1541,8 @@
     const lots = Array.isArray(payload?.lots) ? payload.lots : [];
     const run = payload?.selected || null;
     const { view, kind, filters } = params();
+    // L'assistant n'existe que sur la vue Sources.
+    if (view !== 'sources') wizardState = null;
     // L'URL fait foi pour les filtres de Passages (Back / Forward / rechargement).
     if (view === 'passages') Object.assign(passageFilters, filters);
     root.className = 'kmc-import-runtime kmc-domain-cockpit';
@@ -1515,7 +1554,7 @@
     if (view === 'passages' || view === 'sources') {
       root.innerHTML = `<section class="kir-page">
         ${domainNav(view, run)}
-        <main class="kir-main">${view === 'passages' ? renderPassages(run, payload?.passages, payload?.passages_page) : renderSourcesView(run, sourceControls, lots)}</main>
+        <main class="kir-main">${view === 'passages' ? renderPassages(run, payload?.passages, payload?.passages_page) : renderSourcesView(run, sourceControls, lots, Array.isArray(payload?.source_requests) ? payload.source_requests : [])}</main>
       </section>`;
       bindAll(root, payload);
       return;
@@ -1575,6 +1614,7 @@
   function bindAll(root, payload) {
     bindNavigation(root);
     bindSourceControls(root, payload);
+    bindWizard(root, payload);
     bindActionList(root);
     bindPassages(root, payload);
     focusDrill(root);
@@ -1680,6 +1720,322 @@
       commandState = null;
       await refresh({ preserve:true });
     }
+  }
+
+  // ── Registre opérateur : assistant « Ajouter une source » ─────────────────────────────────────
+  // Ajouter → Connecter → Tester → Préparer → Certifier → Activer. Chaque étape appelle une route
+  // backend qui reste l'autorité ; l'assistant n'invente ni état ni droit d'activation.
+  const WIZARD_BASE = '/api/admin/workspaces/sourcing/sources';
+
+  function newWizardState() {
+    return {
+      step:'type', kind:null, catalog:null, loading:false, error:null, existingRef:null,
+      sourceRef:null, creating:null, testing:false, testResult:null, requestSaved:null, saving:false,
+      form:{ provider_name:'', requested_label:'', reference_url:'' },
+    };
+  }
+
+  function rerenderWizard() {
+    if (mountedRoot && lastPayload) render(mountedRoot, lastPayload);
+  }
+
+  function closeWizard() {
+    wizardState = null;
+    rerenderWizard();
+  }
+
+  async function openWizard() {
+    wizardState = newWizardState();
+    rerenderWizard();
+  }
+
+  async function loadWizardCatalog() {
+    if (!wizardState) return;
+    wizardState.loading = true;
+    wizardState.error = null;
+    rerenderWizard();
+    try {
+      const catalog = await api(`${WIZARD_BASE}/catalog`);
+      if (wizardState) wizardState.catalog = Array.isArray(catalog?.connectors) ? catalog.connectors : [];
+    } catch (error) {
+      if (wizardState) wizardState.error = error.message;
+    } finally {
+      if (wizardState) wizardState.loading = false;
+      rerenderWizard();
+    }
+  }
+
+  function connectorStatusLine(connector) {
+    if (connector.existing_source_ref) return 'Déjà ajoutée';
+    if (connector.available && connector.automatable) return 'Disponible · alimentation automatique possible';
+    if (connector.available) return 'Connecteur présent · autopilot non certifié';
+    return 'Connecteur présent · non disponible actuellement';
+  }
+
+  function focusSourceCard(sourceRef) {
+    const card = Array.from(mountedRoot?.querySelectorAll?.('[data-source-card]') || [])
+      .find(node => node.getAttribute('data-source-card') === sourceRef);
+    if (!card) return;
+    card.scrollIntoView?.({ block:'center' });
+    card.focus?.();
+  }
+
+  function viewExistingSource(sourceRef) {
+    wizardState = null;
+    rerenderWizard();
+    focusSourceCard(sourceRef);
+  }
+
+  async function createWizardSource(adapter) {
+    if (!wizardState || wizardState.creating) return;
+    wizardState.creating = adapter;
+    wizardState.error = null;
+    wizardState.existingRef = null;
+    rerenderWizard();
+    try {
+      const response = await api(WIZARD_BASE, { method:'POST', body:{ adapter } });
+      if (wizardState) {
+        wizardState.sourceRef = response?.result?.source_ref || null;
+        wizardState.step = 'connection';
+        wizardState.testResult = null;
+      }
+    } catch (error) {
+      if (wizardState) {
+        wizardState.error = error.code === 'sourcing_source_already_exists' ? 'Cette source existe déjà.' : error.message;
+        wizardState.existingRef = error.code === 'sourcing_source_already_exists' ? (error.details?.existing_source_ref || null) : null;
+      }
+    } finally {
+      if (wizardState) wizardState.creating = null;
+      await refresh({ preserve:true });
+      rerenderWizard();
+    }
+  }
+
+  function showCommandError(prefix, message) {
+    const main = mountedRoot?.querySelector?.('.kir-main');
+    if (main) main.insertAdjacentHTML('afterbegin', `<div class="kir-error">${esc(prefix)} · ${esc(message)}</div>`);
+  }
+
+  async function runConnectionTest(sourceRef) {
+    if (wizardState) { wizardState.testing = true; wizardState.error = null; rerenderWizard(); }
+    try {
+      const response = await api(`${WIZARD_BASE}/${encodeURIComponent(sourceRef)}/test-connection`, { method:'POST', body:{} });
+      const result = response?.result || {};
+      if (wizardState) wizardState.testResult = { ok:result.ok === true, message:result.message || '' };
+      else if (result.ok !== true) showCommandError('Connexion impossible', result.message || 'Le test a échoué.');
+    } catch (error) {
+      if (wizardState) wizardState.testResult = { ok:false, message:error.message };
+      else showCommandError('Test de connexion', error.message);
+    } finally {
+      if (wizardState) wizardState.testing = false;
+      await refresh({ preserve:true });
+      rerenderWizard();
+    }
+  }
+
+  async function runPrepare(sourceRef) {
+    if (prepareState) return;
+    prepareState = { sourceRef };
+    if (wizardState) wizardState.error = null;
+    rerenderWizard();
+    const poll = typeof global.setInterval === 'function'
+      ? global.setInterval(() => { refresh({ preserve:true }); }, COMMAND_POLL_MS) : null;
+    try {
+      const response = await api(`${WIZARD_BASE}/${encodeURIComponent(sourceRef)}/prepare`, { method:'POST', body:{} });
+      if (wizardState) wizardState.firstRunRef = response?.result?.certification_run?.run_ref || null;
+    } catch (error) {
+      const message = error.code === 'sourcing_source_certification_incomplete'
+        ? 'Le premier passage n’a pas permis de certifier la source. Consultez le passage puis réessayez.'
+        : error.message;
+      if (wizardState) { wizardState.error = message; wizardState.firstRunRef = error.details?.run_ref || null; }
+      else showCommandError('Préparation', message);
+    } finally {
+      if (poll && typeof global.clearInterval === 'function') global.clearInterval(poll);
+      prepareState = null;
+      await refresh({ preserve:true });
+      rerenderWizard();
+    }
+  }
+
+  async function saveConnectorRequest() {
+    if (!wizardState || wizardState.saving) return;
+    wizardState.saving = true;
+    wizardState.error = null;
+    rerenderWizard();
+    try {
+      const response = await api(`${WIZARD_BASE}/requests`, { method:'POST', body:{ ...wizardState.form } });
+      if (wizardState) wizardState.requestSaved = response?.result || { status:'connector_required' };
+    } catch (error) {
+      if (wizardState) wizardState.error = error.message;
+    } finally {
+      if (wizardState) wizardState.saving = false;
+      await refresh({ preserve:true });
+      rerenderWizard();
+    }
+  }
+
+  function wizardChecklist(source) {
+    const caps = source?.capabilities || {};
+    const row = (done, label) => `<li class="${done ? 'is-done' : 'is-todo'}"><span aria-hidden="true">${done ? '✓' : '○'}</span> ${label}</li>`;
+    return `<ul class="kir-wizard-checklist" data-wizard-checklist>
+      ${row(source?.connection?.verified === true, 'Connexion')}
+      ${row(caps.discovery === true, 'Découverte fournisseur')}
+      ${row(caps.sync === true, 'Synchronisation')}
+      ${row(caps.import === true, 'Import')}
+      ${row(source?.production_runtime_certified === true, 'Certification')}
+    </ul>`;
+  }
+
+  function wizardConnectionStep(sourceControls) {
+    const w = wizardState;
+    const source = (sourceControls || []).find(item => item.source_ref === w.sourceRef) || null;
+    const connector = (w.catalog || []).find(item => item.existing_source_ref === w.sourceRef || item.adapter === String(w.sourceRef || '').replace(/^api:/, '')) || null;
+    const name = esc(source?.label || connector?.label || 'Source');
+    const preparing = Boolean(prepareState && prepareState.sourceRef === w.sourceRef);
+    const verified = source?.connection?.verified === true;
+    const certified = source?.production_runtime_certified === true;
+    const enabled = source?.autopilot_enabled === true;
+    const connect = connector?.connection_mode === 'oauth'
+      ? `<p class="kir-wizard-note">Reliez d’abord le compte fournisseur, puis testez la connexion.</p>
+         <a class="kir-wizard-link" href="${esc(connector.connect_path || '#')}" target="_blank" rel="noopener" data-wizard-connect>Connecter le compte</a>`
+      : `<p class="kir-wizard-note">Les identifiants de ce fournisseur sont gérés côté serveur. Aucun secret n’est saisi ni affiché ici.</p>`;
+    const result = w.testResult
+      ? (w.testResult.ok
+        ? '<p class="kir-wizard-ok" data-wizard-test-result>✓ Connexion valide</p>'
+        : `<p class="kir-wizard-error" role="alert" data-wizard-test-result>Connexion impossible<br><small>${esc(w.testResult.message)}</small></p>`)
+      : '';
+    let action;
+    if (enabled) action = '<p class="kir-wizard-ok">Alimentation automatique active.</p>';
+    else if (certified && source?.state === 'ready') {
+      action = `<p class="kir-wizard-ok" data-wizard-ready>Source prête</p>
+        <button type="button" class="kir-wizard-primary" data-wizard-activate data-source-ref="${esc(w.sourceRef)}">Activer l’alimentation automatique</button>`;
+    } else if (preparing) {
+      action = `<p class="kir-wizard-progress" data-wizard-preparing>PRÉPARATION → Connexion fournisseur → Premier passage → Certification</p>`;
+    } else if (verified) {
+      action = `<button type="button" class="kir-wizard-primary" data-wizard-prepare data-source-ref="${esc(w.sourceRef)}">Préparer et certifier</button>
+        <p class="kir-wizard-note">Lance un premier passage borné réel pour certifier la source.</p>`;
+    } else action = '';
+    const follow = w.firstRunRef ? `<a class="kir-wizard-link" href="${urlFor(w.firstRunRef)}" data-wizard-follow>Voir le suivi du premier passage →</a>` : '';
+    return `<p class="kir-wizard-ok" data-wizard-created>Source ajoutée · ${name}</p>
+      <section class="kir-wizard-block"><h4>Connexion</h4>${connect}
+        <button type="button" class="kir-wizard-secondary" data-wizard-test data-source-ref="${esc(w.sourceRef)}" ${w.testing || preparing ? 'disabled aria-busy="true"' : ''}>${w.testing ? 'Test en cours…' : 'Tester la connexion'}</button>
+        ${result}</section>
+      ${verified ? `<section class="kir-wizard-block"><h4>Préparation de la source</h4>${wizardChecklist(source)}${action}${follow}</section>` : ''}`;
+  }
+
+  function wizardMarkup(sourceControls) {
+    if (!wizardState) return '';
+    const w = wizardState;
+    const error = w.error ? `<p class="kir-wizard-error" role="alert" data-wizard-error>${esc(w.error)}${w.existingRef ? ` <button type="button" class="kir-wizard-linkbtn" data-wizard-existing="${esc(w.existingRef)}">Voir la source existante</button>` : ''}</p>` : '';
+    let body = '';
+    if (w.step === 'type') {
+      body = `<p class="kir-wizard-q">Quelle source souhaitez-vous ajouter ?</p>
+        <div class="kir-wizard-choices">
+          <button type="button" data-wizard-kind="api"><strong>API fournisseur</strong><span>Alimentation récurrente possible</span></button>
+          <button type="button" data-wizard-kind="csv"><strong>CSV</strong><span>Import ponctuel d’un fichier</span></button>
+          <button type="button" data-wizard-kind="manual"><strong>Saisie manuelle</strong><span>Produits saisis à la main</span></button>
+        </div>`;
+    } else if (w.step === 'manual_info') {
+      body = `<p class="kir-wizard-q">${w.kind === 'csv' ? 'CSV' : 'Saisie manuelle'}</p>
+        <p class="kir-wizard-note" data-wizard-manual-note>Cette source ne s’alimente pas automatiquement : elle se lance ponctuellement depuis l’import du Sourcing. Aucune alimentation automatique n’est créée.</p>
+        <div class="kir-wizard-actions"><button type="button" class="kir-wizard-secondary" data-wizard-back>Retour</button><button type="button" class="kir-wizard-secondary" data-wizard-close>Fermer</button></div>`;
+    } else if (w.step === 'provider') {
+      const list = (w.catalog || []).map(connector => {
+        const action = connector.existing_source_ref
+          ? `<button type="button" class="kir-wizard-secondary" data-wizard-existing="${esc(connector.existing_source_ref)}">Voir la source existante</button>`
+          : connector.can_create
+            ? `<button type="button" class="kir-wizard-primary" data-wizard-create="${esc(connector.adapter)}" ${w.creating ? 'disabled' : ''}>${w.creating === connector.adapter ? 'Ajout…' : 'Ajouter'}</button>`
+            : '<span class="kir-wizard-unavailable">Indisponible</span>';
+        return `<li data-wizard-connector="${esc(connector.adapter)}"><div><strong>${esc(connector.label)}</strong><span>${esc(connectorStatusLine(connector))}</span></div>${action}</li>`;
+      }).join('');
+      body = `<p class="kir-wizard-q">Quel fournisseur ?</p>
+        ${w.loading ? '<p class="kir-wizard-note">Chargement des connecteurs…</p>' : `<ul class="kir-wizard-list">${list}
+          <li data-wizard-connector="other"><div><strong>Autre fournisseur</strong><span>Aucun connecteur Komerce · enregistré comme « connecteur requis »</span></div>
+            <button type="button" class="kir-wizard-secondary" data-wizard-other>Choisir</button></li></ul>`}
+        <div class="kir-wizard-actions"><button type="button" class="kir-wizard-secondary" data-wizard-back>Retour</button></div>`;
+    } else if (w.step === 'other') {
+      if (w.requestSaved) {
+        body = `<p class="kir-wizard-q">Statut : <strong data-wizard-request-status>Connecteur requis</strong></p>
+          <p class="kir-wizard-note">Cette source est enregistrée mais ne peut pas encore alimenter Komerce automatiquement.</p>
+          <div class="kir-wizard-actions"><button type="button" class="kir-wizard-secondary" data-wizard-close>Configurer plus tard</button></div>`;
+      } else {
+        body = `<p class="kir-wizard-q">Autre fournisseur</p>
+          <label class="kir-wizard-field">Nom du fournisseur<input type="text" data-wizard-field="provider_name" maxlength="80" value="${esc(w.form.provider_name)}" required></label>
+          <label class="kir-wizard-field">Nom souhaité de la source<input type="text" data-wizard-field="requested_label" maxlength="80" value="${esc(w.form.requested_label)}"></label>
+          <label class="kir-wizard-field">Site / référence (facultatif)<input type="text" data-wizard-field="reference_url" maxlength="300" value="${esc(w.form.reference_url)}"></label>
+          <div class="kir-wizard-actions"><button type="button" class="kir-wizard-secondary" data-wizard-back>Retour</button>
+            <button type="button" class="kir-wizard-primary" data-wizard-save-request ${w.saving ? 'disabled' : ''}>${w.saving ? 'Enregistrement…' : 'Enregistrer'}</button></div>`;
+      }
+    } else if (w.step === 'connection') {
+      body = wizardConnectionStep(sourceControls);
+    }
+    return `<div class="kir-wizard-backdrop" data-wizard-backdrop>
+      <section class="kir-wizard" role="dialog" aria-modal="true" aria-label="Ajouter une source" data-source-wizard data-wizard-step="${esc(w.step)}">
+        <header class="kir-wizard-head"><h3>Ajouter une source</h3><button type="button" class="kir-wizard-close" data-wizard-close aria-label="Fermer">×</button></header>
+        ${error}${body}
+      </section></div>`;
+  }
+
+  function bindWizard(root, payload) {
+    root.querySelectorAll?.('[data-add-source]').forEach(button => {
+      button.addEventListener('click', () => openWizard());
+    });
+    root.querySelectorAll?.('[data-source-step]').forEach(button => {
+      button.addEventListener('click', () => {
+        const sourceRef = button.getAttribute('data-source-ref');
+        if (!sourceRef || button.disabled) return;
+        if (button.getAttribute('data-source-step') === 'test') runConnectionTest(sourceRef);
+        else runPrepare(sourceRef);
+      });
+    });
+    const wizard = root.querySelector?.('[data-source-wizard]');
+    if (!wizard || !wizardState) return;
+    root.querySelector('[data-wizard-backdrop]')?.addEventListener('click', event => {
+      if (event.target === event.currentTarget) closeWizard();
+    });
+    wizard.querySelectorAll('[data-wizard-close]').forEach(button => button.addEventListener('click', closeWizard));
+    wizard.querySelectorAll('[data-wizard-back]').forEach(button => button.addEventListener('click', () => {
+      wizardState.error = null;
+      wizardState.existingRef = null;
+      wizardState.step = wizardState.step === 'other' ? 'provider' : 'type';
+      rerenderWizard();
+    }));
+    wizard.querySelectorAll('[data-wizard-kind]').forEach(button => button.addEventListener('click', () => {
+      const kind = button.getAttribute('data-wizard-kind');
+      wizardState.kind = kind;
+      wizardState.error = null;
+      if (kind === 'api') {
+        wizardState.step = 'provider';
+        loadWizardCatalog();
+      } else {
+        wizardState.step = 'manual_info';
+        rerenderWizard();
+      }
+    }));
+    wizard.querySelectorAll('[data-wizard-create]').forEach(button => button.addEventListener('click', () => createWizardSource(button.getAttribute('data-wizard-create'))));
+    wizard.querySelectorAll('[data-wizard-existing]').forEach(button => button.addEventListener('click', () => viewExistingSource(button.getAttribute('data-wizard-existing'))));
+    wizard.querySelectorAll('[data-wizard-other]').forEach(button => button.addEventListener('click', () => {
+      wizardState.step = 'other';
+      wizardState.error = null;
+      rerenderWizard();
+    }));
+    wizard.querySelectorAll('[data-wizard-field]').forEach(input => input.addEventListener('input', () => {
+      wizardState.form[input.getAttribute('data-wizard-field')] = input.value;
+    }));
+    wizard.querySelectorAll('[data-wizard-save-request]').forEach(button => button.addEventListener('click', saveConnectorRequest));
+    wizard.querySelectorAll('[data-wizard-test]').forEach(button => button.addEventListener('click', () => runConnectionTest(button.getAttribute('data-source-ref'))));
+    wizard.querySelectorAll('[data-wizard-prepare]').forEach(button => button.addEventListener('click', () => runPrepare(button.getAttribute('data-source-ref'))));
+    wizard.querySelectorAll('[data-wizard-activate]').forEach(button => button.addEventListener('click', () => {
+      const sourceRef = button.getAttribute('data-source-ref');
+      wizardState = null;
+      toggleSource(root, lastPayload || payload, sourceRef, false, button);
+    }));
+    wizard.querySelectorAll('[data-wizard-follow]').forEach(link => link.addEventListener('click', event => {
+      event.preventDefault();
+      const href = link.getAttribute('href');
+      wizardState = null;
+      if (href) goto(href);
+    }));
   }
 
   function bindSourceControls(root, payload) {
@@ -1833,7 +2189,10 @@
       lastPayload = payload;
       // Ne pas casser une saisie de filtre en cours : le prochain rafraîchissement la reprendra.
       const typing = global.document?.activeElement?.hasAttribute?.('data-passage-filter');
-      if (!(typing && view === 'passages')) render(mountedRoot, payload);
+      const wizardTyping = Boolean(wizardState)
+        && /^(INPUT|TEXTAREA)$/.test(String(global.document?.activeElement?.tagName || ''))
+        && Boolean(global.document?.activeElement?.closest?.('[data-source-wizard]'));
+      if (!(typing && view === 'passages') && !wizardTyping) render(mountedRoot, payload);
     } catch (error) {
       // Une erreur issue d'une lecture devenue obsolète ne doit ni repeindre l'écran ni afficher une alerte.
       if (!refreshStillCurrent(token)) return;
@@ -1856,6 +2215,8 @@
     // Invalide toute lecture encore en vol d'un montage précédent.
     refreshEpoch += 1;
     activationState = null;
+    prepareState = null;
+    wizardState = null;
     stopActivationPolling();
     renderLoading(mountedRoot);
     if (timer) clearInterval(timer);
@@ -1864,6 +2225,9 @@
     global.addEventListener?.('focus', () => refresh({ preserve:true }), { once:false });
     global.document?.addEventListener?.('visibilitychange', () => {
       if (global.document.visibilityState === 'visible') refresh({ preserve:true });
+    }, { once:false });
+    global.document?.addEventListener?.('keydown', event => {
+      if (event.key === 'Escape' && wizardState) closeWizard();
     }, { once:false });
     await refresh({ preserve:true });
     timer = setInterval(() => refresh({ preserve:true }), POLL_MS);

@@ -59,28 +59,34 @@ function automationBySourceRef(sourceRef) {
     .find((descriptor) => descriptorSourceRef(descriptor) === sourceRef) || null;
 }
 
-async function ensureRegisteredPullSources(q = db) {
+// Le registre opérateur est explicite : une source n'existe que si l'opérateur l'a ajoutée
+// (services/sourcing-source-registry.js). Ce rafraîchissement ne crée JAMAIS de ligne : il
+// réaligne seulement le contrat (adapter/pull/recurring) des sources déjà enregistrées.
+async function refreshRegisteredPullSources(q = db) {
   const descriptors = importDispatch.sourceAutomationCatalog();
-  const registered = [];
+  const refs = descriptors.map(descriptorSourceRef);
+  if (!refs.length) return [];
+  const { rows } = await q.query(
+    'SELECT source_id FROM sourcing_sources WHERE source_id = ANY($1::text[])',
+    [refs]
+  );
+  const present = new Set(rows.map((row) => row.source_id));
   for (const descriptor of descriptors) {
     const sourceRef = descriptorSourceRef(descriptor);
+    if (!present.has(sourceRef)) continue;
     await q.query(
-      `INSERT INTO sourcing_sources
-         (source_id, adapter_type, acquisition, continuity, status, autopilot_enabled)
-       VALUES ($1, $2, 'pull', 'recurring', 'active', false)
-       ON CONFLICT (source_id) DO UPDATE
-         SET adapter_type = EXCLUDED.adapter_type,
-             acquisition = EXCLUDED.acquisition,
-             continuity = EXCLUDED.continuity`,
+      `UPDATE sourcing_sources
+          SET adapter_type = $2, acquisition = 'pull', continuity = 'recurring'
+        WHERE source_id = $1
+          AND (adapter_type IS DISTINCT FROM $2 OR acquisition <> 'pull' OR continuity <> 'recurring')`,
       [sourceRef, descriptor.adapter]
     );
-    registered.push(sourceRef);
   }
-  return registered;
+  return refs.filter((ref) => present.has(ref));
 }
 
 async function listSources(q = db) {
-  await ensureRegisteredPullSources(q);
+  await refreshRegisteredPullSources(q);
   const { rows } = await q.query(
     `SELECT s.source_id AS source_ref,
             s.adapter_type,
@@ -90,6 +96,7 @@ async function listSources(q = db) {
             s.autopilot_enabled,
             s.discovery_enabled, s.sync_enabled, s.import_enabled, s.production_enabled,
             s.production_certified_at,
+            s.connection_test_status, s.connection_test_code, s.connection_tested_at,
             s.updated_at,
             last_capture.status AS last_capture_status,
             last_capture.completed_at AS last_capture_at,
@@ -126,7 +133,7 @@ async function listSources(q = db) {
 
 async function requireSource(sourceRef, q = db) {
   const { rows: [row] } = await q.query(
-    `SELECT source_id AS source_ref, adapter_type, acquisition, continuity, status, autopilot_enabled, discovery_enabled, sync_enabled, import_enabled, production_enabled, production_certified_capture_id, production_certified_at
+    `SELECT source_id AS source_ref, adapter_type, acquisition, continuity, status, autopilot_enabled, discovery_enabled, sync_enabled, import_enabled, production_enabled, production_certified_capture_id, production_certified_at, connection_test_status
        FROM sourcing_sources
       WHERE source_id = $1`,
     [sourceRef]
@@ -258,7 +265,7 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
     return { status: 'skipped', source_ref: sourceRef, reason: 'runtime_disabled' };
   }
 
-  await ensureRegisteredPullSources();
+  await refreshRegisteredPullSources();
   const source = await requireSource(sourceRef);
   if (source.status !== 'active') {
     return { status: 'skipped', source_ref: sourceRef, reason: 'source_lifecycle_disabled' };
@@ -406,7 +413,7 @@ async function runSourceOnce(sourceRef, { reason = 'scheduled' } = {}) {
 }
 
 async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operator_import_live' } = {}) {
-  await ensureRegisteredPullSources();
+  await refreshRegisteredPullSources();
   const source = await requireSource(sourceRef);
   const automation = automationBySourceRef(sourceRef);
 
@@ -528,7 +535,7 @@ async function runSourceImportNow(sourceRef, { actorId = null, reason = 'operato
 }
 
 async function setSourceActive(sourceRef, active, { runNow = true } = {}) {
-  await ensureRegisteredPullSources();
+  await refreshRegisteredPullSources();
   const source = await requireSource(sourceRef);
   const automation = automationBySourceRef(sourceRef);
 
@@ -572,7 +579,7 @@ async function setSourceActive(sourceRef, active, { runNow = true } = {}) {
 
 async function runActiveSources({ limit = DEFAULT_BATCH_LIMIT, reason = 'scheduled' } = {}) {
   if (!runtimeEnabled()) return { status: 'disabled', scanned_sources: 0, results: [] };
-  await ensureRegisteredPullSources();
+  await refreshRegisteredPullSources();
   const boundedLimit = Math.max(1, Math.min(Number(limit) || DEFAULT_BATCH_LIMIT, 50));
   const { rows } = await db.query(
     `SELECT source_id AS source_ref
@@ -599,7 +606,8 @@ async function runActiveSources({ limit = DEFAULT_BATCH_LIMIT, reason = 'schedul
 module.exports = {
   SourcingSourceAutopilotError,
   runtimeEnabled,
-  ensureRegisteredPullSources,
+  refreshRegisteredPullSources,
+  descriptorSourceRef,
   listSources,
   requireSource,
   setSourceActive,

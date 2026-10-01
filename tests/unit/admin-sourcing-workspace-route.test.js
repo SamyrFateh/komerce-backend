@@ -44,6 +44,11 @@ const mockCalls = {
   updateSupplier: jest.fn(),
   setSupplierActive: jest.fn(),
   recordUnitStockChange: jest.fn(),
+  getSourceCatalog: jest.fn(),
+  createSource: jest.fn(),
+  createSourceRequest: jest.fn(),
+  testSourceConnection: jest.fn(),
+  prepareSourceForCertification: jest.fn(),
 };
 
 jest.mock('../../services/sourcing-workspace', () => ({
@@ -62,6 +67,11 @@ jest.mock('../../services/sourcing-workspace', () => ({
   createSupplier: (...args) => mockCalls.createSupplier(...args),
   updateSupplier: (...args) => mockCalls.updateSupplier(...args),
   setSupplierActive: (...args) => mockCalls.setSupplierActive(...args),
+  getSourceCatalog: (...args) => mockCalls.getSourceCatalog(...args),
+  createSource: (...args) => mockCalls.createSource(...args),
+  createSourceRequest: (...args) => mockCalls.createSourceRequest(...args),
+  testSourceConnection: (...args) => mockCalls.testSourceConnection(...args),
+  prepareSourceForCertification: (...args) => mockCalls.prepareSourceForCertification(...args),
 }));
 
 jest.mock('../../services/sourcing-catalog-change-observation', () => ({
@@ -244,5 +254,99 @@ describe('first Catalog Change Intake observation seam — global Sourcing guard
     const res = await request(app()).post(endpoint).send(body);
     expect(res.status).toBe(200);
     expect(res.body.result.capture_id).toBe('capture-1');
+  });
+});
+
+
+describe('registre opérateur des sources', () => {
+  const BASE = '/api/admin/workspaces/sourcing/sources';
+
+  test('catalogue : lecture sans cache, exposé tel que fourni par le backend', async () => {
+    mockCalls.getSourceCatalog.mockResolvedValue({ connectors: [{ adapter: 'cj', can_create: true }] });
+    const res = await request(app()).get(`${BASE}/catalog`);
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toContain('no-store');
+    expect(res.body.connectors[0]).toMatchObject({ adapter: 'cj', can_create: true });
+  });
+
+  test('création : 201 et action nommée, seul « adapter » est transmis', async () => {
+    mockCalls.createSource.mockResolvedValue({ source_ref: 'api:cj', created: true, source: { state: 'connection_to_test', autopilot_enabled: false } });
+    const res = await request(app()).post(BASE).send({ adapter: 'cj' });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ ok: true, action: 'create_source', result: { source_ref: 'api:cj', created: true } });
+    expect(mockCalls.createSource).toHaveBeenCalledWith({ adapter: 'cj' }, expect.objectContaining({ role: 'admin' }));
+    expect(mockCalls.activateSourceAutopilot).not.toHaveBeenCalled();
+    expect(mockCalls.runSourceImportNow).not.toHaveBeenCalled();
+  });
+
+  test('doublon : 409 avec la source existante, aucun second appel', async () => {
+    mockCalls.createSource.mockRejectedValue(Object.assign(new Error('Cette source existe déjà'), {
+      status: 409, code: 'sourcing_source_already_exists', details: { existing_source_ref: 'api:cj' },
+    }));
+    const res = await request(app()).post(BASE).send({ adapter: 'cj' });
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ code: 'sourcing_source_already_exists', details: { existing_source_ref: 'api:cj' } });
+  });
+
+  test('les identifiants internes et la dimension marché restent refusés sur les nouvelles routes', async () => {
+    const withId = await request(app()).post(BASE).send({ adapter: 'cj', id: 12 });
+    expect(withId.status).toBe(400);
+    expect(withId.body.code).toBe('sourcing_internal_id_forbidden');
+    const withMarket = await request(app()).post(`${BASE}/requests`).send({ provider_name: 'BigBuy', market_id: 3 });
+    expect(withMarket.status).toBe(400);
+    expect(withMarket.body.code).toBe('sourcing_market_dimension_forbidden');
+    expect(mockCalls.createSource).not.toHaveBeenCalled();
+    expect(mockCalls.createSourceRequest).not.toHaveBeenCalled();
+  });
+
+  test('autre fournisseur : 201 « connecteur requis », la route n’appelle jamais la création de source', async () => {
+    mockCalls.createSourceRequest.mockResolvedValue({ request_ref: 'req-1', provider_name: 'BigBuy', status: 'connector_required' });
+    const res = await request(app()).post(`${BASE}/requests`).send({ provider_name: 'BigBuy', requested_label: 'BigBuy EU' });
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ action: 'request_source_connector', result: { status: 'connector_required' } });
+    expect(mockCalls.createSource).not.toHaveBeenCalled();
+  });
+
+  test('test de connexion : sans cache, résultat sans secret', async () => {
+    mockCalls.testSourceConnection.mockResolvedValue({ source_ref: 'api:cj', ok: false, code: 'credentials_rejected', message: 'Le fournisseur a refusé les identifiants.' });
+    const res = await request(app()).post(`${BASE}/${encodeURIComponent('api:cj')}/test-connection`).send({});
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toContain('no-store');
+    expect(mockCalls.testSourceConnection).toHaveBeenCalledWith('api:cj');
+    expect(res.body.result).toMatchObject({ ok: false, code: 'credentials_rejected' });
+    expect(JSON.stringify(res.body)).not.toMatch(/token|secret|apiKey|stack/i);
+  });
+
+  test('préparation : appelle la préparation, jamais l’activation', async () => {
+    mockCalls.prepareSourceForCertification.mockResolvedValue({ source_ref: 'api:cj', prepared: true, autopilot_enabled: false });
+    const res = await request(app()).post(`${BASE}/${encodeURIComponent('api:cj')}/prepare`).send({});
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ action: 'prepare_source', result: { autopilot_enabled: false } });
+    expect(mockCalls.prepareSourceForCertification).toHaveBeenCalledWith('api:cj', expect.objectContaining({ role: 'admin' }));
+    expect(mockCalls.activateSourceAutopilot).not.toHaveBeenCalled();
+    expect(mockCalls.setSourceAutopilot).not.toHaveBeenCalled();
+  });
+
+  test('préparation refusée sans test de connexion : 409 propagé', async () => {
+    mockCalls.prepareSourceForCertification.mockRejectedValue(Object.assign(new Error('Testez la connexion avant de préparer la source'), {
+      status: 409, code: 'sourcing_source_connection_untested',
+    }));
+    const res = await request(app()).post(`${BASE}/${encodeURIComponent('api:cj')}/prepare`).send({});
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('sourcing_source_connection_untested');
+  });
+
+  test('accès refusé sans grant sourcing global : aucune route du registre n’est atteignable', async () => {
+    mockSourcingAllowed = false;
+    for (const call of [
+      () => request(app()).get(`${BASE}/catalog`),
+      () => request(app()).post(BASE).send({ adapter: 'cj' }),
+      () => request(app()).post(`${BASE}/requests`).send({ provider_name: 'BigBuy' }),
+      () => request(app()).post(`${BASE}/api%3Acj/test-connection`).send({}),
+      () => request(app()).post(`${BASE}/api%3Acj/prepare`).send({}),
+    ]) {
+      expect((await call()).status).toBe(403);
+    }
+    expect(mockCalls.createSource).not.toHaveBeenCalled();
   });
 });

@@ -639,6 +639,20 @@ The canonical boutique taxonomy owns stable navigation imagery at subcategory le
 - These fields are presentation metadata only; they do not change product taxonomy matching or sourcing identity.
 
 
+### Registre opérateur des sources (migration 260)
+
+- `sourcing_sources.connection_test_status`: dernier test de connexion opérateur (`ok` / `failed`), nullable ; informatif, jamais une certification runtime.
+- `sourcing_sources.connection_test_code`: code métier court du dernier échec (jamais de message fournisseur brut ni de secret).
+- `sourcing_sources.connection_tested_at`: horodatage du dernier test de connexion.
+
+<!-- schema-pending
+object: sourcing_source_requests
+kind: table
+migration: 260
+section: ### 4.10 Sourcing et fournisseurs
+role: Fournisseurs demandés par l'opérateur sans connecteur Komerce (statut unique `connector_required`). Jamais une source : aucun autopilot, aucune capacité, aucune capture, aucun lien avec sourcing_sources. Unicité sur lower(btrim(provider_name)). Écrite exclusivement par services/sourcing-source-registry.js.
+-->
+
 ### Provider control policy (migration 255)
 
 - `sourcing_sources.discovery_enabled`: autorisation opérateur explicite de découverte automatique; défaut OFF.

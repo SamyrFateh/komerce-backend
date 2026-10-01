@@ -99,6 +99,7 @@ module.exports = {
       'migrations/256_provider_runtime_certification.sql',
       'migrations/257_import_runtime_runs.sql',
       'migrations/258_import_runtime_item_events.sql',
+      'migrations/260_sourcing_source_registry.sql',
     ],
     scripts: [
       'scripts/sourcing-shadow-proof-staging.js',
@@ -141,6 +142,7 @@ module.exports = {
       'services/sourcing-certification-gate-a-fixture-harness.js',
       'services/import-runtime-runs.js',
       'services/import-runtime-item-events.js',
+      'services/sourcing-source-registry.js',
     ],
     routes: [
       'routes/sourcing-scanner.js',
@@ -195,6 +197,10 @@ module.exports = {
       'tests/unit/import-runtime-item-events.test.js',
       'tests/integration/import-runtime-item-events-real-db.test.js',
       'tests/unit/admin-import-runtime-runs-route.test.js',
+      'tests/unit/sourcing-source-registry.test.js',
+      'tests/unit/sourcing-workspace-source-registry.test.js',
+      'tests/unit/sourcing-import-dispatch-connection.test.js',
+      'tests/integration/sourcing-source-registry-real-db.test.js',
     ],
   },
 

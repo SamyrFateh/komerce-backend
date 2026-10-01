@@ -3264,3 +3264,45 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-logout{
 /* Le calque legacy force un fond blanc !important sur tous les interrupteurs : la carte source le neutralise. */
 .kmc-import-runtime .kir-source-card button.kir-source-switch{background:transparent !important;border:0 !important;min-width:0;min-height:0;padding:4px;color:#AFC0D4;font-size:12px}
 .kmc-import-runtime .kir-source-card button.kir-source-switch[aria-checked="true"]{color:#6DE8AC}
+
+/* ── Registre opérateur des sources : « + Ajouter une source » et assistant ───────────────── */
+.kmc-import-runtime .kir-sources-head{align-items:flex-start;gap:16px}
+.kmc-import-runtime .kir-add-source{flex:none;align-self:flex-start;padding:10px 16px;border:1px solid #195D8F;border-radius:10px;background:#0D2741;color:#8CCAFF;font-size:14px;font-weight:750;cursor:pointer}
+.kmc-import-runtime .kir-add-source:hover{background:#12355A}
+.kmc-import-runtime .kir-add-source:focus-visible,.kmc-import-runtime .kir-source-step:focus-visible,.kmc-import-runtime .kir-wizard button:focus-visible,.kmc-import-runtime .kir-wizard input:focus-visible{outline:2px solid #2F80ED;outline-offset:2px}
+.kmc-import-runtime .kir-source-step{justify-self:start;padding:8px 14px;border:1px solid #76500B;border-radius:9px;background:#2C210C;color:#FFD08A;font-size:13.5px;font-weight:700;cursor:pointer}
+.kmc-import-runtime .kir-source-step:hover{background:#3A2B0E}
+.kmc-import-runtime .kir-wizard-backdrop{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;background:rgb(3 8 16 / .72)}
+.kmc-import-runtime .kir-wizard{display:grid;gap:14px;width:min(560px,100%);max-height:calc(100vh - 40px);overflow:auto;padding:20px;border:1px solid #1D3148;border-radius:14px;background:#0A1625;color:#E4ECF6;box-shadow:0 24px 60px rgb(0 0 0 / .5)}
+.kmc-import-runtime .kir-wizard-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.kmc-import-runtime .kir-wizard-head h3{margin:0;font-size:18px;color:#F1F6FC}
+.kmc-import-runtime .kir-wizard-close{border:0;background:transparent;color:#9FB2C8;font-size:22px;line-height:1;cursor:pointer}
+.kmc-import-runtime .kir-wizard-q{margin:0;font-size:15px;font-weight:700;color:#F1F6FC}
+.kmc-import-runtime .kir-wizard-note{margin:0;font-size:13.5px;line-height:1.5;color:#9FB2C8}
+.kmc-import-runtime .kir-wizard-choices{display:grid;gap:10px}
+.kmc-import-runtime .kir-wizard-choices button{display:grid;gap:3px;padding:13px 14px;border:1px solid #2A435E;border-radius:11px;background:#0B1827;color:#E4ECF6;text-align:left;cursor:pointer}
+.kmc-import-runtime .kir-wizard-choices button:hover{border-color:#2F80ED}
+.kmc-import-runtime .kir-wizard-choices span{font-size:12.5px;color:#8EA1B8}
+.kmc-import-runtime .kir-wizard-list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.kmc-import-runtime .kir-wizard-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 12px;border:1px solid #1D3148;border-radius:10px;background:#0B1827}
+.kmc-import-runtime .kir-wizard-list li div{display:grid;gap:2px;min-width:0}
+.kmc-import-runtime .kir-wizard-list li span{font-size:12.5px;color:#8EA1B8}
+.kmc-import-runtime .kir-wizard-unavailable{flex:none;font-size:12px;font-weight:700;color:#FF8191}
+.kmc-import-runtime .kir-wizard-block{display:grid;gap:10px;padding:12px;border:1px solid #1D3148;border-radius:11px;background:#0B1827}
+.kmc-import-runtime .kir-wizard-block h4{margin:0;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:#8EA1B8}
+.kmc-import-runtime .kir-wizard-checklist{display:grid;gap:6px;margin:0;padding:0;list-style:none;font-size:14px}
+.kmc-import-runtime .kir-wizard-checklist .is-done{color:#6DE8AC}.kmc-import-runtime .kir-wizard-checklist .is-todo{color:#8EA1B8}
+.kmc-import-runtime .kir-wizard-ok{margin:0;font-size:14px;font-weight:700;color:#6DE8AC}
+.kmc-import-runtime .kir-wizard-error{margin:0;padding:9px 11px;border-radius:9px;background:#35131C;color:#FFB2BC;font-size:13.5px;line-height:1.45}
+.kmc-import-runtime .kir-wizard-progress{margin:0;font-size:13px;font-weight:700;letter-spacing:.04em;color:#FFC766}
+.kmc-import-runtime .kir-wizard-primary,.kmc-import-runtime .kir-wizard-secondary{padding:9px 14px;border-radius:9px;font-size:13.5px;font-weight:700;cursor:pointer;justify-self:start}
+.kmc-import-runtime .kir-wizard-primary{border:1px solid #118C5A;background:#0A2A20;color:#5EF0A8}
+.kmc-import-runtime .kir-wizard-secondary{border:1px solid #2A435E;background:#0B1827;color:#AFC0D4}
+.kmc-import-runtime .kir-wizard-primary:disabled,.kmc-import-runtime .kir-wizard-secondary:disabled{cursor:not-allowed;opacity:.55}
+.kmc-import-runtime .kir-wizard-actions{display:flex;flex-wrap:wrap;gap:8px}
+.kmc-import-runtime .kir-wizard-link{justify-self:start;color:#7FB2FF;text-decoration:none;font-weight:650;font-size:14px}
+.kmc-import-runtime .kir-wizard-link:hover{text-decoration:underline}
+.kmc-import-runtime .kir-wizard-linkbtn{border:0;background:transparent;color:#7FB2FF;font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;padding:0}
+.kmc-import-runtime .kir-wizard-field{display:grid;gap:5px;font-size:13px;color:#9FB2C8}
+.kmc-import-runtime .kir-wizard-field input{padding:9px 11px;border:1px solid #2A435E;border-radius:9px;background:#07101C;color:#E4ECF6;font-size:14px}
+@media(max-width:720px){.kmc-import-runtime .kir-sources-head{flex-direction:column}.kmc-import-runtime .kir-wizard{padding:16px}.kmc-import-runtime .kir-wizard-list li{flex-direction:column;align-items:flex-start}}

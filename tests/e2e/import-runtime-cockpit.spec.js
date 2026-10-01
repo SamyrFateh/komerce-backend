@@ -841,9 +841,9 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
 
 test.describe('Cockpit imports — vue Sources (cartes opérateur)', () => {
   const sources = () => [
-    { source_ref:'api:aliexpress', label:'AliExpress Dropshipper API', autopilot_enabled:true, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:iso(30) },
-    { source_ref:'api:cj', label:'CJ Dropshipping', autopilot_enabled:false, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:iso(90) },
-    { source_ref:'api:bigbuy', label:'BigBuy', autopilot_enabled:false, autopilot_ready:false, activation_ready:false, blocker:'Clé API manquante', production_runtime_certified:false, last_capture_at:null },
+    { source_ref:'api:aliexpress', label:'AliExpress Dropshipper API', state:'active', connection:{ verified:true }, autopilot_enabled:true, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:iso(30) },
+    { source_ref:'api:cj', label:'CJ Dropshipping', state:'ready', connection:{ verified:true }, autopilot_enabled:false, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:iso(90) },
+    { source_ref:'api:bigbuy', label:'BigBuy', state:'blocked', connection:{ verified:false }, autopilot_enabled:false, autopilot_ready:false, activation_ready:false, blocker:'Clé API manquante', production_runtime_certified:false, last_capture_at:null },
   ];
   const board = () => {
     const data = JSON.parse(JSON.stringify(calmPayload));

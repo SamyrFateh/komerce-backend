@@ -95,6 +95,13 @@ async function discoverAcquisitionPlan(options = {}) {
   });
 }
 
+// Contrôle réel de la session gérée : lit la connexion chiffrée et la rafraîchit si besoin.
+// Aucun appel catalogue, aucun import, aucun secret retourné.
+async function testConnection(options = {}) {
+  await managedRuntimeEnv(options);
+  return { ok: true };
+}
+
 const IS_ACTIVE = isRuntimeConfigured(process.env);
 const INACTIVE_REASON = inactiveReason(process.env);
 
@@ -110,4 +117,5 @@ module.exports = {
   invokeTop,
   fetchProducts,
   discoverAcquisitionPlan,
+  testConnection,
 };

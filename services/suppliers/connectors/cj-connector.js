@@ -520,6 +520,12 @@ function resetTokenCacheForTests() {
   cachedAccessToken = null;
 }
 
+// Contrôle réel : obtient (ou réutilise) le jeton d'accès. Aucun appel catalogue.
+async function testConnection(options = {}) {
+  await getAccessToken(options);
+  return { ok: true };
+}
+
 const IS_ACTIVE = isConfigured(process.env);
 const INACTIVE_REASON = inactiveReason(process.env);
 
@@ -543,6 +549,7 @@ module.exports = {
   buildCommandableStructure,
   flattenProductList,
   getAccessToken,
+  testConnection,
   buildProductListUrl,
   fetchProductDetail,
   fetchProductDetailsPaced,

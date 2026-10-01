@@ -5560,6 +5560,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/e2e/import-runtime-source-registry.spec.js",
+        "resolvedPath": "tests/e2e/import-runtime-source-registry.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/e2e/hub-live-cockpit.spec.js",
         "resolvedPath": "tests/e2e/hub-live-cockpit.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15268,6 +15275,13 @@
       },
       {
         "feature": "sourcing",
+        "category": "migrations",
+        "declared": "migrations/260_sourcing_source_registry.sql",
+        "resolvedPath": "migrations/260_sourcing_source_registry.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
         "category": "scripts",
         "declared": "scripts/sourcing-shadow-proof-staging.js",
         "resolvedPath": "scripts/sourcing-shadow-proof-staging.js",
@@ -15530,6 +15544,13 @@
         "category": "services",
         "declared": "services/import-runtime-item-events.js",
         "resolvedPath": "services/import-runtime-item-events.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/sourcing-source-registry.js",
+        "resolvedPath": "services/sourcing-source-registry.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -15880,6 +15901,34 @@
         "category": "tests",
         "declared": "tests/unit/admin-import-runtime-runs-route.test.js",
         "resolvedPath": "tests/unit/admin-import-runtime-runs-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-source-registry.test.js",
+        "resolvedPath": "tests/unit/sourcing-source-registry.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-workspace-source-registry.test.js",
+        "resolvedPath": "tests/unit/sourcing-workspace-source-registry.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/sourcing-import-dispatch-connection.test.js",
+        "resolvedPath": "tests/unit/sourcing-import-dispatch-connection.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/integration/sourcing-source-registry-real-db.test.js",
+        "resolvedPath": "tests/integration/sourcing-source-registry-real-db.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -40147,6 +40196,10 @@
                 "targetFile": "services/catalog-run-progress.js"
               },
               {
+                "sourceFileId": "services/sourcing-source-registry.js",
+                "targetFile": "services/sourcing-import-dispatch.js"
+              },
+              {
                 "sourceFileId": "routes/sourcing-scanner.js",
                 "targetFile": "services/supplier-catalog-scanner.js"
               },
@@ -40177,6 +40230,14 @@
               {
                 "sourceFileId": "tests/unit/catalog-product-route-canary.test.js",
                 "targetFile": "services/catalog-product-route-canary.js"
+              },
+              {
+                "sourceFileId": "tests/unit/sourcing-import-dispatch-connection.test.js",
+                "targetFile": "services/sourcing-import-dispatch.js"
+              },
+              {
+                "sourceFileId": "tests/integration/sourcing-source-registry-real-db.test.js",
+                "targetFile": "services/suppliers/connectors/cj-connector.js"
               }
             ]
           },
@@ -40389,6 +40450,10 @@
               },
               {
                 "sourceFileId": "services/import-runtime-item-events.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-source-registry.js",
                 "targetFile": "db.js"
               },
               {
@@ -40975,7 +41040,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1727
+        "filesObserved": 1733
       },
       "boutique": {
         "filesObserved": 214,
@@ -43984,8 +44049,8 @@
       "backend": {
         "manifestsDiscovered": 35,
         "manifestsConnected": 35,
-        "technicalNodesTotal": 538,
-        "technicalNodesOwned": 538,
+        "technicalNodesTotal": 539,
+        "technicalNodesOwned": 539,
         "technicalOrphans": 0
       },
       "dash": {
