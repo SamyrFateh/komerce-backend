@@ -107,6 +107,16 @@ beforeEach(() => {
   });
 });
 
+test('projection Catalogue conserve un prix absent à null', () => {
+  expect(workspace._test.publicProduct({
+    product_ref: 'KPR-NULL',
+    name: 'Sans prix',
+    category: 'Maison',
+    price_kmf: null,
+    stock: 1,
+  }).price_kmf).toBeNull();
+});
+
 test('projection Catalogue ne sort que les identités métier et expose le cap de curation', async () => {
   const payload = await workspace.buildWorkspace({});
   expect(payload.scope).toEqual({ mode: 'global_commercial_catalog', label: 'Catalogue global commercial' });
