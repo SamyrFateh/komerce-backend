@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-01T03:28:21.006Z",
+  "generatedAt": "2026-10-01T16:18:00.000Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 679,
-    "protected": 624,
+    "total": 680,
+    "protected": 625,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1748,6 +1748,13 @@
     },
     {
       "key": "POST /api/admin/workspaces/catalog/approval/{productRef}/override",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/catalog/approval/{productRef}/prepare-fr",
       "level": "PROTECTED",
       "roles": [
         "admin"
