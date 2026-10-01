@@ -42,6 +42,15 @@ test('Catalogue garde une seule surface Canonical et délègue provenance/import
   expect(workspace).toContain("sourcing.href = '/admin/workspaces/sourcing'");
 });
 
+test('la curation guide explicitement la préparation française avant publication', () => {
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+  expect(workspace).toContain('Préparer en français');
+  expect(workspace).toContain('/prepare-fr');
+  expect(workspace).toContain('Valider après relecture');
+  expect(workspace).toContain('Description corrigée');
+  expect(workspace).toContain('/admin/products/');
+});
+
 test('Catalogue ne crée plus de navigation parallèle au shell Canonical', () => {
   const source = read('public/dashboards/canonical/js/catalog-control-tower.js');
   const css = read('public/dashboards/canonical/css/catalog-control-tower.css');
