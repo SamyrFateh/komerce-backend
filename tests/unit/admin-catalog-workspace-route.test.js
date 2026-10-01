@@ -31,6 +31,7 @@ const mockBuildWorkspace = jest.fn();
 const mockCreateProduct = jest.fn();
 const mockUpdateProduct = jest.fn();
 const mockDeactivateProduct = jest.fn();
+const mockPrepareCandidateFrench = jest.fn();
 const mockApproveCandidate = jest.fn();
 const mockRejectCandidate = jest.fn();
 const mockOverrideCandidate = jest.fn();
@@ -49,6 +50,7 @@ jest.mock('../../services/catalog-workspace', () => {
     createProduct: (...args) => mockCreateProduct(...args),
     updateProduct: (...args) => mockUpdateProduct(...args),
     deactivateProduct: (...args) => mockDeactivateProduct(...args),
+    prepareCandidateFrench: (...args) => mockPrepareCandidateFrench(...args),
     approveCandidate: (...args) => mockApproveCandidate(...args),
     rejectCandidate: (...args) => mockRejectCandidate(...args),
     overrideCandidate: (...args) => mockOverrideCandidate(...args),
@@ -85,6 +87,7 @@ beforeEach(() => {
   mockCreateProduct.mockResolvedValue({ product_ref: 'KPR-000001', name: 'Produit' });
   mockUpdateProduct.mockResolvedValue({ product_ref: 'KPR-000001', price_kmf: 5000 });
   mockDeactivateProduct.mockResolvedValue({ product_ref: 'KPR-000001', deactivated: true });
+  mockPrepareCandidateFrench.mockResolvedValue({ product_ref: 'KPR-000001', status: 'ok', needs_review: false });
   mockApproveCandidate.mockResolvedValue({ product_ref: 'KPR-000001', is_active: true });
   mockRejectCandidate.mockResolvedValue({ product_ref: 'KPR-000001', rejected: true });
   mockOverrideCandidate.mockResolvedValue({ product_ref: 'KPR-000001', overridden: ['name'] });
@@ -123,6 +126,18 @@ test('mutation produit utilise product_ref métier et acteur authentifié', asyn
   expect(mockUpdateProduct).toHaveBeenCalledWith(
     'KPR-000001',
     { price_kmf: 5000 },
+    expect.objectContaining({ id: 'admin-central', role: 'admin' })
+  );
+});
+
+test('préparation française utilise product_ref et acteur authentifié', async () => {
+  const res = await request(app())
+    .post('/api/admin/workspaces/catalog/approval/KPR-000001/prepare-fr')
+    .send({});
+  expect(res.status).toBe(200);
+  expect(res.body.action).toBe('catalog_candidate_prepared_fr');
+  expect(mockPrepareCandidateFrench).toHaveBeenCalledWith(
+    'KPR-000001',
     expect.objectContaining({ id: 'admin-central', role: 'admin' })
   );
 });
