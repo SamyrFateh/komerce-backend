@@ -111,7 +111,7 @@ async function loadProduct360(product, options = {}) {
   `, [productId]);
 
   const skusPromise = db.query(`
-    SELECT sku, variant_combo, stock, price_kmf, is_active, created_at, updated_at
+    SELECT sku, supplier_sku, variant_combo, stock, price_kmf, is_active, created_at, updated_at
     FROM product_skus
     WHERE product_id = $1::uuid
     ORDER BY is_active DESC, created_at ASC
@@ -238,6 +238,7 @@ async function loadProduct360(product, options = {}) {
 
   const skus = skusResult.rows.map(row => Object.freeze({
     sku: row.sku || null,
+    supplier_sku: row.supplier_sku || null,
     variant_combo: row.variant_combo || null,
     stock: Number(row.stock) || 0,
     price_kmf: row.price_kmf == null ? null : Number(row.price_kmf),
