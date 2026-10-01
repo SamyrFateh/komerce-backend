@@ -64,6 +64,12 @@
     return markets.map(row => row.code || row.name).filter(Boolean).join(' · ');
   }
 
+  function pricingHref(productRef) {
+    return productRef
+      ? `/admin/workspaces/pricing?product_ref=${encodeURIComponent(productRef)}`
+      : '/admin/workspaces/pricing';
+  }
+
   function createHeader(doc, payload) {
     const product = payload.product || {};
     const header = doc.createElement('header');
@@ -83,7 +89,7 @@
       ['/admin/commerce', '← Commerce'],
       ['/admin/products', 'Catalogue'],
       ['/admin/sourcing', 'Sourcing'],
-      ['/admin/pricing', 'Pricing'],
+      [pricingHref(product.product_ref), 'Pricing'],
     ].forEach(([href, label]) => {
       const link = text(doc, 'a', 'kmc-entity-nav-link', label);
       link.setAttribute('href', href);
@@ -354,6 +360,7 @@
     formatAed,
     formatDate,
     marketLabel,
+    pricingHref,
     variantLabel,
     metricItems,
     renderPayload,

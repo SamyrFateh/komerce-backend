@@ -159,8 +159,20 @@ async function computeRecommend(b = {}) {
   const category   = b.category || product?.category || 'phones';
   const isDiaspora = !!b.is_diaspora;
   const channel    = b.channel || 'cash_relais';
-  const poidsKg    = Number(b.poids_kg)  || 1;
-  const volumeM3   = Number(b.volume_m3) || 0.005;
+  const bodyWeightKg = Number(b.poids_kg);
+  const productWeightKg = Number(product?.weight_kg);
+  const engineWeightKg = bodyWeightKg > 0
+    ? bodyWeightKg
+    : productWeightKg > 0 ? productWeightKg : null;
+  const productVolumeM3 = Number(product?.volume_cm3) > 0
+    ? Number(product.volume_cm3) / 1_000_000
+    : null;
+  const bodyVolumeM3 = Number(b.volume_m3);
+  const engineVolumeM3 = bodyVolumeM3 > 0
+    ? bodyVolumeM3
+    : productVolumeM3;
+  const poidsKg    = engineWeightKg ?? 1;
+  const volumeM3   = engineVolumeM3 ?? 0.005;
   const ctx        = { category, channel, isDiaspora };
 
   // Dériver prix AED
@@ -263,8 +275,8 @@ async function computeRecommend(b = {}) {
       category,
       channel,
       cost_kmf:          product?.cost_kmf,
-      weight_kg:         poidsKg,
-      volume_m3:         volumeM3,
+      weight_kg:         engineWeightKg,
+      volume_m3:         engineVolumeM3,
       current_price_kmf: product?.price_kmf,
     });
   } catch (errDoctrine) {
@@ -391,7 +403,7 @@ async function computeRecommendBatch(b = {}) {
   params.push(limit);
 
   const productsRes = await db.query(
-    `SELECT p.id, p.name, p.category, p.price_kmf, p.cost_kmf, p.weight_kg
+    `SELECT p.id, p.name, p.category, p.price_kmf, p.cost_kmf, p.weight_kg, p.volume_cm3
        FROM products p
       WHERE ${conditions.join(' AND ')}
       ORDER BY p.category, p.name
@@ -429,7 +441,7 @@ async function computeRecommendBatch(b = {}) {
     const category     = product.category || 'phones';
     const cat          = cats[category];
     const poidsKg      = Number(product.weight_kg) || 1;
-    const volumeM3     = 0.005;
+    const volumeM3     = Number(product.volume_cm3) > 0 ? Number(product.volume_cm3) / 1_000_000 : 0.005;
     const margeCible   = cat?.default_margin_pct
       ? Number(cat.default_margin_pct) / 100
       : margeGlob;

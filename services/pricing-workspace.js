@@ -114,7 +114,7 @@ function publicProduct(product) {
     product_ref: product.product_ref,
     name: product.name,
     category: product.category,
-    price_kmf: Number(product.price_kmf) || 0,
+    price_kmf: product.price_kmf == null ? null : Number(product.price_kmf),
     cost_kmf: Number(product.cost_kmf) || 0,
     weight_kg: product.weight_kg == null ? null : Number(product.weight_kg),
     volume_m3: product.volume_m3 == null ? null : Number(product.volume_m3),
@@ -127,7 +127,7 @@ function simulationProduct(product) {
     product_ref: product.product_ref,
     name: product.name,
     category: product.category,
-    current_price_kmf: Number(product.price_kmf) || 0,
+    current_price_kmf: product.price_kmf == null ? null : Number(product.price_kmf),
   };
 }
 
@@ -533,7 +533,7 @@ function simulationEngineInput(product = {}, body = {}) {
     cost_kmf: body.cost_kmf != null ? Number(body.cost_kmf) : Number(product.cost_kmf),
     weight_kg: body.weight_kg != null ? Number(body.weight_kg) : Number(product.weight_kg),
     volume_m3: body.volume_m3 != null ? Number(body.volume_m3) : Number(product.volume_m3),
-    current_price_kmf: body.current_price_kmf != null ? Number(body.current_price_kmf) : Number(product.price_kmf),
+    current_price_kmf: body.current_price_kmf != null ? Number(body.current_price_kmf) : (product.price_kmf == null ? null : Number(product.price_kmf)),
     pricing_strategy: body.pricing_strategy || 'mechanical',
   };
 }

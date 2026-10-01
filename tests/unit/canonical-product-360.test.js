@@ -66,6 +66,10 @@ test('metricItems ne fait que formatter les valeurs déjà préparées par le se
   expect(metrics.find(row => row.key === 'central').value).toBe('Central uniquement');
 });
 
+test('Pricing conserve le product_ref du Product 360', () => {
+  expect(product360.pricingHref('KPR-000123')).toBe('/admin/workspaces/pricing?product_ref=KPR-000123');
+});
+
 test('variantLabel ne fait que présenter le variant_combo serveur', () => {
   expect(product360.variantLabel({ couleur: 'Noir', taille: 'M' })).toBe('couleur: Noir · taille: M');
   expect(product360.variantLabel(null)).toBe('Défaut');

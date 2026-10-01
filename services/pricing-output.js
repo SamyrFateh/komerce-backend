@@ -476,15 +476,17 @@ function buildCostBreakdown(details = {}) {
 function buildDataQuality(input, context) {
   const sources = {};
   const missing = [];
-  if (input.product_id && context.hasProduct) sources.purchase_price = 'real';
-  else if (input.cost_kmf || input.prix_aed) sources.purchase_price = 'manual';
+  if (context.hasProduct && context.hasPurchaseCost) sources.purchase_price = 'real';
+  else if (Number(input.cost_kmf) > 0 || Number(input.prix_aed) > 0) sources.purchase_price = 'manual';
   else { sources.purchase_price = 'missing'; missing.push('purchase_price'); }
 
-  if (input.weight_kg || input.poids_kg) sources.weight = input.product_id && context.hasProduct ? 'real' : 'manual';
+  if (context.hasProduct && context.hasProductWeight) sources.weight = 'real';
+  else if (Number(input.weight_kg) > 0 || Number(input.poids_kg) > 0) sources.weight = 'manual';
   else if (context.hasCustomsCategory) sources.weight = 'category';
   else { sources.weight = 'default'; missing.push('weight'); }
 
-  if (input.volume_m3 && Number(input.volume_m3) > 0) sources.volume = 'manual';
+  if (context.hasProduct && context.hasProductVolume) sources.volume = 'real';
+  else if (Number(input.volume_m3) > 0) sources.volume = 'manual';
   else if (context.hasCustomsCategory) sources.volume = 'category';
   else { sources.volume = 'default'; missing.push('volume'); }
 
