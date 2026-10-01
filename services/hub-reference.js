@@ -1,3 +1,21 @@
+/**
+ * @komerce-arch
+ * @role          hub-reference
+ * @domain        logistics
+ * @layer         service
+ * @criticality   high
+ * @inputs        purchase_order_id, physical_identity_kind
+ * @outputs       supplier_inbound_tag, physical_reference, supplier_tag_request
+ * @depends       crypto
+ * @used-by       services/purchasing-trigger-service.js, services/hub-operations.js
+ * @db-read       none
+ * @db-write      none
+ * @db-txn        none
+ * @doctrine      docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md
+ * @impact-areas  logistics, purchasing, supplier-integration
+ * @version       2026-10
+ */
+
 'use strict';
 
 const crypto = require('crypto');
