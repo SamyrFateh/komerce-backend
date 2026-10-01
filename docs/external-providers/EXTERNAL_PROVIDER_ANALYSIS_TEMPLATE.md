@@ -37,6 +37,31 @@ The provider contract is read and proved before a domain pipeline relies on it.
 
 ---
 
+## 1.5 Human onboarding contract
+
+This section converts the provider study into instructions an operator can actually follow **before credentials are collected**.
+
+| Field | Value |
+|---|---|
+| Authority | provider_documentation / provider_confirmation |
+| Official evidence URL / reference | |
+| Credential owner | partner_account / integration_application / komerce_platform_application / provider_managed / none |
+| Prerequisites | |
+| Provider-side / setup steps | |
+| What the operator must obtain | exact credential field keys + human labels, or NONE for OAuth |
+| What the operator must never request | password, temporary token, unrelated secret, etc. |
+| Completion condition | |
+
+Rules:
+
+- the onboarding contract is normally established from provider documentation before partner credentials exist;
+- AI may help extract and structure the documentation, but AI inference alone never becomes the authority;
+- for source-scoped `api_key` or `client_credentials`, the fields listed under “must obtain” must match the public auth contract exactly;
+- for OAuth, do not ask the partner to copy tokens: guide them through provider authorization;
+- if this section is not defined, an automated source must remain unavailable for creation.
+
+---
+
 ## 2. Complete conversation contract
 
 Every operation analysed must answer all six phases.
