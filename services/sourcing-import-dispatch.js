@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      single_connector_dispatch_authority, source_autopull_is_registry_metadata_not_provider_branching, discovery_plan_precedes_import
  * @impact-areas  sourcing, supplier-import
- * @version       2026-09
+ * @version       2026-10
  */
 
 'use strict';
@@ -39,13 +39,21 @@ const CONNECTORS = Object.freeze({
       label: 'Noon API',
       reason: noonModule.INACTIVE_REASON,
       supplierName: 'Noon',
+      auth: Object.freeze({ mode: 'none' }),
       automation: null,
     },
     cj: {
       module: cjModule,
-      active: cjModule.IS_ACTIVE,
+      // Disponibilité plateforme : aucun prérequis serveur. La clé API relève de la source.
+      active: true,
       label: 'CJdropshipping API',
-      reason: cjModule.INACTIVE_REASON,
+      reason: null,
+      auth: Object.freeze({
+        mode: 'api_key',
+        scope: 'source',
+        fields: Object.freeze([Object.freeze({ key: 'api_key', label: 'Clé API', secret: true })]),
+        hasEnvironmentCredentials: () => cjModule.hasEnvironmentCredentials(process.env),
+      }),
       supplierName: 'CJdropshipping',
       connection: Object.freeze({ mode: 'server_managed' }),
       discovery: Object.freeze({ mode: 'static', version: 'cj-catalog-page-v1' }),
@@ -59,6 +67,15 @@ const CONNECTORS = Object.freeze({
       get reason() { return allegroModule.INACTIVE_REASON; },
       supplierName: 'Allegro Sandbox',
       connection: Object.freeze({ mode: 'server_managed' }),
+      auth: Object.freeze({
+        mode: 'client_credentials',
+        scope: 'source',
+        fields: Object.freeze([
+          Object.freeze({ key: 'client_id', label: 'Client ID', secret: false }),
+          Object.freeze({ key: 'client_secret', label: 'Client Secret', secret: true }),
+        ]),
+        hasEnvironmentCredentials: () => allegroModule.hasEnvironmentCredentials(process.env),
+      }),
       discovery: Object.freeze({ mode: 'static', version: 'allegro-sandbox-offers-v1' }),
       automation: Object.freeze({}),
     },
@@ -70,6 +87,11 @@ const CONNECTORS = Object.freeze({
       get reason() { return ebayModule.INACTIVE_REASON; },
       supplierName: 'eBay Sandbox',
       connection: Object.freeze({ mode: 'server_managed' }),
+      // Contrat déclaré ; le connecteur eBay lit encore l'env (pas d'autopilot, non migré ici).
+      auth: Object.freeze({
+        mode: 'client_credentials',
+        scope: 'platform',
+      }),
       // P3 registration only: no unattended broad crawl until a bounded
       // automation policy is separately proved.
       automation: null,
@@ -81,6 +103,9 @@ const CONNECTORS = Object.freeze({
       reason: aliexpressModule.INACTIVE_REASON,
       supplierName: 'AliExpress',
       connection: Object.freeze({ mode: 'oauth', connectPath: '/api/integrations/aliexpress/oauth/start' }),
+      // Cas A : APP_KEY/APP_SECRET = application Komerce (secret d'infrastructure). Seule la
+      // session du compte est propre à la source, obtenue par OAuth côté serveur.
+      auth: Object.freeze({ mode: 'oauth', scope: 'platform', sessionKey: 'aliexpress' }),
       discovery: Object.freeze({ mode: 'runtime', version: 'aliexpress-ds-discovery-v1' }),
       automation: Object.freeze({ size: 20 }),
     },
@@ -138,9 +163,34 @@ function sourceConnectorFacts() {
       connection_mode: entry.connection?.mode || null,
       connect_path: entry.connection?.connectPath || null,
       can_test_connection: Boolean(entry.connection && typeof entry.module?.testConnection === 'function'),
+      auth: publicAuthContract(entry),
       reason,
     };
   });
+}
+
+// Contrat d'authentification déclaré par le registre : l'UI en dérive son formulaire.
+// Jamais de valeur, de nom de variable d'environnement ni d'indice sur un secret.
+function publicAuthContract(entry) {
+  const auth = entry?.auth || { mode: 'none' };
+  return {
+    mode: auth.mode,
+    scope: auth.scope || null,
+    fields: (auth.fields || []).map((field) => ({ key: field.key, label: field.label, secret: Boolean(field.secret) })),
+  };
+}
+
+function authContract(adapter) {
+  const entry = CONNECTORS.api[String(adapter || '').trim().toLowerCase()];
+  if (!entry) return null;
+  const auth = entry.auth || { mode: 'none' };
+  return {
+    ...publicAuthContract(entry),
+    sessionKey: auth.sessionKey || null,
+    hasEnvironmentCredentials: typeof auth.hasEnvironmentCredentials === 'function'
+      ? Boolean(auth.hasEnvironmentCredentials())
+      : false,
+  };
 }
 
 const CONNECTION_FAILURE_MESSAGES = Object.freeze({
@@ -149,6 +199,8 @@ const CONNECTION_FAILURE_MESSAGES = Object.freeze({
   connection_test_unavailable: 'Aucun test de connexion n’est disponible pour ce connecteur.',
   account_not_connected: 'Le compte fournisseur n’est pas encore connecté.',
   credentials_rejected: 'Le fournisseur a refusé les identifiants.',
+  credentials_missing: 'Identifiants à configurer.',
+  authorization_expired: 'Autorisation expirée : nouvelle autorisation nécessaire.',
   provider_unreachable: 'Le fournisseur ne répond pas pour le moment.',
   connection_failed: 'La connexion au fournisseur a échoué.',
 });
@@ -156,7 +208,9 @@ const CONNECTION_FAILURE_MESSAGES = Object.freeze({
 function classifyConnectionFailure(error) {
   const text = String(error?.message || error || '');
   let code = 'connection_failed';
-  if (/non autoris|nouvelle autorisation|aucun refresh|refresh token expir|compte .* non/i.test(text)) code = 'account_not_connected';
+  if (/identifiants (à configurer|du coffre incomplets)|VAULT_CREDENTIALS_INCOMPLETE|CREDENTIALS_REQUIRED|_CLIENT_(ID|SECRET) requis/i.test(text)) code = 'credentials_missing';
+  else if (/refresh token expir|nouvelle autorisation|REFRESH_TOKEN_REQUIRED|REFRESH_TOKEN_UNREADABLE/i.test(text)) code = 'authorization_expired';
+  else if (/non autoris|nouvelle autorisation|aucun refresh|refresh token expir|compte .* non/i.test(text)) code = 'account_not_connected';
   else if (/rejected|refus|unauthori[sz]ed|forbidden|invalid.*(key|token|client)|HTTP_40[13]|\b40[13]\b/i.test(text)) code = 'credentials_rejected';
   else if (/TRANSPORT|timeout|timed out|ECONN|ENOTFOUND|EAI_AGAIN|fetch failed|HTTP_5\d\d|\b5\d\d\b/i.test(text)) code = 'provider_unreachable';
   return { ok: false, code, message: CONNECTION_FAILURE_MESSAGES[code] };
@@ -164,7 +218,7 @@ function classifyConnectionFailure(error) {
 
 // Test réel du connecteur, sans import, sans KIR, sans secret en sortie.
 // Un test de connexion n'est jamais une certification runtime.
-async function testConnection(adapter) {
+async function testConnection(adapter, { credentials = null } = {}) {
   const key = String(adapter || '').trim().toLowerCase();
   const entry = CONNECTORS.api[key];
   if (!entry) return { ok: false, code: 'connector_unknown', message: CONNECTION_FAILURE_MESSAGES.connector_unknown };
@@ -173,7 +227,7 @@ async function testConnection(adapter) {
     return { ok: false, code: 'connection_test_unavailable', message: CONNECTION_FAILURE_MESSAGES.connection_test_unavailable };
   }
   try {
-    await entry.module.testConnection();
+    await entry.module.testConnection(credentials ? { credentials } : {});
     return { ok: true, code: 'connection_ok', message: 'Connexion valide' };
   } catch (error) {
     return classifyConnectionFailure(error);
@@ -249,7 +303,9 @@ function apiConnectorOptions(body = {}) {
   };
 }
 
-async function dispatchToConnector(body = {}) {
+// Les secrets éventuels arrivent hors du corps d'import (second argument) : ils ne sont
+// donc jamais persistés, journalisés ni recopiés avec le lot.
+async function dispatchToConnector(body = {}, { credentials = null } = {}) {
   const sourceType = body.source_type || 'manual';
   if (sourceType === 'csv') {
     return csvConnector.fetchProducts({
@@ -277,13 +333,16 @@ async function dispatchToConnector(body = {}) {
     // Le dispatch ne connaît pas la sémantique du fournisseur. Il transmet
     // uniquement une whitelist de capacités communes ; chaque connecteur décide
     // lesquelles il sait réellement interpréter.
-    return entry.module.fetchProducts(apiConnectorOptions(body));
+    const options = apiConnectorOptions(body);
+    if (credentials) options.credentials = credentials;
+    return entry.module.fetchProducts(options);
   }
   throw new Error(`source_type inconnu : "${sourceType}". Valeurs supportées : csv, manual, api.`);
 }
 
 module.exports = {
   CONNECTORS,
+  authContract,
   connectorCatalog,
   sourceAutomationCatalog,
   sourceAutomationDescriptor,
