@@ -104,6 +104,50 @@ if (!hasIntegrationEnv) {
   });
 
   describe('projection du run avec événements par produit', () => {
+    it('un ré-import du même candidat ne vide jamais la population d’un ancien KIR', async () => {
+      const firstRun = await newRun({ withImport: true });
+      const candidateId = await newCandidate(firstRun.importId, 'STABLE-1', 'Produit historique');
+      const firstEvent = await itemEvents.startItem(firstRun.id, {
+        seq: 1,
+        product: { supplier_product_id: 'STABLE-1', product_name: 'Produit historique' },
+      });
+      await itemEvents.finishItem(firstEvent.id, {
+        outcome: 'ready_for_refinery',
+        candidateId,
+        changeKind: 'created',
+      });
+
+      expect(await runs._loadRows(firstRun.id)).toHaveLength(1);
+
+      const secondRun = await newRun({ withImport: true });
+      await db.query(
+        `UPDATE sourcing_candidates
+            SET import_id = $1,
+                product_name = 'Produit ré-observé',
+                updated_at = NOW()
+          WHERE id = $2`,
+        [secondRun.importId, candidateId]
+      );
+      const secondEvent = await itemEvents.startItem(secondRun.id, {
+        seq: 1,
+        product: { supplier_product_id: 'STABLE-1', product_name: 'Produit ré-observé' },
+      });
+      await itemEvents.finishItem(secondEvent.id, {
+        outcome: 'ready_for_refinery',
+        candidateId,
+        changeKind: 'updated',
+      });
+
+      const [oldRows, newRows] = await Promise.all([
+        runs._loadRows(firstRun.id),
+        runs._loadRows(secondRun.id),
+      ]);
+      expect(oldRows).toHaveLength(1);
+      expect(newRows).toHaveLength(1);
+      expect(oldRows[0].supplier_product_id).toBe('STABLE-1');
+      expect(newRows[0].supplier_product_id).toBe('STABLE-1');
+    });
+
     it('produit en cours réel + durée + prix + fil produit ; les anciens runs gardent le repli', async () => {
       const run = await newRun({ withImport: true });
       await newCandidate(run.importId, 'P1', 'Tefal OptiGrill+ XL');
