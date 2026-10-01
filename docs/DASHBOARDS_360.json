@@ -9,7 +9,7 @@
     "deadApiMethods": 0,
     "missingApiMethods": 0,
     "doctrineViolations": 0,
-    "unprovenContracts": 59
+    "unprovenContracts": 57
   },
   "modules": [
     {
@@ -1600,7 +1600,7 @@
       "route": "/api/products",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "EconomicFlowView",
@@ -1816,7 +1816,7 @@
       "route": "/api/orders",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "PilotageFinView",
@@ -1861,7 +1861,7 @@
       "route": "/api/products",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "PricingStrategyView",
@@ -1906,7 +1906,7 @@
       "route": "/api/orders",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "ProblemsView",
@@ -2420,10 +2420,8 @@
       "GET /api/hub/inventory/proposals",
       "GET /api/hub/inventory/stats",
       "GET /api/invoices",
-      "GET /api/orders",
       "GET /api/pricing/dashboard",
       "GET /api/pricing/strategy",
-      "GET /api/products",
       "GET /api/transitaire/history",
       "GET /api/transitaire/parcels",
       "GET /api/transitaire/stats",
