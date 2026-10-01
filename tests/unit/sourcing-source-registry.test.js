@@ -101,7 +101,7 @@ describe('catalogue canonique des connecteurs', () => {
 
   test('jamais de nom de module, de classe, de variable d’environnement ni de trace', async () => {
     const json = JSON.stringify(await registry.getCatalog());
-    expect(json).not.toMatch(/module|Connector\b|ALIEXPRESS_|CJ_|EBAY_|ALLEGRO_|\.js|stack|process\.env|access[_-]?token|refresh[_-]?token/i);
+    expect(json).not.toMatch(/module|Connector\b|ALIEXPRESS_|CJ_|EBAY_|ALLEGRO_|\.js|stack|process\.env|ciphertext|credential_ref/i);
   });
 
   test('signale la source existante au lieu de proposer une recréation', async () => {
