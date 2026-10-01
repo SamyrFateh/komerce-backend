@@ -87,10 +87,21 @@ async function mount(page, backend) {
     if (req.method() === 'GET' && p === `${base}/catalog`) {
       backend.calls.push('catalog');
       return json(route, { connectors: [
-        { adapter: 'cj', name: 'CJdropshipping', label: 'CJdropshipping API', available: true, automatable: true, connection_mode: 'server_managed',
-          connect_path: null, can_test_connection: true, can_create: !backend.source, reason: null, existing_source_ref: backend.source ? 'api:cj' : null, existing_archived: Boolean(backend.source?.archived) },
-        { adapter: 'ebay', name: 'eBay Sandbox', label: 'eBay Sandbox Browse API', available: true, automatable: false, connection_mode: 'server_managed',
-          connect_path: null, can_test_connection: true, can_create: false, reason: 'Autopilot non certifié', existing_source_ref: null },
+        { adapter: 'cj', name: 'CJdropshipping', label: 'CJdropshipping API', available: true, automatable: true, onboarding_ready: true,
+          onboarding: { status: 'defined', authority: 'provider_documentation', evidence_url: 'https://developers.cjdropshipping.com/en/summary/course.html',
+            prerequisites: ['Disposer d’un compte CJdropshipping avec accès API autorisé'],
+            setup_steps: ['Dans CJdropshipping : My CJ → Authorization → API → API Key', 'Créer ou récupérer la clé API du compte fournisseur'],
+            operator_must_obtain: [{ key: 'api_key', label: 'Clé API CJdropshipping' }],
+            operator_must_not_request: ['Mot de passe du compte CJdropshipping', 'Access Token ou Refresh Token temporaire'],
+            completion: 'Renseigner la clé API dans Komerce.' },
+          connection_mode: 'server_managed', connect_path: null, can_test_connection: true,
+          auth: { mode: 'api_key', scope: 'source',
+            fields: [{ key: 'api_key', label: 'Clé API CJdropshipping', secret: true }] },
+          can_create: !backend.source, reason: null, existing_source_ref: backend.source ? 'api:cj' : null, existing_archived: Boolean(backend.source?.archived) },
+        { adapter: 'ebay', name: 'eBay Sandbox', label: 'eBay Sandbox Browse API', available: true, automatable: false, onboarding_ready: false,
+          onboarding: { status: 'missing', prerequisites: [], setup_steps: [], operator_must_obtain: [], operator_must_not_request: [], completion: null },
+          connection_mode: 'server_managed', connect_path: null, can_test_connection: true, auth: { mode: 'client_credentials', scope: 'platform', fields: [] },
+          can_create: false, reason: 'Autopilot non certifié', existing_source_ref: null },
       ] });
     }
     if (req.method() === 'POST' && p === base) {
@@ -186,8 +197,15 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     await expect(page.locator('.kir-sources-empty')).toBeVisible();
     await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Sources');
 
+    // Avant même de créer la source, le registre explique ce qu'il faudra fournir.
+    await page.locator('[data-add-source]').click();
+    await wizard(page).locator('[data-wizard-kind="api"]').click();
+    await expect(wizard(page).locator('[data-wizard-connector="cj"] [data-wizard-auth-requirement]'))
+      .toContainText('Clé API CJdropshipping');
+    await wizard(page).locator('[data-wizard-create="cj"]').click();
+    await expect(wizard(page).locator('[data-wizard-created]')).toBeVisible();
+
     // A — ajout via l'assistant : fail-closed, aucun import déclenché.
-    await addCj(page);
     expect(backend.calls).toEqual(['catalog', 'create']);
     expect(backend.runs).toHaveLength(0);
     await expect(card(page).locator('.kir-source-badge')).toHaveText('CONNEXION À TESTER');
@@ -286,11 +304,13 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     await page.locator('[data-add-source]').click();
     await wizard(page).locator('[data-wizard-kind="api"]').click();
     await expect(wizard(page).locator('[data-wizard-connector="ebay"]')).toContainText('autopilot non certifié');
+    await expect(wizard(page).locator('[data-wizard-connector="other"]')).toContainText('Étude API requise');
+    await expect(wizard(page).locator('[data-wizard-connector="other"]')).toContainText('aucun secret à demander');
     await expect(wizard(page).locator('[data-wizard-create="ebay"]')).toHaveCount(0);
     await wizard(page).locator('[data-wizard-other]').click();
     await wizard(page).locator('[data-wizard-field="provider_name"]').fill('BigBuy');
     await wizard(page).locator('[data-wizard-save-request]').click();
-    await expect(wizard(page).locator('[data-wizard-request-status]')).toHaveText('Connecteur requis');
+    await expect(wizard(page).locator('[data-wizard-request-status]')).toHaveText('À étudier · connecteur requis');
     await expect(wizard(page).locator('[data-wizard-test], [data-wizard-prepare], [data-wizard-activate], [data-source-toggle]')).toHaveCount(0);
     await wizard(page).locator('[data-wizard-close]').first().click();
     const req = page.locator('[data-source-request-card]');

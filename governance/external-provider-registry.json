@@ -30,7 +30,30 @@
         "allegro-sandbox"
       ],
       "analysis_document": "docs/external-providers/suppliers/ALLEGRO_SANDBOX.md",
-      "highest_proof": "P4"
+      "highest_proof": "P4",
+      "onboarding": {
+        "status": "blocked",
+        "authority": "provider_documentation",
+        "evidence_url": "https://developer.allegro.pl/tutorials/uwierzytelnianie-i-autoryzacja-zlq9e75GdIR",
+        "credential_owner": "komerce_platform_application",
+        "prerequisites": [
+          "L'application Komerce Allegro Sandbox doit être enregistrée côté plateforme",
+          "Le compte vendeur Allegro doit autoriser l'application via OAuth"
+        ],
+        "setup_steps": [
+          "Komerce utilise les identifiants de sa propre application Allegro",
+          "Le vendeur est redirigé vers Allegro pour se connecter et autoriser l'application"
+        ],
+        "operator_must_obtain": [],
+        "operator_must_not_request": [
+          "Client ID du vendeur",
+          "Client Secret du vendeur",
+          "Mot de passe du compte Allegro",
+          "Access Token ou Refresh Token copié-collé"
+        ],
+        "completion": "À implémenter : onboarding OAuth vendeur côté Komerce avant d'autoriser la création de nouvelles sources Allegro.",
+        "blocker": "Le connecteur Sources actuel demande encore Client ID / Client Secret par source ; cela doit être remplacé par l'autorisation OAuth vendeur."
+      }
     },
     {
       "id": "ebay",
@@ -70,7 +93,26 @@
         "provider: 'aliexpress'"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "onboarding": {
+        "status": "defined",
+        "authority": "provider_documentation",
+        "evidence_url": "https://open.alitrip.com/docs/doc.htm?articleId=120687&docType=1&treeId=727",
+        "credential_owner": "komerce_platform_application",
+        "prerequisites": [
+          "L'application Komerce AliExpress doit déjà être enregistrée et configurée côté plateforme"
+        ],
+        "setup_steps": [
+          "Le propriétaire du compte vendeur ouvre l'autorisation AliExpress depuis Komerce",
+          "Le propriétaire du compte se connecte chez AliExpress et autorise l'application Komerce"
+        ],
+        "operator_must_obtain": [],
+        "operator_must_not_request": [
+          "Mot de passe du compte AliExpress",
+          "Access token ou Refresh Token copié-collé"
+        ],
+        "completion": "Le callback OAuth rattache la session du compte à la source ; aucun token n'est saisi manuellement."
+      }
     },
     {
       "id": "cj",
@@ -89,7 +131,29 @@
         "CJdropshipping"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED"
+      "highest_proof": "UNQUALIFIED",
+      "onboarding": {
+        "status": "defined",
+        "authority": "provider_documentation",
+        "evidence_url": "https://developers.cjdropshipping.com/en/api/api2/api/auth.html",
+        "credential_owner": "partner_account",
+        "prerequisites": [
+          "Disposer d'un compte CJdropshipping avec accès API autorisé"
+        ],
+        "setup_steps": [
+          "Installer l'application API CJ si elle n'est pas encore installée",
+          "Ouvrir la section API du compte puis créer ou récupérer une API Key",
+          "Copier la clé API active du compte fournisseur"
+        ],
+        "operator_must_obtain": [
+          { "key": "api_key", "label": "Clé API CJdropshipping" }
+        ],
+        "operator_must_not_request": [
+          "Mot de passe du compte CJdropshipping",
+          "Access Token ou Refresh Token temporaire"
+        ],
+        "completion": "Renseigner la clé API dans Komerce ; Komerce obtient et gère ensuite les tokens serveur nécessaires."
+      }
     },
     {
       "id": "noon",

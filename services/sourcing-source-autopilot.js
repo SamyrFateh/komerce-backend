@@ -120,8 +120,10 @@ async function listSources(q = db) {
       ORDER BY s.source_id`
   );
 
+  const connectorFacts = new Map(importDispatch.sourceConnectorFacts().map((fact) => [fact.adapter, fact]));
   return Promise.all(rows.map(async (row) => {
     const automation = automationBySourceRef(row.source_ref);
+    const connectorFact = connectorFacts.get(row.adapter_type) || null;
     const { credential_last_test_status: vaultTest, credential_in_vault: inVault, ...sourceRow } = row;
     const contract = importDispatch.authContract(row.adapter_type);
     const session = await credentialService.oauthSession(contract);
@@ -135,7 +137,11 @@ async function listSources(q = db) {
         productionCertified: Boolean(row.production_certified_at),
         oauthConnected: session ? session.connected !== false : undefined,
       }),
-      auth: contract ? { mode: contract.mode, scope: contract.scope, fields: contract.fields } : { mode: 'none', scope: null, fields: [] },
+      auth: contract
+        ? { mode: contract.mode, scope: contract.scope, fields: contract.fields }
+        : { mode: 'none', scope: null, fields: [] },
+      onboarding_ready: connectorFact?.onboarding_ready === true,
+      onboarding: connectorFact?.onboarding || null,
       production_runtime_certified: Boolean(row.production_certified_at),
       label: row.display_name || automation?.label || row.adapter_type,
       connector_label: automation?.label || row.adapter_type,

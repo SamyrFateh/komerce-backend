@@ -93,7 +93,10 @@ async function getCatalog(q = db) {
         connection_mode: fact.connection_mode,
         connect_path: fact.connect_path,
         can_test_connection: fact.can_test_connection,
-        can_create: fact.available && fact.automatable && !existing,
+        auth: fact.auth || { mode: 'none', scope: null, fields: [] },
+        onboarding_ready: fact.onboarding_ready === true,
+        onboarding: fact.onboarding || null,
+        can_create: fact.available && fact.automatable && fact.onboarding_ready === true && !existing,
         reason: fact.reason,
         existing_source_ref: existing,
         existing_archived: Boolean(existing && archived.has(existing)),
@@ -123,6 +126,13 @@ async function createSource({ adapter } = {}, q = db) {
   }
   if (!fact.available) {
     throw new SourceRegistryError(409, fact.reason || 'Connecteur non disponible', 'sourcing_source_connector_unavailable');
+  }
+  if (fact.onboarding_ready !== true) {
+    throw new SourceRegistryError(
+      409,
+      'Étude API / onboarding fournisseur incomplet : aucun identifiant ne doit être demandé tant que le contrat n’est pas défini.',
+      'sourcing_source_onboarding_contract_required'
+    );
   }
 
   const sourceRef = refFor(descriptor);

@@ -18,10 +18,49 @@ const CSS = ['base', 'canonical-theme-v2', 'canonical-shell-v4', 'canonical-lega
 const BASE = '/api/admin/workspaces/sourcing/sources';
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
-const CJ_AUTH = { mode: 'api_key', scope: 'source', fields: [{ key: 'api_key', label: 'Clé API', secret: true }] };
+const CJ_AUTH = {
+  mode: 'api_key',
+  scope: 'source',
+  fields: [{
+    key: 'api_key',
+    label: 'Clé API CJdropshipping',
+    secret: true,
+  }],
+};
 const OAUTH_AUTH = { mode: 'oauth', scope: 'platform', fields: [] };
+const CJ_ONBOARDING = {
+  status: 'defined',
+  authority: 'provider_documentation',
+  evidence_url: 'https://developers.cjdropshipping.com/en/summary/course.html',
+  prerequisites: ['Disposer d’un compte CJdropshipping avec accès API autorisé'],
+  setup_steps: ['Dans CJdropshipping : My CJ → Authorization → API → API Key', 'Créer ou récupérer la clé API du compte fournisseur'],
+  operator_must_obtain: [{ key: 'api_key', label: 'Clé API CJdropshipping' }],
+  operator_must_not_request: ['Mot de passe du compte CJdropshipping', 'Access Token ou Refresh Token temporaire'],
+  completion: 'Renseigner la clé API dans Komerce.',
+};
+const OAUTH_ONBOARDING = {
+  status: 'defined',
+  authority: 'provider_documentation',
+  evidence_url: 'https://open.alitrip.com/docs/doc.htm?articleId=120687&docType=1&treeId=727',
+  prerequisites: ['Application Komerce AliExpress déjà configurée'],
+  setup_steps: ['Le propriétaire du compte vendeur autorise Komerce chez AliExpress'],
+  operator_must_obtain: [],
+  operator_must_not_request: ['Mot de passe du compte AliExpress', 'Access Token ou Refresh Token copié-collé'],
+  completion: 'Le callback OAuth rattache la session à la source.',
+};
+const BLOCKED_ALLEGRO_ONBOARDING = {
+  status: 'blocked',
+  authority: 'provider_documentation',
+  evidence_url: 'https://developer.allegro.pl/tutorials/uwierzytelnianie-i-autoryzacja-zlq9e75GdIR',
+  prerequisites: ['Application Komerce Allegro Sandbox'],
+  setup_steps: ['Le vendeur doit autoriser l’application via OAuth'],
+  operator_must_obtain: [],
+  operator_must_not_request: ['Client ID du vendeur', 'Client Secret du vendeur'],
+  completion: 'OAuth vendeur à implémenter.',
+  blocker: 'Le connecteur Sources actuel demande encore Client ID / Client Secret par source ; cela doit être remplacé par l’autorisation OAuth vendeur.',
+};
 
-function createBackend({ ref = 'api:cj', adapter = 'cj', auth = CJ_AUTH, credential = null } = {}) {
+function createBackend({ ref = 'api:cj', adapter = 'cj', auth = CJ_AUTH, onboarding = CJ_ONBOARDING, credential = null } = {}) {
   const backend = {
     ref, auth,
     secret: credential,       // secret côté serveur uniquement
@@ -39,6 +78,7 @@ function createBackend({ ref = 'api:cj', adapter = 'cj', auth = CJ_AUTH, credent
         archived: false, autopilot_enabled: false, autopilot_ready: false, activation_ready: false,
         production_runtime_certified: false, connector_ready: true,
         credential_status: backend.credentialStatus, credential_in_vault: Boolean(backend.secret), auth: backend.auth,
+        onboarding_ready: true, onboarding,
         connection: { verified: valid, test_status: valid ? 'ok' : null },
         capabilities: { discovery: false, sync: false, import: false, production: false },
       };
@@ -130,7 +170,11 @@ test.describe('Sources — identifiants fournisseur', () => {
     await expect(card(page).locator('[data-source-step]')).toHaveCount(0);
     await expect(card(page).locator('[data-source-toggle]')).toBeDisabled();
 
-    // Formulaire dérivé du contrat auth : un champ secret, de type password, vide.
+    // Formulaire dérivé du contrat auth : l'opérateur sait quoi fournir, sans nom de variable Railway.
+    await expect(card(page).locator('[data-onboarding-guidance]')).toContainText('My CJ → Authorization → API → API Key');
+    await expect(card(page).locator('[data-onboarding-guidance]')).toContainText('Ne pas demander');
+    await expect(card(page).locator('[data-provider-documentation]')).toHaveAttribute('href', 'https://developers.cjdropshipping.com/en/summary/course.html');
+    await expect(card(page).locator('.kir-wizard-field', { hasText: 'Clé API CJdropshipping' })).toBeVisible();
     const field = card(page).locator('[data-credential-field="api_key"]');
     await expect(field).toHaveAttribute('type', 'password');
     await expect(field).toHaveValue('');
@@ -195,8 +239,33 @@ test.describe('Sources — identifiants fournisseur', () => {
     await expect(field).toHaveValue('typing-in-progress');
   });
 
+  test('onboarding bloqué : Komerce refuse de collecter de nouveaux secrets', async ({ page }) => {
+    const backend = createBackend({
+      ref: 'api:allegro',
+      adapter: 'allegro',
+      auth: {
+        mode: 'client_credentials',
+        scope: 'source',
+        fields: [
+          { key: 'client_id', label: 'Client ID Allegro', secret: false },
+          { key: 'client_secret', label: 'Client Secret Allegro', secret: true },
+        ],
+      },
+      onboarding: BLOCKED_ALLEGRO_ONBOARDING,
+      credential: null,
+    });
+    const originalControl = backend.control.bind(backend);
+    backend.control = () => ({ ...originalControl(), onboarding_ready: false, onboarding: BLOCKED_ALLEGRO_ONBOARDING });
+    await mount(page, backend);
+    await boot(page);
+
+    await expect(card(page, 'api:allegro').locator('[data-onboarding-blocker]')).toContainText('OAuth vendeur');
+    await expect(card(page, 'api:allegro').locator('[data-credentials-form]')).toHaveCount(0);
+    await expect(card(page, 'api:allegro').locator('[data-credential-field]')).toHaveCount(0);
+  });
+
   test('OAuth plateforme : aucun champ secret, aucun formulaire d’identifiants', async ({ page }) => {
-    const backend = createBackend({ ref: 'api:aliexpress', adapter: 'aliexpress', auth: OAUTH_AUTH, credential: null });
+    const backend = createBackend({ ref: 'api:aliexpress', adapter: 'aliexpress', auth: OAUTH_AUTH, onboarding: OAUTH_ONBOARDING, credential: null });
     backend.credentialStatus = 'untested';
     await mount(page, backend);
     await boot(page);
