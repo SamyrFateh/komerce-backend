@@ -185,6 +185,7 @@ async function publish(q, before) {
   const { rows: [product] } = await q.query(
     `UPDATE products
         SET is_active = TRUE,
+            is_available = TRUE,
             quality_validated = TRUE,
             needs_review = FALSE,
             lifecycle_status = 'active',
