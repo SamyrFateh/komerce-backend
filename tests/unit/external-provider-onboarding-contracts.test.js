@@ -41,6 +41,29 @@ describe('external provider onboarding contracts', () => {
     });
   });
 
+  test('Allegro : la documentation officielle bloque l ancien modèle de credentials par source', () => {
+    const result = onboarding.checkReady('allegro', {
+      mode: 'client_credentials',
+      scope: 'source',
+      fields: [
+        { key: 'client_id', label: 'Client ID Allegro', secret: false },
+        { key: 'client_secret', label: 'Client Secret Allegro', secret: true },
+      ],
+    });
+    expect(result).toMatchObject({
+      ready: false,
+      reason: 'provider_onboarding_blocked',
+      contract: {
+        status: 'blocked',
+        authority: 'provider_documentation',
+        credential_owner: 'komerce_platform_application',
+        operator_must_obtain: [],
+      },
+    });
+    expect(result.contract.blocker).toMatch(/OAuth vendeur/i);
+    expect(result.contract.operator_must_not_request.join(' ')).toMatch(/Client ID/i);
+  });
+
   test('AliExpress : OAuth = autorisation humaine, aucun credential source à copier', () => {
     const result = onboarding.checkReady('aliexpress', {
       mode: 'oauth',
