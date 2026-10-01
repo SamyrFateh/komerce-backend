@@ -481,6 +481,54 @@ const KNOWN_RESPONSES = {
     post: { fields: ['success','event'], source: 'route-read' }
   },
 
+  // D5 — dernier burn-down contractuel : réponses prouvées par lecture directe
+  // des routes/services canoniques. Aucun champ n'est inventé.
+  '/api/admin/dashboard/orders': {
+    get: { fields: ['scope','summary','signals','funnel','priority_orders','kpis','lifecycle','payment_mix','work_queues','data_quality'], source: 'service-read' }
+  },
+  '/api/admin/dashboard/orders/market/{marketCode}': {
+    get: { fields: ['scope','summary','signals','funnel','priority_orders','kpis','lifecycle','payment_mix','work_queues','data_quality'], source: 'service-read' }
+  },
+  '/api/admin/market-settlements/markets/{marketCode}/settlements': {
+    get: { fields: ['market','assignment_id','settlements'], source: 'route-read' }
+  },
+  '/api/admin/market-settlements/markets/{marketCode}/settlements/ready': {
+    post: { fields: ['success','settlement'], source: 'route-read' }
+  },
+  '/api/admin/market-settlements/settlements/{settlementId}/paid': {
+    post: { fields: ['success','settlement'], source: 'route-read' }
+  },
+  '/api/auth/me/password': {
+    put: { fields: ['success','message'], source: 'route-read' }
+  },
+  '/api/auth/step-up/otp/request': {
+    post: { fields: ['ok','message','expiresIn','retryAfter'], source: 'route-read' }
+  },
+  '/api/auth/step-up/otp/verify': {
+    post: { fields: ['ok','verified'], source: 'route-read' }
+  },
+  '/api/payments/mobile-money/admin/pending': {
+    get: { fields: ['transactions'], source: 'route-read' }
+  },
+  '/api/payments/mobile-money/availability': {
+    get: { fields: ['market_code','currency','available','reason','provider','label','requires_msisdn','flow'], source: 'service-read' }
+  },
+  '/api/payments/mobile-money/callback/{provider}/{transactionId}': {
+    post: { fields: ['received','status'], source: 'route-read' }
+  },
+  '/api/payments/mobile-money/initiate': {
+    post: { fields: ['reused','transaction'], source: 'service-read' }
+  },
+  '/api/payments/mobile-money/transactions/{transactionId}': {
+    get: { fields: ['transaction'], source: 'route-read' }
+  },
+  '/api/payments/mobile-money/transactions/{transactionId}/refresh': {
+    post: { fields: ['transaction','reconciled'], source: 'service-read' }
+  },
+  '/api/payments/mobile-money/webhook/{provider}': {
+    post: { fields: ['received','status'], source: 'route-read' }
+  },
+
   // market-delegation team/catalog/cash-control : tests/unit/market-delegation-
   // team-routes.test.js, -cash-control-routes.test.js, -catalog-routes.test.js
   // existent mais sont structurels (auth middleware présent, market_id rejeté,
@@ -2468,6 +2516,7 @@ if (inventory.length < 150) {
 }
 
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'POST /api/admin/market-settlements/markets/{marketCode}/settlements/ready': '201',
   'POST /api/market-delegation/markets/{marketCode}/network/providers': '201',
   'POST /api/market-delegation/markets/{marketCode}/network/relais': '201',
   'POST /api/market-delegation/markets/{marketCode}/structure-events': '201',
@@ -2482,6 +2531,9 @@ const SUCCESS_STATUS_OVERRIDES = Object.freeze({
 // KNOWN_RESPONSES (pas un schéma de corps, juste un code de statut documenté en plus).
 // Format : "METHOD /chemin/{param}" → { [code]: { description } }
 const RESPONSE_OVERRIDES = {
+  'POST /api/payments/mobile-money/initiate': {
+    '201': { description: 'Nouvelle tentative Mobile Money créée' },
+  },
   'POST /api/hub/unit': {
     '201': { description: 'Unité physique opérateur créée' },
     '400': { description: 'Commande Hub invalide' },
