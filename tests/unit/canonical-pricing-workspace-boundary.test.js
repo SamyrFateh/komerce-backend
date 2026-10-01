@@ -153,6 +153,15 @@ test('Pricing Canonical est global et utilise uniquement refs métier navigateur
   expect(source).not.toContain('competitor_id');
 });
 
+test('un candidat simulé peut recevoir explicitement le prix choisi sans être déjà actif', () => {
+  const source = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace.js'), 'utf8');
+  expect(source).toContain("'Choisir ce prix'");
+  expect(source).toContain("apply.dataset.productRef = productRef");
+  expect(source).toContain("apply.dataset.price = recommendedPrice");
+  expect(source).toContain('Données manquantes');
+  expect(source).toContain('Sources :');
+});
+
 test('service délègue aux autorités pricing existantes', () => {
   const source = fs.readFileSync(path.join(ROOT, 'services', 'pricing-workspace.js'), 'utf8');
   expect(source).toContain("require('./pricing-engine')");
