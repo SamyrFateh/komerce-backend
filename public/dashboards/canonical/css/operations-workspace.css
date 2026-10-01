@@ -258,37 +258,44 @@
 }
 
 .kmc-catalog-curation-table {
-  table-layout: fixed;
+  table-layout: auto;
+  min-width: 980px;
 }
 
 .kmc-catalog-curation-table th:nth-child(1),
 .kmc-catalog-curation-table td:nth-child(1) {
-  width: 38%;
+  min-width: 340px;
+  width: 42%;
 }
 
 .kmc-catalog-curation-table th:nth-child(2),
 .kmc-catalog-curation-table td:nth-child(2) {
-  width: 11%;
+  width: 110px;
+  min-width: 110px;
 }
 
 .kmc-catalog-curation-table th:nth-child(3),
 .kmc-catalog-curation-table td:nth-child(3) {
-  width: 24%;
+  width: 280px;
+  min-width: 240px;
 }
 
 .kmc-catalog-curation-table th:nth-child(4),
 .kmc-catalog-curation-table td:nth-child(4) {
-  width: 12%;
+  width: 130px;
+  min-width: 130px;
 }
 
 .kmc-catalog-curation-table th:nth-child(5),
 .kmc-catalog-curation-table td:nth-child(5) {
-  width: 220px;
+  width: 250px;
+  min-width: 250px;
 }
 
 .kmc-catalog-curation-table td {
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .kmc-catalog-product-cell {
@@ -320,23 +327,33 @@
 .kmc-catalog-state-cell {
   display: grid;
   gap: 4px;
+  align-content: center;
+}
+
+.kmc-catalog-signal-cell .kmc-workspace-subtitle,
+.kmc-catalog-reason {
+  max-width: 100%;
+  line-height: 1.35;
 }
 
 .kmc-catalog-reason {
   color: #74829a;
-  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .kmc-catalog-curation-table .kmc-catalog-actions-cell {
   position: sticky;
   right: 0;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   align-content: center;
   gap: 6px;
-  min-width: 220px;
+  min-width: 250px;
   background: #fff;
   box-shadow: -8px 0 12px -12px rgb(20 35 65 / .35);
 }
@@ -353,11 +370,12 @@
   min-height: 30px;
   padding: 5px 8px;
   font-size: 11px;
+  white-space: nowrap;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1100px) {
   .kmc-catalog-curation-table {
-    min-width: 900px;
+    min-width: 980px;
   }
 }
 
