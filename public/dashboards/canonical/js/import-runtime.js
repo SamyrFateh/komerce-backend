@@ -845,7 +845,7 @@
         // Remplacement refusé : l'ancienne connexion reste active, le formulaire reste ouvert (vide).
         credentialsState = { ref, open:true, saving:false, error:result.message || 'Identifiants refusés.', notice:null };
       } else {
-        credentialsState = { ref, open:false, saving:false, error:null, notice:mode === 'rotate' ? '✓ Connexion valide' : 'Identifiants enregistrés. Testez la connexion.' };
+        credentialsState = { ref, open:false, saving:false, error:null, notice:mode === 'rotate' ? '✓ Connexion valide' : 'Identifiants enregistrés.' };
       }
     } catch (error) {
       credentialsState = { ref, open:true, saving:false, error:error.message, notice:null };
