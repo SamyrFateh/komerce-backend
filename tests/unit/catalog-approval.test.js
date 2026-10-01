@@ -226,6 +226,7 @@ describe('approveProduct', () => {
     expect(getRuleNumber).toHaveBeenCalledWith('CATALOG_CAP_MVP', 120);
     const update = calls.find(c => c.sql.startsWith('UPDATE products'));
     expect(update.sql).toContain('is_active = TRUE');
+    expect(update.sql).toContain('is_available = TRUE');
     expect(update.sql).toContain('quality_validated = TRUE');
     expect(update.sql).toContain('needs_review = FALSE');
   });
