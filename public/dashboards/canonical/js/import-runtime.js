@@ -512,6 +512,9 @@
         if (routeAtStart !== currentRouteKey()) return;
       }
       if (routeAtStart !== currentRouteKey()) return;
+      if (activationState.runRef && params().run !== activationState.runRef) {
+        global.history.pushState({}, '', urlFor(activationState.runRef));
+      }
       lastPayload = payload;
       if (mountedRoot) render(mountedRoot, payload);
     } catch (_) {
@@ -2056,25 +2059,64 @@
 
   async function runPrepare(sourceRef) {
     if (prepareState) return;
+    const source = (lastPayload?.source_controls || []).find(item => item.source_ref === sourceRef) || {};
     prepareState = { sourceRef };
+    activationState = {
+      sourceRef,
+      label: source.label || source.supplier_name || sourceRef,
+      done: false,
+      error: null,
+      baselineRunRefs: (lastPayload?.lots || []).map(lot => lot.run_ref),
+      runRef: null,
+      run: null,
+      outcome: null,
+    };
     if (wizardState) wizardState.error = null;
     rerenderWizard();
-    const poll = typeof global.setInterval === 'function'
-      ? global.setInterval(() => { refresh({ preserve:true }); }, COMMAND_POLL_MS) : null;
+    startActivationPolling();
     try {
       const response = await api(`${WIZARD_BASE}/${encodeURIComponent(sourceRef)}/prepare`, { method:'POST', body:{} });
-      if (wizardState) wizardState.firstRunRef = response?.result?.certification_run?.run_ref || null;
+      const result = response?.result || {};
+      const runRef = result?.certification_run?.run_ref || null;
+      if (wizardState) wizardState.firstRunRef = runRef;
+      if (activationState?.sourceRef === sourceRef) {
+        if (runRef) activationState.runRef = runRef;
+        activationState.outcome = result?.certification_run?.status || null;
+        activationState.done = true;
+        if (activationState.runRef && params().run !== activationState.runRef) {
+          global.history.pushState({}, '', urlFor(activationState.runRef));
+        }
+      }
     } catch (error) {
       const message = error.code === 'sourcing_source_certification_incomplete'
         ? 'Le premier passage n’a pas permis de certifier la source. Consultez le passage puis réessayez.'
         : error.message;
-      if (wizardState) { wizardState.error = message; wizardState.firstRunRef = error.details?.run_ref || null; }
-      else showCommandError('Préparation', message);
+      const runRef = error.details?.run_ref || null;
+      if (wizardState) { wizardState.error = message; wizardState.firstRunRef = runRef; }
+      if (activationState?.sourceRef === sourceRef) {
+        if (runRef) activationState.runRef = runRef;
+        activationState.outcome = error.code === 'sourcing_source_certification_incomplete'
+          ? 'certification_incomplete'
+          : 'failed';
+        activationState.error = error.code === 'sourcing_source_certification_incomplete' ? null : message;
+        activationState.done = true;
+        if (activationState.runRef && params().run !== activationState.runRef) {
+          global.history.pushState({}, '', urlFor(activationState.runRef));
+        }
+      } else {
+        showCommandError('Préparation', message);
+      }
     } finally {
-      if (poll && typeof global.clearInterval === 'function') global.clearInterval(poll);
+      stopActivationPolling();
       prepareState = null;
       await refresh({ preserve:true });
       rerenderWizard();
+      if (activationState && typeof global.setTimeout === 'function') {
+        global.setTimeout(() => {
+          activationState = null;
+          if (mountedRoot && lastPayload) render(mountedRoot, lastPayload);
+        }, 5000);
+      }
     }
   }
 
