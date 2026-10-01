@@ -305,6 +305,7 @@ function projectSourceControl(source) {
       tested_at: source.connection_tested_at || null,
     },
     credential_status: credentialStatus,
+    credential_in_vault: Boolean(source.credential_in_vault),
     auth: source.auth || { mode: 'none', scope: null, fields: [] },
     capabilities,
     last_capture_status: source.last_capture_status || null,

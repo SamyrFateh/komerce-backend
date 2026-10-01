@@ -126,6 +126,7 @@ async function listSources(q = db) {
     const contract = importDispatch.authContract(row.adapter_type);
     return {
       ...sourceRow,
+      credential_in_vault: Boolean(inVault),
       credential_status: credentialService.deriveCredentialState({
         contract,
         vault: inVault ? { last_test_status: vaultTest } : null,
