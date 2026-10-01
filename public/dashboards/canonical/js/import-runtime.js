@@ -814,10 +814,15 @@
     const inputs = fields.map(field => `<label class="kir-wizard-field">${esc(field.label || field.key)}
         <input type="${field.secret ? 'password' : 'text'}" data-credential-field="${esc(field.key)}" value=""
           autocomplete="${field.secret ? 'new-password' : 'off'}" autocapitalize="off" spellcheck="false" maxlength="4096" required ${saving ? 'disabled' : ''}>
+        ${field.help ? `<small class="kir-wizard-note">${esc(field.help)}</small>` : ''}
       </label>`).join('');
     const submitLabel = saving ? 'Enregistrement…' : (configured ? 'Remplacer et tester' : 'Configurer la connexion');
+    const guidance = source?.auth?.description
+      ? `<p class="kir-wizard-note" data-credentials-guidance>${esc(source.auth.description)}</p>`
+      : '';
     return `<section class="kir-credentials" data-credentials-panel="${esc(ref)}" data-credentials-context="${context}">
       ${status}${notice}
+      ${guidance}
       <form class="kir-credentials-form" data-credentials-form data-source-ref="${esc(ref)}" data-credentials-mode="${inVault ? 'rotate' : 'configure'}" autocomplete="off">
         ${inputs}
         <p class="kir-wizard-note">Les identifiants sont chiffrés côté serveur et ne sont plus jamais affichés.</p>
@@ -1943,6 +1948,18 @@
     return 'Connecteur présent · non disponible actuellement';
   }
 
+  function connectorAuthLine(connector) {
+    const auth = connector?.auth || {};
+    const fields = Array.isArray(auth.fields) ? auth.fields : [];
+    if (auth.mode === 'oauth') return auth.description || 'Connexion par autorisation du compte · aucun secret à saisir';
+    if (auth.scope === 'source' && fields.length) {
+      const labels = fields.map(field => field.label || field.key).filter(Boolean).join(' + ');
+      return auth.description || `À renseigner : ${labels}`;
+    }
+    if (auth.scope === 'platform') return auth.description || 'Identifiants gérés par Komerce';
+    return auth.description || 'Aucun identifiant à saisir';
+  }
+
   function focusSourceCard(sourceRef) {
     const card = Array.from(mountedRoot?.querySelectorAll?.('[data-source-card]') || [])
       .find(node => node.getAttribute('data-source-card') === sourceRef);
@@ -2121,7 +2138,7 @@
           : connector.can_create
             ? `<button type="button" class="kir-wizard-primary" data-wizard-create="${esc(connector.adapter)}" ${w.creating ? 'disabled' : ''}>${w.creating === connector.adapter ? 'Ajout…' : 'Ajouter'}</button>`
             : '<span class="kir-wizard-unavailable">Indisponible</span>';
-        return `<li data-wizard-connector="${esc(connector.adapter)}"><div><strong>${esc(connector.label)}</strong><span>${esc(connectorStatusLine(connector))}</span></div>${action}</li>`;
+        return `<li data-wizard-connector="${esc(connector.adapter)}"><div><strong>${esc(connector.label)}</strong><span>${esc(connectorStatusLine(connector))}</span><small data-wizard-auth-requirement>${esc(connectorAuthLine(connector))}</small></div>${action}</li>`;
       }).join('');
       body = `<p class="kir-wizard-q">Quel fournisseur ?</p>
         ${w.loading ? '<p class="kir-wizard-note">Chargement des connecteurs…</p>' : `<ul class="kir-wizard-list">${list}
