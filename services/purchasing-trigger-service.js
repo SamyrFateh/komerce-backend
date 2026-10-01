@@ -32,6 +32,7 @@ const {
   buildPurchaseTarget,
   insertHistoricalPurchaseLine,
   confirmHistoricalPurchaseLine,
+  findItemCoverage,
   resolveProcurementHubRef,
   procurementHubLabel,
 } = require('./purchase-line-snapshot');
@@ -158,6 +159,10 @@ async function loadSupplierMapping(client, item, exactSku) {
 }
 
 async function findExistingPo(client, orderId, item, productSupplierId) {
+  // PR 2 : un item déjà couvert par les lignes (quel que soit le fournisseur) ne se rachète jamais.
+  const coverage = await findItemCoverage(client, item);
+  if (coverage) return coverage;
+  // Repli historique inchangé : PO antérieures à la 225 (sans order_item_id), items sans id, couverture partielle.
   if (item.id) {
     const { rows: [existingPo] } = await client.query(`
       SELECT id, status FROM purchase_orders
@@ -245,7 +250,7 @@ async function triggerPurchasing(orderId, options = {}) {
         }
         const existingPo = await findExistingPo(client, orderId, item, ps.id);
         if (existingPo) {
-          results.push({ item: item.product_name, status: 'already_exists', purchase_order_id: existingPo.id, purchase_order_status: existingPo.status, inbound_tag: buildSupplierTagRequest(existingPo.id).reference });
+          results.push({ item: item.product_name, status: 'already_exists', purchase_order_id: existingPo.id, purchase_order_status: existingPo.status, inbound_tag: existingPo.id ? buildSupplierTagRequest(existingPo.id).reference : null });
           await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
           continue;
         }

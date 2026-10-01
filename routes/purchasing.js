@@ -73,7 +73,7 @@ router.get('/', ...guard, async (req, res, next) => {
         s.auto_order,
         s.contact_phone
       FROM purchase_orders po
-      JOIN orders    o ON o.id  = po.order_id
+      LEFT JOIN orders o ON o.id  = po.order_id
       JOIN suppliers s ON s.id  = po.supplier_id
       WHERE ${conditions.join(' AND ')}
       ORDER BY po.created_at DESC
@@ -227,17 +227,22 @@ router.get('/order/:order_id/completeness', ...guard, async (req, res, next) => 
   try {
     const { order_id } = req.params;
 
+    // Lecture par la vue de progression : l'engagé et le reçu viennent des lignes, pas de purchase_orders.qty.
     const { rows: pos } = await db.query(`
       SELECT
-        po.id, po.status, po.supplier_id, po.qty, po.received_qty,
+        po.id, po.status, po.supplier_id,
+        SUM(v.quantity)::int          AS qty,
+        SUM(v.received_quantity)::int AS received_qty,
         s.name AS supplier_name,
-        COALESCE(po.received_qty, 0)                     AS received,
-        COALESCE(po.qty, 0)                              AS ordered,
-        COALESCE(po.qty, 0) - COALESCE(po.received_qty, 0) AS remaining
-      FROM purchase_orders po
+        SUM(v.received_quantity)::int AS received,
+        SUM(v.quantity)::int          AS ordered,
+        (SUM(v.quantity) - SUM(v.received_quantity))::int AS remaining
+      FROM v_purchase_line_progress v
+      JOIN purchase_orders po ON po.id = v.purchase_order_id
       JOIN suppliers s ON s.id = po.supplier_id
-      WHERE po.order_id = $1
-      ORDER BY po.created_at ASC
+      WHERE v.order_id = $1
+      GROUP BY po.id, po.status, po.supplier_id, s.name
+      ORDER BY MIN(po.created_at) ASC
     `, [order_id]);
 
     if (!pos.length) {
@@ -269,7 +274,8 @@ router.get('/:order_id', ...guard, async (req, res, next) => {
       SELECT po.*, s.name AS supplier_name, s.platform, s.contact_phone, s.auto_order
       FROM purchase_orders po
       JOIN suppliers s ON s.id = po.supplier_id
-      WHERE po.order_id = $1
+      WHERE po.id IN (SELECT v.purchase_order_id FROM v_purchase_line_progress v
+                       WHERE v.order_id = $1 AND v.purchase_order_id IS NOT NULL)
       ORDER BY po.created_at ASC
     `, [req.params.order_id]);
 

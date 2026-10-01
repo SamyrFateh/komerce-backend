@@ -106,6 +106,7 @@ describe('GET /api/purchasing — pipeline sourcing', () => {
     expect(res.body).toEqual({ purchase_orders: [], total: 0 });
     const [sql, params] = db.query.mock.calls[0];
     expect(sql).not.toMatch(/po\.status = \$/);
+    expect(sql).toContain('LEFT JOIN orders o'); // les PO regroupées (sans order_id) restent listées
     expect(params).toEqual([]);
   });
 
@@ -329,6 +330,11 @@ describe('GET /api/purchasing/order/:order_id/completeness', () => {
     expect(res.body.total_ordered).toBe(15);
     expect(res.body.total_received).toBe(10);
     expect(res.body.total_remaining).toBe(5);
+    // lecture par la vue de progression ; la quantité commandée brute reste celle de la PO annulée
+    const sql = db.query.mock.calls[0][0];
+    expect(sql).toContain('v_purchase_line_progress');
+    expect(sql).toContain('SUM(v.quantity)');
+    expect(sql).not.toMatch(/FROM purchase_orders po\s+JOIN suppliers/);
   });
 
   it('any_pending=true si au moins une PO en pending/notified/confirmed/shipped', async () => {
@@ -366,6 +372,8 @@ describe('GET /api/purchasing/:order_id', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(rows);
     expect(db.query.mock.calls[0][1]).toEqual(['o1']);
+    // les PO d'une commande sont retrouvées par ses lignes (une PO regroupée n'a pas d'order_id)
+    expect(db.query.mock.calls[0][0]).toContain('v_purchase_line_progress');
   });
 
   it('erreur DB → next(err) → 500', async () => {

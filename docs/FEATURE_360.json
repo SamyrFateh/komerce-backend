@@ -24214,6 +24214,10 @@
       "authority": "backend-core — tout changement du flux d'engagement fournisseur (Procurement Route, readiness dynamique, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing ; supplier-connectivity possède l'identité provider, la Supplier Order Identity et le contrat générique d'adapter",
       "invariants": [
         {
+          "statement": "les lecteurs d'achat (signaux, GET /api/purchasing, complétude de réception, scans Hub, stock-sync) lisent l'engagé et le reçu par ligne via v_purchase_line_progress, jamais purchase_orders.qty/received_qty ; la vue redonne exactement l'ancien calcul pour les PO historiques (avec ligne, sans ligne avant 225, annulées) et is_order_complete la consomme ; un item déjà couvert par les lignes (autre fournisseur compris) ne se rachète pas",
+          "test": "tests/integration/purchase-line-progress-postgres.test.js"
+        },
+        {
           "statement": "purchase_lines (PR 1, migration 263) : la quantité effective achetée d'un order_item (0 si annulée, sinon COALESCE(settled, confirmed, quantity)) ne dépasse jamais order_items.quantity — garde base I1 sous verrou FOR UPDATE sur order_items ; une ligne confirmée/réglée/annulée est figée (one-shot) et ne se supprime pas directement",
           "test": "tests/integration/purchase-lines-postgres.test.js"
         },
@@ -24266,7 +24270,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 3,
+            "count": 4,
             "files": [
               {
                 "declared": "migrations/225_purchase_orders_exact_supplier_identity.sql",
@@ -24281,6 +24285,11 @@
               {
                 "declared": "migrations/263_purchase_lines_foundation.sql",
                 "resolvedPath": "migrations/263_purchase_lines_foundation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/264_purchase_line_progress_view.sql",
+                "resolvedPath": "migrations/264_purchase_line_progress_view.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -24431,11 +24440,16 @@
             ]
           },
           "tests": {
-            "count": 32,
+            "count": 33,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/purchase-line-progress-postgres.test.js",
+                "resolvedPath": "tests/integration/purchase-line-progress-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -24596,7 +24610,7 @@
             ]
           }
         },
-        "totalFiles": 61,
+        "totalFiles": 63,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

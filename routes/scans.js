@@ -101,21 +101,20 @@ router.get('/hub/pending', requireAuth, requireRole(['admin', 'agent_hub']), asy
          o.reference,
          o.status,
          o.created_at,
-         COUNT(po.id)    AS total_pos,
-         SUM(CASE WHEN po.received_qty >= po.qty THEN 1 ELSE 0 END)  AS pos_recus,
-         SUM(po.qty - po.received_qty) FILTER (
-           WHERE po.status != 'cancelled' AND po.received_qty < po.qty
+         COUNT(v.purchase_order_id) AS total_pos,
+         SUM(CASE WHEN v.received_quantity >= v.effective_quantity THEN 1 ELSE 0 END)  AS pos_recus,
+         SUM(v.effective_quantity - v.received_quantity) FILTER (
+           WHERE v.received_quantity < v.effective_quantity
          )               AS qty_manquante,
          ARRAY_AGG(
-           p.name || ' (' || po.received_qty || '/' || po.qty || ')'
+           p.name || ' (' || v.received_quantity || '/' || v.effective_quantity || ')'
            ORDER BY p.name
          )               AS articles
        FROM orders o
-       JOIN purchase_orders po ON po.order_id = o.id
-       JOIN product_suppliers ps ON ps.id = po.product_supplier_id
+       JOIN v_purchase_line_progress v ON v.order_id = o.id AND v.purchase_order_id IS NOT NULL AND NOT v.cancelled
+       JOIN product_suppliers ps ON ps.id = v.product_supplier_id
        JOIN products p ON p.id = ps.product_id
        WHERE o.status IN ('ordered', 'confirmed')
-         AND po.status != 'cancelled'
        GROUP BY o.id, o.reference, o.status, o.created_at
        ORDER BY o.created_at ASC`
     );

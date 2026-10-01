@@ -312,3 +312,56 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
     expect(result.purchase_orders[0].status).toBe('api_failed_notified');
   });
 });
+
+describe('purchasing-trigger-service — couverture par les lignes (PR 2)', () => {
+  const itemWithId = { ...item, id: 'it-1', quantity: 2 };
+  beforeEach(() => {
+    jest.clearAllMocks();
+    delete process.env.ADMIN_PHONE;
+  });
+
+  it('item déjà couvert par les lignes (autre fournisseur) → already_exists, aucune nouvelle PO', async () => {
+    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [itemWithId] });
+    const client = makeClient([
+      { rows: [supplierRow()] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000202', status: 'confirmed', effective_quantity: 2 }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await triggerPurchasing('o1');
+
+    expect(result.purchase_orders).toEqual([{
+      item: 'Sac Ali', status: 'already_exists',
+      purchase_order_id: '00000000-0000-0000-0000-000000000202', purchase_order_status: 'confirmed',
+      inbound_tag: 'KOM-IN-00000000000000000000000000000202',
+    }]);
+    expect(client.calls.some((s) => /INSERT INTO purchase_orders/.test(String(s)))).toBe(false);
+  });
+
+  it('item couvert par une ligne ouverte (sans PO) → already_exists sans tag colis', async () => {
+    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [itemWithId] });
+    const client = makeClient([
+      { rows: [supplierRow()] },
+      { rows: [{ id: null, status: null, effective_quantity: 2 }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await triggerPurchasing('o1');
+
+    expect(result.purchase_orders[0]).toMatchObject({ status: 'already_exists', purchase_order_id: null, inbound_tag: null });
+  });
+
+  it('couverture partielle → repli sur la recherche historique de PO', async () => {
+    db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [itemWithId] });
+    const client = makeClient([
+      { rows: [supplierRow()] },
+      { rows: [{ id: 'po-x', status: 'confirmed', effective_quantity: 1 }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000303', status: 'pending' }] },
+    ]);
+    db.getClient.mockResolvedValue(client);
+
+    const result = await triggerPurchasing('o1');
+
+    expect(result.purchase_orders[0]).toMatchObject({ status: 'already_exists', purchase_order_id: '00000000-0000-0000-0000-000000000303' });
+  });
+});

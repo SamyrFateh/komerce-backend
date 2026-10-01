@@ -112,6 +112,7 @@ describe('purchasing exact SKU procurement', () => {
         auto_order: false, contact_phone: null, account_id: null, api_key_enc: null,
         api_secret_enc: null, lead_time_days: 5, supplier_url: null,
       }] };
+      if (sql.includes('FROM v_purchase_line_progress')) return { rows: [] };
       if (sql.startsWith('SELECT id, status FROM purchase_orders')) return { rows: [] };
       if (sql.includes('INSERT INTO purchase_orders')) {
         insertParams = params;
@@ -205,6 +206,7 @@ describe('purchasing exact SKU procurement', () => {
         auto_order: true, contact_phone: null, account_id: null, api_key_enc: null,
         api_secret_enc: null, lead_time_days: 5, supplier_url: null,
       }] };
+      if (sql.includes('FROM v_purchase_line_progress')) return { rows: [] };
       if (sql.startsWith('SELECT id, status FROM purchase_orders')) return { rows: [] };
       if (sql.includes('INSERT INTO purchase_orders')) return { rows: [{ id: '00000000-0000-0000-0000-000000000201' }] };
       if (sql.includes('INSERT INTO purchase_lines')) return { rows: [{ id: 'line-1' }] };

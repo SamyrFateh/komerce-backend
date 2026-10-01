@@ -285,8 +285,8 @@ GENERATORS.ordered_without_purchase_order = async function() {
        WHERE o.status = 'ordered'
          AND COALESCE(o.ordered_at, o.updated_at, o.created_at) < NOW() - INTERVAL '15 minutes'
          AND NOT EXISTS (
-           SELECT 1 FROM purchase_orders po
-            WHERE po.order_id = o.id AND po.status != 'cancelled'
+           SELECT 1 FROM v_purchase_line_progress v
+            WHERE v.order_id = o.id AND v.purchase_order_id IS NOT NULL AND NOT v.cancelled
          )
        ORDER BY COALESCE(o.ordered_at, o.updated_at, o.created_at) ASC
        LIMIT 50
@@ -320,14 +320,15 @@ GENERATORS.purchase_order_overreceived = async function() {
   try {
     const rows = (await db.query(`
       SELECT o.id, o.reference,
-             COUNT(*)::int AS po_count,
-             SUM(po.received_qty - po.qty)::int AS excess_qty
-        FROM purchase_orders po
-        JOIN orders o ON o.id = po.order_id
-       WHERE po.status != 'cancelled'
-         AND po.received_qty > po.qty
+             COUNT(DISTINCT v.purchase_order_id)::int AS po_count,
+             SUM(v.received_quantity - v.effective_quantity)::int AS excess_qty
+        FROM v_purchase_line_progress v
+        JOIN orders o ON o.id = v.order_id
+       WHERE v.purchase_order_id IS NOT NULL
+         AND NOT v.cancelled
+         AND v.received_quantity > v.effective_quantity
        GROUP BY o.id, o.reference
-       ORDER BY SUM(po.received_qty - po.qty) DESC
+       ORDER BY SUM(v.received_quantity - v.effective_quantity) DESC
        LIMIT 50
     `)).rows;
 
@@ -358,16 +359,16 @@ GENERATORS.purchase_order_receipt_stuck = async function() {
   try {
     const rows = (await db.query(`
       SELECT o.id, o.reference,
-             COUNT(*)::int AS po_count,
-             EXTRACT(EPOCH FROM (NOW() - MAX(po.hub_received_at)))::int / 60 AS minutes_stuck
+             COUNT(DISTINCT v.purchase_order_id)::int AS po_count,
+             EXTRACT(EPOCH FROM (NOW() - MAX(v.hub_received_at)))::int / 60 AS minutes_stuck
         FROM orders o
-        JOIN purchase_orders po ON po.order_id = o.id AND po.status != 'cancelled'
+        JOIN v_purchase_line_progress v ON v.order_id = o.id AND v.purchase_order_id IS NOT NULL AND NOT v.cancelled
        WHERE o.status = 'ordered'
        GROUP BY o.id, o.reference
       HAVING COUNT(*) > 0
-         AND BOOL_AND(po.received_qty >= po.qty AND po.hub_received_at IS NOT NULL)
-         AND MAX(po.hub_received_at) < NOW() - INTERVAL '15 minutes'
-       ORDER BY MAX(po.hub_received_at) ASC
+         AND BOOL_AND(v.received_quantity >= v.effective_quantity AND v.hub_received_at IS NOT NULL)
+         AND MAX(v.hub_received_at) < NOW() - INTERVAL '15 minutes'
+       ORDER BY MAX(v.hub_received_at) ASC
        LIMIT 50
     `)).rows;
 

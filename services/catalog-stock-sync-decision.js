@@ -218,7 +218,8 @@ async function decideStockSyncApplication(observationId, {
   // service.js#AUTO_CANCEL_STATUSES (fournisseur pas encore au courant).
   const { rows: unreconciled } = await query(
     "SELECT id, status FROM purchase_orders " +
-    "WHERE product_sku_id = $1 AND status IN ('pending','notified') LIMIT 5",
+    "WHERE (product_sku_id = $1 OR id IN (SELECT purchase_order_id FROM purchase_lines WHERE product_sku_id = $1 AND purchase_order_id IS NOT NULL)) " +
+    "AND status IN ('pending','notified') LIMIT 5",
     [productSkuId]
   );
   if (unreconciled.length) {
@@ -233,7 +234,8 @@ async function decideStockSyncApplication(observationId, {
   // réconciliation avant qu'une valeur absolue externe puisse remplacer la
   // quantité vendable Komerce.
   const { rows: commitments } = await query(
-    "SELECT id, status FROM purchase_orders WHERE product_sku_id = $1 LIMIT 5",
+    "SELECT id, status FROM purchase_orders " +
+    "WHERE product_sku_id = $1 OR id IN (SELECT purchase_order_id FROM purchase_lines WHERE product_sku_id = $1 AND purchase_order_id IS NOT NULL) LIMIT 5",
     [productSkuId]
   );
   if (commitments.length) {

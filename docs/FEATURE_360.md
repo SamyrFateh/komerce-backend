@@ -2055,6 +2055,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
 - purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)
 - une réception ne peut être appliquée qu'à un bon de commande existant et cohérent
 - aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js
@@ -2088,12 +2089,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 61 fichier(s) déclaré(s)
-  - migrations : 3
+**Implementation** : 63 fichier(s) déclaré(s)
+  - migrations : 4
   - routes : 1
   - scripts : 3
   - services : 22
-  - tests : 32
+  - tests : 33
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="purchasing"]_
 
