@@ -104,3 +104,16 @@ test('live-kit.css : lignes de tableau et tuiles gardent le gabarit noir (calque
   expect(css).toContain('background:#0A1625 !important');
   expect(css).toContain('.lk-flow-track');
 });
+
+test('moteur : une première lecture en erreur garde la coque noire et affiche l’erreur sous les onglets', async () => {
+  const views = { home:{ tab:() => 'a', load:async () => { throw new Error('Erreur interne du serveur'); }, render:() => ({ hero:'', body:'' }) } };
+  const attrs = {};
+  const root = { className:'', innerHTML:'', setAttribute:(k, v) => { attrs[k] = v; }, addEventListener() {}, querySelector:() => null };
+  const { kit } = loadKit({ document:{ contains:() => true, addEventListener() {}, visibilityState:'visible' } });
+  const cockpit = kit.createCockpit({ basePath:'/admin/x-live', domainLabel:'X', defaultView:'home', tabs:[{ key:'a', label:'A', href:'/admin/x-live' }], views });
+  await cockpit.mount({ root });
+  expect(root.className).toBe('kmc-import-runtime kmc-domain-cockpit');
+  expect(attrs['data-cockpit-language']).toBe('live-ops');
+  expect(root.innerHTML).toContain('Cockpit indisponible · Erreur interne du serveur');
+  expect(root.innerHTML).toContain('kir-domain-nav');
+});

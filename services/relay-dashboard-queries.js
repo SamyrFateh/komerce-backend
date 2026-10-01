@@ -143,7 +143,7 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }, { aut
 
   if (status) {
     const statuses = status.split(',').map(s => s.trim());
-    where += ` AND o.status = ANY($${pi}::text[])`;
+    where += ` AND o.status::text = ANY($${pi}::text[])`;
     params.push(statuses);
     pi++;
   } else {
@@ -295,7 +295,8 @@ async function getOrderDetail(user, orderId, { authorizedMarkets = null } = {}) 
     const historyParams = [order.user_id];
     let historyMarketClause = '';
     if (user.role === 'market_operator') {
-      historyParams.push(authorizedMarkets ? Array.from(authorizedMarkets) : []);
+      // authorizedMarkets est non nul ici : un market_operator sans scope a déjà reçu `forbidden`.
+      historyParams.push(Array.from(authorizedMarkets));
       historyMarketClause = ' AND market_id = ANY($2::uuid[])';
     }
     const { rows: [hist] } = await db.query(`

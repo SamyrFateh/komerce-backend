@@ -5581,6 +5581,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/e2e/import-runtime-credentials.spec.js",
+        "resolvedPath": "tests/e2e/import-runtime-credentials.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/e2e/hub-live-cockpit.spec.js",
         "resolvedPath": "tests/e2e/hub-live-cockpit.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -15303,6 +15310,13 @@
       },
       {
         "feature": "sourcing",
+        "category": "migrations",
+        "declared": "migrations/261_sourcing_source_lifecycle_update.sql",
+        "resolvedPath": "migrations/261_sourcing_source_lifecycle_update.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
         "category": "scripts",
         "declared": "scripts/sourcing-shadow-proof-staging.js",
         "resolvedPath": "scripts/sourcing-shadow-proof-staging.js",
@@ -15572,6 +15586,13 @@
         "category": "services",
         "declared": "services/sourcing-source-registry.js",
         "resolvedPath": "services/sourcing-source-registry.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "sourcing",
+        "category": "services",
+        "declared": "services/provider-credential-service.js",
+        "resolvedPath": "services/provider-credential-service.js",
         "status": "resolved-in-technical-graph"
       },
       {
@@ -15950,6 +15971,27 @@
         "category": "tests",
         "declared": "tests/integration/sourcing-source-registry-real-db.test.js",
         "resolvedPath": "tests/integration/sourcing-source-registry-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/provider-credential-service.test.js",
+        "resolvedPath": "tests/unit/provider-credential-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/unit/admin-sourcing-credentials-route.test.js",
+        "resolvedPath": "tests/unit/admin-sourcing-credentials-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "sourcing",
+        "category": "tests",
+        "declared": "tests/integration/provider-credential-vault-real-db.test.js",
+        "resolvedPath": "tests/integration/provider-credential-vault-real-db.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -28868,6 +28910,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "routes/integrations-aliexpress.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/gate-b-interrupted-json-batch.test.js",
                 "targetFile": "db.js"
               },
@@ -29702,6 +29748,10 @@
               {
                 "sourceFileId": "services/catalog-product-source-read-service.js",
                 "targetFile": "services/catalog-product-read-cutover-trial.js"
+              },
+              {
+                "sourceFileId": "routes/integrations-aliexpress.js",
+                "targetFile": "services/provider-credential-service.js"
               },
               {
                 "sourceFileId": "tests/unit/gate-a-final-real-seams.test.js",
@@ -40221,6 +40271,14 @@
                 "targetFile": "services/sourcing-import-dispatch.js"
               },
               {
+                "sourceFileId": "services/provider-credential-service.js",
+                "targetFile": "services/sourcing-import-dispatch.js"
+              },
+              {
+                "sourceFileId": "services/provider-credential-service.js",
+                "targetFile": "services/suppliers/aliexpress-oauth.js"
+              },
+              {
                 "sourceFileId": "routes/sourcing-scanner.js",
                 "targetFile": "services/supplier-catalog-scanner.js"
               },
@@ -40475,6 +40533,10 @@
               },
               {
                 "sourceFileId": "services/sourcing-source-registry.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/provider-credential-service.js",
                 "targetFile": "db.js"
               },
               {
@@ -41061,7 +41123,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1736
+        "filesObserved": 1741
       },
       "boutique": {
         "filesObserved": 214,
@@ -44070,8 +44132,8 @@
       "backend": {
         "manifestsDiscovered": 35,
         "manifestsConnected": 35,
-        "technicalNodesTotal": 539,
-        "technicalNodesOwned": 539,
+        "technicalNodesTotal": 540,
+        "technicalNodesOwned": 540,
         "technicalOrphans": 0
       },
       "dash": {
