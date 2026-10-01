@@ -160,3 +160,48 @@ Contexte : un audit humain (compte manager réel vs code/tests) sur l'autonomie 
 - **FERMÉ (2026-09-26)**, PR #1806 (`feature/gap3-client-delegation`, merge `0c34da607`). Nouvelle route `routes/market-delegation-client.js` : `GET /api/market-delegation/markets/:marketCode/clients` (index) et `GET /api/market-delegation/markets/:marketCode/clients/:clientPhone` (360), gardées par `requireMarketDelegatedCapability('client.read')` — jamais de bypass par rôle, `market_id`/`marketId` client explicitement rejeté (400). Réutilise telles quelles `services/client-index.js` et `services/client-360.js` (déjà consommées par les routes admin globales), sans dupliquer la logique de projection ; `includeSecurity` forcé à `false` pour ne jamais exposer passkeys/rôle compte à un market_operator (doctrine `client_account_facets_global_only`). Deux corrections nécessaires après le premier push pour repasser la CI au vert : (1) `contract.consumes` de `market-delegation.feature.js` ne déclarait pas la dépendance réelle vers la feature `dashboard` (services réutilisés en `@domain admin-dashboard`) — `business-graph:ratchet-check` bloque toute nouvelle catégorie de drift non revue ; (2) `docs/SECURITY_360.json` était périmé (nouvelles routes absentes du snapshot) — régénéré via `npm run security:360`, 0 route non protégée. 7/7 tests sur le nouveau fichier, 163/163 `market-delegation-*`, 11/11 `admin-client-index-route`/`admin-client-360-route`.
 
 **Verdict MARKET-DELEGATION-P0B : les 3 gaps sont fermés** (Gap 1 PR #1801, Gap 2 PR #1804, Gap 3 PR #1806). L'audit initial (Réseau, Provider, Catalogue, Offre locale, Litiges, Règlements, Hub/Relais) reste valide ; aucun nouveau gap P0 identifié à ce stade.
+
+## CREDENTIAL-AUTHORITY — Provider Credential Authority — EN COURS — 2026-10-01
+
+Branche : `feat/provider-credential-authority` (basée sur `feat/sourcing-source-archive-update`, PR #1997 ; la PR finale dépend de #1997).
+Mission : l'opérateur configure / remplace / teste les identifiants fournisseur depuis Sources, sans Railway. Chaîne :
+Sources UI → API admin → Provider Credential Authority → AES-256-GCM serveur → `credential_ref` → `sourcing_sources` → connecteur.
+Règle absolue : le navigateur ne relit JAMAIS un secret (pas même masqué). Pas de big bang ; le repli `process.env` reste actif ; aucune variable Railway supprimée dans cette PR.
+
+### Décisions (analyse Opus, ne pas rouvrir)
+
+- Coffre : table `provider_credentials` (migration 262). Enveloppe JSON chiffrée AES-256-GCM, IV aléatoire, tag, `key_version`, AAD = provider + credential_ref + version + auth_type. Clé maître `KOMERCE_PROVIDER_CREDENTIALS_MASTER_KEY` (32 octets, hex64 ou base64), `KOMERCE_PROVIDER_CREDENTIALS_KEY_VERSION` (défaut 1) ; Railway uniquement, jamais en base. Clé absente/invalide → échec fermé.
+- Statuts : pending / active / superseded / revoked / failed. Seuls pending/active gardent une enveloppe (crypto-shredding des autres, imposé par CHECK).
+- `supplier_oauth_connections` est conservée comme backend OAuth spécialisé (option C) : une ligne `auth_type='oauth'` référence la session via `oauth_session_key`, sans token.
+- Portée par fournisseur : AliExpress = plateforme (APP_KEY/SECRET en env, session OAuth par source) ; CJ = source (clé API dans le coffre, access token en cache mémoire par empreinte, jamais persisté) ; Allegro = client_id/secret par source + refresh token en session OAuth serveur ; eBay = `client_credentials`/plateforme, pas d'autopilot, non migré ; Noon = `none`, indisponible.
+- Contrat `auth` déclaré dans `CONNECTORS.api` (`mode` oauth|api_key|client_credentials|none, `scope` platform|source, `fields`). L'UI en dérive son formulaire : jamais de branche par nom de fournisseur côté front. `sourceConnectorFacts()` l'expose sans valeur ni nom de variable.
+- Les secrets passent hors-bande au connecteur (`dispatchToConnector(body, {credentials})`, `testConnection(adapter, {credentials})`), jamais dans le corps d'import, le lot ou les logs.
+- Autopilot fail-closed : `credential_status` ∈ valid | untested | invalid | missing | not_required, décidé par `deriveCredentialState` (backend). Pas `valid`/`not_required` → ni autopilot-ready, ni activation, ni import opérateur, ni run planifié. Un échec de test du coffre l'emporte sur une certification passée. Le repli env n'est `valid` que si la connexion est testée OK ou la source certifiée.
+- Création initiale : `configure` (actif, non testé) puis test distinct. Remplacement : `rotate` (pending → vrai test → bascule transactionnelle ; échec = ancien intact, nouveau `failed` et effacé). Écritures réservées au rôle `admin`.
+
+### Fait (commité)
+
+- Migration 262 + FK `sourcing_sources.credential_ref` (NOT VALID) + capacité `credentials` dans `sourcing_provider_control_events`.
+- Connecteurs CJ et Allegro : identifiants du coffre d'abord, repli env ; `testConnection` force un vrai échange. `allegro-sandbox-client` : `platformConfiguration`, `hasEnvironmentClientCredentials`.
+- `sourcing-import-dispatch` : contrats `auth`, `authContract()`, codes `credentials_missing` / `authorization_expired`, passage des credentials.
+- `services/provider-credential-service.js` : chiffrement, validation par contrat, configure / test / rotate / revoke / status / forSource / resolveForRun / linkOAuthSession, `deriveCredentialState`, `redactSecrets`.
+- Autopilot (`runSourceOnce`, `runSourceImportNow`, `setSourceActive`, `listSources`) et registre (`testSourceConnection`) passent par le coffre ; `projectSourceControl` expose `credential_status` + `auth` et bloque en fail-closed.
+- Routes admin : `GET /sources/:ref/credentials/status`, `POST /credentials`, `/credentials/test`, `/credentials/rotate`, `/credentials/revoke` (body `{credentials:{…}}`, `Cache-Control: no-store`).
+- Redaction pino : api_key, client_secret, access/refresh_token, credentials (+ variantes `*.`).
+- Tests unitaires verts : provider-credential-service (13), admin-sourcing-credentials-route (9), autopilot, projection, registre, dispatch, CJ, Allegro.
+
+### Reste à faire (ordre)
+
+1. **Intégration réelle-DB** (`tests/integration`, `describeE2E`, DATABASE_URL se terminant par `_test`) : secret absent en clair dans la table, IV différents, mauvais tag / mauvaise clé → illisible, rotation réussie atomique, rotation échouée garde l'ancien, révocation désactive l'autopilot, double configure refusé, `resolveForRun`. Créer un Postgres local, puis l'arrêter.
+2. **OAuth** : callback AliExpress → `linkOAuthSession` ; Allegro refresh token (flux OAuth serveur : state CSPRNG, échange du code côté serveur, jetons chiffrés remplacés au refresh). Aucun secret ni jeton dans les redirections ou réponses.
+3. **UI** (`public/dashboards/canonical/js/import-runtime.js` + CSS) : formulaire dérivé de `source.auth.fields` (champs secrets en `type=password`, vidés du DOM après envoi, jamais préremplis), « Configurer la connexion » / « Modifier les identifiants », « Tester la connexion », « ✓ Connexion valide », puis Préparer / Certifier / Activer ; états « Configurée / À configurer » ; OAuth → « Connecter le compte » ; `none` → rien. Messages clients : Connexion impossible / Identifiants refusés / Autorisation expirée / Nouvelle autorisation nécessaire, sans corps fournisseur ni stack.
+4. **Clean-room** : ajouter `provider_credentials` à `PRESERVED_CONFIGURATION` (`scripts/staging-clean-room-reset.js`) + test de non-régression.
+5. **E2E Playwright** avec API mockée à état : parcours CJ, parcours OAuth, parcours rotation.
+6. **Gouvernance** : intention de migration 262 + bloc schema-pending `provider_credentials` dans `docs/SCHEMA.md` ; feature map `features/sourcing.feature.js` (nouveaux fichiers : service, test) ; `npm run arch:gen`, `feature:360:gen`, `security:360` ; gates `feature:registry`, `gate:schema`, `gate:touched-files`, `gate:docs-lint`, `feature:360:check`, `arch:gate`, `map:check`. Complétion au contact (AGENTS.md §8) sur les fichiers retouchés avec leur test.
+7. **PR** (API GitHub, sections Pourquoi / Quoi / Tests, dépendance à #1997).
+
+### Points d'attention
+
+- `tests/unit/logger.test.js` : 18 échecs déjà présents avant ce chantier (vérifié en retirant le changement de `utils/logger.js`) ; non traités ici.
+- `IS_ACTIVE` / `INACTIVE_REASON` du connecteur CJ sont encore calculés depuis l'env au chargement ; la disponibilité du registre CJ est maintenant `true` (la clé relève de la source).
+- Suivi opérateur, hors PR : appliquer les migrations 260/261/262 sur Railway, définir `KOMERCE_PROVIDER_CREDENTIALS_MASTER_KEY`, `npm run schema:promote:write` après confirmation live, test réel fournisseur sur staging, puis seulement migrer les connexions existantes du repli env vers le coffre.

@@ -259,6 +259,53 @@ router.post('/sources/:sourceRef/test-connection', async (req, res, next) => {
   } catch (err) { handleError(err, res, next); }
 });
 
+// Identifiants fournisseur (coffre applicatif). Écriture réservée à l'admin ; aucune route ne
+// renvoie un secret, pas même masqué. Réponses jamais mises en cache.
+const adminOnly = requireRole(['admin']);
+const noStore = (res) => res.set('Cache-Control', 'no-store');
+
+function credentialsBody(req) {
+  const credentials = req.body?.credentials;
+  return credentials && typeof credentials === 'object' && !Array.isArray(credentials) ? credentials : {};
+}
+
+router.get('/sources/:sourceRef/credentials/status', async (req, res, next) => {
+  try {
+    noStore(res);
+    sendAction(res, 'credentials_status', await workspace.credentialStatus(req.params.sourceRef));
+  } catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources/:sourceRef/credentials', adminOnly, async (req, res, next) => {
+  try {
+    noStore(res);
+    sendAction(res, 'configure_credentials',
+      await workspace.configureCredentials(req.params.sourceRef, credentialsBody(req), req.user), 201);
+  } catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources/:sourceRef/credentials/test', async (req, res, next) => {
+  try {
+    noStore(res);
+    sendAction(res, 'test_source_connection', await workspace.testSourceConnection(req.params.sourceRef));
+  } catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources/:sourceRef/credentials/rotate', adminOnly, async (req, res, next) => {
+  try {
+    noStore(res);
+    sendAction(res, 'rotate_credentials',
+      await workspace.rotateCredentials(req.params.sourceRef, credentialsBody(req), req.user));
+  } catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources/:sourceRef/credentials/revoke', adminOnly, async (req, res, next) => {
+  try {
+    noStore(res);
+    sendAction(res, 'revoke_credentials', await workspace.revokeCredentials(req.params.sourceRef, req.user));
+  } catch (err) { handleError(err, res, next); }
+});
+
 router.post('/sources/:sourceRef/prepare', async (req, res, next) => {
   try { sendAction(res, 'prepare_source', await workspace.prepareSourceForCertification(req.params.sourceRef, req.user)); }
   catch (err) { handleError(err, res, next); }

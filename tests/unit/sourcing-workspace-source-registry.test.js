@@ -74,6 +74,7 @@ const READY_SOURCE = Object.freeze({
   import_enabled: true,
   production_enabled: true,
   production_runtime_certified: true,
+  credential_status: 'valid',
 });
 
 const project = (overrides) => workspace.projectSourceControl({ ...READY_SOURCE, ...overrides });
@@ -142,6 +143,34 @@ describe('état canonique projeté par le backend', () => {
   });
 });
 
+describe('autorité crédentielle dans la projection (fail-closed)', () => {
+  test('sans identifiants : À CONFIGURER, jamais prête ni activable', () => {
+    const view = project({ credential_status: 'missing', production_runtime_certified: false, connection_test_status: null });
+    expect(view.state).toBe('to_configure');
+    expect(view.autopilot_ready).toBe(false);
+    expect(view.activation_ready).toBe(false);
+    expect(view.hard_blockers).toContain('Identifiants à configurer');
+  });
+
+  test('identifiants refusés : BLOQUÉE même si la source était certifiée et active', () => {
+    const view = project({ credential_status: 'invalid', autopilot_enabled: true });
+    expect(view.state).toBe('blocked');
+    expect(view.autopilot_ready).toBe(false);
+    expect(view.credential_status).toBe('invalid');
+  });
+
+  test('identifiants enregistrés mais non testés : À TESTER, pas prête', () => {
+    const view = project({ credential_status: 'untested', production_runtime_certified: false, connection_test_status: null });
+    expect(view.state).toBe('connection_to_test');
+    expect(view.autopilot_ready).toBe(false);
+  });
+
+  test('credential_status absent : traité comme manquant (échec fermé)', () => {
+    const { credential_status: _omit, ...legacy } = READY_SOURCE;
+    expect(workspace.projectSourceControl(legacy).autopilot_ready).toBe(false);
+  });
+});
+
 describe('création depuis l’interface', () => {
   test('listSourceControls reflète immédiatement la création, autopilot OFF et à tester', async () => {
     mockRegistryCreate.mockResolvedValue({ source_ref: 'api:cj', created: true });
@@ -149,7 +178,7 @@ describe('création depuis l’interface', () => {
       source_ref: 'api:cj', label: 'CJdropshipping API', status: 'active', autopilot_enabled: false,
       runtime_enabled: true, connector_ready: true, discovery_ready: true,
       discovery_enabled: false, sync_enabled: false, import_enabled: false, production_enabled: false,
-      production_runtime_certified: false,
+      production_runtime_certified: false, credential_status: 'untested',
     };
     mockListSources.mockResolvedValue([created]);
 

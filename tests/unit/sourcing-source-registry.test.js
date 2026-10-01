@@ -24,6 +24,10 @@ jest.mock('../../services/sourcing-import-dispatch', () => ({
   sourceAutomationDescriptor: (...args) => mockDescriptor(...args),
   testConnection: (...args) => mockTestConnection(...args),
 }));
+const mockCredentialTest = jest.fn();
+jest.mock('../../services/provider-credential-service', () => ({
+  test: (...args) => mockCredentialTest(...args),
+}));
 jest.mock('../../services/sourcing-source-autopilot', () => ({
   descriptorSourceRef: (descriptor) => `api:${descriptor.adapter}`,
   requireSource: (...args) => mockRequireSource(...args),
@@ -192,25 +196,22 @@ describe('test de connexion', () => {
     mockQuery.mockResolvedValue({ rows: [{ connection_tested_at: '2026-10-01T01:00:00Z' }] });
   });
 
-  test('connexion valide : mémorisée, sans KIR ni capacité ni certification', async () => {
-    mockTestConnection.mockResolvedValue({ ok: true, code: 'connection_ok', message: 'Connexion valide' });
+  test('connexion valide : déléguée à l’autorité crédentielle (secrets côté serveur seulement)', async () => {
+    mockCredentialTest.mockResolvedValue({ source_ref: 'api:cj', ok: true, code: 'connection_ok', message: 'Connexion valide', tested_at: '2026-10-01T01:00:00Z' });
 
     const result = await registry.testSourceConnection('api:cj');
 
     expect(result).toEqual({ source_ref: 'api:cj', ok: true, code: 'connection_ok', message: 'Connexion valide', tested_at: '2026-10-01T01:00:00Z' });
-    expect(mockTestConnection).toHaveBeenCalledWith('cj');
-    const [update] = sqlCalls();
-    expect(update.params).toEqual(['api:cj', 'ok', null]);
-    expect(update.sql).not.toMatch(/production_certified|_enabled|autopilot|sourcing_captures/);
+    expect(mockCredentialTest).toHaveBeenCalledWith('api:cj', expect.any(Object));
+    expect(mockTestConnection).not.toHaveBeenCalled();
   });
 
   test('connexion impossible : raison métier courte, jamais de message brut ni de secret', async () => {
-    mockTestConnection.mockResolvedValue({ ok: false, code: 'credentials_rejected', message: 'Le fournisseur a refusé les identifiants.' });
+    mockCredentialTest.mockResolvedValue({ source_ref: 'api:cj', ok: false, code: 'credentials_rejected', message: 'Le fournisseur a refusé les identifiants.', tested_at: null, extra: 'x' });
 
     const result = await registry.testSourceConnection('api:cj');
 
-    expect(result).toMatchObject({ ok: false, code: 'credentials_rejected', message: 'Le fournisseur a refusé les identifiants.' });
-    expect(sqlCalls()[0].params).toEqual(['api:cj', 'failed', 'credentials_rejected']);
+    expect(result).toEqual({ source_ref: 'api:cj', ok: false, code: 'credentials_rejected', message: 'Le fournisseur a refusé les identifiants.', tested_at: null });
     expect(JSON.stringify(result)).not.toMatch(/stack|Error:|apiKey|token/i);
   });
 
