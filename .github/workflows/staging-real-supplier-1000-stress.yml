@@ -46,7 +46,7 @@ jobs:
     env:
       KOMERCE_ENV: staging
       NODE_ENV: test
-      DATABASE_URL: ${{ secrets.RAILWAY_STAGING_DATABASE_URL }}
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
 
     steps:
       - name: Resolve bounded operation
@@ -103,7 +103,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_STAGING_DATABASE_URL manquant — aucun write autorisé sur le Railway production-only'; exit 1; }
+          test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_DATABASE_URL manquant — opération staging Railway impossible'; exit 1; }
           test "${KOMERCE_ENV}" = 'staging'
           test "${NODE_ENV}" = 'test'
 
