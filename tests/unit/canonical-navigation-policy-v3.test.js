@@ -52,7 +52,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     const nav = loadPolicy();
     expect(domainIds(nav, 'finance')).toEqual(['finance']);
     expect(domainIds(nav, 'sourcing')).toEqual(['live']);
-    expect(domainIds(nav, 'agent_hub')).toEqual(['operations']);
+    expect(domainIds(nav, 'agent_hub')).toEqual(['operations', 'live']);
     expect(domainIds(nav, 'agent_relais')).toEqual(['operations', 'live', 'finance']);
     expect(domainIds(nav, 'agent_transitaire')).toEqual(['operations']);
     expect(domainIds(nav, 'support')).toEqual([]);
@@ -68,7 +68,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     ]);
     expect(spaceIds(nav, 'live', 'admin')).toEqual(['import-runtime', 'hub-live', 'relais-live']);
     expect(spaceIds(nav, 'live', 'sourcing')).toEqual(['import-runtime']);
-    expect(spaceIds(nav, 'live', 'agent_hub')).toEqual([]);
+    expect(spaceIds(nav, 'live', 'agent_hub')).toEqual(['hub-live']);
     expect(spaceIds(nav, 'live', 'agent_relais')).toEqual(['relais-live']);
     expect(spaceIds(nav, 'operations', 'market_operator')).toEqual([
       'operations-overview', 'operations-workspace', 'shipping-customs-workspace',
