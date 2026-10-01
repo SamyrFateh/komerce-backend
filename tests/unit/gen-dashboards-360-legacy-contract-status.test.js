@@ -13,6 +13,7 @@ const {
   extractContractStatus,
   isProvenStatus,
   parseOpenApiContract,
+  build,
 } = require('../../scripts/gen-dashboards-360');
 
 describe('Legacy Dashboard 360 — OpenAPI proof status', () => {
@@ -48,10 +49,18 @@ describe('Legacy Dashboard 360 — OpenAPI proof status', () => {
     expect(isProvenStatus(extractContractStatus(def))).toBe(false);
   });
 
-  test('real contract distinguishes already-tested dashboard dependencies', () => {
+  test('real contract exposes existing HTTP-tested dashboard dependencies as PROVEN', () => {
     const contract = parseOpenApiContract();
     expect(contract['GET /api/orders']).toBe('PROVEN');
     expect(contract['GET /api/products']).toBe('PROVEN');
-    expect(contract['GET /api/admin/costing/orders']).toBe('UNKNOWN');
+    expect(contract['GET /api/admin/costing/orders']).toBe('PROVEN');
+    expect(contract['GET /api/admin/economic/executive']).toBe('PROVEN');
+    expect(contract['POST /api/transitaire/ship']).toBe('PROVEN');
+  });
+
+  test('Legacy Dashboard 360 has no called response contract left unproven', () => {
+    const model = build();
+    expect(model.summary.unprovenContracts).toBe(0);
+    expect(model.diagnostics.unprovenContracts).toEqual([]);
   });
 });
