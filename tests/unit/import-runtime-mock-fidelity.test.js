@@ -140,6 +140,13 @@ describe('import-runtime — doctrine LIVE Operations', () => {
     expect(source).toContain('run.events');
   });
 
+  test('préparation source suit automatiquement le KIR dès sa création', () => {
+    expect(source).toContain('baselineRunRefs: (lastPayload?.lots || []).map(lot => lot.run_ref)');
+    expect(source).toContain('startActivationPolling();');
+    expect(source).toContain("global.history.pushState({}, '', urlFor(activationState.runRef));");
+    expect(source).toContain("result?.certification_run?.run_ref || null");
+  });
+
   test('pipeline et KPI ouvrent des drill-downs du même KIR', () => {
     expect(source).toContain('function stageUrl(runRef, stageKey');
     expect(source).toContain('data-cockpit-nav');
