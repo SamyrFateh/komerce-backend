@@ -418,6 +418,69 @@ const KNOWN_RESPONSES = {
   '/api/admin/workspaces/pricing/market/{marketCode}/commercial-prices': {
     get: { fields: ['market','authority','products'], source: 'route-read' }
   },
+  // D4 — Market Delegation : formes lues directement dans les routes, sauf
+  // performance qui est une projection explicite du service économique.
+  '/api/market-delegation/markets/{marketCode}/client-cases/disputes': {
+    get: { fields: ['market','assignment_id','actor_capabilities','disputes'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/client-cases/disputes/{disputeId}': {
+    put: { fields: ['success','dispute'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/local-offer/services': {
+    get: { fields: ['market','assignment_id','actor_capabilities','services'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/local-offer/services/{serviceId}': {
+    put: { fields: ['success','service'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/local-offer/physical-offers': {
+    get: { fields: ['market','assignment_id','actor_capabilities','physical_offers'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/local-offer/physical-offers/{physicalOfferId}': {
+    put: { fields: ['success','physical_offer'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/network/providers': {
+    get: { fields: ['market','assignment_id','actor_capabilities','providers'], source: 'route-read' },
+    post: { fields: ['success','provider'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/network/providers/{providerId}': {
+    put: { fields: ['success','provider'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/network/providers/{providerId}/activate': {
+    post: { fields: ['success','provider'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/network/providers/{providerId}/suspend': {
+    post: { fields: ['success','provider'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/network/relais': {
+    get: { fields: ['market','assignment_id','actor_capabilities','relais'], source: 'route-read' },
+    post: { fields: ['success','relais'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/network/relais/{relaisId}': {
+    put: { fields: ['success','relais'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/network/relais/{relaisId}/activate': {
+    post: { fields: ['success','relais'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/network/relais/{relaisId}/suspend': {
+    post: { fields: ['success','relais'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/performance': {
+    get: { fields: ['market','assignment_id','period','status','reason','activity','contribution','structure_costs','coverage','settlement_basis','evaluated_at'], source: 'service-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/settlements': {
+    get: { fields: ['market','assignment_id','actor_capabilities','settlements'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/settlements/{settlementId}/request': {
+    post: { fields: ['success','settlement'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/settlements/{settlementId}/receive': {
+    post: { fields: ['success','settlement'], source: 'route-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/structure-events': {
+    get: { fields: ['market','assignment_id','actor_capabilities','events'], source: 'route-read' },
+    post: { fields: ['success','event'], source: 'route-read' }
+  },
+
   // market-delegation team/catalog/cash-control : tests/unit/market-delegation-
   // team-routes.test.js, -cash-control-routes.test.js, -catalog-routes.test.js
   // existent mais sont structurels (auth middleware présent, market_id rejeté,
@@ -2405,6 +2468,9 @@ if (inventory.length < 150) {
 }
 
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'POST /api/market-delegation/markets/{marketCode}/network/providers': '201',
+  'POST /api/market-delegation/markets/{marketCode}/network/relais': '201',
+  'POST /api/market-delegation/markets/{marketCode}/structure-events': '201',
   'POST /api/hub/unit': '201',
   'GET /api/integrations/aliexpress/oauth/start': '302',
   'POST /api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe': '201',
