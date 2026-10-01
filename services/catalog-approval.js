@@ -35,7 +35,8 @@ const db = require('../db');
 const { createAlert } = require('../utils/alerts');
 const { getRuleNumber } = require('../utils/rules');
 const { upsertOverrides } = require('./catalog-overrides');
-const { validatePublicationUpdate } = require('./product-publication-guard');
+const { certifyCatalogProduct } = require('./catalog-certification');
+const { activateProductSkuInventoryModel } = require('./product-sku-service');
 const log = require('../utils/logger').child({ module: 'catalog-approval' });
 
 const PENDING_SOURCES = Object.freeze(['connector_raw', 'ai_enriched', 'manual']);
@@ -116,15 +117,53 @@ async function withPublicationDecision(q, work) {
   return work(q);
 }
 
+async function preparePublication(q, before) {
+  const verdict = await certifyCatalogProduct(q, before.id);
+  if (!verdict) return { ok: false, result: { status: 404, body: { error: 'Produit introuvable' } } };
+
+  if (!verdict.certification.certified) {
+    const guardCode = verdict.certification.publication_guard;
+    const guardReason = (verdict.certification.reasons || []).find(reason => reason === `publication_guard:${guardCode}`);
+    return {
+      ok: false,
+      result: {
+        status: 422,
+        body: {
+          error: guardReason
+            ? `Publication refusée : ${guardCode}`
+            : 'Certification Catalogue incomplète',
+          code: guardReason ? guardCode : 'catalog_certification_failed',
+          reasons: verdict.certification.reasons,
+          certification_version: verdict.certification.certification_version,
+        },
+      },
+    };
+  }
+
+  if (verdict.row.has_sourcing_candidate === true) {
+    try {
+      await activateProductSkuInventoryModel(q, before.id);
+    } catch (error) {
+      return {
+        ok: false,
+        result: {
+          status: error.status || 422,
+          body: {
+            error: error.message,
+            code: error.code || 'catalog_sku_cutover_not_ready',
+            reasons: error.reasons || [],
+          },
+        },
+      };
+    }
+  }
+
+  return { ok: true, verdict };
+}
+
 async function publish(q, before) {
-  const { rows: [{ count: mediaCount }] } = await q.query(
-    `SELECT COUNT(*)::int AS count FROM catalog_media WHERE product_id = $1 AND is_active = TRUE`,
-    [before.id]
-  );
-  const patch = { is_active: true };
-  const context = { catalogMediaCount: mediaCount };
-  const check = validatePublicationUpdate({ before, patch, context });
-  if (!check.ok) return { status: 422, body: { error: check.error, code: check.code } };
+  const preparation = await preparePublication(q, before);
+  if (!preparation.ok) return preparation.result;
 
   const capacity = await assertCatalogCapacity(q);
   if (!capacity.ok) return capacity.result;
@@ -230,19 +269,10 @@ async function overrideAndApprove(q = db, productId, { fields, reason } = {}, ad
       throw err;
     }
 
-    // Cap déjà contrôlé sous le même advisory lock ; ne pas refaire une lecture
-    // susceptible de rendre les tests/transactions inutilement bavards.
-    const { rows: [{ count: overrideMediaCount }] } = await tx.query(
-      `SELECT COUNT(*)::int AS count FROM catalog_media WHERE product_id = $1 AND is_active = TRUE`,
-      [overrideResult.product.id]
-    );
-    const patch = { is_active: true };
-    const check = validatePublicationUpdate({
-      before: overrideResult.product,
-      patch,
-      context: { catalogMediaCount: overrideMediaCount },
-    });
-    if (!check.ok) return { status: 422, body: { error: check.error, code: check.code } };
+    // Cap déjà contrôlé sous le même advisory lock ; certification + éventuelle
+    // bascule SKU utilisent exactement la même frontière que l'approbation simple.
+    const preparation = await preparePublication(tx, overrideResult.product);
+    if (!preparation.ok) return preparation.result;
     const { rows: [product] } = await tx.query(
       `UPDATE products
           SET is_active = TRUE,
@@ -273,5 +303,5 @@ module.exports = {
   approveProduct,
   rejectProduct,
   overrideAndApprove,
-  _test: { isPending, assertCatalogCapacity, withPublicationDecision },
+  _test: { isPending, assertCatalogCapacity, withPublicationDecision, preparePublication },
 };
