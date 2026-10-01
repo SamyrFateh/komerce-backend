@@ -86,7 +86,7 @@ test('workspace Pricing conserve un produit non pricé à null', async () => {
       name: 'Produit CJ',
       category: 'vetements',
       price_kmf: null,
-      cost_kmf: 1500,
+      cost_kmf: null,
       weight_kg: 0.3,
       volume_m3: null,
       is_active: false,
@@ -98,6 +98,8 @@ test('workspace Pricing conserve un produit non pricé à null', async () => {
   const result = await workspace.buildWorkspace();
 
   expect(result.products[0].price_kmf).toBeNull();
+  expect(result.products[0].cost_kmf).toBeNull();
+  expect(result.products[0].volume_m3).toBeNull();
 });
 
 test('simulation convertit product_ref en id uniquement pour le moteur', async () => {
@@ -124,8 +126,39 @@ test('simulation impact transmet null quand le produit n’a pas encore de prix'
 
   await workspace.simulateImpact({ product_ref: 'KPR-UNPRICED', overrides: [] });
 
-  expect(mockFlow.mock.calls[0][0].current_price_kmf).toBeNull();
-  expect(mockFlow.mock.calls[1][0].current_price_kmf).toBeNull();
+  expect(mockFlow.mock.calls[0][0]).toMatchObject({
+    product_id: 'internal-product',
+    current_price_kmf: null,
+  });
+  expect(mockFlow.mock.calls[1][0]).toMatchObject({
+    product_id: 'internal-product',
+    current_price_kmf: null,
+  });
+});
+
+test('simulation impact ne transforme pas des données économiques absentes en zéros', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [{
+    id: 'internal-product',
+    product_ref: 'KPR-MISSING',
+    name: 'Produit CJ incomplet',
+    category: 'vetements',
+    price_kmf: null,
+    cost_kmf: null,
+    weight_kg: null,
+    volume_m3: null,
+  }] });
+  mockLoadGlobalConfig.mockResolvedValueOnce({ finance: {}, categories: {}, provisions: [], charges: [], cost_benchmarks: [], components: [] });
+  mockFlow.mockResolvedValue({});
+
+  await workspace.simulateImpact({ product_ref: 'KPR-MISSING', overrides: [] });
+
+  expect(mockFlow.mock.calls[0][0]).toMatchObject({
+    product_id: 'internal-product',
+    cost_kmf: null,
+    weight_kg: null,
+    volume_m3: null,
+    current_price_kmf: null,
+  });
 });
 
 test('simulation impact utilise le même moteur avant/après sans persister', async () => {

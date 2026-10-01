@@ -79,11 +79,14 @@
 
     const nav = doc.createElement('nav');
     nav.className = 'kmc-entity-nav';
+    const pricingHref = product.product_ref
+      ? `/admin/workspaces/pricing?product_ref=${encodeURIComponent(product.product_ref)}`
+      : '/admin/workspaces/pricing';
     [
       ['/admin/commerce', '← Commerce'],
       ['/admin/products', 'Catalogue'],
       ['/admin/sourcing', 'Sourcing'],
-      ['/admin/pricing', 'Pricing'],
+      [pricingHref, 'Pricing'],
     ].forEach(([href, label]) => {
       const link = text(doc, 'a', 'kmc-entity-nav-link', label);
       link.setAttribute('href', href);

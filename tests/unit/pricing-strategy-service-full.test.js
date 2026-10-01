@@ -195,6 +195,32 @@ test('applyStrategy applique uniquement une décision humaine explicite et journ
   expect(client.release).toHaveBeenCalled();
 });
 
+test('applyStrategy conserve null comme ancien prix lors de la première décision', async () => {
+  const calls = [];
+  const client = {
+    query: jest.fn(async (sql, params) => {
+      calls.push({ sql: String(sql), params });
+      if (String(sql).includes('SELECT * FROM products WHERE id')) {
+        return { rows: [{ id: 'p1', category: 'phones', cost_kmf: 900, weight_kg: 1, price_kmf: null }] };
+      }
+      if (String(sql).includes('SELECT strategy_type FROM pricing_strategies')) return { rows: [] };
+      return { rows: [] };
+    }),
+    release: jest.fn(),
+  };
+  const pool = { getClient: jest.fn().mockResolvedValue(client) };
+
+  await applyStrategy(pool, {
+    product_id: 'p1',
+    strategy_type: 'manual_market_decision',
+    final_price_kmf: 2100,
+    reason: 'premier prix',
+  }, 'u1');
+
+  const history = calls.find(call => call.sql.includes('INSERT INTO price_history'));
+  expect(history.params[1]).toBeNull();
+});
+
 test('estimateElasticity conserve le calcul historique sur faits observés', async () => {
   const db = makeDb([
     ['FROM price_history', { rows: [

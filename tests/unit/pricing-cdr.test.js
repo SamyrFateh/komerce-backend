@@ -115,6 +115,37 @@ describe('pricing-cdr', () => {
     expect(result._meta).toMatchObject({ taxEUR: 500, fretEUR: 100, category: 'food', channel: 'cash_relais' });
   });
 
+  it('computeCDR utilise réellement les défauts logistiques de la catégorie quand le produit ne les connaît pas', () => {
+    const cfg = {
+      finance: { taux_change_eur_kmf: 500, fret_eur_per_m3: 100, allocation_confidence: 'high', objectif_commandes_mois: 10 },
+      categories: {
+        vetements: {
+          douane_pct: 20,
+          tva_pct: 10,
+          taxe_add_pct: 2.5,
+          default_weight_kg: 0.4,
+          default_dim_l_cm: 25,
+          default_dim_w_cm: 22,
+          default_dim_h_cm: 10,
+        },
+      },
+      components: [],
+      provisions: [],
+      charges: [],
+    };
+
+    const result = computeCDR({ category: 'vetements', cost_kmf: 1000, weight_kg: null }, { config: cfg, volume_m3: null });
+
+    expect(result._meta).toMatchObject({
+      weight_kg: 0.4,
+      volume_m3: 0.0055,
+      weight_source: 'category',
+      volume_source: 'category',
+    });
+    expect(result.details.freight).toBe(Math.round(0.0055 * 100 * 500));
+    expect(result.warnings.join(' ')).not.toContain('défaut générique');
+  });
+
   it('computeCDR signale categorie inconnue, cout absent et allocation non calibree', () => {
     const cfg = {
       finance: { allocation_confidence: 'low' },

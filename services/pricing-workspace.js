@@ -78,7 +78,7 @@ async function resolveProductRef(productRef, q = db) {
   if (!ref) throw new PricingWorkspaceError(400, 'product_ref requis', 'pricing_product_ref_required');
   const { rows } = await q.query(
     `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg,
-            (COALESCE(volume_cm3, 0) / 1000000.0) AS volume_m3,
+            (volume_cm3 / 1000000.0) AS volume_m3,
             is_active
        FROM products
       WHERE product_ref = $1
@@ -115,7 +115,7 @@ function publicProduct(product) {
     name: product.name,
     category: product.category,
     price_kmf: product.price_kmf == null ? null : Number(product.price_kmf),
-    cost_kmf: Number(product.cost_kmf) || 0,
+    cost_kmf: product.cost_kmf == null ? null : Number(product.cost_kmf),
     weight_kg: product.weight_kg == null ? null : Number(product.weight_kg),
     volume_m3: product.volume_m3 == null ? null : Number(product.volume_m3),
     is_active: Boolean(product.is_active),
@@ -526,15 +526,22 @@ function simulationDelta(before, after) {
   return delta;
 }
 
+function numericOrNull(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
 function simulationEngineInput(product = {}, body = {}) {
   return {
+    product_id: product.id || null,
     category: body.category || product.category || 'phones',
     channel: body.channel || 'cash_relais',
-    cost_kmf: body.cost_kmf != null ? Number(body.cost_kmf) : Number(product.cost_kmf),
-    weight_kg: body.weight_kg != null ? Number(body.weight_kg) : Number(product.weight_kg),
-    volume_m3: body.volume_m3 != null ? Number(body.volume_m3) : Number(product.volume_m3),
-    current_price_kmf: body.current_price_kmf != null ? Number(body.current_price_kmf) : (product.price_kmf == null ? null : Number(product.price_kmf)),
-    pricing_strategy: body.pricing_strategy || 'mechanical',
+    cost_kmf: body.cost_kmf != null ? numericOrNull(body.cost_kmf) : numericOrNull(product.cost_kmf),
+    weight_kg: body.weight_kg != null ? numericOrNull(body.weight_kg) : numericOrNull(product.weight_kg),
+    volume_m3: body.volume_m3 != null ? numericOrNull(body.volume_m3) : numericOrNull(product.volume_m3),
+    current_price_kmf: body.current_price_kmf != null ? numericOrNull(body.current_price_kmf) : numericOrNull(product.price_kmf),
+    pricing_strategy: body.pricing_strategy || 'market_bounded',
   };
 }
 
@@ -551,7 +558,7 @@ async function buildWorkspace() {
   ] = await Promise.all([
     db.query(
       `SELECT id, product_ref, name, category, price_kmf, cost_kmf, weight_kg,
-              (COALESCE(volume_cm3, 0) / 1000000.0) AS volume_m3,
+              (volume_cm3 / 1000000.0) AS volume_m3,
               is_active
          FROM products
         ORDER BY is_active DESC, updated_at DESC NULLS LAST, name
