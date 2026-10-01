@@ -74,9 +74,14 @@ test('la file de curation garde les décisions et actions dans le viewport', () 
   expect(workspace).toContain('curationState');
   expect(css).toContain('position: sticky');
   expect(css).toContain('.kmc-catalog-actions-cell');
+  expect(css).toContain('display: table-cell');
+  expect(css).toContain('.kmc-catalog-actions-inner');
+  expect(css).toContain('.kmc-catalog-cell-stack');
   expect(css).toContain('min-width: 240px');
   expect(css).toContain('-webkit-line-clamp: 2');
   expect(css).toContain('word-break: normal');
+  expect(workspace).toContain("actionContent.className = 'kmc-catalog-actions-inner'");
+  expect(workspace).toContain("signalContent.className = 'kmc-catalog-cell-stack'");
 });
 
 test('Catalogue ne crée plus de navigation parallèle au shell Canonical', () => {
