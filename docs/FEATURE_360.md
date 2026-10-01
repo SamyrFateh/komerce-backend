@@ -577,13 +577,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 296 fichier(s) déclaré(s)
+**Implementation** : 297 fichier(s) déclaré(s)
   - dash : 105
   - middleware : 1
   - migrations : 2
   - routes : 24
   - services : 25
-  - tests : 139
+  - tests : 140
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 
@@ -776,6 +776,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - preuves provider P0 Business readiness → P1 Raw API → P2 Adapter → P3 Pipeline → P4 Golden E2E
   - règle fail-closed commune : une preuve absente, inconnue ou ambiguë ne devient jamais implicitement PASS
   - inventaire et fiches de qualification des frontières API externes de Komerce
+  - contrat d onboarding humain dérivé de la vérité fournisseur : prérequis, lieu/action de création, éléments à obtenir, éléments à ne jamais demander et critère de fin
 - _out_ :
   - les adapters et clients provider spécifiques, qui restent dans la feature métier consommatrice (payments, notifications, catalog/purchasing, etc.)
   - les credentials/secrets et leur cycle de rotation, qui restent dans l ownership technique ou métier approprié
@@ -791,20 +792,24 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - une preuve Sandbox/staging ne satisfait jamais implicitement un contrat Production
 - une correspondance externe ambiguë bloque : Komerce ne devine jamais une référence ou un état provider
 - un Golden E2E prouve la composition de contrats élémentaires déjà qualifiés ; il ne sert jamais à découvrir P0/P1 à l aveugle
+- un onboarding partenaire ne demande jamais un credential au hasard : le type, le propriétaire, les prérequis, les actions de création et les éléments à obtenir proviennent du contrat fournisseur qualifié
+- l IA peut accélérer la lecture et la formalisation mais ne devient jamais l autorité du contrat : la provenance reste documentation fournisseur, confirmation fournisseur ou preuve runtime explicite
 - les adapters provider et les side effects restent possédés par leurs features métier ; external-provider-contracts ne devient jamais un god-adapter
 
 **Owns** : _aucune_
 
-**Exposes** : 9 internal API(s), 0 HTTP interface(s)
+**Exposes** : 11 internal API(s), 0 HTTP interface(s)
   - `assertConversation` (scripts/provider-contract-proof.js) — resolved
   - `assertThrough` (scripts/provider-contract-proof.js) — resolved
   - `buildConversation` (scripts/provider-contract-proof.js) — resolved
   - `buildProof` (scripts/provider-contract-proof.js) — resolved
+  - `checkReady` (services/external-provider-onboarding-contracts.js) — resolved
+  - `publicContract` (services/external-provider-onboarding-contracts.js) — resolved
   - `runBatch` (scripts/external-provider-batch-proof.js) — resolved
   - `runEbayBrowseReadOnlyProof` (scripts/ebay-sandbox-browse-proof.js) — resolved
   - `runStripeReadOnlyProof` (scripts/stripe-provider-contract-proof.js) — resolved
   - `scanRepository` (scripts/external-provider-boundary-scan.js) — resolved
-  - `summary` (scripts/provider-contract-proof.js) — resolved
+  - _...1 de plus, voir FEATURE_360.json_
 
 **Consumes** : _aucune_
 **Consumed by** : catalog (DECLARED_AND_OBSERVED), purchasing (DECLARED_AND_OBSERVED)
@@ -820,10 +825,11 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 **Architectural debt** (1) :
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "infrastructure" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 11 fichier(s) déclaré(s)
+**Implementation** : 13 fichier(s) déclaré(s)
   - config : 1
   - scripts : 5
-  - tests : 5
+  - services : 1
+  - tests : 6
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="external-provider-contracts"]_
 
@@ -951,7 +957,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 351 fichier(s) déclaré(s)
+**Implementation** : 352 fichier(s) déclaré(s)
   - assets : 33
   - bootstrap : 9
   - ci : 24
@@ -963,7 +969,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - routes : 1
   - scripts : 92
   - services : 2
-  - tests : 81
+  - tests : 82
   - utils : 5
   - validators : 1
 
@@ -1171,7 +1177,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `carriers`, `hub_custody_events`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `parcel_events`, `parcel_items`, `parcels`, `pickup_print_tokens`, `pickup_reveal_codes`, `pickup_verify_attempts`, `relais`, `scan_events`, `scans`, `shipments`
 
-**Exposes** : 27 internal API(s), 77 HTTP interface(s)
+**Exposes** : 27 internal API(s), 78 HTTP interface(s)
   - `addParcelItem` (services/parcel-item-mutation-service.js) — resolved
   - `appendParcelShipmentInfo` (services/parcel-mutation-service.js) — resolved
   - `assignParcelItem` (services/parcel-item-mutation-service.js) — resolved
@@ -1197,15 +1203,15 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 112 fichier(s) déclaré(s)
+**Implementation** : 114 fichier(s) déclaré(s)
   - boutique : 1
   - dash : 2
   - docs : 5
   - middleware : 1
   - migrations : 3
   - routes : 18
-  - services : 25
-  - tests : 54
+  - services : 26
+  - tests : 55
   - utils : 3
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="logistics"]_
@@ -2048,6 +2054,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
+- [object Object]
 - purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)
 - une réception ne peut être appliquée qu'à un bon de commande existant et cohérent
 - aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js
@@ -2081,12 +2089,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 55 fichier(s) déclaré(s)
-  - migrations : 2
+**Implementation** : 63 fichier(s) déclaré(s)
+  - migrations : 4
   - routes : 1
-  - scripts : 2
-  - services : 21
-  - tests : 29
+  - scripts : 3
+  - services : 22
+  - tests : 33
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="purchasing"]_
 
@@ -2419,13 +2427,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 107 fichier(s) déclaré(s)
+**Implementation** : 112 fichier(s) déclaré(s)
   - middleware : 1
-  - migrations : 13
+  - migrations : 14
   - routes : 2
   - scripts : 7
-  - services : 32
-  - tests : 52
+  - services : 33
+  - tests : 55
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="sourcing"]_
 

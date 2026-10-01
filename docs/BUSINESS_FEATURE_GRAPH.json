@@ -7932,6 +7932,13 @@
       },
       {
         "feature": "external-provider-contracts",
+        "category": "services",
+        "declared": "services/external-provider-onboarding-contracts.js",
+        "resolvedPath": "services/external-provider-onboarding-contracts.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "external-provider-contracts",
         "category": "scripts",
         "declared": "scripts/provider-contract-proof.js",
         "resolvedPath": "scripts/provider-contract-proof.js",
@@ -7977,6 +7984,13 @@
         "category": "tests",
         "declared": "tests/unit/provider-contract-proof.test.js",
         "resolvedPath": "tests/unit/provider-contract-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "category": "tests",
+        "declared": "tests/unit/external-provider-onboarding-contracts.test.js",
+        "resolvedPath": "tests/unit/external-provider-onboarding-contracts.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10117,6 +10131,13 @@
       {
         "feature": "infrastructure",
         "category": "tests",
+        "declared": "tests/unit/gen-dashboards-360-legacy-contract-status.test.js",
+        "resolvedPath": "tests/unit/gen-dashboards-360-legacy-contract-status.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
         "declared": "tests/unit/golden-cdr-preflight.test.js",
         "resolvedPath": "tests/unit/golden-cdr-preflight.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10915,6 +10936,13 @@
       {
         "feature": "logistics",
         "category": "services",
+        "declared": "services/hub-reference.js",
+        "resolvedPath": "services/hub-reference.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "logistics",
+        "category": "services",
         "declared": "services/routing.js",
         "resolvedPath": "services/routing.js",
         "status": "resolved-in-technical-graph"
@@ -11386,6 +11414,13 @@
         "category": "tests",
         "declared": "tests/unit/hub-operations.test.js",
         "resolvedPath": "tests/unit/hub-operations.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "logistics",
+        "category": "tests",
+        "declared": "tests/unit/hub-reference.test.js",
+        "resolvedPath": "tests/unit/hub-reference.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14372,6 +14407,13 @@
       },
       {
         "feature": "purchasing",
+        "category": "services",
+        "declared": "services/purchase-line-snapshot.js",
+        "resolvedPath": "services/purchase-line-snapshot.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
         "category": "routes",
         "declared": "routes/purchasing.js",
         "resolvedPath": "routes/purchasing.js",
@@ -14393,6 +14435,27 @@
       },
       {
         "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/263_purchase_lines_foundation.sql",
+        "resolvedPath": "migrations/263_purchase_lines_foundation.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/264_purchase_line_progress_view.sql",
+        "resolvedPath": "migrations/264_purchase_line_progress_view.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "scripts",
+        "declared": "scripts/purchase-lines-parity-check.js",
+        "resolvedPath": "scripts/purchase-lines-parity-check.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
         "category": "scripts",
         "declared": "scripts/allegro-sandbox-purchase-proof.js",
         "resolvedPath": "scripts/allegro-sandbox-purchase-proof.js",
@@ -14403,6 +14466,34 @@
         "category": "scripts",
         "declared": "scripts/allegro-shipping-capability-proof.js",
         "resolvedPath": "scripts/allegro-shipping-capability-proof.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/purchase-line-snapshot.test.js",
+        "resolvedPath": "tests/unit/purchase-line-snapshot.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/purchase-lines-parity-check.test.js",
+        "resolvedPath": "tests/unit/purchase-lines-parity-check.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/purchase-lines-postgres.test.js",
+        "resolvedPath": "tests/integration/purchase-lines-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/purchase-line-progress-postgres.test.js",
+        "resolvedPath": "tests/integration/purchase-line-progress-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -19901,6 +19992,14 @@
       },
       {
         "feature": "logistics",
+        "entry": "POST /api/scans/hub/reconcile",
+        "method": "POST",
+        "path": "/api/scans/hub/reconcile",
+        "routeFile": "routes/scans.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "logistics",
         "entry": "POST /api/scans/verify-qr",
         "method": "POST",
         "path": "/api/scans/verify-qr",
@@ -22109,6 +22208,18 @@
         "feature": "external-provider-contracts",
         "fn": "summary",
         "file": "scripts/provider-contract-proof.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "fn": "publicContract",
+        "file": "services/external-provider-onboarding-contracts.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "external-provider-contracts",
+        "fn": "checkReady",
+        "file": "services/external-provider-onboarding-contracts.js",
         "status": "resolved"
       },
       {
@@ -28632,6 +28743,10 @@
               {
                 "sourceFileId": "scripts/allegro-sandbox-check.js",
                 "targetFile": "scripts/provider-contract-proof.js"
+              },
+              {
+                "sourceFileId": "services/sourcing-import-dispatch.js",
+                "targetFile": "services/external-provider-onboarding-contracts.js"
               },
               {
                 "sourceFileId": "tests/unit/allegro-conversation-requiredness.test.js",
@@ -38911,6 +39026,10 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "scripts/purchase-lines-parity-check.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "scripts/allegro-sandbox-purchase-proof.js",
                 "targetFile": "db.js"
               },
@@ -38982,6 +39101,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/purchasing-trigger-service.js",
+                "targetFile": "services/hub-reference.js"
+              },
               {
                 "sourceFileId": "services/purchasing-receive-service.js",
                 "targetFile": "services/scan-operations.js"
@@ -39126,10 +39249,6 @@
             "evidence": [
               {
                 "sourceFileId": "services/purchasing-trigger-service.js",
-                "targetFile": "services/suppliers/supplier-order-identity.js"
-              },
-              {
-                "sourceFileId": "services/purchasing-trigger-service.js",
                 "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
               },
               {
@@ -39175,6 +39294,10 @@
               {
                 "sourceFileId": "services/suppliers/purchase-order-confirmation-boundary.js",
                 "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
+              },
+              {
+                "sourceFileId": "services/purchase-line-snapshot.js",
+                "targetFile": "services/suppliers/supplier-order-identity.js"
               },
               {
                 "sourceFileId": "tests/unit/purchasing-adapter-resolution.test.js",
@@ -41123,7 +41246,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1741
+        "filesObserved": 1752
       },
       "boutique": {
         "filesObserved": 214,
@@ -44132,8 +44255,8 @@
       "backend": {
         "manifestsDiscovered": 35,
         "manifestsConnected": 35,
-        "technicalNodesTotal": 540,
-        "technicalNodesOwned": 540,
+        "technicalNodesTotal": 543,
+        "technicalNodesOwned": 543,
         "technicalOrphans": 0
       },
       "dash": {

@@ -269,6 +269,20 @@ Trigger `trg_customs_anomaly` détecte les anomalies de taux.
 |---|---|
 | `suppliers` | Fournisseurs. |
 | `partners` | Partenaires (élargi vs suppliers, voir ADR-005). |
+<!-- schema-pending
+object: purchase_lines
+kind: table
+migration: 263
+section: ### 4.10 Sourcing et fournisseurs
+role: Ligne d'achat canonique ORDER_ITEM → PURCHASE_LINE → PURCHASE_ORDER (MISSION_PURCHASE_LINES, PR 1 fondation). Snapshot figé de ce qu'on achète (fournisseur, SKU/SOI, prix, Procurement Hub). Quantité effective = 0 si annulée, sinon COALESCE(settled_quantity, confirmed_quantity, quantity) ; garde anti-double-achat I1 (FOR UPDATE sur order_items) ; ligne confirmée/réglée/annulée figée ; suppression directe interdite. Backfill 1:1 depuis purchase_orders ; écriture double avec purchase_orders, aucune lecture métier en PR 1.
+-->
+<!-- schema-pending
+object: v_purchase_line_progress
+kind: view
+migration: 264
+section: ### 4.10 Sourcing et fournisseurs
+role: Vue unique de progression d'achat par ligne (MISSION_PURCHASE_LINES, PR 2) : quantité engagée brute et effective, reçu, annulée, PO et forme de PO (historical, grouped, historical_no_line). Seule définition du reçu par ligne pour les lecteurs (signaux, routes purchasing, scans Hub, complétude de réception, stock-sync) ; is_order_complete(uuid) la consomme. Les PO historiques sans ligne (avant la migration 225) y figurent avec line_id NULL. Reçu d'une PO regroupée : 0 jusqu'à la PR 3 (placements RECEIVE).
+-->
 | `purchase_orders` | Bons de commande fournisseur. **Migration 225 (2026-09-13, `intended_migration_schema`)** : + `order_item_id` UUID nullable (FK `order_items(id)` ON DELETE SET NULL), + `product_sku_id` UUID nullable (FK `product_skus(id)` ON DELETE SET NULL), + `supplier_unit_ref` TEXT nullable et + `supplier_order_identity` JSONB nullable. Ces colonnes snapshotent l’unité fournisseur exacte décidée au moment de créer la PO ; aucun backfill historique heuristique. Pour une ligne SKU, `product_suppliers` choisit le fournisseur mais ne peut pas remplacer la Supplier Order Identity du SKU vendu. Index partiel unique `(order_item_id, product_supplier_id)` pour les PO actives. **Migration 239 (2026-09-17, `intended_migration_schema`)** : + `supplier_unit_price` NUMERIC(18,4) nullable, + `supplier_currency` TEXT nullable et + `supplier_total_price` NUMERIC(18,4) généré (`supplier_unit_price × qty`) pour snapshotter la monnaie native du fournisseur sans conversion implicite vers AED. Les PO historiques portant `unit_price_aed` sont backfillées comme devise `AED`; pour une ligne SKU/SOI exacte, la Canonical Unit est l'autorité du prix/devise et `unit_price_aed` reste NULL lorsque la devise native n'est pas AED. Doctrine : `docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md`, `docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md` et `docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md`. |
 | `sourcing_candidates` | Candidats sourcing. **Migration 105 (2026-07-12, `verified_live_schema` — vérifié live Railway)** : + `normalized_source_contract` JSONB nullable, snapshot du `NormalizedSupplierProduct V2` validé sans dupliquer `raw_payload`. Préserve `media`, `option_axes` et `sellable_units` source ; ne constitue ni le catalogue canonique ni la vérité de stock. |
 | `sourcing_candidate_events` | Événements candidats. |

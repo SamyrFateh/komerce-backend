@@ -175,6 +175,11 @@ describe('scans — GET /hub/pending', () => {
     const res = await request(app).get('/api/scans/hub/pending');
     expect(res.status).toBe(200);
     expect(res.body.count).toBe(1);
+    // lecture par la vue de progression d'achat, jamais purchase_orders.qty / received_qty
+    const sql = mockQuery.mock.calls[0][0];
+    expect(sql).toContain('v_purchase_line_progress');
+    expect(sql).toContain('NOT v.cancelled');
+    expect(sql).not.toContain('po.received_qty');
   });
 });
 

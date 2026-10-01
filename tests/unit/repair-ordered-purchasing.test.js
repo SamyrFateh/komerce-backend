@@ -30,8 +30,10 @@ describe('repair-ordered-purchasing', () => {
 
       expect(result).toBe(rows);
       expect(db.query).toHaveBeenCalledTimes(1);
-      const [, params] = db.query.mock.calls[0];
+      const [sql, params] = db.query.mock.calls[0];
       expect(params).toEqual([10]);
+      expect(sql).toContain('v_purchase_line_progress');
+      expect(sql).not.toContain('purchase_orders po');
     });
 
     it('clamp la limite entre 1 et 200', async () => {

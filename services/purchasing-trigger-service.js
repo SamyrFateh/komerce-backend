@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/hub-reference.js, services/suppliers/supplier-order-identity.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/procurement-execution-boundary.js, services/suppliers/execution-adapter-registry.js, utils/logger.js
+ * @depends       db, services/notification-service.js, services/hub-reference.js, services/purchase-line-snapshot.js, services/suppliers/supplier-order-identity.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/procurement-execution-boundary.js, services/suppliers/execution-adapter-registry.js, utils/logger.js
  * @used-by       routes/cash.js, routes/purchasing.js
- * @db-read       order_items, orders, product_skus, product_suppliers, products, purchase_orders, relais, suppliers
- * @db-write      alerts, purchase_orders
+ * @db-read       order_items, orders, product_skus, product_suppliers, products, purchase_lines, purchase_orders, relais, suppliers
+ * @db-write      alerts, purchase_lines, purchase_orders
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md, docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md, docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md
  * @impact-areas  purchasing, supplier-integration
@@ -21,27 +21,25 @@
 const db = require('../db');
 const { notifyText } = require('../services/notification-service');
 const { createAlert } = require('../utils/alerts');
-const { blockedSupplierIdentity, normalizeIdentity } = require('./suppliers/supplier-order-identity');
 const { validateAdapter } = require('./suppliers/supplier-fulfillment-adapter-contract');
 const { EXECUTION_ADAPTER_REGISTRY } = require('./suppliers/execution-adapter-registry');
-const { evaluateCanonicalProcurementReadiness } = require('./suppliers/canonical-unit-purchasing-gate');
 const { evaluateProcurementExecutionBoundary } = require('./suppliers/procurement-execution-boundary');
 const { buildSupplierTagRequest } = require('./hub-reference');
+const {
+  requireSupplierMoney,
+  loadExactSoldSku,
+  resolveExactSkuProcurementReadiness,
+  buildPurchaseTarget,
+  insertHistoricalPurchaseLine,
+  confirmHistoricalPurchaseLine,
+  findItemCoverage,
+  resolveProcurementHubRef,
+  procurementHubLabel,
+} = require('./purchase-line-snapshot');
 const log = require('../utils/logger').child({ module: 'purchasing-trigger' });
 
 const ADMIN_WA = process.env.ADMIN_WHATSAPP || process.env.WA_ADMIN;
 if (!ADMIN_WA) log.warn('⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled');
-
-function requireSupplierMoney(target) {
-  const amount = Number(target?.supplier_unit_price ?? target?.supplier_price_aed);
-  const currency = String(
-    target?.supplier_currency || (target?.supplier_price_aed != null ? 'AED' : '')
-  ).trim().toUpperCase();
-  if (!Number.isFinite(amount) || amount <= 0 || !/^[A-Z]{3}$/.test(currency)) {
-    throw new Error('SUPPLIER_MONEY_UNAVAILABLE');
-  }
-  return { amount, currency };
-}
 
 async function notifyAdminNoSupplier(order, item) {
   const msg = [
@@ -92,7 +90,7 @@ async function notifySupplierWhatsApp(client, ps, order, item, purchaseOrderId, 
     `- Total : ${total} ${money.currency}`, '', `Référence commande Komerce : ${order.reference}`,
     supplierTagRequest ? `Référence colis Komerce à apposer si possible : ${supplierTagRequest.printable_text}` : '',
     supplierTagRequest ? 'Merci de conserver cette référence sur chaque colis physique de cette commande.' : '',
-    'Livraison au Hub Dubai.', 'Merci de confirmer la disponibilité.',
+    `Livraison au Hub ${procurementHubLabel(resolveProcurementHubRef())}.`, 'Merci de confirmer la disponibilité.',
   ].join('\n'));
   const waUrl = `https://wa.me/${ps.contact_phone}?text=${msg}`;
   log.info('[PURCHASING] WhatsApp fournisseur:', waUrl);
@@ -110,62 +108,6 @@ async function callSupplierAPI(ps, item) {
     return { success: false, error: `Adapter ${check.provider} sans capacité placeOrder — mode manuel` };
   }
   return check.adapter.placeOrder(ps, item);
-}
-
-async function loadExactSoldSku(client, item) {
-  if (!item.sku_id) return null;
-  const { rows: [sku] } = await client.query(`
-    SELECT id, product_id, supplier_sku, supplier_unit_ref, supplier_order_identity
-    FROM product_skus WHERE id = $1 AND product_id = $2 LIMIT 1
-  `, [item.sku_id, item.product_id]);
-  if (!sku) throw blockedSupplierIdentity('product_sku vendu introuvable', { product_sku_id: item.sku_id, product_id: item.product_id });
-  const supplierSku = String(sku.supplier_sku || '').trim();
-  if (!supplierSku) throw blockedSupplierIdentity('supplier_sku absent sur le product_sku vendu', { product_sku_id: sku.id });
-  const supplierUnitRef = String(sku.supplier_unit_ref || '').trim() || null;
-  const identity = normalizeIdentity(sku.supplier_order_identity, supplierUnitRef);
-  return { ...sku, supplier_sku: supplierSku, supplier_unit_ref: supplierUnitRef, supplier_order_identity: identity };
-}
-
-/**
- * GAP-4A — décision de readiness canonique pour le SKU exactement vendu,
- * via le moteur unique (canonical-unit-purchasing-gate.js), plutôt qu'une
- * résolution money réimplémentée en ligne. Le gate décide (identité, stock,
- * prix, preflight distant si requis par l'autorité provider) ; cette
- * fonction ne fait que traduire son verdict dans la forme attendue par
- * triggerPurchasing — aucune logique métier supplémentaire ici.
- *
- * Le cross-check fort SOI vendue ↔ SOI canonique (provider+version+payload)
- * reste obligatoire : il est appliqué par le gate lui-même via
- * `soldIdentity`, jamais réimplémenté ici.
- *
- * `context` est transmis tel quel à `adapter.evaluate()` (via le gate) —
- * seam de test déjà établi par les adapters eux-mêmes (ex.
- * `context.aliexpressConnected || connected` dans
- * aliexpress-fulfillment-adapter.js), jamais interprété ici. Vide par
- * défaut ({}) : le comportement de production (aucun contexte injecté)
- * est inchangé.
- */
-async function resolveExactSkuProcurementReadiness(client, exactSku, quantity, context = {}) {
-  const readiness = await evaluateCanonicalProcurementReadiness({
-    productSkuId: exactSku.id,
-    quantity,
-    soldIdentity: exactSku.supplier_order_identity,
-    query: client.query.bind(client),
-    adapters: EXECUTION_ADAPTER_REGISTRY,
-    context,
-  });
-  if (!readiness.ready) {
-    throw blockedSupplierIdentity(readiness.reason || readiness.status, readiness.evidence || {});
-  }
-  return {
-    unit_price: readiness.money.unit_price,
-    currency: readiness.money.currency,
-    canonical_unit_id: readiness.canonical_unit_id,
-    canonical_unit: readiness.canonical_unit,
-    supplier_unit_ref: readiness.supplier_unit_ref,
-    supplier_order_identity: readiness.identity,
-    preflight: readiness.preflight,
-  };
 }
 
 /**
@@ -217,6 +159,10 @@ async function loadSupplierMapping(client, item, exactSku) {
 }
 
 async function findExistingPo(client, orderId, item, productSupplierId) {
+  // PR 2 : un item déjà couvert par les lignes (quel que soit le fournisseur) ne se rachète jamais.
+  const coverage = await findItemCoverage(client, item);
+  if (coverage) return coverage;
+  // Repli historique inchangé : PO antérieures à la 225 (sans order_item_id), items sans id, couverture partielle.
   if (item.id) {
     const { rows: [existingPo] } = await client.query(`
       SELECT id, status FROM purchase_orders
@@ -304,26 +250,14 @@ async function triggerPurchasing(orderId, options = {}) {
         }
         const existingPo = await findExistingPo(client, orderId, item, ps.id);
         if (existingPo) {
-          results.push({ item: item.product_name, status: 'already_exists', purchase_order_id: existingPo.id, purchase_order_status: existingPo.status, inbound_tag: buildSupplierTagRequest(existingPo.id).reference });
+          results.push({ item: item.product_name, status: 'already_exists', purchase_order_id: existingPo.id, purchase_order_status: existingPo.status, inbound_tag: existingPo.id ? buildSupplierTagRequest(existingPo.id).reference : null });
           await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
           continue;
         }
 
         const triggerMode = ps.auto_order ? 'auto' : (ps.platform === 'whatsapp' ? 'whatsapp' : 'manual');
-        const purchaseTarget = exactSku ? {
-          ...ps,
-          supplier_sku: exactSku.supplier_sku,
-          supplier_unit_price: canonicalMoney.unit_price,
-          supplier_currency: canonicalMoney.currency,
-        } : {
-          ...ps,
-          supplier_unit_price: Number(ps.supplier_price_aed),
-          supplier_currency: 'AED',
-        };
-        const money = requireSupplierMoney(purchaseTarget);
-        const unitPriceAed = money.currency === 'AED' ? money.amount : null;
-        const supplierUnitRef = exactSku ? canonicalMoney.supplier_unit_ref : null;
-        const supplierOrderIdentity = exactSku ? canonicalMoney.supplier_order_identity : null;
+        const snapshot = { ...buildPurchaseTarget(ps, exactSku, canonicalMoney), productSkuId: exactSku?.id || null };
+        const { purchaseTarget, money, unitPriceAed, supplierUnitRef, supplierOrderIdentity } = snapshot;
 
         const { rows: [po] } = await client.query(`
           INSERT INTO purchase_orders
@@ -336,12 +270,16 @@ async function triggerPurchasing(orderId, options = {}) {
           supplierOrderIdentity ? JSON.stringify(supplierOrderIdentity) : null,
           item.quantity, unitPriceAed, money.amount, money.currency, triggerMode]);
 
+        // PR 1 — écriture double : la ligne d'achat naît avec la PO, dans la même transaction.
+        await insertHistoricalPurchaseLine(client, { purchaseOrderId: po.id, item, ps, snapshot, quantity: item.quantity });
+
         const supplierTagRequest = buildSupplierTagRequest(po.id);
 
         if (ps.auto_order) {
           const apiResult = await resolveAutoOrderResult(client, exactSku, canonicalMoney, item, purchaseTarget, supplierTagRequest);
           if (apiResult.success) {
             await client.query(`UPDATE purchase_orders SET status='confirmed', supplier_order_id=$1, tracking_url=$2, ordered_at=NOW(), updated_at=NOW() WHERE id=$3`, [apiResult.supplier_order_id, apiResult.tracking_url || null, po.id]);
+            await confirmHistoricalPurchaseLine(client, po.id, { quantity: item.quantity, unitPrice: money.amount });
             results.push({ item: item.product_name, status: 'auto_ordered', purchase_order_id: po.id, supplier_order_id: apiResult.supplier_order_id, inbound_tag: supplierTagRequest.reference });
           } else {
             await notifyAdminManual(order, item, purchaseTarget, supplierTagRequest);

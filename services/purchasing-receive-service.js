@@ -118,14 +118,15 @@ async function processReceive({ id, qty_recue, actor }) {
 
   // 3. Vérifier si TOUS les POs de la commande sont reçus
   // [B1] qty (pas quantity) dans SUM et dans CASE
+  // Lecture par la vue de progression (engagé effectif / reçu par ligne), plus depuis purchase_orders.qty.
   const completenessRes = await db.query(
     `SELECT
-       COUNT(*) FILTER (WHERE status != 'cancelled')                             AS total,
-       COUNT(*) FILTER (WHERE received_qty >= qty AND status != 'cancelled')     AS recus,
-       SUM(qty)          FILTER (WHERE status != 'cancelled')                    AS qty_totale,
-       SUM(received_qty) FILTER (WHERE status != 'cancelled')                    AS qty_recue
-     FROM purchase_orders
-     WHERE order_id = $1`,
+       COUNT(*) FILTER (WHERE NOT cancelled)                                                  AS total,
+       COUNT(*) FILTER (WHERE received_quantity >= effective_quantity AND NOT cancelled)      AS recus,
+       SUM(effective_quantity) FILTER (WHERE NOT cancelled)                                   AS qty_totale,
+       SUM(received_quantity)  FILTER (WHERE NOT cancelled)                                   AS qty_recue
+     FROM v_purchase_line_progress
+     WHERE order_id = $1 AND purchase_order_id IS NOT NULL`,
     [po.order_id]
   );
 

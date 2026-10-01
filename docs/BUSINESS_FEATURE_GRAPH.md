@@ -80,7 +80,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 35 | 35 | 540 | 540 | 0 |
+| backend | 35 | 35 | 543 | 543 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -284,13 +284,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Qualifier, prouver et publier ce que Komerce peut réellement croire d un système externe avant qu une feature métier ne s appuie sur son contrat.
 
+- services: 1
 - scripts: 5
 - config: 1
-- tests: 5
+- tests: 6
 - tables owned (lifecycle): 0
 - tables written: 0
 - interfaces exposed: 0
-- internal APIs: 9
+- internal APIs: 11
 - dependencies (consumes): 1 — infrastructure
 - consumers: 3 — catalog, purchasing, supplier-connectivity
 
@@ -324,7 +325,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - db: 16
 - routes: 1
 - config: 12
-- tests: 81
+- tests: 82
 - tables owned (lifecycle): 3 — `schema_migrations`, `outbox_events`, `physical_outcome_receipts`
 - tables written: 7
 - interfaces exposed: 4
@@ -381,14 +382,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 3
 - docs: 5
 - utils: 3
-- services: 25
+- services: 26
 - routes: 18
 - boutique: 1
 - dash: 2
-- tests: 54
+- tests: 55
 - tables owned (lifecycle): 15 — `parcels`, `relais`, `parcel_items`, `scan_events`, `scans`, `pickup_print_tokens`, `pickup_reveal_codes`, `carriers`, `hub_custody_events`, `hub_physical_unit_placements`, `hub_physical_units`, `hub_purchase_allocations`, `parcel_events`, `pickup_verify_attempts`, `shipments`
 - tables written: 15
-- interfaces exposed: 77
+- interfaces exposed: 78
 - internal APIs: 27
 - dependencies (consumes): 15 — documents, incident-management, infrastructure, business-rules, orders, auth, auth-identity, catalog, notifications, payments, refunds, purchasing, loyalty, market, market-delegation
 - consumers: 20 — auth-identity, catalog, customs, dashboard, documents, economic-engine, incident-management, infrastructure, inventory, local-stock, market-delegation, market-operator-dashboard, notifications, orders, payments, platform-ops, purchasing, recommendations, admin-dashboard, decision-signals
@@ -565,11 +566,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.
 
-- services: 21
+- services: 22
 - routes: 1
-- migrations: 2
-- scripts: 2
-- tests: 29
+- migrations: 4
+- scripts: 3
+- tests: 33
 - tables owned (lifecycle): 3 — `product_suppliers`, `purchase_orders`, `suppliers`
 - tables written: 3
 - interfaces exposed: 10
@@ -1260,6 +1261,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/scans/collect` | logistics | `routes/scans.js` (resolved-owned) |
 | `GET /api/scans/hub/pending` | logistics | `routes/scans.js` (resolved-owned) |
 | `POST /api/scans/hub/receive` | logistics | `routes/scans.js` (resolved-owned) |
+| `POST /api/scans/hub/reconcile` | logistics | `routes/scans.js` (resolved-owned) |
 | `POST /api/scans/verify-qr` | logistics | `routes/scans.js` (resolved-owned) |
 | `POST /api/tracking/{id}/verify-pickup` | logistics | `routes/tracking.js` (resolved-owned) |
 | `GET /api/transit` | logistics | `routes/transit-dashboard.js` (resolved-owned) |
@@ -1551,6 +1553,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `assertConversation` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
 | `assertThrough` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
 | `summary` | `scripts/provider-contract-proof.js` | external-provider-contracts | resolved |
+| `publicContract` | `services/external-provider-onboarding-contracts.js` | external-provider-contracts | resolved |
+| `checkReady` | `services/external-provider-onboarding-contracts.js` | external-provider-contracts | resolved |
 | `scanRepository` | `scripts/external-provider-boundary-scan.js` | external-provider-contracts | resolved |
 | `runBatch` | `scripts/external-provider-batch-proof.js` | external-provider-contracts | resolved |
 | `runStripeReadOnlyProof` | `scripts/stripe-provider-contract-proof.js` | external-provider-contracts | resolved |
@@ -2131,7 +2135,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1741 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1752 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 78 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2178,7 +2182,7 @@ Meta Graph monté : oui.
 | catalog | business-rules | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | catalog | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | catalog | economic-engine | static-code | 12 | **DECLARED_AND_OBSERVED** |
-| catalog | external-provider-contracts | static-code | 4 | **DECLARED_AND_OBSERVED** |
+| catalog | external-provider-contracts | static-code | 5 | **DECLARED_AND_OBSERVED** |
 | catalog | infrastructure | static-code | 98 | **DECLARED_AND_OBSERVED** |
 | catalog | logistics | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | catalog | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -2410,8 +2414,8 @@ Meta Graph monté : oui.
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| purchasing | infrastructure | static-code | 29 | **DECLARED_AND_OBSERVED** |
-| purchasing | logistics | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 30 | **DECLARED_AND_OBSERVED** |
+| purchasing | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | purchasing | notifications | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | purchasing | sourcing | static-code | 4 | **DECLARED_AND_OBSERVED** |

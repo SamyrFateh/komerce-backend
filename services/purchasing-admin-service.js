@@ -76,6 +76,7 @@ async function deleteSupplier(id, forceDelete = false) {
       throw err;
     }
 
+    // Les lignes d'achat des PO annulées sont annulées par le trigger trg_purchase_orders_cancel_lines.
     const posQuery = (isTestSupplier && forceDelete)
       ? `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status != 'cancelled'`
       : `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status IN ('pending', 'notified')`;
@@ -180,8 +181,10 @@ async function confirmPurchaseOrder(poId, orderId, data = {}, options = {}) {
     verifiedSupplierOrderId = evidence.external_ref;
   }
 
+  // Double écriture (PR 1) : la ligne unique de la PO porte la quantité/prix confirmés (même instruction).
   const { rows: [po] } = await db.query(
-    `UPDATE purchase_orders
+    `WITH upd AS (
+     UPDATE purchase_orders
       SET
         status            = 'confirmed',
         supplier_order_id = COALESCE($1, supplier_order_id),
@@ -193,7 +196,15 @@ async function confirmPurchaseOrder(poId, orderId, data = {}, options = {}) {
         confirmed_at      = NOW(),
         updated_at        = NOW()
       WHERE id = $6 AND order_id = $7
-      RETURNING *`,
+      RETURNING *
+     ), lines AS (
+       UPDATE purchase_lines pl
+          SET confirmed_quantity = upd.qty, confirmed_unit_price = upd.supplier_unit_price,
+              confirmed_at = NOW(), updated_at = NOW()
+         FROM upd
+        WHERE pl.purchase_order_id = upd.id AND pl.confirmed_quantity IS NULL AND pl.cancelled_at IS NULL
+     )
+     SELECT * FROM upd`,
     [verifiedSupplierOrderId, unit_price_aed, tracking_url, tracking_number, notes, poId, orderId]
   );
   if (!po) {

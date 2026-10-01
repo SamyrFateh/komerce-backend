@@ -298,14 +298,16 @@ describe('LOT 4H truth generators', () => {
     const [selectSql] = mockQuery.mock.calls[0];
     expect(selectSql).toContain("o.status = 'ordered'");
     expect(selectSql).toContain("INTERVAL '15 minutes'");
-    expect(selectSql).toContain('FROM purchase_orders po');
+    expect(selectSql).toContain('FROM v_purchase_line_progress v');
+    expect(selectSql).toContain('v.purchase_order_id IS NOT NULL AND NOT v.cancelled');
+    expect(selectSql).not.toContain('FROM purchase_orders');
     const [, params] = mockQuery.mock.calls[1];
     expect(params[0]).toBe('ordered_without_purchase_order');
     expect(params[9]).toBe('order');
     expect(params[10]).toBe('o1');
   });
 
-  test('purchase_order_overreceived compare received_qty à la vraie colonne qty', async () => {
+  test('purchase_order_overreceived compare le reçu à l\'engagé effectif de la vue de progression', async () => {
     mockQuery = jest.fn()
       .mockResolvedValueOnce({ rows: [{ id: 'o2', reference: 'CMD-OVER', po_count: 2, excess_qty: 3 }] })
       .mockResolvedValueOnce({ rows: [{ id: 's2' }] })
@@ -313,8 +315,9 @@ describe('LOT 4H truth generators', () => {
     const { GENERATORS } = loadService();
     await GENERATORS.purchase_order_overreceived();
     const [selectSql] = mockQuery.mock.calls[0];
-    expect(selectSql).toContain('po.received_qty > po.qty');
-    expect(selectSql).not.toContain('po.quantity');
+    expect(selectSql).toContain('v.received_quantity > v.effective_quantity');
+    expect(selectSql).toContain('v_purchase_line_progress');
+    expect(selectSql).not.toContain('purchase_orders po');
     const [, params] = mockQuery.mock.calls[1];
     expect(params[0]).toBe('purchase_order_overreceived');
     expect(params[1]).toBe('critical');
@@ -329,7 +332,7 @@ describe('LOT 4H truth generators', () => {
     await GENERATORS.purchase_order_receipt_stuck();
     const [selectSql] = mockQuery.mock.calls[0];
     expect(selectSql).toContain("o.status = 'ordered'");
-    expect(selectSql).toContain('BOOL_AND(po.received_qty >= po.qty AND po.hub_received_at IS NOT NULL)');
+    expect(selectSql).toContain('BOOL_AND(v.received_quantity >= v.effective_quantity AND v.hub_received_at IS NOT NULL)');
     expect(selectSql).toContain("INTERVAL '15 minutes'");
   });
 
