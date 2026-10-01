@@ -210,7 +210,15 @@ async function approveProduct(q = db, productId, adminUser) {
       return { status: 409, body: { error: 'Candidat déjà décidé ou hors file de curation', code: 'not_pending' } };
     }
 
-    const result = await publish(tx, before);
+    let reviewed = before;
+    const reviewablePreparedContent = before.needs_review === true
+      && (before.content_source === 'ai_enriched' || before.content_source === 'manual')
+      && (before.name_source || before.description_source);
+    if (reviewablePreparedContent) {
+      reviewed = await finalizeReviewedManualPreparation(tx, productId);
+    }
+
+    const result = await publish(tx, reviewed);
     if (result.status === 200) {
       log.info(`Approuvé par ${adminUser?.id || 'admin'} — produit ${productId}`);
     }
