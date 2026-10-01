@@ -6128,6 +6128,10 @@
           "test": "tests/unit/import-lot-registry.test.js"
         },
         {
+          "statement": "vue Sources du cockpit Sourcing : vue de 1er niveau (Suivi / Passages / Sources, Sources actif) avec « Retour au suivi » toujours visible, vers le KIR sélectionné s’il existe sinon vers l’accueil Suivi (le KIR reste un contexte « Passage courant », jamais un niveau du fil) ; synthèse compacte et une carte opérateur par fournisseur calculées uniquement depuis source_controls et les passages déjà chargés (badge ACTIVE/PRÊTE/PRÉPARATION/BLOQUÉE/ERREUR, interrupteur ON/OFF fidèle, désactivé avec raison visible si non activable, dernier passage et « Voir le suivi » seulement s'il existe) ; aucun lien « Sources → », aucune nouvelle API ni logique métier (toggle, activationState, polling inchangés)",
+          "test": "tests/unit/import-runtime-journey.test.js"
+        },
+        {
           "statement": "cockpit Live Relais (/admin/relais-live, domaine Live, admin) : lecture seule sur les API relay existantes (scopées rôle et marché), même moteur live-kit et même navigation que le Hub ; vues exclusives Suivi (flux Transit → Disponible → Retiré, chiffres cliquables vers la liste exacte, colis à retirer en premier) et Colis (liste complète, 1er niveau sans retour) ; une liste revient au Suivi, un colis revient à sa liste d'origine ; jamais de contact client, de code de retrait ni de SMS ; pas de vue par relais tant qu'aucune API ne l'expose sans sélection de marché",
           "test": "tests/unit/relay-live-journey.test.js"
         },
@@ -6136,11 +6140,7 @@
           "test": "tests/unit/hub-live-journey.test.js"
         },
         {
-          "statement": "vue Sources du cockpit Sourcing : vue de 1er niveau (Suivi / Passages / Sources, Sources actif) avec « Retour au suivi » seulement si un passage est sélectionné (le KIR reste un contexte « Passage courant », jamais un niveau du fil) ; synthèse compacte et une carte opérateur par fournisseur calculées uniquement depuis source_controls et les passages déjà chargés (badge ACTIVE/PRÊTE/PRÉPARATION/BLOQUÉE/ERREUR, interrupteur ON/OFF fidèle, désactivé avec raison visible si non activable, dernier passage et « Voir le suivi » seulement s'il existe) ; aucun lien « Sources → », aucune nouvelle API ni logique métier (toggle, activationState, polling inchangés)",
-          "test": "tests/unit/import-runtime-journey.test.js"
-        },
-        {
-          "statement": "navigation Sourcing à parent unique : le fil d'Ariane est Sourcing › Suivi › vue (jamais Sourcing › KIR › vue) — le KIR est le contexte du Suivi (pastille Passage KIR), pas un niveau ; toute vue de drill-down du Suivi (Source, Produits reçus, Prêts, Écartés, Action requise, Contrôle, Remise Catalogue) revient par « Retour au suivi », un produit revient à sa population d'origine (ou à Remise Catalogue), un détail technique revient au contrôle ou au produit dont il provient, Passages n'a aucun bouton retour (Sources : voir l'invariant dédié) ; l'onglet Suivi reste actif sur toutes les vues hors Passages/Sources ; la sortie vers une fiche Catalogue porte un return_to exact vers l'objet Sourcing d'origine ; les filtres et la pagination de Passages vivent dans l'URL (Back/Forward/rechargement) ; la navigation ne touche ni moteur, ni handoff, ni certification, ni données",
+          "statement": "navigation Sourcing à parent unique : le fil d'Ariane est Sourcing › Suivi › vue (jamais Sourcing › KIR › vue) — le KIR est le contexte du Suivi (pastille Passage KIR), pas un niveau ; toute vue de drill-down du Suivi (Source, Produits reçus, Prêts, Écartés, Action requise, Contrôle, Remise Catalogue) revient par « Retour au suivi », un produit revient à sa population d'origine (ou à Remise Catalogue), un détail technique revient au contrôle ou au produit dont il provient, Passages et Sources exposent toujours un « Retour au suivi » explicite, même sans KIR sélectionné ; l'onglet Suivi reste actif sur toutes les vues hors Passages/Sources ; la sortie vers une fiche Catalogue porte un return_to exact vers l'objet Sourcing d'origine ; les filtres et la pagination de Passages vivent dans l'URL (Back/Forward/rechargement) ; la navigation ne touche ni moteur, ni handoff, ni certification, ni données",
           "test": "tests/unit/import-runtime-journey.test.js"
         },
         {
@@ -6159,7 +6159,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 104,
+            "count": 105,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6622,6 +6622,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/relay-live.js",
+                "resolvedPath": "public/dashboards/canonical/js/relay-live.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/sourcing-workspace.js",
                 "resolvedPath": "public/dashboards/canonical/js/sourcing-workspace.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6964,7 +6969,7 @@
             ]
           },
           "tests": {
-            "count": 136,
+            "count": 138,
             "files": [
               {
                 "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
@@ -6984,6 +6989,11 @@
               {
                 "declared": "tests/e2e/live-ops-shell.spec.js",
                 "resolvedPath": "tests/e2e/live-ops-shell.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/relais-live-cockpit.spec.js",
+                "resolvedPath": "tests/e2e/relais-live-cockpit.spec.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7622,6 +7632,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/relay-live-journey.test.js",
+                "resolvedPath": "tests/unit/relay-live-journey.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/require-dashboard-global-authority.test.js",
                 "resolvedPath": "tests/unit/require-dashboard-global-authority.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7649,7 +7664,7 @@
             ]
           }
         },
-        "totalFiles": 292,
+        "totalFiles": 295,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
