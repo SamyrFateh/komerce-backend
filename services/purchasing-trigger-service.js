@@ -26,6 +26,7 @@ const { validateAdapter } = require('./suppliers/supplier-fulfillment-adapter-co
 const { EXECUTION_ADAPTER_REGISTRY } = require('./suppliers/execution-adapter-registry');
 const { evaluateCanonicalProcurementReadiness } = require('./suppliers/canonical-unit-purchasing-gate');
 const { evaluateProcurementExecutionBoundary } = require('./suppliers/procurement-execution-boundary');
+const { buildSupplierTagRequest } = require('./hub-reference');
 const log = require('../utils/logger').child({ module: 'purchasing-trigger' });
 
 const ADMIN_WA = process.env.ADMIN_WHATSAPP || process.env.WA_ADMIN;
@@ -58,7 +59,7 @@ async function notifyAdminNoSupplier(order, item) {
   log.warn('[PURCHASING] Aucun fournisseur pour produit:', item.product_name, '— commande:', order.reference);
 }
 
-async function notifyAdminManual(order, item, ps) {
+async function notifyAdminManual(order, item, ps, supplierTagRequest = null) {
   const money = requireSupplierMoney(ps);
   const total = (money.amount * item.quantity).toFixed(2);
   const msg = [
@@ -70,6 +71,8 @@ async function notifyAdminManual(order, item, ps) {
     `Prix unitaire : ${money.amount} ${money.currency}`,
     `Total : ${total} ${money.currency}`,
     ps.supplier_url ? `Lien : ${ps.supplier_url}` : '',
+    supplierTagRequest ? `Tag colis Komerce : ${supplierTagRequest.printable_text}` : '',
+    supplierTagRequest ? '→ Demander au fournisseur de l’apposer sur chaque colis si son process le permet.' : '',
     '',
     '→ Confirmer sur le dashboard ou via :',
     `POST /api/purchasing/${order.id}/confirm`,
@@ -80,13 +83,15 @@ async function notifyAdminManual(order, item, ps) {
   log.info('[PURCHASING] Notification admin — commande manuelle:', order.reference, ps.supplier_name);
 }
 
-async function notifySupplierWhatsApp(client, ps, order, item, purchaseOrderId) {
+async function notifySupplierWhatsApp(client, ps, order, item, purchaseOrderId, supplierTagRequest = null) {
   const money = requireSupplierMoney(ps);
   const total = (money.amount * item.quantity).toFixed(2);
   const msg = encodeURIComponent([
     `Bonjour ${ps.supplier_name},`, '', 'Je souhaite commander :',
     `- ${item.product_name} (x${item.quantity})`, `- Ref : ${ps.supplier_sku}`,
     `- Total : ${total} ${money.currency}`, '', `Référence commande Komerce : ${order.reference}`,
+    supplierTagRequest ? `Référence colis Komerce à apposer si possible : ${supplierTagRequest.printable_text}` : '',
+    supplierTagRequest ? 'Merci de conserver cette référence sur chaque colis physique de cette commande.' : '',
     'Livraison au Hub Dubai.', 'Merci de confirmer la disponibilité.',
   ].join('\n'));
   const waUrl = `https://wa.me/${ps.contact_phone}?text=${msg}`;
@@ -171,7 +176,7 @@ async function resolveExactSkuProcurementReadiness(client, exactSku, quantity, c
  * réelle (aucun adapter n'a placeOrder), donc le comportement observable
  * (fallback manuel) est identique dans les deux branches.
  */
-async function resolveAutoOrderResult(client, exactSku, canonicalMoney, item, purchaseTarget) {
+async function resolveAutoOrderResult(client, exactSku, canonicalMoney, item, purchaseTarget, supplierTagRequest = null) {
   if (!exactSku) return callSupplierAPI(purchaseTarget, item);
 
   const boundary = await evaluateProcurementExecutionBoundary({
@@ -179,7 +184,7 @@ async function resolveAutoOrderResult(client, exactSku, canonicalMoney, item, pu
     quantity: item.quantity,
     canonicalUnit: canonicalMoney.canonical_unit,
     preflight: canonicalMoney.preflight,
-    context: { item },
+    context: { item, supplier_tag_request: supplierTagRequest },
     adapters: EXECUTION_ADAPTER_REGISTRY,
   });
   if (!boundary.crossed) {
@@ -299,7 +304,7 @@ async function triggerPurchasing(orderId, options = {}) {
         }
         const existingPo = await findExistingPo(client, orderId, item, ps.id);
         if (existingPo) {
-          results.push({ item: item.product_name, status: 'already_exists', purchase_order_id: existingPo.id, purchase_order_status: existingPo.status });
+          results.push({ item: item.product_name, status: 'already_exists', purchase_order_id: existingPo.id, purchase_order_status: existingPo.status, inbound_tag: buildSupplierTagRequest(existingPo.id).reference });
           await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
           continue;
         }
@@ -331,24 +336,26 @@ async function triggerPurchasing(orderId, options = {}) {
           supplierOrderIdentity ? JSON.stringify(supplierOrderIdentity) : null,
           item.quantity, unitPriceAed, money.amount, money.currency, triggerMode]);
 
+        const supplierTagRequest = buildSupplierTagRequest(po.id);
+
         if (ps.auto_order) {
-          const apiResult = await resolveAutoOrderResult(client, exactSku, canonicalMoney, item, purchaseTarget);
+          const apiResult = await resolveAutoOrderResult(client, exactSku, canonicalMoney, item, purchaseTarget, supplierTagRequest);
           if (apiResult.success) {
             await client.query(`UPDATE purchase_orders SET status='confirmed', supplier_order_id=$1, tracking_url=$2, ordered_at=NOW(), updated_at=NOW() WHERE id=$3`, [apiResult.supplier_order_id, apiResult.tracking_url || null, po.id]);
-            results.push({ item: item.product_name, status: 'auto_ordered', purchase_order_id: po.id, supplier_order_id: apiResult.supplier_order_id });
+            results.push({ item: item.product_name, status: 'auto_ordered', purchase_order_id: po.id, supplier_order_id: apiResult.supplier_order_id, inbound_tag: supplierTagRequest.reference });
           } else {
-            await notifyAdminManual(order, item, purchaseTarget);
+            await notifyAdminManual(order, item, purchaseTarget, supplierTagRequest);
             await client.query(`UPDATE purchase_orders SET status='notified', trigger_mode='manual', updated_at=NOW() WHERE id=$1`, [po.id]);
-            results.push({ item: item.product_name, status: 'api_failed_notified', purchase_order_id: po.id });
+            results.push({ item: item.product_name, status: 'api_failed_notified', purchase_order_id: po.id, inbound_tag: supplierTagRequest.reference });
           }
         } else if (ps.platform === 'whatsapp') {
-          await notifySupplierWhatsApp(client, purchaseTarget, order, item, po.id);
+          await notifySupplierWhatsApp(client, purchaseTarget, order, item, po.id, supplierTagRequest);
           await client.query(`UPDATE purchase_orders SET status='notified', ordered_at=NOW(), updated_at=NOW() WHERE id=$1`, [po.id]);
-          results.push({ item: item.product_name, status: 'whatsapp_sent', purchase_order_id: po.id });
+          results.push({ item: item.product_name, status: 'whatsapp_sent', purchase_order_id: po.id, inbound_tag: supplierTagRequest.reference });
         } else {
-          await notifyAdminManual(order, item, purchaseTarget);
+          await notifyAdminManual(order, item, purchaseTarget, supplierTagRequest);
           await client.query(`UPDATE purchase_orders SET status='notified', updated_at=NOW() WHERE id=$1`, [po.id]);
-          results.push({ item: item.product_name, status: 'admin_notified', purchase_order_id: po.id });
+          results.push({ item: item.product_name, status: 'admin_notified', purchase_order_id: po.id, inbound_tag: supplierTagRequest.reference });
         }
         await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
       } catch (itemErr) {
