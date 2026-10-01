@@ -79,7 +79,7 @@ async function applyPrice(productId, body, userId) {
     };
   }
 
-  const oldPrice = Number(product.price_kmf) || 0;
+  const oldPrice = product.price_kmf == null ? null : Number(product.price_kmf);
   const updated = await catalogProductMutationService.applyPrice(db, productId, price_kmf);
 
   // Audit price_history (colonnes scenario_* optionnelles — fallback gracieux)
