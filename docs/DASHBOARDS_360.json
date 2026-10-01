@@ -9,7 +9,7 @@
     "deadApiMethods": 0,
     "missingApiMethods": 0,
     "doctrineViolations": 0,
-    "unprovenContracts": 59
+    "unprovenContracts": 0
   },
   "modules": [
     {
@@ -1375,7 +1375,7 @@
       "route": "/api/dashboard/finance",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "AccountingView",
@@ -1384,7 +1384,7 @@
       "route": "/api/admin/economic/charges",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "AccountingView",
@@ -1393,7 +1393,7 @@
       "route": "/api/cash/reconciliation",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "AccountingView",
@@ -1402,7 +1402,7 @@
       "route": "/api/cash/uncollected",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "ActionCenterView",
@@ -1411,7 +1411,7 @@
       "route": "/api/admin/signals/stats",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "ActionCenterView",
@@ -1420,7 +1420,7 @@
       "route": "/api/admin/signals",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "ActionCenterView",
@@ -1456,7 +1456,7 @@
       "route": "/api/admin/signals/generate",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "ClientsView",
@@ -1465,7 +1465,7 @@
       "route": "/api/dashboard/clients",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "ClientsView",
@@ -1474,7 +1474,7 @@
       "route": "/api/dashboard/clients/list",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "ClientsView",
@@ -1483,7 +1483,7 @@
       "route": "/api/dashboard/clients/detail",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "ControlTowerView",
@@ -1492,7 +1492,7 @@
       "route": "/api/admin/dashboard/control-tower",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "ControlTowerView",
@@ -1501,7 +1501,7 @@
       "route": "/api/dashboard/ops",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "ControlTowerView",
@@ -1519,7 +1519,7 @@
       "route": "/api/admin/dashboard/costing",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "CostingView",
@@ -1528,7 +1528,7 @@
       "route": "/api/admin/costing/orders",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "CostingView",
@@ -1537,7 +1537,7 @@
       "route": "/api/admin/costing/products",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "CostingView",
@@ -1546,7 +1546,7 @@
       "route": "/api/admin/costing/relais",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "CustomsView",
@@ -1555,7 +1555,7 @@
       "route": "/api/admin/customs-shipments",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "CustomsView",
@@ -1564,7 +1564,7 @@
       "route": "/api/admin/customs-shipments/rates/effective",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "CustomsView",
@@ -1573,7 +1573,7 @@
       "route": "/api/admin/partners",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "CustomsView",
@@ -1582,7 +1582,7 @@
       "route": "/api/admin/customs-shipments",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "CustomsView",
@@ -1600,7 +1600,7 @@
       "route": "/api/products",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "EconomicFlowView",
@@ -1609,7 +1609,7 @@
       "route": "/api/pricing/flow",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "EconomicView",
@@ -1618,7 +1618,7 @@
       "route": "/api/pricing/dashboard",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "EconomicView",
@@ -1627,7 +1627,7 @@
       "route": "/api/admin/economic/executive",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "EconomicView",
@@ -1636,7 +1636,7 @@
       "route": "/api/admin/economic/charges",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "EconomicView",
@@ -1645,7 +1645,7 @@
       "route": "/api/admin/economic/coherence",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "HubRelaisView",
@@ -1654,7 +1654,7 @@
       "route": "/api/dashboard/pipeline",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "HubRelaisView",
@@ -1663,7 +1663,7 @@
       "route": "/api/v2/parcels",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "HubRelaisView",
@@ -1672,7 +1672,7 @@
       "route": "/api/hub/orders/mark-ordered",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "HubRelaisView",
@@ -1690,7 +1690,7 @@
       "route": "/api/hub/auto-distribute",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "HubRelaisView",
@@ -1699,7 +1699,7 @@
       "route": "/api/hub/auto-distribute",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "HubRelaisView",
@@ -1735,7 +1735,7 @@
       "route": "/api/hub/inventory/scan-assign",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "InventoryView",
@@ -1744,7 +1744,7 @@
       "route": "/api/hub/inventory/stats",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "InventoryView",
@@ -1753,7 +1753,7 @@
       "route": "/api/hub/inventory/proposals",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "InventoryView",
@@ -1762,7 +1762,7 @@
       "route": "/api/hub/inventory/open-parcels",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "InventoryView",
@@ -1771,7 +1771,7 @@
       "route": "/api/hub/inventory/propose-all",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "InvoicesView",
@@ -1780,7 +1780,7 @@
       "route": "/api/invoices",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "InvoicesView",
@@ -1789,7 +1789,7 @@
       "route": "/api/cash/reconciliation",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "InvoicesView",
@@ -1798,7 +1798,7 @@
       "route": "/api/cash/uncollected",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "OrdersLogisticsView",
@@ -1807,7 +1807,7 @@
       "route": "/api/admin/dashboard/logistics",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "OrdersLogisticsView",
@@ -1816,7 +1816,7 @@
       "route": "/api/orders",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "PilotageFinView",
@@ -1825,7 +1825,7 @@
       "route": "/api/dashboard/finance",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "PilotageFinView",
@@ -1834,7 +1834,7 @@
       "route": "/api/admin/economic/history",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "PilotageFinView",
@@ -1843,7 +1843,7 @@
       "route": "/api/admin/economic/variables",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "PilotageView",
@@ -1852,7 +1852,7 @@
       "route": "/api/admin/dashboard/unified",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "PricingStrategyView",
@@ -1861,7 +1861,7 @@
       "route": "/api/products",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "PricingStrategyView",
@@ -1870,7 +1870,7 @@
       "route": "/api/pricing/strategy",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "PricingStrategyView",
@@ -1879,7 +1879,7 @@
       "route": "/api/pricing/strategy/competitors",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "PricingStrategyView",
@@ -1897,7 +1897,7 @@
       "route": "/api/pricing/strategy/apply",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "ProblemsView",
@@ -1906,7 +1906,7 @@
       "route": "/api/orders",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "ProblemsView",
@@ -1915,7 +1915,7 @@
       "route": "/api/v2/parcels/reconciliation",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SalesView",
@@ -1924,7 +1924,7 @@
       "route": "/api/dashboard/sales",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SanteView",
@@ -1933,7 +1933,7 @@
       "route": "/api/dashboard/ops",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SanteView",
@@ -1942,7 +1942,7 @@
       "route": "/api/dashboard/finance",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SanteView",
@@ -1951,7 +1951,7 @@
       "route": "/api/dashboard/clients",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SanteView",
@@ -1960,7 +1960,7 @@
       "route": "/api/dashboard/sales",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SanteView",
@@ -1969,7 +1969,7 @@
       "route": "/api/cash/reconciliation",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SanteView",
@@ -1978,7 +1978,7 @@
       "route": "/api/cash/uncollected",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SanteView",
@@ -1987,7 +1987,7 @@
       "route": "/api/admin/customs-shipments/rates/effective",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SanteView",
@@ -1996,7 +1996,7 @@
       "route": "/api/admin/finance-config",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SettingsView",
@@ -2176,7 +2176,7 @@
       "route": "/api/admin/sourcing/catalogs",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SourcingScannerView",
@@ -2185,7 +2185,7 @@
       "route": "/api/admin/sourcing/candidates",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SourcingScannerView",
@@ -2194,7 +2194,7 @@
       "route": "/api/admin/customs-categories",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SourcingScannerView",
@@ -2203,7 +2203,7 @@
       "route": "/api/admin/sourcing/catalogs/import",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SourcingScannerView",
@@ -2266,7 +2266,7 @@
       "route": "/api/admin/sourcing/synthesis",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SourcingView",
@@ -2275,7 +2275,7 @@
       "route": "/api/admin/sourcing/analysis",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SourcingView",
@@ -2293,7 +2293,7 @@
       "route": "/api/admin/partners",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SuppliersView",
@@ -2302,7 +2302,7 @@
       "route": "/api/admin/partners/stats",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SuppliersView",
@@ -2320,7 +2320,7 @@
       "route": "/api/admin/partners",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "SuppliersView",
@@ -2338,7 +2338,7 @@
       "route": "/api/transitaire/ship",
       "httpMethod": "POST",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "TransitaireView",
@@ -2347,7 +2347,7 @@
       "route": "/api/transitaire/stats",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "TransitaireView",
@@ -2356,7 +2356,7 @@
       "route": "/api/transitaire/parcels",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     },
     {
       "view": "TransitaireView",
@@ -2365,7 +2365,7 @@
       "route": "/api/transitaire/history",
       "httpMethod": "GET",
       "dynamic": false,
-      "contractStatus": "UNKNOWN"
+      "contractStatus": "PROVEN"
     }
   ],
   "headerCoverage": {
@@ -2381,67 +2381,7 @@
     "missingApiMethods": [],
     "doctrineViolations": [],
     "rawFetchDebt": [],
-    "unprovenContracts": [
-      "GET /api/admin/costing/orders",
-      "GET /api/admin/costing/products",
-      "GET /api/admin/costing/relais",
-      "GET /api/admin/customs-categories",
-      "GET /api/admin/customs-shipments",
-      "GET /api/admin/customs-shipments/rates/effective",
-      "GET /api/admin/dashboard/control-tower",
-      "GET /api/admin/dashboard/costing",
-      "GET /api/admin/dashboard/logistics",
-      "GET /api/admin/dashboard/unified",
-      "GET /api/admin/economic/charges",
-      "GET /api/admin/economic/coherence",
-      "GET /api/admin/economic/executive",
-      "GET /api/admin/economic/history",
-      "GET /api/admin/economic/variables",
-      "GET /api/admin/finance-config",
-      "GET /api/admin/partners",
-      "GET /api/admin/partners/stats",
-      "GET /api/admin/signals",
-      "GET /api/admin/signals/stats",
-      "GET /api/admin/sourcing/analysis",
-      "GET /api/admin/sourcing/candidates",
-      "GET /api/admin/sourcing/catalogs",
-      "GET /api/admin/sourcing/synthesis",
-      "GET /api/cash/reconciliation",
-      "GET /api/cash/uncollected",
-      "GET /api/dashboard/clients",
-      "GET /api/dashboard/clients/detail",
-      "GET /api/dashboard/clients/list",
-      "GET /api/dashboard/finance",
-      "GET /api/dashboard/ops",
-      "GET /api/dashboard/pipeline",
-      "GET /api/dashboard/sales",
-      "GET /api/hub/auto-distribute",
-      "GET /api/hub/inventory/open-parcels",
-      "GET /api/hub/inventory/proposals",
-      "GET /api/hub/inventory/stats",
-      "GET /api/invoices",
-      "GET /api/orders",
-      "GET /api/pricing/dashboard",
-      "GET /api/pricing/strategy",
-      "GET /api/products",
-      "GET /api/transitaire/history",
-      "GET /api/transitaire/parcels",
-      "GET /api/transitaire/stats",
-      "GET /api/v2/parcels",
-      "GET /api/v2/parcels/reconciliation",
-      "POST /api/admin/customs-shipments",
-      "POST /api/admin/partners",
-      "POST /api/admin/signals/generate",
-      "POST /api/admin/sourcing/catalogs/import",
-      "POST /api/hub/auto-distribute",
-      "POST /api/hub/inventory/propose-all",
-      "POST /api/hub/inventory/scan-assign",
-      "POST /api/hub/orders/mark-ordered",
-      "POST /api/pricing/flow",
-      "POST /api/pricing/strategy/apply",
-      "POST /api/pricing/strategy/competitors",
-      "POST /api/transitaire/ship"
-    ],
+    "unprovenContracts": [],
     "notFoundContracts": [],
     "unresolvedRoutes": [
       "expireSharedCart",
