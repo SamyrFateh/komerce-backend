@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-01T03:06:00.980Z",
+  "generatedAt": "2026-10-01T03:28:21.006Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 673,
-    "protected": 618,
+    "total": 678,
+    "protected": 623,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2359,6 +2359,46 @@
     },
     {
       "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/revoke",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/rotate",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/status",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/test",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/credentials",
       "level": "PROTECTED",
       "roles": [
         "admin",

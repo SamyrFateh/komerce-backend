@@ -658,6 +658,19 @@ role: Fournisseurs demandés par l'opérateur sans connecteur Komerce (statut un
 - `sourcing_sources.display_name`: libellé opérateur (affichage uniquement, NULL = libellé du connecteur, 1 à 80 caractères) ; jamais un identifiant.
 - `sourcing_provider_control_events.capability`: accepte désormais `lifecycle` (archivage / restauration d'une source ; `old_value`/`new_value` = « source active »). Une source archivée garde `status='disabled'` : captures, observations, KIR, capacités et certification restent intacts ; aucune ligne n'est supprimée.
 
+### Coffre des identifiants fournisseur (migration 262)
+
+- `sourcing_sources.credential_ref`: colonne existante depuis la migration 226, désormais liée par clé étrangère (`sourcing_sources_credential_ref_fk`, `NOT VALID` : aucune valeur historique n'est imposée, toute nouvelle écriture est protégée) au credential actif de la source. Jamais un secret : seulement une référence `cred_<32 hex>`.
+- `sourcing_provider_control_events.capability`: accepte désormais `credentials` (configuration, remplacement, révocation, liaison OAuth ; `old_value`/`new_value` = « credential valide avant / après »). Aucun secret n'est tracé.
+
+<!-- schema-pending
+object: provider_credentials
+kind: table
+migration: 262
+section: ### 4.10 Sourcing et fournisseurs
+role: Coffre applicatif des credentials fournisseurs (Provider Credential Authority). Une ligne = un credential versionné ; l'enveloppe est un JSON chiffré AES-256-GCM (IV aléatoire, tag, AAD = provider + credential_ref + version + auth_type) sous la clé maître serveur KOMERCE_PROVIDER_CREDENTIALS_MASTER_KEY, jamais en base. Statuts pending/active/superseded/revoked/failed ; seuls pending et active peuvent porter une enveloppe (crypto-shredding des autres, imposé par CHECK). Les credentials oauth ne portent aucun token : ils référencent la session chiffrée de supplier_oauth_connections via oauth_session_key. Écrite exclusivement par services/provider-credential-service.js ; jamais relue par le navigateur.
+-->
+
 ### Provider control policy (migration 255)
 
 - `sourcing_sources.discovery_enabled`: autorisation opérateur explicite de découverte automatique; défaut OFF.

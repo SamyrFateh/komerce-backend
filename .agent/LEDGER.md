@@ -190,15 +190,20 @@ Règle absolue : le navigateur ne relit JAMAIS un secret (pas même masqué). Pa
 - Redaction pino : api_key, client_secret, access/refresh_token, credentials (+ variantes `*.`).
 - Tests unitaires verts : provider-credential-service (13), admin-sourcing-credentials-route (9), autopilot, projection, registre, dispatch, CJ, Allegro.
 
+### Fait depuis (commits suivants)
+
+- Tests réel-DB : `tests/integration/provider-credential-vault-real-db.test.js` (10 cas : chiffrement, IV, rotation atomique, refus = ancien intact, mauvaise clé, enveloppe altérée, révocation, CHECK) ; parcours CJ complet dans `sourcing-source-registry-real-db.test.js`. Postgres local : dump `docs/db/railway-live-schema.sql` + `scripts/ci-migrate.js` ; le dump est en retard sur 255–259 et sur certaines colonnes (appliquer `migrations/22x–25x` à la main sur la base jetable).
+- Clean-room : `provider_credentials` préservée + test.
+- UI : panneau d'identifiants dérivé de `source.auth` (carte + assistant), secrets `type=password` jamais préremplis ni conservés en mémoire JS, saisie en cours protégée du rafraîchissement ; spec `tests/e2e/import-runtime-credentials.spec.js` (CJ, remplacement, OAuth, erreur) ; 65/65 specs import-runtime vertes (`@playwright/test` installé hors dépôt, ex. `/var/tmp/pw`, avec `executablePath` chromium).
+- OAuth AliExpress : callback relie la session aux sources (`linkSessionToSources`), routes OAuth sans message brut, état de session lu en direct (session absente = À CONFIGURER).
+- Gouvernance : cartes de features (sourcing, dashboard), SCHEMA.md (migration 262 + bloc schema-pending), sorties régénérées (arch graph, FEATURE_360, SECURITY_360) ; `feature:360:check`, `gate:schema(:full)`, `gate:touched-files`, `gate:docs-lint`, `check-schema-intent-doc --base origin/main --head HEAD`, `arch-schema-drift-check`, `arch-header-sql-check` verts.
+
 ### Reste à faire (ordre)
 
-1. **Intégration réelle-DB** (`tests/integration`, `describeE2E`, DATABASE_URL se terminant par `_test`) : secret absent en clair dans la table, IV différents, mauvais tag / mauvaise clé → illisible, rotation réussie atomique, rotation échouée garde l'ancien, révocation désactive l'autopilot, double configure refusé, `resolveForRun`. Créer un Postgres local, puis l'arrêter.
-2. **OAuth** : callback AliExpress → `linkOAuthSession` ; Allegro refresh token (flux OAuth serveur : state CSPRNG, échange du code côté serveur, jetons chiffrés remplacés au refresh). Aucun secret ni jeton dans les redirections ou réponses.
-3. **UI** (`public/dashboards/canonical/js/import-runtime.js` + CSS) : formulaire dérivé de `source.auth.fields` (champs secrets en `type=password`, vidés du DOM après envoi, jamais préremplis), « Configurer la connexion » / « Modifier les identifiants », « Tester la connexion », « ✓ Connexion valide », puis Préparer / Certifier / Activer ; états « Configurée / À configurer » ; OAuth → « Connecter le compte » ; `none` → rien. Messages clients : Connexion impossible / Identifiants refusés / Autorisation expirée / Nouvelle autorisation nécessaire, sans corps fournisseur ni stack.
-4. **Clean-room** : ajouter `provider_credentials` à `PRESERVED_CONFIGURATION` (`scripts/staging-clean-room-reset.js`) + test de non-régression.
-5. **E2E Playwright** avec API mockée à état : parcours CJ, parcours OAuth, parcours rotation.
-6. **Gouvernance** : intention de migration 262 + bloc schema-pending `provider_credentials` dans `docs/SCHEMA.md` ; feature map `features/sourcing.feature.js` (nouveaux fichiers : service, test) ; `npm run arch:gen`, `feature:360:gen`, `security:360` ; gates `feature:registry`, `gate:schema`, `gate:touched-files`, `gate:docs-lint`, `feature:360:check`, `arch:gate`, `map:check`. Complétion au contact (AGENTS.md §8) sur les fichiers retouchés avec leur test.
-7. **PR** (API GitHub, sections Pourquoi / Quoi / Tests, dépendance à #1997).
+1. **Autorisation Allegro depuis l'UI** (non fait) : flux OAuth serveur (state CSPRNG en cookie httpOnly, échange du code côté serveur, jetons chiffrés dans `supplier_oauth_connections`, `linkOAuthSession`) ; aujourd'hui le refresh token Allegro s'obtient hors UI. Ajouter alors le parcours E2E « OAuth Allegro ».
+2. **Migration des connexions existantes** (env → coffre) : après validation staging, jamais dans cette PR.
+3. **PR** (API GitHub, sections Pourquoi / Quoi / Tests, dépendance à #1997) ; vérifier le CI.
+4. Dette hors chantier, constatée sur la branche : `arch:gate` rouge sur `check-currency-format` (migrations 235 et 259) et `check-currency-truncation` (87 > cliquet 86, `services/cost-allocation/variance.js`) ; `tests/unit/logger.test.js` (18 échecs) ; orphelins `.github/workflows/*` du registre de features.
 
 ### Points d'attention
 

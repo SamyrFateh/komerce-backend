@@ -6,14 +6,15 @@
  * @criticality   high
  * @inputs        admin OAuth start/status requests, AliExpress OAuth callback
  * @outputs       provider redirect, encrypted OAuth connection status
- * @depends       middleware/auth.js, services/suppliers/aliexpress-oauth.js
+ * @depends       middleware/auth.js, services/suppliers/aliexpress-oauth.js, services/provider-credential-service.js, db.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       supplier_oauth_connections
+ * @db-read       supplier_oauth_connections, sourcing_sources
  * @db-write      supplier_oauth_connections
+ * @db-write-via:provider-credential-service provider_credentials, sourcing_sources, sourcing_provider_control_events
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  catalog, supplier-import, auth
- * @version       2026-09-v1
+ * @version       2026-10
  */
 'use strict';
 

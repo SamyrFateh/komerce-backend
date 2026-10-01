@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 643,
-    "filesWithFullHeaders": 598,
+    "scannedCodeFiles": 644,
+    "filesWithFullHeaders": 599,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 643,
+    "filesWithAnyHeaders": 644,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1548,
-    "edges": 7668,
-    "dbTables": 177,
-    "doctrines": 537,
+    "graphNodes": 1555,
+    "edges": 7694,
+    "dbTables": 178,
+    "doctrines": 542,
     "impactAreas": 191,
-    "unresolvedCodeEdges": 765,
+    "unresolvedCodeEdges": 767,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 77
   },
@@ -41,7 +41,7 @@
     "market-delegation": 29,
     "market": 3,
     "economic-engine": 56,
-    "sourcing": 35,
+    "sourcing": 36,
     "logistics": 47,
     "boutique": 22,
     "checkout": 3,
@@ -107,7 +107,7 @@
     "schema": 1,
     "route": 130,
     "entrypoint": 1,
-    "service": 335,
+    "service": 336,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -116,7 +116,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 92,
+    "critical": 93,
     "medium": 134,
     "high": 363,
     "low": 54
@@ -8979,18 +8979,30 @@
       ],
       "depends": [
         "middleware/auth.js",
-        "services/suppliers/aliexpress-oauth.js"
+        "services/suppliers/aliexpress-oauth.js",
+        "services/provider-credential-service.js",
+        "db.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
       ],
       "dbRead": [
-        "supplier_oauth_connections"
+        "supplier_oauth_connections",
+        "sourcing_sources"
       ],
       "dbWrite": [
         "supplier_oauth_connections"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "provider-credential-service",
+          "tables": [
+            "provider_credentials",
+            "sourcing_sources",
+            "sourcing_provider_control_events"
+          ]
+        }
+      ],
       "dbTxn": [],
       "doctrine": [
         "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
@@ -9000,7 +9012,7 @@
         "supplier-import",
         "auth"
       ],
-      "version": "2026-09-v1"
+      "version": "2026-10"
     },
     {
       "id": "routes/inventory-api.js",
@@ -23338,6 +23350,63 @@
       "version": "2026-08"
     },
     {
+      "id": "services/provider-credential-service.js",
+      "file": "services/provider-credential-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "provider-credential-service",
+      "domain": "sourcing",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "provider_credentials",
+        "sourcing_sources",
+        "connector_auth_contract",
+        "KOMERCE_PROVIDER_CREDENTIALS_MASTER_KEY"
+      ],
+      "outputs": [
+        "credential_status_without_secret",
+        "server_side_connector_credentials"
+      ],
+      "depends": [
+        "db.js",
+        "services/sourcing-import-dispatch.js"
+      ],
+      "usedBy": [
+        "routes/admin-sourcing-workspace.js",
+        "services/sourcing-workspace.js",
+        "services/sourcing-source-autopilot.js",
+        "services/sourcing-source-registry.js"
+      ],
+      "dbRead": [
+        "provider_credentials",
+        "sourcing_sources"
+      ],
+      "dbWrite": [
+        "provider_credentials",
+        "sourcing_sources",
+        "sourcing_provider_control_events"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "atomic_credential_switch"
+      ],
+      "doctrine": [
+        "provider_credential_authority",
+        "browser_never_rereads_a_secret",
+        "aes_256_gcm_aad_bound_envelope",
+        "rotation_tests_before_switch",
+        "fail_closed_credentials"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "security"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/provider-status-mutation-service.js",
       "file": "services/provider-status-mutation-service.js",
       "type": "file",
@@ -26300,7 +26369,7 @@
         "sourcing",
         "supplier-import"
       ],
-      "version": "2026-09"
+      "version": "2026-10"
     },
     {
       "id": "services/sourcing-integrity-service.js",
@@ -26805,6 +26874,7 @@
       "depends": [
         "db.js",
         "services/sourcing-import-dispatch.js",
+        "services/provider-credential-service.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "services/sourcing-observation-shadow-service.js",
         "services/sourcing-provider-control-policy.js",
@@ -26892,7 +26962,8 @@
       "depends": [
         "db.js",
         "services/sourcing-import-dispatch.js",
-        "services/sourcing-source-autopilot.js"
+        "services/sourcing-source-autopilot.js",
+        "services/provider-credential-service.js"
       ],
       "usedBy": [
         "services/sourcing-workspace.js"
@@ -31058,6 +31129,21 @@
       "table": "supplier_oauth_connections"
     },
     {
+      "id": "db:sourcing_sources",
+      "type": "db-table",
+      "table": "sourcing_sources"
+    },
+    {
+      "id": "db:provider_credentials",
+      "type": "db-table",
+      "table": "provider_credentials"
+    },
+    {
+      "id": "db:sourcing_provider_control_events",
+      "type": "db-table",
+      "table": "sourcing_provider_control_events"
+    },
+    {
       "id": "db:shipments",
       "type": "db-table",
       "table": "shipments"
@@ -31388,11 +31474,6 @@
       "table": "import_runtime_item_events"
     },
     {
-      "id": "db:sourcing_sources",
-      "type": "db-table",
-      "table": "sourcing_sources"
-    },
-    {
       "id": "db:inventory_items",
       "type": "db-table",
       "table": "inventory_items"
@@ -31526,11 +31607,6 @@
       "id": "db:sourcing_resolution_decisions",
       "type": "db-table",
       "table": "sourcing_resolution_decisions"
-    },
-    {
-      "id": "db:sourcing_provider_control_events",
-      "type": "db-table",
-      "table": "sourcing_provider_control_events"
     },
     {
       "id": "db:sourcing_match_proposals",
@@ -33806,6 +33882,31 @@
       "id": "doctrine:§6 (PDC-7)",
       "type": "doctrine",
       "doctrine": "§6 (PDC-7)"
+    },
+    {
+      "id": "doctrine:provider_credential_authority",
+      "type": "doctrine",
+      "doctrine": "provider_credential_authority"
+    },
+    {
+      "id": "doctrine:browser_never_rereads_a_secret",
+      "type": "doctrine",
+      "doctrine": "browser_never_rereads_a_secret"
+    },
+    {
+      "id": "doctrine:aes_256_gcm_aad_bound_envelope",
+      "type": "doctrine",
+      "doctrine": "aes_256_gcm_aad_bound_envelope"
+    },
+    {
+      "id": "doctrine:rotation_tests_before_switch",
+      "type": "doctrine",
+      "doctrine": "rotation_tests_before_switch"
+    },
+    {
+      "id": "doctrine:fail_closed_credentials",
+      "type": "doctrine",
+      "doctrine": "fail_closed_credentials"
     },
     {
       "id": "doctrine:lifecycle_owner_write_boundary",
@@ -48024,6 +48125,18 @@
       "label": "services/suppliers/aliexpress-oauth.js"
     },
     {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "services/provider-credential-service.js",
+      "type": "depends",
+      "label": "services/provider-credential-service.js"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/integrations-aliexpress.js",
       "type": "uses",
@@ -48037,9 +48150,36 @@
     },
     {
       "from": "routes/integrations-aliexpress.js",
+      "to": "db:sourcing_sources",
+      "type": "db-read",
+      "label": "sourcing_sources"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
       "to": "db:supplier_oauth_connections",
       "type": "db-write",
       "label": "supplier_oauth_connections"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "db:provider_credentials",
+      "type": "db-write-via",
+      "label": "provider_credentials",
+      "via": "provider-credential-service"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "db:sourcing_sources",
+      "type": "db-write-via",
+      "label": "sourcing_sources",
+      "via": "provider-credential-service"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
+      "to": "db:sourcing_provider_control_events",
+      "type": "db-write-via",
+      "label": "sourcing_provider_control_events",
+      "via": "provider-credential-service"
     },
     {
       "from": "routes/integrations-aliexpress.js",
@@ -70530,6 +70670,114 @@
       "label": "catalog"
     },
     {
+      "from": "services/provider-credential-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "services/sourcing-import-dispatch.js",
+      "type": "depends",
+      "label": "services/sourcing-import-dispatch.js"
+    },
+    {
+      "from": "routes/admin-sourcing-workspace.js",
+      "to": "services/provider-credential-service.js",
+      "type": "uses",
+      "label": "routes/admin-sourcing-workspace.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/provider-credential-service.js",
+      "type": "uses",
+      "label": "services/sourcing-workspace.js"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
+      "to": "services/provider-credential-service.js",
+      "type": "uses",
+      "label": "services/sourcing-source-autopilot.js"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "services/provider-credential-service.js",
+      "type": "uses",
+      "label": "services/sourcing-source-registry.js"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "db:provider_credentials",
+      "type": "db-read",
+      "label": "provider_credentials"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "db:sourcing_sources",
+      "type": "db-read",
+      "label": "sourcing_sources"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "db:provider_credentials",
+      "type": "db-write",
+      "label": "provider_credentials"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "db:sourcing_sources",
+      "type": "db-write",
+      "label": "sourcing_sources"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "db:sourcing_provider_control_events",
+      "type": "db-write",
+      "label": "sourcing_provider_control_events"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "doctrine:provider_credential_authority",
+      "type": "doctrine",
+      "label": "provider_credential_authority"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "doctrine:browser_never_rereads_a_secret",
+      "type": "doctrine",
+      "label": "browser_never_rereads_a_secret"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "doctrine:aes_256_gcm_aad_bound_envelope",
+      "type": "doctrine",
+      "label": "aes_256_gcm_aad_bound_envelope"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "doctrine:rotation_tests_before_switch",
+      "type": "doctrine",
+      "label": "rotation_tests_before_switch"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "doctrine:fail_closed_credentials",
+      "type": "doctrine",
+      "label": "fail_closed_credentials"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "impact:security",
+      "type": "impact",
+      "label": "security"
+    },
+    {
       "from": "services/provider-status-mutation-service.js",
       "to": "none (executor fourni par l'appelant)",
       "type": "depends",
@@ -75723,6 +75971,12 @@
     },
     {
       "from": "services/sourcing-source-autopilot.js",
+      "to": "services/provider-credential-service.js",
+      "type": "depends",
+      "label": "services/provider-credential-service.js"
+    },
+    {
+      "from": "services/sourcing-source-autopilot.js",
       "to": "services/suppliers/catalog-import-orchestrator.js",
       "type": "depends",
       "label": "services/suppliers/catalog-import-orchestrator.js"
@@ -75950,6 +76204,12 @@
       "to": "services/sourcing-source-autopilot.js",
       "type": "depends",
       "label": "services/sourcing-source-autopilot.js"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "services/provider-credential-service.js",
+      "type": "depends",
+      "label": "services/provider-credential-service.js"
     },
     {
       "from": "services/sourcing-workspace.js",
@@ -88612,6 +88872,7 @@
         "middleware/require-sourcing-global-authority.js",
         "services/import-lot-registry.js",
         "services/import-runtime-runs.js",
+        "services/provider-credential-service.js",
         "services/sourcing-catalog-change-observation.js",
         "services/sourcing-integrity-service.js",
         "services/sourcing-provider-control-policy.js",
@@ -90492,19 +90753,31 @@
       "purpose": null,
       "directDependsOn": [
         "middleware/auth.js",
-        "services/suppliers/aliexpress-oauth.js"
+        "services/suppliers/aliexpress-oauth.js",
+        "services/provider-credential-service.js",
+        "db.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
       ],
       "ownedFiles": [],
       "dbRead": [
-        "supplier_oauth_connections"
+        "supplier_oauth_connections",
+        "sourcing_sources"
       ],
       "dbWrite": [
         "supplier_oauth_connections"
       ],
-      "dbWriteVia": [],
+      "dbWriteVia": [
+        {
+          "via": "provider-credential-service",
+          "tables": [
+            "provider_credentials",
+            "sourcing_sources",
+            "sourcing_provider_control_events"
+          ]
+        }
+      ],
       "doctrines": [
         "docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md"
       ],
@@ -90515,12 +90788,16 @@
       ],
       "mustCheck": [
         "bootstrap/api-routes.js",
+        "db:provider_credentials",
+        "db:sourcing_provider_control_events",
+        "db:sourcing_sources",
         "db:supplier_oauth_connections",
         "doctrine:docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md",
         "impact:auth",
         "impact:catalog",
         "impact:supplier-import",
         "middleware/auth.js",
+        "services/provider-credential-service.js",
         "services/suppliers/aliexpress-oauth.js"
       ]
     },
@@ -104733,6 +105010,64 @@
         "services/catalog-enrichment.js"
       ]
     },
+    "services/provider-credential-service.js": {
+      "role": "provider-credential-service",
+      "domain": "sourcing",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/sourcing-import-dispatch.js"
+      ],
+      "directUsedBy": [
+        "routes/admin-sourcing-workspace.js",
+        "services/sourcing-workspace.js",
+        "services/sourcing-source-autopilot.js",
+        "services/sourcing-source-registry.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "provider_credentials",
+        "sourcing_sources"
+      ],
+      "dbWrite": [
+        "provider_credentials",
+        "sourcing_sources",
+        "sourcing_provider_control_events"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "provider_credential_authority",
+        "browser_never_rereads_a_secret",
+        "aes_256_gcm_aad_bound_envelope",
+        "rotation_tests_before_switch",
+        "fail_closed_credentials"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "security"
+      ],
+      "mustCheck": [
+        "db:provider_credentials",
+        "db:sourcing_provider_control_events",
+        "db:sourcing_sources",
+        "doctrine:aes_256_gcm_aad_bound_envelope",
+        "doctrine:browser_never_rereads_a_secret",
+        "doctrine:fail_closed_credentials",
+        "doctrine:provider_credential_authority",
+        "doctrine:rotation_tests_before_switch",
+        "impact:security",
+        "impact:sourcing",
+        "routes/admin-sourcing-workspace.js",
+        "routes/integrations-aliexpress.js",
+        "services/sourcing-import-dispatch.js",
+        "services/sourcing-source-autopilot.js",
+        "services/sourcing-source-registry.js",
+        "services/sourcing-workspace.js"
+      ]
+    },
     "services/provider-status-mutation-service.js": {
       "role": "providers-services-status-mutation-service",
       "domain": "providers-services",
@@ -107622,6 +107957,7 @@
         "impact:sourcing",
         "impact:supplier-import",
         "routes/sourcing-scanner.js",
+        "services/provider-credential-service.js",
         "services/sourcing-source-autopilot.js",
         "services/sourcing-source-registry.js",
         "services/sourcing-workspace.js",
@@ -108090,6 +108426,7 @@
       "directDependsOn": [
         "db.js",
         "services/sourcing-import-dispatch.js",
+        "services/provider-credential-service.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "services/sourcing-observation-shadow-service.js",
         "services/sourcing-provider-control-policy.js",
@@ -108170,6 +108507,7 @@
         "impact:catalog",
         "impact:sourcing",
         "impact:supplier-import",
+        "services/provider-credential-service.js",
         "services/sourcing-candidate-actions.js",
         "services/sourcing-import-dispatch.js",
         "services/sourcing-observation-shadow-service.js",
@@ -108190,7 +108528,8 @@
       "directDependsOn": [
         "db.js",
         "services/sourcing-import-dispatch.js",
-        "services/sourcing-source-autopilot.js"
+        "services/sourcing-source-autopilot.js",
+        "services/provider-credential-service.js"
       ],
       "directUsedBy": [
         "services/sourcing-workspace.js"
@@ -108230,6 +108569,7 @@
         "impact:admin-dashboard",
         "impact:sourcing",
         "impact:supplier-import",
+        "services/provider-credential-service.js",
         "services/sourcing-import-dispatch.js",
         "services/sourcing-source-autopilot.js",
         "services/sourcing-workspace.js"
@@ -108353,6 +108693,7 @@
         "impact:sourcing",
         "routes/admin-sourcing-workspace.js",
         "services/partner-admin-service.js",
+        "services/provider-credential-service.js",
         "services/sourcing-analysis.js",
         "services/sourcing-candidate-actions.js",
         "services/sourcing-import-dispatch.js",
@@ -112185,6 +112526,17 @@
       ]
     },
     {
+      "table": "sourcing_sources",
+      "writerCount": 5,
+      "writers": [
+        "services/provider-credential-service.js",
+        "services/sourcing-observation-shadow-service.js",
+        "services/sourcing-provider-control-policy.js",
+        "services/sourcing-source-autopilot.js",
+        "services/sourcing-source-registry.js"
+      ]
+    },
+    {
       "table": "users",
       "writerCount": 5,
       "writers": [
@@ -112263,16 +112615,6 @@
         "services/sourcing-candidate-actions.js",
         "services/sourcing-candidate-import-service.js",
         "services/suppliers/catalog-import-json.js"
-      ]
-    },
-    {
-      "table": "sourcing_sources",
-      "writerCount": 4,
-      "writers": [
-        "services/sourcing-observation-shadow-service.js",
-        "services/sourcing-provider-control-policy.js",
-        "services/sourcing-source-autopilot.js",
-        "services/sourcing-source-registry.js"
       ]
     },
     {
@@ -112375,6 +112717,15 @@
         "services/sourcing-catalog-change-observation.js",
         "services/sourcing-observation-shadow-service.js",
         "services/sourcing-source-autopilot.js"
+      ]
+    },
+    {
+      "table": "sourcing_provider_control_events",
+      "writerCount": 3,
+      "writers": [
+        "services/provider-credential-service.js",
+        "services/sourcing-provider-control-policy.js",
+        "services/sourcing-source-registry.js"
       ]
     },
     {
@@ -112649,14 +113000,6 @@
       "writers": [
         "services/sourcing-catalog-change-observation.js",
         "services/sourcing-observation-shadow-service.js"
-      ]
-    },
-    {
-      "table": "sourcing_provider_control_events",
-      "writerCount": 2,
-      "writers": [
-        "services/sourcing-provider-control-policy.js",
-        "services/sourcing-source-registry.js"
       ]
     },
     {
@@ -113949,6 +114292,12 @@
     },
     {
       "from": "routes/hub.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "routes/integrations-aliexpress.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
@@ -116106,6 +116455,12 @@
       "to": "services/product-variant-service.js",
       "type": "uses",
       "label": "routes/products.js (via product-admin-service.js)"
+    },
+    {
+      "from": "services/provider-credential-service.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
     },
     {
       "from": "services/provider-status-mutation-service.js",
