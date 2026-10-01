@@ -125,7 +125,9 @@ async function getSkuCandidates(dbPool, productId) {
     [productId]
   );
 
-  if (!product.has_variants) {
+  const hasVariants = hasVariantsOverride == null ? Boolean(product.has_variants) : Boolean(hasVariantsOverride);
+
+  if (!hasVariants) {
     const existing = declared.find(s => s.variant_combo === null) || null;
     return {
       product_id: product.id, product_name: product.name,
@@ -272,7 +274,7 @@ async function deactivateProductSku(dbPool, productId, skuId) {
  * basculer products.inventory_model vers 'SKU'. Lecture seule, ne modifie
  * jamais inventory_model (la bascule reste un acte explicite séparé).
  */
-async function auditProductSkuReadiness(dbPool, productId) {
+async function auditProductSkuReadiness(dbPool, productId, { hasVariantsOverride = null } = {}) {
   const { rows: [product] } = await dbPool.query(
     'SELECT id, name, has_variants, inventory_model FROM products WHERE id = $1',
     [productId]
@@ -333,6 +335,51 @@ async function auditProductSkuReadiness(dbPool, productId) {
   };
 }
 
+async function activateProductSkuInventoryModel(dbPool, productId) {
+  const { rows: variantRows } = await dbPool.query(
+    'SELECT variant_type, variant_value FROM product_variants WHERE product_id = $1',
+    [productId]
+  );
+  const hasVariants = variantRows.length > 0;
+  const readiness = await auditProductSkuReadiness(dbPool, productId, { hasVariantsOverride: hasVariants });
+
+  if (!readiness.ready) {
+    const e = new Error(`Bascule SKU refusée : ${readiness.reasons.join(' ; ') || 'produit non READY'}`);
+    e.status = 422;
+    e.code = 'catalog_sku_cutover_not_ready';
+    e.reasons = readiness.reasons;
+    throw e;
+  }
+
+  if (readiness.already_sku) {
+    return { ...readiness, inventory_model: 'SKU', has_variants: hasVariants };
+  }
+
+  const { rows: [product] } = await dbPool.query(
+    `UPDATE products
+        SET has_variants = $2,
+            inventory_model = 'SKU',
+            updated_at = NOW()
+      WHERE id = $1
+        AND inventory_model = 'LEGACY_VARIANTS'
+      RETURNING id, inventory_model, has_variants`,
+    [productId, hasVariants]
+  );
+
+  if (!product) {
+    const e = new Error('Bascule SKU impossible : produit introuvable ou état concurrent');
+    e.status = 409;
+    e.code = 'catalog_sku_cutover_conflict';
+    throw e;
+  }
+
+  return {
+    ...readiness,
+    inventory_model: product.inventory_model,
+    has_variants: Boolean(product.has_variants),
+  };
+}
+
 module.exports = {
   canonicalizeVariantCombo: _canonicalCombo,
   resolveActiveSku,
@@ -340,4 +387,5 @@ module.exports = {
   upsertProductSku,
   deactivateProductSku,
   auditProductSkuReadiness,
+  activateProductSkuInventoryModel,
 };
