@@ -67,11 +67,19 @@ async function resolveActiveBoutiqueTaxonomy(q, candidate = {}) {
  * The caller injects the transaction client so product creation remains in the
  * same atomic unit as catalog promotion + sourcing candidate state transition.
  */
+function draftStockFromCandidate(candidate) {
+  const value = candidate?.stock_available;
+  if (value === null || value === undefined || value === '') return 0;
+  const stock = Number(value);
+  return Number.isInteger(stock) && stock >= 0 ? stock : 0;
+}
+
 async function createDraftProductFromSourcingCandidate(q, {
   candidate,
   initialPrice,
 }) {
   const weightKg = candidate.estimated_weight_kg || null;
+  const stock = draftStockFromCandidate(candidate);
   const sourceLocale = sourceLocaleFromCandidate(candidate);
   const boutiqueTaxonomy = await resolveActiveBoutiqueTaxonomy(q, candidate);
 
@@ -81,10 +89,11 @@ async function createDraftProductFromSourcingCandidate(q, {
        boutique_category_key, boutique_subcategory_key,
        cost_kmf,
        price_kmf,
+       stock,
        weight_kg,
        is_active, is_available, lifecycle_status,
        name_source, description_source, source_locale, content_source
-     ) VALUES ($1, $2, $3, $4, $5, $6, $7, FALSE, FALSE, 'candidate', $8, $9, $10, 'connector_raw')
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, FALSE, FALSE, 'candidate', $9, $10, $11, 'connector_raw')
      RETURNING id`,
     [
       candidate.product_name,
@@ -93,6 +102,7 @@ async function createDraftProductFromSourcingCandidate(q, {
       boutiqueTaxonomy.subcategory,
       candidate.purchase_price_kmf || 0,
       initialPrice == null ? null : initialPrice,
+      stock,
       weightKg,
       candidate.product_name,
       candidate.description || null,
@@ -105,6 +115,7 @@ async function createDraftProductFromSourcingCandidate(q, {
 
 module.exports = {
   createDraftProductFromSourcingCandidate,
+  draftStockFromCandidate,
   sourceLocaleFromCandidate,
   boutiqueTaxonomyFromCandidate,
   resolveActiveBoutiqueTaxonomy,
