@@ -730,11 +730,32 @@ const CANDIDATE_COLUMNS = `
   p.product_ref
 `;
 
+// L'identité d'un candidat est durable et réutilisée entre imports. Son import_id est donc
+// mutable par construction (chaque nouvel UPSERT le rattache au dernier import observé).
+// Un KIR historique ne doit jamais déduire sa population depuis ce pointeur mutable :
+// migration 258 enregistre déjà l'appartenance run -> candidate_id au moment du traitement.
+// On l'utilise comme ancre de lecture, avec fallback import_id uniquement pour les anciens
+// runs dépourvus d'événements produit.
 async function loadRows(runId, q = db) {
   const { rows } = await q.query(
-    `SELECT ${CANDIDATE_COLUMNS}
+    `WITH event_membership AS (
+       SELECT DISTINCT e.candidate_id
+         FROM import_runtime_item_events e
+        WHERE e.run_id = $1
+          AND e.candidate_id IS NOT NULL
+     ),
+     membership_state AS (
+       SELECT EXISTS (SELECT 1 FROM event_membership) AS has_events
+     )
+     SELECT ${CANDIDATE_COLUMNS}
        FROM import_runtime_runs r
-       JOIN sourcing_candidates sc ON sc.import_id = r.import_id
+       CROSS JOIN membership_state ms
+       JOIN sourcing_candidates sc
+         ON (
+           (ms.has_events AND sc.id IN (SELECT candidate_id FROM event_membership))
+           OR
+           (NOT ms.has_events AND sc.import_id = r.import_id)
+         )
        LEFT JOIN products p ON p.id = sc.product_id
       WHERE r.id = $1`,
     [runId]
@@ -745,11 +766,34 @@ async function loadRows(runId, q = db) {
 async function loadRowsForRuns(runIds, q = db) {
   if (!runIds.length) return new Map();
   const { rows } = await q.query(
-    `SELECT r.id::text AS run_id, ${CANDIDATE_COLUMNS}
-       FROM import_runtime_runs r
-       JOIN sourcing_candidates sc ON sc.import_id = r.import_id
-       LEFT JOIN products p ON p.id = sc.product_id
-      WHERE r.id = ANY($1::uuid[])`,
+    `WITH event_membership AS (
+       SELECT DISTINCT e.run_id, e.candidate_id
+         FROM import_runtime_item_events e
+        WHERE e.run_id = ANY($1::uuid[])
+          AND e.candidate_id IS NOT NULL
+     ),
+     runs_with_events AS (
+       SELECT DISTINCT run_id FROM event_membership
+     ),
+     event_rows AS (
+       SELECT em.run_id::text AS run_id, ${CANDIDATE_COLUMNS}
+         FROM event_membership em
+         JOIN sourcing_candidates sc ON sc.id = em.candidate_id
+         LEFT JOIN products p ON p.id = sc.product_id
+     ),
+     legacy_rows AS (
+       SELECT r.id::text AS run_id, ${CANDIDATE_COLUMNS}
+         FROM import_runtime_runs r
+         JOIN sourcing_candidates sc ON sc.import_id = r.import_id
+         LEFT JOIN products p ON p.id = sc.product_id
+        WHERE r.id = ANY($1::uuid[])
+          AND NOT EXISTS (
+            SELECT 1 FROM runs_with_events x WHERE x.run_id = r.id
+          )
+     )
+     SELECT * FROM event_rows
+     UNION ALL
+     SELECT * FROM legacy_rows`,
     [runIds]
   );
   const grouped = new Map(runIds.map((id) => [String(id), []]));
@@ -952,14 +996,9 @@ async function getProductTrace(runRef, supplierProductId, q = db) {
   );
   if (!run) return null;
 
-  const { rows: [row] } = await q.query(
-    `SELECT ${CANDIDATE_COLUMNS}
-       FROM import_runtime_runs r
-       JOIN sourcing_candidates sc ON sc.import_id = r.import_id
-       LEFT JOIN products p ON p.id = sc.product_id
-      WHERE r.id = $1
-        AND sc.supplier_product_id = $2`,
-    [run.id, supplierProductId]
+  const candidateRows = await loadRows(run.id, q);
+  const row = candidateRows.find(
+    (candidate) => String(candidate.supplier_product_id || '') === String(supplierProductId || '')
   );
   if (!row) return null;
 
@@ -1010,4 +1049,6 @@ module.exports = {
   buildPassage,
   listPassages,
   getRunNeighbors,
+  _loadRows: loadRows,
+  _loadRowsForRuns: loadRowsForRuns,
 };
