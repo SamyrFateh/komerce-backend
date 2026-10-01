@@ -307,6 +307,8 @@ function projectSourceControl(source) {
     credential_status: credentialStatus,
     credential_in_vault: Boolean(source.credential_in_vault),
     auth: source.auth || { mode: 'none', scope: null, fields: [] },
+    onboarding_ready: source.onboarding_ready === true,
+    onboarding: source.onboarding || null,
     capabilities,
     last_capture_status: source.last_capture_status || null,
     last_capture_at: source.last_capture_at || null,
