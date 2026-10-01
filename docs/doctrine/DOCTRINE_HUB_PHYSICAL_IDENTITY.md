@@ -129,3 +129,73 @@ Le vieux `POST /api/hub/scan` basé sur `parcel_ref → order_id → safeSyncSca
 `POST /api/hub/pack` et `POST /api/hub/seal` conservent leurs URLs historiques pour limiter le coût de cutover, mais le champ `parcel_id` y désigne désormais l'UUID de la `hub_physical_unit` canonique. Le seal est donc strictement **physical-unit scoped** ; il ne peut plus expédier d'autres colis d'une commande par effet de bord.
 
 Les surfaces lecture legacy (`/api/hub/pending`, `/search`, `/today`, `/stats/week`) restent des projections d'observation pendant le cutover. Elles n'accordent aucune autorité d'écriture et ne sont pas une source de vérité HUB-001.
+
+## 11. HUB V1 — arrivée, ouverture, contrôle qualité et reconditionnement
+
+La V1 distingue explicitement quatre identités/gestes. Ils ne doivent jamais être confondus.
+
+### 11.1 `KOM-IN` — référence d'inbound attendue
+
+Après création d'une Purchase Order, Komerce peut produire une référence déterministe `KOM-IN-...` et la transmettre au fournisseur.
+
+Cette référence :
+
+- désigne la Purchase Order Komerce à laquelle le fournisseur doit rattacher ses colis ;
+- peut être imprimée en clair, CODE128 ou QR selon la capacité fournisseur ;
+- est **optionnelle** : l'absence de coopération fournisseur ne bloque jamais le Hub ;
+- peut être répétée sur plusieurs colis lorsque le fournisseur scinde physiquement une même PO ;
+- ne remplace ni le tracking transporteur ni l'identité physique réelle du colis.
+
+La préférence opérationnelle est :
+
+`KOM-IN reconnu → tracking/référence fournisseur réconciliable → recherche manuelle`.
+
+### 11.2 `KOM-RCV` — colis fournisseur physiquement reçu
+
+Chaque colis physique arrivé au Hub reçoit une identité Hub propre `KOM-RCV-...`, distincte de `KOM-IN`.
+
+L'arrivée peut être enregistrée **sans ouvrir le colis et sans déclarer son contenu détaillé** :
+
+`arrivée → capture KOM-IN/tracking si disponible → RECEIVED`.
+
+Si `KOM-IN` est reconnu, la PO attendue est connue mais le contenu physique n'est pas encore déclaré comme vrai. Si aucun rapprochement n'est disponible, le colis reste recevable en mode non réconcilié.
+
+Le tracking fournisseur distingue notamment plusieurs colis physiques portant le même `KOM-IN`.
+
+### 11.3 Ouverture et réconciliation du contenu
+
+Le contenu détaillé devient une vérité Hub lorsque l'agent ouvre réellement le colis.
+
+Le geste canonique est :
+
+`RECEIVED → ouverture → constat SKU/quantités → réconciliation Purchase Order → IDENTIFIED`.
+
+Une incohérence de PO, SKU, quantité, Supplier Order Identity, Market ou destination ne doit jamais être devinée : le colis passe en `QUARANTINED` avec incident gouverné.
+
+Le contrôle qualité suit l'identification :
+
+`IDENTIFIED → QUALITY_CHECKED`.
+
+Le contrôle qualité est donc lié au moment où le produit est réellement visible et manipulable, et non au simple scan d'arrivée.
+
+### 11.4 `KOM-ITEM` — identité physique après déballage, seulement si utile
+
+Lorsqu'un produit ou lot perd une identité exploitable en sortant de l'emballage fournisseur, le Hub peut créer une `HANDLING_UNIT` étiquetée `KOM-ITEM-...`.
+
+Le réétiquetage n'est pas systématique. Il est justifié seulement lorsqu'il préserve une identité utile pendant la manipulation : séparation de lots/destinations, code fournisseur inutilisable, regroupement, fractionnement ou autre besoin réel.
+
+### 11.5 `KOM-BOX` — carton outbound Komerce
+
+Le carton destiné à quitter le Hub est une `MARKET_PARCEL` avec identité `KOM-BOX-...`.
+
+La matière contrôlée peut être déplacée du colis fournisseur ou d'un `KOM-ITEM` vers un `KOM-BOX` par `REPACK`, `SPLIT` ou `MERGE`. Ces opérations ne modifient jamais l'allocation économique.
+
+Plusieurs sources fournisseur peuvent être consolidées dans un même `KOM-BOX` uniquement si les invariants outbound restent satisfaits, notamment mono-Market et mono-destination.
+
+### 11.6 Principe opératoire V1
+
+La chaîne observable est :
+
+`KOM-IN éventuel → KOM-RCV → ouverture/réconciliation → contrôle qualité → KOM-ITEM si nécessaire → REPACK → KOM-BOX → PACKED → DISPATCHED`.
+
+Komerce ne gère pas en V1 les racks, tables ou déplacements internes. Un scan ou une impression n'est demandé que lorsqu'il matérialise une nouvelle vérité utile.
