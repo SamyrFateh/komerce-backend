@@ -461,7 +461,7 @@
     slot.appendChild(result);
   }
 
-  function renderSimulationResult(doc, rootNode, result, title) {
+  function renderSimulationResult(doc, rootNode, result, title, productRef = null) {
     const target = rootNode.querySelector('[data-pricing-simulation]');
     if (!target) return;
     target.replaceChildren();
@@ -485,6 +485,35 @@
     target.appendChild(grid);
     if (result.strategy_risk || result.data_quality?.confidence) {
       target.appendChild(text(doc, 'p', 'kmc-workspace-note', `Risque stratégie : ${result.strategy_risk || '—'} · confiance : ${result.data_quality?.confidence || '—'}`));
+    }
+
+    const sources = result.data_quality?.sources || {};
+    const sourceBits = [
+      ['achat', sources.purchase_price],
+      ['poids', sources.weight],
+      ['volume', sources.volume],
+      ['douane', sources.customs_category],
+    ].filter(([, value]) => value).map(([label, value]) => `${label}: ${value}`);
+    if (sourceBits.length) {
+      target.appendChild(text(doc, 'p', 'kmc-workspace-note', `Sources : ${sourceBits.join(' · ')}`));
+    }
+    const missing = Array.isArray(result.data_quality?.missing_fields)
+      ? result.data_quality.missing_fields.filter(Boolean)
+      : [];
+    if (missing.length) {
+      target.appendChild(text(doc, 'p', 'kmc-workspace-note', `Données manquantes : ${missing.join(', ')}`));
+    }
+
+    const recommendedPrice = Number(result.recommended_price_kmf);
+    if (productRef && Number.isFinite(recommendedPrice) && recommendedPrice > 0) {
+      const actions = doc.createElement('div');
+      actions.className = 'kmc-workspace-actions';
+      const apply = button(doc, 'Choisir ce prix', 'apply-recommended');
+      apply.dataset.productRef = productRef;
+      apply.dataset.price = recommendedPrice;
+      apply.dataset.survival = Number(result.minimum_safe_price_kmf) || 0;
+      actions.appendChild(apply);
+      target.appendChild(actions);
     }
   }
 
@@ -770,7 +799,7 @@
       if (act === 'simulate-product') {
         const productRef = target.dataset.productRef;
         const result = await action(context, `${endpointFor(context)}/simulate`, { product_ref: productRef }, 'Simulation calculée.');
-        if (result) renderSimulationResult(context.document, rootNode, result.result, `Simulation · ${productRef}`);
+        if (result) renderSimulationResult(context.document, rootNode, result.result, `Simulation · ${productRef}`, productRef);
       }
       if (act === 'apply-recommended') {
         const productRef = target.dataset.productRef;
