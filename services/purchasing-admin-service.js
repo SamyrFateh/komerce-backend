@@ -76,17 +76,10 @@ async function deleteSupplier(id, forceDelete = false) {
       throw err;
     }
 
-    // Double écriture (PR 1) : les lignes des PO annulées le sont dans la même instruction.
-    const poFilter = (isTestSupplier && forceDelete)
-      ? `supplier_id = $1 AND status != 'cancelled'`
-      : `supplier_id = $1 AND status IN ('pending', 'notified')`;
-    const posQuery = `WITH upd AS (
-        UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE ${poFilter} RETURNING id
-      ), lines AS (
-        UPDATE purchase_lines SET cancelled_at = NOW(), cancel_reason = 'purchase_order_cancelled', updated_at = NOW()
-         WHERE purchase_order_id IN (SELECT id FROM upd) AND cancelled_at IS NULL
-      )
-      SELECT id FROM upd`;
+    // Les lignes d'achat des PO annulées sont annulées par le trigger trg_purchase_orders_cancel_lines.
+    const posQuery = (isTestSupplier && forceDelete)
+      ? `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status != 'cancelled'`
+      : `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status IN ('pending', 'notified')`;
     const { rowCount: posCancelled } = await client.query(posQuery, [id]);
 
     const { rowCount: mappingsDeleted } = await client.query(
@@ -263,11 +256,7 @@ async function cancelPurchaseOrder(poId, forceDelete = false) {
   }
 
   await db.query(
-    `WITH upd AS (
-       UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING id
-     )
-     UPDATE purchase_lines SET cancelled_at = NOW(), cancel_reason = 'purchase_order_cancelled', updated_at = NOW()
-      WHERE purchase_order_id IN (SELECT id FROM upd) AND cancelled_at IS NULL`,
+    `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1`,
     [poId]
   );
 

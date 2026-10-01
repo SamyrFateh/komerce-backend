@@ -352,3 +352,25 @@ DROP TRIGGER IF EXISTS trg_purchase_lines_guard_delete ON public.purchase_lines;
 CREATE TRIGGER trg_purchase_lines_guard_delete
   BEFORE DELETE ON public.purchase_lines
   FOR EACH ROW EXECUTE FUNCTION public.purchase_lines_guard_delete();
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Synchronisation garantie en base : une PO annulée (quel que soit l'écrivain : service, script, SQL
+-- direct) annule sa ligne d'achat. Sans cela une ligne orpheline resterait « engagée » et la garde I1
+-- bloquerait à tort un nouveau besoin d'achat.
+-- ─────────────────────────────────────────────────────────────────────────────
+CREATE OR REPLACE FUNCTION public.purchase_orders_cancel_lines()
+RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  UPDATE public.purchase_lines
+     SET cancelled_at = now(), cancel_reason = 'purchase_order_cancelled', updated_at = now()
+   WHERE purchase_order_id = NEW.id AND cancelled_at IS NULL;
+  RETURN NULL;
+END $$;
+
+DROP TRIGGER IF EXISTS trg_purchase_orders_cancel_lines ON public.purchase_orders;
+CREATE TRIGGER trg_purchase_orders_cancel_lines
+  AFTER UPDATE OF status ON public.purchase_orders
+  FOR EACH ROW
+  WHEN (NEW.status = 'cancelled' AND OLD.status IS DISTINCT FROM 'cancelled')
+  EXECUTE FUNCTION public.purchase_orders_cancel_lines();

@@ -288,6 +288,17 @@ describeDb('purchase_lines — migration 263 (REAL_DB)', () => {
       expect(rows[0].n).toBe(0);
     });
 
+    it('annuler une PO (SQL direct) annule sa ligne et libère le besoin', async () => {
+      const po = await seedPo(s, { ...base, qty: 3 });
+      const { rows: [l] } = await q(s, `INSERT INTO purchase_lines(purchase_order_id, order_item_id, supplier_id, supplier_sku, quantity, procurement_hub_ref)
+                                        VALUES ($1,$2,$3,'SKU',3,'DXB') RETURNING id`, [po, base.item, base.supplier]);
+      await q(s, `UPDATE purchase_orders SET status = 'cancelled' WHERE id = $1`, [po]);
+      const { rows: [after] } = await q(s, 'SELECT cancelled_at, cancel_reason FROM purchase_lines WHERE id = $1', [l.id]);
+      expect(after.cancelled_at).not.toBeNull();
+      expect(after.cancel_reason).toBe('purchase_order_cancelled');
+      await expect(q(s, lineSql, [base.item, base.supplier, 3])).resolves.toBeTruthy();
+    });
+
     it('contraintes de forme : identité exacte exige SKU et référence ; paire prix/devise', async () => {
       const bad = `INSERT INTO purchase_lines(order_item_id, supplier_id, supplier_sku, quantity, procurement_hub_ref, supplier_order_identity)
                    VALUES ($1,$2,'SKU',1,'DXB','{"provider":"x","version":1,"payload":{"a":1}}')`;
