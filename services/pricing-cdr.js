@@ -40,6 +40,18 @@ const DEFAULT_TARGET_ORDERS_PER_MONTH = 100;
 
 function r(n) { return Math.round(Number(n) || 0); }
 
+function positiveNumberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function categoryDefaultVolumeM3(category = {}) {
+  const l = positiveNumberOrNull(category.default_dim_l_cm);
+  const w = positiveNumberOrNull(category.default_dim_w_cm);
+  const h = positiveNumberOrNull(category.default_dim_h_cm);
+  return l && w && h ? (l * w * h) / 1_000_000 : null;
+}
+
 // ── Helpers legacy ────────────────────────────────────────────────
 function _legacyFamilyFromCategory(oldCat) {
   if (oldCat === 'paiement') return 'business';
@@ -208,11 +220,21 @@ function computeCDR(product, ctx = {}) {
   if (!cat) warnings.push(`Catégorie "${categoryKey}" inconnue — taux douane par défaut utilisés.`);
 
   const productCostKmf = Number(product.cost_kmf) || 0;
-  const weightKg       = Number(product.weight_kg) || 1;
-  const volM3          = Number(ctx.volume_m3) || 0.005;
-  const channel        = ctx.channel || 'cash_relais';
+  const productWeightKg = positiveNumberOrNull(product.weight_kg);
+  const categoryWeightKg = positiveNumberOrNull(cat?.default_weight_kg);
+  const requestedVolumeM3 = positiveNumberOrNull(ctx.volume_m3);
+  const categoryVolumeM3 = categoryDefaultVolumeM3(cat);
+  const weightKg = productWeightKg ?? categoryWeightKg ?? 1;
+  const volM3 = requestedVolumeM3 ?? categoryVolumeM3 ?? 0.005;
+  const channel = ctx.channel || 'cash_relais';
 
   if (productCostKmf <= 0) warnings.push('cost_kmf absent ou nul sur le produit — CDR non significatif.');
+  if (productWeightKg == null && categoryWeightKg == null) {
+    warnings.push('weight_kg absent — utilisation du défaut générique 1 kg.');
+  }
+  if (requestedVolumeM3 == null && categoryVolumeM3 == null) {
+    warnings.push('volume_m3 absent — utilisation du défaut générique 0,005 m³.');
+  }
 
   const details = {
     product_cost: r(productCostKmf),
@@ -365,7 +387,13 @@ function computeCDR(product, ctx = {}) {
     target_orders_per_month:      fixedAlloc.target_orders_per_month,
     details,
     warnings,
-    _meta: { taxAED, taxEUR, fretEUR, category: categoryKey, channel },
+    _meta: {
+      taxAED, taxEUR, fretEUR, category: categoryKey, channel,
+      weight_kg: weightKg,
+      volume_m3: volM3,
+      weight_source: productWeightKg != null ? 'product' : (categoryWeightKg != null ? 'category' : 'default'),
+      volume_source: requestedVolumeM3 != null ? 'product' : (categoryVolumeM3 != null ? 'category' : 'default'),
+    },
   };
 }
 
@@ -375,4 +403,6 @@ module.exports = {
   computeCDR,
   _legacyFamilyFromCategory,
   _legacyCategoryToNew,
+  _positiveNumberOrNull: positiveNumberOrNull,
+  _categoryDefaultVolumeM3: categoryDefaultVolumeM3,
 };
