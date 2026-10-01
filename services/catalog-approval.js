@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        product_id, admin_user, reject_reason, override_fields
  * @outputs       queue_page, approved_product, rejected_product, overridden_product
- * @depends       db.js, services/catalog-overrides.js, services/product-publication-guard.js, utils/alerts.js, utils/rules.js
+ * @depends       db.js, services/catalog-overrides.js, services/catalog-certification.js, services/product-publication-guard.js, services/product-sku-service.js, utils/alerts.js, utils/rules.js
  * @used-by       routes/admin/catalog-approval.js, services/catalog-workspace.js
  * @db-read       catalog_media, products
  * @db-write      products
@@ -36,6 +36,7 @@ const { createAlert } = require('../utils/alerts');
 const { getRuleNumber } = require('../utils/rules');
 const { upsertOverrides } = require('./catalog-overrides');
 const { certifyCatalogProduct } = require('./catalog-certification');
+const { validatePublicationUpdate } = require('./product-publication-guard');
 const { activateProductSkuInventoryModel } = require('./product-sku-service');
 const log = require('../utils/logger').child({ module: 'catalog-approval' });
 
@@ -121,6 +122,21 @@ async function preparePublication(q, before) {
   const verdict = await certifyCatalogProduct(q, before.id);
   if (!verdict) return { ok: false, result: { status: 404, body: { error: 'Produit introuvable' } } };
 
+  // Compatibilité des produits natifs / historiques : la certification
+  // fournisseur stricte ne s'applique qu'aux produits réellement issus du
+  // Sourcing. Ils restent néanmoins soumis au même publication guard.
+  if (verdict.row.has_sourcing_candidate !== true) {
+    const check = validatePublicationUpdate({
+      before,
+      patch: { is_active: true },
+      context: { catalogMediaCount: Number(verdict.row.active_media || 0) },
+    });
+    if (!check.ok) {
+      return { ok: false, result: { status: 422, body: { error: check.error, code: check.code } } };
+    }
+    return { ok: true, verdict };
+  }
+
   if (!verdict.certification.certified) {
     const guardCode = verdict.certification.publication_guard;
     const guardReason = (verdict.certification.reasons || []).find(reason => reason === `publication_guard:${guardCode}`);
@@ -140,22 +156,20 @@ async function preparePublication(q, before) {
     };
   }
 
-  if (verdict.row.has_sourcing_candidate === true) {
-    try {
-      await activateProductSkuInventoryModel(q, before.id);
-    } catch (error) {
-      return {
-        ok: false,
-        result: {
-          status: error.status || 422,
-          body: {
-            error: error.message,
-            code: error.code || 'catalog_sku_cutover_not_ready',
-            reasons: error.reasons || [],
-          },
+  try {
+    await activateProductSkuInventoryModel(q, before.id);
+  } catch (error) {
+    return {
+      ok: false,
+      result: {
+        status: error.status || 422,
+        body: {
+          error: error.message,
+          code: error.code || 'catalog_sku_cutover_not_ready',
+          reasons: error.reasons || [],
         },
-      };
-    }
+      },
+    };
   }
 
   return { ok: true, verdict };
