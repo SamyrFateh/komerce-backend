@@ -7,8 +7,8 @@
  * @inputs        canonical catalog candidate facts
  * @outputs       versioned certification verdict and reasons
  * @depends       services/product-publication-guard.js, utils/certification-accounting.js
- * @used-by       scripts/catalog-e2e-712-acceptance.js, scripts/catalog-refinery-final-acceptance.js
- * @db-read       none
+ * @used-by       services/catalog-approval.js, scripts/catalog-e2e-712-acceptance.js, scripts/catalog-refinery-final-acceptance.js
+ * @db-read       boutique_categories, boutique_subcategories, catalog_media, product_market_exposure, product_skus, products, sourcing_candidates
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_CERTIFICATION_CATALOGUE_SOURCING.md
