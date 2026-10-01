@@ -2,13 +2,13 @@
 
 /** @test-kind unit @test-runner jest @test-requires none */
 
-jest.mock('../../services/catalog-overrides', () => ({ upsertOverrides: jest.fn() }));
+jest.mock('../../services/catalog-overrides', () => ({ upsertOverrides: jest.fn(), finalizeReviewedManualPreparation: jest.fn() }));
 jest.mock('../../utils/rules', () => ({ getRuleNumber: jest.fn() }));
 jest.mock('../../services/product-sku-service', () => ({
   activateProductSkuInventoryModel: jest.fn(),
 }));
 
-const { upsertOverrides } = require('../../services/catalog-overrides');
+const { upsertOverrides, finalizeReviewedManualPreparation } = require('../../services/catalog-overrides');
 const { getRuleNumber } = require('../../utils/rules');
 const { activateProductSkuInventoryModel } = require('../../services/product-sku-service');
 const approval = require('../../services/catalog-approval');
@@ -88,8 +88,12 @@ function mockDb({
 
 beforeEach(() => {
   upsertOverrides.mockReset();
+  finalizeReviewedManualPreparation.mockReset();
   getRuleNumber.mockReset();
   getRuleNumber.mockResolvedValue(120);
+  finalizeReviewedManualPreparation.mockImplementation(async (_q, _productId) =>
+    candidateRow({ needs_review: false, content_source: 'manual' })
+  );
   activateProductSkuInventoryModel.mockReset();
   activateProductSkuInventoryModel.mockResolvedValue({ ready: true, inventory_model: 'SKU' });
 });
@@ -143,6 +147,42 @@ describe('approveProduct', () => {
       .resolves.toMatchObject({ status: 422, body: { code: 'invalid_price' } });
   });
 
+  it('une approbation humaine clôt une revue faible-confiance déjà préparée', async () => {
+    const prepared = candidateRow({
+      needs_review: true,
+      content_source: 'ai_enriched',
+      name_source: 'Power Bank',
+      description_source: 'Portable power bank supplier description',
+    });
+    finalizeReviewedManualPreparation.mockImplementationOnce(async () => {
+      prepared.needs_review = false;
+      prepared.content_source = 'manual';
+      return prepared;
+    });
+    const { q } = mockDb({ product: prepared, activeCount: 40 });
+
+    const result = await approval.approveProduct(q, PRODUCT_ID, { id: 'admin-1' });
+
+    expect(finalizeReviewedManualPreparation).toHaveBeenCalledWith(q, PRODUCT_ID);
+    expect(result.status).toBe(200);
+  });
+
+  it('une source fournisseur brute étrangère ne peut pas être validée sans préparation FR', async () => {
+    const raw = candidateRow({
+      content_source: 'connector_raw',
+      source_locale: 'en',
+      needs_review: true,
+      name_source: 'Power Bank',
+      description_source: 'Portable power bank supplier description',
+    });
+    const { q } = mockDb({ product: raw });
+
+    const result = await approval.approveProduct(q, PRODUCT_ID, { id: 'admin-1' });
+
+    expect(finalizeReviewedManualPreparation).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ status: 422, body: { code: 'enrichment_required' } });
+  });
+
   it('422 si un produit fournisseur n’a pas une Supplier Order Identity complète', async () => {
     const { q } = mockDb({
       product: candidateRow(),
@@ -186,6 +226,7 @@ describe('approveProduct', () => {
     expect(getRuleNumber).toHaveBeenCalledWith('CATALOG_CAP_MVP', 120);
     const update = calls.find(c => c.sql.startsWith('UPDATE products'));
     expect(update.sql).toContain('is_active = TRUE');
+    expect(update.sql).toContain('is_available = TRUE');
     expect(update.sql).toContain('quality_validated = TRUE');
     expect(update.sql).toContain('needs_review = FALSE');
   });
@@ -226,6 +267,33 @@ describe('overrideAndApprove', () => {
     upsertOverrides.mockRejectedValue(Object.assign(new Error('Champ non retouchable'), { code: 'OVERRIDE_FIELD_NOT_ALLOWED' }));
     const result = await approval.overrideAndApprove(q, PRODUCT_ID, { fields: { stock: '999' } }, { id: 'admin-1' });
     expect(result).toMatchObject({ status: 422, body: { code: 'OVERRIDE_FIELD_NOT_ALLOWED' } });
+  });
+
+  it('une correction humaine clôt une revue IA faible-confiance avant publication', async () => {
+    const prepared = candidateRow({
+      needs_review: true,
+      content_source: 'ai_enriched',
+      name_source: 'Power Bank',
+      description_source: 'Portable power bank supplier description',
+    });
+    const { q } = mockDb({ product: prepared, activeCount: 40 });
+    upsertOverrides.mockResolvedValue({
+      overridden: ['name', 'description'],
+      product: prepared,
+    });
+    finalizeReviewedManualPreparation.mockImplementationOnce(async () => {
+      prepared.needs_review = false;
+      prepared.content_source = 'manual';
+      return prepared;
+    });
+
+    const result = await approval.overrideAndApprove(q, PRODUCT_ID, {
+      fields: { name: 'Batterie externe', description: 'Batterie externe compacte et fiable pour téléphone.' },
+      reason: 'relecture humaine',
+    }, { id: 'admin-1' });
+
+    expect(finalizeReviewedManualPreparation).toHaveBeenCalledWith(q, PRODUCT_ID);
+    expect(result.status).toBe(200);
   });
 
   it('200 pose les overrides puis publie dans le même geste', async () => {

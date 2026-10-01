@@ -214,6 +214,15 @@
     })[String(value || 'UNKNOWN').toUpperCase()] || 'is-neutral';
   }
 
+  function isFrenchLocale(value) {
+    const locale = String(value || '').trim().toLowerCase().replace('_', '-');
+    return locale === 'fr' || locale.startsWith('fr-');
+  }
+
+  function needsFrenchPreparation(row = {}) {
+    return row.content_source === 'connector_raw' && !isFrenchLocale(row.source_locale);
+  }
+
   function renderApproval(rootNode, ui, doc, payload, context) {
     const slot = createSection(rootNode, ui, 'File de curation', 'Le scanner sourcing priorise la revue ; seule une décision humaine ajoute, corrige ou écarte un produit.');
     const rows = payload.approval || [];
@@ -248,7 +257,11 @@
     const tbody = doc.createElement('tbody');
     rows.forEach(row => {
       const tr = doc.createElement('tr');
-      tr.appendChild(td(doc, row.product_ref));
+      const refCell = doc.createElement('td');
+      const refLink = text(doc, 'a', 'kmc-workspace-nav-link', row.product_ref);
+      refLink.href = `/admin/products/${encodeURIComponent(row.product_ref)}`;
+      refCell.appendChild(refLink);
+      tr.appendChild(refCell);
       tr.appendChild(td(doc, row.name));
       tr.appendChild(td(doc, row.category));
       tr.appendChild(td(doc, formatKmf(row.price_kmf)));
@@ -270,25 +283,42 @@
       tr.appendChild(td(doc, `${formatSource(row.content_source)}${row.supplier_name ? ` · ${row.supplier_name}` : ''}`));
       const actions = doc.createElement('td');
 
-      const approve = makeButton(doc, 'Ajouter à la sélection', 'approve');
-      approve.addEventListener('click', () => {
-        if (!context.confirm(`Ajouter ${row.product_ref} · ${row.name} à la sélection publiée ?`)) return;
-        runAction(context, approve, {
-          url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/approve`,
-          successMessage: `${row.product_ref} ajouté à la sélection publiée.`,
+      const mustPrepareFrench = needsFrenchPreparation(row);
+      if (mustPrepareFrench) {
+        const prepare = makeButton(doc, 'Préparer en français', 'prepare-fr');
+        prepare.addEventListener('click', () => {
+          runAction(context, prepare, {
+            url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/prepare-fr`,
+            runningMessage: 'Préparation française en cours…',
+            successMessage: `${row.product_ref} préparé en français. Vérifiez puis validez.`,
+          });
         });
-      });
-      actions.appendChild(approve);
+        actions.appendChild(prepare);
+      } else {
+        const approveLabel = row.needs_review ? 'Valider après relecture' : 'Ajouter à la sélection';
+        const approve = makeButton(doc, approveLabel, 'approve');
+        approve.addEventListener('click', () => {
+          if (!context.confirm(`Ajouter ${row.product_ref} · ${row.name} à la sélection publiée ?`)) return;
+          runAction(context, approve, {
+            url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/approve`,
+            successMessage: `${row.product_ref} ajouté à la sélection publiée.`,
+          });
+        });
+        actions.appendChild(approve);
+      }
 
       const correct = makeButton(doc, 'Corriger + ajouter', 'override', true);
       correct.addEventListener('click', () => {
         const name = context.prompt('Nom corrigé', row.name || '');
         if (name == null) return;
+        const description = context.prompt('Description corrigée', row.description || '');
+        if (description == null) return;
         const category = context.prompt('Catégorie corrigée', row.category || '');
         if (category == null) return;
         const reason = context.prompt('Raison de la correction', '') || undefined;
         const fields = {};
         if (name.trim() !== String(row.name || '').trim()) fields.name = name.trim();
+        if (description.trim() !== String(row.description || '').trim()) fields.description = description.trim();
         if (category.trim() !== String(row.category || '').trim()) fields.category = category.trim();
         if (!Object.keys(fields).length) {
           setFeedback(context.root, 'Aucun champ modifié.', 'critical');
@@ -300,7 +330,7 @@
           successMessage: `${row.product_ref} corrigé puis ajouté à la sélection.`,
         });
       });
-      actions.appendChild(correct);
+      if (!mustPrepareFrench) actions.appendChild(correct);
 
       const reject = makeButton(doc, 'Écarter', 'reject', true);
       reject.addEventListener('click', () => {

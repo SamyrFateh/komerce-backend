@@ -34,7 +34,7 @@
 const db = require('../db');
 const { createAlert } = require('../utils/alerts');
 const { getRuleNumber } = require('../utils/rules');
-const { upsertOverrides } = require('./catalog-overrides');
+const { upsertOverrides, finalizeReviewedManualPreparation } = require('./catalog-overrides');
 const { certifyCatalogProduct } = require('./catalog-certification');
 const { validatePublicationUpdate } = require('./product-publication-guard');
 const { activateProductSkuInventoryModel } = require('./product-sku-service');
@@ -185,6 +185,7 @@ async function publish(q, before) {
   const { rows: [product] } = await q.query(
     `UPDATE products
         SET is_active = TRUE,
+            is_available = TRUE,
             quality_validated = TRUE,
             needs_review = FALSE,
             lifecycle_status = 'active',
@@ -210,7 +211,15 @@ async function approveProduct(q = db, productId, adminUser) {
       return { status: 409, body: { error: 'Candidat déjà décidé ou hors file de curation', code: 'not_pending' } };
     }
 
-    const result = await publish(tx, before);
+    let reviewed = before;
+    const reviewablePreparedContent = before.needs_review === true
+      && (before.content_source === 'ai_enriched' || before.content_source === 'manual')
+      && (before.name_source || before.description_source);
+    if (reviewablePreparedContent) {
+      reviewed = await finalizeReviewedManualPreparation(tx, productId);
+    }
+
+    const result = await publish(tx, reviewed);
     if (result.status === 200) {
       log.info(`Approuvé par ${adminUser?.id || 'admin'} — produit ${productId}`);
     }
@@ -283,6 +292,16 @@ async function overrideAndApprove(q = db, productId, { fields, reason } = {}, ad
       throw err;
     }
 
+    // Une correction humaine explicite clôt la revue éditoriale d'une fiche
+    // pipeline à faible confiance. La source brute reste conservée dans
+    // name_source/description_source ; seule la présentation client devient manual.
+    const reviewablePreparedContent = overrideResult.product?.needs_review === true
+      && (overrideResult.product?.content_source === 'ai_enriched' || overrideResult.product?.content_source === 'manual')
+      && (overrideResult.product?.name_source || overrideResult.product?.description_source);
+    if (reviewablePreparedContent) {
+      overrideResult.product = await finalizeReviewedManualPreparation(tx, productId);
+    }
+
     // Cap déjà contrôlé sous le même advisory lock ; certification + éventuelle
     // bascule SKU utilisent exactement la même frontière que l'approbation simple.
     const preparation = await preparePublication(tx, overrideResult.product);
@@ -290,6 +309,7 @@ async function overrideAndApprove(q = db, productId, { fields, reason } = {}, ad
     const { rows: [product] } = await tx.query(
       `UPDATE products
           SET is_active = TRUE,
+              is_available = TRUE,
               quality_validated = TRUE,
               needs_review = FALSE,
               lifecycle_status = 'active',
