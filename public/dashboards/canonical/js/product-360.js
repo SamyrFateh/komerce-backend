@@ -80,8 +80,8 @@
     const nav = doc.createElement('nav');
     nav.className = 'kmc-entity-nav';
     const pricingHref = product.product_ref
-      ? `/admin/pricing?product_ref=${encodeURIComponent(product.product_ref)}`
-      : '/admin/pricing';
+      ? `/admin/workspaces/pricing?product_ref=${encodeURIComponent(product.product_ref)}`
+      : '/admin/workspaces/pricing';
     [
       ['/admin/commerce', '← Commerce'],
       ['/admin/products', 'Catalogue'],
