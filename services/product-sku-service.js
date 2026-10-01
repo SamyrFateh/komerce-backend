@@ -5,11 +5,11 @@
  * @layer         service
  * @criticality   high
  * @inputs        product_id, variant_combo, sku_payload
- * @outputs       product_sku_row, sku_candidates, sku_readiness_audit
+ * @outputs       product_sku_row, sku_candidates, sku_readiness_audit, sku_inventory_cutover
  * @depends       none
  * @used-by       services/product-admin-service.js, routes/orders/create.js (via product-admin-service.js), routes/products.js (via product-admin-service.js)
  * @db-read       product_skus, product_variants, products
- * @db-write      product_skus
+ * @db-write      product_skus, products
  * @db-txn        none
  * @doctrine      docs/specs/DECISION_MODELE_STOCK_SKU.md
  * @impact-areas  catalog, admin-dashboard, orders
@@ -125,9 +125,7 @@ async function getSkuCandidates(dbPool, productId) {
     [productId]
   );
 
-  const hasVariants = hasVariantsOverride == null ? Boolean(product.has_variants) : Boolean(hasVariantsOverride);
-
-  if (!hasVariants) {
+  if (!product.has_variants) {
     const existing = declared.find(s => s.variant_combo === null) || null;
     return {
       product_id: product.id, product_name: product.name,
@@ -286,8 +284,11 @@ async function auditProductSkuReadiness(dbPool, productId, { hasVariantsOverride
   }
 
   const reasons = [];
+  const hasVariants = hasVariantsOverride == null
+    ? Boolean(product.has_variants)
+    : Boolean(hasVariantsOverride);
 
-  if (!product.has_variants) {
+  if (!hasVariants) {
     const { rows: [defaultSku] } = await dbPool.query(
       `SELECT id, stock, is_active FROM product_skus WHERE product_id = $1 AND variant_combo IS NULL`,
       [productId]
