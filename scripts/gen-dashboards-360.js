@@ -285,7 +285,7 @@ function extractContractStatus(def) {
   if (def['x-contract-status']) return def['x-contract-status'];
 
   const responses = def.responses || {};
-  const successCodes = Object.keys(responses).filter(c => /^2\\d\\d$/.test(c)).sort();
+  const successCodes = Object.keys(responses).filter(c => /^2\d\d$/.test(c)).sort();
   for (const code of successCodes) {
     const content = responses[code] && responses[code].content;
     if (!content) continue;
