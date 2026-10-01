@@ -96,7 +96,7 @@ describe('catalog candidate draft source locale', () => {
 
     expect(q.query.mock.calls[0][0]).toContain("FALSE, FALSE, 'candidate'");
     expect(q.query.mock.calls[0][1][5]).toBeNull();
-    expect(q.query.mock.calls[0][1][9]).toBe('pl-PL');
+    expect(q.query.mock.calls[0][1][10]).toBe('pl-PL');
     expect(candidateProductService.sourceLocaleFromCandidate(candidate)).toBe('pl-PL');
     expect(candidateProductService.sourceLocaleFromCandidate({})).toBe('en');
   });

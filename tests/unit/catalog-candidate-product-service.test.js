@@ -6,7 +6,7 @@
  * @test-requires none
  */
 
-const { createDraftProductFromSourcingCandidate } = require('../../services/catalog-candidate-product-service');
+const { createDraftProductFromSourcingCandidate, draftStockFromCandidate } = require('../../services/catalog-candidate-product-service');
 
 describe('catalog-candidate-product-service', () => {
   it('creates the inactive candidate product through the injected transaction client', async () => {
@@ -20,6 +20,7 @@ describe('catalog-candidate-product-service', () => {
       komerce_category: 'mode',
       purchase_price_kmf: 1200,
       estimated_weight_kg: 0.4,
+      stock_available: 17,
       description: 'Raw supplier description',
       raw_payload: {
         discovery: {
@@ -45,6 +46,7 @@ describe('catalog-candidate-product-service', () => {
       'Femme',
       1200,
       2500,
+      17,
       0.4,
       'Chemise',
       'Raw supplier description',
@@ -69,6 +71,7 @@ describe('catalog-candidate-product-service', () => {
       null,
       0,
       900,
+      0,
       null,
       'Produit brut',
       null,
@@ -107,6 +110,16 @@ describe('catalog-candidate-product-service', () => {
     expect(params[2]).toBe('Tech');
     expect(params[3]).toBe('Audio');
   });
+
+describe('catalog draft stock truth', () => {
+  it('reprend le stock source connu et ne fabrique jamais le défaut historique 100', () => {
+    expect(draftStockFromCandidate({ stock_available: 23 })).toBe(23);
+    expect(draftStockFromCandidate({ stock_available: '7' })).toBe(7);
+    expect(draftStockFromCandidate({ stock_available: null })).toBe(0);
+    expect(draftStockFromCandidate({})).toBe(0);
+    expect(draftStockFromCandidate({ stock_available: -1 })).toBe(0);
+  });
+});
 
 describe('catalog candidate boutique taxonomy guard', () => {
   it('refuses an inactive or unknown discovery subcategory before product creation', async () => {
