@@ -585,7 +585,7 @@ test('CAS B : « Tous les passages » remplace le cockpit par la vue Passages (S
   for (const gone of ['kir-run-flow', 'kir-run-truth', 'kir-command-bar', 'kir-live-hero', 'kir-handoff']) expect(html).not.toContain(gone);
   expect(html).toContain('Historique des passages');
   expect(html).toContain('<span class="kir-crumb-domain">Sourcing</span><i aria-hidden="true">›</i><span aria-current="page">Passages');
-  expect(html).not.toContain('kir-back');
+  expect(html).toContain('← Retour au suivi');
   for (const col of ['Passage', 'Source', 'Date / heure', 'État Sourcing', 'Produits reçus', 'Prêts Catalogue', 'Écartés', 'Action requise', 'Remise Catalogue']) expect(html).toContain(`<th>${col}</th>`);
   for (const gone of ['Décisions finales', 'Approuvés vente', 'Reste']) expect(html).not.toContain(gone);
   expect((html.match(/data-row-href/g) || []).length).toBe(3);
@@ -689,14 +689,13 @@ test('audit : chaque vue du Suivi a pour parent « Suivi » (breadcrumb Sourcing
   }
 });
 
-test('audit : Passages et Sources sont des vues de 1er niveau — onglet actif, aucun bouton retour', () => {
+test('audit : Passages et Sources sont des vues de 1er niveau — onglet actif et retour explicite au suivi', () => {
   const p = scenario(); p.passages = PASSAGES;
   const passages = render(p, `?run=${RUN}&view=passages`);
   const sources = drill('sources');
   expect(passages).toMatch(/is-active[^>]*>Passages</);
   expect(sources).toMatch(/is-active[^>]*>Sources</);
-  // Passages : aucun retour. Sources : seulement « Retour au suivi » quand un passage est sélectionné.
-  expect(backOf(passages)).toBeNull();
+  expect(backOf(passages)).toEqual({ href:SUIVI, label:'← Retour au suivi' });
   expect(backOf(sources)).toEqual({ href:SUIVI, label:'← Retour au suivi' });
   for (const html of [passages, sources]) {
     expect(html).not.toContain('Retour au passage');
@@ -825,7 +824,7 @@ test('Sources : « Voir le suivi » seulement si un dernier passage existe (jama
   expect(html).not.toContain('kir-source-pill');
 });
 
-test('Sources : retour au suivi présent avec un passage, absent sans passage ; le KIR n’est jamais un niveau du fil', () => {
+test('Sources : retour au suivi toujours présent ; le KIR n’est jamais un niveau du fil', () => {
   const withRun = sourcesView(`run=${RUN}&`);
   expect(backOf(withRun)).toEqual({ href:SUIVI, label:'← Retour au suivi' });
   expect(withRun).toContain(`Passage courant : ${RUN}`);
@@ -834,9 +833,9 @@ test('Sources : retour au suivi présent avec un passage, absent sans passage ; 
   expect(withRun).toMatch(/is-active[^>]*>Sources</);
   const p = scenario(); p.source_controls = SOURCES(); p.selected = null;
   const noRun = render(p, '?view=sources');
-  expect(backOf(noRun)).toBeNull();
+  expect(backOf(noRun)).toEqual({ href:'/admin/import-runtime', label:'← Retour au suivi' });
   expect(noRun).not.toContain('Passage courant');
-  expect(noRun).not.toContain('Retour au suivi');
+  expect(noRun).toContain('Retour au suivi');
 });
 
 test('Sources : état d’erreur (preuve runtime) et liste vide sans carte fantôme', () => {

@@ -1140,8 +1140,8 @@
       ? { label:'Remise Catalogue', href:urlFor(ref, 'handoff') }
       : { label:popLabel, href:populationUrl(ref, p.kind) };
     const itemCrumb = { label:'Produit', href:itemUrl(ref, p.item, p.kind, p.origin) };
-    if (p.view === 'passages') return { crumbs:[domain, leaf('Passages')], back:null };
-    if (p.view === 'sources') return { crumbs:[domain, leaf('Sources')], back:ref ? backToSuivi : null };
+    if (p.view === 'passages') return { crumbs:[domain, leaf('Passages')], back:backToSuivi };
+    if (p.view === 'sources') return { crumbs:[domain, leaf('Sources')], back:backToSuivi };
     const tail = {
       population: { crumbs:[leaf(popLabel)], back:backToSuivi },
       exceptions: { crumbs:[leaf('Action requise')], back:backToSuivi },
@@ -1443,6 +1443,7 @@
   }
 
   function renderPassages(run, passages, page = {}) {
+    const { back } = viewNav(run, params());
     const list = Array.isArray(passages) ? passages : null;
     const providers = [...new Set((list || []).map(item => item.provider).filter(Boolean))];
     const option = (value, label, current) => `<option value="${esc(value)}" ${current === value ? 'selected' : ''}>${esc(label)}</option>`;
@@ -1457,6 +1458,7 @@
     </nav>` : '';
     return `<div class="kir-drill-head"><div>
         ${breadcrumb(run)}
+        ${back ? `<a href="${back.href}" data-cockpit-nav class="kir-back">${esc(back.label)}</a>` : ''}
         <h2>Historique des passages</h2>
         <p>Les passages Sourcing : ce qui a été reçu, ce qui est prêt pour le Catalogue et ce qui demande une action.</p>
       </div></div>
