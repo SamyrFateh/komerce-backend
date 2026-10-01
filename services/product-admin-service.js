@@ -371,7 +371,7 @@ async function updateProduct(db, productId, payload, adminUser) {
   if (payload.price_kmf !== undefined && Number(payload.price_kmf) !== Number(before.price_kmf)) {
     await recordProductPriceChange(db, {
       productId,
-      oldPriceKmf: Number(before.price_kmf),
+      oldPriceKmf: before.price_kmf == null ? null : Number(before.price_kmf),
       newPriceKmf: Number(payload.price_kmf),
       source:      'product_update',
       appliedBy:   adminUser?.id,
