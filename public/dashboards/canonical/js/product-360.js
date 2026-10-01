@@ -178,9 +178,11 @@
       ],
       rows: [
         ...(inventory.skus || []).map(row => ({
-          type: row.is_active ? 'SKU actif' : 'SKU inactif',
+          type: inventory.model === 'SKU'
+            ? (row.is_active ? 'SKU actif' : 'SKU inactif')
+            : 'SKU préparé',
           unite: variantLabel(row.variant_combo),
-          sku: row.sku,
+          sku: row.sku || row.supplier_sku,
           stock: formatNumber(row.stock),
           prix: row.price_kmf == null ? 'Prix produit' : formatKmf(row.price_kmf),
         })),
