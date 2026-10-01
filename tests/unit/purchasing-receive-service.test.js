@@ -85,6 +85,10 @@ describe('processReceive', () => {
     const result = await processReceive({ id: 'po-1', qty_recue: 1, actor: { id: 'u1', role: 'admin' } });
 
     expect(result.httpError).toBeUndefined();
+    // complétude lue via la vue de progression (engagé effectif / reçu par ligne)
+    const completenessSql = mockDbQuery.mock.calls[2][0];
+    expect(completenessSql).toContain('v_purchase_line_progress');
+    expect(completenessSql).toContain('effective_quantity');
     expect(result.ready_to_prepare).toBe(false);
     expect(result.order_status).toBe('ordered');
     expect(mockTransitionOrderStatus).not.toHaveBeenCalled();

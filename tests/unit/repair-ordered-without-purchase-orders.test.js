@@ -56,6 +56,9 @@ describe('repairOrderedWithoutPurchaseOrders', () => {
       candidates,
     });
     expect(triggerPurchasing).not.toHaveBeenCalled();
+    const sql = db.query.mock.calls[0][0];
+    expect(sql).toContain('v_purchase_line_progress');
+    expect(sql).toContain('NOT v.cancelled');
   });
 
   test('dry_run=false : relance le sourcing pour chaque candidat, 200 si tout réussit', async () => {
