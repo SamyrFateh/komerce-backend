@@ -6,11 +6,11 @@
  * @criticality   high
  * @inputs        authenticated_central_actor, product_ref, category_key, catalog_action_payload
  * @outputs       catalog_work_queue, delegated_catalog_mutations
- * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js
+ * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-enrichment.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js
  * @used-by       routes/admin-catalog-workspace.js
  * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts
  * @db-write      none
- * @db-write-via  product-admin-service, catalog-approval, boutique-taxonomy-admin
+ * @db-write-via  product-admin-service, catalog-approval, catalog-enrichment, boutique-taxonomy-admin
  * @db-txn        delegated_to_domain_authority
  * @doctrine      workspace_acts_dashboard_observes, global_catalog_not_market_scoped, commercial_catalog_is_union_of_approved_products_from_closed_kirs, reuse_domain_mutation_authorities, product_ref_is_public_identity
  * @impact-areas  admin-dashboard, catalog, boutique
@@ -23,6 +23,7 @@ const db = require('../db');
 const { getRuleNumber } = require('../utils/rules');
 const productAdmin = require('./product-admin-service');
 const catalogApproval = require('./catalog-approval');
+const catalogEnrichment = require('./catalog-enrichment');
 const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
 
@@ -151,7 +152,7 @@ async function queryApprovalQueue({ limit = 50, offset = 0 } = {}) {
   const decisionOrder = sourcingDecisionOrderSql('sc');
   const { rows } = await db.query(`
     SELECT p.product_ref, p.name, p.description, p.category, p.fragility, p.emoji,
-           p.price_kmf, p.stock, p.content_source, p.needs_review,
+           p.price_kmf, p.stock, p.content_source, p.source_locale, p.needs_review,
            p.enrichment_confidence, p.created_at,
            sc.supplier_name,
            sc.supplier_product_id,
@@ -201,6 +202,7 @@ async function queryApprovalQueue({ limit = 50, offset = 0 } = {}) {
     price_kmf: row.price_kmf == null ? null : Number(row.price_kmf),
     stock: row.stock == null ? null : Number(row.stock),
     content_source: row.content_source,
+    source_locale: row.source_locale || null,
     needs_review: Boolean(row.needs_review),
     enrichment_confidence: row.enrichment_confidence == null ? null : Number(row.enrichment_confidence),
     supplier_name: row.supplier_name || null,
@@ -348,6 +350,29 @@ async function deactivateProduct(productRef) {
   return { product_ref: product.product_ref, deactivated: true };
 }
 
+async function prepareCandidateFrench(productRef, actor) {
+  const product = await resolveProduct(productRef, { candidateOnly: true });
+  const result = await catalogEnrichment.enrichAndApply(product.id);
+
+  if (!result || result.status === 'failed' || result.status === 'invalid_output') {
+    throw new CatalogWorkspaceError(
+      'catalog_fr_preparation_failed',
+      result?.error || 'Préparation française indisponible',
+      422
+    );
+  }
+
+  return {
+    product_ref: product.product_ref,
+    status: result.status,
+    confidence: result.confidence == null ? null : Number(result.confidence),
+    needs_review: Boolean(result.needsReview),
+    applied_overrides: result.appliedOverrides || [],
+    review_notes: result.review_notes || [],
+    prepared_by: actor?.id || null,
+  };
+}
+
 async function approveCandidate(productRef, actor) {
   const product = await resolveProduct(productRef, { candidateOnly: true });
   const result = await catalogApproval.approveProduct(db, product.id, actor);
@@ -378,6 +403,7 @@ module.exports = {
   createProduct,
   updateProduct,
   deactivateProduct,
+  prepareCandidateFrench,
   approveCandidate,
   rejectCandidate,
   overrideCandidate,
