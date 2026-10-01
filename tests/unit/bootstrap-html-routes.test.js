@@ -262,6 +262,17 @@ describe('bootstrap/html-routes', () => {
       expect(EXPECTED_ADMIN_PATHS).toHaveLength(29);
     });
 
+    test('/admin/hub-live (cockpit Live Hub) sert le runtime Canonical', () => {
+      expect(app._allRegistrations).toContain('/admin/hub-live');
+      const res = fakeRes();
+      app._routes['/admin/hub-live']({}, res);
+      expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'canonical');
+      expect(res.sendFile).toHaveBeenCalledWith(
+        require('path').join(PUBLIC_DIR, 'dashboards', 'canonical', 'index.html'),
+        expect.any(Function)
+      );
+    });
+
     test('/admin/pilotage sert désormais le runtime Canonical stable', () => {
       const res = fakeRes();
       app._routes['/admin/pilotage']({}, res);

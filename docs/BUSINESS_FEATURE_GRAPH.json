@@ -4832,6 +4832,20 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/live-kit.js",
+        "resolvedPath": "public/dashboards/canonical/js/live-kit.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/hub-live.js",
+        "resolvedPath": "public/dashboards/canonical/js/hub-live.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/navigation.js",
         "resolvedPath": "public/dashboards/canonical/js/navigation.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4855,6 +4869,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/css/import-runtime.css",
         "resolvedPath": "public/dashboards/canonical/css/import-runtime.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/live-kit.css",
+        "resolvedPath": "public/dashboards/canonical/css/live-kit.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5518,6 +5539,13 @@
       {
         "feature": "dashboard",
         "category": "tests",
+        "declared": "tests/unit/hub-live-journey.test.js",
+        "resolvedPath": "tests/unit/hub-live-journey.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
         "declared": "tests/unit/import-runtime-mock-fidelity.test.js",
         "resolvedPath": "tests/unit/import-runtime-mock-fidelity.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5527,6 +5555,13 @@
         "category": "tests",
         "declared": "tests/e2e/import-runtime-cockpit.spec.js",
         "resolvedPath": "tests/e2e/import-runtime-cockpit.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/hub-live-cockpit.spec.js",
+        "resolvedPath": "tests/e2e/hub-live-cockpit.spec.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -40940,7 +40975,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1723
+        "filesObserved": 1727
       },
       "boutique": {
         "filesObserved": 214,

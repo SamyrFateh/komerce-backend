@@ -62,6 +62,7 @@
       // restent dans Opérations.
       spaces: Object.freeze([
         Object.freeze({ id: 'import-runtime', label: 'Sourcing live', href: '/admin/import-runtime', roles: Object.freeze(['admin', 'sourcing']) }),
+        Object.freeze({ id: 'hub-live', label: 'Hub live', href: '/admin/hub-live', roles: Object.freeze(['admin']) }),
       ]),
     }),
     Object.freeze({
@@ -130,6 +131,7 @@
       label: 'Live',
       items: Object.freeze([
         Object.freeze({ id: 'import-runtime', label: 'Sourcing live', href: '/admin/import-runtime' }),
+        Object.freeze({ id: 'hub-live', label: 'Hub live', href: '/admin/hub-live' }),
       ]),
     }),
     Object.freeze({
@@ -212,6 +214,7 @@
     'shipping-customs-workspace': 'operations',
     'sourcing-workspace': 'catalog',
     'import-runtime': 'live',
+    'hub-live': 'live',
 
     finance: 'finance',
     'accounting-workspace': 'finance',
@@ -232,6 +235,7 @@
     'operations-workspace': 'operations-workspace',
     'shipping-customs-workspace': 'shipping-customs-workspace',
     'import-runtime': 'import-runtime',
+    'hub-live': 'hub-live',
 
     finance: 'finance-overview',
     'accounting-workspace': 'accounting-workspace',
