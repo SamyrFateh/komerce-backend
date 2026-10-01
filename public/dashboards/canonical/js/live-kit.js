@@ -161,10 +161,16 @@
       return `<section class="kir-page">${domainNav(view.tab(p))}<main class="kir-main">${head}${out.body}</main></section>`;
     }
 
-    function render(root, search, data) {
+    // Coque noire appliquée dès le montage : un écran de chargement ou d'erreur ne doit jamais
+    // s'afficher sur le fond clair par défaut.
+    function applyShell(root) {
       root.className = 'kmc-import-runtime kmc-domain-cockpit';
       root.setAttribute?.('data-cockpit-pattern', 'v1');
       root.setAttribute?.('data-cockpit-language', 'live-ops');
+    }
+
+    function render(root, search, data) {
+      applyShell(root);
       root.innerHTML = renderHtml(search, data);
     }
 
@@ -208,6 +214,7 @@
     async function mount(options = {}) {
       if (!options.root) throw new Error('live_cockpit_root_missing');
       mountedRoot = options.root;
+      applyShell(mountedRoot);
       last = null;
       epoch += 1;
       if (timer) clearInterval(timer);
