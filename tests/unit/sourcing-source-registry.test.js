@@ -37,11 +37,16 @@ jest.mock('../../services/sourcing-source-autopilot', () => ({
 const registry = require('../../services/sourcing-source-registry');
 
 const FACTS = [
-  { adapter: 'aliexpress', name: 'AliExpress', label: 'AliExpress Dropshipper API', available: true, automatable: true, connection_mode: 'oauth', connect_path: '/api/integrations/aliexpress/oauth/start', can_test_connection: true, reason: null },
-  { adapter: 'cj', name: 'CJdropshipping', label: 'CJdropshipping API', available: true, automatable: true, connection_mode: 'server_managed', connect_path: null, can_test_connection: true, reason: null },
+  { adapter: 'aliexpress', name: 'AliExpress', label: 'AliExpress Dropshipper API', available: true, automatable: true, connection_mode: 'oauth', connect_path: '/api/integrations/aliexpress/oauth/start', can_test_connection: true, reason: null,
+    auth: { mode: 'oauth', scope: 'platform', description: 'Aucun secret à saisir : autorisez le compte AliExpress depuis Komerce.', fields: [] } },
+  { adapter: 'cj', name: 'CJdropshipping', label: 'CJdropshipping API', available: true, automatable: true, connection_mode: 'server_managed', connect_path: null, can_test_connection: true, reason: null,
+    auth: { mode: 'api_key', scope: 'source', description: 'Renseignez la clé API permanente du compte CJdropshipping.',
+      fields: [{ key: 'api_key', label: 'Clé API CJdropshipping', secret: true, help: 'Clé API du compte fournisseur utilisée pour autoriser Komerce.' }] } },
   { adapter: 'noon', name: 'Noon', label: 'Noon API', available: false, automatable: false, connection_mode: null, connect_path: null, can_test_connection: false, reason: 'Connecteur non configuré sur ce serveur' },
   { adapter: 'ebay', name: 'eBay Sandbox', label: 'eBay Sandbox Browse API', available: true, automatable: false, connection_mode: 'server_managed', connect_path: null, can_test_connection: true, reason: 'Alimentation automatique non certifiée pour ce connecteur' },
-  { adapter: 'allegro', name: 'Allegro Sandbox', label: 'Allegro Sandbox', available: false, automatable: true, connection_mode: 'server_managed', connect_path: null, can_test_connection: true, reason: 'Connecteur non configuré sur ce serveur' },
+  { adapter: 'allegro', name: 'Allegro Sandbox', label: 'Allegro Sandbox', available: false, automatable: true, connection_mode: 'server_managed', connect_path: null, can_test_connection: true, reason: 'Connecteur non configuré sur ce serveur',
+    auth: { mode: 'client_credentials', scope: 'source', description: 'Renseignez les identifiants de l’application Allegro associée au compte fournisseur.',
+      fields: [{ key: 'client_id', label: 'Client ID Allegro', secret: false }, { key: 'client_secret', label: 'Client Secret Allegro', secret: true }] } },
 ];
 
 function descriptorFor(adapter) {
@@ -68,7 +73,16 @@ describe('catalogue canonique des connecteurs', () => {
     expect(aliexpress).toMatchObject({
       available: true, automatable: true, can_create: true,
       connection_mode: 'oauth', connect_path: '/api/integrations/aliexpress/oauth/start',
+      auth: { mode: 'oauth', scope: 'platform', fields: [] },
       reason: null, existing_source_ref: null,
+    });
+    expect(connectors.find((item) => item.adapter === 'cj')).toMatchObject({
+      auth: {
+        mode: 'api_key',
+        scope: 'source',
+        description: expect.stringContaining('clé API'),
+        fields: [{ key: 'api_key', label: 'Clé API CJdropshipping', secret: true, help: expect.any(String) }],
+      },
     });
     expect(connectors.find((item) => item.adapter === 'noon')).toMatchObject({ available: false, can_create: false });
     expect(connectors.find((item) => item.adapter === 'ebay')).toMatchObject({ available: true, automatable: false, can_create: false });
@@ -76,7 +90,7 @@ describe('catalogue canonique des connecteurs', () => {
 
   test('jamais de nom de module, de classe, de variable d’environnement ni de trace', async () => {
     const json = JSON.stringify(await registry.getCatalog());
-    expect(json).not.toMatch(/module|Connector\b|ALIEXPRESS_|CJ_|EBAY_|ALLEGRO_|\.js|stack|secret|token/i);
+    expect(json).not.toMatch(/module|Connector\b|ALIEXPRESS_|CJ_|EBAY_|ALLEGRO_|\.js|stack|process\.env|access[_-]?token|refresh[_-]?token/i);
   });
 
   test('signale la source existante au lieu de proposer une recréation', async () => {
