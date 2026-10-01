@@ -257,6 +257,110 @@
   background: var(--kmc-blue-soft, #eef5ff);
 }
 
+.kmc-catalog-curation-table {
+  table-layout: fixed;
+}
+
+.kmc-catalog-curation-table th:nth-child(1),
+.kmc-catalog-curation-table td:nth-child(1) {
+  width: 38%;
+}
+
+.kmc-catalog-curation-table th:nth-child(2),
+.kmc-catalog-curation-table td:nth-child(2) {
+  width: 11%;
+}
+
+.kmc-catalog-curation-table th:nth-child(3),
+.kmc-catalog-curation-table td:nth-child(3) {
+  width: 24%;
+}
+
+.kmc-catalog-curation-table th:nth-child(4),
+.kmc-catalog-curation-table td:nth-child(4) {
+  width: 12%;
+}
+
+.kmc-catalog-curation-table th:nth-child(5),
+.kmc-catalog-curation-table td:nth-child(5) {
+  width: 220px;
+}
+
+.kmc-catalog-curation-table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.kmc-catalog-product-cell {
+  display: grid;
+  gap: 5px;
+}
+
+.kmc-catalog-product-title {
+  color: #142441;
+  font-weight: 750;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.kmc-catalog-product-title:hover,
+.kmc-catalog-product-title:focus-visible {
+  color: #17458f;
+  text-decoration: underline;
+}
+
+.kmc-catalog-product-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.kmc-catalog-signal-cell,
+.kmc-catalog-state-cell {
+  display: grid;
+  gap: 4px;
+}
+
+.kmc-catalog-reason {
+  color: #74829a;
+  line-height: 1.35;
+}
+
+.kmc-catalog-curation-table .kmc-catalog-actions-cell {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-content: center;
+  gap: 6px;
+  min-width: 220px;
+  background: #fff;
+  box-shadow: -8px 0 12px -12px rgb(20 35 65 / .35);
+}
+
+.kmc-catalog-curation-table tbody tr:hover .kmc-catalog-actions-cell {
+  background: #fbfcff;
+}
+
+.kmc-catalog-curation-table tbody tr.is-context-target .kmc-catalog-actions-cell {
+  background: #fff8e8;
+}
+
+.kmc-catalog-curation-table .kmc-catalog-actions-cell .kmc-workspace-action {
+  min-height: 30px;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+
+@media (max-width: 980px) {
+  .kmc-catalog-curation-table {
+    min-width: 900px;
+  }
+}
+
 .kmc-workspace-table td.is-action {
   text-align: right;
 }
