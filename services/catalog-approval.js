@@ -34,7 +34,7 @@
 const db = require('../db');
 const { createAlert } = require('../utils/alerts');
 const { getRuleNumber } = require('../utils/rules');
-const { upsertOverrides } = require('./catalog-overrides');
+const { upsertOverrides, finalizeReviewedManualPreparation } = require('./catalog-overrides');
 const { certifyCatalogProduct } = require('./catalog-certification');
 const { validatePublicationUpdate } = require('./product-publication-guard');
 const { activateProductSkuInventoryModel } = require('./product-sku-service');
@@ -281,6 +281,13 @@ async function overrideAndApprove(q = db, productId, { fields, reason } = {}, ad
         return { status: 422, body: { error: err.message, code: err.code } };
       }
       throw err;
+    }
+
+    // Une correction humaine explicite clôt la revue éditoriale d'une fiche
+    // pipeline à faible confiance. La source brute reste conservée dans
+    // name_source/description_source ; seule la présentation client devient manual.
+    if (overrideResult.product?.needs_review === true) {
+      overrideResult.product = await finalizeReviewedManualPreparation(tx, productId);
     }
 
     // Cap déjà contrôlé sous le même advisory lock ; certification + éventuelle
