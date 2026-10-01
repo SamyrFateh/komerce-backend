@@ -238,10 +238,10 @@
       "deadApiMethods": 0,
       "missingApiMethods": 0,
       "doctrineViolations": 0,
-      "unprovenContracts": 59
+      "unprovenContracts": 0
     },
     "blockingDebt": 0,
-    "informationalDebt": 59,
+    "informationalDebt": 0,
     "metrics": [
       {
         "metric": "orphanRoutes",
@@ -321,7 +321,7 @@
       },
       {
         "metric": "unprovenContracts",
-        "value": 59,
+        "value": 0,
         "baseline": null,
         "remediation": {
           "code": "DASH-UNPROVEN-CONTRACT",
