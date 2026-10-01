@@ -122,13 +122,13 @@ describe('triggerPurchasing', () => {
 
     const client = makeClient([
       { rows: [PS_LOCAL] },
-      { rows: [{ id: 'po-existing', status: 'confirmed' }] }, // existingPo
+      { rows: [{ id: '00000000-0000-0000-0000-000000000401', status: 'confirmed' }] }, // existingPo
     ]);
     mockGetClient.mockResolvedValue(client);
 
     const result = await triggerPurchasing('order-uuid');
     expect(result.purchase_orders[0].status).toBe('already_exists');
-    expect(result.purchase_orders[0].purchase_order_id).toBe('po-existing');
+    expect(result.purchase_orders[0].purchase_order_id).toBe('00000000-0000-0000-0000-000000000401');
     const inserts = client.calls.filter(c => c.sql.startsWith('INSERT INTO purchase_orders'));
     expect(inserts).toHaveLength(0);
   });
@@ -141,14 +141,14 @@ describe('triggerPurchasing', () => {
     const client = makeClient([
       { rows: [PS_LOCAL] },
       { rows: [] },                   // existingPo → rien
-      { rows: [{ id: 'po-new' }] },  // INSERT purchase_orders
+      { rows: [{ id: '00000000-0000-0000-0000-000000000402' }] },  // INSERT purchase_orders
       { rows: [], rowCount: 1 },      // UPDATE status = notified
     ]);
     mockGetClient.mockResolvedValue(client);
 
     const result = await triggerPurchasing('order-uuid');
     expect(result.purchase_orders[0].status).toBe('admin_notified');
-    expect(result.purchase_orders[0].purchase_order_id).toBe('po-new');
+    expect(result.purchase_orders[0].purchase_order_id).toBe('00000000-0000-0000-0000-000000000402');
   });
 
   test('mode whatsapp → status whatsapp_sent', async () => {
@@ -159,7 +159,7 @@ describe('triggerPurchasing', () => {
     const client = makeClient([
       { rows: [PS_WHATSAPP] },
       { rows: [] },                   // existingPo
-      { rows: [{ id: 'po-wa' }] },   // INSERT
+      { rows: [{ id: '00000000-0000-0000-0000-000000000403' }] },   // INSERT
       { rows: [], rowCount: 1 },      // UPDATE notes wa_url (LOT R3 : via le client transactionnel)
       { rows: [], rowCount: 1 },      // UPDATE status = notified
     ]);
@@ -183,7 +183,7 @@ describe('triggerPurchasing', () => {
     const client = makeClient([
       { rows: [PS_AUTO] },
       { rows: [] },                  // existingPo
-      { rows: [{ id: 'po-auto' }] }, // INSERT
+      { rows: [{ id: '00000000-0000-0000-0000-000000000404' }] }, // INSERT
       { rows: [], rowCount: 1 },     // UPDATE trigger_mode=manual, status=notified (api_failed fallback)
     ]);
     mockGetClient.mockResolvedValue(client);
