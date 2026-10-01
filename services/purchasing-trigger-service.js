@@ -6,14 +6,14 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/suppliers/supplier-order-identity.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/procurement-execution-boundary.js, services/suppliers/execution-adapter-registry.js, utils/logger.js
+ * @depends       db, services/notification-service.js, services/hub-reference.js, services/suppliers/supplier-order-identity.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/procurement-execution-boundary.js, services/suppliers/execution-adapter-registry.js, utils/logger.js
  * @used-by       routes/cash.js, routes/purchasing.js
  * @db-read       order_items, orders, product_skus, product_suppliers, products, purchase_orders, relais, suppliers
  * @db-write      alerts, purchase_orders
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md, docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md, docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md
  * @impact-areas  purchasing, supplier-integration
- * @version       2026-09
+ * @version       2026-10
  */
 
 'use strict';
