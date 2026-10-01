@@ -5,6 +5,7 @@
 const {
   CATALOG_CERTIFICATION_VERSION,
   evaluateCatalogProductCertification,
+  certifyCatalogProduct,
   certifyCatalogBatch,
 } = require('../../services/catalog-certification');
 
@@ -75,6 +76,41 @@ describe('catalog canonical certification', () => {
     });
     expect(result.certified).toBe(false);
     expect(result.reasons).toContain(expectedReason);
+  });
+
+  test('un produit natif non sourcé peut être certifié sans identité fournisseur', () => {
+    const result = evaluateCatalogProductCertification(readyRow({
+      supplier_name: null,
+      supplier_product_id: null,
+      normalized_source_contract: null,
+      sourcing_decision: 'UNKNOWN',
+      active_supplier_skus: 0,
+      complete_supplier_skus: 0,
+    }), {
+      publicationGuard: PASS_GUARD,
+      requireSourceIdentity: false,
+      requireSourceContractV2: false,
+      requireAcceptedSourcingDecision: false,
+      requireSupplierSku: false,
+    });
+
+    expect(result.certified).toBe(true);
+  });
+
+  test('certification live d’un produit fournisseur reste fail-closed sur Supplier Order Identity', async () => {
+    const q = {
+      query: jest.fn().mockResolvedValueOnce({ rows: [{
+        ...readyRow(),
+        has_sourcing_candidate: true,
+        active_supplier_skus: 1,
+        complete_supplier_skus: 0,
+      }] }),
+    };
+
+    const result = await certifyCatalogProduct(q, 'p-1', { publicationGuard: PASS_GUARD });
+
+    expect(result.certification.certified).toBe(false);
+    expect(result.certification.reasons).toContain('supplier_order_identity_incomplete');
   });
 
   test('publication guard failure is part of the same certification verdict', () => {
