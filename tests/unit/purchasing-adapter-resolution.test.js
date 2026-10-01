@@ -142,14 +142,14 @@ describe('caractérisation — Allegro auto_order=false ne touche jamais la rés
     const client = makeClient([
       { rows: [supplierRow({ auto_order: false, platform: 'allegro' })] },
       { rows: [] },
-      { rows: [{ id: 'po1' }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000301' }] },
       {},
     ]);
     db.getClient.mockResolvedValue(client);
 
     const result = await triggerPurchasing('o1');
 
-    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'admin_notified', purchase_order_id: 'po1' }]);
+    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'admin_notified', purchase_order_id: '00000000-0000-0000-0000-000000000301', inbound_tag: 'KOM-IN-00000000000000000000000000000301' }]);
   });
 });
 
@@ -164,7 +164,7 @@ describe('résolution fail-closed — deux causes distinctes, jamais confondues'
     const client = makeClient([
       { rows: [supplierRow({ auto_order: true, platform: 'totally_unknown_provider' })] },
       { rows: [] },
-      { rows: [{ id: 'po1' }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000301' }] },
       {}, // UPDATE status notified (api_failed_notified path)
     ]);
     db.getClient.mockResolvedValue(client);
@@ -180,7 +180,7 @@ describe('résolution fail-closed — deux causes distinctes, jamais confondues'
     const client = makeClient([
       { rows: [supplierRow({ auto_order: true, platform: 'allegro' })] },
       { rows: [] },
-      { rows: [{ id: 'po1' }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000301' }] },
       {},
     ]);
     db.getClient.mockResolvedValue(client);
