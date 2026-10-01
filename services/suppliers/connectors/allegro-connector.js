@@ -15,7 +15,25 @@
  * @impact-areas  catalog, sourcing
  */
 'use strict';
+const crypto = require('crypto');
 const client = require('../allegro-sandbox-client');
+
+// Identifiants du coffre : un client dédié par couple id/secret (cache mémoire indexé par
+// empreinte, jamais par le secret). Sans credential, repli sur le client historique (env).
+const vaultClients = new Map();
+function clientFor(credentials) {
+  if (!credentials) return client;
+  const id = String(credentials.client_id || '').trim();
+  const secret = String(credentials.client_secret || '').trim();
+  if (!id || !secret) throw new Error('ALLEGRO_VAULT_CREDENTIALS_INCOMPLETE');
+  const fingerprint = crypto.createHash('sha256').update(`${id}\u0000${secret}`).digest('hex');
+  if (!vaultClients.has(fingerprint)) {
+    vaultClients.set(fingerprint, client.createClient({
+      env: { ...process.env, ALLEGRO_SANDBOX_CLIENT_ID: id, ALLEGRO_SANDBOX_CLIENT_SECRET: secret },
+    }));
+  }
+  return vaultClients.get(fingerprint);
+}
 const { partitionValid } = require('../normalized-product');
 
 function offerId(value) {
@@ -53,7 +71,7 @@ function normalizeOffer(offer, expectedId) {
 }
 
 async function fetchProducts(options = {}) {
-  const api = options.client || client;
+  const api = options.client || clientFor(options.credentials || null);
   let ids;
   if (options.productIds !== undefined) {
     if (!Array.isArray(options.productIds) || !options.productIds.length || options.productIds.length > 100) throw new Error('ALLEGRO_EXPECTS_1_TO_100_OFFER_IDS');
@@ -82,15 +100,20 @@ async function fetchProducts(options = {}) {
 }
 
 // Contrôle réel en lecture seule : une seule offre vendeur, aucune écriture.
-async function testConnection() {
-  await client.get('/sale/offers', { limit: 1, 'publication.status': 'ACTIVE' });
+async function testConnection(options = {}) {
+  await clientFor(options.credentials || null).get('/sale/offers', { limit: 1, 'publication.status': 'ACTIVE' });
   return { ok: true };
 }
 
+// Disponibilité = prérequis plateforme uniquement ; les identifiants client relèvent de la
+// source (coffre) avec repli env pendant la migration.
 function inactiveReason() {
-  try { client.configuration(process.env); return null; } catch (error) { return error.message; }
+  try { client.platformConfiguration(process.env); return null; } catch (error) { return error.message; }
 }
-module.exports = { fetchProducts, normalizeOffer, offerId, testConnection,
+function hasEnvironmentCredentials(env = process.env) {
+  return client.hasEnvironmentClientCredentials(env);
+}
+module.exports = { fetchProducts, normalizeOffer, offerId, testConnection, hasEnvironmentCredentials,
   get IS_ACTIVE() { return inactiveReason() === null; },
   get INACTIVE_REASON() { return inactiveReason(); },
 };

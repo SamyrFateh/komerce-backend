@@ -12,6 +12,7 @@ const mockDispatch = jest.fn();
 const mockImportCatalog = jest.fn();
 const mockDiscoverSourcePlan = jest.fn();
 const mockHandoffImportResult = jest.fn();
+const mockResolveForRun = jest.fn();
 
 jest.mock('../../db', () => ({
   query: (...args) => mockQuery(...args),
@@ -33,8 +34,14 @@ jest.mock('../../services/sourcing-import-dispatch', () => ({
       supports_full_snapshot: true,
     },
   ])),
+  authContract: jest.fn(() => ({ mode: 'api_key', scope: 'source', fields: [], hasEnvironmentCredentials: true })),
   discoverSourcePlan: (...args) => mockDiscoverSourcePlan(...args),
   dispatchToConnector: (...args) => mockDispatch(...args),
+}));
+
+jest.mock('../../services/provider-credential-service', () => ({
+  ...jest.requireActual('../../services/provider-credential-service'),
+  resolveForRun: (...args) => mockResolveForRun(...args),
 }));
 
 jest.mock('../../services/suppliers/catalog-import-orchestrator', () => ({
@@ -87,6 +94,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   process.env.KOMERCE_SOURCE_AUTOPILOT = '1';
   mockHandoffImportResult.mockImplementation(async (result) => result);
+  mockResolveForRun.mockResolvedValue({ state: 'valid', credentials: null, ok: true });
   mockDiscoverSourcePlan.mockResolvedValue({
     status: 'READY',
     provider: 'cj',
@@ -164,6 +172,61 @@ test('production ON sans preuve runtime reste bloquée avant tout connecteur', a
 
   expect(mockImportCatalog).not.toHaveBeenCalled();
   expect(mockGetClient).not.toHaveBeenCalled();
+});
+
+describe('autorité crédentielle de l’exécution (fail-closed)', () => {
+  const lockedClient = () => ({
+    query: jest.fn().mockResolvedValue({ rows: [{ locked: true, pg_advisory_unlock: true }] }),
+    release: jest.fn(),
+  });
+
+  test('identifiants non valides : aucun appel fournisseur, échec tracé sans secret', async () => {
+    mockSourceQueries();
+    mockResolveForRun.mockResolvedValue({ state: 'invalid', credentials: null, ok: false });
+
+    const result = await autopilot.runSourceOnce('api:cj', { reason: 'test' });
+
+    expect(result).toMatchObject({ status: 'failed', code: 'credentials_not_valid', credential_status: 'invalid' });
+    expect(mockImportCatalog).not.toHaveBeenCalled();
+    expect(mockDiscoverSourcePlan).not.toHaveBeenCalled();
+  });
+
+  test('les secrets du coffre partent hors du corps d’import, jamais dans le lot', async () => {
+    mockSourceQueries();
+    mockGetClient.mockResolvedValue(lockedClient());
+    mockResolveForRun.mockResolvedValue({ state: 'valid', credentials: { api_key: 'sk-vault-secret' }, ok: true });
+    mockImportCatalog.mockImplementation(async (body, _actor, dispatcher) => {
+      expect(JSON.stringify(body)).not.toContain('sk-vault-secret');
+      await dispatcher(body);
+      return { status: 200, body: { accepted: 1, created: 1, updated: 0, rejected: 0, shadow_ingestion: { status: 'recorded' } } };
+    });
+
+    await autopilot.runSourceOnce('api:cj', { reason: 'test' });
+
+    expect(mockDispatch).toHaveBeenCalledWith(expect.any(Object), { credentials: { api_key: 'sk-vault-secret' } });
+  });
+
+  test('activation refusée sans identifiants valides', async () => {
+    mockSourceQueries();
+    mockResolveForRun.mockResolvedValue({ state: 'missing', credentials: null, ok: false });
+    await expect(autopilot.setSourceActive('api:cj', true, { runNow: false }))
+      .rejects.toMatchObject({ status: 409, code: 'sourcing_credentials_not_valid' });
+  });
+
+  test('import opérateur refusé sans identifiants valides', async () => {
+    mockSourceQueries();
+    mockResolveForRun.mockResolvedValue({ state: 'untested', credentials: null, ok: false });
+    await expect(autopilot.runSourceImportNow('api:cj'))
+      .rejects.toMatchObject({ status: 409, code: 'sourcing_credentials_not_valid' });
+    expect(mockImportCatalog).not.toHaveBeenCalled();
+  });
+
+  test('erreur de lecture du coffre : traité comme invalide (jamais d’exécution)', async () => {
+    mockSourceQueries();
+    mockResolveForRun.mockRejectedValue(new Error('db down'));
+    await expect(autopilot.setSourceActive('api:cj', true, { runNow: false }))
+      .rejects.toMatchObject({ code: 'sourcing_credentials_not_valid' });
+  });
 });
 
 test('source ON exécute le pull borné via le registry sans branche fournisseur dans le runner', async () => {

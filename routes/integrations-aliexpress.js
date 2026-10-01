@@ -6,14 +6,15 @@
  * @criticality   high
  * @inputs        admin OAuth start/status requests, AliExpress OAuth callback
  * @outputs       provider redirect, encrypted OAuth connection status
- * @depends       middleware/auth.js, services/suppliers/aliexpress-oauth.js
+ * @depends       middleware/auth.js, services/suppliers/aliexpress-oauth.js, services/provider-credential-service.js, db.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       supplier_oauth_connections
+ * @db-read       supplier_oauth_connections, sourcing_sources
  * @db-write      supplier_oauth_connections
+ * @db-write-via:provider-credential-service provider_credentials, sourcing_sources, sourcing_provider_control_events
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md
  * @impact-areas  catalog, supplier-import, auth
- * @version       2026-09-v1
+ * @version       2026-10
  */
 'use strict';
 
@@ -21,6 +22,7 @@ const crypto = require('crypto');
 const express = require('express');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const oauth = require('../services/suppliers/aliexpress-oauth');
+const db = require('../db');
 
 const STATE_COOKIE = 'komerce_aliexpress_oauth_state';
 const STATE_TTL_MS = 10 * 60 * 1000;
@@ -56,7 +58,24 @@ function errorHtml(message) {
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Komerce · AliExpress</title></head><body><main><h1>Connexion AliExpress non finalisée</h1><p>${safe}</p></main></body></html>`;
 }
 
-function createRouter({ oauthService = oauth, env = process.env } = {}) {
+// Après une autorisation réussie : relie la session OAuth (chiffrée côté serveur, jamais exposée)
+// à chaque source AliExpress enregistrée. Un échec ici n'invalide jamais l'autorisation.
+async function linkSessionToSources(status, { query = db.query.bind(db), credentialService = require('../services/provider-credential-service') } = {}) {
+  const { rows } = await query(
+    `SELECT source_id FROM sourcing_sources WHERE adapter_type = 'aliexpress' AND status = 'active'`
+  );
+  for (const row of rows) {
+    await credentialService.linkOAuthSession(row.source_id, {
+      sessionKey: 'aliexpress',
+      accountLabel: status?.provider_user_nick || null,
+      accessExpiresAt: status?.access_expires_at || null,
+      refreshExpiresAt: status?.refresh_expires_at || null,
+    }, null);
+  }
+  return rows.length;
+}
+
+function createRouter({ oauthService = oauth, env = process.env, linkSources = linkSessionToSources } = {}) {
   const router = express.Router();
 
   router.get('/oauth/start', authenticate, requireAdmin, (req, res) => {
@@ -65,7 +84,7 @@ function createRouter({ oauthService = oauth, env = process.env } = {}) {
       res.cookie(STATE_COOKIE, state, cookieOptions(env));
       return res.redirect(302, oauthService.buildAuthorizationUrl(state, { env }));
     } catch (err) {
-      return res.status(503).json({ error: 'AliExpress OAuth non configuré', detail: err.message });
+      return res.status(503).json({ error: 'AliExpress OAuth non configuré' });
     }
   });
 
@@ -86,10 +105,13 @@ function createRouter({ oauthService = oauth, env = process.env } = {}) {
     }
 
     try {
-      await oauthService.exchangeAuthorizationCode(code, { env });
+      const status = await oauthService.exchangeAuthorizationCode(code, { env });
+      try { await linkSources(status); } catch (err) {
+        console.error('[aliexpress-oauth] link to sources failed:', err.code || 'link_failed');
+      }
       return res.status(200).type('html').send(successHtml());
     } catch (err) {
-      console.error('[aliexpress-oauth] callback exchange failed:', err.message);
+      console.error('[aliexpress-oauth] callback exchange failed');
       return res.status(502).type('html').send(errorHtml('AliExpress n’a pas pu être relié à Komerce. Relancez l’autorisation.'));
     }
   });
@@ -98,7 +120,7 @@ function createRouter({ oauthService = oauth, env = process.env } = {}) {
     try {
       return res.json(await oauthService.getConnectionStatus({ env }));
     } catch (err) {
-      return res.status(503).json({ connected: false, supplier: 'aliexpress', error: err.message });
+      return res.status(503).json({ connected: false, supplier: 'aliexpress', error: 'Statut AliExpress indisponible' });
     }
   });
 
@@ -109,7 +131,7 @@ function createRouter({ oauthService = oauth, env = process.env } = {}) {
       const refreshed = await oauthService.refreshConnection(current, { env });
       return res.json(oauthService.safeStatus(refreshed, { source: 'manual_refresh' }));
     } catch (err) {
-      return res.status(502).json({ error: 'Rafraîchissement AliExpress impossible', detail: err.message });
+      return res.status(502).json({ error: 'Rafraîchissement AliExpress impossible' });
     }
   });
 
@@ -120,5 +142,6 @@ const router = createRouter();
 router.createRouter = createRouter;
 router.STATE_COOKIE = STATE_COOKIE;
 router.sameState = sameState;
+router.linkSessionToSources = linkSessionToSources;
 router.cookieOptions = cookieOptions;
 module.exports = router;

@@ -40,12 +40,13 @@ function createBackend() {
       const s = backend.source;
       if (!s) return null;
       let state;
-      if (s.enabled) state = 'active';
+      if (s.archived) state = 'archived';
+      else if (s.enabled) state = 'active';
       else if (!s.connected) state = 'connection_to_test';
       else if (!s.certified) state = 'to_certify';
       else state = 'ready';
       return {
-        source_ref: 'api:cj', label: 'CJdropshipping API', state, autopilot_enabled: s.enabled,
+        source_ref: 'api:cj', label: s.label || 'CJdropshipping API', state, archived: Boolean(s.archived), autopilot_enabled: s.enabled,
         autopilot_ready: s.certified, activation_ready: true, production_runtime_certified: s.certified,
         connection: { verified: s.connected || s.certified },
         capabilities: { discovery: s.certified, sync: s.certified, import: s.certified, production: s.certified },
@@ -87,7 +88,7 @@ async function mount(page, backend) {
       backend.calls.push('catalog');
       return json(route, { connectors: [
         { adapter: 'cj', name: 'CJdropshipping', label: 'CJdropshipping API', available: true, automatable: true, connection_mode: 'server_managed',
-          connect_path: null, can_test_connection: true, can_create: !backend.source, reason: null, existing_source_ref: backend.source ? 'api:cj' : null },
+          connect_path: null, can_test_connection: true, can_create: !backend.source, reason: null, existing_source_ref: backend.source ? 'api:cj' : null, existing_archived: Boolean(backend.source?.archived) },
         { adapter: 'ebay', name: 'eBay Sandbox', label: 'eBay Sandbox Browse API', available: true, automatable: false, connection_mode: 'server_managed',
           connect_path: null, can_test_connection: true, can_create: false, reason: 'Autopilot non certifié', existing_source_ref: null },
       ] });
@@ -104,6 +105,36 @@ async function mount(page, backend) {
       backend.requests.push({ request_ref: `REQ-${backend.requests.length + 1}`, provider_name: body.provider_name,
         requested_label: body.requested_label || body.provider_name, reference_url: body.reference_url || null, status: 'connector_required' });
       return json(route, { ok: true, result: { status: 'connector_required' } }, 201);
+    }
+    if (req.method() === 'PATCH' && p === `${base}/api:cj`) {
+      backend.calls.push('rename');
+      const body = JSON.parse(req.postData() || '{}');
+      if (!body.label || body.label.length < 2) return json(route, { error: 'Nom de la source invalide (2 à 80 caractères)', code: 'sourcing_source_label_invalid' }, 400);
+      backend.source.label = body.label;
+      return json(route, { ok: true, result: { source_ref: 'api:cj', label: body.label } });
+    }
+    if (req.method() === 'POST' && p === `${base}/api:cj/archive`) {
+      backend.calls.push('archive');
+      backend.source.archived = true; backend.source.enabled = false;
+      return json(route, { ok: true, result: { archived: true, changed: true } });
+    }
+    if (req.method() === 'POST' && p === `${base}/api:cj/restore`) {
+      backend.calls.push('restore');
+      backend.source.archived = false;
+      return json(route, { ok: true, result: { archived: false, changed: true } });
+    }
+    const reqMatch = p.match(new RegExp(`^${base}/requests/([^/]+)$`));
+    if (reqMatch && req.method() === 'PATCH') {
+      backend.calls.push('request-rename');
+      const found = backend.requests.find((r) => r.request_ref === reqMatch[1]);
+      if (!found) return json(route, { error: 'Demande introuvable', code: 'sourcing_source_request_not_found' }, 404);
+      found.requested_label = JSON.parse(req.postData() || '{}').requested_label;
+      return json(route, { ok: true, result: found });
+    }
+    if (reqMatch && req.method() === 'DELETE') {
+      backend.calls.push('request-delete');
+      backend.requests = backend.requests.filter((r) => r.request_ref !== reqMatch[1]);
+      return json(route, { ok: true, result: { deleted: true } });
     }
     if (req.method() === 'POST' && p === `${base}/api:cj/test-connection`) {
       backend.calls.push('test');
@@ -299,4 +330,112 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     expect(backend.source).toBeNull();
     await expect(page.locator('[data-source-card], [data-source-toggle]')).toHaveCount(0);
   });
+
+  test('J : renommer une source — inline, persistant, sans toucher à l’état', async ({ page }) => {
+    const backend = createBackend();
+    backend.source = { connected: true, certified: true, enabled: false };
+    await mount(page, backend);
+    await boot(page);
+    await card(page).locator('[data-source-menu] summary').click();
+    await card(page).locator('[data-manage-rename]').click();
+    const input = card(page).locator('[data-manage-input]');
+    await expect(input).toBeFocused();
+    await input.fill('CJ principal');
+    await card(page).locator('[data-manage-form] button[type=submit]').click();
+    await expect(card(page).locator('h3')).toHaveText('CJ principal');
+    await expect(card(page).locator('.kir-source-badge')).toHaveText('PRÊTE');
+    expect(backend.source.enabled).toBe(false);
+    await page.reload();
+    await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+    await expect(card(page).locator('h3')).toHaveText('CJ principal');
+    // Annuler ne modifie rien.
+    await card(page).locator('[data-source-menu] summary').click();
+    await card(page).locator('[data-manage-rename]').click();
+    await card(page).locator('[data-manage-cancel]').click();
+    await expect(card(page).locator('h3')).toHaveText('CJ principal');
+    expect(backend.calls.filter((c) => c === 'rename')).toHaveLength(1);
+  });
+
+  test('K : archiver — confirmation, source sortie du tableau, section Archivées, aucun DELETE', async ({ page }) => {
+    const backend = createBackend();
+    backend.source = { connected: true, certified: true, enabled: true };
+    backend.runs.push(emptyRun('KIR-000010', 'CJdropshipping'));
+    const deletes = [];
+    page.on('request', (r) => { if (r.method() === 'DELETE') deletes.push(r.url()); });
+    await mount(page, backend);
+    await boot(page);
+    await expect(card(page).locator('.kir-source-badge')).toHaveText('ACTIVE');
+    await card(page).locator('[data-source-menu] summary').click();
+    await card(page).locator('[data-manage-archive]').click();
+    await expect(card(page).locator('[data-archive-confirm]')).toContainText('alimentation automatique sera arrêtée');
+    await expect(card(page).locator('[data-archive-confirm]')).toContainText('historique');
+    expect(backend.calls).not.toContain('archive');
+    await card(page).locator('[data-manage-cancel]').click();
+    await expect(card(page).locator('[data-archive-confirm]')).toHaveCount(0);
+    await card(page).locator('[data-source-menu] summary').click();
+    await card(page).locator('[data-manage-archive]').click();
+    await card(page).locator('[data-manage-archive-confirm]').click();
+    await expect(page.locator('[data-source-card]')).toHaveCount(0);
+    const archived = page.locator('[data-sources-archived]');
+    await expect(archived.locator('summary')).toHaveText('Archivées (1)');
+    await archived.locator('summary').click();
+    await expect(archived.locator('[data-archived-source="api:cj"]')).toContainText('historique conservé');
+    await expect(page.locator('[data-sources-summary]')).toContainText('0 active');
+    expect(backend.source.enabled).toBe(false);
+    expect(backend.runs).toHaveLength(1);
+    expect(deletes).toEqual([]);
+    await page.screenshot({ path: 'test-results/import-runtime-source-archived.png' });
+  });
+
+  test('L : restaurer — la source revient PRÊTE, jamais ACTIVE, et le doublon propose Restaurer', async ({ page }) => {
+    const backend = createBackend();
+    backend.source = { connected: true, certified: true, enabled: false, archived: true };
+    await mount(page, backend);
+    await boot(page);
+    await page.locator('[data-add-source]').click();
+    await wizard(page).locator('[data-wizard-kind="api"]').click();
+    await expect(wizard(page).locator('[data-wizard-connector="cj"]')).toContainText('Archivée');
+    await expect(wizard(page).locator('[data-wizard-create="cj"]')).toHaveCount(0);
+    await wizard(page).locator('[data-manage-restore]').click();
+    await expect(wizard(page)).toHaveCount(0);
+    await expect(card(page).locator('.kir-source-badge')).toHaveText('PRÊTE');
+    await expect(card(page).locator('[data-source-toggle]')).toHaveAttribute('aria-checked', 'false');
+    expect(backend.source.enabled).toBe(false);
+    expect(backend.calls).not.toContain('create');
+    expect(backend.calls).not.toContain('activate');
+  });
+
+  test('M : demandes « connecteur requis » — renommer puis retirer avec confirmation', async ({ page }) => {
+    const backend = createBackend();
+    backend.requests.push({ request_ref: 'REQ-1', provider_name: 'BigBuy', requested_label: 'BigBuy', reference_url: null, status: 'connector_required' });
+    await mount(page, backend);
+    await boot(page);
+    const req = page.locator('[data-source-request-card="REQ-1"]');
+    await req.locator('[data-request-menu] summary').click();
+    await req.locator('[data-manage-rename-request]').click();
+    await req.locator('[data-manage-input]').fill('BigBuy Europe');
+    await req.locator('[data-manage-form] button[type=submit]').click();
+    await expect(req.locator('h3')).toHaveText('BigBuy Europe');
+    await req.locator('[data-request-menu] summary').click();
+    await req.locator('[data-manage-remove-request]').click();
+    await expect(req.locator('[data-remove-confirm]')).toContainText('rien d’autre n’est supprimé');
+    await req.locator('[data-manage-remove-confirm]').click();
+    await expect(page.locator('[data-source-request-card]')).toHaveCount(0);
+    expect(backend.calls).toEqual(expect.arrayContaining(['request-rename', 'request-delete']));
+    expect(backend.source).toBeNull();
+  });
+
+  test('N : une source en cours de préparation n’offre ni renommage ni archivage', async ({ page }) => {
+    const backend = createBackend();
+    backend.source = { connected: true, certified: false, enabled: false };
+    await mount(page, backend);
+    await boot(page);
+    await expect(card(page).locator('[data-source-menu]')).toHaveCount(1);
+    await expect(card(page).locator('.kir-source-badge')).toHaveText('À CERTIFIER');
+    // Pendant « Préparer et certifier », le menu disparaît (aucun archivage en plein import).
+    await page.route(`${ORIGIN}/**/prepare`, async (route) => { await new Promise((r) => setTimeout(r, 1200)); route.fallback(); });
+    await card(page).locator('[data-source-step="prepare"]').click();
+    await expect(card(page).locator('[data-source-menu]')).toHaveCount(0);
+  });
 });
+
