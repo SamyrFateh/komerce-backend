@@ -123,6 +123,7 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/demo',
     '/admin/import-runtime',
     '/admin/hub-live',
+    '/admin/relais-live',
   ].forEach(routePath => {
     app.get(routePath, (req, res) => {
       sendCanonicalAdmin(res);

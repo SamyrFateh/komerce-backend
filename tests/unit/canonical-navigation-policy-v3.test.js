@@ -66,7 +66,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(spaceIds(nav, 'operations', 'admin')).toEqual([
       'operations-overview', 'operations-workspace', 'shipping-customs-workspace',
     ]);
-    expect(spaceIds(nav, 'live', 'admin')).toEqual(['import-runtime', 'hub-live']);
+    expect(spaceIds(nav, 'live', 'admin')).toEqual(['import-runtime', 'hub-live', 'relais-live']);
     expect(spaceIds(nav, 'live', 'sourcing')).toEqual(['import-runtime']);
     expect(spaceIds(nav, 'live', 'agent_hub')).toEqual([]);
     expect(spaceIds(nav, 'operations', 'market_operator')).toEqual([

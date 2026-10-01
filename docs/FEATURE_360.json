@@ -6132,6 +6132,10 @@
           "test": "tests/unit/import-runtime-journey.test.js"
         },
         {
+          "statement": "cockpit Live Relais (/admin/relais-live, domaine Live, admin) : lecture seule sur les API relay existantes (scopées rôle et marché), même moteur live-kit et même navigation que le Hub ; vues exclusives Suivi (flux Transit → Disponible → Retiré, chiffres cliquables vers la liste exacte, colis à retirer en premier) et Colis (liste complète, 1er niveau sans retour) ; une liste revient au Suivi, un colis revient à sa liste d'origine ; jamais de contact client, de code de retrait ni de SMS ; pas de vue par relais tant qu'aucune API ne l'expose sans sélection de marché",
+          "test": "tests/unit/relay-live-journey.test.js"
+        },
+        {
           "statement": "cockpit Live Hub (/admin/hub-live, domaine Live, admin) : lecture seule sur les API hub-dash existantes (scopées rôle et marché), aucune écriture ni endpoint d'action ; vues exclusives Suivi (flux Commandes → Relais, chiffres cliquables vers la liste exacte, signaux, file à traiter en premier) et Commandes (file complète) ; une file revient au Suivi, une commande revient à sa file d'origine, Commandes est de 1er niveau sans retour ; aucune donnée de contact client exposée ; moteur commun live-kit partagé avec le futur cockpit Relais",
           "test": "tests/unit/hub-live-journey.test.js"
         },
@@ -6155,7 +6159,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 104,
+            "count": 105,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6618,6 +6622,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/js/relay-live.js",
+                "resolvedPath": "public/dashboards/canonical/js/relay-live.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/js/sourcing-workspace.js",
                 "resolvedPath": "public/dashboards/canonical/js/sourcing-workspace.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6960,7 +6969,7 @@
             ]
           },
           "tests": {
-            "count": 136,
+            "count": 138,
             "files": [
               {
                 "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
@@ -6980,6 +6989,11 @@
               {
                 "declared": "tests/e2e/live-ops-shell.spec.js",
                 "resolvedPath": "tests/e2e/live-ops-shell.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/relais-live-cockpit.spec.js",
+                "resolvedPath": "tests/e2e/relais-live-cockpit.spec.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7618,6 +7632,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/relay-live-journey.test.js",
+                "resolvedPath": "tests/unit/relay-live-journey.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/require-dashboard-global-authority.test.js",
                 "resolvedPath": "tests/unit/require-dashboard-global-authority.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7645,7 +7664,7 @@
             ]
           }
         },
-        "totalFiles": 292,
+        "totalFiles": 295,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
