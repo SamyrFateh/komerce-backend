@@ -74,6 +74,9 @@ test('la file de curation garde les décisions et actions dans le viewport', () 
   expect(workspace).toContain('curationState');
   expect(css).toContain('position: sticky');
   expect(css).toContain('.kmc-catalog-actions-cell');
+  expect(css).toContain('min-width: 240px');
+  expect(css).toContain('-webkit-line-clamp: 2');
+  expect(css).toContain('word-break: normal');
 });
 
 test('Catalogue ne crée plus de navigation parallèle au shell Canonical', () => {
