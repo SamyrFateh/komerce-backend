@@ -32,26 +32,27 @@
       "analysis_document": "docs/external-providers/suppliers/ALLEGRO_SANDBOX.md",
       "highest_proof": "P4",
       "onboarding": {
-        "status": "defined",
+        "status": "blocked",
         "authority": "provider_documentation",
-        "evidence_url": "https://developer.allegro.pl/tutorials/pierwsze-kroki-MRwYEoOq0im",
-        "credential_owner": "integration_application",
+        "evidence_url": "https://developer.allegro.pl/tutorials/uwierzytelnianie-i-autoryzacja-zlq9e75GdIR",
+        "credential_owner": "komerce_platform_application",
         "prerequisites": [
-          "Disposer d'une application Allegro Sandbox enregistrée pour l'intégration"
+          "L'application Komerce Allegro Sandbox doit être enregistrée côté plateforme",
+          "Le compte vendeur Allegro doit autoriser l'application via OAuth"
         ],
         "setup_steps": [
-          "Créer ou ouvrir l'application Allegro Sandbox utilisée par cette intégration",
-          "Récupérer le Client ID et le Client Secret de cette même application"
+          "Komerce utilise les identifiants de sa propre application Allegro",
+          "Le vendeur est redirigé vers Allegro pour se connecter et autoriser l'application"
         ],
-        "operator_must_obtain": [
-          { "key": "client_id", "label": "Client ID Allegro" },
-          { "key": "client_secret", "label": "Client Secret Allegro" }
-        ],
+        "operator_must_obtain": [],
         "operator_must_not_request": [
+          "Client ID du vendeur",
+          "Client Secret du vendeur",
           "Mot de passe du compte Allegro",
-          "Access token temporaire"
+          "Access Token ou Refresh Token copié-collé"
         ],
-        "completion": "Renseigner le Client ID et le Client Secret dans Komerce puis tester la connexion."
+        "completion": "À implémenter : onboarding OAuth vendeur côté Komerce avant d'autoriser la création de nouvelles sources Allegro.",
+        "blocker": "Le connecteur Sources actuel demande encore Client ID / Client Secret par source ; cela doit être remplacé par l'autorisation OAuth vendeur."
       }
     },
     {
@@ -134,14 +135,15 @@
       "onboarding": {
         "status": "defined",
         "authority": "provider_documentation",
-        "evidence_url": "https://developers.cjdropshipping.com/en/summary/course.html",
+        "evidence_url": "https://developers.cjdropshipping.com/en/api/api2/api/auth.html",
         "credential_owner": "partner_account",
         "prerequisites": [
           "Disposer d'un compte CJdropshipping avec accès API autorisé"
         ],
         "setup_steps": [
-          "Dans CJdropshipping : My CJ → Authorization → API → API Key",
-          "Créer ou récupérer la clé API du compte fournisseur"
+          "Installer l'application API CJ si elle n'est pas encore installée",
+          "Ouvrir la section API du compte puis créer ou récupérer une API Key",
+          "Copier la clé API active du compte fournisseur"
         ],
         "operator_must_obtain": [
           { "key": "api_key", "label": "Clé API CJdropshipping" }
