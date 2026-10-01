@@ -143,9 +143,11 @@ describe('sourcing-scanner — GET /connectors', () => {
     // Le catalogue de connecteurs API est extensible (dispatch multi-fournisseur,
     // CJ et AliExpress s'ajoutent à Noon) : la cardinalité exacte ne fait pas
     // partie du contrat, seule la présence/état de chaque connecteur déclaré compte.
+    // Depuis la Credential Authority, CJ est disponible au niveau plateforme même
+    // sans secret process.env : l'identifiant est désormais porté par la source.
     expect(res.body.api_suppliers).toEqual(expect.arrayContaining([
       { supplier: 'noon', active: false, label: 'Noon API', reason: 'Non implémenté' },
-      { supplier: 'cj', active: false, label: 'CJdropshipping API', reason: 'CJ non configuré (test)' },
+      { supplier: 'cj', active: true, label: 'CJdropshipping API', reason: null },
       { supplier: 'aliexpress', active: false, label: 'AliExpress Dropshipper API', reason: 'AliExpress non configuré (test)' },
     ]));
   });
