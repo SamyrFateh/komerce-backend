@@ -225,9 +225,44 @@
 
   function curationState(row = {}) {
     if (needsFrenchPreparation(row)) return { label: 'FR à préparer', tone: 'is-warning' };
-    if (row.needs_review) return { label: 'À relire', tone: 'is-warning' };
+    if (row.needs_review) return { label: 'FR préparé · à relire', tone: 'is-warning' };
+    if (row.content_source === 'ai_enriched' || row.content_source === 'manual') {
+      if (row.price_kmf == null) return { label: 'FR préparé', tone: 'is-positive' };
+    }
     if (row.price_kmf == null) return { label: 'Prix à définir', tone: 'is-neutral' };
     return { label: 'Prêt à valider', tone: 'is-positive' };
+  }
+
+  function appendBeforeAfter(doc, cell, row = {}) {
+    const hasSource = Boolean(row.name_source || row.description_source);
+    const prepared = row.content_source === 'ai_enriched' || row.content_source === 'manual';
+    if (!hasSource || !prepared) return;
+
+    const details = doc.createElement('details');
+    details.className = 'kmc-catalog-compare';
+    const summary = doc.createElement('summary');
+    summary.textContent = 'Avant / après';
+    details.appendChild(summary);
+
+    const grid = doc.createElement('div');
+    grid.className = 'kmc-catalog-compare-grid';
+
+    const before = doc.createElement('div');
+    before.className = 'kmc-catalog-compare-pane';
+    before.appendChild(text(doc, 'strong', '', 'Avant · fournisseur'));
+    before.appendChild(text(doc, 'div', 'kmc-catalog-compare-title', row.name_source || '—'));
+    if (row.description_source) before.appendChild(text(doc, 'p', '', row.description_source));
+
+    const after = doc.createElement('div');
+    after.className = 'kmc-catalog-compare-pane';
+    after.appendChild(text(doc, 'strong', '', 'Après · français'));
+    after.appendChild(text(doc, 'div', 'kmc-catalog-compare-title', row.name || '—'));
+    if (row.description) after.appendChild(text(doc, 'p', '', row.description));
+
+    grid.appendChild(before);
+    grid.appendChild(after);
+    details.appendChild(grid);
+    cell.appendChild(details);
   }
 
   function renderApproval(rootNode, ui, doc, payload, context) {
@@ -290,6 +325,7 @@
         `${formatSource(row.content_source)}${row.supplier_name ? ` · ${row.supplier_name}` : ''}`
       ));
       productCell.appendChild(productMeta);
+      appendBeforeAfter(doc, productCell, row);
       tr.appendChild(productCell);
 
       tr.appendChild(td(doc, row.category));
