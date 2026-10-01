@@ -84,6 +84,19 @@ test('la file de curation garde les décisions et actions dans le viewport', () 
   expect(workspace).toContain("signalContent.className = 'kmc-catalog-cell-stack'");
 });
 
+test('la curation montre explicitement le avant/après après préparation FR', () => {
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+  const css = read('public/dashboards/canonical/css/operations-workspace.css');
+
+  expect(workspace).toContain('Avant / après');
+  expect(workspace).toContain('Avant · fournisseur');
+  expect(workspace).toContain('Après · français');
+  expect(workspace).toContain('name_source');
+  expect(workspace).toContain('description_source');
+  expect(workspace).toContain('FR préparé · à relire');
+  expect(css).toContain('.kmc-catalog-compare-grid');
+});
+
 test('Catalogue ne crée plus de navigation parallèle au shell Canonical', () => {
   const source = read('public/dashboards/canonical/js/catalog-control-tower.js');
   const css = read('public/dashboards/canonical/css/catalog-control-tower.css');
