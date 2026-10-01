@@ -611,11 +611,11 @@ test.describe('Cockpit imports — navigation canonique (vues exclusives)', () =
   test('onglets Sources et Suivi : vue exclusive puis retour au cockpit', async ({ page }) => {
     await mountLive(page, withLots());
     await page.locator('.kir-domain-nav a', { hasText: 'Sources' }).click();
-    await expect(page.locator('.kir-source-control')).toHaveCount(1);
+    await expect(page.locator('.kir-sources-board')).toHaveCount(1);
     await expect(page.locator('.kir-run-truth')).toHaveCount(0);
     await page.locator('.kir-domain-nav a', { hasText: 'Suivi' }).click();
     await expect(page.locator('.kir-run-truth')).toHaveCount(1);
-    await expect(page.locator('.kir-source-control')).toHaveCount(0);
+    await expect(page.locator('.kir-sources-board')).toHaveCount(0);
   });
 
   test('historique navigateur : Suivi → Passages → Sources → retour arrière restaure chaque vue exclusive', async ({ page }) => {
@@ -625,7 +625,7 @@ test.describe('Cockpit imports — navigation canonique (vues exclusives)', () =
     await page.locator('.kir-domain-nav a', { hasText:'Passages' }).click();
     await expect(page.locator('.kir-passage-row')).toHaveCount(2);
     await page.locator('.kir-domain-nav a', { hasText:'Sources' }).click();
-    await expect(page.locator('.kir-source-control')).toHaveCount(1);
+    await expect(page.locator('.kir-sources-board')).toHaveCount(1);
 
     await page.goBack();
     await expect(page.locator('.kir-passage-row')).toHaveCount(2);
@@ -779,11 +779,11 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
     await expect(page.locator('.kir-run-truth')).toHaveCount(1);
   });
 
-  test('8 Suivi → Sources → Suivi : Sources sans bouton retour, onglet actif', async ({ page }) => {
+  test('8 Suivi → Sources → Suivi : onglet actif, retour contextuel au suivi', async ({ page }) => {
     await mountLive(page, withLots());
     await page.locator('.kir-domain-nav a', { hasText:'Sources' }).click();
     await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Sources');
-    await expect(page.locator('.kir-back')).toHaveCount(0);
+    await expect(page.locator('.kir-back')).toHaveText('← Retour au suivi');
     expect(await crumb(page)).toBe('Sourcing > Sources');
     await page.locator('.kir-domain-nav a', { hasText:'Suivi' }).click();
     await expect(page.locator('.kir-run-truth')).toHaveCount(1);
@@ -837,4 +837,114 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
     await expect(page.locator('[data-passage-filter="source"]')).toHaveValue('CJ');
     await activeTab(page);
   });
+});
+
+test.describe('Cockpit imports — vue Sources (cartes opérateur)', () => {
+  const sources = () => [
+    { source_ref:'api:aliexpress', label:'AliExpress Dropshipper API', autopilot_enabled:true, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:iso(30) },
+    { source_ref:'api:cj', label:'CJ Dropshipping', autopilot_enabled:false, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:iso(90) },
+    { source_ref:'api:bigbuy', label:'BigBuy', autopilot_enabled:false, autopilot_ready:false, activation_ready:false, blocker:'Clé API manquante', production_runtime_certified:false, last_capture_at:null },
+  ];
+  const board = () => {
+    const data = JSON.parse(JSON.stringify(calmPayload));
+    data.source_controls = sources();
+    data.lots = [{ run_ref:'KIR-000009', provider:'AliExpress', source_total:712, business_status:'RUNNING' }, { run_ref:'KIR-000008', provider:'CJ', source_total:20, business_status:'CLOSED' }];
+    data.run_nav = { older_ref:'KIR-000008', newer_ref:null };
+    return data;
+  };
+  const open = async (page, data = board()) => {
+    const state = await mountLive(page, data);
+    state.passages = [];
+    await page.locator('.kir-domain-nav a', { hasText:'Sources' }).click();
+    await expect(page.locator('.kir-sources-board')).toHaveCount(1);
+    return state;
+  };
+
+  test('structure : onglet actif, synthèse, 3 cartes fidèles au payload, aucun lien absurde', async ({ page }) => {
+    await open(page);
+    await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Sources');
+    await expect(page.locator('.kir-domain-nav a', { hasText:'Suivi' })).toBeVisible();
+    await expect(page.locator('.kir-domain-nav a', { hasText:'Passages' })).toBeVisible();
+    await expect(page.locator('[data-sources-summary]')).toContainText('3 sources connectées');
+    await expect(page.locator('[data-sources-summary]')).toContainText('1 active');
+    await expect(page.locator('[data-sources-summary]')).toContainText('1 prête');
+    await expect(page.locator('[data-source-card]')).toHaveCount(3);
+    const main = page.locator('.kir-main');
+    await expect(main).not.toContainText('Sources →');
+    await expect(main).not.toContainText('Retour au passage');
+    const ali = page.locator('[data-source-card="api:aliexpress"]');
+    await expect(ali.locator('.kir-source-badge')).toHaveText(/ACTIVE/);
+    await expect(ali.locator('[data-source-toggle]')).toHaveAttribute('aria-checked', 'true');
+    const cj = page.locator('[data-source-card="api:cj"]');
+    await expect(cj.locator('.kir-source-badge')).toHaveText('PRÊTE');
+    await expect(cj.locator('[data-source-toggle]')).toHaveAttribute('aria-checked', 'false');
+    await expect(cj.locator('[data-source-toggle]')).toBeEnabled();
+    const big = page.locator('[data-source-card="api:bigbuy"]');
+    await expect(big.locator('.kir-source-badge')).toHaveText('BLOQUÉE');
+    await expect(big.locator('[data-source-toggle]')).toBeDisabled();
+    await expect(big.locator('[data-source-reason]')).toContainText('Clé API manquante');
+    await expect(big).not.toContainText('Voir le suivi');
+    await page.screenshot({ path:'test-results/import-runtime-cockpit-sources.png' });
+  });
+
+  test('retour contextuel : présent avec run (→ Suivi du KIR), absent sans run', async ({ page }) => {
+    await open(page);
+    await expect(page.locator('.kir-back')).toHaveText('← Retour au suivi');
+    await expect(page.locator('.kir-sources-context')).toHaveText('Passage courant : KIR-000009');
+    expect(await page.locator('.kir-breadcrumb').innerText()).toMatch(/^Sourcing\s*›\s*Sources$/);
+    await page.locator('.kir-back').click();
+    await expect(page).toHaveURL(/\/admin\/import-runtime\?run=KIR-000009$/);
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+
+    const none = JSON.parse(JSON.stringify(board())); none.lots = []; none.selected = null;
+    await page.unroute(`${ORIGIN}/**`).catch(() => {});
+    await mountLive(page, none);
+    await page.goto(`${ORIGIN}/admin/import-runtime?view=sources`);
+    await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
+    await expect(page.locator('.kir-sources-board')).toHaveCount(1);
+    await expect(page.locator('.kir-back')).toHaveCount(0);
+  });
+
+  test('Sources → Suivi → Sources → Passages → Sources ; Back / Forward', async ({ page }) => {
+    await open(page);
+    await page.locator('.kir-domain-nav a', { hasText:'Suivi' }).click();
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    await page.locator('.kir-domain-nav a', { hasText:'Sources' }).click();
+    await expect(page.locator('.kir-sources-board')).toHaveCount(1);
+    await page.locator('.kir-domain-nav a', { hasText:'Passages' }).click();
+    await expect(page.locator('.kir-sources-board')).toHaveCount(0);
+    await page.locator('.kir-domain-nav a', { hasText:'Sources' }).click();
+    await expect(page.locator('[data-source-card]')).toHaveCount(3);
+    await page.goBack();
+    await expect(page.locator('.kir-sources-board')).toHaveCount(0);
+    await page.goBack();
+    await expect(page.locator('.kir-sources-board')).toHaveCount(1);
+  });
+
+  test('« Voir le suivi » ouvre le bon KIR ; Back revient sur Sources ; Forward rouvre le même Suivi', async ({ page }) => {
+    await open(page);
+    await page.locator('[data-source-card="api:cj"]').getByText('Voir le suivi →').click();
+    await expect(page).toHaveURL(/run=KIR-000008$/);
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+    await page.goBack();
+    await expect(page.locator('.kir-sources-board')).toHaveCount(1);
+    await page.goForward();
+    await expect(page).toHaveURL(/run=KIR-000008$/);
+    await expect(page.locator('.kir-run-truth')).toHaveCount(1);
+  });
+
+  for (const [name, width, height, cols] of [['1280', 1280, 800, 3], ['1024', 1024, 768, 2], ['mobile', 390, 844, 1]]) {
+    test(`responsive ${name} : ${cols} colonne(s), aucun débordement`, async ({ page }) => {
+      await open(page);
+      await page.setViewportSize({ width, height });
+      await expect(page.locator('[data-source-card]')).toHaveCount(3);
+      const geo = await page.evaluate(() => {
+        const cards = [...document.querySelectorAll('[data-source-card]')].map(el => el.getBoundingClientRect());
+        return { cols:new Set(cards.map(r => Math.round(r.left))).size, maxRight:Math.max(...cards.map(r => r.right)), scroll:document.documentElement.scrollWidth, inner:window.innerWidth };
+      });
+      expect(geo.cols).toBe(cols);
+      expect(geo.maxRight).toBeLessThanOrEqual(geo.inner);
+      expect(geo.scroll).toBeLessThanOrEqual(geo.inner);
+    });
+  }
 });

@@ -35,7 +35,7 @@ test('canonical import runtime is loaded without legacy dependency', () => {
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const source = fs.readFileSync(path.join(CANONICAL, 'js', 'import-runtime.js'), 'utf8');
   expect(index).toContain('/dashboards/canonical/js/import-runtime.js?v=260930-13');
-  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260930-12');
+  expect(index).toContain('/dashboards/canonical/css/import-runtime.css?v=260930-13');
   expect(index).toContain('/dashboards/canonical/css/canonical-legacy-theme-v1.css?v=260929-4');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-cockpit');
   expect(source).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
@@ -104,7 +104,7 @@ test('import cockpit montre les décisions et délègue les détails aux pages d
   expect(source).toContain('PASSAGE AU CATALOGUE');
   expect(source).not.toContain('PARCOURS MÉTIER');
   expect(source).toContain('provider_runtime_status');
-  expect(source).toContain('Source OFF · preuve runtime à corriger puis relancer');
+  expect(source).toContain('Preuve runtime à corriger, puis relancer la source.');
   expect(css).toContain('Legacy Admin visual parity');
   expect(css).toContain('--kir-orange:var(--kmc-legacy-orange');
   expect(source).toContain('/api/admin/workspaces/sourcing/import-runs/');
