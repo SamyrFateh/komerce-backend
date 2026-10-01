@@ -240,9 +240,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_MIXED',
-    authedRoutesDetected: 74,
-    totalRoutes: 79,
-    note: "74/79 routes protégées. 5 routes publiques par design : GET /api/relais, /relais/public, /relais/:id (annuaire public des points relais) ; GET /api/tracking/:token et POST /api/tracking/:token/verify-pickup (capability token documenté — pas d'accès aux données client sans token valide).",
+    authedRoutesDetected: 75,
+    totalRoutes: 80,
+    note: "75/80 routes protégées. 5 routes publiques par design : GET /api/relais, /relais/public, /relais/:id (annuaire public des points relais) ; GET /api/tracking/:token et POST /api/tracking/:token/verify-pickup (capability token documenté — pas d'accès aux données client sans token valide).",
   },
   contract: {
     exposes: [
