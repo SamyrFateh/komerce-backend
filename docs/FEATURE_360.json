@@ -6969,7 +6969,7 @@
             ]
           },
           "tests": {
-            "count": 139,
+            "count": 140,
             "files": [
               {
                 "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
@@ -6984,6 +6984,11 @@
               {
                 "declared": "tests/e2e/import-runtime-cockpit.spec.js",
                 "resolvedPath": "tests/e2e/import-runtime-cockpit.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/import-runtime-credentials.spec.js",
+                "resolvedPath": "tests/e2e/import-runtime-credentials.spec.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7669,7 +7674,7 @@
             ]
           }
         },
-        "totalFiles": 296,
+        "totalFiles": 297,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11221,7 +11226,8 @@
           "états de faits KNOWN / DERIVED / UNKNOWN",
           "preuves provider P0 Business readiness → P1 Raw API → P2 Adapter → P3 Pipeline → P4 Golden E2E",
           "règle fail-closed commune : une preuve absente, inconnue ou ambiguë ne devient jamais implicitement PASS",
-          "inventaire et fiches de qualification des frontières API externes de Komerce"
+          "inventaire et fiches de qualification des frontières API externes de Komerce",
+          "contrat d onboarding humain dérivé de la vérité fournisseur : prérequis, lieu/action de création, éléments à obtenir, éléments à ne jamais demander et critère de fin"
         ],
         "out": [
           "les adapters et clients provider spécifiques, qui restent dans la feature métier consommatrice (payments, notifications, catalog/purchasing, etc.)",
@@ -11238,6 +11244,8 @@
         "une preuve Sandbox/staging ne satisfait jamais implicitement un contrat Production",
         "une correspondance externe ambiguë bloque : Komerce ne devine jamais une référence ou un état provider",
         "un Golden E2E prouve la composition de contrats élémentaires déjà qualifiés ; il ne sert jamais à découvrir P0/P1 à l aveugle",
+        "un onboarding partenaire ne demande jamais un credential au hasard : le type, le propriétaire, les prérequis, les actions de création et les éléments à obtenir proviennent du contrat fournisseur qualifié",
+        "l IA peut accélérer la lecture et la formalisation mais ne devient jamais l autorité du contrat : la provenance reste documentation fournisseur, confirmation fournisseur ou preuve runtime explicite",
         "les adapters provider et les side effects restent possédés par leurs features métier ; external-provider-contracts ne devient jamais un god-adapter"
       ],
       "implementation": {
@@ -11282,8 +11290,18 @@
               }
             ]
           },
+          "services": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "services/external-provider-onboarding-contracts.js",
+                "resolvedPath": "services/external-provider-onboarding-contracts.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
           "tests": {
-            "count": 5,
+            "count": 6,
             "files": [
               {
                 "declared": "tests/unit/ebay-sandbox-browse-proof.test.js",
@@ -11301,6 +11319,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/external-provider-onboarding-contracts.test.js",
+                "resolvedPath": "tests/unit/external-provider-onboarding-contracts.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/provider-contract-proof.test.js",
                 "resolvedPath": "tests/unit/provider-contract-proof.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -11313,7 +11336,7 @@
             ]
           }
         },
-        "totalFiles": 11,
+        "totalFiles": 13,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -11350,6 +11373,16 @@
           {
             "fn": "buildProof",
             "file": "scripts/provider-contract-proof.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "checkReady",
+            "file": "services/external-provider-onboarding-contracts.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "publicContract",
+            "file": "services/external-provider-onboarding-contracts.js",
             "status": "resolved"
           },
           {
@@ -13251,7 +13284,7 @@
             ]
           },
           "tests": {
-            "count": 81,
+            "count": 82,
             "files": [
               {
                 "declared": "tests/integration/groupe-paiement.manual.js",
@@ -13489,6 +13522,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/gen-dashboards-360-legacy-contract-status.test.js",
+                "resolvedPath": "tests/unit/gen-dashboards-360-legacy-contract-status.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/golden-cdr-preflight.test.js",
                 "resolvedPath": "tests/unit/golden-cdr-preflight.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -13701,7 +13739,7 @@
             ]
           }
         },
-        "totalFiles": 351,
+        "totalFiles": 352,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -15520,7 +15558,7 @@
             ]
           },
           "services": {
-            "count": 25,
+            "count": 26,
             "files": [
               {
                 "declared": "services/auto-parcel.js",
@@ -15535,6 +15573,11 @@
               {
                 "declared": "services/hub-physical-identity.js",
                 "resolvedPath": "services/hub-physical-identity.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/hub-reference.js",
+                "resolvedPath": "services/hub-reference.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -15650,7 +15693,7 @@
             ]
           },
           "tests": {
-            "count": 54,
+            "count": 55,
             "files": [
               {
                 "declared": "tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js",
@@ -15715,6 +15758,11 @@
               {
                 "declared": "tests/unit/hub-operations.test.js",
                 "resolvedPath": "tests/unit/hub-operations.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/hub-reference.test.js",
+                "resolvedPath": "tests/unit/hub-reference.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -15945,7 +15993,7 @@
             ]
           }
         },
-        "totalFiles": 112,
+        "totalFiles": 114,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -16495,7 +16543,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 77
+          "count": 78
         }
       },
       "businessDependencies": [
@@ -24166,6 +24214,10 @@
       "authority": "backend-core — tout changement du flux d'engagement fournisseur (Procurement Route, readiness dynamique, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing ; supplier-connectivity possède l'identité provider, la Supplier Order Identity et le contrat générique d'adapter",
       "invariants": [
         {
+          "statement": "purchase_lines (PR 1, migration 263) : la quantité effective achetée d'un order_item (0 si annulée, sinon COALESCE(settled, confirmed, quantity)) ne dépasse jamais order_items.quantity — garde base I1 sous verrou FOR UPDATE sur order_items ; une ligne confirmée/réglée/annulée est figée (one-shot) et ne se supprime pas directement",
+          "test": "tests/integration/purchase-lines-postgres.test.js"
+        },
+        {
           "statement": "un besoin d'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)",
           "test": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js"
         },
@@ -24214,7 +24266,7 @@
       "implementation": {
         "byCategory": {
           "migrations": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "migrations/225_purchase_orders_exact_supplier_identity.sql",
@@ -24224,6 +24276,11 @@
               {
                 "declared": "migrations/239_purchase_orders_canonical_supplier_money.sql",
                 "resolvedPath": "migrations/239_purchase_orders_canonical_supplier_money.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/263_purchase_lines_foundation.sql",
+                "resolvedPath": "migrations/263_purchase_lines_foundation.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
@@ -24239,7 +24296,7 @@
             ]
           },
           "scripts": {
-            "count": 2,
+            "count": 3,
             "files": [
               {
                 "declared": "scripts/allegro-sandbox-purchase-proof.js",
@@ -24250,12 +24307,22 @@
                 "declared": "scripts/allegro-shipping-capability-proof.js",
                 "resolvedPath": "scripts/allegro-shipping-capability-proof.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/purchase-lines-parity-check.js",
+                "resolvedPath": "scripts/purchase-lines-parity-check.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
           "services": {
-            "count": 21,
+            "count": 22,
             "files": [
+              {
+                "declared": "services/purchase-line-snapshot.js",
+                "resolvedPath": "services/purchase-line-snapshot.js",
+                "status": "resolved-in-technical-graph"
+              },
               {
                 "declared": "services/purchasing-admin-service.js",
                 "resolvedPath": "services/purchasing-admin-service.js",
@@ -24364,11 +24431,16 @@
             ]
           },
           "tests": {
-            "count": 29,
+            "count": 32,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
                 "resolvedPath": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/purchase-lines-postgres.test.js",
+                "resolvedPath": "tests/integration/purchase-lines-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -24429,6 +24501,16 @@
               {
                 "declared": "tests/unit/procurement-execution-boundary.test.js",
                 "resolvedPath": "tests/unit/procurement-execution-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchase-line-snapshot.test.js",
+                "resolvedPath": "tests/unit/purchase-line-snapshot.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchase-lines-parity-check.test.js",
+                "resolvedPath": "tests/unit/purchase-lines-parity-check.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -24514,7 +24596,7 @@
             ]
           }
         },
-        "totalFiles": 55,
+        "totalFiles": 61,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -26803,7 +26885,7 @@
             ]
           },
           "migrations": {
-            "count": 13,
+            "count": 14,
             "files": [
               {
                 "declared": "migrations/041_sourcing_candidates.sql",
@@ -26869,6 +26951,11 @@
                 "declared": "migrations/260_sourcing_source_registry.sql",
                 "resolvedPath": "migrations/260_sourcing_source_registry.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/261_sourcing_source_lifecycle_update.sql",
+                "resolvedPath": "migrations/261_sourcing_source_lifecycle_update.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -26928,7 +27015,7 @@
             ]
           },
           "services": {
-            "count": 32,
+            "count": 33,
             "files": [
               {
                 "declared": "services/catalog-product-read-cutover-trial.js",
@@ -26943,6 +27030,11 @@
               {
                 "declared": "services/import-runtime-runs.js",
                 "resolvedPath": "services/import-runtime-runs.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/provider-credential-service.js",
+                "resolvedPath": "services/provider-credential-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -27093,7 +27185,7 @@
             ]
           },
           "tests": {
-            "count": 52,
+            "count": 55,
             "files": [
               {
                 "declared": "tests/integration/catalog-change-sku-identity-proof-real-db.test.js",
@@ -27116,6 +27208,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/integration/provider-credential-vault-real-db.test.js",
+                "resolvedPath": "tests/integration/provider-credential-vault-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/integration/sourcing-candidate-arbitration-real-db.test.js",
                 "resolvedPath": "tests/integration/sourcing-candidate-arbitration-real-db.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -27133,6 +27230,11 @@
               {
                 "declared": "tests/unit/admin-import-runtime-runs-route.test.js",
                 "resolvedPath": "tests/unit/admin-import-runtime-runs-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/admin-sourcing-credentials-route.test.js",
+                "resolvedPath": "tests/unit/admin-sourcing-credentials-route.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -27163,6 +27265,11 @@
               {
                 "declared": "tests/unit/import-runtime-runs.test.js",
                 "resolvedPath": "tests/unit/import-runtime-runs.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/provider-credential-service.test.js",
+                "resolvedPath": "tests/unit/provider-credential-service.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -27358,7 +27465,7 @@
             ]
           }
         },
-        "totalFiles": 107,
+        "totalFiles": 112,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

@@ -99,7 +99,9 @@ describe('purchasing exact SKU procurement', () => {
     db.query.mockResolvedValueOnce({ rows: [ORDER] }).mockResolvedValueOnce({ rows: [item] });
 
     let insertParams = null;
+    let lineParams = null;
     const client = makeClient((sql, params) => {
+      if (sql.includes('INSERT INTO purchase_lines')) { lineParams = params; return { rows: [{ id: 'line-1' }] }; }
       if (sql.includes('FROM product_skus')) return { rows: [{
         id: 'sku-black-m', product_id: 'p1', supplier_sku: 'ALI-BLACK-M',
         supplier_unit_ref: 'UNIT-BLACK-M', supplier_order_identity: IDENTITY,
@@ -141,6 +143,19 @@ describe('purchasing exact SKU procurement', () => {
     expect(insertParams[10]).toBe(29.9);
     expect(insertParams[11]).toBe('PLN');
     expect(insertParams[12]).toBe('manual');
+    // Écriture double : la ligne d'achat porte le même instantané, rattachée à la PO, hub par défaut DXB.
+    expect(lineParams[0]).toBe('00000000-0000-0000-0000-000000000201');
+    expect(lineParams[1]).toBe('oi-import');
+    expect(lineParams[2]).toBe('sup1');
+    expect(lineParams[3]).toBe('ps1');
+    expect(lineParams[4]).toBe('sku-black-m');
+    expect(lineParams[5]).toBe('ALI-BLACK-M');
+    expect(lineParams[6]).toBe('UNIT-BLACK-M');
+    expect(JSON.parse(lineParams[7])).toEqual(IDENTITY);
+    expect(lineParams[8]).toBe(2);
+    expect(lineParams[9]).toBe(29.9);
+    expect(lineParams[10]).toBe('PLN');
+    expect(lineParams[11]).toBe('DXB');
   });
 
   it('GAP-4A — readiness bloquée (adapter requis absent, identité divergente, etc.) devient une erreur item avec alerte, comme avant', async () => {
@@ -192,6 +207,7 @@ describe('purchasing exact SKU procurement', () => {
       }] };
       if (sql.startsWith('SELECT id, status FROM purchase_orders')) return { rows: [] };
       if (sql.includes('INSERT INTO purchase_orders')) return { rows: [{ id: '00000000-0000-0000-0000-000000000201' }] };
+      if (sql.includes('INSERT INTO purchase_lines')) return { rows: [{ id: 'line-1' }] };
       if (sql.startsWith('UPDATE purchase_orders')) { updateSql = sql; return { rows: [] }; }
       throw new Error(`SQL inattendu: ${sql}`);
     });

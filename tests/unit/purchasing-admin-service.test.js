@@ -218,6 +218,11 @@ describe('confirmPurchaseOrder', () => {
 
     expect(result).toMatchObject({ success: true });
     expect(result.purchase_order.status).toBe('confirmed');
+    // double écriture : la ligne de la PO reçoit quantité/prix confirmés dans la même instruction
+    const sql = mockQuery.mock.calls[1][0];
+    expect(sql).toContain('UPDATE purchase_lines');
+    expect(sql).toContain('confirmed_quantity IS NULL');
+    expect(sql).toMatch(/SELECT \* FROM upd/);
   });
 
   test('nominal (notified → confirmed) → idem', async () => {
