@@ -44,6 +44,8 @@ function publicProduct(row) {
     product_ref: row.product_ref,
     name: row.name,
     description: row.description || null,
+    name_source: row.name_source || null,
+    description_source: row.description_source || null,
     category: row.category,
     subcategory: row.subcategory || null,
     price_kmf: row.price_kmf == null ? null : Number(row.price_kmf),
@@ -151,7 +153,8 @@ async function queryApprovalQueue({ limit = 50, offset = 0 } = {}) {
   const safeOffset = Math.max(Number.parseInt(offset, 10) || 0, 0);
   const decisionOrder = sourcingDecisionOrderSql('sc');
   const { rows } = await db.query(`
-    SELECT p.product_ref, p.name, p.description, p.category, p.fragility, p.emoji,
+    SELECT p.product_ref, p.name, p.description, p.name_source, p.description_source,
+           p.category, p.fragility, p.emoji,
            p.price_kmf, p.stock, p.content_source, p.source_locale, p.needs_review,
            p.enrichment_confidence, p.created_at,
            sc.supplier_name,
