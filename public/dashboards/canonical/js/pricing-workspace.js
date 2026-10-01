@@ -505,7 +505,10 @@
     }
 
     const recommendedPrice = Number(result.recommended_price_kmf);
-    if (productRef && Number.isFinite(recommendedPrice) && recommendedPrice > 0) {
+    const canonicalRecommendation = result.source_of_truth === 'pricing-engine';
+    const purchaseCostKnown = sources.purchase_price && sources.purchase_price !== 'missing';
+    if (productRef && canonicalRecommendation && purchaseCostKnown
+        && Number.isFinite(recommendedPrice) && recommendedPrice > 0) {
       const actions = doc.createElement('div');
       actions.className = 'kmc-workspace-actions';
       const apply = button(doc, 'Choisir ce prix', 'apply-recommended');
