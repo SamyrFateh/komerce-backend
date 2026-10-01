@@ -295,7 +295,10 @@ async function overrideAndApprove(q = db, productId, { fields, reason } = {}, ad
     // Une correction humaine explicite clôt la revue éditoriale d'une fiche
     // pipeline à faible confiance. La source brute reste conservée dans
     // name_source/description_source ; seule la présentation client devient manual.
-    if (overrideResult.product?.needs_review === true) {
+    const reviewablePreparedContent = overrideResult.product?.needs_review === true
+      && (overrideResult.product?.content_source === 'ai_enriched' || overrideResult.product?.content_source === 'manual')
+      && (overrideResult.product?.name_source || overrideResult.product?.description_source);
+    if (reviewablePreparedContent) {
       overrideResult.product = await finalizeReviewedManualPreparation(tx, productId);
     }
 
@@ -306,6 +309,7 @@ async function overrideAndApprove(q = db, productId, { fields, reason } = {}, ad
     const { rows: [product] } = await tx.query(
       `UPDATE products
           SET is_active = TRUE,
+              is_available = TRUE,
               quality_validated = TRUE,
               needs_review = FALSE,
               lifecycle_status = 'active',
