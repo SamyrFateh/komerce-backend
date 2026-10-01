@@ -33,7 +33,7 @@
  * @db-txn       none
  * @doctrine     KOMERCE_DB_SCHEMA_DOCTRINE
  * @impact-areas governance, ci, economic-engine
- * @version      2026-09
+ * @version      2026-10
  *
  * Principe :
  *   On ne lit que les migrations dont le numero est STRICTEMENT SUPERIEUR au
@@ -72,8 +72,16 @@ const CURRENCY_CODES = ['kmf', 'eur', 'aed', 'usd', 'xaf', 'cdf', 'cny', 'mga'];
 //   2. ADD COLUMN, y compris inline dans un ALTER TABLE sur une seule ligne
 //      (`ALTER TABLE t ADD COLUMN x_kmf INTEGER;`) — forme courante que la
 //      version initiale de ce gate ratait, trouvee par test de mutation.
+//
+// Pour CREATE TABLE, on exige maintenant un type SQL apres le nom. Sans cela,
+// une expression de CHECK comme `price_kmf IS NOT NULL` etait prise pour une
+// declaration de colonne (faux positif observe sur migration 259).
 const CURRENCY_GROUP = `[a-z0-9_]+_(?:${CURRENCY_CODES.join('|')})`;
-const CREATE_COLUMN_RE = new RegExp(`^\\s*(${CURRENCY_GROUP})\\s+`, 'i');
+const SQL_MONEY_TYPE = String.raw`(?:SMALLINT|INTEGER|INT|BIGINT|NUMERIC|DECIMAL|REAL|MONEY|DOUBLE\s+PRECISION)`;
+const CREATE_COLUMN_RE = new RegExp(
+  `^\\s*(${CURRENCY_GROUP})\\s+${SQL_MONEY_TYPE}\\b`,
+  'i'
+);
 const ADD_COLUMN_RE = new RegExp(
   `\\bADD\\s+COLUMN\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?(${CURRENCY_GROUP})\\b`,
   'i'
@@ -88,6 +96,16 @@ const DROP_COLUMN_RE = new RegExp(
   String.raw`\bDROP\s+COLUMN\s+(?:IF\s+EXISTS\s+)?(${CURRENCY_GROUP})\b`,
   'i'
 );
+
+// Un taux de change n'est pas un montant. Exemple canonique existant :
+// `taux_pln_kmf` = "KMF par PLN". Le suffixe de devise décrit l'unité du
+// ratio, pas la devise d'un montant stocké. L'exception reste volontairement
+// étroite : seulement la forme taux_<devise>_<devise>.
+const EXPLICIT_RATE_RE = /^taux_[a-z0-9]+_(?:kmf|eur|aed|usd|xaf|cdf|cny|mga)$/i;
+
+function isExplicitCurrencyRate(column) {
+  return EXPLICIT_RATE_RE.test(column);
+}
 
 function scanMigration(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
@@ -117,6 +135,7 @@ function scanMigration(filePath) {
     const match = withoutComment.match(ADD_COLUMN_RE) || withoutComment.match(CREATE_COLUMN_RE);
     if (match) {
       if (recreated.has(match[1].toLowerCase())) return;
+      if (isExplicitCurrencyRate(match[1])) return;
       offenders.push({ line: index + 1, column: match[1], raw: withoutComment.trim() });
     }
   });
