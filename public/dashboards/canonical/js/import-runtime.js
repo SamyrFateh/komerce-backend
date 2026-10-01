@@ -794,6 +794,7 @@
 
   function onboardingRequirementLine(holder) {
     const onboarding = holder?.onboarding || {};
+    if (onboarding.status === 'blocked') return 'Onboarding fournisseur à requalifier avant toute nouvelle connexion';
     if (holder?.onboarding_ready === false || onboarding.status === 'missing') {
       return 'Étude API requise avant toute demande d’identifiant';
     }
@@ -828,6 +829,17 @@
     const fields = credentialFields(source);
     if (!fields.length) return '';
     const ref = source.source_ref;
+    if (source?.onboarding_ready === false) {
+      const blocker = source?.onboarding?.blocker || 'Le contrat d’onboarding fournisseur doit être requalifié avant de collecter de nouveaux identifiants.';
+      const evidence = source?.onboarding?.evidence_url
+        ? `<a class="kir-wizard-link" href="${esc(source.onboarding.evidence_url)}" target="_blank" rel="noopener noreferrer" data-provider-documentation>Documentation fournisseur ↗</a>`
+        : '';
+      return `<section class="kir-credentials" data-credentials-panel="${esc(ref)}" data-credentials-context="${context}">
+        <p class="kir-credentials-status">ONBOARDING À REQUALIFIER</p>
+        <p class="kir-wizard-note" data-onboarding-blocker>${esc(blocker)}</p>
+        ${evidence}
+      </section>`;
+    }
     const st = credentialsState && credentialsState.ref === ref ? credentialsState : null;
     const configured = credentialsConfigured(source);
     const open = !configured || Boolean(st?.open);
