@@ -254,6 +254,7 @@ async function syncCategory(category, config, budget, seenIds, deps = {}) {
 
 async function runSync() {
   const config = runtimeConfig();
+  const countClean = countCleanCandidates;
   const startingClean = await countClean();
   if (startingClean > config.maxCleanProducts) {
     throw new Error(`Pool CJ déjà au-dessus du cap: ${startingClean}/${config.maxCleanProducts}`);
