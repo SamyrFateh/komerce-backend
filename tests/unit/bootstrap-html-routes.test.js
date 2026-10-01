@@ -367,6 +367,21 @@ describe('bootstrap/html-routes', () => {
     });
 
     test.each([
+      '/admin/customs',
+      '/admin/suppliers',
+      '/admin/sales',
+      '/admin/transitaire',
+      '/admin/sante',
+      '/admin/shared-carts',
+      '/admin/simulator',
+    ])('%s est explicitement LEGACY_REQUIRED, sans faux redirect Canonical', (routePath) => {
+      const res = fakeRes();
+      app._routes[routePath]({ query: {} }, res);
+      expect(res.setHeader).toHaveBeenCalledWith('X-Admin-Generation', 'legacy-1');
+      expect(res.redirect).not.toHaveBeenCalled();
+    });
+
+    test.each([
       '/admin/alerts',
       '/admin/problems',
     ])('%s converge vers l’Action Center Canonical', (routePath) => {
