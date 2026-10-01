@@ -37,15 +37,21 @@ jest.mock('../../services/sourcing-source-autopilot', () => ({
 const registry = require('../../services/sourcing-source-registry');
 
 const FACTS = [
-  { adapter: 'aliexpress', name: 'AliExpress', label: 'AliExpress Dropshipper API', available: true, automatable: true, connection_mode: 'oauth', connect_path: '/api/integrations/aliexpress/oauth/start', can_test_connection: true, reason: null,
-    auth: { mode: 'oauth', scope: 'platform', description: 'Aucun secret à saisir : autorisez le compte AliExpress depuis Komerce.', fields: [] } },
-  { adapter: 'cj', name: 'CJdropshipping', label: 'CJdropshipping API', available: true, automatable: true, connection_mode: 'server_managed', connect_path: null, can_test_connection: true, reason: null,
-    auth: { mode: 'api_key', scope: 'source', description: 'Renseignez la clé API permanente du compte CJdropshipping.',
-      fields: [{ key: 'api_key', label: 'Clé API CJdropshipping', secret: true, help: 'Clé API du compte fournisseur utilisée pour autoriser Komerce.' }] } },
+  { adapter: 'aliexpress', name: 'AliExpress', label: 'AliExpress Dropshipper API', available: true, automatable: true, onboarding_ready: true,
+    onboarding: { status: 'defined', operator_must_obtain: [], setup_steps: ['Autoriser le compte'], prerequisites: ['Compte vendeur'], completion: 'OAuth terminé' },
+    connection_mode: 'oauth', connect_path: '/api/integrations/aliexpress/oauth/start', can_test_connection: true, reason: null,
+    auth: { mode: 'oauth', scope: 'platform', fields: [] } },
+  { adapter: 'cj', name: 'CJdropshipping', label: 'CJdropshipping API', available: true, automatable: true, onboarding_ready: true,
+    onboarding: { status: 'defined', operator_must_obtain: [{ key: 'api_key', label: 'Clé API CJdropshipping' }], setup_steps: ['Créer la clé API'], prerequisites: ['Compte CJ'], completion: 'Clé enregistrée' },
+    connection_mode: 'server_managed', connect_path: null, can_test_connection: true, reason: null,
+    auth: { mode: 'api_key', scope: 'source',
+      fields: [{ key: 'api_key', label: 'Clé API CJdropshipping', secret: true }] } },
   { adapter: 'noon', name: 'Noon', label: 'Noon API', available: false, automatable: false, connection_mode: null, connect_path: null, can_test_connection: false, reason: 'Connecteur non configuré sur ce serveur' },
   { adapter: 'ebay', name: 'eBay Sandbox', label: 'eBay Sandbox Browse API', available: true, automatable: false, connection_mode: 'server_managed', connect_path: null, can_test_connection: true, reason: 'Alimentation automatique non certifiée pour ce connecteur' },
-  { adapter: 'allegro', name: 'Allegro Sandbox', label: 'Allegro Sandbox', available: false, automatable: true, connection_mode: 'server_managed', connect_path: null, can_test_connection: true, reason: 'Connecteur non configuré sur ce serveur',
-    auth: { mode: 'client_credentials', scope: 'source', description: 'Renseignez les identifiants de l’application Allegro associée au compte fournisseur.',
+  { adapter: 'allegro', name: 'Allegro Sandbox', label: 'Allegro Sandbox', available: false, automatable: true, onboarding_ready: true,
+    onboarding: { status: 'defined', operator_must_obtain: [{ key: 'client_id', label: 'Client ID Allegro' }, { key: 'client_secret', label: 'Client Secret Allegro' }], setup_steps: ['Créer l’application'], prerequisites: ['Application Allegro'], completion: 'Identifiants enregistrés' },
+    connection_mode: 'server_managed', connect_path: null, can_test_connection: true, reason: 'Connecteur non configuré sur ce serveur',
+    auth: { mode: 'client_credentials', scope: 'source',
       fields: [{ key: 'client_id', label: 'Client ID Allegro', secret: false }, { key: 'client_secret', label: 'Client Secret Allegro', secret: true }] } },
 ];
 
@@ -74,14 +80,19 @@ describe('catalogue canonique des connecteurs', () => {
       available: true, automatable: true, can_create: true,
       connection_mode: 'oauth', connect_path: '/api/integrations/aliexpress/oauth/start',
       auth: { mode: 'oauth', scope: 'platform', fields: [] },
+      onboarding_ready: true,
+      onboarding: { status: 'defined' },
       reason: null, existing_source_ref: null,
     });
     expect(connectors.find((item) => item.adapter === 'cj')).toMatchObject({
       auth: {
         mode: 'api_key',
         scope: 'source',
-        description: expect.stringContaining('clé API'),
-        fields: [{ key: 'api_key', label: 'Clé API CJdropshipping', secret: true, help: expect.any(String) }],
+        fields: [{ key: 'api_key', label: 'Clé API CJdropshipping', secret: true }],
+      },
+      onboarding_ready: true,
+      onboarding: {
+        operator_must_obtain: [{ key: 'api_key', label: 'Clé API CJdropshipping' }],
       },
     });
     expect(connectors.find((item) => item.adapter === 'noon')).toMatchObject({ available: false, can_create: false });
@@ -122,6 +133,19 @@ describe('création de source', () => {
     expect(sqlCalls().some(({ sql }) => /sourcing_captures|sourcing_provider_control_events/.test(sql))).toBe(false);
     expect(mockTestConnection).not.toHaveBeenCalled();
   });
+  test('un connecteur sans contrat d onboarding ne peut jamais devenir une source', async () => {
+    mockFacts.mockReturnValue(FACTS.map((fact) => fact.adapter === 'cj'
+      ? { ...fact, onboarding_ready: false, onboarding: { status: 'missing' }, reason: 'Étude API / onboarding fournisseur incomplet' }
+      : fact));
+    mockQuery.mockResolvedValue({ rows: [{ source_id: 'api:cj' }] });
+
+    await expect(registry.createSource({ adapter: 'cj' })).rejects.toMatchObject({
+      status: 409,
+      code: 'sourcing_source_onboarding_contract_required',
+    });
+    expect(sqlCalls().some(({ sql }) => /INSERT INTO sourcing_sources/.test(sql))).toBe(false);
+  });
+
 
   test('doublon refusé : 409 et référence de la source existante', async () => {
     mockQuery.mockResolvedValue({ rows: [] });
