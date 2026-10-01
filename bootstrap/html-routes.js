@@ -283,28 +283,31 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/pilotage-fin': '/admin/finance',
   });
 
-  // Legacy 1 reste accessible pour les témoins et les capacités non encore
-  // prouvées absorbées par une surface Canonical.
-  const ADMIN_DASHBOARD_PATHS = [
-    '/admin/control-tower',
-    '/admin/costing',
+  // Les chemins déjà absorbés sont des entrées Canonical avec rollback
+  // explicite uniquement. Ils ne doivent plus être confondus avec une
+  // dépendance fonctionnelle Legacy.
+  Object.entries(LEGACY_CANONICAL_REDIRECTS).forEach(([routePath, stablePath]) => {
+    app.get(routePath, (req, res) => {
+      if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
+      res.redirect(302, stablePath);
+    });
+  });
+
+  // D6 — seules ces capacités restent réellement dépendantes de Legacy 1.
+  // Cette liste est volontairement explicite : toute suppression exige une
+  // preuve de couverture Canonical, pas seulement l'existence d'un redirect.
+  const LEGACY_REQUIRED_ADMIN_PATHS = Object.freeze([
     '/admin/customs',
     '/admin/suppliers',
     '/admin/sales',
     '/admin/transitaire',
-    '/admin/economic',
-    '/admin/pilotage-fin',
     '/admin/sante',
     '/admin/shared-carts',
     '/admin/simulator',
-  ];
+  ]);
 
-  ADMIN_DASHBOARD_PATHS.forEach(routePath => {
-    app.get(routePath, (req, res) => {
-      const stablePath = LEGACY_CANONICAL_REDIRECTS[routePath];
-      if (stablePath && !(req.query && req.query.legacy === '1')) {
-        return res.redirect(302, stablePath);
-      }
+  LEGACY_REQUIRED_ADMIN_PATHS.forEach(routePath => {
+    app.get(routePath, (_req, res) => {
       sendLegacyAdmin(res);
     });
   });
