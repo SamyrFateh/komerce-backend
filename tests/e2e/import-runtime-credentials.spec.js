@@ -18,7 +18,17 @@ const CSS = ['base', 'canonical-theme-v2', 'canonical-shell-v4', 'canonical-lega
 const BASE = '/api/admin/workspaces/sourcing/sources';
 const json = (route, body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
-const CJ_AUTH = { mode: 'api_key', scope: 'source', fields: [{ key: 'api_key', label: 'Clé API', secret: true }] };
+const CJ_AUTH = {
+  mode: 'api_key',
+  scope: 'source',
+  description: 'Renseignez la clé API permanente du compte CJdropshipping.',
+  fields: [{
+    key: 'api_key',
+    label: 'Clé API CJdropshipping',
+    secret: true,
+    help: 'Clé API du compte fournisseur utilisée pour autoriser Komerce.',
+  }],
+};
 const OAUTH_AUTH = { mode: 'oauth', scope: 'platform', fields: [] };
 
 function createBackend({ ref = 'api:cj', adapter = 'cj', auth = CJ_AUTH, credential = null } = {}) {
@@ -130,7 +140,9 @@ test.describe('Sources — identifiants fournisseur', () => {
     await expect(card(page).locator('[data-source-step]')).toHaveCount(0);
     await expect(card(page).locator('[data-source-toggle]')).toBeDisabled();
 
-    // Formulaire dérivé du contrat auth : un champ secret, de type password, vide.
+    // Formulaire dérivé du contrat auth : l'opérateur sait quoi fournir, sans nom de variable Railway.
+    await expect(card(page).locator('[data-credentials-guidance]')).toContainText('clé API permanente du compte CJdropshipping');
+    await expect(card(page).locator('.kir-wizard-field', { hasText: 'Clé API CJdropshipping' })).toContainText('autoriser Komerce');
     const field = card(page).locator('[data-credential-field="api_key"]');
     await expect(field).toHaveAttribute('type', 'password');
     await expect(field).toHaveValue('');
