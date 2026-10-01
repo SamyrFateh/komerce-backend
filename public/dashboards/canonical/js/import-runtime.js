@@ -792,6 +792,38 @@
     return !['missing', 'not_required'].includes(source?.credential_status || 'missing');
   }
 
+  function onboardingRequirementLine(holder) {
+    const onboarding = holder?.onboarding || {};
+    if (holder?.onboarding_ready === false || onboarding.status === 'missing') {
+      return 'Étude API requise avant toute demande d’identifiant';
+    }
+    const obtain = Array.isArray(onboarding.operator_must_obtain) ? onboarding.operator_must_obtain : [];
+    const labels = obtain.map(item => item?.label).filter(Boolean);
+    if (labels.length) return `À préparer : ${labels.join(' + ')}`;
+    if (holder?.auth?.mode === 'oauth') return 'Autorisation du compte chez le fournisseur · aucun secret à transmettre';
+    if (holder?.auth?.scope === 'platform') return 'Identifiants d’application gérés par Komerce';
+    return 'Aucun identifiant à transmettre';
+  }
+
+  function onboardingGuidance(holder) {
+    const onboarding = holder?.onboarding || {};
+    if (!onboarding || onboarding.status !== 'defined') return '';
+    const prerequisites = Array.isArray(onboarding.prerequisites) ? onboarding.prerequisites : [];
+    const steps = Array.isArray(onboarding.setup_steps) ? onboarding.setup_steps : [];
+    const forbidden = Array.isArray(onboarding.operator_must_not_request) ? onboarding.operator_must_not_request : [];
+    const evidence = onboarding.evidence_url
+      ? `<a class="kir-wizard-link" href="${esc(onboarding.evidence_url)}" target="_blank" rel="noopener noreferrer" data-provider-documentation>Documentation fournisseur ↗</a>`
+      : '';
+    return `<div class="kir-onboarding-guidance" data-onboarding-guidance>
+      <strong>Avant de connecter</strong>
+      ${prerequisites.length ? `<p>${esc(prerequisites.join(' · '))}</p>` : ''}
+      ${steps.length ? `<ol>${steps.map(step => `<li>${esc(step)}</li>`).join('')}</ol>` : ''}
+      ${forbidden.length ? `<p class="kir-wizard-note"><strong>Ne pas demander :</strong> ${esc(forbidden.join(' · '))}</p>` : ''}
+      ${onboarding.completion ? `<p class="kir-wizard-note">${esc(onboarding.completion)}</p>` : ''}
+      ${evidence}
+    </div>`;
+  }
+
   function credentialsPanel(source, { context = 'card' } = {}) {
     const fields = credentialFields(source);
     if (!fields.length) return '';
@@ -814,12 +846,9 @@
     const inputs = fields.map(field => `<label class="kir-wizard-field">${esc(field.label || field.key)}
         <input type="${field.secret ? 'password' : 'text'}" data-credential-field="${esc(field.key)}" value=""
           autocomplete="${field.secret ? 'new-password' : 'off'}" autocapitalize="off" spellcheck="false" maxlength="4096" required ${saving ? 'disabled' : ''}>
-        ${field.help ? `<small class="kir-wizard-note">${esc(field.help)}</small>` : ''}
       </label>`).join('');
     const submitLabel = saving ? 'Enregistrement…' : (configured ? 'Remplacer et tester' : 'Configurer la connexion');
-    const guidance = source?.auth?.description
-      ? `<p class="kir-wizard-note" data-credentials-guidance>${esc(source.auth.description)}</p>`
-      : '';
+    const guidance = onboardingGuidance(source);
     return `<section class="kir-credentials" data-credentials-panel="${esc(ref)}" data-credentials-context="${context}">
       ${status}${notice}
       ${guidance}
@@ -1949,15 +1978,7 @@
   }
 
   function connectorAuthLine(connector) {
-    const auth = connector?.auth || {};
-    const fields = Array.isArray(auth.fields) ? auth.fields : [];
-    if (auth.mode === 'oauth') return auth.description || 'Connexion par autorisation du compte · aucun secret à saisir';
-    if (auth.scope === 'source' && fields.length) {
-      const labels = fields.map(field => field.label || field.key).filter(Boolean).join(' + ');
-      return auth.description || `À renseigner : ${labels}`;
-    }
-    if (auth.scope === 'platform') return auth.description || 'Identifiants gérés par Komerce';
-    return auth.description || 'Aucun identifiant à saisir';
+    return onboardingRequirementLine(connector);
   }
 
   function focusSourceCard(sourceRef) {
@@ -2083,12 +2104,16 @@
     const verified = source?.connection?.verified === true;
     const certified = source?.production_runtime_certified === true;
     const enabled = source?.autopilot_enabled === true;
+    const onboarding = source?.onboarding || connector?.onboarding || null;
+    const onboardingHolder = { onboarding, onboarding_ready: source?.onboarding_ready ?? connector?.onboarding_ready, auth: source?.auth || connector?.auth };
     const connect = connector?.connection_mode === 'oauth'
-      ? `<p class="kir-wizard-note">Reliez d’abord le compte fournisseur, puis testez la connexion.</p>
+      ? `${onboardingGuidance(onboardingHolder)}
+         <p class="kir-wizard-note">Reliez ensuite le compte fournisseur, puis testez la connexion.</p>
          <a class="kir-wizard-link" href="${esc(connector.connect_path || '#')}" target="_blank" rel="noopener" data-wizard-connect>Connecter le compte</a>`
       : credentialFields(source).length
         ? ''
-        : `<p class="kir-wizard-note">Les identifiants de ce fournisseur sont gérés côté serveur. Aucun secret n’est saisi ni affiché ici.</p>`;
+        : `${onboardingGuidance(onboardingHolder)}
+           <p class="kir-wizard-note">Aucun secret propre à cette source n’est saisi ni affiché ici.</p>`;
     const result = w.testResult
       ? (w.testResult.ok
         ? '<p class="kir-wizard-ok" data-wizard-test-result>✓ Connexion valide</p>'
@@ -2142,13 +2167,13 @@
       }).join('');
       body = `<p class="kir-wizard-q">Quel fournisseur ?</p>
         ${w.loading ? '<p class="kir-wizard-note">Chargement des connecteurs…</p>' : `<ul class="kir-wizard-list">${list}
-          <li data-wizard-connector="other"><div><strong>Autre fournisseur</strong><span>Aucun connecteur Komerce · enregistré comme « connecteur requis »</span></div>
+          <li data-wizard-connector="other"><div><strong>Autre fournisseur</strong><span>Étude API requise · aucun secret à demander tant que le contrat fournisseur n’est pas défini</span></div>
             <button type="button" class="kir-wizard-secondary" data-wizard-other>Choisir</button></li></ul>`}
         <div class="kir-wizard-actions"><button type="button" class="kir-wizard-secondary" data-wizard-back>Retour</button></div>`;
     } else if (w.step === 'other') {
       if (w.requestSaved) {
-        body = `<p class="kir-wizard-q">Statut : <strong data-wizard-request-status>Connecteur requis</strong></p>
-          <p class="kir-wizard-note">Cette source est enregistrée mais ne peut pas encore alimenter Komerce automatiquement.</p>
+        body = `<p class="kir-wizard-q">Statut : <strong data-wizard-request-status>À étudier · connecteur requis</strong></p>
+          <p class="kir-wizard-note">Prochaine étape : étudier l’API et formaliser le contrat fournisseur. Ne demandez aucun secret au partenaire tant que Komerce n’a pas défini ce qui est réellement requis.</p>
           <div class="kir-wizard-actions"><button type="button" class="kir-wizard-secondary" data-wizard-close>Configurer plus tard</button></div>`;
       } else {
         body = `<p class="kir-wizard-q">Autre fournisseur</p>
