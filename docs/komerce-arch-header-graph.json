@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 642,
-    "filesWithFullHeaders": 597,
+    "scannedCodeFiles": 643,
+    "filesWithFullHeaders": 598,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 642,
+    "filesWithAnyHeaders": 643,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1541,
-    "edges": 7650,
-    "dbTables": 176,
-    "doctrines": 532,
+    "graphNodes": 1548,
+    "edges": 7667,
+    "dbTables": 177,
+    "doctrines": 537,
     "impactAreas": 191,
-    "unresolvedCodeEdges": 764,
+    "unresolvedCodeEdges": 765,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 76
   },
@@ -41,7 +41,7 @@
     "market-delegation": 29,
     "market": 3,
     "economic-engine": 56,
-    "sourcing": 34,
+    "sourcing": 35,
     "logistics": 47,
     "boutique": 22,
     "checkout": 3,
@@ -107,7 +107,7 @@
     "schema": 1,
     "route": 130,
     "entrypoint": 1,
-    "service": 334,
+    "service": 335,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -118,7 +118,7 @@
   "byCriticality": {
     "critical": 92,
     "medium": 134,
-    "high": 362,
+    "high": 363,
     "low": 54
   },
   "nodes": [
@@ -6963,7 +6963,8 @@
       "outputs": [
         "global_sourcing_projection",
         "sourcing_action_results",
-        "source_autopilot_switch_results"
+        "source_autopilot_switch_results",
+        "source_registry_results"
       ],
       "depends": [
         "middleware/auth.js",
@@ -26867,6 +26868,60 @@
       "dbWriteViaOverlapWarning": "services/sourcing-source-autopilot.js: table(s) déclarée(s) à la fois en @db-write direct et @db-write-via -> sourcing_sources, sourcing_captures"
     },
     {
+      "id": "services/sourcing-source-registry.js",
+      "file": "services/sourcing-source-registry.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "sourcing-source-registry",
+      "domain": "sourcing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "connector_registry",
+        "operator_source_requests",
+        "authenticated_operator"
+      ],
+      "outputs": [
+        "source_connector_catalog",
+        "registered_source",
+        "connector_required_request",
+        "connection_test_result"
+      ],
+      "depends": [
+        "db.js",
+        "services/sourcing-import-dispatch.js",
+        "services/sourcing-source-autopilot.js"
+      ],
+      "usedBy": [
+        "services/sourcing-workspace.js"
+      ],
+      "dbRead": [
+        "sourcing_sources",
+        "sourcing_source_requests"
+      ],
+      "dbWrite": [
+        "sourcing_sources",
+        "sourcing_source_requests"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [],
+      "doctrine": [
+        "operator_owned_source_registry",
+        "one_source_per_adapter",
+        "fail_closed_source_creation",
+        "connection_test_is_not_certification",
+        "connector_required_is_never_a_source"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "supplier-import",
+        "admin-dashboard"
+      ],
+      "version": "2026-10"
+    },
+    {
       "id": "services/sourcing-workspace.js",
       "file": "services/sourcing-workspace.js",
       "type": "file",
@@ -26893,6 +26948,7 @@
         "services/sourcing-candidate-actions.js",
         "services/sourcing-import-dispatch.js",
         "services/sourcing-source-autopilot.js",
+        "services/sourcing-source-registry.js",
         "services/sourcing-provider-control-policy.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "services/partner-admin-service.js"
@@ -31479,6 +31535,11 @@
       "table": "sourcing_match_proposals"
     },
     {
+      "id": "db:sourcing_source_requests",
+      "type": "db-table",
+      "table": "sourcing_source_requests"
+    },
+    {
       "id": "db:supplier_catalog_import_rejections",
       "type": "db-table",
       "table": "supplier_catalog_import_rejections"
@@ -33962,6 +34023,31 @@
       "id": "doctrine:production_requires_runtime_certification",
       "type": "doctrine",
       "doctrine": "production_requires_runtime_certification"
+    },
+    {
+      "id": "doctrine:operator_owned_source_registry",
+      "type": "doctrine",
+      "doctrine": "operator_owned_source_registry"
+    },
+    {
+      "id": "doctrine:one_source_per_adapter",
+      "type": "doctrine",
+      "doctrine": "one_source_per_adapter"
+    },
+    {
+      "id": "doctrine:fail_closed_source_creation",
+      "type": "doctrine",
+      "doctrine": "fail_closed_source_creation"
+    },
+    {
+      "id": "doctrine:connection_test_is_not_certification",
+      "type": "doctrine",
+      "doctrine": "connection_test_is_not_certification"
+    },
+    {
+      "id": "doctrine:connector_required_is_never_a_source",
+      "type": "doctrine",
+      "doctrine": "connector_required_is_never_a_source"
     },
     {
       "id": "doctrine:sourcing_partners_only",
@@ -75845,6 +75931,102 @@
       "label": "supplier-import"
     },
     {
+      "from": "services/sourcing-source-registry.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "services/sourcing-import-dispatch.js",
+      "type": "depends",
+      "label": "services/sourcing-import-dispatch.js"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "services/sourcing-source-autopilot.js",
+      "type": "depends",
+      "label": "services/sourcing-source-autopilot.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/sourcing-source-registry.js",
+      "type": "uses",
+      "label": "services/sourcing-workspace.js"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "db:sourcing_sources",
+      "type": "db-read",
+      "label": "sourcing_sources"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "db:sourcing_source_requests",
+      "type": "db-read",
+      "label": "sourcing_source_requests"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "db:sourcing_sources",
+      "type": "db-write",
+      "label": "sourcing_sources"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "db:sourcing_source_requests",
+      "type": "db-write",
+      "label": "sourcing_source_requests"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "doctrine:operator_owned_source_registry",
+      "type": "doctrine",
+      "label": "operator_owned_source_registry"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "doctrine:one_source_per_adapter",
+      "type": "doctrine",
+      "label": "one_source_per_adapter"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "doctrine:fail_closed_source_creation",
+      "type": "doctrine",
+      "label": "fail_closed_source_creation"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "doctrine:connection_test_is_not_certification",
+      "type": "doctrine",
+      "label": "connection_test_is_not_certification"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "doctrine:connector_required_is_never_a_source",
+      "type": "doctrine",
+      "label": "connector_required_is_never_a_source"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "impact:sourcing",
+      "type": "impact",
+      "label": "sourcing"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "impact:supplier-import",
+      "type": "impact",
+      "label": "supplier-import"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
+    },
+    {
       "from": "services/sourcing-workspace.js",
       "to": "db.js",
       "type": "depends",
@@ -75879,6 +76061,12 @@
       "to": "services/sourcing-source-autopilot.js",
       "type": "depends",
       "label": "services/sourcing-source-autopilot.js"
+    },
+    {
+      "from": "services/sourcing-workspace.js",
+      "to": "services/sourcing-source-registry.js",
+      "type": "depends",
+      "label": "services/sourcing-source-registry.js"
     },
     {
       "from": "services/sourcing-workspace.js",
@@ -107426,6 +107614,7 @@
         "impact:supplier-import",
         "routes/sourcing-scanner.js",
         "services/sourcing-source-autopilot.js",
+        "services/sourcing-source-registry.js",
         "services/sourcing-workspace.js",
         "services/suppliers/connectors/aliexpress-connected-connector.js",
         "services/suppliers/connectors/aliexpress-connector.js",
@@ -107977,8 +108166,62 @@
         "services/sourcing-observation-shadow-service.js",
         "services/sourcing-provider-control-policy.js",
         "services/sourcing-source-autopilot.js",
+        "services/sourcing-source-registry.js",
         "services/sourcing-workspace.js",
         "services/suppliers/catalog-import-orchestrator.js"
+      ]
+    },
+    "services/sourcing-source-registry.js": {
+      "role": "sourcing-source-registry",
+      "domain": "sourcing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db.js",
+        "services/sourcing-import-dispatch.js",
+        "services/sourcing-source-autopilot.js"
+      ],
+      "directUsedBy": [
+        "services/sourcing-workspace.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "sourcing_sources",
+        "sourcing_source_requests"
+      ],
+      "dbWrite": [
+        "sourcing_sources",
+        "sourcing_source_requests"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "operator_owned_source_registry",
+        "one_source_per_adapter",
+        "fail_closed_source_creation",
+        "connection_test_is_not_certification",
+        "connector_required_is_never_a_source"
+      ],
+      "impactAreas": [
+        "sourcing",
+        "supplier-import",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:sourcing_source_requests",
+        "db:sourcing_sources",
+        "doctrine:connection_test_is_not_certification",
+        "doctrine:connector_required_is_never_a_source",
+        "doctrine:fail_closed_source_creation",
+        "doctrine:one_source_per_adapter",
+        "doctrine:operator_owned_source_registry",
+        "impact:admin-dashboard",
+        "impact:sourcing",
+        "impact:supplier-import",
+        "services/sourcing-import-dispatch.js",
+        "services/sourcing-source-autopilot.js",
+        "services/sourcing-workspace.js"
       ]
     },
     "services/sourcing-workspace.js": {
@@ -107995,6 +108238,7 @@
         "services/sourcing-candidate-actions.js",
         "services/sourcing-import-dispatch.js",
         "services/sourcing-source-autopilot.js",
+        "services/sourcing-source-registry.js",
         "services/sourcing-provider-control-policy.js",
         "services/suppliers/catalog-import-orchestrator.js",
         "services/partner-admin-service.js"
@@ -108104,6 +108348,7 @@
         "services/sourcing-mutations.js",
         "services/sourcing-provider-control-policy.js",
         "services/sourcing-source-autopilot.js",
+        "services/sourcing-source-registry.js",
         "services/suppliers/catalog-import-orchestrator.js"
       ]
     },
@@ -112010,6 +112255,16 @@
       ]
     },
     {
+      "table": "sourcing_sources",
+      "writerCount": 4,
+      "writers": [
+        "services/sourcing-observation-shadow-service.js",
+        "services/sourcing-provider-control-policy.js",
+        "services/sourcing-source-autopilot.js",
+        "services/sourcing-source-registry.js"
+      ]
+    },
+    {
       "table": "supplier_oauth_connections",
       "writerCount": 4,
       "writers": [
@@ -112108,15 +112363,6 @@
       "writers": [
         "services/sourcing-catalog-change-observation.js",
         "services/sourcing-observation-shadow-service.js",
-        "services/sourcing-source-autopilot.js"
-      ]
-    },
-    {
-      "table": "sourcing_sources",
-      "writerCount": 3,
-      "writers": [
-        "services/sourcing-observation-shadow-service.js",
-        "services/sourcing-provider-control-policy.js",
         "services/sourcing-source-autopilot.js"
       ]
     },
@@ -116324,6 +116570,12 @@
     },
     {
       "from": "services/sourcing-source-autopilot.js",
+      "to": "db.js",
+      "type": "depends",
+      "label": "db.js"
+    },
+    {
+      "from": "services/sourcing-source-registry.js",
       "to": "db.js",
       "type": "depends",
       "label": "db.js"

@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 642
-- Files with full headers: 597
+- Scanned code files: 643
+- Files with full headers: 598
 - Files with lite headers: 45
-- Files with any headers: 642
+- Files with any headers: 643
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1541
-- Edges: 7650
-- DB tables: 176
-- Doctrines: 532
+- Graph nodes: 1548
+- Edges: 7667
+- DB tables: 177
+- Doctrines: 537
 - Impact areas: 191
-- Unresolved code edges: 764
+- Unresolved code edges: 765
 - Tables multi-écrivains directs (>=2): 76
 - Avertissements db-write / db-write-via en chevauchement: 8
 
@@ -61,7 +61,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - shared: 1
 - shared-cart: 25
 - shared-cart-modal: 7
-- sourcing: 34
+- sourcing: 35
 - supplier-connectivity: 3
 - tracking: 1
 - unsold-resolution: 1
@@ -87,7 +87,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 130
 - route-manifest: 1
 - schema: 1
-- service: 334
+- service: 335
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -517,6 +517,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/sourcing-shadow-quantity-trial.js — sourcing-shadow-quantity-trial (sourcing, high, full)
 - services/sourcing-shadow-resolution-service.js — sourcing-shadow-resolution-owner (sourcing, high, full)
 - services/sourcing-source-autopilot.js — sourcing-source-autopilot (sourcing, high, full)
+- services/sourcing-source-registry.js — sourcing-source-registry (sourcing, high, full)
 - services/sourcing-workspace.js — canonical-sourcing-workspace-service (sourcing, high, full)
 - services/supplier-catalog-scanner.js — catalog-supplier-catalog-scanner (catalog, high, full)
 - services/suppliers/aliexpress-discovery.js — aliexpress-source-discovery (sourcing, high, full)
@@ -889,6 +890,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - product_skus: 4 écrivains directs — services/catalog-promotion.js, services/catalog-stock-sync-application.js, services/product-sku-service.js, services/product-stock-service.js
 - product_variants: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/product-stock-service.js, services/product-variant-service.js
 - sourcing_candidates: 4 écrivains directs — routes/sourcing-scanner.js, services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js, services/suppliers/catalog-import-json.js
+- sourcing_sources: 4 écrivains directs — services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js
 - supplier_oauth_connections: 4 écrivains directs — routes/integrations-aliexpress.js, services/suppliers/aliexpress-oauth.js, services/suppliers/allegro-sandbox-client.js, services/suppliers/connectors/aliexpress-connected-connector.js
 - wallet_transactions: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
 - wallets: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js
@@ -900,7 +902,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - relais: 3 écrivains directs — routes/admin/system.js, services/relais-mutation-service.js, services/routing.js
 - sms_log: 3 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js
 - sourcing_captures: 3 écrivains directs — services/sourcing-catalog-change-observation.js, services/sourcing-observation-shadow-service.js, services/sourcing-source-autopilot.js
-- sourcing_sources: 3 écrivains directs — services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-autopilot.js
 - wallet_consumptions: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - wallet_credit_lots: 3 écrivains directs — routes/admin/system.js, routes/wallet.js, services/wallet-service.js
 - business_rules: 2 écrivains directs — routes/admin-rules.js, utils/rules.js

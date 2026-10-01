@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-09-30T16:32:40.454Z",
+  "generatedAt": "2026-10-01T02:52:27.959Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 663,
-    "protected": 608,
+    "total": 668,
+    "protected": 613,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2367,6 +2367,46 @@
     },
     {
       "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/import-now",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/prepare",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/test-connection",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/sourcing/sources/catalog",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/sources/requests",
+      "level": "PROTECTED",
+      "roles": [
+        "admin",
+        "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/sourcing/sources",
       "level": "PROTECTED",
       "roles": [
         "admin",

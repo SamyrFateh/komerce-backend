@@ -6960,7 +6960,7 @@
             ]
           },
           "tests": {
-            "count": 136,
+            "count": 137,
             "files": [
               {
                 "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
@@ -6975,6 +6975,11 @@
               {
                 "declared": "tests/e2e/import-runtime-cockpit.spec.js",
                 "resolvedPath": "tests/e2e/import-runtime-cockpit.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/import-runtime-source-registry.spec.js",
+                "resolvedPath": "tests/e2e/import-runtime-source-registry.spec.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7645,7 +7650,7 @@
             ]
           }
         },
-        "totalFiles": 292,
+        "totalFiles": 293,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -26766,7 +26771,7 @@
             ]
           },
           "migrations": {
-            "count": 12,
+            "count": 13,
             "files": [
               {
                 "declared": "migrations/041_sourcing_candidates.sql",
@@ -26827,6 +26832,11 @@
                 "declared": "migrations/258_import_runtime_item_events.sql",
                 "resolvedPath": "migrations/258_import_runtime_item_events.sql",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/260_sourcing_source_registry.sql",
+                "resolvedPath": "migrations/260_sourcing_source_registry.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
               }
             ]
           },
@@ -26886,7 +26896,7 @@
             ]
           },
           "services": {
-            "count": 31,
+            "count": 32,
             "files": [
               {
                 "declared": "services/catalog-product-read-cutover-trial.js",
@@ -27034,6 +27044,11 @@
                 "status": "resolved-in-technical-graph"
               },
               {
+                "declared": "services/sourcing-source-registry.js",
+                "resolvedPath": "services/sourcing-source-registry.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
                 "declared": "services/sourcing-workspace.js",
                 "resolvedPath": "services/sourcing-workspace.js",
                 "status": "resolved-in-technical-graph"
@@ -27046,7 +27061,7 @@
             ]
           },
           "tests": {
-            "count": 48,
+            "count": 52,
             "files": [
               {
                 "declared": "tests/integration/catalog-change-sku-identity-proof-real-db.test.js",
@@ -27076,6 +27091,11 @@
               {
                 "declared": "tests/integration/sourcing-candidate-stock-zero-real-db.test.js",
                 "resolvedPath": "tests/integration/sourcing-candidate-stock-zero-real-db.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/sourcing-source-registry-real-db.test.js",
+                "resolvedPath": "tests/integration/sourcing-source-registry-real-db.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -27209,6 +27229,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/sourcing-import-dispatch-connection.test.js",
+                "resolvedPath": "tests/unit/sourcing-import-dispatch-connection.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/sourcing-integrity-audit.test.js",
                 "resolvedPath": "tests/unit/sourcing-integrity-audit.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -27274,8 +27299,18 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/sourcing-source-registry.test.js",
+                "resolvedPath": "tests/unit/sourcing-source-registry.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/sourcing-workspace-source-control.test.js",
                 "resolvedPath": "tests/unit/sourcing-workspace-source-control.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/sourcing-workspace-source-registry.test.js",
+                "resolvedPath": "tests/unit/sourcing-workspace-source-registry.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -27291,7 +27326,7 @@
             ]
           }
         },
-        "totalFiles": 101,
+        "totalFiles": 107,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
