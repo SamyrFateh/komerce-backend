@@ -44,13 +44,13 @@ async function recordProductPriceChange(q = db, {
 } = {}) {
   if (!productId) return { skipped: true, reason: 'missing_product_id' };
 
-  const oldPrice = Number(oldPriceKmf || 0);
+  const oldPrice = oldPriceKmf == null ? null : Number(oldPriceKmf);
   const newPrice = Number(newPriceKmf || 0);
 
   if (!Number.isFinite(newPrice) || newPrice <= 0) {
     return { skipped: true, reason: 'invalid_new_price' };
   }
-  if (oldPrice === newPrice) {
+  if (oldPrice != null && oldPrice === newPrice) {
     return { skipped: true, reason: 'unchanged' };
   }
 
