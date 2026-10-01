@@ -76,9 +76,17 @@ async function deleteSupplier(id, forceDelete = false) {
       throw err;
     }
 
-    const posQuery = (isTestSupplier && forceDelete)
-      ? `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status != 'cancelled'`
-      : `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status IN ('pending', 'notified')`;
+    // Double écriture (PR 1) : les lignes des PO annulées le sont dans la même instruction.
+    const poFilter = (isTestSupplier && forceDelete)
+      ? `supplier_id = $1 AND status != 'cancelled'`
+      : `supplier_id = $1 AND status IN ('pending', 'notified')`;
+    const posQuery = `WITH upd AS (
+        UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE ${poFilter} RETURNING id
+      ), lines AS (
+        UPDATE purchase_lines SET cancelled_at = NOW(), cancel_reason = 'purchase_order_cancelled', updated_at = NOW()
+         WHERE purchase_order_id IN (SELECT id FROM upd) AND cancelled_at IS NULL
+      )
+      SELECT id FROM upd`;
     const { rowCount: posCancelled } = await client.query(posQuery, [id]);
 
     const { rowCount: mappingsDeleted } = await client.query(
@@ -180,8 +188,10 @@ async function confirmPurchaseOrder(poId, orderId, data = {}, options = {}) {
     verifiedSupplierOrderId = evidence.external_ref;
   }
 
+  // Double écriture (PR 1) : la ligne unique de la PO porte la quantité/prix confirmés (même instruction).
   const { rows: [po] } = await db.query(
-    `UPDATE purchase_orders
+    `WITH upd AS (
+     UPDATE purchase_orders
       SET
         status            = 'confirmed',
         supplier_order_id = COALESCE($1, supplier_order_id),
@@ -193,7 +203,15 @@ async function confirmPurchaseOrder(poId, orderId, data = {}, options = {}) {
         confirmed_at      = NOW(),
         updated_at        = NOW()
       WHERE id = $6 AND order_id = $7
-      RETURNING *`,
+      RETURNING *
+     ), lines AS (
+       UPDATE purchase_lines pl
+          SET confirmed_quantity = upd.qty, confirmed_unit_price = upd.supplier_unit_price,
+              confirmed_at = NOW(), updated_at = NOW()
+         FROM upd
+        WHERE pl.purchase_order_id = upd.id AND pl.confirmed_quantity IS NULL AND pl.cancelled_at IS NULL
+     )
+     SELECT * FROM upd`,
     [verifiedSupplierOrderId, unit_price_aed, tracking_url, tracking_number, notes, poId, orderId]
   );
   if (!po) {
@@ -245,7 +263,11 @@ async function cancelPurchaseOrder(poId, forceDelete = false) {
   }
 
   await db.query(
-    `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1`,
+    `WITH upd AS (
+       UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1 RETURNING id
+     )
+     UPDATE purchase_lines SET cancelled_at = NOW(), cancel_reason = 'purchase_order_cancelled', updated_at = NOW()
+      WHERE purchase_order_id IN (SELECT id FROM upd) AND cancelled_at IS NULL`,
     [poId]
   );
 

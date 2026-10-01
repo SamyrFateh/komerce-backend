@@ -416,3 +416,10 @@ AliExpress expose placeOrder exploitable   ← capacité fournisseur à prouver
 10. **Le Hub est une capacité/rôle résolu ; Dubai est la route V1 actuelle, pas une hypothèse universelle du moteur.**
 11. **Une capacité API fournisseur absente ne peut jamais être simulée comme disponible.**
 12. **Une incapacité API fournisseur n'empêche pas de prouver séparément la cohérence du modèle Komerce en staging.**
+
+## 12bis. Ligne d'achat (purchase_lines) — fondation
+
+Chaîne cible : `ORDER → ORDER_ITEM → PURCHASE_LINE → PURCHASE_ORDER → KOM-IN → HUB`. `purchase_lines` est la ligne canonique de ce qu'on achète ; `purchase_orders` reste l'en-tête fournisseur. Pas de PurchaseBatch, SupplierCommitment ni SupplierShipment ; le modèle physique HUB-001 est inchangé.
+
+- Migration 263 : table, garde anti-double-achat (quantité effective d'un order_item ≤ `order_items.quantity`, sous verrou), lignes figées une fois confirmées/réglées/annulées, pas de suppression directe, backfill 1:1 des PO historiques (hub `DXB`, configurable `KOMERCE_PROCUREMENT_HUB_REF`).
+- PR 1 : écriture double uniquement (création, confirmation, annulation) ; aucune lecture ne dépend de la ligne. Contrôle : `npm run purchase-lines:parity`.

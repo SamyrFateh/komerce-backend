@@ -139,6 +139,10 @@ describe('deleteSupplier', () => {
     expect(result.pos_cancelled).toBe(2);
     expect(result.mappings_deleted).toBe(3);
     expect(client.released).toBe(true);
+    // double écriture : les lignes d'achat des PO annulées le sont dans la même instruction
+    const poUpdate = client.calls.find(c => /UPDATE purchase_orders/.test(c.sql));
+    expect(poUpdate.sql).toContain('UPDATE purchase_lines');
+    expect(poUpdate.sql).toContain("status != 'cancelled'");
   });
 
   test('cas nominal (pas de PO confirmée) → soft-delete + annulation pending', async () => {
@@ -218,6 +222,11 @@ describe('confirmPurchaseOrder', () => {
 
     expect(result).toMatchObject({ success: true });
     expect(result.purchase_order.status).toBe('confirmed');
+    // double écriture : la ligne de la PO reçoit quantité/prix confirmés dans la même instruction
+    const sql = mockQuery.mock.calls[1][0];
+    expect(sql).toContain('UPDATE purchase_lines');
+    expect(sql).toContain('confirmed_quantity IS NULL');
+    expect(sql).toMatch(/SELECT \* FROM upd/);
   });
 
   test('nominal (notified → confirmed) → idem', async () => {
@@ -304,6 +313,9 @@ describe('cancelPurchaseOrder', () => {
       po_id: 'po-uuid',
       previous_status: 'pending',
     });
+    const sql = mockQuery.mock.calls[1][0];
+    expect(sql).toContain("cancel_reason = 'purchase_order_cancelled'");
+    expect(sql).toContain('cancelled_at IS NULL');
   });
 
   test('statut "hub_received" avec force → annulé', async () => {

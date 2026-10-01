@@ -69,11 +69,16 @@ async function syncPurchaseOrdersOnOrderCancel(q = db, { orderId, orderReference
 
   if (autoIds.length) {
     await q.query(
-      `UPDATE purchase_orders
-          SET status = 'cancelled',
-              updated_at = NOW(),
-              notes = CONCAT(COALESCE(notes, ''), $2::text)
-        WHERE id = ANY($1::uuid[])`,
+      `WITH upd AS (
+         UPDATE purchase_orders
+            SET status = 'cancelled',
+                updated_at = NOW(),
+                notes = CONCAT(COALESCE(notes, ''), $2::text)
+          WHERE id = ANY($1::uuid[])
+          RETURNING id
+       )
+       UPDATE purchase_lines SET cancelled_at = NOW(), cancel_reason = 'order_cancelled', updated_at = NOW()
+        WHERE purchase_order_id IN (SELECT id FROM upd) AND cancelled_at IS NULL`,
       [
         autoIds,
         `\n[I-SWEEP-5A] Annulée automatiquement avec la commande${reason ? ` — ${reason}` : ''}`,

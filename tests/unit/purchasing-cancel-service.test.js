@@ -66,6 +66,7 @@ describe('purchasing-cancel-service', () => {
     expect(q.query.mock.calls[1][0]).toContain("SET status = 'cancelled'");
     expect(q.query.mock.calls[1][1][0]).toEqual(['po-pending', 'po-notified']);
     expect(q.query.mock.calls[1][1][1]).toContain('client_cancel');
+    expect(q.query.mock.calls[1][0]).toContain("cancel_reason = 'order_cancelled'");
     expect(q.query.mock.calls[3][0]).toContain('INSERT INTO alerts');
     expect(q.query.mock.calls[3][1]).toEqual(expect.arrayContaining(['order_cancel_purchasing_blocked', 'order', 'order-001', 'medium']));
   });
