@@ -88,6 +88,26 @@ describe('état canonique projeté par le backend', () => {
     expect(project({})).toMatchObject({ state: 'ready', autopilot_ready: true, connection: { verified: true } });
   });
 
+  test('la projection cockpit conserve le contrat d onboarding provider sans secret', () => {
+    const onboarding = {
+      status: 'defined',
+      authority: 'provider_documentation',
+      evidence_url: 'https://developers.cjdropshipping.com/en/summary/course.html',
+      prerequisites: ['Compte CJ avec accès API'],
+      setup_steps: ['Créer ou récupérer la clé API'],
+      operator_must_obtain: [{ key: 'api_key', label: 'Clé API CJdropshipping' }],
+      operator_must_not_request: ['Mot de passe CJ'],
+      completion: 'Renseigner la clé puis tester',
+    };
+    expect(project({ onboarding_ready: true, onboarding })).toMatchObject({
+      onboarding_ready: true,
+      onboarding: {
+        status: 'defined',
+        operator_must_obtain: [{ key: 'api_key', label: 'Clé API CJdropshipping' }],
+      },
+    });
+  });
+
   test('ACTIVE : autopilot ON et source réellement prête', () => {
     expect(project({ autopilot_enabled: true })).toMatchObject({ state: 'active', autopilot_ready: true });
   });
