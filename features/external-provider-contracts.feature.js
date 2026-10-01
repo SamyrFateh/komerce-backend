@@ -87,6 +87,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/provider-contract-proof.test.js',
+      'tests/unit/external-provider-onboarding-contracts.test.js',
       'tests/unit/external-provider-boundary-scan.test.js',
       'tests/unit/external-provider-batch-proof.test.js',
       'tests/unit/stripe-provider-contract-proof.test.js',
