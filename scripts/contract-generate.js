@@ -475,6 +475,16 @@ const KNOWN_RESPONSES = {
   '/api/admin/workspaces/sourcing/imports': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/sourcing/sources/{sourceRef}/import-now': { post: { fields: ['ok','action','result'], source: 'test' } },
+  // D2 — Supplier contracts : forme sendAction() prouvée directement dans la route.
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/activate': { post: { fields: ['ok','action','result'], source: 'route-read' } },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/deactivate': { post: { fields: ['ok','action','result'], source: 'route-read' } },
+
+  // D2 — AliExpress OAuth : la route délègue à un service dont la projection sûre
+  // est explicite. Les réponses non JSON sont remplacées plus bas par RESPONSE_OVERRIDES.
+  '/api/integrations/aliexpress/oauth/start': { get: { fields: ['_redirect_only'], source: 'test' } },
+  '/api/integrations/aliexpress/oauth/callback': { get: { fields: ['_html_only'], source: 'test' } },
+  '/api/integrations/aliexpress/status': { get: { fields: ['connected','supplier','source','access_expires_at','refresh_expires_at','provider_user_id','provider_user_nick','last_refreshed_at','reason'], source: 'service-read' } },
+  '/api/integrations/aliexpress/oauth/refresh': { post: { fields: ['connected','supplier','source','access_expires_at','refresh_expires_at','provider_user_id','provider_user_nick','last_refreshed_at'], source: 'service-read' } },
   '/api/admin/workspaces/sourcing/products/{productRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/sourcing/candidates/{candidateRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/sourcing/candidates/{candidateRef}/scan': { post: { fields: ['ok','action','result'], source: 'test' } },
@@ -2378,6 +2388,7 @@ if (inventory.length < 150) {
 }
 
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'GET /api/integrations/aliexpress/oauth/start': '302',
   'POST /api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe': '201',
   'POST /api/providers-services/inquiries': '201',
 });
@@ -2387,6 +2398,28 @@ const SUCCESS_STATUS_OVERRIDES = Object.freeze({
 // KNOWN_RESPONSES (pas un schéma de corps, juste un code de statut documenté en plus).
 // Format : "METHOD /chemin/{param}" → { [code]: { description } }
 const RESPONSE_OVERRIDES = {
+  'GET /api/integrations/aliexpress/oauth/start': {
+    '302': {
+      description: 'Redirection vers l’autorisation OAuth AliExpress',
+      headers: { Location: { schema: { type: 'string' } } },
+    },
+    '503': { description: 'AliExpress OAuth non configuré' },
+  },
+  'GET /api/integrations/aliexpress/oauth/callback': {
+    '200': {
+      description: 'Autorisation AliExpress enregistrée',
+      content: { 'text/html': { schema: { type: 'string', 'x-contract-status': 'test' } } },
+    },
+    '400': { description: 'État OAuth invalide, autorisation refusée ou code absent' },
+    '502': { description: 'Échange OAuth AliExpress impossible' },
+  },
+  'GET /api/integrations/aliexpress/status': {
+    '503': { description: 'Statut AliExpress indisponible' },
+  },
+  'POST /api/integrations/aliexpress/oauth/refresh': {
+    '409': { description: 'AliExpress non connecté' },
+    '502': { description: 'Rafraîchissement AliExpress impossible' },
+  },
   'POST /api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe': {
     '200': { description: 'Rejeu identique : observation existante' },
     '400': { description: 'Enveloppe invalide' },
