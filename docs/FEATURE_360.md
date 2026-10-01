@@ -556,6 +556,7 @@ _DÃ©tails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json â
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
 
 **Owns** : `order_incidents`, `partners`
 **Writes (not owner)** : `invoices` (writer-not-owner), `order_comments` (writer-not-owner), `order_items` (writer-not-owner), `order_status_history` (writer-not-owner), `orders` (writer-not-owner), `products` (writer-not-owner), `recipients` (writer-not-owner), `relais` (writer-not-owner), `scan_events` (writer-not-owner), `sms_log` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)
