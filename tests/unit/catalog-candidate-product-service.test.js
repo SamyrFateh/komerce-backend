@@ -6,7 +6,12 @@
  * @test-requires none
  */
 
-const { createDraftProductFromSourcingCandidate, draftStockFromCandidate } = require('../../services/catalog-candidate-product-service');
+const {
+  createDraftProductFromSourcingCandidate,
+  hasVariantsFromCandidate,
+  draftPurchaseCostFromCandidate,
+  draftStockFromCandidate,
+} = require('../../services/catalog-candidate-product-service');
 
 describe('catalog-candidate-product-service', () => {
   it('creates the inactive candidate product through the injected transaction client', async () => {
@@ -48,6 +53,7 @@ describe('catalog-candidate-product-service', () => {
       2500,
       17,
       0.4,
+      false,
       'Chemise',
       'Raw supplier description',
       'en',
@@ -69,10 +75,11 @@ describe('catalog-candidate-product-service', () => {
       'autre',
       null,
       null,
-      0,
+      null,
       900,
       0,
       null,
+      false,
       'Produit brut',
       null,
       'en',
@@ -110,6 +117,32 @@ describe('catalog-candidate-product-service', () => {
     expect(params[2]).toBe('Tech');
     expect(params[3]).toBe('Audio');
   });
+
+describe('catalog draft supplier truth', () => {
+  it('ne fabrique ni coût fournisseur ni variantes absentes', () => {
+    expect(draftPurchaseCostFromCandidate({})).toBeNull();
+    expect(draftPurchaseCostFromCandidate({ purchase_price_kmf: 0 })).toBeNull();
+    expect(draftPurchaseCostFromCandidate({ purchase_price_kmf: 1250 })).toBe(1250);
+    expect(hasVariantsFromCandidate({})).toBe(false);
+  });
+
+  it('déduit has_variants uniquement des unités fournisseur réellement optionnées', () => {
+    expect(hasVariantsFromCandidate({
+      normalized_source_contract: {
+        sellable_units: [
+          { supplier_sku: 'CJ-1', option_values: { cj_size: 'M' } },
+          { supplier_sku: 'CJ-2', option_values: { cj_size: 'L' } },
+        ],
+      },
+    })).toBe(true);
+
+    expect(hasVariantsFromCandidate({
+      normalized_source_contract: {
+        sellable_units: [{ supplier_sku: 'CJ-DEFAULT', option_values: {} }],
+      },
+    })).toBe(false);
+  });
+});
 
 describe('catalog draft stock truth', () => {
   it('reprend le stock source connu et ne fabrique jamais le défaut historique 100', () => {
