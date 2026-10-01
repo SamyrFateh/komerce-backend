@@ -44,6 +44,7 @@ const HUB_QUARANTINE_SUBTYPE_BY_REASON = Object.freeze({
   HUB_PURCHASE_ORDER_ITEM_MISMATCH: 'hub_purchase_identity_conflict',
   HUB_PURCHASE_SKU_MISMATCH: 'hub_purchase_identity_conflict',
   HUB_SUPPLIER_IDENTITY_UNRESOLVABLE: 'hub_purchase_identity_conflict',
+  HUB_INBOUND_TAG_CONTENT_MISMATCH: 'hub_purchase_identity_conflict',
   HUB_ALLOCATION_SNAPSHOT_DRIFT: 'hub_purchase_identity_conflict',
   HUB_PURCHASE_QUANTITY_INVALID: 'hub_purchase_quantity_conflict',
   HUB_ALLOCATION_OVERRECEIVED: 'hub_purchase_quantity_conflict',
@@ -571,6 +572,27 @@ async function reconcileSupplierPackageContents(executor, {
     [unitId]
   );
   if (Number(existing.count) > 0) fail('HUB_RECONCILE_ALREADY_DONE');
+
+  const { rows: [creationEvent] } = await db.query(
+    `SELECT details
+       FROM hub_custody_events
+      WHERE physical_unit_id=$1
+        AND event_type='STATE_TRANSITION'
+        AND details->>'creation'='true'
+      ORDER BY created_at ASC, id ASC
+      LIMIT 1`,
+    [unitId]
+  );
+  const expectedPurchaseOrderId = creationEvent?.details?.expected_purchase_order_id || null;
+  if (expectedPurchaseOrderId && !normalized.some((item) => String(item.purchase_order_id) === String(expectedPurchaseOrderId))) {
+    return quarantineExistingInbound(db, {
+      unit, actorId, locationRef,
+      reasonCode: 'HUB_INBOUND_TAG_CONTENT_MISMATCH',
+      reason: 'Le contenu constaté ne contient pas la Purchase Order annoncée par le tag KOM-IN',
+      contents: normalized,
+      purchaseOrderId: expectedPurchaseOrderId,
+    });
+  }
 
   const resolved = [];
   for (const content of normalized) {
