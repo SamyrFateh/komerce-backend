@@ -97,6 +97,33 @@ describe('computeRecommend', () => {
     });
   });
 
+  it('reprend poids et volume persistés du produit au lieu des défauts de simulation', async () => {
+    mockDbQuery.mockImplementation((sql) => {
+      if (sql.includes('SELECT * FROM products WHERE id = $1')) {
+        return Promise.resolve({ rows: [{
+          id: 'p1', category: 'phones', cost_kmf: 1380, price_kmf: null,
+          weight_kg: 0.25, volume_cm3: 1200,
+        }] });
+      }
+      if (sql.includes('FROM finance_config')) return Promise.resolve({ rows: [{ taux_aed_kmf: 138 }] });
+      if (sql.includes('FROM pricing_components')) return Promise.resolve({ rows: [] });
+      if (sql.includes('FROM risk_provisions')) return Promise.resolve({ rows: [] });
+      if (sql.includes('FROM charges')) return Promise.resolve({ rows: [] });
+      if (sql.includes('FROM customs_categories')) return Promise.resolve({ rows: [] });
+      return Promise.resolve({ rows: [] });
+    });
+    mockRecommend.mockResolvedValue({ recommended_price_kmf: 5000, fully_loaded_cost_reference_kmf: 3000, warnings: [] });
+
+    await computeRecommend({ product_id: 'p1' });
+
+    expect(mockRecommend).toHaveBeenCalledWith(expect.objectContaining({
+      product_id: 'p1',
+      weight_kg: 0.25,
+      volume_m3: 0.0012,
+      current_price_kmf: null,
+    }));
+  });
+
   it('avertit si prix_aed est manquant et aucun produit fourni', async () => {
     mockGlobalParams();
     const result = await computeRecommend({});
@@ -206,6 +233,22 @@ describe('computeRecommendBatch', () => {
     expect(result.count).toBe(1);
     expect(['aligned', 'underpriced', 'overpriced', 'unset']).toContain(result.items[0].status);
     expect(result.summary.aligned + result.summary.underpriced + result.summary.overpriced).toBe(1);
+  });
+
+  it('batch utilise le volume canonique persistant quand il existe', async () => {
+    mockDbQuery
+      .mockResolvedValueOnce({
+        rows: [{ id: 'p1', name: 'A', category: 'phones', price_kmf: 1000, cost_kmf: 500, weight_kg: 0.5, volume_cm3: 2500 }],
+      })
+      .mockImplementation((sql) => {
+        if (sql.includes('FROM finance_config')) return Promise.resolve({ rows: [{}] });
+        return Promise.resolve({ rows: [] });
+      });
+    mockLoadGlobalConfig.mockRejectedValue(new Error('no doctrine'));
+
+    const result = await computeRecommendBatch({});
+
+    expect(result.items[0].volume_m3).toBe(0.0025);
   });
 
   it('classe un produit sans prix courant (price_kmf=0) comme underpriced (unset compte comme underpriced)', async () => {

@@ -66,6 +66,8 @@ test('runtime Pricing n’importe aucune vue Legacy ni API historique', () => {
   expect(source).not.toContain('/api/admin/cost-components');
   expect(source).not.toContain('/api/admin/economic');
   expect(source).toContain('/api/admin/workspaces/pricing');
+  expect(source).toContain("get('product_ref')");
+  expect(source).toContain('requestedProductRef');
   expect(source).toContain('Santé économique globale');
   expect(source).toContain('Variables économiques');
   expect(source).toContain('Charges économiques');

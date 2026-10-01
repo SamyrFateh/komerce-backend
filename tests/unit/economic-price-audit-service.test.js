@@ -33,6 +33,16 @@ describe('economic-price-audit-service', () => {
     ]);
   });
 
+  it('conserve null comme origine du premier prix', async () => {
+    const q = { query: jest.fn().mockResolvedValueOnce({ rows: [], rowCount: 1 }) };
+
+    await expect(recordProductPriceChange(q, {
+      productId: 'prod-001', oldPriceKmf: null, newPriceKmf: 1500,
+    })).resolves.toEqual({ inserted: true, enriched: true });
+
+    expect(q.query.mock.calls[0][1][1]).toBeNull();
+  });
+
   it('fallback sur insertion simple si schema enrichi indisponible', async () => {
     const q = { query: jest.fn()
       .mockRejectedValueOnce(new Error('column missing'))

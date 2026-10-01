@@ -164,10 +164,17 @@ describe('pricing-output', () => {
   it('buildDataQuality qualifie sources, manquants et confidence', () => {
     expect(buildDataQuality(
       { product_id: 'p1', weight_kg: 1, volume_m3: 0.1 },
-      { hasProduct: true, hasCustomsCategory: true, hasFinanceConfig: true, warnings: [] },
+      { hasProduct: true, hasPurchaseCost: true, hasProductWeight: true, hasProductVolume: true, hasCustomsCategory: true, hasFinanceConfig: true, warnings: [] },
     )).toMatchObject({ confidence: 'medium', missing_fields: [] });
 
-    const low = buildDataQuality({}, { hasProduct: false, hasCustomsCategory: false, hasFinanceConfig: false, warnings: ['a', 'b', 'c'] });
+    const missingCost = buildDataQuality(
+      { product_id: 'p1' },
+      { hasProduct: true, hasPurchaseCost: false, hasProductWeight: false, hasProductVolume: false, hasCustomsCategory: true, hasFinanceConfig: true, warnings: [] },
+    );
+    expect(missingCost.sources.purchase_price).toBe('missing');
+    expect(missingCost.missing_fields).toContain('purchase_price');
+
+    const low = buildDataQuality({}, { hasProduct: false, hasPurchaseCost: false, hasProductWeight: false, hasProductVolume: false, hasCustomsCategory: false, hasFinanceConfig: false, warnings: ['a', 'b', 'c'] });
     expect(low.confidence).toBe('low');
     expect(low.missing_fields).toEqual(expect.arrayContaining(['purchase_price', 'weight', 'volume', 'customs_category']));
   });

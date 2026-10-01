@@ -126,16 +126,21 @@ async function recommend(input, options = {}) {
     if (result.rows.length) product = result.rows[0];
   }
 
+  const productVolumeM3 = Number(product?.volume_cm3) > 0
+    ? Number(product.volume_cm3) / 1_000_000
+    : null;
+  const inputVolumeM3 = Number(input.volume_m3) > 0 ? Number(input.volume_m3) : null;
   const merged = {
     id: input.product_id || product?.id || null,
     category: input.category || product?.category || 'phones',
     cost_kmf: input.cost_kmf != null ? input.cost_kmf : product?.cost_kmf,
     weight_kg: input.weight_kg != null ? input.weight_kg : product?.weight_kg,
+    volume_m3: inputVolumeM3 ?? productVolumeM3,
     price_kmf: input.current_price_kmf != null ? input.current_price_kmf : product?.price_kmf,
   };
   const ctx = {
     config,
-    volume_m3: input.volume_m3 || 0.005,
+    volume_m3: merged.volume_m3 ?? 0.005,
     channel: input.channel || 'cash_relais',
   };
 
@@ -154,7 +159,8 @@ async function recommend(input, options = {}) {
   const structureAllocationReference = r(breakdown.business?.fixed_overhead || 0);
   const fullyLoadedAnalyticalReference = r(variableComplete + structureAllocationReference);
 
-  const currentPrice = Number(merged.price_kmf) || 0;
+  const currentPriceRaw = merged.price_kmf == null ? null : Number(merged.price_kmf);
+  const currentPrice = Number.isFinite(currentPriceRaw) && currentPriceRaw > 0 ? currentPriceRaw : null;
   const estimatedContribution = currentPrice > 0 ? currentPrice - variableComplete : null;
   const estimatedContributionRate = currentPrice > 0
     ? ((currentPrice - variableComplete) / currentPrice) * 100
@@ -205,6 +211,9 @@ async function recommend(input, options = {}) {
   const warnings = [...(cdr.warnings || []), ...market.warnings];
   const dataQuality = buildDataQuality(input, {
     hasProduct: !!product,
+    hasPurchaseCost: Number(product?.cost_kmf) > 0,
+    hasProductWeight: Number(product?.weight_kg) > 0,
+    hasProductVolume: productVolumeM3 != null,
     hasCustomsCategory: !!cat,
     hasFinanceConfig: Object.keys(fc).length > 0,
     warnings,
@@ -311,7 +320,7 @@ async function recommend(input, options = {}) {
       allocation_averages: allocationAverages,
     },
 
-    current_price_kmf: r(currentPrice),
+    current_price_kmf: currentPrice == null ? null : r(currentPrice),
     survival_price_kmf: prices.survival_price_kmf,
     test_price_kmf: prices.test_price_kmf,
     scenarios,
