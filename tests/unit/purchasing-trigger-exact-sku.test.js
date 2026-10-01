@@ -113,7 +113,7 @@ describe('purchasing exact SKU procurement', () => {
       if (sql.startsWith('SELECT id, status FROM purchase_orders')) return { rows: [] };
       if (sql.includes('INSERT INTO purchase_orders')) {
         insertParams = params;
-        return { rows: [{ id: 'po1' }] };
+        return { rows: [{ id: '00000000-0000-0000-0000-000000000201' }] };
       }
       if (sql.startsWith('UPDATE purchase_orders')) return { rows: [] };
       throw new Error(`SQL inattendu: ${sql}`);
@@ -123,7 +123,8 @@ describe('purchasing exact SKU procurement', () => {
     const result = await triggerPurchasing(ORDER.id);
 
     expect(result.purchase_orders[0]).toEqual({
-      item: 'T-shirt', status: 'admin_notified', purchase_order_id: 'po1',
+      item: 'T-shirt', status: 'admin_notified', purchase_order_id: '00000000-0000-0000-0000-000000000201',
+    inbound_tag: 'KOM-IN-00000000000000000000000000000201',
     });
     expect(evaluateCanonicalProcurementReadiness).toHaveBeenCalledWith(expect.objectContaining({
       productSkuId: 'sku-black-m', quantity: 2, soldIdentity: IDENTITY,
@@ -190,7 +191,7 @@ describe('purchasing exact SKU procurement', () => {
         api_secret_enc: null, lead_time_days: 5, supplier_url: null,
       }] };
       if (sql.startsWith('SELECT id, status FROM purchase_orders')) return { rows: [] };
-      if (sql.includes('INSERT INTO purchase_orders')) return { rows: [{ id: 'po1' }] };
+      if (sql.includes('INSERT INTO purchase_orders')) return { rows: [{ id: '00000000-0000-0000-0000-000000000201' }] };
       if (sql.startsWith('UPDATE purchase_orders')) { updateSql = sql; return { rows: [] }; }
       throw new Error(`SQL inattendu: ${sql}`);
     });
@@ -199,7 +200,8 @@ describe('purchasing exact SKU procurement', () => {
     const result = await triggerPurchasing(ORDER.id);
 
     expect(result.purchase_orders[0]).toEqual({
-      item: 'T-shirt', status: 'api_failed_notified', purchase_order_id: 'po1',
+      item: 'T-shirt', status: 'api_failed_notified', purchase_order_id: '00000000-0000-0000-0000-000000000201',
+    inbound_tag: 'KOM-IN-00000000000000000000000000000201',
     });
     // Mode manuel — jamais 'confirmed' — puisque la boundary n'est jamais franchie aujourd'hui.
     expect(updateSql).toContain("status='notified'");
