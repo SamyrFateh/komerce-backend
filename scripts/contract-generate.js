@@ -674,6 +674,23 @@ const KNOWN_RESPONSES = {
   '/api/hub/volume': {
     post: { fields: ['message', 'product', 'repack_gain_cm3', 'recorded_by'], source: 'test' },
   },
+  // D3 — Hub operator commands : formes top-level prouvées par les services
+  // hub-operations / hub-physical-identity.
+  '/api/hub/unit': {
+    post: { fields: ['physical_unit','label'], source: 'service-read' },
+  },
+  '/api/hub/transition': {
+    post: { fields: ['noop','unit'], source: 'service-read' },
+  },
+  '/api/hub/move': {
+    post: { fields: ['operation_id','operation_type','allocation_id','quantity','source_state','target_state'], source: 'service-read' },
+  },
+  '/api/hub/revalidate': {
+    post: { fields: ['resolved','unit','incident','allocations','operation_id','reason','incident_id','unit_id'], source: 'service-read' },
+  },
+  '/api/hub/outcome': {
+    post: { fields: ['noop','unit','outbox_event_id'], source: 'service-read' },
+  },
   '/api/hub/photo': {
     post: { fields: ['message', 'event_id', 'photo_url', 'photo_count', 'recorded_at'], source: 'test' },
   },
@@ -2388,6 +2405,7 @@ if (inventory.length < 150) {
 }
 
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'POST /api/hub/unit': '201',
   'GET /api/integrations/aliexpress/oauth/start': '302',
   'POST /api/admin/workspaces/sourcing/sources/{sourceRef}/catalog-changes/observe': '201',
   'POST /api/providers-services/inquiries': '201',
@@ -2398,6 +2416,22 @@ const SUCCESS_STATUS_OVERRIDES = Object.freeze({
 // KNOWN_RESPONSES (pas un schéma de corps, juste un code de statut documenté en plus).
 // Format : "METHOD /chemin/{param}" → { [code]: { description } }
 const RESPONSE_OVERRIDES = {
+  'POST /api/hub/unit': {
+    '201': { description: 'Unité physique opérateur créée' },
+    '400': { description: 'Commande Hub invalide' },
+  },
+  'POST /api/hub/transition': {
+    '400': { description: 'Transition physique invalide' },
+  },
+  'POST /api/hub/move': {
+    '400': { description: 'Mouvement physique invalide' },
+  },
+  'POST /api/hub/revalidate': {
+    '409': { description: 'Vérité upstream non résolue ; quarantaine maintenue' },
+  },
+  'POST /api/hub/outcome': {
+    '400': { description: 'Outcome physique invalide' },
+  },
   'GET /api/integrations/aliexpress/oauth/start': {
     '302': {
       description: 'Redirection vers l’autorisation OAuth AliExpress',
