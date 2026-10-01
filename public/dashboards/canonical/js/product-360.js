@@ -153,7 +153,7 @@
         { champ: 'Référence Komerce', valeur: product.product_ref },
         { champ: 'SKU catalogue', valeur: product.sku },
         { champ: 'Catégorie', valeur: [product.category, product.subcategory].filter(Boolean).join(' · ') },
-        { champ: 'Prix boutique', valeur: formatKmf(product.price_kmf) },
+        { champ: 'Prix boutique', valeur: product.price_kmf == null ? 'À définir' : formatKmf(product.price_kmf) },
         { champ: 'Lifecycle', valeur: product.lifecycle_status },
         { champ: 'Actif', valeur: product.is_active ? 'Oui' : 'Non' },
         { champ: 'Disponible', valeur: product.is_available ? 'Oui' : 'Non' },
