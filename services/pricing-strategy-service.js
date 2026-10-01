@@ -406,7 +406,7 @@ async function applyStrategy(dbPool, body, userId) {
 
     let appliedProducts = [];
     if (product_id) {
-      oldPriceKmf = Number(product.price_kmf) || 0;
+      oldPriceKmf = product.price_kmf == null ? null : Number(product.price_kmf);
       await catalogProductMutationService.applyPrice(client, product_id, finalPrice);
       try {
         await client.query('SAVEPOINT sp_price_history');

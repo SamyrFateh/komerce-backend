@@ -167,6 +167,24 @@ describe('pricing-output', () => {
       { hasProduct: true, hasPurchaseCost: true, hasProductWeight: true, hasProductVolume: true, hasCustomsCategory: true, hasFinanceConfig: true, warnings: [] },
     )).toMatchObject({ confidence: 'medium', missing_fields: [] });
 
+    const categoryFallback = buildDataQuality(
+      { product_id: 'p1' },
+      {
+        hasProduct: true,
+        hasPurchaseCost: true,
+        hasProductWeight: false,
+        hasProductVolume: false,
+        hasCategoryWeightDefault: true,
+        hasCategoryVolumeDefault: true,
+        hasCustomsCategory: true,
+        hasFinanceConfig: true,
+        warnings: [],
+      },
+    );
+    expect(categoryFallback.sources.weight).toBe('category');
+    expect(categoryFallback.sources.volume).toBe('category');
+    expect(categoryFallback.missing_fields).not.toEqual(expect.arrayContaining(['weight', 'volume']));
+
     const missingCost = buildDataQuality(
       { product_id: 'p1' },
       { hasProduct: true, hasPurchaseCost: false, hasProductWeight: false, hasProductVolume: false, hasCustomsCategory: true, hasFinanceConfig: true, warnings: [] },

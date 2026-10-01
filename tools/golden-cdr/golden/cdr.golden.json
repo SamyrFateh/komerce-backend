@@ -1,1 +1,847 @@
-{"_kind":"golden-cdr","captured_at":"2026-09-12T15:25:00.000Z","config_fingerprint":"8dd411ff63e062f6","frozen_config":{"categories":{"ceremonie":{"douane_pct":20,"taxe_add_pct":2.5,"tva_pct":10},"cosmetiques":{"douane_pct":20,"taxe_add_pct":1,"tva_pct":10},"electro":{"douane_pct":15,"taxe_add_pct":0,"tva_pct":10},"enfants":{"douane_pct":10,"taxe_add_pct":0,"tva_pct":10},"mariage":{"douane_pct":15,"taxe_add_pct":0,"tva_pct":10},"materiels":{"douane_pct":15,"taxe_add_pct":0,"tva_pct":10},"phones":{"douane_pct":10,"taxe_add_pct":0,"tva_pct":10},"vetements":{"douane_pct":20,"taxe_add_pct":2.5,"tva_pct":10}},"charges":[{"amount_kmf":4801900,"recurrence_period":"monthly"},{"amount_kmf":500,"recurrence_period":"per_order"}],"components":[{"allocation_method":"by_value","category":"product_purchase","confidence":"medium","default_value":1.5,"key":"frais_bancaires_achat_pct","scope":"global","unit":"pct"},{"allocation_method":"per_order","category":"sourcing","confidence":"low","default_value":200,"key":"sourcing_temps_acheteur_kmf","scope":"global","unit":"kmf_per_order"},{"allocation_method":"per_item","category":"hub","confidence":"medium","default_value":150,"key":"hub_controle_qualite_kmf","scope":"global","unit":"kmf_per_parcel"},{"allocation_method":"per_item","category":"hub","confidence":"medium","default_value":50,"key":"hub_etiquetage_kmf","scope":"global","unit":"kmf_per_parcel"},{"allocation_method":"per_item","category":"packaging","confidence":"medium","default_value":300,"key":"packaging_carton_standard_kmf","scope":"global","unit":"kmf_per_parcel"},{"allocation_method":"by_volume","category":"freight","confidence":"medium","default_value":180,"key":"fret_maritime_eur_m3","scope":"global","unit":"eur"},{"allocation_method":"by_value","category":"freight","confidence":"medium","default_value":0.5,"key":"assurance_transport_pct","scope":"global","unit":"pct"},{"allocation_method":"per_order","category":"customs","confidence":"low","default_value":5000,"key":"frais_inspection_douane_kmf","scope":"shipment","unit":"kmf_per_shipment"},{"allocation_method":"by_value","category":"port_transitary","confidence":"medium","default_value":3,"key":"transitaire_kmf","scope":"global","unit":"pct"},{"allocation_method":"per_order","category":"port_transitary","confidence":"medium","default_value":25000,"key":"frais_portuaires_kmf","scope":"shipment","unit":"kmf_per_shipment"},{"allocation_method":"per_item","category":"local_distribution","confidence":"medium","default_value":500,"key":"transport_port_relais_kmf","scope":"global","unit":"kmf_per_parcel"},{"allocation_method":"per_item","category":"local_distribution","confidence":"medium","default_value":800,"key":"transport_inter_iles_moheli_kmf","scope":"category","unit":"kmf_per_parcel"},{"allocation_method":"per_item","category":"local_distribution","confidence":"medium","default_value":800,"key":"transport_inter_iles_anjouan_kmf","scope":"category","unit":"kmf_per_parcel"},{"allocation_method":"per_order","category":"relay","confidence":"medium","default_value":500,"key":"commission_relais_kmf","scope":"global","unit":"kmf_per_order"},{"allocation_method":"by_value","category":"payment","confidence":"high","default_value":1.5,"key":"stripe_pct","scope":"global","unit":"pct"},{"allocation_method":"per_order","category":"payment","confidence":"high","default_value":130,"key":"stripe_fixed_kmf","scope":"global","unit":"kmf_per_order"},{"allocation_method":"per_order","category":"payment","confidence":"medium","default_value":200,"key":"cash_collecte_kmf","scope":"global","unit":"kmf_per_order"},{"allocation_method":"by_value","category":"risk_provision","confidence":"medium","default_value":2,"key":"provision_non_collecte_pct","scope":"global","unit":"pct"},{"allocation_method":"by_value","category":"risk_provision","confidence":"medium","default_value":1,"key":"provision_casse_transport_pct","scope":"global","unit":"pct"},{"allocation_method":"per_order","category":"fixed_overhead","confidence":"high","default_value":0,"key":"charges_fixes_mensuelles_kmf","scope":"global","unit":"kmf_per_order"}],"components_source":"cost_components","cost_benchmarks":[],"finance":{"allocation_calibrated_at":null,"allocation_confidence":"low","avg_articles_per_order":2.5,"avg_articles_per_parcel":4.0,"avg_articles_per_shipment":200.0,"fret_eur_per_m3":180,"objectif_commandes_mois":100,"taux_aed_kmf":139,"taux_change_eur_kmf":495},"provisions":[{"rate_pct":1.5},{"rate_pct":3.0},{"rate_pct":0.8},{"rate_pct":0.5}]},"mode":"db","snapshots":[{"allocation":{"levels":{"article":6,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":30071,"distribution":725,"freight":1478,"hub":50,"overhead":19408,"packaging":75,"payment":80,"purchase":152255,"relay":200,"risk":11274,"sourcing":80,"transitary":4744},"category":"phones","channel":"cash_relais","id":"phones__cash","label":"Téléphone — cash relais","provenance":{"category_known":true,"components_source":"cost_components","cost_zero":false,"volume_defaulted":false},"totals":{"fixed":19408,"risk":11274,"total":225058,"variable":205650},"warnings":["Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."]},{"allocation":{"levels":{"article":7,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":30071,"distribution":725,"freight":1478,"hub":50,"overhead":19408,"packaging":75,"payment":2443,"purchase":152255,"relay":200,"risk":11415,"sourcing":80,"transitary":4744},"category":"phones","channel":"diaspora","id":"phones__diaspora","label":"Téléphone — diaspora","provenance":{"category_known":true,"components_source":"cost_components","cost_zero":false,"volume_defaulted":false},"totals":{"fixed":19408,"risk":11415,"total":227634,"variable":208226},"warnings":["Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."]},{"allocation":{"levels":{"article":6,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":3987,"distribution":725,"freight":599,"hub":50,"overhead":19408,"packaging":75,"payment":80,"purchase":12184,"relay":200,"risk":1086,"sourcing":80,"transitary":515},"category":"vetements","channel":"cash_relais","id":"vetements__cash","label":"Vêtement — léger, faible valeur","provenance":{"category_known":true,"components_source":"cost_components","cost_zero":false,"volume_defaulted":false},"totals":{"fixed":19408,"risk":1086,"total":39223,"variable":19815},"warnings":["Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."]},{"allocation":{"levels":{"article":7,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":14857,"distribution":725,"freight":1662,"hub":50,"overhead":19408,"packaging":75,"payment":800,"purchase":45686,"relay":200,"risk":3887,"sourcing":80,"transitary":1552},"category":"ceremonie","channel":"diaspora","id":"ceremonie__diaspora","label":"Tenue cérémonie — diaspora","provenance":{"category_known":true,"components_source":"cost_components","cost_zero":false,"volume_defaulted":false},"totals":{"fixed":19408,"risk":3887,"total":90311,"variable":70903},"warnings":["Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."]},{"allocation":{"levels":{"article":6,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":51782,"distribution":725,"freight":15344,"hub":50,"overhead":19408,"packaging":75,"payment":80,"purchase":203107,"relay":200,"risk":16516,"sourcing":80,"transitary":6685},"category":"electro","channel":"cash_relais","id":"electro__heavy","label":"Électroménager compact — poids lourd","provenance":{"category_known":true,"components_source":"cost_components","cost_zero":false,"volume_defaulted":false},"totals":{"fixed":19408,"risk":16516,"total":320683,"variable":301275},"warnings":["Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."]},{"allocation":{"levels":{"article":7,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":7805,"distribution":725,"freight":486,"hub":50,"overhead":19408,"packaging":75,"payment":468,"purchase":25378,"relay":200,"risk":2136,"sourcing":80,"transitary":908},"category":"cosmetiques","channel":"diaspora","id":"cosmetiques__diaspora","label":"Cosmétiques — diaspora","provenance":{"category_known":true,"components_source":"cost_components","cost_zero":false,"volume_defaulted":false},"totals":{"fixed":19408,"risk":2136,"total":58370,"variable":38962},"warnings":["Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."]},{"allocation":{"levels":{"article":7,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":20569,"distribution":725,"freight":45080,"hub":50,"overhead":19408,"packaging":75,"payment":1711,"purchase":61234,"relay":200,"risk":7902,"sourcing":80,"transitary":3321},"category":"mariage","channel":"diaspora","id":"mariage__volume","label":"Mariage / décoration — gros volume","provenance":{"category_known":true,"components_source":"cost_components","cost_zero":false,"volume_defaulted":false},"totals":{"fixed":19408,"risk":7902,"total":163546,"variable":144138},"warnings":["Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."]},{"allocation":{"levels":{"article":6,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":3778,"distribution":725,"freight":1883,"hub":50,"overhead":19408,"packaging":75,"payment":80,"purchase":18283,"relay":200,"risk":1529,"sourcing":80,"transitary":737},"category":"enfants","channel":"cash_relais","id":"enfants__cash","label":"Enfants — cash relais","provenance":{"category_known":true,"components_source":"cost_components","cost_zero":false,"volume_defaulted":false},"totals":{"fixed":19408,"risk":1529,"total":47291,"variable":27883},"warnings":["Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."]},{"allocation":{"levels":{"article":6,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":23168,"distribution":725,"freight":5831,"hub":50,"overhead":19408,"packaging":75,"payment":80,"purchase":91390,"relay":200,"risk":7395,"sourcing":80,"transitary":3049},"category":"materiels","channel":"cash_relais","id":"materiels__heavy","label":"Petit matériel — lourd","provenance":{"category_known":true,"components_source":"cost_components","cost_zero":false,"volume_defaulted":false},"totals":{"fixed":19408,"risk":7395,"total":154310,"variable":134902},"warnings":["Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."]},{"allocation":{"levels":{"article":6,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":25,"distribution":725,"freight":1151,"hub":50,"overhead":19408,"packaging":75,"payment":80,"purchase":50757,"relay":200,"risk":3264,"sourcing":80,"transitary":1689},"category":"ghost_category_xyz","channel":"cash_relais","id":"unknown_cat__cash","label":"Catégorie inconnue → fallback douane","provenance":{"category_known":false,"components_source":"cost_components","cost_zero":false,"volume_defaulted":false},"totals":{"fixed":19408,"risk":3264,"total":78953,"variable":59545},"warnings":["Catégorie \"ghost_category_xyz\" inconnue — taux douane par défaut utilisés.","Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."]},{"allocation":{"levels":{"article":6,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":71,"distribution":725,"freight":717,"hub":50,"overhead":19408,"packaging":75,"payment":80,"purchase":5,"relay":200,"risk":117,"sourcing":80,"transitary":154},"category":"phones","channel":"cash_relais","id":"zero_cost__cash","label":"cost_kmf nul → CDR non significatif","provenance":{"category_known":true,"components_source":"cost_components","cost_zero":true,"volume_defaulted":false},"totals":{"fixed":19408,"risk":117,"total":21540,"variable":2132},"warnings":["Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel.","cost_kmf absent ou nul sur le produit — CDR non significatif."]},{"allocation":{"levels":{"article":7,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":300446,"distribution":725,"freight":9673,"hub":50,"overhead":19408,"packaging":75,"payment":19036,"purchase":1218027,"relay":200,"risk":94185,"sourcing":80,"transitary":36963},"category":"electro","channel":"diaspora","id":"high_value__diaspora","label":"Forte valeur → composants pct dominants","provenance":{"category_known":true,"components_source":"cost_components","cost_zero":false,"volume_defaulted":false},"totals":{"fixed":19408,"risk":94185,"total":1737463,"variable":1718055},"warnings":["Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."]},{"allocation":{"levels":{"article":6,"order":3,"parcel":6,"shipment":2},"min_confidence":"low"},"breakdown":{"customs":30089,"distribution":725,"freight":1658,"hub":50,"overhead":19408,"packaging":75,"payment":80,"purchase":152257,"relay":200,"risk":11286,"sourcing":80,"transitary":4749},"category":"phones","channel":"cash_relais","id":"no_volume__cash","label":"Volume absent → défaut 0.005 m³","provenance":{"category_known":true,"components_source":"cost_components","cost_zero":false,"volume_defaulted":true},"totals":{"fixed":19408,"risk":11286,"total":225280,"variable":205872},"warnings":["Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."]}],"witness_count":13}
+{
+  "_kind": "golden-cdr",
+  "captured_at": "2026-09-12T15:25:00.000Z",
+  "config_fingerprint": "8dd411ff63e062f6",
+  "frozen_config": {
+    "categories": {
+      "ceremonie": {
+        "douane_pct": 20,
+        "taxe_add_pct": 2.5,
+        "tva_pct": 10
+      },
+      "cosmetiques": {
+        "douane_pct": 20,
+        "taxe_add_pct": 1,
+        "tva_pct": 10
+      },
+      "electro": {
+        "douane_pct": 15,
+        "taxe_add_pct": 0,
+        "tva_pct": 10
+      },
+      "enfants": {
+        "douane_pct": 10,
+        "taxe_add_pct": 0,
+        "tva_pct": 10
+      },
+      "mariage": {
+        "douane_pct": 15,
+        "taxe_add_pct": 0,
+        "tva_pct": 10
+      },
+      "materiels": {
+        "douane_pct": 15,
+        "taxe_add_pct": 0,
+        "tva_pct": 10
+      },
+      "phones": {
+        "douane_pct": 10,
+        "taxe_add_pct": 0,
+        "tva_pct": 10
+      },
+      "vetements": {
+        "douane_pct": 20,
+        "taxe_add_pct": 2.5,
+        "tva_pct": 10
+      }
+    },
+    "charges": [
+      {
+        "amount_kmf": 4801900,
+        "recurrence_period": "monthly"
+      },
+      {
+        "amount_kmf": 500,
+        "recurrence_period": "per_order"
+      }
+    ],
+    "components": [
+      {
+        "allocation_method": "by_value",
+        "category": "product_purchase",
+        "confidence": "medium",
+        "default_value": 1.5,
+        "key": "frais_bancaires_achat_pct",
+        "scope": "global",
+        "unit": "pct"
+      },
+      {
+        "allocation_method": "per_order",
+        "category": "sourcing",
+        "confidence": "low",
+        "default_value": 200,
+        "key": "sourcing_temps_acheteur_kmf",
+        "scope": "global",
+        "unit": "kmf_per_order"
+      },
+      {
+        "allocation_method": "per_item",
+        "category": "hub",
+        "confidence": "medium",
+        "default_value": 150,
+        "key": "hub_controle_qualite_kmf",
+        "scope": "global",
+        "unit": "kmf_per_parcel"
+      },
+      {
+        "allocation_method": "per_item",
+        "category": "hub",
+        "confidence": "medium",
+        "default_value": 50,
+        "key": "hub_etiquetage_kmf",
+        "scope": "global",
+        "unit": "kmf_per_parcel"
+      },
+      {
+        "allocation_method": "per_item",
+        "category": "packaging",
+        "confidence": "medium",
+        "default_value": 300,
+        "key": "packaging_carton_standard_kmf",
+        "scope": "global",
+        "unit": "kmf_per_parcel"
+      },
+      {
+        "allocation_method": "by_volume",
+        "category": "freight",
+        "confidence": "medium",
+        "default_value": 180,
+        "key": "fret_maritime_eur_m3",
+        "scope": "global",
+        "unit": "eur"
+      },
+      {
+        "allocation_method": "by_value",
+        "category": "freight",
+        "confidence": "medium",
+        "default_value": 0.5,
+        "key": "assurance_transport_pct",
+        "scope": "global",
+        "unit": "pct"
+      },
+      {
+        "allocation_method": "per_order",
+        "category": "customs",
+        "confidence": "low",
+        "default_value": 5000,
+        "key": "frais_inspection_douane_kmf",
+        "scope": "shipment",
+        "unit": "kmf_per_shipment"
+      },
+      {
+        "allocation_method": "by_value",
+        "category": "port_transitary",
+        "confidence": "medium",
+        "default_value": 3,
+        "key": "transitaire_kmf",
+        "scope": "global",
+        "unit": "pct"
+      },
+      {
+        "allocation_method": "per_order",
+        "category": "port_transitary",
+        "confidence": "medium",
+        "default_value": 25000,
+        "key": "frais_portuaires_kmf",
+        "scope": "shipment",
+        "unit": "kmf_per_shipment"
+      },
+      {
+        "allocation_method": "per_item",
+        "category": "local_distribution",
+        "confidence": "medium",
+        "default_value": 500,
+        "key": "transport_port_relais_kmf",
+        "scope": "global",
+        "unit": "kmf_per_parcel"
+      },
+      {
+        "allocation_method": "per_item",
+        "category": "local_distribution",
+        "confidence": "medium",
+        "default_value": 800,
+        "key": "transport_inter_iles_moheli_kmf",
+        "scope": "category",
+        "unit": "kmf_per_parcel"
+      },
+      {
+        "allocation_method": "per_item",
+        "category": "local_distribution",
+        "confidence": "medium",
+        "default_value": 800,
+        "key": "transport_inter_iles_anjouan_kmf",
+        "scope": "category",
+        "unit": "kmf_per_parcel"
+      },
+      {
+        "allocation_method": "per_order",
+        "category": "relay",
+        "confidence": "medium",
+        "default_value": 500,
+        "key": "commission_relais_kmf",
+        "scope": "global",
+        "unit": "kmf_per_order"
+      },
+      {
+        "allocation_method": "by_value",
+        "category": "payment",
+        "confidence": "high",
+        "default_value": 1.5,
+        "key": "stripe_pct",
+        "scope": "global",
+        "unit": "pct"
+      },
+      {
+        "allocation_method": "per_order",
+        "category": "payment",
+        "confidence": "high",
+        "default_value": 130,
+        "key": "stripe_fixed_kmf",
+        "scope": "global",
+        "unit": "kmf_per_order"
+      },
+      {
+        "allocation_method": "per_order",
+        "category": "payment",
+        "confidence": "medium",
+        "default_value": 200,
+        "key": "cash_collecte_kmf",
+        "scope": "global",
+        "unit": "kmf_per_order"
+      },
+      {
+        "allocation_method": "by_value",
+        "category": "risk_provision",
+        "confidence": "medium",
+        "default_value": 2,
+        "key": "provision_non_collecte_pct",
+        "scope": "global",
+        "unit": "pct"
+      },
+      {
+        "allocation_method": "by_value",
+        "category": "risk_provision",
+        "confidence": "medium",
+        "default_value": 1,
+        "key": "provision_casse_transport_pct",
+        "scope": "global",
+        "unit": "pct"
+      },
+      {
+        "allocation_method": "per_order",
+        "category": "fixed_overhead",
+        "confidence": "high",
+        "default_value": 0,
+        "key": "charges_fixes_mensuelles_kmf",
+        "scope": "global",
+        "unit": "kmf_per_order"
+      }
+    ],
+    "components_source": "cost_components",
+    "cost_benchmarks": [],
+    "finance": {
+      "allocation_calibrated_at": null,
+      "allocation_confidence": "low",
+      "avg_articles_per_order": 2.5,
+      "avg_articles_per_parcel": 4,
+      "avg_articles_per_shipment": 200,
+      "fret_eur_per_m3": 180,
+      "objectif_commandes_mois": 100,
+      "taux_aed_kmf": 139,
+      "taux_change_eur_kmf": 495
+    },
+    "provisions": [
+      {
+        "rate_pct": 1.5
+      },
+      {
+        "rate_pct": 3
+      },
+      {
+        "rate_pct": 0.8
+      },
+      {
+        "rate_pct": 0.5
+      }
+    ]
+  },
+  "mode": "db",
+  "snapshots": [
+    {
+      "allocation": {
+        "levels": {
+          "article": 6,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 30071,
+        "distribution": 725,
+        "freight": 1478,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 80,
+        "purchase": 152255,
+        "relay": 200,
+        "risk": 11274,
+        "sourcing": 80,
+        "transitary": 4744
+      },
+      "category": "phones",
+      "channel": "cash_relais",
+      "id": "phones__cash",
+      "label": "Téléphone — cash relais",
+      "provenance": {
+        "category_known": true,
+        "components_source": "cost_components",
+        "cost_zero": false,
+        "volume_defaulted": false
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 11274,
+        "total": 225058,
+        "variable": 205650
+      },
+      "warnings": [
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
+      ]
+    },
+    {
+      "allocation": {
+        "levels": {
+          "article": 7,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 30071,
+        "distribution": 725,
+        "freight": 1478,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 2443,
+        "purchase": 152255,
+        "relay": 200,
+        "risk": 11415,
+        "sourcing": 80,
+        "transitary": 4744
+      },
+      "category": "phones",
+      "channel": "diaspora",
+      "id": "phones__diaspora",
+      "label": "Téléphone — diaspora",
+      "provenance": {
+        "category_known": true,
+        "components_source": "cost_components",
+        "cost_zero": false,
+        "volume_defaulted": false
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 11415,
+        "total": 227634,
+        "variable": 208226
+      },
+      "warnings": [
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
+      ]
+    },
+    {
+      "allocation": {
+        "levels": {
+          "article": 6,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 3987,
+        "distribution": 725,
+        "freight": 599,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 80,
+        "purchase": 12184,
+        "relay": 200,
+        "risk": 1086,
+        "sourcing": 80,
+        "transitary": 515
+      },
+      "category": "vetements",
+      "channel": "cash_relais",
+      "id": "vetements__cash",
+      "label": "Vêtement — léger, faible valeur",
+      "provenance": {
+        "category_known": true,
+        "components_source": "cost_components",
+        "cost_zero": false,
+        "volume_defaulted": false
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 1086,
+        "total": 39223,
+        "variable": 19815
+      },
+      "warnings": [
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
+      ]
+    },
+    {
+      "allocation": {
+        "levels": {
+          "article": 7,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 14857,
+        "distribution": 725,
+        "freight": 1662,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 800,
+        "purchase": 45686,
+        "relay": 200,
+        "risk": 3887,
+        "sourcing": 80,
+        "transitary": 1552
+      },
+      "category": "ceremonie",
+      "channel": "diaspora",
+      "id": "ceremonie__diaspora",
+      "label": "Tenue cérémonie — diaspora",
+      "provenance": {
+        "category_known": true,
+        "components_source": "cost_components",
+        "cost_zero": false,
+        "volume_defaulted": false
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 3887,
+        "total": 90311,
+        "variable": 70903
+      },
+      "warnings": [
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
+      ]
+    },
+    {
+      "allocation": {
+        "levels": {
+          "article": 6,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 51782,
+        "distribution": 725,
+        "freight": 15344,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 80,
+        "purchase": 203107,
+        "relay": 200,
+        "risk": 16516,
+        "sourcing": 80,
+        "transitary": 6685
+      },
+      "category": "electro",
+      "channel": "cash_relais",
+      "id": "electro__heavy",
+      "label": "Électroménager compact — poids lourd",
+      "provenance": {
+        "category_known": true,
+        "components_source": "cost_components",
+        "cost_zero": false,
+        "volume_defaulted": false
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 16516,
+        "total": 320683,
+        "variable": 301275
+      },
+      "warnings": [
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
+      ]
+    },
+    {
+      "allocation": {
+        "levels": {
+          "article": 7,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 7805,
+        "distribution": 725,
+        "freight": 486,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 468,
+        "purchase": 25378,
+        "relay": 200,
+        "risk": 2136,
+        "sourcing": 80,
+        "transitary": 908
+      },
+      "category": "cosmetiques",
+      "channel": "diaspora",
+      "id": "cosmetiques__diaspora",
+      "label": "Cosmétiques — diaspora",
+      "provenance": {
+        "category_known": true,
+        "components_source": "cost_components",
+        "cost_zero": false,
+        "volume_defaulted": false
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 2136,
+        "total": 58370,
+        "variable": 38962
+      },
+      "warnings": [
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
+      ]
+    },
+    {
+      "allocation": {
+        "levels": {
+          "article": 7,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 20569,
+        "distribution": 725,
+        "freight": 45080,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 1711,
+        "purchase": 61234,
+        "relay": 200,
+        "risk": 7902,
+        "sourcing": 80,
+        "transitary": 3321
+      },
+      "category": "mariage",
+      "channel": "diaspora",
+      "id": "mariage__volume",
+      "label": "Mariage / décoration — gros volume",
+      "provenance": {
+        "category_known": true,
+        "components_source": "cost_components",
+        "cost_zero": false,
+        "volume_defaulted": false
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 7902,
+        "total": 163546,
+        "variable": 144138
+      },
+      "warnings": [
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
+      ]
+    },
+    {
+      "allocation": {
+        "levels": {
+          "article": 6,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 3778,
+        "distribution": 725,
+        "freight": 1883,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 80,
+        "purchase": 18283,
+        "relay": 200,
+        "risk": 1529,
+        "sourcing": 80,
+        "transitary": 737
+      },
+      "category": "enfants",
+      "channel": "cash_relais",
+      "id": "enfants__cash",
+      "label": "Enfants — cash relais",
+      "provenance": {
+        "category_known": true,
+        "components_source": "cost_components",
+        "cost_zero": false,
+        "volume_defaulted": false
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 1529,
+        "total": 47291,
+        "variable": 27883
+      },
+      "warnings": [
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
+      ]
+    },
+    {
+      "allocation": {
+        "levels": {
+          "article": 6,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 23168,
+        "distribution": 725,
+        "freight": 5831,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 80,
+        "purchase": 91390,
+        "relay": 200,
+        "risk": 7395,
+        "sourcing": 80,
+        "transitary": 3049
+      },
+      "category": "materiels",
+      "channel": "cash_relais",
+      "id": "materiels__heavy",
+      "label": "Petit matériel — lourd",
+      "provenance": {
+        "category_known": true,
+        "components_source": "cost_components",
+        "cost_zero": false,
+        "volume_defaulted": false
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 7395,
+        "total": 154310,
+        "variable": 134902
+      },
+      "warnings": [
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
+      ]
+    },
+    {
+      "allocation": {
+        "levels": {
+          "article": 6,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 25,
+        "distribution": 725,
+        "freight": 1151,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 80,
+        "purchase": 50757,
+        "relay": 200,
+        "risk": 3264,
+        "sourcing": 80,
+        "transitary": 1689
+      },
+      "category": "ghost_category_xyz",
+      "channel": "cash_relais",
+      "id": "unknown_cat__cash",
+      "label": "Catégorie inconnue → fallback douane",
+      "provenance": {
+        "category_known": false,
+        "components_source": "cost_components",
+        "cost_zero": false,
+        "volume_defaulted": false
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 3264,
+        "total": 78953,
+        "variable": 59545
+      },
+      "warnings": [
+        "Catégorie \"ghost_category_xyz\" inconnue — taux douane par défaut utilisés.",
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
+      ]
+    },
+    {
+      "allocation": {
+        "levels": {
+          "article": 6,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 71,
+        "distribution": 725,
+        "freight": 717,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 80,
+        "purchase": 5,
+        "relay": 200,
+        "risk": 117,
+        "sourcing": 80,
+        "transitary": 154
+      },
+      "category": "phones",
+      "channel": "cash_relais",
+      "id": "zero_cost__cash",
+      "label": "cost_kmf nul → CDR non significatif",
+      "provenance": {
+        "category_known": true,
+        "components_source": "cost_components",
+        "cost_zero": true,
+        "volume_defaulted": false
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 117,
+        "total": 21540,
+        "variable": 2132
+      },
+      "warnings": [
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel.",
+        "cost_kmf absent ou nul sur le produit — CDR non significatif."
+      ]
+    },
+    {
+      "allocation": {
+        "levels": {
+          "article": 7,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 300446,
+        "distribution": 725,
+        "freight": 9673,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 19036,
+        "purchase": 1218027,
+        "relay": 200,
+        "risk": 94185,
+        "sourcing": 80,
+        "transitary": 36963
+      },
+      "category": "electro",
+      "channel": "diaspora",
+      "id": "high_value__diaspora",
+      "label": "Forte valeur → composants pct dominants",
+      "provenance": {
+        "category_known": true,
+        "components_source": "cost_components",
+        "cost_zero": false,
+        "volume_defaulted": false
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 94185,
+        "total": 1737463,
+        "variable": 1718055
+      },
+      "warnings": [
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel."
+      ]
+    },
+    {
+      "allocation": {
+        "levels": {
+          "article": 6,
+          "order": 3,
+          "parcel": 6,
+          "shipment": 2
+        },
+        "min_confidence": "low"
+      },
+      "breakdown": {
+        "customs": 30089,
+        "distribution": 725,
+        "freight": 1658,
+        "hub": 50,
+        "overhead": 19408,
+        "packaging": 75,
+        "payment": 80,
+        "purchase": 152257,
+        "relay": 200,
+        "risk": 11286,
+        "sourcing": 80,
+        "transitary": 4749
+      },
+      "category": "phones",
+      "channel": "cash_relais",
+      "id": "no_volume__cash",
+      "label": "Volume absent → défaut 0.005 m³",
+      "provenance": {
+        "category_known": true,
+        "components_source": "cost_components",
+        "cost_zero": false,
+        "volume_defaulted": true
+      },
+      "totals": {
+        "fixed": 19408,
+        "risk": 11286,
+        "total": 225280,
+        "variable": 205872
+      },
+      "warnings": [
+        "Moyennes d'allocation non calibrées (hypothèses initiales). Les coûts par shipment/colis/commande sont divisés par des valeurs estimées. À recalibrer dans finance_config dès que vous aurez du volume réel.",
+        "volume_m3 absent — utilisation du défaut générique 0,005 m³."
+      ]
+    }
+  ],
+  "witness_count": 13
+}

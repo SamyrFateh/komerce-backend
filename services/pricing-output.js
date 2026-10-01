@@ -482,12 +482,12 @@ function buildDataQuality(input, context) {
 
   if (context.hasProduct && context.hasProductWeight) sources.weight = 'real';
   else if (Number(input.weight_kg) > 0 || Number(input.poids_kg) > 0) sources.weight = 'manual';
-  else if (context.hasCustomsCategory) sources.weight = 'category';
+  else if (context.hasCategoryWeightDefault) sources.weight = 'category';
   else { sources.weight = 'default'; missing.push('weight'); }
 
   if (context.hasProduct && context.hasProductVolume) sources.volume = 'real';
   else if (Number(input.volume_m3) > 0) sources.volume = 'manual';
-  else if (context.hasCustomsCategory) sources.volume = 'category';
+  else if (context.hasCategoryVolumeDefault) sources.volume = 'category';
   else { sources.volume = 'default'; missing.push('volume'); }
 
   sources.customs_category = context.hasCustomsCategory ? 'category' : 'default';
