@@ -923,13 +923,13 @@ const KNOWN_RESPONSES = {
   // GET /api/admin/costing/orders|products|relais : routes/admin-costing.js, top-level
   // de chaque res.json(...) lu directement dans le handler (pas de test) → 'route-read'.
   '/api/admin/costing/orders': {
-    get: { fields: ['orders','pagination','doctrine_phase'], source: 'route-read' }
+    get: { fields: ['orders','pagination','doctrine_phase'], source: 'test' }
   },
   '/api/admin/costing/products': {
-    get: { fields: ['products','doctrine_phase'], source: 'route-read' }
+    get: { fields: ['products','doctrine_phase'], source: 'test' }
   },
   '/api/admin/costing/relais': {
-    get: { fields: ['relais','doctrine_phase'], source: 'route-read' }
+    get: { fields: ['relais','doctrine_phase'], source: 'test' }
   },
   // GET /api/admin/radar : routes/admin-radar.js → res.json(await radar.getRadarSummary())
   // ; shape lue dans services/radar-queries.js, pas de test dédié → 'route-read'.
@@ -1019,11 +1019,11 @@ const KNOWN_RESPONSES = {
     get: { fields: ['history','by_category','anomalies','period_days'], source: 'route-read' }
   },
   '/api/admin/partners': {
-    get: { fields: ['id','name','type','contact'], source: 'route-read' },
-    post: { fields: ['id','name','type','contact'], source: 'route-read' }
+    get: { fields: ['id','name','type','contact'], source: 'test' },
+    post: { fields: ['id','name','type','contact'], source: 'test' }
   },
   '/api/admin/partners/stats': {
-    get: { fields: ['partner','stats'], source: 'route-read' }
+    get: { fields: ['partner','stats'], source: 'test' }
   },
   '/api/admin/partners/{id}': {
     get: { fields: ['partner','stats'], source: 'route-read' },
@@ -1070,16 +1070,16 @@ const KNOWN_RESPONSES = {
     get: { fields: ['metrics','alerts','generated_at'], source: 'route-read' }
   },
   '/api/admin/dashboard/control-tower': {
-    get: { fields: ['orders','parcels','alerts','generated_at'], source: 'route-read' }
+    get: { fields: ['orders','parcels','alerts','generated_at'], source: 'test' }
   },
   '/api/admin/dashboard/costing': {
-    get: { fields: ['orders','summary','generated_at'], source: 'route-read' }
+    get: { fields: ['orders','summary','generated_at'], source: 'test' }
   },
   '/api/admin/dashboard/logistics': {
-    get: { fields: ['parcels','relais','summary','generated_at'], source: 'route-read' }
+    get: { fields: ['parcels','relais','summary','generated_at'], source: 'test' }
   },
   '/api/admin/dashboard/unified': {
-    get: { fields: ['orders','parcels','metrics','generated_at'], source: 'route-read' }
+    get: { fields: ['orders','parcels','metrics','generated_at'], source: 'test' }
   },
   '/api/admin/dashboard/cache/clear': {
     post: { fields: ['ok','cleared','prefix'], source: 'route-read' }
@@ -1135,13 +1135,13 @@ const KNOWN_RESPONSES = {
     post: { fields: ['success','message','deposit'], source: 'route-read' }
   },
   '/api/cash/reconciliation': {
-    get: { fields: ['period','generated_at','totals','agents'], source: 'route-read' }
+    get: { fields: ['period','generated_at','totals','agents'], source: 'test' }
   },
   '/api/cash/reconciliation/agents': {
     get: { fields: ['generated_at','agents'], source: 'route-read' }
   },
   '/api/cash/uncollected': {
-    get: { fields: ['hours_threshold','count','total_missing_kmf','orders'], source: 'route-read' }
+    get: { fields: ['hours_threshold','count','total_missing_kmf','orders'], source: 'test' }
   },
 
   // pickup-secret.js — réponses lues dans les handlers
@@ -1299,13 +1299,13 @@ const KNOWN_RESPONSES = {
 
   // dashboard.js (delegates to sub-routers)
   '/api/dashboard/ops': {
-    get: { fields: ['activite','commandes_aujourd_hui','commandes_en_cours'], source: 'route-read' }
+    get: { fields: ['activite','commandes_aujourd_hui','commandes_en_cours'], source: 'test' }
   },
   '/api/dashboard/pilotage': {
     get: { fields: ['periode','genere_le','taux','taux_history','volume','total','annulees'], source: 'route-read' }
   },
   '/api/dashboard/pipeline': {
-    get: { fields: ['pipeline'], source: 'route-read' }
+    get: { fields: ['pipeline'], source: 'test' }
   },
   '/api/dashboard/retards': {
     get: { fields: ['retards'], source: 'route-read' }
@@ -1320,7 +1320,7 @@ const KNOWN_RESPONSES = {
     get: { fields: ['panier_moyen_kmf','nb_clients','total_orders','active_orders','completed_orders','ca_total_kmf','kpi'], source: 'route-read' }
   },
   '/api/dashboard/finance': {
-    get: { fields: ['period','taux','kpi'], source: 'route-read' }
+    get: { fields: ['period','taux','kpi'], source: 'test' }
   },
   '/api/dashboard/annulations-parcels': {
     get: { fields: ['period','annulations'], source: 'route-read' }
@@ -1329,16 +1329,16 @@ const KNOWN_RESPONSES = {
     get: { fields: ['period','taux','cash'], source: 'route-read' }
   },
   '/api/dashboard/sales': {
-    get: { fields: ['period','kpi'], source: 'route-read' }
+    get: { fields: ['period','kpi'], source: 'test' }
   },
   '/api/dashboard/clients': {
-    get: { fields: ['clients'], source: 'route-read' }
+    get: { fields: ['clients'], source: 'test' }
   },
   '/api/dashboard/clients/list': {
-    get: { fields: ['total','total_pages','filters'], source: 'route-read' }
+    get: { fields: ['total','total_pages','filters'], source: 'test' }
   },
   '/api/dashboard/clients/detail': {
-    get: { fields: ['profile','nb_orders_total','nb_orders_valid','nb_orders_cancelled','ltv_kmf'], source: 'route-read' }
+    get: { fields: ['profile','nb_orders_total','nb_orders_valid','nb_orders_cancelled','ltv_kmf'], source: 'test' }
   },
   '/api/dashboard/history': {
     get: { fields: ['en_transit','a_remettre','kpi'], source: 'route-read' }
@@ -1355,13 +1355,13 @@ const KNOWN_RESPONSES = {
 
   // sourcing-engine.js
   '/api/admin/sourcing/analysis': {
-    get: { fields: ['analysis'], source: 'route-read' }
+    get: { fields: ['analysis'], source: 'test' }
   },
   '/api/admin/sourcing/analysis/{id}': {
     get: { fields: ['analysis'], source: 'route-read' }
   },
   '/api/admin/sourcing/synthesis': {
-    get: { fields: ['synthesis'], source: 'route-read' }
+    get: { fields: ['synthesis'], source: 'test' }
   },
   '/api/admin/sourcing/products/{id}': {
     put: { fields: ['product'], source: 'route-read' }
@@ -1380,13 +1380,13 @@ const KNOWN_RESPONSES = {
     get: { fields: ['connectors'], source: 'route-read' }
   },
   '/api/admin/sourcing/catalogs/import': {
-    post: { fields: ['imported'], source: 'route-read' }
+    post: { fields: ['imported'], source: 'test' }
   },
   '/api/admin/sourcing/catalogs': {
-    get: { fields: ['catalogs'], source: 'route-read' }
+    get: { fields: ['catalogs'], source: 'test' }
   },
   '/api/admin/sourcing/candidates': {
-    get: { fields: ['candidates'], source: 'route-read' }
+    get: { fields: ['candidates'], source: 'test' }
   },
   '/api/admin/sourcing/candidates/{id}': {
     get: { fields: ['candidate'], source: 'route-read' },
@@ -1460,7 +1460,7 @@ const KNOWN_RESPONSES = {
     post: { fields: ['price_kmf','breakdown'], source: 'route-read' }
   },
   '/api/pricing/flow': {
-    post: { fields: ['flow'], source: 'route-read' }
+    post: { fields: ['flow'], source: 'test' }
   },
   '/api/pricing/benchmarks': {
     get: { fields: ['count','benchmarks'], source: 'route-read' },
@@ -1492,12 +1492,12 @@ const KNOWN_RESPONSES = {
     get: { fields: ['benchmarks'], source: 'route-read' }
   },
   '/api/pricing/dashboard': {
-    get: { fields: ['dashboard'], source: 'route-read' }
+    get: { fields: ['dashboard'], source: 'test' }
   },
 
   // parcel-api-v2 (routes/parcel-api-v2/read.js + scans.js)
   '/api/v2/parcels': {
-    get: { fields: ['count','parcels'], source: 'route-read' }
+    get: { fields: ['count','parcels'], source: 'test' }
   },
   '/api/v2/parcels/kpis': {
     get: { fields: ['total','draft','preparation','shipped','delivered'], source: 'route-read' }
@@ -1509,7 +1509,7 @@ const KNOWN_RESPONSES = {
     get: { fields: ['count','parcels'], source: 'route-read' }
   },
   '/api/v2/parcels/reconciliation': {
-    get: { fields: ['summary','parcels'], source: 'route-read' }
+    get: { fields: ['summary','parcels'], source: 'test' }
   },
   '/api/v2/parcels/{ref}': {
     get: { fields: ['id','reference','status','type','destination_island'], source: 'route-read' }
@@ -1562,11 +1562,11 @@ const KNOWN_RESPONSES = {
     get: { fields: ['data','count'], source: 'route-read' }
   },
   '/api/hub/orders/mark-ordered': {
-    post: { fields: ['ok'], source: 'route-read' }
+    post: { fields: ['ok'], source: 'test' }
   },
   '/api/hub/auto-distribute': {
-    post: { fields: ['distributed'], source: 'route-read' },
-    get:  { fields: ['proposals'], source: 'route-read' }
+    post: { fields: ['distributed'], source: 'test' },
+    get:  { fields: ['proposals'], source: 'test' }
   },
   '/api/hub/auto-distribute/cleanup': {
     post: { fields: ['cleaned'], source: 'route-read' }
@@ -1574,16 +1574,16 @@ const KNOWN_RESPONSES = {
 
   // economic-engine.js
   '/api/admin/economic/executive': {
-    get: { fields: ['executive'], source: 'route-read' }
+    get: { fields: ['executive'], source: 'test' }
   },
   '/api/admin/economic/variables': {
-    get: { fields: ['variables'], source: 'route-read' }
+    get: { fields: ['variables'], source: 'test' }
   },
   '/api/admin/economic/variables/{key}': {
     put: { fields: ['variable'], source: 'route-read' }
   },
   '/api/admin/economic/charges': {
-    get:  { fields: ['charges'], source: 'route-read' },
+    get:  { fields: ['charges'], source: 'test' },
     post: { fields: ['charge'], source: 'route-read' }
   },
   '/api/admin/economic/charges/{id}': {
@@ -1594,10 +1594,10 @@ const KNOWN_RESPONSES = {
     put: { fields: ['charge'], source: 'route-read' }
   },
   '/api/admin/economic/coherence': {
-    get: { fields: ['coherence'], source: 'route-read' }
+    get: { fields: ['coherence'], source: 'test' }
   },
   '/api/admin/economic/history': {
-    get: { fields: ['history'], source: 'route-read' }
+    get: { fields: ['history'], source: 'test' }
   },
   '/api/admin/economic/redistribute': {
     post: { fields: ['ok'], source: 'route-read' }
@@ -1770,11 +1770,11 @@ const KNOWN_RESPONSES = {
 
   // admin-customs-shipments.js
   '/api/admin/customs-shipments': {
-    get:  { fields: ['shipments'], source: 'route-read' },
-    post: { fields: ['shipment'], source: 'route-read' }
+    get:  { fields: ['shipments'], source: 'test' },
+    post: { fields: ['shipment'], source: 'test' }
   },
   '/api/admin/customs-shipments/rates/effective': {
-    get: { fields: ['rates'], source: 'route-read' }
+    get: { fields: ['rates'], source: 'test' }
   },
   '/api/admin/customs-shipments/{id}': {
     get:    { fields: ['shipment'], source: 'route-read' },
@@ -1819,22 +1819,22 @@ const KNOWN_RESPONSES = {
     post: { fields: ['ok'], source: 'route-read' }
   },
   '/api/hub/inventory/scan-assign': {
-    post: { fields: ['ok'], source: 'route-read' }
+    post: { fields: ['ok'], source: 'test' }
   },
   '/api/hub/inventory/propose-all': {
-    post: { fields: ['ok'], source: 'route-read' }
+    post: { fields: ['ok'], source: 'test' }
   },
   '/api/hub/inventory/proposals': {
-    get: { fields: ['ok','items'], source: 'route-read' }
+    get: { fields: ['ok','items'], source: 'test' }
   },
   '/api/hub/inventory/open-parcels': {
-    get: { fields: ['ok','parcels'], source: 'route-read' }
+    get: { fields: ['ok','parcels'], source: 'test' }
   },
   '/api/hub/inventory/buffer': {
     get: { fields: ['ok','items'], source: 'route-read' }
   },
   '/api/hub/inventory/stats': {
-    get: { fields: ['ok'], source: 'route-read' }
+    get: { fields: ['ok'], source: 'test' }
   },
   '/api/hub/inventory/order/{id}/dispatch': {
     get: { fields: ['ok'], source: 'route-read' }
@@ -1859,13 +1859,13 @@ const KNOWN_RESPONSES = {
 
   // signals.js
   '/api/admin/signals': {
-    get: { fields: ['signals','total','limit','offset'], source: 'route-read' }
+    get: { fields: ['signals','total','limit','offset'], source: 'test' }
   },
   '/api/admin/signals/stats': {
-    get: { fields: ['total','bySeverity','byType','byFamily'], source: 'route-read' }
+    get: { fields: ['total','bySeverity','byType','byFamily'], source: 'test' }
   },
   '/api/admin/signals/generate': {
-    post: { fields: ['ok','result'], source: 'route-read' }
+    post: { fields: ['ok','result'], source: 'test' }
   },
   '/api/admin/signals/{id}/acknowledge': {
     post: { fields: ['ok','signal'], source: 'route-read' }
@@ -1968,7 +1968,7 @@ const KNOWN_RESPONSES = {
 
   // admin-customs-categories.js
   '/api/admin/customs-categories': {
-    get:  { fields: ['categories'], source: 'route-read' },
+    get:  { fields: ['categories'], source: 'test' },
     post: { fields: ['category'], source: 'route-read' }
   },
   '/api/admin/customs-categories/{key}': {
@@ -2030,7 +2030,7 @@ const KNOWN_RESPONSES = {
 
   // invoices.js
   '/api/invoices': {
-    get: { fields: ['ok','invoices','count'], source: 'route-read' }
+    get: { fields: ['ok','invoices','count'], source: 'test' }
   },
   '/api/invoices/{orderId}': {
     get: { fields: ['ok','invoice'], source: 'route-read' }
@@ -2044,16 +2044,16 @@ const KNOWN_RESPONSES = {
   // pricing-strategy.js
   '/api/pricing/strategy/competitors': {
     get:    { fields: ['competitors'], source: 'route-read' },
-    post:   { fields: ['competitor'], source: 'route-read' }
+    post:   { fields: ['competitor'], source: 'test' }
   },
   '/api/pricing/strategy/competitors/{id}': {
     delete: { fields: ['ok'], source: 'route-read' }
   },
   '/api/pricing/strategy': {
-    get: { fields: ['strategy'], source: 'route-read' }
+    get: { fields: ['strategy'], source: 'test' }
   },
   '/api/pricing/strategy/apply': {
-    post: { fields: ['ok'], source: 'route-read' }
+    post: { fields: ['ok'], source: 'test' }
   },
   '/api/pricing/strategy/history': {
     get: { fields: ['history'], source: 'route-read' }
@@ -2196,16 +2196,16 @@ const KNOWN_RESPONSES = {
 
   // transitaire-api.js
   '/api/transitaire/parcels': {
-    get: { fields: ['parcels','count'], source: 'route-read' }
+    get: { fields: ['parcels','count'], source: 'test' }
   },
   '/api/transitaire/ship': {
-    post: { fields: ['success','parcel','message'], source: 'route-read' }
+    post: { fields: ['success','parcel','message'], source: 'test' }
   },
   '/api/transitaire/stats': {
-    get: { fields: ['stats'], source: 'route-read' }
+    get: { fields: ['stats'], source: 'test' }
   },
   '/api/transitaire/history': {
-    get: { fields: ['events'], source: 'route-read' }
+    get: { fields: ['events'], source: 'test' }
   },
 
   // shares.js
@@ -2232,7 +2232,7 @@ const KNOWN_RESPONSES = {
     get: { fields: ['schema'], source: 'route-read' }
   },
   '/api/admin/finance-config': {
-    get: { fields: ['config'], source: 'route-read' },
+    get: { fields: ['config'], source: 'test' },
     put: { fields: ['config'], source: 'route-read' }
   },
 
