@@ -51,6 +51,31 @@ test('la curation guide explicitement la préparation française avant publicati
   expect(workspace).toContain('/admin/products/');
 });
 
+test('Catalogue montre la file immédiatement et conserve le contexte Product 360', () => {
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+  const decision = read('public/dashboards/canonical/js/catalog-workspace-decision.js');
+
+  expect(workspace).toContain("tr.setAttribute('data-product-ref'");
+  expect(workspace).toContain("text(doc, 'a', 'kmc-catalog-product-title'");
+  expect(workspace).toContain('Retour à la curation');
+  expect(decision).toContain('requestedProductRef');
+  expect(decision).toContain("classList.add('is-context-target')");
+  expect(decision).toContain("host.insertBefore(approvalSection");
+  expect(decision).not.toContain('Voir la file →');
+});
+
+test('la file de curation garde les décisions et actions dans le viewport', () => {
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+  const css = read('public/dashboards/canonical/css/operations-workspace.css');
+
+  expect(workspace).toContain('kmc-catalog-curation-table');
+  expect(workspace).toContain('<th>Produit</th><th>Catégorie</th><th>Signal sourcing</th><th>État</th><th>Action</th>');
+  expect(workspace).toContain('kmc-catalog-reason');
+  expect(workspace).toContain('curationState');
+  expect(css).toContain('position: sticky');
+  expect(css).toContain('.kmc-catalog-actions-cell');
+});
+
 test('Catalogue ne crée plus de navigation parallèle au shell Canonical', () => {
   const source = read('public/dashboards/canonical/js/catalog-control-tower.js');
   const css = read('public/dashboards/canonical/css/catalog-control-tower.css');
