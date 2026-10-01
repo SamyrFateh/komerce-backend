@@ -51,7 +51,13 @@ const CONNECTORS = Object.freeze({
       auth: Object.freeze({
         mode: 'api_key',
         scope: 'source',
-        fields: Object.freeze([Object.freeze({ key: 'api_key', label: 'Clé API', secret: true })]),
+        description: 'Renseignez la clé API permanente du compte CJdropshipping.',
+        fields: Object.freeze([Object.freeze({
+          key: 'api_key',
+          label: 'Clé API CJdropshipping',
+          secret: true,
+          help: 'Clé API du compte fournisseur utilisée pour autoriser Komerce.',
+        })]),
         hasEnvironmentCredentials: () => typeof cjModule.hasEnvironmentCredentials === 'function' && cjModule.hasEnvironmentCredentials(process.env),
       }),
       supplierName: 'CJdropshipping',
@@ -70,9 +76,10 @@ const CONNECTORS = Object.freeze({
       auth: Object.freeze({
         mode: 'client_credentials',
         scope: 'source',
+        description: 'Renseignez les identifiants de l’application Allegro associée au compte fournisseur.',
         fields: Object.freeze([
-          Object.freeze({ key: 'client_id', label: 'Client ID', secret: false }),
-          Object.freeze({ key: 'client_secret', label: 'Client Secret', secret: true }),
+          Object.freeze({ key: 'client_id', label: 'Client ID Allegro', secret: false, help: 'Identifiant de l’application Allegro.' }),
+          Object.freeze({ key: 'client_secret', label: 'Client Secret Allegro', secret: true, help: 'Secret de la même application Allegro.' }),
         ]),
         hasEnvironmentCredentials: () => typeof allegroModule.hasEnvironmentCredentials === 'function' && allegroModule.hasEnvironmentCredentials(process.env),
       }),
@@ -91,6 +98,7 @@ const CONNECTORS = Object.freeze({
       auth: Object.freeze({
         mode: 'client_credentials',
         scope: 'platform',
+        description: 'Identifiants gérés par la plateforme Komerce ; rien à saisir pour cette source.',
       }),
       // P3 registration only: no unattended broad crawl until a bounded
       // automation policy is separately proved.
@@ -105,7 +113,12 @@ const CONNECTORS = Object.freeze({
       connection: Object.freeze({ mode: 'oauth', connectPath: '/api/integrations/aliexpress/oauth/start' }),
       // Cas A : APP_KEY/APP_SECRET = application Komerce (secret d'infrastructure). Seule la
       // session du compte est propre à la source, obtenue par OAuth côté serveur.
-      auth: Object.freeze({ mode: 'oauth', scope: 'platform', sessionKey: 'aliexpress' }),
+      auth: Object.freeze({
+        mode: 'oauth',
+        scope: 'platform',
+        sessionKey: 'aliexpress',
+        description: 'Aucun secret à saisir : autorisez le compte AliExpress depuis Komerce.',
+      }),
       discovery: Object.freeze({ mode: 'runtime', version: 'aliexpress-ds-discovery-v1' }),
       automation: Object.freeze({ size: 20 }),
     },
@@ -176,7 +189,13 @@ function publicAuthContract(entry) {
   return {
     mode: auth.mode,
     scope: auth.scope || null,
-    fields: (auth.fields || []).map((field) => ({ key: field.key, label: field.label, secret: Boolean(field.secret) })),
+    description: auth.description || null,
+    fields: (auth.fields || []).map((field) => ({
+      key: field.key,
+      label: field.label,
+      secret: Boolean(field.secret),
+      help: field.help || null,
+    })),
   };
 }
 
