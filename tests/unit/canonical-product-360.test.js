@@ -66,6 +66,15 @@ test('metricItems ne fait que formatter les valeurs déjà préparées par le se
   expect(metrics.find(row => row.key === 'central').value).toBe('Central uniquement');
 });
 
+test('Product 360 distingue un SKU préparé d’un SKU devenu vérité d’inventaire', () => {
+  const source = require('fs').readFileSync(
+    require('path').join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'product-360.js'),
+    'utf8'
+  );
+  expect(source).toContain("'SKU préparé'");
+  expect(source).toContain("row.sku || row.supplier_sku");
+});
+
 test('variantLabel ne fait que présenter le variant_combo serveur', () => {
   expect(product360.variantLabel({ couleur: 'Noir', taille: 'M' })).toBe('couleur: Noir · taille: M');
   expect(product360.variantLabel(null)).toBe('Défaut');
