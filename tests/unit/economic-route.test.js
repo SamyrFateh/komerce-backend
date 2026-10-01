@@ -76,7 +76,7 @@ const seedCalledAtModuleLoad = queries.seedEconomicData.mock.calls.length > 0;
 function buildApp() {
   const app = express();
   app.use(express.json());
-  app.use('/api/economic', router);
+  app.use('/api/admin/economic', router);
   app.use((err, req, res, next) => res.status(500).json({ error: err.message }));
   return app;
 }
@@ -98,20 +98,20 @@ describe('routes/economic', () => {
 
   test('refuse un rôle non admin', async () => {
     mockUser = { id: 'u1', role: 'agent_hub' };
-    const res = await request(buildApp()).get('/api/economic/executive');
+    const res = await request(buildApp()).get('/api/admin/economic/executive');
     expect(res.status).toBe(403);
   });
 
   test('refuse sans authentification', async () => {
     mockUser = null;
-    const res = await request(buildApp()).get('/api/economic/executive');
+    const res = await request(buildApp()).get('/api/admin/economic/executive');
     expect(res.status).toBe(401);
   });
 
   describe('GET /executive', () => {
     test('délègue à buildExecutiveSummary', async () => {
       queries.buildExecutiveSummary.mockResolvedValueOnce({ margin: 12 });
-      const res = await request(buildApp()).get('/api/economic/executive');
+      const res = await request(buildApp()).get('/api/admin/economic/executive');
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ margin: 12 });
     });
@@ -120,7 +120,7 @@ describe('routes/economic', () => {
   describe('GET /variables', () => {
     test('délègue à getVariables', async () => {
       queries.getVariables.mockResolvedValueOnce([{ key: 'eur_kmf' }]);
-      const res = await request(buildApp()).get('/api/economic/variables');
+      const res = await request(buildApp()).get('/api/admin/economic/variables');
       expect(res.status).toBe(200);
       expect(res.body).toEqual([{ key: 'eur_kmf' }]);
     });
@@ -129,7 +129,7 @@ describe('routes/economic', () => {
   describe('PUT /variables/:key', () => {
     test('met à jour et invalide les deux caches', async () => {
       queries.updateVariable.mockResolvedValueOnce({ key: 'eur_kmf', value: 750 });
-      const res = await request(buildApp()).put('/api/economic/variables/eur_kmf').send({ value: 750 });
+      const res = await request(buildApp()).put('/api/admin/economic/variables/eur_kmf').send({ value: 750 });
       expect(res.status).toBe(200);
       expect(queries.updateVariable).toHaveBeenCalledWith('eur_kmf', { value: 750 }, 'admin-1');
       expect(ecoBridge.invalidateEcoCache).toHaveBeenCalled();
@@ -138,7 +138,7 @@ describe('routes/economic', () => {
 
     test('renvoie le code d\'erreur du service sans invalider le cache', async () => {
       queries.updateVariable.mockResolvedValueOnce({ error: 'Valeur invalide', status: 422 });
-      const res = await request(buildApp()).put('/api/economic/variables/eur_kmf').send({ value: -1 });
+      const res = await request(buildApp()).put('/api/admin/economic/variables/eur_kmf').send({ value: -1 });
       expect(res.status).toBe(422);
       expect(res.body).toEqual({ error: 'Valeur invalide' });
       expect(ecoBridge.invalidateEcoCache).not.toHaveBeenCalled();
@@ -146,7 +146,7 @@ describe('routes/economic', () => {
 
     test('défaut 400 si le service ne précise pas de status', async () => {
       queries.updateVariable.mockResolvedValueOnce({ error: 'Erreur générique' });
-      const res = await request(buildApp()).put('/api/economic/variables/eur_kmf').send({ value: -1 });
+      const res = await request(buildApp()).put('/api/admin/economic/variables/eur_kmf').send({ value: -1 });
       expect(res.status).toBe(400);
     });
   });
@@ -154,7 +154,7 @@ describe('routes/economic', () => {
   describe('GET /charges', () => {
     test('délègue à getCharges', async () => {
       queries.getCharges.mockResolvedValueOnce([{ id: 'c1' }]);
-      const res = await request(buildApp()).get('/api/economic/charges');
+      const res = await request(buildApp()).get('/api/admin/economic/charges');
       expect(res.status).toBe(200);
       expect(res.body).toEqual([{ id: 'c1' }]);
     });
@@ -163,7 +163,7 @@ describe('routes/economic', () => {
   describe('POST /charges', () => {
     test('crée et invalide les caches', async () => {
       queries.createCharge.mockResolvedValueOnce({ id: 'c1', label: 'Loyer' });
-      const res = await request(buildApp()).post('/api/economic/charges').send({ label: 'Loyer' });
+      const res = await request(buildApp()).post('/api/admin/economic/charges').send({ label: 'Loyer' });
       expect(res.status).toBe(200);
       expect(ecoBridge.invalidateEcoCache).toHaveBeenCalled();
       expect(ecoBridge.invalidateChargesCache).toHaveBeenCalled();
@@ -171,7 +171,7 @@ describe('routes/economic', () => {
 
     test('renvoie l\'erreur du service sans invalider le cache', async () => {
       queries.createCharge.mockResolvedValueOnce({ error: 'label requis', status: 400 });
-      const res = await request(buildApp()).post('/api/economic/charges').send({});
+      const res = await request(buildApp()).post('/api/admin/economic/charges').send({});
       expect(res.status).toBe(400);
       expect(ecoBridge.invalidateEcoCache).not.toHaveBeenCalled();
     });
@@ -180,7 +180,7 @@ describe('routes/economic', () => {
   describe('PUT /charges/:id', () => {
     test('met à jour et invalide les caches', async () => {
       queries.updateCharge.mockResolvedValueOnce({ id: 'c1', label: 'Loyer 2' });
-      const res = await request(buildApp()).put('/api/economic/charges/c1').send({ label: 'Loyer 2' });
+      const res = await request(buildApp()).put('/api/admin/economic/charges/c1').send({ label: 'Loyer 2' });
       expect(res.status).toBe(200);
       expect(queries.updateCharge).toHaveBeenCalledWith('c1', { label: 'Loyer 2' });
       expect(ecoBridge.invalidateEcoCache).toHaveBeenCalled();
@@ -190,7 +190,7 @@ describe('routes/economic', () => {
   describe('PUT /charges/:id/toggle', () => {
     test('bascule et invalide les caches', async () => {
       queries.toggleCharge.mockResolvedValueOnce({ id: 'c1', active: false });
-      const res = await request(buildApp()).put('/api/economic/charges/c1/toggle');
+      const res = await request(buildApp()).put('/api/admin/economic/charges/c1/toggle');
       expect(res.status).toBe(200);
       expect(queries.toggleCharge).toHaveBeenCalledWith('c1');
       expect(ecoBridge.invalidateEcoCache).toHaveBeenCalled();
@@ -198,7 +198,7 @@ describe('routes/economic', () => {
 
     test('défaut 404 si le service ne précise pas de status', async () => {
       queries.toggleCharge.mockResolvedValueOnce({ error: 'Charge introuvable' });
-      const res = await request(buildApp()).put('/api/economic/charges/c404/toggle');
+      const res = await request(buildApp()).put('/api/admin/economic/charges/c404/toggle');
       expect(res.status).toBe(404);
     });
   });
@@ -206,7 +206,7 @@ describe('routes/economic', () => {
   describe('DELETE /charges/:id', () => {
     test('supprime et invalide les caches', async () => {
       queries.deleteCharge.mockResolvedValueOnce({ success: true });
-      const res = await request(buildApp()).delete('/api/economic/charges/c1');
+      const res = await request(buildApp()).delete('/api/admin/economic/charges/c1');
       expect(res.status).toBe(200);
       expect(queries.deleteCharge).toHaveBeenCalledWith('c1', false);
       expect(ecoBridge.invalidateEcoCache).toHaveBeenCalled();
@@ -214,13 +214,13 @@ describe('routes/economic', () => {
 
     test('force=true/1 est transmis au service', async () => {
       queries.deleteCharge.mockResolvedValueOnce({ success: true });
-      await request(buildApp()).delete('/api/economic/charges/c1').query({ force: 'true' });
+      await request(buildApp()).delete('/api/admin/economic/charges/c1').query({ force: 'true' });
       expect(queries.deleteCharge).toHaveBeenCalledWith('c1', true);
     });
 
     test('renvoie l\'erreur + hint du service sans invalider le cache', async () => {
       queries.deleteCharge.mockResolvedValueOnce({ error: 'Charge liée à des commandes', status: 409, hint: 'Désactivez-la plutôt' });
-      const res = await request(buildApp()).delete('/api/economic/charges/c1');
+      const res = await request(buildApp()).delete('/api/admin/economic/charges/c1');
       expect(res.status).toBe(409);
       expect(res.body).toEqual({ error: 'Charge liée à des commandes', hint: 'Désactivez-la plutôt' });
       expect(ecoBridge.invalidateEcoCache).not.toHaveBeenCalled();
@@ -230,7 +230,7 @@ describe('routes/economic', () => {
   describe('GET /coherence', () => {
     test('délègue à getCoherence', async () => {
       queries.getCoherence.mockResolvedValueOnce({ checks_passed: true });
-      const res = await request(buildApp()).get('/api/economic/coherence');
+      const res = await request(buildApp()).get('/api/admin/economic/coherence');
       expect(res.status).toBe(200);
       expect(res.body).toEqual({ checks_passed: true });
     });
@@ -239,7 +239,7 @@ describe('routes/economic', () => {
   describe('GET /history', () => {
     test('délègue à getHistory', async () => {
       queries.getHistory.mockResolvedValueOnce([{ date: '2026-06' }]);
-      const res = await request(buildApp()).get('/api/economic/history');
+      const res = await request(buildApp()).get('/api/admin/economic/history');
       expect(res.status).toBe(200);
       expect(res.body).toEqual([{ date: '2026-06' }]);
     });
@@ -250,7 +250,7 @@ describe('routes/economic', () => {
       queries.redistribute.mockResolvedValueOnce(undefined);
       queries.buildExecutiveSummary.mockResolvedValueOnce({ margin: 15 });
 
-      const res = await request(buildApp()).post('/api/economic/redistribute');
+      const res = await request(buildApp()).post('/api/admin/economic/redistribute');
 
       expect(res.status).toBe(200);
       expect(queries.redistribute).toHaveBeenCalledWith('manual_force');
