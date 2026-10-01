@@ -51,6 +51,19 @@ test('la curation guide explicitement la préparation française avant publicati
   expect(workspace).toContain('/admin/products/');
 });
 
+test('Catalogue montre la file immédiatement et conserve le contexte Product 360', () => {
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+  const decision = read('public/dashboards/canonical/js/catalog-workspace-decision.js');
+
+  expect(workspace).toContain("tr.setAttribute('data-product-ref'");
+  expect(workspace).toContain('Fiche 360 →');
+  expect(workspace).toContain('Retour à la curation');
+  expect(decision).toContain('requestedProductRef');
+  expect(decision).toContain("classList.add('is-context-target')");
+  expect(decision).toContain("host.insertBefore(approvalSection");
+  expect(decision).not.toContain('Voir la file →');
+});
+
 test('Catalogue ne crée plus de navigation parallèle au shell Canonical', () => {
   const source = read('public/dashboards/canonical/js/catalog-control-tower.js');
   const css = read('public/dashboards/canonical/css/catalog-control-tower.css');
