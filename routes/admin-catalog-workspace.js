@@ -78,6 +78,16 @@ router.post('/products/:productRef/deactivate', async (req, res, next) => {
   } catch (err) { sendError(err, res, next); }
 });
 
+router.post('/approval/:productRef/prepare-fr', async (req, res, next) => {
+  try {
+    res.json({
+      ok: true,
+      action: 'catalog_candidate_prepared_fr',
+      result: await workspace.prepareCandidateFrench(req.params.productRef, req.user),
+    });
+  } catch (err) { sendError(err, res, next); }
+});
+
 router.post('/approval/:productRef/approve', async (req, res, next) => {
   try {
     res.json({ ok: true, action: 'catalog_candidate_approved', result: await workspace.approveCandidate(req.params.productRef, req.user) });
