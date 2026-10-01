@@ -35,6 +35,7 @@
     SOURCING_WORKSPACE: 'sourcing-workspace',
     IMPORT_RUNTIME: 'import-runtime',
     HUB_LIVE: 'hub-live',
+    RELAIS_LIVE: 'relais-live',
     PRICING_WORKSPACE: 'pricing-workspace',
     ACTION_CENTER: 'action-center',
     ORDER_360: 'order-360',
@@ -170,6 +171,7 @@
     }
     if (path === '/admin/import-runtime') return SURFACES.IMPORT_RUNTIME;
     if (path === '/admin/hub-live') return SURFACES.HUB_LIVE;
+    if (path === '/admin/relais-live') return SURFACES.RELAIS_LIVE;
     if (path === '/admin/workspaces/pricing' || path === '/admin-next/workspaces/pricing') {
       return SURFACES.PRICING_WORKSPACE;
     }
@@ -447,6 +449,11 @@
     return global.KomerceCanonicalHubLive.mount({ root, user, document: global.document, fetch: global.fetch.bind(global) });
   }
 
+  function renderRelayLive(root, user) {
+    if (!global.KomerceCanonicalRelayLive) throw new Error('canonical_relay_live_module_missing');
+    return global.KomerceCanonicalRelayLive.mount({ root, user, document: global.document, fetch: global.fetch.bind(global) });
+  }
+
   function renderPricingWorkspace(root, user, adminContext, requestedMarket) {
     return canonicalMount(
       global.KomerceCanonicalPricingWorkspace,
@@ -684,6 +691,7 @@
     if (surface === SURFACES.SOURCING_WORKSPACE) return renderSourcingWorkspace(root, user);
     if (surface === SURFACES.IMPORT_RUNTIME) return renderImportRuntime(root, user);
     if (surface === SURFACES.HUB_LIVE) return renderHubLive(root, user);
+    if (surface === SURFACES.RELAIS_LIVE) return renderRelayLive(root, user);
     if (surface === SURFACES.PRICING_WORKSPACE) return renderPricingWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.ACTION_CENTER) return renderActionCenter(root, user);
     if (surface === SURFACES.DEMO) return renderDemo(root, user);
@@ -788,6 +796,7 @@
     renderSourcingWorkspace,
     renderImportRuntime,
     renderHubLive,
+    renderRelayLive,
     renderPricingWorkspace,
     renderActionCenter,
     renderFinanceAccountingWorkspace,
