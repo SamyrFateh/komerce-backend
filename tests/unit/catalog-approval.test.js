@@ -4,9 +4,13 @@
 
 jest.mock('../../services/catalog-overrides', () => ({ upsertOverrides: jest.fn() }));
 jest.mock('../../utils/rules', () => ({ getRuleNumber: jest.fn() }));
+jest.mock('../../services/product-sku-service', () => ({
+  activateProductSkuInventoryModel: jest.fn(),
+}));
 
 const { upsertOverrides } = require('../../services/catalog-overrides');
 const { getRuleNumber } = require('../../utils/rules');
+const { activateProductSkuInventoryModel } = require('../../services/product-sku-service');
 const approval = require('../../services/catalog-approval');
 
 const PRODUCT_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
@@ -16,9 +20,15 @@ function candidateRow(over = {}) {
     id: PRODUCT_ID,
     name: 'Batterie externe',
     description: 'Batterie externe compacte avec charge rapide pour appareils mobiles.',
+    product_ref: 'KPR-TEST',
     category: 'tech',
+    boutique_category_key: 'Tech',
+    boutique_subcategory_key: 'Batteries',
+    source_locale: 'fr',
     price_kmf: 15000,
     stock: 10,
+    inventory_model: 'LEGACY_VARIANTS',
+    has_variants: false,
     is_active: false,
     is_available: true,
     lifecycle_status: 'candidate',
@@ -28,11 +38,39 @@ function candidateRow(over = {}) {
   };
 }
 
-function mockDb({ product, activeCount = 3, queueCount = 3, mediaCount = 1 } = {}) {
+function mockDb({
+  product,
+  activeCount = 3,
+  queueCount = 3,
+  mediaCount = 1,
+  sourceMapped = false,
+  supplierSkuCount = 1,
+  completeSupplierSkus = 1,
+  enabledMarkets = 0,
+  taxonomyActive = true,
+} = {}) {
   const calls = [];
   const q = {
     query: jest.fn(async (sql, params) => {
       calls.push({ sql, params });
+      if (sql.includes('WITH media AS (')) {
+        if (!product) return { rows: [] };
+        return { rows: [{
+          ...product,
+          product_id: product.id,
+          taxonomy_active: taxonomyActive,
+          has_sourcing_candidate: sourceMapped,
+          supplier_name: sourceMapped ? 'CJdropshipping' : null,
+          supplier_product_id: sourceMapped ? 'CJ-1' : null,
+          normalized_source_contract: sourceMapped ? { schema_version: '2' } : null,
+          sourcing_decision: sourceMapped ? 'TEST' : 'UNKNOWN',
+          active_media: mediaCount,
+          supplier_skus: sourceMapped ? supplierSkuCount : 0,
+          active_supplier_skus: sourceMapped ? supplierSkuCount : 0,
+          complete_supplier_skus: sourceMapped ? completeSupplierSkus : 0,
+          enabled_markets: enabledMarkets,
+        }] };
+      }
       if (sql.includes('SELECT * FROM products')) return { rows: product ? [product] : [] };
       if (sql.includes('FROM catalog_media')) return { rows: [{ count: mediaCount }] };
       if (sql.includes('COUNT(*)::int AS count') && sql.includes('FROM products') && sql.includes('is_active = TRUE')) {
@@ -52,6 +90,8 @@ beforeEach(() => {
   upsertOverrides.mockReset();
   getRuleNumber.mockReset();
   getRuleNumber.mockResolvedValue(120);
+  activateProductSkuInventoryModel.mockReset();
+  activateProductSkuInventoryModel.mockResolvedValue({ ready: true, inventory_model: 'SKU' });
 });
 
 describe('getApprovalQueue', () => {
@@ -101,6 +141,42 @@ describe('approveProduct', () => {
     const { q } = mockDb({ product: candidateRow({ price_kmf: 0 }) });
     await expect(approval.approveProduct(q, PRODUCT_ID, { id: 'admin-1' }))
       .resolves.toMatchObject({ status: 422, body: { code: 'invalid_price' } });
+  });
+
+  it('422 si un produit fournisseur n’a pas une Supplier Order Identity complète', async () => {
+    const { q } = mockDb({
+      product: candidateRow(),
+      sourceMapped: true,
+      supplierSkuCount: 1,
+      completeSupplierSkus: 0,
+    });
+
+    const result = await approval.approveProduct(q, PRODUCT_ID, { id: 'admin-1' });
+
+    expect(result).toMatchObject({
+      status: 422,
+      body: {
+        code: 'catalog_certification_failed',
+        reasons: expect.arrayContaining(['supplier_order_identity_incomplete']),
+      },
+    });
+    expect(activateProductSkuInventoryModel).not.toHaveBeenCalled();
+  });
+
+  it('un produit fournisseur certifié bascule en SKU dans la même décision de publication', async () => {
+    const { q, calls } = mockDb({
+      product: candidateRow(),
+      sourceMapped: true,
+      supplierSkuCount: 1,
+      completeSupplierSkus: 1,
+      activeCount: 40,
+    });
+
+    const result = await approval.approveProduct(q, PRODUCT_ID, { id: 'admin-1' });
+
+    expect(result.status).toBe(200);
+    expect(activateProductSkuInventoryModel).toHaveBeenCalledWith(q, PRODUCT_ID);
+    expect(calls.find(call => call.sql.startsWith('UPDATE products'))).toBeDefined();
   });
 
   it('200 publie une fiche prête sous le cap', async () => {
