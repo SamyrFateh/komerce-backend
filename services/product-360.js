@@ -66,7 +66,7 @@ function publicIdentity(product) {
     description: product.description || null,
     category: product.category || null,
     subcategory: product.subcategory || null,
-    price_kmf: Number(product.price_kmf) || 0,
+    price_kmf: product.price_kmf == null ? null : Number(product.price_kmf),
     lifecycle_status: product.lifecycle_status || null,
     is_active: Boolean(product.is_active),
     is_available: Boolean(product.is_available),
