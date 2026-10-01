@@ -53,6 +53,7 @@ module.exports = {
       'preuves provider P0 Business readiness → P1 Raw API → P2 Adapter → P3 Pipeline → P4 Golden E2E',
       'règle fail-closed commune : une preuve absente, inconnue ou ambiguë ne devient jamais implicitement PASS',
       'inventaire et fiches de qualification des frontières API externes de Komerce',
+      'contrat d onboarding humain dérivé de la vérité fournisseur : prérequis, lieu/action de création, éléments à obtenir, éléments à ne jamais demander et critère de fin',
     ],
     out: [
       'les adapters et clients provider spécifiques, qui restent dans la feature métier consommatrice (payments, notifications, catalog/purchasing, etc.)',
@@ -66,10 +67,14 @@ module.exports = {
     'docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md',
     'docs/external-providers/EXTERNAL_PROVIDER_ANALYSIS_TEMPLATE.md',
     'docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md',
+    'docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_ONBOARDING.md',
     'docs/chantier/EXTERNAL_PROVIDER_CONTRACTS_L0.md',
   ],
 
   files: {
+    services: [
+      'services/external-provider-onboarding-contracts.js',
+    ],
     scripts: [
       'scripts/provider-contract-proof.js',
       'scripts/external-provider-boundary-scan.js',
@@ -108,6 +113,8 @@ module.exports = {
       { fn: 'assertConversation', file: 'scripts/provider-contract-proof.js' },
       { fn: 'assertThrough', file: 'scripts/provider-contract-proof.js' },
       { fn: 'summary', file: 'scripts/provider-contract-proof.js' },
+      { fn: 'publicContract', file: 'services/external-provider-onboarding-contracts.js' },
+      { fn: 'checkReady', file: 'services/external-provider-onboarding-contracts.js' },
       { fn: 'scanRepository', file: 'scripts/external-provider-boundary-scan.js' },
       { fn: 'runBatch', file: 'scripts/external-provider-batch-proof.js' },
       { fn: 'runStripeReadOnlyProof', file: 'scripts/stripe-provider-contract-proof.js' },
@@ -127,6 +134,8 @@ module.exports = {
     'une preuve Sandbox/staging ne satisfait jamais implicitement un contrat Production',
     'une correspondance externe ambiguë bloque : Komerce ne devine jamais une référence ou un état provider',
     'un Golden E2E prouve la composition de contrats élémentaires déjà qualifiés ; il ne sert jamais à découvrir P0/P1 à l aveugle',
+    'un onboarding partenaire ne demande jamais un credential au hasard : le type, le propriétaire, les prérequis, les actions de création et les éléments à obtenir proviennent du contrat fournisseur qualifié',
+    'l IA peut accélérer la lecture et la formalisation mais ne devient jamais l autorité du contrat : la provenance reste documentation fournisseur, confirmation fournisseur ou preuve runtime explicite',
     'les adapters provider et les side effects restent possédés par leurs features métier ; external-provider-contracts ne devient jamais un god-adapter',
   ],
 };
