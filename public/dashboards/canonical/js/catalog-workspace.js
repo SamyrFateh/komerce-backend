@@ -223,6 +223,13 @@
     return row.content_source === 'connector_raw' && !isFrenchLocale(row.source_locale);
   }
 
+  function curationState(row = {}) {
+    if (needsFrenchPreparation(row)) return { label: 'FR à préparer', tone: 'is-warning' };
+    if (row.needs_review) return { label: 'À relire', tone: 'is-warning' };
+    if (row.price_kmf == null) return { label: 'Prix à définir', tone: 'is-neutral' };
+    return { label: 'Prêt à valider', tone: 'is-positive' };
+  }
+
   function renderApproval(rootNode, ui, doc, payload, context) {
     const slot = createSection(rootNode, ui, 'File de curation', 'Le scanner sourcing priorise la revue ; seule une décision humaine ajoute, corrige ou écarte un produit.');
     const rows = payload.approval || [];
@@ -252,32 +259,43 @@
     }
 
     const table = doc.createElement('table');
-    table.className = 'kmc-workspace-table';
-    table.innerHTML = '<thead><tr><th>Référence</th><th>Produit</th><th>Catégorie</th><th>Réf. KMF</th><th>Signal sourcing</th><th>Pourquoi</th><th>Provenance</th><th></th></tr></thead>';
+    table.className = 'kmc-workspace-table kmc-catalog-curation-table';
+    table.innerHTML = '<thead><tr><th>Produit</th><th>Catégorie</th><th>Signal sourcing</th><th>État</th><th>Action</th></tr></thead>';
     const tbody = doc.createElement('tbody');
     rows.forEach(row => {
       const tr = doc.createElement('tr');
       tr.setAttribute('data-product-ref', row.product_ref || '');
-      const refCell = doc.createElement('td');
+      const productCell = doc.createElement('td');
+      productCell.className = 'kmc-catalog-product-cell';
       const returnTo = row.product_ref
         ? `/admin/workspaces/catalog?product_ref=${encodeURIComponent(row.product_ref)}`
         : '/admin/workspaces/catalog';
-      const refLink = text(doc, 'a', 'kmc-workspace-nav-link', row.product_ref);
-      refLink.href = contextualHref(
+      const productTitle = text(doc, 'a', 'kmc-catalog-product-title', row.name || row.product_ref);
+      productTitle.href = contextualHref(
         `/admin/products/${encodeURIComponent(row.product_ref)}`,
         returnTo,
         'Retour à la curation'
       );
-      refCell.appendChild(refLink);
-      const detailLink = text(doc, 'a', 'kmc-workspace-row-detail-link', 'Fiche 360 →');
-      detailLink.href = refLink.href;
-      refCell.appendChild(detailLink);
-      tr.appendChild(refCell);
-      tr.appendChild(td(doc, row.name));
+      productCell.appendChild(productTitle);
+
+      const productMeta = doc.createElement('div');
+      productMeta.className = 'kmc-catalog-product-meta';
+      const refLink = text(doc, 'a', 'kmc-workspace-nav-link', row.product_ref);
+      refLink.href = productTitle.href;
+      productMeta.appendChild(refLink);
+      productMeta.appendChild(text(
+        doc,
+        'span',
+        'kmc-workspace-subtitle',
+        `${formatSource(row.content_source)}${row.supplier_name ? ` · ${row.supplier_name}` : ''}`
+      ));
+      productCell.appendChild(productMeta);
+      tr.appendChild(productCell);
+
       tr.appendChild(td(doc, row.category));
-      tr.appendChild(td(doc, formatKmf(row.price_kmf)));
 
       const signalCell = doc.createElement('td');
+      signalCell.className = 'kmc-catalog-signal-cell';
       signalCell.appendChild(text(doc, 'strong', sourcingDecisionTone(row.sourcing_decision), sourcingDecisionLabel(row.sourcing_decision)));
       const signalMeta = [
         row.sourcing_confidence ? `confiance ${row.sourcing_confidence}` : null,
@@ -285,14 +303,23 @@
         row.supplier_stock == null ? null : `stock fournisseur ${formatNumber(row.supplier_stock)}`,
       ].filter(Boolean).join(' · ');
       if (signalMeta) signalCell.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', signalMeta));
+      signalCell.appendChild(text(doc, 'small', 'kmc-catalog-reason', row.sourcing_reason || 'Aucune raison sourcing persistée.'));
       tr.appendChild(signalCell);
 
-      const reasonCell = doc.createElement('td');
-      reasonCell.appendChild(text(doc, 'span', '', row.sourcing_reason || 'Aucune raison sourcing persistée.'));
-      tr.appendChild(reasonCell);
+      const state = curationState(row);
+      const stateCell = doc.createElement('td');
+      stateCell.className = 'kmc-catalog-state-cell';
+      stateCell.appendChild(text(doc, 'strong', state.tone, state.label));
+      stateCell.appendChild(text(
+        doc,
+        'small',
+        'kmc-workspace-subtitle',
+        row.price_kmf == null ? 'Prix —' : formatKmf(row.price_kmf)
+      ));
+      tr.appendChild(stateCell);
 
-      tr.appendChild(td(doc, `${formatSource(row.content_source)}${row.supplier_name ? ` · ${row.supplier_name}` : ''}`));
       const actions = doc.createElement('td');
+      actions.className = 'kmc-catalog-actions-cell';
 
       const mustPrepareFrench = needsFrenchPreparation(row);
       if (mustPrepareFrench) {
@@ -578,5 +605,5 @@
     return context.reload();
   }
 
-  return Object.freeze({ ENDPOINT, metricItems, stageLabel, mount });
+  return Object.freeze({ ENDPOINT, metricItems, stageLabel, curationState, mount });
 });
