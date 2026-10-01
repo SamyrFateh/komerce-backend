@@ -240,3 +240,72 @@ describe('sameState — comparaison en temps constant', () => {
     expect(sameState('', '')).toBe(false);
   });
 });
+
+describe('liaison de la session OAuth aux sources (Provider Credential Authority)', () => {
+  function appWith(svc, linkSources) {
+    const app = express();
+    app.use(cookieParser());
+    app.use('/api/integrations/aliexpress', createRouter({ oauthService: svc, env: { NODE_ENV: 'test' }, linkSources }));
+    return app;
+  }
+  async function authorize(app) {
+    const start = await request(app).get('/api/integrations/aliexpress/oauth/start');
+    const cookie = start.headers['set-cookie'][0].split(';')[0];
+    const state = decodeURIComponent(cookie.split('=')[1]);
+    return request(app).get(`/api/integrations/aliexpress/oauth/callback?state=${state}&code=code-xyz`).set('Cookie', cookie);
+  }
+
+  it('après un échange réussi : statut (sans token) transmis à la liaison', async () => {
+    const status = { connected: true, provider_user_nick: 'shop', access_expires_at: '2026-11-01T00:00:00Z', refresh_expires_at: '2027-01-01T00:00:00Z' };
+    const svc = fakeOauthService({ exchangeAuthorizationCode: jest.fn().mockResolvedValue(status) });
+    const link = jest.fn().mockResolvedValue(1);
+    const res = await authorize(appWith(svc, link));
+    expect(res.status).toBe(200);
+    expect(link).toHaveBeenCalledWith(status);
+    expect(res.text).not.toMatch(/code-xyz|access_token|refresh_token/i);
+  });
+
+  it('échec de liaison : l’autorisation reste valide (200), aucun détail exposé', async () => {
+    const svc = fakeOauthService();
+    const link = jest.fn().mockRejectedValue(new Error('secret-db-detail'));
+    const res = await authorize(appWith(svc, link));
+    expect(res.status).toBe(200);
+    expect(res.text).not.toMatch(/secret-db-detail/);
+  });
+
+  it('échec d’échange : aucune liaison tentée', async () => {
+    const svc = fakeOauthService({ exchangeAuthorizationCode: jest.fn().mockRejectedValue(new Error('boom')) });
+    const link = jest.fn();
+    const res = await authorize(appWith(svc, link));
+    expect(res.status).toBe(502);
+    expect(link).not.toHaveBeenCalled();
+  });
+
+  it('503 / 502 de routes OAuth : aucun message brut renvoyé', async () => {
+    const svc = fakeOauthService({
+      buildAuthorizationUrl: jest.fn(() => { throw new Error('ALIEXPRESS_APP_SECRET manquant'); }),
+      refreshConnection: jest.fn().mockRejectedValue(new Error('refresh_token=abc123 rejeté')),
+      getConnectionStatus: jest.fn().mockRejectedValue(new Error('connexion db refusée')),
+    });
+    const app = buildApp(svc);
+    const start = await request(app).get('/api/integrations/aliexpress/oauth/start');
+    expect(start.status).toBe(503);
+    expect(JSON.stringify(start.body)).not.toMatch(/SECRET|manquant/);
+    const refresh = await request(app).post('/api/integrations/aliexpress/oauth/refresh');
+    expect(refresh.status).toBe(502);
+    expect(JSON.stringify(refresh.body)).not.toMatch(/abc123|refresh_token/);
+    const status = await request(app).get('/api/integrations/aliexpress/status');
+    expect(JSON.stringify(status.body)).not.toMatch(/db refusée/);
+  });
+
+  it('linkSessionToSources relie chaque source aliexpress active, sans token', async () => {
+    const { linkSessionToSources } = require('../../routes/integrations-aliexpress');
+    const credentialService = { linkOAuthSession: jest.fn().mockResolvedValue({}) };
+    const query = jest.fn().mockResolvedValue({ rows: [{ source_id: 'api:aliexpress' }] });
+    const n = await linkSessionToSources({ provider_user_nick: 'shop', access_expires_at: 'a', refresh_expires_at: 'r', access_token: 'NEVER' }, { query, credentialService });
+    expect(n).toBe(1);
+    expect(credentialService.linkOAuthSession).toHaveBeenCalledWith('api:aliexpress',
+      { sessionKey: 'aliexpress', accountLabel: 'shop', accessExpiresAt: 'a', refreshExpiresAt: 'r' }, null);
+    expect(JSON.stringify(credentialService.linkOAuthSession.mock.calls)).not.toContain('NEVER');
+  });
+});

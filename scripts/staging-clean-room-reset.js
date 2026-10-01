@@ -51,6 +51,8 @@ const PRESERVED_CONFIGURATION = Object.freeze([
   'sourcing_merge_policies',
   'sourcing_global_access_grants',
   'supplier_oauth_connections',
+  // Coffre des identifiants fournisseurs : jamais effacé par un reset (sinon les sources perdent leur connexion).
+  'provider_credentials',
 ]);
 
 function assertStaging() {

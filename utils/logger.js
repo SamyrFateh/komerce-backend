@@ -142,6 +142,12 @@ try {
         '*.token',
         '*.secret',
         '*.creditCard',
+        // Identifiants fournisseurs (coffre) : jamais en clair dans un log, quelle que soit la forme.
+        'api_key', 'apiKey', 'client_secret', 'clientSecret', 'access_token', 'accessToken',
+        'refresh_token', 'refreshToken', 'credentials',
+        '*.api_key', '*.apiKey', '*.client_secret', '*.clientSecret', '*.access_token', '*.accessToken',
+        '*.refresh_token', '*.refreshToken', '*.credentials',
+        'req.body.credentials', 'req.body.credentials.*',
       ],
       censor: '[REDACTED]',
     },

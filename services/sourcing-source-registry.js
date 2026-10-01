@@ -6,11 +6,11 @@
  * @criticality   high
  * @inputs        connector_registry, operator_source_requests, authenticated_operator
  * @outputs       source_connector_catalog, registered_source, connector_required_request, connection_test_result
- * @depends       db.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js
+ * @depends       db.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/provider-credential-service.js
  * @used-by       services/sourcing-workspace.js
  * @db-read       sourcing_sources, sourcing_source_requests
- * @db-write      sourcing_sources, sourcing_source_requests
- * @db-txn        none
+ * @db-write      sourcing_sources, sourcing_source_requests, sourcing_provider_control_events
+ * @db-txn        lifecycle_transition_and_audit
  * @doctrine      operator_owned_source_registry, one_source_per_adapter, fail_closed_source_creation, connection_test_is_not_certification, connector_required_is_never_a_source
  * @impact-areas  sourcing, supplier-import, admin-dashboard
  * @version       2026-10
@@ -20,6 +20,7 @@
 const db = require('../db');
 const importDispatch = require('./sourcing-import-dispatch');
 const sourceAutopilot = require('./sourcing-source-autopilot');
+const credentialService = require('./provider-credential-service');
 
 class SourceRegistryError extends Error {
   constructor(status, message, code, details = null) {
@@ -59,6 +60,15 @@ async function existingRefs(refs, q = db) {
   return new Set(rows.map((row) => row.source_id));
 }
 
+async function archivedRefs(refs, q = db) {
+  if (!refs.length) return new Set();
+  const { rows } = await q.query(
+    `SELECT source_id FROM sourcing_sources WHERE source_id = ANY($1::text[]) AND status <> 'active'`,
+    [refs]
+  );
+  return new Set(rows.map((row) => row.source_id));
+}
+
 // Catalogue canonique des connecteurs API pour l'assistant. Source unique : le registre
 // backend. Aucun détail interne (module, classe, variable d'environnement, trace).
 async function getCatalog(q = db) {
@@ -69,6 +79,7 @@ async function getCatalog(q = db) {
     if (descriptor) refByAdapter.set(fact.adapter, refFor(descriptor));
   }
   const present = await existingRefs([...refByAdapter.values()], q);
+  const archived = await archivedRefs([...refByAdapter.values()], q);
   return {
     connectors: facts.map((fact) => {
       const ref = refByAdapter.get(fact.adapter) || null;
@@ -85,6 +96,7 @@ async function getCatalog(q = db) {
         can_create: fact.available && fact.automatable && !existing,
         reason: fact.reason,
         existing_source_ref: existing,
+        existing_archived: Boolean(existing && archived.has(existing)),
       };
     }),
   };
@@ -217,27 +229,117 @@ async function testSourceConnection(sourceRef, q = db) {
     throw new SourceRegistryError(409, 'Source sans contrat d’autopull', 'sourcing_autopull_unavailable');
   }
 
-  const result = await importDispatch.testConnection(source.adapter_type);
-  const { rows } = await q.query(
-    `UPDATE sourcing_sources
-        SET connection_test_status = $2,
-            connection_test_code = $3,
-            connection_tested_at = NOW()
-      WHERE source_id = $1
-      RETURNING connection_tested_at`,
-    [source.source_ref, result.ok ? 'ok' : 'failed', result.ok ? null : result.code]
-  );
+  // Le test passe par l'autorité crédentielle : secrets du coffre côté serveur uniquement,
+  // résultat mémorisé (statut + code métier) sur la source et sur le credential.
+  const result = await credentialService.test(source.source_ref, { q });
   return {
-    source_ref: source.source_ref,
-    ok: Boolean(result.ok),
+    source_ref: result.source_ref,
+    ok: result.ok,
     code: result.code,
     message: result.message,
-    tested_at: rows[0]?.connection_tested_at || null,
+    tested_at: result.tested_at,
   };
+}
+
+// Cycle de vie : archiver = sortir du tableau sans rien supprimer. L'autopilot passe OFF,
+// le statut lifecycle passe à « disabled » ; capacités, certification, captures, observations
+// et KIR restent intacts. Restaurer remet la source visible, autopilot toujours OFF.
+async function setLifecycle(sourceRef, active, actor, q = db) {
+  const source = await sourceAutopilot.requireSource(sourceRef, q);
+  const wasActive = source.status === 'active';
+  if (wasActive === active && (active || !source.autopilot_enabled)) {
+    return { source_ref: source.source_ref, archived: !active, changed: false };
+  }
+  const client = await q.getClient();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `UPDATE sourcing_sources
+          SET status = $2, autopilot_enabled = false, updated_at = NOW()
+        WHERE source_id = $1`,
+      [source.source_ref, active ? 'active' : 'disabled']
+    );
+    await client.query(
+      `INSERT INTO sourcing_provider_control_events (source_id, capability, old_value, new_value, actor_id, reason)
+       VALUES ($1, 'lifecycle', $2, $3, $4, $5)`,
+      [source.source_ref, wasActive, active, actor?.id ? String(actor.id) : null,
+        active ? 'operator_source_restore' : 'operator_source_archive']
+    );
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+  return { source_ref: source.source_ref, archived: !active, changed: wasActive !== active };
+}
+
+const archiveSource = (sourceRef, actor, q = db) => setLifecycle(sourceRef, false, actor, q);
+const restoreSource = (sourceRef, actor, q = db) => setLifecycle(sourceRef, true, actor, q);
+
+// Mise à jour : uniquement le libellé opérateur. Le connecteur, l'identifiant et tous les
+// états de sécurité (autopilot, capacités, certification) ne sont jamais modifiables ici.
+async function updateSource(sourceRef, body = {}, q = db) {
+  const source = await sourceAutopilot.requireSource(sourceRef, q);
+  if (!Object.prototype.hasOwnProperty.call(body || {}, 'label')) {
+    throw new SourceRegistryError(400, 'Aucune modification demandée', 'sourcing_source_update_empty');
+  }
+  const label = squash(body.label);
+  if (label && (label.length < 2 || label.length > MAX_NAME_LENGTH)) {
+    throw new SourceRegistryError(400, 'Nom de la source invalide (2 à 80 caractères)', 'sourcing_source_label_invalid');
+  }
+  await q.query(
+    'UPDATE sourcing_sources SET display_name = $2, updated_at = NOW() WHERE source_id = $1',
+    [source.source_ref, label || null]
+  );
+  return { source_ref: source.source_ref, label: label || null };
+}
+
+// Demandes « connecteur requis » : jamais des sources, sans historique — modifiables et
+// supprimables (c'est la seule suppression réelle du registre).
+async function updateConnectorRequest(requestRef, body = {}, q = db) {
+  const sets = [];
+  const values = [requestRef];
+  const push = (column, value) => { values.push(value); sets.push(`${column} = $${values.length}`); };
+  if (Object.prototype.hasOwnProperty.call(body, 'requested_label')) {
+    const label = squash(body.requested_label);
+    if (label.length < 2 || label.length > MAX_NAME_LENGTH) {
+      throw new SourceRegistryError(400, 'Nom de la source invalide (2 à 80 caractères)', 'sourcing_source_request_label_invalid');
+    }
+    push('requested_label', label);
+  }
+  if (Object.prototype.hasOwnProperty.call(body, 'reference_url')) push('reference_url', cleanReference(body.reference_url));
+  if (!sets.length) throw new SourceRegistryError(400, 'Aucune modification demandée', 'sourcing_source_update_empty');
+  const { rows } = await q.query(
+    `UPDATE sourcing_source_requests SET ${sets.join(', ')}, updated_at = NOW()
+      WHERE request_id::text = $1
+      RETURNING request_id, provider_name, requested_label, reference_url, status, created_at`,
+    values
+  ).catch((err) => {
+    if (err.code === '22P02') return { rows: [] };
+    throw err;
+  });
+  if (!rows.length) throw new SourceRegistryError(404, 'Demande introuvable', 'sourcing_source_request_not_found');
+  return requestRow(rows[0]);
+}
+
+async function deleteConnectorRequest(requestRef, q = db) {
+  const { rows } = await q.query(
+    'DELETE FROM sourcing_source_requests WHERE request_id::text = $1 RETURNING request_id',
+    [requestRef]
+  );
+  if (!rows.length) throw new SourceRegistryError(404, 'Demande introuvable', 'sourcing_source_request_not_found');
+  return { request_ref: rows[0].request_id, deleted: true };
 }
 
 module.exports = {
   SourceRegistryError,
+  archiveSource,
+  restoreSource,
+  updateSource,
+  updateConnectorRequest,
+  deleteConnectorRequest,
   getCatalog,
   createSource,
   createConnectorRequest,

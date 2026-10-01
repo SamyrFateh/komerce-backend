@@ -85,7 +85,7 @@ describe('test de connexion réel', () => {
     ['ALLEGRO_TRANSPORT_UNAVAILABLE', 'provider_unreachable'],
     ['fetch failed ECONNRESET', 'provider_unreachable'],
     ['[AliExpress OAuth] compte AliExpress non autorisé; ouvrir /api/integrations/aliexpress/oauth/start', 'account_not_connected'],
-    ['[AliExpress OAuth] refresh token expiré; nouvelle autorisation AliExpress requise', 'account_not_connected'],
+    ['[AliExpress OAuth] refresh token expiré; nouvelle autorisation AliExpress requise', 'authorization_expired'],
     ['quelque chose d’inattendu', 'connection_failed'],
   ])('échec « %s » → %s', async (raw, code) => {
     mockAliTest.mockRejectedValue(new Error(raw));

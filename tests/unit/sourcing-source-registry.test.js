@@ -13,11 +13,20 @@ const mockTestConnection = jest.fn();
 const mockRequireSource = jest.fn();
 const mockAutomationBySourceRef = jest.fn();
 
-jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
+const mockClientQuery = jest.fn();
+const mockRelease = jest.fn();
+jest.mock('../../db', () => ({
+  query: (...args) => mockQuery(...args),
+  getClient: async () => ({ query: (...args) => mockClientQuery(...args), release: () => mockRelease() }),
+}));
 jest.mock('../../services/sourcing-import-dispatch', () => ({
   sourceConnectorFacts: (...args) => mockFacts(...args),
   sourceAutomationDescriptor: (...args) => mockDescriptor(...args),
   testConnection: (...args) => mockTestConnection(...args),
+}));
+const mockCredentialTest = jest.fn();
+jest.mock('../../services/provider-credential-service', () => ({
+  test: (...args) => mockCredentialTest(...args),
 }));
 jest.mock('../../services/sourcing-source-autopilot', () => ({
   descriptorSourceRef: (descriptor) => `api:${descriptor.adapter}`,
@@ -187,25 +196,22 @@ describe('test de connexion', () => {
     mockQuery.mockResolvedValue({ rows: [{ connection_tested_at: '2026-10-01T01:00:00Z' }] });
   });
 
-  test('connexion valide : mémorisée, sans KIR ni capacité ni certification', async () => {
-    mockTestConnection.mockResolvedValue({ ok: true, code: 'connection_ok', message: 'Connexion valide' });
+  test('connexion valide : déléguée à l’autorité crédentielle (secrets côté serveur seulement)', async () => {
+    mockCredentialTest.mockResolvedValue({ source_ref: 'api:cj', ok: true, code: 'connection_ok', message: 'Connexion valide', tested_at: '2026-10-01T01:00:00Z' });
 
     const result = await registry.testSourceConnection('api:cj');
 
     expect(result).toEqual({ source_ref: 'api:cj', ok: true, code: 'connection_ok', message: 'Connexion valide', tested_at: '2026-10-01T01:00:00Z' });
-    expect(mockTestConnection).toHaveBeenCalledWith('cj');
-    const [update] = sqlCalls();
-    expect(update.params).toEqual(['api:cj', 'ok', null]);
-    expect(update.sql).not.toMatch(/production_certified|_enabled|autopilot|sourcing_captures/);
+    expect(mockCredentialTest).toHaveBeenCalledWith('api:cj', expect.any(Object));
+    expect(mockTestConnection).not.toHaveBeenCalled();
   });
 
   test('connexion impossible : raison métier courte, jamais de message brut ni de secret', async () => {
-    mockTestConnection.mockResolvedValue({ ok: false, code: 'credentials_rejected', message: 'Le fournisseur a refusé les identifiants.' });
+    mockCredentialTest.mockResolvedValue({ source_ref: 'api:cj', ok: false, code: 'credentials_rejected', message: 'Le fournisseur a refusé les identifiants.', tested_at: null, extra: 'x' });
 
     const result = await registry.testSourceConnection('api:cj');
 
-    expect(result).toMatchObject({ ok: false, code: 'credentials_rejected', message: 'Le fournisseur a refusé les identifiants.' });
-    expect(sqlCalls()[0].params).toEqual(['api:cj', 'failed', 'credentials_rejected']);
+    expect(result).toEqual({ source_ref: 'api:cj', ok: false, code: 'credentials_rejected', message: 'Le fournisseur a refusé les identifiants.', tested_at: null });
     expect(JSON.stringify(result)).not.toMatch(/stack|Error:|apiKey|token/i);
   });
 
@@ -219,5 +225,131 @@ describe('test de connexion', () => {
     mockRequireSource.mockRejectedValue(Object.assign(new Error('Source sourcing introuvable'), { status: 404 }));
     await expect(registry.testSourceConnection('api:ghost')).rejects.toMatchObject({ status: 404 });
     expect(mockTestConnection).not.toHaveBeenCalled();
+  });
+});
+
+describe('cycle de vie : archiver / restaurer (jamais de suppression)', () => {
+  const source = (overrides = {}) => ({ source_ref: 'api:cj', status: 'active', autopilot_enabled: true, ...overrides });
+  const clientSql = () => mockClientQuery.mock.calls.map(([sql, params]) => ({ sql: String(sql), params }));
+
+  beforeEach(() => { mockClientQuery.mockResolvedValue({ rows: [] }); });
+
+  test('archiver : autopilot OFF + statut disabled + trace, dans une transaction', async () => {
+    mockRequireSource.mockResolvedValue(source());
+    await expect(registry.archiveSource('api:cj', { id: 7 })).resolves.toEqual({ source_ref: 'api:cj', archived: true, changed: true });
+    const calls = clientSql();
+    expect(calls[0].sql).toBe('BEGIN');
+    expect(calls.find((c) => /UPDATE sourcing_sources/.test(c.sql)).params).toEqual(['api:cj', 'disabled']);
+    expect(calls.find((c) => /UPDATE sourcing_sources/.test(c.sql)).sql).toMatch(/autopilot_enabled = false/);
+    const event = calls.find((c) => /sourcing_provider_control_events/.test(c.sql));
+    expect(event.params).toEqual(['api:cj', true, false, '7', 'operator_source_archive']);
+    expect(calls[calls.length - 1].sql).toBe('COMMIT');
+    expect(mockRelease).toHaveBeenCalled();
+  });
+
+  test('aucune suppression : ni DELETE, ni TRUNCATE, ni toucher aux capacités ou à la certification', async () => {
+    mockRequireSource.mockResolvedValue(source());
+    await registry.archiveSource('api:cj', null);
+    const sql = clientSql().map((c) => c.sql).join('\n');
+    expect(sql).not.toMatch(/DELETE|TRUNCATE|DROP/i);
+    expect(sql).not.toMatch(/discovery_enabled|sync_enabled|import_enabled|production_enabled|production_certified/);
+    expect(sql).not.toMatch(/sourcing_captures|sourcing_observations/);
+  });
+
+  test('restaurer : statut active, autopilot reste OFF', async () => {
+    mockRequireSource.mockResolvedValue(source({ status: 'disabled', autopilot_enabled: false }));
+    await expect(registry.restoreSource('api:cj', { id: 7 })).resolves.toEqual({ source_ref: 'api:cj', archived: false, changed: true });
+    const update = clientSql().find((c) => /UPDATE sourcing_sources/.test(c.sql));
+    expect(update.params).toEqual(['api:cj', 'active']);
+    expect(update.sql).toMatch(/autopilot_enabled = false/);
+    expect(clientSql().find((c) => /control_events/.test(c.sql)).params.slice(1, 3)).toEqual([false, true]);
+  });
+
+  test('idempotent : déjà archivée ou déjà active, aucune écriture', async () => {
+    mockRequireSource.mockResolvedValue(source({ status: 'disabled', autopilot_enabled: false }));
+    await expect(registry.archiveSource('api:cj')).resolves.toMatchObject({ changed: false, archived: true });
+    mockRequireSource.mockResolvedValue(source());
+    await expect(registry.restoreSource('api:cj')).resolves.toMatchObject({ changed: false, archived: false });
+    expect(mockClientQuery).not.toHaveBeenCalled();
+  });
+
+  test('échec SQL : ROLLBACK, client libéré, erreur propagée', async () => {
+    mockRequireSource.mockResolvedValue(source());
+    mockClientQuery.mockImplementation(async (sql) => { if (/INSERT INTO sourcing_provider_control_events/.test(sql)) throw new Error('boom'); return { rows: [] }; });
+    await expect(registry.archiveSource('api:cj')).rejects.toThrow('boom');
+    expect(clientSql().some((c) => c.sql === 'ROLLBACK')).toBe(true);
+    expect(mockRelease).toHaveBeenCalled();
+  });
+
+  test('source inconnue : l’erreur de requireSource remonte, aucune écriture', async () => {
+    mockRequireSource.mockRejectedValue(Object.assign(new Error('introuvable'), { status: 404 }));
+    await expect(registry.archiveSource('api:nope')).rejects.toMatchObject({ status: 404 });
+    expect(mockClientQuery).not.toHaveBeenCalled();
+  });
+
+  test('le catalogue signale une source archivée (restaurable, non recréable)', async () => {
+    mockQuery.mockImplementation(async (sql) => {
+      if (/status <> 'active'/.test(sql)) return { rows: [{ source_id: 'api:cj' }] };
+      return { rows: [{ source_id: 'api:cj' }] };
+    });
+    const { connectors } = await registry.getCatalog();
+    expect(connectors.find((c) => c.adapter === 'cj')).toMatchObject({ existing_source_ref: 'api:cj', existing_archived: true, can_create: false });
+  });
+});
+
+describe('mise à jour : libellé opérateur uniquement', () => {
+  beforeEach(() => { mockRequireSource.mockResolvedValue({ source_ref: 'api:cj', status: 'active' }); });
+
+  test('renomme sans toucher au connecteur ni aux états de sécurité', async () => {
+    await expect(registry.updateSource('api:cj', { label: '  CJ   principal ' })).resolves.toEqual({ source_ref: 'api:cj', label: 'CJ principal' });
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(params).toEqual(['api:cj', 'CJ principal']);
+    expect(String(sql)).toMatch(/SET display_name = \$2/);
+    expect(String(sql)).not.toMatch(/autopilot|enabled|certified|adapter_type|status/);
+  });
+
+  test('libellé vide : retour au libellé du connecteur', async () => {
+    await expect(registry.updateSource('api:cj', { label: '   ' })).resolves.toEqual({ source_ref: 'api:cj', label: null });
+    expect(mockQuery.mock.calls[0][1]).toEqual(['api:cj', null]);
+  });
+
+  test.each([[{}], [{ adapter: 'ebay' }], [{ autopilot_enabled: true }], [{ label: 'x' }], [{ label: 'y'.repeat(81) }]])('refus %j sans écriture', async (body) => {
+    await expect(registry.updateSource('api:cj', body)).rejects.toMatchObject({ status: 400 });
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+});
+
+describe('demandes « connecteur requis » : modifier / retirer', () => {
+  const row = { request_id: 'r1', provider_name: 'BigBuy', requested_label: 'BigBuy EU', reference_url: null, status: 'connector_required', created_at: 'x' };
+
+  test('modifie le nom et la référence', async () => {
+    mockQuery.mockResolvedValue({ rows: [row] });
+    const result = await registry.updateConnectorRequest('r1', { requested_label: ' BigBuy  EU ', reference_url: ' https://bigbuy.eu ' });
+    expect(result).toMatchObject({ request_ref: 'r1', requested_label: 'BigBuy EU' });
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(params).toEqual(['r1', 'BigBuy EU', 'https://bigbuy.eu']);
+    expect(String(sql)).not.toMatch(/provider_name\s*=|status\s*=/);
+  });
+
+  test('demande inconnue ou identifiant mal formé : 404', async () => {
+    mockQuery.mockResolvedValue({ rows: [] });
+    await expect(registry.updateConnectorRequest('r9', { requested_label: 'Ok' })).rejects.toMatchObject({ status: 404 });
+    mockQuery.mockRejectedValue(Object.assign(new Error('bad uuid'), { code: '22P02' }));
+    await expect(registry.updateConnectorRequest('zzz', { requested_label: 'Ok' })).rejects.toMatchObject({ status: 404 });
+  });
+
+  test('modification vide ou nom invalide : 400 sans écriture', async () => {
+    await expect(registry.updateConnectorRequest('r1', {})).rejects.toMatchObject({ status: 400 });
+    await expect(registry.updateConnectorRequest('r1', { requested_label: 'a' })).rejects.toMatchObject({ status: 400 });
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  test('retirer : supprime uniquement la demande, jamais une source', async () => {
+    mockQuery.mockResolvedValue({ rows: [{ request_id: 'r1' }] });
+    await expect(registry.deleteConnectorRequest('r1')).resolves.toEqual({ request_ref: 'r1', deleted: true });
+    expect(String(mockQuery.mock.calls[0][0])).toMatch(/DELETE FROM sourcing_source_requests/);
+    expect(String(mockQuery.mock.calls[0][0])).not.toMatch(/sourcing_sources/);
+    mockQuery.mockResolvedValue({ rows: [] });
+    await expect(registry.deleteConnectorRequest('r2')).rejects.toMatchObject({ status: 404 });
   });
 });

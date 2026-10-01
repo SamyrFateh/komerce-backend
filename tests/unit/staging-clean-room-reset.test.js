@@ -29,6 +29,9 @@ test('clean-room removes runtime facts but preserves provider configuration', ()
   expect(script).toContain("'sourcing_sources'");
   expect(script).toContain("'sourcing_merge_policies'");
   expect(script).toContain("'supplier_oauth_connections'");
+  expect(script).toContain("'provider_credentials'");
+  expect(script).not.toContain('TRUNCATE TABLE provider_credentials');
+  expect(script).not.toContain('DELETE FROM provider_credentials');
   expect(script).not.toContain('TRUNCATE TABLE sourcing_sources');
   expect(script).not.toContain('DELETE FROM sourcing_sources');
   expect(script).not.toContain('RESTART IDENTITY CASCADE');
@@ -46,4 +49,11 @@ test('workflow exposes the bounded clean-room operation', () => {
   expect(workflow).toContain('clean-room-reset');
   expect(workflow).toContain('KOMERCE_ALLOW_CLEAN_ROOM_RESET');
   expect(workflow).toContain('node scripts/staging-clean-room-reset.js');
+});
+
+test('le coffre des identifiants est préservé et jamais dans les tables runtime effacées', () => {
+  const mod = require('../../scripts/staging-clean-room-reset');
+  expect(mod.PRESERVED_CONFIGURATION).toContain('provider_credentials');
+  expect(mod.RUNTIME_TABLES).not.toContain('provider_credentials');
+  expect(mod.RUNTIME_TABLES).not.toContain('sourcing_sources');
 });

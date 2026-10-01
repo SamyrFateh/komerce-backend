@@ -17,6 +17,7 @@
  */
 'use strict';
 
+const crypto = require('crypto');
 const { partitionValid } = require('../normalized-product');
 
 const SUPPLIER_NAME = 'CJdropshipping';
@@ -346,12 +347,7 @@ async function parseJsonResponse(response, label) {
   return body;
 }
 
-async function getAccessToken({ fetchImpl = fetch, env = process.env, forceRefresh = false } = {}) {
-  if (env?.[ACCESS_TOKEN_ENV]) return env[ACCESS_TOKEN_ENV];
-  if (!forceRefresh && cachedAccessToken) return cachedAccessToken;
-  const apiKey = env?.[API_KEY_ENV];
-  if (!apiKey) throw new Error(`[CJdropshipping] ${API_KEY_ENV} ou ${ACCESS_TOKEN_ENV} requis`);
-
+async function exchangeApiKey(apiKey, fetchImpl) {
   const response = await fetchImpl(`${BASE_URL}${AUTH_PATH}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -360,6 +356,33 @@ async function getAccessToken({ fetchImpl = fetch, env = process.env, forceRefre
   const body = await parseJsonResponse(response, 'authentification');
   const token = body?.data?.accessToken;
   if (!token) throw new Error('[CJdropshipping] accessToken absent de la réponse d’authentification');
+  return token;
+}
+
+// Jetons éphémères dérivés d'une clé du coffre : cache mémoire uniquement, indexé par une
+// empreinte de la clé (jamais la clé elle-même), jamais persisté.
+const vaultTokenCache = new Map();
+function apiKeyFingerprint(apiKey) {
+  return crypto.createHash('sha256').update(String(apiKey)).digest('hex');
+}
+
+// Ordre de résolution : credential du coffre (credentials.api_key) d'abord ; repli
+// process.env uniquement pendant la migration (sources historiques).
+async function getAccessToken({ fetchImpl = fetch, env = process.env, forceRefresh = false, credentials = null } = {}) {
+  if (credentials) {
+    const apiKey = String(credentials.api_key || '').trim();
+    if (!apiKey) throw new Error('[CJdropshipping] identifiants du coffre incomplets');
+    const fingerprint = apiKeyFingerprint(apiKey);
+    if (!forceRefresh && vaultTokenCache.has(fingerprint)) return vaultTokenCache.get(fingerprint);
+    const token = await exchangeApiKey(apiKey, fetchImpl);
+    vaultTokenCache.set(fingerprint, token);
+    return token;
+  }
+  if (env?.[ACCESS_TOKEN_ENV]) return env[ACCESS_TOKEN_ENV];
+  if (!forceRefresh && cachedAccessToken) return cachedAccessToken;
+  const apiKey = env?.[API_KEY_ENV];
+  if (!apiKey) throw new Error('[CJdropshipping] identifiants à configurer');
+  const token = await exchangeApiKey(apiKey, fetchImpl);
   cachedAccessToken = token;
   return token;
 }
@@ -386,7 +409,7 @@ function buildProductListUrl(options = {}) {
 async function fetchProductDetail(productId, options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
   const env = options.env || process.env;
-  const accessToken = options.accessToken || await getAccessToken({ fetchImpl, env });
+  const accessToken = options.accessToken || await getAccessToken({ fetchImpl, env, credentials: options.credentials || null });
   const pid = String(productId || '').trim();
   if (!pid) throw new Error('[CJdropshipping] product id requis');
   const url = new URL(`${BASE_URL}${PRODUCT_QUERY_PATH}`);
@@ -463,7 +486,7 @@ function normalizeProductIds(options = {}) {
 async function fetchProducts(options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
   const env = options.env || process.env;
-  const accessToken = await getAccessToken({ fetchImpl, env });
+  const accessToken = await getAccessToken({ fetchImpl, env, credentials: options.credentials || null });
   const productIds = normalizeProductIds(options);
 
   if (productIds.length) {
@@ -518,11 +541,13 @@ async function fetchProducts(options = {}) {
 
 function resetTokenCacheForTests() {
   cachedAccessToken = null;
+  vaultTokenCache.clear();
 }
 
 // Contrôle réel : obtient (ou réutilise) le jeton d'accès. Aucun appel catalogue.
 async function testConnection(options = {}) {
-  await getAccessToken(options);
+  // Un test vérifie réellement la clé : jamais un jeton mis en cache.
+  await getAccessToken({ ...options, forceRefresh: true });
   return { ok: true };
 }
 
@@ -530,6 +555,7 @@ const IS_ACTIVE = isConfigured(process.env);
 const INACTIVE_REASON = inactiveReason(process.env);
 
 module.exports = {
+  hasEnvironmentCredentials: isConfigured,
   SUPPLIER_NAME,
   PROVIDER_ID,
   BASE_URL,

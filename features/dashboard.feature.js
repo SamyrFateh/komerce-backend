@@ -555,6 +555,7 @@ module.exports = {
       'tests/unit/import-runtime-mock-fidelity.test.js',
       'tests/e2e/import-runtime-cockpit.spec.js',
       'tests/e2e/import-runtime-source-registry.spec.js',
+      'tests/e2e/import-runtime-credentials.spec.js',
       'tests/e2e/hub-live-cockpit.spec.js',
       'tests/e2e/live-ops-shell.spec.js',
       'tests/unit/dashboard-market-scope-helpers.test.js',
