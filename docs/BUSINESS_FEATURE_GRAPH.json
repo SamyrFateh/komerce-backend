@@ -14442,6 +14442,13 @@
       },
       {
         "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/264_purchase_line_progress_view.sql",
+        "resolvedPath": "migrations/264_purchase_line_progress_view.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
         "category": "scripts",
         "declared": "scripts/purchase-lines-parity-check.js",
         "resolvedPath": "scripts/purchase-lines-parity-check.js",
@@ -14480,6 +14487,13 @@
         "category": "tests",
         "declared": "tests/integration/purchase-lines-postgres.test.js",
         "resolvedPath": "tests/integration/purchase-lines-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/purchase-line-progress-postgres.test.js",
+        "resolvedPath": "tests/integration/purchase-line-progress-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -41232,7 +41246,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1751
+        "filesObserved": 1752
       },
       "boutique": {
         "filesObserved": 214,
