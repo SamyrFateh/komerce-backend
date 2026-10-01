@@ -47,6 +47,7 @@ const CONNECTORS = Object.freeze({
       label: 'CJdropshipping API',
       reason: cjModule.INACTIVE_REASON,
       supplierName: 'CJdropshipping',
+      connection: Object.freeze({ mode: 'server_managed' }),
       discovery: Object.freeze({ mode: 'static', version: 'cj-catalog-page-v1' }),
       automation: Object.freeze({ page: 1, size: 20, include_commandable_units: true }),
     },
@@ -57,6 +58,7 @@ const CONNECTORS = Object.freeze({
       label: 'Allegro Sandbox (seller test offers)',
       get reason() { return allegroModule.INACTIVE_REASON; },
       supplierName: 'Allegro Sandbox',
+      connection: Object.freeze({ mode: 'server_managed' }),
       discovery: Object.freeze({ mode: 'static', version: 'allegro-sandbox-offers-v1' }),
       automation: Object.freeze({}),
     },
@@ -67,6 +69,7 @@ const CONNECTORS = Object.freeze({
       label: 'eBay Sandbox Browse API',
       get reason() { return ebayModule.INACTIVE_REASON; },
       supplierName: 'eBay Sandbox',
+      connection: Object.freeze({ mode: 'server_managed' }),
       // P3 registration only: no unattended broad crawl until a bounded
       // automation policy is separately proved.
       automation: null,
@@ -77,6 +80,7 @@ const CONNECTORS = Object.freeze({
       label: 'AliExpress Dropshipper API',
       reason: aliexpressModule.INACTIVE_REASON,
       supplierName: 'AliExpress',
+      connection: Object.freeze({ mode: 'oauth', connectPath: '/api/integrations/aliexpress/oauth/start' }),
       discovery: Object.freeze({ mode: 'runtime', version: 'aliexpress-ds-discovery-v1' }),
       automation: Object.freeze({ size: 20 }),
     },
@@ -114,6 +118,66 @@ function sourceAutomationCatalog() {
       pull_options: { ...entry.automation },
       supports_full_snapshot: entry.supportsFullSnapshot !== false,
     }));
+}
+
+// Faits opérateur sur les connecteurs API du registre : jamais de nom de module, de classe,
+// de variable d'environnement ni de trace. La raison est un libellé métier.
+function sourceConnectorFacts() {
+  return Object.entries(CONNECTORS.api).map(([adapter, entry]) => {
+    const available = Boolean(entry.active);
+    const automatable = Boolean(entry.automation);
+    let reason = null;
+    if (!available) reason = 'Connecteur non configuré sur ce serveur';
+    else if (!automatable) reason = 'Alimentation automatique non certifiée pour ce connecteur';
+    return {
+      adapter,
+      name: entry.supplierName || entry.label || adapter,
+      label: entry.label || adapter,
+      available,
+      automatable,
+      connection_mode: entry.connection?.mode || null,
+      connect_path: entry.connection?.connectPath || null,
+      can_test_connection: Boolean(entry.connection && typeof entry.module?.testConnection === 'function'),
+      reason,
+    };
+  });
+}
+
+const CONNECTION_FAILURE_MESSAGES = Object.freeze({
+  connector_unknown: 'Ce connecteur n’existe pas dans Komerce.',
+  connector_unavailable: 'Le connecteur n’est pas configuré sur ce serveur.',
+  connection_test_unavailable: 'Aucun test de connexion n’est disponible pour ce connecteur.',
+  account_not_connected: 'Le compte fournisseur n’est pas encore connecté.',
+  credentials_rejected: 'Le fournisseur a refusé les identifiants.',
+  provider_unreachable: 'Le fournisseur ne répond pas pour le moment.',
+  connection_failed: 'La connexion au fournisseur a échoué.',
+});
+
+function classifyConnectionFailure(error) {
+  const text = String(error?.message || error || '');
+  let code = 'connection_failed';
+  if (/non autoris|nouvelle autorisation|aucun refresh|refresh token expir|compte .* non/i.test(text)) code = 'account_not_connected';
+  else if (/rejected|refus|unauthori[sz]ed|forbidden|invalid.*(key|token|client)|HTTP_40[13]|\b40[13]\b/i.test(text)) code = 'credentials_rejected';
+  else if (/TRANSPORT|timeout|timed out|ECONN|ENOTFOUND|EAI_AGAIN|fetch failed|HTTP_5\d\d|\b5\d\d\b/i.test(text)) code = 'provider_unreachable';
+  return { ok: false, code, message: CONNECTION_FAILURE_MESSAGES[code] };
+}
+
+// Test réel du connecteur, sans import, sans KIR, sans secret en sortie.
+// Un test de connexion n'est jamais une certification runtime.
+async function testConnection(adapter) {
+  const key = String(adapter || '').trim().toLowerCase();
+  const entry = CONNECTORS.api[key];
+  if (!entry) return { ok: false, code: 'connector_unknown', message: CONNECTION_FAILURE_MESSAGES.connector_unknown };
+  if (!entry.active) return { ok: false, code: 'connector_unavailable', message: CONNECTION_FAILURE_MESSAGES.connector_unavailable };
+  if (!entry.connection || typeof entry.module?.testConnection !== 'function') {
+    return { ok: false, code: 'connection_test_unavailable', message: CONNECTION_FAILURE_MESSAGES.connection_test_unavailable };
+  }
+  try {
+    await entry.module.testConnection();
+    return { ok: true, code: 'connection_ok', message: 'Connexion valide' };
+  } catch (error) {
+    return classifyConnectionFailure(error);
+  }
 }
 
 function sourceAutomationDescriptor(adapter) {
@@ -223,6 +287,9 @@ module.exports = {
   connectorCatalog,
   sourceAutomationCatalog,
   sourceAutomationDescriptor,
+  sourceConnectorFacts,
+  testConnection,
+  _classifyConnectionFailure: classifyConnectionFailure,
   discoverSourcePlan,
   apiConnectorOptions,
   dispatchToConnector,

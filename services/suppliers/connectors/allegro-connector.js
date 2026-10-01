@@ -81,10 +81,16 @@ async function fetchProducts(options = {}) {
   return { products: checked.valid, invalid: [...invalid, ...checked.invalid], total: ids.length };
 }
 
+// Contrôle réel en lecture seule : une seule offre vendeur, aucune écriture.
+async function testConnection() {
+  await client.get('/sale/offers', { limit: 1, 'publication.status': 'ACTIVE' });
+  return { ok: true };
+}
+
 function inactiveReason() {
   try { client.configuration(process.env); return null; } catch (error) { return error.message; }
 }
-module.exports = { fetchProducts, normalizeOffer, offerId,
+module.exports = { fetchProducts, normalizeOffer, offerId, testConnection,
   get IS_ACTIVE() { return inactiveReason() === null; },
   get INACTIVE_REASON() { return inactiveReason(); },
 };

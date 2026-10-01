@@ -268,6 +268,12 @@ async function fetchProducts(options = {}) {
   };
 }
 
+// Contrôle réel : jeton application (client credentials). Aucun appel Browse.
+async function testConnection(options = {}) {
+  await applicationToken(configuration(options.env || process.env), options.fetchImpl);
+  return { ok: true };
+}
+
 function inactiveReason(env = process.env) {
   try {
     configuration(env);
@@ -294,6 +300,7 @@ module.exports = {
   discoverItemIds,
   fetchExactItem,
   fetchProducts,
+  testConnection,
   get IS_ACTIVE() { return inactiveReason() === null; },
   get INACTIVE_REASON() { return inactiveReason(); },
 };

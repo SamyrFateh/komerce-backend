@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        business_references, sourcing_action_payloads, authenticated_actor
  * @outputs       global_sourcing_projection, sourcing_mutation_result
- * @depends       db.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/sourcing-provider-control-policy.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
+ * @depends       db.js, services/sourcing-analysis.js, services/sourcing-mutations.js, services/sourcing-candidate-actions.js, services/sourcing-import-dispatch.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js, services/sourcing-provider-control-policy.js, services/suppliers/catalog-import-orchestrator.js, services/partner-admin-service.js
  * @used-by       routes/admin-sourcing-workspace.js
  * @db-read       products, sourcing_candidates, supplier_catalog_imports, partners, suppliers_stats, sourcing_sources, sourcing_captures
  * @db-write-via:sourcing-mutations products
@@ -29,6 +29,7 @@ const sourcingMutations = require('./sourcing-mutations');
 const candidateActions = require('./sourcing-candidate-actions');
 const importDispatch = require('./sourcing-import-dispatch');
 const sourceAutopilot = require('./sourcing-source-autopilot');
+const sourceRegistry = require('./sourcing-source-registry');
 const providerPolicy = require('./sourcing-provider-control-policy');
 const catalogImport = require('./suppliers/catalog-import-orchestrator');
 const partnerAdmin = require('./partner-admin-service');
@@ -259,6 +260,20 @@ function projectSourceControl(source) {
   if (!capabilities.production) preparationRequired.push('Production');
 
   const autopilotReady = hardBlockers.length === 0 && preparationRequired.length === 0;
+  // Un import réellement certifié prouve aussi la connexion : une source déjà certifiée n'est
+  // jamais « à tester ». Le test de connexion reste informatif et distinct de la certification.
+  const connectionVerified = source.connection_test_status === 'ok' || Boolean(source.production_runtime_certified);
+  const captureFailed = /fail|error/i.test(String(source.last_capture_status || ''));
+  const enabled = Boolean(source.autopilot_enabled);
+  let state;
+  if (enabled && autopilotReady) state = 'active';
+  else if (!source.connector_ready) state = 'to_configure';
+  else if (hardBlockers.length > 0 || enabled) state = 'blocked';
+  else if (captureFailed) state = 'error';
+  else if (!connectionVerified) state = 'connection_to_test';
+  else if (preparationRequired.length > 0) state = 'to_certify';
+  else state = 'ready';
+
   return {
     source_ref: source.source_ref,
     label: source.label || source.adapter_type || source.source_ref,
@@ -272,6 +287,14 @@ function projectSourceControl(source) {
     runtime_enabled: Boolean(source.runtime_enabled),
     connector_ready: Boolean(source.connector_ready),
     production_runtime_certified: Boolean(source.production_runtime_certified),
+    state,
+    connection: {
+      connector_ready: Boolean(source.connector_ready),
+      verified: connectionVerified,
+      test_status: source.connection_test_status || null,
+      test_code: source.connection_test_code || null,
+      tested_at: source.connection_tested_at || null,
+    },
     capabilities,
     last_capture_status: source.last_capture_status || null,
     last_capture_at: source.last_capture_at || null,
@@ -364,7 +387,9 @@ async function runSourceImportNow(sourceRef, actor) {
   });
 }
 
-async function activateSourceAutopilot(sourceRef, actor) {
+// Préparation = tout ce qui précède l'interrupteur : capacités autorisées, premier passage
+// borné réel, certification runtime, Production. Elle n'active JAMAIS l'autopilot.
+async function prepareSource(sourceRef, actor, { requireConnectionTest = false } = {}) {
   const sources = await sourceAutopilot.listSources();
   const source = sources.find(row => row.source_ref === sourceRef);
   if (!source) throw new SourcingWorkspaceError(404, 'Source sourcing introuvable', 'sourcing_source_not_found');
@@ -376,6 +401,13 @@ async function activateSourceAutopilot(sourceRef, actor) {
       projected.hard_blockers[0] || 'Source non activable',
       'sourcing_source_activation_blocked',
       { blockers: projected.hard_blockers }
+    );
+  }
+  if (requireConnectionTest && !projected.connection.verified) {
+    throw new SourcingWorkspaceError(
+      409,
+      'Testez la connexion avant de préparer la source',
+      'sourcing_source_connection_untested'
     );
   }
 
@@ -410,16 +442,70 @@ async function activateSourceAutopilot(sourceRef, actor) {
     enabledDuringPreparation.push('production');
   }
 
-  const state = await sourceAutopilot.setSourceActive(sourceRef, true, {
-    runNow: certificationRun == null,
-  });
-
   return {
-    ...state,
+    source_ref: sourceRef,
     prepared: enabledDuringPreparation.length > 0 || certificationRun != null,
     enabled_capabilities: enabledDuringPreparation,
     certification_run: certificationRun,
   };
+}
+
+async function prepareSourceForCertification(sourceRef, actor) {
+  const prepared = await prepareSource(sourceRef, actor, { requireConnectionTest: true });
+  return { ...prepared, autopilot_enabled: false };
+}
+
+async function activateSourceAutopilot(sourceRef, actor) {
+  const prepared = await prepareSource(sourceRef, actor);
+  const state = await sourceAutopilot.setSourceActive(sourceRef, true, {
+    runNow: prepared.certification_run == null,
+  });
+
+  return {
+    ...state,
+    prepared: prepared.prepared,
+    enabled_capabilities: prepared.enabled_capabilities,
+    certification_run: prepared.certification_run,
+  };
+}
+
+async function sourceControlFor(sourceRef) {
+  const controls = await listSourceControls();
+  return controls.find(row => row.source_ref === sourceRef) || null;
+}
+
+function registryError(err) {
+  if (err instanceof sourceRegistry.SourceRegistryError) {
+    return new SourcingWorkspaceError(err.status, err.message, err.code, err.details);
+  }
+  return err;
+}
+
+async function getSourceCatalog() {
+  return sourceRegistry.getCatalog();
+}
+
+async function createSource(body, actor) {
+  try {
+    const created = await sourceRegistry.createSource(body || {});
+    return { ...created, source: await sourceControlFor(created.source_ref), actor: actor?.id ? { role: actor.role } : null };
+  } catch (err) { throw registryError(err); }
+}
+
+async function createSourceRequest(body, actor) {
+  try { return await sourceRegistry.createConnectorRequest(body || {}, actor); }
+  catch (err) { throw registryError(err); }
+}
+
+async function listSourceRequests() {
+  return sourceRegistry.listConnectorRequests();
+}
+
+async function testSourceConnection(sourceRef) {
+  try {
+    const result = await sourceRegistry.testSourceConnection(sourceRef);
+    return { ...result, source: await sourceControlFor(sourceRef) };
+  } catch (err) { throw registryError(err); }
 }
 
 async function setSourceAutopilot(sourceRef, enabled) {
@@ -465,8 +551,14 @@ module.exports = {
   rejectCandidate,
   promoteCandidate,
   runSourceImportNow,
+  prepareSourceForCertification,
   activateSourceAutopilot,
   setSourceAutopilot,
+  getSourceCatalog,
+  createSource,
+  createSourceRequest,
+  listSourceRequests,
+  testSourceConnection,
   createSupplier,
   updateSupplier,
   setSupplierActive,

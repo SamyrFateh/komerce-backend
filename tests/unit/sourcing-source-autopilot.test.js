@@ -101,15 +101,29 @@ afterAll(() => {
   delete process.env.KOMERCE_SOURCE_AUTOPILOT;
 });
 
-test('enregistre les connecteurs automatisables avec autopilot explicitement OFF par défaut', async () => {
-  mockQuery.mockResolvedValue({ rows: [], rowCount: 1 });
+test('le rafraîchissement ne crée jamais de source : le registre est explicite', async () => {
+  mockQuery.mockResolvedValue({ rows: [], rowCount: 0 });
 
-  await expect(autopilot.ensureRegisteredPullSources()).resolves.toEqual(['api:cj']);
+  await expect(autopilot.refreshRegisteredPullSources()).resolves.toEqual([]);
 
-  const sql = mockQuery.mock.calls[0][0];
-  expect(sql).toContain('autopilot_enabled');
-  expect(sql).toContain("'pull', 'recurring', 'active', false");
-  expect(sql).not.toMatch(/DO UPDATE[\s\S]*autopilot_enabled\s*=/);
+  const statements = mockQuery.mock.calls.map(([sql]) => String(sql));
+  expect(statements.some((sql) => /INSERT\s+INTO\s+sourcing_sources/i.test(sql))).toBe(false);
+  expect(statements.some((sql) => /UPDATE\s+sourcing_sources/i.test(sql))).toBe(false);
+});
+
+test('le rafraîchissement réaligne le contrat des sources déjà enregistrées sans toucher à l’autopilot', async () => {
+  mockQuery.mockImplementation(async (sql) => (
+    String(sql).includes('SELECT source_id FROM sourcing_sources')
+      ? { rows: [{ source_id: 'api:cj' }] }
+      : { rows: [], rowCount: 1 }
+  ));
+
+  await expect(autopilot.refreshRegisteredPullSources()).resolves.toEqual(['api:cj']);
+
+  const update = mockQuery.mock.calls.map(([sql]) => String(sql)).find((sql) => /UPDATE\s+sourcing_sources/i.test(sql));
+  expect(update).toBeDefined();
+  expect(update).not.toMatch(/autopilot_enabled|_enabled\s*=|production_certified/);
+  expect(mockQuery.mock.calls.some(([sql]) => /INSERT\s+INTO\s+sourcing_sources/i.test(String(sql)))).toBe(false);
 });
 
 test('runtime OFF bloque tout passage même si la source est ON en base', async () => {
@@ -637,6 +651,48 @@ test('activation refuse fail-closed si le runtime global est OFF', async () => {
   expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('UPDATE sourcing_sources'))).toBe(false);
 });
 
+
+test('activation impossible avant certification, même avec Discovery/Sync/Import/Production ON', async () => {
+  mockSourceQueries(sourceRow({ production_certified_capture_id: null, production_certified_at: null }));
+
+  await expect(autopilot.setSourceActive('api:cj', true, { runNow: false }))
+    .rejects.toMatchObject({ status: 409, code: 'provider_capability_policy_off' });
+
+  expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('UPDATE sourcing_sources'))).toBe(false);
+});
+
+test('activation possible dès que les quatre capacités et la certification runtime sont réunies', async () => {
+  mockSourceQueries(sourceRow({ autopilot_enabled: false }));
+
+  await expect(autopilot.setSourceActive('api:cj', true, { runNow: false }))
+    .resolves.toEqual({ source_ref: 'api:cj', autopilot_enabled: true });
+});
+
+test('désactiver une source préserve tout son historique et sa certification', async () => {
+  mockSourceQueries();
+
+  await expect(autopilot.setSourceActive('api:cj', false, { runNow: false }))
+    .resolves.toEqual({ source_ref: 'api:cj', autopilot_enabled: false });
+
+  const statements = mockQuery.mock.calls.map(([sql]) => String(sql));
+  expect(statements.some((sql) => /\bDELETE\b|\bTRUNCATE\b|\bDROP\b/i.test(sql))).toBe(false);
+  const mutations = statements.filter((sql) => /^\s*(UPDATE|INSERT|DELETE)\b/i.test(sql));
+  expect(mutations).toHaveLength(1);
+  expect(mutations[0]).toMatch(/UPDATE\s+sourcing_sources\s+SET\s+autopilot_enabled = \$2, updated_at = NOW\(\)/);
+  expect(mutations[0]).not.toMatch(/sourcing_captures|production_certified|discovery_enabled|import_enabled/);
+});
+
+test('runActiveSources ne voit que les sources ON, complètes et certifiées', async () => {
+  mockQuery.mockImplementation(async (sql) => (
+    String(sql).includes('autopilot_enabled = true') ? { rows: [{ source_ref: 'api:cj' }] } : { rows: [] }
+  ));
+  const select = (await autopilot.runActiveSources({ limit: 5 }).catch(() => null));
+  const sql = mockQuery.mock.calls.map(([text]) => String(text)).find((text) => text.includes('autopilot_enabled = true'));
+  expect(sql).toContain('discovery_enabled = true AND sync_enabled = true AND import_enabled = true AND production_enabled = true');
+  expect(sql).toContain('production_certified_capture_id IS NOT NULL');
+  expect(sql).toContain('production_certified_at IS NOT NULL');
+  expect(select === null || select.status === 'ok').toBe(true);
+});
 
 describe('sourcing source autopilot one-shot router', () => {
   test('sans one-shot conserve le passage autopilot canonique et borné', async () => {

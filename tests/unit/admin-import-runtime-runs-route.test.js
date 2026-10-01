@@ -58,10 +58,12 @@ jest.mock('../../services/import-lot-registry', () => ({
 
 const mockReplay = jest.fn();
 const mockListSourceControls = jest.fn();
+const mockListSourceRequests = jest.fn();
 jest.mock('../../services/sourcing-workspace', () => ({
   SourcingWorkspaceError: class extends Error {},
   replayImport: (...args) => mockReplay(...args),
   listSourceControls: (...args) => mockListSourceControls(...args),
+  listSourceRequests: (...args) => mockListSourceRequests(...args),
 }));
 jest.mock('../../services/sourcing-catalog-change-observation', () => ({}));
 jest.mock('../../services/sourcing-integrity-service', () => ({}));
@@ -85,6 +87,7 @@ describe('import runtime run routes', () => {
     jest.clearAllMocks();
     mockSourcingAllowed = true;
     mockListSourceControls.mockResolvedValue([]);
+    mockListSourceRequests.mockResolvedValue([]);
     mockRuns.getRunNeighbors.mockResolvedValue({ older_ref:null, newer_ref:null });
   });
 

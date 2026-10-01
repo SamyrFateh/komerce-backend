@@ -5,7 +5,7 @@
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_session, sourcing_global_grant, business_references, action_payloads
- * @outputs       global_sourcing_projection, sourcing_action_results, source_autopilot_switch_results
+ * @outputs       global_sourcing_projection, sourcing_action_results, source_autopilot_switch_results, source_registry_results
  * @depends       middleware/auth.js, middleware/require-sourcing-global-authority.js, services/import-runtime-runs.js, services/import-lot-registry.js, services/sourcing-workspace.js, services/sourcing-integrity-service.js, services/sourcing-catalog-change-observation.js
  * @used-by       bootstrap/api-routes.js, canonical sourcing workspace
  * @db-read       none
@@ -109,9 +109,10 @@ router.get('/import-cockpit', async (req, res, next) => {
     const requestedRun = req.query.run ? String(req.query.run) : null;
     if (requestedRun && !RUN_REF_RE.test(requestedRun)) return runNotFound(res);
 
-    const [lots, sourceControls] = await Promise.all([
+    const [lots, sourceControls, sourceRequests] = await Promise.all([
       importLotRegistry.listLots({ limit: req.query.limit || 12 }),
       workspace.listSourceControls(),
+      workspace.listSourceRequests(),
     ]);
     const selectedRef = requestedRun || lots[0]?.run_ref || null;
     let selectedLot = selectedRef ? lots.find(lot => lot.run_ref === selectedRef) : null;
@@ -133,6 +134,7 @@ router.get('/import-cockpit', async (req, res, next) => {
     res.set('Cache-Control', 'no-store');
     res.json({
       source_controls: sourceControls,
+      source_requests: sourceRequests,
       lots: visibleLots,
       run_nav: runNav,
       selected: selected ? { ...selected, business: selectedLot } : null,
@@ -204,6 +206,37 @@ router.post('/sources/:sourceRef/catalog-changes/observe', async (req, res, next
     sendAction(res, 'observe_unit_stock_change', result,
       result.status === 'recorded' ? 201 : 200);
   } catch (err) { handleError(err, res, next); }
+});
+
+// Registre opérateur des sources : catalogue canonique, création fail-closed, demande de
+// connecteur, test de connexion. Aucune de ces routes n'active, ne certifie ni n'importe.
+router.get('/sources/catalog', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store');
+    res.json(await workspace.getSourceCatalog());
+  } catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources', async (req, res, next) => {
+  try { sendAction(res, 'create_source', await workspace.createSource(req.body, req.user), 201); }
+  catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources/requests', async (req, res, next) => {
+  try { sendAction(res, 'request_source_connector', await workspace.createSourceRequest(req.body, req.user), 201); }
+  catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources/:sourceRef/test-connection', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store');
+    sendAction(res, 'test_source_connection', await workspace.testSourceConnection(req.params.sourceRef));
+  } catch (err) { handleError(err, res, next); }
+});
+
+router.post('/sources/:sourceRef/prepare', async (req, res, next) => {
+  try { sendAction(res, 'prepare_source', await workspace.prepareSourceForCertification(req.params.sourceRef, req.user)); }
+  catch (err) { handleError(err, res, next); }
 });
 
 router.post('/sources/:sourceRef/capabilities/:capability', async (req,res,next)=>{

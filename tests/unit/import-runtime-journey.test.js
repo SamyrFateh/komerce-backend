@@ -784,9 +784,9 @@ test('audit : aucune occurrence de « Retour au passage » ni « Retour au cockp
 
 // ── Vue Sources : synthèse + cartes opérateur ─────────────────────────────────
 const SOURCES = () => [
-  { source_ref:'api:aliexpress', label:'AliExpress Dropshipper API', autopilot_enabled:true, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:'2026-09-30T14:36:00Z' },
-  { source_ref:'api:cj', label:'CJ Dropshipping', autopilot_enabled:false, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:null },
-  { source_ref:'api:bigbuy', label:'BigBuy', autopilot_enabled:false, autopilot_ready:false, activation_ready:false, blocker:'Clé API manquante', production_runtime_certified:false, last_capture_at:null },
+  { source_ref:'api:aliexpress', label:'AliExpress Dropshipper API', state:'active', connection:{ verified:true }, autopilot_enabled:true, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:'2026-09-30T14:36:00Z' },
+  { source_ref:'api:cj', label:'CJ Dropshipping', state:'ready', connection:{ verified:true }, autopilot_enabled:false, autopilot_ready:true, activation_ready:true, production_runtime_certified:true, last_capture_at:null },
+  { source_ref:'api:bigbuy', label:'BigBuy', state:'blocked', connection:{ verified:false }, autopilot_enabled:false, autopilot_ready:false, activation_ready:false, blocker:'Clé API manquante', production_runtime_certified:false, last_capture_at:null },
 ];
 const sourcesView = (search = '') => { const p = scenario(); p.source_controls = SOURCES(); return render(p, `?${search}view=sources`); };
 
@@ -839,7 +839,7 @@ test('Sources : retour au suivi toujours présent ; le KIR n’est jamais un niv
 });
 
 test('Sources : état d’erreur (preuve runtime) et liste vide sans carte fantôme', () => {
-  const p = scenario(); p.source_controls = SOURCES(); p.source_controls[1].last_capture_status = 'failed';
+  const p = scenario(); p.source_controls = SOURCES(); p.source_controls[1].last_capture_status = 'failed'; p.source_controls[1].state = 'error';
   const html = render(p, `?run=${RUN}&view=sources`);
   expect((html.match(/data-sources-summary>([\s\S]*?)<\/p>/) || [])[1]).toContain('<strong>1</strong> en erreur');
   expect(html).toContain('ERREUR');
