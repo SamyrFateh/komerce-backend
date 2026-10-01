@@ -27,6 +27,7 @@ const {
   basicCleanProduct,
   CJ_RESULT_CAP,
   ABSOLUTE_MAX_CLEAN_PRODUCTS,
+  runSync,
 } = require('../../scripts/cj-full-catalog-sync');
 
 describe('cj-full-catalog-sync clean pool', () => {
@@ -91,6 +92,38 @@ describe('cj-full-catalog-sync clean pool', () => {
   test('génère une référence de page déterministe pour reprise', () => {
     expect(importSourceFilename('epoch-1', 'cat-42', 7))
       .toBe('cj-pool/epoch-1/cat-42/page-0007.json');
+  });
+
+
+  test('runSync peut auditer le pool initial sans ReferenceError et s’arrête si la cible est déjà atteinte', async () => {
+    const db = require('../../db');
+    const checkpoints = require('../../services/suppliers/catalog-sync-checkpoint');
+    const previous = {
+      allow: process.env.KOMERCE_ALLOW_CJ_FULL_SYNC,
+      database: process.env.DATABASE_URL,
+      token: process.env.CJ_ACCESS_TOKEN,
+      target: process.env.KOMERCE_CJ_SYNC_MAX_CLEAN_PRODUCTS,
+    };
+    process.env.KOMERCE_ALLOW_CJ_FULL_SYNC = '1';
+    process.env.DATABASE_URL = 'postgres://db';
+    process.env.CJ_ACCESS_TOKEN = 'test-token';
+    process.env.KOMERCE_CJ_SYNC_MAX_CLEAN_PRODUCTS = '21';
+    db.query.mockResolvedValueOnce({ rows: [{ count: 21 }] });
+    checkpoints.summarize.mockResolvedValueOnce({});
+
+    try {
+      await expect(runSync()).resolves.toMatchObject({
+        starting_clean: 21,
+        final_clean: 21,
+        target: 21,
+        paused_reason: 'target-already-reached',
+      });
+    } finally {
+      if (previous.allow === undefined) delete process.env.KOMERCE_ALLOW_CJ_FULL_SYNC; else process.env.KOMERCE_ALLOW_CJ_FULL_SYNC = previous.allow;
+      if (previous.database === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = previous.database;
+      if (previous.token === undefined) delete process.env.CJ_ACCESS_TOKEN; else process.env.CJ_ACCESS_TOKEN = previous.token;
+      if (previous.target === undefined) delete process.env.KOMERCE_CJ_SYNC_MAX_CLEAN_PRODUCTS; else process.env.KOMERCE_CJ_SYNC_MAX_CLEAN_PRODUCTS = previous.target;
+    }
   });
 
   test('reconnaît les arrêts quota comme pauses reprenables', () => {
