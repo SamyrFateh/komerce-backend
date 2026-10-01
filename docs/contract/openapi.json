@@ -2954,7 +2954,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -2981,7 +2981,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -3010,7 +3010,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -3495,7 +3495,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -5363,7 +5363,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -5404,7 +5404,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -5441,7 +5441,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -5482,7 +5482,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -10398,7 +10398,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -10482,7 +10482,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -10515,7 +10515,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -11274,7 +11274,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -11313,7 +11313,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -11354,7 +11354,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -12768,7 +12768,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -12797,7 +12797,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -12865,7 +12865,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -13036,7 +13036,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -13065,7 +13065,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -13152,7 +13152,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -13389,7 +13389,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -13457,7 +13457,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -13696,7 +13696,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -13725,7 +13725,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -13754,7 +13754,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -14223,7 +14223,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -14264,7 +14264,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -14305,7 +14305,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -14662,7 +14662,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -14752,7 +14752,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -14949,7 +14949,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -15056,7 +15056,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -15089,7 +15089,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -15118,7 +15118,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -15155,7 +15155,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -16298,7 +16298,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -16446,7 +16446,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -19100,7 +19100,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -19174,7 +19174,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -19611,7 +19611,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -19796,7 +19796,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -19864,7 +19864,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -19893,7 +19893,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -19984,7 +19984,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -20384,7 +20384,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -21878,7 +21878,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -21936,7 +21936,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -21965,7 +21965,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -21994,7 +21994,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -22027,7 +22027,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -22093,7 +22093,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -22161,7 +22161,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -22194,7 +22194,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -22231,7 +22231,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -22260,7 +22260,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -22289,7 +22289,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
@@ -22316,7 +22316,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
+                  "x-contract-status": "test",
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {

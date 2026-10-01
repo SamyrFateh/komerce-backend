@@ -363,6 +363,7 @@ module.exports = {
       'tests/unit/feature-dependency-disposition-composition.test.js',
       'tests/unit/gen-boutique-360.p3b-ownership.test.js',
       'tests/unit/gen-dashboards-360-canonical.contract-status.test.js',
+      'tests/unit/gen-dashboards-360-legacy-contract-status.test.js',
       'tests/unit/golden-cdr-preflight.test.js',
       'tests/unit/governance-derived-projection-preflight.test.js',
       'tests/unit/migration-collision-governance.test.js',
