@@ -140,7 +140,7 @@ async function recommend(input, options = {}) {
   };
   const ctx = {
     config,
-    volume_m3: merged.volume_m3 ?? 0.005,
+    volume_m3: merged.volume_m3,
     channel: input.channel || 'cash_relais',
   };
 
@@ -214,6 +214,10 @@ async function recommend(input, options = {}) {
     hasPurchaseCost: Number(product?.cost_kmf) > 0,
     hasProductWeight: Number(product?.weight_kg) > 0,
     hasProductVolume: productVolumeM3 != null,
+    hasCategoryWeightDefault: Number(cat?.default_weight_kg) > 0,
+    hasCategoryVolumeDefault: Number(cat?.default_dim_l_cm) > 0
+      && Number(cat?.default_dim_w_cm) > 0
+      && Number(cat?.default_dim_h_cm) > 0,
     hasCustomsCategory: !!cat,
     hasFinanceConfig: Object.keys(fc).length > 0,
     warnings,
