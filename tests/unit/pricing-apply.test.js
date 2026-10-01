@@ -95,6 +95,18 @@ describe('pricing-apply', () => {
       expect(insertCall[1]).toEqual(['prod-1', 5000, 6000, 'manual', 'user-1', 'sc-1', 'Hausse saison', 'demande']);
     });
 
+    it('premier prix conserve old_price_kmf = null dans l’historique', async () => {
+      db.query
+        .mockResolvedValueOnce({ rows: [{ id: 'prod-1', name: 'Robe', price_kmf: null }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'prod-1', name: 'Robe', price_kmf: 6000 }] })
+        .mockResolvedValueOnce({ rows: [] });
+
+      const result = await applyPrice('prod-1', { price_kmf: 6000, source: 'manual' }, 'user-1');
+
+      expect(result.body.old_price_kmf).toBeNull();
+      expect(db.query.mock.calls[2][1][1]).toBeNull();
+    });
+
     it('fallback gracieux si colonnes scenario_* absentes (insert simplifié)', async () => {
       db.query
         .mockResolvedValueOnce({ rows: [{ id: 'prod-1', name: 'Robe', price_kmf: 5000 }] }) // SELECT
