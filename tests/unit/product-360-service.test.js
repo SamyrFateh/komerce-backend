@@ -107,6 +107,16 @@ test('MarketScope est injecté dans performance, coûts estimés et coûts réel
   expect(db.query.mock.calls.some(([sql]) => String(sql).includes('FROM price_history ph'))).toBe(false);
 });
 
+test('Product 360 n’invente pas un prix à 0 KMF quand le produit n’est pas encore pricé', async () => {
+  mockQueries();
+
+  const result = await product360.loadProduct360(product({ price_kmf: null }), {
+    marketIds: null, includeCentral: false,
+  });
+
+  expect(result.product.price_kmf).toBeNull();
+});
+
 test('LEGACY_VARIANTS garde products.stock comme vérité et ne somme jamais les axes variantes', async () => {
   mockQueries({
     variants: [
