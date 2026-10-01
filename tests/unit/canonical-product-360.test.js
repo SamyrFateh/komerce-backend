@@ -75,6 +75,15 @@ test('Product 360 distingue un SKU préparé d’un SKU devenu vérité d’inve
   expect(source).toContain("row.sku || row.supplier_sku");
 });
 
+test('Product 360 conserve le produit courant en ouvrant Catalogue', () => {
+  const source = require('fs').readFileSync(
+    require('path').join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'product-360.js'),
+    'utf8'
+  );
+  expect(source).toContain('/admin/workspaces/catalog?product_ref=');
+  expect(source).toContain('encodeURIComponent(product.product_ref)');
+});
+
 test('Product 360 ouvre Pricing directement sur le produit courant', () => {
   const source = require('fs').readFileSync(
     require('path').join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'product-360.js'),
