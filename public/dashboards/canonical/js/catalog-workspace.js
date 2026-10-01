@@ -257,10 +257,21 @@
     const tbody = doc.createElement('tbody');
     rows.forEach(row => {
       const tr = doc.createElement('tr');
+      tr.setAttribute('data-product-ref', row.product_ref || '');
       const refCell = doc.createElement('td');
+      const returnTo = row.product_ref
+        ? `/admin/workspaces/catalog?product_ref=${encodeURIComponent(row.product_ref)}`
+        : '/admin/workspaces/catalog';
       const refLink = text(doc, 'a', 'kmc-workspace-nav-link', row.product_ref);
-      refLink.href = `/admin/products/${encodeURIComponent(row.product_ref)}`;
+      refLink.href = contextualHref(
+        `/admin/products/${encodeURIComponent(row.product_ref)}`,
+        returnTo,
+        'Retour à la curation'
+      );
       refCell.appendChild(refLink);
+      const detailLink = text(doc, 'a', 'kmc-workspace-row-detail-link', 'Fiche 360 →');
+      detailLink.href = refLink.href;
+      refCell.appendChild(detailLink);
       tr.appendChild(refCell);
       tr.appendChild(td(doc, row.name));
       tr.appendChild(td(doc, row.category));
@@ -405,7 +416,11 @@
       const actions = doc.createElement('td');
 
       const detail = text(doc, 'a', 'kmc-workspace-nav-link', 'Product 360');
-      detail.href = contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`, '/admin/workspaces/catalog', 'Retour au catalogue');
+      detail.href = contextualHref(
+        `/admin/products/${encodeURIComponent(row.product_ref)}`,
+        `/admin/workspaces/catalog?product_ref=${encodeURIComponent(row.product_ref)}`,
+        'Retour au catalogue'
+      );
       actions.appendChild(detail);
 
       const deactivate = makeButton(doc, 'Sortir du catalogue', 'deactivate-product', true);
