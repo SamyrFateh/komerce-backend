@@ -504,12 +504,12 @@ async function quarantineExistingInbound(executor, {
   const subtype = quarantineSubtypeForReason(reasonCode);
 
   const { rows: [quarantined] } = await db.query(
-    \`UPDATE hub_physical_units
+    `UPDATE hub_physical_units
         SET state='QUARANTINED',
             current_location_ref=COALESCE($2,current_location_ref),
             updated_at=now()
       WHERE id=$1
-      RETURNING *\`,
+      RETURNING *`,
     [unit.id, locationRef]
   );
 
@@ -565,9 +565,9 @@ async function reconcileSupplierPackageContents(executor, {
   if (unit.outcome_type) fail('HUB_RECONCILE_OUTCOME_TERMINAL');
 
   const { rows: [existing] } = await db.query(
-    \`SELECT COUNT(*)::integer AS count
+    `SELECT COUNT(*)::integer AS count
        FROM hub_physical_unit_placements
-      WHERE physical_unit_id=$1 AND removed_at IS NULL\`,
+      WHERE physical_unit_id=$1 AND removed_at IS NULL`,
     [unitId]
   );
   if (Number(existing.count) > 0) fail('HUB_RECONCILE_ALREADY_DONE');
@@ -609,9 +609,9 @@ async function reconcileSupplierPackageContents(executor, {
     }
 
     const { rows: [placed] } = await db.query(
-      \`SELECT COALESCE(SUM(quantity), 0)::integer AS quantity
+      `SELECT COALESCE(SUM(quantity), 0)::integer AS quantity
          FROM hub_physical_unit_placements
-        WHERE allocation_id = $1 AND removed_at IS NULL\`,
+        WHERE allocation_id = $1 AND removed_at IS NULL`,
       [allocation.id]
     );
     if (Number(placed.quantity) + entry.content.quantity > Number(allocation.quantity)) {
@@ -629,9 +629,9 @@ async function reconcileSupplierPackageContents(executor, {
   const operationId = crypto.randomUUID();
   for (const item of allocations) {
     await db.query(
-      \`INSERT INTO hub_physical_unit_placements (
+      `INSERT INTO hub_physical_unit_placements (
          physical_unit_id, allocation_id, quantity, operation_id, operation_type, created_by
-       ) VALUES ($1,$2,$3,$4,'RECEIVE',$5)\`,
+       ) VALUES ($1,$2,$3,$4,'RECEIVE',$5)`,
       [unit.id, item.allocation.id, item.quantity, operationId, actorId]
     );
     await insertCustodyEvent(db, {
