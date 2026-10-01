@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        supplier_import_payload
  * @outputs       normalized_supplier_products, connector_catalog, source_automation_catalog, acquisition_discovery_plan
- * @depends       services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/connectors/noon-connector.js, services/suppliers/connectors/cj-connector.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/allegro-connector.js, services/suppliers/connectors/ebay-connector.js
+ * @depends       services/suppliers/connectors/csv-connector.js, services/suppliers/connectors/manual-connector.js, services/suppliers/connectors/noon-connector.js, services/suppliers/connectors/cj-connector.js, services/suppliers/connectors/aliexpress-connected-connector.js, services/suppliers/connectors/allegro-connector.js, services/suppliers/connectors/ebay-connector.js, services/external-provider-onboarding-contracts.js
  * @used-by       routes/sourcing-scanner.js, services/sourcing-workspace.js, services/sourcing-source-autopilot.js
  * @db-read       none
  * @db-write      none
@@ -25,6 +25,7 @@ const cjModule = require('./suppliers/connectors/cj-connector');
 const aliexpressModule = require('./suppliers/connectors/aliexpress-connected-connector');
 const allegroModule = require('./suppliers/connectors/allegro-connector');
 const ebayModule = require('./suppliers/connectors/ebay-connector');
+const providerOnboarding = require('./external-provider-onboarding-contracts');
 
 // `automation` is deliberately declarative. The autopilot runner never branches
 // on provider names: adding a future source means registering a connector and
@@ -51,12 +52,10 @@ const CONNECTORS = Object.freeze({
       auth: Object.freeze({
         mode: 'api_key',
         scope: 'source',
-        description: 'Renseignez la clé API permanente du compte CJdropshipping.',
         fields: Object.freeze([Object.freeze({
           key: 'api_key',
           label: 'Clé API CJdropshipping',
           secret: true,
-          help: 'Clé API du compte fournisseur utilisée pour autoriser Komerce.',
         })]),
         hasEnvironmentCredentials: () => typeof cjModule.hasEnvironmentCredentials === 'function' && cjModule.hasEnvironmentCredentials(process.env),
       }),
@@ -76,10 +75,9 @@ const CONNECTORS = Object.freeze({
       auth: Object.freeze({
         mode: 'client_credentials',
         scope: 'source',
-        description: 'Renseignez les identifiants de l’application Allegro associée au compte fournisseur.',
         fields: Object.freeze([
-          Object.freeze({ key: 'client_id', label: 'Client ID Allegro', secret: false, help: 'Identifiant de l’application Allegro.' }),
-          Object.freeze({ key: 'client_secret', label: 'Client Secret Allegro', secret: true, help: 'Secret de la même application Allegro.' }),
+          Object.freeze({ key: 'client_id', label: 'Client ID Allegro', secret: false }),
+          Object.freeze({ key: 'client_secret', label: 'Client Secret Allegro', secret: true }),
         ]),
         hasEnvironmentCredentials: () => typeof allegroModule.hasEnvironmentCredentials === 'function' && allegroModule.hasEnvironmentCredentials(process.env),
       }),
@@ -98,7 +96,6 @@ const CONNECTORS = Object.freeze({
       auth: Object.freeze({
         mode: 'client_credentials',
         scope: 'platform',
-        description: 'Identifiants gérés par la plateforme Komerce ; rien à saisir pour cette source.',
       }),
       // P3 registration only: no unattended broad crawl until a bounded
       // automation policy is separately proved.
@@ -117,7 +114,6 @@ const CONNECTORS = Object.freeze({
         mode: 'oauth',
         scope: 'platform',
         sessionKey: 'aliexpress',
-        description: 'Aucun secret à saisir : autorisez le compte AliExpress depuis Komerce.',
       }),
       discovery: Object.freeze({ mode: 'runtime', version: 'aliexpress-ds-discovery-v1' }),
       automation: Object.freeze({ size: 20 }),
@@ -164,19 +160,24 @@ function sourceConnectorFacts() {
   return Object.entries(CONNECTORS.api).map(([adapter, entry]) => {
     const available = Boolean(entry.active);
     const automatable = Boolean(entry.automation);
+    const auth = publicAuthContract(entry);
+    const onboardingCheck = providerOnboarding.checkReady(adapter, auth);
     let reason = null;
     if (!available) reason = 'Connecteur non configuré sur ce serveur';
     else if (!automatable) reason = 'Alimentation automatique non certifiée pour ce connecteur';
+    else if (!onboardingCheck.ready) reason = 'Étude API / onboarding fournisseur incomplet';
     return {
       adapter,
       name: entry.supplierName || entry.label || adapter,
       label: entry.label || adapter,
       available,
       automatable,
+      onboarding_ready: onboardingCheck.ready,
+      onboarding: onboardingCheck.contract,
       connection_mode: entry.connection?.mode || null,
       connect_path: entry.connection?.connectPath || null,
       can_test_connection: Boolean(entry.connection && typeof entry.module?.testConnection === 'function'),
-      auth: publicAuthContract(entry),
+      auth,
       reason,
     };
   });
@@ -189,12 +190,10 @@ function publicAuthContract(entry) {
   return {
     mode: auth.mode,
     scope: auth.scope || null,
-    description: auth.description || null,
     fields: (auth.fields || []).map((field) => ({
       key: field.key,
       label: field.label,
       secret: Boolean(field.secret),
-      help: field.help || null,
     })),
   };
 }
