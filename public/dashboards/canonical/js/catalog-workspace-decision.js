@@ -37,6 +37,17 @@
     return (Array.isArray(payload && payload.products) ? payload.products : []).filter(row => row && row.is_active);
   }
 
+  function requestedProductRef(options = {}) {
+    const search = options.location && typeof options.location.search === 'string'
+      ? options.location.search
+      : (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
+    try {
+      return new URLSearchParams(search || '').get('product_ref');
+    } catch (_) {
+      return null;
+    }
+  }
+
   function reviewProducts(payload) {
     return activeProducts(payload).filter(row => row.needs_review);
   }
@@ -47,19 +58,6 @@
     const curation = payload && payload.curation ? payload.curation : {};
     const approval = Array.isArray(payload && payload.approval) ? payload.approval : [];
     const review = reviewProducts(payload);
-
-    if (approval.length > 0) {
-      items.push({
-        key: 'approval-pending',
-        label: 'Produits à curater',
-        helper: 'Validation humaine requise avant première publication',
-        value: String(approval.length),
-        tone: 'warning',
-        icon: '✓',
-        href: '#catalog-curation',
-        actionLabel: 'Voir la file →',
-      });
-    }
 
     if (review.length > 0 || Number(summary.needs_review) > 0) {
       items.push({
@@ -190,9 +188,32 @@
     else if (typeof rootNode.prepend === 'function') rootNode.prepend(host);
     else rootNode.appendChild(host);
 
-    const approvalSection = rootNode.querySelector && rootNode.querySelector('.kmc-workspace-table');
-    if (approvalSection && approvalSection.parentNode && approvalSection.parentNode.parentNode) {
-      approvalSection.parentNode.parentNode.setAttribute('id', 'catalog-curation');
+    const approvalTable = rootNode.querySelector && rootNode.querySelector('.kmc-workspace-table');
+    const approvalBody = approvalTable && approvalTable.parentNode && approvalTable.parentNode.parentNode;
+    const approvalSection = approvalBody && approvalBody.parentNode;
+    if (approvalBody) approvalBody.setAttribute('id', 'catalog-curation');
+
+    // La liste de curation est le travail principal : elle vient immédiatement
+    // sous le titre Catalogue, avant les KPI et l'assortiment déjà approuvé.
+    if (approvalSection && approvalSection.classList && approvalSection.classList.contains('kmc-section')) {
+      const headerNext = header.nextSibling;
+      if (headerNext) host.insertBefore(approvalSection, headerNext);
+      else host.appendChild(approvalSection);
+    }
+
+    const focusedRef = requestedProductRef(options);
+    if (focusedRef && approvalTable) {
+      const rows = approvalTable.querySelectorAll ? approvalTable.querySelectorAll('[data-product-ref]') : [];
+      const focusedRow = Array.from(rows || []).find(row => row.getAttribute('data-product-ref') === focusedRef);
+      if (focusedRow) {
+        focusedRow.classList.add('is-context-target');
+        focusedRow.setAttribute('aria-current', 'true');
+        const marker = text(doc, 'div', 'kmc-catalog-context-banner', `Produit suivi · ${focusedRef}`);
+        approvalSection.insertBefore(marker, approvalSection.firstChild);
+        if (typeof focusedRow.scrollIntoView === 'function') {
+          focusedRow.scrollIntoView({ block: 'center', behavior: 'auto' });
+        }
+      }
     }
     return host;
   }
