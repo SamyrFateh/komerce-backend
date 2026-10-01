@@ -56,7 +56,7 @@ test('Catalogue montre la file immédiatement et conserve le contexte Product 36
   const decision = read('public/dashboards/canonical/js/catalog-workspace-decision.js');
 
   expect(workspace).toContain("tr.setAttribute('data-product-ref'");
-  expect(workspace).toContain('Fiche 360 →');
+  expect(workspace).toContain("text(doc, 'a', 'kmc-catalog-product-title'");
   expect(workspace).toContain('Retour à la curation');
   expect(decision).toContain('requestedProductRef');
   expect(decision).toContain("classList.add('is-context-target')");
