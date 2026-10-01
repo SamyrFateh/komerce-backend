@@ -135,7 +135,9 @@ async function listSources(q = db) {
         productionCertified: Boolean(row.production_certified_at),
         oauthConnected: session ? session.connected !== false : undefined,
       }),
-      auth: contract ? { mode: contract.mode, scope: contract.scope, fields: contract.fields } : { mode: 'none', scope: null, fields: [] },
+      auth: contract
+        ? { mode: contract.mode, scope: contract.scope, description: contract.description || null, fields: contract.fields }
+        : { mode: 'none', scope: null, description: null, fields: [] },
       production_runtime_certified: Boolean(row.production_certified_at),
       label: row.display_name || automation?.label || row.adapter_type,
       connector_label: automation?.label || row.adapter_type,
