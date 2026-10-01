@@ -51,17 +51,17 @@
     }
   },
   "summary": {
-    "features": 38,
-    "healthy": 27,
-    "attention": 11,
+    "features": 39,
+    "healthy": 34,
+    "attention": 5,
     "blocked": 0,
-    "businessDependencies": 274,
+    "businessDependencies": 289,
     "directCrossFeatureImports": 0,
     "runtimeCycles": 0,
     "ambiguousOwnershipSignals": 0,
     "ontologyGaps": 0,
-    "debtItemsTotal": 15,
-    "gateHealthy": 35,
+    "debtItemsTotal": 9,
+    "gateHealthy": 36,
     "gateBlocked": 2
   },
   "projectionIntegrity": {
@@ -846,6 +846,13 @@
         },
         {
           "consumer": "providers-services",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "purchasing",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
@@ -5332,6 +5339,13 @@
           ]
         },
         {
+          "provider": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -5470,6 +5484,14 @@
           ]
         },
         {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
           "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -5511,14 +5533,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "purchasing"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -5566,14 +5586,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"purchasing\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -8199,6 +8213,13 @@
           ]
         },
         {
+          "provider": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -8277,14 +8298,12 @@
         ]
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "purchasing"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -8304,14 +8323,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"purchasing\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -11410,6 +11423,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "projections": {
@@ -14183,6 +14203,13 @@
           ]
         },
         {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -14238,7 +14265,7 @@
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
         "testOnlyRelations": 0,
-        "compositionRootRelations": 13,
+        "compositionRootRelations": 14,
         "details": [
           {
             "to": "auth-identity",
@@ -14278,6 +14305,10 @@
           },
           {
             "to": "providers-services",
+            "family": "COMPOSITION_ROOT_WIRING"
+          },
+          {
+            "to": "purchasing",
             "family": "COMPOSITION_ROOT_WIRING"
           },
           {
@@ -16148,7 +16179,7 @@
           },
           {
             "table": "product_suppliers",
-            "lifecycleOwner": null
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "product_variants",
@@ -16160,7 +16191,7 @@
           },
           {
             "table": "purchase_orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "recipients",
@@ -16350,7 +16381,7 @@
           },
           {
             "table": "product_suppliers",
-            "lifecycleOwner": null
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "product_variants",
@@ -16362,7 +16393,7 @@
           },
           {
             "table": "purchase_orders",
-            "lifecycleOwner": null
+            "lifecycleOwner": "purchasing"
           },
           {
             "table": "recipients",
@@ -16614,6 +16645,14 @@
           ]
         },
         {
+          "provider": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
           "provider": "refunds",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -16756,6 +16795,14 @@
           ]
         },
         {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
           "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -16778,14 +16825,12 @@
         ]
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "purchasing"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -16805,14 +16850,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"purchasing\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -20267,6 +20306,13 @@
           ]
         },
         {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "consumer": "shared-cart",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -21479,6 +21525,13 @@
           ]
         },
         {
+          "provider": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "refunds",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -21627,6 +21680,14 @@
           ]
         },
         {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
           "consumer": "recommendations",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -21676,14 +21737,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "purchasing"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -21703,14 +21762,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"purchasing\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -22508,6 +22561,13 @@
           ]
         },
         {
+          "provider": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
           "provider": "refunds",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -22563,14 +22623,12 @@
         "details": []
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "purchasing"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -22590,14 +22648,8 @@
         "findings": []
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"purchasing\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -23454,6 +23506,14 @@
           ]
         },
         {
+          "provider": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "interface"
+          ]
+        },
+        {
           "provider": "wallet",
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
@@ -23582,14 +23642,12 @@
         ]
       },
       "boundaryHealth": {
-        "status": "ATTENTION",
+        "status": "HEALTHY",
         "directCrossFeatureImports": 0,
         "runtimeCycles": 0,
         "unclassifiedDependencies": 0,
-        "declaredNotObserved": 1,
-        "declaredNotObservedEvidence": [
-          "purchasing"
-        ]
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
       },
       "governanceHealth": {
         "status": "HEALTHY",
@@ -23620,14 +23678,8 @@
         ]
       },
       "architecturalDebt": {
-        "debtCount": 1,
-        "debtItems": [
-          {
-            "type": "DECLARED_NOT_OBSERVED",
-            "severity": "low",
-            "evidence": "contract.consumes déclare \"purchasing\" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)"
-          }
-        ]
+        "debtCount": 0,
+        "debtItems": []
       },
       "evidence": {
         "source": "docs/BUSINESS_FEATURE_GRAPH.json",
@@ -24075,6 +24127,781 @@
           "disposition": "DECLARED_AND_OBSERVED",
           "channels": [
             "static-code"
+          ]
+        }
+      ],
+      "projections": {
+        "projectedBy": []
+      },
+      "technicalContext": {
+        "technicalPrimitiveDependencies": 0,
+        "testOnlyRelations": 0,
+        "compositionRootRelations": 0,
+        "details": []
+      },
+      "boundaryHealth": {
+        "status": "HEALTHY",
+        "directCrossFeatureImports": 0,
+        "runtimeCycles": 0,
+        "unclassifiedDependencies": 0,
+        "declaredNotObserved": 0,
+        "declaredNotObservedEvidence": []
+      },
+      "governanceHealth": {
+        "status": "HEALTHY",
+        "manifestPresent": true,
+        "registryPresent": true,
+        "orphanFiles": 0,
+        "unresolvedInternalApis": 0,
+        "declaredOnlyDependencyCount": 0,
+        "ontologyGapsLinked": 0,
+        "ambiguousOwnershipCount": 0
+      },
+      "gateHealth": {
+        "status": "HEALTHY",
+        "failCount": 0,
+        "warnCount": 0,
+        "gatesReporting": [],
+        "findings": []
+      },
+      "architecturalDebt": {
+        "debtCount": 0,
+        "debtItems": []
+      },
+      "evidence": {
+        "source": "docs/BUSINESS_FEATURE_GRAPH.json",
+        "businessFeatureGraphVersion": "O6-1.0"
+      }
+    },
+    {
+      "id": "purchasing",
+      "kind": "business-feature",
+      "status": "production",
+      "manifestFile": "features/purchasing.feature.js",
+      "repo": "backend",
+      "identity": {
+        "id": "purchasing",
+        "kind": "business-feature",
+        "status": "production"
+      },
+      "service": "Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.",
+      "perimeter": {
+        "in": [
+          "préflight Allegro Sandbox : identité exacte et stock/prix live ; fulfillment manuel prêt sans prétendre à un buyer placeOrder API",
+          "réconciliation d'achat manuel Allegro Sandbox : le proof runner peut découvrir de façon bornée la commande vendeur READY_FOR_PROCESSING postérieure à la PO, exige un match unique sur offer_id/SOI + quantité + monnaie native, puis confirme uniquement ce checkoutForm exact",
+          "déclenchement automatique d'un bon de commande (purchase_order) quand une commande client nécessite un réassort fournisseur",
+          "notification/confirmation du fournisseur (manuel ou WhatsApp) et suivi du statut du bon de commande",
+          "réception (partielle ou totale) d'un bon de commande, et rattachement au flux logistique",
+          "synchronisation d'annulation : pending/notified suivent l'annulation de la commande ; les POs engagées déclenchent une alerte sans forçage",
+          "réparation/rattrapage des commandes marquées \"ordered\" sans (ou avec) bon de commande cohérent (outils admin de correction)",
+          "gestion des fournisseurs et de leur mapping produit (routes/purchasing.js /suppliers/*)",
+          "administration transverse des bons de commande, historiquement exposée depuis le dashboard (services/purchasing-admin-service.js — retaggé @domain purchasing au Lot O2, écrit orders/product_suppliers/purchase_orders/suppliers)",
+          "Supplier Order Identity universelle : une unité vendable doit se résoudre sans ambiguïté vers exactement une unité commandable fournisseur avant tout engagement",
+          "Procurement Route canonique : l'achat fournisseur est routé vers un Procurement Hub explicite avant la jambe logistique Market ; aucune destination client/Market brute ne peut être assimilée à la destination fournisseur",
+          "préflight fournisseur AliExpress avant engagement : réconciliation SKU, stock/prix live, fret Supplier → Procurement Hub et construction fail-closed du payload d'achat sans exécution automatique",
+          "Supplier Fulfillment Readiness dynamique : évaluer SKU × quantité × Procurement Route à partir de l'identité fournisseur persistée, du refresh live et du fret, sans mutation fournisseur",
+          "Supplier Fulfillment Adapter Contract universel : chaque fournisseur déclare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce",
+          "Shipping Capability Adapter Contract : les faits de livraison natifs d'un provider sont traduits en capacité canonique sans fuite de champs provider ni défaut implicite sur les faits inconnus",
+          "Purchase Order exacte : pour une ligne vendue avec sku_id, la PO conserve order_item_id, product_sku_id et la Supplier Order Identity snapshotée ; un mapping produit-level ne peut pas remplacer la variante vendue",
+          "Supplier money canonique : pour une ligne SKU/SOI exacte, la PO snapshotte supplier_unit_price + supplier_currency depuis la Canonical Unit ; aucun prix natif non-AED ne peut être écrit dans unit_price_aed"
+        ],
+        "out": [
+          "cycle de vie de la commande cliente elle-même — orders reste seul propriétaire de order-status-machine.js (feature orders, scindée au Lot O1.4)",
+          "confirmation de paiement client (order-payment-confirmation.js, reste dans orders)",
+          "mouvement physique du colis une fois reçu (feature logistics, lecture seule sur purchase_orders/product_suppliers)",
+          "entrée catalogue / import fournisseur en amont (feature catalog — sourcing/catalog-import, hors périmètre purchasing)"
+        ]
+      },
+      "authority": "backend-core — tout changement du flux d'engagement fournisseur (Procurement Route, readiness dynamique, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing ; supplier-connectivity possède l'identité provider, la Supplier Order Identity et le contrat générique d'adapter",
+      "invariants": [
+        {
+          "statement": "les lecteurs d'achat (signaux, GET /api/purchasing, complétude de réception, scans Hub, stock-sync) lisent l'engagé et le reçu par ligne via v_purchase_line_progress, jamais purchase_orders.qty/received_qty ; la vue redonne exactement l'ancien calcul pour les PO historiques (avec ligne, sans ligne avant 225, annulées) et is_order_complete la consomme ; un item déjà couvert par les lignes (autre fournisseur compris) ne se rachète pas",
+          "test": "tests/integration/purchase-line-progress-postgres.test.js"
+        },
+        {
+          "statement": "purchase_lines (PR 1, migration 263) : la quantité effective achetée d'un order_item (0 si annulée, sinon COALESCE(settled, confirmed, quantity)) ne dépasse jamais order_items.quantity — garde base I1 sous verrou FOR UPDATE sur order_items ; une ligne confirmée/réglée/annulée est figée (one-shot) et ne se supprime pas directement",
+          "test": "tests/integration/purchase-lines-postgres.test.js"
+        },
+        {
+          "statement": "un besoin d'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)",
+          "test": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js"
+        },
+        {
+          "statement": "une ligne LOCAL_STOCK ne crée jamais de Purchase Order fournisseur ; seules les lignes IMPORT appartiennent au procurement fournisseur",
+          "test": "tests/unit/purchasing-trigger-service.test.js"
+        },
+        {
+          "statement": "si order_items.sku_id est renseigné, la Purchase Order doit conserver exactement ce product_sku_id, son supplier_unit_ref et sa Supplier Order Identity ; product_suppliers ne peut pas substituer un supplier_sku générique",
+          "test": "tests/integration/purchasing-exact-sku-po.test.js"
+        },
+        {
+          "statement": "pour une ligne SKU/SOI exacte, le prix et la devise du fournisseur viennent de la Canonical Unit et sont snapshotés nativement sur la PO ; un montant PLN/USD/CNY ne doit jamais être rebaptisé AED",
+          "test": "tests/unit/purchasing-canonical-money.test.js"
+        },
+        {
+          "statement": "une capacité de livraison provider ne franchit la frontière Purchasing que sous forme ShippingCapability canonique ; les champs natifs restent dans l'adapter et tout fait décisionnel inconnu bloque au lieu d'être inventé",
+          "test": "tests/unit/allegro-shipping-capability-adapter.test.js"
+        },
+        {
+          "statement": "Fulfillment Ready est un verdict dynamique SKU × quantité × Procurement Route ; identité résolue seule ne suffit pas et aucun preflight ne peut appeler placeOrder ni un paiement",
+          "test": "tests/unit/supplier-fulfillment-readiness.test.js"
+        },
+        {
+          "statement": "Allegro Sandbox peut être fulfillment-ready en exécution manuelle après identité + stock + prix live, tout en restant auto_order_ready=false et sans jamais invoquer de buyer placeOrder API",
+          "test": "tests/unit/allegro-fulfillment-adapter.test.js"
+        },
+        {
+          "statement": "une preuve d'achat manuel Allegro ne confirme la PO que si une commande vendeur READY_FOR_PROCESSING correspond exactement à offer id/SOI, quantité et monnaie native ; la discovery est bornée dans le temps, zéro ou plusieurs matchs bloquent, un rejeu identique est idempotent et un rebind différent est refusé",
+          "test": "tests/unit/allegro-sandbox-purchase-proof.test.js"
+        },
+        {
+          "statement": "la destination fournisseur est dérivée d'une Procurement Route explicite ; le moteur actuel n'ouvre que PROCUREMENT_HUB et refuse une destination Market/client brute ainsi que tout mode direct fournisseur-client implicite",
+          "test": "tests/unit/supplier-fulfillment-readiness.test.js"
+        },
+        {
+          "statement": "pour AliExpress freight.calculate, l'identité SKU reste résolue en amont mais le fret utilise uniquement le DTO complexe produit × quantité × destination hub encapsulé sous param_aeop_freight_calculate_for_buyer_d_t_o ; aucun sku_id n'est inventé",
+          "test": "tests/unit/aliexpress-purchase-preflight.test.js"
+        },
+        "purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)",
+        "une réception ne peut être appliquée qu'à un bon de commande existant et cohérent",
+        "aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js",
+        "tout message WhatsApp fournisseur part d un purchase_order déjà persisté ; un rejeu de notification ne recrée jamais le bon ni ne confirme son statut",
+        "un préflight fournisseur ne peut jamais créer de commande fournisseur ni déclencher un paiement ; toute mutation externe exige un gate explicite séparé"
+      ],
+      "implementation": {
+        "byCategory": {
+          "migrations": {
+            "count": 4,
+            "files": [
+              {
+                "declared": "migrations/225_purchase_orders_exact_supplier_identity.sql",
+                "resolvedPath": "migrations/225_purchase_orders_exact_supplier_identity.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/239_purchase_orders_canonical_supplier_money.sql",
+                "resolvedPath": "migrations/239_purchase_orders_canonical_supplier_money.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/263_purchase_lines_foundation.sql",
+                "resolvedPath": "migrations/263_purchase_lines_foundation.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "migrations/264_purchase_line_progress_view.sql",
+                "resolvedPath": "migrations/264_purchase_line_progress_view.sql",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "routes": {
+            "count": 1,
+            "files": [
+              {
+                "declared": "routes/purchasing.js",
+                "resolvedPath": "routes/purchasing.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "scripts": {
+            "count": 3,
+            "files": [
+              {
+                "declared": "scripts/allegro-sandbox-purchase-proof.js",
+                "resolvedPath": "scripts/allegro-sandbox-purchase-proof.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/allegro-shipping-capability-proof.js",
+                "resolvedPath": "scripts/allegro-shipping-capability-proof.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "scripts/purchase-lines-parity-check.js",
+                "resolvedPath": "scripts/purchase-lines-parity-check.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          },
+          "services": {
+            "count": 22,
+            "files": [
+              {
+                "declared": "services/purchase-line-snapshot.js",
+                "resolvedPath": "services/purchase-line-snapshot.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/purchasing-admin-service.js",
+                "resolvedPath": "services/purchasing-admin-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/purchasing-cancel-service.js",
+                "resolvedPath": "services/purchasing-cancel-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/purchasing-canonical-money.js",
+                "resolvedPath": "services/purchasing-canonical-money.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/purchasing-receive-service.js",
+                "resolvedPath": "services/purchasing-receive-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/purchasing-trigger-service.js",
+                "resolvedPath": "services/purchasing-trigger-service.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/receive-purchase-order.js",
+                "resolvedPath": "services/receive-purchase-order.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/repair-ordered-purchasing.js",
+                "resolvedPath": "services/repair-ordered-purchasing.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/repair-ordered-without-purchase-orders.js",
+                "resolvedPath": "services/repair-ordered-without-purchase-orders.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/aliexpress-fulfillment-adapter.js",
+                "resolvedPath": "services/suppliers/aliexpress-fulfillment-adapter.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/aliexpress-purchase-preflight.js",
+                "resolvedPath": "services/suppliers/aliexpress-purchase-preflight.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/allegro-fulfillment-adapter.js",
+                "resolvedPath": "services/suppliers/allegro-fulfillment-adapter.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/allegro-purchase-reconciliation.js",
+                "resolvedPath": "services/suppliers/allegro-purchase-reconciliation.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/allegro-shipping-capability-adapter.js",
+                "resolvedPath": "services/suppliers/allegro-shipping-capability-adapter.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/canonical-unit-cutover-comparison.js",
+                "resolvedPath": "services/suppliers/canonical-unit-cutover-comparison.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/canonical-unit-purchasing-gate.js",
+                "resolvedPath": "services/suppliers/canonical-unit-purchasing-gate.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/execution-adapter-registry.js",
+                "resolvedPath": "services/suppliers/execution-adapter-registry.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/procurement-execution-boundary.js",
+                "resolvedPath": "services/suppliers/procurement-execution-boundary.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/purchase-order-confirmation-boundary.js",
+                "resolvedPath": "services/suppliers/purchase-order-confirmation-boundary.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/purchasing-validators.js",
+                "resolvedPath": "services/suppliers/purchasing-validators.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/shipping-capability-contract.js",
+                "resolvedPath": "services/suppliers/shipping-capability-contract.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/suppliers/supplier-fulfillment-readiness.js",
+                "resolvedPath": "services/suppliers/supplier-fulfillment-readiness.js",
+                "status": "resolved-in-technical-graph"
+              }
+            ]
+          },
+          "tests": {
+            "count": 33,
+            "files": [
+              {
+                "declared": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+                "resolvedPath": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/purchase-line-progress-postgres.test.js",
+                "resolvedPath": "tests/integration/purchase-line-progress-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/purchase-lines-postgres.test.js",
+                "resolvedPath": "tests/integration/purchase-lines-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/purchasing-exact-sku-po.test.js",
+                "resolvedPath": "tests/integration/purchasing-exact-sku-po.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/purchasing-wa-url-w3-1.test.js",
+                "resolvedPath": "tests/integration/purchasing-wa-url-w3-1.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/aliexpress-purchase-preflight.test.js",
+                "resolvedPath": "tests/unit/aliexpress-purchase-preflight.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-fulfillment-adapter.test.js",
+                "resolvedPath": "tests/unit/allegro-fulfillment-adapter.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-purchase-reconciliation.test.js",
+                "resolvedPath": "tests/unit/allegro-purchase-reconciliation.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-sandbox-purchase-proof.test.js",
+                "resolvedPath": "tests/unit/allegro-sandbox-purchase-proof.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-seller-order-read.test.js",
+                "resolvedPath": "tests/unit/allegro-seller-order-read.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-shipping-capability-adapter.test.js",
+                "resolvedPath": "tests/unit/allegro-shipping-capability-adapter.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/allegro-shipping-capability-proof.test.js",
+                "resolvedPath": "tests/unit/allegro-shipping-capability-proof.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-unit-cutover-comparison.test.js",
+                "resolvedPath": "tests/unit/canonical-unit-cutover-comparison.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/canonical-unit-purchasing-gate.test.js",
+                "resolvedPath": "tests/unit/canonical-unit-purchasing-gate.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/procurement-execution-boundary.test.js",
+                "resolvedPath": "tests/unit/procurement-execution-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchase-line-snapshot.test.js",
+                "resolvedPath": "tests/unit/purchase-line-snapshot.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchase-lines-parity-check.test.js",
+                "resolvedPath": "tests/unit/purchase-lines-parity-check.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchase-order-confirmation-boundary.test.js",
+                "resolvedPath": "tests/unit/purchase-order-confirmation-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-adapter-resolution.test.js",
+                "resolvedPath": "tests/unit/purchasing-adapter-resolution.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-admin-service.test.js",
+                "resolvedPath": "tests/unit/purchasing-admin-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-cancel-service.test.js",
+                "resolvedPath": "tests/unit/purchasing-cancel-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-canonical-money.test.js",
+                "resolvedPath": "tests/unit/purchasing-canonical-money.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-readiness-vocabulary-mapping.test.js",
+                "resolvedPath": "tests/unit/purchasing-readiness-vocabulary-mapping.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-receive-service.test.js",
+                "resolvedPath": "tests/unit/purchasing-receive-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-route.test.js",
+                "resolvedPath": "tests/unit/purchasing-route.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-trigger-exact-sku.test.js",
+                "resolvedPath": "tests/unit/purchasing-trigger-exact-sku.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing-trigger-service.test.js",
+                "resolvedPath": "tests/unit/purchasing-trigger-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/purchasing.test.js",
+                "resolvedPath": "tests/unit/purchasing.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/receive-purchase-order.test.js",
+                "resolvedPath": "tests/unit/receive-purchase-order.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/repair-ordered-purchasing.test.js",
+                "resolvedPath": "tests/unit/repair-ordered-purchasing.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/repair-ordered-without-purchase-orders.test.js",
+                "resolvedPath": "tests/unit/repair-ordered-without-purchase-orders.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/shipping-capability-contract.test.js",
+                "resolvedPath": "tests/unit/shipping-capability-contract.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/unit/supplier-fulfillment-readiness.test.js",
+                "resolvedPath": "tests/unit/supplier-fulfillment-readiness.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              }
+            ]
+          }
+        },
+        "totalFiles": 63,
+        "boutiqueManifest": null,
+        "boutiqueFiles": {
+          "count": 0,
+          "files": []
+        }
+      },
+      "ownership": {
+        "ownsTables": [
+          {
+            "table": "product_suppliers",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "purchase_orders",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "suppliers",
+            "resolution": "single-writer"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "product_suppliers",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "purchase_orders",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "suppliers",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          }
+        ],
+        "readsTables": [
+          {
+            "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "product_skus",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "products",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "relais",
+            "lifecycleOwner": "logistics"
+          }
+        ]
+      },
+      "data": {
+        "ownsTables": [
+          {
+            "table": "product_suppliers",
+            "resolution": "single-writer"
+          },
+          {
+            "table": "purchase_orders",
+            "resolution": "declared-table-owner"
+          },
+          {
+            "table": "suppliers",
+            "resolution": "single-writer"
+          }
+        ],
+        "writesTables": [
+          {
+            "table": "product_suppliers",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "purchase_orders",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          },
+          {
+            "table": "suppliers",
+            "mode": "RW",
+            "lifecycleOwner": "purchasing",
+            "ownershipStatus": "owner"
+          }
+        ],
+        "readsTables": [
+          {
+            "table": "order_items",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "orders",
+            "lifecycleOwner": "orders"
+          },
+          {
+            "table": "product_skus",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "products",
+            "lifecycleOwner": "catalog"
+          },
+          {
+            "table": "relais",
+            "lifecycleOwner": "logistics"
+          }
+        ]
+      },
+      "interfaces": {
+        "internalApis": [
+          {
+            "fn": "adaptShippingRate",
+            "file": "services/suppliers/allegro-shipping-capability-adapter.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "compareLegacyCanonicalUnit",
+            "file": "services/suppliers/canonical-unit-cutover-comparison.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "evaluateSupplierFulfillmentReadiness",
+            "file": "services/suppliers/supplier-fulfillment-readiness.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "normalizeCapability",
+            "file": "services/suppliers/shipping-capability-contract.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "prepareCanonicalUnitPurchase",
+            "file": "services/suppliers/canonical-unit-purchasing-gate.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "reconcile",
+            "file": "services/suppliers/allegro-purchase-reconciliation.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "repairOrderedWithoutPurchaseOrders",
+            "file": "services/repair-ordered-without-purchase-orders.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "resolveCanonicalSupplierMoney",
+            "file": "services/purchasing-canonical-money.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "syncPurchaseOrdersOnOrderCancel",
+            "file": "services/purchasing-cancel-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "triggerPurchasing",
+            "file": "services/purchasing-trigger-service.js",
+            "status": "resolved"
+          }
+        ],
+        "httpInterfaces": {
+          "count": 10
+        }
+      },
+      "businessDependencies": [
+        {
+          "provider": "auth",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "external-provider-contracts",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "infrastructure",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "notifications",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "provider": "sourcing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "provider": "supplier-connectivity",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        }
+      ],
+      "consumedBy": [
+        {
+          "consumer": "catalog",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "dashboard",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "logistics",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "data-read"
+          ]
+        },
+        {
+          "consumer": "orders",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "payments",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
+        },
+        {
+          "consumer": "platform-ops",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code",
+            "interface"
           ]
         }
       ],
@@ -27185,6 +28012,13 @@
             "static-code",
             "data-read"
           ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "projections": {
@@ -27192,9 +28026,14 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 0,
+        "testOnlyRelations": 1,
         "compositionRootRelations": 0,
-        "details": []
+        "details": [
+          {
+            "to": "purchasing",
+            "family": "NON_RUNTIME_TEST"
+          }
+        ]
       },
       "boundaryHealth": {
         "status": "HEALTHY",
@@ -27413,6 +28252,13 @@
           "channels": [
             "static-code"
           ]
+        },
+        {
+          "consumer": "purchasing",
+          "disposition": "DECLARED_AND_OBSERVED",
+          "channels": [
+            "static-code"
+          ]
         }
       ],
       "projections": {
@@ -27420,9 +28266,14 @@
       },
       "technicalContext": {
         "technicalPrimitiveDependencies": 0,
-        "testOnlyRelations": 0,
+        "testOnlyRelations": 1,
         "compositionRootRelations": 0,
-        "details": []
+        "details": [
+          {
+            "to": "purchasing",
+            "family": "NON_RUNTIME_TEST"
+          }
+        ]
       },
       "boundaryHealth": {
         "status": "ATTENTION",

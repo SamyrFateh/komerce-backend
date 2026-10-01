@@ -9,15 +9,15 @@
 | Family | N |
 |---|---|
 | PROJECTION | 0 |
-| COMPOSITION_ROOT_WIRING | 18 |
-| NON_RUNTIME_TEST | 11 |
+| COMPOSITION_ROOT_WIRING | 19 |
+| NON_RUNTIME_TEST | 13 |
 | TECHNICAL_PRIMITIVE | 0 |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 |
 | CROSS_FEATURE_DIRECT_IMPORT | 0 |
 | BUSINESS_FEATURE_INTERFACE | 0 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **29** |
+| **TOTAL** | **32** |
 
 ## The 94 pairs (from → to)
 
@@ -35,6 +35,7 @@
 | infrastructure → loyalty | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → market-delegation | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → providers-services | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
+| infrastructure → purchasing | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → settlement | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → sourcing | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → unsold-resolution | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
@@ -51,6 +52,8 @@
 | platform-ops → shared-cart | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | refunds → auth | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | technical-transversal | static-code | technical-primitive | non-runtime-evidence | — | `` |
 | refunds → payments | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
+| sourcing → purchasing | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
+| supplier-connectivity → purchasing | NON_RUNTIME_TEST | TEST_ONLY | integration-adapter | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | wallet → notifications | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-transversal | static-code | technical-primitive | non-runtime-evidence | — | `` |
 
 ## Exceptions ledger (measured, not fixed)
