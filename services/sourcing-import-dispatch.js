@@ -139,28 +139,19 @@ function connectorCatalog() {
 function sourceAutomationCatalog() {
   return Object.entries(CONNECTORS.api)
     .filter(([, entry]) => entry.automation)
-    .map(([adapter, entry]) => {
-      const onboarding = providerOnboarding.checkReady(adapter, publicAuthContract(entry));
-      const connectorReady = Boolean(entry.active) && onboarding.ready;
-      return {
-        adapter,
-        supplier_name: entry.supplierName || entry.label || adapter,
-        label: entry.label,
-        connector_ready: connectorReady,
-        reason: !entry.active
-          ? (entry.reason || 'connecteur inactif')
-          : (!onboarding.ready ? 'Étude API / onboarding fournisseur incomplet' : null),
-        onboarding_ready: onboarding.ready,
-        discovery_mode: entry.discovery?.mode || null,
-        discovery_version: entry.discovery?.version || null,
-        discovery_ready: connectorReady && (
-          entry.discovery?.mode === 'static'
-          || typeof entry.module?.discoverAcquisitionPlan === 'function'
-        ),
-        pull_options: { ...entry.automation },
-        supports_full_snapshot: entry.supportsFullSnapshot !== false,
-      };
-    });
+    .map(([adapter, entry]) => ({
+      adapter,
+      supplier_name: entry.supplierName || entry.label || adapter,
+      label: entry.label,
+      connector_ready: Boolean(entry.active),
+      reason: entry.active ? null : (entry.reason || 'connecteur inactif'),
+      discovery_mode: entry.discovery?.mode || null,
+      discovery_version: entry.discovery?.version || null,
+      discovery_ready: entry.discovery?.mode === 'static'
+        || typeof entry.module?.discoverAcquisitionPlan === 'function',
+      pull_options: { ...entry.automation },
+      supports_full_snapshot: entry.supportsFullSnapshot !== false,
+    }));
 }
 
 // Faits opérateur sur les connecteurs API du registre : jamais de nom de module, de classe,
