@@ -122,6 +122,7 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/action-center',
     '/admin/demo',
     '/admin/import-runtime',
+    '/admin/hub-live',
   ].forEach(routePath => {
     app.get(routePath, (req, res) => {
       sendCanonicalAdmin(res);
