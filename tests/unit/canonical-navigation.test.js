@@ -396,7 +396,7 @@ describe('canonical admin navigation — filtrage par rôle des domaines N1 (doc
     ['finance', ['dashboard', 'finance']],
     ['sourcing', ['dashboard', 'live']],
     ['agent_hub', ['dashboard', 'operations']],
-    ['agent_relais', ['dashboard', 'operations', 'finance']],
+    ['agent_relais', ['dashboard', 'operations', 'live', 'finance']],
     ['agent_transitaire', ['dashboard', 'operations']],
     ['support', ['dashboard']],
     ['inconnu', ['dashboard']],
