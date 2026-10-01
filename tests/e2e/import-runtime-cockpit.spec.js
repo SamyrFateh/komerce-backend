@@ -762,7 +762,7 @@ test.describe('Cockpit imports — audit de navigation (parent unique par écran
     state.passages = passages;
     state.populations = { received:{ ...readyPop, kind:'received' } };
     await page.locator('.kir-domain-nav a', { hasText:'Passages' }).click();
-    await expect(page.locator('.kir-back')).toHaveCount(0);
+    await expect(page.locator('.kir-back')).toHaveText('← Retour au suivi');
     await page.locator('.kir-passage-row', { hasText:'KIR-000008' }).click();
     await expect(page).toHaveURL(/run=KIR-000008/);
     await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Suivi');
@@ -887,7 +887,7 @@ test.describe('Cockpit imports — vue Sources (cartes opérateur)', () => {
     await page.screenshot({ path:'test-results/import-runtime-cockpit-sources.png' });
   });
 
-  test('retour contextuel : présent avec run (→ Suivi du KIR), absent sans run', async ({ page }) => {
+  test('retour au suivi : vers le KIR sélectionné, ou vers l’accueil Suivi sans run', async ({ page }) => {
     await open(page);
     await expect(page.locator('.kir-back')).toHaveText('← Retour au suivi');
     await expect(page.locator('.kir-sources-context')).toHaveText('Passage courant : KIR-000009');
@@ -902,7 +902,8 @@ test.describe('Cockpit imports — vue Sources (cartes opérateur)', () => {
     await page.goto(`${ORIGIN}/admin/import-runtime?view=sources`);
     await page.evaluate(() => window.KomerceCanonicalImportRuntime.mount({ root: document.getElementById('root') }));
     await expect(page.locator('.kir-sources-board')).toHaveCount(1);
-    await expect(page.locator('.kir-back')).toHaveCount(0);
+    await expect(page.locator('.kir-back')).toHaveText('← Retour au suivi');
+    await expect(page.locator('.kir-back')).toHaveAttribute('href', '/admin/import-runtime');
   });
 
   test('Sources → Suivi → Sources → Passages → Sources ; Back / Forward', async ({ page }) => {
