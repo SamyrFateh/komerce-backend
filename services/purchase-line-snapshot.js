@@ -160,7 +160,27 @@ async function confirmHistoricalPurchaseLine(client, purchaseOrderId, { quantity
   `, [purchaseOrderId, quantity, unitPrice]);
 }
 
+/**
+ * Couverture d'un order_item (PR 2) : l'item est couvert quand la somme des quantités effectives de ses lignes
+ * non annulées atteint sa quantité. Contrairement à l'ancienne recherche « même fournisseur », elle empêche
+ * aussi de racheter un item déjà couvert par un AUTRE fournisseur (anti-double-achat). Retourne la PO qui couvre
+ * (id peut être null pour une ligne ouverte, PR 4) ou null si l'item n'est pas couvert.
+ */
+async function findItemCoverage(client, item) {
+  if (!item?.id) return null;
+  const { rows } = await client.query(`
+    SELECT purchase_order_id AS id, po_status AS status, effective_quantity
+      FROM v_purchase_line_progress
+     WHERE order_item_id = $1 AND NOT cancelled
+     ORDER BY purchase_order_id NULLS LAST
+  `, [item.id]);
+  const covered = rows.reduce((sum, r) => sum + Number(r.effective_quantity || 0), 0);
+  if (!rows.length || covered < Number(item.quantity)) return null;
+  return { id: rows[0].id, status: rows[0].status };
+}
+
 module.exports = {
+  findItemCoverage,
   DEFAULT_PROCUREMENT_HUB_REF,
   resolveProcurementHubRef,
   procurementHubLabel,

@@ -40,12 +40,13 @@ async function findOrderedWithoutPurchaseOrders({ limit = 50 } = {}) {
            COUNT(oi.id) AS item_count
     FROM orders o
     JOIN order_items oi ON oi.order_id = o.id
-    LEFT JOIN purchase_orders po
-      ON po.order_id = o.id
-     AND po.status != 'cancelled'
+    LEFT JOIN v_purchase_line_progress v
+      ON v.order_id = o.id
+     AND v.purchase_order_id IS NOT NULL
+     AND NOT v.cancelled
     WHERE o.status = 'ordered'
       AND o.payment_status = 'paid'
-      AND po.id IS NULL
+      AND v.purchase_order_id IS NULL
     GROUP BY o.id
     ORDER BY o.updated_at ASC NULLS FIRST, o.created_at ASC
     LIMIT $1

@@ -43,9 +43,10 @@ async function repairOrderedWithoutPurchaseOrders({ dryRun = true, limit = 25, u
     FROM orders o
     WHERE o.status = 'ordered'
       AND NOT EXISTS (
-        SELECT 1 FROM purchase_orders po
-        WHERE po.order_id = o.id
-          AND po.status != 'cancelled'
+        SELECT 1 FROM v_purchase_line_progress v
+        WHERE v.order_id = o.id
+          AND v.purchase_order_id IS NOT NULL
+          AND NOT v.cancelled
       )
     ORDER BY o.updated_at ASC NULLS FIRST, o.created_at ASC
     LIMIT $1

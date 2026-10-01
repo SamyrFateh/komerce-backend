@@ -127,3 +127,22 @@ describe('lignes historiques', () => {
     expect(c.query.mock.calls[1][1]).toEqual(['po', 3, null]);
   });
 });
+
+describe('findItemCoverage', () => {
+  test('sans id d\'item → null, aucune requête', async () => {
+    const c = { query: jest.fn() };
+    expect(await snap.findItemCoverage(c, {})).toBeNull();
+    expect(await snap.findItemCoverage(c, null)).toBeNull();
+    expect(c.query).not.toHaveBeenCalled();
+  });
+  test('aucune ligne → null ; somme insuffisante → null', async () => {
+    const c = { query: jest.fn().mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: 'po', status: 'pending', effective_quantity: 1 }, { id: null, status: null, effective_quantity: null }] }) };
+    expect(await snap.findItemCoverage(c, { id: 'it', quantity: 2 })).toBeNull();
+    expect(await snap.findItemCoverage(c, { id: 'it', quantity: 2 })).toBeNull();
+  });
+  test('somme suffisante (lignes cumulées) → première PO', async () => {
+    const c = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'po1', status: 'confirmed', effective_quantity: 1 }, { id: 'po2', status: 'pending', effective_quantity: 1 }] }) };
+    expect(await snap.findItemCoverage(c, { id: 'it', quantity: 2 })).toEqual({ id: 'po1', status: 'confirmed' });
+    expect(c.query.mock.calls[0][0]).toContain('NOT cancelled');
+  });
+});
