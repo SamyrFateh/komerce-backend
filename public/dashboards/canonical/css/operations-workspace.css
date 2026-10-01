@@ -323,8 +323,7 @@
   gap: 6px 10px;
 }
 
-.kmc-catalog-signal-cell,
-.kmc-catalog-state-cell {
+.kmc-catalog-cell-stack {
   display: grid;
   gap: 4px;
   align-content: center;
@@ -344,18 +343,22 @@
   overflow: hidden;
 }
 
-.kmc-catalog-curation-table .kmc-catalog-actions-cell {
+.kmc-catalog-curation-table td.kmc-catalog-actions-cell {
   position: sticky;
   right: 0;
   z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-content: center;
-  gap: 6px;
+  display: table-cell;
   min-width: 250px;
   background: #fff;
   box-shadow: -8px 0 12px -12px rgb(20 35 65 / .35);
+}
+
+.kmc-catalog-actions-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
 }
 
 .kmc-catalog-curation-table tbody tr:hover .kmc-catalog-actions-cell {
@@ -588,4 +591,9 @@
     overflow-x: auto;
     scrollbar-gutter: stable both-edges;
   }
+}
+
+/* Catalog curation must keep semantic table cells; layout belongs to inner wrappers. */
+.kmc-catalog-curation-table td.kmc-catalog-actions-cell {
+  display: table-cell;
 }
