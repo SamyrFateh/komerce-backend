@@ -86,7 +86,7 @@ function evaluateCatalogProductCertification(row = {}, options = {}) {
       is_active: false,
       is_available: false,
     },
-    patch: { is_active: true },
+    patch: { is_active: true, is_available: true },
     context: { catalogMediaCount: Number(row.active_media || 0) },
   });
   if (!publication.ok) reasons.push(`publication_guard:${publication.code}`);
