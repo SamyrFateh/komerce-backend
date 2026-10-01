@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        runtime_context, operator_command_payload
  * @outputs       physical_unit_result, custody_side_effects
- * @depends       db, services/hub-physical-identity.js
+ * @depends       db, services/hub-physical-identity.js, services/hub-reference.js
  * @used-by       routes/hub.js, routes/scans.js
  * @db-read       business_rules, hub_physical_units, parcel_items, parcels, products, scan_events
  * @db-write      products, scan_events
@@ -14,7 +14,7 @@
  * @db-txn        operator_command_atomic
  * @doctrine      HUB-001 Physical Identity, Allocation & Custody; HUB-002 Operator Execution Cutover; DOCTRINE_DENSITE_VALEUR
  * @impact-areas  logistics, purchasing, incident-management
- * @version       2026-09
+ * @version       2026-10
  */
 
 'use strict';
