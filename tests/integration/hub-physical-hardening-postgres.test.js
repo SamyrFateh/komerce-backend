@@ -116,23 +116,35 @@ beforeAll(async () => {
         market_id uuid,
         relais_id uuid,
         reference text,
-        status text
+        status text,
+        created_at timestamptz NOT NULL DEFAULT now()
       );
       CREATE TABLE order_items (
         id uuid PRIMARY KEY,
         order_id uuid NOT NULL REFERENCES orders(id),
-        sku_id uuid REFERENCES product_skus(id)
+        sku_id uuid REFERENCES product_skus(id),
+        quantity integer NOT NULL DEFAULT 1
       );
+      CREATE TABLE product_suppliers (id uuid PRIMARY KEY);
       CREATE TABLE purchase_orders (
         id uuid PRIMARY KEY,
-        order_id uuid NOT NULL REFERENCES orders(id),
+        order_id uuid REFERENCES orders(id),
         order_item_id uuid REFERENCES order_items(id),
         product_sku_id uuid REFERENCES product_skus(id),
+        product_supplier_id uuid REFERENCES product_suppliers(id),
         supplier_id uuid NOT NULL REFERENCES suppliers(id),
+        supplier_sku text NOT NULL DEFAULT 'SKU',
         supplier_unit_ref text,
         supplier_order_identity jsonb,
-        qty integer NOT NULL,
-        status text NOT NULL
+        qty integer,
+        received_qty integer NOT NULL DEFAULT 0,
+        supplier_unit_price numeric(18,4),
+        supplier_currency text,
+        status text NOT NULL,
+        confirmed_at timestamptz,
+        hub_received_at timestamptz,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
       );
       CREATE TABLE incidents (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -178,6 +190,9 @@ beforeAll(async () => {
     `);
     await client.query(migration233);
     await client.query(migration234);
+    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql']) {
+      await client.query(fs.readFileSync(path.join(__dirname, '../../migrations', name), 'utf8').replace(/public\./g, `${schema}.`));
+    }
   } finally {
     client.release();
   }

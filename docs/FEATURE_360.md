@@ -1164,6 +1164,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - un produit tague fragile ne se repacke jamais (repack_exempt) : la protection prime sur le volume
 - la photo de scelle Dubai est la borne 1 de responsabilite : avant = fournisseur, apres = transport
 - le systeme prescrit (repack/measure/photo), l agent execute, jamais l inverse (R2)
+- une PO regroupee (order_id NULL) ne s alloue au Hub que par ligne d achat (purchase_line_id), repartie dans l ordre des commandes et plafonnee au restant du effectif ; l allocation historique reste au niveau PO
 - un colis ne change de statut que via une sequence de scan validee
 - [object Object]
 - le retrait exceptionnel par autorisation nominative ne revele jamais le nom attendu a l'agent relais — comparaison aveugle uniquement

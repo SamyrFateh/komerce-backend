@@ -100,6 +100,51 @@ async function seedPurchase({ marketId, relaisId, qty = 1, soi = null, supplierU
   return { market, supplier, sku, order, item, po, destination, identity };
 }
 
+// PO regroupée (order_id NULL) : lignes ouvertes → PO draft → rattachement → PO confirmée.
+async function seedGroupedPurchase({ quantities = [1, 1], confirmed = null } = {}) {
+  const supplier = id();
+  const sku = id();
+  const po = id();
+  await query('INSERT INTO suppliers(id) VALUES ($1)', [supplier]);
+  await query('INSERT INTO product_skus(id) VALUES ($1)', [sku]);
+  const lines = [];
+  for (const quantity of quantities) {
+    const market = id();
+    const order = id();
+    const item = id();
+    const line = id();
+    await query('INSERT INTO markets(id) VALUES ($1)', [market]);
+    await query(
+      'INSERT INTO orders(id, market_id, relais_id, reference, status) VALUES ($1,$2,$3,$4,$5)',
+      [order, market, id(), `ORD-${order.slice(0, 8)}`, 'ordered']
+    );
+    await query('INSERT INTO order_items(id, order_id, sku_id, quantity) VALUES ($1,$2,$3,$4)', [item, order, sku, quantity]);
+    await query(
+      `INSERT INTO purchase_lines(id, order_item_id, supplier_id, product_sku_id, supplier_sku, supplier_unit_ref,
+                                  supplier_order_identity, quantity, procurement_hub_ref)
+       VALUES ($1,$2,$3,$4,'SKU','UNIT-G',$5::jsonb,$6,'HUB-DXB')`,
+      [line, item, supplier, sku, JSON.stringify({ provider: 'manual', version: 1, payload: { supplier_sku: 'UNIT-G' } }), quantity]
+    );
+    lines.push({ line, item, order, market, quantity });
+  }
+  await query(
+    "INSERT INTO purchase_orders(id, order_id, supplier_id, status) VALUES ($1, NULL, $2, 'draft')",
+    [po, supplier]
+  );
+  await query('UPDATE purchase_lines SET purchase_order_id = $1 WHERE id = ANY($2::uuid[])', [po, lines.map((l) => l.line)]);
+  await query("UPDATE purchase_orders SET status = 'notified' WHERE id = $1", [po]);
+  await query("UPDATE purchase_orders SET status = 'confirmed' WHERE id = $1", [po]);
+  if (confirmed !== null) {
+    for (let i = 0; i < lines.length; i += 1) {
+      await query(
+        'UPDATE purchase_lines SET confirmed_quantity = $2, confirmed_at = now() WHERE id = $1',
+        [lines[i].line, confirmed[i]]
+      );
+    }
+  }
+  return { supplier, sku, po, lines };
+}
+
 async function advanceToPicked(unitId) {
   return transact(async (client) => {
     for (const state of ['IDENTIFIED', 'QUALITY_CHECKED', 'LOCATED', 'ALLOCATED', 'PICKED']) {
@@ -123,23 +168,35 @@ beforeAll(async () => {
         market_id uuid,
         relais_id uuid,
         reference text,
-        status text
+        status text,
+        created_at timestamptz NOT NULL DEFAULT now()
       );
       CREATE TABLE order_items (
         id uuid PRIMARY KEY,
         order_id uuid NOT NULL REFERENCES orders(id),
-        sku_id uuid REFERENCES product_skus(id)
+        sku_id uuid REFERENCES product_skus(id),
+        quantity integer NOT NULL DEFAULT 1
       );
+      CREATE TABLE product_suppliers (id uuid PRIMARY KEY);
       CREATE TABLE purchase_orders (
         id uuid PRIMARY KEY,
-        order_id uuid NOT NULL REFERENCES orders(id),
+        order_id uuid REFERENCES orders(id),
         order_item_id uuid REFERENCES order_items(id),
         product_sku_id uuid REFERENCES product_skus(id),
+        product_supplier_id uuid REFERENCES product_suppliers(id),
         supplier_id uuid NOT NULL REFERENCES suppliers(id),
+        supplier_sku text NOT NULL DEFAULT 'SKU',
         supplier_unit_ref text,
         supplier_order_identity jsonb,
-        qty integer NOT NULL,
-        status text NOT NULL
+        qty integer,
+        received_qty integer NOT NULL DEFAULT 0,
+        supplier_unit_price numeric(18,4),
+        supplier_currency text,
+        status text NOT NULL,
+        confirmed_at timestamptz,
+        hub_received_at timestamptz,
+        created_at timestamptz NOT NULL DEFAULT now(),
+        updated_at timestamptz NOT NULL DEFAULT now()
       );
       CREATE TABLE incidents (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -175,6 +232,9 @@ beforeAll(async () => {
       );
     `);
     await client.query(migrationSql);
+    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql']) {
+      await client.query(fs.readFileSync(path.join(__dirname, '../../migrations', name), 'utf8').replace(/public\./g, `${schema}.`));
+    }
   } finally {
     client.release();
   }
@@ -516,5 +576,100 @@ describe('HUB-001 — physical outcome transactional contract', () => {
 
     expect((await query('SELECT outcome_type FROM hub_physical_units WHERE id=$1', [inbound.unit.id])).rows[0].outcome_type)
       .toBe('DESTROYED');
+  });
+});
+
+describe('HUB-001 — réception par ligne d\'achat (PO regroupée)', () => {
+  test('une réception sur une PO regroupée alloue par ligne, dans l\'ordre des commandes, et alimente la vue', async () => {
+    const g = await seedGroupedPurchase({ quantities: [1, 2] });
+
+    const inbound = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'SUP-GROUP-001',
+      contents: [{ purchase_order_id: g.po, product_sku_id: g.sku, quantity: 2 }],
+    }));
+
+    expect(inbound.quarantined).toBe(false);
+    expect(inbound.allocations).toHaveLength(2);
+    expect(inbound.allocations.map((a) => String(a.allocation.purchase_line_id)).sort())
+      .toEqual(g.lines.map((l) => String(l.line)).sort());
+
+    const progress = await query(
+      'SELECT line_id, received_quantity, effective_quantity FROM v_purchase_line_progress WHERE purchase_order_id = $1',
+      [g.po]
+    );
+    const received = Object.fromEntries(progress.rows.map((r) => [String(r.line_id), Number(r.received_quantity)]));
+    expect(Object.values(received).reduce((a, b) => a + b, 0)).toBe(2);
+  });
+
+  test('sans product_sku_id, une PO regroupée est refusée', async () => {
+    const g = await seedGroupedPurchase();
+    const result = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'SUP-GROUP-NOSKU',
+      contents: [{ purchase_order_id: g.po, quantity: 1 }],
+    }));
+    expect(result).toMatchObject({ quarantined: true, reason_code: 'HUB_PURCHASE_SKU_MISMATCH' });
+    expect((await query('SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations')).rows[0].n).toBe(0);
+  });
+
+  test('un SKU étranger à la PO regroupée est refusé', async () => {
+    const g = await seedGroupedPurchase();
+    await query('INSERT INTO product_skus(id) VALUES ($1)', [id()]);
+    const result = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'SUP-GROUP-OTHERSKU',
+      contents: [{ purchase_order_id: g.po, product_sku_id: id(), quantity: 1 }],
+    }));
+    expect(result).toMatchObject({ quarantined: true, reason_code: 'HUB_PURCHASE_SKU_MISMATCH' });
+    expect((await query('SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations')).rows[0].n).toBe(0);
+  });
+
+  test('une réception supérieure au restant dû des lignes est refusée', async () => {
+    const g = await seedGroupedPurchase({ quantities: [1, 1] });
+    const result = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'SUP-GROUP-OVER',
+      contents: [{ purchase_order_id: g.po, product_sku_id: g.sku, quantity: 3 }],
+    }));
+    expect(result).toMatchObject({ quarantined: true, reason_code: 'HUB_ALLOCATION_OVERRECEIVED' });
+    expect((await query('SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations')).rows[0].n).toBe(0);
+  });
+
+  test('la quantité confirmée réduite par le fournisseur plafonne la réception', async () => {
+    const g = await seedGroupedPurchase({ quantities: [2], confirmed: [1] });
+    const result = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'SUP-GROUP-CONFIRMED',
+      contents: [{ purchase_order_id: g.po, product_sku_id: g.sku, quantity: 2 }],
+    }));
+    expect(result).toMatchObject({ quarantined: true, reason_code: 'HUB_ALLOCATION_OVERRECEIVED' });
+    expect((await query('SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations')).rows[0].n).toBe(0);
+  });
+
+  test('une PO regroupée annulée n\'est pas recevable', async () => {
+    const g = await seedGroupedPurchase();
+    await query("UPDATE purchase_orders SET status = 'cancelled' WHERE id = $1", [g.po]);
+    const result = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'SUP-GROUP-CANCELLED',
+      contents: [{ purchase_order_id: g.po, product_sku_id: g.sku, quantity: 1 }],
+    }));
+    expect(result).toMatchObject({ quarantined: true, reason_code: 'HUB_PURCHASE_ORDER_CANCELLED' });
+    expect((await query('SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations')).rows[0].n).toBe(0);
+  });
+
+  test('la base refuse une allocation au niveau PO pour une PO regroupée', async () => {
+    const g = await seedGroupedPurchase({ quantities: [1] });
+    await expect(query(
+      `INSERT INTO hub_purchase_allocations(purchase_order_id, order_id, order_item_id, product_sku_id, supplier_id,
+                                            supplier_unit_ref, supplier_order_identity, quantity, market_id, destination_ref)
+       VALUES ($1,$2,$3,$4,$5,'UNIT-G','{}'::jsonb,1,$6,'x')`,
+      [g.po, g.lines[0].order, g.lines[0].item, g.sku, g.supplier, g.lines[0].market]
+    )).rejects.toThrow(/hub_allocation_grouped_requires_line/);
+  });
+
+  test('la base refuse une allocation dont l\'instantané ne décrit pas la ligne', async () => {
+    const g = await seedGroupedPurchase({ quantities: [1, 1] });
+    await expect(query(
+      `INSERT INTO hub_purchase_allocations(purchase_order_id, purchase_line_id, order_id, order_item_id, product_sku_id,
+                                            supplier_id, supplier_unit_ref, supplier_order_identity, quantity, market_id, destination_ref)
+       VALUES ($1,$2,$3,$4,$5,$6,'UNIT-G','{}'::jsonb,1,$7,'x')`,
+      [g.po, g.lines[0].line, g.lines[1].order, g.lines[1].item, g.sku, g.supplier, g.lines[1].market]
+    )).rejects.toThrow(/hub_allocation_line_mismatch/);
   });
 });

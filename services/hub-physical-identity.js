@@ -123,6 +123,7 @@ function snapshotFromRow(row) {
 
   return {
     purchase_order_id: row.purchase_order_id,
+    purchase_line_id: row.purchase_line_id || null,
     order_id: row.order_id,
     order_item_id: row.order_item_id,
     product_sku_id: row.product_sku_id,
@@ -161,8 +162,111 @@ async function resolvePurchaseSnapshot(executor, purchaseOrderId) {
   return snapshotFromRow(row);
 }
 
+// PO regroupée : la quantité reçue est répartie sur les lignes de la PO portant le product_sku_id déclaré,
+// non annulées et non soldées, par ordre de commande (orders.created_at) puis id de ligne. Chaque ligne servie
+// reçoit son propre instantané d'allocation (ligne + order_items + orders).
+async function resolveGroupedLineEntries(db, content) {
+  if (!content.product_sku_id) {
+    fail('HUB_PURCHASE_SKU_MISMATCH', 'product_sku_id obligatoire pour une Purchase Order regroupée');
+  }
+  const { rows } = await db.query(
+    `SELECT pl.id AS purchase_line_id,
+            po.id AS purchase_order_id,
+            oi.order_id,
+            pl.order_item_id,
+            pl.product_sku_id,
+            pl.supplier_id,
+            pl.supplier_unit_ref,
+            pl.supplier_order_identity,
+            purchase_line_effective_quantity(pl.cancelled_at, pl.settled_quantity, pl.confirmed_quantity, pl.quantity)
+              AS quantity,
+            po.status AS po_status,
+            oi.order_id AS item_order_id,
+            oi.sku_id AS item_sku_id,
+            o.market_id,
+            o.relais_id,
+            COALESCE((
+              SELECT SUM(p.quantity)::integer
+                FROM hub_physical_unit_placements p
+                JOIN hub_purchase_allocations a ON a.id = p.allocation_id
+               WHERE a.purchase_line_id = pl.id AND p.operation_type = 'RECEIVE'
+            ), 0) AS received
+       FROM purchase_lines pl
+       JOIN purchase_orders po ON po.id = pl.purchase_order_id
+       JOIN order_items oi ON oi.id = pl.order_item_id
+       JOIN orders o ON o.id = oi.order_id
+      WHERE pl.purchase_order_id = $1
+        AND pl.product_sku_id = $2
+        AND pl.cancelled_at IS NULL
+      ORDER BY o.created_at ASC, pl.id ASC
+      FOR SHARE OF pl, po`,
+    [content.purchase_order_id, content.product_sku_id]
+  );
+  if (rows.length === 0) {
+    fail('HUB_PURCHASE_SKU_MISMATCH', 'Aucune ligne d’achat ouverte pour ce product_sku_id dans la Purchase Order');
+  }
+
+  const entries = [];
+  let left = Number(content.quantity);
+  for (const row of rows) {
+    if (left <= 0) break;
+    const remaining = Number(row.quantity) - Number(row.received);
+    if (remaining <= 0) continue;
+    const share = Math.min(left, remaining);
+    entries.push({
+      content: { ...content, quantity: share },
+      snapshot: snapshotFromRow(row),
+    });
+    left -= share;
+  }
+  if (left > 0) {
+    fail('HUB_ALLOCATION_OVERRECEIVED', 'Quantité physique supérieure à la quantité restant à recevoir sur les lignes');
+  }
+  return entries;
+}
+
+// Un contenu déclaré → une ou plusieurs entrées {content, snapshot} (une par allocation).
+//   - PO historique : une entrée, allocation au niveau PO (comportement inchangé) ;
+//   - PO regroupée (order_id NULL) : une entrée par ligne servie.
+async function resolveContentEntries(executor, content) {
+  const db = requireExecutor(executor);
+  const { rows: [header] } = await db.query(
+    'SELECT id, order_id, status FROM purchase_orders WHERE id = $1',
+    [content.purchase_order_id]
+  );
+  if (header && header.order_id === null) {
+    if (header.status === 'cancelled') fail('HUB_PURCHASE_ORDER_CANCELLED', 'Purchase Order annulée');
+    return resolveGroupedLineEntries(db, content);
+  }
+
+  const snapshot = await resolvePurchaseSnapshot(db, content.purchase_order_id);
+  if (content.product_sku_id && String(content.product_sku_id) !== String(snapshot.product_sku_id)) {
+    fail('HUB_PURCHASE_SKU_MISMATCH', 'product_sku_id déclaré différent du SKU de la Purchase Order');
+  }
+  if (content.quantity > snapshot.quantity) {
+    fail('HUB_ALLOCATION_OVERRECEIVED', 'Quantité physique supérieure à la quantité achetée');
+  }
+  return [{ content, snapshot }];
+}
+
+async function findExistingAllocation(db, snapshot) {
+  if (snapshot.purchase_line_id) {
+    const { rows: [existing] } = await db.query(
+      'SELECT * FROM hub_purchase_allocations WHERE purchase_line_id = $1 FOR SHARE',
+      [snapshot.purchase_line_id]
+    );
+    return existing || null;
+  }
+  const { rows: [existing] } = await db.query(
+    'SELECT * FROM hub_purchase_allocations WHERE purchase_order_id = $1 AND purchase_line_id IS NULL FOR SHARE',
+    [snapshot.purchase_order_id]
+  );
+  return existing || null;
+}
+
 function allocationMatches(existing, snapshot) {
   return String(existing.purchase_order_id) === String(snapshot.purchase_order_id)
+    && String(existing.purchase_line_id || '') === String(snapshot.purchase_line_id || '')
     && String(existing.order_id) === String(snapshot.order_id)
     && String(existing.order_item_id) === String(snapshot.order_item_id)
     && String(existing.product_sku_id) === String(snapshot.product_sku_id)
@@ -176,15 +280,20 @@ function allocationMatches(existing, snapshot) {
 
 async function persistPurchaseAllocation(executor, snapshot) {
   const db = requireExecutor(executor);
+  // Les deux formes ont chacune leur index unique partiel : le prédicat doit figurer dans ON CONFLICT.
+  const conflictTarget = snapshot.purchase_line_id
+    ? 'ON CONFLICT (purchase_line_id) WHERE purchase_line_id IS NOT NULL DO NOTHING'
+    : 'ON CONFLICT (purchase_order_id) WHERE purchase_line_id IS NULL DO NOTHING';
   const { rows } = await db.query(
     `INSERT INTO hub_purchase_allocations (
-       purchase_order_id, order_id, order_item_id, product_sku_id, supplier_id,
+       purchase_order_id, purchase_line_id, order_id, order_item_id, product_sku_id, supplier_id,
        supplier_unit_ref, supplier_order_identity, quantity, market_id, destination_ref
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10)
-     ON CONFLICT (purchase_order_id) DO NOTHING
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11)
+     ${conflictTarget}
      RETURNING *`,
     [
       snapshot.purchase_order_id,
+      snapshot.purchase_line_id || null,
       snapshot.order_id,
       snapshot.order_item_id,
       snapshot.product_sku_id,
@@ -199,10 +308,7 @@ async function persistPurchaseAllocation(executor, snapshot) {
 
   if (rows[0]) return rows[0];
 
-  const { rows: [existing] } = await db.query(
-    'SELECT * FROM hub_purchase_allocations WHERE purchase_order_id = $1 FOR SHARE',
-    [snapshot.purchase_order_id]
-  );
+  const existing = await findExistingAllocation(db, snapshot);
   if (!existing || !allocationMatches(existing, snapshot)) {
     fail('HUB_ALLOCATION_SNAPSHOT_DRIFT', 'Allocation existante différente de la vérité d’achat snapshotée');
   }
@@ -279,6 +385,12 @@ async function createPhysicalUnit(executor, {
   return unit;
 }
 
+function manifestEntry(c) {
+  return c.product_sku_id
+    ? { purchase_order_id: c.purchase_order_id, product_sku_id: c.product_sku_id, quantity: c.quantity }
+    : { purchase_order_id: c.purchase_order_id, quantity: c.quantity };
+}
+
 function quarantineSubtypeForReason(reasonCode) {
   const subtype = HUB_QUARANTINE_SUBTYPE_BY_REASON[reasonCode];
   if (!subtype) fail('HUB_QUARANTINE_REASON_UNMAPPED', `Aucune autorité F2 pour ${reasonCode}`);
@@ -296,7 +408,7 @@ async function createQuarantinedInbound(executor, {
   purchaseOrderId = null,
 }) {
   const db = requireExecutor(executor);
-  const manifest = contents.map((c) => ({ purchase_order_id: c.purchase_order_id, quantity: c.quantity }));
+  const manifest = contents.map(manifestEntry);
   const unit = await createPhysicalUnit(db, {
     reference,
     unitType: 'SUPPLIER_PACKAGE',
@@ -350,10 +462,15 @@ function normalizeInboundContents(contents) {
     if (!item || !item.purchase_order_id) fail('HUB_PURCHASE_ORDER_REQUIRED');
     const quantity = Number(item.quantity);
     if (!Number.isInteger(quantity) || quantity <= 0) fail('HUB_INBOUND_QUANTITY_INVALID');
-    const key = String(item.purchase_order_id);
-    grouped.set(key, (grouped.get(key) || 0) + quantity);
+    const productSkuId = item.product_sku_id ? String(item.product_sku_id) : null;
+    const key = `${String(item.purchase_order_id)}|${productSkuId || ''}`;
+    const entry = grouped.get(key) || { purchase_order_id: String(item.purchase_order_id), product_sku_id: productSkuId, quantity: 0 };
+    entry.quantity += quantity;
+    grouped.set(key, entry);
   }
-  return [...grouped.entries()].map(([purchase_order_id, quantity]) => ({ purchase_order_id, quantity }));
+  return [...grouped.values()].map((entry) => (entry.product_sku_id
+    ? entry
+    : { purchase_order_id: entry.purchase_order_id, quantity: entry.quantity }));
 }
 
 async function receiveSupplierPackage(executor, {
@@ -369,11 +486,7 @@ async function receiveSupplierPackage(executor, {
   const resolved = [];
   for (const content of normalized) {
     try {
-      const snapshot = await resolvePurchaseSnapshot(db, content.purchase_order_id);
-      if (content.quantity > snapshot.quantity) {
-        fail('HUB_ALLOCATION_OVERRECEIVED', 'Quantité physique supérieure à la quantité achetée');
-      }
-      resolved.push({ content, snapshot });
+      resolved.push(...await resolveContentEntries(db, content));
     } catch (error) {
       if (!(error instanceof HubPhysicalError)) throw error;
       return createQuarantinedInbound(db, {
@@ -446,7 +559,7 @@ async function receiveSupplierPackage(executor, {
       operationType: 'RECEIVE',
       actorId,
       locationRef,
-      details: { purchase_order_id: item.allocation.purchase_order_id },
+      details: { purchase_order_id: item.allocation.purchase_order_id, purchase_line_id: item.allocation.purchase_line_id || null },
     });
   }
 
@@ -501,7 +614,7 @@ async function quarantineExistingInbound(executor, {
   purchaseOrderId = null,
 }) {
   const db = requireExecutor(executor);
-  const manifest = contents.map((c) => ({ purchase_order_id: c.purchase_order_id, quantity: c.quantity }));
+  const manifest = contents.map(manifestEntry);
   const subtype = quarantineSubtypeForReason(reasonCode);
 
   const { rows: [quarantined] } = await db.query(
@@ -597,11 +710,7 @@ async function reconcileSupplierPackageContents(executor, {
   const resolved = [];
   for (const content of normalized) {
     try {
-      const snapshot = await resolvePurchaseSnapshot(db, content.purchase_order_id);
-      if (content.quantity > snapshot.quantity) {
-        fail('HUB_ALLOCATION_OVERRECEIVED', 'Quantité physique supérieure à la quantité achetée');
-      }
-      resolved.push({ content, snapshot });
+      resolved.push(...await resolveContentEntries(db, content));
     } catch (error) {
       if (!(error instanceof HubPhysicalError)) throw error;
       return quarantineExistingInbound(db, {
@@ -665,7 +774,7 @@ async function reconcileSupplierPackageContents(executor, {
       operationType: 'RECEIVE',
       actorId,
       locationRef,
-      details: { purchase_order_id: item.allocation.purchase_order_id, reconciliation_on_opening: true },
+      details: { purchase_order_id: item.allocation.purchase_order_id, purchase_line_id: item.allocation.purchase_line_id || null, reconciliation_on_opening: true },
     });
   }
 
@@ -725,25 +834,21 @@ async function revalidateQuarantinedInbound(executor, {
       const next = [];
       try {
         for (const content of manifest) {
-          const snapshot = await resolvePurchaseSnapshot(sameDb, content.purchase_order_id);
-          if (Number(content.quantity) > Number(snapshot.quantity)) return false;
+          for (const entry of await resolveContentEntries(sameDb, content)) {
+            const existing = await findExistingAllocation(sameDb, entry.snapshot);
+            if (existing && !allocationMatches(existing, entry.snapshot)) return false;
 
-          const { rows: [existing] } = await sameDb.query(
-            'SELECT * FROM hub_purchase_allocations WHERE purchase_order_id = $1 FOR SHARE',
-            [snapshot.purchase_order_id]
-          );
-          if (existing && !allocationMatches(existing, snapshot)) return false;
-
-          if (existing) {
-            const { rows: [placed] } = await sameDb.query(
-              `SELECT COALESCE(SUM(quantity),0)::integer AS quantity
-                 FROM hub_physical_unit_placements
-                WHERE allocation_id = $1 AND removed_at IS NULL`,
-              [existing.id]
-            );
-            if (Number(placed.quantity) + Number(content.quantity) > Number(snapshot.quantity)) return false;
+            if (existing) {
+              const { rows: [placed] } = await sameDb.query(
+                `SELECT COALESCE(SUM(quantity),0)::integer AS quantity
+                   FROM hub_physical_unit_placements
+                  WHERE allocation_id = $1 AND removed_at IS NULL`,
+                [existing.id]
+              );
+              if (Number(placed.quantity) + Number(entry.content.quantity) > Number(entry.snapshot.quantity)) return false;
+            }
+            next.push(entry);
           }
-          next.push({ content, snapshot });
         }
       } catch (error) {
         if (error instanceof HubPhysicalError) return false;
@@ -796,7 +901,7 @@ async function revalidateQuarantinedInbound(executor, {
       operationType: 'RECEIVE',
       actorId,
       locationRef: locationRef || released.current_location_ref,
-      details: { purchase_order_id: allocation.purchase_order_id, revalidated: true },
+      details: { purchase_order_id: allocation.purchase_order_id, purchase_line_id: allocation.purchase_line_id || null, revalidated: true },
     });
     allocations.push({ allocation, quantity: entry.content.quantity });
   }
