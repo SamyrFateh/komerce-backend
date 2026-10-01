@@ -135,6 +135,30 @@ test('LEGACY_VARIANTS garde products.stock comme vérité et ne somme jamais les
   expect(result.data_quality.legacy_variant_stock_rule).toBe('variant_rows_not_summed');
 });
 
+test('Product 360 expose le supplier_sku quand le SKU interne n’a pas de libellé', async () => {
+  mockQueries({
+    variants: [],
+    skus: [{
+      sku: null,
+      supplier_sku: 'CJ-SKU-123',
+      variant_combo: null,
+      stock: 4,
+      price_kmf: null,
+      is_active: true,
+    }],
+  });
+
+  const result = await product360.loadProduct360(product({ inventory_model: 'SKU', has_variants: false }), {
+    marketIds: null, includeCentral: false,
+  });
+
+  expect(result.inventory.skus[0]).toMatchObject({
+    sku: null,
+    supplier_sku: 'CJ-SKU-123',
+    stock: 4,
+  });
+});
+
 test('mode SKU somme uniquement les SKU actifs', async () => {
   mockQueries({
     variants: [],
