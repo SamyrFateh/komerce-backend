@@ -80,7 +80,7 @@ test('Product 360 ouvre Pricing directement sur le produit courant', () => {
     require('path').join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'product-360.js'),
     'utf8'
   );
-  expect(source).toContain('/admin/pricing?product_ref=');
+  expect(source).toContain('/admin/workspaces/pricing?product_ref=');
   expect(source).toContain('encodeURIComponent(product.product_ref)');
 });
 
