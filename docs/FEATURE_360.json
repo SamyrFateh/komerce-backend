@@ -6132,7 +6132,7 @@
           "test": "tests/unit/import-runtime-journey.test.js"
         },
         {
-          "statement": "cockpit Live Hub (/admin/hub-live, domaine Live, admin) : lecture seule sur les API hub-dash existantes (scopées rôle et marché), aucune écriture ni endpoint d'action ; vues exclusives Suivi (flux Commandes → Relais, chiffres cliquables vers la liste exacte, signaux, file à traiter en premier) et Commandes (file complète) ; une file revient au Suivi, une commande revient à sa file d'origine, Commandes est de 1er niveau sans retour ; aucune donnée de contact client exposée ; moteur commun live-kit partagé avec le futur cockpit Relais",
+          "statement": "cockpit Live Hub (/admin/hub-live, domaine Live, rôles admin et agent_hub) : lecture seule sur les API hub-dash existantes (scopées rôle et marché), aucune écriture ni endpoint d'action ; vues exclusives Suivi (flux Commandes → Relais, chiffres cliquables vers la liste exacte, signaux, file à traiter en premier) et Commandes (file complète) ; une file revient au Suivi, une commande revient à sa file d'origine, Commandes est de 1er niveau sans retour ; aucune donnée de contact client exposée ; moteur commun live-kit partagé avec le futur cockpit Relais",
           "test": "tests/unit/hub-live-journey.test.js"
         },
         {
