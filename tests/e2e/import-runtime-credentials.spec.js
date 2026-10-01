@@ -21,17 +21,35 @@ const json = (route, body, status = 200) => route.fulfill({ status, contentType:
 const CJ_AUTH = {
   mode: 'api_key',
   scope: 'source',
-  description: 'Renseignez la clé API permanente du compte CJdropshipping.',
   fields: [{
     key: 'api_key',
     label: 'Clé API CJdropshipping',
     secret: true,
-    help: 'Clé API du compte fournisseur utilisée pour autoriser Komerce.',
   }],
 };
 const OAUTH_AUTH = { mode: 'oauth', scope: 'platform', fields: [] };
+const CJ_ONBOARDING = {
+  status: 'defined',
+  authority: 'provider_documentation',
+  evidence_url: 'https://developers.cjdropshipping.com/en/summary/course.html',
+  prerequisites: ['Disposer d’un compte CJdropshipping avec accès API autorisé'],
+  setup_steps: ['Dans CJdropshipping : My CJ → Authorization → API → API Key', 'Créer ou récupérer la clé API du compte fournisseur'],
+  operator_must_obtain: [{ key: 'api_key', label: 'Clé API CJdropshipping' }],
+  operator_must_not_request: ['Mot de passe du compte CJdropshipping', 'Access Token ou Refresh Token temporaire'],
+  completion: 'Renseigner la clé API dans Komerce.',
+};
+const OAUTH_ONBOARDING = {
+  status: 'defined',
+  authority: 'provider_documentation',
+  evidence_url: 'https://open.alitrip.com/docs/doc.htm?articleId=120687&docType=1&treeId=727',
+  prerequisites: ['Application Komerce AliExpress déjà configurée'],
+  setup_steps: ['Le propriétaire du compte vendeur autorise Komerce chez AliExpress'],
+  operator_must_obtain: [],
+  operator_must_not_request: ['Mot de passe du compte AliExpress', 'Access Token ou Refresh Token copié-collé'],
+  completion: 'Le callback OAuth rattache la session à la source.',
+};
 
-function createBackend({ ref = 'api:cj', adapter = 'cj', auth = CJ_AUTH, credential = null } = {}) {
+function createBackend({ ref = 'api:cj', adapter = 'cj', auth = CJ_AUTH, onboarding = CJ_ONBOARDING, credential = null } = {}) {
   const backend = {
     ref, auth,
     secret: credential,       // secret côté serveur uniquement
@@ -49,6 +67,7 @@ function createBackend({ ref = 'api:cj', adapter = 'cj', auth = CJ_AUTH, credent
         archived: false, autopilot_enabled: false, autopilot_ready: false, activation_ready: false,
         production_runtime_certified: false, connector_ready: true,
         credential_status: backend.credentialStatus, credential_in_vault: Boolean(backend.secret), auth: backend.auth,
+        onboarding_ready: true, onboarding,
         connection: { verified: valid, test_status: valid ? 'ok' : null },
         capabilities: { discovery: false, sync: false, import: false, production: false },
       };
@@ -141,8 +160,10 @@ test.describe('Sources — identifiants fournisseur', () => {
     await expect(card(page).locator('[data-source-toggle]')).toBeDisabled();
 
     // Formulaire dérivé du contrat auth : l'opérateur sait quoi fournir, sans nom de variable Railway.
-    await expect(card(page).locator('[data-credentials-guidance]')).toContainText('clé API permanente du compte CJdropshipping');
-    await expect(card(page).locator('.kir-wizard-field', { hasText: 'Clé API CJdropshipping' })).toContainText('autoriser Komerce');
+    await expect(card(page).locator('[data-onboarding-guidance]')).toContainText('My CJ → Authorization → API → API Key');
+    await expect(card(page).locator('[data-onboarding-guidance]')).toContainText('Ne pas demander');
+    await expect(card(page).locator('[data-provider-documentation]')).toHaveAttribute('href', 'https://developers.cjdropshipping.com/en/summary/course.html');
+    await expect(card(page).locator('.kir-wizard-field', { hasText: 'Clé API CJdropshipping' })).toBeVisible();
     const field = card(page).locator('[data-credential-field="api_key"]');
     await expect(field).toHaveAttribute('type', 'password');
     await expect(field).toHaveValue('');
@@ -208,7 +229,7 @@ test.describe('Sources — identifiants fournisseur', () => {
   });
 
   test('OAuth plateforme : aucun champ secret, aucun formulaire d’identifiants', async ({ page }) => {
-    const backend = createBackend({ ref: 'api:aliexpress', adapter: 'aliexpress', auth: OAUTH_AUTH, credential: null });
+    const backend = createBackend({ ref: 'api:aliexpress', adapter: 'aliexpress', auth: OAUTH_AUTH, onboarding: OAUTH_ONBOARDING, credential: null });
     backend.credentialStatus = 'untested';
     await mount(page, backend);
     await boot(page);
