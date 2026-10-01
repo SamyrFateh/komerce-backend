@@ -48,6 +48,17 @@ const OAUTH_ONBOARDING = {
   operator_must_not_request: ['Mot de passe du compte AliExpress', 'Access Token ou Refresh Token copié-collé'],
   completion: 'Le callback OAuth rattache la session à la source.',
 };
+const BLOCKED_ALLEGRO_ONBOARDING = {
+  status: 'blocked',
+  authority: 'provider_documentation',
+  evidence_url: 'https://developer.allegro.pl/tutorials/uwierzytelnianie-i-autoryzacja-zlq9e75GdIR',
+  prerequisites: ['Application Komerce Allegro Sandbox'],
+  setup_steps: ['Le vendeur doit autoriser l’application via OAuth'],
+  operator_must_obtain: [],
+  operator_must_not_request: ['Client ID du vendeur', 'Client Secret du vendeur'],
+  completion: 'OAuth vendeur à implémenter.',
+  blocker: 'Le connecteur Sources actuel demande encore Client ID / Client Secret par source ; cela doit être remplacé par l’autorisation OAuth vendeur.',
+};
 
 function createBackend({ ref = 'api:cj', adapter = 'cj', auth = CJ_AUTH, onboarding = CJ_ONBOARDING, credential = null } = {}) {
   const backend = {
@@ -226,6 +237,31 @@ test.describe('Sources — identifiants fournisseur', () => {
     await page.evaluate(() => window.dispatchEvent(new Event('focus')));
     await page.waitForTimeout(300);
     await expect(field).toHaveValue('typing-in-progress');
+  });
+
+  test('onboarding bloqué : Komerce refuse de collecter de nouveaux secrets', async ({ page }) => {
+    const backend = createBackend({
+      ref: 'api:allegro',
+      adapter: 'allegro',
+      auth: {
+        mode: 'client_credentials',
+        scope: 'source',
+        fields: [
+          { key: 'client_id', label: 'Client ID Allegro', secret: false },
+          { key: 'client_secret', label: 'Client Secret Allegro', secret: true },
+        ],
+      },
+      onboarding: BLOCKED_ALLEGRO_ONBOARDING,
+      credential: null,
+    });
+    const originalControl = backend.control.bind(backend);
+    backend.control = () => ({ ...originalControl(), onboarding_ready: false, onboarding: BLOCKED_ALLEGRO_ONBOARDING });
+    await mount(page, backend);
+    await boot(page);
+
+    await expect(card(page, 'api:allegro').locator('[data-onboarding-blocker]')).toContainText('OAuth vendeur');
+    await expect(card(page, 'api:allegro').locator('[data-credentials-form]')).toHaveCount(0);
+    await expect(card(page, 'api:allegro').locator('[data-credential-field]')).toHaveCount(0);
   });
 
   test('OAuth plateforme : aucun champ secret, aucun formulaire d’identifiants', async ({ page }) => {
