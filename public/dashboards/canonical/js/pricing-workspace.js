@@ -398,7 +398,13 @@
 
   function renderProducts(rootNode, ui, doc, payload, context) {
     const slot = section(rootNode, ui, 'Décision produit', 'Le moteur calcule. L’opérateur choisit quand appliquer un prix. Product 360 reste le drill-down.', 'pricing-products');
-    const rows = payload.products || [];
+    const requestedProductRef = context?.requestedProductRef || null;
+    const rows = [...(payload.products || [])].sort((a, b) => {
+      if (!requestedProductRef) return 0;
+      if (a.product_ref === requestedProductRef) return -1;
+      if (b.product_ref === requestedProductRef) return 1;
+      return 0;
+    });
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun produit à tarifer.'));
       return;
@@ -413,6 +419,11 @@
     rows.forEach(row => {
       const recommendation = reco.get(row.product_ref) || {};
       const tr = doc.createElement('tr');
+      tr.dataset.productRef = row.product_ref;
+      if (requestedProductRef && row.product_ref === requestedProductRef) {
+        tr.className = 'is-focused-product';
+        tr.setAttribute('aria-current', 'true');
+      }
       const productCell = doc.createElement('td');
       const link = text(doc, 'a', 'kmc-workspace-nav-link', `${row.product_ref} · ${row.name}`);
       link.href = contextualHref(`/admin/products/${encodeURIComponent(row.product_ref)}`, '/admin/workspaces/pricing', 'Retour à l’atelier économique');
@@ -857,6 +868,9 @@
       ui: options.ui,
       adminContext: options.adminContext || null,
       requestedMarket: options.requestedMarket || null,
+      requestedProductRef: options.requestedProductRef
+        || new URLSearchParams(globalThis.location?.search || '').get('product_ref')
+        || null,
       reload: null,
     };
     async function load() {
