@@ -93,6 +93,7 @@ async function getCatalog(q = db) {
         connection_mode: fact.connection_mode,
         connect_path: fact.connect_path,
         can_test_connection: fact.can_test_connection,
+        auth: fact.auth || { mode: 'none', scope: null, description: null, fields: [] },
         can_create: fact.available && fact.automatable && !existing,
         reason: fact.reason,
         existing_source_ref: existing,
