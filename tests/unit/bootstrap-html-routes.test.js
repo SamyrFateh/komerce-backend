@@ -262,7 +262,9 @@ describe('bootstrap/html-routes', () => {
       expect(EXPECTED_ADMIN_PATHS).toHaveLength(29);
     });
 
-    test('/admin/hub-live (cockpit Live Hub) sert le runtime Canonical', () => {
+    test('/admin/relais-live et /admin/hub-live (cockpits Live) servent le runtime Canonical', () => {
+      expect(app._allRegistrations).toContain('/admin/relais-live');
+      app._routes['/admin/relais-live']({}, fakeRes());
       expect(app._allRegistrations).toContain('/admin/hub-live');
       const res = fakeRes();
       app._routes['/admin/hub-live']({}, res);
