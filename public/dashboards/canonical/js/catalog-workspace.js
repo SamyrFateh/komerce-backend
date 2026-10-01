@@ -296,30 +296,38 @@
 
       const signalCell = doc.createElement('td');
       signalCell.className = 'kmc-catalog-signal-cell';
-      signalCell.appendChild(text(doc, 'strong', sourcingDecisionTone(row.sourcing_decision), sourcingDecisionLabel(row.sourcing_decision)));
+      const signalContent = doc.createElement('div');
+      signalContent.className = 'kmc-catalog-cell-stack';
+      signalContent.appendChild(text(doc, 'strong', sourcingDecisionTone(row.sourcing_decision), sourcingDecisionLabel(row.sourcing_decision)));
       const signalMeta = [
         row.sourcing_confidence ? `confiance ${row.sourcing_confidence}` : null,
         row.economic_health_status ? `santé ${row.economic_health_status}` : null,
         row.supplier_stock == null ? null : `stock fournisseur ${formatNumber(row.supplier_stock)}`,
       ].filter(Boolean).join(' · ');
-      if (signalMeta) signalCell.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', signalMeta));
-      signalCell.appendChild(text(doc, 'small', 'kmc-catalog-reason', row.sourcing_reason || 'Aucune raison sourcing persistée.'));
+      if (signalMeta) signalContent.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', signalMeta));
+      signalContent.appendChild(text(doc, 'small', 'kmc-catalog-reason', row.sourcing_reason || 'Aucune raison sourcing persistée.'));
+      signalCell.appendChild(signalContent);
       tr.appendChild(signalCell);
 
       const state = curationState(row);
       const stateCell = doc.createElement('td');
       stateCell.className = 'kmc-catalog-state-cell';
-      stateCell.appendChild(text(doc, 'strong', state.tone, state.label));
-      stateCell.appendChild(text(
+      const stateContent = doc.createElement('div');
+      stateContent.className = 'kmc-catalog-cell-stack';
+      stateContent.appendChild(text(doc, 'strong', state.tone, state.label));
+      stateContent.appendChild(text(
         doc,
         'small',
         'kmc-workspace-subtitle',
         row.price_kmf == null ? 'Prix —' : formatKmf(row.price_kmf)
       ));
+      stateCell.appendChild(stateContent);
       tr.appendChild(stateCell);
 
       const actions = doc.createElement('td');
       actions.className = 'kmc-catalog-actions-cell';
+      const actionContent = doc.createElement('div');
+      actionContent.className = 'kmc-catalog-actions-inner';
 
       const mustPrepareFrench = needsFrenchPreparation(row);
       if (mustPrepareFrench) {
@@ -331,7 +339,7 @@
             successMessage: `${row.product_ref} préparé en français. Vérifiez puis validez.`,
           });
         });
-        actions.appendChild(prepare);
+        actionContent.appendChild(prepare);
       } else {
         const approveLabel = row.needs_review ? 'Valider après relecture' : 'Ajouter à la sélection';
         const approve = makeButton(doc, approveLabel, 'approve');
@@ -342,7 +350,7 @@
             successMessage: `${row.product_ref} ajouté à la sélection publiée.`,
           });
         });
-        actions.appendChild(approve);
+        actionContent.appendChild(approve);
       }
 
       const correct = makeButton(doc, 'Corriger + ajouter', 'override', true);
@@ -368,7 +376,7 @@
           successMessage: `${row.product_ref} corrigé puis ajouté à la sélection.`,
         });
       });
-      if (!mustPrepareFrench) actions.appendChild(correct);
+      if (!mustPrepareFrench) actionContent.appendChild(correct);
 
       const reject = makeButton(doc, 'Écarter', 'reject', true);
       reject.addEventListener('click', () => {
@@ -380,7 +388,8 @@
           successMessage: `${row.product_ref} écarté de la sélection.`,
         });
       });
-      actions.appendChild(reject);
+      actionContent.appendChild(reject);
+      actions.appendChild(actionContent);
       tr.appendChild(actions);
       tbody.appendChild(tr);
     });
