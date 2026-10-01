@@ -44,6 +44,7 @@ const HUB_QUARANTINE_SUBTYPE_BY_REASON = Object.freeze({
   HUB_PURCHASE_ORDER_ITEM_MISMATCH: 'hub_purchase_identity_conflict',
   HUB_PURCHASE_SKU_MISMATCH: 'hub_purchase_identity_conflict',
   HUB_SUPPLIER_IDENTITY_UNRESOLVABLE: 'hub_purchase_identity_conflict',
+  HUB_INBOUND_TAG_CONTENT_MISMATCH: 'hub_purchase_identity_conflict',
   HUB_ALLOCATION_SNAPSHOT_DRIFT: 'hub_purchase_identity_conflict',
   HUB_PURCHASE_QUANTITY_INVALID: 'hub_purchase_quantity_conflict',
   HUB_ALLOCATION_OVERRECEIVED: 'hub_purchase_quantity_conflict',
@@ -457,6 +458,234 @@ async function receiveSupplierPackage(executor, {
   };
 }
 
+
+async function receiveSupplierPackageArrival(executor, {
+  reference,
+  externalRef = null,
+  actorId = null,
+  locationRef = null,
+  expectedPurchaseOrderId = null,
+  inboundTag = null,
+}) {
+  const db = requireExecutor(executor);
+  const unit = await createPhysicalUnit(db, {
+    reference,
+    unitType: 'SUPPLIER_PACKAGE',
+    externalRef,
+    actorId,
+    locationRef,
+    initialState: 'RECEIVED',
+    details: {
+      inbound_arrival_only: true,
+      reconciliation_pending: true,
+      expected_purchase_order_id: expectedPurchaseOrderId || null,
+      inbound_tag: inboundTag || null,
+    },
+  });
+  return {
+    quarantined: false,
+    unit,
+    reconciliation_pending: true,
+    expected_purchase_order_id: expectedPurchaseOrderId || null,
+    inbound_tag: inboundTag || null,
+  };
+}
+
+async function quarantineExistingInbound(executor, {
+  unit,
+  actorId = null,
+  locationRef = null,
+  reasonCode,
+  reason,
+  contents,
+  purchaseOrderId = null,
+}) {
+  const db = requireExecutor(executor);
+  const manifest = contents.map((c) => ({ purchase_order_id: c.purchase_order_id, quantity: c.quantity }));
+  const subtype = quarantineSubtypeForReason(reasonCode);
+
+  const { rows: [quarantined] } = await db.query(
+    `UPDATE hub_physical_units
+        SET state='QUARANTINED',
+            current_location_ref=COALESCE($2,current_location_ref),
+            updated_at=now()
+      WHERE id=$1
+      RETURNING *`,
+    [unit.id, locationRef]
+  );
+
+  let context = null;
+  if (purchaseOrderId) {
+    const { rows: [row] } = await db.query(
+      'SELECT id, order_id, order_item_id FROM purchase_orders WHERE id = $1',
+      [purchaseOrderId]
+    );
+    context = row || null;
+  }
+
+  const incident = await createHubPhysicalReconciliationIncident(db, {
+    physicalUnitId: unit.id,
+    subtype,
+    reasonCode,
+    message: reason,
+    purchaseOrderId: purchaseOrderId || null,
+    orderId: context && context.order_id,
+    orderItemId: context && context.order_item_id,
+    details: { manifest, physical_unit_reference: unit.reference },
+  });
+
+  await insertCustodyEvent(db, {
+    physicalUnitId: unit.id,
+    eventType: 'QUARANTINE',
+    fromState: unit.state,
+    toState: 'QUARANTINED',
+    actorId,
+    locationRef,
+    details: { incident_id: incident.id, reason_code: reasonCode, incident_subtype: subtype, manifest },
+  });
+
+  return { quarantined: true, reason_code: reasonCode, unit: quarantined, incident };
+}
+
+async function reconcileSupplierPackageContents(executor, {
+  unitId,
+  contents,
+  actorId = null,
+  locationRef = null,
+}) {
+  const db = requireExecutor(executor);
+  const normalized = normalizeInboundContents(contents);
+
+  const { rows: [unit] } = await db.query(
+    'SELECT * FROM hub_physical_units WHERE id=$1 FOR UPDATE',
+    [unitId]
+  );
+  if (!unit) fail('HUB_PHYSICAL_UNIT_NOT_FOUND');
+  if (unit.unit_type !== 'SUPPLIER_PACKAGE') fail('HUB_RECONCILE_SUPPLIER_PACKAGE_REQUIRED');
+  if (unit.state !== 'RECEIVED') fail('HUB_RECONCILE_STATE_INVALID', 'La réconciliation contenu exige un colis RECEIVED');
+  if (unit.outcome_type) fail('HUB_RECONCILE_OUTCOME_TERMINAL');
+
+  const { rows: [existing] } = await db.query(
+    `SELECT COUNT(*)::integer AS count
+       FROM hub_physical_unit_placements
+      WHERE physical_unit_id=$1 AND removed_at IS NULL`,
+    [unitId]
+  );
+  if (Number(existing.count) > 0) fail('HUB_RECONCILE_ALREADY_DONE');
+
+  const { rows: [creationEvent] } = await db.query(
+    `SELECT details
+       FROM hub_custody_events
+      WHERE physical_unit_id=$1
+        AND event_type='STATE_TRANSITION'
+        AND details->>'creation'='true'
+      ORDER BY created_at ASC, id ASC
+      LIMIT 1`,
+    [unitId]
+  );
+  const expectedPurchaseOrderId = creationEvent?.details?.expected_purchase_order_id || null;
+  if (expectedPurchaseOrderId && !normalized.some((item) => String(item.purchase_order_id) === String(expectedPurchaseOrderId))) {
+    return quarantineExistingInbound(db, {
+      unit, actorId, locationRef,
+      reasonCode: 'HUB_INBOUND_TAG_CONTENT_MISMATCH',
+      reason: 'Le contenu constaté ne contient pas la Purchase Order annoncée par le tag KOM-IN',
+      contents: normalized,
+      purchaseOrderId: expectedPurchaseOrderId,
+    });
+  }
+
+  const resolved = [];
+  for (const content of normalized) {
+    try {
+      const snapshot = await resolvePurchaseSnapshot(db, content.purchase_order_id);
+      if (content.quantity > snapshot.quantity) {
+        fail('HUB_ALLOCATION_OVERRECEIVED', 'Quantité physique supérieure à la quantité achetée');
+      }
+      resolved.push({ content, snapshot });
+    } catch (error) {
+      if (!(error instanceof HubPhysicalError)) throw error;
+      return quarantineExistingInbound(db, {
+        unit, actorId, locationRef,
+        reasonCode: error.code,
+        reason: error.message,
+        contents: normalized,
+        purchaseOrderId: content.purchase_order_id,
+      });
+    }
+  }
+
+  const allocations = [];
+  for (const entry of resolved) {
+    let allocation;
+    try {
+      allocation = await persistPurchaseAllocation(db, entry.snapshot);
+    } catch (error) {
+      if (!(error instanceof HubPhysicalError)) throw error;
+      return quarantineExistingInbound(db, {
+        unit, actorId, locationRef,
+        reasonCode: error.code,
+        reason: error.message,
+        contents: normalized,
+        purchaseOrderId: entry.content.purchase_order_id,
+      });
+    }
+
+    const { rows: [placed] } = await db.query(
+      `SELECT COALESCE(SUM(quantity), 0)::integer AS quantity
+         FROM hub_physical_unit_placements
+        WHERE allocation_id = $1 AND removed_at IS NULL`,
+      [allocation.id]
+    );
+    if (Number(placed.quantity) + entry.content.quantity > Number(allocation.quantity)) {
+      return quarantineExistingInbound(db, {
+        unit, actorId, locationRef,
+        reasonCode: 'HUB_ALLOCATION_OVERRECEIVED',
+        reason: 'La quantité déjà placée + reçue dépasse la quantité achetée',
+        contents: normalized,
+        purchaseOrderId: entry.content.purchase_order_id,
+      });
+    }
+    allocations.push({ allocation, quantity: entry.content.quantity });
+  }
+
+  const operationId = crypto.randomUUID();
+  for (const item of allocations) {
+    await db.query(
+      `INSERT INTO hub_physical_unit_placements (
+         physical_unit_id, allocation_id, quantity, operation_id, operation_type, created_by
+       ) VALUES ($1,$2,$3,$4,'RECEIVE',$5)`,
+      [unit.id, item.allocation.id, item.quantity, operationId, actorId]
+    );
+    await insertCustodyEvent(db, {
+      physicalUnitId: unit.id,
+      eventType: 'PLACEMENT_IN',
+      allocationId: item.allocation.id,
+      quantity: item.quantity,
+      operationId,
+      operationType: 'RECEIVE',
+      actorId,
+      locationRef,
+      details: { purchase_order_id: item.allocation.purchase_order_id, reconciliation_on_opening: true },
+    });
+  }
+
+  const transitioned = await transitionPhysicalUnit(db, {
+    unitId: unit.id,
+    toState: 'IDENTIFIED',
+    actorId,
+    locationRef,
+    details: { content_reconciled: true, operation_id: operationId },
+  });
+
+  return {
+    quarantined: false,
+    unit: transitioned.unit,
+    allocations: allocations.map(({ allocation, quantity }) => ({ allocation, quantity })),
+    operation_id: operationId,
+    reconciliation_pending: false,
+  };
+}
+
 async function revalidateQuarantinedInbound(executor, {
   unitId,
   incidentId,
@@ -846,6 +1075,8 @@ module.exports = {
   snapshotPurchaseAllocation,
   createPhysicalUnit,
   receiveSupplierPackage,
+  receiveSupplierPackageArrival,
+  reconcileSupplierPackageContents,
   revalidateQuarantinedInbound,
   transitionPhysicalUnit,
   moveAllocationQuantity,

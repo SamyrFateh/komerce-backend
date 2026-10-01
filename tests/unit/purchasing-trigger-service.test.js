@@ -108,7 +108,7 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
     db.query.mockResolvedValueOnce({ rows: [order] }).mockResolvedValueOnce({ rows: [item] });
     const client = makeClient([
       { rows: [supplierRow()] },
-      { rows: [{ id: 'po-existing', status: 'pending' }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000101', status: 'pending' }] },
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -116,7 +116,8 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
 
     expect(result.purchase_orders).toEqual([{
       item: 'Sac Ali', status: 'already_exists',
-      purchase_order_id: 'po-existing', purchase_order_status: 'pending',
+      purchase_order_id: '00000000-0000-0000-0000-000000000101', purchase_order_status: 'pending',
+    inbound_tag: 'KOM-IN-00000000000000000000000000000101',
     }]);
   });
 
@@ -126,14 +127,14 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
     const client = makeClient([
       { rows: [supplierRow({ auto_order: true, platform: 'noon' })] },
       { rows: [] }, // pas de PO existante
-      { rows: [{ id: 'po1' }] }, // INSERT purchase_orders
+      { rows: [{ id: '00000000-0000-0000-0000-000000000102' }] }, // INSERT purchase_orders
       {}, // UPDATE status notified
     ]);
     db.getClient.mockResolvedValue(client);
 
     const result = await triggerPurchasing('o1');
 
-    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'api_failed_notified', purchase_order_id: 'po1' }]);
+    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'api_failed_notified', purchase_order_id: '00000000-0000-0000-0000-000000000102', inbound_tag: 'KOM-IN-00000000000000000000000000000102' }]);
     expect(notifyText).toHaveBeenCalledWith('+269900000', expect.stringContaining('À commander'), 'purchase_manual', 'o1');
   });
 
@@ -144,7 +145,7 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
     const client = makeClient([
       { rows: [supplierRow({ platform: 'whatsapp', auto_order: false })] },
       { rows: [] },
-      { rows: [{ id: 'po2' }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000103' }] },
       {}, // UPDATE notes wa_url (LOT R3 : via le client transactionnel, plus le pool)
       {}, // UPDATE status notified
     ]);
@@ -152,7 +153,7 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
 
     const result = await triggerPurchasing('o1');
 
-    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'whatsapp_sent', purchase_order_id: 'po2' }]);
+    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'whatsapp_sent', purchase_order_id: '00000000-0000-0000-0000-000000000103', inbound_tag: 'KOM-IN-00000000000000000000000000000103' }]);
     // LOT R3 (DEBT-03/FSF-03) : le wa_url doit être écrit via le client
     // transactionnel (même transaction que l'INSERT purchase_orders), pas
     // via db.query (le pool) — c'était la cause du wa_url perdu après COMMIT.
@@ -168,14 +169,14 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
     const client = makeClient([
       { rows: [supplierRow({ platform: 'local', auto_order: false })] },
       { rows: [] },
-      { rows: [{ id: 'po3' }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000104' }] },
       {},
     ]);
     db.getClient.mockResolvedValue(client);
 
     const result = await triggerPurchasing('o1');
 
-    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'admin_notified', purchase_order_id: 'po3' }]);
+    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'admin_notified', purchase_order_id: '00000000-0000-0000-0000-000000000104', inbound_tag: 'KOM-IN-00000000000000000000000000000104' }]);
   });
 
   it('sans supplier_url (falsy) → notifyAdminManual n\'ajoute pas la ligne Lien', async () => {
@@ -184,7 +185,7 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
     const client = makeClient([
       { rows: [supplierRow({ supplier_url: null })] },
       { rows: [] },
-      { rows: [{ id: 'po4' }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000105' }] },
       {},
     ]);
     db.getClient.mockResolvedValue(client);
@@ -271,7 +272,7 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
     const client = makeClient([
       { rows: [supplierRow({ auto_order: true, platform: 'amazon_uae' })] },
       { rows: [] },
-      { rows: [{ id: 'po5' }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000106' }] },
       {},
     ]);
     db.getClient.mockResolvedValue(client);
@@ -286,7 +287,7 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
     const client = makeClient([
       { rows: [supplierRow({ auto_order: true, platform: 'aliexpress' })] },
       { rows: [] },
-      { rows: [{ id: 'po6' }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000107' }] },
       {},
     ]);
     db.getClient.mockResolvedValue(client);
@@ -301,7 +302,7 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
     const client = makeClient([
       { rows: [supplierRow({ auto_order: true, platform: 'shopify' })] },
       { rows: [] },
-      { rows: [{ id: 'po7' }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000108' }] },
       {},
     ]);
     db.getClient.mockResolvedValue(client);

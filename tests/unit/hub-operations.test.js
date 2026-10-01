@@ -15,6 +15,8 @@ jest.mock('../../services/hub-physical-identity', () => {
     HubPhysicalError,
     createPhysicalUnit: jest.fn(),
     receiveSupplierPackage: jest.fn(),
+    receiveSupplierPackageArrival: jest.fn(),
+    reconcileSupplierPackageContents: jest.fn(),
     revalidateQuarantinedInbound: jest.fn(),
     transitionPhysicalUnit: jest.fn(),
     moveAllocationQuantity: jest.fn(),
@@ -77,6 +79,77 @@ test('canonical supplier receiving forwards exact multi-PO manifest to HUB-001',
       { purchase_order_id: PO1, quantity: 1 },
       { purchase_order_id: '00000000-0000-0000-0000-000000000302', quantity: 2 },
     ],
+  }));
+});
+
+
+test('light supplier arrival can be registered from KOM-IN without opening the parcel', async () => {
+  hubPhysical.receiveSupplierPackageArrival.mockResolvedValue({
+    unit: { id: U1, reference: 'KOM-RCV-001', state: 'RECEIVED' },
+    reconciliation_pending: true,
+  });
+  const tx = clientWithUnit(null);
+  db.withTransaction.mockImplementation(async (work) => work(tx));
+
+  const result = await hubOps.receiveSupplierPackageCommand({
+    komerce_inbound_tag: 'KOM-IN-00000000000000000000000000000301',
+    tracking_ref: 'TRACK-1',
+  }, 'user-1');
+
+  expect(result.status).toBe(201);
+  expect(result.body.reconciliation_mode).toBe('PRE_RECONCILED_TAG');
+  expect(hubPhysical.receiveSupplierPackageArrival).toHaveBeenCalledWith(tx, expect.objectContaining({
+    expectedPurchaseOrderId: PO1,
+    inboundTag: 'KOM-IN-00000000000000000000000000000301',
+    externalRef: 'TRACK-1',
+  }));
+  expect(hubPhysical.receiveSupplierPackage).not.toHaveBeenCalled();
+});
+
+test('arrival without supplier cooperation remains receivable and unreconciled', async () => {
+  hubPhysical.receiveSupplierPackageArrival.mockResolvedValue({
+    unit: { id: U1, reference: 'KOM-RCV-002', state: 'RECEIVED' },
+    reconciliation_pending: true,
+  });
+  const result = await hubOps.receiveSupplierPackageCommand({ tracking_ref: 'UNKNOWN-TRACK' }, 'user-1');
+  expect(result.status).toBe(201);
+  expect(result.body.reconciliation_mode).toBe('UNRECONCILED');
+});
+
+test('opening reconciliation records actual content before quality check', async () => {
+  hubPhysical.reconcileSupplierPackageContents.mockResolvedValue({
+    quarantined: false,
+    unit: { id: U1, state: 'IDENTIFIED' },
+  });
+  const result = await hubOps.reconcileSupplierPackageCommand({
+    unit_id: U1,
+    contents: [{ purchase_order_id: PO1, quantity: 1 }],
+  }, 'user-1');
+
+  expect(result.status).toBe(200);
+  expect(hubPhysical.reconcileSupplierPackageContents).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+    unitId: U1,
+    contents: [{ purchase_order_id: PO1, quantity: 1 }],
+  }));
+});
+
+test('operator labels default to KOM-ITEM and KOM-BOX identities', async () => {
+  hubPhysical.createPhysicalUnit
+    .mockResolvedValueOnce({ id: U1, reference: 'KOM-ITEM-ABC', unit_type: 'HANDLING_UNIT', state: 'RECEIVED' })
+    .mockResolvedValueOnce({ id: U2, reference: 'KOM-BOX-XYZ', unit_type: 'MARKET_PARCEL', state: 'RECEIVED' });
+
+  const item = await hubOps.createOperatorUnitCommand({ unit_type: 'HANDLING_UNIT' }, 'user-1');
+  const box = await hubOps.createOperatorUnitCommand({ unit_type: 'MARKET_PARCEL' }, 'user-1');
+
+  expect(item.body.label.kind).toBe('KOM-ITEM');
+  expect(box.body.label.kind).toBe('KOM-BOX');
+  expect(hubPhysical.createPhysicalUnit).toHaveBeenNthCalledWith(1, expect.anything(), expect.objectContaining({
+    unitType: 'HANDLING_UNIT',
+    reference: expect.stringMatching(/^KOM-ITEM-/),
+  }));
+  expect(hubPhysical.createPhysicalUnit).toHaveBeenNthCalledWith(2, expect.anything(), expect.objectContaining({
+    unitType: 'MARKET_PARCEL',
+    reference: expect.stringMatching(/^KOM-BOX-/),
   }));
 });
 
