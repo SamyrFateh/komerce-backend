@@ -497,7 +497,8 @@ test('l’entrée Catalogue préchauffée prépare le FR sans clic produit puis 
 
   const refreshed = root.querySelector('[data-product-ref="KPR-131956"]');
   expect(refreshed.textContent).toContain('Avant / après');
-  expect(refreshed.textContent).toContain('Après · français');
+  expect(refreshed.textContent).not.toContain('Après · français');
+  expect(refreshed.querySelector('[data-catalog-compare-toggle]')).not.toBeNull();
   expect(refreshed.textContent).toContain('Définir le prix');
   expect(refreshed.textContent).not.toContain('Valider après relecture');
   expect(refreshed.textContent).toContain('FR préparé · CJdropshipping');
@@ -588,7 +589,8 @@ test('le parcours FR intégré conserve toute la file et rend le avant/après ap
   expect(root.querySelectorAll('[data-product-ref]')).toHaveLength(2);
   const refreshed = root.querySelector('[data-product-ref="KPR-131956"]');
   expect(refreshed.textContent).toContain('Avant / après');
-  expect(refreshed.textContent).toContain('Après · français');
+  expect(refreshed.textContent).not.toContain('Après · français');
+  expect(refreshed.querySelector('[data-catalog-compare-toggle]')).not.toBeNull();
   expect(refreshed.textContent).toContain('Haut homme décontracté à col montant');
   expect(prompt).not.toHaveBeenCalled();
 
