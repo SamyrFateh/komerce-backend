@@ -297,18 +297,17 @@ describe('G-01..G-02 — railway-live-schema.sql baseline safety', () => {
     expect(dumpCommit).not.toBe(headCommit);
   });
 
-  test('G-02 — migration 240 est post-snapshot (Mode B)', () => {
-    const { execSync } = require('child_process');
-    const dumpCommit = execSync(
-      'git log --no-merges --format="%H" -1 -- docs/db/railway-live-schema.sql',
-      { cwd: ROOT, encoding: 'utf8' }
-    ).trim();
-    const listing = execSync(
-      `git ls-tree -r --name-only "${dumpCommit}" -- migrations/`,
-      { cwd: ROOT, encoding: 'utf8' }
-    );
-    const baselineFiles = listing.split('\n').map(p => path.basename(p));
-    // 240 must NOT be in the baseline — it should be applied as Mode B
-    expect(baselineFiles.some(f => f.startsWith('240_'))).toBe(false);
+  test('G-02 — migration 240 sort de la baseline si le snapshot ne porte pas Allegro', async () => {
+    const { reconcileStructuralBaseline } = require('../../scripts/ci-migrate');
+    const client = {
+      query: jest.fn().mockResolvedValue({ rows: [{ represented: false }] }),
+    };
+    const baseline = new Set(['240_supplier_platform_allegro.sql']);
+
+    const reconciled = await reconcileStructuralBaseline(client, baseline);
+
+    expect(client.query).toHaveBeenCalledWith(expect.stringContaining('suppliers_platform_check'));
+    expect(client.query).toHaveBeenCalledWith(expect.stringContaining("ILIKE '%allegro%'"));
+    expect(reconciled.has('240_supplier_platform_allegro.sql')).toBe(false);
   });
 });
