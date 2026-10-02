@@ -20,10 +20,11 @@ describe('PR enforcement — shallow checkout ratchet', () => {
   });
 
   test('les gates hors migration qui comparent base/head fetchent uniquement le commit de base', () => {
-    // changes + boutique + governance (Debt Zero, commit 1a9a1ada0 — même
-    // patron shallow-checkout appliqué au nouveau gate).
+    // changes + from_scratch E2E scope + boutique + governance.
+    // Tous restent ciblés sur le seul BASE_SHA nécessaire.
     const targetedFetches = workflow.match(/git fetch --no-tags --depth=1 origin "\$BASE_SHA"/g) || [];
-    expect(targetedFetches).toHaveLength(3);
+    expect(targetedFetches).toHaveLength(4);
+    expect(workflow).toContain('name: Fetch PR base commit for E2E impact scope');
   });
 
   test('les six checkouts concernés restent explicitement shallow', () => {
