@@ -448,6 +448,7 @@ module.exports = {
       'dashboards/canonical/js/navigation.js',
       'dashboards/canonical/js/navigation-policy-v3.js',
       'dashboards/canonical/js/navigation-policy-v4.js',
+      'dashboards/canonical/js/canonical-client-router-v4.js',
       'dashboards/canonical/css/import-runtime.css',
       'dashboards/canonical/css/live-kit.css',
       'dashboards/canonical/css/live-ops-shell.css',
