@@ -24234,6 +24234,7 @@
           "Shipping Capability Adapter Contract : les faits de livraison natifs d'un provider sont traduits en capacité canonique sans fuite de champs provider ni défaut implicite sur les faits inconnus",
           "Purchase Order exacte : pour une ligne vendue avec sku_id, la PO conserve order_item_id, product_sku_id et la Supplier Order Identity snapshotée ; un mapping produit-level ne peut pas remplacer la variante vendue",
           "engagement d'une PO regroupée (PR 5) : soumission par groupe supplier_unit_ref, confirmation par PO ligne par ligne avec reliquat en ligne ouverte, écart à la réception (solde d'une ligne confirmée), création manuelle d'une ligne ouverte ; contrat adaptateur items[] (buildOrderPayload / reconcile)",
+          "complétude d'achat après réception Hub (PR 7) : purchasing-completion-service passe une PO regroupée en hub_received quand toutes ses lignes non annulées sont reçues et une commande ordered en preparation (puis SCAN 3) quand chaque item non LOCAL_STOCK est couvert ET reçu, appelée après COMMIT par hub-operations, jamais bloquante (alerte purchasing_completion_failed) ; deleteSupplier annule les lignes ouvertes et refuse les PO en brouillon ; signaux lus sur les lignes",
           "Supplier money canonique : pour une ligne SKU/SOI exacte, la PO snapshotte supplier_unit_price + supplier_currency depuis la Canonical Unit ; aucun prix natif non-AED ne peut être écrit dans unit_price_aed"
         ],
         "out": [
@@ -24260,6 +24261,10 @@
         {
           "statement": "engagement d'une PO regroupée (PR 5, KOMERCE_GROUPED_PURCHASING éteint par défaut) : submit ne passe une PO draft en notified que si chaque groupe supplier_unit_ref est prêt (préparation distante par groupe, quantité sommée) et que l'adaptateur accepte les items (Allegro : une seule ligne, ALLEGRO_MULTI_ITEM_UNSUPPORTED) — sinon la PO reste draft avec les verdicts ; confirm exige exactement les lignes non annulées de la PO, écrit d'abord la confirmation de chaque ligne puis le reliquat en ligne ouverte (parent_line_id, même instantané, I1 vérifie), passe la PO en confirmed (cancelled si tout est à 0) et ne confirme rien si la réconciliation fournisseur est rejetée ; settle (écart à la réception) solde une ligne confirmée à une quantité ≤ reçu du Hub et < effectif, puis crée le reliquat si reopen_remainder, et passe la PO en hub_received quand toutes ses lignes non annulées sont soldées ; POST /lines ne crée qu'une ligne ouverte à identité exacte du même provider, I1 refuse tout sur-engagement ; chaque ligne garde son marché et les réponses l'exposent par marché en lecture seule ; place_order_invoked reste false",
           "test": "tests/integration/purchase-lines-engagement-postgres.test.js"
+        },
+        {
+          "statement": "complétude d'achat (PR 7) : après le COMMIT d'une réception Hub, une commande ordered ne passe en preparation (machine d'états, source system, puis SCAN 3) que si chaque item non LOCAL_STOCK a une somme d'effectifs de lignes non annulées ≥ sa quantité ET toutes ces lignes reçues ; une ligne soldée sans reliquat rouvert laisse l'item sous-couvert et la commande bloquée (fail-closed, signal ordered_without_purchase_order) ; une PO regroupée dont toutes les lignes non annulées sont reçues passe en hub_received ; la réception Hub reste acquise si la complétude échoue (alerte, jamais d'exception) ; second appel idempotent ; le chemin historique processReceive est inchangé",
+          "test": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js"
         },
         {
           "statement": "un besoin d'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)",
