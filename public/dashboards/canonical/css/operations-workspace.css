@@ -323,8 +323,50 @@
   gap: 6px 10px;
 }
 
-.kmc-catalog-signal-cell,
-.kmc-catalog-state-cell {
+.kmc-catalog-compare {
+  margin-top: 2px;
+}
+
+.kmc-catalog-compare > summary {
+  width: fit-content;
+  cursor: pointer;
+  color: #225bb5;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.kmc-catalog-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.kmc-catalog-compare-pane {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-radius: 8px;
+  background: #fbfcfe;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.kmc-catalog-compare-pane p {
+  margin: 5px 0 0;
+  color: #64748b;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+.kmc-catalog-compare-title {
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.kmc-catalog-cell-stack {
   display: grid;
   gap: 4px;
   align-content: center;
@@ -344,18 +386,22 @@
   overflow: hidden;
 }
 
-.kmc-catalog-curation-table .kmc-catalog-actions-cell {
+.kmc-catalog-curation-table td.kmc-catalog-actions-cell {
   position: sticky;
   right: 0;
   z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-content: center;
-  gap: 6px;
+  display: table-cell;
   min-width: 250px;
   background: #fff;
   box-shadow: -8px 0 12px -12px rgb(20 35 65 / .35);
+}
+
+.kmc-catalog-actions-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
 }
 
 .kmc-catalog-curation-table tbody tr:hover .kmc-catalog-actions-cell {
@@ -588,4 +634,9 @@
     overflow-x: auto;
     scrollbar-gutter: stable both-edges;
   }
+}
+
+/* Catalog curation must keep semantic table cells; layout belongs to inner wrappers. */
+.kmc-catalog-curation-table td.kmc-catalog-actions-cell {
+  display: table-cell;
 }

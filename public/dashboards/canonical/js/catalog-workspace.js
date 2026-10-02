@@ -225,9 +225,44 @@
 
   function curationState(row = {}) {
     if (needsFrenchPreparation(row)) return { label: 'FR à préparer', tone: 'is-warning' };
-    if (row.needs_review) return { label: 'À relire', tone: 'is-warning' };
+    if (row.needs_review) return { label: 'FR préparé · à relire', tone: 'is-warning' };
+    if (row.content_source === 'ai_enriched' || row.content_source === 'manual') {
+      if (row.price_kmf == null) return { label: 'FR préparé', tone: 'is-positive' };
+    }
     if (row.price_kmf == null) return { label: 'Prix à définir', tone: 'is-neutral' };
     return { label: 'Prêt à valider', tone: 'is-positive' };
+  }
+
+  function appendBeforeAfter(doc, cell, row = {}) {
+    const hasSource = Boolean(row.name_source || row.description_source);
+    const prepared = row.content_source === 'ai_enriched' || row.content_source === 'manual';
+    if (!hasSource || !prepared) return;
+
+    const details = doc.createElement('details');
+    details.className = 'kmc-catalog-compare';
+    const summary = doc.createElement('summary');
+    summary.textContent = 'Avant / après';
+    details.appendChild(summary);
+
+    const grid = doc.createElement('div');
+    grid.className = 'kmc-catalog-compare-grid';
+
+    const before = doc.createElement('div');
+    before.className = 'kmc-catalog-compare-pane';
+    before.appendChild(text(doc, 'strong', '', 'Avant · fournisseur'));
+    before.appendChild(text(doc, 'div', 'kmc-catalog-compare-title', row.name_source || '—'));
+    if (row.description_source) before.appendChild(text(doc, 'p', '', row.description_source));
+
+    const after = doc.createElement('div');
+    after.className = 'kmc-catalog-compare-pane';
+    after.appendChild(text(doc, 'strong', '', 'Après · français'));
+    after.appendChild(text(doc, 'div', 'kmc-catalog-compare-title', row.name || '—'));
+    if (row.description) after.appendChild(text(doc, 'p', '', row.description));
+
+    grid.appendChild(before);
+    grid.appendChild(after);
+    details.appendChild(grid);
+    cell.appendChild(details);
   }
 
   function renderApproval(rootNode, ui, doc, payload, context) {
@@ -290,36 +325,45 @@
         `${formatSource(row.content_source)}${row.supplier_name ? ` · ${row.supplier_name}` : ''}`
       ));
       productCell.appendChild(productMeta);
+      appendBeforeAfter(doc, productCell, row);
       tr.appendChild(productCell);
 
       tr.appendChild(td(doc, row.category));
 
       const signalCell = doc.createElement('td');
       signalCell.className = 'kmc-catalog-signal-cell';
-      signalCell.appendChild(text(doc, 'strong', sourcingDecisionTone(row.sourcing_decision), sourcingDecisionLabel(row.sourcing_decision)));
+      const signalContent = doc.createElement('div');
+      signalContent.className = 'kmc-catalog-cell-stack';
+      signalContent.appendChild(text(doc, 'strong', sourcingDecisionTone(row.sourcing_decision), sourcingDecisionLabel(row.sourcing_decision)));
       const signalMeta = [
         row.sourcing_confidence ? `confiance ${row.sourcing_confidence}` : null,
         row.economic_health_status ? `santé ${row.economic_health_status}` : null,
         row.supplier_stock == null ? null : `stock fournisseur ${formatNumber(row.supplier_stock)}`,
       ].filter(Boolean).join(' · ');
-      if (signalMeta) signalCell.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', signalMeta));
-      signalCell.appendChild(text(doc, 'small', 'kmc-catalog-reason', row.sourcing_reason || 'Aucune raison sourcing persistée.'));
+      if (signalMeta) signalContent.appendChild(text(doc, 'small', 'kmc-workspace-subtitle', signalMeta));
+      signalContent.appendChild(text(doc, 'small', 'kmc-catalog-reason', row.sourcing_reason || 'Aucune raison sourcing persistée.'));
+      signalCell.appendChild(signalContent);
       tr.appendChild(signalCell);
 
       const state = curationState(row);
       const stateCell = doc.createElement('td');
       stateCell.className = 'kmc-catalog-state-cell';
-      stateCell.appendChild(text(doc, 'strong', state.tone, state.label));
-      stateCell.appendChild(text(
+      const stateContent = doc.createElement('div');
+      stateContent.className = 'kmc-catalog-cell-stack';
+      stateContent.appendChild(text(doc, 'strong', state.tone, state.label));
+      stateContent.appendChild(text(
         doc,
         'small',
         'kmc-workspace-subtitle',
         row.price_kmf == null ? 'Prix —' : formatKmf(row.price_kmf)
       ));
+      stateCell.appendChild(stateContent);
       tr.appendChild(stateCell);
 
       const actions = doc.createElement('td');
       actions.className = 'kmc-catalog-actions-cell';
+      const actionContent = doc.createElement('div');
+      actionContent.className = 'kmc-catalog-actions-inner';
 
       const mustPrepareFrench = needsFrenchPreparation(row);
       if (mustPrepareFrench) {
@@ -331,7 +375,7 @@
             successMessage: `${row.product_ref} préparé en français. Vérifiez puis validez.`,
           });
         });
-        actions.appendChild(prepare);
+        actionContent.appendChild(prepare);
       } else {
         const approveLabel = row.needs_review ? 'Valider après relecture' : 'Ajouter à la sélection';
         const approve = makeButton(doc, approveLabel, 'approve');
@@ -342,7 +386,7 @@
             successMessage: `${row.product_ref} ajouté à la sélection publiée.`,
           });
         });
-        actions.appendChild(approve);
+        actionContent.appendChild(approve);
       }
 
       const correct = makeButton(doc, 'Corriger + ajouter', 'override', true);
@@ -368,7 +412,7 @@
           successMessage: `${row.product_ref} corrigé puis ajouté à la sélection.`,
         });
       });
-      if (!mustPrepareFrench) actions.appendChild(correct);
+      if (!mustPrepareFrench) actionContent.appendChild(correct);
 
       const reject = makeButton(doc, 'Écarter', 'reject', true);
       reject.addEventListener('click', () => {
@@ -380,7 +424,8 @@
           successMessage: `${row.product_ref} écarté de la sélection.`,
         });
       });
-      actions.appendChild(reject);
+      actionContent.appendChild(reject);
+      actions.appendChild(actionContent);
       tr.appendChild(actions);
       tbody.appendChild(tr);
     });
