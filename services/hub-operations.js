@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        runtime_context, operator_command_payload
  * @outputs       physical_unit_result, custody_side_effects
- * @depends       db, services/hub-physical-identity.js, services/hub-reference.js
+ * @depends       db, services/hub-physical-identity.js, services/hub-reference.js, services/purchasing-completion-service.js
  * @used-by       routes/hub.js, routes/scans.js
  * @db-read       business_rules, hub_physical_units, parcel_items, parcels, products, scan_events
  * @db-write      products, scan_events
@@ -33,6 +33,7 @@ const {
 } = require('./hub-physical-identity');
 
 const { parseInboundTag, generatePhysicalReference } = require('./hub-reference');
+const { completeOrdersAfterHubReceipt } = require('./purchasing-completion-service');
 
 const REPACK_MIN_GAIN_FALLBACK_CM3 = 2000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -196,6 +197,9 @@ async function receiveSupplierPackageCommand(payload, userId) {
       contents: normalizedContents,
     }));
 
+    // PR 7 : après COMMIT, la complétude d'achat des commandes touchées par des lignes regroupées (jamais bloquante).
+    if (!result.quarantined) await completeOrdersAfterHubReceipt(result.allocations, { actor: { id: userId || null } });
+
     return {
       status: result.quarantined ? 202 : 201,
       body: result,
@@ -228,6 +232,7 @@ async function reconcileSupplierPackageCommand(payload, userId) {
       actorId: userId || null,
       locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
     }));
+    if (!result.quarantined) await completeOrdersAfterHubReceipt(result.allocations, { actor: { id: userId || null } });
     return { status: result.quarantined ? 202 : 200, body: result };
   } catch (error) {
     return hubErrorResponse(error);
@@ -312,6 +317,7 @@ async function revalidateQuarantineCommand(payload, userId) {
       locationRef: payload.location_ref ? String(payload.location_ref).trim() : null,
       notes: payload.notes ? String(payload.notes).trim() : null,
     }));
+    if (result.resolved) await completeOrdersAfterHubReceipt(result.allocations, { actor: { id: userId || null } });
     return {
       status: result.resolved ? 200 : 409,
       body: result,

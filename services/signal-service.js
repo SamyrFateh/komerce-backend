@@ -9,7 +9,7 @@
  * @depends       db, utils/logger.js
  * @used-by       routes/signals.js, bootstrap/feature-wiring.js, services/action-center-workspace.js,
  *                services/incident-escalation.js
- * @db-read       cash_collections, orders, parcels, purchase_orders
+ * @db-read       cash_collections, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, parcels, purchase_orders, v_purchase_line_progress
  * @db-write      signals
  * @db-txn        optional_caller_owned_transaction_for_upsert
  * @doctrine      resolve_before_behavior_change, market_scope_is_server_authority, preserve_caller_transaction
@@ -276,18 +276,33 @@ async function retireObsoleteSignalTypes() {
   }
 }
 
+// PR 7 — « couverture » d'achat lue sur les lignes (v_purchase_line_progress) : un item non LOCAL_STOCK est couvert
+// quand la somme des quantités effectives de ses lignes non annulées (ouvertes, en brouillon ou engagées) atteint sa
+// quantité. Une ligne soldée sans reliquat rouvert laisse l'item non couvert (la commande reste bloquée, fail-closed).
+const UNCOVERED_ITEM_PREDICATE = `
+  COALESCE(oi.fulfillment_source, '') <> 'LOCAL_STOCK'
+  AND COALESCE((
+    SELECT SUM(v.effective_quantity)
+      FROM v_purchase_line_progress v
+     WHERE v.order_item_id = oi.id AND NOT v.cancelled
+  ), 0) < oi.quantity`;
+
 GENERATORS.ordered_without_purchase_order = async function() {
   try {
     const rows = (await db.query(`
-      SELECT o.id, o.reference,
+      WITH uncovered AS (
+        SELECT oi.order_id, COUNT(*)::int AS uncovered_items
+          FROM order_items oi
+          JOIN orders od ON od.id = oi.order_id AND od.status = 'ordered'
+         WHERE ${UNCOVERED_ITEM_PREDICATE}
+         GROUP BY oi.order_id
+      )
+      SELECT o.id, o.reference, u.uncovered_items,
              EXTRACT(EPOCH FROM (NOW() - COALESCE(o.ordered_at, o.updated_at, o.created_at)))::int / 60 AS minutes_waiting
         FROM orders o
+        JOIN uncovered u ON u.order_id = o.id
        WHERE o.status = 'ordered'
          AND COALESCE(o.ordered_at, o.updated_at, o.created_at) < NOW() - INTERVAL '15 minutes'
-         AND NOT EXISTS (
-           SELECT 1 FROM v_purchase_line_progress v
-            WHERE v.order_id = o.id AND v.purchase_order_id IS NOT NULL AND NOT v.cancelled
-         )
        ORDER BY COALESCE(o.ordered_at, o.updated_at, o.created_at) ASC
        LIMIT 50
     `)).rows;
@@ -298,13 +313,13 @@ GENERATORS.ordered_without_purchase_order = async function() {
       entityIds.push(r.id);
       await upsertSignal({
         signal_type: 'ordered_without_purchase_order', severity: 'critical',
-        title: r.reference ? 'Commande sans PO — ' + r.reference : 'Commande sans PO',
-        summary: 'Commande au statut ordered depuis ' + Number(r.minutes_waiting || 0) + ' min sans bon d’achat actif',
+        title: r.reference ? 'Commande sans achat couvert — ' + r.reference : 'Commande sans achat couvert',
+        summary: Number(r.uncovered_items || 0) + ' item(s) non couvert(s) par une ligne d’achat depuis ' + Number(r.minutes_waiting || 0) + ' min',
         source_module: 'signal-service', target_shell: 'bo', target_view: 'orders',
         target_filters: { status: 'ordered' }, owner_role: 'sourcing',
         entity_type: 'order', entity_id: r.id,
-        recommendation: 'Relancer le déclenchement sourcing et vérifier le mapping fournisseur', confidence: 'high',
-        meta: { minutes_waiting: Number(r.minutes_waiting || 0) },
+        recommendation: 'Relancer le déclenchement sourcing, vérifier le mapping fournisseur ou racheter le reliquat', confidence: 'high',
+        meta: { minutes_waiting: Number(r.minutes_waiting || 0), uncovered_items: Number(r.uncovered_items || 0) },
       });
       generated++;
     }
@@ -357,18 +372,34 @@ GENERATORS.purchase_order_overreceived = async function() {
 
 GENERATORS.purchase_order_receipt_stuck = async function() {
   try {
+    // Filet de la complétude Hub : tout est couvert ET entièrement reçu, mais la commande est toujours « ordered ».
+    // Dernière réception d'une ligne regroupée = dernier placement RECEIVE ; historique = hub_received_at de la PO.
     const rows = (await db.query(`
       SELECT o.id, o.reference,
              COUNT(DISTINCT v.purchase_order_id)::int AS po_count,
-             EXTRACT(EPOCH FROM (NOW() - MAX(v.hub_received_at)))::int / 60 AS minutes_stuck
+             EXTRACT(EPOCH FROM (NOW() - MAX(COALESCE(lr.received_at, v.hub_received_at))))::int / 60 AS minutes_stuck
         FROM orders o
         JOIN v_purchase_line_progress v ON v.order_id = o.id AND v.purchase_order_id IS NOT NULL AND NOT v.cancelled
+        LEFT JOIN LATERAL (
+          SELECT MAX(p.placed_at) AS received_at
+            FROM hub_physical_unit_placements p
+            JOIN hub_purchase_allocations a ON a.id = p.allocation_id
+           WHERE v.line_id IS NOT NULL AND a.purchase_line_id = v.line_id AND p.operation_type = 'RECEIVE'
+        ) lr ON TRUE
        WHERE o.status = 'ordered'
+         AND NOT EXISTS (
+           SELECT 1 FROM order_items oi
+            WHERE oi.order_id = o.id AND ${UNCOVERED_ITEM_PREDICATE}
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM v_purchase_line_progress w
+            WHERE w.order_id = o.id AND NOT w.cancelled AND w.received_quantity < w.effective_quantity
+         )
        GROUP BY o.id, o.reference
       HAVING COUNT(*) > 0
-         AND BOOL_AND(v.received_quantity >= v.effective_quantity AND v.hub_received_at IS NOT NULL)
-         AND MAX(v.hub_received_at) < NOW() - INTERVAL '15 minutes'
-       ORDER BY MAX(v.hub_received_at) ASC
+         AND BOOL_AND(COALESCE(lr.received_at, v.hub_received_at) IS NOT NULL)
+         AND MAX(COALESCE(lr.received_at, v.hub_received_at)) < NOW() - INTERVAL '15 minutes'
+       ORDER BY MAX(COALESCE(lr.received_at, v.hub_received_at)) ASC
        LIMIT 50
     `)).rows;
 
@@ -378,11 +409,11 @@ GENERATORS.purchase_order_receipt_stuck = async function() {
       entityIds.push(r.id);
       await upsertSignal({
         signal_type: 'purchase_order_receipt_stuck', severity: 'warning',
-        title: r.reference ? 'PO reçues, commande bloquée — ' + r.reference : 'PO reçues, commande bloquée',
-        summary: Number(r.po_count || 0) + ' PO complètes mais commande toujours ordered depuis ' + Number(r.minutes_stuck || 0) + ' min',
+        title: r.reference ? 'Achats reçus, commande bloquée — ' + r.reference : 'Achats reçus, commande bloquée',
+        summary: Number(r.po_count || 0) + ' PO reçues et items couverts mais commande toujours ordered depuis ' + Number(r.minutes_stuck || 0) + ' min',
         source_module: 'signal-service', target_shell: 'bo', target_view: 'orders',
         target_filters: { status: 'ordered' }, owner_role: 'hub', entity_type: 'order', entity_id: r.id,
-        recommendation: 'Vérifier la transition ordered → preparation et les scans de réception Hub', confidence: 'high',
+        recommendation: 'Vérifier la transition ordered → preparation et la complétude d’achat après réception Hub', confidence: 'high',
         meta: { po_count: Number(r.po_count || 0), minutes_stuck: Number(r.minutes_stuck || 0) },
       });
       generated++;

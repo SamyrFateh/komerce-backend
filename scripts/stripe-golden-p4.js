@@ -9,7 +9,7 @@
  * @outputs       bounded sanitized P4 proof JSON
  * @depends       stripe, db, services/payment-stripe.js
  * @used-by       operator-controlled Stripe external-provider P4 qualification
- * @db-read       markets, orders, products, stripe_events_processed, purchase_orders
+ * @db-read       markets, order_items, orders, products, purchase_lines, purchase_orders, stripe_events_processed
  * @db-write      temporary P4-only relais/products/orders/order_items fixtures + cleanup
  * @db-txn        bounded_fixture_setup_and_cleanup
  * @doctrine      external-provider-contract-proof, test-only-provider-mutation, fail-closed
@@ -272,7 +272,11 @@ async function waitForGolden({
 
 async function assertNoExternalPurchasing(db, fixture) {
   const { rows: [{ count }] } = await db.query(
-    'SELECT COUNT(*)::int AS count FROM purchase_orders WHERE order_id = $1',
+    // PR 7 : en mode regroupé le déclencheur ouvre des lignes sans PO ; aucun achat ne doit exister, PO ou ligne.
+    `SELECT (
+        (SELECT COUNT(*) FROM purchase_orders WHERE order_id = $1)
+        + (SELECT COUNT(*) FROM purchase_lines pl JOIN order_items oi ON oi.id = pl.order_item_id WHERE oi.order_id = $1)
+      )::int AS count`,
     [fixture.orderId]
   );
   if (Number(count) !== 0) {

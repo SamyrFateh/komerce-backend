@@ -24074,11 +24074,27 @@
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
-                    "success": {
+                    "deleted": {
                       "type": "string",
                       "x-observed": true
                     },
-                    "message": {
+                    "id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "name": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "mappings_deleted": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "pos_cancelled": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "open_lines_cancelled": {
                       "type": "string",
                       "x-observed": true
                     }
