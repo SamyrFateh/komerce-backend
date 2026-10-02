@@ -83,7 +83,7 @@ router.post('/approval/:productRef/prepare-fr', async (req, res, next) => {
     res.json({
       ok: true,
       action: 'catalog_candidate_prepared_fr',
-      result: await workspace.prepareCandidateFrench(req.params.productRef, req.user),
+      result: await workspace.prepareCandidateFrench(req.params.productRef, req.body || {}, req.user),
     });
   } catch (err) { sendError(err, res, next); }
 });

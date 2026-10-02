@@ -44,7 +44,8 @@ test('Catalogue garde une seule surface Canonical et délègue provenance/import
 
 test('la curation guide explicitement la préparation française avant publication', () => {
   const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
-  expect(workspace).toContain('Préparer en français');
+  expect(workspace).toContain('Copier pour ChatGPT');
+  expect(workspace).toContain('Saisir le français');
   expect(workspace).toContain('/prepare-fr');
   expect(workspace).toContain('Valider après relecture');
   expect(workspace).toContain('Description corrigée');
@@ -82,6 +83,16 @@ test('la file de curation garde les décisions et actions dans le viewport', () 
   expect(css).toContain('word-break: normal');
   expect(workspace).toContain("actionContent.className = 'kmc-catalog-actions-inner'");
   expect(workspace).toContain("signalContent.className = 'kmc-catalog-cell-stack'");
+});
+
+test('la préparation FR canonique reste gratuite et assistée hors runtime', () => {
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+
+  expect(workspace).toContain('Copier pour ChatGPT');
+  expect(workspace).toContain('Saisir le français');
+  expect(workspace).toContain('Aucun appel API depuis Komerce');
+  expect(workspace).toContain('sans API IA payante');
+  expect(workspace).not.toContain('ANTHROPIC_API_KEY');
 });
 
 test('la curation montre explicitement le avant/après après préparation FR', () => {

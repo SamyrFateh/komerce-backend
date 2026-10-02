@@ -236,12 +236,12 @@
   function appendBeforeAfter(doc, cell, row = {}) {
     const hasSource = Boolean(row.name_source || row.description_source);
     const prepared = row.content_source === 'ai_enriched' || row.content_source === 'manual';
-    if (!hasSource || !prepared) return;
+    if (!hasSource) return;
 
     const details = doc.createElement('details');
     details.className = 'kmc-catalog-compare';
     const summary = doc.createElement('summary');
-    summary.textContent = 'Avant / après';
+    summary.textContent = prepared ? 'Avant / après' : 'Voir source fournisseur';
     details.appendChild(summary);
 
     const grid = doc.createElement('div');
@@ -249,20 +249,48 @@
 
     const before = doc.createElement('div');
     before.className = 'kmc-catalog-compare-pane';
-    before.appendChild(text(doc, 'strong', '', 'Avant · fournisseur'));
+    before.appendChild(text(doc, 'strong', '', prepared ? 'Avant · fournisseur' : 'Source fournisseur'));
     before.appendChild(text(doc, 'div', 'kmc-catalog-compare-title', row.name_source || '—'));
     if (row.description_source) before.appendChild(text(doc, 'p', '', row.description_source));
-
-    const after = doc.createElement('div');
-    after.className = 'kmc-catalog-compare-pane';
-    after.appendChild(text(doc, 'strong', '', 'Après · français'));
-    after.appendChild(text(doc, 'div', 'kmc-catalog-compare-title', row.name || '—'));
-    if (row.description) after.appendChild(text(doc, 'p', '', row.description));
-
     grid.appendChild(before);
-    grid.appendChild(after);
+
+    if (prepared) {
+      const after = doc.createElement('div');
+      after.className = 'kmc-catalog-compare-pane';
+      after.appendChild(text(doc, 'strong', '', 'Après · français'));
+      after.appendChild(text(doc, 'div', 'kmc-catalog-compare-title', row.name || '—'));
+      if (row.description) after.appendChild(text(doc, 'p', '', row.description));
+      grid.appendChild(after);
+    }
+
     details.appendChild(grid);
     cell.appendChild(details);
+  }
+
+  function frenchAssistantPrompt(row = {}) {
+    return [
+      'Prépare cette fiche produit Komerce en français.',
+      'Conserve strictement le sens fournisseur, sans inventer de caractéristiques.',
+      'Réponds uniquement avec deux lignes :',
+      'Titre FR: ...',
+      'Description FR: ...',
+      '',
+      `Référence: ${row.product_ref || '—'}`,
+      `Catégorie: ${row.category || '—'}`,
+      `Titre fournisseur: ${row.name_source || row.name || '—'}`,
+      `Description fournisseur: ${row.description_source || '—'}`,
+    ].join('\n');
+  }
+
+  async function copyForAssistant(context, row = {}) {
+    const prompt = frenchAssistantPrompt(row);
+    const clipboard = typeof navigator !== 'undefined' && navigator.clipboard;
+    if (clipboard && typeof clipboard.writeText === 'function') {
+      await clipboard.writeText(prompt);
+      setFeedback(context.root, `${row.product_ref} · prompt copié pour ChatGPT. Aucun appel API depuis Komerce.`, 'positive');
+      return;
+    }
+    context.prompt('Copiez ce prompt dans ChatGPT puis revenez saisir le résultat français', prompt);
   }
 
   function renderApproval(rootNode, ui, doc, payload, context) {
@@ -367,12 +395,37 @@
 
       const mustPrepareFrench = needsFrenchPreparation(row);
       if (mustPrepareFrench) {
-        const prepare = makeButton(doc, 'Préparer en français', 'prepare-fr');
+        const copy = makeButton(doc, 'Copier pour ChatGPT', 'copy-fr', true);
+        copy.addEventListener('click', async () => {
+          try {
+            await copyForAssistant(context, row);
+          } catch (error) {
+            setFeedback(context.root, error.message || 'Copie impossible.', 'critical');
+          }
+        });
+        actionContent.appendChild(copy);
+
+        const prepare = makeButton(doc, 'Saisir le français', 'prepare-fr');
         prepare.addEventListener('click', () => {
+          const name = context.prompt(
+            `Titre français · source: ${row.name_source || row.name || '—'}`,
+            ''
+          );
+          if (name == null || !name.trim()) return;
+          const description = context.prompt(
+            'Description française · collez ici le texte préparé hors runtime',
+            ''
+          );
+          if (description == null || !description.trim()) return;
           runAction(context, prepare, {
             url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/prepare-fr`,
-            runningMessage: 'Préparation française en cours…',
-            successMessage: `${row.product_ref} préparé en français. Vérifiez puis validez.`,
+            body: {
+              name: name.trim(),
+              description: description.trim(),
+              reason: 'Préparation FR manuelle/assistée hors runtime',
+            },
+            runningMessage: 'Enregistrement de la préparation française…',
+            successMessage: `${row.product_ref} préparé en français sans API IA payante. Vérifiez Avant / après puis validez.`,
           });
         });
         actionContent.appendChild(prepare);
@@ -650,5 +703,5 @@
     return context.reload();
   }
 
-  return Object.freeze({ ENDPOINT, metricItems, stageLabel, curationState, mount });
+  return Object.freeze({ ENDPOINT, metricItems, stageLabel, curationState, frenchAssistantPrompt, mount });
 });

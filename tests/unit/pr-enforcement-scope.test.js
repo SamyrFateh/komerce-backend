@@ -307,6 +307,90 @@ describe('PR enforcement scope — backend + migrations + Boutique + governance'
     expect(result.e2eApiRequired).toBe(true);
   });
 
+  test('scope lourd sémantique: orchestration interne sans changement SQL ni surface HTTP reste légère', () => {
+    const before = {
+      'services/catalog-workspace.js': `/**
+ * @komerce-arch
+ * @layer service
+ * @db-read products
+ * @db-write none
+ * @used-by routes/admin-catalog-workspace.js
+ */
+async function read() {
+  return db.query(\`SELECT id, name FROM products WHERE id = $1\`, [id]);
+}
+async function prepare() { return catalogEnrichment.enrichAndApply(id); }`,
+      'routes/admin-catalog-workspace.js': `
+router.post('/approval/:productRef/prepare-fr', guard, async (req, res) => {
+  res.status(200).json({ result: await workspace.prepareCandidateFrench(req.params.productRef, req.user) });
+});`,
+    };
+    const after = {
+      'services/catalog-workspace.js': `/**
+ * @komerce-arch
+ * @layer service
+ * @db-read products
+ * @db-write none
+ * @used-by routes/admin-catalog-workspace.js
+ */
+async function read() {
+  return db.query(\`SELECT id, name FROM products WHERE id = $1\`, [id]);
+}
+async function prepare() { return catalogOverrides.upsertOverrides(db, id, payload); }`,
+      'routes/admin-catalog-workspace.js': `
+router.post('/approval/:productRef/prepare-fr', guard, async (req, res) => {
+  res.status(200).json({ result: await workspace.prepareCandidateFrench(req.params.productRef, req.body || {}, req.user) });
+});`,
+    };
+
+    const result = classifyRuntimeProof(Object.keys(after), {
+      readBefore: file => before[file] || null,
+      readAfter: file => after[file] || null,
+    });
+
+    expect(result).toEqual({
+      dbRebuildRequired: false,
+      integrationRequired: false,
+      e2eApiRequired: false,
+    });
+  });
+
+  test('scope lourd sémantique: une requête SQL modifiée exige la preuve intégration', () => {
+    const before = `/**
+ * @komerce-arch
+ * @layer service
+ * @db-read products
+ * @db-write none
+ */
+return db.query(\`SELECT id FROM products WHERE id = $1\`, [id]);`;
+    const after = `/**
+ * @komerce-arch
+ * @layer service
+ * @db-read products
+ * @db-write none
+ */
+return db.query(\`SELECT id, lifecycle FROM products WHERE id = $1\`, [id]);`;
+
+    const result = classifyRuntimeProof(['services/catalog-reader.js'], {
+      readBefore: () => before,
+      readAfter: () => after,
+    });
+    expect(result.integrationRequired).toBe(true);
+    expect(result.e2eApiRequired).toBe(false);
+  });
+
+  test('scope lourd sémantique: une surface de route modifiée exige E2E API', () => {
+    const before = `router.post('/approval/:productRef/prepare-fr', guard, handler);`;
+    const after = `router.patch('/approval/:productRef/prepare-fr', guard, handler);`;
+
+    const result = classifyRuntimeProof(['routes/admin-catalog-workspace.js'], {
+      readBefore: () => before,
+      readAfter: () => after,
+    });
+    expect(result.integrationRequired).toBe(false);
+    expect(result.e2eApiRequired).toBe(true);
+  });
+
   test('un CSS Boutique source déclenche la branche CSS et alimente désormais related-tests (incident 2026-09)', () => {
     const result = classify(['public/boutique/css/layout.css']);
     expect(result.boutique).toBe(true);

@@ -26,15 +26,15 @@ jest.mock('../../services/product-admin-service', () => ({
 const mockApprove = jest.fn();
 const mockReject = jest.fn();
 const mockOverride = jest.fn();
-const mockEnrich = jest.fn();
 jest.mock('../../services/catalog-approval', () => ({
   approveProduct: (...args) => mockApprove(...args),
   rejectProduct: (...args) => mockReject(...args),
   overrideAndApprove: (...args) => mockOverride(...args),
 }));
 
-jest.mock('../../services/catalog-enrichment', () => ({
-  enrichAndApply: (...args) => mockEnrich(...args),
+const mockUpsertOverrides = jest.fn();
+jest.mock('../../services/catalog-overrides', () => ({
+  upsertOverrides: (...args) => mockUpsertOverrides(...args),
 }));
 
 const mockListCategories = jest.fn();
@@ -59,12 +59,18 @@ const workspace = require('../../services/catalog-workspace');
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetRuleNumber.mockResolvedValue(120);
-  mockEnrich.mockResolvedValue({
-    status: 'ok',
-    confidence: 0.94,
-    needsReview: false,
-    appliedOverrides: [],
-    review_notes: [],
+  mockUpsertOverrides.mockResolvedValue({
+    overridden: ['name', 'description'],
+    product: {
+      product_ref: 'KPR-CJ',
+      name: 'Robe plissée à bretelles',
+      description: 'Robe plissée à bretelles pour femme.',
+      name_source: 'Lily Pleated Suspender Dress',
+      description_source: 'Supplier description',
+      source_locale: 'en',
+      content_source: 'manual',
+      needs_review: false,
+    },
   });
   mockListCategories.mockResolvedValue([{ key: 'Maison', label: 'Maison', is_active: true, subcategories: [] }]);
   mockListCommercialAssortment.mockResolvedValue([{
@@ -249,7 +255,7 @@ test('file de curation expose la vérité source pour comparaison avant/après',
   });
 });
 
-test('préparation FR résout product_ref puis délègue au service d’enrichissement sans publier', async () => {
+test('préparation FR résout product_ref puis applique des overrides manuels sans API IA', async () => {
   mockQuery.mockImplementation(async sql => {
     if (String(sql).includes('WHERE product_ref = $1')) {
       return { rows: [{ id: 'candidate-internal-id', product_ref: 'KPR-CJ', lifecycle_status: 'candidate', is_active: false }] };
@@ -257,29 +263,51 @@ test('préparation FR résout product_ref puis délègue au service d’enrichis
     return { rows: [] };
   });
 
-  const result = await workspace.prepareCandidateFrench('KPR-CJ', { id: 'central-admin' });
+  const result = await workspace.prepareCandidateFrench(
+    'KPR-CJ',
+    {
+      name: 'Robe plissée à bretelles',
+      description: 'Robe plissée à bretelles pour femme.',
+    },
+    { id: 'central-admin' }
+  );
 
-  expect(mockEnrich).toHaveBeenCalledWith('candidate-internal-id');
+  expect(mockUpsertOverrides).toHaveBeenCalledWith(
+    expect.anything(),
+    'candidate-internal-id',
+    {
+      name: 'Robe plissée à bretelles',
+      description: 'Robe plissée à bretelles pour femme.',
+    },
+    expect.objectContaining({
+      reason: expect.stringContaining('zéro API IA payante'),
+      setBy: 'central-admin',
+    })
+  );
   expect(result).toMatchObject({
     product_ref: 'KPR-CJ',
-    status: 'ok',
-    confidence: 0.94,
+    status: 'manual_ready',
+    content_source: 'manual',
     needs_review: false,
+    api_calls: 0,
+    paid_ai_dependency: false,
+    before: { name: 'Lily Pleated Suspender Dress' },
+    after: { name: 'Robe plissée à bretelles' },
   });
   expect(JSON.stringify(result)).not.toContain('candidate-internal-id');
 });
 
-test('préparation FR échouée reste un candidat et remonte une erreur métier stable', async () => {
+test('préparation FR refuse un payload vide au lieu d’appeler une API payante', async () => {
   mockQuery.mockImplementation(async sql => {
     if (String(sql).includes('WHERE product_ref = $1')) {
       return { rows: [{ id: 'candidate-internal-id', product_ref: 'KPR-CJ', lifecycle_status: 'candidate', is_active: false }] };
     }
     return { rows: [] };
   });
-  mockEnrich.mockResolvedValueOnce({ status: 'failed', error: 'ANTHROPIC_API_KEY manquant' });
 
-  await expect(workspace.prepareCandidateFrench('KPR-CJ', { id: 'central-admin' }))
-    .rejects.toMatchObject({ code: 'catalog_fr_preparation_failed', status: 422 });
+  await expect(workspace.prepareCandidateFrench('KPR-CJ', {}, { id: 'central-admin' }))
+    .rejects.toMatchObject({ code: 'catalog_fr_manual_fields_required', status: 422 });
+  expect(mockUpsertOverrides).not.toHaveBeenCalled();
 });
 
 test('approval résout la référence avant délégation au moteur de validation', async () => {
