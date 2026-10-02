@@ -76,10 +76,12 @@ function buildPlan(scope, baseSha, headSha = 'HEAD') {
   ];
 
   if (scope.backend || scope.dashboard || scope.boutique) {
-    nodeRun('Touched tests / completion-at-contact', 'scripts/touched-tests-gate.js', [
-      '--base', baseSha,
-      '--strict',
-    ]);
+    plan.push(
+      nodeRun('Touched tests / completion-at-contact', 'scripts/touched-tests-gate.js', [
+        '--base', baseSha,
+        '--strict',
+      ])
+    );
   }
 
   if (scope.backend) {
