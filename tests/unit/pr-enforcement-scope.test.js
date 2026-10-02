@@ -12,6 +12,11 @@ const {
   isBackendFile,
   isMigrationFile,
   isLiveSchemaFile,
+  isDbRebuildFile,
+  isDirectApiRuntimeFile,
+  headerTouchesDb,
+  headerFeedsApi,
+  classifyRuntimeProof,
   isBoutiqueCssSource,
   isBoutiqueJsSource,
   isBoutiqueHtml,
@@ -238,6 +243,68 @@ describe('PR enforcement scope — backend + migrations + Boutique + governance'
     expect(result.migrations).toBe(true);
     expect(result.schemaDump).toBe(true);
     expect(result.migrationFiles).toEqual([]);
+  });
+
+  test('scope lourd: une PR gouvernance/test unitaire ne déclenche ni DB, ni intégration, ni E2E API', () => {
+    const result = classifyRuntimeProof([
+      'AGENTS.md',
+      '.github/workflows/pr-enforcement.yml',
+      'scripts/pr-preflight.js',
+      'tests/unit/pr-preflight.test.js',
+    ], { readSource: () => null });
+
+    expect(result).toEqual({
+      dbRebuildRequired: false,
+      integrationRequired: false,
+      e2eApiRequired: false,
+    });
+  });
+
+  test('scope lourd: une migration reconstruit la DB et rejoue les intégrations, sans inventer un E2E API', () => {
+    const result = classifyRuntimeProof(['migrations/999_test.sql'], { readSource: () => null });
+    expect(result.dbRebuildRequired).toBe(true);
+    expect(result.integrationRequired).toBe(true);
+    expect(result.e2eApiRequired).toBe(false);
+    expect(isDbRebuildFile('migrations/999_test.sql')).toBe(true);
+  });
+
+  test('scope lourd: les headers DB déclenchent uniquement la preuve intégration nécessaire', () => {
+    const source = `/**
+ * @komerce-arch
+ * @layer service
+ * @db-read products
+ * @db-write none
+ * @used-by services/other.js
+ */`;
+    expect(headerTouchesDb(source)).toBe(true);
+    expect(headerFeedsApi(source)).toBe(false);
+
+    const result = classifyRuntimeProof(['services/catalog-reader.js'], {
+      readSource: () => source,
+    });
+    expect(result.dbRebuildRequired).toBe(false);
+    expect(result.integrationRequired).toBe(true);
+    expect(result.e2eApiRequired).toBe(false);
+  });
+
+  test('scope lourd: une route ou un service utilisé par une route déclenche la preuve E2E API', () => {
+    expect(isDirectApiRuntimeFile('routes/orders.js')).toBe(true);
+
+    const source = `/**
+ * @komerce-arch
+ * @layer service
+ * @db-read none
+ * @db-write none
+ * @used-by routes/orders.js
+ */`;
+    expect(headerFeedsApi(source)).toBe(true);
+
+    const result = classifyRuntimeProof(['services/order-read-model.js'], {
+      readSource: () => source,
+    });
+    expect(result.dbRebuildRequired).toBe(false);
+    expect(result.integrationRequired).toBe(false);
+    expect(result.e2eApiRequired).toBe(true);
   });
 
   test('un CSS Boutique source déclenche la branche CSS et alimente désormais related-tests (incident 2026-09)', () => {
