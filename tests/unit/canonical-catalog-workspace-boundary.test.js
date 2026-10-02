@@ -187,8 +187,8 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=2501');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261003-1');
-  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261003-1');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261003-2');
+  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261003-2');
 });
 
 test('Vue Catalogue ne duplique plus le pipeline Import', () => {
@@ -289,7 +289,7 @@ test('la curation montre explicitement le avant/après après préparation FR', 
   expect(css).toContain('.kmc-catalog-compare-grid');
 });
 
-test('Avant / après s ouvre explicitement au clic puis se referme', async () => {
+test('Avant / après ouvre une fenêtre hors du tableau sans muter la ligne', async () => {
   const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
   const doc = fakeDocument();
   const root = doc.createElement('main');
@@ -316,22 +316,24 @@ test('Avant / après s ouvre explicitement au clic puis se referme', async () =>
   });
 
   const row = root.querySelector('[data-product-ref="KPR-131956"]');
+  const rowTextBefore = row.textContent;
   const toggle = row.querySelector('[data-catalog-compare-toggle]');
-  const panel = row.querySelector('[data-catalog-compare-panel]');
   expect(toggle).not.toBeNull();
-  expect(panel).not.toBeNull();
-  expect(panel.hidden).toBe(true);
-  expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  expect(root.querySelector('[data-catalog-compare-dialog]')).toBeNull();
 
   await toggle.click();
-  expect(panel.hidden).toBe(false);
-  expect(toggle.getAttribute('aria-expanded')).toBe('true');
-  expect(panel.textContent).toContain('Avant · fournisseur');
-  expect(panel.textContent).toContain('Après · français');
 
-  await toggle.click();
-  expect(panel.hidden).toBe(true);
-  expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  const overlay = root.querySelector('[data-catalog-compare-dialog]');
+  expect(overlay).not.toBeNull();
+  expect(row.textContent).toBe(rowTextBefore);
+  expect(overlay.textContent).toContain('KPR-131956');
+  expect(overlay.textContent).toContain('Avant · fournisseur');
+  expect(overlay.textContent).toContain('Après · français');
+  expect(overlay.textContent).toContain('Casual Stand Collar Men Top Outdoor Workwear');
+  expect(overlay.textContent).toContain('Haut homme décontracté à col montant');
+
+  await overlay.querySelector('[data-workspace-action="close-compare"]').click();
+  expect(root.querySelector('[data-catalog-compare-dialog]')).toBeNull();
 });
 
 test('une fiche FR sans prix route vers Atelier économique avant toute validation', async () => {
