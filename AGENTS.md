@@ -130,6 +130,9 @@ Exceptions : lecture simple, explication sans modification, commande triviale ex
 9. Régénérer les sorties dérivées pertinentes.
 10. Exécuter `npm run pr:preflight` et corriger jusqu'au vert.
 11. Ouvrir ou mettre à jour la PR seulement après ce preflight vert. La CI est une preuve indépendante, pas le premier lieu de découverte des erreurs.
+12. Attendre le verdict des checks requis sur la PR.
+13. Dès que la PR est conforme, verte, à jour et mergeable, l'agent qui porte le chantier **doit la merger lui-même** sans demander une confirmation humaine supplémentaire.
+14. Vérifier ensuite que le merge est effectif sur `main` et, lorsqu'un déploiement automatique est attendu, vérifier que le déploiement correspondant a bien démarré ou abouti.
 
 ## 3. Gates carte-first
 
@@ -152,6 +155,26 @@ npm run pr:preflight
 Cette commande réutilise les gates canoniques selon le diff. Ne pas ouvrir une PR pour découvrir un rouge reproductible localement.
 
 Les commandes unitaires restent disponibles pour le diagnostic (`feature:registry`, `gate:schema`, `gate:touched-files`, `gate:docs-lint`, etc.), mais le chemin normal est le preflight unique.
+
+## 4.1. Clôture autonome de PR — merge sans intervention externe
+
+Le cycle normal d'une intervention Komerce ne s'arrête pas à « PR verte ». Il se termine à **merge confirmé**.
+
+Règle par défaut : lorsqu'un agent a ouvert ou mis à jour une PR pour exécuter un chantier demandé, il est responsable de sa clôture. Si les checks requis sont verts, que la branche est à jour, que la PR est mergeable et qu'aucun blocage explicite ne subsiste, l'agent **merge immédiatement la PR lui-même** avec la méthode autorisée par le dépôt. Il ne demande pas « tu peux merger ? », « je merge ? » ou une validation externe supplémentaire.
+
+L'absence d'intervention humaine supplémentaire vaut uniquement pour la **clôture Git de la PR**. Elle n'autorise jamais à franchir silencieusement une décision séparée.
+
+L'auto-merge doit être suspendu uniquement si au moins un de ces cas est vrai :
+- l'utilisateur a explicitement demandé d'attendre, de laisser la PR ouverte ou de ne pas merger ;
+- un check requis est rouge, manquant ou encore en cours ;
+- la PR n'est pas mergeable, n'est pas à jour, présente un conflit ou son head SHA a changé depuis la dernière vérification ;
+- la PR contient une migration, suppression, reset, opération destructive ou changement d'autorité qui exige explicitement une revue humaine selon la doctrine active ;
+- le merge lui-même déclencherait une activation production que l'utilisateur a explicitement séparée du merge ;
+- une revue humaine est explicitement exigée par la carte, la doctrine, la sécurité ou la plateforme.
+
+Une activation de feature flag, un reset, une migration live, un déploiement manuel, une publication métier ou toute autre action post-merge reste gouvernée par ses propres autorisations. **Merge autonome ≠ activation autonome.**
+
+Après merge, l'agent vérifie le statut de la PR et le commit de `main`. Si le dépôt déploie automatiquement ce merge, l'agent vérifie également le déploiement lorsque cela fait partie du chantier.
 
 ## 5. Vérification complète
 
