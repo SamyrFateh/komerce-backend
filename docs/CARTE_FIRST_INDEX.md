@@ -2,6 +2,14 @@
 
 Point d'entree documentaire apres AGENTS.md.
 
+## Contexte permanent
+
+La lecture de ce document **n'ouvre pas un nouveau contexte** : `AGENTS.md` reste actif pendant toute l'intervention.
+
+Tout document consulté ensuite est subordonné à la gouvernance déjà chargée : feature owner, périmètre, invariants, headers `@komerce-arch`, `interventionIndex.mustCheck`, Debt Zero et preuve adaptée au risque.
+
+En cas de contradiction, signaler la divergence ; ne jamais suivre silencieusement la règle locale.
+
 ## Parcours
 
 1. Identifier la feature ou le transversal.
