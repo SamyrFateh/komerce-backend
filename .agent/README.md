@@ -24,6 +24,7 @@ Les anciens states, tâches, worklogs, prompts, preuves brutes, handoffs, lanes 
 
 ## Lecture et écriture économes
 
+- Après `AGENTS.md`, utiliser `npm run agent:context -- --feature <feature>` ou `--files <paths>` ; ne pas lire ce Ledger en entier par défaut.
 - Lire uniquement les sources nécessaires au changement courant.
 - Ne pas parcourir les archives ou sorties générées volumineuses sans échec précis à diagnostiquer.
 - Modifier une source canonique existante au lieu de créer un document parallèle.
