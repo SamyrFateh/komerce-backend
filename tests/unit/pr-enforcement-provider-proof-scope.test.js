@@ -128,7 +128,9 @@ describe('strict CJ isolated pilot proof-only CI scope', () => {
     expect(workflow).toContain("steps.scope.outputs.cj_pilot_proof_only == 'true'");
     expect(workflow).toContain('node --check scripts/cj-three-real-staging-pilot.js');
     expect(workflow).toContain("needs.changes.outputs.cj_pilot_proof_only != 'true'");
-    expect(workflow).toContain("needs.changes.outputs.backend == 'true' || needs.changes.outputs.migrations == 'true'");
+    expect(workflow).toContain("needs: [changes, backend]");
+    expect(workflow).toContain("needs.changes.outputs.backend == 'true' && needs.backend.result == 'success'");
+    expect(workflow).toContain("needs.changes.outputs.migrations == 'true'");
   });
 });
 
@@ -141,7 +143,9 @@ test('mandatory PR workflow requires focused gate; standalone batch remains manu
   expect(workflow).toContain("needs: [changes, provider_contracts, backend, migrations, from_scratch, dashboard, boutique, governance]");
   expect(workflow).toContain('for result in "$PROVIDER_CONTRACTS_RESULT"');
   expect(workflow).toContain("needs.changes.outputs.provider_proof_only != 'true'");
-  expect(workflow).toContain("needs.changes.outputs.backend == 'true' || needs.changes.outputs.migrations == 'true'");
+  expect(workflow).toContain("needs: [changes, backend]");
+    expect(workflow).toContain("needs.changes.outputs.backend == 'true' && needs.backend.result == 'success'");
+    expect(workflow).toContain("needs.changes.outputs.migrations == 'true'");
   expect(batch).toContain('  workflow_dispatch:');
   expect(batch).not.toMatch(/^\s{2}pull_request:/m);
 });
