@@ -11,7 +11,11 @@ function manifests() {
     {
       name: 'catalog',
       files: {
-        services: ['services/suppliers/connectors/ebay-connector.js'],
+        services: [
+          'services/suppliers/connectors/ebay-connector.js',
+          'services/catalog-workspace.js',
+        ],
+        routes: ['routes/admin-catalog-workspace.js'],
         tests: ['tests/unit/ebay-connector.test.js'],
       },
       contract: { consumes: [] },
@@ -56,10 +60,21 @@ describe('E2E impact scope', () => {
     });
   });
 
-  test('deep runtime change remains full', () => {
-    expect(isDeepOrTransversal('routes/purchasing.js')).toBe(true);
+  test('owned route follows Feature First ownership instead of forcing full', () => {
+    expect(isDeepOrTransversal('routes/admin-catalog-workspace.js')).toBe(false);
     expect(computeImpact(
-      ['routes/purchasing.js'],
+      ['routes/admin-catalog-workspace.js', 'services/catalog-workspace.js'],
+      { manifests: manifests(), e2eFeatures }
+    )).toMatchObject({
+      mode: 'targeted',
+      features: ['catalog', 'purchasing', 'sourcing'],
+    });
+  });
+
+  test('deep transversal runtime remains full', () => {
+    expect(isDeepOrTransversal('middleware/auth.js')).toBe(true);
+    expect(computeImpact(
+      ['middleware/auth.js'],
       { manifests: manifests(), e2eFeatures }
     )).toMatchObject({ mode: 'full' });
   });
@@ -71,13 +86,23 @@ describe('E2E impact scope', () => {
     )).toMatchObject({ mode: 'full' });
   });
 
-  test('CI workflow change remains full', () => {
+  test('CI workflow change is non-runtime and skips E2E API', () => {
     expect(computeImpact(
       ['.github/workflows/pr-enforcement.yml'],
       { manifests: manifests(), e2eFeatures }
     )).toMatchObject({
-      mode: 'full',
-      reason: 'deep/transversal: .github/workflows/pr-enforcement.yml',
+      mode: 'skip',
+      features: [],
+    });
+  });
+
+  test('owned route without dedicated E2E suite does not wake unrelated suites', () => {
+    expect(computeImpact(
+      ['routes/admin-catalog-workspace.js', 'services/catalog-workspace.js'],
+      { manifests: manifests(), e2eFeatures: new Set(['sourcing', 'purchasing']) }
+    )).toMatchObject({
+      mode: 'skip',
+      features: [],
     });
   });
 
@@ -87,7 +112,7 @@ describe('E2E impact scope', () => {
       { manifests: manifests(), e2eFeatures }
     )).toMatchObject({
       mode: 'full',
-      reason: 'unowned peripheral/test file: services/suppliers/connectors/future-connector.js',
+      reason: 'unowned owned-runtime candidate: services/suppliers/connectors/future-connector.js',
     });
   });
 
