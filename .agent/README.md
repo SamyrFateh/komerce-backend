@@ -2,6 +2,10 @@
 
 Ce dossier ne pilote aucun runtime de tâches, de lanes ou de branches.
 
+## Gouvernance persistante
+
+Entrer dans `.agent/` ne change jamais le cadre de décision : `AGENTS.md` reste actif et prioritaire. Le ledger et les rapports de palier ajoutent du contexte opérationnel ; ils ne peuvent pas réduire le périmètre de gouvernance, contourner les headers/mustCheck, Feature First ou Debt Zero.
+
 ## Sources de vérité
 
 1. `main` ;

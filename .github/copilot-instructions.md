@@ -9,6 +9,8 @@ Avant toute modification :
 
 Ne pas commencer par un audit, un rapport date, un prompt historique ou une sortie generee.
 
+Contexte sticky : après lecture de `AGENTS.md`, toute documentation ouverte ensuite complète le contexte mais ne le remplace jamais. Conserver en permanence feature owner, périmètre, invariants, headers/mustCheck, Debt Zero et scope minimal. Toute contradiction locale doit être signalée.
+
 Plan d'attaque obligatoire :
 
 - demande comprise ;
@@ -21,13 +23,21 @@ Plan d'attaque obligatoire :
 - risques ou points a verifier ;
 - gates et tests prevus.
 
-Gates utiles :
+Avant PR :
 
-- npm run feature:registry
-- npm run gate:schema
-- npm run gate:touched-files
-- npm run gate:docs-lint
-- npm run gate:feature-audit
-- npm run map:check
+- `npm run pr:preflight`
+
+Cette commande réutilise les gates canoniques selon le diff. Utiliser les gates unitaires seulement pour diagnostiquer un rouge ; `npm run map:check` reste disponible pour une reconstruction globale.
 
 Si public/boutique est touche, lire aussi public/boutique/README.md et la carte parente.
+
+
+## Mode Komerce — coût maîtrisé
+
+Pour toute modification substantielle, commencer par : carte Feature First → headers `@komerce-arch` → `interventionIndex.mustCheck` → lecture/diff ciblés.
+
+Ne pas cloner/fetcher/scanner tout le dépôt ni lancer toute la suite de tests par défaut. Élargir uniquement si la preuve ciblée est insuffisante.
+
+Ne pas créer de nouvelle dette silencieuse : `@unknown`, allowlist, exemption, baseline, bypass ou duplication d'autorité doivent être évités ou explicitement approuvés.
+
+Avant PR : `npm run pr:preflight`.

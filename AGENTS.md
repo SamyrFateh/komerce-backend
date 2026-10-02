@@ -19,6 +19,52 @@ Toute intervention commence par :
 
 Un agent ne doit pas démarrer depuis un ancien audit, un rapport daté, un prompt historique, un `_LIVE.md`, un `MEMO_*` ou une sortie générée.
 
+## 0.1. Mode Komerce par défaut — précision maximale, coût minimal
+
+Avant toute analyse ou modification substantielle, utiliser les atouts déjà présents dans le dépôt dans cet ordre :
+
+1. carte Feature First concernée ;
+2. headers `@komerce-arch` des fichiers propriétaires ;
+3. `interventionIndex["<file>"].mustCheck` ;
+4. diff/recherche/lecture ciblée sur les fichiers utiles ;
+5. élargir seulement si une incertitude réelle subsiste.
+
+Règle d'économie : **ne jamais commencer par un clone complet, un fetch complet, un scan global, une lecture exhaustive des sorties générées ou une suite de tests complète quand une preuve ciblée suffit**.
+
+Préférer :
+- fichiers/ranges précis via l'API ou le workspace déjà disponible ;
+- historique shallow et SHA/base exacts ;
+- tests/gates déterminés par le scope ;
+- `npm run pr:preflight` avant PR ;
+- tests lourds uniquement lorsque le scope ou la preuve l'exige.
+
+Un clone/fetch complet, un scan global ou une exécution exhaustive reste autorisé quand nécessaire, mais la raison doit être explicite dans le plan d'attaque.
+
+Règle dette : ne jamais introduire silencieusement un nouvel `@unknown`, allowlist, exemption, baseline, bypass, duplication d'autorité ou writer parallèle. Corriger la cause ou demander une validation humaine explicite.
+
+Réflexe à annoncer au début d'un chantier substantiel :
+
+`Mode Komerce : carte + headers + mustCheck + scope ciblé + dette non croissante + preflight avant PR.`
+
+## 0.2. Gouvernance persistante — contexte sticky
+
+La gouvernance Komerce est **cumulative et persistante pendant toute l'intervention**.
+
+Ouvrir ensuite un README, une doctrine, une feature card, un ledger, un rapport, une sortie générée ou un fichier technique **n'efface jamais** les règles déjà chargées depuis `AGENTS.md`, `CARTE_FIRST_INDEX`, la carte Feature First, les headers `@komerce-arch` et `interventionIndex.mustCheck`.
+
+Tout document consulté doit être interprété **sous** ce contexte global, jamais comme un cadre autonome.
+
+Règles :
+- un document local complète le contexte ; il ne remplace pas la gouvernance racine ;
+- une instruction locale incompatible avec `AGENTS.md`, la carte propriétaire, les headers ou une source de vérité supérieure est une divergence à signaler, pas une nouvelle règle à suivre ;
+- l'agent doit conserver en tête les invariants, le périmètre, l'autorité, la dette et les gates déjà identifiés pendant toute la session ;
+- changer de fichier ou de document ne remet jamais le raisonnement à zéro ;
+- aucune optimisation locale ne peut contourner Debt Zero, Feature First, les ownerships ou les preuves requises.
+
+Le rappel mental permanent est :
+
+`Contexte sticky : gouvernance active + feature owner + headers/mustCheck + dette non croissante + scope minimal + preuve adaptée au risque.`
+
 ## 1. Plan d'attaque obligatoire
 
 Avant toute modification substantielle, l'agent doit annoncer un plan d'attaque court avant de coder.
@@ -80,8 +126,10 @@ Exceptions : lecture simple, explication sans modification, commande triviale ex
 5. Annoncer le plan d'attaque avant de modifier.
 6. Vérifier que les fichiers touchés appartiennent à la carte ou à un transversal déclaré.
 7. Si l'intention métier change, mettre à jour la carte dans la même PR.
-8. Régénérer les sorties dérivées pertinentes.
-9. Lancer les gates.
+8. Lire le header des fichiers structurels touchés puis `interventionIndex["<file>"].mustCheck` dans le graphe d'architecture.
+9. Régénérer les sorties dérivées pertinentes.
+10. Exécuter `npm run pr:preflight` et corriger jusqu'au vert.
+11. Ouvrir ou mettre à jour la PR seulement après ce preflight vert. La CI est une preuve indépendante, pas le premier lieu de découverte des erreurs.
 
 ## 3. Gates carte-first
 
@@ -95,20 +143,23 @@ Exceptions : lecture simple, explication sans modification, commande triviale ex
 | Docs lint | `npm run gate:docs-lint` | empêche le bruit historique documentaire |
 | Map globale | `npm run map:check` | reconstruction globale |
 
-## 4. Vérification minimale
+## 4. Vérification avant PR — commande unique
 
 ```bash
-npm run feature:registry
-npm run gate:schema
-npm run gate:touched-files
-npm run gate:docs-lint
+npm run pr:preflight
 ```
+
+Cette commande réutilise les gates canoniques selon le diff. Ne pas ouvrir une PR pour découvrir un rouge reproductible localement.
+
+Les commandes unitaires restent disponibles pour le diagnostic (`feature:registry`, `gate:schema`, `gate:touched-files`, `gate:docs-lint`, etc.), mais le chemin normal est le preflight unique.
 
 ## 5. Vérification complète
 
 ```bash
 npm run map:check
 ```
+
+`map:check` reste la reconstruction globale explicite ; il ne remplace pas le preflight avant PR.
 
 ## 6. Hiérarchie documentaire
 
@@ -124,7 +175,7 @@ npm run map:check
 
 ## 7. Contexte agent, branche et économie de tokens
 
-- `main` est l'unique branche de travail active. Ne pas créer, rechercher ou réactiver une ancienne branche `agent/*` sauf demande humaine explicite.
+- `main` est l'unique branche d'intégration. Les branches PR éphémères sont autorisées ; ne pas rechercher ou réactiver une ancienne branche `agent/*` sauf demande humaine explicite.
 - `.agent/README.md` est la seule instruction active sous `.agent/`.
 - `.agent/LEDGER.md` contient uniquement le chantier courant et les prochains actes décidés. Un palier clos n'est jamais rouvert à cause d'un ancien state, worklog, audit ou compteur.
 - Lecture minimale obligatoire : `AGENTS.md` → `docs/CARTE_FIRST_INDEX.md` → carte de la feature concernée → `.agent/LEDGER.md`. Ne lire ensuite que les fichiers directement utiles au changement.
@@ -149,4 +200,4 @@ npm run map:check
 
 ## 9. Divergence
 
-Si code, DB, cartes et docs divergent : ne pas corriger silencieusement. Noter la divergence, corriger dans la même PR ou créer une dette explicite.
+Si code, DB, cartes et docs divergent : ne pas corriger silencieusement. Noter la divergence, corriger dans la même PR ou demander une validation humaine explicite. Ne jamais créer une nouvelle dette par défaut.
