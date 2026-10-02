@@ -18,6 +18,10 @@ En cas de contradiction, signaler la divergence ; ne jamais suivre silencieuseme
 4. Verifier le perimetre et les invariants.
 5. Annoncer le plan d'attaque.
 6. Lancer les gates.
+7. Ouvrir la PR après preflight vert.
+8. Attendre les checks requis.
+9. Si la PR est verte et mergeable, la merger sans intervention externe supplémentaire.
+10. Vérifier le merge sur `main` et le déploiement attendu le cas échéant.
 
 ## Plan d'attaque obligatoire
 
@@ -42,6 +46,10 @@ Chemin normal :
 - `npm run pr:preflight`
 
 Le preflight choisit et réutilise les gates canoniques selon le diff. Les commandes détaillées restent disponibles pour diagnostiquer un échec ; `npm run map:check` reste la reconstruction globale explicite.
+
+## Clôture de PR
+
+Une PR portée par l'agent n'attend pas une commande humaine « merge ». Dès que les checks requis sont verts et que la PR est mergeable, l'agent la merge lui-même puis vérifie le merge. Les exceptions et la distinction **merge autonome ≠ activation autonome** sont définies dans `AGENTS.md §4.1`.
 
 ## Regle
 
