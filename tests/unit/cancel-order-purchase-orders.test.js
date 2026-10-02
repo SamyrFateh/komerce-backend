@@ -26,9 +26,12 @@ describe('cancel-order-purchase-orders', () => {
   });
 
   it('retourne zero si aucune PO active', async () => {
-    const q = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+    const q = { query: jest.fn().mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })   // forme regroupée : repérage des PO
+      .mockResolvedValueOnce({ rows: [] }) }; // forme regroupée : lignes
 
-    await expect(syncPurchaseOrdersOnOrderCancel(q, { orderId: 'order-001' })).resolves.toEqual({
+    await expect(syncPurchaseOrdersOnOrderCancel(q, { orderId: 'order-001' })).resolves.toMatchObject({
+      lines_cancelled: 0,
       total: 0,
       auto_cancelled: 0,
       blocking: 0,
@@ -48,7 +51,9 @@ describe('cancel-order-purchase-orders', () => {
       .mockResolvedValueOnce({ rows: [], rowCount: 2 })              // UPDATE status='cancelled'
       .mockResolvedValueOnce({ rows: [], rowCount: 1 })              // SAVEPOINT cancel_order_po_alert
       .mockResolvedValueOnce({ rows: [{ id: 'alert-1' }] })          // INSERT alerts (createAlert)
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) };           // RELEASE SAVEPOINT cancel_order_po_alert
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })            // RELEASE SAVEPOINT cancel_order_po_alert
+      .mockResolvedValueOnce({ rows: [] })                          // forme regroupée : repérage des PO
+      .mockResolvedValueOnce({ rows: [] }) };                       // forme regroupée : lignes
 
     const result = await syncPurchaseOrdersOnOrderCancel(q, {
       orderId: 'order-001',
@@ -58,6 +63,7 @@ describe('cancel-order-purchase-orders', () => {
     });
 
     expect(result).toEqual({
+      lines_cancelled: 0,
       total: 3,
       auto_cancelled: 2,
       blocking: 1,
@@ -78,7 +84,9 @@ describe('cancel-order-purchase-orders', () => {
       .mockResolvedValueOnce({ rows: [{ id: 'po-1', status: 'received', supplier_id: 'sup', supplier_order_id: null }] })
       .mockResolvedValueOnce({ rows: [], rowCount: 1 })   // SAVEPOINT cancel_order_po_alert
       .mockRejectedValueOnce(new Error('alert_down'))     // INSERT alerts (createAlert) échoue
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) }; // ROLLBACK TO SAVEPOINT cancel_order_po_alert
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })   // ROLLBACK TO SAVEPOINT cancel_order_po_alert
+      .mockResolvedValueOnce({ rows: [] })                // forme regroupée : repérage des PO
+      .mockResolvedValueOnce({ rows: [] }) };             // forme regroupée : lignes
 
     await expect(syncPurchaseOrdersOnOrderCancel(q, { orderId: 'order-001' })).resolves.toMatchObject({
       total: 1,
