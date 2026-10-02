@@ -9,6 +9,7 @@ const CANONICAL = path.join(ROOT, 'public', 'dashboards', 'canonical');
 
 afterEach(() => {
   delete globalThis.Translator;
+  delete globalThis.__KOMERCE_CATALOG_FR_TRANSLATOR__;
 });
 
 function read(relative) {
@@ -186,7 +187,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=2501');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261002-1');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261002-2');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261002-1');
 });
 
@@ -219,6 +220,7 @@ test('la curation guide explicitement la préparation française avant publicati
   const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
   expect(workspace).toContain('Copier pour ChatGPT');
   expect(workspace).toContain('Préparer en français');
+  expect(workspace).toContain('Préparation FR automatique…');
   expect(workspace).toContain('Enregistrer la préparation FR');
   expect(workspace).toContain('Coller la réponse');
   expect(workspace).toContain('/prepare-fr');
@@ -295,6 +297,92 @@ test('la réponse ChatGPT se transforme automatiquement en champs FR', () => {
     name: 'Haut homme décontracté à col montant',
     description: 'Vêtement pour extérieur et travail, préparé à partir de la source fournisseur.',
   });
+});
+
+test('l’entrée Catalogue préchauffée prépare le FR sans clic produit puis laisse la validation humaine', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument();
+  const root = doc.createElement('main');
+  const ui = fakeUi(doc);
+
+  const second = candidate({
+    product_ref: 'KPR-131957',
+    name: 'Produit déjà français',
+    name_source: 'Produit déjà français',
+    description_source: 'Description source déjà française',
+    source_locale: 'fr',
+  });
+  const initial = workspacePayload([candidate(), second]);
+  const prepared = workspacePayload([
+    candidate({
+      name: 'Haut homme décontracté à col montant',
+      description: 'Description française relue.',
+      content_source: 'manual',
+    }),
+    second,
+  ]);
+
+  const translate = jest.fn(async value => (
+    value.includes('Casual Stand Collar')
+      ? 'Haut homme décontracté à col montant'
+      : 'Description française relue.'
+  ));
+  const destroy = jest.fn();
+  globalThis.__KOMERCE_CATALOG_FR_TRANSLATOR__ = {
+    sourceLanguage: 'en',
+    targetLanguage: 'fr',
+    promise: Promise.resolve({ translate, destroy }),
+  };
+
+  let getCount = 0;
+  const fetchFn = jest.fn(async (url, options) => {
+    if (options.method === 'POST') {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true, result: { product_ref: 'KPR-131956' } }),
+      };
+    }
+    getCount += 1;
+    return {
+      ok: true,
+      status: 200,
+      json: async () => (getCount === 1 ? initial : prepared),
+    };
+  });
+
+  await workspace.mount({
+    root,
+    document: doc,
+    ui,
+    fetch: fetchFn,
+    confirm: () => true,
+    prompt: jest.fn(),
+  });
+
+  const firstPaint = root.querySelector('[data-product-ref="KPR-131956"]');
+  expect(firstPaint.querySelector('[data-workspace-action="prepare-fr-auto"]')).not.toBeNull();
+  expect(firstPaint.querySelector('[data-workspace-action="prepare-fr"]')).toBeNull();
+
+  await Promise.resolve();
+  await Promise.resolve();
+  await new Promise(resolve => setImmediate(resolve));
+
+  const post = fetchFn.mock.calls.find(([, options]) => options.method === 'POST');
+  expect(post).toBeDefined();
+  expect(post[0]).toBe('/api/admin/workspaces/catalog/approval/KPR-131956/prepare-fr');
+  expect(JSON.parse(post[1].body)).toMatchObject({
+    name: 'Haut homme décontracté à col montant',
+    description: 'Description française relue.',
+    reason: 'Préparation FR automatique locale au navigateur — zéro API IA payante',
+  });
+  expect(destroy).not.toHaveBeenCalled();
+
+  const refreshed = root.querySelector('[data-product-ref="KPR-131956"]');
+  expect(refreshed.textContent).toContain('Avant / après');
+  expect(refreshed.textContent).toContain('Après · français');
+  expect(refreshed.textContent).toContain('Valider après relecture');
+  expect(refreshed.querySelector('[data-workspace-action="prepare-fr"]')).toBeNull();
 });
 
 test('le parcours FR intégré conserve toute la file et rend le avant/après après sauvegarde', async () => {

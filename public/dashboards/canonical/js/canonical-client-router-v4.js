@@ -11,9 +11,9 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      single_shell_sidebar_n1_horizontal_n2_local_n3, intra_canonical_navigation_must_not_full_reload
- * @impact-areas  admin-dashboard, navigation
- * @version       2026-09-v4.1
+ * @doctrine      single_shell_sidebar_n1_horizontal_n2_local_n3, intra_canonical_navigation_must_not_full_reload, catalog_entry_primes_local_french_translation
+ * @impact-areas  admin-dashboard, navigation, catalog
+ * @version       2026-10-v4.2
  */
 'use strict';
 
@@ -26,6 +26,7 @@
   let navigating = false;
   let navigationSeq = 0;
   let committedUrl = null;
+  const CATALOG_FR_TRANSLATOR_CACHE_KEY = '__KOMERCE_CATALOG_FR_TRANSLATOR__';
 
   const CONTEXTLESS_SURFACES = new Set([
     'catalog-workspace',
@@ -40,6 +41,49 @@
     'pricing-costs': 'Atelier des coûts',
     'pricing-strategy': 'Stratégie & concurrence',
   });
+
+  function normalizeSourceLanguage(value) {
+    const locale = String(value || 'en').trim().toLowerCase().replace(/_/g, '-');
+    return locale.split('-')[0] || 'en';
+  }
+
+  function primeCatalogFrenchTranslator(sourceLanguage = 'en') {
+    const translatorApi = global && global.Translator;
+    if (!translatorApi || typeof translatorApi.create !== 'function') return null;
+
+    const source = normalizeSourceLanguage(sourceLanguage);
+    const current = global[CATALOG_FR_TRANSLATOR_CACHE_KEY];
+    if (
+      current
+      && current.sourceLanguage === source
+      && current.targetLanguage === 'fr'
+      && current.promise
+    ) {
+      return current.promise;
+    }
+
+    let created;
+    try {
+      // Translator.create() must be invoked synchronously from the trusted
+      // navigation click so the browser's transient user activation is kept.
+      created = translatorApi.create({ sourceLanguage: source, targetLanguage: 'fr' });
+    } catch (_) {
+      return null;
+    }
+
+    const entry = {
+      sourceLanguage: source,
+      targetLanguage: 'fr',
+      promise: Promise.resolve(created).catch(() => null),
+    };
+    global[CATALOG_FR_TRANSLATOR_CACHE_KEY] = entry;
+    entry.promise.then(translator => {
+      if (!translator && global[CATALOG_FR_TRANSLATOR_CACHE_KEY] === entry) {
+        delete global[CATALOG_FR_TRANSLATOR_CACHE_KEY];
+      }
+    });
+    return entry.promise;
+  }
 
   function currentUrl() {
     try { return new URL(global.location.href); } catch (_) { return null; }
@@ -279,6 +323,14 @@
     try { targetUrl = new URL(anchor.href, global.location.href); } catch (_) { return; }
     const fromUrl = committedUrl || currentUrl();
     if (!sameDocumentScope(fromUrl, targetUrl)) return;
+    if (targetUrl.pathname === '/admin/workspaces/catalog') {
+      const primed = primeCatalogFrenchTranslator('en');
+      if (fromUrl && fromUrl.pathname === targetUrl.pathname && primed && typeof primed.then === 'function') {
+        primed.then(() => {
+          global.KomerceCanonicalCatalogWorkspace?.resumeAutoFrenchPreparation?.();
+        });
+      }
+    }
     event.preventDefault();
     navigate(targetUrl).catch(error => console.error('[canonical-admin] navigation click failed', error));
   }
@@ -310,6 +362,8 @@
     sameRoute,
     sameDocumentScope,
     ensureAnchor,
+    _primeCatalogFrenchTranslator: primeCatalogFrenchTranslator,
+    _normalizeSourceLanguage: normalizeSourceLanguage,
     _localNavigation: localNavigation,
   });
 });

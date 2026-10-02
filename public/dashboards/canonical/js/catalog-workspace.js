@@ -11,9 +11,9 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, global_catalog_not_market_scoped, commercial_catalog_is_union_of_approved_products_from_closed_kirs, product_360_explains, sourcing_keeps_source_mutation_authority, no_paid_ai_api_for_fr_preparation, browser_local_translation_optional_human_review_required
+ * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, global_catalog_not_market_scoped, commercial_catalog_is_union_of_approved_products_from_closed_kirs, product_360_explains, sourcing_keeps_source_mutation_authority, no_paid_ai_api_for_fr_preparation, catalog_entry_gesture_primes_local_translation, human_catalog_validation_required
  * @impact-areas  admin-dashboard, catalog, sourcing, boutique
- * @version       2026-09
+ * @version       2026-10
  */
 
 'use strict';
@@ -24,6 +24,9 @@
   if (root) root.KomerceCanonicalCatalogWorkspace = api;
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createCatalogWorkspace() {
   const ENDPOINT = '/api/admin/workspaces/catalog';
+  const CATALOG_FR_TRANSLATOR_CACHE_KEY = '__KOMERCE_CATALOG_FR_TRANSLATOR__';
+  let activeContext = null;
+  let activePayload = null;
 
   function contextualHref(path, returnTo, label) {
     const nav = globalThis.KomerceCanonicalNavigation;
@@ -330,14 +333,42 @@
   }
 
   function sourceLanguageTag(row = {}) {
-    const locale = String(row.source_locale || '').trim().replace(/_/g, '-');
-    return locale || null;
+    const locale = String(row.source_locale || '').trim().toLowerCase().replace(/_/g, '-');
+    return locale ? locale.split('-')[0] : null;
+  }
+
+  function primedFrenchTranslatorEntry(row = {}) {
+    const sourceLanguage = sourceLanguageTag(row);
+    const entry = typeof globalThis !== 'undefined'
+      ? globalThis[CATALOG_FR_TRANSLATOR_CACHE_KEY]
+      : null;
+    if (!sourceLanguage || !entry || !entry.promise) return null;
+    if (entry.sourceLanguage !== sourceLanguage || entry.targetLanguage !== 'fr') return null;
+    return entry;
+  }
+
+  function hasPrimedFrenchTranslator(row = {}) {
+    return Boolean(primedFrenchTranslatorEntry(row));
+  }
+
+  async function translateFrenchValues(row, translator) {
+    const sourceTitle = String(row.name_source || row.name || '').trim();
+    const sourceDescription = String(row.description_source || '').trim();
+    const [translatedTitle, translatedDescription] = await Promise.all([
+      sourceTitle ? translator.translate(sourceTitle) : Promise.resolve(''),
+      sourceDescription ? translator.translate(sourceDescription) : Promise.resolve(''),
+    ]);
+    return {
+      name: String(translatedTitle || '').trim(),
+      description: String(translatedDescription || '').trim(),
+    };
   }
 
   async function autoTranslateFrench(row, nameControl, descriptionControl, statusNode) {
     const translatorApi = typeof globalThis !== 'undefined' ? globalThis.Translator : null;
     const sourceLanguage = sourceLanguageTag(row);
-    if (!translatorApi || typeof translatorApi.create !== 'function' || !sourceLanguage) {
+    const primed = primedFrenchTranslatorEntry(row);
+    if ((!primed && (!translatorApi || typeof translatorApi.create !== 'function')) || !sourceLanguage) {
       setEditorFeedback(
         statusNode,
         'Traduction locale indisponible sur ce navigateur. Utilisez « Copier pour ChatGPT » puis « Coller la réponse ».',
@@ -347,33 +378,32 @@
     }
 
     let translator = null;
+    let ownsTranslator = false;
     try {
       setEditorFeedback(statusNode, 'Préparation française automatique dans le navigateur…');
-      translator = await translatorApi.create({
-        sourceLanguage,
-        targetLanguage: 'fr',
-        monitor(monitor) {
-          if (!monitor || typeof monitor.addEventListener !== 'function') return;
-          monitor.addEventListener('downloadprogress', event => {
-            const loaded = Math.max(0, Math.min(1, Number(event && event.loaded) || 0));
-            setEditorFeedback(statusNode, `Préparation du traducteur local · ${Math.round(loaded * 100)} %`);
-          });
-        },
-      });
+      if (primed) {
+        translator = await primed.promise;
+      } else {
+        translator = await translatorApi.create({
+          sourceLanguage,
+          targetLanguage: 'fr',
+          monitor(monitor) {
+            if (!monitor || typeof monitor.addEventListener !== 'function') return;
+            monitor.addEventListener('downloadprogress', event => {
+              const loaded = Math.max(0, Math.min(1, Number(event && event.loaded) || 0));
+              setEditorFeedback(statusNode, `Préparation du traducteur local · ${Math.round(loaded * 100)} %`);
+            });
+          },
+        });
+        ownsTranslator = true;
+      }
+      if (!translator || typeof translator.translate !== 'function') throw new Error('translator_unavailable');
 
-      const sourceTitle = String(row.name_source || row.name || '').trim();
-      const sourceDescription = String(row.description_source || '').trim();
-      const [translatedTitle, translatedDescription] = await Promise.all([
-        sourceTitle ? translator.translate(sourceTitle) : Promise.resolve(''),
-        sourceDescription ? translator.translate(sourceDescription) : Promise.resolve(''),
-      ]);
+      const translated = await translateFrenchValues(row, translator);
+      if (translated.name) nameControl.value = translated.name;
+      if (translated.description) descriptionControl.value = translated.description;
 
-      const name = String(translatedTitle || '').trim();
-      const description = String(translatedDescription || '').trim();
-      if (name) nameControl.value = name;
-      if (description) descriptionControl.value = description;
-
-      if (!name || !description) {
+      if (!translated.name || !translated.description) {
         setEditorFeedback(
           statusNode,
           'Préparation locale partielle : complétez les champs manquants ou utilisez ChatGPT, puis relisez avant d’enregistrer.',
@@ -396,8 +426,90 @@
       );
       return false;
     } finally {
-      if (translator && typeof translator.destroy === 'function') translator.destroy();
+      if (ownsTranslator && translator && typeof translator.destroy === 'function') translator.destroy();
     }
+  }
+
+  async function autoPrepareFrenchQueue(context, payload = {}) {
+    const rows = Array.isArray(payload.approval) ? payload.approval : [];
+    const candidates = rows.filter(row => (
+      needsFrenchPreparation(row)
+      && !context.autoFrenchAttempted.has(row.product_ref)
+      && hasPrimedFrenchTranslator(row)
+    ));
+    if (!candidates.length) return { attempted: 0, prepared: 0, failed: 0 };
+
+    let prepared = 0;
+    let failed = 0;
+    for (const row of candidates) {
+      context.autoFrenchAttempted.add(row.product_ref);
+      try {
+        const entry = primedFrenchTranslatorEntry(row);
+        const translator = entry ? await entry.promise : null;
+        if (!translator || typeof translator.translate !== 'function') throw new Error('translator_unavailable');
+        const translated = await translateFrenchValues(row, translator);
+        if (!translated.name || !translated.description) throw new Error('translation_incomplete');
+
+        await jsonRequest(
+          context.fetch,
+          `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/prepare-fr`,
+          {
+            method: 'POST',
+            body: {
+              name: translated.name,
+              description: translated.description,
+              reason: 'Préparation FR automatique locale au navigateur — zéro API IA payante',
+            },
+          }
+        );
+        context.autoFrenchFailed.delete(row.product_ref);
+        prepared += 1;
+      } catch (_) {
+        context.autoFrenchFailed.add(row.product_ref);
+        failed += 1;
+      }
+    }
+
+    await context.reload({ skipAutoFrenchSchedule: true });
+    if (prepared) {
+      setFeedback(
+        context.root,
+        `${prepared} fiche(s) préparée(s) automatiquement en français · relecture humaine requise avant validation.`,
+        failed ? 'warning' : 'positive'
+      );
+    } else if (failed) {
+      setFeedback(
+        context.root,
+        'Préparation FR automatique indisponible pour cette fiche. Le bouton de secours reste disponible.',
+        'warning'
+      );
+    }
+    return { attempted: candidates.length, prepared, failed };
+  }
+
+  function scheduleAutoFrenchPreparation(context, payload = {}) {
+    if (context.autoFrenchRunning) return false;
+    const rows = Array.isArray(payload.approval) ? payload.approval : [];
+    const eligible = rows.some(row => (
+      needsFrenchPreparation(row)
+      && !context.autoFrenchAttempted.has(row.product_ref)
+      && hasPrimedFrenchTranslator(row)
+    ));
+    if (!eligible) return false;
+
+    context.autoFrenchRunning = true;
+    Promise.resolve()
+      .then(() => autoPrepareFrenchQueue(context, payload))
+      .catch(() => null)
+      .finally(() => {
+        context.autoFrenchRunning = false;
+      });
+    return true;
+  }
+
+  function resumeAutoFrenchPreparation() {
+    if (!activeContext || !activePayload) return false;
+    return scheduleAutoFrenchPreparation(activeContext, activePayload);
   }
 
   function closeFrenchEditor(context, triggerButton) {
@@ -663,21 +775,30 @@
 
       const mustPrepareFrench = needsFrenchPreparation(row);
       if (mustPrepareFrench) {
-        const copy = makeButton(doc, 'Copier pour ChatGPT', 'copy-fr', true);
-        copy.addEventListener('click', async () => {
-          try {
-            await copyForAssistant(context, row);
-          } catch (error) {
-            setFeedback(context.root, error.message || 'Copie impossible.', 'critical');
-          }
-        });
-        actionContent.appendChild(copy);
+        const autoPending = hasPrimedFrenchTranslator(row) && !context.autoFrenchFailed.has(row.product_ref);
+        if (autoPending) {
+          const pending = makeButton(doc, 'Préparation FR automatique…', 'prepare-fr-auto', true);
+          pending.disabled = true;
+          actionContent.appendChild(pending);
+        } else {
+          const copy = makeButton(doc, 'Copier pour ChatGPT', 'copy-fr', true);
+          copy.addEventListener('click', async () => {
+            try {
+              await copyForAssistant(context, row);
+            } catch (error) {
+              setFeedback(context.root, error.message || 'Copie impossible.', 'critical');
+            }
+          });
+          actionContent.appendChild(copy);
 
-        const prepare = makeButton(doc, 'Préparer en français', 'prepare-fr');
-        prepare.addEventListener('click', async () => openFrenchEditor(context, row, prepare));
-        actionContent.appendChild(prepare);
+          const prepare = makeButton(doc, 'Préparer en français', 'prepare-fr');
+          prepare.addEventListener('click', async () => openFrenchEditor(context, row, prepare));
+          actionContent.appendChild(prepare);
+        }
       } else {
-        const approveLabel = row.needs_review ? 'Valider après relecture' : 'Ajouter à la sélection';
+        const approveLabel = (row.needs_review || row.content_source === 'manual')
+          ? 'Valider après relecture'
+          : 'Ajouter à la sélection';
         const approve = makeButton(doc, approveLabel, 'approve');
         approve.addEventListener('click', () => {
           if (!context.confirm(`Ajouter ${row.product_ref} · ${row.name} à la sélection publiée ?`)) return;
@@ -927,8 +1048,11 @@
       reload: null,
       approvalLimit: 50,
       approvalOffset: 0,
+      autoFrenchAttempted: new Set(),
+      autoFrenchFailed: new Set(),
+      autoFrenchRunning: false,
     };
-    context.reload = async () => {
+    context.reload = async (reloadOptions = {}) => {
       try {
         const params = new URLSearchParams({
           approval_limit: String(context.approvalLimit),
@@ -936,6 +1060,9 @@
         });
         const payload = await jsonRequest(fetchFn, `${ENDPOINT}?${params.toString()}`);
         renderPayload(rootNode, ui, doc, payload, context);
+        activeContext = context;
+        activePayload = payload;
+        if (!reloadOptions.skipAutoFrenchSchedule) scheduleAutoFrenchPreparation(context, payload);
         return payload;
       } catch (error) {
         rootNode.replaceChildren();
@@ -960,6 +1087,10 @@
     parseFrenchAssistantOutput,
     sourceLanguageTag,
     autoTranslateFrench,
+    autoPrepareFrenchQueue,
+    scheduleAutoFrenchPreparation,
+    hasPrimedFrenchTranslator,
+    resumeAutoFrenchPreparation,
     mount,
   });
 });
