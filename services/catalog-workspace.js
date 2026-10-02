@@ -409,7 +409,16 @@ async function prepareCandidateFrench(productRef, body = {}, actor) {
 async function approveCandidate(productRef, actor) {
   const product = await resolveProduct(productRef, { candidateOnly: true });
   const result = await catalogApproval.approveProduct(db, product.id, actor);
-  if (result.status >= 400) throw new CatalogWorkspaceError(result.body.code || 'catalog_approve_rejected', result.body.error || 'Approbation refusée', result.status);
+  if (result.status >= 400) {
+    const error = new CatalogWorkspaceError(
+      result.body.code || 'catalog_approve_rejected',
+      result.body.error || 'Approbation refusée',
+      result.status
+    );
+    error.reasons = Array.isArray(result.body.reasons) ? result.body.reasons : [];
+    error.certification_version = result.body.certification_version || null;
+    throw error;
+  }
   return publicProduct(result.body);
 }
 
@@ -426,7 +435,16 @@ async function overrideCandidate(productRef, body, actor) {
     fields: body && body.fields,
     reason: body && body.reason,
   }, actor);
-  if (result.status >= 400) throw new CatalogWorkspaceError(result.body.code || 'catalog_override_rejected', result.body.error || 'Correction refusée', result.status);
+  if (result.status >= 400) {
+    const error = new CatalogWorkspaceError(
+      result.body.code || 'catalog_override_rejected',
+      result.body.error || 'Correction refusée',
+      result.status
+    );
+    error.reasons = Array.isArray(result.body.reasons) ? result.body.reasons : [];
+    error.certification_version = result.body.certification_version || null;
+    throw error;
+  }
   return { ...publicProduct(result.body), overridden: result.body.overridden || [] };
 }
 

@@ -154,3 +154,26 @@ test('validation humaine utilise product_ref, jamais UUID navigateur', async () 
   expect(res.status).toBe(200);
   expect(mockApproveCandidate).toHaveBeenCalledWith('KPR-000001', expect.objectContaining({ id: 'admin-central' }));
 });
+
+
+test('erreur certification conserve reasons et version jusque dans la réponse HTTP', async () => {
+  const workspace = require('../../services/catalog-workspace');
+  const error = new workspace.CatalogWorkspaceError('Certification Catalogue incomplète');
+  error.code = 'catalog_certification_failed';
+  error.status = 422;
+  error.reasons = ['boutique_subcategory_missing', 'media_missing'];
+  error.certification_version = 'v-test';
+  mockApproveCandidate.mockRejectedValueOnce(error);
+
+  const res = await request(app())
+    .post('/api/admin/workspaces/catalog/approval/KPR-000001/approve')
+    .send({});
+
+  expect(res.status).toBe(422);
+  expect(res.body).toEqual(expect.objectContaining({
+    error: 'Certification Catalogue incomplète',
+    code: 'catalog_certification_failed',
+    reasons: ['boutique_subcategory_missing', 'media_missing'],
+    certification_version: 'v-test',
+  }));
+});
