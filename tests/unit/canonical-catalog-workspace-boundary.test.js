@@ -187,7 +187,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=2501');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261003-3');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261003-4');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261003-2');
 });
 
@@ -626,4 +626,13 @@ test('le CTA prix cible explicitement l onglet Produits du Pricing', () => {
   const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
   expect(workspace).toContain("#pricing-products");
   expect(workspace).toContain("product_ref=");
+});
+
+
+test('Catalogue affiche les raisons de certification lisibles au lieu du seul 422 générique', () => {
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+  expect(workspace).toContain("error.reasons = Array.isArray(body.reasons)");
+  expect(workspace).toContain("boutique_subcategory_missing: 'sous-catégorie Boutique absente'");
+  expect(workspace).toContain("media_missing: 'média Catalogue absent'");
+  expect(workspace).toContain('actionErrorMessage(error)');
 });

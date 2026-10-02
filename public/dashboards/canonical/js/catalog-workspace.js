@@ -117,9 +117,43 @@
       const error = new Error(body.error || `Erreur HTTP ${response.status}`);
       error.code = body.code || null;
       error.status = response.status;
+      error.reasons = Array.isArray(body.reasons) ? body.reasons : [];
+      error.certificationVersion = body.certification_version || null;
       throw error;
     }
     return body;
+  }
+
+  function certificationReasonLabel(reason) {
+    const labels = {
+      supplier_name_missing: 'fournisseur absent',
+      supplier_product_id_missing: 'référence produit fournisseur absente',
+      decision_not_accepted: 'décision sourcing non acceptée (TEST ou PRIORITY requis)',
+      source_contract_v2_missing: 'contrat source v2 absent',
+      name_missing: 'titre produit absent',
+      description_missing: 'description produit absente',
+      french_editorial_not_ready: 'préparation française non finalisée',
+      customs_category_missing: 'catégorie douanière absente',
+      boutique_category_missing: 'catégorie Boutique absente',
+      boutique_subcategory_missing: 'sous-catégorie Boutique absente',
+      boutique_taxonomy_inactive_or_invalid: 'taxonomie Boutique inactive ou invalide',
+      media_missing: 'média Catalogue absent',
+      active_supplier_sku_missing: 'SKU fournisseur actif absent',
+      supplier_order_identity_incomplete: 'identité de commande fournisseur incomplète',
+      not_inactive_candidate: 'produit hors état candidate inactif',
+      market_exposure_enabled: 'exposition marché déjà activée',
+    };
+    if (labels[reason]) return labels[reason];
+    if (String(reason || '').startsWith('publication_guard:')) {
+      return `publication guard : ${String(reason).slice('publication_guard:'.length)}`;
+    }
+    return String(reason || '').replaceAll('_', ' ');
+  }
+
+  function actionErrorMessage(error) {
+    const reasons = Array.isArray(error?.reasons) ? error.reasons.filter(Boolean) : [];
+    if (!reasons.length) return error?.message || 'Action refusée.';
+    return `${error.message || 'Certification refusée'} — ${reasons.map(certificationReasonLabel).join(' · ')}`;
   }
 
   function makeButton(doc, label, action, secondary = false) {
@@ -192,7 +226,7 @@
       await context.reload();
       return result;
     } catch (error) {
-      setFeedback(context.root, error.message, 'critical');
+      setFeedback(context.root, actionErrorMessage(error), 'critical');
       button.disabled = false;
       button.textContent = previous;
       return null;
