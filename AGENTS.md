@@ -12,10 +12,11 @@ Ne pas coder puis corriger. Coder avec l'analyse en tête.
 
 Toute intervention commence par :
 
-1. `docs/CARTE_FIRST_INDEX.md`
-2. la carte `features/<feature>.feature.js` ou le transversal concerné
-3. un plan d'attaque annoncé à l'utilisateur
-4. les gates applicables
+1. identifier la feature ou les fichiers probables ;
+2. exécuter `npm run agent:context -- --feature <feature>` ou `--files <paths>` ;
+3. annoncer un plan d'attaque court à partir de cette projection ;
+4. ouvrir seulement les sources explicitement nécessaires ;
+5. exécuter les gates applicables
 
 Un agent ne doit pas démarrer depuis un ancien audit, un rapport daté, un prompt historique, un `_LIVE.md`, un `MEMO_*` ou une sortie générée.
 
@@ -23,11 +24,9 @@ Un agent ne doit pas démarrer depuis un ancien audit, un rapport daté, un prom
 
 Avant toute analyse ou modification substantielle, utiliser les atouts déjà présents dans le dépôt dans cet ordre :
 
-1. carte Feature First concernée ;
-2. headers `@komerce-arch` des fichiers propriétaires ;
-3. `interventionIndex["<file>"].mustCheck` ;
-4. diff/recherche/lecture ciblée sur les fichiers utiles ;
-5. élargir seulement si une incertitude réelle subsiste.
+1. `npm run agent:context` pour compiler carte + headers + `mustCheck` + diff ;
+2. lecture ciblée des fichiers utiles signalés par cette projection ;
+3. élargir seulement si une incertitude réelle subsiste.
 
 Règle d'économie : **ne jamais commencer par un clone complet, un fetch complet, un scan global, une lecture exhaustive des sorties générées ou une suite de tests complète quand une preuve ciblée suffit**.
 
@@ -201,76 +200,36 @@ npm run map:check
 - `main` est l'unique branche d'intégration. Les branches PR éphémères sont autorisées ; ne pas rechercher ou réactiver une ancienne branche `agent/*` sauf demande humaine explicite.
 - `.agent/README.md` est la seule instruction active sous `.agent/`.
 - `.agent/LEDGER.md` contient uniquement le chantier courant et les prochains actes décidés. Un palier clos n'est jamais rouvert à cause d'un ancien state, worklog, audit ou compteur.
-- Lecture minimale obligatoire : `AGENTS.md` → `docs/CARTE_FIRST_INDEX.md` → carte de la feature concernée → `.agent/LEDGER.md`. Ne lire ensuite que les fichiers directement utiles au changement.
+- Lecture minimale obligatoire : `AGENTS.md` → `npm run agent:context` → fichiers directement utiles. `CARTE_FIRST_INDEX`, carte complète et `.agent/LEDGER.md` ne sont lus directement que si la projection signale un manque.
 - Ne pas scanner par défaut les archives, rapports datés, preuves brutes, anciens prompts, sorties générées volumineuses ou historiques de tâches. Les ouvrir seulement lorsqu'un fichier actif les référence précisément ou qu'une preuve ne peut pas être régénérée.
 - Préférer les recherches ciblées et les extraits courts. Ne pas recopier des fichiers entiers dans les rapports ou réponses.
 - Ne pas créer de document horodaté, prompt bis, ZIP, patch ou rapport parallèle lorsqu'un document canonique existe déjà.
 - Les preuves reproductibles sont des commandes et des tests. Ne pas committer leurs logs bruts ; consigner un résumé et la commande, sauf preuve externe non régénérable et compacte.
 - Toute nouvelle instruction d'agent doit remplacer une instruction obsolète, jamais s'empiler avec elle.
 
-## 7.1. Économie de tokens — anti-patterns et réflexes obligatoires
+## 7.1. Économie de tokens — contexte compilé obligatoire
 
-Chaque token consommé coûte du temps et du crédit. Un agent efficace livre le même résultat avec 3× moins de contexte qu'un agent naïf.
+La doctrine détaillée est conservée dans `docs/doctrine/AGENT_TOKEN_ECONOMY.md`.
+Le chemin normal est **de ne pas la relire**.
 
-### Anti-patterns interdits
+Après chargement de ce fichier racine, l'agent doit compiler son contexte ciblé :
 
-| Anti-pattern | Coût typique | Réflexe correct |
-|---|---|---|
-| Lire un fichier entier pour trouver une fonction | ~2 000 tokens | `grep` ou recherche ciblée + lecture du range utile |
-| Relire AGENTS.md à chaque tour | ~2 500 tokens | Déjà en contexte au démarrage — ne jamais relire |
-| `git clone --depth=0` ou `git fetch --unshallow` | réseau + tokens des logs | `fetch --depth=1` + `fetch origin <SHA>` sur le SHA utile |
-| Lire les sorties générées (FEATURE_360.json, BUSINESS_FEATURE_GRAPH.json, etc.) | 5 000–50 000 tokens | Lire la carte source, pas la projection |
-| Scanner `docs/` ou `archive/` sans cible | milliers de tokens | Recherche ciblée par nom/grep, jamais `ls -R` |
-| Recopier le contenu d'un fichier dans la réponse | double le coût | Citer le chemin + les lignes pertinentes |
-| Lancer `npm run map:check` pour un changement ciblé | ~3 min CI | `npm run pr:preflight` suffit |
-| Lancer la suite de tests complète pour un fichier | ~2 min | `npx jest --findRelatedTests <fichier>` |
-| Lire `.agent/LEDGER.md` en entier | ~3 000 tokens | Lire uniquement la section du chantier courant |
-| Créer un rapport/memo/audit parallèle | tokens + bruit | Modifier le document canonique existant |
-
-### Réflexes de lecture minimale
-
-1. **Carte feature** : lire seulement `name`, `service`, `perimeter`, `authority`, `invariants`, `files` — pas les commentaires ni l'historique.
-2. **Headers `@komerce-arch`** : les 10–20 premières lignes du fichier source suffisent pour extraire owner, service, authority.
-3. **`interventionIndex.mustCheck`** : une seule requête dans le graphe d'architecture, pas la lecture du JSON complet.
-4. **Diff** : `git diff --name-only` d'abord pour le scope, `git diff <fichier>` ensuite uniquement sur les fichiers pertinents.
-5. **Tests** : `--findRelatedTests` ou `run-staged-related-tests.js` — jamais la suite complète sauf preuve structurelle requise.
-6. **Logs CI** : lire uniquement le step en échec, pas le log complet du job.
-
-### Réflexes d'écriture minimale
-
-1. **Réponse** : résultat + chemin + commande de preuve. Pas de récit de l'analyse ni de reformulation du brief.
-2. **Commit message** : `<type>(<scope>): <quoi>` + une ligne pourquoi. Pas de paragraphes.
-3. **PR body** : les sections `## Pourquoi / ## Quoi / ## Tests` remplies — pas de prose supplémentaire.
-4. **Plan d'attaque** : le template de §1, pas un essai. 10 lignes max.
-5. **Preuves** : la commande et le verdict (OK/FAIL). Pas le log brut.
-
-### Séquence d'entrée optimale (budget cible : < 4 000 tokens de lecture)
-
-```
-1. AGENTS.md               → déjà en contexte (0 token)
-2. Carte feature concernée → ~200–500 tokens (champs utiles)
-3. Headers des 2–3 fichiers touchés → ~100 tokens chacun
-4. mustCheck si applicable → ~50 tokens
-5. .agent/LEDGER.md section courante → ~300 tokens
-Total : < 1 500 tokens de lecture avant de coder
+```bash
+npm run agent:context -- --feature <feature>
+# ou, si les fichiers sont déjà connus
+npm run agent:context -- --files path/a.js,path/b.js
 ```
 
-Un agent qui dépasse 4 000 tokens de lecture avant son premier changement doit justifier pourquoi dans le plan d'attaque.
+Cette projection dérive les cartes Feature First, headers `@komerce-arch`,
+`interventionIndex.mustCheck`, scope CI et ledger pertinent. Elle ne crée
+aucune autorité. Budget par défaut : **≤ 6000 caractères (~1500 tokens)**.
 
-### Clone et fetch
+Règles :
+- ne pas relire `AGENTS.md`, `CARTE_FIRST_INDEX`, une carte entière, le graphe entier ou le Ledger entier si `agent:context` a déjà fourni l'information nécessaire ;
+- ouvrir ensuite uniquement le code ou la doctrine explicitement requis par le changement ;
+- si le contexte compilé est insuffisant, élargir une source à la fois et justifier l'élargissement ;
+- les gates restent `npm run pr:preflight` ; le compilateur réduit la lecture, jamais la preuve.
 
-- **Jamais** `git clone` complet ni `git fetch --unshallow` sauf reconstruction globale explicite.
-- Clone shallow : `--depth=1 --single-branch --branch main`.
-- Pour un diff PR : `git fetch --depth=1 origin <BASE_SHA>` — uniquement le commit de base.
-- Le workspace est déjà cloné dans la plupart des environnements agents — vérifier avant de cloner.
-
-### Tests et gates
-
-- **Avant PR** : `npm run pr:preflight` (unique commande, scope automatique).
-- **Diagnostic** : la gate unitaire qui a échoué, pas toutes les gates.
-- **Tests ciblés** : `npx jest --findRelatedTests <fichiers>` ou `node scripts/run-staged-related-tests.js`.
-- **Suite complète** : uniquement si migration, changement de schéma ou refactoring transversal.
-- Ne jamais relancer une gate verte pour "vérifier" — elle est déterministe.
 
 ## 8. Règles techniques non négociables
 
