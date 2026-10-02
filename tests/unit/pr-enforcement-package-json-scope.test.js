@@ -40,6 +40,15 @@ describe('PR enforcement — package.json semantic scope', () => {
     expect(governanceOnlyPackageJsonObjects(base, head)).toBe(true);
   });
 
+  test('ajouter agent:context seul est Governance-only', () => {
+    const base = pkg({ 'pr:preflight': 'node scripts/pr-preflight.js' });
+    const head = pkg({
+      'pr:preflight': 'node scripts/pr-preflight.js',
+      'agent:context': 'node scripts/agent-context.js',
+    });
+    expect(governanceOnlyPackageJsonObjects(base, head)).toBe(true);
+  });
+
   test.each([
     ['script test', pkg({ test: 'jest --runInBand' }), pkg({ test: 'jest' })],
     ['lifecycle prepare', pkg({ prepare: 'node a.js' }), pkg({ prepare: 'node b.js' })],
