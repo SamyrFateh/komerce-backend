@@ -16,6 +16,11 @@ function read(relative) {
   return fs.readFileSync(path.join(ROOT, relative), 'utf8');
 }
 
+afterEach(() => {
+  delete globalThis.Translator;
+  delete globalThis.__KOMERCE_CATALOG_FR_TRANSLATOR__;
+});
+
 describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => {
   test('toutes les routes admin portées par les tabs V4 sont routables sans reload document', () => {
     const policy = read('public/dashboards/canonical/js/navigation-policy-v4.js');
@@ -106,10 +111,29 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
     expect(source).not.toMatch(/global\.location\.href\s*=\s*targetUrl/);
   });
 
+  test('le clic Catalogue préchauffe le traducteur local FR avant la navigation', async () => {
+    const create = jest.fn(async () => ({ translate: jest.fn() }));
+    globalThis.Translator = { create };
+
+    const primed = router._primeCatalogFrenchTranslator('en-US');
+    expect(create).toHaveBeenCalledWith({ sourceLanguage: 'en', targetLanguage: 'fr' });
+    expect(globalThis.__KOMERCE_CATALOG_FR_TRANSLATOR__).toMatchObject({
+      sourceLanguage: 'en',
+      targetLanguage: 'fr',
+    });
+    await expect(primed).resolves.toEqual(expect.objectContaining({ translate: expect.any(Function) }));
+
+    const source = read('public/dashboards/canonical/js/canonical-client-router-v4.js');
+    const primeIndex = source.indexOf("primeCatalogFrenchTranslator('en')");
+    const navigateIndex = source.indexOf("navigate(targetUrl).catch", primeIndex);
+    expect(primeIndex).toBeGreaterThanOrEqual(0);
+    expect(navigateIndex).toBeGreaterThan(primeIndex);
+  });
+
   test('index charge le routeur après le shell V4', () => {
     const html = read('public/dashboards/canonical/index.html');
     const shell = html.indexOf('/dashboards/canonical/js/navigation-shell-v4-sync.js?v=2101');
-    const clientRouter = html.indexOf('/dashboards/canonical/js/canonical-client-router-v4.js?v=2201');
+    const clientRouter = html.indexOf('/dashboards/canonical/js/canonical-client-router-v4.js?v=261002-2');
     expect(shell).toBeGreaterThanOrEqual(0);
     expect(clientRouter).toBeGreaterThan(shell);
   });
