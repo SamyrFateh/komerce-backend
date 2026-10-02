@@ -199,6 +199,8 @@ async function queryApprovalQueue({ limit = 50, offset = 0 } = {}) {
     product_ref: row.product_ref,
     name: row.name,
     description: row.description || null,
+    name_source: row.name_source || null,
+    description_source: row.description_source || null,
     category: row.category,
     fragility: row.fragility || null,
     emoji: row.emoji || null,
