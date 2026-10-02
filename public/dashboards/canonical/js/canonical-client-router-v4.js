@@ -324,7 +324,12 @@
     const fromUrl = committedUrl || currentUrl();
     if (!sameDocumentScope(fromUrl, targetUrl)) return;
     if (targetUrl.pathname === '/admin/workspaces/catalog') {
-      primeCatalogFrenchTranslator('en');
+      const primed = primeCatalogFrenchTranslator('en');
+      if (fromUrl && fromUrl.pathname === targetUrl.pathname && primed && typeof primed.then === 'function') {
+        primed.then(() => {
+          global.KomerceCanonicalCatalogWorkspace?.resumeAutoFrenchPreparation?.();
+        });
+      }
     }
     event.preventDefault();
     navigate(targetUrl).catch(error => console.error('[canonical-admin] navigation click failed', error));
