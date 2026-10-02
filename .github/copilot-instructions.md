@@ -9,6 +9,8 @@ Avant toute modification :
 
 Ne pas commencer par un audit, un rapport date, un prompt historique ou une sortie generee.
 
+Contexte sticky : après lecture de `AGENTS.md`, toute documentation ouverte ensuite complète le contexte mais ne le remplace jamais. Conserver en permanence feature owner, périmètre, invariants, headers/mustCheck, Debt Zero et scope minimal. Toute contradiction locale doit être signalée.
+
 Plan d'attaque obligatoire :
 
 - demande comprise ;
