@@ -46,6 +46,8 @@ function sendError(err, res, next) {
     return res.status(err.status || 400).json({
       error: err.message,
       ...(err.code ? { code: err.code } : {}),
+      ...(Array.isArray(err.reasons) && err.reasons.length ? { reasons: err.reasons } : {}),
+      ...(err.certification_version ? { certification_version: err.certification_version } : {}),
     });
   }
   return next(err);
