@@ -6,13 +6,13 @@
  * @criticality   high
  * @inputs        authenticated_central_actor, product_ref, category_key, catalog_action_payload
  * @outputs       catalog_work_queue, delegated_catalog_mutations
- * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-enrichment.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js
+ * @depends       db, utils/rules.js, services/product-admin-service.js, services/catalog-approval.js, services/catalog-overrides.js, services/boutique-taxonomy-admin.js, services/catalog-commercial-assortment.js
  * @used-by       routes/admin-catalog-workspace.js
  * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories, import_runtime_runs, markets, product_market_exposure, product_market_price_drafts
  * @db-write      none
- * @db-write-via  product-admin-service, catalog-approval, catalog-enrichment, boutique-taxonomy-admin
+ * @db-write-via  product-admin-service, catalog-approval, catalog-overrides, boutique-taxonomy-admin
  * @db-txn        delegated_to_domain_authority
- * @doctrine      workspace_acts_dashboard_observes, global_catalog_not_market_scoped, commercial_catalog_is_union_of_approved_products_from_closed_kirs, reuse_domain_mutation_authorities, product_ref_is_public_identity
+ * @doctrine      workspace_acts_dashboard_observes, global_catalog_not_market_scoped, commercial_catalog_is_union_of_approved_products_from_closed_kirs, reuse_domain_mutation_authorities, product_ref_is_public_identity, no_paid_ai_api_for_fr_preparation
  * @impact-areas  admin-dashboard, catalog, boutique
  * @version       2026-09
  */
@@ -23,7 +23,7 @@ const db = require('../db');
 const { getRuleNumber } = require('../utils/rules');
 const productAdmin = require('./product-admin-service');
 const catalogApproval = require('./catalog-approval');
-const catalogEnrichment = require('./catalog-enrichment');
+const catalogOverrides = require('./catalog-overrides');
 const taxonomy = require('./boutique-taxonomy-admin');
 const commercialAssortment = require('./catalog-commercial-assortment');
 
@@ -355,25 +355,53 @@ async function deactivateProduct(productRef) {
   return { product_ref: product.product_ref, deactivated: true };
 }
 
-async function prepareCandidateFrench(productRef, actor) {
+async function prepareCandidateFrench(productRef, body = {}, actor) {
   const product = await resolveProduct(productRef, { candidateOnly: true });
-  const result = await catalogEnrichment.enrichAndApply(product.id);
+  const name = String(body.name || body.name_fr || '').trim();
+  const description = String(body.description || body.description_fr || '').trim();
 
-  if (!result || result.status === 'failed' || result.status === 'invalid_output') {
+  if (!name || !description) {
     throw new CatalogWorkspaceError(
-      'catalog_fr_preparation_failed',
-      result?.error || 'Préparation française indisponible',
+      'catalog_fr_manual_fields_required',
+      'Titre et description français requis — la préparation FR canonique n’appelle aucune API IA payante',
+      422
+    );
+  }
+
+  const result = await catalogOverrides.upsertOverrides(
+    db,
+    product.id,
+    { name, description },
+    {
+      reason: body.reason || 'Préparation FR manuelle/assistée hors runtime — zéro API IA payante',
+      setBy: actor?.id || null,
+    }
+  );
+
+  if (!result.product || result.product.content_source !== 'manual' || result.product.needs_review === true) {
+    throw new CatalogWorkspaceError(
+      'catalog_fr_manual_preparation_incomplete',
+      'Préparation française manuelle incomplète',
       422
     );
   }
 
   return {
     product_ref: product.product_ref,
-    status: result.status,
-    confidence: result.confidence == null ? null : Number(result.confidence),
-    needs_review: Boolean(result.needsReview),
-    applied_overrides: result.appliedOverrides || [],
-    review_notes: result.review_notes || [],
+    status: 'manual_ready',
+    content_source: 'manual',
+    needs_review: false,
+    api_calls: 0,
+    paid_ai_dependency: false,
+    before: {
+      name: result.product.name_source || null,
+      description: result.product.description_source || null,
+      locale: result.product.source_locale || null,
+    },
+    after: {
+      name: result.product.name || null,
+      description: result.product.description || null,
+    },
     prepared_by: actor?.id || null,
   };
 }
