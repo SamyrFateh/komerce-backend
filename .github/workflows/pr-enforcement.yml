@@ -393,7 +393,9 @@ jobs:
           node scripts/ci-db-bootstrap.js
       - name: Integration DB proofs
         if: needs.changes.outputs.integration_required == 'true'
-        run: npm run test:integration
+        env:
+          BACKEND_FILES: ${{ needs.changes.outputs.backend_files }}
+        run: node scripts/run-integration-tests.js --files "$BACKEND_FILES"
       - name: Feature-first E2E API proofs (targeted)
         if: needs.changes.outputs.e2e_api_required == 'true' && steps.e2e_scope.outputs.mode == 'targeted'
         env:
