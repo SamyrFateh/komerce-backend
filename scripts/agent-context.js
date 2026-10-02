@@ -191,10 +191,14 @@ function gateHints(scope) {
 function buildContext(options = {}) {
   const features = loadFeatures();
   let files = (options.files || []).map(norm).filter(Boolean);
-  let scope = scopeForFiles(files, options.base, options.head);
-  if (!files.length && Array.isArray(scope.changedFiles)) files = scope.changedFiles.slice();
-
   const explicitNames = options.features || [];
+  let scope = files.length
+    ? classify(files)
+    : (explicitNames.length ? classify([]) : scopeForFiles([], options.base, options.head));
+  if (!files.length && !explicitNames.length && Array.isArray(scope.changedFiles)) {
+    files = scope.changedFiles.slice();
+  }
+
   const selected = resolveFeatureEntries(features, files, explicitNames);
   const graph = loadGraph();
 
