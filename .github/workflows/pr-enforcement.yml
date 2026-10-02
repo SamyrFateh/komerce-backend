@@ -305,10 +305,10 @@ jobs:
   from_scratch:
     name: From-scratch DB + integration + E2E API
     needs: [changes, backend]
-    # Fail-fast : lorsqu'un changement backend existe, les gates backend doivent
-    # être verts AVANT de consommer le runner DB/E2E. Pour une PR migration ou
-    # gouvernance sans backend, le job backend est skipped et le from-scratch
-    # reste autorisé.
+    # Preuve lourde pilotée par le risque réel : DB rebuild, intégration DB ou
+    # E2E API uniquement quand le diff/headers l'exigent. Un simple changement
+    # gouvernance/test/docs/workflow ne doit jamais réveiller ce runner.
+    # Si le backend runtime est touché, ses gates rapides doivent être verts avant.
     if: >-
       always() &&
       needs.changes.result == 'success' &&
