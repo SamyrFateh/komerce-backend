@@ -211,6 +211,21 @@ const STRUCTURAL_PROBES = Object.freeze({
     `);
     return row?.represented === true;
   },
+  '240_supplier_platform_allegro.sql': async (client) => {
+    const { rows: [row] } = await client.query(`
+      SELECT EXISTS (
+        SELECT 1
+          FROM pg_constraint c
+          JOIN pg_class t ON t.oid = c.conrelid
+          JOIN pg_namespace n ON n.oid = t.relnamespace
+         WHERE n.nspname = 'public'
+           AND t.relname = 'suppliers'
+           AND c.conname = 'suppliers_platform_check'
+           AND pg_get_constraintdef(c.oid) ILIKE '%allegro%'
+      ) AS represented
+    `);
+    return row?.represented === true;
+  },
 });
 
 function baselineFromDumpCommit() {
