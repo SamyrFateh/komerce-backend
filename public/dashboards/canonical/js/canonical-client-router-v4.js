@@ -30,6 +30,7 @@
   const CONTEXTLESS_SURFACES = new Set([
     'catalog-workspace',
     'sourcing-workspace',
+    'purchasing-workspace',
     'action-center',
     'settings',
   ]);
@@ -51,7 +52,7 @@
     if (/^\/admin\/orders\/[^/]+$/.test(path)) return true;
     if (/^\/admin\/clients\/[^/]+$/.test(path)) return true;
     if (/^\/admin\/products\/[^/]+$/.test(path)) return true;
-    if (/^\/admin\/workspaces\/(operations|shipping-customs|catalog|accounting|sourcing|pricing)$/.test(path)) return true;
+    if (/^\/admin\/workspaces\/(operations|shipping-customs|catalog|accounting|sourcing|purchasing|pricing)$/.test(path)) return true;
     if (['/admin-next/pilotage', '/admin-next/commerce', '/admin-next/orders', '/admin-next/clients', '/admin-next/operations', '/admin-next/finance', '/admin-next/action-center', '/admin-next/demo'].includes(path)) return true;
     if (/^\/admin-next\/workspaces\/(operations|shipping-customs|catalog|accounting|sourcing|pricing)$/.test(path)) return true;
     return false;
