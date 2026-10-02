@@ -127,7 +127,9 @@ describe('strict CJ isolated pilot proof-only CI scope', () => {
     const workflow = fs.readFileSync(path.join(__dirname, '../../.github/workflows/pr-enforcement.yml'), 'utf8');
     expect(workflow).toContain("steps.scope.outputs.cj_pilot_proof_only == 'true'");
     expect(workflow).toContain('node --check scripts/cj-three-real-staging-pilot.js');
-    expect(workflow).toContain("needs.changes.outputs.cj_pilot_proof_only != 'true'");
+    expect(workflow).toContain("needs.changes.outputs.db_rebuild_required == 'true'");
+    expect(workflow).toContain("needs.changes.outputs.integration_required == 'true'");
+    expect(workflow).toContain("needs.changes.outputs.e2e_api_required == 'true'");
     expect(workflow).toContain("needs: [changes, backend]");
   expect(workflow).toContain("needs.changes.outputs.db_rebuild_required == 'true'");
   expect(workflow).toContain("needs.changes.outputs.integration_required == 'true'");
@@ -144,7 +146,9 @@ test('mandatory PR workflow requires focused gate; standalone batch remains manu
   expect(workflow).toContain("needs.changes.outputs.provider_proof_only == 'true'");
   expect(workflow).toContain("needs: [changes, provider_contracts, backend, migrations, from_scratch, dashboard, boutique, governance]");
   expect(workflow).toContain('for result in "$PROVIDER_CONTRACTS_RESULT"');
-  expect(workflow).toContain("needs.changes.outputs.provider_proof_only != 'true'");
+  expect(workflow).toContain("needs.changes.outputs.db_rebuild_required == 'true'");
+  expect(workflow).toContain("needs.changes.outputs.integration_required == 'true'");
+  expect(workflow).toContain("needs.changes.outputs.e2e_api_required == 'true'");
   expect(workflow).toContain("needs: [changes, backend]");
     expect(workflow).toContain("needs.changes.outputs.db_rebuild_required == 'true'");
     expect(workflow).toContain("needs.changes.outputs.integration_required == 'true'");
