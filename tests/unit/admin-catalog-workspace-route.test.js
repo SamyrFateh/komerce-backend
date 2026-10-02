@@ -158,11 +158,9 @@ test('validation humaine utilise product_ref, jamais UUID navigateur', async () 
 
 test('erreur certification conserve reasons et version jusque dans la réponse HTTP', async () => {
   const workspace = require('../../services/catalog-workspace');
-  const error = new workspace.CatalogWorkspaceError(
-    'catalog_certification_failed',
-    'Certification Catalogue incomplète',
-    422
-  );
+  const error = new workspace.CatalogWorkspaceError('Certification Catalogue incomplète');
+  error.code = 'catalog_certification_failed';
+  error.status = 422;
   error.reasons = ['boutique_subcategory_missing', 'media_missing'];
   error.certification_version = 'v-test';
   mockApproveCandidate.mockRejectedValueOnce(error);
