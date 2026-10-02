@@ -284,23 +284,23 @@ describe('P-20 — Legacy fallback fail-closed', () => {
 
 describe('G-01..G-02 — railway-live-schema.sql baseline safety', () => {
   test('G-01 — le dump commit n\'est pas un commit de cette branche', () => {
-    // Le dump commit doit rester cdea3f05 (la dernière vraie snapshot).
-    // Si un commit de PR touche le dump, il déplace la baseline et casse
-    // l'application des migrations Mode B en CI.
+    // Ignore les commits de merge : Git peut les faire apparaître dans
+    // l'historique d'un path sans que le blob du snapshot ait réellement changé.
+    // La baseline doit être le dernier vrai commit de contenu du dump.
     const { execSync } = require('child_process');
     const dumpCommit = execSync(
-      'git log --format="%H" -1 -- docs/db/railway-live-schema.sql',
+      'git log --no-merges --format="%H" -1 -- docs/db/railway-live-schema.sql',
       { cwd: ROOT, encoding: 'utf8' }
     ).trim();
     const headCommit = execSync('git rev-parse HEAD', { cwd: ROOT, encoding: 'utf8' }).trim();
-    // Le dump commit ne doit PAS être le HEAD (sinon on a touché le dump)
+    // Le vrai commit de contenu du dump ne doit PAS être le HEAD.
     expect(dumpCommit).not.toBe(headCommit);
   });
 
   test('G-02 — migration 240 est post-snapshot (Mode B)', () => {
     const { execSync } = require('child_process');
     const dumpCommit = execSync(
-      'git log --format="%H" -1 -- docs/db/railway-live-schema.sql',
+      'git log --no-merges --format="%H" -1 -- docs/db/railway-live-schema.sql',
       { cwd: ROOT, encoding: 'utf8' }
     ).trim();
     const listing = execSync(
