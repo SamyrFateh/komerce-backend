@@ -614,9 +614,9 @@ role: Politique de projection de champs par grain sans selection d'offre.
 <!-- schema-pending
 object: hub_purchase_allocations
 kind: table
-migration: 233
+migration: 233,265
 section: ### 4.2 Logistique colis (5 tables)
-role: Snapshot economique immuable Purchase Order exacte vers order item/SKU/Supplier Order Identity, Market et destination ; aucune reassignation Hub.
+role: Snapshot economique immuable Purchase Order exacte (historique) ou ligne d achat exacte (colonne `purchase_line_id` ajoutee par la migration 265, PO regroupee) vers order item/SKU/Supplier Order Identity, Market et destination ; aucune reassignation Hub.
 -->
 
 <!-- schema-pending

@@ -125,6 +125,23 @@ describe('scans — POST /hub/receive', () => {
     expect(mockQuery).not.toHaveBeenCalled();
   });
 
+  it('transmet tel quel le product_sku_id d\'une réception par ligne (PO regroupée)', async () => {
+    const payload = {
+      reference: 'SUP-GROUP-001',
+      contents: [{
+        purchase_order_id: '00000000-0000-0000-0000-000000000301',
+        product_sku_id: '00000000-0000-0000-0000-000000000501',
+        quantity: 3,
+      }],
+    };
+    mockReceiveSupplierPackageCommand.mockResolvedValueOnce({ status: 201, body: { quarantined: false, unit: { id: 'u1' } } });
+
+    const res = await request(app).post('/api/scans/hub/receive').send(payload);
+
+    expect(res.status).toBe(201);
+    expect(mockReceiveSupplierPackageCommand).toHaveBeenCalledWith(payload, 'admin-1');
+  });
+
   it('propage une quarantaine gouvernée en 202 sans la transformer en succès nominal', async () => {
     mockReceiveSupplierPackageCommand.mockResolvedValueOnce({
       status: 202,

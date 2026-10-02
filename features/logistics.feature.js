@@ -379,6 +379,8 @@ module.exports = {
 
   debt: {
     knownGaps: [
+      { gap: 'reception Hub d une PO regroupee : le recu alimente v_purchase_line_progress (placements RECEIVE par ligne) mais aucun statut de commande n est avance par HUB-001 (il n ecrit jamais orders.status).',
+        risk: 'une commande entierement recue via PO regroupee n avance pas toute seule vers preparation tant que le proprietaire purchasing/orders ne lit pas is_order_complete apres reception — a traiter avec la forme regroupee (PR 4/5).' },
       { gap: 'ancien contrat déclaré "POST /api/parcels/:id/scan" (v1) : aucune route ne sert ce chemin. Le scan de colis est passé à l\'API v2 (routes/parcel-api-v2/scans.js), montée sous /api/v2/parcels/:ref/scan.',
         risk: 'si un client externe (scanner physique, app mobile hub) appelle encore le chemin v1, il reçoit un 404 — à vérifier avant de considérer ce point clos.' },
       { gap: 'RÉSOLU (2026-07-06) — le FAIL [PARAM_NAME_MISMATCH] sur "GET /api/v2/parcels/:ref" était un artefact du bug de shadowing documenté dans platform-ops.feature.js.',
@@ -393,6 +395,7 @@ module.exports = {
     'un produit tague fragile ne se repacke jamais (repack_exempt) : la protection prime sur le volume',
     'la photo de scelle Dubai est la borne 1 de responsabilite : avant = fournisseur, apres = transport',
     'le systeme prescrit (repack/measure/photo), l agent execute, jamais l inverse (R2)',
+    'une PO regroupee (order_id NULL) ne s alloue au Hub que par ligne d achat (purchase_line_id), repartie dans l ordre des commandes et plafonnee au restant du effectif ; l allocation historique reste au niveau PO',
     'un colis ne change de statut que via une sequence de scan validee',
     { statement: 'secret de retrait a usage unique, et une seule voie de remise peut gagner pour une commande',
       test: 'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js' },

@@ -72,7 +72,8 @@ router.post('/collect', authenticate, requireRole(['admin', 'agent_relais']), va
  *   reference: "SUP-PKG-001",
  *   external_ref?: "carrier/barcode",
  *   location_ref?: "HUB-DXB-A1",
- *   contents: [{ purchase_order_id: UUID, quantity: 1 }, ...]
+ *   contents: [{ purchase_order_id: UUID, product_sku_id?: UUID, quantity: 1 }, ...]
+ *     (product_sku_id obligatoire pour une PO regroupée : la réception est répartie par ligne d'achat)
  * }
  *
  * Le client ne fournit jamais market_id, destination, SKU ou SOI : ces vérités

@@ -180,6 +180,8 @@ async function receiveSupplierPackageCommand(payload, userId) {
       : generatePhysicalReference('SUPPLIER_PACKAGE');
     const normalizedContents = contents.map((item) => ({
       purchase_order_id: requireUuid(item && item.purchase_order_id, 'purchase_order_id'),
+      // Obligatoire côté service pour une PO regroupée (réception par ligne), ignoré sinon.
+      ...(item && item.product_sku_id ? { product_sku_id: requireUuid(item.product_sku_id, 'product_sku_id') } : {}),
       quantity: Number(item && item.quantity),
     }));
     if (normalizedContents.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0)) {
@@ -212,6 +214,8 @@ async function reconcileSupplierPackageCommand(payload, userId) {
     }
     const normalizedContents = contents.map((item) => ({
       purchase_order_id: requireUuid(item && item.purchase_order_id, 'purchase_order_id'),
+      // Obligatoire côté service pour une PO regroupée (réception par ligne), ignoré sinon.
+      ...(item && item.product_sku_id ? { product_sku_id: requireUuid(item.product_sku_id, 'product_sku_id') } : {}),
       quantity: Number(item && item.quantity),
     }));
     if (normalizedContents.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0)) {

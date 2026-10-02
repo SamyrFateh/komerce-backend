@@ -83,6 +83,45 @@ test('canonical supplier receiving forwards exact multi-PO manifest to HUB-001',
 });
 
 
+test('canonical supplier receiving forwards product_sku_id for grouped purchase orders and rejects a malformed one', async () => {
+  hubPhysical.receiveSupplierPackage.mockResolvedValue({ quarantined: false, unit: { id: U1 } });
+  const tx = clientWithUnit(null);
+  db.withTransaction.mockImplementation(async (work) => work(tx));
+  const SKU = '00000000-0000-0000-0000-000000000501';
+
+  const ok = await hubOps.receiveSupplierPackageCommand({
+    reference: 'SUP-GROUP-001',
+    contents: [{ purchase_order_id: PO1, product_sku_id: SKU, quantity: 3 }],
+  }, 'user-1');
+  expect(ok.status).toBe(201);
+  expect(hubPhysical.receiveSupplierPackage).toHaveBeenCalledWith(tx, expect.objectContaining({
+    contents: [{ purchase_order_id: PO1, product_sku_id: SKU, quantity: 3 }],
+  }));
+
+  const bad = await hubOps.receiveSupplierPackageCommand({
+    reference: 'SUP-GROUP-002',
+    contents: [{ purchase_order_id: PO1, product_sku_id: 'pas-un-uuid', quantity: 1 }],
+  }, 'user-1');
+  expect(bad.status).toBe(400);
+});
+
+test('reconciliation forwards product_sku_id when declared', async () => {
+  hubPhysical.reconcileSupplierPackageContents.mockResolvedValue({ quarantined: false });
+  const tx = clientWithUnit(null);
+  db.withTransaction.mockImplementation(async (work) => work(tx));
+  const SKU = '00000000-0000-0000-0000-000000000501';
+
+  const result = await hubOps.reconcileSupplierPackageCommand({
+    unit_id: U1,
+    contents: [{ purchase_order_id: PO1, product_sku_id: SKU, quantity: 1 }],
+  }, 'user-1');
+  expect(result.status).toBe(200);
+  expect(hubPhysical.reconcileSupplierPackageContents).toHaveBeenCalledWith(tx, expect.objectContaining({
+    contents: [{ purchase_order_id: PO1, product_sku_id: SKU, quantity: 1 }],
+  }));
+});
+
+
 test('light supplier arrival can be registered from KOM-IN without opening the parcel', async () => {
   hubPhysical.receiveSupplierPackageArrival.mockResolvedValue({
     unit: { id: U1, reference: 'KOM-RCV-001', state: 'RECEIVED' },
