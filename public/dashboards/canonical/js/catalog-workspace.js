@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, global_catalog_not_market_scoped, commercial_catalog_is_union_of_approved_products_from_closed_kirs, product_360_explains, sourcing_keeps_source_mutation_authority
+ * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, global_catalog_not_market_scoped, commercial_catalog_is_union_of_approved_products_from_closed_kirs, product_360_explains, sourcing_keeps_source_mutation_authority, no_paid_ai_api_for_fr_preparation, browser_local_translation_optional_human_review_required
  * @impact-areas  admin-dashboard, catalog, sourcing, boutique
  * @version       2026-09
  */
@@ -282,15 +282,283 @@
     ].join('\n');
   }
 
+  function parseFrenchAssistantOutput(value) {
+    const raw = String(value || '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/\*\*/g, '')
+      .replace(/^\s*[-*]\s+/gm, '')
+      .trim();
+    if (!raw) return { name: '', description: '' };
+
+    const titleMatch = raw.match(/(?:^|\n)\s*Titre\s*FR\s*:\s*(.+?)(?=\n|$)/i);
+    const descriptionMatch = raw.match(/(?:^|\n)\s*Description\s*FR\s*:\s*([\s\S]+)$/i);
+    return {
+      name: titleMatch ? titleMatch[1].trim() : '',
+      description: descriptionMatch ? descriptionMatch[1].trim() : '',
+    };
+  }
+
   async function copyForAssistant(context, row = {}) {
     const prompt = frenchAssistantPrompt(row);
     const clipboard = typeof navigator !== 'undefined' && navigator.clipboard;
-    if (clipboard && typeof clipboard.writeText === 'function') {
-      await clipboard.writeText(prompt);
-      setFeedback(context.root, `${row.product_ref} · prompt copié pour ChatGPT. Aucun appel API depuis Komerce.`, 'positive');
-      return;
+    if (!clipboard || typeof clipboard.writeText !== 'function') {
+      setFeedback(context.root, 'Presse-papiers indisponible : ouvrez l’éditeur FR pour afficher le prompt.', 'critical');
+      return false;
     }
-    context.prompt('Copiez ce prompt dans ChatGPT puis revenez saisir le résultat français', prompt);
+    await clipboard.writeText(prompt);
+    setFeedback(context.root, `${row.product_ref} · prompt copié pour ChatGPT. Aucun appel API depuis Komerce.`, 'positive');
+    return true;
+  }
+
+  function editorField(doc, labelText, name, multiline = false) {
+    const wrap = doc.createElement('label');
+    wrap.className = 'kmc-catalog-fr-field';
+    wrap.appendChild(text(doc, 'span', 'kmc-catalog-fr-label', labelText));
+    const control = doc.createElement(multiline ? 'textarea' : 'input');
+    if (!multiline) control.type = 'text';
+    control.name = name;
+    control.setAttribute('data-catalog-fr-field', name);
+    if (multiline) control.rows = 8;
+    wrap.appendChild(control);
+    return { wrap, control };
+  }
+
+  function setEditorFeedback(node, message, tone = 'neutral') {
+    if (!node) return;
+    node.className = `kmc-catalog-fr-status is-${tone}`;
+    node.textContent = message || '';
+  }
+
+  function sourceLanguageTag(row = {}) {
+    const locale = String(row.source_locale || '').trim().replace(/_/g, '-');
+    return locale || null;
+  }
+
+  async function autoTranslateFrench(row, nameControl, descriptionControl, statusNode) {
+    const translatorApi = typeof globalThis !== 'undefined' ? globalThis.Translator : null;
+    const sourceLanguage = sourceLanguageTag(row);
+    if (!translatorApi || typeof translatorApi.create !== 'function' || !sourceLanguage) {
+      setEditorFeedback(
+        statusNode,
+        'Traduction locale indisponible sur ce navigateur. Utilisez « Copier pour ChatGPT » puis « Coller la réponse ».',
+        'warning'
+      );
+      return false;
+    }
+
+    let translator = null;
+    try {
+      setEditorFeedback(statusNode, 'Préparation française automatique dans le navigateur…');
+      translator = await translatorApi.create({
+        sourceLanguage,
+        targetLanguage: 'fr',
+        monitor(monitor) {
+          if (!monitor || typeof monitor.addEventListener !== 'function') return;
+          monitor.addEventListener('downloadprogress', event => {
+            const loaded = Math.max(0, Math.min(1, Number(event && event.loaded) || 0));
+            setEditorFeedback(statusNode, `Préparation du traducteur local · ${Math.round(loaded * 100)} %`);
+          });
+        },
+      });
+
+      const sourceTitle = String(row.name_source || row.name || '').trim();
+      const sourceDescription = String(row.description_source || '').trim();
+      const [translatedTitle, translatedDescription] = await Promise.all([
+        sourceTitle ? translator.translate(sourceTitle) : Promise.resolve(''),
+        sourceDescription ? translator.translate(sourceDescription) : Promise.resolve(''),
+      ]);
+
+      const name = String(translatedTitle || '').trim();
+      const description = String(translatedDescription || '').trim();
+      if (name) nameControl.value = name;
+      if (description) descriptionControl.value = description;
+
+      if (!name || !description) {
+        setEditorFeedback(
+          statusNode,
+          'Préparation locale partielle : complétez les champs manquants ou utilisez ChatGPT, puis relisez avant d’enregistrer.',
+          'warning'
+        );
+        return false;
+      }
+
+      setEditorFeedback(
+        statusNode,
+        'Préparation FR générée localement, sans API payante Komerce. Relisez puis enregistrez.',
+        'positive'
+      );
+      return true;
+    } catch (error) {
+      setEditorFeedback(
+        statusNode,
+        'Traduction locale indisponible. Utilisez « Copier pour ChatGPT » puis « Coller la réponse ».',
+        'warning'
+      );
+      return false;
+    } finally {
+      if (translator && typeof translator.destroy === 'function') translator.destroy();
+    }
+  }
+
+  function closeFrenchEditor(context, triggerButton) {
+    const editor = context.root.querySelector('[data-catalog-fr-editor]');
+    if (editor && typeof editor.remove === 'function') editor.remove();
+    if (triggerButton && typeof triggerButton.focus === 'function') triggerButton.focus();
+  }
+
+  async function openFrenchEditor(context, row = {}, triggerButton = null) {
+    closeFrenchEditor(context);
+    const doc = context.document;
+    const overlay = doc.createElement('div');
+    overlay.className = 'kmc-catalog-fr-editor';
+    overlay.setAttribute('data-catalog-fr-editor', '');
+    overlay.setAttribute('role', 'presentation');
+
+    const dialog = doc.createElement('section');
+    dialog.className = 'kmc-catalog-fr-dialog';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-label', `Préparation française · ${row.product_ref || 'produit'}`);
+
+    const heading = doc.createElement('header');
+    heading.className = 'kmc-catalog-fr-heading';
+    const headingCopy = doc.createElement('div');
+    headingCopy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'PRÉPARATION FR'));
+    headingCopy.appendChild(text(doc, 'h2', 'kmc-catalog-fr-title', row.product_ref || 'Produit'));
+    headingCopy.appendChild(text(
+      doc,
+      'p',
+      'kmc-workspace-subtitle',
+      'La source fournisseur reste intacte. Le français est enregistré comme override tracé, puis relu avant validation Catalogue.'
+    ));
+    heading.appendChild(headingCopy);
+    const close = makeButton(doc, 'Fermer', 'close-fr-editor', true);
+    close.addEventListener('click', () => closeFrenchEditor(context, triggerButton));
+    heading.appendChild(close);
+    dialog.appendChild(heading);
+
+    const grid = doc.createElement('div');
+    grid.className = 'kmc-catalog-fr-editor-grid';
+
+    const sourcePane = doc.createElement('section');
+    sourcePane.className = 'kmc-catalog-fr-editor-pane is-source';
+    sourcePane.appendChild(text(doc, 'strong', 'kmc-catalog-fr-pane-title', 'Source fournisseur'));
+    sourcePane.appendChild(text(doc, 'div', 'kmc-catalog-fr-source-title', row.name_source || row.name || '—'));
+    sourcePane.appendChild(text(doc, 'p', 'kmc-catalog-fr-source-description', row.description_source || 'Aucune description fournisseur.'));
+    grid.appendChild(sourcePane);
+
+    const frenchPane = doc.createElement('section');
+    frenchPane.className = 'kmc-catalog-fr-editor-pane is-french';
+    frenchPane.appendChild(text(doc, 'strong', 'kmc-catalog-fr-pane-title', 'Français'));
+
+    const assistantActions = doc.createElement('div');
+    assistantActions.className = 'kmc-catalog-fr-assistant-actions';
+    const copy = makeButton(doc, 'Copier pour ChatGPT', 'copy-fr-editor', true);
+    assistantActions.appendChild(copy);
+    const paste = makeButton(doc, 'Coller la réponse', 'paste-fr-editor', true);
+    assistantActions.appendChild(paste);
+    frenchPane.appendChild(assistantActions);
+
+    const nameField = editorField(doc, 'Titre français', 'name');
+    const descriptionField = editorField(doc, 'Description française', 'description', true);
+    frenchPane.appendChild(nameField.wrap);
+    frenchPane.appendChild(descriptionField.wrap);
+
+    const promptDetails = doc.createElement('details');
+    promptDetails.className = 'kmc-catalog-fr-prompt-details';
+    const promptSummary = doc.createElement('summary');
+    promptSummary.textContent = 'Voir le prompt ChatGPT';
+    promptDetails.appendChild(promptSummary);
+    const promptPreview = doc.createElement('textarea');
+    promptPreview.className = 'kmc-catalog-fr-prompt';
+    promptPreview.readOnly = true;
+    promptPreview.rows = 8;
+    promptPreview.value = frenchAssistantPrompt(row);
+    promptDetails.appendChild(promptPreview);
+    frenchPane.appendChild(promptDetails);
+
+    const status = text(doc, 'div', 'kmc-catalog-fr-status is-neutral', '');
+    status.setAttribute('role', 'status');
+    frenchPane.appendChild(status);
+
+    copy.addEventListener('click', async () => {
+      try {
+        const copied = await copyForAssistant(context, row);
+        setEditorFeedback(
+          status,
+          copied ? 'Prompt copié. Revenez ici avec la réponse ChatGPT.' : 'Copiez le prompt affiché ci-dessous.',
+          copied ? 'positive' : 'warning'
+        );
+      } catch (error) {
+        setEditorFeedback(status, error.message || 'Copie impossible.', 'critical');
+      }
+    });
+
+    paste.addEventListener('click', async () => {
+      const clipboard = typeof navigator !== 'undefined' && navigator.clipboard;
+      if (!clipboard || typeof clipboard.readText !== 'function') {
+        setEditorFeedback(status, 'Lecture du presse-papiers indisponible. Collez directement dans les champs.', 'warning');
+        return;
+      }
+      try {
+        const parsed = parseFrenchAssistantOutput(await clipboard.readText());
+        if (!parsed.name || !parsed.description) {
+          setEditorFeedback(status, 'Réponse non reconnue. Format attendu : « Titre FR: … » puis « Description FR: … ».', 'critical');
+          return;
+        }
+        nameField.control.value = parsed.name;
+        descriptionField.control.value = parsed.description;
+        setEditorFeedback(status, 'Titre et description récupérés automatiquement. Vérifiez puis enregistrez.', 'positive');
+      } catch (error) {
+        setEditorFeedback(status, error.message || 'Lecture du presse-papiers impossible.', 'critical');
+      }
+    });
+
+    grid.appendChild(frenchPane);
+    dialog.appendChild(grid);
+
+    const footer = doc.createElement('footer');
+    footer.className = 'kmc-catalog-fr-footer';
+    const cancel = makeButton(doc, 'Annuler', 'cancel-fr-editor', true);
+    cancel.addEventListener('click', () => closeFrenchEditor(context, triggerButton));
+    footer.appendChild(cancel);
+    const save = makeButton(doc, 'Enregistrer la préparation FR', 'save-fr-editor');
+    save.addEventListener('click', async () => {
+      const name = String(nameField.control.value || '').trim();
+      const description = String(descriptionField.control.value || '').trim();
+      if (!name || !description) {
+        setEditorFeedback(status, 'Titre et description français sont obligatoires.', 'critical');
+        return;
+      }
+      setEditorFeedback(status, 'Enregistrement en cours…');
+      await runAction(context, save, {
+        url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/prepare-fr`,
+        body: {
+          name,
+          description,
+          reason: 'Préparation FR manuelle/assistée hors runtime',
+        },
+        runningMessage: 'Enregistrement de la préparation française…',
+        successMessage: `${row.product_ref} préparé en français sans API IA payante. Vérifiez Avant / après puis validez.`,
+      });
+    });
+    footer.appendChild(save);
+    dialog.appendChild(footer);
+
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) closeFrenchEditor(context, triggerButton);
+    });
+    dialog.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      closeFrenchEditor(context, triggerButton);
+    });
+
+    overlay.appendChild(dialog);
+    context.root.appendChild(overlay);
+    if (typeof nameField.control.focus === 'function') nameField.control.focus();
+    await autoTranslateFrench(row, nameField.control, descriptionField.control, status);
+    return overlay;
   }
 
   function renderApproval(rootNode, ui, doc, payload, context) {
@@ -405,29 +673,8 @@
         });
         actionContent.appendChild(copy);
 
-        const prepare = makeButton(doc, 'Saisir le français', 'prepare-fr');
-        prepare.addEventListener('click', () => {
-          const name = context.prompt(
-            `Titre français · source: ${row.name_source || row.name || '—'}`,
-            ''
-          );
-          if (name == null || !name.trim()) return;
-          const description = context.prompt(
-            'Description française · collez ici le texte préparé hors runtime',
-            ''
-          );
-          if (description == null || !description.trim()) return;
-          runAction(context, prepare, {
-            url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/prepare-fr`,
-            body: {
-              name: name.trim(),
-              description: description.trim(),
-              reason: 'Préparation FR manuelle/assistée hors runtime',
-            },
-            runningMessage: 'Enregistrement de la préparation française…',
-            successMessage: `${row.product_ref} préparé en français sans API IA payante. Vérifiez Avant / après puis validez.`,
-          });
-        });
+        const prepare = makeButton(doc, 'Préparer en français', 'prepare-fr');
+        prepare.addEventListener('click', async () => openFrenchEditor(context, row, prepare));
         actionContent.appendChild(prepare);
       } else {
         const approveLabel = row.needs_review ? 'Valider après relecture' : 'Ajouter à la sélection';
@@ -672,6 +919,7 @@
     }
     const context = {
       root: rootNode,
+      document: doc,
       user: options.user || {},
       fetch: fetchFn,
       confirm: options.confirm || (typeof window !== 'undefined' ? window.confirm.bind(window) : () => true),
@@ -703,5 +951,15 @@
     return context.reload();
   }
 
-  return Object.freeze({ ENDPOINT, metricItems, stageLabel, curationState, frenchAssistantPrompt, mount });
+  return Object.freeze({
+    ENDPOINT,
+    metricItems,
+    stageLabel,
+    curationState,
+    frenchAssistantPrompt,
+    parseFrenchAssistantOutput,
+    sourceLanguageTag,
+    autoTranslateFrench,
+    mount,
+  });
 });

@@ -439,6 +439,8 @@ module.exports = {
       'dashboards/canonical/js/demo-order-flow.js',
       'dashboards/canonical/js/finance-accounting-workspace.js',
       'dashboards/canonical/js/sourcing-workspace.js',
+      'dashboards/canonical/js/catalog-workspace.js',
+      'dashboards/canonical/css/operations-workspace.css',
       'dashboards/canonical/js/purchasing-workspace.js',
       'dashboards/canonical/css/purchasing-workspace.css',
       'dashboards/canonical/js/import-runtime.js',
