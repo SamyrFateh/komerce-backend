@@ -46,7 +46,7 @@ fi
 
 cat > "$PRE_COMMIT" << 'HOOK'
 #!/bin/bash
-# KOMERCE-HOOK v6 - tiers-1-5-targeted
+# KOMERCE-HOOK v7 - tiers-1-5-targeted + preflight-governance
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
@@ -103,6 +103,25 @@ if echo "$STAGED" | grep -Eq '^(features|capabilities|services|routes|migrations
   run_gate "Feature Registry" node scripts/feature-registry-targeted-check.js
 fi
 
+# N2b - Schema carte : quand une carte feature est stagee, valider sa structure.
+# Rattrape en local le gate:schema qui ne tourne sinon qu'en CI.
+if echo "$STAGED" | grep -Eq '^(features|public/boutique/features)/.+\.feature\.js$'; then
+  run_gate "Feature Schema" node scripts/feature-schema-check.js --strict
+fi
+
+# N2c - Propriete : tout fichier applicatif stage doit appartenir a une carte.
+# Rattrape en local le gate:touched-files de CI.
+STAGED_APP=$(echo "$STAGED" | grep -E '\.(js|cjs|mjs|ts|css|html)$' | grep -Ev '^(docs/|archive/|node_modules/|\.github/|tests/|scripts/|migrations/|\.config\.)' || true)
+if [[ -n "$STAGED_APP" ]]; then
+  FILES_CSV=$(echo "$STAGED_APP" | paste -sd ',' -)
+  run_gate "Touched files ownership" node scripts/touched-files-feature-gate.js --files "$FILES_CSV"
+fi
+
+# N2d - Anti-historique docs : empeche le bruit documentaire hors archive.
+if echo "$STAGED" | grep -Eq '^docs/.+\.(md|txt|json)$'; then
+  run_gate "Docs history lint" node scripts/docs-history-lint.js --strict
+fi
+
 # N3 - Schema cible.
 if echo "$STAGED" | grep -Eq '^migrations/.+\.sql$|^docs/db/railway-live-schema\.sql$'; then
   run_gate "Schema freshness" node scripts/check-schema-freshness.js
@@ -157,8 +176,8 @@ HOOK
 
 chmod +x "$PRE_COMMIT"
 
-echo "OK Hooks Komerce - niveaux 1-5 installes."
-echo "   pre-commit : technique + registry + schema + Boutique source + tests unitaires lies"
+echo "OK Hooks Komerce v7 - niveaux 1-5 + preflight gouvernance installes."
+echo "   pre-commit : technique + registry + feature-schema + touched-files + docs-lint + schema + Boutique source + tests unitaires lies"
 echo "   pre-push   : toujours desactive"
-echo "   lourds     : Carte First complet / rebuild CSS-dist / coverage / integration / E2E / 360 / meta en pause"
+echo "   lourds     : rebuild CSS-dist / coverage / integration / E2E / 360 / meta en pause"
 echo "   timings    : affiches gate par gate a chaque commit"

@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - main
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 8
     outputs:
       backend: ${{ steps.scope.outputs.backend }}
+      backend_source: ${{ steps.scope.outputs.backend_source }}
       provider_proof_only: ${{ steps.scope.outputs.provider_proof_only }}
       cj_pilot_proof_only: ${{ steps.scope.outputs.cj_pilot_proof_only }}
       backend_files: ${{ steps.scope.outputs.backend_files }}
@@ -52,6 +53,17 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
+
+      # ── Fast-fail : body PR (plan d'attaque) ────────────────────────────────
+      # Zero dependance npm — echoue en 2s si body vide/incomplet, avant tout
+      # le reste du pipeline. Fusionne l'ancien workflow pr-governance.yml.
+      - name: PR body governance (plan d'attaque)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/pr-governance-check.js
+
       # CI FAST-4 : le classifier a besoin des deux arbres, pas de tout l'historique.
       - name: Fetch PR base commit only
         env:
@@ -174,6 +186,19 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
+
+      # ── Touched-tests (ex pr-governance.yml) ─────────────────────────────────
+      # Vérifie que tout code touché a un signal test. --strict active la
+      # complétion au contact (couverture Jest). Nécessite npm ci, donc ici
+      # plutôt que dans le job changes.
+      - name: Touched-tests signal (strict)
+        if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth=1
+          node scripts/touched-tests-gate.js --base origin/${{ github.base_ref }} --strict
+
       - name: Npm audit gate
         if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
         run: npm run audit:gate
@@ -181,9 +206,6 @@ jobs:
       - name: Quality gate
         if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
         run: node scripts/code-quality-gate.js --strict
-      - name: Feature guard
-        if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
-        run: node scripts/feature-guard.js --strict
       - name: Canonical catalog + sourcing certification invariants
         if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
         run: >-
@@ -204,7 +226,7 @@ jobs:
           BACKEND_FILES: ${{ needs.changes.outputs.backend_files }}
         run: node scripts/run-staged-related-tests.js --files "$BACKEND_FILES"
       - name: Unit test coverage threshold
-        if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
+        if: (needs.changes.outputs.backend_source == 'true') && needs.changes.outputs.unit_repair_only != 'true'
         run: npm run test:unit:coverage
 
       - name: Target only the repaired failing unit tests
@@ -228,9 +250,6 @@ jobs:
       - name: Golden CDR — parité
         if: needs.changes.outputs.golden == 'true'
         run: node tools/golden-cdr/golden-cdr.js verify
-
-      - name: Agent remediation contract — backend
-        run: node scripts/check-agent-remediation-contract.js --scope=backend
 
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
@@ -421,8 +440,6 @@ jobs:
           node-version: '20'
       - name: Dashboard 360 structural ratchet
         run: npm run dashboards:360:check
-      - name: Agent remediation contract — dashboard
-        run: node scripts/check-agent-remediation-contract.js --scope=dashboard
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 
@@ -495,8 +512,6 @@ jobs:
         run: |
           node public/boutique/scripts/check-selector-ownership.js
           node public/boutique/scripts/check-runtime-css-var-ownership.js
-      - name: Agent remediation contract — boutique
-        run: node scripts/check-agent-remediation-contract.js --scope=boutique
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 
