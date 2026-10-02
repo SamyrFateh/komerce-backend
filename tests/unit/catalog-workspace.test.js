@@ -101,6 +101,8 @@ beforeEach(() => {
         stock: 2,
         content_source: 'ai_enriched',
         source_locale: 'en',
+        name_source: 'Supplier raw title',
+        description_source: 'Supplier raw description',
         needs_review: true,
         enrichment_confidence: '0.6',
         supplier_name: 'CJdropshipping',
@@ -218,6 +220,33 @@ test('taxonomie Canonical délègue au service partagé', async () => {
   mockCreateCategory.mockResolvedValue({ key: 'Tech', label: 'Tech' });
   await workspace.createCategory({ key: 'Tech', label: 'Tech' });
   expect(mockCreateCategory).toHaveBeenCalledWith({ key: 'Tech', label: 'Tech' });
+});
+
+test('file de curation expose la vérité source pour comparaison avant/après', async () => {
+  mockQuery.mockImplementation(async sql => {
+    if (String(sql).includes("FROM products p") && String(sql).includes("lifecycle_status = 'candidate'")) {
+      return { rows: [{
+        product_ref: 'KPR-COMPARE',
+        name: 'Titre français',
+        description: 'Description française',
+        name_source: 'Supplier title',
+        description_source: 'Supplier description',
+        category: 'vetements',
+        content_source: 'ai_enriched',
+        source_locale: 'en',
+        needs_review: true,
+      }] };
+    }
+    return { rows: [] };
+  });
+
+  const rows = await workspace._test.queryApprovalQueue({ limit: 10, offset: 0 });
+
+  expect(rows[0]).toMatchObject({
+    product_ref: 'KPR-COMPARE',
+    name_source: 'Supplier title',
+    description_source: 'Supplier description',
+  });
 });
 
 test('préparation FR résout product_ref puis délègue au service d’enrichissement sans publier', async () => {
