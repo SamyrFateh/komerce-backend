@@ -27,6 +27,11 @@ test('flattenFiles compacte récursivement une carte feature', () => {
   })).toEqual(['routes/a.js', 'tests/unit/a.test.js']);
 });
 
+test('declaredPath applique le préfixe canonique de la catégorie dash', () => {
+  expect(ctx.declaredPath(process.cwd(), 'dashboards/canonical/js/catalog-workspace.js', 'dash'))
+    .toBe('public/dashboards/canonical/js/catalog-workspace.js');
+});
+
 test('agent context identifie la feature dashboard sans lire les projections entières', () => {
   const model = ctx.buildContext({
     files: ['public/dashboards/canonical/js/catalog-workspace.js'],
