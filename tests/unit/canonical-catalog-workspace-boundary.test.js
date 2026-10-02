@@ -90,7 +90,7 @@ test('la préparation FR canonique reste gratuite et assistée hors runtime', ()
   expect(workspace).toContain('Copier pour ChatGPT');
   expect(workspace).toContain('Saisir le français');
   expect(workspace).toContain('Aucun appel API depuis Komerce');
-  expect(workspace).toContain('paid');
+  expect(workspace).toContain('sans API IA payante');
   expect(workspace).not.toContain('ANTHROPIC_API_KEY');
 });
 
