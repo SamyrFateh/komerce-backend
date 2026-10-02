@@ -320,7 +320,7 @@ describe('purchasing exact SKU procurement', () => {
       };
       db.query.mockResolvedValueOnce({ rows: [ORDER] }).mockResolvedValueOnce({ rows: [item] });
       const client = makeClient((sql) => {
-        if (sql.includes('FROM product_suppliers')) return { rows: [{ ...PS_ROW, auto_order: false, platform: 'manual', supplier_price_aed: 12 }] };
+        if (sql.includes('FROM product_suppliers')) return { rows: [{ ...PS_ROW, auto_order: false, platform: 'alibaba', supplier_price_aed: 12 }] };
         if (sql.includes('FROM v_purchase_line_progress')) return { rows: [] };
         if (sql.startsWith('SELECT id, status FROM purchase_orders')) return { rows: [] };
         if (sql.includes('INSERT INTO purchase_orders')) return { rows: [{ id: '00000000-0000-0000-0000-000000000301' }] };
