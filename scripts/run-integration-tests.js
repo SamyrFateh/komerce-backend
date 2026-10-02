@@ -20,7 +20,112 @@ const { checkPostgresPreflight } = require('./lib/pg-preflight');
 
 const ROOT = path.resolve(__dirname, '..');
 const INTEGRATION_DIR = path.join(ROOT, 'tests', 'integration');
+const FEATURES_DIR = path.join(ROOT, 'features');
 const JEST_BIN = require.resolve('jest/bin/jest');
+
+function norm(file) {
+  return String(file || '').replace(/\\/g, '/').replace(/^\.\//, '');
+}
+
+function argValue(flag) {
+  const args = process.argv.slice(2);
+  const inline = args.find(arg => arg.startsWith(flag + '='));
+  if (inline) return inline.slice(flag.length + 1);
+  const i = args.indexOf(flag);
+  return i >= 0 ? args[i + 1] : null;
+}
+
+function flattenFiles(node, out = []) {
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      if (typeof item === 'string') out.push(norm(item));
+      else flattenFiles(item, out);
+    }
+    return out;
+  }
+  if (node && typeof node === 'object') {
+    for (const value of Object.values(node)) flattenFiles(value, out);
+  }
+  return out;
+}
+
+function loadFeatureManifests() {
+  if (!fs.existsSync(FEATURES_DIR)) return [];
+  return fs.readdirSync(FEATURES_DIR)
+    .filter(name => name.endsWith('.feature.js'))
+    .map(name => require(path.join(FEATURES_DIR, name)))
+    .filter(Boolean);
+}
+
+function integrationTests(manifest) {
+  return [...new Set(flattenFiles(manifest?.files || {})
+    .filter(file => /^tests\/integration\/.+\.test\.js$/i.test(file)))].sort();
+}
+
+function selectSuitesForFiles(files, manifests = loadFeatureManifests()) {
+  const changed = [...new Set((files || []).map(norm).filter(Boolean))];
+  if (!changed.length) {
+    return { mode: 'full', owners: [], suites: listSuites(), reason: 'no scoped files' };
+  }
+
+  const runtime = changed.filter(file =>
+    /^(?:server\.js|routes|services|middleware|utils|validators|core|bootstrap|db)\//i.test(file)
+    || file === 'server.js'
+  );
+  const candidates = runtime.length
+    ? runtime
+    : changed.filter(file => /^tests\/integration\//i.test(file));
+
+  if (!candidates.length) {
+    return { mode: 'skip', owners: [], suites: [], reason: 'no integration runtime impact' };
+  }
+
+  const ownership = new Map();
+  for (const manifest of manifests) {
+    const owner = String(manifest?.name || '').trim();
+    if (!owner) continue;
+    for (const file of new Set(flattenFiles(manifest?.files || {}))) {
+      if (!ownership.has(file)) ownership.set(file, []);
+      ownership.get(file).push(owner);
+    }
+  }
+
+  const owners = new Set();
+  for (const file of candidates) {
+    const matches = ownership.get(file) || [];
+    if (matches.length !== 1) {
+      return {
+        mode: 'full',
+        owners: [],
+        suites: listSuites(),
+        reason: matches.length ? `ambiguous ownership: ${file}` : `unowned integration runtime: ${file}`,
+      };
+    }
+    owners.add(matches[0]);
+  }
+
+  const suites = [...new Set(
+    manifests
+      .filter(manifest => owners.has(String(manifest?.name || '').trim()))
+      .flatMap(integrationTests)
+  )].sort();
+
+  if (!suites.length) {
+    return {
+      mode: 'full',
+      owners: [...owners].sort(),
+      suites: listSuites(),
+      reason: 'owned runtime has no declared integration suite',
+    };
+  }
+
+  return {
+    mode: 'targeted',
+    owners: [...owners].sort(),
+    suites,
+    reason: 'feature-owned integration scope',
+  };
+}
 
 function listSuites() {
   return fs.readdirSync(INTEGRATION_DIR)
@@ -66,8 +171,18 @@ async function main() {
   }
   console.log(`POSTGRES: available — ${preflight.reason}`);
 
-  const suites = listSuites();
+  const filesArg = argValue('--files');
+  const scopedFiles = filesArg ? filesArg.split(',').map(norm).filter(Boolean) : [];
+  const selection = selectSuitesForFiles(scopedFiles);
+  const suites = selection.suites;
   const failures = [];
+
+  console.log(`Integration scope: ${selection.mode} — ${selection.reason}`);
+  if (selection.owners.length) console.log(`Integration owners: ${selection.owners.join(', ')}`);
+  if (selection.mode === 'skip') {
+    console.log('Aucune suite d’intégration nécessaire pour ce diff.');
+    return;
+  }
 
   for (const suite of suites) {
     if (!runSuite(suite)) failures.push(suite);
@@ -87,5 +202,16 @@ async function main() {
   console.log('Toutes les suites d’intégration sont vertes.');
 }
 
-main();
+if (require.main === module) {
+  main();
+}
+
+module.exports = {
+  norm,
+  flattenFiles,
+  loadFeatureManifests,
+  integrationTests,
+  selectSuitesForFiles,
+  listSuites,
+};
 
