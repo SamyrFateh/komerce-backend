@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 649,
-    "filesWithFullHeaders": 604,
+    "scannedCodeFiles": 650,
+    "filesWithFullHeaders": 605,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 649,
+    "filesWithAnyHeaders": 650,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1566,
-    "edges": 7786,
+    "graphNodes": 1567,
+    "edges": 7808,
     "dbTables": 181,
     "doctrines": 544,
     "impactAreas": 192,
-    "unresolvedCodeEdges": 771,
+    "unresolvedCodeEdges": 772,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 78
   },
@@ -65,7 +65,7 @@
     "operations": 11,
     "inventory": 2,
     "local-stock": 4,
-    "purchasing": 25,
+    "purchasing": 26,
     "unsold-resolution": 1,
     "external-provider-contracts": 1,
     "incident-management": 5,
@@ -108,7 +108,7 @@
     "schema": 1,
     "route": 130,
     "entrypoint": 1,
-    "service": 341,
+    "service": 342,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -117,7 +117,7 @@
     "validators": 1
   },
   "byCriticality": {
-    "critical": 94,
+    "critical": 95,
     "medium": 134,
     "high": 367,
     "low": 54
@@ -16978,7 +16978,8 @@
       "depends": [
         "db",
         "services/hub-physical-identity.js",
-        "services/hub-reference.js"
+        "services/hub-reference.js",
+        "services/purchasing-completion-service.js"
       ],
       "usedBy": [
         "routes/hub.js",
@@ -23752,6 +23753,7 @@
       "dbWrite": [
         "orders",
         "product_suppliers",
+        "purchase_lines",
         "purchase_orders",
         "suppliers"
       ],
@@ -23862,6 +23864,61 @@
         "finance"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/purchasing-completion-service.js",
+      "file": "services/purchasing-completion-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "purchasing-order-completion-service",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "critical",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "order_id",
+        "hub_allocations",
+        "actor"
+      ],
+      "outputs": [
+        "order_completion_verdict",
+        "purchase_order_hub_received",
+        "order_status_preparation"
+      ],
+      "depends": [
+        "db",
+        "services/order-status-machine.js",
+        "services/scan-operations.js",
+        "utils/alerts.js",
+        "utils/logger.js"
+      ],
+      "usedBy": [
+        "services/hub-operations.js"
+      ],
+      "dbRead": [
+        "order_items",
+        "orders",
+        "purchase_orders",
+        "v_purchase_line_progress"
+      ],
+      "dbWrite": [
+        "alerts",
+        "purchase_orders"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "owns_transaction"
+      ],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "orders",
+        "logistics"
+      ],
+      "version": "2026-10"
     },
     {
       "id": "services/purchasing-engagement-service.js",
@@ -25547,9 +25604,13 @@
       ],
       "dbRead": [
         "cash_collections",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "order_items",
         "orders",
         "parcels",
-        "purchase_orders"
+        "purchase_orders",
+        "v_purchase_line_progress"
       ],
       "dbWrite": [
         "signals"
@@ -60782,6 +60843,12 @@
       "label": "services/hub-reference.js"
     },
     {
+      "from": "services/hub-operations.js",
+      "to": "services/purchasing-completion-service.js",
+      "type": "depends",
+      "label": "services/purchasing-completion-service.js"
+    },
+    {
       "from": "routes/hub.js",
       "to": "services/hub-operations.js",
       "type": "uses",
@@ -71566,6 +71633,12 @@
     },
     {
       "from": "services/purchasing-admin-service.js",
+      "to": "db:purchase_lines",
+      "type": "db-write",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/purchasing-admin-service.js",
       "to": "db:purchase_orders",
       "type": "db-write",
       "label": "purchase_orders"
@@ -71737,6 +71810,102 @@
       "to": "impact:finance",
       "type": "impact",
       "label": "finance"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "services/order-status-machine.js",
+      "type": "depends",
+      "label": "services/order-status-machine.js"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "services/scan-operations.js",
+      "type": "depends",
+      "label": "services/scan-operations.js"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "utils/alerts.js",
+      "type": "depends",
+      "label": "utils/alerts.js"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "utils/logger.js",
+      "type": "depends",
+      "label": "utils/logger.js"
+    },
+    {
+      "from": "services/hub-operations.js",
+      "to": "services/purchasing-completion-service.js",
+      "type": "uses",
+      "label": "services/hub-operations.js"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "db:v_purchase_line_progress",
+      "type": "db-read",
+      "label": "v_purchase_line_progress"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "db:alerts",
+      "type": "db-write",
+      "label": "alerts"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "db:purchase_orders",
+      "type": "db-write",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "impact:orders",
+      "type": "impact",
+      "label": "orders"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
+      "to": "impact:logistics",
+      "type": "impact",
+      "label": "logistics"
     },
     {
       "from": "services/purchasing-engagement-service.js",
@@ -74434,6 +74603,24 @@
     },
     {
       "from": "services/signal-service.js",
+      "to": "db:hub_physical_unit_placements",
+      "type": "db-read",
+      "label": "hub_physical_unit_placements"
+    },
+    {
+      "from": "services/signal-service.js",
+      "to": "db:hub_purchase_allocations",
+      "type": "db-read",
+      "label": "hub_purchase_allocations"
+    },
+    {
+      "from": "services/signal-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/signal-service.js",
       "to": "db:orders",
       "type": "db-read",
       "label": "orders"
@@ -74449,6 +74636,12 @@
       "to": "db:purchase_orders",
       "type": "db-read",
       "label": "purchase_orders"
+    },
+    {
+      "from": "services/signal-service.js",
+      "to": "db:v_purchase_line_progress",
+      "type": "db-read",
+      "label": "v_purchase_line_progress"
     },
     {
       "from": "services/signal-service.js",
@@ -99528,7 +99721,8 @@
       "directDependsOn": [
         "db",
         "services/hub-physical-identity.js",
-        "services/hub-reference.js"
+        "services/hub-reference.js",
+        "services/purchasing-completion-service.js"
       ],
       "directUsedBy": [
         "routes/hub.js",
@@ -99590,6 +99784,7 @@
         "routes/scans.js",
         "services/hub-physical-identity.js",
         "services/hub-reference.js",
+        "services/purchasing-completion-service.js",
         "utils/parcelSync.js"
       ]
     },
@@ -102974,6 +103169,7 @@
         "services/payment-status-validator.js",
         "services/pickup-collection-recorder.js",
         "services/pickup-collection-service.js",
+        "services/purchasing-completion-service.js",
         "services/purchasing-receive-service.js",
         "services/qr-collection-core.js",
         "services/receive-purchase-order.js",
@@ -106257,6 +106453,7 @@
       "dbWrite": [
         "orders",
         "product_suppliers",
+        "purchase_lines",
         "purchase_orders",
         "suppliers"
       ],
@@ -106272,6 +106469,7 @@
       "mustCheck": [
         "db:orders",
         "db:product_suppliers",
+        "db:purchase_lines",
         "db:purchase_orders",
         "db:suppliers",
         "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
@@ -106374,6 +106572,60 @@
         "services/purchasing-trigger-service.js",
         "services/sourcing-canonical-unit-product-sku-resolution.js",
         "services/suppliers/supplier-order-identity.js"
+      ]
+    },
+    "services/purchasing-completion-service.js": {
+      "role": "purchasing-order-completion-service",
+      "domain": "purchasing",
+      "criticality": "critical",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/order-status-machine.js",
+        "services/scan-operations.js",
+        "utils/alerts.js",
+        "utils/logger.js"
+      ],
+      "directUsedBy": [
+        "services/hub-operations.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "order_items",
+        "orders",
+        "purchase_orders",
+        "v_purchase_line_progress"
+      ],
+      "dbWrite": [
+        "alerts",
+        "purchase_orders"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "orders",
+        "logistics"
+      ],
+      "mustCheck": [
+        "db:alerts",
+        "db:order_items",
+        "db:orders",
+        "db:purchase_orders",
+        "db:v_purchase_line_progress",
+        "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "impact:logistics",
+        "impact:orders",
+        "impact:purchasing",
+        "services/hub-operations.js",
+        "services/order-status-machine.js",
+        "services/scan-operations.js",
+        "utils/alerts.js",
+        "utils/logger.js"
       ]
     },
     "services/purchasing-engagement-service.js": {
@@ -107419,6 +107671,7 @@
         "services/order-status-machine.js",
         "services/pickup-collection-service.js",
         "services/pickup-secret-service.js",
+        "services/purchasing-completion-service.js",
         "services/purchasing-receive-service.js",
         "services/qr-collection-core.js",
         "utils/logger.js",
@@ -108020,9 +108273,13 @@
       "ownedFiles": [],
       "dbRead": [
         "cash_collections",
+        "hub_physical_unit_placements",
+        "hub_purchase_allocations",
+        "order_items",
         "orders",
         "parcels",
-        "purchase_orders"
+        "purchase_orders",
+        "v_purchase_line_progress"
       ],
       "dbWrite": [
         "signals"
@@ -108044,10 +108301,14 @@
       "mustCheck": [
         "bootstrap/feature-wiring.js",
         "db:cash_collections",
+        "db:hub_physical_unit_placements",
+        "db:hub_purchase_allocations",
+        "db:order_items",
         "db:orders",
         "db:parcels",
         "db:purchase_orders",
         "db:signals",
+        "db:v_purchase_line_progress",
         "doctrine:market_scope_is_server_authority",
         "doctrine:preserve_caller_transaction",
         "doctrine:resolve_before_behavior_change",
@@ -112035,7 +112296,8 @@
         "services/payment-stripe.js",
         "services/pickup-authorization-service.js",
         "services/pickup-collection-service.js",
-        "services/purchasing-cancel-service.js"
+        "services/purchasing-cancel-service.js",
+        "services/purchasing-completion-service.js"
       ]
     },
     "utils/auth-cookie.js": {
@@ -112789,6 +113051,7 @@
         "services/product-publication-guard.js",
         "services/purchasing-admin-service.js",
         "services/purchasing-cancel-service.js",
+        "services/purchasing-completion-service.js",
         "services/purchasing-engagement-service.js",
         "services/purchasing-grouped-service.js",
         "services/purchasing-receive-service.js",
@@ -113464,7 +113727,7 @@
     },
     {
       "table": "alerts",
-      "writerCount": 20,
+      "writerCount": 21,
       "writers": [
         "services/admin-order-refund.js",
         "services/cash-operations.js",
@@ -113481,6 +113744,7 @@
         "services/pickup-exceptional-collection-service.js",
         "services/product-publication-guard.js",
         "services/purchasing-cancel-service.js",
+        "services/purchasing-completion-service.js",
         "services/purchasing-trigger-service.js",
         "services/repair-ordered-without-purchase-orders.js",
         "services/scan-operations.js",
@@ -113574,6 +113838,20 @@
       ]
     },
     {
+      "table": "purchase_orders",
+      "writerCount": 8,
+      "writers": [
+        "services/purchasing-admin-service.js",
+        "services/purchasing-cancel-service.js",
+        "services/purchasing-completion-service.js",
+        "services/purchasing-engagement-service.js",
+        "services/purchasing-grouped-service.js",
+        "services/purchasing-receive-service.js",
+        "services/purchasing-trigger-service.js",
+        "services/receive-purchase-order.js"
+      ]
+    },
+    {
       "table": "order_items",
       "writerCount": 7,
       "writers": [
@@ -113597,19 +113875,6 @@
         "services/order-checkout-persistence.js",
         "services/order-checkout-service.js",
         "services/order-status-machine.js"
-      ]
-    },
-    {
-      "table": "purchase_orders",
-      "writerCount": 7,
-      "writers": [
-        "services/purchasing-admin-service.js",
-        "services/purchasing-cancel-service.js",
-        "services/purchasing-engagement-service.js",
-        "services/purchasing-grouped-service.js",
-        "services/purchasing-receive-service.js",
-        "services/purchasing-trigger-service.js",
-        "services/receive-purchase-order.js"
       ]
     },
     {
@@ -113646,6 +113911,18 @@
         "services/pickup-collection-service.js",
         "services/pickup-secret-access-service.js",
         "services/pickup-secret-rotation-service.js"
+      ]
+    },
+    {
+      "table": "purchase_lines",
+      "writerCount": 6,
+      "writers": [
+        "services/purchase-line-snapshot.js",
+        "services/purchasing-admin-service.js",
+        "services/purchasing-cancel-service.js",
+        "services/purchasing-engagement-service.js",
+        "services/purchasing-grouped-service.js",
+        "services/purchasing-trigger-service.js"
       ]
     },
     {
@@ -113693,17 +113970,6 @@
         "routes/invoices.js",
         "services/invoice-service.js",
         "services/order-payment-confirmation.js"
-      ]
-    },
-    {
-      "table": "purchase_lines",
-      "writerCount": 5,
-      "writers": [
-        "services/purchase-line-snapshot.js",
-        "services/purchasing-cancel-service.js",
-        "services/purchasing-engagement-service.js",
-        "services/purchasing-grouped-service.js",
-        "services/purchasing-trigger-service.js"
       ]
     },
     {
@@ -117704,6 +117970,12 @@
     },
     {
       "from": "services/purchasing-cancel-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/purchasing-completion-service.js",
       "to": "db",
       "type": "depends",
       "label": "db"

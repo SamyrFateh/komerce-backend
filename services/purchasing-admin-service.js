@@ -9,7 +9,7 @@
  * @depends       db, utils/logger.js, services/order-mutation-service.js, services/suppliers/purchase-order-confirmation-boundary.js (confirmPurchaseOrder, GAP-5), services/suppliers/execution-adapter-registry.js (confirmPurchaseOrder, GAP-5)
  * @used-by       routes/purchasing.js
  * @db-read       purchase_orders, suppliers
- * @db-write      orders, product_suppliers, purchase_orders, suppliers
+ * @db-write      orders, product_suppliers, purchase_lines, purchase_orders, suppliers
  * @db-txn        owned
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md, docs/gaps/GAP_SUPPLIER_CONNECTIVITY_ALIGNMENT.md
  * @impact-areas  dashboard, admin-dashboard
@@ -24,7 +24,7 @@
  * Mutations admin du domaine purchasing : gestion fournisseurs et purchase orders.
  *
  * Fonctions exportées :
- *   deleteSupplier(id, forceDelete)         → soft-delete fournisseur + POs + mappings
+ *   deleteSupplier(id, forceDelete)         → soft-delete fournisseur + POs (dont brouillons) + lignes ouvertes + mappings
  *   confirmPurchaseOrder(poId, orderId, data) → UPDATE purchase_order → confirmed
  *   cancelPurchaseOrder(poId, forceDelete)   → UPDATE purchase_order → cancelled
  *
@@ -78,10 +78,20 @@ async function deleteSupplier(id, forceDelete = false) {
     }
 
     // Les lignes d'achat des PO annulées sont annulées par le trigger trg_purchase_orders_cancel_lines.
+    // PR 7 : une PO regroupée en brouillon (draft) est annulée comme une PO non engagée.
     const posQuery = (isTestSupplier && forceDelete)
       ? `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status != 'cancelled'`
-      : `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status IN ('pending', 'notified')`;
+      : `UPDATE purchase_orders SET status = 'cancelled', updated_at = NOW() WHERE supplier_id = $1 AND status IN ('draft', 'pending', 'notified')`;
     const { rowCount: posCancelled } = await client.query(posQuery, [id]);
+
+    // PR 7 : les lignes ouvertes (sans PO) du fournisseur sont annulées avec trace ; leurs items redeviennent non
+    // couverts (signal ordered_without_purchase_order) et peuvent être rachetés chez un autre fournisseur.
+    const { rowCount: openLinesCancelled } = await client.query(
+      `UPDATE purchase_lines
+          SET cancelled_at = NOW(), cancel_reason = 'supplier_deleted', updated_at = NOW()
+        WHERE supplier_id = $1 AND purchase_order_id IS NULL AND cancelled_at IS NULL`,
+      [id]
+    );
 
     const { rowCount: mappingsDeleted } = await client.query(
       'UPDATE product_suppliers SET deleted_at = NOW() WHERE supplier_id = $1 AND deleted_at IS NULL',
@@ -91,9 +101,12 @@ async function deleteSupplier(id, forceDelete = false) {
     await client.query('UPDATE suppliers SET deleted_at = NOW() WHERE id = $1', [id]);
     await client.query('COMMIT');
 
-    log.info(`[PURCHASING] Fournisseur désactivé (soft-delete) : ${sup.name} (${id}) — ${mappingsDeleted} mapping(s), ${posCancelled} PO(s) annulée(s)`);
+    log.info(`[PURCHASING] Fournisseur désactivé (soft-delete) : ${sup.name} (${id}) — ${mappingsDeleted} mapping(s), ${posCancelled} PO(s) annulée(s), ${openLinesCancelled} ligne(s) ouverte(s) annulée(s)`);
 
-    return { deleted: true, id, name: sup.name, mappings_deleted: mappingsDeleted, pos_cancelled: posCancelled };
+    return {
+      deleted: true, id, name: sup.name, mappings_deleted: mappingsDeleted, pos_cancelled: posCancelled,
+      open_lines_cancelled: openLinesCancelled,
+    };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     throw err;

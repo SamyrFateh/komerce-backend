@@ -1097,7 +1097,7 @@ const KNOWN_RESPONSES = {
     post: { fields: ['id','product_id','supplier_id','supplier_sku','supplier_price_aed'], source: 'route-read' }
   },
   '/api/purchasing/suppliers/{id}': {
-    delete: { fields: ['success','message'], source: 'route-read' }
+    delete: { fields: ['deleted','id','name','mappings_deleted','pos_cancelled','open_lines_cancelled'], source: 'route-read' }
   },
   '/api/purchasing/order/{order_id}/completeness': {
     get: { fields: ['order_id','complete','any_pending','total_ordered','total_received','purchase_orders'], source: 'route-read' }
