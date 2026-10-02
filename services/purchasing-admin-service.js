@@ -158,9 +158,12 @@ async function confirmPurchaseOrder(poId, orderId, data = {}, options = {}) {
   const evidence = await verifyProviderEvidenceForConfirmation({
     identity: currentPo.supplier_order_identity,
     externalRef: supplier_order_id,
-    supplierUnitRef: currentPo.supplier_unit_ref,
-    supplierSku: currentPo.supplier_sku,
-    quantity: currentPo.qty,
+    items: [{
+      identity: currentPo.supplier_order_identity,
+      supplier_unit_ref: currentPo.supplier_unit_ref,
+      supplier_sku: currentPo.supplier_sku,
+      quantity: currentPo.qty,
+    }],
     adapters: EXECUTION_ADAPTER_REGISTRY,
     context: options.context || {},
   });

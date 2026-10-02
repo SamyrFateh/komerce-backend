@@ -179,10 +179,13 @@ async function prepareCanonicalUnitPurchase({
   let payload;
   try {
     payload = await adapterCheck.adapter.buildOrderPayload({
-      identity,
-      quantity: requestedQuantity,
-      canonicalUnit: resolution.canonical_unit,
-      preflight: verdict,
+      items: [{
+        identity,
+        supplier_unit_ref: resolution.supplier_unit_ref,
+        quantity: requestedQuantity,
+        canonical_unit: resolution.canonical_unit,
+      }],
+      preflights: [verdict],
       context,
     });
   } catch (error) {

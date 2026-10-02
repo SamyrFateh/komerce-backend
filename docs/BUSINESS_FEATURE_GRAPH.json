@@ -14421,6 +14421,13 @@
       },
       {
         "feature": "purchasing",
+        "category": "services",
+        "declared": "services/purchasing-engagement-service.js",
+        "resolvedPath": "services/purchasing-engagement-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
         "category": "routes",
         "declared": "routes/purchasing.js",
         "resolvedPath": "routes/purchasing.js",
@@ -14515,6 +14522,20 @@
         "category": "tests",
         "declared": "tests/integration/purchase-lines-grouped-postgres.test.js",
         "resolvedPath": "tests/integration/purchase-lines-grouped-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/purchase-lines-engagement-postgres.test.js",
+        "resolvedPath": "tests/integration/purchase-lines-engagement-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/purchasing-engagement-service.test.js",
+        "resolvedPath": "tests/unit/purchasing-engagement-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -21460,6 +21481,38 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "purchasing",
+        "entry": "POST /api/purchasing/po/:po_id/submit",
+        "method": "POST",
+        "path": "/api/purchasing/po/{id}/submit",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "purchasing",
+        "entry": "POST /api/purchasing/po/:po_id/confirm",
+        "method": "POST",
+        "path": "/api/purchasing/po/{id}/confirm",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "purchasing",
+        "entry": "POST /api/purchasing/lines",
+        "method": "POST",
+        "path": "/api/purchasing/lines",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "purchasing",
+        "entry": "POST /api/purchasing/lines/:id/settle",
+        "method": "POST",
+        "path": "/api/purchasing/lines/{id}/settle",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "recommendations",
         "entry": "GET /api/boutique/suggestions",
         "method": "GET",
@@ -23165,6 +23218,30 @@
         "feature": "purchasing",
         "fn": "syncPurchaseOrdersOnOrderCancel",
         "file": "services/purchasing-cancel-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
+        "fn": "submitPurchaseOrder",
+        "file": "services/purchasing-engagement-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
+        "fn": "confirmGroupedPurchaseOrder",
+        "file": "services/purchasing-engagement-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
+        "fn": "settleLine",
+        "file": "services/purchasing-engagement-service.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "purchasing",
+        "fn": "createManualLine",
+        "file": "services/purchasing-engagement-service.js",
         "status": "resolved"
       },
       {
@@ -39095,6 +39172,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/purchasing-engagement-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-engagement-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "routes/purchasing.js",
                 "targetFile": "db.js"
               },
@@ -39116,6 +39201,14 @@
               },
               {
                 "sourceFileId": "tests/integration/purchase-lines-grouped-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/purchase-lines-engagement-postgres.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/purchasing-engagement-service.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -39191,6 +39284,10 @@
                 "targetFile": "services/scan-operations.js"
               },
               {
+                "sourceFileId": "services/purchasing-engagement-service.js",
+                "targetFile": "services/hub-reference.js"
+              },
+              {
                 "sourceFileId": "tests/unit/purchasing-receive-service.test.js",
                 "targetFile": "services/scan-operations.js"
               }
@@ -39230,6 +39327,10 @@
               {
                 "sourceFileId": "services/repair-ordered-without-purchase-orders.js",
                 "targetFile": "utils/alerts.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-engagement-service.js",
+                "targetFile": "services/notification-service.js"
               },
               {
                 "sourceFileId": "tests/unit/purchasing-trigger-service.test.js",
@@ -39329,6 +39430,10 @@
             "channel": "static-code",
             "evidence": [
               {
+                "sourceFileId": "services/suppliers/allegro-fulfillment-adapter.js",
+                "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
+              },
+              {
                 "sourceFileId": "services/purchasing-trigger-service.js",
                 "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
               },
@@ -39379,6 +39484,14 @@
               {
                 "sourceFileId": "services/purchase-line-snapshot.js",
                 "targetFile": "services/suppliers/supplier-order-identity.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-engagement-service.js",
+                "targetFile": "services/suppliers/provider-authority.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-engagement-service.js",
+                "targetFile": "services/suppliers/supplier-fulfillment-adapter-contract.js"
               },
               {
                 "sourceFileId": "tests/unit/purchasing-adapter-resolution.test.js",
@@ -41327,7 +41440,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1754
+        "filesObserved": 1757
       },
       "boutique": {
         "filesObserved": 214,
@@ -44336,8 +44449,8 @@
       "backend": {
         "manifestsDiscovered": 35,
         "manifestsConnected": 35,
-        "technicalNodesTotal": 544,
-        "technicalNodesOwned": 544,
+        "technicalNodesTotal": 545,
+        "technicalNodesOwned": 545,
         "technicalOrphans": 0
       },
       "dash": {

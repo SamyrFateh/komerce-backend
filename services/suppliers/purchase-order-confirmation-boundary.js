@@ -77,9 +77,8 @@ function rejected(provider, reason, extra = {}) {
  *   structurée — la majorité aujourd'hui).
  * @param {string} [params.externalRef] Référence externe à vérifier (ex.
  *   pour Allegro : le checkoutFormId communiqué par l'opérateur).
- * @param {string} [params.supplierUnitRef]
- * @param {string} [params.supplierSku]
- * @param {number} [params.quantity]
+ * @param {Array<{identity: object, supplier_unit_ref: string, supplier_sku: string, quantity: number}>} [params.items]
+ *   Lignes de la PO agrégées par supplier_unit_ref (PR 5) ; une PO historique passe un seul élément.
  * @param {object} [params.adapters] registry provider→adapter (réutiliser
  *   EXECUTION_ADAPTER_REGISTRY de GAP-2, ne pas en construire un second).
  * @param {object} [params.context]
@@ -93,9 +92,7 @@ function rejected(provider, reason, extra = {}) {
 async function verifyProviderEvidenceForConfirmation({
   identity = null,
   externalRef = null,
-  supplierUnitRef = null,
-  supplierSku = null,
-  quantity = null,
+  items = [],
   adapters = {},
   context = {},
 } = {}) {
@@ -123,10 +120,7 @@ async function verifyProviderEvidenceForConfirmation({
 
   const verdict = await adapterCheck.adapter.reconcile({
     externalRef: externalRef.trim(),
-    identity,
-    supplierUnitRef,
-    supplierSku,
-    quantity,
+    items,
     context,
   });
 

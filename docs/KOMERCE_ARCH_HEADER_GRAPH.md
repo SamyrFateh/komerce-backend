@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 648
-- Files with full headers: 603
+- Scanned code files: 649
+- Files with full headers: 604
 - Files with lite headers: 45
-- Files with any headers: 648
+- Files with any headers: 649
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1564
-- Edges: 7761
-- DB tables: 180
+- Graph nodes: 1566
+- Edges: 7786
+- DB tables: 181
 - Doctrines: 544
 - Impact areas: 192
-- Unresolved code edges: 770
+- Unresolved code edges: 771
 - Tables multi-écrivains directs (>=2): 78
 - Avertissements db-write / db-write-via en chevauchement: 8
 
@@ -55,7 +55,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - payment: 25
 - platform-ops: 2
 - providers-services: 7
-- purchasing: 24
+- purchasing: 25
 - recommendations: 6
 - refunds: 2
 - settlement: 2
@@ -88,7 +88,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 130
 - route-manifest: 1
 - schema: 1
-- service: 340
+- service: 341
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -194,6 +194,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/product-stock-service.js — catalog-product-stock-service (catalog, critical, full)
 - services/provider-credential-service.js — provider-credential-service (sourcing, critical, full)
 - services/purchasing-cancel-service.js — purchasing-cancel-service (purchasing, critical, full)
+- services/purchasing-engagement-service.js — purchasing-engagement-service (purchasing, critical, full)
 - services/qr-collection-core.js — qr-collection-core (orders, critical, full)
 - services/receive-purchase-order.js — orders-receive-purchase-order (purchasing, critical, full)
 - services/repair-ordered-purchasing.js — orders-repair-ordered-purchasing (purchasing, critical, full)
@@ -879,14 +880,15 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - notification_log: 9 écrivains directs — services/notification-service.js, services/notifications/internals.js, services/notifications/loyalty.js, services/notifications/misc.js, services/notifications/notification-service.js, services/notifications/order.js, services/notifications/otp-auth.js, services/notifications/parcel.js, services/simulator/state-advancer.js
 - order_items: 7 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-item-availability-service.js, services/order-status-machine.js, services/scan-engine.js
 - order_status_history: 7 écrivains directs — routes/admin/delete-order-cascade.js, routes/admin/system.js, routes/admin/users.js, routes/orders/cancel.js, services/order-checkout-persistence.js, services/order-checkout-service.js, services/order-status-machine.js
+- purchase_orders: 7 écrivains directs — services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-engagement-service.js, services/purchasing-grouped-service.js, services/purchasing-receive-service.js, services/purchasing-trigger-service.js, services/receive-purchase-order.js
 - finance_config: 6 écrivains directs — bootstrap/startup-migrations.js, routes/admin-costing.js, routes/admin-finance-config.js, services/economic-config.js, services/economic-engine-queries.js, services/pricing-rates.js
 - pickup_print_tokens: 6 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-rotation-service.js
 - pickup_reveal_codes: 6 écrivains directs — bootstrap/crons.js, routes/pickup-secret.js, services/pickup-collection-recorder.js, services/pickup-collection-service.js, services/pickup-secret-access-service.js, services/pickup-secret-rotation-service.js
-- purchase_orders: 6 écrivains directs — services/purchasing-admin-service.js, services/purchasing-cancel-service.js, services/purchasing-grouped-service.js, services/purchasing-receive-service.js, services/purchasing-trigger-service.js, services/receive-purchase-order.js
 - scan_events: 6 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/transitaire-api.js, services/hub-operations.js, services/parcel-auto-create-service.js, services/scan-engine.js
 - shared_cart_events: 6 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-internals.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
 - transaction_documents: 6 écrivains directs — routes/documents.js, services/documents/customs-invoice.js, services/documents/document-service.js, services/documents/pickup-proof.js, services/documents/refund-receipt.js, services/documents/wallet-receipt.js
 - invoices: 5 écrivains directs — routes/admin/system.js, routes/documents.js, routes/invoices.js, services/invoice-service.js, services/order-payment-confirmation.js
+- purchase_lines: 5 écrivains directs — services/purchase-line-snapshot.js, services/purchasing-cancel-service.js, services/purchasing-engagement-service.js, services/purchasing-grouped-service.js, services/purchasing-trigger-service.js
 - shared_carts: 5 écrivains directs — services/cart-share-service.js, services/shared-cart-creation.js, services/shared-cart-engine.js, services/shared-cart-lifecycle.js, services/shared-cart-queries.js
 - sourcing_sources: 5 écrivains directs — services/provider-credential-service.js, services/sourcing-observation-shadow-service.js, services/sourcing-provider-control-policy.js, services/sourcing-source-autopilot.js, services/sourcing-source-registry.js
 - users: 5 écrivains directs — bootstrap/startup-migrations.js, routes/auth.js, routes/client-auth.js, routes/otp.js, services/user-mutation-service.js
@@ -896,7 +898,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - order_comments: 4 écrivains directs — routes/hub-dashboard.js, routes/hub-mark-ordered.js, routes/relay-dashboard.js, services/operations-workspace.js
 - product_skus: 4 écrivains directs — services/catalog-promotion.js, services/catalog-stock-sync-application.js, services/product-sku-service.js, services/product-stock-service.js
 - product_variants: 4 écrivains directs — services/catalog-product-mutation-service.js, services/catalog-promotion.js, services/product-stock-service.js, services/product-variant-service.js
-- purchase_lines: 4 écrivains directs — services/purchase-line-snapshot.js, services/purchasing-cancel-service.js, services/purchasing-grouped-service.js, services/purchasing-trigger-service.js
 - sourcing_candidates: 4 écrivains directs — routes/sourcing-scanner.js, services/sourcing-candidate-actions.js, services/sourcing-candidate-import-service.js, services/suppliers/catalog-import-json.js
 - supplier_oauth_connections: 4 écrivains directs — routes/integrations-aliexpress.js, services/suppliers/aliexpress-oauth.js, services/suppliers/allegro-sandbox-client.js, services/suppliers/connectors/aliexpress-connected-connector.js
 - wallet_transactions: 4 écrivains directs — routes/admin/system.js, routes/admin/users.js, routes/wallet.js, services/wallet-service.js

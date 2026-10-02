@@ -105,10 +105,7 @@ describe('allegro-fulfillment-adapter — reconcile()', () => {
     const client = { getSellerOrder: jest.fn(async () => readyPayload()) };
     const out = await allegroAdapter.reconcile({
       externalRef: checkoutId,
-      identity,
-      supplierUnitRef: '123',
-      supplierSku: 'allegro-sandbox:123',
-      quantity: 1,
+      items: [{ identity, supplier_unit_ref: '123', supplier_sku: 'allegro-sandbox:123', quantity: 1 }],
       context: { allegroSandboxClient: client },
     });
     expect(out).toMatchObject({
@@ -124,8 +121,9 @@ describe('allegro-fulfillment-adapter — reconcile()', () => {
   test('statut natif non prêt (BOUGHT) → commitment_verdict rejected, jamais une exception qui remonte', async () => {
     const client = { getSellerOrder: jest.fn(async () => readyPayload({ status: 'BOUGHT' })) };
     const out = await allegroAdapter.reconcile({
-      externalRef: checkoutId, identity, supplierUnitRef: '123', supplierSku: 'allegro-sandbox:123',
-      quantity: 1, context: { allegroSandboxClient: client },
+      externalRef: checkoutId,
+      items: [{ identity, supplier_unit_ref: '123', supplier_sku: 'allegro-sandbox:123', quantity: 1 }],
+      context: { allegroSandboxClient: client },
     });
     expect(out.commitment_verdict).toBe('rejected');
     expect(out.evidence.reason).toMatch(/ALLEGRO_RECONCILIATION_NOT_READY/);
@@ -135,9 +133,11 @@ describe('allegro-fulfillment-adapter — reconcile()', () => {
     const client = { getSellerOrder: jest.fn(async () => readyPayload()) };
     const out = await allegroAdapter.reconcile({
       externalRef: checkoutId,
-      identity: { provider: 'allegro', version: 1, payload: { environment: 'sandbox', offer_id: '999' } },
-      supplierUnitRef: '999', supplierSku: 'allegro-sandbox:999',
-      quantity: 1, context: { allegroSandboxClient: client },
+      items: [{
+        identity: { provider: 'allegro', version: 1, payload: { environment: 'sandbox', offer_id: '999' } },
+        supplier_unit_ref: '999', supplier_sku: 'allegro-sandbox:999', quantity: 1,
+      }],
+      context: { allegroSandboxClient: client },
     });
     expect(out.commitment_verdict).toBe('rejected');
   });
@@ -183,8 +183,9 @@ describe('purchase-order-confirmation-boundary — verifyProviderEvidenceForConf
   test('allegro + evidence réconciliée committed → required:true, verdict transmis tel quel', async () => {
     const client = { getSellerOrder: jest.fn(async () => readyPayload()) };
     const out = await verifyProviderEvidenceForConfirmation({
-      identity, externalRef: checkoutId, supplierUnitRef: '123', supplierSku: 'allegro-sandbox:123',
-      quantity: 1, adapters: { allegro: allegroAdapter }, context: { allegroSandboxClient: client },
+      identity, externalRef: checkoutId,
+      items: [{ identity, supplier_unit_ref: '123', supplier_sku: 'allegro-sandbox:123', quantity: 1 }],
+      adapters: { allegro: allegroAdapter }, context: { allegroSandboxClient: client },
     });
     expect(out.required).toBe(true);
     expect(out.commitment_verdict).toBe(COMMITMENT_VERDICT.COMMITTED);

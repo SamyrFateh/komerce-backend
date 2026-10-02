@@ -24,7 +24,7 @@ function fullAdapter(provider, overrides = {}) {
   return {
     provider,
     evaluate: jest.fn(async () => ({ ready: true, status: 'FULFILLMENT_READY', evidence: {}, reason: null })),
-    buildOrderPayload: jest.fn(async ({ identity }) => ({ provider: identity.provider, native: identity.payload })),
+    buildOrderPayload: jest.fn(async ({ items: [{ identity }] }) => ({ provider: identity.provider, native: identity.payload })),
     placeOrder: jest.fn(async () => ({ supplier_order_id: 'EXT-1', tracking_url: 'https://track.test/1' })),
     ...overrides,
   };
