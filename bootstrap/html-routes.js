@@ -118,6 +118,7 @@ function mountHtmlRoutes(app, rootDir) {
     '/admin/workspaces/catalog',
     '/admin/workspaces/accounting',
     '/admin/workspaces/sourcing',
+    '/admin/workspaces/purchasing',
     '/admin/workspaces/pricing',
     '/admin/action-center',
     '/admin/demo',

@@ -294,7 +294,7 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
 });
 
 describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4)', () => {
-  test('admin voit les 3 espaces Opérations dans l’ordre canonique, Expéditions & Douane actif (Sourcing live est dans Live)', () => {
+  test('admin voit les 4 espaces Opérations dans l’ordre canonique, Expéditions & Douane actif (Sourcing live est dans Live)', () => {
     const env = loadNavigation('/admin/workspaces/shipping-customs', 'shipping-customs-workspace');
     const header = mountFor(env, '/admin/workspaces/shipping-customs', 'shipping-customs-workspace', { role: 'admin' });
 
@@ -304,11 +304,30 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     const n2 = secondaryNav(header);
     expect(n2.className).toBe('kmc-admin-secondary-nav');
     const ids = n2.children.map(link => link.attributes['data-dashboard']);
-    expect(ids).toEqual(['operations-overview', 'operations-workspace', 'shipping-customs-workspace']);
+    expect(ids).toEqual(['operations-overview', 'operations-workspace', 'shipping-customs-workspace', 'purchasing-workspace']);
 
     const active = n2.children.find(link => link.attributes['data-dashboard'] === 'shipping-customs-workspace');
     expect(active.attributes['aria-current']).toBe('page');
     expect(active.href).toBe('/admin/workspaces/shipping-customs');
+  });
+
+  test('Achats fournisseurs : espace Opérations réservé à admin, actif sur sa propre surface', () => {
+    const env = loadNavigation('/admin/workspaces/purchasing', 'purchasing-workspace');
+    expect(env.api.activePrimarySurface('purchasing-workspace')).toBe('operations');
+    expect(env.api.activeSpaceFor('purchasing-workspace')).toBe('purchasing-workspace');
+
+    const header = mountFor(env, '/admin/workspaces/purchasing', 'purchasing-workspace', { role: 'admin' });
+    const active = secondaryNav(header).children.find(link => link.attributes['data-dashboard'] === 'purchasing-workspace');
+    expect(active.attributes['aria-current']).toBe('page');
+    expect(active.href).toBe('/admin/workspaces/purchasing');
+
+    for (const role of ['market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire']) {
+      const roleEnv = loadNavigation('/admin/operations', 'operations');
+      const roleHeader = mountFor(roleEnv, '/admin/operations', 'operations', { role });
+      const nav = secondaryNav(roleHeader);
+      const ids = nav ? nav.children.map(link => link.attributes['data-dashboard']) : [];
+      expect(ids).not.toContain('purchasing-workspace');
+    }
   });
 
   test('market_operator voit Vue d’ensemble, Hub/Relais, Expéditions & Douane — jamais Sourcing', () => {
@@ -528,7 +547,7 @@ describe('canonical admin navigation — zone utilitaire et marché', () => {
 describe('canonical admin navigation — pas de Retour redondant sur les espaces N2 (doctrine V2 §9)', () => {
   test('operations / operations-workspace / shipping-customs-workspace / sourcing-workspace / finance / accounting-workspace n’affichent jamais de Retour', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
-    ['operations', 'operations-workspace', 'shipping-customs-workspace', 'sourcing-workspace', 'finance', 'accounting-workspace'].forEach(surface => {
+    ['operations', 'operations-workspace', 'shipping-customs-workspace', 'purchasing-workspace', 'sourcing-workspace', 'finance', 'accounting-workspace'].forEach(surface => {
       const header = mountFor(env, `/admin/${surface}`, surface, { role: 'admin' });
       const back = header.children[0].children[0].children.find(node => node.className === 'kmc-admin-back');
       expect(back).toBeUndefined();
