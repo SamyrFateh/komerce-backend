@@ -80,6 +80,74 @@ function isLiveSchemaFile(file) {
   return norm(file) === 'docs/db/railway-live-schema.sql';
 }
 
+function isDbRebuildFile(file) {
+  const f = norm(file);
+  return isMigrationFile(f)
+    || isLiveSchemaFile(f)
+    || f === 'bootstrap/startup-migrations.js'
+    || f === 'scripts/ci-db-bootstrap.js';
+}
+
+function isDirectApiRuntimeFile(file) {
+  const f = norm(file);
+  return f === 'server.js'
+    || f === 'bootstrap/api-routes.js'
+    || /^routes\/.+\.(?:js|cjs|mjs)$/i.test(f)
+    || /^tests\/e2e-api\/.+\.(?:test|spec)\.(?:js|cjs|mjs|ts)$/i.test(f);
+}
+
+function headerField(source, name) {
+  if (!source) return null;
+  const lines = String(source).split(/\r?\n/);
+  const prefix = '@' + name;
+  for (const line of lines) {
+    const at = line.indexOf(prefix);
+    if (at < 0) continue;
+    return line.slice(at + prefix.length).replace(/^\s+/, '').trim() || null;
+  }
+  return null;
+}
+
+function headerTouchesDb(source) {
+  const read = headerField(source, 'db-read');
+  const write = headerField(source, 'db-write');
+  const risky = value => value && !/^none$/i.test(value);
+  return Boolean(risky(read) || risky(write));
+}
+
+function headerFeedsApi(source) {
+  const layer = headerField(source, 'layer');
+  const usedBy = headerField(source, 'used-by');
+  return /^(?:route|controller)$/i.test(layer || '') || /routes\//i.test(usedBy || '');
+}
+
+function defaultReadSource(file) {
+  try {
+    return fs.readFileSync(norm(file), 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+function classifyRuntimeProof(files, { readSource = defaultReadSource } = {}) {
+  const changed = [...new Set((files || []).map(norm).filter(Boolean))];
+  const dbRebuildRequired = changed.some(isDbRebuildFile);
+
+  const integrationRequired = dbRebuildRequired || changed.some(file => {
+    if (/^tests\/integration\//i.test(file) || /^db\//i.test(file)) return true;
+    if (!/^(?:services|routes|middleware|utils|validators|core|bootstrap)\//i.test(file)) return false;
+    return headerTouchesDb(readSource(file));
+  });
+
+  const e2eApiRequired = changed.some(file => {
+    if (isDirectApiRuntimeFile(file)) return true;
+    if (!/^(?:services|middleware|utils|validators|core|bootstrap)\//i.test(file)) return false;
+    return headerFeedsApi(readSource(file));
+  });
+
+  return { dbRebuildRequired, integrationRequired, e2eApiRequired };
+}
+
 // Parité économique CURRENT. Cette liste reprend exactement l'ancien
 // path-filter de .github/workflows/golden-cdr.yml ; elle vit désormais dans
 // le classifier unique pour éviter un second runner checkout/setup/npm-ci.
@@ -179,8 +247,9 @@ function isGovernanceFile(file) {
     || /^docs\/(?:FEATURE_360|BUSINESS_FEATURE_GRAPH|O6_INVENTORY)\.(?:json|md)$/i.test(f);
 }
 
-function classify(files) {
+function classify(files, options = {}) {
   const changedFiles = [...new Set((files || []).map(norm).filter(Boolean))].sort();
+  const runtimeProof = classifyRuntimeProof(changedFiles, options);
   const providerProofOnly = changedFiles.length > 0 && changedFiles.every(isProviderProofOnlyFile);
   const cjPilotProofOnly = changedFiles.length > 0 && changedFiles.every(isCjPilotProofOnlyFile);
   // The isolated probe unit test is not a backend business test *only when*
@@ -213,6 +282,9 @@ function classify(files) {
     golden: goldenFiles.length > 0,
     migrations: migrationFiles.length > 0 || schemaDump,
     schemaDump,
+    dbRebuildRequired: runtimeProof.dbRebuildRequired,
+    integrationRequired: runtimeProof.integrationRequired,
+    e2eApiRequired: runtimeProof.e2eApiRequired,
     boutique: boutiqueFiles.length > 0,
     dashboard: dashboardFiles.length > 0,
     boutiqueCss,
@@ -310,7 +382,13 @@ function diffFiles(base, head) {
 
 function classifyDiff(base, head) {
   const files = diffFiles(base, head);
-  const model = classify(files);
+  const readAt = (ref, file) => {
+    const r = cp.spawnSync('git', ['show', ref + ':' + file], { encoding: 'utf8' });
+    return r.status === 0 ? r.stdout : null;
+  };
+  const model = classify(files, {
+    readSource: file => readAt(head, file) || readAt(base, file),
+  });
   const packageJsonGovernanceOnly = files.includes('package.json')
     && !files.includes('package-lock.json')
     && governanceOnlyPackageJsonChange(base, head);
@@ -329,6 +407,9 @@ function appendGithubOutput(path, model) {
     `migrations=${model.migrations ? 'true' : 'false'}`,
     `migration_files=${model.migrationFiles.join(',')}`,
     `schema_dump=${model.schemaDump ? 'true' : 'false'}`,
+    `db_rebuild_required=${model.dbRebuildRequired ? 'true' : 'false'}`,
+    `integration_required=${model.integrationRequired ? 'true' : 'false'}`,
+    `e2e_api_required=${model.e2eApiRequired ? 'true' : 'false'}`,
     `dashboard=${model.dashboard ? 'true' : 'false'}`,
     `dashboard_files=${model.dashboardFiles.join(',')}`,
     `boutique=${model.boutique ? 'true' : 'false'}`,
@@ -373,6 +454,12 @@ module.exports = {
   isCjPilotProofOnlyFile,
   isMigrationFile,
   isLiveSchemaFile,
+  isDbRebuildFile,
+  isDirectApiRuntimeFile,
+  headerField,
+  headerTouchesDb,
+  headerFeedsApi,
+  classifyRuntimeProof,
   isGoldenCdrFile,
   isBoutiqueCssSource,
   isBoutiqueJsSource,
