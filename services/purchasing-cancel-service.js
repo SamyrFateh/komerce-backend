@@ -8,8 +8,8 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, utils/alerts.js, utils/logger.js
  * @used-by       services/cancel-order-purchase-orders.js
- * @db-read       purchase_orders
- * @db-write      alerts, purchase_orders
+ * @db-read       order_items, purchase_lines, purchase_orders
+ * @db-write      alerts, purchase_lines, purchase_orders
  * @db-txn        caller_managed
  * @doctrine      writer_not_owner_campaign_2026_08
  * @impact-areas  orders, purchasing, cancellation

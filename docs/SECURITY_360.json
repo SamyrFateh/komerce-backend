@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-01T16:18:00.000Z",
+  "generatedAt": "2026-10-02T05:25:24.592Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 680,
-    "protected": 625,
+    "total": 685,
+    "protected": 630,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -4267,6 +4267,20 @@
       ]
     },
     {
+      "key": "POST /api/purchasing/lines/{id}/cancel",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/purchasing/open-lines",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "GET /api/purchasing/order/{order_id}/completeness",
       "level": "PROTECTED",
       "roles": [
@@ -4274,7 +4288,28 @@
       ]
     },
     {
+      "key": "POST /api/purchasing/po/{po_id}/detach",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/po/{po_id}/discard",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "DELETE /api/purchasing/po/{po_id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/po/prepare",
       "level": "PROTECTED",
       "roles": [
         "admin"
