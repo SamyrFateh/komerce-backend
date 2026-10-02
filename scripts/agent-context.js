@@ -264,6 +264,80 @@ function buildContext(options = {}) {
   };
 }
 
+// --brief: ultra-compact entry point (~600-800 tokens).
+// Feature names + owners + scope + gates only. No perimeter, no invariants,
+// no headers, no ledger. The agent calls --expand only when it hits ambiguity.
+function renderBrief(model, maxChars = 3200) {
+  const lines = [];
+  lines.push('KOMERCE AGENT CONTEXT v1 brief — appeler --expand <feature|file> si ambiguïté');
+
+  const flags = Object.entries(model.scope).filter(([, v]) => v).map(([k]) => k);
+  lines.push(`scope: ${flags.length ? flags.join(' ') : 'none'}`);
+
+  if (model.files.length) lines.push(`files: ${take(model.files, 6).join(', ')}`);
+
+  for (const feature of model.features) {
+    lines.push(`[${feature.name}] owner=${feature.owner || '—'} | ${compact(feature.service, 120)}`);
+  }
+
+  lines.push(`gates: ${model.gates.join(' → ')}`);
+
+  const body = lines.join('\n');
+  const tokens = Math.ceil(body.length / 4);
+  lines.push(`budget: ${body.length} chars ≈ ${tokens} tokens`);
+  const full = lines.join('\n');
+  return full.length <= maxChars ? full : full.slice(0, maxChars - 40) + '\n… budget atteint';
+}
+
+// --expand <name>: full detail for one feature or one file only.
+// Returns perimeter, invariants, authority, headers, mustCheck — everything
+// the brief omitted, scoped to a single item.
+function renderExpand(model, target) {
+  const lines = [];
+
+  // Try feature match first
+  const feature = model.features.find(f =>
+    f.name.toLowerCase() === target.toLowerCase()
+    || f.file.toLowerCase().includes(target.toLowerCase()));
+
+  if (feature) {
+    lines.push(`[feature ${feature.name}] owner=${feature.owner || '—'} · ${feature.file}`);
+    if (feature.service) lines.push(`service: ${feature.service}`);
+    if (feature.perimeterIn.length) lines.push(`in: ${feature.perimeterIn.join(' | ')}`);
+    if (feature.perimeterOut.length) lines.push(`out: ${feature.perimeterOut.join(' | ')}`);
+    if (feature.authority.length) lines.push(`authority: ${feature.authority.join(' | ')}`);
+    if (feature.invariants.length) lines.push(`invariants: ${feature.invariants.join(' | ')}`);
+  }
+
+  // Try file header match
+  const header = model.headers.find(h =>
+    h.file.toLowerCase() === target.toLowerCase()
+    || h.file.toLowerCase().includes(target.toLowerCase()));
+
+  if (header) {
+    const h = header.header;
+    lines.push(`[file ${header.file}] role=${h.role || '—'} domain=${h.domain || '—'} layer=${h.layer || '—'} criticality=${h.criticality || '—'}`);
+    if (h['db-read'] && h['db-read'] !== 'none') lines.push(`db-read: ${compact(h['db-read'], 240)}`);
+    if (h['db-write'] && h['db-write'] !== 'none') lines.push(`db-write: ${compact(h['db-write'], 240)}`);
+    if (h.doctrine) lines.push(`doctrine: ${compact(h.doctrine, 240)}`);
+    if (header.mustCheck.length) lines.push(`mustCheck: ${header.mustCheck.join(', ')}`);
+  }
+
+  if (model.ledger && !lines.length) {
+    lines.push(`ledger: ${model.ledger}`);
+  } else if (model.ledger && feature) {
+    lines.push(`ledger: ${model.ledger}`);
+  }
+
+  if (!lines.length) {
+    lines.push(`expand: aucun résultat pour "${target}". Features disponibles : ${model.features.map(f => f.name).join(', ') || 'aucune'}`);
+  }
+
+  const body = lines.join('\n');
+  const tokens = Math.ceil(body.length / 4);
+  return body + `\nbudget: ${body.length} chars ≈ ${tokens} tokens`;
+}
+
 function renderContext(model, maxChars = 6000) {
   const lines = [];
   const add = line => {
@@ -322,6 +396,18 @@ function main() {
     process.stdout.write(JSON.stringify(model, null, 2) + '\n');
     return;
   }
+
+  const expandTarget = argValue(args, '--expand', '');
+  if (expandTarget) {
+    process.stdout.write(renderExpand(model, expandTarget) + '\n');
+    return;
+  }
+
+  if (args.includes('--brief')) {
+    process.stdout.write(renderBrief(model, maxChars) + '\n');
+    return;
+  }
+
   process.stdout.write(renderContext(model, maxChars) + '\n');
 }
 
@@ -343,5 +429,7 @@ module.exports = {
   resolveFeatureEntries,
   gateHints,
   buildContext,
+  renderBrief,
+  renderExpand,
   renderContext,
 };
