@@ -14,7 +14,7 @@ const resolved = (identity, state = {}) => ({
 });
 function adapter(provider) {
   return { provider, evaluate: jest.fn(async ({ identity }) => ({ ready: true, status: 'FULFILLMENT_READY', evidence: { identity }, reason: null })),
-    buildOrderPayload: jest.fn(async ({ identity }) => ({ provider: identity.provider, native: identity.payload })) };
+    buildOrderPayload: jest.fn(async ({ items: [{ identity }] }) => ({ provider: identity.provider, native: identity.payload })) };
 }
 
 test.each([

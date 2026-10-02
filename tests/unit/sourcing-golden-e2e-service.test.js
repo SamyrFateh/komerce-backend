@@ -111,7 +111,7 @@ test('Golden traverse ingestion, Resolution, Product/Offer/Unit, catalog SKU et 
   const adapter = {
     provider: 'cj',
     evaluate: jest.fn(async () => ({ ready: true, status: 'FULFILLMENT_READY' })),
-    buildOrderPayload: jest.fn(async ({ identity }) => ({ opaque: identity })),
+    buildOrderPayload: jest.fn(async ({ items }) => ({ opaque: items[0].identity })),
   };
   const hardStop = await prepareCanonicalUnitPurchase({
     productSkuId: 'sku-cj',
@@ -228,8 +228,8 @@ test('un provider futur reste compatible via le contrat opaque, sans branche mé
       status: 'FULFILLMENT_READY',
       evidence: { opaque_identity: identity },
     })),
-    buildOrderPayload: jest.fn(async ({ identity }) => ({
-      forwarded_without_core_interpretation: identity.payload,
+    buildOrderPayload: jest.fn(async ({ items }) => ({
+      forwarded_without_core_interpretation: items[0].identity.payload,
     })),
   };
   const out = await prepareCanonicalUnitPurchase({

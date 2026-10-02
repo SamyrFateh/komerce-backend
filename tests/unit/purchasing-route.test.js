@@ -64,8 +64,16 @@ jest.mock('../../services/purchasing-grouped-service', () => ({
   cancelLine: jest.fn(),
 }));
 
+jest.mock('../../services/purchasing-engagement-service', () => ({
+  submitPurchaseOrder: jest.fn(),
+  confirmGroupedPurchaseOrder: jest.fn(),
+  settleLine: jest.fn(),
+  createManualLine: jest.fn(),
+}));
+
 const db = require('../../db');
 const grouped = require('../../services/purchasing-grouped-service');
+const engagement = require('../../services/purchasing-engagement-service');
 const { processReceive } = require('../../services/purchasing-receive-service');
 const {
   deleteSupplier,
@@ -574,6 +582,56 @@ describe('forme regroupée — routes (PR 4)', () => {
 
     grouped.discardPurchaseOrder.mockRejectedValueOnce(new Error('db down'));
     expect((await request(app).post(`/api/purchasing/po/${PO}/discard`)).status).toBe(500);
+  });
+
+  it('PR 5 — submit / confirm / settle / POST /lines délèguent à l\'engagement avec l\'acteur', async () => {
+    const actor = { id: 'admin-1', role: 'admin' };
+    engagement.submitPurchaseOrder.mockResolvedValueOnce({ purchase_order: { id: PO } });
+    engagement.confirmGroupedPurchaseOrder.mockResolvedValueOnce({ remnants: [] });
+    engagement.settleLine.mockResolvedValueOnce({ remnant: null });
+    engagement.createManualLine.mockResolvedValueOnce({ line: { line_id: 'L9' } });
+
+    expect((await request(app).post(`/api/purchasing/po/${PO}/submit`)).status).toBe(200);
+    expect(engagement.submitPurchaseOrder).toHaveBeenCalledWith(PO, { actor });
+
+    const body = { supplier_order_id: 'S1', lines: [{ purchase_line_id: 'L1', confirmed_quantity: 2 }] };
+    expect((await request(app).post(`/api/purchasing/po/${PO}/confirm`).send(body)).status).toBe(200);
+    expect(engagement.confirmGroupedPurchaseOrder).toHaveBeenCalledWith(PO, body, { actor });
+
+    expect((await request(app).post('/api/purchasing/lines/L1/settle').send({ settled_quantity: 1, reason: 'x' })).status).toBe(200);
+    expect(engagement.settleLine).toHaveBeenCalledWith('L1', { settled_quantity: 1, reason: 'x' }, { actor });
+
+    const created = await request(app).post('/api/purchasing/lines').send({ order_item_id: 'i', product_supplier_id: 'p', quantity: 1 });
+    expect(created.status).toBe(201);
+    expect(engagement.createManualLine).toHaveBeenCalledWith({ order_item_id: 'i', product_supplier_id: 'p', quantity: 1 }, { actor });
+  });
+
+  it('PR 5 — corps absent → {} ; les diagnostics (verdicts, missing/extra) sont relayés ; erreur inattendue → 500', async () => {
+    engagement.confirmGroupedPurchaseOrder.mockResolvedValueOnce({});
+    engagement.settleLine.mockResolvedValueOnce({});
+    engagement.createManualLine.mockResolvedValueOnce({});
+    await request(app).post(`/api/purchasing/po/${PO}/confirm`);
+    await request(app).post('/api/purchasing/lines/L1/settle');
+    await request(app).post('/api/purchasing/lines');
+    expect(engagement.confirmGroupedPurchaseOrder).toHaveBeenLastCalledWith(PO, {}, expect.anything());
+    expect(engagement.settleLine).toHaveBeenLastCalledWith('L1', {}, expect.anything());
+    expect(engagement.createManualLine).toHaveBeenLastCalledWith({}, expect.anything());
+
+    engagement.submitPurchaseOrder.mockRejectedValueOnce(Object.assign(new Error('refusée'), {
+      status: 409, code: 'PURCHASE_ORDER_SUBMIT_REFUSED', verdicts: [{ supplier_unit_ref: 'U1', ready: false }],
+    }));
+    const refused = await request(app).post(`/api/purchasing/po/${PO}/submit`);
+    expect(refused.status).toBe(409);
+    expect(refused.body).toMatchObject({ code: 'PURCHASE_ORDER_SUBMIT_REFUSED', verdicts: [{ supplier_unit_ref: 'U1', ready: false }] });
+
+    engagement.confirmGroupedPurchaseOrder.mockRejectedValueOnce(Object.assign(new Error('écart'), {
+      status: 409, code: 'PURCHASE_LINES_MISMATCH', missing: ['a'], extra: ['b'],
+    }));
+    const mismatch = await request(app).post(`/api/purchasing/po/${PO}/confirm`).send({ lines: [] });
+    expect(mismatch.body).toMatchObject({ missing: ['a'], extra: ['b'] });
+
+    engagement.settleLine.mockRejectedValueOnce(new Error('db down'));
+    expect((await request(app).post('/api/purchasing/lines/L1/settle').send({})).status).toBe(500);
   });
 
   it('routes historiques : le code PURCHASE_ORDER_GROUPED_USE_PO_ROUTES est relayé (confirm, receive, delete)', async () => {

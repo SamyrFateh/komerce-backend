@@ -42,6 +42,7 @@ module.exports = {
       'Supplier Fulfillment Adapter Contract universel : chaque fournisseur déclare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce',
       'Shipping Capability Adapter Contract : les faits de livraison natifs d\'un provider sont traduits en capacité canonique sans fuite de champs provider ni défaut implicite sur les faits inconnus',
       'Purchase Order exacte : pour une ligne vendue avec sku_id, la PO conserve order_item_id, product_sku_id et la Supplier Order Identity snapshotée ; un mapping produit-level ne peut pas remplacer la variante vendue',
+      'engagement d\'une PO regroupée (PR 5) : soumission par groupe supplier_unit_ref, confirmation par PO ligne par ligne avec reliquat en ligne ouverte, clôture d\'une ligne confirmée, création manuelle d\'une ligne ouverte ; contrat adaptateur items[] (buildOrderPayload / reconcile)',
       'Supplier money canonique : pour une ligne SKU/SOI exacte, la PO snapshotte supplier_unit_price + supplier_currency depuis la Canonical Unit ; aucun prix natif non-AED ne peut être écrit dans unit_price_aed',
     ],
     out: [
@@ -86,6 +87,7 @@ module.exports = {
       'services/purchasing-admin-service.js',
       'services/purchase-line-snapshot.js',
       'services/purchasing-grouped-service.js',
+      'services/purchasing-engagement-service.js',
     ],
     routes: [
       'routes/purchasing.js',
@@ -108,6 +110,8 @@ module.exports = {
       'tests/integration/purchase-lines-postgres.test.js',
       'tests/integration/purchase-line-progress-postgres.test.js',
       'tests/integration/purchase-lines-grouped-postgres.test.js',
+      'tests/integration/purchase-lines-engagement-postgres.test.js',
+      'tests/unit/purchasing-engagement-service.test.js',
       'tests/unit/allegro-fulfillment-adapter.test.js',
       'tests/unit/shipping-capability-contract.test.js',
       'tests/unit/allegro-purchase-reconciliation.test.js',
@@ -155,9 +159,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 16,
-    totalRoutes: 16,
-    note: '16/16 routes protégées (guard admin appliqué sur chaque route de routes/purchasing.js — GET/POST/DELETE confondus, y compris le référentiel fournisseur).',
+    authedRoutesDetected: 20,
+    totalRoutes: 20,
+    note: '20/20 routes protégées (guard admin appliqué sur chaque route de routes/purchasing.js — GET/POST/DELETE confondus, y compris le référentiel fournisseur).',
   },
   contract: {
     exposes: [
@@ -177,6 +181,10 @@ module.exports = {
       'POST /api/purchasing/po/:po_id/detach',
       'POST /api/purchasing/po/:po_id/discard',
       'POST /api/purchasing/lines/:id/cancel',
+      'POST /api/purchasing/po/:po_id/submit',
+      'POST /api/purchasing/po/:po_id/confirm',
+      'POST /api/purchasing/lines',
+      'POST /api/purchasing/lines/:id/settle',
     ],
     internalApi: [
       { fn: 'triggerPurchasing', file: 'services/purchasing-trigger-service.js' },
@@ -189,6 +197,10 @@ module.exports = {
       { fn: 'reconcile', file: 'services/suppliers/allegro-purchase-reconciliation.js' },
       { fn: 'repairOrderedWithoutPurchaseOrders', file: 'services/repair-ordered-without-purchase-orders.js' },
       { fn: 'syncPurchaseOrdersOnOrderCancel', file: 'services/purchasing-cancel-service.js' },
+      { fn: 'submitPurchaseOrder', file: 'services/purchasing-engagement-service.js' },
+      { fn: 'confirmGroupedPurchaseOrder', file: 'services/purchasing-engagement-service.js' },
+      { fn: 'settleLine', file: 'services/purchasing-engagement-service.js' },
+      { fn: 'createManualLine', file: 'services/purchasing-engagement-service.js' },
     ],
     consumes: [
       'supplier-connectivity (autorité provider, Supplier Order Identity opaque et contrats adapter fail-closed)',
@@ -208,6 +220,8 @@ module.exports = {
       { gap: 'PR 2 de MISSION_PURCHASE_LINES : v_hub_transit et v_sourcing_pipeline (agrégats par PO, aucun consommateur dans le code, vérifié par recherche exhaustive) ne sont pas redéfinis via v_purchase_line_progress ; purchasing-cancel-service.js (annulation de commande) reste lu sur purchase_orders (hub-physical-identity.js lit la ligne d\'achat depuis la PR 3) ; receive-purchase-order.js (service de réception non branché) est inchangé.',
         risk: 'sans effet tant qu\'aucune PO regroupée n\'existe (drapeau KOMERCE_GROUPED_PURCHASING éteint). À traiter avant l\'activation : v_hub_transit / v_sourcing_pipeline à migrer ou retirer. purchasing-cancel-service.js gère désormais les lignes ouvertes et les PO regroupées (PR 4).',
       },
+      { gap: 'PR 5 : une seule supplier_order_id par PO regroupée en V1 (le découpage d\'une commande AliExpress en plusieurs références vendeur n\'a pas de colonne dédiée) ; la ventilation par marché est une projection en lecture seule (quantités et montants confirmés par marché dans les réponses de confirm et settle), aucune refacturation ni table de règlement par marché n\'est écrite.',
+        risk: 'sans effet drapeau éteint ; le règlement/coût par marché reste à construire à partir de v_purchase_line_market (marché de chaque ligne) et des montants confirmés des lignes.' },
       { gap: 'PR 4 : deleteSupplier (services/purchasing-admin-service.js) n\'annule que les PO pending/notified : les lignes ouvertes et les PO regroupées en brouillon d\'un fournisseur supprimé restent en place.',
         risk: 'sans effet drapeau éteint ; à traiter avant l\'activation staging (PR 7) : refuser la suppression ou détacher/annuler ces lignes.' },
       { gap: 'purchase_lines est en écriture double avec purchase_orders (1 PO = 1 ligne) : aucune lecture ne dépend encore de la ligne (PR 2–8 de MISSION_PURCHASE_LINES). Écart assumé à la mission : FK order_item_id en ON DELETE CASCADE (et non RESTRICT) car ~20 scripts/tests e2e suppriment commandes et PO ; la suppression directe d\'une ligne reste bloquée par trigger (pg_trigger_depth).',
@@ -233,6 +247,8 @@ module.exports = {
       test: 'tests/integration/purchase-lines-postgres.test.js' },
     { statement: 'forme regroupée (PR 4, migration 266, KOMERCE_GROUPED_PURCHASING éteint par défaut) : une PO est soit historique (order_id, qty, supplier_sku renseignés) soit regroupée (détail de ligne NULL, chk_purchase_orders_header_shape) ; une PO regroupée ne reçoit que des lignes à identité exacte, même fournisseur, même hub, même devise (garde base I4) ; rattachement, détachement, abandon et annulation de ligne se font en brouillon seulement ; une PO regroupée répond 409 PURCHASE_ORDER_GROUPED_USE_PO_ROUTES aux routes historiques ; le marché reste une propriété de chaque ligne (order_item → order → market_id, vue v_purchase_line_market) : une PO regroupée peut mêler KM/CM/CG, la clé de regroupement est fournisseur + hub (jamais le marché), le marché est visible dans open-lines, la préparation et la lecture de PO, market_id n\'est qu\'un filtre opérateur et Purchasing ne réassigne jamais un marché ; l\'annulation d\'une commande annule ses lignes ouvertes et en brouillon et n\'annule JAMAIS une ligne d\'une PO regroupée déjà soumise (alerte avec purchase_line_ids)',
       test: 'tests/integration/purchase-lines-grouped-postgres.test.js' },
+    { statement: 'engagement d\'une PO regroupée (PR 5, KOMERCE_GROUPED_PURCHASING éteint par défaut) : submit ne passe une PO draft en notified que si chaque groupe supplier_unit_ref est prêt (préparation distante par groupe, quantité sommée) et que l\'adaptateur accepte les items (Allegro : une seule ligne, ALLEGRO_MULTI_ITEM_UNSUPPORTED) — sinon la PO reste draft avec les verdicts ; confirm exige exactement les lignes non annulées de la PO, écrit d\'abord la confirmation de chaque ligne puis le reliquat en ligne ouverte (parent_line_id, même instantané, I1 vérifie), passe la PO en confirmed (cancelled si tout est à 0) et ne confirme rien si la réconciliation fournisseur est rejetée ; settle clôture une ligne confirmée (jamais sous le reçu du Hub) puis crée le reliquat ; POST /lines ne crée qu\'une ligne ouverte à identité exacte du même provider, I1 refuse tout sur-engagement ; chaque ligne garde son marché et les réponses l\'exposent par marché en lecture seule ; place_order_invoked reste false',
+      test: 'tests/integration/purchase-lines-engagement-postgres.test.js' },
     { statement: 'un besoin d\'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)',
       test: 'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js' },
     { statement: 'une ligne LOCAL_STOCK ne crée jamais de Purchase Order fournisseur ; seules les lignes IMPORT appartiennent au procurement fournisseur',

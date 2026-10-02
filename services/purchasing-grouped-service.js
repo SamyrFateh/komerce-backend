@@ -26,7 +26,7 @@
  * ce service donne des erreurs lisibles et pose l'ordre de verrouillage commun : PO d'abord, lignes ensuite
  * (identifiants triés), pour qu'annulation de commande, détachement et abandon ne s'interbloquent pas.
  *
- * Hors périmètre (PR 5) : soumission, confirmation par PO, règlement et reliquats.
+ * Soumission, confirmation par PO, règlement et reliquats : purchasing-engagement-service.js (PR 5).
  */
 
 const db = require('../db');
@@ -128,6 +128,8 @@ const LINE_COLUMNS = `
     vm.market_id, mk.code AS market_code, mk.name AS market_name,
     p.name AS product_name, pl.product_sku_id, pl.supplier_sku, pl.supplier_unit_ref,
     pl.quantity, vm.effective_quantity, vm.cancelled, pl.supplier_unit_price, pl.supplier_currency, pl.created_at,
+    pl.parent_line_id, pl.confirmed_quantity, pl.confirmed_unit_price, pl.confirmed_at,
+    pl.settled_quantity, pl.settled_at, pl.settle_reason, pl.cancel_reason,
     (pl.product_sku_id IS NOT NULL AND pl.supplier_unit_ref IS NOT NULL
        AND pl.supplier_order_identity IS NOT NULL AND pl.supplier_unit_price IS NOT NULL
        AND pl.supplier_currency IS NOT NULL) AS groupable`;
@@ -144,6 +146,7 @@ const LINE_JOINS = `
 function shapeLine(row) {
   return {
     line_id: row.line_id,
+    purchase_order_id: row.purchase_order_id,
     order_id: row.order_id,
     order_reference: row.order_reference,
     order_item_id: row.order_item_id,
@@ -161,6 +164,15 @@ function shapeLine(row) {
     supplier_currency: row.supplier_currency,
     groupable: row.groupable,
     created_at: row.created_at,
+    // PR 5 — engagement : null tant que la PO n'est pas confirmée ; reliquat = ligne dont parent_line_id est renseigné.
+    parent_line_id: row.parent_line_id,
+    confirmed_quantity: row.confirmed_quantity,
+    confirmed_unit_price: row.confirmed_unit_price === null ? null : Number(row.confirmed_unit_price),
+    confirmed_at: row.confirmed_at,
+    settled_quantity: row.settled_quantity,
+    settled_at: row.settled_at,
+    settle_reason: row.settle_reason,
+    cancel_reason: row.cancel_reason,
   };
 }
 
@@ -395,7 +407,14 @@ async function cancelLine(lineId, reason) {
   });
 }
 
+// Partagé avec purchasing-engagement-service (PR 5) : mêmes erreurs, même transaction, même ordre de verrouillage.
+const shared = {
+  fail, requireEnabled, requireUuid, withTransaction, lockGroupedPo,
+  loadPurchaseOrderLines, summarizeMarkets, shapeLine, LINE_COLUMNS, LINE_JOINS,
+};
+
 module.exports = {
+  shared,
   GROUPED_ROUTE_CODE,
   isGroupedPurchasingEnabled,
   groupedRouteError,

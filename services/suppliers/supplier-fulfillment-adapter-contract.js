@@ -78,6 +78,20 @@ function validateReconciliationAdapter(provider, adapter) {
   return { ok: true, provider: base.provider, adapter: base.adapter };
 }
 
+/**
+ * PR 5 — `buildOrderPayload({ items, preflights, context })` et `reconcile({ externalRef, items, context })`
+ * reçoivent des `items` agrégés par supplier_unit_ref : `[{ identity, supplier_unit_ref, supplier_sku?, quantity }]`.
+ * Une PO historique passe un seul élément. L'adaptateur reste propriétaire de ce qu'il accepte (Allegro : un seul).
+ */
+function validateItems(items) {
+  if (!Array.isArray(items) || items.length === 0) return { ok: false, reason: 'items doit être un tableau non vide' };
+  for (const item of items) {
+    if (!item || typeof item !== 'object') return { ok: false, reason: 'item invalide' };
+    if (!Number.isSafeInteger(item.quantity) || item.quantity < 1) return { ok: false, reason: 'item.quantity invalide' };
+  }
+  return { ok: true };
+}
+
 function validateVerdict(verdict, VERDICT) {
   if (!verdict || typeof verdict !== 'object' || Array.isArray(verdict)) {
     return { ok: false, reason: 'Verdict fulfillment absent ou invalide' };
@@ -116,5 +130,6 @@ module.exports = {
   validateAdapter,
   validateExecutionAdapter,
   validateReconciliationAdapter,
+  validateItems,
   validateVerdict,
 };
