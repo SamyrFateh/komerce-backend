@@ -80,8 +80,10 @@ Exceptions : lecture simple, explication sans modification, commande triviale ex
 5. Annoncer le plan d'attaque avant de modifier.
 6. Vérifier que les fichiers touchés appartiennent à la carte ou à un transversal déclaré.
 7. Si l'intention métier change, mettre à jour la carte dans la même PR.
-8. Régénérer les sorties dérivées pertinentes.
-9. Lancer les gates.
+8. Lire le header des fichiers structurels touchés puis `interventionIndex["<file>"].mustCheck` dans le graphe d'architecture.
+9. Régénérer les sorties dérivées pertinentes.
+10. Exécuter `npm run pr:preflight` et corriger jusqu'au vert.
+11. Ouvrir ou mettre à jour la PR seulement après ce preflight vert. La CI est une preuve indépendante, pas le premier lieu de découverte des erreurs.
 
 ## 3. Gates carte-first
 
@@ -95,20 +97,23 @@ Exceptions : lecture simple, explication sans modification, commande triviale ex
 | Docs lint | `npm run gate:docs-lint` | empêche le bruit historique documentaire |
 | Map globale | `npm run map:check` | reconstruction globale |
 
-## 4. Vérification minimale
+## 4. Vérification avant PR — commande unique
 
 ```bash
-npm run feature:registry
-npm run gate:schema
-npm run gate:touched-files
-npm run gate:docs-lint
+npm run pr:preflight
 ```
+
+Cette commande réutilise les gates canoniques selon le diff. Ne pas ouvrir une PR pour découvrir un rouge reproductible localement.
+
+Les commandes unitaires restent disponibles pour le diagnostic (`feature:registry`, `gate:schema`, `gate:touched-files`, `gate:docs-lint`, etc.), mais le chemin normal est le preflight unique.
 
 ## 5. Vérification complète
 
 ```bash
 npm run map:check
 ```
+
+`map:check` reste la reconstruction globale explicite ; il ne remplace pas le preflight avant PR.
 
 ## 6. Hiérarchie documentaire
 
@@ -124,7 +129,7 @@ npm run map:check
 
 ## 7. Contexte agent, branche et économie de tokens
 
-- `main` est l'unique branche de travail active. Ne pas créer, rechercher ou réactiver une ancienne branche `agent/*` sauf demande humaine explicite.
+- `main` est l'unique branche d'intégration. Les branches PR éphémères sont autorisées ; ne pas rechercher ou réactiver une ancienne branche `agent/*` sauf demande humaine explicite.
 - `.agent/README.md` est la seule instruction active sous `.agent/`.
 - `.agent/LEDGER.md` contient uniquement le chantier courant et les prochains actes décidés. Un palier clos n'est jamais rouvert à cause d'un ancien state, worklog, audit ou compteur.
 - Lecture minimale obligatoire : `AGENTS.md` → `docs/CARTE_FIRST_INDEX.md` → carte de la feature concernée → `.agent/LEDGER.md`. Ne lire ensuite que les fichiers directement utiles au changement.
