@@ -33,6 +33,7 @@ const GOVERNANCE_ONLY_PACKAGE_SCRIPTS = new Set([
   'feature:360:refresh-global',
   'feature:360:check',
   'pr:preflight',
+  'agent:context',
 ]);
 
 function argValue(flag) {

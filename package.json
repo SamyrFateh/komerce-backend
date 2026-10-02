@@ -135,7 +135,8 @@
     "contract:debt:write": "node scripts/contract-debt-sync.js --write",
     "impact:suppressions:check": "node scripts/impact-suppression-check.js",
     "purchase-lines:parity": "node scripts/purchase-lines-parity-check.js",
-    "pr:preflight": "node scripts/pr-preflight.js"
+    "pr:preflight": "node scripts/pr-preflight.js",
+    "agent:context": "node scripts/agent-context.js"
   },
   "dependencies": {
     "@simplewebauthn/server": "^13.3.2",

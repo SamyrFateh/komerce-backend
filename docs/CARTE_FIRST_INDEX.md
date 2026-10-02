@@ -12,10 +12,10 @@ En cas de contradiction, signaler la divergence ; ne jamais suivre silencieuseme
 
 ## Parcours
 
-1. Identifier la feature ou le transversal.
-2. Lire la carte dans features/.
-3. Qualifier l'operation CRUD.
-4. Verifier le perimetre et les invariants.
+1. Identifier la feature ou les fichiers probables.
+2. Compiler le contexte : `npm run agent:context -- --feature <feature>` ou `--files <paths>`.
+3. Qualifier l'operation CRUD à partir de la projection.
+4. Ouvrir seulement les sources signalées nécessaires.
 5. Annoncer le plan d'attaque.
 6. Lancer les gates.
 7. Ouvrir la PR après preflight vert.
@@ -45,7 +45,7 @@ Chemin normal :
 
 - `npm run pr:preflight`
 
-Le preflight choisit et réutilise les gates canoniques selon le diff. Les commandes détaillées restent disponibles pour diagnostiquer un échec ; `npm run map:check` reste la reconstruction globale explicite.
+`agent:context` réduit la lecture ; il ne remplace aucune preuve. Le preflight choisit et réutilise les gates canoniques selon le diff. Les commandes détaillées restent disponibles pour diagnostiquer un échec ; `npm run map:check` reste la reconstruction globale explicite.
 
 ## Clôture de PR
 
