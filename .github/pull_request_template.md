@@ -36,12 +36,9 @@ Plan annonce :
 
 ### Verification
 
-- [ ] npm run feature:registry
-- [ ] npm run gate:schema
-- [ ] npm run gate:touched-files
-- [ ] npm run gate:docs-lint
-- [ ] npm run gate:feature-audit ou justification
-- [ ] npm run map:check ou justification
+- [ ] `npm run pr:preflight` est vert avant ouverture/mise à jour de la PR.
+- [ ] Les tests lourds non reproductibles localement restent à la CI.
+- [ ] `npm run map:check` si reconstruction globale explicitement nécessaire.
 
 Fichiers modifies :
 
