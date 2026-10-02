@@ -305,6 +305,7 @@
 
       commitStage(doc, oldRoot, stage, user, adminContext, surface, targetUrl);
       committedUrl = new URL(targetUrl.href);
+      queueMicrotask(() => scrollLocalTarget(doc, targetUrl));
       return true;
     } catch (error) {
       if (oldUrl) global.history.replaceState({}, '', oldUrl.href);

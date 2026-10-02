@@ -111,6 +111,16 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
     expect(source).not.toMatch(/global\.location\.href\s*=\s*targetUrl/);
   });
 
+  test('une navigation cross-workspace applique le hash après le commit du DOM final', () => {
+    const source = read('public/dashboards/canonical/js/canonical-client-router-v4.js');
+    const renderIndex = source.indexOf('await app.renderReady(stage, user, adminContext)');
+    const commitIndex = source.indexOf('commitStage(doc, oldRoot, stage, user, adminContext, surface, targetUrl)', renderIndex);
+    const scrollIndex = source.indexOf('queueMicrotask(() => scrollLocalTarget(doc, targetUrl))', commitIndex);
+    expect(renderIndex).toBeGreaterThanOrEqual(0);
+    expect(commitIndex).toBeGreaterThan(renderIndex);
+    expect(scrollIndex).toBeGreaterThan(commitIndex);
+  });
+
   test('le clic Catalogue préchauffe le traducteur local FR avant la navigation', async () => {
     const create = jest.fn(async () => ({ translate: jest.fn() }));
     globalThis.Translator = { create };
@@ -133,7 +143,7 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
   test('index charge le routeur après le shell V4', () => {
     const html = read('public/dashboards/canonical/index.html');
     const shell = html.indexOf('/dashboards/canonical/js/navigation-shell-v4-sync.js?v=2101');
-    const clientRouter = html.indexOf('/dashboards/canonical/js/canonical-client-router-v4.js?v=261002-2');
+    const clientRouter = html.indexOf('/dashboards/canonical/js/canonical-client-router-v4.js?v=261003-1');
     expect(shell).toBeGreaterThanOrEqual(0);
     expect(clientRouter).toBeGreaterThan(shell);
   });
