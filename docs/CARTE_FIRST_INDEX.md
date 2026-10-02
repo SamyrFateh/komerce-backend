@@ -27,14 +27,13 @@ Le plan doit nommer :
 - les risques ou points a verifier ;
 - les gates et tests prevus.
 
-## Gates
+## Gate avant PR
 
-- npm run feature:registry
-- npm run gate:schema
-- npm run gate:touched-files
-- npm run gate:docs-lint
-- npm run gate:feature-audit
-- npm run map:check
+Chemin normal :
+
+- `npm run pr:preflight`
+
+Le preflight choisit et réutilise les gates canoniques selon le diff. Les commandes détaillées restent disponibles pour diagnostiquer un échec ; `npm run map:check` reste la reconstruction globale explicite.
 
 ## Regle
 
