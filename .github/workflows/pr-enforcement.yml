@@ -31,6 +31,9 @@ jobs:
       migrations: ${{ steps.scope.outputs.migrations }}
       migration_files: ${{ steps.scope.outputs.migration_files }}
       schema_dump: ${{ steps.scope.outputs.schema_dump }}
+      db_rebuild_required: ${{ steps.scope.outputs.db_rebuild_required }}
+      integration_required: ${{ steps.scope.outputs.integration_required }}
+      e2e_api_required: ${{ steps.scope.outputs.e2e_api_required }}
       boutique: ${{ steps.scope.outputs.boutique }}
       boutique_files: ${{ steps.scope.outputs.boutique_files }}
       boutique_test_files: ${{ steps.scope.outputs.boutique_test_files }}
@@ -311,18 +314,13 @@ jobs:
       needs.changes.result == 'success' &&
       needs.changes.outputs.unit_repair_only != 'true' &&
       (
-        (needs.changes.outputs.backend == 'true' && needs.backend.result == 'success') ||
-        (
-          needs.changes.outputs.backend != 'true' &&
-          (
-            needs.changes.outputs.migrations == 'true' ||
-            (
-              needs.changes.outputs.governance == 'true' &&
-              needs.changes.outputs.provider_proof_only != 'true' &&
-              needs.changes.outputs.cj_pilot_proof_only != 'true'
-            )
-          )
-        )
+        needs.changes.outputs.db_rebuild_required == 'true' ||
+        needs.changes.outputs.integration_required == 'true' ||
+        needs.changes.outputs.e2e_api_required == 'true'
+      ) &&
+      (
+        needs.changes.outputs.backend != 'true' ||
+        needs.backend.result == 'success'
       )
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -360,6 +358,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
       - name: Fetch full history for migration baseline resolution
+        if: needs.changes.outputs.db_rebuild_required == 'true'
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
@@ -374,6 +373,7 @@ jobs:
       - run: npm ci
       - id: e2e_scope
         name: Compute Feature-first E2E blast radius
+        if: needs.changes.outputs.e2e_api_required == 'true'
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
@@ -387,21 +387,22 @@ jobs:
           PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
           node scripts/ci-db-bootstrap.js
       - name: Integration DB proofs
+        if: needs.changes.outputs.integration_required == 'true'
         run: npm run test:integration
       - name: Feature-first E2E API proofs (targeted)
-        if: steps.e2e_scope.outputs.mode == 'targeted'
+        if: needs.changes.outputs.e2e_api_required == 'true' && steps.e2e_scope.outputs.mode == 'targeted'
         env:
           E2E_FEATURES: ${{ steps.e2e_scope.outputs.features }}
         run: |
           echo "Targeted E2E features: $E2E_FEATURES"
           node scripts/run-e2e-feature-tests.js --features="$E2E_FEATURES"
       - name: Feature-first E2E API proofs (full)
-        if: steps.e2e_scope.outputs.mode == 'full'
+        if: needs.changes.outputs.e2e_api_required == 'true' && steps.e2e_scope.outputs.mode == 'full'
         run: |
           echo "Full E2E required: ${{ steps.e2e_scope.outputs.reason }}"
           npm run test:e2e:features
       - name: Feature-first E2E API proofs (skip)
-        if: steps.e2e_scope.outputs.mode == 'skip'
+        if: needs.changes.outputs.e2e_api_required == 'true' && steps.e2e_scope.outputs.mode == 'skip'
         run: |
           echo "No E2E API runtime impact: ${{ steps.e2e_scope.outputs.reason }}"
 
