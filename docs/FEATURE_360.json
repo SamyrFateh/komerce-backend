@@ -6092,6 +6092,7 @@
           "Canonical : public/dashboards/canonical/** — seule cible autorisée pour tout nouveau développement dashboard",
           "Portail interne unique /admin — même shell Canonical pour administration centrale, opérateurs pays et rôles terrain autorisés",
           "Operations Workspace : les rôles terrain natifs restent compatibles ; une membership pays peut exécuter une mutation seulement avec la capability execution.* exacte, résolue et auditée par market-delegation",
+          "Espace canonique « Achats fournisseurs » (/admin/workspaces/purchasing, domaine Opérations, rôle admin) : écran de lecture/action sur les routes /api/purchasing existantes (lignes ouvertes groupées fournisseur + Hub, préparation de brouillon, détachement, soumission, confirmation partielle) — la logique et les mutations restent dans la feature purchasing",
           "Authentification commune puis landing/navigation contextuelles ; les deep-links /admin/** restent des destinations, pas des portails séparés",
           "AdminContext canonical — projection UI d'une autorité market déjà résolue côté serveur, jamais une source d'autorisation locale",
           "auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis"
@@ -6123,6 +6124,10 @@
         "un filtre pays du DashboardSchema est présentationnel : canonical ne charge jamais un agrégat global pour le filtrer ensuite côté client",
         "market est l'unité de délégation business ; corridor reste une dimension technique/logistique sans autorité",
         "le cockpit Démo / Staging ne possède aucune transition : il délègue à la route orders et lit les notifications/documents réellement persistés",
+        {
+          "statement": "espace « Achats fournisseurs » (/admin/workspaces/purchasing, domaine Opérations, admin seul) : aucune route ni logique métier nouvelle, il relit les routes /api/purchasing après chaque action ; la clé de regroupement affichée est fournisseur + Hub (jamais le marché, visible par ligne et en badge « multi-marchés ») ; « Préparer la commande » est verrouillé dès le premier clic (un double clic ne crée qu'une commande) ; le brouillon reste rouvrable via ?po= ; une confirmation partielle rouvre le reliquat dans les lignes à acheter ; les refus serveur (verdicts de soumission) sont affichés tels quels ; aucun débordement horizontal mobile ni desktop",
+          "test": "tests/e2e/purchasing-workspace.spec.js"
+        },
         {
           "statement": "un cockpit Canonical montre situation, décisions et exceptions ; les étapes techniques saines restent dans le drill-down et la clôture KIR est projetée côté serveur depuis des décisions terminales",
           "test": "tests/unit/import-lot-registry.test.js"
@@ -6159,7 +6164,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 105,
+            "count": 108,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6532,6 +6537,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/purchasing-workspace.css",
+                "resolvedPath": "public/dashboards/canonical/css/purchasing-workspace.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/css/renderer.css",
                 "resolvedPath": "public/dashboards/canonical/css/renderer.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6554,6 +6564,11 @@
               {
                 "declared": "dashboards/canonical/js/app.js",
                 "resolvedPath": "public/dashboards/canonical/js/app.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/canonical-client-router-v4.js",
+                "resolvedPath": "public/dashboards/canonical/js/canonical-client-router-v4.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6619,6 +6634,11 @@
               {
                 "declared": "dashboards/canonical/js/primitives.js",
                 "resolvedPath": "public/dashboards/canonical/js/primitives.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/purchasing-workspace.js",
+                "resolvedPath": "public/dashboards/canonical/js/purchasing-workspace.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6969,7 +6989,7 @@
             ]
           },
           "tests": {
-            "count": 140,
+            "count": 142,
             "files": [
               {
                 "declared": "public/boutique/tests/e2e/admin-pricing-market-decision.spec.js",
@@ -6999,6 +7019,11 @@
               {
                 "declared": "tests/e2e/live-ops-shell.spec.js",
                 "resolvedPath": "tests/e2e/live-ops-shell.spec.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/e2e/purchasing-workspace.spec.js",
+                "resolvedPath": "tests/e2e/purchasing-workspace.spec.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -7362,6 +7387,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/canonical-purchasing-workspace-boundary.test.js",
+                "resolvedPath": "tests/unit/canonical-purchasing-workspace-boundary.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/canonical-shipping-customs-workspace-boundary.test.js",
                 "resolvedPath": "tests/unit/canonical-shipping-customs-workspace-boundary.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -7674,7 +7704,7 @@
             ]
           }
         },
-        "totalFiles": 297,
+        "totalFiles": 302,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,

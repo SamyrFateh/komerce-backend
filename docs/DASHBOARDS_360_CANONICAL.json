@@ -1,16 +1,16 @@
 {
-  "generatedAt": "2026-09-20T19:35:58.222Z",
+  "generatedAt": "2026-10-02T07:45:31.015Z",
   "summary": {
-    "navItems": 13,
-    "navMatrixEntries": 37,
-    "canonicalModules": 62,
-    "apiEdgesTraced": 66,
+    "navItems": 16,
+    "navMatrixEntries": 42,
+    "canonicalModules": 69,
+    "apiEdgesTraced": 76,
     "surfaceWithoutModule": 0,
     "navHrefUnresolved": 0,
-    "unprovenContracts": 0,
+    "unprovenContracts": 8,
     "notFoundContracts": 0,
     "notFoundDynamic": 9,
-    "unresolvedFetches": 22,
+    "unresolvedFetches": 25,
     "legacyDependencies": 0,
     "clientMarketAuthoritySuspects": 0,
     "moduleFilesWithoutHeader": 0
@@ -344,26 +344,79 @@
     },
     {
       "role": "admin",
-      "itemId": "sourcing-workspace",
-      "label": "Sourcing",
-      "href": "/admin/workspaces/sourcing",
-      "surfaceId": "sourcing-workspace",
+      "itemId": "purchasing-workspace",
+      "label": "Achats fournisseurs",
+      "href": "/admin/workspaces/purchasing",
+      "surfaceId": "purchasing-workspace",
       "resolvedVia": "app-equality",
       "moduleFiles": [
-        "sourcing-workspace-decision.js",
-        "sourcing-workspace.js"
+        "purchasing-workspace.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "import-runtime",
+      "label": "Sourcing live",
+      "href": "/admin/import-runtime",
+      "surfaceId": "import-runtime",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "import-runtime.js"
       ]
     },
     {
       "role": "sourcing",
-      "itemId": "sourcing-workspace",
-      "label": "Sourcing",
-      "href": "/admin/workspaces/sourcing",
-      "surfaceId": "sourcing-workspace",
+      "itemId": "import-runtime",
+      "label": "Sourcing live",
+      "href": "/admin/import-runtime",
+      "surfaceId": "import-runtime",
       "resolvedVia": "app-equality",
       "moduleFiles": [
-        "sourcing-workspace-decision.js",
-        "sourcing-workspace.js"
+        "import-runtime.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "hub-live",
+      "label": "Hub live",
+      "href": "/admin/hub-live",
+      "surfaceId": "hub-live",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "hub-live.js"
+      ]
+    },
+    {
+      "role": "agent_hub",
+      "itemId": "hub-live",
+      "label": "Hub live",
+      "href": "/admin/hub-live",
+      "surfaceId": "hub-live",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "hub-live.js"
+      ]
+    },
+    {
+      "role": "admin",
+      "itemId": "relais-live",
+      "label": "Relais live",
+      "href": "/admin/relais-live",
+      "surfaceId": "relais-live",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "relay-live.js"
+      ]
+    },
+    {
+      "role": "agent_relais",
+      "itemId": "relais-live",
+      "label": "Relais live",
+      "href": "/admin/relais-live",
+      "surfaceId": "relais-live",
+      "resolvedVia": "app-equality",
+      "moduleFiles": [
+        "relay-live.js"
       ]
     },
     {
@@ -500,18 +553,10 @@
       "contractStatus": "PROVEN"
     },
     {
-      "module": "catalog-control-tower.js",
-      "rawUrl": "ENDPOINT",
-      "httpMethod": "?",
-      "normalized": null,
-      "matchedRoute": null,
-      "contractStatus": "UNRESOLVED"
-    },
-    {
       "module": "catalog-workspace.js",
-      "rawUrl": "/api/admin/workspaces/sourcing/sources/${encodeURIComponent(source.source_ref)}/${active ? 'deactivate' : 'activate'}",
+      "rawUrl": "/api/admin/workspaces/catalog/approval/${encodeURIComponent(row.product_ref)}/prepare-fr",
       "httpMethod": "POST",
-      "normalized": "/api/admin/workspaces/sourcing/sources/{param}/{param}",
+      "normalized": "/api/admin/workspaces/catalog/approval/{param}/prepare-fr",
       "matchedRoute": null,
       "contractStatus": "NOT_FOUND_DYNAMIC"
     },
@@ -573,7 +618,7 @@
     },
     {
       "module": "catalog-workspace.js",
-      "rawUrl": "/api/admin/workspaces/catalog",
+      "rawUrl": "/api/admin/workspaces/catalog?${params.toString()}",
       "httpMethod": "GET",
       "normalized": "/api/admin/workspaces/catalog",
       "matchedRoute": "/api/admin/workspaces/catalog",
@@ -581,11 +626,11 @@
     },
     {
       "module": "client-360.js",
-      "rawUrl": "/api/admin/entities/clients/${param}",
-      "httpMethod": "GET",
-      "normalized": "/api/admin/entities/clients/{param}",
-      "matchedRoute": "/api/admin/entities/clients/{clientPhone}",
-      "contractStatus": "PROVEN"
+      "rawUrl": "endpoint",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
     },
     {
       "module": "demo-order-flow.js",
@@ -626,6 +671,22 @@
       "normalized": "/api/admin/workspaces/accounting/market/{param}{param}{param}",
       "matchedRoute": null,
       "contractStatus": "NOT_FOUND_DYNAMIC"
+    },
+    {
+      "module": "import-runtime.js",
+      "rawUrl": "path",
+      "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "live-kit.js",
+      "rawUrl": "path",
+      "httpMethod": "GET",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
     },
     {
       "module": "market-autonomy.js",
@@ -695,6 +756,14 @@
       "module": "markets-decision-bootstrap.js",
       "rawUrl": "url",
       "httpMethod": "?",
+      "normalized": null,
+      "matchedRoute": null,
+      "contractStatus": "UNRESOLVED"
+    },
+    {
+      "module": "navigation.js",
+      "rawUrl": "path",
+      "httpMethod": "POST",
       "normalized": null,
       "matchedRoute": null,
       "contractStatus": "UNRESOLVED"
@@ -842,6 +911,70 @@
       "normalized": "/api/admin/entities/products/{param}",
       "matchedRoute": "/api/admin/entities/products/{productRef}",
       "contractStatus": "PROVEN"
+    },
+    {
+      "module": "purchasing-workspace.js",
+      "rawUrl": "/api/purchasing/open-lines",
+      "httpMethod": "GET",
+      "normalized": "/api/purchasing/open-lines",
+      "matchedRoute": "/api/purchasing/open-lines",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "purchasing-workspace.js",
+      "rawUrl": "/api/purchasing/po/${encodeURIComponent(context.poId)}",
+      "httpMethod": "GET",
+      "normalized": "/api/purchasing/po/{param}",
+      "matchedRoute": "/api/purchasing/po/{po_id}",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "purchasing-workspace.js",
+      "rawUrl": "/api/purchasing/lines/${encodeURIComponent(line.line_id)}/cancel",
+      "httpMethod": "POST",
+      "normalized": "/api/purchasing/lines/{param}/cancel",
+      "matchedRoute": "/api/purchasing/lines/{id}/cancel",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "purchasing-workspace.js",
+      "rawUrl": "/api/purchasing/po/prepare",
+      "httpMethod": "POST",
+      "normalized": "/api/purchasing/po/prepare",
+      "matchedRoute": "/api/purchasing/po/prepare",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "purchasing-workspace.js",
+      "rawUrl": "/api/purchasing/po/${encodeURIComponent(po.id)}/confirm",
+      "httpMethod": "POST",
+      "normalized": "/api/purchasing/po/{param}/confirm",
+      "matchedRoute": "/api/purchasing/po/{po_id}/confirm",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "purchasing-workspace.js",
+      "rawUrl": "/api/purchasing/po/${encodeURIComponent(po.id)}/detach",
+      "httpMethod": "POST",
+      "normalized": "/api/purchasing/po/{param}/detach",
+      "matchedRoute": "/api/purchasing/po/{po_id}/detach",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "purchasing-workspace.js",
+      "rawUrl": "/api/purchasing/po/${encodeURIComponent(po.id)}/discard",
+      "httpMethod": "POST",
+      "normalized": "/api/purchasing/po/{param}/discard",
+      "matchedRoute": "/api/purchasing/po/{po_id}/discard",
+      "contractStatus": "UNKNOWN"
+    },
+    {
+      "module": "purchasing-workspace.js",
+      "rawUrl": "/api/purchasing/po/${encodeURIComponent(po.id)}/submit",
+      "httpMethod": "POST",
+      "normalized": "/api/purchasing/po/{param}/submit",
+      "matchedRoute": "/api/purchasing/po/{po_id}/submit",
+      "contractStatus": "UNKNOWN"
     },
     {
       "module": "settings-workspace.js",
@@ -1068,18 +1201,19 @@
       "file": "catalog-control-tower.js",
       "hasHeader": true,
       "isLite": false,
-      "role": "canonical-catalog-business-truth-ui",
+      "role": "canonical-catalog-commercial-shell",
       "domain": "admin-dashboard",
       "layer": "ui-orchestration",
       "criticality": "medium",
       "doctrine": [
         "one_shell_one_truth_no_duplicate_dashboard",
-        "visible_means_sellable"
+        "catalog_does_not_repeat_import_pipeline",
+        "commercial_assortment_is_primary_catalog_read"
       ],
       "exportsGlobals": [
         "KomerceCanonicalCatalogWorkspace"
       ],
-      "fetchCount": 1
+      "fetchCount": 0
     },
     {
       "file": "catalog-workspace-decision.js",
@@ -1111,8 +1245,8 @@
         "workspace_acts_dashboard_observes",
         "canonical_admin_no_legacy_imports",
         "global_catalog_not_market_scoped",
+        "commercial_catalog_is_union_of_approved_products_from_closed_kirs",
         "product_360_explains",
-        "curated_catalog_not_crud",
         "sourcing_keeps_source_mutation_authority"
       ],
       "exportsGlobals": [
@@ -1154,6 +1288,24 @@
       ],
       "exportsGlobals": [
         "KomerceCanonicalClientIndex"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "cockpit-pattern.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-domain-cockpit-pattern",
+      "domain": "admin-dashboard",
+      "layer": "ui-component",
+      "criticality": "medium",
+      "doctrine": [
+        "dashboard_no_business_recompute",
+        "cockpit_pattern_is_presentation_only",
+        "legacy_visual_language"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalCockpitPattern"
       ],
       "fetchCount": 0
     },
@@ -1332,6 +1484,62 @@
       "fetchCount": 0
     },
     {
+      "file": "hub-live.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-hub-live-cockpit",
+      "domain": "admin-dashboard",
+      "layer": "ui-workspace",
+      "criticality": "medium",
+      "doctrine": [
+        "exclusive_views",
+        "single_parent_navigation",
+        "read_only_live_cockpit",
+        "dashboard_never_recomputes_business_truth"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalHubLive"
+      ],
+      "fetchCount": 0
+    },
+    {
+      "file": "import-runtime.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-import-decision-cockpit",
+      "domain": "admin-dashboard",
+      "layer": "ui-workspace",
+      "criticality": "high",
+      "doctrine": [
+        "situation_then_decision_then_exception_then_drilldown",
+        "dashboard_never_recomputes_business_truth",
+        "technical_pipeline_hidden_unless_requested",
+        "one_card_one_complete_page"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalImportRuntime"
+      ],
+      "fetchCount": 1
+    },
+    {
+      "file": "live-kit.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-live-cockpit-kit",
+      "domain": "admin-dashboard",
+      "layer": "ui-workspace",
+      "criticality": "medium",
+      "doctrine": [
+        "exclusive_views",
+        "single_parent_navigation",
+        "read_only_live_cockpit"
+      ],
+      "exportsGlobals": [
+        "KomerceLiveKit"
+      ],
+      "fetchCount": 1
+    },
+    {
       "file": "market-access.js",
       "hasHeader": true,
       "isLite": false,
@@ -1463,6 +1671,25 @@
       ],
       "exportsGlobals": [],
       "fetchCount": 1
+    },
+    {
+      "file": "market-ready-to-sell.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "market-ready-to-sell-ui",
+      "domain": "dashboard",
+      "layer": "ui-workspace",
+      "criticality": "high",
+      "doctrine": [
+        "certified_product_before_market_decision",
+        "one_human_commercial_decision",
+        "bulk_only_green_rows",
+        "server_rechecks_every_gate"
+      ],
+      "exportsGlobals": [
+        "KomerceMarketReadyToSell"
+      ],
+      "fetchCount": 0
     },
     {
       "file": "market-settlement.js",
@@ -1597,7 +1824,7 @@
       "exportsGlobals": [
         "KomerceCanonicalNavigation"
       ],
-      "fetchCount": 1
+      "fetchCount": 2
     },
     {
       "file": "operations-decision.js",
@@ -1949,6 +2176,46 @@
       "fetchCount": 1
     },
     {
+      "file": "purchasing-workspace.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-purchasing-workspace-ui",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "high",
+      "doctrine": [
+        "workspace_acts_dashboard_observes",
+        "canonical_admin_no_legacy_imports",
+        "grouping_key_supplier_and_hub_never_market",
+        "market_is_a_line_property",
+        "browser_never_supplies_market_id_authority",
+        "browser_no_business_recompute"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalPurchasingWorkspace"
+      ],
+      "fetchCount": 8
+    },
+    {
+      "file": "relay-live.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-relay-live-cockpit",
+      "domain": "admin-dashboard",
+      "layer": "ui-workspace",
+      "criticality": "medium",
+      "doctrine": [
+        "exclusive_views",
+        "single_parent_navigation",
+        "read_only_live_cockpit",
+        "dashboard_never_recomputes_business_truth"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalRelayLive"
+      ],
+      "fetchCount": 0
+    },
+    {
       "file": "settings-workspace.js",
       "hasHeader": true,
       "isLite": false,
@@ -2013,6 +2280,7 @@
         "dashboard_no_business_recompute",
         "decision_first_dashboard_visuals",
         "global_sourcing_not_market_scoped",
+        "technical_health_is_diagnostic_only",
         "browser_never_recomputes_health_truth"
       ],
       "exportsGlobals": [
@@ -2076,7 +2344,16 @@
   "diagnostics": {
     "surfaceWithoutModule": [],
     "navHrefUnresolved": [],
-    "unprovenContracts": [],
+    "unprovenContracts": [
+      "GET /api/purchasing/open-lines",
+      "GET /api/purchasing/po/{po_id}",
+      "POST /api/purchasing/lines/{id}/cancel",
+      "POST /api/purchasing/po/prepare",
+      "POST /api/purchasing/po/{po_id}/confirm",
+      "POST /api/purchasing/po/{po_id}/detach",
+      "POST /api/purchasing/po/{po_id}/discard",
+      "POST /api/purchasing/po/{po_id}/submit"
+    ],
     "notFoundContracts": [],
     "notFoundDynamic": [
       "GET* /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)",
@@ -2084,21 +2361,24 @@
       "GET* /api/admin/workspaces/pricing/market/{param}/strategy (pricing-workspace.js)",
       "GET* /api/admin/workspaces/shipping-customs/market/{param}{param} (shipping-customs-workspace.js)",
       "POST /api/admin/workspaces/accounting/market/{param}{param}{param} (finance-accounting-workspace.js)",
+      "POST /api/admin/workspaces/catalog/approval/{param}/prepare-fr (catalog-workspace.js)",
       "POST /api/admin/workspaces/operations/market/{param}{param} (operations-workspace.js)",
       "POST /api/admin/workspaces/shipping-customs/market/{param}{param} (shipping-customs-workspace.js)",
-      "POST /api/admin/workspaces/sourcing/sources/{param}/{param} (catalog-workspace.js)",
       "POST /api/admin/workspaces/sourcing/suppliers/{param}/{param} (sourcing-workspace.js)"
     ],
     "unresolvedFetches": [
-      "ENDPOINT (catalog-control-tower.js)",
       "config.chargesEndpoint (pricing-structure-event-panel.js)",
       "config.submitEndpoint (pricing-structure-event-panel.js)",
       "context.loadEndpoint (action-center.js)",
+      "endpoint (client-360.js)",
       "endpoint (operations.js)",
       "endpoint (orders.js)",
       "endpoint (pilotage.js)",
       "endpoint(workspace, options.requestedMarket) (pricing-workspace-simulation.js)",
       "path (action-center.js)",
+      "path (import-runtime.js)",
+      "path (live-kit.js)",
+      "path (navigation.js)",
       "url (market-autonomy.js)",
       "url (market-cash-control.js)",
       "url (market-catalog.js)",

@@ -61,6 +61,7 @@
         Object.freeze({ id: 'operations-overview', label: 'Vue d’ensemble', href: '/admin/operations', roles: Object.freeze(['admin', 'market_operator']) }),
         Object.freeze({ id: 'operations-workspace', label: 'Hub / Relais', href: '/admin/workspaces/operations', roles: Object.freeze(['admin', 'agent_hub', 'agent_relais', 'market_operator']) }),
         Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: Object.freeze(['admin', 'agent_hub', 'agent_transitaire', 'market_operator']) }),
+        Object.freeze({ id: 'purchasing-workspace', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: Object.freeze(['admin']) }),
       ]),
     }),
     Object.freeze({
@@ -114,6 +115,7 @@
     operations: 'operations',
     'operations-workspace': 'operations',
     'shipping-customs-workspace': 'operations',
+    'purchasing-workspace': 'operations',
     'sourcing-workspace': 'catalog',
     'import-runtime': 'live',
     'hub-live': 'live',
@@ -132,6 +134,7 @@
     operations: 'operations-overview',
     'operations-workspace': 'operations-workspace',
     'shipping-customs-workspace': 'shipping-customs-workspace',
+    'purchasing-workspace': 'purchasing-workspace',
     'import-runtime': 'import-runtime',
     'hub-live': 'hub-live',
     'relais-live': 'relais-live',

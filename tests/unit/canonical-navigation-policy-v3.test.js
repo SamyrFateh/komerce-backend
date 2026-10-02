@@ -64,7 +64,7 @@ describe('Canonical Navigation Policy V3.1', () => {
   test('N2 Opérations reflète exactement les guards de lecture serveur', () => {
     const nav = loadPolicy();
     expect(spaceIds(nav, 'operations', 'admin')).toEqual([
-      'operations-overview', 'operations-workspace', 'shipping-customs-workspace',
+      'operations-overview', 'operations-workspace', 'shipping-customs-workspace', 'purchasing-workspace',
     ]);
     expect(spaceIds(nav, 'live', 'admin')).toEqual(['import-runtime', 'hub-live', 'relais-live']);
     expect(spaceIds(nav, 'live', 'sourcing')).toEqual(['import-runtime']);

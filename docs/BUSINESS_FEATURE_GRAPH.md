@@ -221,8 +221,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - services: 25
 - routes: 24
 - migrations: 2
-- dash: 105
-- tests: 140
+- dash: 108
+- tests: 142
 - tables owned (lifecycle): 2 — `order_incidents`, `partners`
 - tables written: 14
 - interfaces exposed: 89
@@ -2124,7 +2124,7 @@ Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la det
 
 ### LIMITES DU GÉNÉRATEUR — hors dette (12)
 
-- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:backend — 22 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/integration/txg01-pricing-matrices.test.js: TARGET) — limitation du modèle statique O5, jamais inventé
+- **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:backend — 23 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE) — limitation du modèle statique O5, jamais inventé
 - **[DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED]** scope:boutique — 1 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope boutique (ex. public/boutique/tests/unit/modal-cart-sku-guard.test.js: bundleConfigPath) — limitation du modèle statique O5, jamais inventé
 - **[EXPOSE-ENTRY-UNPARSED]** logistics / GET/POST /api/parcels — entrée contract.exposes non parseable (attendu "METHOD /path")
 - **[EXPOSE-ENTRY-UNPARSED]** orders / GET/POST /api/orders — entrée contract.exposes non parseable (attendu "METHOD /path")
@@ -2149,7 +2149,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1757 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1761 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 78 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2552,7 +2552,7 @@ Meta Graph monté : oui.
 
 ### Dynamic dependencies non résolues statiquement (limitation du modèle, jamais inventées)
 
-- scope `backend` : 22 appel(s) — ex. `tests/unit/modal-mobile-canonical.test.js`: `CSS_BUNDLES_PATH`, `tests/integration/txg03-hub-dashboard.test.js`: `TARGET`, `tests/integration/txg01-pricing-matrices.test.js`: `TARGET`
+- scope `backend` : 23 appel(s) — ex. `tests/unit/modal-mobile-canonical.test.js`: `CSS_BUNDLES_PATH`, `tests/integration/txg03-hub-dashboard.test.js`: `TARGET`, `tests/unit/canonical-purchasing-workspace-boundary.test.js`: `path.join(ROOT, WORKSPACE`
 - scope `boutique` : 1 appel(s) — ex. `public/boutique/tests/unit/modal-cart-sku-guard.test.js`: `bundleConfigPath`
 
 ## O6 — Dependency Disposition

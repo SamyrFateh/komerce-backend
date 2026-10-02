@@ -520,6 +520,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - Canonical : public/dashboards/canonical/** — seule cible autorisée pour tout nouveau développement dashboard
   - Portail interne unique /admin — même shell Canonical pour administration centrale, opérateurs pays et rôles terrain autorisés
   - Operations Workspace : les rôles terrain natifs restent compatibles ; une membership pays peut exécuter une mutation seulement avec la capability execution.* exacte, résolue et auditée par market-delegation
+  - Espace canonique « Achats fournisseurs » (/admin/workspaces/purchasing, domaine Opérations, rôle admin) : écran de lecture/action sur les routes /api/purchasing existantes (lignes ouvertes groupées fournisseur + Hub, préparation de brouillon, détachement, soumission, confirmation partielle) — la logique et les mutations restent dans la feature purchasing
   - Authentification commune puis landing/navigation contextuelles ; les deep-links /admin/** restent des destinations, pas des portails séparés
   - AdminContext canonical — projection UI d'une autorité market déjà résolue côté serveur, jamais une source d'autorisation locale
   - auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis
@@ -558,6 +559,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
 
 **Owns** : `order_incidents`, `partners`
 **Writes (not owner)** : `invoices` (writer-not-owner), `order_comments` (writer-not-owner), `order_items` (writer-not-owner), `order_status_history` (writer-not-owner), `orders` (writer-not-owner), `products` (writer-not-owner), `recipients` (writer-not-owner), `relais` (writer-not-owner), `scan_events` (writer-not-owner), `sms_log` (writer-not-owner), `wallet_transactions` (writer-not-owner), `wallets` (writer-not-owner)
@@ -577,13 +579,13 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 297 fichier(s) déclaré(s)
-  - dash : 105
+**Implementation** : 302 fichier(s) déclaré(s)
+  - dash : 108
   - middleware : 1
   - migrations : 2
   - routes : 24
   - services : 25
-  - tests : 140
+  - tests : 142
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="dashboard"]_
 

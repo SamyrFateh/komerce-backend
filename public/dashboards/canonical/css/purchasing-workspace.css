@@ -1,0 +1,113 @@
+/* Achats fournisseurs — surface canonique (PR 6/8). Mise en page seulement : aucune logique métier. */
+.kmc-purchasing-workspace {
+  min-width: 0;
+}
+
+.kmc-purchasing-group {
+  min-width: 0;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--kmc-border, #e2e8f0);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.kmc-purchasing-group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.kmc-purchasing-group-title {
+  margin: 0;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.kmc-purchasing-hub,
+.kmc-purchasing-currency {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--kmc-muted, #64748b);
+}
+
+.kmc-purchasing-markets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+
+.kmc-purchasing-market-badge,
+.kmc-purchasing-multi-market {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef2f7;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.kmc-purchasing-multi-market {
+  background: #fff4dc;
+  color: #8a5a00;
+}
+
+.kmc-purchasing-filter {
+  margin-bottom: 12px;
+}
+
+.kmc-purchasing-filter select,
+.kmc-purchasing-confirm input[type='text'],
+.kmc-purchasing-confirm input[type='number'] {
+  max-width: 100%;
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 1px solid var(--kmc-border, #cbd5e1);
+  border-radius: 8px;
+  font: inherit;
+}
+
+.kmc-purchasing-confirm input[type='number'] {
+  width: 96px;
+}
+
+.kmc-purchasing-confirm input[type='text'] {
+  width: min(100%, 360px);
+  margin-top: 10px;
+}
+
+.kmc-purchasing-lines-table .kmc-workspace-action,
+.kmc-purchasing-po-table .kmc-workspace-action {
+  white-space: normal;
+}
+
+.kmc-purchasing-po-table tr.is-cancelled td {
+  text-decoration: line-through;
+  opacity: .55;
+}
+
+.kmc-purchasing-workspace .kmc-workspace-section-actions {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .kmc-purchasing-group {
+    padding: 10px;
+  }
+
+  .kmc-purchasing-workspace .kmc-workspace-table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .kmc-purchasing-workspace .kmc-workspace-section-actions {
+    justify-content: stretch;
+  }
+
+  .kmc-purchasing-workspace .kmc-workspace-section-actions .kmc-workspace-action {
+    flex: 1 1 100%;
+  }
+}

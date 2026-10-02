@@ -6,8 +6,8 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, orders, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, pricing-workspace, action-center, order-360, client-index, client-360, product-360, demo-order-flow
- * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/orders, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/workspaces/pricing, /admin/action-center, /admin/orders/:reference, /admin/clients, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
+ * @depends       canonical admin-context, pilotage, commerce, orders, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, purchasing-workspace, pricing-workspace, action-center, order-360, client-index, client-360, product-360, demo-order-flow
+ * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/orders, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/workspaces/purchasing, /admin/workspaces/pricing, /admin/action-center, /admin/orders/:reference, /admin/clients, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -33,6 +33,7 @@
     CATALOG_WORKSPACE: 'catalog-workspace',
     ACCOUNTING_WORKSPACE: 'accounting-workspace',
     SOURCING_WORKSPACE: 'sourcing-workspace',
+    PURCHASING_WORKSPACE: 'purchasing-workspace',
     IMPORT_RUNTIME: 'import-runtime',
     HUB_LIVE: 'hub-live',
     RELAIS_LIVE: 'relais-live',
@@ -169,6 +170,7 @@
     if (path === '/admin/workspaces/sourcing' || path === '/admin-next/workspaces/sourcing') {
       return SURFACES.SOURCING_WORKSPACE;
     }
+    if (path === '/admin/workspaces/purchasing') return SURFACES.PURCHASING_WORKSPACE;
     if (path === '/admin/import-runtime') return SURFACES.IMPORT_RUNTIME;
     if (path === '/admin/hub-live') return SURFACES.HUB_LIVE;
     if (path === '/admin/relais-live') return SURFACES.RELAIS_LIVE;
@@ -434,6 +436,17 @@
     });
   }
 
+  function renderPurchasingWorkspace(root, user) {
+    if (!global.KomerceCanonicalPurchasingWorkspace) throw new Error('canonical_purchasing_workspace_module_missing');
+    return global.KomerceCanonicalPurchasingWorkspace.mount({
+      root,
+      user,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+      ui: global.KomerceCanonicalUI,
+    });
+  }
+
   function renderImportRuntime(root, user) {
     if (!global.KomerceCanonicalImportRuntime) throw new Error('canonical_import_runtime_module_missing');
     return global.KomerceCanonicalImportRuntime.mount({
@@ -689,6 +702,7 @@
     if (surface === SURFACES.CATALOG_WORKSPACE) return renderCatalogWorkspace(root, user, adminContext);
     if (surface === SURFACES.ACCOUNTING_WORKSPACE) return renderFinanceAccountingWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.SOURCING_WORKSPACE) return renderSourcingWorkspace(root, user);
+    if (surface === SURFACES.PURCHASING_WORKSPACE) return renderPurchasingWorkspace(root, user);
     if (surface === SURFACES.IMPORT_RUNTIME) return renderImportRuntime(root, user);
     if (surface === SURFACES.HUB_LIVE) return renderHubLive(root, user);
     if (surface === SURFACES.RELAIS_LIVE) return renderRelayLive(root, user);
@@ -721,7 +735,7 @@
     }
 
     const surface = surfaceForPath(global.location.pathname);
-    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.IMPORT_RUNTIME || surface === SURFACES.ACTION_CENTER || surface === SURFACES.SETTINGS)
+    const adminContext = (surface === SURFACES.CATALOG_WORKSPACE || surface === SURFACES.SOURCING_WORKSPACE || surface === SURFACES.PURCHASING_WORKSPACE || surface === SURFACES.IMPORT_RUNTIME || surface === SURFACES.ACTION_CENTER || surface === SURFACES.SETTINGS)
       ? null
       : await requireAdminContext();
     global.KOMERCE_CANONICAL_AUTH_USER = user;
