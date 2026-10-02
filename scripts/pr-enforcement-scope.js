@@ -129,20 +129,87 @@ function defaultReadSource(file) {
   }
 }
 
-function classifyRuntimeProof(files, { readSource = defaultReadSource } = {}) {
+function compactWhitespace(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function dbSurfaceFingerprint(source) {
+  const text = String(source || '');
+  const templates = text.match(/`(?:\\.|[^\\`])*`/gs) || [];
+  const sql = templates
+    .map(compactWhitespace)
+    .filter(value => /\b(?:SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM|WITH)\b/i.test(value))
+    .sort();
+
+  return JSON.stringify({
+    read: headerField(text, 'db-read') || null,
+    write: headerField(text, 'db-write') || null,
+    sql,
+  });
+}
+
+function apiSurfaceFingerprint(source) {
+  const text = String(source || '');
+  const routes = [];
+  const re = /\brouter\.(get|post|put|patch|delete|use)\s*\(\s*(['"`])([^`'"]+)\2/g;
+  let match;
+  while ((match = re.exec(text))) routes.push(`${match[1].toUpperCase()} ${match[3]}`);
+
+  const statuses = [...text.matchAll(/\bres\.status\(\s*(\d{3})\s*\)/g)]
+    .map(m => m[1])
+    .sort();
+
+  return JSON.stringify({ routes: routes.sort(), statuses });
+}
+
+function directDbWrite(source) {
+  const write = headerField(source, 'db-write');
+  return Boolean(write && !/^none$/i.test(write));
+}
+
+function classifyRuntimeProof(files, {
+  readSource = defaultReadSource,
+  readBefore = null,
+  readAfter = null,
+} = {}) {
   const changed = [...new Set((files || []).map(norm).filter(Boolean))];
   const dbRebuildRequired = changed.some(isDbRebuildFile);
+  const semanticDiffAvailable = typeof readBefore === 'function' && typeof readAfter === 'function';
+
+  const before = file => semanticDiffAvailable ? readBefore(file) : null;
+  const after = file => semanticDiffAvailable ? readAfter(file) : readSource(file);
 
   const integrationRequired = dbRebuildRequired || changed.some(file => {
     if (/^tests\/integration\//i.test(file) || /^db\//i.test(file)) return true;
     if (!/^(?:services|routes|middleware|utils|validators|core|bootstrap)\//i.test(file)) return false;
-    return headerTouchesDb(readSource(file));
+
+    const previous = before(file);
+    const current = after(file);
+    const effective = current || previous;
+
+    if (!effective || !headerTouchesDb(effective)) return false;
+    if (directDbWrite(current) || directDbWrite(previous)) return true;
+
+    if (!semanticDiffAvailable) return true;
+    return dbSurfaceFingerprint(previous) !== dbSurfaceFingerprint(current);
   });
 
   const e2eApiRequired = changed.some(file => {
-    if (isDirectApiRuntimeFile(file)) return true;
-    if (!/^(?:services|middleware|utils|validators|core|bootstrap)\//i.test(file)) return false;
-    return headerFeedsApi(readSource(file));
+    const f = norm(file);
+    if (/^tests\/e2e-api\/.+\.(?:test|spec)\.(?:js|cjs|mjs|ts)$/i.test(f)) return true;
+    if (f === 'server.js' || f === 'bootstrap/api-routes.js') return true;
+
+    if (/^routes\/.+\.(?:js|cjs|mjs)$/i.test(f)) {
+      if (!semanticDiffAvailable) return true;
+      return apiSurfaceFingerprint(before(file)) !== apiSurfaceFingerprint(after(file));
+    }
+
+    if (!semanticDiffAvailable
+      && /^(?:services|middleware|utils|validators|core|bootstrap)\//i.test(f)) {
+      return headerFeedsApi(readSource(file));
+    }
+
+    return false;
   });
 
   return { dbRebuildRequired, integrationRequired, e2eApiRequired };
@@ -388,6 +455,8 @@ function classifyDiff(base, head) {
   };
   const model = classify(files, {
     readSource: file => readAt(head, file) || readAt(base, file),
+    readBefore: file => readAt(base, file),
+    readAfter: file => readAt(head, file),
   });
   const packageJsonGovernanceOnly = files.includes('package.json')
     && !files.includes('package-lock.json')
@@ -459,6 +528,9 @@ module.exports = {
   headerField,
   headerTouchesDb,
   headerFeedsApi,
+  dbSurfaceFingerprint,
+  apiSurfaceFingerprint,
+  directDbWrite,
   classifyRuntimeProof,
   isGoldenCdrFile,
   isBoutiqueCssSource,
