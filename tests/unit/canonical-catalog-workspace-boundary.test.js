@@ -44,7 +44,8 @@ test('Catalogue garde une seule surface Canonical et délègue provenance/import
 
 test('la curation guide explicitement la préparation française avant publication', () => {
   const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
-  expect(workspace).toContain('Préparer en français');
+  expect(workspace).toContain('Copier pour ChatGPT');
+  expect(workspace).toContain('Saisir le français');
   expect(workspace).toContain('/prepare-fr');
   expect(workspace).toContain('Valider après relecture');
   expect(workspace).toContain('Description corrigée');
