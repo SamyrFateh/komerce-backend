@@ -26,10 +26,9 @@ const { classify, classifyDiff } = require('./pr-enforcement-scope');
 const ROOT = path.resolve(__dirname, '..');
 const FEATURE_ROOTS = [
   'features',
-  'public/features',
-  'public/dashboards/features',
   'public/boutique/features',
 ];
+const CATEGORY_PREFIX = { boutique: 'public/boutique', dash: 'public' };
 
 function argValue(args, flag, fallback = null) {
   const i = args.indexOf(flag);
@@ -77,6 +76,37 @@ function featurePaths() {
   return found.sort();
 }
 
+function repoRel(abs) {
+  return path.relative(ROOT, abs).replace(/\\/g, '/');
+}
+
+function declaredPath(cardBase, rel, category) {
+  const clean = norm(rel).replace(/^\/+/, '');
+  if (!clean || clean.endsWith('/')) return null;
+  if (clean.startsWith('../')) return repoRel(path.resolve(cardBase, clean));
+
+  const prefix = CATEGORY_PREFIX[category];
+  if (prefix) return norm(`${prefix}/${clean}`);
+
+  const rootCandidate = path.join(ROOT, clean);
+  if (fs.existsSync(rootCandidate)) return clean;
+
+  const localCandidate = path.resolve(cardBase, clean);
+  if (fs.existsSync(localCandidate)) return repoRel(localCandidate);
+  return clean;
+}
+
+function manifestOwnedFiles(manifest, cardBase) {
+  const files = [];
+  for (const [category, entries] of Object.entries(manifest.files || {})) {
+    for (const rel of Array.isArray(entries) ? entries : []) {
+      const resolved = declaredPath(cardBase, rel, category);
+      if (resolved) files.push(resolved);
+    }
+  }
+  return files;
+}
+
 function loadFeatures() {
   return featurePaths().map(file => {
     const abs = path.join(ROOT, file);
@@ -85,7 +115,7 @@ function loadFeatures() {
     return {
       file,
       manifest,
-      ownedFiles: new Set(flattenFiles(manifest.files || {})),
+      ownedFiles: new Set(manifestOwnedFiles(manifest, path.dirname(abs))),
     };
   });
 }
@@ -306,6 +336,8 @@ if (require.main === module) {
 
 module.exports = {
   flattenFiles,
+  declaredPath,
+  manifestOwnedFiles,
   parseHeader,
   featureSummary,
   resolveFeatureEntries,
