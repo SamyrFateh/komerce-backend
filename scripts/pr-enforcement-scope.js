@@ -72,6 +72,18 @@ function isBackendFile(file) {
     || /^tests\/.+/i.test(f);
 }
 
+// Coverage-relevant backend source: the directories instrumented by
+// collectCoverageFrom (routes/, services/, middleware/, validators/, utils/)
+// plus server.js, jest configs and core/bootstrap/db that feed them.
+// Excludes package.json, package-lock.json and tests/ — test-only changes
+// cannot lower coverage below thresholds, and the "Related unit tests" step
+// already validates those.
+function isBackendSourceFile(file) {
+  const f = norm(file);
+  return /^(?:server\.js|jest\.config\.js|jest\.unit\.config\.js)$/i.test(f)
+    || /^(?:routes|services|middleware|utils|validators|core|bootstrap|db)\/.+/i.test(f);
+}
+
 function isMigrationFile(file) {
   return /^migrations\/.+\.sql$/i.test(norm(file));
 }
@@ -323,6 +335,7 @@ function classify(files, options = {}) {
   // the entire PR belongs to this strict tooling allowlist.
   const backendFiles = changedFiles.filter(file =>
     isBackendFile(file) && !(providerProofOnly && file === 'tests/unit/external-provider-batch-proof.test.js'));
+  const backendSourceFiles = changedFiles.filter(isBackendSourceFile);
   const goldenFiles = changedFiles.filter(isGoldenCdrFile);
   const migrationFiles = changedFiles.filter(isMigrationFile);
   const schemaDump = changedFiles.some(isLiveSchemaFile);
@@ -339,6 +352,7 @@ function classify(files, options = {}) {
   return {
     changedFiles,
     backendFiles,
+    backendSourceFiles,
     goldenFiles,
     migrationFiles,
     boutiqueFiles,
@@ -346,6 +360,7 @@ function classify(files, options = {}) {
     boutiqueTestFiles,
     governanceFiles,
     backend: backendFiles.length > 0,
+    backendSource: backendSourceFiles.length > 0,
     golden: goldenFiles.length > 0,
     migrations: migrationFiles.length > 0 || schemaDump,
     schemaDump,
@@ -468,6 +483,7 @@ function appendGithubOutput(path, model) {
   if (!path) return;
   const lines = [
     `backend=${model.backend ? 'true' : 'false'}`,
+    `backend_source=${model.backendSource ? 'true' : 'false'}`,
     `provider_proof_only=${model.providerProofOnly ? 'true' : 'false'}`,
     `cj_pilot_proof_only=${model.cjPilotProofOnly ? 'true' : 'false'}`,
     `backend_files=${model.backendFiles.join(',')}`,
@@ -519,6 +535,7 @@ module.exports = {
   GOVERNANCE_ONLY_PACKAGE_SCRIPTS,
   norm,
   isBackendFile,
+  isBackendSourceFile,
   isProviderProofOnlyFile,
   isCjPilotProofOnlyFile,
   isMigrationFile,

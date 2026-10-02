@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 8
     outputs:
       backend: ${{ steps.scope.outputs.backend }}
+      backend_source: ${{ steps.scope.outputs.backend_source }}
       provider_proof_only: ${{ steps.scope.outputs.provider_proof_only }}
       cj_pilot_proof_only: ${{ steps.scope.outputs.cj_pilot_proof_only }}
       backend_files: ${{ steps.scope.outputs.backend_files }}
@@ -225,7 +226,7 @@ jobs:
           BACKEND_FILES: ${{ needs.changes.outputs.backend_files }}
         run: node scripts/run-staged-related-tests.js --files "$BACKEND_FILES"
       - name: Unit test coverage threshold
-        if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
+        if: (needs.changes.outputs.backend_source == 'true') && needs.changes.outputs.unit_repair_only != 'true'
         run: npm run test:unit:coverage
 
       - name: Target only the repaired failing unit tests
