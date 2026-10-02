@@ -273,7 +273,6 @@ module.exports = {
       '.github/workflows-disabled/lot7-staging-business-qualification.yml',
       '.github/workflows-disabled/lot8-pre-go-live-certification.yml',
       '.github/workflows-disabled/lot8-reconcile-current-main-once.yml',
-      '.github/workflows/pr-governance.yml',
     ],
     assets: [
       'public/images/Komerce_Kero_Desktop_2.png',
