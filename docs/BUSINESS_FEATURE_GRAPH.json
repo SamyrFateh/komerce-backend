@@ -4825,6 +4825,20 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/purchasing-workspace.js",
+        "resolvedPath": "public/dashboards/canonical/js/purchasing-workspace.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/purchasing-workspace.css",
+        "resolvedPath": "public/dashboards/canonical/css/purchasing-workspace.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/import-runtime.js",
         "resolvedPath": "public/dashboards/canonical/js/import-runtime.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4869,6 +4883,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/navigation-policy-v4.js",
         "resolvedPath": "public/dashboards/canonical/js/navigation-policy-v4.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/canonical-client-router-v4.js",
+        "resolvedPath": "public/dashboards/canonical/js/canonical-client-router-v4.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5562,6 +5583,20 @@
         "category": "tests",
         "declared": "tests/unit/import-runtime-mock-fidelity.test.js",
         "resolvedPath": "tests/unit/import-runtime-mock-fidelity.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/e2e/purchasing-workspace.spec.js",
+        "resolvedPath": "tests/e2e/purchasing-workspace.spec.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/canonical-purchasing-workspace-boundary.test.js",
+        "resolvedPath": "tests/unit/canonical-purchasing-workspace-boundary.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -41330,6 +41365,11 @@
           "raw": "TARGET"
         },
         {
+          "sourceFileId": "tests/unit/canonical-purchasing-workspace-boundary.test.js",
+          "kind": "require",
+          "raw": "path.join(ROOT, WORKSPACE"
+        },
+        {
           "sourceFileId": "tests/integration/txg01-pricing-matrices.test.js",
           "kind": "require",
           "raw": "TARGET"
@@ -41440,7 +41480,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1757
+        "filesObserved": 1761
       },
       "boutique": {
         "filesObserved": 214,
@@ -44771,7 +44811,7 @@
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
-        "msg": "22 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/integration/txg01-pricing-matrices.test.js: TARGET) — limitation du modèle statique O5, jamais inventé"
+        "msg": "23 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE) — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",

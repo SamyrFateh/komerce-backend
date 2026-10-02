@@ -4,7 +4,7 @@
  * @brief Parcours navigateur de l'espace /admin/workspaces/purchasing : liste groupée (fournisseur + Hub,
  *        marché visible par ligne), sélection, préparation (un double clic ne crée qu'une commande),
  *        détail brouillon (détacher), soumission, confirmation partielle (reliquat), refus de
- *        soumission, filtre opérateur par marché, absence de débordement mobile et desktop.
+ *        soumission, absence de débordement mobile et desktop.
  *        API simulée avec état : aucun serveur ni base requis.
  */
 'use strict';
@@ -66,7 +66,7 @@ function createFakeApi({ submitRefusal = false } = {}) {
     nextPo: 1,
     nextRemnant: 9,
   };
-  const openLines = (marketId) => state.lines.filter((l) => !l.purchase_order_id && !l.cancelled && (!marketId || l.market_id === marketId));
+  const openLines = () => state.lines.filter((l) => !l.purchase_order_id && !l.cancelled);
   const poLines = (poId) => state.lines.filter((l) => l.purchase_order_id === poId);
 
   async function handle(method, pathname, search, body) {
@@ -74,14 +74,12 @@ function createFakeApi({ submitRefusal = false } = {}) {
     if (method === 'POST') state.calls.push({ key, body });
 
     if (key === 'GET /api/purchasing/open-lines') {
-      const marketId = new URLSearchParams(search).get('market_id');
-      state.calls.push({ key: 'GET open-lines', market_id: marketId });
-      const lines = openLines(marketId);
+      const lines = openLines();
       const groups = lines.length ? [{
         supplier_id: SUPPLIER.id, supplier_name: SUPPLIER.name, procurement_hub_ref: HUB, currencies: ['PLN'],
         lines, by_supplier_unit_ref: [], ...summarize(lines),
       }] : [];
-      return { status: 200, json: { filter: { market_id: marketId }, groups, total_lines: lines.length } };
+      return { status: 200, json: { filter: { market_id: null }, groups, total_lines: lines.length } };
     }
     if (key === 'POST /api/purchasing/po/prepare') {
       await new Promise((r) => setTimeout(r, 300));
@@ -296,16 +294,6 @@ test.describe('Achats fournisseurs — espace canonique', () => {
 
     await mountWorkspace(page, api, { search });
     await expect(page.locator('[data-purchasing-po-status="draft"]')).toBeVisible();
-  });
-
-  test('filtre opérateur par marché : relit avec market_id sans changer le groupage', async ({ page }) => {
-    const api = createFakeApi();
-    await mountWorkspace(page, api);
-
-    await page.locator('[data-purchasing-market-filter]').selectOption(CM.market_id);
-    await expect(page.locator('tr[data-purchasing-line]')).toHaveCount(1);
-    expect(api.state.calls.some((c) => c.key === 'GET open-lines' && c.market_id === CM.market_id)).toBe(true);
-    await expect(page.locator('[data-purchasing-group]')).toContainText('Hub HUB-001');
   });
 
   for (const viewport of [{ name: 'desktop', width: 1440, height: 900 }, { name: 'mobile', width: 390, height: 844 }]) {

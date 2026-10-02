@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, grouping_key_supplier_and_hub_never_market, market_is_a_line_property, browser_no_business_recompute
+ * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, grouping_key_supplier_and_hub_never_market, market_is_a_line_property, browser_never_supplies_market_id_authority, browser_no_business_recompute
  * @impact-areas  admin-dashboard, purchasing, operations
  * @version       2026-10
  */
@@ -158,33 +158,6 @@
 
   // ─── Lignes ouvertes ──────────────────────────────────────────────────────────────────────────
 
-  function renderMarketFilter(doc, slot, context) {
-    const bar = doc.createElement('div');
-    bar.className = 'kmc-purchasing-filter';
-    const label = text(doc, 'label', 'kmc-purchasing-filter-label', 'Marché (filtre opérateur) ');
-    const select = doc.createElement('select');
-    select.setAttribute('data-purchasing-market-filter', '');
-    const all = doc.createElement('option');
-    all.value = '';
-    all.textContent = 'Tous les marchés';
-    select.appendChild(all);
-    [...context.knownMarkets.values()].sort((a, b) => marketLabel(a).localeCompare(marketLabel(b))).forEach((m) => {
-      const option = doc.createElement('option');
-      option.value = m.market_id;
-      option.textContent = marketLabel(m);
-      select.appendChild(option);
-    });
-    select.value = context.marketFilter || '';
-    select.addEventListener('change', () => {
-      context.marketFilter = select.value || null;
-      context.selection.clear();
-      context.reload().catch(() => {});
-    });
-    label.appendChild(select);
-    bar.appendChild(label);
-    slot.appendChild(bar);
-  }
-
   function groupKey(group) {
     return `${group.supplier_id}|${group.procurement_hub_ref}`;
   }
@@ -288,9 +261,6 @@
       'Lignes à acheter',
       'Regroupement par fournisseur et Hub. Cochez les lignes d’un même groupe puis préparez une commande ; un brouillon reste modifiable avant soumission.'
     );
-    (payload.groups || []).forEach((g) => (g.markets || []).forEach((m) => context.knownMarkets.set(m.market_id, m)));
-    renderMarketFilter(doc, slot, context);
-
     if (!(payload.groups || []).length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune ligne à acheter.'));
       return;
@@ -532,8 +502,6 @@
       prompt: options.prompt || (typeof window !== 'undefined' ? window.prompt.bind(window) : () => null),
       selection: new Set(),
       busy: new Set(),
-      knownMarkets: new Map(),
-      marketFilter: null,
       poId: readPoFromLocation(loc),
       reload: null,
       act: null,
@@ -542,10 +510,9 @@
     };
 
     context.reload = async () => {
-      const filter = context.marketFilter ? `?market_id=${encodeURIComponent(context.marketFilter)}` : '';
       try {
         const [openLines, detailResult] = await Promise.all([
-          jsonRequest(fetchFn, `${ENDPOINT}/open-lines${filter}`),
+          jsonRequest(fetchFn, `${ENDPOINT}/open-lines`),
           context.poId
             ? jsonRequest(fetchFn, `${ENDPOINT}/po/${encodeURIComponent(context.poId)}`).then((d) => ({ detail: d }), (e) => ({ error: e }))
             : Promise.resolve({}),
