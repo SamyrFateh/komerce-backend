@@ -84,6 +84,16 @@ test('la file de curation garde les décisions et actions dans le viewport', () 
   expect(workspace).toContain("signalContent.className = 'kmc-catalog-cell-stack'");
 });
 
+test('la préparation FR canonique reste gratuite et assistée hors runtime', () => {
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+
+  expect(workspace).toContain('Copier pour ChatGPT');
+  expect(workspace).toContain('Saisir le français');
+  expect(workspace).toContain('Aucun appel API depuis Komerce');
+  expect(workspace).toContain('paid');
+  expect(workspace).not.toContain('ANTHROPIC_API_KEY');
+});
+
 test('la curation montre explicitement le avant/après après préparation FR', () => {
   const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
   const css = read('public/dashboards/canonical/css/operations-workspace.css');
