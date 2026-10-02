@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-02T05:35:42.502Z",
+  "generatedAt": "2026-10-02T06:29:14.450Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 686,
-    "protected": 631,
+    "total": 690,
+    "protected": 635,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -4274,6 +4274,20 @@
       ]
     },
     {
+      "key": "POST /api/purchasing/lines/{id}/settle",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/lines",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "GET /api/purchasing/open-lines",
       "level": "PROTECTED",
       "roles": [
@@ -4288,6 +4302,13 @@
       ]
     },
     {
+      "key": "POST /api/purchasing/po/{po_id}/confirm",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
       "key": "POST /api/purchasing/po/{po_id}/detach",
       "level": "PROTECTED",
       "roles": [
@@ -4296,6 +4317,13 @@
     },
     {
       "key": "POST /api/purchasing/po/{po_id}/discard",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/purchasing/po/{po_id}/submit",
       "level": "PROTECTED",
       "roles": [
         "admin"

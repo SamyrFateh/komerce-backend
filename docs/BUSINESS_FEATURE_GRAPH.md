@@ -80,7 +80,7 @@ _"cross-repo" ailleurs dans ce document = cross-scope (frontière de gouvernance
 
 | Dépôt | Manifests découverts | Manifests connectés | Nœuds techniques | Owned | Orphelins |
 |---|---|---|---|---|---|
-| backend | 35 | 35 | 544 | 544 | 0 |
+| backend | 35 | 35 | 545 | 545 | 0 |
 | dash | 3 | 3 | N/A | N/A | N/A |
 | boutique | 16 | 16 | 104 | 104 | 0 |
 
@@ -566,15 +566,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.
 
-- services: 23
+- services: 24
 - routes: 1
 - migrations: 5
 - scripts: 3
-- tests: 34
+- tests: 36
 - tables owned (lifecycle): 3 — `product_suppliers`, `purchase_orders`, `suppliers`
 - tables written: 3
-- interfaces exposed: 16
-- internal APIs: 10
+- interfaces exposed: 20
+- internal APIs: 14
 - dependencies (consumes): 9 — supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, notifications, logistics
 - consumers: 6 — catalog, dashboard, logistics, orders, payments, platform-ops
 
@@ -1442,6 +1442,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/purchasing/po/{id}/detach` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/po/{id}/discard` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/lines/{id}/cancel` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/{id}/submit` | purchasing | — (not-in-openapi-contract) |
+| `POST /api/purchasing/po/{id}/confirm` | purchasing | — (not-in-openapi-contract) |
+| `POST /api/purchasing/lines` | purchasing | — (not-in-openapi-contract) |
+| `POST /api/purchasing/lines/{id}/settle` | purchasing | — (not-in-openapi-contract) |
 | `GET /api/boutique/suggestions` | recommendations | `routes/boutique-suggestions.js` (resolved-owned) |
 | `GET /api/admin/market-settlements/markets/{id}/settlements` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
 | `POST /api/admin/market-settlements/markets/{id}/settlements/ready` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
@@ -1707,6 +1711,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `reconcile` | `services/suppliers/allegro-purchase-reconciliation.js` | purchasing | resolved |
 | `repairOrderedWithoutPurchaseOrders` | `services/repair-ordered-without-purchase-orders.js` | purchasing | resolved |
 | `syncPurchaseOrdersOnOrderCancel` | `services/purchasing-cancel-service.js` | purchasing | resolved |
+| `submitPurchaseOrder` | `services/purchasing-engagement-service.js` | purchasing | resolved |
+| `confirmGroupedPurchaseOrder` | `services/purchasing-engagement-service.js` | purchasing | resolved |
+| `settleLine` | `services/purchasing-engagement-service.js` | purchasing | resolved |
+| `createManualLine` | `services/purchasing-engagement-service.js` | purchasing | resolved |
 | `processRefund(orderOrCartId, reason)` | `null` | refunds | documented-signature-no-file |
 | `createReadySettlement()` | `null` | settlement | documented-signature-no-file |
 | `listForAssignment()` | `null` | settlement | documented-signature-no-file |
@@ -2062,11 +2070,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (0)
+### DETTE / DRIFT ACTIONNABLE (4)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- none
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ purchasing / POST /api/purchasing/lines — "POST /api/purchasing/lines" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ purchasing / POST /api/purchasing/lines/{id}/settle — "POST /api/purchasing/lines/{id}/settle" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ purchasing / POST /api/purchasing/po/{id}/confirm — "POST /api/purchasing/po/{id}/confirm" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ purchasing / POST /api/purchasing/po/{id}/submit — "POST /api/purchasing/po/{id}/submit" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
 
 ### TOPOLOGIE ATTENDUE — hors dette (43)
 
@@ -2141,7 +2152,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1754 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1757 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 78 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2420,12 +2431,12 @@ Meta Graph monté : oui.
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| purchasing | infrastructure | static-code | 33 | **DECLARED_AND_OBSERVED** |
-| purchasing | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
-| purchasing | notifications | static-code | 7 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 37 | **DECLARED_AND_OBSERVED** |
+| purchasing | logistics | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
+| purchasing | notifications | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | purchasing | sourcing | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| purchasing | supplier-connectivity | static-code | 16 | **DECLARED_AND_OBSERVED** |
+| purchasing | supplier-connectivity | static-code | 19 | **DECLARED_AND_OBSERVED** |
 | recommendations | catalog | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | recommendations | infrastructure | static-code | 6 | **DECLARED_AND_OBSERVED** |
 | recommendations | local-stock | static-code | 3 | **DECLARED_AND_OBSERVED** |

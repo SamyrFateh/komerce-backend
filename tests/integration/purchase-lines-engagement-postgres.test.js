@@ -34,7 +34,7 @@ const engagement = require('../../services/purchasing-engagement-service');
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeDb = hasDb ? describe : describe.skip;
 const id = () => crypto.randomUUID();
-const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '266_purchase_orders_grouped_form.sql'];
+const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql'];
 const identityOf = (provider, payload = { supplier_sku: 'U1' }) => JSON.stringify({ provider, version: 1, payload });
 const NOON = identityOf('noon');
 const ALLEGRO = (offer) => identityOf('allegro', { environment: 'sandbox', offer_id: offer });
@@ -97,6 +97,20 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
           updated_at timestamptz NOT NULL DEFAULT now(),
           CONSTRAINT chk_purchase_orders_qty CHECK (qty > 0),
           CONSTRAINT purchase_orders_status_check CHECK (status = ANY (ARRAY['pending'::text, 'notified'::text, 'confirmed'::text, 'shipped'::text, 'hub_received'::text, 'cancelled'::text]))
+        );
+        -- Tables Hub minimales : la vue de progression lit le reçu d'une ligne regroupée dans les placements RECEIVE.
+        CREATE TABLE hub_purchase_allocations (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          purchase_order_id uuid NOT NULL,
+          order_item_id uuid,
+          product_sku_id uuid,
+          supplier_id uuid
+        );
+        CREATE TABLE hub_physical_unit_placements (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          allocation_id uuid NOT NULL REFERENCES hub_purchase_allocations(id),
+          operation_type text NOT NULL,
+          quantity integer NOT NULL
         );
       `);
       for (const name of MIGRATIONS) await c.query(migrationSql(name));
@@ -191,6 +205,15 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
     SELECT COALESCE(SUM(public_eff), 0)::int AS n FROM (
       SELECT purchase_line_effective_quantity(cancelled_at, settled_quantity, confirmed_quantity, quantity) AS public_eff
         FROM purchase_lines WHERE order_item_id = $1) x`, [item])).n;
+
+  /** Réception Hub simulée : une allocation par ligne et un placement RECEIVE (ce que lit v_purchase_line_progress). */
+  async function receive(lineId, quantity) {
+    const { rows: [line] } = await q('SELECT purchase_order_id, order_item_id, product_sku_id, supplier_id FROM purchase_lines WHERE id = $1', [lineId]);
+    const { rows: [alloc] } = await q(`
+      INSERT INTO hub_purchase_allocations(purchase_order_id, order_item_id, product_sku_id, supplier_id, purchase_line_id)
+      VALUES ($1,$2,$3,$4,$5) RETURNING id`, [line.purchase_order_id, line.order_item_id, line.product_sku_id, line.supplier_id, lineId]);
+    await q('INSERT INTO hub_physical_unit_placements(allocation_id, operation_type, quantity) VALUES ($1,$2,$3)', [alloc.id, 'RECEIVE', quantity]);
+  }
 
   // ─── submit ───────────────────────────────────────────────────────────────────────────────────
   describe('submit', () => {
@@ -437,59 +460,80 @@ describeDb('engagement d\'une PO regroupée — soumission, confirmation, reliqu
 
   // ─── settle ───────────────────────────────────────────────────────────────────────────────────
   describe('settle', () => {
-    async function confirmedLine({ quantity = 6, market = 'KM' } = {}) {
+    async function confirmedLine({ quantity = 6, market = 'KM', extra = [] } = {}) {
       const supplier = await seedSupplier();
       const a = await seedLine({ supplier, quantity, market });
-      const po = await submittedPo(supplier, [a.line]);
-      await engagement.confirmGroupedPurchaseOrder(po.id, { lines: [{ purchase_line_id: a.line, confirmed_quantity: quantity }] });
-      return { supplier, ...a, po };
+      const others = [];
+      for (const [i, q2] of extra.entries()) others.push(await seedLine({ supplier, quantity: q2, unitRef: `X${i}` }));
+      const po = await submittedPo(supplier, [a.line, ...others.map((o) => o.line)]);
+      await engagement.confirmGroupedPurchaseOrder(po.id, {
+        lines: [{ purchase_line_id: a.line, confirmed_quantity: quantity }, ...others.map((o, i) => ({ purchase_line_id: o.line, confirmed_quantity: extra[i] }))],
+      });
+      return { supplier, ...a, po, others };
     }
 
-    it('clôture à 4 sur 6 confirmés : l\'effectif baisse d\'abord, le reliquat de 2 naît ouvert (même marché)', async () => {
-      const { line, item } = await confirmedLine({ quantity: 6, market: 'CG' });
+    it('écart à la réception : 4 reçus sur 6 → soldée à 4 ; le reliquat de 2 naît ouvert (même marché) seulement avec reopen_remainder', async () => {
+      const { line, item, others } = await confirmedLine({ quantity: 6, market: 'CG', extra: [3] });
+      await receive(line, 4);
 
-      const out = await engagement.settleLine(line, { settled_quantity: 4, reason: 'fournisseur en rupture' });
+      const out = await engagement.settleLine(line, { settled_quantity: 4, reason: '2 unités endommagées', reopen_remainder: true });
 
-      expect(out.line).toMatchObject({ settled_quantity: 4, effective_quantity: 4, settle_reason: 'fournisseur en rupture', market_code: 'CG' });
+      expect(out.line).toMatchObject({ settled_quantity: 4, effective_quantity: 4, settle_reason: '2 unités endommagées', market_code: 'CG' });
       expect(out.remnant).toMatchObject({ parent_line_id: line, quantity: 2, purchase_order_id: null, market_code: 'CG' });
       expect(out.unsettled_quantity).toBe(2);
       expect(out.markets[0]).toMatchObject({ market_code: 'CG', confirmed_quantity: 4, remnant_quantity: 2 });
       expect(await need(item)).toBe(6);
+      // L'autre ligne n'est pas encore reçue : la PO n'est pas clôturée.
+      expect(out.purchase_order.status).toBe('confirmed');
+      expect(others).toHaveLength(1);
     });
 
-    it('create_remnant=false : la clôture ne crée aucune ligne', async () => {
-      const { line } = await confirmedLine({ quantity: 6 });
-      const out = await engagement.settleLine(line, { settled_quantity: 5, reason: 'écart accepté', create_remnant: false });
+    it('sans reopen_remainder (défaut) : aucune ligne créée', async () => {
+      const { line } = await confirmedLine({ quantity: 6, extra: [2] });
+      await receive(line, 5);
+      const out = await engagement.settleLine(line, { settled_quantity: 5, reason: 'écart accepté' });
       expect(out.remnant).toBeNull();
       expect((await row('SELECT count(*)::int AS n FROM purchase_lines WHERE parent_line_id IS NOT NULL')).n).toBe(0);
     });
 
-    it('clôture à la quantité confirmée : pas de reliquat', async () => {
-      const { line } = await confirmedLine({ quantity: 3 });
-      const out = await engagement.settleLine(line, { settled_quantity: 3, reason: 'ok' });
-      expect(out.remnant).toBeNull();
-      expect(out.unsettled_quantity).toBe(0);
+    it('toutes les lignes soldées (reçu ≥ effectif) → la PO regroupée passe en hub_received', async () => {
+      const { line, others, po } = await confirmedLine({ quantity: 6, extra: [3] });
+      await receive(others[0].line, 3);
+      await receive(line, 4);
+      const out = await engagement.settleLine(line, { settled_quantity: 4, reason: 'casse' });
+      expect(out.purchase_order).toMatchObject({ id: po.id, status: 'hub_received' });
+      expect(out.purchase_order.hub_received_at).not.toBeNull();
     });
 
-    it('refus : au-delà du confirmé, sans motif, déjà clôturée, ligne ouverte, ligne non confirmée, introuvable', async () => {
-      const { line, supplier } = await confirmedLine({ quantity: 4 });
-      await expect(engagement.settleLine(line, { settled_quantity: 5, reason: 'x' })).rejects.toMatchObject({ status: 400 });
+    it('settled_quantity ≤ reçu : au-delà du reçu → 409 ; ≥ effectif → 400 ; rien n\'est écrit', async () => {
+      const { line } = await confirmedLine({ quantity: 6 });
+      await receive(line, 3);
+      await expect(engagement.settleLine(line, { settled_quantity: 4, reason: 'x' }))
+        .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_SETTLE_ABOVE_RECEIVED', received_quantity: 3 });
+      await expect(engagement.settleLine(line, { settled_quantity: 6, reason: 'x' })).rejects.toMatchObject({ status: 400 });
+      await expect(engagement.settleLine(line, { settled_quantity: 7, reason: 'x' })).rejects.toMatchObject({ status: 400 });
+      expect((await row('SELECT settled_at FROM purchase_lines WHERE id=$1', [line])).settled_at).toBeNull();
+    });
+
+    it('rien reçu : une ligne se solde à 0 ; refus sans motif, quantité négative, déjà soldée, ligne ouverte, PO non confirmée, introuvable', async () => {
+      const { line, supplier } = await confirmedLine({ quantity: 4, extra: [2] });
       await expect(engagement.settleLine(line, { settled_quantity: 2 })).rejects.toMatchObject({ status: 400 });
       await expect(engagement.settleLine(line, { settled_quantity: -1, reason: 'x' })).rejects.toMatchObject({ status: 400 });
-      await engagement.settleLine(line, { settled_quantity: 2, reason: 'x' });
-      await expect(engagement.settleLine(line, { settled_quantity: 1, reason: 'x' }))
+      const out = await engagement.settleLine(line, { settled_quantity: 0, reason: 'jamais livrée', reopen_remainder: true });
+      expect(out.remnant).toMatchObject({ quantity: 4 });
+      await expect(engagement.settleLine(line, { settled_quantity: 0, reason: 'x' }))
         .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_ALREADY_SETTLED' });
 
       const open = await seedLine({ supplier, quantity: 2 });
-      await expect(engagement.settleLine(open.line, { settled_quantity: 1, reason: 'x' }))
+      await expect(engagement.settleLine(open.line, { settled_quantity: 0, reason: 'x' }))
         .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_NOT_SETTLEABLE' });
 
       const notified = await seedLine({ supplier, quantity: 2 });
       await submittedPo(supplier, [notified.line]);
-      await expect(engagement.settleLine(notified.line, { settled_quantity: 1, reason: 'x' }))
+      await expect(engagement.settleLine(notified.line, { settled_quantity: 0, reason: 'x' }))
         .rejects.toMatchObject({ status: 409, code: 'PURCHASE_LINE_NOT_SETTLEABLE', current_status: 'notified' });
 
-      await expect(engagement.settleLine(id(), { settled_quantity: 1, reason: 'x' })).rejects.toMatchObject({ status: 404 });
+      await expect(engagement.settleLine(id(), { settled_quantity: 0, reason: 'x' })).rejects.toMatchObject({ status: 404 });
     });
   });
 

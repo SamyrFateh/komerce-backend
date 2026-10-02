@@ -272,47 +272,68 @@ describe('confirmGroupedPurchaseOrder — garde-fous', () => {
 
 describe('settleLine — garde-fous', () => {
   const peek = (po = PO) => [/SELECT id, purchase_order_id FROM purchase_lines WHERE id/, { rows: [{ id: L1, purchase_order_id: po }] }];
+  const poLock = (status = 'confirmed') => [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status })] }];
   const lineRow = (extra = {}) => ({
     id: L1, purchase_order_id: PO, order_item_id: uuid(7), supplier_id: uuid(3), product_supplier_id: null, product_sku_id: null,
     supplier_sku: 'S', supplier_unit_ref: 'U1', supplier_order_identity: null, quantity: 6, supplier_unit_price: 10,
     supplier_currency: 'USD', procurement_hub_ref: 'DXB', confirmed_quantity: 6, settled_at: null, cancelled_at: null, ...extra,
   });
+  const lineLock = (extra) => [/FROM purchase_lines WHERE id = \$1 FOR UPDATE/, { rows: [lineRow(extra)] }];
+  const shaped = { rows: [{ line_id: L1, market_id: 'm', market_code: 'KM', effective_quantity: 4, cancelled: false }] };
 
-  it('refuse sous la quantité déjà reçue par le Hub', async () => {
-    scripted([
-      peek(),
-      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'confirmed' })] }],
-      [/FROM purchase_lines WHERE id = \$1 FOR UPDATE/, { rows: [lineRow()] }],
-      [/v_purchase_line_progress/, { rows: [{ received_quantity: '5' }] }],
-    ]);
+  it('refuse au-delà de ce que le Hub a reçu, et à effectif ou plus', async () => {
+    scripted([peek(), poLock(), lineLock(), [/v_purchase_line_progress/, { rows: [{ received_quantity: '3' }] }]]);
     await expect(engagement.settleLine(L1, { settled_quantity: 4, reason: 'x' })).rejects.toMatchObject({
-      status: 409, code: 'PURCHASE_LINE_SETTLE_BELOW_RECEIVED', received_quantity: 5,
+      status: 409, code: 'PURCHASE_LINE_SETTLE_ABOVE_RECEIVED', received_quantity: 3,
     });
+    scripted([peek(), poLock(), lineLock()]);
+    await expect(engagement.settleLine(L1, { settled_quantity: 6, reason: 'x' })).rejects.toMatchObject({ status: 400, confirmed_quantity: 6 });
   });
 
-  it('sans ligne de progression, le reçu vaut 0 ; acteur uuid transmis au reliquat', async () => {
+  it('sans ligne de progression, le reçu vaut 0 : seule une clôture à 0 passe ; reliquat et acteur uuid transmis', async () => {
     const { calls } = scripted([
-      peek(),
-      [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'confirmed' })] }],
-      [/FROM purchase_lines WHERE id = \$1 FOR UPDATE/, { rows: [lineRow()] }],
-      [/v_purchase_line_progress/, { rows: [] }],
+      peek(), poLock(), lineLock(),
+      [/v_purchase_line_progress\s+WHERE line_id/, { rows: [] }],
       [/INSERT INTO purchase_lines/, { rows: [{ id: uuid(98) }] }],
+      [/FROM v_purchase_line_progress\s+WHERE purchase_order_id/, { rows: [{ effective_quantity: 0, received_quantity: 0 }, { effective_quantity: 2, received_quantity: 1 }] }],
     ]);
-    db.query.mockResolvedValue({ rows: [{ line_id: L1, market_id: 'm', market_code: 'KM', effective_quantity: 4, cancelled: false }] });
-    const out = await engagement.settleLine(L1, { settled_quantity: 4, reason: 'x' }, { actor: { id: uuid(50) } });
-    expect(out.unsettled_quantity).toBe(2);
+    db.query.mockImplementation(async (sql) => (/FROM purchase_orders WHERE id/.test(sql) ? { rows: [{ id: PO, status: 'confirmed' }] } : shaped));
+    const out = await engagement.settleLine(L1, { settled_quantity: 0, reason: 'x', reopen_remainder: true }, { actor: { id: uuid(50) } });
+    expect(out.unsettled_quantity).toBe(6);
     expect(calls.find((c) => /INSERT INTO purchase_lines/.test(c.sql)).params[12]).toBe(uuid(50));
+    expect(calls.some((c) => /SET status = 'hub_received'/.test(c.sql))).toBe(false);
   });
 
-  it('ligne annulée, ligne qui change de PO, PO annulée → 409', async () => {
-    scripted([peek(), [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'confirmed' })] },], [/FROM purchase_lines WHERE id = \$1 FOR UPDATE/, { rows: [lineRow({ cancelled_at: new Date() })] }]]);
+  it('PO sans autre ligne active → pas de clôture ; toutes soldées → hub_received', async () => {
+    const none = scripted([peek(), poLock(), lineLock(), [/v_purchase_line_progress\s+WHERE line_id/, { rows: [{ received_quantity: 2 }] }], [/FROM v_purchase_line_progress\s+WHERE purchase_order_id/, { rows: [] }]]);
+    db.query.mockImplementation(async (sql) => (/FROM purchase_orders WHERE id/.test(sql) ? { rows: [{ id: PO, status: 'confirmed' }] } : shaped));
+    await engagement.settleLine(L1, { settled_quantity: 2, reason: 'x' });
+    expect(none.calls.some((c) => /SET status = 'hub_received'/.test(c.sql))).toBe(false);
+
+    const all = scripted([peek(), poLock(), lineLock(), [/v_purchase_line_progress\s+WHERE line_id/, { rows: [{ received_quantity: 2 }] }], [/FROM v_purchase_line_progress\s+WHERE purchase_order_id/, { rows: [{ effective_quantity: 2, received_quantity: 2 }] }]]);
+    db.query.mockImplementation(async (sql) => (/FROM purchase_orders WHERE id/.test(sql) ? { rows: [{ id: PO, status: 'hub_received' }] } : shaped));
+    const out = await engagement.settleLine(L1, { settled_quantity: 2, reason: 'x' });
+    expect(all.calls.some((c) => /SET status = 'hub_received'/.test(c.sql))).toBe(true);
+    expect(out.purchase_order.status).toBe('hub_received');
+    expect(out.remnant).toBeNull();
+  });
+
+  it('ligne annulée, soldée, non confirmée, qui change de PO, ouverte ; PO non confirmée ; ligne introuvable → 409/404', async () => {
+    scripted([peek(), poLock(), lineLock({ cancelled_at: new Date() })]);
     await expect(engagement.settleLine(L1, { settled_quantity: 1, reason: 'x' })).rejects.toMatchObject({ code: 'PURCHASE_LINE_ALREADY_CANCELLED' });
-    scripted([peek(), [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'confirmed' })] }], [/FROM purchase_lines WHERE id = \$1 FOR UPDATE/, { rows: [lineRow({ purchase_order_id: uuid(77) })] }]]);
+    scripted([peek(), poLock(), lineLock({ settled_at: new Date() })]);
+    await expect(engagement.settleLine(L1, { settled_quantity: 1, reason: 'x' })).rejects.toMatchObject({ code: 'PURCHASE_LINE_ALREADY_SETTLED' });
+    scripted([peek(), poLock(), lineLock({ purchase_order_id: uuid(77) })]);
     await expect(engagement.settleLine(L1, { settled_quantity: 1, reason: 'x' })).rejects.toMatchObject({ code: 'PURCHASE_LINE_CONCURRENT_CHANGE' });
-    scripted([peek(), [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'cancelled' })] }]]);
-    await expect(engagement.settleLine(L1, { settled_quantity: 1, reason: 'x' })).rejects.toMatchObject({ code: 'PURCHASE_LINE_NOT_SETTLEABLE' });
-    scripted([peek(), [/FROM purchase_orders WHERE id = \$1 FOR UPDATE/, { rows: [poRow({ status: 'confirmed' })] }, ], [/FROM purchase_lines WHERE id = \$1 FOR UPDATE/, { rows: [lineRow({ confirmed_quantity: null })] }]]);
+    scripted([peek(), poLock(), lineLock({ confirmed_quantity: null })]);
     await expect(engagement.settleLine(L1, { settled_quantity: 1, reason: 'x' })).rejects.toMatchObject({ code: 'PURCHASE_LINE_NOT_CONFIRMED' });
+    scripted([peek(), poLock('cancelled')]);
+    await expect(engagement.settleLine(L1, { settled_quantity: 1, reason: 'x' })).rejects.toMatchObject({ code: 'PURCHASE_LINE_NOT_SETTLEABLE', current_status: 'cancelled' });
+    scripted([peek(null)]);
+    await expect(engagement.settleLine(L1, { settled_quantity: 1, reason: 'x' })).rejects.toMatchObject({ code: 'PURCHASE_LINE_NOT_SETTLEABLE' });
+    scripted([]);
+    await expect(engagement.settleLine(L1, { settled_quantity: 1, reason: 'x' })).rejects.toMatchObject({ status: 404 });
+    await expect(engagement.settleLine(L1, { settled_quantity: 1 })).rejects.toMatchObject({ status: 400 });
   });
 });
 

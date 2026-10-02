@@ -8,7 +8,7 @@
  * @outputs       response_or_domain_result, side_effects
  * @depends       db, services/purchasing-grouped-service.js, services/purchase-line-snapshot.js, services/notification-service.js, services/hub-reference.js, services/suppliers/provider-authority.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/purchase-order-confirmation-boundary.js, services/suppliers/execution-adapter-registry.js, services/suppliers/supplier-fulfillment-adapter-contract.js, utils/logger.js
  * @used-by       routes/purchasing.js
- * @db-read       order_items, orders, product_suppliers, purchase_lines, purchase_orders, suppliers, v_purchase_line_progress
+ * @db-read       order_items, orders, product_suppliers, products, purchase_lines, purchase_orders, suppliers, v_purchase_line_progress
  * @db-write      purchase_lines, purchase_orders
  * @db-txn        owns_transaction
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
@@ -23,7 +23,8 @@
  *
  *   submit  : PO draft → notified (préparation par groupe supplier_unit_ref, message agrégé) ; échec = PO reste draft.
  *   confirm : PO notified → confirmed (ou cancelled si tout à 0), une confirmation par ligne, reliquat en ligne ouverte.
- *   settle  : clôture d'une ligne confirmée à une quantité inférieure, reliquat en ligne ouverte.
+ *   settle  : écart à la réception — ligne confirmée soldée à une quantité ≤ reçu et < effectif, reliquat optionnel
+ *             (reopen_remainder) ; la PO passe en hub_received quand toutes ses lignes sont soldées.
  *   POST /lines : création manuelle d'une ligne ouverte (ex. racheter un reliquat chez un autre fournisseur).
  *
  * Ordre d'écriture imposé par I1 (somme des effectifs ≤ besoin) : la confirmation (ou la clôture) de la ligne
@@ -57,7 +58,8 @@ const {
   loadPurchaseOrderLines, summarizeMarkets, shapeLine, LINE_COLUMNS, LINE_JOINS,
 } = shared;
 
-const SETTLEABLE_PO_STATUSES = ['confirmed', 'partially_received', 'received', 'hub_received'];
+// Statuts de PO regroupée où une ligne peut être soldée (seul `confirmed` : `hub_received` est terminal).
+const SETTLEABLE_PO_STATUSES = ['confirmed'];
 
 function requireNonNegativeInt(value, name) {
   if (!Number.isSafeInteger(value) || value < 0) throw fail(400, 'INVALID_INPUT', `${name} doit être un entier >= 0`);
@@ -479,7 +481,31 @@ async function confirmGroupedPurchaseOrder(poId, body = {}, { actor = null, cont
   };
 }
 
-// ─── Clôture d'une ligne (règlement) ──────────────────────────────────────────────────────────────
+// ─── Clôture d'une ligne (écart à la réception) ───────────────────────────────────────────────────
+
+/**
+ * Écart à la réception (casse ou manquant) : la ligne confirmée est soldée à `settled_quantity`, qui ne peut pas
+ * dépasser ce que le Hub a reçu (v_purchase_line_progress) et doit être strictement inférieure à l'effectif.
+ * `settled_*` s'écrit d'abord (l'effectif baisse), le reliquat ensuite (I1). Clôture de la PO regroupée : quand toutes
+ * ses lignes non annulées sont soldées (reçu ≥ effectif), la PO passe en `hub_received`.
+ * La réclamation fournisseur reste hors périmètre.
+ */
+async function closeGroupedPurchaseOrderIfComplete(client, poId) {
+  const { rows: progress } = await client.query(`
+    SELECT effective_quantity, received_quantity
+      FROM v_purchase_line_progress
+     WHERE purchase_order_id = $1 AND line_id IS NOT NULL AND NOT cancelled
+  `, [poId]);
+  if (!progress.length) return false;
+  if (!progress.every((p) => Number(p.received_quantity) >= Number(p.effective_quantity))) return false;
+  await client.query(`
+    UPDATE purchase_orders
+       SET status = 'hub_received', hub_received_at = COALESCE(hub_received_at, NOW()), updated_at = NOW(),
+           notes = CONCAT(COALESCE(notes, ''), E'\\n[GROUPED] toutes les lignes sont soldées')
+     WHERE id = $1 AND status = 'confirmed'
+  `, [poId]);
+  return true;
+}
 
 async function settleLine(lineId, body = {}, { actor = null } = {}) {
   requireEnabled();
@@ -487,13 +513,13 @@ async function settleLine(lineId, body = {}, { actor = null } = {}) {
   const settledQuantity = requireNonNegativeInt(body.settled_quantity, 'settled_quantity');
   const reason = optionalText(body.reason);
   if (!reason) throw fail(400, 'INVALID_INPUT', 'reason obligatoire');
-  const createRemnant = body.create_remnant !== false;
+  const reopenRemainder = body.reopen_remainder === true;
 
   const outcome = await withTransaction(async (client) => {
     // Ordre commun : PO d'abord (lue sans verrou, verrouillée), puis la ligne.
     const { rows: [peek] } = await client.query('SELECT id, purchase_order_id FROM purchase_lines WHERE id = $1', [lineId]);
     if (!peek) throw fail(404, 'PURCHASE_LINE_NOT_FOUND', 'Ligne d\'achat introuvable');
-    if (!peek.purchase_order_id) throw fail(409, 'PURCHASE_LINE_NOT_SETTLEABLE', 'Une ligne ouverte ne se règle pas : elle s\'annule');
+    if (!peek.purchase_order_id) throw fail(409, 'PURCHASE_LINE_NOT_SETTLEABLE', 'Une ligne ouverte ne se solde pas : elle s\'annule');
     const po = await lockGroupedPo(client, peek.purchase_order_id, { requireDraft: false });
     if (!SETTLEABLE_PO_STATUSES.includes(po.status)) {
       throw fail(409, 'PURCHASE_LINE_NOT_SETTLEABLE', `PO au statut "${po.status}" : la ligne n'est pas confirmée`, { current_status: po.status });
@@ -512,16 +538,16 @@ async function settleLine(lineId, body = {}, { actor = null } = {}) {
     if (line.settled_at) throw fail(409, 'PURCHASE_LINE_ALREADY_SETTLED', 'Clôture déjà enregistrée');
     if (line.confirmed_quantity === null) throw fail(409, 'PURCHASE_LINE_NOT_CONFIRMED', 'La ligne n\'est pas confirmée');
 
-    const committed = line.confirmed_quantity;
-    if (settledQuantity > committed) {
-      throw fail(400, 'INVALID_INPUT', 'settled_quantity ne peut pas dépasser la quantité confirmée', { confirmed_quantity: committed });
+    const effective = line.confirmed_quantity;
+    if (settledQuantity >= effective) {
+      throw fail(400, 'INVALID_INPUT', 'settled_quantity doit être strictement inférieure à la quantité effective', { confirmed_quantity: effective });
     }
     const { rows: [progress] } = await client.query(
       'SELECT received_quantity FROM v_purchase_line_progress WHERE line_id = $1', [lineId]
     );
     const received = progress ? Number(progress.received_quantity) : 0;
-    if (settledQuantity < received) {
-      throw fail(409, 'PURCHASE_LINE_SETTLE_BELOW_RECEIVED', 'La clôture ne peut pas être inférieure à ce que le Hub a déjà reçu', {
+    if (settledQuantity > received) {
+      throw fail(409, 'PURCHASE_LINE_SETTLE_ABOVE_RECEIVED', 'La clôture ne peut pas dépasser ce que le Hub a reçu', {
         received_quantity: received,
       });
     }
@@ -531,18 +557,21 @@ async function settleLine(lineId, body = {}, { actor = null } = {}) {
       UPDATE purchase_lines SET settled_quantity = $2, settled_at = NOW(), settle_reason = $3, updated_at = NOW()
        WHERE id = $1
     `, [lineId, settledQuantity, reason]);
-    const remaining = committed - settledQuantity;
+    const remaining = effective - settledQuantity;
     let remnantId = null;
-    if (createRemnant && remaining > 0) remnantId = await insertRemnant(client, line, remaining, actor);
-    return { lineId, remnantId, remaining };
+    if (reopenRemainder) remnantId = await insertRemnant(client, line, remaining, actor);
+    const closed = await closeGroupedPurchaseOrderIfComplete(client, po.id);
+    return { lineId, remnantId, remaining, poId: po.id, closed };
   });
 
   const [line] = await loadLinesByIds(db, [outcome.lineId]);
   const remnants = outcome.remnantId ? await loadLinesByIds(db, [outcome.remnantId]) : [];
+  const { rows: [purchaseOrder] } = await db.query('SELECT id, status, hub_received_at FROM purchase_orders WHERE id = $1', [outcome.poId]);
   return {
     line,
     remnant: remnants[0] || null,
     unsettled_quantity: outcome.remaining,
+    purchase_order: purchaseOrder,
     ...summarizeCommitmentByMarket([line], remnants),
   };
 }
