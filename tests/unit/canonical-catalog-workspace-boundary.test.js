@@ -187,7 +187,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=2501');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261002-2');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261002-3');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261002-1');
 });
 
@@ -382,6 +382,8 @@ test('l’entrée Catalogue préchauffée prépare le FR sans clic produit puis 
   expect(refreshed.textContent).toContain('Avant / après');
   expect(refreshed.textContent).toContain('Après · français');
   expect(refreshed.textContent).toContain('Valider après relecture');
+  expect(refreshed.textContent).toContain('FR préparé · CJdropshipping');
+  expect(refreshed.textContent).not.toContain('Préparation humaine · CJdropshipping');
   expect(refreshed.querySelector('[data-workspace-action="prepare-fr"]')).toBeNull();
 });
 

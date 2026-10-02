@@ -57,7 +57,17 @@
     return Number.isFinite(n) ? `${Math.round(n * 100)} %` : '—';
   }
 
-  function formatSource(value) {
+  function formatSource(row = {}) {
+    const object = row && typeof row === 'object' ? row : null;
+    const value = object ? object.content_source : row;
+    if (
+      value === 'manual'
+      && object
+      && (object.name_source || object.description_source)
+      && !isFrenchLocale(object.source_locale)
+    ) {
+      return 'FR préparé';
+    }
     const labels = {
       connector_raw: 'Source fournisseur',
       ai_enriched: 'Assisté IA',
@@ -730,7 +740,7 @@
         doc,
         'span',
         'kmc-workspace-subtitle',
-        `${formatSource(row.content_source)}${row.supplier_name ? ` · ${row.supplier_name}` : ''}`
+        `${formatSource(row)}${row.supplier_name ? ` · ${row.supplier_name}` : ''}`
       ));
       productCell.appendChild(productMeta);
       appendBeforeAfter(doc, productCell, row);
