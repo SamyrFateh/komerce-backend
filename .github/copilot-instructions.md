@@ -21,13 +21,10 @@ Plan d'attaque obligatoire :
 - risques ou points a verifier ;
 - gates et tests prevus.
 
-Gates utiles :
+Avant PR :
 
-- npm run feature:registry
-- npm run gate:schema
-- npm run gate:touched-files
-- npm run gate:docs-lint
-- npm run gate:feature-audit
-- npm run map:check
+- `npm run pr:preflight`
+
+Cette commande réutilise les gates canoniques selon le diff. Utiliser les gates unitaires seulement pour diagnostiquer un rouge ; `npm run map:check` reste disponible pour une reconstruction globale.
 
 Si public/boutique est touche, lire aussi public/boutique/README.md et la carte parente.
