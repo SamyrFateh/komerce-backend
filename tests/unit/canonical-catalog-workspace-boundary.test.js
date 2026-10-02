@@ -367,7 +367,7 @@ test('une fiche FR sans prix route vers Atelier économique avant toute validati
   expect(row.textContent).toContain('FR préparé · prix à définir');
   const pricing = row.querySelector('[data-workspace-action="define-price"]');
   expect(pricing).not.toBeNull();
-  expect(pricing.href).toBe('/admin/workspaces/pricing?product_ref=KPR-131956');
+  expect(pricing.href).toBe('/admin/workspaces/pricing?product_ref=KPR-131956#pricing-products');
   expect(row.querySelector('[data-workspace-action="approve"]')).toBeNull();
   expect(row.querySelector('[data-workspace-action="override"]')).toBeNull();
 });
@@ -619,4 +619,11 @@ test('la vue business lit uniquement le Workspace Catalogue canonique', () => {
   expect(workspace).not.toContain("'/api/products");
   expect(tower).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
   expect(workspace).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
+});
+
+
+test('le CTA prix cible explicitement l onglet Produits du Pricing', () => {
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+  expect(workspace).toContain("#pricing-products");
+  expect(workspace).toContain("product_ref=");
 });
