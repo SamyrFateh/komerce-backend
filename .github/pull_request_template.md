@@ -34,6 +34,12 @@ Plan annonce :
 - [ ] perimeter.in couvre la modification.
 - [ ] perimeter.out n'est pas franchi silencieusement.
 
+### Analyse ciblée / coût
+
+- [ ] J'ai utilisé la carte, les headers et `interventionIndex.mustCheck` avant d'élargir l'analyse.
+- [ ] Aucun clone/fetch/scan complet inutile ; toute exploration exhaustive éventuelle est justifiée.
+- [ ] Aucune nouvelle dette silencieuse (unknown/allowlist/exemption/baseline/bypass/autorité dupliquée).
+
 ### Verification
 
 - [ ] `npm run pr:preflight` est vert avant ouverture/mise à jour de la PR.
