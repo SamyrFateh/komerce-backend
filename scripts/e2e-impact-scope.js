@@ -189,34 +189,34 @@ function computeImpact(files, {
       continue;
     }
 
-    if (isPeripheralRuntimeFile(file) || isUnitTest(file)) {
+    if (isPeripheralRuntimeFile(file) || isUnitTest(file) || /^(?:services|routes)\//i.test(file)) {
       const owners = ownership.get(file) || [];
       if (owners.length !== 1) {
         return {
           mode: 'full',
           features: [],
           reason: owners.length === 0
-            ? `unowned peripheral/test file: ${file}`
+            ? `unowned owned-runtime candidate: ${file}`
             : `ambiguous ownership: ${file} -> ${owners.join(',')}`,
           changed,
         };
       }
 
       const owner = owners[0];
-      if (!e2eFeatures.has(owner)) {
-        return { mode: 'full', features: [], reason: `owner has no E2E suite: ${owner}`, changed };
+      if (e2eFeatures.has(owner)) {
+        targeted.add(owner);
+        for (const consumer of consumers.get(owner) || []) {
+          if (e2eFeatures.has(consumer)) targeted.add(consumer);
+        }
+        reasons.push(`owned-runtime:${file}->${owner}`);
+      } else {
+        reasons.push(`owned-runtime-no-e2e:${file}->${owner}`);
       }
-
-      targeted.add(owner);
-      for (const consumer of consumers.get(owner) || []) {
-        if (e2eFeatures.has(consumer)) targeted.add(consumer);
-      }
-      reasons.push(`peripheral:${file}->${owner}`);
       continue;
     }
 
     if (isBackendRuntimeLike(file)) {
-      return { mode: 'full', features: [], reason: `runtime not proven peripheral: ${file}`, changed };
+      return { mode: 'full', features: [], reason: `deep runtime impact: ${file}`, changed };
     }
   }
 
