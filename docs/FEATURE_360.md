@@ -2066,7 +2066,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `product_suppliers`, `purchase_orders`, `suppliers`
 
-**Exposes** : 10 internal API(s), 15 HTTP interface(s)
+**Exposes** : 10 internal API(s), 16 HTTP interface(s)
   - `adaptShippingRate` (services/suppliers/allegro-shipping-capability-adapter.js) — resolved
   - `compareLegacyCanonicalUnit` (services/suppliers/canonical-unit-cutover-comparison.js) — resolved
   - `evaluateSupplierFulfillmentReadiness` (services/suppliers/supplier-fulfillment-readiness.js) — resolved

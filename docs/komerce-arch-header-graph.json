@@ -20,9 +20,9 @@
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1563,
-    "edges": 7759,
-    "dbTables": 179,
+    "graphNodes": 1564,
+    "edges": 7761,
+    "dbTables": 180,
     "doctrines": 544,
     "impactAreas": 192,
     "unresolvedCodeEdges": 770,
@@ -23902,8 +23902,10 @@
         "purchase_orders",
         "order_items",
         "orders",
+        "markets",
         "products",
-        "suppliers"
+        "suppliers",
+        "v_purchase_line_market"
       ],
       "dbWrite": [
         "purchase_lines",
@@ -31804,6 +31806,11 @@
       "id": "db:purchase_lines",
       "type": "db-table",
       "table": "purchase_lines"
+    },
+    {
+      "id": "db:v_purchase_line_market",
+      "type": "db-table",
+      "table": "v_purchase_line_market"
     },
     {
       "id": "db:shared_cart_saved_access",
@@ -71724,6 +71731,12 @@
     },
     {
       "from": "services/purchasing-grouped-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
       "to": "db:products",
       "type": "db-read",
       "label": "products"
@@ -71733,6 +71746,12 @@
       "to": "db:suppliers",
       "type": "db-read",
       "label": "suppliers"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:v_purchase_line_market",
+      "type": "db-read",
+      "label": "v_purchase_line_market"
     },
     {
       "from": "services/purchasing-grouped-service.js",
@@ -106157,8 +106176,10 @@
         "purchase_orders",
         "order_items",
         "orders",
+        "markets",
         "products",
-        "suppliers"
+        "suppliers",
+        "v_purchase_line_market"
       ],
       "dbWrite": [
         "purchase_lines",
@@ -106173,12 +106194,14 @@
         "admin-dashboard"
       ],
       "mustCheck": [
+        "db:markets",
         "db:order_items",
         "db:orders",
         "db:products",
         "db:purchase_lines",
         "db:purchase_orders",
         "db:suppliers",
+        "db:v_purchase_line_market",
         "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
         "impact:admin-dashboard",
         "impact:purchasing",

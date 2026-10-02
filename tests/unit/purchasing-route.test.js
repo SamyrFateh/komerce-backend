@@ -57,6 +57,7 @@ jest.mock('../../services/purchasing-admin-service', () => ({
 
 jest.mock('../../services/purchasing-grouped-service', () => ({
   listOpenLines: jest.fn(),
+  getGroupedPurchaseOrder: jest.fn(),
   preparePurchaseOrder: jest.fn(),
   detachLines: jest.fn(),
   discardPurchaseOrder: jest.fn(),
@@ -516,6 +517,23 @@ describe('forme regroupée — routes (PR 4)', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ groups: [], total_lines: 0 });
     expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('GET /open-lines transmet le filtre opérateur market_id (jamais une clé de regroupement)', async () => {
+    grouped.listOpenLines.mockResolvedValue({ groups: [], total_lines: 0 });
+    await request(app).get('/api/purchasing/open-lines?market_id=11111111-1111-1111-1111-111111111111');
+    expect(grouped.listOpenLines).toHaveBeenLastCalledWith({ market_id: '11111111-1111-1111-1111-111111111111' });
+    await request(app).get('/api/purchasing/open-lines');
+    expect(grouped.listOpenLines).toHaveBeenLastCalledWith({ market_id: undefined });
+  });
+
+  it('GET /po/:po_id lit une PO regroupée (lignes + marchés) ; erreur relayée', async () => {
+    grouped.getGroupedPurchaseOrder.mockResolvedValueOnce({ purchase_order: { id: PO }, lines: [], markets: [], multi_market: false });
+    const ok = await request(app).get(`/api/purchasing/po/${PO}`);
+    expect(ok.status).toBe(200);
+    expect(grouped.getGroupedPurchaseOrder).toHaveBeenCalledWith(PO);
+    grouped.getGroupedPurchaseOrder.mockRejectedValueOnce(Object.assign(new Error('introuvable'), { status: 404, code: 'PURCHASE_ORDER_NOT_FOUND' }));
+    expect((await request(app).get(`/api/purchasing/po/${PO}`)).status).toBe(404);
   });
 
   it('POST /po/prepare → 201, corps et acteur transmis', async () => {

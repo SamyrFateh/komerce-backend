@@ -24302,6 +24302,55 @@
       }
     },
     "/api/purchasing/po/{po_id}": {
+      "get": {
+        "summary": "GET /api/purchasing/po/{po_id}",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "purchase_order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lines": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "multi_market": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
       "delete": {
         "summary": "DELETE /api/purchasing/po/{po_id}",
         "x-route-file": "routes/purchasing.js",

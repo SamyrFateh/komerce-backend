@@ -148,3 +148,27 @@ CREATE OR REPLACE FUNCTION public.is_order_complete(p_order_id uuid) RETURNS boo
        AND v.received_quantity < v.effective_quantity
   );
 $$;
+
+-- 7. Marché de chaque ligne (lecture seule) : le marché n'est JAMAIS une propriété de l'en-tête de PO ni une clé de
+--    regroupement ; il reste porté par order_item → order → orders.market_id (immuable, F1.1). Cette vue le rend
+--    explicite et observable pour open-lines, la lecture d'une PO regroupée, le cockpit et le futur règlement par marché
+--    (PR 5). Aucune écriture, aucune ventilation financière ici.
+CREATE OR REPLACE VIEW public.v_purchase_line_market AS
+SELECT
+  pl.id                  AS line_id,
+  pl.purchase_order_id   AS purchase_order_id,
+  pl.order_item_id       AS order_item_id,
+  oi.order_id            AS order_id,
+  o.market_id            AS market_id,
+  pl.supplier_id         AS supplier_id,
+  pl.procurement_hub_ref AS procurement_hub_ref,
+  pl.quantity            AS quantity,
+  public.purchase_line_effective_quantity(pl.cancelled_at, pl.settled_quantity, pl.confirmed_quantity, pl.quantity)
+                         AS effective_quantity,
+  (pl.cancelled_at IS NOT NULL) AS cancelled
+FROM public.purchase_lines pl
+JOIN public.order_items oi ON oi.id = pl.order_item_id
+JOIN public.orders o ON o.id = oi.order_id;
+
+COMMENT ON VIEW public.v_purchase_line_market IS
+  'Marché d''origine de chaque ligne d''achat (order_item → order → market_id). Lecture seule : le marché ne se réassigne jamais via Purchasing et n''est pas une clé de regroupement des PO.';

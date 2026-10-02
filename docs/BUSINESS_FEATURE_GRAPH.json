@@ -14417,7 +14417,7 @@
         "category": "services",
         "declared": "services/purchasing-grouped-service.js",
         "resolvedPath": "services/purchasing-grouped-service.js",
-        "status": "resolved-on-disk-no-header"
+        "status": "resolved-in-technical-graph"
       },
       {
         "feature": "purchasing",
@@ -21416,6 +21416,14 @@
         "entry": "GET /api/purchasing/open-lines",
         "method": "GET",
         "path": "/api/purchasing/open-lines",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "purchasing",
+        "entry": "GET /api/purchasing/po/:po_id",
+        "method": "GET",
+        "path": "/api/purchasing/po/{id}",
         "routeFile": "routes/purchasing.js",
         "status": "resolved-owned"
       },
@@ -44328,8 +44336,8 @@
       "backend": {
         "manifestsDiscovered": 35,
         "manifestsConnected": 35,
-        "technicalNodesTotal": 543,
-        "technicalNodesOwned": 543,
+        "technicalNodesTotal": 544,
+        "technicalNodesOwned": 544,
         "technicalOrphans": 0
       },
       "dash": {

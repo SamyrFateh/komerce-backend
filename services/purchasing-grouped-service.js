@@ -8,7 +8,7 @@
  * @outputs       open-line groups, draft grouped purchase order, detach/discard/cancel results
  * @depends       db, services/purchase-line-snapshot.js, utils/logger.js
  * @used-by       routes/purchasing.js, services/purchasing-admin-service.js, services/purchasing-receive-service.js
- * @db-read       purchase_lines, purchase_orders, order_items, orders, products, suppliers
+ * @db-read       purchase_lines, purchase_orders, order_items, orders, markets, products, suppliers, v_purchase_line_market
  * @db-write      purchase_lines, purchase_orders
  * @db-txn        owned
  * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
@@ -118,26 +118,85 @@ async function lockGroupedPo(client, poId, { requireDraft = true } = {}) {
   return po;
 }
 
-// ─── Lecture : lignes ouvertes regroupées par (fournisseur, hub) ─────────────────────────────────
+// ─── Marché : visible partout, jamais une clé de regroupement ────────────────────────────────────
+// Une PO regroupée peut contenir des lignes de plusieurs marchés (KM, CM, CG…). Le marché reste une propriété de
+// chaque ligne (order_item → order → market_id, via v_purchase_line_market) ; la PO n'en porte aucun.
 
-async function listOpenLines(q = db) {
-  requireEnabled();
-  const { rows } = await q.query(`
-    SELECT pl.id AS line_id, pl.supplier_id, s.name AS supplier_name, pl.procurement_hub_ref,
-           pl.order_item_id, oi.order_id, o.reference AS order_reference,
-           p.name AS product_name, pl.product_sku_id, pl.supplier_sku, pl.supplier_unit_ref,
-           pl.quantity, pl.supplier_unit_price, pl.supplier_currency, pl.created_at,
-           (pl.product_sku_id IS NOT NULL AND pl.supplier_unit_ref IS NOT NULL
-              AND pl.supplier_order_identity IS NOT NULL AND pl.supplier_unit_price IS NOT NULL
-              AND pl.supplier_currency IS NOT NULL) AS groupable
+const LINE_COLUMNS = `
+    pl.id AS line_id, pl.supplier_id, s.name AS supplier_name, pl.procurement_hub_ref,
+    pl.purchase_order_id, pl.order_item_id, vm.order_id, o.reference AS order_reference,
+    vm.market_id, mk.code AS market_code, mk.name AS market_name,
+    p.name AS product_name, pl.product_sku_id, pl.supplier_sku, pl.supplier_unit_ref,
+    pl.quantity, vm.effective_quantity, vm.cancelled, pl.supplier_unit_price, pl.supplier_currency, pl.created_at,
+    (pl.product_sku_id IS NOT NULL AND pl.supplier_unit_ref IS NOT NULL
+       AND pl.supplier_order_identity IS NOT NULL AND pl.supplier_unit_price IS NOT NULL
+       AND pl.supplier_currency IS NOT NULL) AS groupable`;
+
+const LINE_JOINS = `
       FROM purchase_lines pl
+      JOIN v_purchase_line_market vm ON vm.line_id = pl.id
       JOIN suppliers s ON s.id = pl.supplier_id
       JOIN order_items oi ON oi.id = pl.order_item_id
       JOIN orders o ON o.id = oi.order_id
-      LEFT JOIN products p ON p.id = oi.product_id
+      LEFT JOIN markets mk ON mk.id = vm.market_id
+      LEFT JOIN products p ON p.id = oi.product_id`;
+
+function shapeLine(row) {
+  return {
+    line_id: row.line_id,
+    order_id: row.order_id,
+    order_reference: row.order_reference,
+    order_item_id: row.order_item_id,
+    market_id: row.market_id,
+    market_code: row.market_code || null,
+    market_name: row.market_name || null,
+    product_name: row.product_name || null,
+    product_sku_id: row.product_sku_id,
+    supplier_sku: row.supplier_sku,
+    supplier_unit_ref: row.supplier_unit_ref,
+    quantity: row.quantity,
+    effective_quantity: row.effective_quantity,
+    cancelled: row.cancelled,
+    expected_unit_price: row.supplier_unit_price === null ? null : Number(row.supplier_unit_price),
+    supplier_currency: row.supplier_currency,
+    groupable: row.groupable,
+    created_at: row.created_at,
+  };
+}
+
+/** Ventilation par marché (quantités et lignes seulement : aucune ventilation financière avant la PR 5). */
+function summarizeMarkets(lines) {
+  const byMarket = new Map();
+  for (const line of lines) {
+    if (line.cancelled) continue;
+    const key = String(line.market_id);
+    const entry = byMarket.get(key) || {
+      market_id: line.market_id, market_code: line.market_code, market_name: line.market_name, lines: 0, quantity: 0,
+    };
+    entry.lines += 1;
+    entry.quantity += Number(line.effective_quantity);
+    byMarket.set(key, entry);
+  }
+  const markets = [...byMarket.values()].sort((a, b) => String(a.market_code || a.market_id).localeCompare(String(b.market_code || b.market_id)));
+  return { markets, multi_market: markets.length > 1 };
+}
+
+// ─── Lecture : lignes ouvertes regroupées par (fournisseur, hub) ─────────────────────────────────
+
+/**
+ * @param {{ market_id?: string }} [filter] filtre OPÉRATEUR uniquement (vue restreinte à un marché) :
+ *   il ne change jamais la clé de regroupement (fournisseur + hub).
+ */
+async function listOpenLines({ market_id: marketId } = {}, q = db) {
+  requireEnabled();
+  const marketFilter = marketId === undefined || marketId === null || marketId === '' ? null : requireUuid(marketId, 'market_id');
+  const { rows } = await q.query(`
+    SELECT ${LINE_COLUMNS}
+    ${LINE_JOINS}
      WHERE pl.purchase_order_id IS NULL AND pl.cancelled_at IS NULL
+       AND ($1::uuid IS NULL OR vm.market_id = $1::uuid)
      ORDER BY s.name, pl.procurement_hub_ref, pl.created_at, pl.id
-  `);
+  `, [marketFilter]);
 
   const groups = new Map();
   for (const row of rows) {
@@ -154,21 +213,7 @@ async function listOpenLines(q = db) {
     }
     const group = groups.get(key);
     if (row.supplier_currency) group.currencies.add(row.supplier_currency);
-    group.lines.push({
-      line_id: row.line_id,
-      order_id: row.order_id,
-      order_reference: row.order_reference,
-      order_item_id: row.order_item_id,
-      product_name: row.product_name || null,
-      product_sku_id: row.product_sku_id,
-      supplier_sku: row.supplier_sku,
-      supplier_unit_ref: row.supplier_unit_ref,
-      quantity: row.quantity,
-      expected_unit_price: row.supplier_unit_price === null ? null : Number(row.supplier_unit_price),
-      supplier_currency: row.supplier_currency,
-      groupable: row.groupable,
-      created_at: row.created_at,
-    });
+    group.lines.push(shapeLine(row));
     if (row.supplier_unit_ref) {
       const agg = group.by_supplier_unit_ref.get(row.supplier_unit_ref) || { supplier_unit_ref: row.supplier_unit_ref, quantity: 0, lines: 0 };
       agg.quantity += Number(row.quantity);
@@ -178,6 +223,7 @@ async function listOpenLines(q = db) {
   }
 
   return {
+    filter: { market_id: marketFilter },
     groups: [...groups.values()].map((g) => ({
       supplier_id: g.supplier_id,
       supplier_name: g.supplier_name,
@@ -185,9 +231,34 @@ async function listOpenLines(q = db) {
       currencies: [...g.currencies].sort(),
       lines: g.lines,
       by_supplier_unit_ref: [...g.by_supplier_unit_ref.values()],
+      ...summarizeMarkets(g.lines),
     })),
     total_lines: rows.length,
   };
+}
+
+async function loadPurchaseOrderLines(q, poId) {
+  const { rows } = await q.query(`
+    SELECT ${LINE_COLUMNS}
+    ${LINE_JOINS}
+     WHERE pl.purchase_order_id = $1
+     ORDER BY o.created_at, pl.created_at, pl.id
+  `, [poId]);
+  return rows.map(shapeLine);
+}
+
+/** Lecture d'une PO regroupée : en-tête (sans marché), lignes avec leur marché, ventilation par marché. */
+async function getGroupedPurchaseOrder(poId, q = db) {
+  requireUuid(poId, 'po_id');
+  const { rows: [po] } = await q.query(`
+    SELECT po.*, s.name AS supplier_name
+      FROM purchase_orders po JOIN suppliers s ON s.id = po.supplier_id
+     WHERE po.id = $1
+  `, [poId]);
+  if (!po) throw fail(404, 'PURCHASE_ORDER_NOT_FOUND', 'Purchase order introuvable');
+  if (po.order_id !== null) throw fail(409, 'PURCHASE_ORDER_NOT_GROUPED', 'Cette PO est de forme historique');
+  const lines = await loadPurchaseOrderLines(q, po.id);
+  return { purchase_order: po, lines, ...summarizeMarkets(lines) };
 }
 
 // ─── Préparation d'une PO regroupée (draft) ───────────────────────────────────────────────────────
@@ -229,8 +300,9 @@ async function preparePurchaseOrder({ supplier_id, procurement_hub_ref, line_ids
       });
     }
 
+    const lines = await loadPurchaseOrderLines(client, po.id);
     log.info({ po_id: po.id, supplier_id: supplierId, lines: ids.length }, '[PURCHASING] PO regroupée préparée (draft)');
-    return { purchase_order: po, line_ids: ids };
+    return { purchase_order: po, line_ids: ids, lines, ...summarizeMarkets(lines) };
   });
 }
 
@@ -328,6 +400,7 @@ module.exports = {
   isGroupedPurchasingEnabled,
   groupedRouteError,
   listOpenLines,
+  getGroupedPurchaseOrder,
   preparePurchaseOrder,
   detachLines,
   discardPurchaseOrder,

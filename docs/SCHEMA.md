@@ -612,6 +612,14 @@ role: Politique de projection de champs par grain sans selection d'offre.
 -->
 
 <!-- schema-pending
+object: v_purchase_line_market
+kind: view
+migration: 266
+section: ### 4.10 Sourcing et fournisseurs
+role: Marche d origine de chaque ligne d achat (order_item vers order vers market_id), lecture seule ; le marche n est ni porte par l en-tete de PO ni cle de regroupement, et ne se reassigne jamais via Purchasing.
+-->
+
+<!-- schema-pending
 object: hub_purchase_allocations
 kind: table
 migration: 233,265

@@ -595,6 +595,12 @@ describe('HUB-001 — réception par ligne d\'achat (PO regroupée)', () => {
     expect(inbound.allocations.map((a) => String(a.allocation.purchase_line_id)).sort())
       .toEqual(g.lines.map((l) => String(l.line)).sort());
 
+    // Le Hub reste l'autorité physique : chaque allocation garde le marché de la commande d'origine de sa ligne.
+    const marketByLine = Object.fromEntries(g.lines.map((l) => [String(l.line), String(l.market)]));
+    expect(inbound.allocations.every((a) => String(a.allocation.market_id) === marketByLine[String(a.allocation.purchase_line_id)])).toBe(true);
+    expect(new Set(inbound.allocations.map((a) => String(a.allocation.market_id))).size).toBe(2);
+    expect(inbound.unit.market_id).toBeNull();
+
     const progress = await query(
       'SELECT line_id, received_quantity, effective_quantity FROM v_purchase_line_progress WHERE purchase_order_id = $1',
       [g.po]

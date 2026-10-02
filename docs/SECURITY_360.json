@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-02T05:25:24.592Z",
+  "generatedAt": "2026-10-02T05:35:42.502Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 685,
-    "protected": 630,
+    "total": 686,
+    "protected": 631,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -4303,6 +4303,13 @@
     },
     {
       "key": "DELETE /api/purchasing/po/{po_id}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/purchasing/po/{po_id}",
       "level": "PROTECTED",
       "roles": [
         "admin"

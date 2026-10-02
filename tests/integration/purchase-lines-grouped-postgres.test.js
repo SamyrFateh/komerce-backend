@@ -30,7 +30,8 @@ const { syncPurchaseOrdersOnOrderCancel } = require('../../services/purchasing-c
 const hasDb = Boolean(process.env.DATABASE_URL);
 const describeDb = hasDb ? describe : describe.skip;
 const id = () => crypto.randomUUID();
-const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '266_purchase_orders_grouped_form.sql'];
+const MIGRATIONS = ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '266_purchase_orders_grouped_form.sql']
+const fs2 = fs; // (lecture des fichiers de migration);
 const IDENTITY = JSON.stringify({ provider: 'manual', version: 1, payload: { supplier_sku: 'U1' } });
 
 describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
@@ -55,7 +56,15 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
         CREATE TABLE product_suppliers (id uuid PRIMARY KEY);
         CREATE TABLE product_skus (id uuid PRIMARY KEY);
         CREATE TABLE products (id uuid PRIMARY KEY, name text);
-        CREATE TABLE orders (id uuid PRIMARY KEY, reference text);
+        CREATE TABLE markets (id uuid PRIMARY KEY, code text NOT NULL UNIQUE, name text NOT NULL);
+        CREATE TABLE orders (id uuid PRIMARY KEY, reference text, market_id uuid REFERENCES markets(id), created_at timestamptz NOT NULL DEFAULT now());
+        CREATE FUNCTION prevent_orders_market_id_mutation() RETURNS trigger AS $f$
+        BEGIN
+          IF NEW.market_id IS DISTINCT FROM OLD.market_id THEN RAISE EXCEPTION 'orders_market_id_immutable'; END IF;
+          RETURN NEW;
+        END $f$ LANGUAGE plpgsql;
+        CREATE TRIGGER trg_orders_market_id_immutable BEFORE UPDATE ON orders
+          FOR EACH ROW EXECUTE FUNCTION prevent_orders_market_id_mutation();
         CREATE TABLE order_items (
           id uuid PRIMARY KEY,
           order_id uuid NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -150,16 +159,27 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
     return supplier;
   }
 
-  async function seedItem({ quantity = 1 } = {}) {
-    const order = id(); const item = id(); const product = id();
-    await q('INSERT INTO orders(id, reference) VALUES ($1,$2)', [order, `CMD-${order.slice(0, 6)}`]);
-    await q('INSERT INTO products(id, name) VALUES ($1,$2)', [product, 'Produit']);
-    await q('INSERT INTO order_items(id, order_id, product_id, quantity) VALUES ($1,$2,$3,$4)', [item, order, product, quantity]);
-    return { order, item };
+  const markets = {};
+  async function seedMarket(code) {
+    if (!markets[`${current}:${code}`]) {
+      const market = id();
+      await q('INSERT INTO markets(id, code, name) VALUES ($1,$2,$3)', [market, code, `Marché ${code}`]);
+      markets[`${current}:${code}`] = market;
+    }
+    return markets[`${current}:${code}`];
   }
 
-  async function seedLine({ supplier, item, quantity = 1, exact = true, hub = 'DXB', currency = 'USD', sku = null } = {}) {
-    const lineItem = item || (await seedItem({ quantity })).item;
+  async function seedItem({ quantity = 1, market = 'KM' } = {}) {
+    const order = id(); const item = id(); const product = id();
+    const marketId = await seedMarket(market);
+    await q('INSERT INTO orders(id, reference, market_id) VALUES ($1,$2,$3)', [order, `CMD-${order.slice(0, 6)}`, marketId]);
+    await q('INSERT INTO products(id, name) VALUES ($1,$2)', [product, 'Produit']);
+    await q('INSERT INTO order_items(id, order_id, product_id, quantity) VALUES ($1,$2,$3,$4)', [item, order, product, quantity]);
+    return { order, item, market: marketId };
+  }
+
+  async function seedLine({ supplier, item, quantity = 1, exact = true, hub = 'DXB', currency = 'USD', sku = null, market = 'KM' } = {}) {
+    const lineItem = item || (await seedItem({ quantity, market })).item;
     const productSku = exact ? (sku || id()) : null;
     if (productSku) await q('INSERT INTO product_skus(id) VALUES ($1) ON CONFLICT DO NOTHING', [productSku]);
     const { rows: [line] } = await q(`
@@ -424,6 +444,140 @@ describeDb('forme regroupée — migration 266 et services (REAL_DB)', () => {
       await expect(grouped.cancelLine(kept, '')).rejects.toMatchObject({ status: 400 });
       await expect(grouped.cancelLine(id(), 'x')).rejects.toMatchObject({ status: 404, code: 'PURCHASE_LINE_NOT_FOUND' });
       await expect(grouped.cancelLine('nope', 'x')).rejects.toMatchObject({ status: 400 });
+    });
+  });
+
+  // ─── multi-marché (KM / CM / CG) ──────────────────────────────────────────────────────────────
+  describe('multi-marché — le marché reste une propriété de la ligne', () => {
+    beforeEach(() => newSchema());
+
+    async function seedThreeMarkets(supplier) {
+      const km = await seedLine({ supplier, market: 'KM', quantity: 2 });
+      const cm = await seedLine({ supplier, market: 'CM', quantity: 3 });
+      const cg = await seedLine({ supplier, market: 'CG', quantity: 1 });
+      return { km, cm, cg };
+    }
+
+    it('une PO DRAFT rattache KM + CM + CG (même fournisseur, même hub) ; l\'en-tête ne porte aucun marché', async () => {
+      const supplier = await seedSupplier();
+      const { km, cm, cg } = await seedThreeMarkets(supplier);
+
+      const result = await grouped.preparePurchaseOrder({ supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: [km, cm, cg] });
+      expect(result.purchase_order.status).toBe('draft');
+      expect(result.multi_market).toBe(true);
+      expect(result.markets.map((m) => [m.market_code, m.lines, m.quantity])).toEqual([['CG', 1, 1], ['CM', 1, 3], ['KM', 1, 2]]);
+
+      const { rows: cols } = await q(
+        `SELECT column_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = 'purchase_orders' AND column_name LIKE '%market%'`,
+        [current]);
+      expect(cols).toEqual([]);
+      const { rows: lineCols } = await q(
+        `SELECT column_name FROM information_schema.columns WHERE table_schema = $1 AND table_name = 'purchase_lines' AND column_name LIKE '%market%'`,
+        [current]);
+      expect(lineCols).toEqual([]);
+    });
+
+    it('chaque ligne conserve le marché de sa commande d\'origine (vue et lecture de la PO)', async () => {
+      const supplier = await seedSupplier();
+      const { km, cm, cg } = await seedThreeMarkets(supplier);
+      const { purchase_order: po } = await grouped.preparePurchaseOrder({ supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: [km, cm, cg] });
+
+      const { rows } = await q(`
+        SELECT vm.line_id, vm.market_id AS view_market, o.market_id AS order_market
+          FROM v_purchase_line_market vm JOIN orders o ON o.id = vm.order_id WHERE vm.purchase_order_id = $1`, [po.id]);
+      expect(rows).toHaveLength(3);
+      expect(rows.every((r) => r.view_market === r.order_market)).toBe(true);
+      expect(new Set(rows.map((r) => r.view_market)).size).toBe(3);
+
+      const read = await grouped.getGroupedPurchaseOrder(po.id);
+      expect(read.purchase_order).toMatchObject({ id: po.id, status: 'draft', order_id: null, supplier_name: 'Fournisseur' });
+      const byLine = Object.fromEntries(read.lines.map((l) => [l.line_id, l.market_code]));
+      expect(byLine).toEqual({ [km]: 'KM', [cm]: 'CM', [cg]: 'CG' });
+      expect(read.multi_market).toBe(true);
+      expect(read.markets).toHaveLength(3);
+    });
+
+    it('lecture d\'une PO regroupée : 404, historique 409, uuid invalide 400', async () => {
+      const supplier = await seedSupplier();
+      await expect(grouped.getGroupedPurchaseOrder(id())).rejects.toMatchObject({ status: 404 });
+      await expect(grouped.getGroupedPurchaseOrder('nope')).rejects.toMatchObject({ status: 400 });
+      const { order, item } = await seedItem();
+      const { rows: [{ id: historical }] } = await q(
+        `INSERT INTO purchase_orders(order_id, order_item_id, supplier_id, qty) VALUES ($1,$2,$3,1) RETURNING id`, [order, item, supplier]);
+      await expect(grouped.getGroupedPurchaseOrder(historical)).rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_NOT_GROUPED' });
+    });
+
+    it('une PO mono-marché n\'est pas multi_market ; une ligne annulée ne compte plus dans la ventilation', async () => {
+      const supplier = await seedSupplier();
+      const a = await seedLine({ supplier, market: 'KM' });
+      const b = await seedLine({ supplier, market: 'CM' });
+      const { purchase_order: po } = await grouped.preparePurchaseOrder({ supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: [a, b] });
+      await grouped.cancelLine(b, 'doublon');
+      const read = await grouped.getGroupedPurchaseOrder(po.id);
+      expect(read.multi_market).toBe(false);
+      expect(read.markets.map((m) => m.market_code)).toEqual(['KM']);
+    });
+
+    it('open-lines expose le marché de chaque ligne et la ventilation du groupe (clé = fournisseur + hub seulement)', async () => {
+      const supplier = await seedSupplier({ name: 'Alpha' });
+      await seedThreeMarkets(supplier);
+
+      const result = await grouped.listOpenLines();
+      expect(result.groups).toHaveLength(1);                       // un seul groupe malgré trois marchés
+      const [group] = result.groups;
+      expect(group.multi_market).toBe(true);
+      expect(group.markets.map((m) => m.market_code)).toEqual(['CG', 'CM', 'KM']);
+      expect(group.lines.every((l) => l.market_id && l.market_code && l.market_name)).toBe(true);
+      expect(Object.fromEntries(group.lines.map((l) => [l.market_code, l.quantity]))).toEqual({ KM: 2, CM: 3, CG: 1 });
+      expect(result.filter).toEqual({ market_id: null });
+    });
+
+    it('le filtre market_id est un filtre opérateur : il restreint les lignes sans changer la clé de regroupement', async () => {
+      const supplier = await seedSupplier({ name: 'Alpha' });
+      await seedThreeMarkets(supplier);
+      const cmMarket = await seedMarket('CM');
+
+      const filtered = await grouped.listOpenLines({ market_id: cmMarket });
+      expect(filtered.total_lines).toBe(1);
+      expect(filtered.groups).toHaveLength(1);
+      expect(filtered.groups[0]).toMatchObject({ supplier_name: 'Alpha', procurement_hub_ref: 'DXB', multi_market: false });
+      expect(filtered.groups[0].lines[0].market_code).toBe('CM');
+      expect(filtered.filter).toEqual({ market_id: cmMarket });
+
+      expect((await grouped.listOpenLines({ market_id: id() })).total_lines).toBe(0);
+      expect((await grouped.listOpenLines({ market_id: '' })).total_lines).toBe(3);
+      await expect(grouped.listOpenLines({ market_id: 'KM' })).rejects.toMatchObject({ status: 400 });
+    });
+
+    it('Purchasing ne réassigne jamais un marché : prepare / detach / discard / cancel ignorent toute demande de marché', async () => {
+      const supplier = await seedSupplier();
+      const { km, cm, cg } = await seedThreeMarkets(supplier);
+      const snapshot = async () => (await q('SELECT id, market_id FROM orders ORDER BY id')).rows;
+      const before = await snapshot();
+      const otherMarket = await seedMarket('YT');
+
+      const { purchase_order: po } = await grouped.preparePurchaseOrder(
+        { supplier_id: supplier, procurement_hub_ref: 'DXB', line_ids: [km, cm, cg], market_id: otherMarket }, { actor: { id: 'a' } });
+      await grouped.detachLines(po.id, [km]);
+      await grouped.cancelLine(cg, 'x');
+      await grouped.discardPurchaseOrder(po.id);
+      await tx((c) => syncPurchaseOrdersOnOrderCancel(c, { orderId: (before[0] || {}).id, reason: 'x' }));
+
+      expect(await snapshot()).toEqual(before);
+      const { rows } = await q('SELECT market_id FROM v_purchase_line_market ORDER BY line_id');
+      expect(rows.every((r) => before.some((o) => o.market_id === r.market_id))).toBe(true);
+      // Le garde-fou de base (F1.1) reste l'autorité : même un UPDATE direct est refusé.
+      await expect(q('UPDATE orders SET market_id = $1', [otherMarket])).rejects.toThrow(/orders_market_id_immutable/);
+    });
+
+    it('aucun service ni route de Purchasing n\'écrit orders ni un marché (garde statique)', () => {
+      const root = path.join(__dirname, '../..');
+      for (const file of ['services/purchasing-grouped-service.js', 'services/purchasing-cancel-service.js', 'routes/purchasing.js', 'services/purchase-line-snapshot.js']) {
+        const source = fs.readFileSync(path.join(root, file), 'utf8');
+        expect(source).not.toMatch(/UPDATE\s+orders\b/i);
+        expect(source).not.toMatch(/SET\s+market_id/i);
+        expect(source).not.toMatch(/INSERT\s+INTO\s+purchase_lines[^;]*market_id/i);
+      }
     });
   });
 

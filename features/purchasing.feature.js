@@ -155,9 +155,9 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 15,
-    totalRoutes: 15,
-    note: '15/15 routes protégées (guard admin appliqué sur chaque route de routes/purchasing.js — GET/POST/DELETE confondus, y compris le référentiel fournisseur).',
+    authedRoutesDetected: 16,
+    totalRoutes: 16,
+    note: '16/16 routes protégées (guard admin appliqué sur chaque route de routes/purchasing.js — GET/POST/DELETE confondus, y compris le référentiel fournisseur).',
   },
   contract: {
     exposes: [
@@ -172,6 +172,7 @@ module.exports = {
       'POST /api/purchasing/:id/receive',
       'DELETE /api/purchasing/po/:po_id',
       'GET /api/purchasing/open-lines',
+      'GET /api/purchasing/po/:po_id',
       'POST /api/purchasing/po/prepare',
       'POST /api/purchasing/po/:po_id/detach',
       'POST /api/purchasing/po/:po_id/discard',
@@ -230,7 +231,7 @@ module.exports = {
       test: 'tests/integration/purchase-line-progress-postgres.test.js' },
     { statement: 'purchase_lines (PR 1, migration 263) : la quantité effective achetée d\'un order_item (0 si annulée, sinon COALESCE(settled, confirmed, quantity)) ne dépasse jamais order_items.quantity — garde base I1 sous verrou FOR UPDATE sur order_items ; une ligne confirmée/réglée/annulée est figée (one-shot) et ne se supprime pas directement',
       test: 'tests/integration/purchase-lines-postgres.test.js' },
-    { statement: 'forme regroupée (PR 4, migration 266, KOMERCE_GROUPED_PURCHASING éteint par défaut) : une PO est soit historique (order_id, qty, supplier_sku renseignés) soit regroupée (détail de ligne NULL, chk_purchase_orders_header_shape) ; une PO regroupée ne reçoit que des lignes à identité exacte, même fournisseur, même hub, même devise (garde base I4) ; rattachement, détachement, abandon et annulation de ligne se font en brouillon seulement ; une PO regroupée répond 409 PURCHASE_ORDER_GROUPED_USE_PO_ROUTES aux routes historiques ; l\'annulation d\'une commande annule ses lignes ouvertes et en brouillon et n\'annule JAMAIS une ligne d\'une PO regroupée déjà soumise (alerte avec purchase_line_ids)',
+    { statement: 'forme regroupée (PR 4, migration 266, KOMERCE_GROUPED_PURCHASING éteint par défaut) : une PO est soit historique (order_id, qty, supplier_sku renseignés) soit regroupée (détail de ligne NULL, chk_purchase_orders_header_shape) ; une PO regroupée ne reçoit que des lignes à identité exacte, même fournisseur, même hub, même devise (garde base I4) ; rattachement, détachement, abandon et annulation de ligne se font en brouillon seulement ; une PO regroupée répond 409 PURCHASE_ORDER_GROUPED_USE_PO_ROUTES aux routes historiques ; le marché reste une propriété de chaque ligne (order_item → order → market_id, vue v_purchase_line_market) : une PO regroupée peut mêler KM/CM/CG, la clé de regroupement est fournisseur + hub (jamais le marché), le marché est visible dans open-lines, la préparation et la lecture de PO, market_id n\'est qu\'un filtre opérateur et Purchasing ne réassigne jamais un marché ; l\'annulation d\'une commande annule ses lignes ouvertes et en brouillon et n\'annule JAMAIS une ligne d\'une PO regroupée déjà soumise (alerte avec purchase_line_ids)',
       test: 'tests/integration/purchase-lines-grouped-postgres.test.js' },
     { statement: 'un besoin d\'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)',
       test: 'tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js' },
