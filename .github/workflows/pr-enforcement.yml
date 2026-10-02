@@ -371,6 +371,11 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
+      - name: Fetch PR base commit for E2E impact scope
+        if: needs.changes.outputs.e2e_api_required == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
       - id: e2e_scope
         name: Compute Feature-first E2E blast radius
         if: needs.changes.outputs.e2e_api_required == 'true'
