@@ -68,6 +68,13 @@ describe('processReceive', () => {
     expect(result.httpError).toEqual({ error: 'PO introuvable', status: 404 });
   });
 
+  test('PO regroupée (order_id NULL) → httpError 409 avec code, aucune écriture', async () => {
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'po-g', order_id: null, qty: null, received_qty: 0, status: 'confirmed' }] });
+    const result = await processReceive({ id: 'po-g', qty_recue: null, actor: null });
+    expect(result.httpError).toMatchObject({ status: 409, code: 'PURCHASE_ORDER_GROUPED_USE_PO_ROUTES' });
+    expect(mockDbQuery).toHaveBeenCalledTimes(1);
+  });
+
   test('déjà reçue en totalité → httpError 400', async () => {
     mockDbQuery.mockResolvedValueOnce({
       rows: [{ id: 'po-1', order_id: 'ord-1', qty: 2, received_qty: 2, status: 'received', hub_received_at: new Date() }],

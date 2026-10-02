@@ -35,6 +35,7 @@ const db  = require('../db');
 const { setSupplierSnapshot } = require('./order-mutation-service');
 const { verifyProviderEvidenceForConfirmation, COMMITMENT_VERDICT } = require('./suppliers/purchase-order-confirmation-boundary');
 const { EXECUTION_ADAPTER_REGISTRY } = require('./suppliers/execution-adapter-registry');
+const { groupedRouteError } = require('./purchasing-grouped-service');
 const log = require('../utils/logger').child({ module: 'purchasing-admin-service' });
 
 // ─── Fournisseurs ──────────────────────────────────────────────────────────────
@@ -136,10 +137,12 @@ async function confirmPurchaseOrder(poId, orderId, data = {}, options = {}) {
   const CONFIRMABLE_STATUSES = ['pending', 'notified'];
 
   const { rows: [currentPo] } = await db.query(
-    `SELECT id, status, supplier_order_identity, supplier_unit_ref, supplier_sku, qty
-       FROM purchase_orders WHERE id = $1 AND order_id = $2`,
+    `SELECT id, order_id, status, supplier_order_identity, supplier_unit_ref, supplier_sku, qty
+       FROM purchase_orders WHERE id = $1 AND (order_id = $2 OR order_id IS NULL)`,
     [poId, orderId]
   );
+  // Une PO regroupée se confirme par ses propres routes (PR 5) : 409 explicite plutôt qu'un 404 trompeur.
+  if (currentPo && currentPo.order_id === null) throw groupedRouteError();
   if (!currentPo) {
     const err = new Error('Purchase order introuvable');
     err.status = 404;
@@ -247,6 +250,7 @@ async function cancelPurchaseOrder(poId, forceDelete = false) {
     err.status = 404;
     throw err;
   }
+  if (po.order_id === null) throw groupedRouteError();
 
   if (TERMINAL_RECEIVED.includes(po.status) && !forceDelete) {
     const err = new Error(`Impossible d'annuler une PO au statut "${po.status}". Utilisez x-force-delete si l'annulation est intentionnelle.`);

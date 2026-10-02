@@ -37,6 +37,13 @@
  *   POST /api/purchasing/:order_id/confirm            → confirmer manuellement un achat
  *   POST /api/purchasing/:id/receive                  → marquer reçu au Hub Dubai [v8.2]
  *   DELETE /api/purchasing/po/:po_id                  → annuler une purchase order
+ *
+ * Forme regroupée (PR 4, KOMERCE_GROUPED_PURCHASING=1 ; sinon 409 GROUPED_PURCHASING_DISABLED) :
+ *   GET  /api/purchasing/open-lines                   → lignes ouvertes par (fournisseur, hub)
+ *   POST /api/purchasing/po/prepare                   → PO regroupée draft + rattachement des lignes
+ *   POST /api/purchasing/po/:po_id/detach             → détacher des lignes d'une PO draft
+ *   POST /api/purchasing/po/:po_id/discard            → abandonner une PO draft
+ *   POST /api/purchasing/lines/:id/cancel             → annuler une ligne ouverte ou en brouillon
  */
 
 'use strict';
@@ -51,6 +58,7 @@ const { triggerPurchasing } = require('../services/purchasing-trigger-service');
 const { resolveCanonicalMappingMoney } = require('../services/purchasing-canonical-money');
 const { processReceive }    = require('../services/purchasing-receive-service');
 const { deleteSupplier, confirmPurchaseOrder, cancelPurchaseOrder } = require('../services/purchasing-admin-service');
+const grouped = require('../services/purchasing-grouped-service');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -82,6 +90,39 @@ router.get('/', ...guard, async (req, res, next) => {
 
     res.json({ purchase_orders: rows, total: rows.length });
   } catch(err) { next(err); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//   FORME REGROUPÉE (PR 4) — déclarées avant /:order_id pour éviter conflit Express
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function groupedError(err, res, next) {
+  if (err && err.status) {
+    return res.status(err.status).json({ error: err.message, code: err.code, current_status: err.current_status });
+  }
+  return next(err);
+}
+
+router.get('/open-lines', ...guard, async (req, res, next) => {
+  try { res.json(await grouped.listOpenLines()); } catch (err) { groupedError(err, res, next); }
+});
+
+router.post('/po/prepare', ...guard, async (req, res, next) => {
+  try {
+    res.status(201).json(await grouped.preparePurchaseOrder(req.body || {}, { actor: req.user }));
+  } catch (err) { groupedError(err, res, next); }
+});
+
+router.post('/po/:po_id/detach', ...guard, async (req, res, next) => {
+  try { res.json(await grouped.detachLines(req.params.po_id, (req.body || {}).line_ids)); } catch (err) { groupedError(err, res, next); }
+});
+
+router.post('/po/:po_id/discard', ...guard, async (req, res, next) => {
+  try { res.json(await grouped.discardPurchaseOrder(req.params.po_id)); } catch (err) { groupedError(err, res, next); }
+});
+
+router.post('/lines/:id/cancel', ...guard, async (req, res, next) => {
+  try { res.json(await grouped.cancelLine(req.params.id, (req.body || {}).reason)); } catch (err) { groupedError(err, res, next); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -297,7 +338,7 @@ router.post('/:order_id/confirm', ...guard, async (req, res, next) => {
     );
     res.json(result);
   } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message, current_status: err.current_status });
+    if (err.status) return res.status(err.status).json({ error: err.message, current_status: err.current_status, ...(err.code ? { code: err.code } : {}) });
     next(err);
   }
 });
@@ -317,7 +358,7 @@ router.post('/:id/receive', ...guard, async (req, res, next) => {
   try {
     const result = await processReceive({ id, qty_recue, actor: req.user });
     if (result.httpError) {
-      return res.status(result.httpError.status).json({ error: result.httpError.error });
+      return res.status(result.httpError.status).json({ error: result.httpError.error, ...(result.httpError.code ? { code: result.httpError.code } : {}) });
     }
     res.json(result);
   } catch(err) { next(err); }
@@ -331,7 +372,7 @@ router.delete('/po/:po_id', ...guard, async (req, res, next) => {
     const result = await cancelPurchaseOrder(req.params.po_id, forceDelete);
     res.json(result);
   } catch (err) {
-    if (err.status) return res.status(err.status).json({ error: err.message, current_status: err.current_status });
+    if (err.status) return res.status(err.status).json({ error: err.message, current_status: err.current_status, ...(err.code ? { code: err.code } : {}) });
     next(err);
   }
 });

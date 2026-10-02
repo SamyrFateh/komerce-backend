@@ -24344,6 +24344,213 @@
         }
       }
     },
+    "/api/purchasing/open-lines": {
+      "get": {
+        "summary": "GET /api/purchasing/open-lines",
+        "x-route-file": "routes/purchasing.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "groups": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total_lines": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/prepare": {
+      "post": {
+        "summary": "POST /api/purchasing/po/prepare",
+        "x-route-file": "routes/purchasing.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "purchase_order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "line_ids": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/{po_id}/detach": {
+      "post": {
+        "summary": "POST /api/purchasing/po/{po_id}/detach",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "purchase_order_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "detached": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "remaining_lines": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/{po_id}/discard": {
+      "post": {
+        "summary": "POST /api/purchasing/po/{po_id}/discard",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "purchase_order_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "detached": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/lines/{id}/cancel": {
+      "post": {
+        "summary": "POST /api/purchasing/lines/{id}/cancel",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "line_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "cancelled": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "detached_from": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/loyalty/tiers": {
       "get": {
         "summary": "GET /api/loyalty/tiers",

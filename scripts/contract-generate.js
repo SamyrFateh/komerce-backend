@@ -1114,6 +1114,22 @@ const KNOWN_RESPONSES = {
   '/api/purchasing/po/{po_id}': {
     delete: { fields: ['success','message'], source: 'route-read' }
   },
+  // Forme regroupée (PR 4) — services/purchasing-grouped-service.js
+  '/api/purchasing/open-lines': {
+    get: { fields: ['groups','total_lines'], source: 'route-read' }
+  },
+  '/api/purchasing/po/prepare': {
+    post: { fields: ['purchase_order','line_ids'], source: 'route-read' }
+  },
+  '/api/purchasing/po/{po_id}/detach': {
+    post: { fields: ['purchase_order_id','detached','remaining_lines'], source: 'route-read' }
+  },
+  '/api/purchasing/po/{po_id}/discard': {
+    post: { fields: ['purchase_order_id','status','detached'], source: 'route-read' }
+  },
+  '/api/purchasing/lines/{id}/cancel': {
+    post: { fields: ['line_id','cancelled','detached_from'], source: 'route-read' }
+  },
 
   // cash.js — routes/cash.js, réponses lues directement dans les handlers
   '/api/cash/collect/{orderId}': {

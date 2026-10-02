@@ -119,6 +119,21 @@ describe('lignes historiques', () => {
     expect(params[4]).toBeNull();
     expect(params[7]).toBeNull();
   });
+  test('ligne ouverte : INSERT sans PO avec l\'instantané exact et le hub', async () => {
+    delete process.env.KOMERCE_PROCUREMENT_HUB_REF;
+    const c = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'open1' }] }) };
+    expect(await snap.insertOpenPurchaseLine(c, { item: base.item, ps, snapshot: snapshot(), quantity: 3 })).toEqual({ id: 'open1' });
+    expect(c.query.mock.calls[0][0]).toContain('VALUES (NULL,');
+    expect(c.query.mock.calls[0][1]).toEqual(['it', 'sup', 'ps', 'sk', 'S', 'R', JSON.stringify({ p: 1 }), 3, 2, 'AED', 'DXB']);
+  });
+  test('ligne ouverte : refuse sans order_item ou sans identité exacte', async () => {
+    const c = { query: jest.fn() };
+    await expect(snap.insertOpenPurchaseLine(c, { item: {}, ps, snapshot: snapshot(), quantity: 1 })).rejects.toThrow('order_item requis');
+    await expect(snap.insertOpenPurchaseLine(c, { item: base.item, ps, snapshot: snapshot({ productSkuId: null }), quantity: 1 })).rejects.toThrow('identité exacte requise');
+    await expect(snap.insertOpenPurchaseLine(c, { item: base.item, ps, snapshot: snapshot({ supplierUnitRef: null }), quantity: 1 })).rejects.toThrow('identité exacte requise');
+    await expect(snap.insertOpenPurchaseLine(c, { item: base.item, ps, snapshot: snapshot({ supplierOrderIdentity: null }), quantity: 1 })).rejects.toThrow('identité exacte requise');
+    expect(c.query).not.toHaveBeenCalled();
+  });
   test('confirmation (prix fourni ou par défaut)', async () => {
     const c = { query: jest.fn().mockResolvedValue({}) };
     await snap.confirmHistoricalPurchaseLine(c, 'po', { quantity: 3, unitPrice: 2 });

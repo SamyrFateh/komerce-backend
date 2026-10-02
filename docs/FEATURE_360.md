@@ -1164,7 +1164,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - un produit tague fragile ne se repacke jamais (repack_exempt) : la protection prime sur le volume
 - la photo de scelle Dubai est la borne 1 de responsabilite : avant = fournisseur, apres = transport
 - le systeme prescrit (repack/measure/photo), l agent execute, jamais l inverse (R2)
-- une PO regroupee (order_id NULL) ne s alloue au Hub que par ligne d achat (purchase_line_id), repartie dans l ordre des commandes et plafonnee au restant du effectif ; l allocation historique reste au niveau PO
+- une PO regroupee (order_id NULL) ne s alloue au Hub que par ligne d achat (purchase_line_id), repartie dans l ordre des commandes et plafonnee au restant du effectif, et n est jamais recevable tant qu elle est en brouillon ou annulee (quarantaine) ; l allocation historique reste au niveau PO
 - un colis ne change de statut que via une sequence de scan validee
 - [object Object]
 - le retrait exceptionnel par autorisation nominative ne revele jamais le nom attendu a l'agent relais — comparaison aveugle uniquement
@@ -2057,6 +2057,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
 - purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)
 - une réception ne peut être appliquée qu'à un bon de commande existant et cohérent
 - aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js
@@ -2065,7 +2066,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `product_suppliers`, `purchase_orders`, `suppliers`
 
-**Exposes** : 10 internal API(s), 10 HTTP interface(s)
+**Exposes** : 10 internal API(s), 15 HTTP interface(s)
   - `adaptShippingRate` (services/suppliers/allegro-shipping-capability-adapter.js) — resolved
   - `compareLegacyCanonicalUnit` (services/suppliers/canonical-unit-cutover-comparison.js) — resolved
   - `evaluateSupplierFulfillmentReadiness` (services/suppliers/supplier-fulfillment-readiness.js) — resolved
@@ -2090,12 +2091,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 63 fichier(s) déclaré(s)
-  - migrations : 4
+**Implementation** : 66 fichier(s) déclaré(s)
+  - migrations : 5
   - routes : 1
   - scripts : 3
-  - services : 22
-  - tests : 33
+  - services : 23
+  - tests : 34
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="purchasing"]_
 

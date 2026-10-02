@@ -101,7 +101,7 @@ async function seedPurchase({ marketId, relaisId, qty = 1, soi = null, supplierU
 }
 
 // PO regroupée (order_id NULL) : lignes ouvertes → PO draft → rattachement → PO confirmée.
-async function seedGroupedPurchase({ quantities = [1, 1], confirmed = null } = {}) {
+async function seedGroupedPurchase({ quantities = [1, 1], confirmed = null, submit = true } = {}) {
   const supplier = id();
   const sku = id();
   const po = id();
@@ -121,19 +121,21 @@ async function seedGroupedPurchase({ quantities = [1, 1], confirmed = null } = {
     await query('INSERT INTO order_items(id, order_id, sku_id, quantity) VALUES ($1,$2,$3,$4)', [item, order, sku, quantity]);
     await query(
       `INSERT INTO purchase_lines(id, order_item_id, supplier_id, product_sku_id, supplier_sku, supplier_unit_ref,
-                                  supplier_order_identity, quantity, procurement_hub_ref)
-       VALUES ($1,$2,$3,$4,'SKU','UNIT-G',$5::jsonb,$6,'HUB-DXB')`,
+                                  supplier_order_identity, quantity, supplier_unit_price, supplier_currency, procurement_hub_ref)
+       VALUES ($1,$2,$3,$4,'SKU','UNIT-G',$5::jsonb,$6,10,'USD','DXB')`,
       [line, item, supplier, sku, JSON.stringify({ provider: 'manual', version: 1, payload: { supplier_sku: 'UNIT-G' } }), quantity]
     );
     lines.push({ line, item, order, market, quantity });
   }
   await query(
-    "INSERT INTO purchase_orders(id, order_id, supplier_id, status) VALUES ($1, NULL, $2, 'draft')",
+    "INSERT INTO purchase_orders(id, order_id, supplier_id, status, supplier_sku) VALUES ($1, NULL, $2, 'draft', NULL)",
     [po, supplier]
   );
   await query('UPDATE purchase_lines SET purchase_order_id = $1 WHERE id = ANY($2::uuid[])', [po, lines.map((l) => l.line)]);
-  await query("UPDATE purchase_orders SET status = 'notified' WHERE id = $1", [po]);
-  await query("UPDATE purchase_orders SET status = 'confirmed' WHERE id = $1", [po]);
+  if (submit) {
+    await query("UPDATE purchase_orders SET status = 'notified' WHERE id = $1", [po]);
+    await query("UPDATE purchase_orders SET status = 'confirmed' WHERE id = $1", [po]);
+  }
   if (confirmed !== null) {
     for (let i = 0; i < lines.length; i += 1) {
       await query(
@@ -232,7 +234,7 @@ beforeAll(async () => {
       );
     `);
     await client.query(migrationSql);
-    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql']) {
+    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql']) {
       await client.query(fs.readFileSync(path.join(__dirname, '../../migrations', name), 'utf8').replace(/public\./g, `${schema}.`));
     }
   } finally {
@@ -639,6 +641,16 @@ describe('HUB-001 — réception par ligne d\'achat (PO regroupée)', () => {
       contents: [{ purchase_order_id: g.po, product_sku_id: g.sku, quantity: 2 }],
     }));
     expect(result).toMatchObject({ quarantined: true, reason_code: 'HUB_ALLOCATION_OVERRECEIVED' });
+    expect((await query('SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations')).rows[0].n).toBe(0);
+  });
+
+  test('une PO regroupée encore en brouillon n\'est pas recevable (rien n\'est engagé auprès du fournisseur)', async () => {
+    const g = await seedGroupedPurchase({ submit: false });
+    const result = await transact((client) => receiveSupplierPackage(client, {
+      reference: 'SUP-GROUP-DRAFT',
+      contents: [{ purchase_order_id: g.po, product_sku_id: g.sku, quantity: 1 }],
+    }));
+    expect(result).toMatchObject({ quarantined: true, reason_code: 'HUB_PURCHASE_ORDER_NOT_SUBMITTED' });
     expect((await query('SELECT COUNT(*)::integer AS n FROM hub_purchase_allocations')).rows[0].n).toBe(0);
   });
 

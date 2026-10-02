@@ -566,14 +566,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 > Transformer un besoin d'approvisionnement issu d'une commande en engagement fournisseur traçable (bon de commande), puis constater sa réception.
 
-- services: 22
+- services: 23
 - routes: 1
-- migrations: 4
+- migrations: 5
 - scripts: 3
-- tests: 33
+- tests: 34
 - tables owned (lifecycle): 3 — `product_suppliers`, `purchase_orders`, `suppliers`
 - tables written: 3
-- interfaces exposed: 10
+- interfaces exposed: 15
 - internal APIs: 10
 - dependencies (consumes): 9 — supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, notifications, logistics
 - consumers: 6 — catalog, dashboard, logistics, orders, payments, platform-ops
@@ -1436,6 +1436,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/purchasing/{id}/confirm` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/{id}/receive` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `DELETE /api/purchasing/po/{id}` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `GET /api/purchasing/open-lines` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/prepare` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/{id}/detach` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/{id}/discard` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/lines/{id}/cancel` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `GET /api/boutique/suggestions` | recommendations | `routes/boutique-suggestions.js` (resolved-owned) |
 | `GET /api/admin/market-settlements/markets/{id}/settlements` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
 | `POST /api/admin/market-settlements/markets/{id}/settlements/ready` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
@@ -2135,7 +2140,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1752 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1754 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 78 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2414,7 +2419,7 @@ Meta Graph monté : oui.
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | catalog | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |
 | purchasing | external-provider-contracts | static-code | 1 | **DECLARED_AND_OBSERVED** |
-| purchasing | infrastructure | static-code | 30 | **DECLARED_AND_OBSERVED** |
+| purchasing | infrastructure | static-code | 33 | **DECLARED_AND_OBSERVED** |
 | purchasing | logistics | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
 | purchasing | notifications | static-code | 7 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 7 | **DECLARED_AND_OBSERVED** |

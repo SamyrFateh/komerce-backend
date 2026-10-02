@@ -31,11 +31,13 @@ const {
   resolveExactSkuProcurementReadiness,
   buildPurchaseTarget,
   insertHistoricalPurchaseLine,
+  insertOpenPurchaseLine,
   confirmHistoricalPurchaseLine,
   findItemCoverage,
   resolveProcurementHubRef,
   procurementHubLabel,
 } = require('./purchase-line-snapshot');
+const { isGroupedPurchasingEnabled } = require('./purchasing-grouped-service');
 const log = require('../utils/logger').child({ module: 'purchasing-trigger' });
 
 const ADMIN_WA = process.env.ADMIN_WHATSAPP || process.env.WA_ADMIN;
@@ -251,6 +253,16 @@ async function triggerPurchasing(orderId, options = {}) {
         const existingPo = await findExistingPo(client, orderId, item, ps.id);
         if (existingPo) {
           results.push({ item: item.product_name, status: 'already_exists', purchase_order_id: existingPo.id, purchase_order_status: existingPo.status, inbound_tag: existingPo.id ? buildSupplierTagRequest(existingPo.id).reference : null });
+          await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
+          continue;
+        }
+
+        // PR 4 — mode regroupé (drapeau éteint par défaut) : un item à identité exacte devient une ligne OUVERTE,
+        // sans PO ni notification ; regroupée plus tard par l'opérateur. Sans identité exacte : chemin historique.
+        if (isGroupedPurchasingEnabled() && exactSku && canonicalMoney) {
+          const openSnapshot = { ...buildPurchaseTarget(ps, exactSku, canonicalMoney), productSkuId: exactSku.id };
+          const line = await insertOpenPurchaseLine(client, { item, ps, snapshot: openSnapshot, quantity: item.quantity });
+          results.push({ item: item.product_name, status: 'line_opened', purchase_order_id: null, purchase_line_id: line.id });
           await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
           continue;
         }
