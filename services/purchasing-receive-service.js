@@ -84,6 +84,11 @@ async function processReceive({ id, qty_recue, actor }) {
 
   const po = poRes.rows[0];
 
+  // Une PO regroupée (order_id NULL, qty NULL) ne se reçoit que par le Hub, ligne par ligne (HUB-001).
+  if (po.order_id === null) {
+    return { httpError: { error: 'PO regroupée : réception par le Hub uniquement', status: 409, code: 'PURCHASE_ORDER_GROUPED_USE_PO_ROUTES' } };
+  }
+
   // Quantité à incrémenter : celle fournie, sinon le reste non reçu
   // [B1] po.qty (pas po.quantity)
   const delta = qty_recue !== null

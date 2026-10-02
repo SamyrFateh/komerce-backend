@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 647,
-    "filesWithFullHeaders": 602,
+    "scannedCodeFiles": 648,
+    "filesWithFullHeaders": 603,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 647,
+    "filesWithAnyHeaders": 648,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1562,
-    "edges": 7739,
-    "dbTables": 179,
+    "graphNodes": 1564,
+    "edges": 7761,
+    "dbTables": 180,
     "doctrines": 544,
     "impactAreas": 192,
-    "unresolvedCodeEdges": 769,
+    "unresolvedCodeEdges": 770,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 78
   },
@@ -65,7 +65,7 @@
     "operations": 11,
     "inventory": 2,
     "local-stock": 4,
-    "purchasing": 23,
+    "purchasing": 24,
     "unsold-resolution": 1,
     "external-provider-contracts": 1,
     "incident-management": 5,
@@ -108,7 +108,7 @@
     "schema": 1,
     "route": 130,
     "entrypoint": 1,
-    "service": 339,
+    "service": 340,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -119,7 +119,7 @@
   "byCriticality": {
     "critical": 93,
     "medium": 134,
-    "high": 366,
+    "high": 367,
     "low": 54
   },
   "nodes": [
@@ -23797,10 +23797,13 @@
         "services/cancel-order-purchase-orders.js"
       ],
       "dbRead": [
+        "order_items",
+        "purchase_lines",
         "purchase_orders"
       ],
       "dbWrite": [
         "alerts",
+        "purchase_lines",
         "purchase_orders"
       ],
       "dbWriteVia": [],
@@ -23859,6 +23862,67 @@
         "finance"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/purchasing-grouped-service.js",
+      "file": "services/purchasing-grouped-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "purchasing-grouped-service",
+      "domain": "purchasing",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "supplier id",
+        "procurement hub ref",
+        "purchase line ids",
+        "purchase order id",
+        "cancel reason",
+        "actor"
+      ],
+      "outputs": [
+        "open-line groups",
+        "draft grouped purchase order",
+        "detach/discard/cancel results"
+      ],
+      "depends": [
+        "db",
+        "services/purchase-line-snapshot.js",
+        "utils/logger.js"
+      ],
+      "usedBy": [
+        "routes/purchasing.js",
+        "services/purchasing-admin-service.js",
+        "services/purchasing-receive-service.js"
+      ],
+      "dbRead": [
+        "purchase_lines",
+        "purchase_orders",
+        "order_items",
+        "orders",
+        "markets",
+        "products",
+        "suppliers",
+        "v_purchase_line_market"
+      ],
+      "dbWrite": [
+        "purchase_lines",
+        "purchase_orders"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "owned"
+      ],
+      "doctrine": [
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "admin-dashboard"
+      ],
+      "version": "2026-10"
     },
     {
       "id": "services/purchasing-receive-service.js",
@@ -31742,6 +31806,11 @@
       "id": "db:purchase_lines",
       "type": "db-table",
       "table": "purchase_lines"
+    },
+    {
+      "id": "db:v_purchase_line_market",
+      "type": "db-table",
+      "table": "v_purchase_line_market"
     },
     {
       "id": "db:shared_cart_saved_access",
@@ -71488,6 +71557,18 @@
     },
     {
       "from": "services/purchasing-cancel-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/purchasing-cancel-service.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/purchasing-cancel-service.js",
       "to": "db:purchase_orders",
       "type": "db-read",
       "label": "purchase_orders"
@@ -71497,6 +71578,12 @@
       "to": "db:alerts",
       "type": "db-write",
       "label": "alerts"
+    },
+    {
+      "from": "services/purchasing-cancel-service.js",
+      "to": "db:purchase_lines",
+      "type": "db-write",
+      "label": "purchase_lines"
     },
     {
       "from": "services/purchasing-cancel-service.js",
@@ -71581,6 +71668,120 @@
       "to": "impact:finance",
       "type": "impact",
       "label": "finance"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "services/purchase-line-snapshot.js",
+      "type": "depends",
+      "label": "services/purchase-line-snapshot.js"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "utils/logger.js",
+      "type": "depends",
+      "label": "utils/logger.js"
+    },
+    {
+      "from": "routes/purchasing.js",
+      "to": "services/purchasing-grouped-service.js",
+      "type": "uses",
+      "label": "routes/purchasing.js"
+    },
+    {
+      "from": "services/purchasing-admin-service.js",
+      "to": "services/purchasing-grouped-service.js",
+      "type": "uses",
+      "label": "services/purchasing-admin-service.js"
+    },
+    {
+      "from": "services/purchasing-receive-service.js",
+      "to": "services/purchasing-grouped-service.js",
+      "type": "uses",
+      "label": "services/purchasing-receive-service.js"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:purchase_lines",
+      "type": "db-read",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:purchase_orders",
+      "type": "db-read",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:order_items",
+      "type": "db-read",
+      "label": "order_items"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:products",
+      "type": "db-read",
+      "label": "products"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:suppliers",
+      "type": "db-read",
+      "label": "suppliers"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:v_purchase_line_market",
+      "type": "db-read",
+      "label": "v_purchase_line_market"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:purchase_lines",
+      "type": "db-write",
+      "label": "purchase_lines"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "db:purchase_orders",
+      "type": "db-write",
+      "label": "purchase_orders"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+      "type": "doctrine",
+      "label": "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "impact:purchasing",
+      "type": "impact",
+      "label": "purchasing"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
+      "to": "impact:admin-dashboard",
+      "type": "impact",
+      "label": "admin-dashboard"
     },
     {
       "from": "services/purchasing-receive-service.js",
@@ -93692,6 +93893,7 @@
         "services/order-mutation-service.js",
         "services/purchasing-admin-service.js",
         "services/purchasing-canonical-money.js",
+        "services/purchasing-grouped-service.js",
         "services/purchasing-receive-service.js",
         "services/purchasing-trigger-service.js",
         "services/repair-ordered-without-purchase-orders.js",
@@ -105799,6 +106001,7 @@
         "impact:supplier-integration",
         "services/purchasing-admin-service.js",
         "services/purchasing-cancel-service.js",
+        "services/purchasing-grouped-service.js",
         "services/purchasing-trigger-service.js",
         "services/suppliers/canonical-unit-purchasing-gate.js",
         "services/suppliers/execution-adapter-registry.js",
@@ -105855,6 +106058,7 @@
         "routes/purchasing.js",
         "services/order-mutation-service.js",
         "services/purchase-line-snapshot.js",
+        "services/purchasing-grouped-service.js",
         "utils/logger.js"
       ]
     },
@@ -105875,10 +106079,13 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "order_items",
+        "purchase_lines",
         "purchase_orders"
       ],
       "dbWrite": [
         "alerts",
+        "purchase_lines",
         "purchase_orders"
       ],
       "dbWriteVia": [],
@@ -105892,6 +106099,8 @@
       ],
       "mustCheck": [
         "db:alerts",
+        "db:order_items",
+        "db:purchase_lines",
         "db:purchase_orders",
         "doctrine:writer_not_owner_campaign_2026_08",
         "impact:cancellation",
@@ -105944,6 +106153,65 @@
         "services/suppliers/supplier-order-identity.js"
       ]
     },
+    "services/purchasing-grouped-service.js": {
+      "role": "purchasing-grouped-service",
+      "domain": "purchasing",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/purchase-line-snapshot.js",
+        "utils/logger.js"
+      ],
+      "directUsedBy": [
+        "routes/purchasing.js",
+        "services/purchasing-admin-service.js",
+        "services/purchasing-receive-service.js"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "purchase_lines",
+        "purchase_orders",
+        "order_items",
+        "orders",
+        "markets",
+        "products",
+        "suppliers",
+        "v_purchase_line_market"
+      ],
+      "dbWrite": [
+        "purchase_lines",
+        "purchase_orders"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md"
+      ],
+      "impactAreas": [
+        "purchasing",
+        "admin-dashboard"
+      ],
+      "mustCheck": [
+        "db:markets",
+        "db:order_items",
+        "db:orders",
+        "db:products",
+        "db:purchase_lines",
+        "db:purchase_orders",
+        "db:suppliers",
+        "db:v_purchase_line_market",
+        "doctrine:docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md",
+        "impact:admin-dashboard",
+        "impact:purchasing",
+        "routes/purchasing.js",
+        "services/purchase-line-snapshot.js",
+        "services/purchasing-admin-service.js",
+        "services/purchasing-receive-service.js",
+        "utils/logger.js"
+      ]
+    },
     "services/purchasing-receive-service.js": {
       "role": "purchasing-receive-service",
       "domain": "purchasing",
@@ -105980,6 +106248,7 @@
         "impact:unknown",
         "routes/purchasing.js",
         "services/order-status-machine.js",
+        "services/purchasing-grouped-service.js",
         "services/scan-operations.js",
         "utils/logger.js"
       ]
@@ -112220,6 +112489,7 @@
         "services/product-publication-guard.js",
         "services/purchasing-admin-service.js",
         "services/purchasing-cancel-service.js",
+        "services/purchasing-grouped-service.js",
         "services/purchasing-receive-service.js",
         "services/purchasing-trigger-service.js",
         "services/receive-purchase-order.js",
@@ -113065,6 +113335,18 @@
       ]
     },
     {
+      "table": "purchase_orders",
+      "writerCount": 6,
+      "writers": [
+        "services/purchasing-admin-service.js",
+        "services/purchasing-cancel-service.js",
+        "services/purchasing-grouped-service.js",
+        "services/purchasing-receive-service.js",
+        "services/purchasing-trigger-service.js",
+        "services/receive-purchase-order.js"
+      ]
+    },
+    {
       "table": "scan_events",
       "writerCount": 6,
       "writers": [
@@ -113109,17 +113391,6 @@
         "routes/invoices.js",
         "services/invoice-service.js",
         "services/order-payment-confirmation.js"
-      ]
-    },
-    {
-      "table": "purchase_orders",
-      "writerCount": 5,
-      "writers": [
-        "services/purchasing-admin-service.js",
-        "services/purchasing-cancel-service.js",
-        "services/purchasing-receive-service.js",
-        "services/purchasing-trigger-service.js",
-        "services/receive-purchase-order.js"
       ]
     },
     {
@@ -113213,6 +113484,16 @@
         "services/catalog-promotion.js",
         "services/product-stock-service.js",
         "services/product-variant-service.js"
+      ]
+    },
+    {
+      "table": "purchase_lines",
+      "writerCount": 4,
+      "writers": [
+        "services/purchase-line-snapshot.js",
+        "services/purchasing-cancel-service.js",
+        "services/purchasing-grouped-service.js",
+        "services/purchasing-trigger-service.js"
       ]
     },
     {
@@ -113552,14 +113833,6 @@
       "writers": [
         "services/provider-status-mutation-service.js",
         "services/providers-service.js"
-      ]
-    },
-    {
-      "table": "purchase_lines",
-      "writerCount": 2,
-      "writers": [
-        "services/purchase-line-snapshot.js",
-        "services/purchasing-trigger-service.js"
       ]
     },
     {
@@ -117128,6 +117401,12 @@
     },
     {
       "from": "services/purchasing-cancel-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/purchasing-grouped-service.js",
       "to": "db",
       "type": "depends",
       "label": "db"

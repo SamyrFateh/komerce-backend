@@ -26,13 +26,14 @@ describe('purchasing-cancel-service', () => {
   });
 
   it('retourne zero si aucune PO active', async () => {
-    const q = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+    const q = { query: jest.fn().mockResolvedValue({ rows: [] }) };
 
     await expect(syncPurchaseOrdersOnOrderCancel(q, { orderId: 'order-001' })).resolves.toEqual({
       total: 0,
       auto_cancelled: 0,
       blocking: 0,
       blocking_pos: [],
+      lines_cancelled: 0,
     });
     expect(q.query).toHaveBeenCalledWith(expect.stringContaining('FOR UPDATE'), ['order-001']);
   });
@@ -48,7 +49,8 @@ describe('purchasing-cancel-service', () => {
       .mockResolvedValueOnce({ rows: [], rowCount: 2 })
       .mockResolvedValueOnce({ rows: [], rowCount: 1 })
       .mockResolvedValueOnce({ rows: [{ id: 'alert-1' }] })
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) };
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValue({ rows: [] }) };
 
     const result = await syncPurchaseOrdersOnOrderCancel(q, {
       orderId: 'order-001',
@@ -62,6 +64,7 @@ describe('purchasing-cancel-service', () => {
       auto_cancelled: 2,
       blocking: 1,
       blocking_pos: [{ id: 'po-confirmed', status: 'confirmed', supplier_id: 'sup-3', supplier_order_id: 'S-3' }],
+      lines_cancelled: 0,
     });
     expect(q.query.mock.calls[1][0]).toContain("SET status = 'cancelled'");
     expect(q.query.mock.calls[1][1][0]).toEqual(['po-pending', 'po-notified']);
@@ -75,7 +78,8 @@ describe('purchasing-cancel-service', () => {
       .mockResolvedValueOnce({ rows: [{ id: 'po-1', status: 'received', supplier_id: 'sup', supplier_order_id: null }] })
       .mockResolvedValueOnce({ rows: [], rowCount: 1 })
       .mockRejectedValueOnce(new Error('alert_down'))
-      .mockResolvedValueOnce({ rows: [], rowCount: 1 }) };
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 })
+      .mockResolvedValue({ rows: [] }) };
 
     await expect(syncPurchaseOrdersOnOrderCancel(q, { orderId: 'order-001' })).resolves.toMatchObject({
       total: 1,

@@ -190,7 +190,7 @@ beforeAll(async () => {
     `);
     await client.query(migration233);
     await client.query(migration234);
-    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql']) {
+    for (const name of ['263_purchase_lines_foundation.sql', '264_purchase_line_progress_view.sql', '265_hub_allocations_purchase_line.sql', '266_purchase_orders_grouped_form.sql']) {
       await client.query(fs.readFileSync(path.join(__dirname, '../../migrations', name), 'utf8').replace(/public\./g, `${schema}.`));
     }
   } finally {

@@ -20,7 +20,8 @@
 'use strict';
 
 // Contrôle de parité PR 1 : tant que les PO historiques coexistent avec purchase_lines (1 PO = 1 ligne),
-// aucune des quatre divergences ci-dessous ne doit exister. Lecture seule ; exit 1 si une divergence est trouvée.
+// aucune des quatre divergences ci-dessous ne doit exister. Les PO regroupées (order_id NULL, PR 4) n'ont pas
+// de parité 1:1 : seules les PO historiques sont comparées, le sur-engagement (I1) vaut pour toutes les lignes. Lecture seule ; exit 1 si une divergence est trouvée.
 
 const CHECKS = [
   {
@@ -34,13 +35,13 @@ const CHECKS = [
     code: 'quantity_mismatch',
     label: 'quantité de la ligne différente de la quantité de sa PO',
     sql: `SELECT po.id FROM purchase_orders po JOIN purchase_lines pl ON pl.purchase_order_id = po.id
-           WHERE pl.quantity <> po.qty`,
+           WHERE po.order_id IS NOT NULL AND pl.quantity <> po.qty`,
   },
   {
     code: 'cancel_mismatch',
     label: 'PO annulée dont la ligne n\'est pas annulée (ou l\'inverse)',
     sql: `SELECT po.id FROM purchase_orders po JOIN purchase_lines pl ON pl.purchase_order_id = po.id
-           WHERE (po.status = 'cancelled') <> (pl.cancelled_at IS NOT NULL)`,
+           WHERE po.order_id IS NOT NULL AND (po.status = 'cancelled') <> (pl.cancelled_at IS NOT NULL)`,
   },
   {
     code: 'overcommitted_item',

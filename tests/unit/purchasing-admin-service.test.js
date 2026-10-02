@@ -173,6 +173,13 @@ describe('deleteSupplier', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('confirmPurchaseOrder', () => {
+  test('PO regroupée (order_id NULL) → 409 PURCHASE_ORDER_GROUPED_USE_PO_ROUTES', async () => {
+    mockQuery = makeDbQueue([{ rows: [{ id: 'po-uuid', order_id: null, status: 'draft' }] }]);
+
+    await expect(confirmPurchaseOrder('po-uuid', 'order-uuid'))
+      .rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_GROUPED_USE_PO_ROUTES' });
+  });
+
   test('PO introuvable → throw 404', async () => {
     mockQuery = makeDbQueue([
       { rows: [] }, // SELECT PO → vide
@@ -257,6 +264,14 @@ describe('confirmPurchaseOrder', () => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('cancelPurchaseOrder', () => {
+  test('PO regroupée → 409 PURCHASE_ORDER_GROUPED_USE_PO_ROUTES, rien n\'est écrit', async () => {
+    mockQuery = makeDbQueue([{ rows: [{ id: 'po-uuid', order_id: null, status: 'draft' }] }]);
+
+    await expect(cancelPurchaseOrder('po-uuid'))
+      .rejects.toMatchObject({ status: 409, code: 'PURCHASE_ORDER_GROUPED_USE_PO_ROUTES' });
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+  });
+
   test('PO introuvable → throw 404', async () => {
     mockQuery = makeDbQueue([{ rows: [] }]);
 

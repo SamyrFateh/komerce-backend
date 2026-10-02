@@ -55,7 +55,17 @@ jest.mock('../../services/purchasing-admin-service', () => ({
   cancelPurchaseOrder: jest.fn(),
 }));
 
+jest.mock('../../services/purchasing-grouped-service', () => ({
+  listOpenLines: jest.fn(),
+  getGroupedPurchaseOrder: jest.fn(),
+  preparePurchaseOrder: jest.fn(),
+  detachLines: jest.fn(),
+  discardPurchaseOrder: jest.fn(),
+  cancelLine: jest.fn(),
+}));
+
 const db = require('../../db');
+const grouped = require('../../services/purchasing-grouped-service');
 const { processReceive } = require('../../services/purchasing-receive-service');
 const {
   deleteSupplier,
@@ -495,5 +505,89 @@ describe('DELETE /api/purchasing/po/:po_id', () => {
     cancelPurchaseOrder.mockRejectedValueOnce(new Error('db down'));
     const res = await request(app).delete('/api/purchasing/po/po1');
     expect(res.status).toBe(500);
+  });
+});
+
+describe('forme regroupée — routes (PR 4)', () => {
+  const PO = '00000000-0000-0000-0000-0000000000a1';
+
+  it('GET /open-lines est servi avant /:order_id', async () => {
+    grouped.listOpenLines.mockResolvedValueOnce({ groups: [], total_lines: 0 });
+    const res = await request(app).get('/api/purchasing/open-lines');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ groups: [], total_lines: 0 });
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('GET /open-lines transmet le filtre opérateur market_id (jamais une clé de regroupement)', async () => {
+    grouped.listOpenLines.mockResolvedValue({ groups: [], total_lines: 0 });
+    await request(app).get('/api/purchasing/open-lines?market_id=11111111-1111-1111-1111-111111111111');
+    expect(grouped.listOpenLines).toHaveBeenLastCalledWith({ market_id: '11111111-1111-1111-1111-111111111111' });
+    await request(app).get('/api/purchasing/open-lines');
+    expect(grouped.listOpenLines).toHaveBeenLastCalledWith({ market_id: undefined });
+  });
+
+  it('GET /po/:po_id lit une PO regroupée (lignes + marchés) ; erreur relayée', async () => {
+    grouped.getGroupedPurchaseOrder.mockResolvedValueOnce({ purchase_order: { id: PO }, lines: [], markets: [], multi_market: false });
+    const ok = await request(app).get(`/api/purchasing/po/${PO}`);
+    expect(ok.status).toBe(200);
+    expect(grouped.getGroupedPurchaseOrder).toHaveBeenCalledWith(PO);
+    grouped.getGroupedPurchaseOrder.mockRejectedValueOnce(Object.assign(new Error('introuvable'), { status: 404, code: 'PURCHASE_ORDER_NOT_FOUND' }));
+    expect((await request(app).get(`/api/purchasing/po/${PO}`)).status).toBe(404);
+  });
+
+  it('POST /po/prepare → 201, corps et acteur transmis', async () => {
+    grouped.preparePurchaseOrder.mockResolvedValueOnce({ purchase_order: { id: PO }, line_ids: ['l1'] });
+    const res = await request(app).post('/api/purchasing/po/prepare').send({ supplier_id: 's', procurement_hub_ref: 'DXB', line_ids: ['l1'] });
+    expect(res.status).toBe(201);
+    expect(grouped.preparePurchaseOrder).toHaveBeenCalledWith(
+      { supplier_id: 's', procurement_hub_ref: 'DXB', line_ids: ['l1'] }, { actor: { id: 'admin-1', role: 'admin' } });
+  });
+
+  it('POST /po/:po_id/detach et /discard et /lines/:id/cancel délèguent', async () => {
+    grouped.detachLines.mockResolvedValueOnce({ detached: ['l1'] });
+    grouped.discardPurchaseOrder.mockResolvedValueOnce({ status: 'cancelled' });
+    grouped.cancelLine.mockResolvedValueOnce({ cancelled: true });
+    expect((await request(app).post(`/api/purchasing/po/${PO}/detach`).send({ line_ids: ['l1'] })).status).toBe(200);
+    expect(grouped.detachLines).toHaveBeenCalledWith(PO, ['l1']);
+    expect((await request(app).post(`/api/purchasing/po/${PO}/discard`)).status).toBe(200);
+    expect(grouped.discardPurchaseOrder).toHaveBeenCalledWith(PO);
+    expect((await request(app).post('/api/purchasing/lines/L1/cancel').send({ reason: 'doublon' })).status).toBe(200);
+    expect(grouped.cancelLine).toHaveBeenCalledWith('L1', 'doublon');
+  });
+
+  it('corps absent : les services reçoivent undefined et décident (400 côté service)', async () => {
+    grouped.detachLines.mockResolvedValueOnce({});
+    grouped.cancelLine.mockResolvedValueOnce({});
+    await request(app).post(`/api/purchasing/po/${PO}/detach`);
+    await request(app).post('/api/purchasing/lines/L1/cancel');
+    expect(grouped.detachLines).toHaveBeenCalledWith(PO, undefined);
+    expect(grouped.cancelLine).toHaveBeenCalledWith('L1', undefined);
+  });
+
+  it('erreur métier relayée avec son code ; erreur inattendue → 500', async () => {
+    const err = Object.assign(new Error('drapeau éteint'), { status: 409, code: 'GROUPED_PURCHASING_DISABLED' });
+    grouped.listOpenLines.mockRejectedValueOnce(err);
+    const res = await request(app).get('/api/purchasing/open-lines');
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({ error: 'drapeau éteint', code: 'GROUPED_PURCHASING_DISABLED' });
+
+    grouped.discardPurchaseOrder.mockRejectedValueOnce(new Error('db down'));
+    expect((await request(app).post(`/api/purchasing/po/${PO}/discard`)).status).toBe(500);
+  });
+
+  it('routes historiques : le code PURCHASE_ORDER_GROUPED_USE_PO_ROUTES est relayé (confirm, receive, delete)', async () => {
+    const err = Object.assign(new Error('regroupée'), { status: 409, code: 'PURCHASE_ORDER_GROUPED_USE_PO_ROUTES' });
+    confirmPurchaseOrder.mockRejectedValueOnce(err);
+    cancelPurchaseOrder.mockRejectedValueOnce(err);
+    processReceive.mockResolvedValueOnce({ httpError: { status: 409, error: 'regroupée', code: 'PURCHASE_ORDER_GROUPED_USE_PO_ROUTES' } });
+
+    const confirm = await request(app).post('/api/purchasing/o1/confirm').send({ purchase_order_id: PO });
+    const del = await request(app).delete(`/api/purchasing/po/${PO}`);
+    const receive = await request(app).post(`/api/purchasing/${PO}/receive`).send({});
+    for (const res of [confirm, del, receive]) {
+      expect(res.status).toBe(409);
+      expect(res.body.code).toBe('PURCHASE_ORDER_GROUPED_USE_PO_ROUTES');
+    }
   });
 });

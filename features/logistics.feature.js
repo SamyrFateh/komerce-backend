@@ -395,7 +395,7 @@ module.exports = {
     'un produit tague fragile ne se repacke jamais (repack_exempt) : la protection prime sur le volume',
     'la photo de scelle Dubai est la borne 1 de responsabilite : avant = fournisseur, apres = transport',
     'le systeme prescrit (repack/measure/photo), l agent execute, jamais l inverse (R2)',
-    'une PO regroupee (order_id NULL) ne s alloue au Hub que par ligne d achat (purchase_line_id), repartie dans l ordre des commandes et plafonnee au restant du effectif ; l allocation historique reste au niveau PO',
+    'une PO regroupee (order_id NULL) ne s alloue au Hub que par ligne d achat (purchase_line_id), repartie dans l ordre des commandes et plafonnee au restant du effectif, et n est jamais recevable tant qu elle est en brouillon ou annulee (quarantaine) ; l allocation historique reste au niveau PO',
     'un colis ne change de statut que via une sequence de scan validee',
     { statement: 'secret de retrait a usage unique, et une seule voie de remise peut gagner pour une commande',
       test: 'tests/e2e-api/orders.pickup-code-vs-authorized-name.e2e.test.js' },

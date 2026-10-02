@@ -40,6 +40,7 @@ const PHYSICAL_OPERATIONS = new Set(['SPLIT', 'MERGE', 'REPACK']);
 const HUB_QUARANTINE_SUBTYPE_BY_REASON = Object.freeze({
   HUB_PURCHASE_ORDER_UNRESOLVABLE: 'hub_purchase_identity_conflict',
   HUB_PURCHASE_ORDER_CANCELLED: 'hub_purchase_identity_conflict',
+  HUB_PURCHASE_ORDER_NOT_SUBMITTED: 'hub_purchase_identity_conflict',
   HUB_PURCHASE_IDENTITY_INCOMPLETE: 'hub_purchase_identity_conflict',
   HUB_PURCHASE_ORDER_ITEM_MISMATCH: 'hub_purchase_identity_conflict',
   HUB_PURCHASE_SKU_MISMATCH: 'hub_purchase_identity_conflict',
@@ -236,6 +237,8 @@ async function resolveContentEntries(executor, content) {
   );
   if (header && header.order_id === null) {
     if (header.status === 'cancelled') fail('HUB_PURCHASE_ORDER_CANCELLED', 'Purchase Order annulée');
+    // Un brouillon n'a rien engagé auprès du fournisseur : rien ne peut en être reçu.
+    if (header.status === 'draft') fail('HUB_PURCHASE_ORDER_NOT_SUBMITTED', 'Purchase Order regroupée encore en brouillon');
     return resolveGroupedLineEntries(db, content);
   }
 

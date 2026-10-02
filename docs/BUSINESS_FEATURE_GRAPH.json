@@ -14414,6 +14414,13 @@
       },
       {
         "feature": "purchasing",
+        "category": "services",
+        "declared": "services/purchasing-grouped-service.js",
+        "resolvedPath": "services/purchasing-grouped-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
         "category": "routes",
         "declared": "routes/purchasing.js",
         "resolvedPath": "routes/purchasing.js",
@@ -14445,6 +14452,13 @@
         "category": "migrations",
         "declared": "migrations/264_purchase_line_progress_view.sql",
         "resolvedPath": "migrations/264_purchase_line_progress_view.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "migrations",
+        "declared": "migrations/266_purchase_orders_grouped_form.sql",
+        "resolvedPath": "migrations/266_purchase_orders_grouped_form.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14494,6 +14508,13 @@
         "category": "tests",
         "declared": "tests/integration/purchase-line-progress-postgres.test.js",
         "resolvedPath": "tests/integration/purchase-line-progress-postgres.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/integration/purchase-lines-grouped-postgres.test.js",
+        "resolvedPath": "tests/integration/purchase-lines-grouped-postgres.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -21387,6 +21408,54 @@
         "entry": "DELETE /api/purchasing/po/:po_id",
         "method": "DELETE",
         "path": "/api/purchasing/po/{id}",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "purchasing",
+        "entry": "GET /api/purchasing/open-lines",
+        "method": "GET",
+        "path": "/api/purchasing/open-lines",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "purchasing",
+        "entry": "GET /api/purchasing/po/:po_id",
+        "method": "GET",
+        "path": "/api/purchasing/po/{id}",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "purchasing",
+        "entry": "POST /api/purchasing/po/prepare",
+        "method": "POST",
+        "path": "/api/purchasing/po/prepare",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "purchasing",
+        "entry": "POST /api/purchasing/po/:po_id/detach",
+        "method": "POST",
+        "path": "/api/purchasing/po/{id}/detach",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "purchasing",
+        "entry": "POST /api/purchasing/po/:po_id/discard",
+        "method": "POST",
+        "path": "/api/purchasing/po/{id}/discard",
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "purchasing",
+        "entry": "POST /api/purchasing/lines/:id/cancel",
+        "method": "POST",
+        "path": "/api/purchasing/lines/{id}/cancel",
         "routeFile": "routes/purchasing.js",
         "status": "resolved-owned"
       },
@@ -39018,6 +39087,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/purchasing-grouped-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-grouped-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "routes/purchasing.js",
                 "targetFile": "db.js"
               },
@@ -39035,6 +39112,10 @@
               },
               {
                 "sourceFileId": "scripts/allegro-shipping-capability-proof.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/purchase-lines-grouped-postgres.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -41246,7 +41327,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1752
+        "filesObserved": 1754
       },
       "boutique": {
         "filesObserved": 214,
@@ -44255,8 +44336,8 @@
       "backend": {
         "manifestsDiscovered": 35,
         "manifestsConnected": 35,
-        "technicalNodesTotal": 543,
-        "technicalNodesOwned": 543,
+        "technicalNodesTotal": 544,
+        "technicalNodesOwned": 544,
         "technicalOrphans": 0
       },
       "dash": {
