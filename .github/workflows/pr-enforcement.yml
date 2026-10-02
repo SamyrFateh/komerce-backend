@@ -371,11 +371,6 @@ jobs:
           node-version: '20'
           cache: npm
       - run: npm ci
-      - name: Fetch PR base commit for E2E impact scope
-        if: needs.changes.outputs.e2e_api_required == 'true'
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
       - id: e2e_scope
         name: Compute Feature-first E2E blast radius
         if: needs.changes.outputs.e2e_api_required == 'true'
@@ -393,9 +388,7 @@ jobs:
           node scripts/ci-db-bootstrap.js
       - name: Integration DB proofs
         if: needs.changes.outputs.integration_required == 'true'
-        env:
-          BACKEND_FILES: ${{ needs.changes.outputs.backend_files }}
-        run: node scripts/run-integration-tests.js --files "$BACKEND_FILES"
+        run: npm run test:integration
       - name: Feature-first E2E API proofs (targeted)
         if: needs.changes.outputs.e2e_api_required == 'true' && steps.e2e_scope.outputs.mode == 'targeted'
         env:
