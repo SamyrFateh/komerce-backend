@@ -187,8 +187,8 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=2501');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261002-3');
-  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261002-1');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261003-3');
+  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261003-2');
 });
 
 test('Vue Catalogue ne duplique plus le pipeline Import', () => {
@@ -289,6 +289,123 @@ test('la curation montre explicitement le avant/après après préparation FR', 
   expect(css).toContain('.kmc-catalog-compare-grid');
 });
 
+test('Avant / après ouvre une fenêtre hors du tableau sans muter la ligne', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument();
+  const root = doc.createElement('main');
+  const ui = fakeUi(doc);
+  const prepared = candidate({
+    name: 'Haut homme décontracté à col montant',
+    description: 'Description française relue.',
+    content_source: 'manual',
+    needs_review: true,
+  });
+  const fetchFn = jest.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => workspacePayload([prepared]),
+  }));
+
+  await workspace.mount({
+    root,
+    document: doc,
+    ui,
+    fetch: fetchFn,
+    confirm: () => true,
+    prompt: jest.fn(),
+  });
+
+  const row = root.querySelector('[data-product-ref="KPR-131956"]');
+  const rowTextBefore = row.textContent;
+  const toggle = row.querySelector('[data-catalog-compare-toggle]');
+  expect(toggle).not.toBeNull();
+  expect(root.querySelector('[data-catalog-compare-dialog]')).toBeNull();
+
+  await toggle.click();
+
+  const overlay = root.querySelector('[data-catalog-compare-dialog]');
+  expect(overlay).not.toBeNull();
+  expect(row.textContent).toBe(rowTextBefore);
+  expect(overlay.textContent).toContain('KPR-131956');
+  expect(overlay.textContent).toContain('Avant · fournisseur');
+  expect(overlay.textContent).toContain('Après · français');
+  expect(overlay.textContent).toContain('Casual Stand Collar Men Top Outdoor Workwear');
+  expect(overlay.textContent).toContain('Haut homme décontracté à col montant');
+
+  await overlay.querySelector('[data-workspace-action="close-compare"]').click();
+  expect(root.querySelector('[data-catalog-compare-dialog]')).toBeNull();
+});
+
+test('une fiche FR sans prix route vers Atelier économique avant toute validation', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument();
+  const root = doc.createElement('main');
+  const ui = fakeUi(doc);
+  const prepared = candidate({
+    name: 'Haut homme décontracté à col montant',
+    description: 'Description française relue.',
+    content_source: 'manual',
+    needs_review: true,
+    price_kmf: null,
+  });
+  const fetchFn = jest.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => workspacePayload([prepared]),
+  }));
+
+  await workspace.mount({
+    root,
+    document: doc,
+    ui,
+    fetch: fetchFn,
+    confirm: () => true,
+    prompt: jest.fn(),
+  });
+
+  const row = root.querySelector('[data-product-ref="KPR-131956"]');
+  expect(row.textContent).toContain('FR préparé · prix à définir');
+  const pricing = row.querySelector('[data-workspace-action="define-price"]');
+  expect(pricing).not.toBeNull();
+  expect(pricing.href).toBe('/admin/workspaces/pricing?product_ref=KPR-131956#pricing-products');
+  expect(row.querySelector('[data-workspace-action="approve"]')).toBeNull();
+  expect(row.querySelector('[data-workspace-action="override"]')).toBeNull();
+});
+
+test('une fiche FR tarifée retrouve ensuite la validation humaine', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument();
+  const root = doc.createElement('main');
+  const ui = fakeUi(doc);
+  const prepared = candidate({
+    name: 'Haut homme décontracté à col montant',
+    description: 'Description française relue.',
+    content_source: 'manual',
+    needs_review: true,
+    price_kmf: 12000,
+  });
+  const fetchFn = jest.fn(async () => ({
+    ok: true,
+    status: 200,
+    json: async () => workspacePayload([prepared]),
+  }));
+
+  await workspace.mount({
+    root,
+    document: doc,
+    ui,
+    fetch: fetchFn,
+    confirm: () => true,
+    prompt: jest.fn(),
+  });
+
+  const row = root.querySelector('[data-product-ref="KPR-131956"]');
+  expect(row.textContent).toContain('FR préparé · à relire');
+  expect(row.textContent).toContain('Valider après relecture');
+  expect(row.querySelector('[data-workspace-action="define-price"]')).toBeNull();
+  expect(row.querySelector('[data-workspace-action="approve"]')).not.toBeNull();
+});
+
 test('la réponse ChatGPT se transforme automatiquement en champs FR', () => {
   const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
   expect(workspace.parseFrenchAssistantOutput(
@@ -380,8 +497,10 @@ test('l’entrée Catalogue préchauffée prépare le FR sans clic produit puis 
 
   const refreshed = root.querySelector('[data-product-ref="KPR-131956"]');
   expect(refreshed.textContent).toContain('Avant / après');
-  expect(refreshed.textContent).toContain('Après · français');
-  expect(refreshed.textContent).toContain('Valider après relecture');
+  expect(refreshed.textContent).not.toContain('Après · français');
+  expect(refreshed.querySelector('[data-catalog-compare-toggle]')).not.toBeNull();
+  expect(refreshed.textContent).toContain('Définir le prix');
+  expect(refreshed.textContent).not.toContain('Valider après relecture');
   expect(refreshed.textContent).toContain('FR préparé · CJdropshipping');
   expect(refreshed.textContent).not.toContain('Préparation humaine · CJdropshipping');
   expect(refreshed.querySelector('[data-workspace-action="prepare-fr"]')).toBeNull();
@@ -470,7 +589,8 @@ test('le parcours FR intégré conserve toute la file et rend le avant/après ap
   expect(root.querySelectorAll('[data-product-ref]')).toHaveLength(2);
   const refreshed = root.querySelector('[data-product-ref="KPR-131956"]');
   expect(refreshed.textContent).toContain('Avant / après');
-  expect(refreshed.textContent).toContain('Après · français');
+  expect(refreshed.textContent).not.toContain('Après · français');
+  expect(refreshed.querySelector('[data-catalog-compare-toggle]')).not.toBeNull();
   expect(refreshed.textContent).toContain('Haut homme décontracté à col montant');
   expect(prompt).not.toHaveBeenCalled();
 
@@ -499,4 +619,11 @@ test('la vue business lit uniquement le Workspace Catalogue canonique', () => {
   expect(workspace).not.toContain("'/api/products");
   expect(tower).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
   expect(workspace).not.toMatch(/\/dashboards\/admin(?:-legacy)?\//);
+});
+
+
+test('le CTA prix cible explicitement l onglet Produits du Pricing', () => {
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+  expect(workspace).toContain("#pricing-products");
+  expect(workspace).toContain("product_ref=");
 });

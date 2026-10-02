@@ -455,6 +455,7 @@ module.exports = {
       'dashboards/canonical/css/live-kit.css',
       'dashboards/canonical/css/live-ops-shell.css',
       'dashboards/canonical/js/pricing-workspace.js',
+      'dashboards/canonical/js/pricing-product-focus.js',
       'dashboards/canonical/js/action-center.js',
       'dashboards/canonical/js/client-index.js',
 
@@ -582,6 +583,7 @@ module.exports = {
       'tests/unit/market-catalog-decision.test.js',
       'tests/unit/pricing-structure-event-panel.test.js',
       'tests/unit/pricing-workspace-decision.test.js',
+      'tests/unit/pricing-product-focus.test.js',
       'tests/unit/pricing-workspace-presentation.test.js',
       'tests/unit/parcel-reference-action-center-regression.test.js',
       'tests/unit/parcel-reference-signal-regression.test.js',

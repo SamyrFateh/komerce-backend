@@ -327,43 +327,92 @@
   margin-top: 2px;
 }
 
-.kmc-catalog-compare > summary {
+.kmc-catalog-compare-toggle {
   width: fit-content;
+  padding: 0;
+  border: 0;
+  background: transparent;
   cursor: pointer;
   color: #225bb5;
+  font: inherit;
   font-size: 11px;
   font-weight: 750;
+  text-align: left;
+}
+
+.kmc-catalog-compare-toggle:hover,
+.kmc-catalog-compare-toggle:focus-visible {
+  text-decoration: underline;
+}
+
+.kmc-catalog-compare-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(15 23 42 / .48);
+  backdrop-filter: blur(2px);
+}
+
+.kmc-catalog-compare-dialog {
+  width: min(980px, 94vw);
+  max-height: 88vh;
+  overflow: auto;
+  border: 1px solid var(--kmc-line, #e2e8f0);
+  border-radius: 18px;
+  background: var(--kmc-card, #fff);
+  box-shadow: 0 24px 72px rgb(15 23 42 / .24);
+}
+
+.kmc-catalog-compare-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--kmc-line, #e2e8f0);
+}
+
+.kmc-catalog-compare-heading-title {
+  margin: 2px 0 4px;
+  color: var(--kmc-navy, #0f1a2e);
+  font-size: 20px;
 }
 
 .kmc-catalog-compare-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 8px;
+  gap: 12px;
+  padding: 20px;
 }
 
 .kmc-catalog-compare-pane {
   min-width: 0;
-  padding: 8px;
+  padding: 14px;
   border: 1px solid var(--kmc-line, #e2e8f0);
-  border-radius: 8px;
+  border-radius: 10px;
   background: #fbfcfe;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .kmc-catalog-compare-pane p {
-  margin: 5px 0 0;
+  margin: 8px 0 0;
   color: #64748b;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-  overflow: hidden;
+  white-space: pre-wrap;
 }
 
 .kmc-catalog-compare-title {
-  margin-top: 4px;
-  font-weight: 700;
+  margin-top: 6px;
+  font-weight: 750;
+}
+
+@media (max-width: 760px) {
+  .kmc-catalog-compare-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .kmc-catalog-fr-editor {

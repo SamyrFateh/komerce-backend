@@ -74,15 +74,18 @@ Le chemin normal n'est plus de relire manuellement toutes les sources ci-dessus.
 La commande suivante compile uniquement le contexte utile au chantier :
 
 ```bash
-npm run agent:context -- --feature <feature>
+npm run agent:context -- --brief --feature <feature>
 # ou
-npm run agent:context -- --files path/a.js,path/b.js
+npm run agent:context -- --brief --files path/a.js,path/b.js
+
+# si et seulement si une ambiguïté subsiste
+npm run agent:context -- --expand <feature|file>
 ```
 
 La projection est dérivée des cartes Feature First, headers `@komerce-arch`,
 `interventionIndex.mustCheck`, du diff et du ledger actif. Elle n'est jamais
 une nouvelle source de vérité.
 
-Budget par défaut : 6000 caractères, soit environ 1500 tokens. L'agent ne doit
-ouvrir une source complète absente de cette projection que si une incertitude
-réelle subsiste.
+Budget d'entrée : 2800 caractères maximum, soit environ 700 tokens pour `--brief`.
+Le mode complet à 6000 caractères reste disponible pour compatibilité, mais le
+chemin normal est brief → expand ciblé → source brute seulement si nécessaire.

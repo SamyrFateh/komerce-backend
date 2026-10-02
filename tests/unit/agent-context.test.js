@@ -53,3 +53,37 @@ test('renderContext respecte le budget de sortie', () => {
   expect(output).toContain('KOMERCE AGENT CONTEXT v1');
   expect(output).toContain('[feature dashboard]');
 });
+
+
+test('renderBrief reste sous le budget ultra-compact par défaut', () => {
+  const model = ctx.buildContext({
+    features: ['catalog', 'dashboard', 'infrastructure'],
+  });
+  const output = ctx.renderBrief(model);
+  expect(output.length).toBeLessThanOrEqual(2800);
+  expect(output).toContain('brief');
+  expect(output).not.toContain('invariants:');
+  expect(output).not.toContain('mustCheck:');
+});
+
+test('expandSeed résout un fichier existant sans exiger --files', () => {
+  expect(ctx.expandSeed('public/dashboards/canonical/js/catalog-workspace.js')).toEqual({
+    files: ['public/dashboards/canonical/js/catalog-workspace.js'],
+    features: [],
+  });
+});
+
+test('expandSeed résout une feature sans exiger --feature', () => {
+  expect(ctx.expandSeed('catalog')).toEqual({
+    files: [],
+    features: ['catalog'],
+  });
+});
+
+test('renderExpand restitue le détail d une feature ciblée seulement', () => {
+  const model = ctx.buildContext({ features: ['catalog', 'dashboard'] });
+  const output = ctx.renderExpand(model, 'catalog');
+  expect(output).toContain('[feature catalog]');
+  expect(output).toContain('invariants:');
+  expect(output).not.toContain('[feature dashboard]');
+});

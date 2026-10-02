@@ -151,15 +151,16 @@
     return doc.getElementById?.(anchorId) || ensurePricingAnchor(doc, anchorId);
   }
 
-  function scrollLocalTarget(doc, targetUrl) {
+  function scrollLocalTarget(doc, targetUrl, options = {}) {
+    const behavior = options.behavior || 'smooth';
     const anchorId = String(targetUrl.hash || '').replace(/^#/, '');
     if (!anchorId) {
-      rootNode(doc)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+      rootNode(doc)?.scrollIntoView?.({ block: 'start', behavior });
       return true;
     }
     const target = ensureAnchor(doc, anchorId);
     if (!target) return false;
-    target.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+    target.scrollIntoView?.({ block: 'start', behavior });
     return true;
   }
 
@@ -261,7 +262,7 @@
     global.KOMERCE_CANONICAL_ADMIN_CONTEXT = adminContext;
     remountChrome(doc, user, adminContext, surface, targetUrl.pathname);
     const anchorId = String(targetUrl.hash || '').replace(/^#/, '');
-    if (anchorId) queueMicrotask(() => scrollLocalTarget(doc, targetUrl));
+    if (anchorId) queueMicrotask(() => scrollLocalTarget(doc, targetUrl, { behavior: 'auto' }));
     else global.scrollTo?.({ top: 0, left: 0, behavior: 'auto' });
   }
 

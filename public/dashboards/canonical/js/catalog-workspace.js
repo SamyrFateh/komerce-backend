@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      workspace_acts_dashboard_observes, canonical_admin_no_legacy_imports, global_catalog_not_market_scoped, commercial_catalog_is_union_of_approved_products_from_closed_kirs, product_360_explains, sourcing_keeps_source_mutation_authority, no_paid_ai_api_for_fr_preparation, catalog_entry_gesture_primes_local_translation, human_catalog_validation_required
  * @impact-areas  admin-dashboard, catalog, sourcing, boutique
- * @version       2026-10
+ * @version       2026-10-v2
  */
 
 'use strict';
@@ -236,26 +236,56 @@
     return row.content_source === 'connector_raw' && !isFrenchLocale(row.source_locale);
   }
 
+  function hasPublishablePrice(row = {}) {
+    const price = Number(row.price_kmf);
+    return Number.isFinite(price) && price > 0;
+  }
+
   function curationState(row = {}) {
     if (needsFrenchPreparation(row)) return { label: 'FR à préparer', tone: 'is-warning' };
-    if (row.needs_review) return { label: 'FR préparé · à relire', tone: 'is-warning' };
-    if (row.content_source === 'ai_enriched' || row.content_source === 'manual') {
-      if (row.price_kmf == null) return { label: 'FR préparé', tone: 'is-positive' };
+    const prepared = row.content_source === 'ai_enriched' || row.content_source === 'manual';
+    if (!hasPublishablePrice(row)) {
+      return {
+        label: prepared ? 'FR préparé · prix à définir' : 'Prix à définir',
+        tone: 'is-warning',
+      };
     }
-    if (row.price_kmf == null) return { label: 'Prix à définir', tone: 'is-neutral' };
+    if (row.needs_review) return { label: 'FR préparé · à relire', tone: 'is-warning' };
     return { label: 'Prêt à valider', tone: 'is-positive' };
   }
 
-  function appendBeforeAfter(doc, cell, row = {}) {
-    const hasSource = Boolean(row.name_source || row.description_source);
-    const prepared = row.content_source === 'ai_enriched' || row.content_source === 'manual';
-    if (!hasSource) return;
+  function closeCatalogCompare(context) {
+    const existing = context.root.querySelector('[data-catalog-compare-dialog]');
+    if (existing) existing.remove();
+  }
 
-    const details = doc.createElement('details');
-    details.className = 'kmc-catalog-compare';
-    const summary = doc.createElement('summary');
-    summary.textContent = prepared ? 'Avant / après' : 'Voir source fournisseur';
-    details.appendChild(summary);
+  function openCatalogCompare(context, row = {}) {
+    const doc = context.document;
+    const prepared = row.content_source === 'ai_enriched' || row.content_source === 'manual';
+    closeCatalogCompare(context);
+
+    const overlay = doc.createElement('div');
+    overlay.className = 'kmc-catalog-compare-overlay';
+    overlay.setAttribute('data-catalog-compare-dialog', '');
+
+    const dialog = doc.createElement('section');
+    dialog.className = 'kmc-catalog-compare-dialog';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-label', `Avant / après · ${row.product_ref || 'produit'}`);
+
+    const heading = doc.createElement('header');
+    heading.className = 'kmc-catalog-compare-heading';
+    const headingCopy = doc.createElement('div');
+    headingCopy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'COMPARAISON CATALOGUE'));
+    headingCopy.appendChild(text(doc, 'h2', 'kmc-catalog-compare-heading-title', row.product_ref || 'Produit'));
+    headingCopy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'La source fournisseur reste intacte. Le français affiché est la préparation à relire.'));
+    heading.appendChild(headingCopy);
+
+    const close = makeButton(doc, 'Fermer', 'close-compare', true);
+    close.addEventListener('click', () => closeCatalogCompare(context));
+    heading.appendChild(close);
+    dialog.appendChild(heading);
 
     const grid = doc.createElement('div');
     grid.className = 'kmc-catalog-compare-grid';
@@ -276,8 +306,42 @@
       grid.appendChild(after);
     }
 
-    details.appendChild(grid);
-    cell.appendChild(details);
+    dialog.appendChild(grid);
+    overlay.appendChild(dialog);
+    overlay.addEventListener('click', event => {
+      if (event.target === overlay) closeCatalogCompare(context);
+    });
+    dialog.addEventListener('keydown', event => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      closeCatalogCompare(context);
+    });
+    context.root.appendChild(overlay);
+    if (typeof close.focus === 'function') close.focus();
+    return overlay;
+  }
+
+  function appendBeforeAfter(context, cell, row = {}) {
+    const doc = context.document;
+    const hasSource = Boolean(row.name_source || row.description_source);
+    const prepared = row.content_source === 'ai_enriched' || row.content_source === 'manual';
+    if (!hasSource) return;
+
+    const compare = doc.createElement('div');
+    compare.className = 'kmc-catalog-compare';
+
+    const toggle = text(
+      doc,
+      'button',
+      'kmc-catalog-compare-toggle',
+      prepared ? 'Avant / après' : 'Voir source fournisseur'
+    );
+    toggle.type = 'button';
+    toggle.setAttribute('data-catalog-compare-toggle', '');
+    toggle.addEventListener('click', () => openCatalogCompare(context, row));
+
+    compare.appendChild(toggle);
+    cell.appendChild(compare);
   }
 
   function frenchAssistantPrompt(row = {}) {
@@ -743,7 +807,7 @@
         `${formatSource(row)}${row.supplier_name ? ` · ${row.supplier_name}` : ''}`
       ));
       productCell.appendChild(productMeta);
-      appendBeforeAfter(doc, productCell, row);
+      appendBeforeAfter(context, productCell, row);
       tr.appendChild(productCell);
 
       tr.appendChild(td(doc, row.category));
@@ -784,6 +848,7 @@
       actionContent.className = 'kmc-catalog-actions-inner';
 
       const mustPrepareFrench = needsFrenchPreparation(row);
+      const priceReady = hasPublishablePrice(row);
       if (mustPrepareFrench) {
         const autoPending = hasPrimedFrenchTranslator(row) && !context.autoFrenchFailed.has(row.product_ref);
         if (autoPending) {
@@ -805,6 +870,13 @@
           prepare.addEventListener('click', async () => openFrenchEditor(context, row, prepare));
           actionContent.appendChild(prepare);
         }
+      } else if (!priceReady) {
+        const pricing = text(doc, 'a', 'kmc-workspace-action', 'Définir le prix');
+        pricing.setAttribute('data-workspace-action', 'define-price');
+        const pricingPath = `/admin/workspaces/pricing?product_ref=${encodeURIComponent(row.product_ref)}`;
+        const returnTo = `/admin/workspaces/catalog?product_ref=${encodeURIComponent(row.product_ref)}`;
+        pricing.href = `${contextualHref(pricingPath, returnTo, 'Retour à la curation')}#pricing-products`;
+        actionContent.appendChild(pricing);
       } else {
         const approveLabel = (row.needs_review || row.content_source === 'manual')
           ? 'Valider après relecture'
@@ -843,7 +915,7 @@
           successMessage: `${row.product_ref} corrigé puis ajouté à la sélection.`,
         });
       });
-      if (!mustPrepareFrench) actionContent.appendChild(correct);
+      if (!mustPrepareFrench && priceReady) actionContent.appendChild(correct);
 
       const reject = makeButton(doc, 'Écarter', 'reject', true);
       reject.addEventListener('click', () => {
@@ -1093,6 +1165,8 @@
     metricItems,
     stageLabel,
     curationState,
+    openCatalogCompare,
+    closeCatalogCompare,
     frenchAssistantPrompt,
     parseFrenchAssistantOutput,
     sourceLanguageTag,

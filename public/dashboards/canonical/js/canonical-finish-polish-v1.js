@@ -43,13 +43,25 @@
     });
   }
 
+  function revealWithoutViewportShift(node, options) {
+    if (!node?.scrollIntoView) return;
+    const left = Number(global.scrollX ?? global.pageXOffset ?? 0);
+    const top = Number(global.scrollY ?? global.pageYOffset ?? 0);
+    node.scrollIntoView(options);
+    const nextLeft = Number(global.scrollX ?? global.pageXOffset ?? 0);
+    const nextTop = Number(global.scrollY ?? global.pageYOffset ?? 0);
+    if ((nextLeft !== left || nextTop !== top) && typeof global.scrollTo === 'function') {
+      global.scrollTo({ left, top, behavior: 'auto' });
+    }
+  }
+
   function revealActiveNavigation(doc) {
     const behavior = scrollBehavior();
     const activePrimary = doc.querySelector?.('.kmc-admin-primary-link.is-active');
     const activeTab = doc.querySelector?.('.kmc-admin-domain-tab.is-active');
 
-    activePrimary?.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior });
-    activeTab?.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior });
+    revealWithoutViewportShift(activePrimary, { block: 'nearest', inline: 'nearest', behavior });
+    revealWithoutViewportShift(activeTab, { block: 'nearest', inline: 'nearest', behavior });
   }
 
   function synchronize(doc) {

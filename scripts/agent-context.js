@@ -267,7 +267,7 @@ function buildContext(options = {}) {
 // --brief: ultra-compact entry point (~600-800 tokens).
 // Feature names + owners + scope + gates only. No perimeter, no invariants,
 // no headers, no ledger. The agent calls --expand only when it hits ambiguity.
-function renderBrief(model, maxChars = 3200) {
+function renderBrief(model, maxChars = 2800) {
   const lines = [];
   lines.push('KOMERCE AGENT CONTEXT v1 brief — appeler --expand <feature|file> si ambiguïté');
 
@@ -292,6 +292,16 @@ function renderBrief(model, maxChars = 3200) {
 // --expand <name>: full detail for one feature or one file only.
 // Returns perimeter, invariants, authority, headers, mustCheck — everything
 // the brief omitted, scoped to a single item.
+function expandSeed(target) {
+  const clean = norm(target);
+  if (!clean) return { files: [], features: [] };
+  const abs = path.join(ROOT, clean);
+  if (fs.existsSync(abs) && fs.statSync(abs).isFile()) {
+    return { files: [clean], features: [] };
+  }
+  return { files: [], features: [clean] };
+}
+
 function renderExpand(model, target) {
   const lines = [];
 
@@ -382,9 +392,18 @@ function main() {
   const args = process.argv.slice(2);
   const filesArg = argValue(args, '--files', '');
   const featureArg = argValue(args, '--feature', '');
-  const maxChars = Math.max(2000, Number(argValue(args, '--max-chars', '6000')) || 6000);
-  const files = filesArg.split(',').map(norm).filter(Boolean);
-  const features = featureArg.split(',').map(v => v.trim()).filter(Boolean);
+  const requestedMaxChars = Number(argValue(args, '--max-chars', '')) || null;
+  const maxChars = Math.max(2000, requestedMaxChars || 6000);
+  const expandTarget = argValue(args, '--expand', '');
+
+  let files = filesArg.split(',').map(norm).filter(Boolean);
+  let features = featureArg.split(',').map(v => v.trim()).filter(Boolean);
+  if (expandTarget && !files.length && !features.length) {
+    const seed = expandSeed(expandTarget);
+    files = seed.files;
+    features = seed.features;
+  }
+
   const model = buildContext({
     files,
     features,
@@ -397,14 +416,14 @@ function main() {
     return;
   }
 
-  const expandTarget = argValue(args, '--expand', '');
   if (expandTarget) {
     process.stdout.write(renderExpand(model, expandTarget) + '\n');
     return;
   }
 
   if (args.includes('--brief')) {
-    process.stdout.write(renderBrief(model, maxChars) + '\n');
+    const briefMaxChars = Math.max(1600, Math.min(2800, requestedMaxChars || 2800));
+    process.stdout.write(renderBrief(model, briefMaxChars) + '\n');
     return;
   }
 
@@ -429,6 +448,7 @@ module.exports = {
   resolveFeatureEntries,
   gateHints,
   buildContext,
+  expandSeed,
   renderBrief,
   renderExpand,
   renderContext,
