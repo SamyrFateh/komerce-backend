@@ -875,7 +875,7 @@
         pricing.setAttribute('data-workspace-action', 'define-price');
         const pricingPath = `/admin/workspaces/pricing?product_ref=${encodeURIComponent(row.product_ref)}`;
         const returnTo = `/admin/workspaces/catalog?product_ref=${encodeURIComponent(row.product_ref)}`;
-        pricing.href = contextualHref(pricingPath, returnTo, 'Retour à la curation');
+        pricing.href = `${contextualHref(pricingPath, returnTo, 'Retour à la curation')}#pricing-products`;
         actionContent.appendChild(pricing);
       } else {
         const approveLabel = (row.needs_review || row.content_source === 'manual')
