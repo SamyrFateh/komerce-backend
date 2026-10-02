@@ -73,7 +73,7 @@ Le plan d'attaque doit contenir :
 - la demande comprise ;
 - la feature ou le transversal concerné ;
 - l'opération : Create, Read, Update, Delete/Archive/Deprecate ;
-- la carte à lire ;
+- la carte propriétaire identifiée par `agent:context` ;
 - le périmètre probable ;
 - les fichiers ou familles de fichiers probablement concernés ;
 - les fichiers ou zones à ne pas toucher ;
@@ -118,20 +118,19 @@ Exceptions : lecture simple, explication sans modification, commande triviale ex
 
 ## 2. Parcours obligatoire
 
-1. Identifier la feature ou le transversal concerné.
-2. Ouvrir la carte correspondante.
+1. Identifier la feature ou les fichiers probables.
+2. Exécuter `npm run agent:context -- --feature <feature>` ou `--files <paths>`.
 3. Qualifier l'opération : Create, Read, Update, Delete/Archive/Deprecate.
-4. Vérifier `service`, `perimeter.in`, `perimeter.out`, `authority`, `contract`, `invariants` et `files`.
-5. Annoncer le plan d'attaque avant de modifier.
-6. Vérifier que les fichiers touchés appartiennent à la carte ou à un transversal déclaré.
+4. Utiliser la projection pour vérifier `service`, périmètre, autorité, invariants, ownership, headers et `mustCheck`.
+5. Ouvrir uniquement les sources nécessaires que la projection ne suffit pas à trancher.
+6. Annoncer le plan d'attaque avant de modifier.
 7. Si l'intention métier change, mettre à jour la carte dans la même PR.
-8. Lire le header des fichiers structurels touchés puis `interventionIndex["<file>"].mustCheck` dans le graphe d'architecture.
-9. Régénérer les sorties dérivées pertinentes.
-10. Exécuter `npm run pr:preflight` et corriger jusqu'au vert.
-11. Ouvrir ou mettre à jour la PR seulement après ce preflight vert. La CI est une preuve indépendante, pas le premier lieu de découverte des erreurs.
-12. Attendre le verdict des checks requis sur la PR.
-13. Dès que la PR est conforme, verte, à jour et mergeable, l'agent qui porte le chantier **doit la merger lui-même** sans demander une confirmation humaine supplémentaire.
-14. Vérifier ensuite que le merge est effectif sur `main` et, lorsqu'un déploiement automatique est attendu, vérifier que le déploiement correspondant a bien démarré ou abouti.
+8. Régénérer les sorties dérivées pertinentes.
+9. Exécuter `npm run pr:preflight` et corriger jusqu'au vert.
+10. Ouvrir ou mettre à jour la PR seulement après ce preflight vert. La CI est une preuve indépendante, pas le premier lieu de découverte des erreurs.
+11. Attendre le verdict des checks requis sur la PR.
+12. Dès que la PR est conforme, verte, à jour et mergeable, l'agent qui porte le chantier **doit la merger lui-même** sans demander une confirmation humaine supplémentaire.
+13. Vérifier ensuite que le merge est effectif sur `main` et, lorsqu'un déploiement automatique est attendu, vérifier que le déploiement correspondant a bien démarré ou abouti.
 
 ## 3. Gates carte-first
 
