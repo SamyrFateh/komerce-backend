@@ -44,6 +44,16 @@ jest.mock('../../utils/logger', () => ({
   child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
 
+// Réconciliation fournisseur : réelle par défaut, pilotable pour les cas Allegro (preuve requise).
+let mockEvidence = null;
+jest.mock('../../services/suppliers/purchase-order-confirmation-boundary', () => {
+  const actual = jest.requireActual('../../services/suppliers/purchase-order-confirmation-boundary');
+  return {
+    ...actual,
+    verifyProviderEvidenceForConfirmation: (...args) => (mockEvidence ? mockEvidence(...args) : actual.verifyProviderEvidenceForConfirmation(...args)),
+  };
+});
+
 // ─── Require après les mocks ──────────────────────────────────────────────────
 
 const {
@@ -94,6 +104,7 @@ function makeDbQueue(script = []) {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockEvidence = null;
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -109,6 +120,22 @@ describe('deleteSupplier', () => {
 
     await expect(deleteSupplier('unknown-uuid'))
       .rejects.toMatchObject({ status: 404 });
+    expect(client.released).toBe(true);
+  });
+
+  test('échec SQL puis ROLLBACK lui-même en échec : l\'erreur d\'origine est relayée, client libéré', async () => {
+    const client = {
+      released: false,
+      query: jest.fn(async (sql) => {
+        if (/^BEGIN/i.test(sql)) return { rows: [] };
+        if (/^ROLLBACK/i.test(sql)) throw new Error('rollback failed');
+        throw new Error('boom');
+      }),
+      release: jest.fn(() => { client.released = true; }),
+    };
+    mockGetClient.mockResolvedValue(client);
+
+    await expect(deleteSupplier('sup-uuid')).rejects.toThrow('boom');
     expect(client.released).toBe(true);
   });
 
@@ -129,6 +156,7 @@ describe('deleteSupplier', () => {
       { rows: [{ id: 'sup-test', name: 'FournisseurDev [TEST]' }] }, // SELECT supplier
       { rows: [{ id: 'po-conf' }] },                                   // SELECT confirmed POs
       { rows: [], rowCount: 2 },   // UPDATE POs → cancelled (force, toutes)
+      { rows: [], rowCount: 0 },   // UPDATE purchase_lines ouvertes → annulées
       { rows: [], rowCount: 3 },   // UPDATE product_suppliers mappings
       { rows: [] },                // UPDATE suppliers deleted_at
     ]);
@@ -145,7 +173,8 @@ describe('deleteSupplier', () => {
     const client = makeClient([
       { rows: [{ id: 'sup-uuid', name: 'Noon Wholesale' }] }, // SELECT supplier
       { rows: [] },              // SELECT confirmed POs → aucune
-      { rows: [], rowCount: 1 }, // UPDATE POs pending/notified → cancelled
+      { rows: [], rowCount: 1 }, // UPDATE POs draft/pending/notified → cancelled
+      { rows: [], rowCount: 4 }, // UPDATE purchase_lines ouvertes → annulées
       { rows: [], rowCount: 2 }, // UPDATE product_suppliers
       { rows: [] },              // UPDATE suppliers deleted_at
     ]);
@@ -157,8 +186,17 @@ describe('deleteSupplier', () => {
       id: 'sup-uuid',
       name: 'Noon Wholesale',
       pos_cancelled: 1,
+      open_lines_cancelled: 4,
       mappings_deleted: 2,
     });
+
+    // PR 7 : brouillons regroupés annulés avec les PO non engagées ; lignes ouvertes annulées avec trace
+    const poUpdate = client.calls.find(c => /UPDATE purchase_orders/.test(c.sql));
+    expect(poUpdate.sql).toContain("status IN ('draft', 'pending', 'notified')");
+    const linesUpdate = client.calls.find(c => /UPDATE purchase_lines/.test(c.sql));
+    expect(linesUpdate.sql).toContain("cancel_reason = 'supplier_deleted'");
+    expect(linesUpdate.sql).toContain('purchase_order_id IS NULL AND cancelled_at IS NULL');
+    expect(linesUpdate.params).toEqual(['sup-uuid']);
 
     const rollback = client.calls.find(c => /^ROLLBACK$/i.test(c.sql));
     expect(rollback).toBeUndefined(); // pas de rollback sur le chemin nominal
@@ -246,6 +284,53 @@ describe('confirmPurchaseOrder', () => {
 
     const result = await confirmPurchaseOrder('po-uuid', 'order-uuid', {});
     expect(result.success).toBe(true);
+  });
+
+  test('provider à réconciliation requise : preuve non validée → 409 sans écriture', async () => {
+    const { COMMITMENT_VERDICT } = require('../../services/suppliers/purchase-order-confirmation-boundary');
+    mockEvidence = jest.fn().mockResolvedValue({ required: true, provider: 'allegro', commitment_verdict: COMMITMENT_VERDICT.REJECTED, evidence: { reason: 'no_match' } });
+    mockQuery = makeDbQueue([
+      { rows: [{ id: 'po-uuid', status: 'notified', supplier_order_identity: { provider: 'allegro' }, supplier_unit_ref: 'U1', supplier_sku: 'S1', qty: 2 }] },
+    ]);
+
+    const err = await confirmPurchaseOrder('po-uuid', 'order-uuid', { supplier_order_id: 'RAW' }).catch(e => e);
+    expect(err.status).toBe(409);
+    expect(err.message).toContain('no_match');
+    expect(err.current_status).toBe('notified');
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+  });
+
+  test('preuve rejetée sans raison fournie → message générique', async () => {
+    mockEvidence = jest.fn().mockResolvedValue({ required: true, provider: 'allegro', commitment_verdict: 'rejected' });
+    mockQuery = makeDbQueue([{ rows: [{ id: 'po-uuid', status: 'pending', supplier_order_identity: { provider: 'allegro' }, qty: 1 }] }]);
+
+    await expect(confirmPurchaseOrder('po-uuid', 'order-uuid', {})).rejects.toThrow('raison inconnue');
+  });
+
+  test('preuve validée : la PO snapshotte la référence vérifiée, jamais la valeur brute', async () => {
+    const { COMMITMENT_VERDICT } = require('../../services/suppliers/purchase-order-confirmation-boundary');
+    mockEvidence = jest.fn().mockResolvedValue({ required: true, provider: 'allegro', commitment_verdict: COMMITMENT_VERDICT.COMMITTED, external_ref: 'VERIFIED-1' });
+    mockQuery = makeDbQueue([
+      { rows: [{ id: 'po-uuid', status: 'notified', supplier_order_identity: { provider: 'allegro' }, qty: 1 }] },
+      { rows: [{ id: 'po-uuid', order_id: 'order-uuid', supplier_id: 'sup-uuid', status: 'confirmed', supplier_order_id: 'VERIFIED-1' }] },
+      { rows: [{ name: 'Allegro' }] },
+      { rows: [] },
+    ]);
+
+    await confirmPurchaseOrder('po-uuid', 'order-uuid', { supplier_order_id: 'RAW' });
+    expect(mockQuery.mock.calls[1][1]).toContain('VERIFIED-1');
+    expect(mockQuery.mock.calls[1][1]).not.toContain('RAW');
+  });
+
+  test('fournisseur supprimé entre-temps : la confirmation n\'écrit pas de snapshot fournisseur', async () => {
+    mockQuery = makeDbQueue([
+      { rows: [{ id: 'po-uuid', status: 'pending' }] },
+      { rows: [{ id: 'po-uuid', order_id: 'order-uuid', supplier_id: 'gone', status: 'confirmed' }] },
+      { rows: [] },
+    ]);
+
+    await expect(confirmPurchaseOrder('po-uuid', 'order-uuid', {})).resolves.toMatchObject({ success: true });
+    expect(mockQuery).toHaveBeenCalledTimes(3);
   });
 
   test('UPDATE PO retourne vide → throw 404', async () => {

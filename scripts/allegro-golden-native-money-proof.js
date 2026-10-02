@@ -8,17 +8,18 @@
  * @criticality   high
  * @inputs        existing Golden order/product/SKU, admin runtime credential
  * @outputs       supplier API mapping + canonical Purchase Order proof
- * @depends       db.js, official purchasing HTTP API, services/purchasing-trigger-service.js
+ * @depends       db.js, official purchasing HTTP API, services/purchasing-trigger-service.js, services/purchasing-grouped-service.js
  * @used-by       operator CLI / Golden E2E
- * @db-read       users, product_suppliers, purchase_orders, suppliers
+ * @db-read       order_items, product_suppliers, purchase_lines, purchase_orders, suppliers, users
  * @db-write-via  routes/purchasing.js, services/purchasing-trigger-service.js
  * @db-txn        delegated
  * @doctrine      exact_sku_identity, canonical_supplier_money, official_api_no_sql_bypass
  * @impact-areas  purchasing, supplier-integration, e2e
- * @version       2026-09
+ * @version       2026-10
  */
 
 const db = require('../db');
+const { isGroupedPurchasingEnabled } = require('../services/purchasing-grouped-service');
 
 function readArg(argv, name) {
   const inline = argv.find(arg => arg.startsWith(`${name}=`));
@@ -60,6 +61,93 @@ function authCookie(response) {
   return raw.split(';')[0];
 }
 
+/**
+ * Mode historique (drapeau éteint) : une PO par item de la commande — comportement inchangé.
+ */
+async function readHistoricalPurchaseOrder(query, { orderId, productId, supplierSku }) {
+  const { rows: purchaseOrders } = await query(`
+    SELECT po.id,
+           po.order_id,
+           po.product_id,
+           po.product_sku_id,
+           po.supplier_id,
+           po.supplier_sku,
+           po.supplier_unit_ref,
+           po.supplier_order_identity,
+           po.qty,
+           po.unit_price_aed,
+           po.supplier_unit_price,
+           po.supplier_currency,
+           po.supplier_total_price,
+           po.status,
+           po.trigger_mode,
+           s.name AS supplier_name,
+           s.platform,
+           ps.supplier_price_aed AS mapping_supplier_price_aed
+      FROM purchase_orders po
+      JOIN suppliers s ON s.id = po.supplier_id
+      JOIN product_suppliers ps ON ps.id = po.product_supplier_id
+     WHERE po.order_id = $1
+     ORDER BY po.created_at ASC
+  `, [orderId]);
+
+  if (purchaseOrders.length !== 1) {
+    throw new Error(`GOLDEN_PURCHASE_ORDER_NOT_EXACT_${purchaseOrders.length}`);
+  }
+  const po = purchaseOrders[0];
+  if (po.product_id !== productId || po.supplier_sku !== supplierSku) {
+    throw new Error('GOLDEN_PURCHASE_ORDER_IDENTITY_MISMATCH');
+  }
+  if (po.mapping_supplier_price_aed !== null || po.unit_price_aed !== null) {
+    throw new Error('GOLDEN_LEGACY_AED_LEAK');
+  }
+  return po;
+}
+
+/**
+ * Mode regroupé (KOMERCE_GROUPED_PURCHASING=1) : « une ligne par item » au lieu d'« une PO par commande ».
+ * Le déclencheur ouvre une ligne sans PO ; l'identité et la monnaie native se prouvent sur la ligne (instantané).
+ */
+async function readGroupedPurchaseLine(query, { orderId, productId, supplierSku }) {
+  const { rows: lines } = await query(`
+    SELECT pl.id,
+           pl.purchase_order_id,
+           oi.order_id,
+           oi.product_id,
+           pl.product_sku_id,
+           pl.supplier_id,
+           pl.supplier_sku,
+           pl.supplier_unit_ref,
+           pl.supplier_order_identity,
+           pl.quantity AS qty,
+           pl.supplier_unit_price,
+           pl.supplier_currency,
+           pl.procurement_hub_ref,
+           (pl.cancelled_at IS NOT NULL) AS cancelled,
+           s.name AS supplier_name,
+           s.platform,
+           ps.supplier_price_aed AS mapping_supplier_price_aed
+      FROM purchase_lines pl
+      JOIN order_items oi ON oi.id = pl.order_item_id
+      JOIN suppliers s ON s.id = pl.supplier_id
+      JOIN product_suppliers ps ON ps.id = pl.product_supplier_id
+     WHERE oi.order_id = $1 AND pl.cancelled_at IS NULL
+     ORDER BY pl.created_at ASC
+  `, [orderId]);
+
+  if (lines.length !== 1) {
+    throw new Error(`GOLDEN_PURCHASE_LINE_NOT_EXACT_${lines.length}`);
+  }
+  const line = lines[0];
+  if (line.product_id !== productId || line.supplier_sku !== supplierSku) {
+    throw new Error('GOLDEN_PURCHASE_LINE_IDENTITY_MISMATCH');
+  }
+  if (line.mapping_supplier_price_aed !== null) {
+    throw new Error('GOLDEN_LEGACY_AED_LEAK');
+  }
+  return line;
+}
+
 async function runGoldenNativeMoneyProof({
   orderId,
   productId,
@@ -70,6 +158,7 @@ async function runGoldenNativeMoneyProof({
   query = db.query.bind(db),
   fetchImpl = global.fetch,
   triggerPurchasing,
+  grouped = isGroupedPurchasingEnabled(),
 } = {}) {
   if (!orderId || !productId || !supplierSku) throw new Error('GOLDEN_INPUTS_REQUIRED');
   if (!adminPassword) throw new Error('ADMIN_PASSWORD_REQUIRED');
@@ -143,43 +232,10 @@ async function runGoldenNativeMoneyProof({
     || require('../services/purchasing-trigger-service').triggerPurchasing;
   const triggerResult = await trigger(orderId);
 
-  const { rows: purchaseOrders } = await query(`
-    SELECT po.id,
-           po.order_id,
-           ps.product_id,
-           po.product_sku_id,
-           po.supplier_id,
-           po.supplier_sku,
-           po.supplier_unit_ref,
-           po.supplier_order_identity,
-           po.qty,
-           po.unit_price_aed,
-           po.supplier_unit_price,
-           po.supplier_currency,
-           po.supplier_total_price,
-           po.status,
-           po.trigger_mode,
-           s.name AS supplier_name,
-           s.platform,
-           ps.supplier_price_aed AS mapping_supplier_price_aed
-      FROM purchase_orders po
-      JOIN suppliers s ON s.id = po.supplier_id
-      JOIN product_suppliers ps ON ps.id = po.product_supplier_id
-     WHERE po.order_id = $1
-     ORDER BY po.created_at ASC
-  `, [orderId]);
-
-  if (purchaseOrders.length !== 1) {
-    throw new Error(`GOLDEN_PURCHASE_ORDER_NOT_EXACT_${purchaseOrders.length}`);
-  }
-  const po = purchaseOrders[0];
-  if (po.product_id !== productId || po.supplier_sku !== supplierSku) {
-    throw new Error('GOLDEN_PURCHASE_ORDER_IDENTITY_MISMATCH');
-  }
-  if (po.mapping_supplier_price_aed !== null || po.unit_price_aed !== null) {
-    throw new Error('GOLDEN_LEGACY_AED_LEAK');
-  }
-  if (!(Number(po.supplier_unit_price) > 0) || !/^[A-Z]{3}$/.test(String(po.supplier_currency || ''))) {
+  const target = grouped
+    ? await readGroupedPurchaseLine(query, { orderId, productId, supplierSku })
+    : await readHistoricalPurchaseOrder(query, { orderId, productId, supplierSku });
+  if (!(Number(target.supplier_unit_price) > 0) || !/^[A-Z]{3}$/.test(String(target.supplier_currency || ''))) {
     throw new Error('GOLDEN_NATIVE_MONEY_INVALID');
   }
 
@@ -202,7 +258,9 @@ async function runGoldenNativeMoneyProof({
       is_active: mapping.is_active,
     },
     trigger: triggerResult,
-    purchase_order: po,
+    purchase_mode: grouped ? 'grouped' : 'historical',
+    purchase_order: grouped ? null : target,
+    purchase_line: grouped ? target : null,
   };
 }
 
@@ -221,6 +279,8 @@ async function main() {
 if (require.main === module) main();
 
 module.exports = {
+  readHistoricalPurchaseOrder,
+  readGroupedPurchaseLine,
   readArg,
   parseArgs,
   responseJson,
