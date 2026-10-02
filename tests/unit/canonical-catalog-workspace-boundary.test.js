@@ -187,8 +187,8 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=2501');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261003-4');
-  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261003-2');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261003-5');
+  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261003-3');
 });
 
 test('Vue Catalogue ne duplique plus le pipeline Import', () => {
@@ -404,6 +404,60 @@ test('une fiche FR tarifée retrouve ensuite la validation humaine', async () =>
   expect(row.textContent).toContain('Valider après relecture');
   expect(row.querySelector('[data-workspace-action="define-price"]')).toBeNull();
   expect(row.querySelector('[data-workspace-action="approve"]')).not.toBeNull();
+});
+
+test('un refus de certification reste visible dans la ligne du produit cliqué', async () => {
+  const workspace = require('../../public/dashboards/canonical/js/catalog-workspace.js');
+  const doc = fakeDocument();
+  const root = doc.createElement('main');
+  const ui = fakeUi(doc);
+  const prepared = candidate({
+    name: 'Jupe bouffante en coton blanc',
+    description: 'Description française relue.',
+    content_source: 'manual',
+    needs_review: true,
+    price_kmf: 7990,
+  });
+  const fetchFn = jest.fn(async (url, options = {}) => {
+    if (options.method === 'POST') {
+      return {
+        ok: false,
+        status: 422,
+        json: async () => ({
+          error: 'Certification Catalogue incomplète',
+          code: 'catalog_certification_failed',
+          reasons: ['boutique_subcategory_missing', 'media_missing'],
+          certification_version: 'v-test',
+        }),
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => workspacePayload([prepared]),
+    };
+  });
+
+  await workspace.mount({
+    root,
+    document: doc,
+    ui,
+    fetch: fetchFn,
+    confirm: () => true,
+    prompt: jest.fn(),
+  });
+
+  const row = root.querySelector('[data-product-ref="KPR-131956"]');
+  const feedback = row.querySelector('[data-catalog-action-feedback]');
+  expect(feedback).not.toBeNull();
+  expect(feedback.textContent).toBe('');
+
+  await row.querySelector('[data-workspace-action="approve"]').click();
+
+  expect(feedback.textContent).toContain('Certification Catalogue incomplète');
+  expect(feedback.textContent).toContain('sous-catégorie Boutique absente');
+  expect(feedback.textContent).toContain('média Catalogue absent');
+  expect(feedback.className).toContain('is-critical');
 });
 
 test('la réponse ChatGPT se transforme automatiquement en champs FR', () => {
