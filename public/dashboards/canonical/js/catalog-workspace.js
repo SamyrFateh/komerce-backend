@@ -25,6 +25,8 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createCatalogWorkspace() {
   const ENDPOINT = '/api/admin/workspaces/catalog';
   const CATALOG_FR_TRANSLATOR_CACHE_KEY = '__KOMERCE_CATALOG_FR_TRANSLATOR__';
+  let activeContext = null;
+  let activePayload = null;
 
   function contextualHref(path, returnTo, label) {
     const nav = globalThis.KomerceCanonicalNavigation;
@@ -503,6 +505,11 @@
         context.autoFrenchRunning = false;
       });
     return true;
+  }
+
+  function resumeAutoFrenchPreparation() {
+    if (!activeContext || !activePayload) return false;
+    return scheduleAutoFrenchPreparation(activeContext, activePayload);
   }
 
   function closeFrenchEditor(context, triggerButton) {
@@ -1053,6 +1060,8 @@
         });
         const payload = await jsonRequest(fetchFn, `${ENDPOINT}?${params.toString()}`);
         renderPayload(rootNode, ui, doc, payload, context);
+        activeContext = context;
+        activePayload = payload;
         if (!reloadOptions.skipAutoFrenchSchedule) scheduleAutoFrenchPreparation(context, payload);
         return payload;
       } catch (error) {
@@ -1081,6 +1090,7 @@
     autoPrepareFrenchQueue,
     scheduleAutoFrenchPreparation,
     hasPrimedFrenchTranslator,
+    resumeAutoFrenchPreparation,
     mount,
   });
 });
