@@ -32,7 +32,10 @@ describe('PR enforcement — targeted repair rerun', () => {
     expect(workflow).toContain("if: needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.governance == 'true'");
     expect(workflow).toContain("needs: [changes, backend]");
     expect(workflow).toContain("needs.changes.outputs.unit_repair_only != 'true'");
-    expect(workflow).toContain("needs.changes.outputs.backend == 'true' && needs.backend.result == 'success'");
+    expect(workflow).toContain("needs.changes.outputs.db_rebuild_required == 'true'");
+    expect(workflow).toContain("needs.changes.outputs.integration_required == 'true'");
+    expect(workflow).toContain("needs.changes.outputs.e2e_api_required == 'true'");
+    expect(workflow).toContain("needs.backend.result == 'success'");
   });
 
   test('the classifier remains fail-closed and falls back to full CI', () => {
