@@ -932,9 +932,9 @@
           ? 'Valider après relecture'
           : 'Ajouter à la sélection';
         const approve = makeButton(doc, approveLabel, 'approve');
-        approve.addEventListener('click', () => {
+        approve.addEventListener('click', async () => {
           if (!context.confirm(`Ajouter ${row.product_ref} · ${row.name} à la sélection publiée ?`)) return;
-          runAction(context, approve, {
+          await runAction(context, approve, {
             url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/approve`,
             successMessage: `${row.product_ref} ajouté à la sélection publiée.`,
             feedbackTarget: actionFeedback,
