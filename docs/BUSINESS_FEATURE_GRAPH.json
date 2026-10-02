@@ -21485,32 +21485,32 @@
         "entry": "POST /api/purchasing/po/:po_id/submit",
         "method": "POST",
         "path": "/api/purchasing/po/{id}/submit",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "purchasing",
         "entry": "POST /api/purchasing/po/:po_id/confirm",
         "method": "POST",
         "path": "/api/purchasing/po/{id}/confirm",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "purchasing",
         "entry": "POST /api/purchasing/lines",
         "method": "POST",
         "path": "/api/purchasing/lines",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "purchasing",
         "entry": "POST /api/purchasing/lines/:id/settle",
         "method": "POST",
         "path": "/api/purchasing/lines/{id}/settle",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/purchasing.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "recommendations",
@@ -44548,50 +44548,8 @@
   },
   "drifts": {
     "error": [],
-    "warn": [
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "purchasing / POST /api/purchasing/lines",
-        "msg": "\"POST /api/purchasing/lines\" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "purchasing / POST /api/purchasing/lines/{id}/settle",
-        "msg": "\"POST /api/purchasing/lines/{id}/settle\" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "purchasing / POST /api/purchasing/po/{id}/confirm",
-        "msg": "\"POST /api/purchasing/po/{id}/confirm\" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "purchasing / POST /api/purchasing/po/{id}/submit",
-        "msg": "\"POST /api/purchasing/po/{id}/submit\" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      }
-    ],
-    "debt": [
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "purchasing / POST /api/purchasing/lines",
-        "msg": "\"POST /api/purchasing/lines\" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "purchasing / POST /api/purchasing/lines/{id}/settle",
-        "msg": "\"POST /api/purchasing/lines/{id}/settle\" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "purchasing / POST /api/purchasing/po/{id}/confirm",
-        "msg": "\"POST /api/purchasing/po/{id}/confirm\" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "purchasing / POST /api/purchasing/po/{id}/submit",
-        "msg": "\"POST /api/purchasing/po/{id}/submit\" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      }
-    ],
+    "warn": [],
+    "debt": [],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -44872,11 +44830,11 @@
       }
     ],
     "summary": {
-      "signals": 4,
-      "debt": 4,
+      "signals": 0,
+      "debt": 0,
       "expectedTopology": 43,
       "generatorLimitations": 12,
-      "classifiedCandidates": 59
+      "classifiedCandidates": 55
     }
   }
 }

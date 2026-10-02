@@ -1442,10 +1442,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/purchasing/po/{id}/detach` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/po/{id}/discard` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `POST /api/purchasing/lines/{id}/cancel` | purchasing | `routes/purchasing.js` (resolved-owned) |
-| `POST /api/purchasing/po/{id}/submit` | purchasing | — (not-in-openapi-contract) |
-| `POST /api/purchasing/po/{id}/confirm` | purchasing | — (not-in-openapi-contract) |
-| `POST /api/purchasing/lines` | purchasing | — (not-in-openapi-contract) |
-| `POST /api/purchasing/lines/{id}/settle` | purchasing | — (not-in-openapi-contract) |
+| `POST /api/purchasing/po/{id}/submit` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/po/{id}/confirm` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/lines` | purchasing | `routes/purchasing.js` (resolved-owned) |
+| `POST /api/purchasing/lines/{id}/settle` | purchasing | `routes/purchasing.js` (resolved-owned) |
 | `GET /api/boutique/suggestions` | recommendations | `routes/boutique-suggestions.js` (resolved-owned) |
 | `GET /api/admin/market-settlements/markets/{id}/settlements` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
 | `POST /api/admin/market-settlements/markets/{id}/settlements/ready` | settlement | `routes/admin-market-settlement.js` (resolved-owned) |
@@ -2070,14 +2070,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (4)
+### DETTE / DRIFT ACTIONNABLE (0)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ purchasing / POST /api/purchasing/lines — "POST /api/purchasing/lines" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ purchasing / POST /api/purchasing/lines/{id}/settle — "POST /api/purchasing/lines/{id}/settle" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ purchasing / POST /api/purchasing/po/{id}/confirm — "POST /api/purchasing/po/{id}/confirm" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ purchasing / POST /api/purchasing/po/{id}/submit — "POST /api/purchasing/po/{id}/submit" déclaré par purchasing mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- none
 
 ### TOPOLOGIE ATTENDUE — hors dette (43)
 

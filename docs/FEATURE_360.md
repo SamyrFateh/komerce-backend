@@ -2035,7 +2035,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - Supplier Fulfillment Adapter Contract universel : chaque fournisseur déclare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce
   - Shipping Capability Adapter Contract : les faits de livraison natifs d'un provider sont traduits en capacité canonique sans fuite de champs provider ni défaut implicite sur les faits inconnus
   - Purchase Order exacte : pour une ligne vendue avec sku_id, la PO conserve order_item_id, product_sku_id et la Supplier Order Identity snapshotée ; un mapping produit-level ne peut pas remplacer la variante vendue
-  - engagement d'une PO regroupée (PR 5) : soumission par groupe supplier_unit_ref, confirmation par PO ligne par ligne avec reliquat en ligne ouverte, clôture d'une ligne confirmée, création manuelle d'une ligne ouverte ; contrat adaptateur items[] (buildOrderPayload / reconcile)
+  - engagement d'une PO regroupée (PR 5) : soumission par groupe supplier_unit_ref, confirmation par PO ligne par ligne avec reliquat en ligne ouverte, écart à la réception (solde d'une ligne confirmée), création manuelle d'une ligne ouverte ; contrat adaptateur items[] (buildOrderPayload / reconcile)
   - Supplier money canonique : pour une ligne SKU/SOI exacte, la PO snapshotte supplier_unit_price + supplier_currency depuis la Canonical Unit ; aucun prix natif non-AED ne peut être écrit dans unit_price_aed
 - _out_ :
   - cycle de vie de la commande cliente elle-même — orders reste seul propriétaire de order-status-machine.js (feature orders, scindée au Lot O1.4)
