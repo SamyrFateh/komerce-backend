@@ -130,14 +130,19 @@ test('mutation produit utilise product_ref métier et acteur authentifié', asyn
   );
 });
 
-test('préparation française utilise product_ref et acteur authentifié', async () => {
+test('préparation française transmet le contenu manuel, product_ref et acteur authentifié', async () => {
+  const body = {
+    name: 'Titre français',
+    description: 'Description française préparée hors runtime.',
+  };
   const res = await request(app())
     .post('/api/admin/workspaces/catalog/approval/KPR-000001/prepare-fr')
-    .send({});
+    .send(body);
   expect(res.status).toBe(200);
   expect(res.body.action).toBe('catalog_candidate_prepared_fr');
   expect(mockPrepareCandidateFrench).toHaveBeenCalledWith(
     'KPR-000001',
+    body,
     expect.objectContaining({ id: 'admin-central', role: 'admin' })
   );
 });
