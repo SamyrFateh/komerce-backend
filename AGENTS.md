@@ -19,6 +19,33 @@ Toute intervention commence par :
 
 Un agent ne doit pas démarrer depuis un ancien audit, un rapport daté, un prompt historique, un `_LIVE.md`, un `MEMO_*` ou une sortie générée.
 
+## 0.1. Mode Komerce par défaut — précision maximale, coût minimal
+
+Avant toute analyse ou modification substantielle, utiliser les atouts déjà présents dans le dépôt dans cet ordre :
+
+1. carte Feature First concernée ;
+2. headers `@komerce-arch` des fichiers propriétaires ;
+3. `interventionIndex["<file>"].mustCheck` ;
+4. diff/recherche/lecture ciblée sur les fichiers utiles ;
+5. élargir seulement si une incertitude réelle subsiste.
+
+Règle d'économie : **ne jamais commencer par un clone complet, un fetch complet, un scan global, une lecture exhaustive des sorties générées ou une suite de tests complète quand une preuve ciblée suffit**.
+
+Préférer :
+- fichiers/ranges précis via l'API ou le workspace déjà disponible ;
+- historique shallow et SHA/base exacts ;
+- tests/gates déterminés par le scope ;
+- `npm run pr:preflight` avant PR ;
+- tests lourds uniquement lorsque le scope ou la preuve l'exige.
+
+Un clone/fetch complet, un scan global ou une exécution exhaustive reste autorisé quand nécessaire, mais la raison doit être explicite dans le plan d'attaque.
+
+Règle dette : ne jamais introduire silencieusement un nouvel `@unknown`, allowlist, exemption, baseline, bypass, duplication d'autorité ou writer parallèle. Corriger la cause ou demander une validation humaine explicite.
+
+Réflexe à annoncer au début d'un chantier substantiel :
+
+`Mode Komerce : carte + headers + mustCheck + scope ciblé + dette non croissante + preflight avant PR.`
+
 ## 1. Plan d'attaque obligatoire
 
 Avant toute modification substantielle, l'agent doit annoncer un plan d'attaque court avant de coder.
