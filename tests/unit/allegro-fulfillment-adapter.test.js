@@ -64,11 +64,11 @@ test('both Purchasing gates expose manual readiness while preserving the externa
 test('manual order payload requires a successful exact preflight and never fabricates execution', async () => {
   const a = args();
   const preflight = await adapter.evaluate(a);
-  await expect(adapter.buildOrderPayload({ identity: a.identity, quantity: 1, preflight })).resolves.toMatchObject({
+  await expect(adapter.buildOrderPayload({ items: [{ identity: a.identity, supplier_unit_ref: '123', quantity: 1 }], preflights: [preflight] })).resolves.toMatchObject({
     provider: 'allegro', environment: 'sandbox', execution_mode: 'manual', offer_id: '123', quantity: 1,
     expected_unit_price: 10, expected_currency: 'PLN', auto_order_ready: false, place_order_invoked: false,
   });
-  await expect(adapter.buildOrderPayload({ identity: a.identity, quantity: 1, preflight: { ready: false } }))
+  await expect(adapter.buildOrderPayload({ items: [{ identity: a.identity, supplier_unit_ref: '123', quantity: 1 }], preflights: [{ ready: false }] }))
     .rejects.toThrow('MANUAL_PREFLIGHT_REQUIRED');
 });
 // GAP-6 — Environment Isolation. buildOrderPayload() a sa PROPRE vérification
@@ -82,8 +82,22 @@ test('manual order payload requires a successful exact preflight and never fabri
 test('buildOrderPayload rejette indépendamment une identity non-sandbox (production)', async () => {
   const prodIdentity = { provider: 'allegro', version: 1, payload: { environment: 'production', offer_id: '123' } };
   await expect(adapter.buildOrderPayload({
-    identity: prodIdentity, quantity: 1, preflight: { ready: true, evidence: { manual_procurement_ready: true } },
+    items: [{ identity: prodIdentity, supplier_unit_ref: '123', quantity: 1 }],
+    preflights: [{ ready: true, evidence: { manual_procurement_ready: true } }],
   })).rejects.toThrow('ALLEGRO_IDENTITY_MISMATCH');
+});
+test('PR 5 — plusieurs items : ALLEGRO_MULTI_ITEM_UNSUPPORTED ; items vides ou quantité invalide : INVALID_ITEMS', async () => {
+  const a = args();
+  const item = { identity: a.identity, supplier_unit_ref: '123', quantity: 1 };
+  await expect(adapter.buildOrderPayload({ items: [item, item], preflights: [{}, {}] })).rejects.toThrow('ALLEGRO_MULTI_ITEM_UNSUPPORTED');
+  await expect(adapter.buildOrderPayload({ items: [], preflights: [] })).rejects.toThrow('INVALID_ITEMS');
+  await expect(adapter.buildOrderPayload()).rejects.toThrow('INVALID_ITEMS');
+  await expect(adapter.buildOrderPayload({ items: [{ ...item, quantity: 0 }], preflights: [{}] })).rejects.toThrow('INVALID_ITEMS');
+  const multi = await adapter.reconcile({ externalRef: 'x', items: [item, item] });
+  expect(multi.commitment_verdict).toBe('rejected');
+  expect(multi.evidence.reason).toMatch(/ALLEGRO_MULTI_ITEM_UNSUPPORTED/);
+  const none = await adapter.reconcile({ externalRef: 'x', items: [] });
+  expect(none.evidence.reason).toMatch(/INVALID_ITEMS/);
 });
 test('default context uses configured client boundary', async () => {
   const a = args(); delete a.context;

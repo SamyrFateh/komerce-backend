@@ -18,6 +18,7 @@
 const connector = require('./connectors/allegro-connector');
 const { VERDICT, result } = require('./supplier-fulfillment-readiness');
 const reconciliation = require('./allegro-purchase-reconciliation');
+const adapterContract = require('./supplier-fulfillment-adapter-contract');
 const provider = 'allegro';
 
 function exactOfferId(row, identity) {
@@ -69,7 +70,13 @@ async function evaluate({ row, identity, quantity, context = {} }) {
   return result(VERDICT.READY, evidence);
 }
 
-async function buildOrderPayload({ identity, quantity, preflight }) {
+async function buildOrderPayload({ items, preflights } = {}) {
+  const checked = adapterContract.validateItems(items);
+  if (!checked.ok) throw new Error('INVALID_ITEMS');
+  // Allegro n'a pas de panier multi-offres côté Komerce : l'opérateur détache pour faire des PO à une ligne.
+  if (items.length !== 1) throw new Error('ALLEGRO_MULTI_ITEM_UNSUPPORTED');
+  const { identity, quantity } = items[0];
+  const preflight = Array.isArray(preflights) ? preflights[0] : null;
   const id = identity?.payload?.offer_id;
   if (identity?.provider !== provider || identity?.version !== 1 || identity?.payload?.environment !== 'sandbox'
     || typeof id !== 'string' || !/^[0-9]{1,30}$/.test(id)) throw new Error('ALLEGRO_IDENTITY_MISMATCH');
@@ -111,14 +118,16 @@ async function buildOrderPayload({ identity, quantity, preflight }) {
  * @param {string} params.externalRef Référence externe à vérifier (pour
  *   Allegro : le checkoutFormId communiqué par l'opérateur après achat
  *   manuel).
- * @param {object} params.identity Supplier Order Identity normalisée.
- * @param {string} [params.supplierUnitRef]
- * @param {string} [params.supplierSku]
- * @param {number} params.quantity
+ * @param {Array<{identity: object, supplier_unit_ref: string, supplier_sku: string, quantity: number}>} params.items
+ *   Un seul élément pour Allegro (ALLEGRO_MULTI_ITEM_UNSUPPORTED sinon : verdict `rejected`).
  * @param {object} [params.context]
  */
-async function reconcile({ externalRef, identity, supplierUnitRef, supplierSku, quantity, context = {} } = {}) {
+async function reconcile({ externalRef, items, context = {} } = {}) {
   try {
+    const checked = adapterContract.validateItems(items);
+    if (!checked.ok) throw new Error('INVALID_ITEMS');
+    if (items.length !== 1) throw new Error('ALLEGRO_MULTI_ITEM_UNSUPPORTED');
+    const { identity, supplier_unit_ref: supplierUnitRef, supplier_sku: supplierSku, quantity } = items[0];
     const verified = await reconciliation.reconcile({
       client: context.allegroSandboxClient,
       checkoutFormId: externalRef,

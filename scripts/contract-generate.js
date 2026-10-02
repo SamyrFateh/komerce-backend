@@ -1131,6 +1131,19 @@ const KNOWN_RESPONSES = {
   '/api/purchasing/lines/{id}/cancel': {
     post: { fields: ['line_id','cancelled','detached_from'], source: 'route-read' }
   },
+  // PR 5 — engagement des PO regroupées
+  '/api/purchasing/po/{po_id}/submit': {
+    post: { fields: ['purchase_order','lines','groups','preflights','notification','place_order_invoked','markets','multi_market'], source: 'route-read' }
+  },
+  '/api/purchasing/po/{po_id}/confirm': {
+    post: { fields: ['purchase_order','lines','remnants','markets','multi_market'], source: 'route-read' }
+  },
+  '/api/purchasing/lines': {
+    post: { fields: ['line','markets','multi_market'], source: 'route-read' }
+  },
+  '/api/purchasing/lines/{id}/settle': {
+    post: { fields: ['line','remnant','unsettled_quantity','purchase_order','markets','multi_market'], source: 'route-read' }
+  },
 
   // cash.js — routes/cash.js, réponses lues directement dans les handlers
   '/api/cash/collect/{orderId}': {

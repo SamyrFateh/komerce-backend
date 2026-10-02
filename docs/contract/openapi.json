@@ -24407,6 +24407,10 @@
                   "description": "Champs observés (source: route-read)",
                   "type": "object",
                   "properties": {
+                    "filter": {
+                      "type": "string",
+                      "x-observed": true
+                    },
                     "groups": {
                       "type": "string",
                       "x-observed": true
@@ -24445,6 +24449,18 @@
                       "x-observed": true
                     },
                     "line_ids": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lines": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "multi_market": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -28301,6 +28317,224 @@
                       "x-observed": true
                     },
                     "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/{po_id}/submit": {
+      "post": {
+        "summary": "POST /api/purchasing/po/{po_id}/submit",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "purchase_order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lines": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "groups": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "preflights": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "notification": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "place_order_invoked": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "multi_market": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/{po_id}/confirm": {
+      "post": {
+        "summary": "POST /api/purchasing/po/{po_id}/confirm",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "purchase_order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lines": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "remnants": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "multi_market": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/lines": {
+      "post": {
+        "summary": "POST /api/purchasing/lines",
+        "x-route-file": "routes/purchasing.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "line": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "multi_market": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/lines/{id}/settle": {
+      "post": {
+        "summary": "POST /api/purchasing/lines/{id}/settle",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "line": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "remnant": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "unsettled_quantity": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "purchase_order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "multi_market": {
                       "type": "string",
                       "x-observed": true
                     }

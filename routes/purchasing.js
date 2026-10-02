@@ -45,6 +45,11 @@
  *   POST /api/purchasing/po/:po_id/detach             → détacher des lignes d'une PO draft
  *   POST /api/purchasing/po/:po_id/discard            → abandonner une PO draft
  *   POST /api/purchasing/lines/:id/cancel             → annuler une ligne ouverte ou en brouillon
+ * Engagement (PR 5) :
+ *   POST /api/purchasing/po/:po_id/submit             → soumettre une PO draft (préparation par groupe, message agrégé)
+ *   POST /api/purchasing/po/:po_id/confirm            → confirmer une PO notified ligne par ligne (reliquat en ligne ouverte)
+ *   POST /api/purchasing/lines                        → créer une ligne ouverte manuellement (ex. reliquat chez un autre fournisseur)
+ *   POST /api/purchasing/lines/:id/settle             → clôturer une ligne confirmée (reliquat en ligne ouverte)
  */
 
 'use strict';
@@ -60,6 +65,7 @@ const { resolveCanonicalMappingMoney } = require('../services/purchasing-canonic
 const { processReceive }    = require('../services/purchasing-receive-service');
 const { deleteSupplier, confirmPurchaseOrder, cancelPurchaseOrder } = require('../services/purchasing-admin-service');
 const grouped = require('../services/purchasing-grouped-service');
+const engagement = require('../services/purchasing-engagement-service');
 
 const guard = [authenticate, requireRole(['admin'])];
 
@@ -97,9 +103,14 @@ router.get('/', ...guard, async (req, res, next) => {
 //   FORME REGROUPÉE (PR 4) — déclarées avant /:order_id pour éviter conflit Express
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// Champs de diagnostic relayés tels quels (verdicts de soumission, écarts de lignes de confirmation…).
+const GROUPED_ERROR_EXTRAS = ['verdicts', 'missing', 'extra', 'received_quantity', 'confirmed_quantity', 'quantity', 'purchase_line_id', 'provider', 'details', 'requested', 'attached', 'detached'];
+
 function groupedError(err, res, next) {
   if (err && err.status) {
-    return res.status(err.status).json({ error: err.message, code: err.code, current_status: err.current_status });
+    const body = { error: err.message, code: err.code, current_status: err.current_status };
+    for (const key of GROUPED_ERROR_EXTRAS) if (err[key] !== undefined) body[key] = err[key];
+    return res.status(err.status).json(body);
   }
   return next(err);
 }
@@ -128,6 +139,25 @@ router.post('/po/:po_id/discard', ...guard, async (req, res, next) => {
 
 router.post('/lines/:id/cancel', ...guard, async (req, res, next) => {
   try { res.json(await grouped.cancelLine(req.params.id, (req.body || {}).reason)); } catch (err) { groupedError(err, res, next); }
+});
+
+// PR 5 — engagement : soumission, confirmation par PO (reliquat), clôture de ligne, création manuelle de ligne.
+router.post('/po/:po_id/submit', ...guard, async (req, res, next) => {
+  try { res.json(await engagement.submitPurchaseOrder(req.params.po_id, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
+});
+
+router.post('/po/:po_id/confirm', ...guard, async (req, res, next) => {
+  try {
+    res.json(await engagement.confirmGroupedPurchaseOrder(req.params.po_id, req.body || {}, { actor: req.user }));
+  } catch (err) { groupedError(err, res, next); }
+});
+
+router.post('/lines', ...guard, async (req, res, next) => {
+  try { res.status(201).json(await engagement.createManualLine(req.body || {}, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
+});
+
+router.post('/lines/:id/settle', ...guard, async (req, res, next) => {
+  try { res.json(await engagement.settleLine(req.params.id, req.body || {}, { actor: req.user })); } catch (err) { groupedError(err, res, next); }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════

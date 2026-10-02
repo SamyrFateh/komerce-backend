@@ -24203,6 +24203,7 @@
           "Supplier Fulfillment Adapter Contract universel : chaque fournisseur déclare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce",
           "Shipping Capability Adapter Contract : les faits de livraison natifs d'un provider sont traduits en capacité canonique sans fuite de champs provider ni défaut implicite sur les faits inconnus",
           "Purchase Order exacte : pour une ligne vendue avec sku_id, la PO conserve order_item_id, product_sku_id et la Supplier Order Identity snapshotée ; un mapping produit-level ne peut pas remplacer la variante vendue",
+          "engagement d'une PO regroupée (PR 5) : soumission par groupe supplier_unit_ref, confirmation par PO ligne par ligne avec reliquat en ligne ouverte, écart à la réception (solde d'une ligne confirmée), création manuelle d'une ligne ouverte ; contrat adaptateur items[] (buildOrderPayload / reconcile)",
           "Supplier money canonique : pour une ligne SKU/SOI exacte, la PO snapshotte supplier_unit_price + supplier_currency depuis la Canonical Unit ; aucun prix natif non-AED ne peut être écrit dans unit_price_aed"
         ],
         "out": [
@@ -24225,6 +24226,10 @@
         {
           "statement": "forme regroupée (PR 4, migration 266, KOMERCE_GROUPED_PURCHASING éteint par défaut) : une PO est soit historique (order_id, qty, supplier_sku renseignés) soit regroupée (détail de ligne NULL, chk_purchase_orders_header_shape) ; une PO regroupée ne reçoit que des lignes à identité exacte, même fournisseur, même hub, même devise (garde base I4) ; rattachement, détachement, abandon et annulation de ligne se font en brouillon seulement ; une PO regroupée répond 409 PURCHASE_ORDER_GROUPED_USE_PO_ROUTES aux routes historiques ; le marché reste une propriété de chaque ligne (order_item → order → market_id, vue v_purchase_line_market) : une PO regroupée peut mêler KM/CM/CG, la clé de regroupement est fournisseur + hub (jamais le marché), le marché est visible dans open-lines, la préparation et la lecture de PO, market_id n'est qu'un filtre opérateur et Purchasing ne réassigne jamais un marché ; l'annulation d'une commande annule ses lignes ouvertes et en brouillon et n'annule JAMAIS une ligne d'une PO regroupée déjà soumise (alerte avec purchase_line_ids)",
           "test": "tests/integration/purchase-lines-grouped-postgres.test.js"
+        },
+        {
+          "statement": "engagement d'une PO regroupée (PR 5, KOMERCE_GROUPED_PURCHASING éteint par défaut) : submit ne passe une PO draft en notified que si chaque groupe supplier_unit_ref est prêt (préparation distante par groupe, quantité sommée) et que l'adaptateur accepte les items (Allegro : une seule ligne, ALLEGRO_MULTI_ITEM_UNSUPPORTED) — sinon la PO reste draft avec les verdicts ; confirm exige exactement les lignes non annulées de la PO, écrit d'abord la confirmation de chaque ligne puis le reliquat en ligne ouverte (parent_line_id, même instantané, I1 vérifie), passe la PO en confirmed (cancelled si tout est à 0) et ne confirme rien si la réconciliation fournisseur est rejetée ; settle (écart à la réception) solde une ligne confirmée à une quantité ≤ reçu du Hub et < effectif, puis crée le reliquat si reopen_remainder, et passe la PO en hub_received quand toutes ses lignes non annulées sont soldées ; POST /lines ne crée qu'une ligne ouverte à identité exacte du même provider, I1 refuse tout sur-engagement ; chaque ligne garde son marché et les réponses l'exposent par marché en lecture seule ; place_order_invoked reste false",
+          "test": "tests/integration/purchase-lines-engagement-postgres.test.js"
         },
         {
           "statement": "un besoin d'achat déjà couvert par un bon de commande existant ne recrée jamais de doublon (idempotence applicative anti-replay, I-SWEEP-3B)",
@@ -24335,7 +24340,7 @@
             ]
           },
           "services": {
-            "count": 23,
+            "count": 24,
             "files": [
               {
                 "declared": "services/purchase-line-snapshot.js",
@@ -24355,6 +24360,11 @@
               {
                 "declared": "services/purchasing-canonical-money.js",
                 "resolvedPath": "services/purchasing-canonical-money.js",
+                "status": "resolved-in-technical-graph"
+              },
+              {
+                "declared": "services/purchasing-engagement-service.js",
+                "resolvedPath": "services/purchasing-engagement-service.js",
                 "status": "resolved-in-technical-graph"
               },
               {
@@ -24455,7 +24465,7 @@
             ]
           },
           "tests": {
-            "count": 34,
+            "count": 36,
             "files": [
               {
                 "declared": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
@@ -24465,6 +24475,11 @@
               {
                 "declared": "tests/integration/purchase-line-progress-postgres.test.js",
                 "resolvedPath": "tests/integration/purchase-line-progress-postgres.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "tests/integration/purchase-lines-engagement-postgres.test.js",
+                "resolvedPath": "tests/integration/purchase-lines-engagement-postgres.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -24573,6 +24588,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "tests/unit/purchasing-engagement-service.test.js",
+                "resolvedPath": "tests/unit/purchasing-engagement-service.test.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "tests/unit/purchasing-readiness-vocabulary-mapping.test.js",
                 "resolvedPath": "tests/unit/purchasing-readiness-vocabulary-mapping.test.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -24630,7 +24650,7 @@
             ]
           }
         },
-        "totalFiles": 66,
+        "totalFiles": 69,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -24766,6 +24786,16 @@
             "status": "resolved"
           },
           {
+            "fn": "confirmGroupedPurchaseOrder",
+            "file": "services/purchasing-engagement-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "createManualLine",
+            "file": "services/purchasing-engagement-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "evaluateSupplierFulfillmentReadiness",
             "file": "services/suppliers/supplier-fulfillment-readiness.js",
             "status": "resolved"
@@ -24796,6 +24826,16 @@
             "status": "resolved"
           },
           {
+            "fn": "settleLine",
+            "file": "services/purchasing-engagement-service.js",
+            "status": "resolved"
+          },
+          {
+            "fn": "submitPurchaseOrder",
+            "file": "services/purchasing-engagement-service.js",
+            "status": "resolved"
+          },
+          {
             "fn": "syncPurchaseOrdersOnOrderCancel",
             "file": "services/purchasing-cancel-service.js",
             "status": "resolved"
@@ -24807,7 +24847,7 @@
           }
         ],
         "httpInterfaces": {
-          "count": 16
+          "count": 20
         }
       },
       "businessDependencies": [

@@ -2035,6 +2035,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
   - Supplier Fulfillment Adapter Contract universel : chaque fournisseur déclare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce
   - Shipping Capability Adapter Contract : les faits de livraison natifs d'un provider sont traduits en capacité canonique sans fuite de champs provider ni défaut implicite sur les faits inconnus
   - Purchase Order exacte : pour une ligne vendue avec sku_id, la PO conserve order_item_id, product_sku_id et la Supplier Order Identity snapshotée ; un mapping produit-level ne peut pas remplacer la variante vendue
+  - engagement d'une PO regroupée (PR 5) : soumission par groupe supplier_unit_ref, confirmation par PO ligne par ligne avec reliquat en ligne ouverte, écart à la réception (solde d'une ligne confirmée), création manuelle d'une ligne ouverte ; contrat adaptateur items[] (buildOrderPayload / reconcile)
   - Supplier money canonique : pour une ligne SKU/SOI exacte, la PO snapshotte supplier_unit_price + supplier_currency depuis la Canonical Unit ; aucun prix natif non-AED ne peut être écrit dans unit_price_aed
 - _out_ :
   - cycle de vie de la commande cliente elle-même — orders reste seul propriétaire de order-status-machine.js (feature orders, scindée au Lot O1.4)
@@ -2058,6 +2059,7 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - [object Object]
 - [object Object]
 - [object Object]
+- [object Object]
 - purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)
 - une réception ne peut être appliquée qu'à un bon de commande existant et cohérent
 - aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d'annulation passe par purchasing-cancel-service.js
@@ -2066,17 +2068,18 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Owns** : `product_suppliers`, `purchase_orders`, `suppliers`
 
-**Exposes** : 10 internal API(s), 16 HTTP interface(s)
+**Exposes** : 14 internal API(s), 20 HTTP interface(s)
   - `adaptShippingRate` (services/suppliers/allegro-shipping-capability-adapter.js) — resolved
   - `compareLegacyCanonicalUnit` (services/suppliers/canonical-unit-cutover-comparison.js) — resolved
+  - `confirmGroupedPurchaseOrder` (services/purchasing-engagement-service.js) — resolved
+  - `createManualLine` (services/purchasing-engagement-service.js) — resolved
   - `evaluateSupplierFulfillmentReadiness` (services/suppliers/supplier-fulfillment-readiness.js) — resolved
   - `normalizeCapability` (services/suppliers/shipping-capability-contract.js) — resolved
   - `prepareCanonicalUnitPurchase` (services/suppliers/canonical-unit-purchasing-gate.js) — resolved
   - `reconcile` (services/suppliers/allegro-purchase-reconciliation.js) — resolved
   - `repairOrderedWithoutPurchaseOrders` (services/repair-ordered-without-purchase-orders.js) — resolved
   - `resolveCanonicalSupplierMoney` (services/purchasing-canonical-money.js) — resolved
-  - `syncPurchaseOrdersOnOrderCancel` (services/purchasing-cancel-service.js) — resolved
-  - `triggerPurchasing` (services/purchasing-trigger-service.js) — resolved
+  - _...4 de plus, voir FEATURE_360.json_
 
 **Consumes** : auth (DECLARED_AND_OBSERVED), catalog (DECLARED_AND_OBSERVED), external-provider-contracts (DECLARED_AND_OBSERVED), infrastructure (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), notifications (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), sourcing (DECLARED_AND_OBSERVED), supplier-connectivity (DECLARED_AND_OBSERVED)
 **Consumed by** : catalog (DECLARED_AND_OBSERVED), dashboard (DECLARED_AND_OBSERVED), logistics (DECLARED_AND_OBSERVED), orders (DECLARED_AND_OBSERVED), payments (DECLARED_AND_OBSERVED), platform-ops (DECLARED_AND_OBSERVED)
@@ -2091,12 +2094,12 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 66 fichier(s) déclaré(s)
+**Implementation** : 69 fichier(s) déclaré(s)
   - migrations : 5
   - routes : 1
   - scripts : 3
-  - services : 23
-  - tests : 34
+  - services : 24
+  - tests : 36
 
 _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json → features[id="purchasing"]_
 

@@ -74,7 +74,9 @@ async function evaluateProcurementExecutionBoundary({
 
   let payload;
   try {
-    payload = await adapterCheck.adapter.buildOrderPayload({ identity, quantity, canonicalUnit, preflight, context });
+    // Contrat items[] (PR 5) : le chemin historique passe un seul élément.
+    const items = [{ identity, supplier_unit_ref: canonicalUnit?.supplier_unit_ref ?? null, quantity, canonical_unit: canonicalUnit }];
+    payload = await adapterCheck.adapter.buildOrderPayload({ items, preflights: [preflight], context });
   } catch (error) {
     return notReached('BUILD_ORDER_PAYLOAD_ERROR', { provider: identity.provider, error_name: error?.name || 'Error' });
   }
