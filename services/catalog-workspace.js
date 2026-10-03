@@ -262,11 +262,68 @@ async function queryApprovalBreakdown() {
   return result;
 }
 
+async function queryFocusedMarketHandoff(productRef) {
+  const ref = String(productRef || '').trim();
+  if (!ref) return null;
+
+  const { rows } = await db.query(`
+    SELECT p.product_ref,
+           p.name,
+           p.lifecycle_status,
+           p.is_active,
+           p.is_available,
+           m.code AS market_code,
+           m.name AS market_name,
+           m.currency AS market_currency,
+           COALESCE(pme.commercial_exposure, 'DISABLED') AS commercial_exposure,
+           (pme.product_id IS NOT NULL) AS exposure_decision_recorded,
+           pmpd.status AS price_status,
+           pmpd.amount AS local_price_amount,
+           pmpd.currency AS local_price_currency
+      FROM products p
+      JOIN markets m ON m.is_active = TRUE
+      LEFT JOIN product_market_exposure pme
+        ON pme.product_id = p.id
+       AND pme.market_id = m.id
+      LEFT JOIN product_market_price_drafts pmpd
+        ON pmpd.product_id = p.id
+       AND pmpd.market_id = m.id
+     WHERE p.product_ref = $1
+       AND p.lifecycle_status = 'active'
+       AND p.is_active = TRUE
+     ORDER BY CASE WHEN m.code = 'KM' THEN 0 ELSE 1 END, m.code
+  `, [ref]);
+
+  if (!rows.length) return null;
+  const first = rows[0];
+  const markets = rows.map(row => ({
+    code: row.market_code,
+    name: row.market_name || row.market_code,
+    currency: row.market_currency || null,
+    commercial_exposure: row.commercial_exposure || 'DISABLED',
+    exposure_decision_recorded: Boolean(row.exposure_decision_recorded),
+    price_status: row.price_status || null,
+    local_price_amount: row.local_price_amount == null ? null : Number(row.local_price_amount),
+    local_price_currency: row.local_price_currency || null,
+    buyer_visible: row.commercial_exposure === 'ENABLED' && row.price_status === 'LOCAL_ACTIVE',
+  }));
+
+  return {
+    product_ref: first.product_ref,
+    name: first.name,
+    lifecycle_status: first.lifecycle_status,
+    is_active: Boolean(first.is_active),
+    is_available: Boolean(first.is_available),
+    state: markets.some(row => !row.buyer_visible) ? 'MARKET_DECISION_PENDING' : 'BUYER_VISIBLE',
+    markets,
+  };
+}
+
 async function buildWorkspace(query = {}) {
   const approvalLimit = Math.min(Math.max(Number(query.approval_limit) || 50, 1), 100);
   const approvalOffset = Math.max(Number.parseInt(query.approval_offset, 10) || 0, 0);
   const approvalProductRef = String(query.product_ref || '').trim() || null;
-  const [summary, catalogCap, categories, products, approval, approvalBreakdown] = await Promise.all([
+  const [summary, catalogCap, categories, products, approval, approvalBreakdown, focusedHandoff] = await Promise.all([
     querySummary(),
     queryCatalogCap(),
     taxonomy.listCategories(),
@@ -277,6 +334,7 @@ async function buildWorkspace(query = {}) {
     }),
     queryApprovalQueue({ limit: approvalLimit, offset: approvalOffset, productRef: approvalProductRef }),
     queryApprovalBreakdown(),
+    queryFocusedMarketHandoff(approvalProductRef),
   ]);
   const approvalTotal = Number(summary.approval_pending) || 0;
   const commercialSummary = {
@@ -299,6 +357,7 @@ async function buildWorkspace(query = {}) {
     categories,
     products,
     approval,
+    focused_handoff: focusedHandoff,
     approval_breakdown: approvalBreakdown,
     approval_strategy: {
       authority: 'human_approval',
