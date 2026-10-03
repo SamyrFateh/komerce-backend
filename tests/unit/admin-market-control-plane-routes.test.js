@@ -25,6 +25,12 @@ describe('admin market control plane — vue centrale en lecture seule', () => {
     expect(source).toContain('res.json(await controlPlane.getControlPlane(db, req.params.marketCode))');
   });
 
+  test('la vue d’autorité centrale est admin, en lecture seule, déclarée avant la route paramétrée', () => {
+    expect(source).toMatch(/router\.get\('\/central-authority', \.\.\.centralAdmin/);
+    expect(source).toContain('res.json(await centralAuthority.overview(db))');
+    expect(source.indexOf("'/central-authority'")).toBeLessThan(source.indexOf("'/:marketCode/control-plane'"));
+  });
+
   test('aucun accès SQL direct dans la route', () => {
     expect(source).not.toMatch(/db\.query|getClient/);
   });

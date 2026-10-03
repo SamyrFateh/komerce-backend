@@ -506,6 +506,7 @@ const KNOWN_RESPONSES = {
   // Control Plane marché (lecture seule) : clés vérifiées par
   // tests/unit/market-control-plane-service.test.js et admin-market-control-plane-routes.test.js.
   '/api/admin/markets': { get: { fields: ['markets'], source: 'test' } },
+  '/api/admin/markets/central-authority': { get: { fields: ['domains','group_capabilities'], source: 'test' } },
   '/api/admin/markets/{marketCode}/control-plane': {
     get: { fields: ['market','assignment','ceiling','team','paymentProviders','cashPolicy','relaisActive','gaps'], source: 'test' }
   },

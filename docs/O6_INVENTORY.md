@@ -9,7 +9,7 @@
 | Family | N |
 |---|---|
 | PROJECTION | 0 |
-| COMPOSITION_ROOT_WIRING | 19 |
+| COMPOSITION_ROOT_WIRING | 20 |
 | NON_RUNTIME_TEST | 14 |
 | TECHNICAL_PRIMITIVE | 0 |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 |
@@ -17,7 +17,7 @@
 | BUSINESS_FEATURE_INTERFACE | 0 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **33** |
+| **TOTAL** | **34** |
 
 ## The 94 pairs (from → to)
 
@@ -33,6 +33,7 @@
 | infrastructure → incident-management | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-transversal | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → local-stock | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → loyalty | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
+| infrastructure → market-control-plane | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → market-delegation | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → providers-services | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | infrastructure → purchasing | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-foundation | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |

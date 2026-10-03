@@ -44,6 +44,7 @@ module.exports = {
   perimeter: {
     in: [
       'GET /api/admin/markets : liste des marchés avec statut d’affectation et nombre de personnes actives',
+      'GET /api/admin/markets/central-authority : titulaires actifs des cinq autorisations centrales explicites (dashboard, catalog, decision_signal, pricing, sourcing) et autorité déclarée de chaque capability de groupe',
       'GET /api/admin/markets/:marketCode/control-plane : affectation, équipe et capacités, plafond, fournisseurs de paiement, politique de caisse, relais actifs, écarts',
       'rapport d’écarts calculé (computeGaps) : MARKET_INACTIVE, NO_ASSIGNMENT, ASSIGNMENT_NOT_ACTIVE, EMPTY_CEILING, NO_ACTIVE_MEMBERSHIP, NO_TEAM_GRANT_HOLDER, NO_PAYMENT_PROVIDER, NO_CASH_POLICY, NO_RELAIS',
     ],
@@ -59,6 +60,7 @@ module.exports = {
   files: {
     services: [
       'services/market-control-plane.js',
+      'services/central-authority.js',
     ],
     routes: [
       'routes/admin-market-control-plane.js',
@@ -66,6 +68,7 @@ module.exports = {
     tests: [
       'tests/unit/market-control-plane-service.test.js',
       'tests/unit/admin-market-control-plane-routes.test.js',
+      'tests/unit/central-authority.test.js',
     ],
   },
 
@@ -79,31 +82,44 @@ module.exports = {
       'market_payment_providers: R',
       'market_cash_control_policies: R',
       'relais: R',
+      'dashboard_global_access_grants: R',
+      'catalog_global_access_grants: R',
+      'decision_signal_global_access_grants: R',
+      'pricing_global_access_grants: R',
+      'sourcing_global_access_grants: R',
     ],
   },
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 2,
-    totalRoutes: 2,
-    note: 'Les 2 routes exigent authenticate + rôle admin, déclaré « central par rôle » (décision Q4 du chantier). Aucune écriture.',
+    authedRoutesDetected: 3,
+    totalRoutes: 3,
+    note: 'Les 3 routes exigent authenticate + rôle admin, déclaré « central par rôle » (décision Q4 du chantier). Aucune écriture.',
   },
 
   contract: {
     exposes: [
       'GET /api/admin/markets', // admin central
+      'GET /api/admin/markets/central-authority', // admin central
       'GET /api/admin/markets/:marketCode/control-plane', // admin central
     ],
     internalApi: [
       'listMarkets()',
       'getControlPlane()',
       'computeGaps()',
+      'central()',
+      'overview()',
     ],
     consumes: [
       'market (markets comme référentiel lu)',
       'market-delegation (affectation, équipe, plafond, politique de caisse lus ; normalizeMarketCode)',
       'providers-services (fournisseurs de paiement du marché lus)',
       'logistics (relais lus)',
+      'dashboard (dashboard_global_access_grants et require-dashboard-global-authority : autorisation centrale explicite lue)',
+      'catalog (catalog_global_access_grants et require-catalog-global-authority : autorisation centrale explicite lue)',
+      'decision-signals (decision_signal_global_access_grants et son middleware : autorisation centrale explicite lue)',
+      'economic-engine (pricing_global_access_grants et require-pricing-global-authority : autorisation centrale explicite lue)',
+      'sourcing (sourcing_global_access_grants et require-sourcing-global-authority : autorisation centrale explicite lue)',
       'auth (garde des routes centrales)',
       'infrastructure (DB et bootstrap)',
     ],
@@ -115,6 +131,8 @@ module.exports = {
     'la vue est strictement en lecture seule : aucun INSERT, UPDATE ou DELETE, aucun appel de service d’écriture',
     'la vue n’accorde aucun droit : l’accès central est le rôle admin déclaré, jamais déduit d’un scope ou d’un rôle d’opérateur',
     'un écart est signalé, jamais réparé ni masqué',
+    'central(X, domaine) est l’unique porte vers les cinq autorisations centrales explicites : elle délègue aux fonctions existantes des middlewares, sans SQL d’autorisation dupliqué, et le rôle admin n’en implique aucune',
+    'chaque capability de groupe ou CENTRAL_ONLY déclare dans le registre son domaine d’autorité centrale ou null ; null est un constat (aucune table ne l’applique aujourd’hui), jamais une autorisation',
     'le code marché est validé côté serveur (deux lettres) ; un code invalide est un 400 et un code inconnu un 404',
   ],
 };
