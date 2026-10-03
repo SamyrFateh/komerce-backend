@@ -1794,12 +1794,7 @@
         "finance",
         "agent_relais",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-finance-accounting-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/verify",
@@ -1809,12 +1804,7 @@
         "finance",
         "agent_relais",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-finance-accounting-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/deposits",
@@ -1824,12 +1814,7 @@
         "finance",
         "agent_relais",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-finance-accounting-workspace.js"
+      ]
     },
     {
       "key": "GET /api/admin/workspaces/accounting/market/{marketCode}",
@@ -1839,12 +1824,7 @@
         "finance",
         "agent_relais",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-finance-accounting-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/catalog/approval/{productRef}/approve",

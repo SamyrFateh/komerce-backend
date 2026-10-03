@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        authenticated_operator, requested_market_code, accounting_action
  * @outputs       authorized_accounting_projection, authorized_cash_deposit_mutations
- * @depends       db, middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/finance-accounting-workspace
+ * @depends       db, middleware/auth, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/finance-accounting-workspace
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, operator_market_scopes, dashboard_global_access_grants
+ * @db-read       markets, users, relais, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_single_market_action_context, server_market_scope_is_authority, client_market_id_forbidden, workspace_role_least_privilege
+ * @doctrine      workspace_single_market_action_context, capability_is_the_authority_not_role, relay_binding_is_server_authority, client_market_id_forbidden, workspace_role_least_privilege
  * @impact-areas  admin-dashboard, payment, accounting, market-authorization
- * @version       2026-09
+ * @version       2026-10-d2
  */
 
 'use strict';
@@ -21,7 +21,6 @@
 const express = require('express');
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const workspace = require('../services/finance-accounting-workspace');
@@ -35,20 +34,47 @@ const requireWorkspaceReadRole = requireRole(['admin', 'finance', 'agent_relais'
 const requireDepositAction = requireRole(['admin', 'agent_relais']);
 const requireVerificationAction = requireRole(['admin']);
 
-// MARKET-DELEGATION LOT B (audit finance.read) : GET /market/:marketCode était
-// gardé par le rôle + operator_market_scopes hérités, jamais par la capability
-// exacte — révoquer finance.read seule ne retirait rien tant que
-// operator_market_scopes restait actif. Les rôles natifs (admin/finance/
-// agent_relais) gardent leur accès inchangé ; seul market_operator doit
-// désormais prouver finance.read (requires_audit=false au registre, déjà
-// consommée côté service par market-delegation-settlement-service.js).
-const NATIVE_WORKSPACE_ROLES = new Set(['admin', 'finance', 'agent_relais']);
-function requireWorkspaceReadCapability() {
-  const capabilityGuard = requireMarketDelegatedCapability('finance.read', { audit: false });
-  return (req, res, next) => {
-    if (req.user && NATIVE_WORKSPACE_ROLES.has(req.user.role)) return next();
-    return capabilityGuard(req, res, next);
-  };
+// D2 Market Control Plane : operator_market_scopes n'est plus une autorité
+// Finance / Comptabilité. Lecture : finance.read, sauf autorité dashboard
+// globale explicite. agent_relais est borné par son relais serveur ; users.role
+// ne choisit jamais le marché. Les mutations comptables de validation/contestation
+// exigent finance.act, même pour admin.
+const requireFinanceRead = requireMarketDelegatedCapability('finance.read', { audit: false });
+const requireFinanceAct = requireMarketDelegatedCapability('finance.act');
+
+async function requireRelayMarketBinding(req, res, next) {
+  try {
+    const binding = await workspace.resolveActorRelaisInMarket(
+      req.user && req.user.id,
+      req.workspaceMarket && req.workspaceMarket.id
+    );
+    req.relayMarketAuthority = binding;
+    return next();
+  } catch (err) {
+    return sendWorkspaceError(err, res, next);
+  }
+}
+
+function requireWorkspaceReadAccess(req, res, next) {
+  if (req.user && req.user.role === 'agent_relais') {
+    return requireRelayMarketBinding(req, res, next);
+  }
+  return hasDashboardGlobalAuthority(req.user && req.user.id)
+    .then(globalAllowed => {
+      if (globalAllowed) {
+        req.workspaceGlobalAuthority = true;
+        return next();
+      }
+      return requireFinanceRead(req, res, next);
+    })
+    .catch(next);
+}
+
+function requireDepositMarketAccess(req, res, next) {
+  if (req.user && req.user.role === 'agent_relais') {
+    return requireRelayMarketBinding(req, res, next);
+  }
+  return requireFinanceAct(req, res, next);
 }
 
 function rejectClientMarketAuthority(req, res, next) {
@@ -106,23 +132,6 @@ async function resolveRequestedMarket(req, res, next) {
   }
 }
 
-function requireWorkspaceMarketAccess(req, res, next) {
-  const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
-  const marketGuard = requireMarketScope(() => targetMarketId);
-  if (req.authorizedMarkets && req.authorizedMarkets.has(targetMarketId)) {
-    return marketGuard(req, res, next);
-  }
-  return hasDashboardGlobalAuthority(req.user && req.user.id)
-    .then(globalAllowed => {
-      if (globalAllowed) {
-        req.workspaceGlobalAuthority = true;
-        return next();
-      }
-      return marketGuard(req, res, next);
-    })
-    .catch(next);
-}
-
 function actionActor(req) {
   return {
     id: req.user && req.user.id,
@@ -147,12 +156,10 @@ router.use(
   authenticate,
   requireWorkspaceReadRole,
   rejectClientMarketAuthority,
-  resolveRequestedMarket,
-  attachAuthorizedMarkets,
-  requireWorkspaceMarketAccess
+  resolveRequestedMarket
 );
 
-router.get('/market/:marketCode', requireWorkspaceReadCapability(), async (req, res, next) => {
+router.get('/market/:marketCode', requireWorkspaceReadAccess, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     const payload = await workspace.buildWorkspace({
@@ -168,7 +175,7 @@ router.get('/market/:marketCode', requireWorkspaceReadCapability(), async (req, 
   }
 });
 
-router.post('/market/:marketCode/deposits', requireDepositAction, rejectClientAgentAuthority, async (req, res, next) => {
+router.post('/market/:marketCode/deposits', requireDepositAction, rejectClientAgentAuthority, requireDepositMarketAccess, async (req, res, next) => {
   try {
     const result = await workspace.createDeposit(req.body || {}, req.workspaceMarket, actionActor(req));
     return res.status(201).json({ ok: true, action: 'create_cash_deposit', result });
@@ -177,7 +184,7 @@ router.post('/market/:marketCode/deposits', requireDepositAction, rejectClientAg
   }
 });
 
-router.post('/market/:marketCode/deposits/:depositRef/verify', requireVerificationAction, async (req, res, next) => {
+router.post('/market/:marketCode/deposits/:depositRef/verify', requireVerificationAction, requireFinanceAct, async (req, res, next) => {
   try {
     const result = await workspace.verifyDeposit(
       req.params.depositRef,
@@ -191,7 +198,7 @@ router.post('/market/:marketCode/deposits/:depositRef/verify', requireVerificati
   }
 });
 
-router.post('/market/:marketCode/deposits/:depositRef/dispute', requireVerificationAction, async (req, res, next) => {
+router.post('/market/:marketCode/deposits/:depositRef/dispute', requireVerificationAction, requireFinanceAct, async (req, res, next) => {
   try {
     const result = await workspace.disputeDeposit(
       req.params.depositRef,
@@ -210,7 +217,9 @@ module.exports._test = {
   rejectClientMarketAuthority,
   rejectClientAgentAuthority,
   resolveRequestedMarket,
-  requireWorkspaceMarketAccess,
+  requireRelayMarketBinding,
+  requireWorkspaceReadAccess,
+  requireDepositMarketAccess,
   actionActor,
   sendWorkspaceError,
 };
