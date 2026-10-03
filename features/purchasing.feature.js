@@ -45,6 +45,7 @@ module.exports = {
       'engagement d\'une PO regroupée (PR 5) : soumission par groupe supplier_unit_ref, confirmation par PO ligne par ligne avec reliquat en ligne ouverte, écart à la réception (solde d\'une ligne confirmée), création manuelle d\'une ligne ouverte ; contrat adaptateur items[] (buildOrderPayload / reconcile)',
       'complétude d\'achat après réception Hub (PR 7) : purchasing-completion-service passe une PO regroupée en hub_received quand toutes ses lignes non annulées sont reçues et une commande ordered en preparation (puis SCAN 3) quand chaque item non LOCAL_STOCK est couvert ET reçu, appelée après COMMIT par hub-operations, jamais bloquante (alerte purchasing_completion_failed) ; deleteSupplier annule les lignes ouvertes et refuse les PO en brouillon ; signaux lus sur les lignes',
       'Supplier money canonique : pour une ligne SKU/SOI exacte, la PO snapshotte supplier_unit_price + supplier_currency depuis la Canonical Unit ; aucun prix natif non-AED ne peut être écrit dans unit_price_aed',
+      'Golden E2E achat provider + full-chain : chaque capacité fournisseur est qualifiée P0→P4 séparément, puis la chaîne B2C paid → purchase_line/PO → provider evidence → coût B2B → compta B2B/B2C scopée → rapprochement est prouvée sans gate de confirmation humaine Komerce',
     ],
     out: [
       'cycle de vie de la commande cliente elle-même — orders reste seul propriétaire de order-status-machine.js ' +
@@ -59,6 +60,7 @@ module.exports = {
     'docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md',
     'docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md',
     'docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md',
+    'docs/doctrine/DOCTRINE_PURCHASING_PROVIDER_GOLDEN_E2E.md',
     'docs/allegro-sandbox.md',
     'docs/allegro-shipping-capability-p2.md',
   ],
