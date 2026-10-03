@@ -187,7 +187,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=2501');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261003-6');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261003-7');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261003-3');
 });
 
@@ -241,6 +241,14 @@ test('Catalogue montre la file immédiatement et conserve le contexte Product 36
   expect(decision).toContain("classList.add('is-context-target')");
   expect(decision).toContain("host.insertBefore(approvalSection");
   expect(decision).not.toContain('Voir la file →');
+});
+
+test('Catalogue conserve un relais visible vers la décision marché après publication', () => {
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+  expect(workspace).toContain('Suite commerciale');
+  expect(workspace).toContain('Publication Catalogue terminée · décision commerciale marché encore requise.');
+  expect(workspace).toContain('/dashboards/canonical/market-catalog.html?');
+  expect(workspace).toContain('product_ref');
 });
 
 test('la file de curation garde les décisions et actions dans le viewport', () => {
