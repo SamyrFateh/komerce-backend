@@ -40,7 +40,54 @@ describe('catalog-taxonomy-provenance-backfill', () => {
       category: null,
       subcategory: null,
       segment_id: 'mode-enfant',
+      source: null,
+      evidence: null,
     });
+  });
+
+  test('la provenance discovery reste prioritaire sur tout fallback historique', () => {
+    expect(backfill.provenanceFor(row({
+      import_ref: 'KSI-000244',
+      supplier_category: "Women's Clothing > Tops & Sets > Lady Dresses",
+      target_category: 'Mode & Beauté',
+      target_subcategory: 'Enfant',
+    }))).toMatchObject({
+      category: 'Mode & Beauté',
+      subcategory: 'Enfant',
+      source: 'discovery',
+      evidence: 'raw_payload.discovery',
+    });
+  });
+
+  test.each([
+    ["Women's Clothing > Tops & Sets > Lady Dresses", 'Mode & Beauté', 'Femme'],
+    ["Men's Clothing > Bottoms > Man Shorts", 'Mode & Beauté', 'Homme'],
+    ['Toys, Kids & Baby / Girls Clothing / Family Matching Outfits', 'Mode & Beauté', 'Enfant'],
+  ])('fallback historique KSI-000244 classe la catégorie fournisseur %s', (supplierCategory, category, subcategory) => {
+    expect(backfill.provenanceFor(row({
+      target_category: null,
+      target_subcategory: null,
+      segment_id: null,
+      import_ref: 'KSI-000244',
+      supplier_category: supplierCategory,
+    }))).toEqual({
+      category,
+      subcategory,
+      segment_id: null,
+      source: 'historical_supplier_category',
+      evidence: supplierCategory,
+    });
+  });
+
+  test('fallback historique ne s applique ni à un autre batch ni à une famille inconnue', () => {
+    expect(backfill.historicalSupplierProvenanceFor(row({
+      import_ref: 'KSI-999999',
+      supplier_category: "Women's Clothing > Tops & Sets > Lady Dresses",
+    }))).toBeNull();
+    expect(backfill.historicalSupplierProvenanceFor(row({
+      import_ref: 'KSI-000244',
+      supplier_category: 'Pet Supplies > Dogs',
+    }))).toBeNull();
   });
 
   test('inspectCandidate accepte uniquement une paire active issue de la provenance', async () => {
@@ -73,6 +120,36 @@ describe('catalog-taxonomy-provenance-backfill', () => {
       reason: 'existing_category_conflict',
     });
     expect(mutation.resolveBoutiqueTaxonomy).not.toHaveBeenCalled();
+  });
+
+  test('inspectCandidate valide le fallback historique contre la taxonomie Boutique active', async () => {
+    const mutation = {
+      resolveBoutiqueTaxonomy: jest.fn().mockResolvedValue({
+        category: 'Mode & Beauté',
+        subcategory: 'Femme',
+      }),
+    };
+    const candidate = row({
+      target_category: null,
+      target_subcategory: null,
+      segment_id: null,
+      import_ref: 'KSI-000244',
+      supplier_category: "Women's Clothing > Tops & Sets > Lady Dresses",
+    });
+
+    await expect(backfill.inspectCandidate({}, mutation, candidate)).resolves.toMatchObject({
+      status: 'READY',
+      provenance: {
+        category: 'Mode & Beauté',
+        subcategory: 'Femme',
+        source: 'historical_supplier_category',
+      },
+    });
+    expect(mutation.resolveBoutiqueTaxonomy).toHaveBeenCalledWith(
+      {},
+      'Mode & Beauté',
+      'Femme'
+    );
   });
 
   test('dry-run ne fait aucune mutation', async () => {
