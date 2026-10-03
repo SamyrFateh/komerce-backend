@@ -107,6 +107,7 @@
     "feature:classification:json": "node scripts/feature-classification-check.js --json",
     "css:guard": "node public/boutique/scripts/css-guard.js --strict",
     "css:specificity-guard": "node public/boutique/scripts/css-specificity-guard.js --strict",
+    "audit:market-cost-attributions": "node scripts/market-cost-attribution-conservation-check.js",
     "gate:touched-files": "node scripts/touched-files-feature-gate.js",
     "gate:schema": "node scripts/feature-schema-check.js --strict --full",
     "gate:schema:full": "node scripts/feature-schema-check.js --strict --full",

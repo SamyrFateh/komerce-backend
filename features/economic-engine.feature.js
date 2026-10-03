@@ -116,6 +116,7 @@ module.exports = {
       'services/pricing-market-decision-projection.js',
       'services/pricing-market-corridor.js',
       'services/market-cost-attribution-service.js',
+      'scripts/market-cost-attribution-conservation-check.js',
       'services/sourcing-analysis.js',
       'services/sourcing-mutations.js',
     ],
@@ -169,6 +170,7 @@ module.exports = {
       'migrations/191_cost_component_economic_classification.sql',
       'migrations/192_market_price_observations.sql',
       'migrations/267_market_cost_attributions.sql',
+      'migrations/268_market_cost_attributions_conservation_guard.sql',
     ],
     dash: [
       // dashboards/admin views — Lot 4
@@ -218,6 +220,7 @@ module.exports = {
       'tests/unit/pricing-period-structure-allocate-pool.test.js',
       'tests/unit/pricing-period-structure-attributions.test.js',
       'tests/unit/market-cost-attribution-service.test.js',
+      'tests/unit/market-cost-attribution-conservation-audit.test.js',
       'tests/unit/admin-pricing-workspace-market-cost-attribution-route.test.js',
       'tests/unit/pricing-market-coverage.test.js',
       'tests/unit/pricing-risk-period.test.js',
@@ -241,6 +244,7 @@ module.exports = {
       'tests/unit/cost-allocation-allocate.test.js',
       'tests/unit/cost-allocation.test.js',
       'tests/integration/cost-allocation-conservation-real-db.test.js',
+      'tests/integration/market-cost-attributions-conservation-real-db.test.js',
       'tests/unit/transport-cost-allocation.test.js',
       'tests/unit/economic-engine-queries.test.js',
       'tests/unit/economic-config.test.js',
