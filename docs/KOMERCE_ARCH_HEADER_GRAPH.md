@@ -14,11 +14,11 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
 - Graph nodes: 1570
-- Edges: 7822
+- Edges: 7824
 - DB tables: 182
 - Doctrines: 545
 - Impact areas: 192
-- Unresolved code edges: 775
+- Unresolved code edges: 774
 - Tables multi-écrivains directs (>=2): 78
 - Avertissements db-write / db-write-via en chevauchement: 8
 
@@ -948,7 +948,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Unresolved Code Edges
 
 - uses: (see files.tests in features/purchasing.feature.js — not yet -> services/suppliers/purchasing-validators.js ((see files.tests in features/purchasing.feature.js — not yet)
-- uses: @none -> services/market-cost-attribution-service.js (@none)
 - uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
 - uses: admin-dashboards -> routes/economic.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
@@ -1067,6 +1066,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/b-komerce.js -> documents API (documents API)
 - depends: public/boutique/js/b-komerce.js -> wallet API (wallet API)
 - depends: public/boutique/js/b-passkey-enrollment.js -> browser WebAuthn API (browser WebAuthn API)
+- depends: public/boutique/js/b-passkey-login.js -> browser WebAuthn API (browser WebAuthn API)
 
 ## Files Still Without Headers Or Aggregation
 

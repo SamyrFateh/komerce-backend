@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-09-30T11:23:02.167Z",
+  "generatedAt": "2026-10-03T00:50:19.724Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 639,
+  "count": 672,
   "routes": [
     {
       "method": "GET",
@@ -1853,6 +1853,16 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/admin/workspaces/catalog/approval/:productRef/prepare-fr",
+      "mountPrefix": "/api/admin/workspaces/catalog",
+      "localPath": "/approval/:productRef/prepare-fr",
+      "routeFile": "routes/admin-catalog-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/admin/workspaces/catalog/approval/:productRef/reject",
       "mountPrefix": "/api/admin/workspaces/catalog",
       "localPath": "/approval/:productRef/reject",
@@ -2363,6 +2373,46 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/admin/workspaces/pricing/structure-events/:eventId/attributions",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/structure-events/:eventId/attributions",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/structure-events/:eventId/attributions",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/structure-events/:eventId/attributions",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/structure-events/:eventId/attributions/correct",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/structure-events/:eventId/attributions/correct",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/pricing/structure-events/:eventId/attributions/reverse",
+      "mountPrefix": "/api/admin/workspaces/pricing",
+      "localPath": "/structure-events/:eventId/attributions/reverse",
+      "routeFile": "routes/admin-pricing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/admin/workspaces/shipping-customs/market/:marketCode",
       "mountPrefix": "/api/admin/workspaces/shipping-customs",
       "localPath": "/market/:marketCode",
@@ -2503,6 +2553,16 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/admin/workspaces/sourcing/import-passages",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/import-passages",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/admin/workspaces/sourcing/import-runs",
       "mountPrefix": "/api/admin/workspaces/sourcing",
       "localPath": "/import-runs",
@@ -2526,6 +2586,16 @@
       "fullPath": "/api/admin/workspaces/sourcing/import-runs/:runRef/items/:supplierProductId",
       "mountPrefix": "/api/admin/workspaces/sourcing",
       "localPath": "/import-runs/:runRef/items/:supplierProductId",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/sourcing/import-runs/:runRef/population",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/import-runs/:runRef/population",
       "routeFile": "routes/admin-sourcing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -2563,9 +2633,39 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/sources",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/:sourceRef",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/activate",
       "mountPrefix": "/api/admin/workspaces/sourcing",
       "localPath": "/sources/:sourceRef/activate",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/archive",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/:sourceRef/archive",
       "routeFile": "routes/admin-sourcing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -2593,6 +2693,56 @@
     },
     {
       "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/credentials",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/:sourceRef/credentials",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/credentials/revoke",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/:sourceRef/credentials/revoke",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/credentials/rotate",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/:sourceRef/credentials/rotate",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/credentials/status",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/:sourceRef/credentials/status",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/credentials/test",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/:sourceRef/credentials/test",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
       "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/deactivate",
       "mountPrefix": "/api/admin/workspaces/sourcing",
       "localPath": "/sources/:sourceRef/deactivate",
@@ -2606,6 +2756,76 @@
       "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/import-now",
       "mountPrefix": "/api/admin/workspaces/sourcing",
       "localPath": "/sources/:sourceRef/import-now",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/prepare",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/:sourceRef/prepare",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/restore",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/:sourceRef/restore",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/:sourceRef/test-connection",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/:sourceRef/test-connection",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/catalog",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/catalog",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/requests",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/requests",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/requests/:requestRef",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/requests/:requestRef",
+      "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "fullPath": "/api/admin/workspaces/sourcing/sources/requests/:requestRef",
+      "mountPrefix": "/api/admin/workspaces/sourcing",
+      "localPath": "/sources/requests/:requestRef",
       "routeFile": "routes/admin-sourcing-workspace.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -5476,6 +5696,46 @@
       ]
     },
     {
+      "method": "POST",
+      "fullPath": "/api/purchasing/lines",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/lines",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/purchasing/lines/:id/cancel",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/lines/:id/cancel",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/purchasing/lines/:id/settle",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/lines/:id/settle",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/purchasing/open-lines",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/open-lines",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "GET",
       "fullPath": "/api/purchasing/order/:order_id/completeness",
       "mountPrefix": "/api/purchasing",
@@ -5490,6 +5750,66 @@
       "fullPath": "/api/purchasing/po/:po_id",
       "mountPrefix": "/api/purchasing",
       "localPath": "/po/:po_id",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/purchasing/po/:po_id",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/po/:po_id",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/purchasing/po/:po_id/confirm",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/po/:po_id/confirm",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/purchasing/po/:po_id/detach",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/po/:po_id/detach",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/purchasing/po/:po_id/discard",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/po/:po_id/discard",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/purchasing/po/:po_id/submit",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/po/:po_id/submit",
+      "routeFile": "routes/purchasing.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/purchasing/po/prepare",
+      "mountPrefix": "/api/purchasing",
+      "localPath": "/po/prepare",
       "routeFile": "routes/purchasing.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -5680,6 +6000,16 @@
       "fullPath": "/api/scans/hub/receive",
       "mountPrefix": "/api/scans",
       "localPath": "/hub/receive",
+      "routeFile": "routes/scans.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/scans/hub/reconcile",
+      "mountPrefix": "/api/scans",
+      "localPath": "/hub/reconcile",
       "routeFile": "routes/scans.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

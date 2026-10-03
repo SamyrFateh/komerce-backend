@@ -21,11 +21,11 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1570,
-    "edges": 7822,
+    "edges": 7824,
     "dbTables": 182,
     "doctrines": 545,
     "impactAreas": 192,
-    "unresolvedCodeEdges": 775,
+    "unresolvedCodeEdges": 774,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 78
   },
@@ -6646,7 +6646,9 @@
         "business_refs",
         "pricing_payload",
         "governed_market_decision_policy",
-        "structure_cost_event"
+        "structure_cost_event",
+        "allocation_policies",
+        "attribution_reason"
       ],
       "outputs": [
         "canonical_pricing_projection",
@@ -6657,7 +6659,8 @@
         "activation_preview",
         "action_results",
         "structure_cost_event_fact",
-        "structure_cost_event_history"
+        "structure_cost_event_history",
+        "market_cost_attribution_journal"
       ],
       "depends": [
         "db.js",
@@ -6671,7 +6674,8 @@
         "services/pricing-market-corridor.js",
         "services/market-commercial-price-service.js",
         "services/market-local-price-activation-service.js",
-        "services/pricing-period-structure.js"
+        "services/pricing-period-structure.js",
+        "services/market-cost-attribution-service.js"
       ],
       "usedBy": [
         "bootstrap/api-routes.js"
@@ -17965,11 +17969,12 @@
         "services/pricing-period-structure.js"
       ],
       "usedBy": [
-        "@none"
+        "routes/admin-pricing-workspace.js"
       ],
       "dbRead": [
         "economic_structure_cost_events",
-        "market_cost_attributions"
+        "market_cost_attributions",
+        "markets"
       ],
       "dbWrite": [
         "market_cost_attributions"
@@ -45174,6 +45179,12 @@
       "label": "services/pricing-period-structure.js"
     },
     {
+      "from": "routes/admin-pricing-workspace.js",
+      "to": "services/market-cost-attribution-service.js",
+      "type": "depends",
+      "label": "services/market-cost-attribution-service.js"
+    },
+    {
       "from": "bootstrap/api-routes.js",
       "to": "routes/admin-pricing-workspace.js",
       "type": "uses",
@@ -62585,10 +62596,10 @@
       "label": "services/pricing-period-structure.js"
     },
     {
-      "from": "@none",
+      "from": "routes/admin-pricing-workspace.js",
       "to": "services/market-cost-attribution-service.js",
       "type": "uses",
-      "label": "@none"
+      "label": "routes/admin-pricing-workspace.js"
     },
     {
       "from": "services/market-cost-attribution-service.js",
@@ -62601,6 +62612,12 @@
       "to": "db:market_cost_attributions",
       "type": "db-read",
       "label": "market_cost_attributions"
+    },
+    {
+      "from": "services/market-cost-attribution-service.js",
+      "to": "db:markets",
+      "type": "db-read",
+      "label": "markets"
     },
     {
       "from": "services/market-cost-attribution-service.js",
@@ -89731,7 +89748,8 @@
         "services/pricing-market-corridor.js",
         "services/market-commercial-price-service.js",
         "services/market-local-price-activation-service.js",
-        "services/pricing-period-structure.js"
+        "services/pricing-period-structure.js",
+        "services/market-cost-attribution-service.js"
       ],
       "directUsedBy": [
         "bootstrap/api-routes.js"
@@ -89792,6 +89810,7 @@
         "middleware/require-pricing-global-authority.js",
         "services/cost-component-market-service.js",
         "services/market-commercial-price-service.js",
+        "services/market-cost-attribution-service.js",
         "services/market-local-price-activation-service.js",
         "services/pricing-market-corridor.js",
         "services/pricing-market-decision-policy.js",
@@ -100861,12 +100880,13 @@
         "services/pricing-period-structure.js"
       ],
       "directUsedBy": [
-        "@none"
+        "routes/admin-pricing-workspace.js"
       ],
       "ownedFiles": [],
       "dbRead": [
         "economic_structure_cost_events",
-        "market_cost_attributions"
+        "market_cost_attributions",
+        "markets"
       ],
       "dbWrite": [
         "market_cost_attributions"
@@ -100883,10 +100903,12 @@
       "mustCheck": [
         "db:economic_structure_cost_events",
         "db:market_cost_attributions",
+        "db:markets",
         "doctrine:pricing_market_viability_cost_scope",
         "impact:economic-engine",
         "impact:governance",
         "impact:pricing",
+        "routes/admin-pricing-workspace.js",
         "services/pricing-period-structure.js"
       ]
     },
@@ -117562,12 +117584,6 @@
       "to": "db",
       "type": "depends",
       "label": "db"
-    },
-    {
-      "from": "@none",
-      "to": "services/market-cost-attribution-service.js",
-      "type": "uses",
-      "label": "@none"
     },
     {
       "from": "market-delegation routes",
