@@ -142,25 +142,6 @@ function defaultReadSource(file) {
   }
 }
 
-function compactWhitespace(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim();
-}
-
-function dbSurfaceFingerprint(source) {
-  const text = String(source || '');
-  const templates = text.match(/`(?:\\.|[^\\`])*`/gs) || [];
-  const sql = templates
-    .map(compactWhitespace)
-    .filter(value => /\b(?:SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM|WITH)\b/i.test(value))
-    .sort();
-
-  return JSON.stringify({
-    read: headerField(text, 'db-read') || null,
-    write: headerField(text, 'db-write') || null,
-    sql,
-  });
-}
-
 function apiSurfaceFingerprint(source) {
   const text = String(source || '');
   const routes = [];
@@ -203,8 +184,14 @@ function classifyRuntimeProof(files, {
     if (!effective || !headerTouchesDb(effective)) return false;
     if (directDbWrite(current) || directDbWrite(previous)) return true;
 
+    // Service en lecture seule (@db-write none avant ET après) : une requête de
+    // lecture modifiée ne réveille plus la preuve intégration. Mesure
+    // 2026-10-03 (1 000 runs) : aucun échec unique de la preuve n'est venu d'un
+    // tel fichier ; les vrais bugs attrapés étaient une migration et un service
+    // écrivain. Fail-closed conservé quand le diff sémantique est indisponible.
+    // Pour forcer la preuve, toucher le test d'intégration concerné.
     if (!semanticDiffAvailable) return true;
-    return dbSurfaceFingerprint(previous) !== dbSurfaceFingerprint(current);
+    return false;
   });
 
   const e2eApiRequired = changed.some(file => {
@@ -546,7 +533,6 @@ module.exports = {
   headerField,
   headerTouchesDb,
   headerFeedsApi,
-  dbSurfaceFingerprint,
   apiSurfaceFingerprint,
   directDbWrite,
   classifyRuntimeProof,

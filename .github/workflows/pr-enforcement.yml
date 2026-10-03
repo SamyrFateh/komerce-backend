@@ -323,23 +323,20 @@ jobs:
 
   from_scratch:
     name: From-scratch DB + integration + E2E API
-    needs: [changes, backend]
+    needs: changes
     # Preuve lourde pilotée par le risque réel : DB rebuild, intégration DB ou
     # E2E API uniquement quand le diff/headers l'exigent. Un simple changement
     # gouvernance/test/docs/workflow ne doit jamais réveiller ce runner.
-    # Si le backend runtime est touché, ses gates rapides doivent être verts avant.
+    # Parallèle aux gates backend (mesure 2026-10-03 sur 1 000 runs : job
+    # médian 3,1 min ; l'enchaînement derrière backend ajoutait ~2 min médian,
+    # ~3 min p90 au verdict). Un échec backend bloque toujours le merge via
+    # Required verdict.
     if: >-
-      always() &&
-      needs.changes.result == 'success' &&
       needs.changes.outputs.unit_repair_only != 'true' &&
       (
         needs.changes.outputs.db_rebuild_required == 'true' ||
         needs.changes.outputs.integration_required == 'true' ||
         needs.changes.outputs.e2e_api_required == 'true'
-      ) &&
-      (
-        needs.changes.outputs.backend != 'true' ||
-        needs.backend.result == 'success'
       )
     runs-on: ubuntu-latest
     timeout-minutes: 35

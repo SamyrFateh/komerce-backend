@@ -5,6 +5,12 @@
 const fs = require('fs');
 const path = require('path');
 
+function fromScratchJob(workflow) {
+  const start = workflow.indexOf('  from_scratch:');
+  const end = workflow.indexOf('\n  ', workflow.indexOf('runs-on:', start));
+  return workflow.slice(start, end);
+}
+
 const workflow = fs.readFileSync(
   path.join(__dirname, '..', '..', '.github', 'workflows', 'pr-enforcement.yml'),
   'utf8'
@@ -30,12 +36,12 @@ describe('PR enforcement — targeted repair rerun', () => {
   test('previously green heavy jobs stay skipped on a proven repair push', () => {
     expect(workflow).toContain("if: needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.dashboard == 'true'");
     expect(workflow).toContain("if: needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.governance == 'true'");
-    expect(workflow).toContain("needs: [changes, backend]");
+    expect(fromScratchJob(workflow)).toContain('needs: changes');
     expect(workflow).toContain("needs.changes.outputs.unit_repair_only != 'true'");
     expect(workflow).toContain("needs.changes.outputs.db_rebuild_required == 'true'");
     expect(workflow).toContain("needs.changes.outputs.integration_required == 'true'");
     expect(workflow).toContain("needs.changes.outputs.e2e_api_required == 'true'");
-    expect(workflow).toContain("needs.backend.result == 'success'");
+    expect(fromScratchJob(workflow)).not.toContain('needs.backend');
   });
 
   test('the classifier remains fail-closed and falls back to full CI', () => {

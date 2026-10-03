@@ -355,7 +355,7 @@ router.post('/approval/:productRef/prepare-fr', guard, async (req, res) => {
     });
   });
 
-  test('scope lourd sémantique: une requête SQL modifiée exige la preuve intégration', () => {
+  test('scope lourd sémantique: une requête de lecture modifiée dans un service en lecture seule reste légère', () => {
     const before = `/**
  * @komerce-arch
  * @layer service
@@ -375,8 +375,50 @@ return db.query(\`SELECT id, lifecycle FROM products WHERE id = $1\`, [id]);`;
       readBefore: () => before,
       readAfter: () => after,
     });
-    expect(result.integrationRequired).toBe(true);
+    expect(result.integrationRequired).toBe(false);
     expect(result.e2eApiRequired).toBe(false);
+  });
+
+  test('scope lourd sémantique: un service écrivain exige toujours la preuve intégration', () => {
+    const source = `/**
+ * @komerce-arch
+ * @layer service
+ * @db-read products
+ * @db-write products
+ */
+return db.query(\`UPDATE products SET name = $2 WHERE id = $1\`, [id, name]);`;
+
+    const result = classifyRuntimeProof(['services/catalog-writer.js'], {
+      readBefore: () => source,
+      readAfter: () => source.replace('name = $2', 'name = $2, updated_at = now()'),
+    });
+    expect(result.integrationRequired).toBe(true);
+  });
+
+  test('scope lourd sémantique: un service qui devient écrivain exige la preuve intégration', () => {
+    const before = `/**
+ * @komerce-arch
+ * @db-read products
+ * @db-write none
+ */`;
+    const after = `/**
+ * @komerce-arch
+ * @db-read products
+ * @db-write products
+ */`;
+    const result = classifyRuntimeProof(['services/catalog-reader.js'], {
+      readBefore: () => before,
+      readAfter: () => after,
+    });
+    expect(result.integrationRequired).toBe(true);
+  });
+
+  test('scope lourd sémantique: toucher un test d intégration force la preuve', () => {
+    const result = classifyRuntimeProof(['tests/integration/catalog-reader.test.js'], {
+      readBefore: () => null,
+      readAfter: () => null,
+    });
+    expect(result.integrationRequired).toBe(true);
   });
 
   test('scope lourd sémantique: une surface de route modifiée exige E2E API', () => {
