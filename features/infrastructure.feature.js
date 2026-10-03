@@ -168,6 +168,7 @@ module.exports = {
       'scripts/lib/preflight-stamp.js',
       'scripts/hooks/pre-push',
       'scripts/agent-checkpoint.js',
+      '.github/workflows/wip-branch-cleanup.yml',
       '.claude/settings.json',
       'scripts/map-check.js',
       'scripts/migrate.js',
@@ -537,7 +538,7 @@ module.exports = {
       test: 'tests/unit/agent-guardrails-hooks.test.js',
     },
     {
-      statement: 'un sandbox d’agent (CLAUDE_CODE_REMOTE=true) sauvegarde son arbre de travail sur wip/<branche> sans toucher branche, index ni arbre ; wip/* est la seule exemption du tampon pre-push, ne déclenche aucune CI et se restaure par npm run agent:restore',
+      statement: 'un sandbox d’agent (CLAUDE_CODE_REMOTE=true) sauvegarde son arbre de travail sur wip/<branche> sans toucher branche, index ni arbre ; wip/* est la seule exemption du tampon pre-push, ne déclenche aucune CI, se restaure par npm run agent:restore et est supprimée par GitHub (PR fermée ou checkpoint de plus de 7 jours, jamais hors refs/heads/wip/)',
       test: 'tests/unit/agent-checkpoint.test.js',
     },
   ],
