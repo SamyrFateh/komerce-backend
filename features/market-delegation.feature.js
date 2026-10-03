@@ -122,6 +122,7 @@ module.exports = {
       'migrations/209_market_delegation_settlement_live.sql',
       'migrations/270_capability_registry_effect_amount_bearing.sql',
       'migrations/271_operator_market_scopes_projection_required.sql',
+      'migrations/272_market_delegation_transit_execution_capability.sql',
       'migrations/210_market_delegation_structure_event_record_live.sql',
       'migrations/212_market_delegation_execution_ceiling.sql',
     ],
@@ -169,6 +170,7 @@ module.exports = {
       'tests/unit/market-operator-provisioning.test.js',
       'tests/unit/market-delegation-p0.test.js',
       'tests/unit/capability-registry-effect.test.js',
+      'tests/unit/market-delegation-transitaire-authority.test.js',
       'tests/unit/market-delegation-team-service.test.js',
       'tests/unit/market-delegation-team-routes.test.js',
       'tests/unit/market-delegation-legacy-backfill.test.js',
@@ -323,6 +325,7 @@ module.exports = {
   invariants: [
     { statement: 'un scope marché d’opérateur n’est attribué ou révoqué que par une membership de délégation ; aucun chemin applicatif admin n’écrit operator_market_scopes directement, attribution et révocation reprojettent depuis la membership', test: 'tests/unit/market-operator-provisioning.test.js' },
     { statement: 'un Market ID possède au plus un Market Operating Assignment ACTIVE', test: 'tests/unit/market-delegation-p0.test.js' },
+    { statement: 'un agent_transitaire ne peut avoir qu’une seule membership marché ACTIVE ; logistics.read et execution.transit.confirm sont prouvées par cette membership, jamais par users.role', test: 'tests/unit/market-delegation-transitaire-authority.test.js' },
     { statement: 'aucune capability GROUP ou CENTRAL_ONLY ne peut entrer dans un ceiling marché', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'les capabilities d’un membre sont toujours un sous-ensemble du ceiling actif de son assignment', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'operator_market_scopes reste une projection de compatibilité persistée par sa lifecycle owner market ; require-market-scope.js ne dépend jamais directement des tables de délégation', test: 'tests/unit/market-delegation-p0.test.js' },

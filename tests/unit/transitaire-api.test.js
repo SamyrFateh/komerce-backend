@@ -34,6 +34,24 @@ jest.mock('../../middleware/auth', () => ({
   requireRole: () => (req, res, next) => next(),
 }));
 
+let mockDelegatedMarketId = 'market-cm-id';
+let mockGrantedCapabilities = new Set(['logistics.read', 'execution.transit.confirm']);
+jest.mock('../../middleware/require-market-delegated-capability', () => ({
+  requireSingleMarketDelegatedCapability: capability => (req, res, next) => {
+    if (!mockGrantedCapabilities.has(capability)) {
+      return res.status(403).json({ code: 'MARKET_CAPABILITY_REQUIRED', error: 'capability required' });
+    }
+    req.marketDelegatedCapability = {
+      capability,
+      market_id: mockDelegatedMarketId,
+      market_code: 'CM',
+      assignment_id: 'assignment-cm',
+      membership_id: 'membership-cm',
+    };
+    return next();
+  },
+}));
+
 const mockQuery = jest.fn();
 const mockClientQuery = jest.fn();
 const mockClient = { query: mockClientQuery, release: jest.fn() };
@@ -66,6 +84,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockNotifyParcelScan.mockResolvedValue({});
   mockClient.query.mockResolvedValue({ rows: [] });
+  mockDelegatedMarketId = 'market-cm-id';
+  mockGrantedCapabilities = new Set(['logistics.read', 'execution.transit.confirm']);
 
   app = express();
   app.use(express.json());
@@ -107,7 +127,7 @@ describe('POST /api/transitaire/ship', () => {
   });
 
   test('400 si le colis n\'est pas en statut "shipped"', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'P1', reference: 'REF1', status: 'preparation', order_id: 'O1' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'P1', reference: 'REF1', status: 'preparation', order_id: 'O1', market_id: 'market-cm-id' }] });
     const res = await request(app).post('/api/transitaire/ship').send({ parcel_id: 'P1' });
     expect(res.status).toBe(400);
     expect(res.body.error).toContain('doit être "shipped"');
@@ -115,7 +135,7 @@ describe('POST /api/transitaire/ship', () => {
   });
 
   test('succès : BEGIN -> transitionOrderStatus -> syncScanToParcels -> COMMIT, notif après coup', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'P1', reference: 'REF1', status: 'shipped', order_id: 'O1' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'P1', reference: 'REF1', status: 'shipped', order_id: 'O1', market_id: 'market-cm-id' }] });
     mockTransitionOrderStatus.mockResolvedValueOnce({ success: true });
     mockSyncScanToParcels.mockResolvedValueOnce({});
 
@@ -137,7 +157,7 @@ describe('POST /api/transitaire/ship', () => {
   });
 
   test('409 + ROLLBACK si transitionOrderStatus refuse la transition order', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'P1', reference: 'REF1', status: 'shipped', order_id: 'O1' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'P1', reference: 'REF1', status: 'shipped', order_id: 'O1', market_id: 'market-cm-id' }] });
     mockTransitionOrderStatus.mockResolvedValueOnce({ success: false, noop: false, error: 'invalid transition', previousStatus: 'draft' });
 
     const res = await request(app).post('/api/transitaire/ship').send({ parcel_id: 'P1' });
@@ -152,7 +172,7 @@ describe('POST /api/transitaire/ship', () => {
   });
 
   test('500 + ROLLBACK si syncScanToParcels échoue', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'P1', reference: 'REF1', status: 'shipped', order_id: 'O1' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'P1', reference: 'REF1', status: 'shipped', order_id: 'O1', market_id: 'market-cm-id' }] });
     mockTransitionOrderStatus.mockResolvedValueOnce({ success: true });
     mockSyncScanToParcels.mockRejectedValueOnce(new Error('sync crash'));
 
@@ -162,6 +182,40 @@ describe('POST /api/transitaire/ship', () => {
     const calls = mockClient.query.mock.calls.map(c => c[0]);
     expect(calls).toContain('ROLLBACK');
     expect(mockClient.release).toHaveBeenCalled();
+  });
+});
+
+describe('market isolation', () => {
+  test('lecture exige logistics.read', async () => {
+    mockGrantedCapabilities.delete('logistics.read');
+    const res = await request(app).get('/api/transitaire/parcels');
+    expect(res.status).toBe(403);
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  test('confirmation transit exige execution.transit.confirm', async () => {
+    mockGrantedCapabilities.delete('execution.transit.confirm');
+    const res = await request(app).post('/api/transitaire/ship').send({ parcel_id: 'P1' });
+    expect(res.status).toBe(403);
+    expect(mockQuery).not.toHaveBeenCalled();
+  });
+
+  test('transitaire CM ne peut pas confirmer un colis CG', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [{
+      id: 'P-CG', reference: 'REF-CG', status: 'shipped', order_id: 'O-CG', market_id: 'market-cg-id',
+    }] });
+    const res = await request(app).post('/api/transitaire/ship').send({ parcel_id: 'P-CG' });
+    expect(res.status).toBe(404);
+    expect(mockClient.query).not.toHaveBeenCalled();
+  });
+
+  test('les lectures SQL sont bornées au market_id délégué', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [] });
+    const res = await request(app).get('/api/transitaire/parcels');
+    expect(res.status).toBe(200);
+    expect(mockQuery.mock.calls[0][0]).toMatch(/o\.market_id = \$1::uuid/);
+    expect(mockQuery.mock.calls[0][1]).toEqual(['market-cm-id']);
   });
 });
 
