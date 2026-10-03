@@ -228,7 +228,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - tables written: 14
 - interfaces exposed: 89
 - internal APIs: 0
-- dependencies (consumes): 23 — shared-cart, incident-management, orders, infrastructure, payments, logistics, inventory, local-stock, economic-engine, wallet, auth, auth-identity, customs, documents, notifications, purchasing, business-rules, decision-signals, market, market-delegation, sourcing, catalog, market-autonomy
+- dependencies (consumes): 24 — shared-cart, incident-management, orders, infrastructure, payments, logistics, inventory, local-stock, economic-engine, wallet, auth, auth-identity, market-delegation, customs, documents, notifications, purchasing, business-rules, decision-signals, market, market-delegation, sourcing, catalog, market-autonomy
 - consumers: 7 — economic-engine, infrastructure, market-control-plane, market-delegation, market-operator-dashboard, sourcing, admin-dashboard
 
 ### decision-signals _(piloting-capability)_
@@ -459,15 +459,15 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - migrations: 16
 - config: 1
 - middleware: 3
-- services: 14
+- services: 15
 - routes: 12
-- tests: 38
+- tests: 39
 - tables owned (lifecycle): 10 — `market_operating_assignments`, `assignment_memberships`, `membership_capabilities`, `assignment_capability_ceiling`, `market_cash_control_policies`, `capability_registry`, `ceiling_templates`, `ceiling_template_capabilities`, `market_delegation_audit`, `market_team_invitations`
 - tables written: 10
 - interfaces exposed: 33
-- internal APIs: 33
+- internal APIs: 35
 - dependencies (consumes): 12 — market, auth, auth-identity, infrastructure, logistics, catalog, providers-services, orders, settlement, economic-engine, market-autonomy, dashboard
-- consumers: 9 — dashboard, economic-engine, logistics, market-autonomy, market-control-plane, market-operator-dashboard, payments, settlement, decision-signals
+- consumers: 10 — dashboard, dashboard, economic-engine, logistics, market-autonomy, market-control-plane, market-operator-dashboard, payments, settlement, decision-signals
 
 ### market-operator-dashboard _(unclassified)_
 
@@ -1324,7 +1324,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/loyalty/recalculate/{id}` | loyalty | `routes/loyalty.js` (resolved-owned) |
 | `POST /api/loyalty/recalculate-all` | loyalty | `routes/loyalty.js` (resolved-owned) |
 | `GET /api/admin/markets` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
-| `GET /api/admin/markets/central-authority` | market-control-plane | — (not-in-openapi-contract) |
+| `GET /api/admin/markets/central-authority` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
 | `GET /api/admin/markets/{id}/control-plane` | market-control-plane | `routes/admin-market-control-plane.js` (resolved-owned) |
 | `GET /api/market-delegation/markets/{id}/team` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
 | `POST /api/market-delegation/markets/{id}/team/invitations` | market-delegation | `routes/market-delegation-team.js` (resolved-owned) |
@@ -1670,6 +1670,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `resolveActiveAssignmentByMarketCode` | `services/market-delegation-service.js` | market-delegation | resolved |
 | `projectAssignment` | `services/market-scope-projector.js` | market-delegation | resolved |
 | `projectionDrift` | `services/market-scope-projector.js` | market-delegation | resolved |
+| `ensureOperatorMembership` | `services/market-operator-provisioning.js` | market-delegation | resolved |
+| `grantOperatorScope` | `services/market-operator-provisioning.js` | market-delegation | resolved |
 | `attachMarketDelegatedRoleFor` | `middleware/require-market-delegated-role.js` | market-delegation | resolved |
 | `inviteTeamMember` | `services/market-delegation-team-service.js` | market-delegation | resolved |
 | `acceptInvitation` | `services/market-delegation-team-service.js` | market-delegation | resolved |
@@ -1853,6 +1855,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | dashboard | wallet (`wallet (soldes et crédits)`) | ✔ |
 | dashboard | auth (`auth`) | ✔ |
 | dashboard | auth-identity (`auth-identity (mutations users via services/user-mutation-service.js ? LOT12)`) | ✔ |
+| dashboard | market-delegation (`market-delegation (attribution d’un scope marché opérateur via services/market-operator-provisioning.js : membership de délégation, jamais une écriture directe de operator_market_scopes)`) | ✔ |
 | dashboard | customs (`customs`) | ✔ |
 | dashboard | documents (`documents`) | ✔ |
 | dashboard | notifications (`notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)`) | ✔ |
@@ -2113,11 +2116,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (1)
+### DETTE / DRIFT ACTIONNABLE (0)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ market-control-plane / GET /api/admin/markets/central-authority — "GET /api/admin/markets/central-authority" déclaré par market-control-plane mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- none
 
 ### TOPOLOGIE ATTENDUE — hors dette (45)
 
@@ -2194,7 +2197,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1807 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1809 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 78 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2276,7 +2279,7 @@ Meta Graph monté : oui.
 | dashboard | loyalty | static-code | 1 | **OBSERVED_UNDECLARED** |
 | dashboard | market | static-code, data-read | 14 | **DECLARED_AND_OBSERVED** |
 | dashboard | market-autonomy | data-read | 1 | **DECLARED_AND_OBSERVED** |
-| dashboard | market-delegation | static-code | 12 | **DECLARED_AND_OBSERVED** |
+| dashboard | market-delegation | static-code | 14 | **DECLARED_AND_OBSERVED** |
 | dashboard | notifications | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
 | dashboard | orders | static-code, data-write, data-read | 12 | **DECLARED_AND_OBSERVED** |
 | dashboard | payments | static-code | 1 | **DECLARED_AND_OBSERVED** |
@@ -2310,7 +2313,7 @@ Meta Graph monté : oui.
 | economic-engine | loyalty | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | economic-engine | market | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | economic-engine | market-autonomy | static-code | 4 | **DECLARED_AND_OBSERVED** |
-| economic-engine | market-delegation | static-code | 2 | **DECLARED_AND_OBSERVED** |
+| economic-engine | market-delegation | static-code | 3 | **DECLARED_AND_OBSERVED** |
 | economic-engine | orders | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | economic-engine | platform-ops | data-read | 2 | **DECLARED_AND_OBSERVED** |
 | economic-engine | refunds | data-read | 1 | **DECLARED_AND_OBSERVED** |
@@ -2403,7 +2406,7 @@ Meta Graph monté : oui.
 | market-delegation | economic-engine | static-code, data-read | 6 | **DECLARED_AND_OBSERVED** |
 | market-delegation | infrastructure | static-code | 20 | **DECLARED_AND_OBSERVED** |
 | market-delegation | logistics | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
-| market-delegation | market | static-code, data-read | 3 | **DECLARED_AND_OBSERVED** |
+| market-delegation | market | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-autonomy | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |
 | market-delegation | market-operator-dashboard | static-code | 1 | **OBSERVED_UNDECLARED** |
 | market-delegation | orders | static-code, data-read | 2 | **DECLARED_AND_OBSERVED** |

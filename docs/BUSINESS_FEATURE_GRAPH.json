@@ -12395,6 +12395,13 @@
       {
         "feature": "market-delegation",
         "category": "services",
+        "declared": "services/market-operator-provisioning.js",
+        "resolvedPath": "services/market-operator-provisioning.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "services",
         "declared": "services/market-delegation-team-service.js",
         "resolvedPath": "services/market-delegation-team-service.js",
         "status": "resolved-in-technical-graph"
@@ -12558,6 +12565,13 @@
         "category": "tests",
         "declared": "tests/unit/provision-market-operator.test.js",
         "resolvedPath": "tests/unit/provision-market-operator.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/market-operator-provisioning.test.js",
+        "resolvedPath": "tests/unit/market-operator-provisioning.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -20811,8 +20825,8 @@
         "entry": "GET /api/admin/markets/central-authority",
         "method": "GET",
         "path": "/api/admin/markets/central-authority",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/admin-market-control-plane.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "market-control-plane",
@@ -23300,6 +23314,18 @@
       },
       {
         "feature": "market-delegation",
+        "fn": "ensureOperatorMembership",
+        "file": "services/market-operator-provisioning.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
+        "fn": "grantOperatorScope",
+        "file": "services/market-operator-provisioning.js",
+        "status": "resolved"
+      },
+      {
+        "feature": "market-delegation",
         "fn": "attachMarketDelegatedRoleFor",
         "file": "middleware/require-market-delegated-role.js",
         "status": "resolved"
@@ -24366,6 +24392,12 @@
         "from": "dashboard",
         "to": "auth-identity",
         "raw": "auth-identity (mutations users via services/user-mutation-service.js ? LOT12)",
+        "resolved": true
+      },
+      {
+        "from": "dashboard",
+        "to": "market-delegation",
+        "raw": "market-delegation (attribution d’un scope marché opérateur via services/market-operator-provisioning.js : membership de délégation, jamais une écriture directe de operator_market_scopes)",
         "resolved": true
       },
       {
@@ -31916,6 +31948,10 @@
                 "targetFile": "middleware/require-market-delegated-role.js"
               },
               {
+                "sourceFileId": "routes/admin/users.js",
+                "targetFile": "services/market-operator-provisioning.js"
+              },
+              {
                 "sourceFileId": "routes/admin-dashboard-market.js",
                 "targetFile": "middleware/require-market-delegated-role.js"
               },
@@ -31954,6 +31990,10 @@
               {
                 "sourceFileId": "routes/relay-dashboard.js",
                 "targetFile": "middleware/require-market-delegated-role.js"
+              },
+              {
+                "sourceFileId": "tests/unit/users.test.js",
+                "targetFile": "services/market-operator-provisioning.js"
               }
             ]
           }
@@ -33333,6 +33373,10 @@
               {
                 "sourceFileId": "routes/admin-pricing-workspace.js",
                 "targetFile": "middleware/require-market-delegated-capability.js"
+              },
+              {
+                "sourceFileId": "routes/admin-pricing-workspace.js",
+                "targetFile": "services/market-delegation-catalog-service.js"
               }
             ]
           }
@@ -36390,6 +36434,14 @@
               {
                 "sourceFileId": "services/market-scope-projector.js",
                 "targetFile": "services/market-scope-admin-service.js"
+              },
+              {
+                "sourceFileId": "services/market-operator-provisioning.js",
+                "targetFile": "services/market-scope-admin-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-operator-provisioning.test.js",
+                "targetFile": "services/market-scope-admin-service.js"
               }
             ]
           },
@@ -36646,7 +36698,7 @@
               },
               {
                 "sourceFileId": "scripts/provision-market-operator.js",
-                "targetFile": "services/market-scope-projector.js"
+                "targetFile": "services/market-operator-provisioning.js"
               }
             ]
           }
@@ -42341,7 +42393,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1807
+        "filesObserved": 1809
       },
       "boutique": {
         "filesObserved": 214,
@@ -45525,20 +45577,8 @@
   },
   "drifts": {
     "error": [],
-    "warn": [
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "market-control-plane / GET /api/admin/markets/central-authority",
-        "msg": "\"GET /api/admin/markets/central-authority\" déclaré par market-control-plane mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      }
-    ],
-    "debt": [
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "market-control-plane / GET /api/admin/markets/central-authority",
-        "msg": "\"GET /api/admin/markets/central-authority\" déclaré par market-control-plane mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      }
-    ],
+    "warn": [],
+    "debt": [],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -45829,11 +45869,11 @@
       }
     ],
     "summary": {
-      "signals": 1,
-      "debt": 1,
+      "signals": 0,
+      "debt": 0,
       "expectedTopology": 45,
       "generatorLimitations": 12,
-      "classifiedCandidates": 58
+      "classifiedCandidates": 57
     }
   }
 }
