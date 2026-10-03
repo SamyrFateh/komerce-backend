@@ -137,7 +137,8 @@
     "impact:suppressions:check": "node scripts/impact-suppression-check.js",
     "purchase-lines:parity": "node scripts/purchase-lines-parity-check.js",
     "pr:preflight": "node scripts/pr-preflight.js",
-    "agent:context": "node scripts/agent-context.js"
+    "agent:context": "node scripts/agent-context.js",
+    "arch:impact": "node scripts/agent-context.js --impact"
   },
   "dependencies": {
     "@simplewebauthn/server": "^13.3.2",

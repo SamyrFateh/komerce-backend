@@ -6,15 +6,15 @@
  * @layer         tooling
  * @criticality   high
  * @inputs        feature manifests, @komerce-arch headers, interventionIndex, git diff
- * @outputs       compact agent context projection
- * @depends       scripts/pr-enforcement-scope.js, docs/komerce-arch-header-graph.json
+ * @outputs       compact agent context projection, change-impact projection (--impact)
+ * @depends       scripts/pr-enforcement-scope.js, scripts/lib/agent-context-impact.js, scripts/run-staged-related-tests.js, docs/komerce-arch-header-graph.json
  * @used-by       coding agents, AGENTS.md
  * @db-read       none
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/AGENT_TOKEN_ECONOMY.md
  * @impact-areas  governance, developer-workflow
- * @version       2026-10-v1
+ * @version       2026-10-v2
  */
 'use strict';
 
@@ -22,6 +22,7 @@ const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
 const { classify, classifyDiff } = require('./pr-enforcement-scope');
+const impactLib = require('./lib/agent-context-impact');
 
 const ROOT = path.resolve(__dirname, '..');
 const FEATURE_ROOTS = [
@@ -388,8 +389,77 @@ function renderContext(model, maxChars = 6000) {
   return body.slice(0, Math.max(0, maxChars - 80)) + '\n… budget atteint';
 }
 
+function readJson(relative) {
+  const raw = safeRead(relative);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function mainMigrationFiles() {
+  try {
+    return git(['ls-tree', '--name-only', 'origin/main', 'migrations/']).split('\n').filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function localMigrationFiles() {
+  const dir = path.join(ROOT, 'migrations');
+  return fs.existsSync(dir) ? fs.readdirSync(dir).map(name => `migrations/${name}`) : [];
+}
+
+// --impact <fichier|feature> : portée d'un changement en un appel (voir scripts/lib/agent-context-impact.js).
+function buildImpact(target, options = {}) {
+  const index = impactLib.indexSources({
+    graph: options.graph || readJson('docs/komerce-arch-header-graph.json'),
+    routes: options.routes || readJson('docs/_generated/route-registry.json'),
+    security: options.security || readJson('docs/SECURITY_360.json'),
+    feature360: options.feature360 || readJson('docs/FEATURE_360.json'),
+  });
+  const features = options.features || loadFeatures();
+  const clean = norm(target);
+  const migration = /^migrations(\/|$)/.test(clean)
+    ? impactLib.migrationStatus({
+      mainFiles: options.mainMigrations || mainMigrationFiles(),
+      localFiles: options.localMigrations || localMigrationFiles(),
+    })
+    : null;
+  const abs = path.join(ROOT, clean);
+  const isFile = options.isFile != null ? options.isFile : (fs.existsSync(abs) && fs.statSync(abs).isFile());
+  if (isFile || migration) {
+    const owner = features.find(entry => entry.ownedFiles.has(clean));
+    let tests = null;
+    if (!options.skipTests) {
+      if (/^migrations\/.+\.sql$/.test(clean) || clean === 'docs/db/railway-live-schema.sql') {
+        tests = { full: true };
+      } else {
+        const lister = options.listRelatedTests || require('./run-staged-related-tests').listRelatedTests;
+        tests = { full: false, list: lister([clean]) };
+      }
+    }
+    return impactLib.fileImpact(index, clean, { feature: owner ? owner.manifest.name : null, tests, migration });
+  }
+  const entry = features.find(e => String(e.manifest.name).toLowerCase() === clean.toLowerCase());
+  if (!entry) {
+    throw new Error(`--impact : "${target}" n'est ni un fichier ni une feature. Features : ${features.map(e => e.manifest.name).join(', ')}`);
+  }
+  return impactLib.featureImpact(index, entry, { migration });
+}
+
 function main() {
   const args = process.argv.slice(2);
+  const impactTarget = argValue(args, '--impact', '');
+  if (impactTarget) {
+    const impact = buildImpact(impactTarget, { skipTests: args.includes('--no-tests') });
+    process.stdout.write(args.includes('--json')
+      ? JSON.stringify(impact, null, 2) + '\n'
+      : impactLib.renderImpact(impact) + '\n');
+    return;
+  }
   const filesArg = argValue(args, '--files', '');
   const featureArg = argValue(args, '--feature', '');
   const requestedMaxChars = Number(argValue(args, '--max-chars', '')) || null;
@@ -440,6 +510,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  buildImpact,
   flattenFiles,
   declaredPath,
   manifestOwnedFiles,
