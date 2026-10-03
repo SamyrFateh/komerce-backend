@@ -7,7 +7,7 @@
  * @inputs        economic_structure_cost_event_id, allocation_policies, actor_id, reason
  * @outputs       market_cost_attributions
  * @depends       db, services/pricing-period-structure.js
- * @used-by       routes/admin-pricing-workspace.js
+ * @used-by       routes/admin-pricing-workspace.js, scripts/market-cost-attribution-conservation-check.js
  * @db-read       economic_structure_cost_events, market_cost_attributions, markets
  * @db-write      market_cost_attributions
  * @db-txn        BEGIN/COMMIT with advisory lock per source event
@@ -35,7 +35,9 @@
  *   centime ; sinon rien n'est écrit ;
  * - un fait non décisionnel (politique absente/ambiguë, assiette vide…) n'écrit
  *   rien et ne déclenche aucun repli silencieux ;
- * - un verrou transactionnel par fait sérialise les écritures concurrentes.
+ * - un verrou transactionnel par fait sérialise les écritures concurrentes ;
+ * - la migration 269 rejoue la conservation en base (contrainte différée) pour
+ *   tout écrivain, et auditAttributionConservation la vérifie en lecture seule.
  */
 
 'use strict';
@@ -390,6 +392,60 @@ async function listEventAttributions(input = {}, options = {}) {
   };
 }
 
+// Audit de conservation en lecture seule : pour chaque fait ayant au moins une
+// attribution active, la somme active doit égaler le montant du fait et le fait
+// doit être un GROUP ACCRUAL. La garde en base (migration 269) empêche ces
+// états à l'écriture ; l'audit détecte ce qui y aurait échappé (donnée
+// historique, trigger désactivé, restauration).
+async function auditAttributionConservation(input = {}, options = {}) {
+  const client = resolveExecutor(options) || db;
+  const eventIds = input.eventIds == null
+    ? null
+    : input.eventIds.map((id) => requireUuid(id, 'eventIds'));
+
+  const { rows } = await client.query(
+    `WITH active AS (
+       SELECT a.source_event_id, a.amount_kmf
+         FROM public.market_cost_attributions a
+        WHERE a.event_kind = 'ATTRIBUTION'
+          AND NOT EXISTS (
+            SELECT 1 FROM public.market_cost_attributions r WHERE r.reverses_id = a.id
+          )
+     ), totals AS (
+       SELECT source_event_id, SUM(amount_kmf) AS active_total_kmf
+         FROM active
+        GROUP BY source_event_id
+     )
+     SELECT e.id AS event_id, e.amount_kmf AS event_amount_kmf,
+            e.scope_kind, e.event_kind, t.active_total_kmf
+       FROM totals t
+       JOIN public.economic_structure_cost_events e ON e.id = t.source_event_id
+      WHERE ($1::uuid[] IS NULL OR e.id = ANY($1::uuid[]))
+      ORDER BY e.id`,
+    [eventIds]
+  );
+
+  const violations = [];
+  for (const row of rows || []) {
+    const base = {
+      event_id: row.event_id,
+      event_amount_kmf: centsToAmount(toCents(row.event_amount_kmf)),
+      active_total_kmf: centsToAmount(toCents(row.active_total_kmf)),
+    };
+    if (row.scope_kind !== 'GROUP' || row.event_kind !== 'ACCRUAL') {
+      violations.push({ ...base, code: 'EVENT_NOT_ATTRIBUTABLE' });
+    } else if (toCents(row.active_total_kmf) !== toCents(row.event_amount_kmf)) {
+      violations.push({ ...base, code: 'NOT_CONSERVED' });
+    }
+  }
+
+  return {
+    checked_events: (rows || []).length,
+    violations,
+    conserved: violations.length === 0,
+  };
+}
+
 module.exports = {
   OUTCOMES,
   MarketCostAttributionError,
@@ -397,4 +453,5 @@ module.exports = {
   reverseAttributions,
   correctGroupEventAttribution,
   listEventAttributions,
+  auditAttributionConservation,
 };
