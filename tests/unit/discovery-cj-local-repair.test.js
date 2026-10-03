@@ -112,8 +112,9 @@ test('resolveCjProducts exige 24 vrais produits CJ publiables et conserve l’or
   );
   const sql = db.query.mock.calls[0][0];
   expect(sql).toContain("p.product_ref NOT LIKE 'SHOWCASE-V2-%'");
-  expect(sql).toContain("p.image_url NOT ILIKE 'data:image/%'");
-  expect(sql).toContain("NULLIF(BTRIM(p.image_url), '') IS NOT NULL");
+  expect(sql).toContain('FROM catalog_media cm');
+  expect(sql).toContain('cm.product_id = p.id');
+  expect(sql).toContain("cm.url NOT ILIKE 'data:image/%'");
 
   expect(products.map(item => item.sort_order)).toEqual(
     repair.CJ_LOCAL_PRODUCTS.map(item => item.sortOrder)

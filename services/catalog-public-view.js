@@ -8,7 +8,7 @@
  * @outputs       public_product_view
  * @depends       (none)
  * @used-by       routes/products.js
- * @db-read       markets, product_market_exposure, product_market_price_drafts, product_skus, product_variants
+ * @db-read       catalog_media, markets, product_market_exposure, product_market_price_drafts, product_skus, product_variants
  * @db-write      (none)
  * @db-txn        (none)
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md, only_LOCAL_ACTIVE_is_buyer_effective, visible_means_sellable
@@ -69,6 +69,23 @@ function isExcludedPublicProductRef(value) {
   const ref = String(value || '').trim().toUpperCase();
   if (!ref) return true;
   return PUBLIC_CATALOG_EXCLUDED_REF_PREFIXES.some((prefix) => ref.startsWith(prefix));
+}
+
+function canonicalProductImageSql(alias = 'p') {
+  const a = assertSqlAlias(alias);
+  return `COALESCE(
+    NULLIF(BTRIM(${a}.image_url), ''),
+    (
+      SELECT NULLIF(BTRIM(cm.url), '')
+        FROM catalog_media cm
+       WHERE cm.product_id = ${a}.id
+         AND cm.is_active = TRUE
+         AND NULLIF(BTRIM(cm.url), '') IS NOT NULL
+         AND cm.url NOT ILIKE 'data:image/%'
+       ORDER BY cm.display_order ASC NULLS LAST, cm.created_at ASC
+       LIMIT 1
+    )
+  )`;
 }
 
 function supplierOrderIdentitySql(skuAlias) {
@@ -176,8 +193,7 @@ function publicCatalogVisibilitySql(alias = 'p', options = {}) {
     `${a}.is_active = TRUE`,
     `${a}.is_available = TRUE`,
     excludedRefs,
-    `NULLIF(BTRIM(${a}.image_url), '') IS NOT NULL`,
-    `${a}.image_url NOT ILIKE 'data:image/%'`,
+    `${canonicalProductImageSql(a)} IS NOT NULL`,
     sellableCatalogUnitSql(a),
   ].filter(Boolean);
 
@@ -220,6 +236,9 @@ function publicProductColumns(alias = 'p') {
     if (field === 'subcategory') {
       return `COALESCE(${a}.boutique_subcategory_key, ${a}.subcategory) AS subcategory`;
     }
+    if (field === 'image_url') {
+      return `${canonicalProductImageSql(a)} AS image_url`;
+    }
     return `${a}.${field}`;
   }).join(',\n         ');
 }
@@ -244,6 +263,7 @@ module.exports = {
   isSyntheticPublicMediaUrl,
   isExcludedPublicProductRef,
   isPublicCatalogProduct,
+  canonicalProductImageSql,
   sellableCatalogUnitSql,
   publicCatalogVisibilitySql,
   publicProductColumns,

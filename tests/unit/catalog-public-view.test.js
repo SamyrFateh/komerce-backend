@@ -90,8 +90,10 @@ describe('public catalog visibility', () => {
     const sql = publicCatalogVisibilitySql('p');
     expect(sql).toContain('p.is_active = TRUE');
     expect(sql).toContain("p.product_ref NOT LIKE 'SHOWCASE-V2-%'");
-    expect(sql).toContain("NULLIF(BTRIM(p.image_url), '') IS NOT NULL");
-    expect(sql).toContain("p.image_url NOT ILIKE 'data:image/%'");
+    expect(sql).toContain('FROM catalog_media cm');
+    expect(sql).toContain('cm.product_id = p.id');
+    expect(sql).toContain("cm.is_active = TRUE");
+    expect(sql).toContain("cm.url NOT ILIKE 'data:image/%'");
   });
 
   it('refuse un alias SQL non sûr', () => {
@@ -188,6 +190,9 @@ describe('publicProductColumns', () => {
         expect(sql).toContain('COALESCE(p.boutique_category_key, p.category) AS category');
       } else if (field === 'subcategory') {
         expect(sql).toContain('COALESCE(p.boutique_subcategory_key, p.subcategory) AS subcategory');
+      } else if (field === 'image_url') {
+        expect(sql).toContain('FROM catalog_media cm');
+        expect(sql).toContain('AS image_url');
       } else {
         expect(sql).toContain(`p.${field}`);
       }
@@ -200,6 +205,7 @@ describe('publicProductColumns', () => {
   it('respecte l\'alias fourni', () => {
     expect(publicProductColumns('x')).toContain('x.id');
     expect(publicProductColumns('x')).toContain('COALESCE(x.boutique_category_key, x.category) AS category');
+    expect(publicProductColumns('x')).toContain('cm.product_id = x.id');
     expect(publicProductColumns('x')).not.toContain('p.id');
   });
 
