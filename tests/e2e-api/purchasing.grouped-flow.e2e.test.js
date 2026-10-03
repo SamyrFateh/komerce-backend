@@ -162,6 +162,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
       DELETE FROM order_status_history WHERE order_id IN (${ordersOfRun});
       DELETE FROM order_items WHERE order_id IN (${ordersOfRun});
       DELETE FROM orders WHERE user_id = '${clientId}';
+      DELETE FROM product_suppliers WHERE supplier_id IN (${suppliers});
       DELETE FROM product_skus WHERE supplier_sku LIKE 'SKU-${RUN_TAG}%';
       DELETE FROM products WHERE name LIKE 'E2E Grouped ${RUN_TAG}%';
       DELETE FROM relais WHERE id IN (${relaisIds});
