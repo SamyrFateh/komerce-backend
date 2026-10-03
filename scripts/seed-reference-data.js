@@ -39,6 +39,17 @@ async function tableExists(client, tableName) {
   return row?.present === true;
 }
 
+async function columnExists(client, tableName, columnName) {
+  const { rows: [row] } = await client.query(
+    `SELECT EXISTS (
+       SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2
+     ) AS present`,
+    [tableName, columnName]
+  );
+  return row?.present === true;
+}
+
 async function seedMarkets(client) {
   if (!(await tableExists(client, 'markets'))) return { skipped: true, count: 0 };
 
@@ -77,28 +88,31 @@ async function seedCurrencyParities(client) {
 async function seedCapabilities(client) {
   if (!(await tableExists(client, 'capability_registry'))) return { skipped: true, count: 0 };
 
+  // Le pré-seed de ci-db-bootstrap s'exécute AVANT les migrations : effect et amount_bearing
+  // (migration 270) peuvent ne pas exister encore. La passe finale, après migrations, les écrit.
+  const withEffect = await columnExists(client, 'capability_registry', 'effect')
+    && await columnExists(client, 'capability_registry', 'amount_bearing');
+
   for (const row of CAPABILITIES) {
+    const columns = ['capability', 'class', 'domain', 'authority_scope', 'delegation_mode', 'requires_audit', 'status'];
+    const values = [
+      row.capability, row.class, row.domain, row.authority_scope, row.delegation_mode, row.requires_audit, row.status,
+    ];
+    if (withEffect) {
+      columns.push('effect', 'amount_bearing');
+      values.push(row.effect, row.amount_bearing);
+    }
+    const placeholders = columns.map((_, index) => `$${index + 1}`).join(',');
+    const updates = columns.filter(column => column !== 'capability')
+      .map(column => `${column} = EXCLUDED.${column}`).join(',\n         ');
     await client.query(
       `INSERT INTO capability_registry
-         (capability, class, domain, authority_scope, delegation_mode, requires_audit, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
+         (${columns.join(', ')})
+       VALUES (${placeholders})
        ON CONFLICT (capability) DO UPDATE SET
-         class = EXCLUDED.class,
-         domain = EXCLUDED.domain,
-         authority_scope = EXCLUDED.authority_scope,
-         delegation_mode = EXCLUDED.delegation_mode,
-         requires_audit = EXCLUDED.requires_audit,
-         status = EXCLUDED.status,
+         ${updates},
          updated_at = NOW()`,
-      [
-        row.capability,
-        row.class,
-        row.domain,
-        row.authority_scope,
-        row.delegation_mode,
-        row.requires_audit,
-        row.status,
-      ]
+      values
     );
   }
   return { skipped: false, count: CAPABILITIES.length };
