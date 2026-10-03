@@ -218,6 +218,7 @@ Mission : « Créer un nouveau marché » en un clic, cohérent jusqu'aux utilis
 ### Fait (mergé sur main)
 
 - PR #2076 (A1) : `gen-security-360` expose `marketGuards` + `file` par route ; `npm run market:guard-inventory [-- --checklist|--json]` (dérivé, non committé). Mesure : 13 fichiers / 76 routes sous les gardes legacy `require-market-scope` ; 52 routes avec autorité centrale explicite (domaines dashboard et pricing), 24 routes par rôle seul (hub 4, hub-dashboard 7, relay-dashboard 7, admin/partners 6).
+- PR #2078 (A2) : `GET /api/admin/markets` et `/:marketCode/control-plane` (admin central déclaré, lecture seule), `services/market-control-plane.js` (`computeGaps`, 9 codes d'écart), carte `market-control-plane`. UNKNOWN contrat inchangé (22).
 - Outillage d'agents (pre-push à tampon, `agent:context --handoff`, checkpoint `wip/*`) : voir AGENTS.md §4, §7, §7.1.
 
 ### Constats vérifiés
@@ -240,7 +241,7 @@ Mission : « Créer un nouveau marché » en un clic, cohérent jusqu'aux utilis
 
 A2 → C → B → D réduite (transitaire inclus) → E → F → G → H. Dépendances : A2 d'abord ; B et C indépendantes ; D dépend de C ; E dépend de B ; F indépendante ; G dépend de E et F ; H dépend de G. Une PR = un seul push après `pr:preflight` vert.
 
-- **A2 Voir** : `services/market-control-plane.js` (lecture seule), `GET /api/admin/markets`, `GET /api/admin/markets/:code/control-plane`, rapport d'écarts sur KM, YT, CM, CG (référence de non-régression) ; crée la carte `market-control-plane` (la carte `market` est un référentiel pur figé). Sans migration : merge autonome possible.
+- **A2 Voir (FAIT, #2078)** : `services/market-control-plane.js` (lecture seule), `GET /api/admin/markets`, `GET /api/admin/markets/:code/control-plane`, rapport d'écarts sur KM, YT, CM, CG (référence de non-régression) ; crée la carte `market-control-plane` (la carte `market` est un référentiel pur figé). Sans migration : merge autonome possible.
 - **C** : registre `config/market-delegation-capabilities.js` : chaque capacité de groupe pointe vers sa table `*_global_access_grants` ; colonnes `effect` et `amount_bearing` ; fonction unique `central(X,C)` ; rôles centraux par rôle déclarés (Q4).
 - **B** : logique de `scripts/provision-market-operator.js` extraite en service, utilisée aussi par `routes/admin/users.js` ; suppression de `grantOrReplaceMarketScope` (M1).
 - **D** : les 13 fichiers migrent de `require-market-scope` vers les capacités, par domaine ; liste de contrôle = `npm run market:guard-inventory -- --checklist` entièrement cochée avant merge (garde avant/après, test de refus, comptes à autoriser) ; suppression du middleware en fin de D.
@@ -251,6 +252,6 @@ A2 → C → B → D réduite (transitaire inclus) → E → F → G → H. Dép
 
 1. Lire AGENTS.md puis cette section seulement ; partir de `main` à jour.
 2. `npm run agent:context -- --pack authz --feature market-delegation` puis `npm run arch:impact -- market-delegation` ; `npm run market:guard-inventory` pour la portée de D.
-3. Annoncer le plan d'attaque de A2 (créer la carte `market-control-plane`), implémenter, `npm run pr:preflight`, un seul push, attendre la CI en une commande, merger (pas de migration).
+3. Prochaine PR : **C** (autorité centrale déclarée dans le registre). A2 est faite. Annoncer le plan d'attaque, implémenter, `npm run pr:preflight`, un seul push, attendre la CI en une commande ; merger si sans migration ni changement d'autorité, sinon revue humaine.
 4. Session interrompue : `npm run agent:restore -- <branche>`.
 5. Suivis ouverts : mesurer la parité du preflight mi-octobre 2026 (base : 16,3 % des runs CI rouges sur une étape reproductible localement) ; l'exception d'accolades expire le 2026-11-02 ; supprimer côté GitHub les branches `feat/agent-guardrails` et `fix/ci-migration-baseline-full-history` (les sessions ne peuvent pas supprimer de branche).
