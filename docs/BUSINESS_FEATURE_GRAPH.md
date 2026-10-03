@@ -1195,10 +1195,10 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | `POST /api/admin/workspaces/pricing/simulate-impact` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `GET /api/admin/workspaces/pricing/structure-events` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `POST /api/admin/workspaces/pricing/structure-events` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
-| `GET /api/admin/workspaces/pricing/structure-events/{id}/attributions` | economic-engine | — (not-in-openapi-contract) |
-| `POST /api/admin/workspaces/pricing/structure-events/{id}/attributions` | economic-engine | — (not-in-openapi-contract) |
-| `POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/reverse` | economic-engine | — (not-in-openapi-contract) |
-| `POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/correct` | economic-engine | — (not-in-openapi-contract) |
+| `GET /api/admin/workspaces/pricing/structure-events/{id}/attributions` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/structure-events/{id}/attributions` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/reverse` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
+| `POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/correct` | economic-engine | `routes/admin-pricing-workspace.js` (resolved-owned) |
 | `GET /api/health` | infrastructure | `server.js` (resolved-owned) |
 | `GET /api/public/config` | infrastructure | `server.js` (resolved-owned) |
 | `GET /webhook/authkey-whatsapp` | infrastructure | — (not-in-openapi-contract) |
@@ -2074,14 +2074,11 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - none
 
-### DETTE / DRIFT ACTIONNABLE (4)
+### DETTE / DRIFT ACTIONNABLE (0)
 
 Seules INVALID_DECLARATION, ACTIONABLE_DRIFT et KNOWN_DEBT constituent de la dette gouvernance. Les topologies attendues et limites du générateur restent visibles séparément et ne consomment aucun budget de dette.
 
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ economic-engine / GET /api/admin/workspaces/pricing/structure-events/{id}/attributions — "GET /api/admin/workspaces/pricing/structure-events/{id}/attributions" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ economic-engine / POST /api/admin/workspaces/pricing/structure-events/{id}/attributions — "POST /api/admin/workspaces/pricing/structure-events/{id}/attributions" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ economic-engine / POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/correct — "POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/correct" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
-- **[EXPOSED-ROUTE-UNRESOLVED]** _[ACTIONABLE_DRIFT]_ economic-engine / POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/reverse — "POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/reverse" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)
+- none
 
 ### TOPOLOGIE ATTENDUE — hors dette (44)
 

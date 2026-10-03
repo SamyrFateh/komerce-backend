@@ -19684,32 +19684,32 @@
         "entry": "GET /api/admin/workspaces/pricing/structure-events/:eventId/attributions",
         "method": "GET",
         "path": "/api/admin/workspaces/pricing/structure-events/{id}/attributions",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "economic-engine",
         "entry": "POST /api/admin/workspaces/pricing/structure-events/:eventId/attributions",
         "method": "POST",
         "path": "/api/admin/workspaces/pricing/structure-events/{id}/attributions",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "economic-engine",
         "entry": "POST /api/admin/workspaces/pricing/structure-events/:eventId/attributions/reverse",
         "method": "POST",
         "path": "/api/admin/workspaces/pricing/structure-events/{id}/attributions/reverse",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "economic-engine",
         "entry": "POST /api/admin/workspaces/pricing/structure-events/:eventId/attributions/correct",
         "method": "POST",
         "path": "/api/admin/workspaces/pricing/structure-events/{id}/attributions/correct",
-        "routeFile": null,
-        "status": "not-in-openapi-contract"
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
       },
       {
         "feature": "infrastructure",
@@ -44857,50 +44857,8 @@
   },
   "drifts": {
     "error": [],
-    "warn": [
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "economic-engine / GET /api/admin/workspaces/pricing/structure-events/{id}/attributions",
-        "msg": "\"GET /api/admin/workspaces/pricing/structure-events/{id}/attributions\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "economic-engine / POST /api/admin/workspaces/pricing/structure-events/{id}/attributions",
-        "msg": "\"POST /api/admin/workspaces/pricing/structure-events/{id}/attributions\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "economic-engine / POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/correct",
-        "msg": "\"POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/correct\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "economic-engine / POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/reverse",
-        "msg": "\"POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/reverse\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      }
-    ],
-    "debt": [
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "economic-engine / GET /api/admin/workspaces/pricing/structure-events/{id}/attributions",
-        "msg": "\"GET /api/admin/workspaces/pricing/structure-events/{id}/attributions\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "economic-engine / POST /api/admin/workspaces/pricing/structure-events/{id}/attributions",
-        "msg": "\"POST /api/admin/workspaces/pricing/structure-events/{id}/attributions\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "economic-engine / POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/correct",
-        "msg": "\"POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/correct\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      },
-      {
-        "type": "EXPOSED-ROUTE-UNRESOLVED",
-        "ref": "economic-engine / POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/reverse",
-        "msg": "\"POST /api/admin/workspaces/pricing/structure-events/{id}/attributions/reverse\" déclaré par economic-engine mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
-      }
-    ],
+    "warn": [],
+    "debt": [],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -45186,11 +45144,11 @@
       }
     ],
     "summary": {
-      "signals": 4,
-      "debt": 4,
+      "signals": 0,
+      "debt": 0,
       "expectedTopology": 44,
       "generatorLimitations": 12,
-      "classifiedCandidates": 60
+      "classifiedCandidates": 56
     }
   }
 }
