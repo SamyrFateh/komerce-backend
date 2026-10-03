@@ -22,13 +22,36 @@
 'use strict';
 
 function captureStdout(fn) {
-  const original = process.stdout.write.bind(process.stdout);
+  // pino écrit via sonic-boom, qui appelle fs.write(1, …) (asynchrone) ou fs.writeSync(1, …), ou
+  // process.stdout.write selon la version / l'environnement : on capture les trois chemins pour ne
+  // pas dépendre de ce détail. Le rappel de fs.write est appelé tout de suite pour libérer sonic-boom.
+  const fs = require('fs');
+  const originalWrite = process.stdout.write.bind(process.stdout);
+  const originalWriteSync = fs.writeSync;
+  const originalFsWrite = fs.write;
   const chunks = [];
   process.stdout.write = (chunk) => { chunks.push(chunk.toString()); return true; };
+  fs.writeSync = (fd, data, ...rest) => {
+    if (fd === 1) {
+      chunks.push(data.toString());
+      return Buffer.byteLength(data.toString());
+    }
+    return originalWriteSync.call(fs, fd, data, ...rest);
+  };
+  fs.write = (fd, data, ...rest) => {
+    if (fd !== 1) return originalFsWrite.call(fs, fd, data, ...rest);
+    const text = data.toString();
+    chunks.push(text);
+    const callback = rest[rest.length - 1];
+    if (typeof callback === 'function') callback(null, Buffer.byteLength(text));
+    return undefined;
+  };
   try {
     fn();
   } finally {
-    process.stdout.write = original;
+    process.stdout.write = originalWrite;
+    fs.writeSync = originalWriteSync;
+    fs.write = originalFsWrite;
   }
   return chunks.join('')
     .split('\n')
