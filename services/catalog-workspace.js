@@ -541,6 +541,7 @@ module.exports = {
     queryProducts,
     queryApprovalQueue,
     queryApprovalBreakdown,
+    queryFocusedMarketHandoff,
     sourcingDecisionOrderSql,
     queryCatalogCap,
     buildCurationState,
