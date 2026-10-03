@@ -7415,8 +7415,8 @@
       {
         "feature": "economic-engine",
         "category": "migrations",
-        "declared": "migrations/268_market_cost_attributions_conservation_guard.sql",
-        "resolvedPath": "migrations/268_market_cost_attributions_conservation_guard.sql",
+        "declared": "migrations/269_market_cost_attributions_conservation_guard.sql",
+        "resolvedPath": "migrations/269_market_cost_attributions_conservation_guard.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
