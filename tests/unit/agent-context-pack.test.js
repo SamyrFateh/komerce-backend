@@ -17,7 +17,7 @@ const security = { routes: [{ key: 'POST /api/widgets', level: 'PROTECTED', role
 const feature360 = { features: [{
   id: 'widgets',
   ownership: { ownsTables: [{ table: 'widgets' }] },
-  interfaces: { internalApis: [{ fn: 'createWidget', file: 'services/w.js' }] },
+  interfaces: { internalApis: [{ fn: 'createWidget', file: 'services/w.js' }, { fn: null, file: 'utils/w.js' }] },
   consumedBy: [{ consumer: 'dashboard' }],
 }] };
 const entry = {
@@ -78,7 +78,7 @@ describe('agent-context-pack', () => {
 
   test('service : API internes, tables, consommateurs, tous les invariants', () => {
     const pack = packLib.buildPack('service', entry, { index, feature360 });
-    expect(pack.internalApis).toEqual(['createWidget · services/w.js']);
+    expect(pack.internalApis).toEqual(['createWidget · services/w.js', 'utils/w.js']);
     expect(pack.consumedBy).toEqual(['dashboard']);
     expect(pack.invariants).toHaveLength(4);
     expect(pack.otherInvariants).toBe(0);

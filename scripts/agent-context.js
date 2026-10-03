@@ -414,6 +414,11 @@ function localMigrationFiles() {
   return fs.existsSync(dir) ? fs.readdirSync(dir).map(name => `migrations/${name}`) : [];
 }
 
+function trackedTestSources() {
+  return git(['ls-files', 'tests/']).split('\n').filter(f => /\.(?:test|spec)\.(?:c|m)?js$/.test(f))
+    .map(f => ({ path: f, source: safeRead(f) }));
+}
+
 // --impact <fichier|feature> : portée d'un changement en un appel (voir scripts/lib/agent-context-impact.js).
 function buildImpact(target, options = {}) {
   const index = impactLib.indexSources({
@@ -440,7 +445,12 @@ function buildImpact(target, options = {}) {
         tests = { full: true };
       } else {
         const lister = options.listRelatedTests || require('./run-staged-related-tests').listRelatedTests;
-        tests = { full: false, list: lister([clean]) };
+        let list = lister([clean]);
+        if (/^scripts\//.test(clean)) {
+          const tracked = options.trackedTests || trackedTestSources();
+          list = Array.from(new Set([...list, ...impactLib.toolingTests(clean, tracked)])).sort();
+        }
+        tests = { full: false, list };
       }
     }
     return impactLib.fileImpact(index, clean, { feature: owner ? owner.manifest.name : null, tests, migration });
