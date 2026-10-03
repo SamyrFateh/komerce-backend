@@ -57,7 +57,7 @@ describe('setup-hooks.sh : installation du pre-push léger', () => {
     fs.mkdirSync(path.dirname(hook), { recursive: true });
     fs.writeFileSync(hook, '#!/bin/sh\n# KOMERCE-HOOK ancien\nexit 1\n');
     expect(run()).toContain('tampon pr:preflight vert');
-    expect(fs.readFileSync(hook, 'utf8')).toContain('pre-push-stamp v1');
+    expect(fs.readFileSync(hook, 'utf8')).toContain('pre-push-stamp v2');
     expect(fs.statSync(hook).mode & 0o111).toBeTruthy();
   });
 
@@ -77,12 +77,20 @@ describe('setup-hooks-runner', () => {
     expect(runner.installerCommand('win32')[1]).toContain('scripts/setup-hooks.ps1');
   });
 
-  test('ensureInstalled : jamais en CI, hors dépôt, ni si le pre-push existe', () => {
+  test('ensureInstalled : jamais en CI ni hors dépôt ; hook géré à jour ou hook personnel conservés', () => {
     const exec = jest.fn();
     expect(runner.ensureInstalled({ env: { CI: 'true' }, exec, exists: () => false })).toBe(false);
     expect(runner.ensureInstalled({ env: {}, exec, exists: () => false })).toBe(false);
-    expect(runner.ensureInstalled({ env: {}, exec, exists: () => true })).toBe(false);
+    expect(runner.ensureInstalled({ env: {}, exec, exists: () => true, read: () => '# KOMERCE-HOOK v2' })).toBe(false);
+    expect(runner.ensureInstalled({ env: {}, exec, exists: () => true, read: () => '#!/bin/sh\nexit 0' })).toBe(false);
     expect(exec).not.toHaveBeenCalled();
+  });
+
+  test('ensureInstalled : un hook géré périmé est réinstallé (mise à jour propagée)', () => {
+    const exec = jest.fn();
+    const read = file => (file.includes(path.join('scripts', 'hooks')) ? '# KOMERCE-HOOK v2' : '# KOMERCE-HOOK v1');
+    expect(runner.ensureInstalled({ env: {}, exec, exists: () => true, read, platform: 'linux' })).toBe(true);
+    expect(exec).toHaveBeenCalledTimes(1);
   });
 
   test('ensureInstalled : installe silencieusement si le pre-push manque, sans jamais faire échouer l’appelant', () => {
