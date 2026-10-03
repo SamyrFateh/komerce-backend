@@ -680,6 +680,79 @@ async function resolveBasis(policy, period, basisCache) {
   };
 }
 
+// Autorité unique de ventilation d'un pool GROUP : sélection de la politique
+// explicite (une seule, couvrant la période), résolution de l'assiette, puis
+// répartition conservative. `allocated` indique si la répartition a réellement
+// été calculée (sinon la politique ou l'assiette bloque avant).
+async function allocatePoolWithPolicies(pool, policies, period, basisCache) {
+  const candidates = policies.filter((policy) => (
+    String(policy.charge_id) === String(pool.charge_id) && policy.covers_period
+  ));
+
+  if (candidates.length === 0) {
+    return {
+      allocated: false,
+      charge: {
+        ...pool,
+        status: 'NOT_DECISIONAL_POLICY_MISSING',
+        decisional: false,
+        policy: null,
+        shares: [],
+      },
+    };
+  }
+  if (candidates.length > 1) {
+    return {
+      allocated: false,
+      charge: {
+        ...pool,
+        status: 'NOT_DECISIONAL_POLICY_AMBIGUOUS',
+        decisional: false,
+        policy: null,
+        shares: [],
+      },
+    };
+  }
+
+  const policy = candidates[0];
+  const basis = await resolveBasis(policy, period, basisCache);
+  if (!basis.decisional) {
+    return {
+      allocated: false,
+      charge: {
+        ...pool,
+        status: basis.status,
+        decisional: false,
+        policy,
+        basis_source: basis.basis_source,
+        shares: [],
+      },
+    };
+  }
+
+  const allocation = allocateChargePool(pool.group_pool_kmf, policy, basis.rows);
+  return {
+    allocated: true,
+    charge: {
+      ...pool,
+      ...allocation,
+      policy,
+      basis_source: basis.basis_source,
+      basis_total: basis.rows.reduce((sum, row) => sum + Number(row.basis_value || 0), 0),
+    },
+  };
+}
+
+// Point d'entrée public pour ventiler UN pool (ex. un fait GROUP persisté) avec
+// des politiques brutes. Réutilise exactement la même autorité que
+// computePeriodStructureTruth : aucune clé de répartition parallèle.
+async function allocateStructurePool(pool, rawPolicies, period) {
+  const bounds = parsePeriod(period.from, period.to);
+  const policies = (rawPolicies || []).map((policy) => normalizeAllocationPolicy(policy, bounds));
+  const { charge } = await allocatePoolWithPolicies(pool, policies, bounds, {});
+  return charge;
+}
+
 async function allocateGroupPools(truth, period, marketId, rawPolicies) {
   const pools = groupPoolsByCharge(truth.evidence);
   if (!pools.length) {
@@ -701,62 +774,24 @@ async function allocateGroupPools(truth, period, marketId, rawPolicies) {
   let marketPartial = 0;
 
   for (const pool of pools) {
-    const candidates = policies.filter((policy) => (
-      String(policy.charge_id) === String(pool.charge_id) && policy.covers_period
-    ));
-
-    if (candidates.length === 0) {
-      charges.push({
-        ...pool,
-        status: 'NOT_DECISIONAL_POLICY_MISSING',
-        decisional: false,
-        policy: null,
-        shares: [],
-      });
-      continue;
-    }
-    if (candidates.length > 1) {
-      charges.push({
-        ...pool,
-        status: 'NOT_DECISIONAL_POLICY_AMBIGUOUS',
-        decisional: false,
-        policy: null,
-        shares: [],
-      });
+    const { charge, allocated } = await allocatePoolWithPolicies(pool, policies, period, basisCache);
+    if (!allocated) {
+      charges.push(charge);
       continue;
     }
 
-    const policy = candidates[0];
-    const basis = await resolveBasis(policy, period, basisCache);
-    if (!basis.decisional) {
-      charges.push({
-        ...pool,
-        status: basis.status,
-        decisional: false,
-        policy,
-        basis_source: basis.basis_source,
-        shares: [],
-      });
-      continue;
-    }
-
-    const allocation = allocateChargePool(pool.group_pool_kmf, policy, basis.rows);
-    const marketShare = allocation.decisional
-      ? allocation.shares.find((share) => String(share.market_id) === String(marketId))
+    const marketShare = charge.decisional
+      ? charge.shares.find((share) => String(share.market_id) === String(marketId))
       : null;
     charges.push({
-      ...pool,
-      ...allocation,
-      policy,
-      basis_source: basis.basis_source,
-      basis_total: basis.rows.reduce((sum, row) => sum + Number(row.basis_value || 0), 0),
-      market_share_kmf: allocation.decisional ? roundKmf(marketShare?.allocated_kmf || 0) : null,
-      market_allocation_ratio: allocation.decisional && marketShare
+      ...charge,
+      market_share_kmf: charge.decisional ? roundKmf(marketShare?.allocated_kmf || 0) : null,
+      market_allocation_ratio: charge.decisional && marketShare
         ? Number(marketShare.allocation_ratio)
         : null,
     });
 
-    if (allocation.decisional) {
+    if (charge.decisional) {
       allocatedGroupPool += pool.group_pool_kmf;
       marketPartial += Number(marketShare?.allocated_kmf || 0);
     }
@@ -845,6 +880,7 @@ module.exports = {
   recordStructureCostEvent,
   listStructureCostEvents,
   computePeriodStructureTruth,
+  allocateStructurePool,
   _aggregateRows: aggregateRows,
   _overlapRatio: overlapRatio,
   _validateMoney: validateMoney,
