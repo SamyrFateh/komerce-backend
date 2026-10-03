@@ -243,6 +243,7 @@ module.exports = {
       'wallet (soldes et crédits)',
       'auth',
       'auth-identity (mutations users via services/user-mutation-service.js ? LOT12)',
+      'market-delegation (attribution d’un scope marché opérateur via services/market-operator-provisioning.js : membership de délégation, jamais une écriture directe de operator_market_scopes)',
       'customs',
       'documents',
       'notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)',

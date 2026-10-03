@@ -11,7 +11,8 @@
  * @db-read       orders, users
  * @db-write      order_status_history, recipients, scan_events, sms_log, wallet_transactions, wallets
  * @db-write-via:user-mutation-service users
- * @db-write-via:market-scope-admin-service operator_market_scopes
+ * @db-write-via:market-scope-admin-service operator_market_scopes (revocations)
+ * @db-write-via:market-operator-provisioning market_operating_assignments, assignment_memberships, membership_capabilities, operator_market_scopes
  * @db-write-via:incident-write-service incidents
  * @db-write-via:scan-write-service scans
  * @db-txn        resolve_before_behavior_change
@@ -44,10 +45,10 @@ const {
   listActiveScopesForUsers,
   listUserMarketScopeHistory,
   hasUserMarketScopeHistory,
-  grantOrReplaceMarketScope,
   revokeMarketScope,
   revokeAllUserMarketScopes,
 } = require('../../services/market-scope-admin-service');
+const { grantOperatorScope } = require('../../services/market-operator-provisioning');
 const log = require('../../utils/logger').child({ module: 'admin/users' });
 
 const guard = [authenticate, requireRole(['admin'])];
@@ -228,7 +229,7 @@ router.post('/users', ...guard, async (req, res, next) => {
           currencyPref: currency_pref,
           passwordHash: password_hash,
         });
-        const grant = await grantOrReplaceMarketScope(client, {
+        const grant = await grantOperatorScope(client, {
           userId: createdUser.id,
           marketCode: marketScope.marketCode,
           scopeRole: marketScope.scopeRole,
@@ -294,7 +295,7 @@ router.put('/users/:id/role', ...guard, async (req, res, next) => {
       const { rows: [updatedUser] } = await setUserRole(client, { userId: id, role });
       let scope = null;
       if (role === 'market_operator' && marketScope) {
-        const grant = await grantOrReplaceMarketScope(client, {
+        const grant = await grantOperatorScope(client, {
           userId: id,
           marketCode: marketScope.marketCode,
           scopeRole: marketScope.scopeRole,
@@ -334,7 +335,7 @@ router.post('/users/:id/market-scopes', ...marketAuthorityGuard, async (req, res
       if (user.role !== 'market_operator') {
         throw new ProvisioningError(409, 'NOT_MARKET_OPERATOR', 'Les scopes marché ne peuvent être attribués qu’à un market_operator.');
       }
-      const grant = await grantOrReplaceMarketScope(client, {
+      const grant = await grantOperatorScope(client, {
         userId: user.id,
         marketCode: marketScope.marketCode,
         scopeRole: marketScope.scopeRole,
