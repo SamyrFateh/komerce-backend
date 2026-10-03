@@ -60,3 +60,6 @@ _audit/
 .agent/CHARTER.md
 .agent/CHECKPOINT-PROTOCOL.md
 .agent/EXECUTION_MAP.md
+
+# Sortie de l’inventaire hors ligne des fournisseurs (preflight et CI), jamais committée
+artifacts/provider-contract-batch/

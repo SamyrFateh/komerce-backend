@@ -152,6 +152,8 @@ npm run pr:preflight
 
 Cette commande réutilise les gates canoniques selon le diff. Ne pas ouvrir une PR pour découvrir un rouge reproductible localement.
 
+Le preflight rejoue toute commande de la CI reproductible localement ; les seules exceptions (corps de PR, couverture globale, base PostgreSQL reconstruite) sont déclarées dans `CI_ONLY` de `scripts/pr-preflight.js` avec leur raison, et un test de parité échoue si la CI gagne un gate sans le preflight. Un diff qui touche une migration exige l'historique git complet (`git fetch --unshallow origin`), comme la CI.
+
 Les commandes unitaires restent disponibles pour le diagnostic (`feature:registry`, `gate:schema`, `gate:touched-files`, `gate:docs-lint`, etc.), mais le chemin normal est le preflight unique.
 
 ## 4.1. Clôture autonome de PR — merge sans intervention externe
