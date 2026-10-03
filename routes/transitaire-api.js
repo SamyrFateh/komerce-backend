@@ -44,9 +44,6 @@ function requireTransitaireCapability(capability, options = {}) {
   };
 }
 
-const transitaireReadGuard = [...guard, requireTransitaireCapability('logistics.read', { audit: false })];
-const transitaireTransitGuard = [...guard, requireTransitaireCapability('execution.transit.confirm')];
-
 function delegatedMarketId(req) {
   return req.user && req.user.role === 'agent_transitaire'
     ? req.marketDelegatedCapability && req.marketDelegatedCapability.market_id
@@ -54,7 +51,7 @@ function delegatedMarketId(req) {
 }
 
 // ── GET /parcels — List parcels ready for transit (shipped) ──
-router.get('/parcels', ...transitaireReadGuard, async (req, res, next) => {
+router.get('/parcels', ...guard, requireTransitaireCapability('logistics.read', { audit: false }), async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT p.id, p.reference, p.status, p.weight_kg,
@@ -84,7 +81,7 @@ router.get('/parcels', ...transitaireReadGuard, async (req, res, next) => {
 });
 
 // ── POST /ship — Confirm transit (shipped → in_transit) ──
-router.post('/ship', ...transitaireTransitGuard, async (req, res, next) => {
+router.post('/ship', ...guard, requireTransitaireCapability('execution.transit.confirm'), async (req, res, next) => {
   try {
     const { parcel_id, notes } = req.body;
     if (!parcel_id) return res.status(400).json({ error: 'parcel_id requis' });
@@ -167,7 +164,7 @@ router.post('/ship', ...transitaireTransitGuard, async (req, res, next) => {
 });
 
 // ── GET /stats — Transitaire KPIs ──
-router.get('/stats', ...transitaireReadGuard, async (req, res, next) => {
+router.get('/stats', ...guard, requireTransitaireCapability('logistics.read', { audit: false }), async (req, res, next) => {
   try {
     const marketId = delegatedMarketId(req);
     const marketClause = marketId
@@ -192,7 +189,7 @@ router.get('/stats', ...transitaireReadGuard, async (req, res, next) => {
 });
 
 // ── GET /history — Recent transit events ──
-router.get('/history', ...transitaireReadGuard, async (req, res, next) => {
+router.get('/history', ...guard, requireTransitaireCapability('logistics.read', { audit: false }), async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT se.id, se.event_type, se.created_at, se.actor_name, se.notes,
