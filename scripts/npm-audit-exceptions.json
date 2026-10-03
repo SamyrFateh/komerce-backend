@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "package": "braces",
+    "advisory": "GHSA-vfj7-8cjw-p6xm",
+    "expires": "2026-11-02",
+    "reason": "GHSA-vfj7-8cjw-p6xm (déni de service par motifs imbriqués, braces <=3.0.3). Dépendance transitive de développement uniquement (nodemon > chokidar), absente de l'arbre de production (npm ls --omit=dev vide). Aucune version corrigée publiée au 2026-10-03 (dernière : 3.0.3). À l'échéance : retirer l'entrée si un correctif existe ; toute prolongation exige une validation humaine."
+  }
+]
