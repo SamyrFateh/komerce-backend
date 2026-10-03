@@ -341,6 +341,21 @@ test('file de curation accepte offset/limit bornés pour parcourir un gros vivie
 });
 
 
+test('product_ref deep-link remonte le produit suivi dans la première page de curation', async () => {
+  await workspace.buildWorkspace({
+    approval_limit: '50',
+    approval_offset: '0',
+    product_ref: 'KPR-131959',
+  });
+  const approvalCall = mockQuery.mock.calls.find(([sql]) =>
+    String(sql).includes('LEFT JOIN LATERAL') &&
+    String(sql).includes('CASE WHEN p.product_ref = $1 THEN 0 ELSE 1 END ASC')
+  );
+  expect(approvalCall).toBeTruthy();
+  expect(String(approvalCall[0])).toContain('LIMIT $2 OFFSET $3');
+  expect(approvalCall[1]).toEqual(['KPR-131959', 50, 0]);
+});
+
 test('ordre de curation privilégie le signal sourcing sans densité de valeur', async () => {
   await workspace.buildWorkspace({ approval_limit: '50', approval_offset: '0' });
   const approvalCall = mockQuery.mock.calls.find(([sql]) =>
