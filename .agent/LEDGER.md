@@ -1,6 +1,6 @@
 # LEDGER — état de clôture Komerce
 
-Mis à jour : 2026-09-15
+Mis à jour : 2026-10-03
 
 ## Source de vérité opérationnelle
 
@@ -210,3 +210,47 @@ Règle absolue : le navigateur ne relit JAMAIS un secret (pas même masqué). Pa
 - `tests/unit/logger.test.js` : 18 échecs déjà présents avant ce chantier (vérifié en retirant le changement de `utils/logger.js`) ; non traités ici.
 - `IS_ACTIVE` / `INACTIVE_REASON` du connecteur CJ sont encore calculés depuis l'env au chargement ; la disponibilité du registre CJ est maintenant `true` (la clé relève de la source).
 - Suivi opérateur, hors PR : appliquer les migrations 260/261/262 sur Railway, définir `KOMERCE_PROVIDER_CREDENTIALS_MASTER_KEY`, `npm run schema:promote:write` après confirmation live, test réel fournisseur sur staging, puis seulement migrer les connexions existantes du repli env vers le coffre.
+
+## MARKET-CONTROL-PLANE — Un seul plan de contrôle des marchés — EN COURS — 2026-10-03
+
+Mission : « Créer un nouveau marché » en un clic, cohérent jusqu'aux utilisateurs, rôles et droits. Règle : aucune nouvelle primitive si une primitive existante peut être étendue. Aucune nouvelle table ; cinq migrations qui étendent l'existant. Plan complet figé ci-dessous (ne pas rouvrir sans fait nouveau) ; une hypothèse fausse du dépôt = s'arrêter et proposer l'ajustement minimal (AGENTS.md §9).
+
+### Fait (mergé sur main)
+
+- PR #2076 (A1) : `gen-security-360` expose `marketGuards` + `file` par route ; `npm run market:guard-inventory [-- --checklist|--json]` (dérivé, non committé). Mesure : 13 fichiers / 76 routes sous les gardes legacy `require-market-scope` ; 52 routes avec autorité centrale explicite (domaines dashboard et pricing), 24 routes par rôle seul (hub 4, hub-dashboard 7, relay-dashboard 7, admin/partners 6).
+- Outillage d'agents (pre-push à tampon, `agent:context --handoff`, checkpoint `wip/*`) : voir AGENTS.md §4, §7, §7.1.
+
+### Constats vérifiés
+
+- Le passe-droit des rôles centraux n'est pas une faille : l'accès de `admin` et `agent_hub` aux 24 routes par rôle est documenté (GAP-1/2/3, le Hub est un nœud physique central) ; `agent_relais` est borné par `relais_id`.
+- `agent_transitaire` n'est rattaché à aucun marché dans le code : `users` n'a pas de colonne marché ; `routes/transitaire-api.js` est gardé par rôle seul ; `admin-shipping-customs-workspace` le traite en « rôle natif » sans preuve de marché ; `require-market-execution-capability` ne le connaît pas. `customs_shipments` porte `market_id` (pas `shipments`). Un transitaire d'un marché peut donc lire et agir sur un autre marché.
+
+### Décisions (validées par l'utilisateur, 2026-10-03)
+
+- **Q4** : sur hub, relay-dashboard, hub-dashboard et partners, `admin` et `agent_hub` sont déclarés « centraux par rôle » dans le registre de C (visibles dans la vue du Control Plane), non supprimés. Les 52 routes à autorité explicite gardent l'autorité explicite.
+- **Transitaire** : un transitaire = exactement un marché. Il entre dans le périmètre de D (le plan v2 l'avait classé hors périmètre à tort). Modèle recommandé : membership sur l'affectation du marché + capacités d'exécution (cohérent avec « `users.role` n'accorde jamais de droit »). Alternative : colonne `users.market_id`, comme `relais_id`. **Changement d'autorité : revue humaine avant merge.** Test de refus obligatoire : un transitaire du marché A est refusé sur B (`transitaire-api`, espace Expéditions & Douane).
+- **F1** responsable opérationnel désigné : `assignment_memberships.is_operating_lead`, au plus un ACTIVE par affectation (index unique partiel) ; aucun droit implicite.
+- **F2** référent central : `market_operating_assignments.central_referent_user_id` ; ne tire aucun droit de la désignation, doit détenir une autorisation centrale active.
+- **F3** limites financières par capacité (`limit_amount` sur plafond et membership, jamais global) ; capacités `amount_bearing` en V1 : `execution.cash.confirm`, `settlement.receive`, `finance.act` ; par opération, devise du marché ; limite membership ≤ plafond ; refus `MARKET_CAPABILITY_LIMIT_EXCEEDED` ; NULL au plafond = sans limite (marchés existants), exigé sur un nouveau marché.
+- **F4** cycle de vie `markets.lifecycle_status` : PROVISIONING / ACTIVE / SUSPENDED / CLOSED, `is_active = lifecycle IN (ACTIVE, SUSPENDED)` imposé en base ; READ délégué en ACTIVE et SUSPENDED, ACT délégué en ACTIVE seulement (`MARKET_SUSPENDED`) ; chaque capacité déclare `effect` READ ou ACT (jamais déduit du nom) ; seul le service de transitions écrit ; chaque transition tracée.
+- Modèle d'autorité unique : `autorisé(X,M,C,A) = central(X,C) OU délégué(X,M,C,A)`. Jamais source de droit : `users.role`, `operator_market_scopes` (projection), `market_cash_control_policies`.
+- Hypothèses non renversées : Q1 responsable = une personne ; Q3 un référent central par affectation ; Q5 services et API admin d'abord, écran en PR H.
+
+### Ordre d'exécution
+
+A2 → C → B → D réduite (transitaire inclus) → E → F → G → H. Dépendances : A2 d'abord ; B et C indépendantes ; D dépend de C ; E dépend de B ; F indépendante ; G dépend de E et F ; H dépend de G. Une PR = un seul push après `pr:preflight` vert.
+
+- **A2 Voir** : `services/market-control-plane.js` (lecture seule), `GET /api/admin/markets`, `GET /api/admin/markets/:code/control-plane`, rapport d'écarts sur KM, YT, CM, CG (référence de non-régression) ; crée la carte `market-control-plane` (la carte `market` est un référentiel pur figé). Sans migration : merge autonome possible.
+- **C** : registre `config/market-delegation-capabilities.js` : chaque capacité de groupe pointe vers sa table `*_global_access_grants` ; colonnes `effect` et `amount_bearing` ; fonction unique `central(X,C)` ; rôles centraux par rôle déclarés (Q4).
+- **B** : logique de `scripts/provision-market-operator.js` extraite en service, utilisée aussi par `routes/admin/users.js` ; suppression de `grantOrReplaceMarketScope` (M1).
+- **D** : les 13 fichiers migrent de `require-market-scope` vers les capacités, par domaine ; liste de contrôle = `npm run market:guard-inventory -- --checklist` entièrement cochée avant merge (garde avant/après, test de refus, comptes à autoriser) ; suppression du middleware en fin de D.
+- **E** (M2, M3, M4) : responsable désigné, durée et suppléance, limites, référent central, invitation WhatsApp du premier responsable, journal étendu au marché. **F** (M5) : cycle de vie, refus de commande en SUSPENDED, textes boutique en base. **G** : `provisionMarket` + porte de préparation à deux verdicts (plate-forme, exploitation) + `POST /api/admin/markets`. **H** : écran canonique « Créer un nouveau marché », E2E de la base vierge à la première commande.
+- Migrations (numéros au moment de chaque PR, prochain libre via `arch:impact`) : M1 `operator_market_scopes` CHECK `projected_from_membership_id IS NOT NULL` NOT VALID ; M2 `market_delegation_audit.market_id` ; M3 colonnes référent / responsable / `effective_until` / suppléance / `limit_amount` ; M4 `market_team_invitations` (`phone_e164`, `channel`, `invited_by_user_id`, `grants_operating_lead`, email facultatif) ; M5 `markets.lifecycle_status` + `storefront_texts jsonb`. Toute PR avec migration ou changement d'autorité : revue humaine (AGENTS.md §4.1), preuve rouge PostgreSQL pour chaque migration.
+
+### Reprise par l'agent suivant
+
+1. Lire AGENTS.md puis cette section seulement ; partir de `main` à jour.
+2. `npm run agent:context -- --pack authz --feature market-delegation` puis `npm run arch:impact -- market-delegation` ; `npm run market:guard-inventory` pour la portée de D.
+3. Annoncer le plan d'attaque de A2 (créer la carte `market-control-plane`), implémenter, `npm run pr:preflight`, un seul push, attendre la CI en une commande, merger (pas de migration).
+4. Session interrompue : `npm run agent:restore -- <branche>`.
+5. Suivis ouverts : mesurer la parité du preflight mi-octobre 2026 (base : 16,3 % des runs CI rouges sur une étape reproductible localement) ; l'exception d'accolades expire le 2026-11-02 ; supprimer côté GitHub les branches `feat/agent-guardrails` et `fix/ci-migration-baseline-full-history` (les sessions ne peuvent pas supprimer de branche).
