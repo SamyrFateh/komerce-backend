@@ -7,7 +7,7 @@
  * @inputs        economic_structure_cost_event_id, allocation_policies, actor_id, reason
  * @outputs       market_cost_attributions
  * @depends       db, services/pricing-period-structure.js
- * @used-by       future admin attribution route, future pricing market coverage
+ * @used-by       @none
  * @db-read       economic_structure_cost_events, market_cost_attributions
  * @db-write      market_cost_attributions
  * @db-txn        BEGIN/COMMIT with advisory lock per source event
