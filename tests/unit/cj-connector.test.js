@@ -10,6 +10,7 @@ const {
   isConfigured,
   inactiveReason,
   normalizeCjProduct,
+  mergeAuthoritativeInventory,
   buildCommandableStructure,
   flattenProductList,
   getAccessToken,
@@ -172,6 +173,50 @@ describe('cj-connector', () => {
     expect(product.media.length).toBeGreaterThanOrEqual(2);
   });
 
+
+  test('fusionne le stock autoritaire getInventoryByPid par VID sans inventer de quantité', () => {
+    const rawWithoutStock = {
+      ...rawDetail,
+      variants: rawDetail.variants.map(({ inventories, ...variant }) => ({ ...variant, inventoryNum: null })),
+    };
+    const enriched = mergeAuthoritativeInventory(rawWithoutStock, {
+      inventories: [{ countryCode: 'CN', totalInventoryNum: 18 }],
+      variantInventories: [
+        {
+          vid: rawDetail.variants[0].vid,
+          inventory: [{ countryCode: 'CN', totalInventory: 7, cjInventory: 7, factoryInventory: 0 }],
+        },
+        {
+          vid: rawDetail.variants[1].vid,
+          inventory: [{ countryCode: 'CN', totalInventory: 11, cjInventory: 11, factoryInventory: 0 }],
+        },
+      ],
+    });
+
+    expect(enriched.totalVerifiedInventory).toBe(18);
+    expect(enriched.variants[0].inventories[0].totalInventory).toBe(7);
+    expect(enriched.variants[1].inventories[0].totalInventory).toBe(11);
+
+    const normalized = normalizeCjProduct(enriched);
+    expect(normalized.stock_available).toBe(18);
+    expect(normalized.sellable_units.map((unit) => unit.stock_available)).toEqual([7, 11]);
+    expect(normalized.sellable_units.every((unit) => unit.is_active)).toBe(true);
+  });
+
+  test('laisse une variante sans quantité si getInventoryByPid ne fournit aucun VID correspondant', () => {
+    const rawWithoutStock = {
+      ...rawDetail,
+      variants: rawDetail.variants.map(({ inventories, ...variant }) => ({ ...variant, inventoryNum: null })),
+    };
+    const enriched = mergeAuthoritativeInventory(rawWithoutStock, {
+      variantInventories: [{ vid: 'other-vid', inventory: [{ totalInventory: 99 }] }],
+    });
+    const normalized = normalizeCjProduct(enriched);
+
+    expect(normalized.sellable_units.map((unit) => unit.stock_available)).toEqual([null, null]);
+    expect(normalized.sellable_units.every((unit) => unit.is_active === false)).toBe(true);
+  });
+
   test('aplatit le format content/productList de listV2', () => {
     expect(flattenProductList({ data: { content: [
       { productList: [{ id: '1' }, { id: '2' }] },
@@ -244,17 +289,43 @@ describe('cj-connector', () => {
     expect(options.headers['CJ-Access-Token']).toBe('token');
   });
 
-  test('fetchProducts ciblé résout directement PID → variantes commandables + SOI', async () => {
-    const fetchImpl = jest.fn().mockResolvedValue(response({
-      code: 200,
-      result: true,
-      success: true,
-      data: rawDetail,
-      requestId: 'req-detail-1',
-    }));
+  test('fetchProducts ciblé enrichit le détail avec getInventoryByPid avant normalisation', async () => {
+    const sleepImpl = jest.fn().mockResolvedValue(undefined);
+    const fetchImpl = jest.fn().mockImplementation(async (url) => {
+      const parsed = new URL(String(url));
+      if (parsed.pathname.endsWith('/product/query')) {
+        return response({
+          code: 200,
+          result: true,
+          success: true,
+          data: {
+            ...rawDetail,
+            variants: rawDetail.variants.map(({ inventories, ...variant }) => ({ ...variant, inventoryNum: null })),
+          },
+          requestId: 'req-detail-1',
+        });
+      }
+      if (parsed.pathname.endsWith('/product/stock/getInventoryByPid')) {
+        return response({
+          code: 200,
+          result: true,
+          success: true,
+          data: {
+            inventories: [{ countryCode: 'CN', totalInventoryNum: 18 }],
+            variantInventories: [
+              { vid: rawDetail.variants[0].vid, inventory: [{ countryCode: 'CN', totalInventory: 7 }] },
+              { vid: rawDetail.variants[1].vid, inventory: [{ countryCode: 'CN', totalInventory: 11 }] },
+            ],
+          },
+          requestId: 'req-stock-1',
+        });
+      }
+      throw new Error(`Unexpected URL ${url}`);
+    });
 
     const result = await fetchProducts({
       fetchImpl,
+      sleepImpl,
       env: { CJ_ACCESS_TOKEN: 'token' },
       productIds: [rawDetail.pid],
     });
@@ -263,23 +334,42 @@ describe('cj-connector', () => {
     expect(result.invalid).toHaveLength(0);
     expect(result.source).toBe('cj_api_v2_product_query');
     expect(result.products[0].sellable_units).toHaveLength(2);
+    expect(result.products[0].sellable_units.map((unit) => unit.stock_available)).toEqual([7, 11]);
     expect(result.products[0].sellable_units[0].supplier_unit_ref).toBe('1369601677723832320');
     expect(result.products[0].sellable_units[0].supplier_order_identity.payload.vid).toBe('1369601677723832320');
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
-    const [url] = fetchImpl.mock.calls[0];
-    expect(String(url)).toContain('/product/query?pid=1369601676230660096');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(String(fetchImpl.mock.calls[0][0])).toContain('/product/query?pid=1369601676230660096');
+    expect(String(fetchImpl.mock.calls[1][0])).toContain('/product/stock/getInventoryByPid?pid=1369601676230660096');
+    expect(sleepImpl).toHaveBeenCalledTimes(1);
+    expect(sleepImpl).toHaveBeenCalledWith(DEFAULT_DETAIL_DELAY_MS);
   });
 
-  test('cadence les détails ciblés séquentiellement pour respecter la limite CJ 1 QPS', async () => {
+  test('cadence détail + stock ciblés séquentiellement pour respecter la limite CJ 1 QPS', async () => {
     const sleepImpl = jest.fn().mockResolvedValue(undefined);
     const fetchImpl = jest.fn().mockImplementation(async (url) => {
-      const pid = new URL(String(url)).searchParams.get('pid');
+      const parsed = new URL(String(url));
+      const pid = parsed.searchParams.get('pid');
+      if (parsed.pathname.endsWith('/product/query')) {
+        return response({
+          code: 200,
+          result: true,
+          success: true,
+          data: { ...rawDetail, pid },
+          requestId: `req-detail-${pid}`,
+        });
+      }
       return response({
         code: 200,
         result: true,
         success: true,
-        data: { ...rawDetail, pid },
-        requestId: `req-${pid}`,
+        data: {
+          inventories: [{ totalInventoryNum: 30 }],
+          variantInventories: rawDetail.variants.map((variant) => ({
+            vid: variant.vid,
+            inventory: variant.inventories,
+          })),
+        },
+        requestId: `req-stock-${pid}`,
       });
     });
     const productIds = ['1369601676230660096', '1369601676230660097', '1369601676230660098'];
@@ -293,13 +383,12 @@ describe('cj-connector', () => {
 
     expect(result.products).toHaveLength(3);
     expect(result.invalid).toHaveLength(0);
-    expect(fetchImpl).toHaveBeenCalledTimes(3);
-    expect(sleepImpl).toHaveBeenCalledTimes(2);
-    expect(sleepImpl).toHaveBeenNthCalledWith(1, DEFAULT_DETAIL_DELAY_MS);
-    expect(sleepImpl).toHaveBeenNthCalledWith(2, DEFAULT_DETAIL_DELAY_MS);
+    expect(fetchImpl).toHaveBeenCalledTimes(6);
+    expect(sleepImpl).toHaveBeenCalledTimes(5);
+    expect(sleepImpl.mock.calls.every(([ms]) => ms === DEFAULT_DETAIL_DELAY_MS)).toBe(true);
   });
 
-  test('retente localement un détail CJ en 429 sans paralléliser le core', async () => {
+  test('retente localement un détail CJ en 429 puis enrichit le stock sans paralléliser le core', async () => {
     const sleepImpl = jest.fn().mockResolvedValue(undefined);
     const fetchImpl = jest.fn()
       .mockResolvedValueOnce(response({
@@ -314,6 +403,19 @@ describe('cj-connector', () => {
         success: true,
         data: rawDetail,
         requestId: 'req-ok',
+      }))
+      .mockResolvedValueOnce(response({
+        code: 200,
+        result: true,
+        success: true,
+        data: {
+          inventories: [{ totalInventoryNum: 40030 }],
+          variantInventories: rawDetail.variants.map((variant) => ({
+            vid: variant.vid,
+            inventory: variant.inventories,
+          })),
+        },
+        requestId: 'req-stock',
       }));
 
     const result = await fetchProducts({
@@ -325,9 +427,9 @@ describe('cj-connector', () => {
 
     expect(result.products).toHaveLength(1);
     expect(result.invalid).toHaveLength(0);
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
-    expect(sleepImpl).toHaveBeenCalledTimes(1);
-    expect(sleepImpl).toHaveBeenCalledWith(DEFAULT_DETAIL_DELAY_MS);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(sleepImpl).toHaveBeenCalledTimes(2);
+    expect(sleepImpl.mock.calls.every(([ms]) => ms === DEFAULT_DETAIL_DELAY_MS)).toBe(true);
   });
 
   test('propage une erreur CJ avec requestId sans secret', async () => {
