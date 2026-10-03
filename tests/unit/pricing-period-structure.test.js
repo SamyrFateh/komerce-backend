@@ -411,6 +411,7 @@ describe('pricing-period-structure — mutualisation GROUP gouvernée', () => {
           amount_kmf: 20000,
         }),
       ] })
+      .mockResolvedValueOnce({ rows: [] }) // aucune attribution active : allocation à la volée
       .mockResolvedValueOnce({ rows: [
         { market_id: CM, basis_value: '2' },
         { market_id: CG, basis_value: '1' },
@@ -434,14 +435,16 @@ describe('pricing-period-structure — mutualisation GROUP gouvernée', () => {
     expect(result.allocation.charges[0].market_share_kmf).toBe(40000);
     expect(result.allocation.charges[0].market_allocation_ratio).toBeCloseTo(2 / 3, 6);
 
-    const [basisSql] = db.query.mock.calls[1];
+    const [basisSql] = db.query.mock.calls[2];
     expect(basisSql).toContain("o.payment_status = 'paid'");
     expect(basisSql).toContain("COALESCE(o.status, '') NOT IN ('cancelled', 'refunded')");
     expect(basisSql).toContain('o.created_at >= $1');
   });
 
   test('une politique manquante laisse tout le total N3 marché fail-closed', async () => {
-    db.query.mockResolvedValueOnce({ rows: [structureEvent()] });
+    db.query
+      .mockResolvedValueOnce({ rows: [structureEvent()] })
+      .mockResolvedValueOnce({ rows: [] });
 
     const result = await computePeriodStructureTruth({
       from: period.from.toISOString(),
@@ -456,7 +459,7 @@ describe('pricing-period-structure — mutualisation GROUP gouvernée', () => {
     expect(result.market_n3_total_kmf).toBeNull();
     expect(result.allocation.unallocated_group_pool_kmf).toBe(60000);
     expect(result.allocation.charges[0].status).toBe('NOT_DECISIONAL_POLICY_MISSING');
-    expect(db.query).toHaveBeenCalledTimes(1);
+    expect(db.query).toHaveBeenCalledTimes(2);
   });
 
   test('si une charge GROUP sur deux n a pas de politique, aucune somme partielle ne devient décisionnelle', async () => {
@@ -471,6 +474,7 @@ describe('pricing-period-structure — mutualisation GROUP gouvernée', () => {
           amount_kmf: 30000,
         }),
       ] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [
         { market_id: CM, basis_value: '1' },
         { market_id: CG, basis_value: '1' },
