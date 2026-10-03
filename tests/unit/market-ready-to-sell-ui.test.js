@@ -65,3 +65,14 @@ test('la surface exprime la certification amont et le bulk vert uniquement', () 
   expect(source).toContain('Le bulk ne sélectionne que les lignes 100 % vertes');
   expect(source).toContain('Mettre en vente');
 });
+
+
+test('le handoff Catalogue conserve product_ref jusqu’à la ligne ready-to-sell', () => {
+  const ready = fs.readFileSync(path.join(ROOT, 'public', 'dashboards', 'canonical', 'js', 'market-ready-to-sell.js'), 'utf8');
+  const market = fs.readFileSync(path.join(ROOT, 'public', 'dashboards', 'canonical', 'js', 'market-catalog.js'), 'utf8');
+  expect(market).toContain("searchParams.get('product_ref')");
+  expect(market).toContain('focusedProductRef');
+  expect(ready).toContain("tr.setAttribute('data-product-ref'");
+  expect(ready).toContain("classList.add('is-context-target')");
+  expect(ready).toContain('suite commerciale retrouvée');
+});

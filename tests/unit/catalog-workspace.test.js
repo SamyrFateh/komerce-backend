@@ -356,6 +356,53 @@ test('product_ref deep-link remonte le produit suivi dans la première page de c
   expect(approvalCall[1]).toEqual(['KPR-131959', 50, 0]);
 });
 
+test('product_ref publié reste matérialisé comme relais marché après sortie de curation', async () => {
+  mockQuery.mockImplementation(async (sql, params) => {
+    const text = String(sql);
+    if (text.includes('COUNT(*)::int AS total_products')) {
+      return { rows: [{ total_products: 2, active_products: 1, inactive_products: 1, approval_pending: 0, needs_review: 0 }] };
+    }
+    if (text.includes('GROUP BY 1') && text.includes('sourcing_decision')) return { rows: [] };
+    if (text.includes("p.lifecycle_status = 'candidate'") && text.includes('LEFT JOIN LATERAL')) return { rows: [] };
+    if (text.includes("JOIN markets m ON m.is_active = TRUE") && text.includes("p.lifecycle_status = 'active'")) {
+      expect(params).toEqual(['KPR-131959']);
+      return { rows: [
+        {
+          product_ref: 'KPR-131959',
+          name: 'Jupe bouffante en coton blanc',
+          lifecycle_status: 'active',
+          is_active: true,
+          is_available: true,
+          market_code: 'KM',
+          market_name: 'Comores',
+          market_currency: 'KMF',
+          commercial_exposure: 'DISABLED',
+          exposure_decision_recorded: false,
+          price_status: null,
+          local_price_amount: null,
+          local_price_currency: null,
+        },
+      ] };
+    }
+    return { rows: [] };
+  });
+
+  const payload = await workspace.buildWorkspace({ product_ref: 'KPR-131959' });
+  expect(payload.focused_handoff).toEqual(expect.objectContaining({
+    product_ref: 'KPR-131959',
+    state: 'MARKET_DECISION_PENDING',
+  }));
+  expect(payload.focused_handoff.markets).toEqual([
+    expect.objectContaining({
+      code: 'KM',
+      commercial_exposure: 'DISABLED',
+      exposure_decision_recorded: false,
+      price_status: null,
+      buyer_visible: false,
+    }),
+  ]);
+});
+
 test('ordre de curation privilégie le signal sourcing sans densité de valeur', async () => {
   await workspace.buildWorkspace({ approval_limit: '50', approval_offset: '0' });
   const approvalCall = mockQuery.mock.calls.find(([sql]) =>

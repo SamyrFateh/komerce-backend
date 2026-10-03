@@ -92,7 +92,7 @@ describe('Catalogue pays decision-first', () => {
     expect(source).toContain('renderReadyToSell(payload, marketCode)');
     expect(source).not.toContain('renderIncomingProducts(payload, marketCode)');
     expect(source).toContain('Garder masqué');
-    expect(html).toContain('/dashboards/canonical/js/market-ready-to-sell.js?v=260929-1');
+    expect(html).toContain('/dashboards/canonical/js/market-ready-to-sell.js?v=261003-1');
     expect(source).not.toMatch(/[?&]market_id=|body\.market_id|body\.marketId/);
   });
 });

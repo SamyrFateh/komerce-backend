@@ -200,7 +200,16 @@
   function renderReadyToSell(payload, marketCode) {
     const ready = global.KomerceMarketReadyToSell;
     if (!ready || typeof ready.render !== 'function') throw new Error('market_ready_to_sell_ui_missing');
-    ready.render({ root, payload, marketCode, request, feedback: setFeedback, reload: load });
+    const focusedProductRef = new URL(global.location.href).searchParams.get('product_ref');
+    ready.render({
+      root,
+      payload,
+      marketCode,
+      focusedProductRef: String(focusedProductRef || '').trim() || null,
+      request,
+      feedback: setFeedback,
+      reload: load,
+    });
   }
 
   function renderExposure(payload, marketCode) {

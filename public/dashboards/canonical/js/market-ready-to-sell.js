@@ -97,6 +97,7 @@
     const host = options.root;
     const payload = options.payload || {};
     const marketCode = options.marketCode;
+    const focusedProductRef = String(options.focusedProductRef || '').trim() || null;
     const request = options.request;
     const feedback = options.feedback || (() => {});
     const reload = options.reload || (async () => {});
@@ -163,9 +164,16 @@
       bulk.disabled = selected.length === 0;
     }
 
+    let focusedRow = null;
     rows.forEach(row => {
       const tr = doc.createElement('tr');
       tr.className = 'kmc-ready-row is-' + String(row.decision_state?.tone || 'neutral');
+      tr.setAttribute('data-product-ref', row.product_ref || '');
+      if (focusedProductRef && row.product_ref === focusedProductRef) {
+        tr.classList.add('is-context-target');
+        tr.setAttribute('tabindex', '-1');
+        focusedRow = tr;
+      }
 
       const selectCell = doc.createElement('td');
       const checkbox = doc.createElement('input');
@@ -319,6 +327,13 @@
     section.appendChild(wrap);
     host.appendChild(section);
     refreshBulkLabel();
+    if (focusedRow) {
+      feedback(`${focusedProductRef} · suite commerciale retrouvée sur ${marketCode}.`, 'positive');
+      if (typeof focusedRow.scrollIntoView === 'function') {
+        focusedRow.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+      if (typeof focusedRow.focus === 'function') focusedRow.focus({ preventScroll: true });
+    }
     return section;
   }
 
