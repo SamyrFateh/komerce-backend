@@ -356,15 +356,11 @@ for (const vp of VIEWPORTS) {
     test.use({ viewport: { width: vp.width, height: vp.height } });
 
     test.beforeEach(async ({ page }) => {
-      // 4 produits minimum, même catégorie : b-catalog.js MIN_PER_SECTION=4
-      // rejette toute section (et tout reliquat) sous ce seuil sur desktop
-      // (renderHomeSections) — avec 3, la section entière disparaît en
-      // >=900px alors qu'elle s'affiche en mobile (chemin de rendu différent).
+      // Régression production : une catégorie réelle avec seulement deux
+      // produits publiables doit rester visible dans « Tout » sur desktop.
       await stubMinimalApi(page, [
         buildMinimalProduct({ id:'p1', name:'Rouge à lèvres chic longue tenue', promo_pct:20 }),
         buildMinimalProduct({ id:'p2', name:'Huile essentielle originale de Madagascar', promo_pct:15 }),
-        buildMinimalProduct({ id:'p3', name:'Poudre compacte minimaliste finition naturelle', promo_pct:null }),
-        buildMinimalProduct({ id:'p4', name:'Sac à main artisanal fait main', promo_pct:null }),
       ]);
       await loadBoutique(page);
       await page.waitForSelector('.k-card', { state:'attached', timeout:8_000 }).catch(()=>{});
@@ -403,6 +399,24 @@ for (const vp of VIEWPORTS) {
       expect(overflow.length, 'Aucun badge promo trouvé').toBeGreaterThan(0);
       for (const r of overflow) {
         expect(r.below, `Badge déborde de ${r.below}px sous l'image-wrap`).toBeLessThanOrEqual(1);
+      }
+    });
+
+    test('G3-0 — deux produits publiables restent présents dans la vue Tout', async ({ page }) => {
+      const ids = await page.locator('.k-card').evaluateAll(cards =>
+        cards.map(card => card.getAttribute('data-id')).filter(Boolean)
+      );
+      expect(ids).toEqual(expect.arrayContaining(['p1', 'p2']));
+    });
+
+    test('G3-d — desktop garde une largeur de carte catalogue standard', async ({ page }) => {
+      test.skip(vp.width < 1200, 'Invariant du module desktop fluide ≥1200px');
+      const widths = await page.locator('.k-card').evaluateAll(cards =>
+        cards.slice(0, 2).map(card => card.getBoundingClientRect().width)
+      );
+      expect(widths).toHaveLength(2);
+      for (const width of widths) {
+        expect(width, `Carte trop large: ${width}px`).toBeLessThanOrEqual(360);
       }
     });
 
