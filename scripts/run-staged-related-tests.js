@@ -241,11 +241,8 @@ function runFullBackendSuite(workspace, reason) {
   return { ran: true, tests: -1, failed: false };
 }
 
-function main() {
-  const files = stagedFiles();
-  const tracked = trackedFiles();
-  const schemaChanged = files.some(isSchemaOrMigrationChange);
-  const workspaces = [
+function workspaceDefinitions() {
+  return [
     {
       name: 'backend',
       cwd: ROOT,
@@ -265,6 +262,33 @@ function main() {
       contentAware: true,
     },
   ];
+}
+
+// Liste (sans les exécuter) les tests unitaires liés à des fichiers : même
+// résolution que runWorkspace. Utilisé par agent:context --impact.
+function listRelatedTests(files, { tracked = trackedFiles(), workspaces = workspaceDefinitions() } = {}) {
+  const out = [];
+  for (const workspace of workspaces) {
+    const sources = workspaceSourceFiles(files, workspace.isSource);
+    const direct = directStagedTests(workspace, files);
+    const content = workspace.contentAware ? contentRelatedTests(sources, tracked, workspace.isUnitTest) : [];
+    if (sources.length === 0 && direct.length === 0 && content.length === 0) continue;
+    let viaJest = [];
+    try {
+      viaJest = relatedTests(workspace, sources);
+    } catch (_error) {
+      viaJest = []; // Jest absent du workspace : on garde les résolutions statiques.
+    }
+    out.push(...viaJest, ...fallbackTests(workspace, sources, tracked), ...direct, ...content);
+  }
+  return Array.from(new Set(out.map(test => path.relative(ROOT, path.resolve(test)).replace(/\\/g, '/')))).sort();
+}
+
+function main() {
+  const files = stagedFiles();
+  const tracked = trackedFiles();
+  const schemaChanged = files.some(isSchemaOrMigrationChange);
+  const workspaces = workspaceDefinitions();
 
   let ran = 0;
   let warnings = 0;
@@ -301,4 +325,5 @@ module.exports = {
   isSchemaOrMigrationChange,
   workspaceSourceFiles,
   contentReferencesSource,
+  listRelatedTests,
 };
