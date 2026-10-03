@@ -1153,6 +1153,70 @@
     slot.appendChild(wrap);
   }
 
+  function renderFocusedHandoff(rootNode, ui, doc, payload) {
+    const handoff = payload && payload.focused_handoff;
+    if (!handoff || !handoff.product_ref) return;
+
+    const slot = createSection(
+      rootNode,
+      ui,
+      `Suite commerciale · ${handoff.product_ref}`,
+      'Le produit est publié dans le Catalogue global. Il reste visible ici tant que sa décision marché et son prix local ne sont pas terminés.'
+    );
+
+    slot.appendChild(text(
+      doc,
+      'p',
+      'kmc-workspace-subtitle',
+      handoff.state === 'BUYER_VISIBLE'
+        ? 'Produit visible acheteur sur tous les marchés actifs.'
+        : 'Publication Catalogue terminée · décision commerciale marché encore requise.'
+    ));
+
+    const table = doc.createElement('table');
+    table.className = 'kmc-workspace-table';
+    table.innerHTML = '<thead><tr><th>Marché</th><th>Exposition</th><th>Prix local</th><th>État Boutique</th><th>Suite</th></tr></thead>';
+    const tbody = doc.createElement('tbody');
+
+    (handoff.markets || []).forEach(market => {
+      const tr = doc.createElement('tr');
+      tr.setAttribute('data-market-code', market.code || '');
+      tr.appendChild(td(doc, market.name ? `${market.name} · ${market.code}` : market.code));
+      tr.appendChild(td(
+        doc,
+        market.exposure_decision_recorded
+          ? market.commercial_exposure
+          : 'À décider'
+      ));
+      tr.appendChild(td(
+        doc,
+        market.price_status === 'LOCAL_ACTIVE'
+          ? `LOCAL_ACTIVE · ${market.local_price_amount == null ? '—' : market.local_price_amount} ${market.local_price_currency || market.currency || ''}`
+          : market.price_status || 'À décider'
+      ));
+      tr.appendChild(td(doc, market.buyer_visible ? 'Visible' : 'Non visible'));
+
+      const action = doc.createElement('td');
+      const link = text(
+        doc,
+        'a',
+        'kmc-workspace-action',
+        market.buyer_visible ? 'Ouvrir le marché' : 'Continuer la mise en vente'
+      );
+      const params = new URLSearchParams({
+        market: market.code,
+        product_ref: handoff.product_ref,
+      });
+      link.href = `/dashboards/canonical/market-catalog.html?${params.toString()}#market-ready-to-sell`;
+      action.appendChild(link);
+      tr.appendChild(action);
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    slot.appendChild(wrapTable(doc, table));
+  }
+
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.replaceChildren();
@@ -1161,6 +1225,7 @@
     metrics.className = 'kmc-workspace-metrics';
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary, payload.curation) });
+    renderFocusedHandoff(rootNode, ui, doc, payload);
     renderApproval(rootNode, ui, doc, payload, context);
     renderProducts(rootNode, ui, doc, payload, context);
     renderTaxonomy(rootNode, ui, doc, payload, context);
