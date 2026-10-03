@@ -2461,12 +2461,7 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-shipping-customs-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/deactivate",
@@ -2476,12 +2471,7 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-shipping-customs-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/declare",
@@ -2491,12 +2481,7 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-shipping-customs-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/update",
@@ -2506,12 +2491,7 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-shipping-customs-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments",
@@ -2521,12 +2501,7 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-shipping-customs-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/parcels/{reference}/confirm-transit",
@@ -2536,12 +2511,7 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-shipping-customs-workspace.js"
+      ]
     },
     {
       "key": "GET /api/admin/workspaces/shipping-customs/market/{marketCode}",
@@ -2551,12 +2521,7 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-shipping-customs-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/promote",
