@@ -217,6 +217,7 @@ module.exports = {
       'tests/unit/pricing-period-structure.test.js',
       'tests/unit/pricing-period-structure-allocate-pool.test.js',
       'tests/unit/market-cost-attribution-service.test.js',
+      'tests/unit/admin-pricing-workspace-market-cost-attribution-route.test.js',
       'tests/unit/pricing-market-coverage.test.js',
       'tests/unit/pricing-risk-period.test.js',
       'tests/unit/pricing-market-decision-policy.test.js',
@@ -485,6 +486,10 @@ module.exports = {
       'POST /api/admin/workspaces/pricing/simulate-impact',
       'GET /api/admin/workspaces/pricing/structure-events',
       'POST /api/admin/workspaces/pricing/structure-events',
+      'GET /api/admin/workspaces/pricing/structure-events/:eventId/attributions',
+      'POST /api/admin/workspaces/pricing/structure-events/:eventId/attributions',
+      'POST /api/admin/workspaces/pricing/structure-events/:eventId/attributions/reverse',
+      'POST /api/admin/workspaces/pricing/structure-events/:eventId/attributions/correct',
     ],
     // O7.3 (provider economic-engine) : formalise les capacités cross-feature
     // explicites. Le moteur reste propriétaire de ses tables et les consumers
