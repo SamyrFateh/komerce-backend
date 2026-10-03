@@ -48,6 +48,59 @@ async function applyPrice(db, productId, priceKmf) {
 }
 
 /**
+ * Assigne la taxonomie Boutique de merchandising d'un produit existant.
+ * La paire doit être complète et active ; category/subcategory historiques
+ * ne sont jamais modifiés par cette mutation.
+ *
+ * @param {object} db
+ * @param {string} productId
+ * @param {string} categoryKey
+ * @param {string} subcategoryKey
+ * @returns {Promise<object|null>}
+ */
+async function assignBoutiqueTaxonomy(db, productId, categoryKey, subcategoryKey) {
+  const category = String(categoryKey || '').trim();
+  const subcategory = String(subcategoryKey || '').trim();
+  if (!category || !subcategory) {
+    const error = new Error('Taxonomie Boutique incomplète : catégorie + sous-catégorie requises');
+    error.status = 422;
+    error.code = 'boutique_taxonomy_incomplete';
+    throw error;
+  }
+
+  const { rows: [valid] } = await db.query(
+    `SELECT bc.key AS category, bs.key AS subcategory
+       FROM boutique_categories bc
+       JOIN boutique_subcategories bs
+         ON bs.category_key = bc.key
+        AND bs.key = $2
+        AND bs.is_active = TRUE
+      WHERE bc.key = $1
+        AND bc.is_active = TRUE
+      LIMIT 1`,
+    [category, subcategory]
+  );
+  if (!valid) {
+    const error = new Error(`Taxonomie Boutique inactive ou invalide : ${category} / ${subcategory}`);
+    error.status = 422;
+    error.code = 'boutique_taxonomy_invalid';
+    throw error;
+  }
+
+  const { rows: [updated] } = await db.query(
+    `UPDATE products
+        SET boutique_category_key = $1,
+            boutique_subcategory_key = $2,
+            updated_at = NOW()
+      WHERE id = $3
+      RETURNING id, product_ref, category, subcategory,
+                boutique_category_key, boutique_subcategory_key`,
+    [valid.category, valid.subcategory, productId]
+  );
+  return updated || null;
+}
+
+/**
  * Met à jour les métadonnées sourcing d'un produit (rail, poids, fragilité,
  * etc.). Extrait à l'identique de services/sourcing-mutations.js (moteur
  * margin/rail admin d'economic-engine, routes/sourcing.js) — même whitelist
@@ -306,6 +359,7 @@ async function replaceVariantsForSourcing(dbPool, productId, variants) {
 
 module.exports = {
   applyPrice,
+  assignBoutiqueTaxonomy,
   updateSourcingFields,
   bulkAssignSourcingRail,
   replaceVariantsForSourcing,
