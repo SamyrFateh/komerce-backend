@@ -5,16 +5,16 @@
  * @domain        catalog
  * @layer         script
  * @criticality   high
- * @inputs        candidate product + latest imported_to_catalog sourcing provenance
+ * @inputs        candidate product + latest imported_to_catalog sourcing provenance + supplier category trace
  * @outputs       missing boutique taxonomy assignments for existing catalog candidates
  * @depends       db.js, services/catalog-product-mutation-service.js
  * @used-by       one-shot Railway operator run
- * @db-read       products, sourcing_candidates, boutique_categories, boutique_subcategories
+ * @db-read       products, sourcing_candidates, supplier_catalog_imports, boutique_categories, boutique_subcategories
  * @db-write-via  catalog-product-mutation-service products
  * @db-txn        one transaction in --apply mode
- * @doctrine      provenance_only, no_title_inference, boutique_taxonomy_distinct_from_legacy_category
+ * @doctrine      provenance_only, discovery_first, historical_supplier_trace_fallback, no_title_inference, boutique_taxonomy_distinct_from_legacy_category
  * @impact-areas  catalog, sourcing, boutique
- * @version       2026-10-v1
+ * @version       2026-10-v2
  */
 'use strict';
 
@@ -55,6 +55,8 @@ async function loadCandidates(q, { productRefs = [] } = {}) {
             sc.id AS sourcing_candidate_id,
             sc.supplier_name,
             sc.supplier_product_id,
+            sc.supplier_category,
+            si.import_ref,
             sc.raw_payload->'discovery'->>'segment_id' AS segment_id,
             sc.raw_payload->'discovery'->>'target_category' AS target_category,
             sc.raw_payload->'discovery'->>'target_subcategory' AS target_subcategory
@@ -67,6 +69,7 @@ async function loadCandidates(q, { productRefs = [] } = {}) {
           ORDER BY candidate.updated_at DESC NULLS LAST, candidate.created_at DESC
           LIMIT 1
        ) sc ON TRUE
+       LEFT JOIN supplier_catalog_imports si ON si.id = sc.import_id
       WHERE p.lifecycle_status = 'candidate'
         AND p.is_active = FALSE
         AND p.content_source IN ('connector_raw','ai_enriched','manual')
@@ -78,12 +81,53 @@ async function loadCandidates(q, { productRefs = [] } = {}) {
   return rows;
 }
 
-function provenanceFor(row = {}) {
+function discoveryProvenanceFor(row = {}) {
+  const category = String(row.target_category || '').trim() || null;
+  const subcategory = String(row.target_subcategory || '').trim() || null;
   return {
-    category: String(row.target_category || '').trim() || null,
-    subcategory: String(row.target_subcategory || '').trim() || null,
+    category,
+    subcategory,
     segment_id: String(row.segment_id || '').trim() || null,
+    source: category && subcategory ? 'discovery' : null,
+    evidence: category && subcategory ? 'raw_payload.discovery' : null,
   };
+}
+
+function historicalSupplierProvenanceFor(row = {}) {
+  if (String(row.supplier_name || '').trim() !== 'CJdropshipping') return null;
+  if (String(row.import_ref || '').trim() !== 'KSI-000244') return null;
+
+  const supplierCategory = String(row.supplier_category || '').trim();
+  if (!supplierCategory) return null;
+
+  const normalized = supplierCategory
+    .replace(/\s*\/\s*/g, ' > ')
+    .replace(/\s*>\s*/g, ' > ')
+    .trim();
+
+  let target = null;
+  if (/^Women's Clothing > /i.test(normalized)) {
+    target = { category: 'Mode & Beauté', subcategory: 'Femme' };
+  } else if (/^Men's Clothing > /i.test(normalized)) {
+    target = { category: 'Mode & Beauté', subcategory: 'Homme' };
+  } else if (/^Toys, Kids & Baby > Girls Clothing > /i.test(normalized)) {
+    target = { category: 'Mode & Beauté', subcategory: 'Enfant' };
+  }
+  if (!target) return null;
+
+  return {
+    ...target,
+    segment_id: null,
+    source: 'historical_supplier_category',
+    evidence: supplierCategory,
+  };
+}
+
+function provenanceFor(row = {}) {
+  const discovery = discoveryProvenanceFor(row);
+  if (discovery.category && discovery.subcategory) return discovery;
+
+  return historicalSupplierProvenanceFor(row) || discovery;
 }
 
 function conflictReason(row, provenance) {
@@ -224,11 +268,15 @@ function printable(result) {
       reason: item.reason,
       target_category: item.provenance.category,
       target_subcategory: item.provenance.subcategory,
+      source: item.provenance.source,
+      evidence: item.provenance.evidence,
     })),
     candidates: result.inspected.map(item => ({
       product_ref: item.row.product_ref,
       supplier: item.row.supplier_name,
       segment_id: item.provenance.segment_id,
+      provenance_source: item.provenance.source,
+      provenance_evidence: item.provenance.evidence,
       legacy_category: item.row.category,
       boutique_category: item.provenance.category,
       boutique_subcategory: item.provenance.subcategory,
@@ -262,6 +310,8 @@ if (require.main === module) {
 module.exports = {
   parseArgs,
   loadCandidates,
+  discoveryProvenanceFor,
+  historicalSupplierProvenanceFor,
   provenanceFor,
   conflictReason,
   inspectCandidate,
