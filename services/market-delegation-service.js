@@ -244,6 +244,41 @@ async function grantableCapabilitiesForActor(executor, { assignmentId, actorUser
 // capability requise est à la fois détenue par le membre et toujours dans le
 // ceiling actif de l'assignment. Utilisée par team/network/provider — un seul
 // point de vérité pour "qui peut faire quoi sur quel marché".
+async function listAuthorizedMarketsForCapability(executor, { userId, requiredCapability }) {
+  const db = requireExecutor(executor);
+  if (!userId) throw delegationError('AUTH_REQUIRED', 'Authentification requise.', 401);
+  if (!requiredCapability) throw new TypeError('requiredCapability requis');
+
+  const { rows } = await db.query(
+    `SELECT m.id AS market_id,
+            m.code AS market_code,
+            m.name AS market_name,
+            m.currency,
+            a.id AS assignment_id,
+            am.id AS membership_id
+       FROM assignment_memberships am
+       JOIN market_operating_assignments a
+         ON a.id = am.assignment_id
+        AND a.status = 'ACTIVE'
+       JOIN markets m
+         ON m.id = a.market_id
+        AND m.is_active = TRUE
+       JOIN membership_capabilities mc
+         ON mc.membership_id = am.id
+        AND mc.capability = $2
+        AND mc.revoked_at IS NULL
+       JOIN assignment_capability_ceiling acc
+         ON acc.assignment_id = a.id
+        AND acc.capability = $2
+        AND acc.revoked_at IS NULL
+      WHERE am.user_id = $1::uuid
+        AND am.status = 'ACTIVE'
+      ORDER BY m.code`,
+    [userId, requiredCapability]
+  );
+  return rows;
+}
+
 async function resolveSingleMarketAuthorization(executor, { userId, requiredCapability }) {
   const db = requireExecutor(executor);
   if (!userId) throw delegationError('AUTH_REQUIRED', 'Authentification requise.', 401);
@@ -607,6 +642,7 @@ module.exports = {
   delegationError,
   normalizeMarketCode,
   resolveActiveAssignmentByMarketCode,
+  listAuthorizedMarketsForCapability,
   resolveSingleMarketAuthorization,
   resolveAuthorization,
   audit,

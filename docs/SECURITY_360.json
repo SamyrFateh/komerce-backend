@@ -3194,11 +3194,7 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/hub-dashboard.js"
+      ]
     },
     {
       "key": "POST /api/hub-dash/orders/{id}/auto-prepare",
@@ -3223,11 +3219,7 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/hub-dashboard.js"
+      ]
     },
     {
       "key": "POST /api/hub-dash/orders/{id}/create-parcel",
@@ -3244,11 +3236,7 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/hub-dashboard.js"
+      ]
     },
     {
       "key": "POST /api/hub-dash/orders/{id}/incident",
@@ -3257,11 +3245,7 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/hub-dashboard.js"
+      ]
     },
     {
       "key": "POST /api/hub-dash/orders/{id}/start-prep",
@@ -3278,11 +3262,7 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/hub-dashboard.js"
+      ]
     },
     {
       "key": "POST /api/hub-dash/parcels/{id}/add-item",
@@ -3323,11 +3303,7 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/hub-dashboard.js"
+      ]
     },
     {
       "key": "GET /api/hub-dash/validate/{id}",
@@ -3336,11 +3312,7 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/hub-dashboard.js"
+      ]
     },
     {
       "key": "POST /api/hub/auto-distribute/cleanup",
@@ -3477,11 +3449,7 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/hub.js"
+      ]
     },
     {
       "key": "POST /api/hub/photo",
@@ -3522,11 +3490,7 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/hub.js"
+      ]
     },
     {
       "key": "GET /api/hub/stats/week",
@@ -3535,11 +3499,7 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/hub.js"
+      ]
     },
     {
       "key": "GET /api/hub/today",
@@ -3548,11 +3508,7 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/hub.js"
+      ]
     },
     {
       "key": "POST /api/hub/transition",

@@ -6,14 +6,14 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-scope.js, services/hub-operations.js
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/hub-operations.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       orders, parcel_items, parcels, users
+ * @db-read       orders, parcel_items, parcels, users, markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling
  * @db-write      none
  * @db-txn        service_owned
- * @doctrine      HUB-001 Physical Identity, Allocation & Custody; HUB-002 Operator Execution Cutover; market_operator_scoping
+ * @doctrine      HUB-001 Physical Identity, Allocation & Custody; HUB-002 Operator Execution Cutover; capability_is_the_authority_not_role; central_hub_roles_remain_global
  * @impact-areas  logistics, market
- * @version       2026-09
+ * @version       2026-10-d4
  */
 
 /**
@@ -40,18 +40,30 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
-const { attachAuthorizedMarketsForOperator } = require('../middleware/require-market-scope');
+const { attachAuthorizedMarketsForCapability } = require('../middleware/require-market-delegated-capability');
 const { validate } = require('../middleware/validate');
 const { hub } = require('../validators');
 const hubOps  = require('../services/hub-operations');
 const uploadHub = require('../middleware/upload-hub');
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
-const hubRead = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
+const attachOperationsReadMarkets = attachAuthorizedMarketsForCapability('operations.read', { audit: false });
+
+function attachHubReadAuthority(req, res, next) {
+  if (!req.user || req.user.role !== 'market_operator') return next();
+  return attachOperationsReadMarkets(req, res, next);
+}
+
+const hubRead = [
+  authenticate,
+  attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']),
+  requireRole(['admin', 'agent_hub', 'market_operator']),
+  attachHubReadAuthority,
+];
 
 function addMarketScope(req, conditions, params, column = 'o.market_id') {
   if (req.user.role !== 'market_operator') return;
-  conditions.push(`${column} = ANY($${params.length + 1}::uuid[])`);
+  conditions.push(`${column} = ANY(${params.length + 1}::uuid[])`);
   params.push(req.authorizedMarkets ? Array.from(req.authorizedMarkets) : []);
 }
 

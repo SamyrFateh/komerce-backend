@@ -30,6 +30,22 @@ jest.mock('../../middleware/auth', () => ({
 jest.mock('../../middleware/validate', () => ({
   validate: () => (req, res, next) => next(),
 }));
+jest.mock('../../middleware/require-market-delegated-role', () => ({
+  attachMarketDelegatedRoleFor: () => (req, res, next) => next(),
+}));
+
+let mockOperationsReadGranted = true;
+const CM_MARKET = '11111111-1111-4111-8111-111111111111';
+jest.mock('../../middleware/require-market-delegated-capability', () => ({
+  attachAuthorizedMarketsForCapability: () => (req, res, next) => {
+    if (!mockOperationsReadGranted) {
+      return res.status(403).json({ code: 'MARKET_CAPABILITY_REQUIRED', error: 'operations.read required' });
+    }
+    req.authorizedMarkets = new Set([CM_MARKET]);
+    return next();
+  },
+}));
+
 
 jest.mock('../../validators', () => ({ hub: { scan: {}, pack: {}, seal: {}, volume: {}, photo: { validate: jest.fn() } } }));
 
@@ -63,6 +79,7 @@ let app;
 beforeEach(() => {
   jest.clearAllMocks();
   mockState.file = undefined;
+  mockOperationsReadGranted = true;
   app = express();
   app.use(express.json());
   jest.isolateModules(() => {
@@ -203,6 +220,27 @@ describe('POST /api/hub/photo', () => {
     const res = await request(app).post('/api/hub/photo').send({ parcel_id: 'P1' });
 
     expect(res.status).toBe(500);
+  });
+});
+
+describe('D4 market_operator authority', () => {
+  test('operations.read absente => refus avant toute lecture Hub', async () => {
+    mockOperationsReadGranted = false;
+    app = express();
+    app.use(express.json());
+    jest.isolateModules(() => {
+      const router = require('../../routes/hub');
+      app.use('/api/hub', (req, _res, next) => {
+        req.user = { id: 'manager-cm', role: 'market_operator' };
+        next();
+      }, router);
+    });
+
+    const res = await request(app).get('/api/hub/search');
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    expect(mockQuery).not.toHaveBeenCalled();
   });
 });
 

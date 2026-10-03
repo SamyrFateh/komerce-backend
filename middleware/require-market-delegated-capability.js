@@ -7,18 +7,18 @@
  * @inputs        authenticated user, canonical marketCode, exact DELEGATION capability
  * @outputs       403 on missing/outside-ceiling capability, request-local authz proof otherwise
  * @depends       db.js, services/market-delegation-service.js
- * @used-by       routes/admin-pricing-workspace.js, routes/transitaire-api.js
+ * @used-by       routes/admin-pricing-workspace.js, routes/transitaire-api.js, routes/hub.js, routes/hub-dashboard.js
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling
  * @db-write      market_delegation_audit
  * @db-txn        none
  * @doctrine      capability_is_the_authority_not_role, audit_before_domain_mutation, users_role_never_mutated, market_scope_is_server_resolved
  * @impact-areas  market-delegation, pricing, authorization
- * @version       2026-09
+ * @version       2026-10-d4
  */
 'use strict';
 
 const db = require('../db');
-const { resolveAuthorization, resolveSingleMarketAuthorization, audit } = require('../services/market-delegation-service');
+const { resolveAuthorization, resolveSingleMarketAuthorization, listAuthorizedMarketsForCapability, audit } = require('../services/market-delegation-service');
 
 function sendDelegationError(res, error) {
   if (!error || !error.code || !error.status) return false;
@@ -41,6 +41,57 @@ function correlationId(req) {
  * still need a central/global bypass (e.g. pricing global authority) must
  * check that before this middleware runs — it does not know about roles.
  */
+function attachAuthorizedMarketsForCapability(capability, options = {}) {
+  if (!capability || typeof capability !== 'string') {
+    throw new TypeError('capability requise');
+  }
+  const shouldAudit = options.audit === true;
+
+  return async (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: 'Authentification requise.', code: 'AUTH_REQUIRED' });
+
+    try {
+      const rows = await listAuthorizedMarketsForCapability(db, {
+        userId: req.user.id,
+        requiredCapability: capability,
+      });
+      if (!rows.length) {
+        return res.status(403).json({
+          error: `Capability ${capability} requise sur au moins un marché actif.`,
+          code: 'MARKET_CAPABILITY_REQUIRED',
+        });
+      }
+
+      req.authorizedMarkets = new Set(rows.map(row => row.market_id));
+      req.marketDelegatedMarkets = rows;
+
+      if (shouldAudit) {
+        for (const authz of rows) {
+          await audit(db, {
+            actorUserId: req.user.id,
+            assignmentId: authz.assignment_id,
+            membershipId: authz.membership_id,
+            capability,
+            action: 'DELEGATION_CAPABILITY_AUTHORIZED',
+            after: {
+              source: req.baseUrl || 'authorized_markets_for_capability',
+              market_code: authz.market_code,
+              method: req.method,
+              path: req.path,
+            },
+            correlationId: correlationId(req),
+          });
+        }
+      }
+
+      return next();
+    } catch (error) {
+      if (sendDelegationError(res, error)) return undefined;
+      return next(error);
+    }
+  };
+}
+
 function requireSingleMarketDelegatedCapability(capability, options = {}) {
   if (!capability || typeof capability !== 'string') {
     throw new TypeError('capability requise');
@@ -146,6 +197,7 @@ function requireMarketDelegatedCapability(capability, options = {}) {
 }
 
 module.exports = {
+  attachAuthorizedMarketsForCapability,
   requireMarketDelegatedCapability,
   requireSingleMarketDelegatedCapability,
 };

@@ -59,12 +59,12 @@ module.exports = {
 
   // ── Primitives utilisées (déjà en place, ne pas recréer) ─────────────────
   primitives_consumed: [
-    'middleware/require-market-scope.js — projection legacy encore consommée par les surfaces D non migrées ; jamais autorité des workspaces D1/D2/D3',
+    'middleware/require-market-scope.js — projection legacy encore consommée uniquement par les surfaces D non migrées ; jamais autorité des workspaces D1/D2/D3 ni du Hub D4',
     'middleware/require-market-delegated-capability.js — operations.read et autres capabilities market-scoped exactes',
     'middleware/require-market-execution-capability.js — execution.* exacte + rôle de compatibilité request-local après preuve',
     'services/dashboard-admin-context.js — resolveDashboardAdminContext (mode market/global)',
     'routes/admin-dashboard-market.js — endpoints /market/:marketCode scopés',
-    'routes/hub-dashboard.js — hubRead/hubSupervise avec filtre market_id dans service',
+    'routes/hub-dashboard.js — D4 : operations.read dérive les Market IDs lisibles ; hub.supervise protège incident/escalade/commentaire ; mutations physiques restent centrales',
     'routes/relay-dashboard.js — 3 cas (admin/agent_relais/market_operator)',
     'routes/admin/partners.js — CRUD scopé country_code, manager requis pour mutations',
     'routes/admin-pricing-workspace.js — lecture/décision locale scopée pour market_operator selon capabilities',

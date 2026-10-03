@@ -154,10 +154,12 @@ describe('GAP-1 — Hub read scoping', () => {
 });
 
 describe('route boundary invariants', () => {
-  test('Hub terrain exposes GET supervision to market_operator but keeps physical POSTs on hubAuth', () => {
+  test('Hub terrain expose les GET au market_operator seulement via operations.read et garde les POST physiques sur hubAuth', () => {
     const source = read('routes/hub.js');
     expect(source).toContain("const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])]");
-    expect(source).toContain("requireRole(['admin', 'agent_hub', 'market_operator'])");
+    expect(source).toContain("attachAuthorizedMarketsForCapability('operations.read'");
+    expect(source).not.toContain('attachAuthorizedMarketsForOperator');
+    expect(source).not.toContain('require-market-scope');
     expect(source).toContain("router.post('/scan', ...hubAuth");
     expect(source).toContain("router.post('/pack', ...hubAuth");
     expect(source).toContain("router.post('/seal', ...hubAuth");
@@ -167,14 +169,17 @@ describe('route boundary invariants', () => {
     expect(source).toContain("router.get('/today', ...hubRead");
   });
 
-  test('Hub dashboard keeps physical mutations out of market_operator', () => {
+  test('Hub dashboard sépare operations.read, hub.supervise et mutations physiques centrales', () => {
     const source = read('routes/hub-dashboard.js');
     expect(source).toContain("const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])]");
-    // GAP-1 (2026-09) : attachMarketDelegatedRoleFor précède désormais
-    // requireRole sur hubRead/hubSupervise (projection de rôle délégué
-    // marché) — la portée admin/agent_hub/market_operator reste inchangée.
-    expect(source).toContain("const hubRead      = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator'])");
-    expect(source).toContain("const hubSupervise = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator'])");
+    expect(source).toContain("attachAuthorizedMarketsForCapability('operations.read'");
+    expect(source).toContain("requireMarketDelegatedCapability('hub.supervise'");
+    expect(source).not.toContain('attachAuthorizedMarketsForOperator');
+    expect(source).not.toContain('require-market-scope');
+    expect(source).toContain('const hubRead = [');
+    expect(source).toContain('attachHubReadAuthority');
+    expect(source).toContain('const hubSupervise = [');
+    expect(source.match(/requireRole\(\['admin', 'agent_hub', 'market_operator'\]\)/g)).toHaveLength(2);
   });
 
   test('Relais and Partners consume the central scope-role resolver', () => {
