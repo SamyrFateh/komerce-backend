@@ -21,11 +21,11 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1570,
-    "edges": 7825,
+    "edges": 7826,
     "dbTables": 182,
     "doctrines": 545,
     "impactAreas": 192,
-    "unresolvedCodeEdges": 774,
+    "unresolvedCodeEdges": 775,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 78
   },
@@ -14486,7 +14486,7 @@
         "catalog",
         "boutique"
       ],
-      "version": "2026-09"
+      "version": "2026-10"
     },
     {
       "id": "services/client-360.js",
@@ -17969,7 +17969,8 @@
         "services/pricing-period-structure.js"
       ],
       "usedBy": [
-        "routes/admin-pricing-workspace.js"
+        "routes/admin-pricing-workspace.js",
+        "scripts/market-cost-attribution-conservation-check.js"
       ],
       "dbRead": [
         "economic_structure_cost_events",
@@ -62605,6 +62606,12 @@
       "label": "routes/admin-pricing-workspace.js"
     },
     {
+      "from": "scripts/market-cost-attribution-conservation-check.js",
+      "to": "services/market-cost-attribution-service.js",
+      "type": "uses",
+      "label": "scripts/market-cost-attribution-conservation-check.js"
+    },
+    {
       "from": "services/market-cost-attribution-service.js",
       "to": "db:economic_structure_cost_events",
       "type": "db-read",
@@ -100889,7 +100896,8 @@
         "services/pricing-period-structure.js"
       ],
       "directUsedBy": [
-        "routes/admin-pricing-workspace.js"
+        "routes/admin-pricing-workspace.js",
+        "scripts/market-cost-attribution-conservation-check.js"
       ],
       "ownedFiles": [],
       "dbRead": [
@@ -117595,6 +117603,12 @@
       "to": "db",
       "type": "depends",
       "label": "db"
+    },
+    {
+      "from": "scripts/market-cost-attribution-conservation-check.js",
+      "to": "services/market-cost-attribution-service.js",
+      "type": "uses",
+      "label": "scripts/market-cost-attribution-conservation-check.js"
     },
     {
       "from": "market-delegation routes",
