@@ -38,6 +38,7 @@ const Joi = require('joi');
 const uuid     = Joi.string().uuid();
 const safeStr  = (max = 255) => Joi.string().trim().max(max);
 const email    = Joi.string().trim().lowercase().email();
+const loginEmail = Joi.string().trim().lowercase().email({ tlds: { allow: false } });
 const phone    = Joi.string().trim().pattern(/^\+?[0-9\s\-().]{6,20}$/).message('Numéro de téléphone invalide');
 const posInt   = Joi.number().integer().positive();
 const posNum   = Joi.number().positive();
@@ -67,7 +68,7 @@ const auth = {
   },
   login: {
     body: Joi.object({
-      email:    email,
+      email:    loginEmail,
       phone:    phone,
       password: safeStr(128).required(),
     }).or('email', 'phone'),

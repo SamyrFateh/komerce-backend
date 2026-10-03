@@ -140,6 +140,14 @@ describe('auth.login', () => {
   const schema = validators.auth?.login;
   const runTest = canValidate(schema) ? test : test.skip;
 
+  runTest('accepts reserved-domain internal login', () => {
+    const { error } = validate(schema, {
+      email: 'operator@example.test',
+      password: 'sample-password-123',
+    });
+    expect(error).toBeUndefined();
+  });
+
   runTest('accepts valid login', () => {
     const { error } = validate(schema, {
       email: 'ali@test.com',
