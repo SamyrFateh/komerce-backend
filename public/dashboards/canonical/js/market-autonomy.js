@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      server_scope_is_authority, country_manager_owns_local_strategy, only_LOCAL_ACTIVE_is_buyer_effective
+ * @doctrine      server_scope_is_authority, country_manager_owns_local_strategy, local_active_implies_market_catalog_entry
  * @impact-areas  admin-dashboard, market, pricing
  * @version       2026-09
  */
@@ -251,7 +251,7 @@
       }
 
       if (canManage && row.local_price != null && row.decision_status !== 'LOCAL_ACTIVE') {
-        const activate = el('button', 'kmc-workspace-action', 'Activer');
+        const activate = el('button', 'kmc-workspace-action', 'Mettre au catalogue');
         activate.type = 'button';
         activate.addEventListener('click', async () => {
           feedback(`Activation ${row.product_ref}…`);
@@ -260,7 +260,7 @@
               method: 'POST',
               body: { reason: reason.value || 'Activation après simulation', source: 'market_autonomy_ui' },
             });
-            feedback(`${row.product_ref} · LOCAL_ACTIVE · prix maintenant consommé par le parcours acheteur.`, 'positive');
+            feedback(`${row.product_ref} · prix actif et entrée au catalogue ${marketCode} confirmée.`, 'positive');
             await load();
           } catch (error) {
             feedback(`${error.message}${error.code ? ` · ${error.code}` : ''}`, 'critical');
