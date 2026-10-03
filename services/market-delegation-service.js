@@ -97,7 +97,10 @@ async function createAssignment(executor, { marketId, actorUserId = null, effect
     `INSERT INTO assignment_capability_ceiling (assignment_id, capability, granted_by)
      SELECT $1::uuid, ctc.capability, $2::uuid
        FROM ceiling_template_capabilities ctc
+       JOIN capability_registry cr ON cr.capability = ctc.capability
       WHERE ctc.template_id = $3::uuid
+        AND cr.authority_scope = 'MARKET'
+        AND cr.delegation_mode = 'DELEGABLE'
      ON CONFLICT DO NOTHING`, [assignment.id, actorUserId, template.id]
   );
   await audit(db, { actorUserId, assignmentId: assignment.id, action: 'ASSIGNMENT_CREATED', after: { market_id: marketId, status, template_id: template.id }, correlationId });
