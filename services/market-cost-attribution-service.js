@@ -36,7 +36,7 @@
  * - un fait non décisionnel (politique absente/ambiguë, assiette vide…) n'écrit
  *   rien et ne déclenche aucun repli silencieux ;
  * - un verrou transactionnel par fait sérialise les écritures concurrentes ;
- * - la migration 268 rejoue la conservation en base (contrainte différée) pour
+ * - la migration 269 rejoue la conservation en base (contrainte différée) pour
  *   tout écrivain, et auditAttributionConservation la vérifie en lecture seule.
  */
 
@@ -394,7 +394,7 @@ async function listEventAttributions(input = {}, options = {}) {
 
 // Audit de conservation en lecture seule : pour chaque fait ayant au moins une
 // attribution active, la somme active doit égaler le montant du fait et le fait
-// doit être un GROUP ACCRUAL. La garde en base (migration 268) empêche ces
+// doit être un GROUP ACCRUAL. La garde en base (migration 269) empêche ces
 // états à l'écriture ; l'audit détecte ce qui y aurait échappé (donnée
 // historique, trigger désactivé, restauration).
 async function auditAttributionConservation(input = {}, options = {}) {

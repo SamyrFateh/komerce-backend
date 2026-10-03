@@ -12,7 +12,7 @@
  * Feature propriétaire : economic-engine
  *
  * Prouve sur une vraie base ce qu'un mock ne peut pas prouver : la contrainte
- * différée de la migration 268 refuse tout état non conservé AU COMMIT (y
+ * différée de la migration 269 refuse tout état non conservé AU COMMIT (y
  * compris un INSERT manuel hors service), tout en laissant passer la
  * correction atomique REVERSAL + nouvelle ATTRIBUTION, et l'annulation totale.
  */

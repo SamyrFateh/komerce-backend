@@ -170,7 +170,7 @@ module.exports = {
       'migrations/191_cost_component_economic_classification.sql',
       'migrations/192_market_price_observations.sql',
       'migrations/267_market_cost_attributions.sql',
-      'migrations/268_market_cost_attributions_conservation_guard.sql',
+      'migrations/269_market_cost_attributions_conservation_guard.sql',
     ],
     dash: [
       // dashboards/admin views — Lot 4
