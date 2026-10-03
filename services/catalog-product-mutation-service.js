@@ -7,8 +7,8 @@
  * @inputs        product mutation command, pool_or_transaction_client
  * @outputs       updated catalog product state
  * @depends       db contract supplied by caller
- * @used-by       services/pricing-apply.js, services/apply-pricing-updates.js, services/pricing-strategy-service.js, services/sourcing-mutations.js
- * @db-read       order_items, orders, product_variants, products
+ * @used-by       services/pricing-apply.js, services/apply-pricing-updates.js, services/pricing-strategy-service.js, services/sourcing-mutations.js, scripts/catalog-taxonomy-provenance-backfill.js
+ * @db-read       boutique_categories, boutique_subcategories, order_items, orders, product_variants, products
  * @db-write      product_variants, products
  * @db-txn        caller transaction preserved; replaceVariantsForSourcing owns its legacy dedicated transaction
  * @doctrine      WRITES != OWNS — catalog owns products/product_variants lifecycle
