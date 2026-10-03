@@ -1174,6 +1174,15 @@
     if (!rootNode || !doc || !ui || typeof fetchFn !== 'function') {
       throw new Error('canonical_catalog_workspace_dependencies_missing');
     }
+    const locationSearch = options.location && typeof options.location.search === 'string'
+      ? options.location.search
+      : (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
+    let focusedProductRef = null;
+    try {
+      focusedProductRef = new URLSearchParams(locationSearch || '').get('product_ref');
+    } catch (_) {
+      focusedProductRef = null;
+    }
     const context = {
       root: rootNode,
       document: doc,
@@ -1184,6 +1193,7 @@
       reload: null,
       approvalLimit: 50,
       approvalOffset: 0,
+      focusedProductRef: String(focusedProductRef || '').trim() || null,
       autoFrenchAttempted: new Set(),
       autoFrenchFailed: new Set(),
       autoFrenchRunning: false,
@@ -1194,6 +1204,7 @@
           approval_limit: String(context.approvalLimit),
           approval_offset: String(context.approvalOffset),
         });
+        if (context.focusedProductRef) params.set('product_ref', context.focusedProductRef);
         const payload = await jsonRequest(fetchFn, `${ENDPOINT}?${params.toString()}`);
         renderPayload(rootNode, ui, doc, payload, context);
         activeContext = context;
