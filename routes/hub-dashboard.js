@@ -6,17 +6,17 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-scope.js, services/*
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, operator_market_scopes, order_items, orders, parcel_items, parcels, products
+ * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, order_items, orders, parcel_items, parcels, products
  * @db-write      order_comments, order_incidents
  * @db-write-via:parcel-item-mutation-service parcel_items
  * @db-write-via:parcel-mutation-service parcels
  * @db-write-via:scan-write-service scans
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change, market_operator_scoping (GAP-1)
+ * @doctrine      resolve_before_behavior_change, capability_is_the_authority_not_role, central_hub_roles_remain_global
  * @impact-areas  dashboard, admin-dashboard, market
- * @version       2026-09
+ * @version       2026-10-d4
  */
 
 /**
@@ -46,8 +46,7 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
-const { attachAuthorizedMarketsForOperator } = require('../middleware/require-market-scope');
-const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
+const { requireMarketDelegatedCapability, attachAuthorizedMarketsForCapability } = require('../middleware/require-market-delegated-capability');
 const { safeSyncScanToParcels } = require('../utils/parcelSync');
 const { generateParcelRef } = require('../utils/reference');
 const { transitionOrderStatus } = require('../services/order-status-machine');
@@ -69,16 +68,29 @@ const hubQueries = require('../services/hub-dashboard-queries');
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 
-// ── GAP-1 (2026-09) ──────────────────────────────────────────────────────
-// hubRead / hubSupervise : ouverts en plus au market_operator, scopé à son
-// marché via operator_market_scopes (attachAuthorizedMarketsForOperator ne
-// fait rien pour admin/agent_hub — aucune requête DB, aucun changement de
-// comportement pour ces deux rôles).
-// hubAuth reste EXCLUSIVEMENT admin/agent_hub pour toute opération physique
-// sur le colis (scan, pack, seal, create-parcel, ready, ship, backorder) —
-// un market_operator ne scanne, n'emballe ni n'expédie jamais.
-const hubRead      = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
-const hubSupervise = [authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']), requireRole(['admin', 'agent_hub', 'market_operator']), attachAuthorizedMarketsForOperator];
+// D4 Market Control Plane — les rôles centraux admin/agent_hub gardent
+// leur accès Hub global historique. Un acteur projeté market_operator doit
+// désormais prouver operations.read pour les lectures ; operator_market_scopes
+// n'est plus l'autorité de ces routes. Les mutations physiques restent
+// exclusivement hubAuth (admin/agent_hub).
+const attachOperationsReadMarkets = attachAuthorizedMarketsForCapability('operations.read', { audit: false });
+
+function attachHubReadAuthority(req, res, next) {
+  if (!req.user || req.user.role !== 'market_operator') return next();
+  return attachOperationsReadMarkets(req, res, next);
+}
+
+const hubRead = [
+  authenticate,
+  attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']),
+  requireRole(['admin', 'agent_hub', 'market_operator']),
+  attachHubReadAuthority,
+];
+const hubSupervise = [
+  authenticate,
+  attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'market_operator']),
+  requireRole(['admin', 'agent_hub', 'market_operator']),
+];
 
 // ── hub.supervise (capability_is_the_authority_not_role) ────────────────────
 // Les routes de supervision (incident/escalade/commentaire) sont adressées
@@ -101,8 +113,8 @@ async function resolveOrderMarket(req, res, next) {
   } catch (err) { return next(err); }
 }
 
-// admin/agent_hub restent autorisés par leur rôle seul (déjà vérifié par
-// hubRead/requireRole en amont) — seul un market_operator doit prouver la
+// admin/agent_hub restent autorisés par leur frontière centrale Hub (déjà
+// vérifiée par hubBase/requireRole) — seul un market_operator doit prouver la
 // capability hub.supervise, exactement comme ensureMarketOperatorCanSupervise
 // ne s'appliquait qu'à ce rôle.
 const hubSuperviseCapability = requireMarketDelegatedCapability('hub.supervise', { audit: false });

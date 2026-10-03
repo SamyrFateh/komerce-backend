@@ -53,13 +53,10 @@ jest.mock('../../middleware/require-market-delegated-role', () => ({
   attachMarketDelegatedRoleFor: () => (req, res, next) => next(),
 }));
 
-// Hors périmètre de ce test suite : attachAuthorizedMarketsForOperator est
-// déjà couvert par ses propres tests (middleware/require-market-scope). Pour
-// hub.supervise, l'autorité réelle est requireMarketDelegatedCapability, pas
-// req.authorizedMarkets — ce no-op isole le test de cette dépendance.
-jest.mock('../../middleware/require-market-scope', () => ({
-  attachAuthorizedMarketsForOperator: (req, res, next) => next(),
-}));
+// D4 : les lectures market_operator sont bornées par operations.read, tandis
+// que les mutations de supervision restent bornées par hub.supervise.
+let mockOperationsReadGranted = true;
+const CM_MARKET = '11111111-1111-4111-8111-111111111111';
 
 // hub.supervise (audit manager-capabilities) : requireMarketDelegatedCapability
 // remplace ensureMarketOperatorCanSupervise pour un market_operator — on
@@ -67,9 +64,17 @@ jest.mock('../../middleware/require-market-scope', () => ({
 // resolveAuthorization/market-delegation-service (déjà testé ailleurs).
 let mockHubSuperviseGranted = true;
 jest.mock('../../middleware/require-market-delegated-capability', () => ({
+  attachAuthorizedMarketsForCapability: (capability) => (req, res, next) => {
+    if (!mockOperationsReadGranted) {
+      return res.status(403).json({ error: `Capability ${capability} requise.`, code: 'MARKET_CAPABILITY_REQUIRED' });
+    }
+    req.authorizedMarkets = new Set([CM_MARKET]);
+    req.marketDelegatedMarkets = [{ market_id: CM_MARKET, market_code: 'CM' }];
+    return next();
+  },
   requireMarketDelegatedCapability: (capability) => (req, res, next) => {
     if (mockHubSuperviseGranted) {
-      req.marketDelegatedCapability = { capability, market_id: 'market-cm', market_code: req.params.marketCode };
+      req.marketDelegatedCapability = { capability, market_id: CM_MARKET, market_code: req.params.marketCode };
       return next();
     }
     return res.status(403).json({ error: `Capability ${capability} requise.`, code: 'MARKET_CAPABILITY_REQUIRED' });
@@ -113,6 +118,7 @@ describe('routes/hub-dashboard', () => {
     mockGetClient.mockReset();
     mockUser = { id: 'op-1', role: 'agent_hub', full_name: 'Opérateur Un' };
     mockHubSuperviseGranted = true;
+    mockOperationsReadGranted = true;
     transitionOrderStatus.mockResolvedValue({ success: true });
   });
 
@@ -127,6 +133,31 @@ describe('routes/hub-dashboard', () => {
     mockUser = null;
     const res = await request(buildApp()).get('/api/hub-dashboard/dashboard');
     expect(res.status).toBe(401);
+  });
+
+  describe('D4 market_operator authority', () => {
+    test('operations.read est obligatoire pour les lectures Hub', async () => {
+      mockUser = { id: 'manager-cm', role: 'market_operator', full_name: 'Manager CM' };
+      mockOperationsReadGranted = false;
+
+      const res = await request(buildApp()).get('/api/hub-dashboard/dashboard');
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+      expect(hubQueries.getDashboardKPIs).not.toHaveBeenCalled();
+    });
+
+    test('operations.read injecte uniquement les Market IDs autorisés dans les queries Hub', async () => {
+      mockUser = { id: 'manager-cm', role: 'market_operator', full_name: 'Manager CM' };
+      hubQueries.getDashboardKPIs.mockResolvedValueOnce({ to_prepare: 1 });
+
+      const res = await request(buildApp()).get('/api/hub-dashboard/dashboard');
+
+      expect(res.status).toBe(200);
+      expect(hubQueries.getDashboardKPIs).toHaveBeenCalledWith({
+        authorizedMarkets: new Set([CM_MARKET]),
+      });
+    });
   });
 
   describe('GET /dashboard', () => {
