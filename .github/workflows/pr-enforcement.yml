@@ -377,7 +377,9 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
       - name: Fetch full history for migration baseline resolution
-        if: needs.changes.outputs.db_rebuild_required == 'true'
+        # ci-db-bootstrap/ci-migrate résout la baseline depuis git log.
+        # Le job from-scratch exécute toujours ce bootstrap, y compris quand il
+        # est déclenché par integration_required/e2e_api_required sans diff migration.
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
