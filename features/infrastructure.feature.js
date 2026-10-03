@@ -377,6 +377,7 @@ module.exports = {
       'tests/unit/pr-enforcement-shallow-checkout.test.js',
       'tests/unit/pr-enforcement-workflow-governance.test.js',
       'tests/unit/pr-preflight.test.js',
+      'tests/unit/pr-preflight-ci-parity.test.js',
       'tests/unit/run-staged-related-tests.test.js',
       'tests/unit/security-360-dispositions.test.js',
       'tests/unit/table-ownership.test.js',
@@ -513,6 +514,10 @@ module.exports = {
     'tout fichier utils/ à @domain infrastructure doit être listé ici',
     'tout fichier bootstrap/ doit être listé ici',
     'validators/index.js est le barrel unique de validation',
+    {
+      statement: 'npm run pr:preflight rejoue toute commande de .github/workflows/pr-enforcement.yml reproductible localement ; toute exception est déclarée dans CI_ONLY avec sa raison, et les projections exclues du contrôle d’arbre sont exactement celles que la CI restaure',
+      test: 'tests/unit/pr-preflight-ci-parity.test.js',
+    },
   ],
 
 };
