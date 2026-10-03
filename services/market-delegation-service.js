@@ -8,7 +8,7 @@
  * @outputs       delegated_market_authority
  * @depends       services/capability-registry.js
  * @used-by       market-delegation routes, market-scope-projector, team service
- * @db-read       markets, capability_registry, ceiling_templates, ceiling_template_capabilities, market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities
+ * @db-read       markets, users, capability_registry, ceiling_templates, ceiling_template_capabilities, market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities
  * @db-write      market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities, market_delegation_audit
  * @db-txn        caller-owned
  * @doctrine      one_active_assignment_per_market, delegated_rights_subset, keep_one_team_grantor
