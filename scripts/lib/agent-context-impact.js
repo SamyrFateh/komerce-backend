@@ -214,6 +214,17 @@ function routeSummary(routes) {
   return Object.entries(levels).map(([k, v]) => `${k}=${v}`).join(' ');
 }
 
+/**
+ * Tests d'un fichier d'outillage (scripts/…) : le graphe Jest des tests liés ne
+ * couvre que le runtime (routes, services…), donc on retient les tests suivis
+ * qui référencent explicitement le fichier (require ou chemin cité).
+ */
+function toolingTests(file, tests) {
+  const stem = String(file).replace(/\.(?:c|m)?js$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const ref = new RegExp(`(?:^|['"\\s]|\\.\\./)${stem}(?:\\.(?:c|m)?js)?['"]`);
+  return tests.filter(t => ref.test(t.source || '')).map(t => t.path).sort();
+}
+
 function renderImpact(impact) {
   const lines = [];
   const push = line => { if (line) lines.push(line); };
@@ -270,5 +281,6 @@ module.exports = {
   indexSources,
   migrationStatus,
   renderImpact,
+  toolingTests,
   securityKey,
 };

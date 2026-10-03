@@ -122,7 +122,7 @@ function buildPack(type, entry, { index, feature360, migration = null, readSourc
     pack.artifacts = impactLib.artifactsFor(['migrations/x.sql']);
   }
   if (type === 'service') {
-    pack.internalApis = (((f360.interfaces || {}).internalApis) || []).map(a => `${a.fn} · ${a.file}`);
+    pack.internalApis = (((f360.interfaces || {}).internalApis) || []).map(a => (a.fn ? `${a.fn} · ${a.file}` : a.file));
     pack.tables = impact.tables.map(t => `${t.table} : ${t.writers.length} écrivain(s)${t.foreignWriters.length ? ` · hors feature : ${t.foreignWriters.join(', ')}` : ''}`);
     pack.consumedBy = impact.consumedBy;
   }

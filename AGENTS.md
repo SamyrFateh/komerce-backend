@@ -250,6 +250,7 @@ Règles :
 - Wallet : créditer, débiter, contre-passer, jamais supprimer.
 - Pricing : composantes DB, jamais de coefficient dur.
 - Toute transition laisse une trace.
+- Authentification Git/GitHub : fournie par l'environnement d'exécution (proxy ou credential helper). Ne jamais demander, chercher, lire, afficher, copier ni persister un token (prompt, `.env`, remote, logs, dépôt) ; un refus d'authentification se signale, il ne se contourne pas.
 - Complétion au contact : si tu touches un fichier **et** son test dans la même
   PR, tu dois amener la couverture de ce fichier au seuil cible (100 % par
   défaut) — pas de retouche partielle qui laisse le fichier aussi peu couvert

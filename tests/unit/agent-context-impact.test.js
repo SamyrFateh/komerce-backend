@@ -156,9 +156,33 @@ describe('agent-context --impact (câblage)', () => {
     expect(lister).not.toHaveBeenCalled();
   });
 
+  test('outillage scripts/ : tests qui référencent le fichier ajoutés au résolveur runtime', () => {
+    const lister = jest.fn(() => ['tests/unit/z.test.js']);
+    const trackedTests = [
+      { path: 'tests/unit/tool.test.js', source: "require('../../scripts/tool');" },
+      { path: 'tests/unit/z.test.js', source: "spawn('node', ['scripts/tool.js'])" },
+      { path: 'tests/unit/other.test.js', source: "require('../../scripts/tool-extra');" },
+    ];
+    const impact = buildImpact('scripts/tool.js', { ...sources, isFile: true, listRelatedTests: lister, trackedTests });
+    expect(impact.tests).toEqual({ full: false, list: ['tests/unit/tool.test.js', 'tests/unit/z.test.js'] });
+  });
+
   test('feature par nom (insensible à la casse) ; cible inconnue refusée avec la liste des features', () => {
     expect(buildImpact('Widgets', { ...sources, isFile: false }).kind).toBe('feature');
     expect(() => buildImpact('nope', { ...sources, isFile: false })).toThrow(/Features : widgets/);
+  });
+});
+
+describe('toolingTests', () => {
+  test('require relatif, chemin cité, extension ; ni préfixe homonyme ni chemin imbriqué ni source absente', () => {
+    const tests = [
+      { path: 'a', source: "require('../../scripts/lib/x')" },
+      { path: 'b', source: '"scripts/lib/x.js"' },
+      { path: 'c', source: "require('../../scripts/lib/x-y')" },
+      { path: 'd', source: "'public/boutique/scripts/lib/x.js'" },
+      { path: 'e', source: null },
+    ];
+    expect(impactLib.toolingTests('scripts/lib/x.js', tests)).toEqual(['a', 'b']);
   });
 });
 
