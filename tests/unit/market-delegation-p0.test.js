@@ -69,6 +69,21 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     expect(migration).toMatch(/market-operator-default/);
   });
 
+  test('new assignments never seed CENTRAL_ONLY capabilities from stale templates', () => {
+    const service = read('services/market-delegation-service.js');
+    const migration = read('migrations/268_market_delegation_template_central_only_cleanup.sql');
+
+    expect(service).toMatch(/JOIN capability_registry cr ON cr\.capability = ctc\.capability/);
+    expect(service).toMatch(/cr\.authority_scope = 'MARKET'/);
+    expect(service).toMatch(/cr\.delegation_mode = 'DELEGABLE'/);
+
+    expect(migration).toMatch(/DELETE FROM ceiling_template_capabilities/);
+    expect(migration).toMatch(/UPDATE membership_capabilities/);
+    expect(migration).toMatch(/UPDATE assignment_capability_ceiling/);
+    expect(migration.indexOf('UPDATE membership_capabilities'))
+      .toBeLessThan(migration.indexOf('UPDATE assignment_capability_ceiling'));
+  });
+
   test('legacy authorization table becomes an attributable market-owned projection without changing middleware', () => {
     const migration = read('migrations/195_operator_market_scopes_projection_marker.sql');
     const projector = read('services/market-scope-projector.js');
