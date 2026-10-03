@@ -120,8 +120,12 @@ module.exports = {
       'migrations/205_market_delegation_client_case_handle_live.sql',
       'migrations/207_market_delegation_catalog_expose_live.sql',
       'migrations/209_market_delegation_settlement_live.sql',
+      'migrations/270_capability_registry_effect_amount_bearing.sql',
       'migrations/210_market_delegation_structure_event_record_live.sql',
       'migrations/212_market_delegation_execution_ceiling.sql',
+    ],
+    config: [
+      'config/market-delegation-capabilities.js',
     ],
     middleware: [
       'middleware/require-market-delegated-role.js',
@@ -161,6 +165,7 @@ module.exports = {
     tests: [
       'tests/unit/provision-market-operator.test.js',
       'tests/unit/market-delegation-p0.test.js',
+      'tests/unit/capability-registry-effect.test.js',
       'tests/unit/market-delegation-team-service.test.js',
       'tests/unit/market-delegation-team-routes.test.js',
       'tests/unit/market-delegation-legacy-backfill.test.js',
@@ -351,5 +356,6 @@ module.exports = {
     { statement: 'aucun SQL direct sur economic_structure_cost_events depuis market-delegation — recordStructureCostEvent() (economic-engine) reste le seul writer, jamais dupliqué', test: 'tests/unit/market-delegation-structure-event-service.test.js' },
     { statement: 'la lecture des faits structure réutilise pricing.read (déjà LIVE) — aucune nouvelle capability de lecture créée pour ce lot', test: 'tests/unit/market-delegation-structure-event-service.test.js' },
     { statement: 'migration 210 active structure.event.record sans jamais créer ni modifier un événement economic_structure_cost_events', test: 'tests/unit/market-delegation-p0.test.js' },
+    { statement: 'chaque capability déclare son effet READ ou ACT une par une, jamais déduit du nom ; amount_bearing ne marque que execution.cash.confirm, settlement.receive et finance.act ; la migration 270 n’écrit aucune membership, aucun plafond ni aucune affectation', test: 'tests/unit/capability-registry-effect.test.js' },
   ],
 };
