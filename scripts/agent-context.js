@@ -6,8 +6,8 @@
  * @layer         tooling
  * @criticality   high
  * @inputs        feature manifests, @komerce-arch headers, interventionIndex, git diff
- * @outputs       compact agent context projection, change-impact projection (--impact)
- * @depends       scripts/pr-enforcement-scope.js, scripts/lib/agent-context-impact.js, scripts/run-staged-related-tests.js, docs/komerce-arch-header-graph.json
+ * @outputs       compact agent context projection, change-impact projection (--impact), context packs (--pack)
+ * @depends       scripts/pr-enforcement-scope.js, scripts/lib/agent-context-impact.js, scripts/lib/agent-context-pack.js, scripts/run-staged-related-tests.js, docs/komerce-arch-header-graph.json
  * @used-by       coding agents, AGENTS.md
  * @db-read       none
  * @db-write      none
@@ -23,6 +23,7 @@ const path = require('path');
 const cp = require('child_process');
 const { classify, classifyDiff } = require('./pr-enforcement-scope');
 const impactLib = require('./lib/agent-context-impact');
+const packLib = require('./lib/agent-context-pack');
 
 const ROOT = path.resolve(__dirname, '..');
 const FEATURE_ROOTS = [
@@ -450,8 +451,45 @@ function buildImpact(target, options = {}) {
   return impactLib.featureImpact(index, entry, { migration });
 }
 
+// --pack <type> --feature <f> | --files <a,b> : contexte minimal par type de changement.
+function buildPacks(type, options = {}) {
+  const features = options.features || loadFeatures();
+  const files = (options.files || []).map(norm).filter(Boolean);
+  const selected = resolveFeatureEntries(features, files, options.featureNames || []);
+  if (!selected.length) {
+    throw new Error(`--pack : aucune feature résolue. Passer --feature <nom> ou --files <chemins>. Features : ${features.map(e => e.manifest.name).join(', ')}`);
+  }
+  const feature360 = options.feature360 || readJson('docs/FEATURE_360.json');
+  const index = impactLib.indexSources({
+    graph: options.graph || readJson('docs/komerce-arch-header-graph.json'),
+    routes: options.routes || readJson('docs/_generated/route-registry.json'),
+    security: options.security || readJson('docs/SECURITY_360.json'),
+    feature360,
+  });
+  const migration = type === 'migration'
+    ? impactLib.migrationStatus({
+      mainFiles: options.mainMigrations || mainMigrationFiles(),
+      localFiles: options.localMigrations || localMigrationFiles(),
+    })
+    : null;
+  return selected.map(entry => packLib.buildPack(type, entry, {
+    index, feature360, migration, readSource: options.readSource || safeRead,
+  }));
+}
+
 function main() {
   const args = process.argv.slice(2);
+  const packType = argValue(args, '--pack', '');
+  if (packType) {
+    const packs = buildPacks(packType, {
+      files: argValue(args, '--files', '').split(','),
+      featureNames: argValue(args, '--feature', '').split(',').map(v => v.trim()).filter(Boolean),
+    });
+    process.stdout.write(args.includes('--json')
+      ? JSON.stringify(packs, null, 2) + '\n'
+      : packs.map(packLib.renderPack).join('\n\n') + '\n');
+    return;
+  }
   const impactTarget = argValue(args, '--impact', '');
   if (impactTarget) {
     const impact = buildImpact(impactTarget, { skipTests: args.includes('--no-tests') });
@@ -511,6 +549,7 @@ if (require.main === module) {
 
 module.exports = {
   buildImpact,
+  buildPacks,
   flattenFiles,
   declaredPath,
   manifestOwnedFiles,
