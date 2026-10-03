@@ -665,6 +665,12 @@ test('le parcours FR intégré conserve toute la file et rend le avant/après ap
   });
 });
 
+test('Catalogue définit le wrapper de table utilisé par les vues produit et relais marché', () => {
+  const workspace = read('public/dashboards/canonical/js/catalog-workspace.js');
+  expect(workspace).toContain('function wrapTable(doc, table)');
+  expect(workspace).toContain("wrap.className = 'kmc-workspace-table-wrap'");
+});
+
 test('Catalogue ne crée plus de navigation parallèle au shell Canonical', () => {
   const source = read('public/dashboards/canonical/js/catalog-control-tower.js');
   const css = read('public/dashboards/canonical/css/catalog-control-tower.css');
