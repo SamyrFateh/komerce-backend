@@ -157,7 +157,7 @@ describe('POST /api/transitaire/ship', () => {
   });
 
   test('409 + ROLLBACK si transitionOrderStatus refuse la transition order', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'P1', reference: 'REF1', status: 'shipped', order_id: 'O1' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'P1', reference: 'REF1', status: 'shipped', order_id: 'O1', market_id: 'market-cm-id' }] });
     mockTransitionOrderStatus.mockResolvedValueOnce({ success: false, noop: false, error: 'invalid transition', previousStatus: 'draft' });
 
     const res = await request(app).post('/api/transitaire/ship').send({ parcel_id: 'P1' });
@@ -172,7 +172,7 @@ describe('POST /api/transitaire/ship', () => {
   });
 
   test('500 + ROLLBACK si syncScanToParcels échoue', async () => {
-    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'P1', reference: 'REF1', status: 'shipped', order_id: 'O1' }] });
+    mockQuery.mockResolvedValueOnce({ rows: [{ id: 'P1', reference: 'REF1', status: 'shipped', order_id: 'O1', market_id: 'market-cm-id' }] });
     mockTransitionOrderStatus.mockResolvedValueOnce({ success: true });
     mockSyncScanToParcels.mockRejectedValueOnce(new Error('sync crash'));
 
