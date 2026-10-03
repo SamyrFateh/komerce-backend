@@ -26,6 +26,7 @@ describe('agent-context-handoff', () => {
     const rules = handoff.rulesFromAgents(fs.readFileSync(path.resolve(__dirname, '../../AGENTS.md'), 'utf8'));
     expect(rules[0]).toMatch(/^Dette : /);
     expect(rules.some(r => /order-status-machine/.test(r))).toBe(true);
+    expect(rules.some(r => /probe non-mutant défini au §7/.test(r))).toBe(true);
     expect(rules.length).toBeGreaterThanOrEqual(5);
   });
 
@@ -36,6 +37,8 @@ describe('agent-context-handoff', () => {
     expect(out).toContain('PACK authz · feature widgets');
     expect(out).toContain('IMPACT routes/w.js');
     expect(out).toContain(`DÉFINITION DE FINI (${handoff.DONE.length})`);
+    expect(out).toContain('git push --dry-run --force --porcelain origin HEAD:refs/heads/wip/capability-probe');
+    expect(out).toContain('poursuivre comme agent d’exécution');
     expect(out.match(/budget: /g)).toHaveLength(1);
     expect(out).toMatch(/budget: \d+ chars ≈ \d+ tokens$/);
   });

@@ -211,6 +211,7 @@ npm run map:check
 - Les preuves reproductibles sont des commandes et des tests. Ne pas committer leurs logs bruts ; consigner un résumé et la commande, sauf preuve externe non régénérable et compacte.
 - Toute nouvelle instruction d'agent doit remplacer une instruction obsolète, jamais s'empiler avec elle.
 - Sandbox jetable : dans une session Claude Code cloud, `.claude/settings.json` sauvegarde automatiquement l'arbre de travail sur `wip/<branche>` (après les éditions, au plus toutes les 2 min, et à chaque fin de tour). Une session interrompue se reprend avec `npm run agent:restore -- <branche>`. `wip/*` n'est jamais une PR : livrer passe toujours par `pr:preflight` puis la branche normale.
+- **Capacités avant conclusion** : un agent ne doit jamais déclarer « je ne peux pas pousser / ouvrir une PR / utiliser GitHub » sur la seule base de son sandbox ou de ses hypothèses. Avant cette conclusion, il vérifie le runtime sans lire de secret : `git rev-parse --is-inside-work-tree`, accès distant via `git ls-remote --heads origin main`, puis capacité d'écriture avec `git push --dry-run --force --porcelain origin HEAD:refs/heads/wip/capability-probe`. Le `--dry-run` ne modifie pas le remote ; `wip/*` est exempté du tampon pre-push. Si le probe réussit, l'agent est un agent d'exécution et poursuit jusqu'au push/PR selon la gouvernance. S'il échoue, il rapporte l'erreur d'authentification/capacité telle quelle, sans demander ni rechercher de token.
 
 ## 7.1. Économie de tokens — contexte compilé obligatoire
 
@@ -274,7 +275,7 @@ Principe : **même rigueur interne, moins de surface conversationnelle. La gouve
 - Wallet : créditer, débiter, contre-passer, jamais supprimer.
 - Pricing : composantes DB, jamais de coefficient dur.
 - Toute transition laisse une trace.
-- Authentification Git/GitHub : fournie par l'environnement d'exécution (proxy ou credential helper). Ne jamais demander, chercher, lire, afficher, copier ni persister un token (prompt, `.env`, remote, logs, dépôt) ; un refus d'authentification se signale, il ne se contourne pas.
+- Authentification Git/GitHub : fournie par l'environnement d'exécution (proxy ou credential helper). Ne jamais demander, chercher, lire, afficher, copier ni persister un token (prompt, `.env`, remote, logs, dépôt). **Ne jamais conclure que push/PR est indisponible avant le probe non-mutant défini au §7.** Un refus réel d'authentification après probe se signale, il ne se contourne pas.
 - Complétion au contact : si tu touches un fichier **et** son test dans la même
   PR, tu dois amener la couverture de ce fichier au seuil cible (100 % par
   défaut) — pas de retouche partielle qui laisse le fichier aussi peu couvert

@@ -28,6 +28,7 @@ const packLib = require('./agent-context-pack');
 const impactLib = require('./agent-context-impact');
 
 const DONE = Object.freeze([
+  'avant de déclarer push/PR/GitHub indisponible, vérifier le runtime sans lire de secret : git rev-parse --is-inside-work-tree ; git ls-remote --heads origin main ; git push --dry-run --force --porcelain origin HEAD:refs/heads/wip/capability-probe ; si le probe réussit, poursuivre comme agent d’exécution',
   'annoncer un plan d’attaque court (demande, feature, opération, périmètre, hors périmètre, invariants, tests) avant de modifier',
   'ne toucher que des fichiers de la feature ci-dessus ; un fichier hors carte rend gate:touched-files rouge',
   'ajouter ou adapter un test pour chaque comportement changé',
