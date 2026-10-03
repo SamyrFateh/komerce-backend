@@ -4637,11 +4637,7 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/relay-dashboard.js"
+      ]
     },
     {
       "key": "PATCH /api/relay/orders/{id}/client-absent",
@@ -4650,11 +4646,7 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/relay-dashboard.js"
+      ]
     },
     {
       "key": "POST /api/relay/orders/{id}/comment",
@@ -4663,11 +4655,7 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/relay-dashboard.js"
+      ]
     },
     {
       "key": "POST /api/relay/orders/{id}/escalate",
@@ -4676,11 +4664,7 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/relay-dashboard.js"
+      ]
     },
     {
       "key": "POST /api/relay/orders/{id}/incident",
@@ -4689,11 +4673,7 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/relay-dashboard.js"
+      ]
     },
     {
       "key": "GET /api/relay/orders/{id}",
@@ -4702,11 +4682,7 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/relay-dashboard.js"
+      ]
     },
     {
       "key": "GET /api/relay/orders",
@@ -4715,11 +4691,7 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
-      ],
-      "file": "routes/relay-dashboard.js"
+      ]
     },
     {
       "key": "GET /api/scans/{order_id}",

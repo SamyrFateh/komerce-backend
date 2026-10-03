@@ -182,11 +182,12 @@ describe('route boundary invariants', () => {
     expect(source.match(/requireRole\(\['admin', 'agent_hub', 'market_operator'\]\)/g)).toHaveLength(2);
   });
 
-  test('Relais and Partners consume the central scope-role resolver', () => {
+  test('Relay Dashboard est capability-based ; Partners reste le dernier consommateur role-scope de ce groupe', () => {
     const relay = read('routes/relay-dashboard.js');
     const partners = read('routes/admin/partners.js');
-    expect(relay).toContain('resolveMarketScopeRole');
-    expect(relay).toContain("hasMarketScopeRole(actualRole, 'manager')");
+    expect(relay).not.toContain('require-market-scope');
+    expect(relay).toContain("attachAuthorizedMarketsForCapability('operations.read'");
+    expect(relay).toContain("requireMarketDelegatedCapability('hub.supervise'");
     expect(partners).toContain('resolveMarketScopeRole');
     expect(partners).toContain("hasMarketScopeRole(actualRole, 'manager')");
   });

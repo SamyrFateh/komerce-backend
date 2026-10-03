@@ -111,12 +111,11 @@ describe('market-delegation runtime compatibility bridge', () => {
     expect(assignmentProjectionCalls.length).toBeGreaterThanOrEqual(3);
   });
 
-  test('les surfaces encore legacy gardent un requireRole statique après le pré-guard ; D3 Operations et D4 Hub en sont sorties', () => {
+  test('les surfaces encore legacy gardent un requireRole statique après le pré-guard ; D3/D4/D5 en sont sorties', () => {
     const legacyFiles = [
       'routes/admin-dashboard-market.js',
       'routes/admin-pricing-workspace.js',
       'routes/admin/partners.js',
-      'routes/relay-dashboard.js',
     ];
     for (const file of legacyFiles) {
       const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -136,5 +135,10 @@ describe('market-delegation runtime compatibility bridge', () => {
       expect(source).not.toContain('require-market-scope');
       expect(source).toContain('operations.read');
     }
+
+    const relay = fs.readFileSync(path.join(ROOT, 'routes', 'relay-dashboard.js'), 'utf8');
+    expect(relay).not.toContain('require-market-scope');
+    expect(relay).toContain("attachAuthorizedMarketsForCapability('operations.read'");
+    expect(relay).toContain("requireMarketDelegatedCapability('hub.supervise'");
   });
 });

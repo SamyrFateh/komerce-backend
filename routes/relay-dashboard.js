@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-scope.js, services/*
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       operator_market_scopes, orders
+ * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, orders
  * @db-write      order_comments, order_incidents
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change, market_operator_scoping (GAP-2)
+ * @doctrine      resolve_before_behavior_change, capability_is_the_authority_not_role, relay_id_is_server_boundary
  * @impact-areas  dashboard, admin-dashboard, market
- * @version       2026-09
+ * @version       2026-10-d5
  */
 
 'use strict';
@@ -39,27 +39,67 @@ const router  = express.Router();
 const db      = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
-const { attachAuthorizedMarketsForOperator, resolveMarketScopeRole, hasMarketScopeRole } = require('../middleware/require-market-scope');
+const { attachAuthorizedMarketsForCapability, requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const log = require('../utils/logger').child({ module: 'relay-dashboard' });
 const { getDashboardKPIs, getOrders, getOrderDetail } = require('../services/relay-dashboard-queries');
 
-// ── GAP-2 (2026-09) ──────────────────────────────────────────────────────
-// Ouvert en plus au market_operator, scopé à ses marchés via
-// operator_market_scopes. attachAuthorizedMarketsForOperator ne fait rien
-// pour admin/agent_relais — aucune requête DB, aucun changement de
-// comportement pour ces deux rôles (invariant : droits actuels inchangés).
-router.use(authenticate, attachMarketDelegatedRoleFor(['admin', 'agent_relais', 'market_operator']), requireRole(['admin', 'agent_relais', 'market_operator']), attachAuthorizedMarketsForOperator);
+// D5 Market Control Plane — admin reste central, agent_relais reste borné par
+// son relais_id serveur. Un market_operator doit prouver operations.read pour
+// les lectures et hub.supervise pour les mutations de supervision. La
+// projection de rôle request-local n'est jamais une autorité marché.
+const attachOperationsReadMarkets = attachAuthorizedMarketsForCapability('operations.read', { audit: false });
+const relaySuperviseCapability = requireMarketDelegatedCapability('hub.supervise', { audit: false });
+
+function attachRelayReadAuthority(req, res, next) {
+  if (!req.user || req.user.role !== 'market_operator') return next();
+  return attachOperationsReadMarkets(req, res, next);
+}
+
+function requireRelaySupervise(req, res, next) {
+  if (!req.user || req.user.role !== 'market_operator') return next();
+  return relaySuperviseCapability(req, res, next);
+}
+
+const relayRead = [
+  authenticate,
+  attachMarketDelegatedRoleFor(['admin', 'agent_relais', 'market_operator']),
+  requireRole(['admin', 'agent_relais', 'market_operator']),
+  attachRelayReadAuthority,
+];
+
+const relaySupervise = [
+  authenticate,
+  attachMarketDelegatedRoleFor(['admin', 'agent_relais', 'market_operator']),
+  requireRole(['admin', 'agent_relais', 'market_operator']),
+];
+
+async function resolveOrderMarket(req, res, next) {
+  try {
+    const { rows } = await db.query(
+      `SELECT o.id, o.reference, o.status, o.relais_id, o.market_id, m.code AS market_code
+         FROM orders o
+         JOIN markets m ON m.id = o.market_id
+        WHERE o.id = $1`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Commande introuvable' });
+    req.relayOrder = rows[0];
+    req.params.marketCode = rows[0].market_code;
+    return next();
+  } catch (err) { return next(err); }
+}
 
 // ── Security helper — vérifie que la commande appartient au relais ──────────
 // 3 cas : admin (aucun check), agent_relais (relais_id fixe, IDOR fix
-// d'origine préservé à l'identique), market_operator (marché autorisé, ET
-// scope 'manager' requis — toute mutation, y compris comment/escalate, est
-// fermée à un viewer, cf. requireMarketScopeRole).
+// préservé), market_operator (capability hub.supervise déjà prouvée sur le
+// market_code résolu depuis la commande).
 async function assertOrderBelongsToRelais(req, res, orderId) {
-  const { rows: [order] } = await db.query(
-    'SELECT id, reference, status, relais_id, market_id FROM orders WHERE id = $1',
-    [orderId]
-  );
+  const order = req.relayOrder && String(req.relayOrder.id) === String(orderId)
+    ? req.relayOrder
+    : (await db.query(
+      'SELECT id, reference, status, relais_id, market_id FROM orders WHERE id = $1',
+      [orderId]
+    )).rows[0];
   if (!order) {
     res.status(404).json({ error: 'Commande introuvable' });
     return null;
@@ -75,16 +115,10 @@ async function assertOrderBelongsToRelais(req, res, orderId) {
   }
 
   if (req.user.role === 'market_operator') {
-    if (!req.authorizedMarkets || !req.authorizedMarkets.has(order.market_id)) {
-      res.status(403).json({ error: 'Commande hors de votre périmètre marché', code: 'market_scope_denied' });
-      return null;
-    }
-    const actualRole = await resolveMarketScopeRole(req.user.id, order.market_id);
-    if (!hasMarketScopeRole(actualRole, 'manager')) {
-      res.status(403).json({
-        error: `Scope ${actualRole || 'aucun'} insuffisant — manager requis`,
-        code: 'market_scope_role_insufficient',
-      });
+    if (!req.marketDelegatedCapability
+        || req.marketDelegatedCapability.capability !== 'hub.supervise'
+        || String(req.marketDelegatedCapability.market_id) !== String(order.market_id)) {
+      res.status(403).json({ error: 'Commande hors de votre périmètre marché', code: 'MARKET_CAPABILITY_REQUIRED' });
       return null;
     }
     return order;
@@ -95,14 +129,14 @@ async function assertOrderBelongsToRelais(req, res, orderId) {
 }
 
 // GET /dashboard
-router.get('/dashboard', async (req, res, next) => {
+router.get('/dashboard', ...relayRead, async (req, res, next) => {
   try {
     res.json(await getDashboardKPIs(req.user, { authorizedMarkets: req.authorizedMarkets }));
   } catch(err) { next(err); }
 });
 
 // GET /orders
-router.get('/orders', async (req, res, next) => {
+router.get('/orders', ...relayRead, async (req, res, next) => {
   try {
     const { status, search, limit = 50, offset = 0 } = req.query;
     res.json(await getOrders(req.user, { status, search, limit, offset }, { authorizedMarkets: req.authorizedMarkets }));
@@ -110,7 +144,7 @@ router.get('/orders', async (req, res, next) => {
 });
 
 // GET /orders/:id
-router.get('/orders/:id', async (req, res, next) => {
+router.get('/orders/:id', ...relayRead, async (req, res, next) => {
   try {
     const result = await getOrderDetail(req.user, req.params.id, { authorizedMarkets: req.authorizedMarkets });
     if (!result) return res.status(404).json({ error: 'Commande introuvable' });
@@ -119,17 +153,32 @@ router.get('/orders/:id', async (req, res, next) => {
   } catch(err) { next(err); }
 });
 
+function validateIncidentBody(req, res, next) {
+  const { type } = req.body || {};
+  if (!type) return res.status(400).json({ error: "Type d'incident requis" });
+  const validTypes = ['retard','blocage','paiement','stock','colis_endommage','colis_perdu','client_absent','autre'];
+  if (!validTypes.includes(type)) {
+    return res.status(400).json({ error: `Type invalide. Valides: ${validTypes.join(', ')}` });
+  }
+  return next();
+}
+
+function validateCommentBody(req, res, next) {
+  const { text } = req.body || {};
+  if (!text || !text.trim()) return res.status(400).json({ error: 'Texte requis' });
+  return next();
+}
+
+function validateEscalateBody(req, res, next) {
+  const { reason } = req.body || {};
+  if (!reason || !reason.trim()) return res.status(400).json({ error: "Raison d'escalade requise" });
+  return next();
+}
+
 // POST /orders/:id/incident
-router.post('/orders/:id/incident', async (req, res, next) => {
+router.post('/orders/:id/incident', ...relaySupervise, validateIncidentBody, resolveOrderMarket, requireRelaySupervise, async (req, res, next) => {
   try {
     const { type, description, priority } = req.body;
-    if (!type) return res.status(400).json({ error: "Type d'incident requis" });
-
-    const validTypes = ['retard','blocage','paiement','stock','colis_endommage','colis_perdu','client_absent','autre'];
-    if (!validTypes.includes(type)) {
-      return res.status(400).json({ error: `Type invalide. Valides: ${validTypes.join(', ')}` });
-    }
-
     const order = await assertOrderBelongsToRelais(req, res, req.params.id);
     if (!order) return;
 
@@ -145,11 +194,9 @@ router.post('/orders/:id/incident', async (req, res, next) => {
 });
 
 // POST /orders/:id/comment
-router.post('/orders/:id/comment', async (req, res, next) => {
+router.post('/orders/:id/comment', ...relaySupervise, validateCommentBody, resolveOrderMarket, requireRelaySupervise, async (req, res, next) => {
   try {
     const { text } = req.body;
-    if (!text || !text.trim()) return res.status(400).json({ error: 'Texte requis' });
-
     const order = await assertOrderBelongsToRelais(req, res, req.params.id);
     if (!order) return;
 
@@ -164,11 +211,9 @@ router.post('/orders/:id/comment', async (req, res, next) => {
 });
 
 // POST /orders/:id/escalate
-router.post('/orders/:id/escalate', async (req, res, next) => {
+router.post('/orders/:id/escalate', ...relaySupervise, validateEscalateBody, resolveOrderMarket, requireRelaySupervise, async (req, res, next) => {
   try {
     const { reason, priority } = req.body;
-    if (!reason || !reason.trim()) return res.status(400).json({ error: "Raison d'escalade requise" });
-
     const order = await assertOrderBelongsToRelais(req, res, req.params.id);
     if (!order) return;
 
@@ -189,7 +234,7 @@ router.post('/orders/:id/escalate', async (req, res, next) => {
 });
 
 // PATCH /orders/:id/client-absent
-router.patch('/orders/:id/client-absent', async (req, res, next) => {
+router.patch('/orders/:id/client-absent', ...relaySupervise, resolveOrderMarket, requireRelaySupervise, async (req, res, next) => {
   try {
     const order = await assertOrderBelongsToRelais(req, res, req.params.id);
     if (!order) return;
