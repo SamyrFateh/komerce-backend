@@ -136,6 +136,7 @@ module.exports = {
       'services/capability-registry.js',
       'services/market-delegation-service.js',
       'services/market-scope-projector.js',
+      'services/market-operator-provisioning.js',
       'services/market-delegation-team-service.js',
       'services/market-cash-control-policy-service.js',
       'services/market-delegation-network-service.js',
@@ -164,6 +165,7 @@ module.exports = {
     ],
     tests: [
       'tests/unit/provision-market-operator.test.js',
+      'tests/unit/market-operator-provisioning.test.js',
       'tests/unit/market-delegation-p0.test.js',
       'tests/unit/capability-registry-effect.test.js',
       'tests/unit/market-delegation-team-service.test.js',
@@ -285,6 +287,8 @@ module.exports = {
       { fn: 'resolveActiveAssignmentByMarketCode', file: 'services/market-delegation-service.js' },
       { fn: 'projectAssignment', file: 'services/market-scope-projector.js' },
       { fn: 'projectionDrift', file: 'services/market-scope-projector.js' },
+      { fn: 'ensureOperatorMembership', file: 'services/market-operator-provisioning.js' },
+      { fn: 'grantOperatorScope', file: 'services/market-operator-provisioning.js' },
       { fn: 'attachMarketDelegatedRoleFor', file: 'middleware/require-market-delegated-role.js' },
       { fn: 'inviteTeamMember', file: 'services/market-delegation-team-service.js' },
       { fn: 'acceptInvitation', file: 'services/market-delegation-team-service.js' },
@@ -316,6 +320,7 @@ module.exports = {
   authority: 'backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées, ni la vérité monétaire du settlement.',
 
   invariants: [
+    { statement: 'un scope marché d’opérateur n’est attribué que par une membership de délégation (ensureOperatorMembership) ; aucun chemin applicatif d’attribution n’écrit operator_market_scopes directement, la route admin et le script CLI partagent la même logique', test: 'tests/unit/market-operator-provisioning.test.js' },
     { statement: 'un Market ID possède au plus un Market Operating Assignment ACTIVE', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'aucune capability GROUP ou CENTRAL_ONLY ne peut entrer dans un ceiling marché', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'les capabilities d’un membre sont toujours un sous-ensemble du ceiling actif de son assignment', test: 'tests/unit/market-delegation-p0.test.js' },

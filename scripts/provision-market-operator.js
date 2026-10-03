@@ -42,64 +42,16 @@
 const db = require('../db');
 const bcrypt = require('bcryptjs');
 const delegation = require('../services/market-delegation-service');
-const {
-  projectAssignment,
-  desiredScopesForAssignment,
-  LEGACY_VIEWER_CAPABILITIES,
-} = require('../services/market-scope-projector');
+const provisioning = require('../services/market-operator-provisioning');
 
-const VALID_SCOPES = ['viewer', 'manager'];
+const { VALID_SCOPES, derivedRoleForUser, targetCapabilitiesForScope } = provisioning;
 
-const MANAGER_CEILING_QUERY = `
-  SELECT acc.capability
-    FROM assignment_capability_ceiling acc
-    JOIN capability_registry registry ON registry.capability = acc.capability
-   WHERE acc.assignment_id = $1
-     AND acc.revoked_at IS NULL
-     AND registry.class = 'DELEGATION'
-     AND registry.authority_scope = 'MARKET'
-     AND registry.delegation_mode = 'DELEGABLE'
-     AND registry.status = 'LIVE'
-`;
-
-// Un manager reçoit tout le ceiling LIVE de l'assignment. Un viewer reçoit le
-// baseline de lecture canonique du projecteur — la même liste qui détermine,
-// côté projectAssignment(), si une membership est reconnue comme "viewer"
-// pour operator_market_scopes. Une seule source de vérité pour ce baseline :
-// services/market-scope-projector.js.
-async function targetCapabilitiesForScope(executor, { assignmentId, scope }) {
-  if (scope === 'manager') {
-    const { rows } = await executor.query(MANAGER_CEILING_QUERY, [assignmentId]);
-    return rows.map(row => row.capability);
-  }
-  return LEGACY_VIEWER_CAPABILITIES.slice();
-}
-
-// Dérive le rôle viewer/manager d'un utilisateur EXACTEMENT comme le fait
-// projectAssignment() (même fonction, même requête) — pour ne jamais avoir
-// une notion de "rôle actuel" divergente entre ce script et le projecteur.
-// Retourne null si la membership existe mais ne correspond à aucun des deux
-// baselines (capabilities personnalisées) : ce script ne sait alors pas
-// classer la membership et échoue fermé plutôt que de deviner.
-async function derivedRoleForUser(executor, { assignmentId, userId }) {
-  const desired = await desiredScopesForAssignment(executor, assignmentId);
-  const row = desired.find(r => String(r.user_id) === String(userId));
-  return row ? row.scope_role : null;
-}
-
+// Le script ne garde que l'affichage : la logique d'attribution vit dans
+// services/market-operator-provisioning.js (partagée avec la route admin).
 async function resolveOrCreateAssignment(client, { marketId, marketCode }) {
-  const assignment = await delegation.resolveActiveAssignmentByMarketCode(client, marketCode).catch(err => {
-    if (err && err.code === 'MARKET_ASSIGNMENT_NOT_ACTIVE') return null;
-    if (err && err.code === 'MARKET_NOT_FOUND') {
-      throw new Error(`Marché ${marketCode} inactif ou introuvable — impossible de résoudre/créer le Market Operating Assignment. Réactivez le marché avant de provisionner.`);
-    }
-    throw err;
-  });
-  if (assignment) return assignment.assignment_id;
-
-  const created = await delegation.createAssignment(client, { marketId, status: 'ACTIVE' });
-  console.log(`✅ Market Operating Assignment créé pour ${marketCode}`);
-  return created.id;
+  const { assignmentId, created } = await provisioning.resolveOrCreateAssignment(client, { marketId, marketCode });
+  if (created) console.log(`✅ Market Operating Assignment créé pour ${marketCode}`);
+  return assignmentId;
 }
 
 // Prévisualisation en lecture seule pour --dry-run : aucune écriture, mais on
@@ -155,46 +107,16 @@ async function ensureDelegationMembership({ userId, marketId, marketCode, scope,
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
-
-    const assignmentId = await resolveOrCreateAssignment(client, { marketId, marketCode });
-    const existingMembership = await delegation.activeMembershipForUser(client, assignmentId, userId);
-
-    if (existingMembership) {
-      const derivedRole = await derivedRoleForUser(client, { assignmentId, userId });
-
-      if (derivedRole !== scope) {
-        await client.query('ROLLBACK');
-        const observed = derivedRole || 'personnalisé (capabilities hors baseline viewer/manager)';
-        const error = new Error(
-          `Rôle demandé "${scope}" ≠ rôle dérivé des capabilities actuelles ("${observed}") pour cet utilisateur sur ${marketCode}. ` +
-          `Aucune écriture effectuée. Changez les capabilities via la route d'administration d'équipe ` +
-          `(PUT /markets/${marketCode}/team/${existingMembership.id}/capabilities), puis relancez ce script pour vérifier.`
-        );
-        error.code = 'MARKET_DELEGATION_SCOPE_MISMATCH';
-        throw error;
-      }
-
-      // Idempotent : rien à muter côté capabilities. On répare quand même la
-      // projection au cas où operator_market_scopes aurait dérivé (legacy,
-      // écriture manuelle antérieure, etc.).
-      await projectAssignment(client, assignmentId);
-      await client.query('COMMIT');
-      console.log(`✅ Membership délégation déjà conforme (${scope}) sur ${marketCode} — projection vérifiée/réparée.`);
-      return { status: 'unchanged' };
-    }
-
-    const capabilities = await targetCapabilitiesForScope(client, { assignmentId, scope });
-    await delegation.addMembership(client, {
-      assignmentId,
-      userId,
-      capabilities,
-      actorIsCentral: true,
+    const outcome = await provisioning.ensureOperatorMembership(client, {
+      userId, marketId, marketCode, scope, allowRoleChange: false,
     });
-    await projectAssignment(client, assignmentId);
-
     await client.query('COMMIT');
-    console.log(`✅ Membership délégation créée (${scope}) sur ${marketCode} — projection reconstruite.`);
-    return { status: 'created' };
+    if (outcome.status === 'unchanged') {
+      console.log(`✅ Membership délégation déjà conforme (${scope}) sur ${marketCode} — projection vérifiée/réparée.`);
+    } else {
+      console.log(`✅ Membership délégation créée (${scope}) sur ${marketCode} — projection reconstruite.`);
+    }
+    return { status: outcome.status };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     throw err;

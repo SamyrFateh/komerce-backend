@@ -112,6 +112,7 @@ describe('provision-market-operator — ensureDelegationMembership', () => {
       assignmentId: 'a1',
       userId: 'u1',
       capabilities: projector.LEGACY_VIEWER_CAPABILITIES,
+      actorUserId: null,
       actorIsCentral: true,
     });
     expect(projector.projectAssignment).toHaveBeenCalledWith(client, 'a1');
@@ -139,6 +140,7 @@ describe('provision-market-operator — ensureDelegationMembership', () => {
       assignmentId: 'a1',
       userId: 'u1',
       capabilities: ['pricing.decide', 'catalog.read'],
+      actorUserId: null,
       actorIsCentral: true,
     });
   });

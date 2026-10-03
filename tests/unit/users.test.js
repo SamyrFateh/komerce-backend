@@ -16,6 +16,10 @@ jest.mock('../../utils/logger', () => ({
 
 jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 
+jest.mock('../../services/market-operator-provisioning', () => ({
+  grantOperatorScope: jest.fn(),
+}));
+
 jest.mock('../../services/market-scope-admin-service', () => ({
   normalizeMarketCode: jest.fn((value) => {
     const code = String(value || '').trim().toUpperCase();
@@ -29,7 +33,6 @@ jest.mock('../../services/market-scope-admin-service', () => ({
   listActiveScopesForUsers: jest.fn(),
   listUserMarketScopeHistory: jest.fn(),
   hasUserMarketScopeHistory: jest.fn(),
-  grantOrReplaceMarketScope: jest.fn(),
   revokeMarketScope: jest.fn(),
   revokeAllUserMarketScopes: jest.fn(),
 }));
@@ -74,6 +77,7 @@ const express = require('express');
 const request = require('supertest');
 const db = require('../../db');
 const marketScopes = require('../../services/market-scope-admin-service');
+const provisioning = require('../../services/market-operator-provisioning');
 
 let app;
 
@@ -99,7 +103,7 @@ beforeEach(() => {
   marketScopes.listActiveScopesForUsers.mockResolvedValue([]);
   marketScopes.listUserMarketScopeHistory.mockResolvedValue([]);
   marketScopes.hasUserMarketScopeHistory.mockResolvedValue(false);
-  marketScopes.grantOrReplaceMarketScope.mockResolvedValue({ status: 'granted', scope: null });
+  provisioning.grantOperatorScope.mockResolvedValue({ status: 'granted', scope: null });
   marketScopes.revokeMarketScope.mockResolvedValue({ status: 'revoked', revoked: null });
   marketScopes.revokeAllUserMarketScopes.mockResolvedValue([]);
   db.getClient.mockImplementation(async () => makeClient());
@@ -275,7 +279,7 @@ describe('POST /api/admin/users', () => {
     db.query
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: 'op-1', full_name: 'Ibrahim', email: 'ibrahim@x.km', role: 'market_operator', currency_pref: 'KMF' }] });
-    marketScopes.grantOrReplaceMarketScope.mockResolvedValueOnce({
+    provisioning.grantOperatorScope.mockResolvedValueOnce({
       status: 'granted',
       scope: { id: 'g1', user_id: 'op-1', market_code: 'CM', scope_role: 'manager' },
     });
@@ -291,7 +295,7 @@ describe('POST /api/admin/users', () => {
     expect(res.status).toBe(201);
     expect(res.body.role).toBe('market_operator');
     expect(res.body.market_scopes[0]).toMatchObject({ market_code: 'CM', scope_role: 'manager' });
-    expect(marketScopes.grantOrReplaceMarketScope).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+    expect(provisioning.grantOperatorScope).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
       userId: 'op-1', marketCode: 'CM', scopeRole: 'manager', grantedBy: ADMIN.id,
     }));
   });
@@ -300,7 +304,7 @@ describe('POST /api/admin/users', () => {
     db.query
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ id: 'op-1', full_name: 'Ibrahim', email: 'ibrahim@x.km', role: 'market_operator' }] });
-    marketScopes.grantOrReplaceMarketScope.mockResolvedValueOnce({ status: 'market_not_found', scope: null });
+    provisioning.grantOperatorScope.mockResolvedValueOnce({ status: 'market_not_found', scope: null });
 
     const res = await request(app).post('/api/admin/users').send({
       full_name: 'Ibrahim', email: 'ibrahim@x.km', password: 'Abcdefg1', role: 'market_operator',
@@ -363,7 +367,7 @@ describe('PUT /api/admin/users/:id/role', () => {
     db.query
       .mockResolvedValueOnce({ rows: [{ id: 'u1', full_name: 'Jean', email: 'jean@x.km', role: 'client' }] })
       .mockResolvedValueOnce({ rows: [{ id: 'u1', full_name: 'Jean', email: 'jean@x.km', role: 'market_operator' }] });
-    marketScopes.grantOrReplaceMarketScope.mockResolvedValueOnce({
+    provisioning.grantOperatorScope.mockResolvedValueOnce({
       status: 'granted', scope: { id: 'g1', market_code: 'CM', scope_role: 'manager' },
     });
 
@@ -401,7 +405,7 @@ describe('POST /api/admin/users/:id/market-scopes', () => {
 
   it('ajoute ou change un scope avec historique géré par la boundary market', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ id: 'u1', role: 'market_operator' }] });
-    marketScopes.grantOrReplaceMarketScope.mockResolvedValueOnce({
+    provisioning.grantOperatorScope.mockResolvedValueOnce({
       status: 'replaced', scope: { id: 'g2', market_code: 'CM', scope_role: 'manager' },
     });
     const res = await request(app).post('/api/admin/users/u1/market-scopes').send({

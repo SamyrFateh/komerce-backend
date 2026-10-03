@@ -121,82 +121,6 @@ async function resolveActiveMarket(executor, marketCode) {
   return rows[0] || null;
 }
 
-async function grantOrReplaceMarketScope(executor, {
-  userId,
-  marketCode,
-  scopeRole,
-  grantedBy = null,
-}) {
-  const db = requireExecutor(executor);
-  const role = normalizeScopeRole(scopeRole);
-  const market = await resolveActiveMarket(db, marketCode);
-
-  if (!role) return { status: 'invalid_scope_role', scope: null };
-  if (!market) return { status: 'market_not_found', scope: null };
-
-  const { rows: activeRows } = await db.query(
-    `SELECT id, role, granted_at, granted_by
-       FROM operator_market_scopes
-      WHERE user_id = $1::uuid
-        AND market_id = $2::uuid
-        AND revoked_at IS NULL
-      FOR UPDATE`,
-    [userId, market.id]
-  );
-
-  const active = activeRows[0] || null;
-  if (active && active.role === role) {
-    return {
-      status: 'unchanged',
-      scope: {
-        id: active.id,
-        user_id: userId,
-        market_id: market.id,
-        market_code: market.code,
-        market_name: market.name,
-        currency: market.currency,
-        scope_role: active.role,
-        granted_at: active.granted_at,
-        granted_by: active.granted_by,
-      },
-    };
-  }
-
-  if (active) {
-    await db.query(
-      `UPDATE operator_market_scopes
-          SET revoked_at = NOW(),
-              revoked_by = $3::uuid
-        WHERE id = $1::uuid
-          AND user_id = $2::uuid
-          AND revoked_at IS NULL`,
-      [active.id, userId, grantedBy]
-    );
-  }
-
-  const { rows } = await db.query(
-    `INSERT INTO operator_market_scopes (
-       user_id,
-       market_id,
-       role,
-       granted_by
-     )
-     VALUES ($1::uuid, $2::uuid, $3, $4::uuid)
-     RETURNING id, user_id, market_id, role AS scope_role, granted_at, granted_by`,
-    [userId, market.id, role, grantedBy]
-  );
-
-  return {
-    status: active ? 'replaced' : 'granted',
-    scope: {
-      ...rows[0],
-      market_code: market.code,
-      market_name: market.name,
-      currency: market.currency,
-    },
-  };
-}
-
 /**
  * Persistence boundary for the market-delegation compatibility projection.
  * The caller computes the desired authority; Market remains the sole writer of
@@ -369,7 +293,6 @@ module.exports = {
   listActiveScopesForUsers,
   listUserMarketScopeHistory,
   hasUserMarketScopeHistory,
-  grantOrReplaceMarketScope,
   upsertProjectedMarketScope,
   revokeProjectedMarketScopes,
   listProjectedMarketScopes,
