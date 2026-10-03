@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-02T07:44:40.108Z",
+  "generatedAt": "2026-10-03T00:53:52.719Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 690,
-    "protected": 635,
+    "total": 694,
+    "protected": 639,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2130,6 +2130,34 @@
     },
     {
       "key": "GET /api/admin/workspaces/pricing/strategy",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/structure-events/{eventId}/attributions/correct",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/structure-events/{eventId}/attributions/reverse",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/workspaces/pricing/structure-events/{eventId}/attributions",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/workspaces/pricing/structure-events/{eventId}/attributions",
       "level": "PROTECTED",
       "roles": [
         "admin"

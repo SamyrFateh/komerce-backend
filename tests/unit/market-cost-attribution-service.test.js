@@ -22,6 +22,7 @@ const {
   attributeGroupEvent,
   reverseAttributions,
   correctGroupEventAttribution,
+  listEventAttributions,
 } = require('../../services/market-cost-attribution-service');
 
 const EVENT_ID = '11111111-1111-4111-8111-111111111111';
@@ -92,6 +93,10 @@ function makeExecutor(state = {}) {
       if (/FROM public\.economic_structure_cost_events/.test(sql)) {
         if (state.nullEventRows) return {};
         return { rows: state.event === null ? [] : [state.event || eventRow()] };
+      }
+      if (/JOIN public\.markets m/.test(sql)) {
+        if (state.nullListRows) return {};
+        return { rows: state.listRows || [] };
       }
       if (/FROM public\.market_cost_attributions a/.test(sql)) {
         if (state.nullActiveRows) return {};
@@ -455,5 +460,72 @@ describe('correctGroupEventAttribution', () => {
     await expect(
       correctGroupEventAttribution({ ...base, reason: '' }, { executor: makeExecutor() })
     ).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+  });
+});
+
+describe('listEventAttributions', () => {
+  const row = (id, kind, marketId, amount, active) => ({
+    id, event_kind: kind, market_id: marketId, market_code: marketId === M1 ? 'CM' : 'CG',
+    amount_kmf: amount, allocation_key: 'PROPORTIONAL:PAID_ORDER_COUNT', policy_version: 'policy-v1',
+    reverses_id: null, recorded_by: ACTOR_ID, recorded_at: new Date('2026-10-03T00:00:00.000Z'), active,
+  });
+
+  test('retourne le journal avec total actif et conservation', async () => {
+    const executor = makeExecutor({
+      listRows: [
+        row('a1', 'ATTRIBUTION', M1, '666.67', true),
+        row('a2', 'ATTRIBUTION', M2, '333.33', true),
+      ],
+    });
+
+    const result = await listEventAttributions({ eventId: EVENT_ID }, { executor });
+
+    expect(result).toMatchObject({
+      event_id: EVENT_ID,
+      event_amount_kmf: '1000.00',
+      active_total_kmf: '1000.00',
+      conserved: true,
+    });
+    expect(result.attributions).toHaveLength(2);
+    expect(result.attributions[0].market_code).toBe('CM');
+  });
+
+  test('exclut du total les attributions reversées et les REVERSAL', async () => {
+    const executor = makeExecutor({
+      listRows: [
+        row('a1', 'ATTRIBUTION', M1, '1000.00', false),
+        row('r1', 'REVERSAL', M1, '-1000.00', false),
+        row('a2', 'ATTRIBUTION', M1, '600.00', true),
+      ],
+    });
+
+    const result = await listEventAttributions({ eventId: EVENT_ID }, { executor });
+
+    expect(result.active_total_kmf).toBe('600.00');
+    expect(result.conserved).toBe(false);
+  });
+
+  test('aucune attribution : total 0 et non conservé', async () => {
+    const result = await listEventAttributions({ eventId: EVENT_ID }, { executor: makeExecutor({ nullListRows: true }) });
+    expect(result).toMatchObject({ active_total_kmf: '0.00', conserved: false, attributions: [] });
+  });
+
+  test('fait introuvable', async () => {
+    await expect(
+      listEventAttributions({ eventId: EVENT_ID }, { executor: makeExecutor({ event: null }) })
+    ).rejects.toMatchObject({ code: 'EVENT_NOT_FOUND' });
+  });
+
+  test('eventId invalide et appel sans argument : INVALID_INPUT', async () => {
+    await expect(listEventAttributions({ eventId: 'x' })).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+    await expect(listEventAttributions()).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+  });
+
+  test('sans executor injecté : utilise db.query', async () => {
+    const ex = makeExecutor();
+    db.query.mockImplementation(ex.query);
+    const result = await listEventAttributions({ eventId: EVENT_ID });
+    expect(result.event_id).toBe(EVENT_ID);
+    expect(db.query).toHaveBeenCalled();
   });
 });

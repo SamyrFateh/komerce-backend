@@ -4,9 +4,9 @@
  * @domain        economic-engine
  * @layer         route
  * @criticality   high
- * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy, structure_cost_event
- * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, market_price_decisions, market_corridor_projection, activation_preview, action_results, structure_cost_event_fact, structure_cost_event_history
- * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js
+ * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy, structure_cost_event, allocation_policies, attribution_reason
+ * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, market_price_decisions, market_corridor_projection, activation_preview, action_results, structure_cost_event_fact, structure_cost_event_history, market_cost_attribution_journal
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js, services/market-cost-attribution-service.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, operator_market_scopes, pricing_global_access_grants, charges, economic_structure_cost_events, users
  * @db-write      none
@@ -37,6 +37,7 @@ const pricingMarketCorridor = require('../services/pricing-market-corridor');
 const marketCommercialPrice = require('../services/market-commercial-price-service');
 const marketLocalPriceActivation = require('../services/market-local-price-activation-service');
 const pricingPeriodStructure = require('../services/pricing-period-structure');
+const marketCostAttribution = require('../services/market-cost-attribution-service');
 const { decorateMarketDecision } = marketDecisionProjection;
 
 const MARKET_CODE = /^[A-Z]{2}$/;
@@ -506,6 +507,87 @@ router.post('/structure-events', async (req, res, next) => {
     );
     sendAction(res, 'record_structure_cost_event', event, 201);
   } catch (error) { handleStructureEventError(error, res, next); }
+});
+
+// Attribution des faits GROUP aux marchés (journal append-only). Admin à
+// autorité globale uniquement : l'acteur vient de la session, l'identifiant du
+// fait du chemin, jamais du corps. Les politiques d'allocation sont explicites,
+// versionnées et sourcées ; chaque attribution en conserve un snapshot.
+const ATTRIBUTION_ERRORS = Object.freeze({
+  INVALID_INPUT: [400, 'market_cost_attribution_invalid'],
+  EVENT_NOT_FOUND: [404, 'structure_event_not_found'],
+  EVENT_NOT_GROUP: [422, 'market_cost_attribution_event_not_attributable'],
+  EVENT_NOT_ACCRUAL: [422, 'market_cost_attribution_event_not_attributable'],
+  EVENT_ALREADY_ADJUSTED: [409, 'market_cost_attribution_event_adjusted'],
+  NO_ACTIVE_ATTRIBUTION: [409, 'market_cost_attribution_none_active'],
+  CONSERVATION_FAILURE: [422, 'market_cost_attribution_conservation_failure'],
+});
+
+function handleAttributionError(error, res, next) {
+  const mapped = error instanceof marketCostAttribution.MarketCostAttributionError
+    ? ATTRIBUTION_ERRORS[error.code]
+    : null;
+  if (mapped) return res.status(mapped[0]).json({ error: error.message, code: mapped[1] });
+  return handleStructureEventError(error, res, next);
+}
+
+function sendAttributionResult(res, action, result) {
+  const { OUTCOMES } = marketCostAttribution;
+  if (result.outcome === OUTCOMES.NOT_DECISIONAL) {
+    return res.status(422).json({
+      ok: false,
+      action,
+      code: 'market_cost_attribution_not_decisional',
+      result,
+    });
+  }
+  const written = result.written && result.written.length > 0;
+  return sendAction(res, action, result, written ? 201 : 200);
+}
+
+router.get('/structure-events/:eventId/attributions', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await marketCostAttribution.listEventAttributions({ eventId: req.params.eventId }));
+  } catch (error) { handleAttributionError(error, res, next); }
+});
+
+router.post('/structure-events/:eventId/attributions', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    const result = await marketCostAttribution.attributeGroupEvent({
+      eventId: req.params.eventId,
+      actorId: req.user.id,
+      policies: (req.body || {}).policies,
+    });
+    sendAttributionResult(res, 'attribute_group_structure_event', result);
+  } catch (error) { handleAttributionError(error, res, next); }
+});
+
+router.post('/structure-events/:eventId/attributions/reverse', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    const result = await marketCostAttribution.reverseAttributions({
+      eventId: req.params.eventId,
+      actorId: req.user.id,
+      reason: (req.body || {}).reason,
+    });
+    sendAttributionResult(res, 'reverse_group_structure_event_attributions', result);
+  } catch (error) { handleAttributionError(error, res, next); }
+});
+
+router.post('/structure-events/:eventId/attributions/correct', async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    const body = req.body || {};
+    const result = await marketCostAttribution.correctGroupEventAttribution({
+      eventId: req.params.eventId,
+      actorId: req.user.id,
+      policies: body.policies,
+      reason: body.reason,
+    });
+    sendAttributionResult(res, 'correct_group_structure_event_attribution', result);
+  } catch (error) { handleAttributionError(error, res, next); }
 });
 
 router.get('/', async (req, res, next) => {

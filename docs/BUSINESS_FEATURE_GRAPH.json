@@ -7709,6 +7709,13 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/unit/admin-pricing-workspace-market-cost-attribution-route.test.js",
+        "resolvedPath": "tests/unit/admin-pricing-workspace-market-cost-attribution-route.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/pricing-market-coverage.test.js",
         "resolvedPath": "tests/unit/pricing-market-coverage.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -19669,6 +19676,38 @@
         "entry": "POST /api/admin/workspaces/pricing/structure-events",
         "method": "POST",
         "path": "/api/admin/workspaces/pricing/structure-events",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "GET /api/admin/workspaces/pricing/structure-events/:eventId/attributions",
+        "method": "GET",
+        "path": "/api/admin/workspaces/pricing/structure-events/{id}/attributions",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/structure-events/:eventId/attributions",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/structure-events/{id}/attributions",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/structure-events/:eventId/attributions/reverse",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/structure-events/{id}/attributions/reverse",
+        "routeFile": "routes/admin-pricing-workspace.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "economic-engine",
+        "entry": "POST /api/admin/workspaces/pricing/structure-events/:eventId/attributions/correct",
+        "method": "POST",
+        "path": "/api/admin/workspaces/pricing/structure-events/{id}/attributions/correct",
         "routeFile": "routes/admin-pricing-workspace.js",
         "status": "resolved-owned"
       },
@@ -41694,7 +41733,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1778
+        "filesObserved": 1779
       },
       "boutique": {
         "filesObserved": 214,

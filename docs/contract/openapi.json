@@ -6,8 +6,8 @@
     "description": "Généré automatiquement par scripts/contract-generate.js.\nNE PAS ÉDITER À LA MAIN — relancer `npm run contract:generate` après tout changement de route ou de validateur.\n\nStatuts de contrat :\n  - x-contract-status: \"joi\"       → requête haute fidélité (schéma Joi)\n  - x-contract-status: \"test\"      → réponse couverte par un test intégration/unitaire\n  - x-contract-status: \"route-read\" → champs lus directement dans le handler (res.json),\n  - x-contract-status: \"service-read\" → forme top-level lue dans le service/lib appelée par la route,\n                                       pas de test sur le corps HTTP — confiance < \"test\"\n  - x-contract-status: \"scan-*\"    → champs observés dans le code front\n  - x-contract-status: \"UNKNOWN\"   → non couvert, à compléter"
   },
   "x-contract-debt": {
-    "unknown_responses": 0,
-    "total_routes": 602,
+    "unknown_responses": 22,
+    "total_routes": 634,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -2955,7 +2955,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "shipments": {
@@ -2982,7 +2982,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "shipment": {
@@ -3011,7 +3011,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "rates": {
@@ -3496,7 +3496,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "categories": {
@@ -5364,7 +5364,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "orders": {
@@ -5405,7 +5405,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "orders": {
@@ -5442,7 +5442,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "parcels": {
@@ -5483,7 +5483,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "orders": {
@@ -6868,6 +6868,38 @@
         }
       }
     },
+    "/api/admin/workspaces/catalog/approval/{productRef}/prepare-fr": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/catalog/approval/{productRef}/prepare-fr",
+        "x-route-file": "routes/admin-catalog-workspace.js",
+        "parameters": [
+          {
+            "name": "productRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/workspaces/catalog/approval/{productRef}/approve": {
       "post": {
         "summary": "POST /api/admin/workspaces/catalog/approval/{productRef}/approve",
@@ -7711,6 +7743,357 @@
         }
       }
     },
+    "/api/admin/workspaces/sourcing/import-runs": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/sourcing/import-runs",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "runs": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/import-passages": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/sourcing/import-passages",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/import-cockpit": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/sourcing/import-cockpit",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "source_controls": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lots": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "selected": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/import-runs/{runRef}": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/sourcing/import-runs/{runRef}",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "runRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "run_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "mode": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "failure_reason": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "provider": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "source_type": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "source_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "import_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "started_at": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "finished_at": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "current_stage": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "processed": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "progress_pct": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "accounting": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "stages": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "current_item": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "recent_items": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "events": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/import-runs/{runRef}/population": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/sourcing/import-runs/{runRef}/population",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "runRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/import-runs/{runRef}/items/{supplierProductId}": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/sourcing/import-runs/{runRef}/items/{supplierProductId}",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "runRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierProductId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "run_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "provider": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "import_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "candidate_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "supplier_product_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "refinery": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "canonical_category": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "product_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "certification": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "catalogue_status": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/import-runs/replay": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/import-runs/replay",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/workspaces/sourcing/imports": {
       "post": {
         "summary": "POST /api/admin/workspaces/sourcing/imports",
@@ -7813,6 +8196,454 @@
         }
       }
     },
+    "/api/admin/workspaces/sourcing/sources/catalog": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/sourcing/sources/catalog",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/requests": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/requests",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/requests/{requestRef}": {
+      "patch": {
+        "summary": "PATCH /api/admin/workspaces/sourcing/sources/requests/{requestRef}",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "requestRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "delete": {
+        "summary": "DELETE /api/admin/workspaces/sourcing/sources/requests/{requestRef}",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "requestRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}": {
+      "patch": {
+        "summary": "PATCH /api/admin/workspaces/sourcing/sources/{sourceRef}",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/archive": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/archive",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/restore": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/restore",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/test-connection": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/test-connection",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/status": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/status",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/credentials": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/credentials",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/test": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/test",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/rotate": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/rotate",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/revoke": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/revoke",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/prepare": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/prepare",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/workspaces/sourcing/sources/{sourceRef}/capabilities/{capability}": {
       "post": {
         "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/capabilities/{capability}",
@@ -7841,12 +8672,44 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Enveloppe sendAction standard",
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/sourcing/sources/{sourceRef}/import-now": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/import-now",
+        "x-route-file": "routes/admin-sourcing-workspace.js",
+        "parameters": [
+          {
+            "name": "sourceRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "ok": {
-                      "type": "boolean",
+                      "type": "string",
                       "x-observed": true
                     },
                     "action": {
@@ -7854,7 +8717,7 @@
                       "x-observed": true
                     },
                     "result": {
-                      "type": "object",
+                      "type": "string",
                       "x-observed": true
                     }
                   }
@@ -9457,6 +10320,200 @@
         }
       }
     },
+    "/api/admin/workspaces/pricing/structure-events/{eventId}/attributions": {
+      "get": {
+        "summary": "GET /api/admin/workspaces/pricing/structure-events/{eventId}/attributions",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "event_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "event_amount_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "active_total_kmf": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "conserved": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "attributions": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/structure-events/{eventId}/attributions",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/structure-events/{eventId}/attributions/reverse": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/structure-events/{eventId}/attributions/reverse",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/workspaces/pricing/structure-events/{eventId}/attributions/correct": {
+      "post": {
+        "summary": "POST /api/admin/workspaces/pricing/structure-events/{eventId}/attributions/correct",
+        "x-route-file": "routes/admin-pricing-workspace.js",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "action": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/admin/workspaces/pricing": {
       "get": {
         "summary": "GET /api/admin/workspaces/pricing",
@@ -10399,7 +11456,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "orders": {
@@ -10483,7 +11540,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "products": {
@@ -10516,7 +11573,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "relais": {
@@ -11275,7 +12332,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "id": {
@@ -11314,7 +12371,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "id": {
@@ -11355,7 +12412,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "partner": {
@@ -12769,7 +13826,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "executive": {
@@ -12798,7 +13855,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "variables": {
@@ -12866,7 +13923,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "charges": {
@@ -13037,7 +14094,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "coherence": {
@@ -13066,7 +14123,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "history": {
@@ -13153,7 +14210,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "config": {
@@ -13390,7 +14447,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "analysis": {
@@ -13458,7 +14515,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "synthesis": {
@@ -13697,7 +14754,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "imported": {
@@ -13726,7 +14783,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "catalogs": {
@@ -13755,7 +14812,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "candidates": {
@@ -14224,7 +15281,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "signals": {
@@ -14265,7 +15322,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "total": {
@@ -14306,7 +15363,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "ok": {
@@ -14663,7 +15720,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "activite": {
@@ -14753,7 +15810,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "pipeline": {
@@ -14950,7 +16007,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "period": {
@@ -15057,7 +16114,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "period": {
@@ -15090,7 +16147,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "clients": {
@@ -15119,7 +16176,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "total": {
@@ -15156,7 +16213,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "profile": {
@@ -16299,7 +17356,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "count": {
@@ -16447,7 +17504,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "summary": {
@@ -19101,7 +20158,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "period": {
@@ -19175,7 +20232,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "hours_threshold": {
@@ -19612,7 +20669,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "ok": {
@@ -19797,7 +20854,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "competitor": {
@@ -19865,7 +20922,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "strategy": {
@@ -19894,7 +20951,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "ok": {
@@ -19985,7 +21042,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "flow": {
@@ -20385,7 +21442,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "dashboard": {
@@ -21333,26 +22390,7 @@
         "x-route-file": "routes/hub.js",
         "responses": {
           "201": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "service-read",
-                  "description": "Champs observés (source: service-read)",
-                  "type": "object",
-                  "properties": {
-                    "physical_unit": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "label": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Unité physique opérateur créée"
           },
           "400": {
             "description": "Commande Hub invalide"
@@ -21879,7 +22917,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "ok": {
@@ -21937,7 +22975,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "ok": {
@@ -21966,7 +23004,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "ok": {
@@ -21995,7 +23033,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "ok": {
@@ -22028,7 +23066,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "ok": {
@@ -22094,7 +23132,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "ok": {
@@ -22162,7 +23200,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "parcels": {
@@ -22195,7 +23233,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "success": {
@@ -22232,7 +23270,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "stats": {
@@ -22261,7 +23299,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "events": {
@@ -22290,7 +23328,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "distributed": {
@@ -22317,7 +23355,7 @@
               "application/json": {
                 "schema": {
                   "x-contract-status": "test",
-                  "description": "Champs observés (source: route-read)",
+                  "description": "Champs observés (source: test)",
                   "type": "object",
                   "properties": {
                     "proposals": {
@@ -23911,6 +24949,539 @@
         }
       }
     },
+    "/api/purchasing/open-lines": {
+      "get": {
+        "summary": "GET /api/purchasing/open-lines",
+        "x-route-file": "routes/purchasing.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "filter": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "groups": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total_lines": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/{po_id}": {
+      "get": {
+        "summary": "GET /api/purchasing/po/{po_id}",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "purchase_order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lines": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "multi_market": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "delete": {
+        "summary": "DELETE /api/purchasing/po/{po_id}",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/prepare": {
+      "post": {
+        "summary": "POST /api/purchasing/po/prepare",
+        "x-route-file": "routes/purchasing.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "purchase_order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "line_ids": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lines": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "multi_market": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/{po_id}/detach": {
+      "post": {
+        "summary": "POST /api/purchasing/po/{po_id}/detach",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "purchase_order_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "detached": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "remaining_lines": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/{po_id}/discard": {
+      "post": {
+        "summary": "POST /api/purchasing/po/{po_id}/discard",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "purchase_order_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "detached": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/lines/{id}/cancel": {
+      "post": {
+        "summary": "POST /api/purchasing/lines/{id}/cancel",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "line_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "cancelled": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "detached_from": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/{po_id}/submit": {
+      "post": {
+        "summary": "POST /api/purchasing/po/{po_id}/submit",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "purchase_order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lines": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "groups": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "preflights": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "notification": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "place_order_invoked": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "multi_market": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/po/{po_id}/confirm": {
+      "post": {
+        "summary": "POST /api/purchasing/po/{po_id}/confirm",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "po_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "purchase_order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lines": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "remnants": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "multi_market": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/lines": {
+      "post": {
+        "summary": "POST /api/purchasing/lines",
+        "x-route-file": "routes/purchasing.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "line": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "multi_market": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/purchasing/lines/{id}/settle": {
+      "post": {
+        "summary": "POST /api/purchasing/lines/{id}/settle",
+        "x-route-file": "routes/purchasing.js",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "line": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "remnant": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "unsettled_quantity": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "purchase_order": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "multi_market": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/purchasing/suppliers": {
       "get": {
         "summary": "GET /api/purchasing/suppliers",
@@ -24303,321 +25874,6 @@
                       "x-observed": true
                     },
                     "received_qty": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/purchasing/po/{po_id}": {
-      "get": {
-        "summary": "GET /api/purchasing/po/{po_id}",
-        "x-route-file": "routes/purchasing.js",
-        "parameters": [
-          {
-            "name": "po_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "purchase_order": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "lines": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "markets": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "multi_market": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      },
-      "delete": {
-        "summary": "DELETE /api/purchasing/po/{po_id}",
-        "x-route-file": "routes/purchasing.js",
-        "parameters": [
-          {
-            "name": "po_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "message": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/purchasing/open-lines": {
-      "get": {
-        "summary": "GET /api/purchasing/open-lines",
-        "x-route-file": "routes/purchasing.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "filter": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "groups": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "total_lines": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/purchasing/po/prepare": {
-      "post": {
-        "summary": "POST /api/purchasing/po/prepare",
-        "x-route-file": "routes/purchasing.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "purchase_order": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "line_ids": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "lines": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "markets": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "multi_market": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/purchasing/po/{po_id}/detach": {
-      "post": {
-        "summary": "POST /api/purchasing/po/{po_id}/detach",
-        "x-route-file": "routes/purchasing.js",
-        "parameters": [
-          {
-            "name": "po_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "purchase_order_id": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "detached": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "remaining_lines": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/purchasing/po/{po_id}/discard": {
-      "post": {
-        "summary": "POST /api/purchasing/po/{po_id}/discard",
-        "x-route-file": "routes/purchasing.js",
-        "parameters": [
-          {
-            "name": "po_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "purchase_order_id": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "status": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "detached": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/purchasing/lines/{id}/cancel": {
-      "post": {
-        "summary": "POST /api/purchasing/lines/{id}/cancel",
-        "x-route-file": "routes/purchasing.js",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "line_id": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "cancelled": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "detached_from": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -26524,6 +27780,78 @@
         }
       }
     },
+    "/api/market-delegation/markets/{marketCode}/clients": {
+      "get": {
+        "summary": "GET /api/market-delegation/markets/{marketCode}/clients",
+        "x-route-file": "routes/market-delegation-client.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/market-delegation/markets/{marketCode}/clients/{clientPhone}": {
+      "get": {
+        "summary": "GET /api/market-delegation/markets/{marketCode}/clients/{clientPhone}",
+        "x-route-file": "routes/market-delegation-client.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "clientPhone",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
     "/api/market-delegation/markets/{marketCode}/client-cases/disputes": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/client-cases/disputes",
@@ -26940,6 +28268,38 @@
                       "x-observed": true
                     }
                   }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/market-delegation/markets/{marketCode}/config": {
+      "get": {
+        "summary": "GET /api/market-delegation/markets/{marketCode}/config",
+        "x-route-file": "routes/market-delegation-market-config.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "UNKNOWN",
+                  "description": "Forme de réponse non couverte par un test. À compléter via des tests d'intégration."
                 }
               }
             }
@@ -27989,568 +29349,6 @@
                   "type": "object",
                   "properties": {
                     "config": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/workspaces/sourcing/import-runs": {
-      "get": {
-        "summary": "GET /api/admin/workspaces/sourcing/import-runs",
-        "x-route-file": "routes/admin-sourcing-workspace.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "test",
-                  "description": "Champs observés (source: test)",
-                  "type": "object",
-                  "properties": {
-                    "runs": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/workspaces/sourcing/import-cockpit": {
-      "get": {
-        "summary": "GET /api/admin/workspaces/sourcing/import-cockpit",
-        "x-route-file": "routes/admin-sourcing-workspace.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "test",
-                  "description": "Champs observés (source: test)",
-                  "type": "object",
-                  "properties": {
-                    "source_controls": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "lots": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "selected": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/workspaces/sourcing/import-runs/{runRef}": {
-      "get": {
-        "summary": "GET /api/admin/workspaces/sourcing/import-runs/{runRef}",
-        "x-route-file": "routes/admin-sourcing-workspace.js",
-        "parameters": [
-          {
-            "name": "runRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "service-read",
-                  "description": "Champs observés (source: service-read)",
-                  "type": "object",
-                  "properties": {
-                    "run_ref": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "mode": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "status": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "failure_reason": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "provider": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "source_type": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "import_ref": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "started_at": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "finished_at": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "updated_at": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "current_stage": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "processed": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "progress_pct": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "accounting": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "stages": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "current_item": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "recent_items": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "events": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "source_ref": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/workspaces/sourcing/import-runs/{runRef}/items/{supplierProductId}": {
-      "get": {
-        "summary": "GET /api/admin/workspaces/sourcing/import-runs/{runRef}/items/{supplierProductId}",
-        "x-route-file": "routes/admin-sourcing-workspace.js",
-        "parameters": [
-          {
-            "name": "runRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "supplierProductId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "service-read",
-                  "description": "Champs observés (source: service-read)",
-                  "type": "object",
-                  "properties": {
-                    "run_ref": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "provider": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "import_ref": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "candidate_ref": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "supplier_product_id": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "refinery": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "canonical_category": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "product_ref": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "certification": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "catalogue_status": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/workspaces/sourcing/import-runs/replay": {
-      "post": {
-        "summary": "POST /api/admin/workspaces/sourcing/import-runs/replay",
-        "x-route-file": "routes/admin-sourcing-workspace.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "test",
-                  "description": "Champs observés (source: test)",
-                  "type": "object",
-                  "properties": {
-                    "ok": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "action": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "result": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/admin/workspaces/sourcing/sources/{sourceRef}/import-now": {
-      "post": {
-        "summary": "POST /api/admin/workspaces/sourcing/sources/{sourceRef}/import-now",
-        "x-route-file": "routes/admin-sourcing-workspace.js",
-        "parameters": [
-          {
-            "name": "sourceRef",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "test",
-                  "description": "Champs observés (source: test)",
-                  "type": "object",
-                  "properties": {
-                    "ok": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "action": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "result": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/purchasing/po/{po_id}/submit": {
-      "post": {
-        "summary": "POST /api/purchasing/po/{po_id}/submit",
-        "x-route-file": "routes/purchasing.js",
-        "parameters": [
-          {
-            "name": "po_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "purchase_order": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "lines": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "groups": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "preflights": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "notification": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "place_order_invoked": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "markets": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "multi_market": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/purchasing/po/{po_id}/confirm": {
-      "post": {
-        "summary": "POST /api/purchasing/po/{po_id}/confirm",
-        "x-route-file": "routes/purchasing.js",
-        "parameters": [
-          {
-            "name": "po_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "purchase_order": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "lines": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "remnants": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "markets": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "multi_market": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/purchasing/lines": {
-      "post": {
-        "summary": "POST /api/purchasing/lines",
-        "x-route-file": "routes/purchasing.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "line": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "markets": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "multi_market": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
-    "/api/purchasing/lines/{id}/settle": {
-      "post": {
-        "summary": "POST /api/purchasing/lines/{id}/settle",
-        "x-route-file": "routes/purchasing.js",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "route-read",
-                  "description": "Champs observés (source: route-read)",
-                  "type": "object",
-                  "properties": {
-                    "line": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "remnant": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "unsettled_quantity": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "purchase_order": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "markets": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "multi_market": {
                       "type": "string",
                       "x-observed": true
                     }

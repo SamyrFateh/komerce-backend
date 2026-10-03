@@ -7,8 +7,8 @@
  * @inputs        economic_structure_cost_event_id, allocation_policies, actor_id, reason
  * @outputs       market_cost_attributions
  * @depends       db, services/pricing-period-structure.js
- * @used-by       @none
- * @db-read       economic_structure_cost_events, market_cost_attributions
+ * @used-by       routes/admin-pricing-workspace.js
+ * @db-read       economic_structure_cost_events, market_cost_attributions, markets
  * @db-write      market_cost_attributions
  * @db-txn        BEGIN/COMMIT with advisory lock per source event
  * @doctrine      pricing_market_viability_cost_scope
@@ -357,10 +357,44 @@ async function correctGroupEventAttribution(input = {}, options = {}) {
   });
 }
 
+// Lecture du journal d'un fait : lignes append-only telles qu'écrites, drapeau
+// `active` (ATTRIBUTION non ciblée par un REVERSAL) et contrôle de conservation.
+async function listEventAttributions(input = {}, options = {}) {
+  const eventId = requireUuid(input.eventId, 'eventId');
+  const client = resolveExecutor(options) || db;
+
+  const event = await loadSourceEvent(client, eventId);
+  const { rows } = await client.query(
+    `SELECT a.id, a.event_kind, a.market_id, m.code AS market_code, a.amount_kmf,
+            a.allocation_key, a.policy_version, a.reverses_id, a.recorded_by, a.recorded_at,
+            (a.event_kind = 'ATTRIBUTION' AND NOT EXISTS (
+               SELECT 1 FROM public.market_cost_attributions r WHERE r.reverses_id = a.id
+             )) AS active
+       FROM public.market_cost_attributions a
+       JOIN public.markets m ON m.id = a.market_id
+      WHERE a.source_event_id = $1
+      ORDER BY a.recorded_at ASC, a.id ASC`,
+    [eventId]
+  );
+
+  const attributions = rows || [];
+  const activeCents = attributions
+    .filter((row) => row.active)
+    .reduce((sum, row) => sum + toCents(row.amount_kmf), 0);
+  return {
+    event_id: eventId,
+    event_amount_kmf: centsToAmount(toCents(event.amount_kmf)),
+    active_total_kmf: centsToAmount(activeCents),
+    conserved: activeCents === toCents(event.amount_kmf),
+    attributions,
+  };
+}
+
 module.exports = {
   OUTCOMES,
   MarketCostAttributionError,
   attributeGroupEvent,
   reverseAttributions,
   correctGroupEventAttribution,
+  listEventAttributions,
 };
