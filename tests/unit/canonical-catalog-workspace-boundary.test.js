@@ -187,7 +187,7 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=2501');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261003-5');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261003-6');
   expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261003-3');
 });
 
@@ -236,6 +236,7 @@ test('Catalogue montre la file immédiatement et conserve le contexte Product 36
   expect(workspace).toContain("tr.setAttribute('data-product-ref'");
   expect(workspace).toContain("text(doc, 'a', 'kmc-catalog-product-title'");
   expect(workspace).toContain('Retour à la curation');
+  expect(workspace).toContain("params.set('product_ref', context.focusedProductRef)");
   expect(decision).toContain('requestedProductRef');
   expect(decision).toContain("classList.add('is-context-target')");
   expect(decision).toContain("host.insertBefore(approvalSection");
