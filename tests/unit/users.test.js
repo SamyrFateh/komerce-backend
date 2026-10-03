@@ -18,6 +18,8 @@ jest.mock('../../db', () => ({ query: jest.fn(), getClient: jest.fn() }));
 
 jest.mock('../../services/market-operator-provisioning', () => ({
   grantOperatorScope: jest.fn(),
+  revokeOperatorScope: jest.fn(),
+  revokeAllOperatorScopes: jest.fn(),
 }));
 
 jest.mock('../../services/market-scope-admin-service', () => ({
@@ -33,8 +35,6 @@ jest.mock('../../services/market-scope-admin-service', () => ({
   listActiveScopesForUsers: jest.fn(),
   listUserMarketScopeHistory: jest.fn(),
   hasUserMarketScopeHistory: jest.fn(),
-  revokeMarketScope: jest.fn(),
-  revokeAllUserMarketScopes: jest.fn(),
 }));
 
 let mockUser = null;
@@ -104,8 +104,8 @@ beforeEach(() => {
   marketScopes.listUserMarketScopeHistory.mockResolvedValue([]);
   marketScopes.hasUserMarketScopeHistory.mockResolvedValue(false);
   provisioning.grantOperatorScope.mockResolvedValue({ status: 'granted', scope: null });
-  marketScopes.revokeMarketScope.mockResolvedValue({ status: 'revoked', revoked: null });
-  marketScopes.revokeAllUserMarketScopes.mockResolvedValue([]);
+  provisioning.revokeOperatorScope.mockResolvedValue({ status: 'revoked', revoked: null });
+  provisioning.revokeAllOperatorScopes.mockResolvedValue([]);
   db.getClient.mockImplementation(async () => makeClient());
   setAuth(ADMIN);
   app = express();
@@ -351,7 +351,7 @@ describe('PUT /api/admin/users/:id/role', () => {
     const res = await request(app).put('/api/admin/users/u1/role').send({ role: 'agent_relais' });
     expect(res.status).toBe(200);
     expect(res.body.user.role).toBe('agent_relais');
-    expect(marketScopes.revokeAllUserMarketScopes).toHaveBeenCalledWith(expect.anything(), {
+    expect(provisioning.revokeAllOperatorScopes).toHaveBeenCalledWith(expect.anything(), {
       userId: 'u1', revokedBy: ADMIN.id,
     });
   });
@@ -427,7 +427,7 @@ describe('DELETE /api/admin/users/:id/market-scopes/:marketCode', () => {
 
   it('révoque le scope sans supprimer son historique', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ id: 'u1', role: 'market_operator' }] });
-    marketScopes.revokeMarketScope.mockResolvedValueOnce({
+    provisioning.revokeOperatorScope.mockResolvedValueOnce({
       status: 'revoked', revoked: { id: 'g1', market_code: 'CM', scope_role: 'manager' },
     });
     const res = await request(app).delete('/api/admin/users/u1/market-scopes/cm');
@@ -535,7 +535,7 @@ describe('DELETE /api/admin/users/:id', () => {
     expect(res.status).toBe(200);
     expect(res.body.type).toBe('soft_delete');
     expect(res.body.message).toMatch(/historique de droits marché/);
-    expect(marketScopes.revokeAllUserMarketScopes).toHaveBeenCalled();
+    expect(provisioning.revokeAllOperatorScopes).toHaveBeenCalled();
   });
 
   it('utilisateur sans commandes ni historique de scope → hard delete, 200', async () => {

@@ -15,7 +15,9 @@ if (!hasIntegrationEnv) {
   });
 } else {
   let db;
-  let requireDashboardGlobalAuthority;
+  let requireDashboardGlobalAuthority, provisioning;
+  let delegationMembershipId = null;
+  let createdAssignmentId = null;
   const PFX = 'itest-dash-global+';
   const CI_PLACEHOLDER_HASH = '$2a$04$AYmAyvzy6sAbPHhY01nPau5qvXBxnD/DFrgbpUzd5QXDR3VgjkISm';
   let adminCentral, adminCountry, adminNoScope, marketCM;
@@ -23,6 +25,7 @@ if (!hasIntegrationEnv) {
   beforeAll(async () => {
     db = require('../../db');
     ({ requireDashboardGlobalAuthority } = require('../../middleware/require-dashboard-global-authority'));
+    provisioning = require('../../services/market-operator-provisioning');
 
     const market = await db.query(
       `SELECT id FROM markets WHERE code = 'CM' LIMIT 1`
@@ -47,18 +50,35 @@ if (!hasIntegrationEnv) {
     adminCountry = await createAdmin('country');
     adminNoScope = await createAdmin('noscope');
 
-    await db.query(
-      `INSERT INTO operator_market_scopes (user_id, market_id, role)
-       VALUES ($1, $2, 'manager')`,
-      [adminCountry, marketCM]
+    const existingAssignment = await db.query(
+      `SELECT id FROM market_operating_assignments WHERE market_id = $1 AND status = 'ACTIVE' LIMIT 1`,
+      [marketCM]
     );
+    const delegated = await provisioning.ensureOperatorMembership(db, {
+      userId: adminCountry,
+      marketId: marketCM,
+      marketCode: 'CM',
+      scope: 'manager',
+      allowRoleChange: true,
+    });
+    delegationMembershipId = delegated.membershipId;
+    if (!existingAssignment.rows.length) createdAssignmentId = delegated.assignmentId;
   });
 
   afterAll(async () => {
     const ids = [adminCentral, adminCountry, adminNoScope].filter(Boolean);
     if (ids.length) {
       await db.query(`DELETE FROM dashboard_global_access_grants WHERE user_id = ANY($1)`, [ids]);
-      await db.query(`DELETE FROM operator_market_scopes WHERE user_id = ANY($1)`, [ids]);
+      if (delegationMembershipId) {
+        await db.query('DELETE FROM operator_market_scopes WHERE projected_from_membership_id = $1', [delegationMembershipId]);
+        await db.query('DELETE FROM market_delegation_audit WHERE membership_id = $1', [delegationMembershipId]);
+        await db.query('DELETE FROM membership_capabilities WHERE membership_id = $1', [delegationMembershipId]);
+        await db.query('DELETE FROM assignment_memberships WHERE id = $1', [delegationMembershipId]);
+      }
+      if (createdAssignmentId) {
+        await db.query('DELETE FROM assignment_capability_ceiling WHERE assignment_id = $1', [createdAssignmentId]);
+        await db.query('DELETE FROM market_operating_assignments WHERE id = $1', [createdAssignmentId]);
+      }
       await db.query(`DELETE FROM users WHERE id = ANY($1)`, [ids]);
     }
   });

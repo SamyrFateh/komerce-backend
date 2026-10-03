@@ -328,7 +328,7 @@ role: Vue unique de progression d'achat par ligne (MISSION_PURCHASE_LINES, PR 2)
 | Table | Rôle |
 |---|---|
 | `markets` | Référentiel canonique des marchés/pays opérés par Komerce. Vérifiée live Railway. |
-| `operator_market_scopes` | Périmètres marché autorisés par opérateur ; frontière serveur des accès market-scoped. Vérifiée live Railway. **Migration 195 (2026-09-09, `intended_migration_schema`)** : + `projected_from_membership_id` UUID nullable, FK vers `assignment_memberships(id)`, marque l’origine d’une projection de délégation ; `NULL` signifie scope legacy/historique non attribué à une membership. |
+| `operator_market_scopes` | Projection de compatibilité des autorisations marché. Vérifiée live Railway. **Migration 195** : + `projected_from_membership_id` UUID nullable, FK vers `assignment_memberships(id)`. **Migration 271 (schema-pending)** : toute nouvelle ligne active doit avoir `projected_from_membership_id`; `NULL` n’est toléré que pour une ligne legacy déjà révoquée (`revoked_at IS NOT NULL`), via CHECK `NOT VALID` pour ne pas invalider l’historique existant. |
 | `currency_parities` | Parités de devise par marché utilisées par la Currency Boundary. Vérifiée live Railway. |
 | `dashboard_global_access_grants` | Grants explicites pour les surfaces Dashboard globales ; aucune élévation globale implicite. Vérifiée live Railway. |
 | `webauthn_credentials` | Credentials Passkey/WebAuthn persistés pour l’authentification et leur révocation. Vérifiée live Railway. |

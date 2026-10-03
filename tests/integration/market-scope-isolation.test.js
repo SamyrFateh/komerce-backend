@@ -38,7 +38,10 @@ if (!hasIntegrationEnv) {
   });
 } else {
   let db;
-  let requireMarketScope, resolveAuthorizedMarkets, attachAuthorizedMarkets;
+  let requireMarketScope, resolveAuthorizedMarkets, attachAuthorizedMarkets, provisioning;
+  const delegationMemberships = [];
+  let createdAssignmentId = null;
+  let currentMembershipId = null;
 
   const PFX = 'itest-market+';
   const CI_PLACEHOLDER_HASH = '$2a$04$AYmAyvzy6sAbPHhY01nPau5qvXBxnD/DFrgbpUzd5QXDR3VgjkISm';
@@ -49,12 +52,13 @@ if (!hasIntegrationEnv) {
     db = require('../../db');
     ({ requireMarketScope, resolveAuthorizedMarkets, attachAuthorizedMarkets } =
       require('../../middleware/require-market-scope'));
+    provisioning = require('../../services/market-operator-provisioning');
 
     // Deux marchés de test, distincts de KM pour ne jamais interférer avec
     // le seed réel (M0 n'insère que KM).
     const mkA = await db.query(
       `INSERT INTO markets (code, name, currency, minor_unit)
-       VALUES ('T1', 'Marché Test 1', 'TST', 0)
+       VALUES ('QX', 'Marché Test 1', 'TST', 0)
        ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
        RETURNING id`
     );
@@ -62,7 +66,7 @@ if (!hasIntegrationEnv) {
 
     const mkB = await db.query(
       `INSERT INTO markets (code, name, currency, minor_unit)
-       VALUES ('T2', 'Marché Test 2', 'TST', 0)
+       VALUES ('QY', 'Marché Test 2', 'TST', 0)
        ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
        RETURNING id`
     );
@@ -88,8 +92,17 @@ if (!hasIntegrationEnv) {
 
   afterAll(async () => {
     await db.query(`DELETE FROM operator_market_scopes WHERE user_id = ANY($1)`, [[userMarketA, userNoScope]]);
+    if (delegationMemberships.length) {
+      await db.query('DELETE FROM market_delegation_audit WHERE membership_id = ANY($1)', [delegationMemberships]);
+      await db.query('DELETE FROM membership_capabilities WHERE membership_id = ANY($1)', [delegationMemberships]);
+      await db.query('DELETE FROM assignment_memberships WHERE id = ANY($1)', [delegationMemberships]);
+    }
+    if (createdAssignmentId) {
+      await db.query('DELETE FROM assignment_capability_ceiling WHERE assignment_id = $1', [createdAssignmentId]);
+      await db.query('DELETE FROM market_operating_assignments WHERE id = $1', [createdAssignmentId]);
+    }
     await db.query(`DELETE FROM users WHERE email LIKE $1`, [`${PFX}%`]);
-    await db.query(`DELETE FROM markets WHERE code IN ('T1', 'T2')`);
+    await db.query(`DELETE FROM markets WHERE code IN ('QX', 'QY')`);
   });
 
   function mockReqRes(user) {
@@ -137,10 +150,20 @@ if (!hasIntegrationEnv) {
     let grantId;
 
     test('3. autorise après un grant actif sur le marché ciblé', async () => {
+      const delegated = await provisioning.ensureOperatorMembership(db, {
+        userId: userMarketA,
+        marketId: marketA,
+        marketCode: 'QX',
+        scope: 'manager',
+        allowRoleChange: true,
+      });
+      currentMembershipId = delegated.membershipId;
+      delegationMemberships.push(currentMembershipId);
+      createdAssignmentId = delegated.assignmentId;
       const g = await db.query(
-        `INSERT INTO operator_market_scopes (user_id, market_id, role)
-         VALUES ($1, $2, 'manager') RETURNING id`,
-        [userMarketA, marketA]
+        `SELECT id FROM operator_market_scopes
+          WHERE projected_from_membership_id = $1 AND revoked_at IS NULL`,
+        [currentMembershipId]
       );
       grantId = g.rows[0].id;
 
@@ -159,11 +182,12 @@ if (!hasIntegrationEnv) {
       expect(res.statusCode).toBe(403);
     });
 
-    test('5. refuse après révocation (UPDATE revoked_at, jamais DELETE)', async () => {
-      await db.query(
-        `UPDATE operator_market_scopes SET revoked_at = now() WHERE id = $1`,
-        [grantId]
-      );
+    test('5. refuse après révocation de la membership (projection historique conservée)', async () => {
+      const revoked = await provisioning.revokeOperatorScope(db, {
+        userId: userMarketA,
+        marketCode: 'QX',
+      });
+      expect(revoked.status).toBe('revoked');
 
       const { req, res, next } = mockReqRes(userMarketA);
       const mw = requireMarketScope(() => marketA);
@@ -180,13 +204,22 @@ if (!hasIntegrationEnv) {
       expect(rows[0].revoked_at).not.toBeNull();
     });
 
-    test('6. re-grant après révocation : nouvelle ligne, réautorise (cycle du freeze §1)', async () => {
+    test('6. re-grant après révocation : nouvelle membership, nouvelle projection, réautorise', async () => {
+      const delegated = await provisioning.ensureOperatorMembership(db, {
+        userId: userMarketA,
+        marketId: marketA,
+        marketCode: 'QX',
+        scope: 'viewer',
+        allowRoleChange: true,
+      });
+      currentMembershipId = delegated.membershipId;
+      delegationMemberships.push(currentMembershipId);
       const g2 = await db.query(
-        `INSERT INTO operator_market_scopes (user_id, market_id, role)
-         VALUES ($1, $2, 'viewer') RETURNING id`,
-        [userMarketA, marketA]
+        `SELECT id FROM operator_market_scopes
+          WHERE projected_from_membership_id = $1 AND revoked_at IS NULL`,
+        [currentMembershipId]
       );
-      expect(g2.rows[0].id).not.toBe(grantId); // ligne distincte, jamais réécrite
+      expect(g2.rows[0].id).not.toBe(grantId);
 
       const { req, res, next } = mockReqRes(userMarketA);
       const mw = requireMarketScope(() => marketA);
@@ -204,14 +237,24 @@ if (!hasIntegrationEnv) {
       expect(rows[1].revoked_at).toBeNull();     // le nouveau est actif
     });
 
-    test('7. index unique partiel : impossible d\'avoir 2 grants actifs simultanés', async () => {
+    test('7. index unique partiel : impossible d\'avoir 2 projections actives simultanées', async () => {
+      await expect(
+        db.query(
+          `INSERT INTO operator_market_scopes (user_id, market_id, role, projected_from_membership_id)
+           VALUES ($1, $2, 'manager', $3)`,
+          [userMarketA, marketA, currentMembershipId]
+        )
+      ).rejects.toThrow(/duplicate key|unique constraint/i);
+    });
+
+    test('8. migration 271 : un writer parallèle ne peut plus créer un scope actif sans membership', async () => {
       await expect(
         db.query(
           `INSERT INTO operator_market_scopes (user_id, market_id, role)
-           VALUES ($1, $2, 'manager')`,
-          [userMarketA, marketA]
+           VALUES ($1, $2, 'viewer')`,
+          [userNoScope, marketB]
         )
-      ).rejects.toThrow(/duplicate key|unique constraint/i);
+      ).rejects.toThrow(/operator_market_scopes_projection_or_revoked_chk|check constraint/i);
     });
   });
 

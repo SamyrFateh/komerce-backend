@@ -5,7 +5,7 @@
  * @layer         service
  * @criticality   high
  * @inputs        caller_owned_executor, user_id, market_code_or_id, scope_role, actor_id, membership_id
- * @outputs       active_markets, scope_projection, scope_history, revoke_result
+ * @outputs       active_markets, scope_projection, scope_history
  * @depends       none
  * @used-by       dashboard, market-delegation
  * @db-read       markets, operator_market_scopes
@@ -13,7 +13,7 @@
  * @db-txn        caller-owned
  * @doctrine      lifecycle_owner_persistence_boundary
  * @impact-areas  market, dashboard, admin-dashboard, market-delegation
- * @version       2026-09
+ * @version       2026-10-v2
  */
 
 'use strict';
@@ -105,20 +105,6 @@ async function hasUserMarketScopeHistory(executor, userId) {
     [userId]
   );
   return Boolean(rows[0] && rows[0].has_history);
-}
-
-async function resolveActiveMarket(executor, marketCode) {
-  const code = normalizeMarketCode(marketCode);
-  if (!code) return null;
-  const { rows } = await requireExecutor(executor).query(
-    `SELECT id, code, name, currency, minor_unit
-       FROM markets
-      WHERE code = $1
-        AND is_active = true
-      LIMIT 1`,
-    [code]
-  );
-  return rows[0] || null;
 }
 
 /**
@@ -237,54 +223,6 @@ async function listProjectedMarketScopes(executor, { membershipIds }) {
   return rows;
 }
 
-async function revokeMarketScope(executor, {
-  userId,
-  marketCode,
-  revokedBy = null,
-}) {
-  const db = requireExecutor(executor);
-  const market = await resolveActiveMarket(db, marketCode);
-  if (!market) return { status: 'market_not_found', revoked: null };
-
-  const { rows } = await db.query(
-    `UPDATE operator_market_scopes
-        SET revoked_at = NOW(),
-            revoked_by = $3::uuid
-      WHERE user_id = $1::uuid
-        AND market_id = $2::uuid
-        AND revoked_at IS NULL
-      RETURNING id, user_id, market_id, role AS scope_role, granted_at, revoked_at, revoked_by`,
-    [userId, market.id, revokedBy]
-  );
-
-  if (!rows[0]) return { status: 'not_active', revoked: null };
-  return {
-    status: 'revoked',
-    revoked: {
-      ...rows[0],
-      market_code: market.code,
-      market_name: market.name,
-      currency: market.currency,
-    },
-  };
-}
-
-async function revokeAllUserMarketScopes(executor, {
-  userId,
-  revokedBy = null,
-}) {
-  const { rows } = await requireExecutor(executor).query(
-    `UPDATE operator_market_scopes
-        SET revoked_at = NOW(),
-            revoked_by = $2::uuid
-      WHERE user_id = $1::uuid
-        AND revoked_at IS NULL
-      RETURNING id, market_id, role AS scope_role, revoked_at`,
-    [userId, revokedBy]
-  );
-  return rows;
-}
-
 module.exports = {
   VALID_SCOPE_ROLES,
   normalizeMarketCode,
@@ -296,6 +234,4 @@ module.exports = {
   upsertProjectedMarketScope,
   revokeProjectedMarketScopes,
   listProjectedMarketScopes,
-  revokeMarketScope,
-  revokeAllUserMarketScopes,
 };

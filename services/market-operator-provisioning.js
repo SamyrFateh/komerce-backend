@@ -8,7 +8,7 @@
  * @outputs       delegation membership aligned on the requested scope, projected operator_market_scopes row
  * @depends       services/market-delegation-service.js, services/market-scope-projector.js, services/market-scope-admin-service.js
  * @used-by       routes/admin/users.js, scripts/provision-market-operator.js
- * @db-read       markets, assignment_capability_ceiling, capability_registry
+ * @db-read       markets, market_operating_assignments, assignment_memberships, assignment_capability_ceiling, capability_registry
  * @db-write      none
  * @db-write-via:market-delegation-service market_operating_assignments, assignment_memberships, membership_capabilities, market_delegation_audit
  * @db-write-via:market-scope-projector operator_market_scopes
@@ -163,11 +163,79 @@ async function grantOperatorScope(client, { userId, marketCode, scopeRole, grant
   return { status: STATUS_BY_OUTCOME[outcome.status], scope: projected };
 }
 
+async function revokeOperatorScope(client, { userId, marketCode, revokedBy = null }) {
+  const code = String(marketCode || '').trim().toUpperCase();
+  const { rows: [market] } = await client.query(
+    'SELECT id, code FROM markets WHERE code = $1 AND is_active = true LIMIT 1', [code]
+  );
+  if (!market) return { status: 'market_not_found', revoked: null };
+
+  const assignment = await delegation.resolveActiveAssignmentByMarketCode(client, code).catch(err => {
+    if (err && err.code === 'MARKET_ASSIGNMENT_NOT_ACTIVE') return null;
+    throw err;
+  });
+  if (!assignment) return { status: 'not_active', revoked: null };
+
+  const membership = await delegation.activeMembershipForUser(client, assignment.assignment_id, userId);
+  if (!membership) return { status: 'not_active', revoked: null };
+
+  const scopes = await listActiveScopesForUsers(client, [userId]);
+  const projected = scopes.find(row => row.market_code === market.code) || null;
+  const revokedMembership = await delegation.revokeMembership(client, {
+    membershipId: membership.id,
+    actorUserId: revokedBy,
+    allowLastGrantor: true,
+  });
+  await projectAssignment(client, assignment.assignment_id);
+
+  return {
+    status: 'revoked',
+    revoked: projected ? {
+      ...projected,
+      revoked_at: revokedMembership.revoked_at,
+      revoked_by: revokedBy,
+    } : {
+      membership_id: membership.id,
+      market_id: market.id,
+      market_code: market.code,
+      revoked_at: revokedMembership.revoked_at,
+      revoked_by: revokedBy,
+    },
+  };
+}
+
+async function revokeAllOperatorScopes(client, { userId, revokedBy = null }) {
+  const { rows: memberships } = await client.query(
+    `SELECT am.id AS membership_id, am.assignment_id
+       FROM assignment_memberships am
+       JOIN market_operating_assignments a ON a.id = am.assignment_id
+      WHERE am.user_id = $1::uuid
+        AND am.status = 'ACTIVE'
+      ORDER BY am.id
+      FOR UPDATE OF am`,
+    [userId]
+  );
+
+  const revoked = [];
+  for (const membership of memberships) {
+    const row = await delegation.revokeMembership(client, {
+      membershipId: membership.membership_id,
+      actorUserId: revokedBy,
+      allowLastGrantor: true,
+    });
+    await projectAssignment(client, membership.assignment_id);
+    revoked.push(row);
+  }
+  return revoked;
+}
+
 module.exports = {
   VALID_SCOPES,
   derivedRoleForUser,
   ensureOperatorMembership,
   grantOperatorScope,
+  revokeOperatorScope,
+  revokeAllOperatorScopes,
   resolveOrCreateAssignment,
   targetCapabilitiesForScope,
 };

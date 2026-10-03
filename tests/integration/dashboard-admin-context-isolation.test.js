@@ -15,7 +15,9 @@ if (!hasIntegrationEnv) {
   });
 } else {
   let db;
-  let resolveDashboardAdminContext;
+  let resolveDashboardAdminContext, provisioning;
+  let delegationMembershipId = null;
+  let createdAssignmentId = null;
   const PFX = 'itest-admin-context+';
   const CI_PLACEHOLDER_HASH = '$2a$04$AYmAyvzy6sAbPHhY01nPau5qvXBxnD/DFrgbpUzd5QXDR3VgjkISm';
   let adminCentral, adminCountry, adminNoScope, marketCM;
@@ -23,6 +25,7 @@ if (!hasIntegrationEnv) {
   beforeAll(async () => {
     db = require('../../db');
     ({ resolveDashboardAdminContext } = require('../../services/dashboard-admin-context'));
+    provisioning = require('../../services/market-operator-provisioning');
 
     const market = await db.query(`SELECT id FROM markets WHERE code = 'CM' AND is_active = TRUE LIMIT 1`);
     if (!market.rows.length) throw new Error('CM market missing — migrations not applied');
@@ -50,18 +53,35 @@ if (!hasIntegrationEnv) {
        VALUES ($1, 'integration-admin-context')`,
       [adminCentral]
     );
-    await db.query(
-      `INSERT INTO operator_market_scopes (user_id, market_id, role)
-       VALUES ($1, $2, 'manager')`,
-      [adminCountry, marketCM]
+    const existingAssignment = await db.query(
+      `SELECT id FROM market_operating_assignments WHERE market_id = $1 AND status = 'ACTIVE' LIMIT 1`,
+      [marketCM]
     );
+    const delegated = await provisioning.ensureOperatorMembership(db, {
+      userId: adminCountry,
+      marketId: marketCM,
+      marketCode: 'CM',
+      scope: 'manager',
+      allowRoleChange: true,
+    });
+    delegationMembershipId = delegated.membershipId;
+    if (!existingAssignment.rows.length) createdAssignmentId = delegated.assignmentId;
   });
 
   afterAll(async () => {
     const ids = [adminCentral, adminCountry, adminNoScope].filter(Boolean);
     if (ids.length) {
       await db.query(`DELETE FROM dashboard_global_access_grants WHERE user_id = ANY($1)`, [ids]);
-      await db.query(`DELETE FROM operator_market_scopes WHERE user_id = ANY($1)`, [ids]);
+      if (delegationMembershipId) {
+        await db.query('DELETE FROM operator_market_scopes WHERE projected_from_membership_id = $1', [delegationMembershipId]);
+        await db.query('DELETE FROM market_delegation_audit WHERE membership_id = $1', [delegationMembershipId]);
+        await db.query('DELETE FROM membership_capabilities WHERE membership_id = $1', [delegationMembershipId]);
+        await db.query('DELETE FROM assignment_memberships WHERE id = $1', [delegationMembershipId]);
+      }
+      if (createdAssignmentId) {
+        await db.query('DELETE FROM assignment_capability_ceiling WHERE assignment_id = $1', [createdAssignmentId]);
+        await db.query('DELETE FROM market_operating_assignments WHERE id = $1', [createdAssignmentId]);
+      }
       await db.query(`DELETE FROM users WHERE id = ANY($1)`, [ids]);
     }
   });
@@ -80,20 +100,13 @@ if (!hasIntegrationEnv) {
   test('opérateur CM => mode market enfermé dans CM', async () => {
     const context = await resolveDashboardAdminContext({ id: adminCountry, role: 'admin' });
 
-    expect(context.access).toEqual({
-      mode: 'market',
-      allowedMarkets: ['CM'],
-      defaultMarket: 'CM',
-      // LOT B (audit dashboard.market.read) : resolveDashboardAdminContext
-      // ne fabrique plus dashboard.market.read côté "capabilities" — seule
-      // la capability DELEGATION réellement prouvée (via
-      // delegatedCapabilities) fait foi désormais.
-      capabilities: ['pilotage.read'],
-      // adminCountry n'a qu'un operator_market_scopes legacy — aucune
-      // assignment_membership DELEGATION réelle sur CM, donc projection vide
-      // (jamais une erreur : cf. NO_DELEGATED_CAPABILITY_CODES).
-      delegatedCapabilities: { CM: [] },
-    });
+    expect(context.access.mode).toBe('market');
+    expect(context.access.allowedMarkets).toEqual(['CM']);
+    expect(context.access.defaultMarket).toBe('CM');
+    expect(context.access.capabilities).toEqual(['pilotage.read']);
+    // B2 : un scope actif n'est plus fabricable sans membership. Le contexte
+    // pays doit donc refléter la vraie délégation qui porte la projection.
+    expect(context.access.delegatedCapabilities.CM).toContain('dashboard.market.read');
   });
 
   test('admin sans grant => aucun contexte — absence de scope != global', async () => {

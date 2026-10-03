@@ -45,10 +45,12 @@ const {
   listActiveScopesForUsers,
   listUserMarketScopeHistory,
   hasUserMarketScopeHistory,
-  revokeMarketScope,
-  revokeAllUserMarketScopes,
 } = require('../../services/market-scope-admin-service');
-const { grantOperatorScope } = require('../../services/market-operator-provisioning');
+const {
+  grantOperatorScope,
+  revokeOperatorScope,
+  revokeAllOperatorScopes,
+} = require('../../services/market-operator-provisioning');
 const log = require('../../utils/logger').child({ module: 'admin/users' });
 
 const guard = [authenticate, requireRole(['admin'])];
@@ -307,7 +309,7 @@ router.put('/users/:id/role', ...guard, async (req, res, next) => {
         scope = grant.scope;
       }
       if (role !== 'market_operator') {
-        await revokeAllUserMarketScopes(client, { userId: id, revokedBy: req.user.id });
+        await revokeAllOperatorScopes(client, { userId: id, revokedBy: req.user.id });
       }
       return { user: updatedUser, scope };
     });
@@ -367,7 +369,7 @@ router.delete('/users/:id/market-scopes/:marketCode', ...marketAuthorityGuard, a
         [req.params.id]
       );
       if (!user) throw new ProvisioningError(404, 'USER_NOT_FOUND', 'Utilisateur introuvable');
-      const revoke = await revokeMarketScope(client, {
+      const revoke = await revokeOperatorScope(client, {
         userId: user.id,
         marketCode: code,
         revokedBy: req.user.id,
@@ -459,7 +461,7 @@ router.delete('/users/:id', ...guard, async (req, res, next) => {
 
     if (Number(orderCount) > 0 || hasScopeHistory) {
       await withTransaction(async (client) => {
-        await revokeAllUserMarketScopes(client, { userId: id, revokedBy: req.user.id });
+        await revokeAllOperatorScopes(client, { userId: id, revokedBy: req.user.id });
         await anonymizeUser(client, id);
       });
       log.info(`🗑️ Admin soft-deleted user ${user.email} by ${req.user.email}`);
