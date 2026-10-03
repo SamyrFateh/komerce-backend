@@ -47,7 +47,7 @@ jest.mock('../../middleware/require-pricing-global-authority', () => ({
 // capability précise à un manager sans toucher mockScopeRole.
 let mockGrantedCapabilities = null; // null = déduit de mockScopeRole (comportement par défaut)
 const mockAllPricingCapabilities = new Set([
-  'pricing.decide', 'pricing.activate', 'pricing.policy.set',
+  'pricing.decide', 'pricing.activate', 'catalog.expose', 'pricing.policy.set',
   'pricing.cost_component.update', 'pricing.cost_component.reset',
   'market.observation.record', 'structure.event.record',
 ]);
@@ -145,6 +145,15 @@ const mockActivation = {
 };
 jest.mock('../../services/market-local-price-activation-service', () => mockActivation);
 
+const mockMarketCatalog = {
+  setExposure: jest.fn(async (_executor, { productId, marketCode }) => ({
+    product_id: productId,
+    market_code: marketCode,
+    commercial_exposure: 'ENABLED',
+  })),
+};
+jest.mock('../../services/market-delegation-catalog-service', () => mockMarketCatalog);
+
 const express = require('express');
 const request = require('supertest');
 const router = require('../../routes/admin-pricing-workspace');
@@ -158,7 +167,12 @@ beforeEach(() => {
   mockScopeRole = 'manager';
   mockGrantedCapabilities = null;
   mockPricingReadGranted = true;
-  db.query.mockImplementation(async (_sql, params) => ({ rows: [{ id: params[0] === 'CM' ? 'market-cm' : 'market-cg', code: params[0], name: params[0], currency: 'XAF' }] }));
+  db.query.mockImplementation(async (sql, params) => {
+    if (String(sql).includes('FROM products p')) {
+      return { rows: [{ id: 'product-1', commercial_exposure: 'DISABLED' }] };
+    }
+    return { rows: [{ id: params[0] === 'CM' ? 'market-cm' : 'market-cg', code: params[0], name: params[0], currency: 'XAF' }] };
+  });
 });
 
 test('manager CM lit et modifie uniquement le modèle CM', async () => {
@@ -455,12 +469,33 @@ describe('pricing.decide / pricing.activate priment sur le rôle market_operator
     expect(mockActivation.activateLocalPrice).not.toHaveBeenCalled();
   });
 
-  test('ajout de pricing.activate en plus : l’activation devient possible sans changement de rôle', async () => {
+  test('pricing.activate sans catalog.expose ne peut pas publier le produit sur le marché', async () => {
     mockGrantedCapabilities = new Set(['pricing.decide', 'pricing.activate']);
+    const activate = await request(app())
+      .post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price/activate')
+      .send({});
+    expect(activate.status).toBe(403);
+    expect(activate.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+    expect(mockActivation.activateLocalPrice).not.toHaveBeenCalled();
+    expect(mockMarketCatalog.setExposure).not.toHaveBeenCalled();
+  });
+
+  test('pricing.activate + catalog.expose : le prix actif fait entrer le produit au catalogue marché', async () => {
+    mockGrantedCapabilities = new Set(['pricing.decide', 'pricing.activate', 'catalog.expose']);
     const activate = await request(app())
       .post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price/activate')
       .send({});
     expect(activate.status).toBe(200);
     expect(mockActivation.activateLocalPrice).toHaveBeenCalled();
+    expect(mockMarketCatalog.setExposure).toHaveBeenCalledWith(
+      db,
+      expect.objectContaining({
+        marketCode: 'CM',
+        actorUserId: 'partner-1',
+        productId: 'product-1',
+        exposure: 'ENABLED',
+      })
+    );
+    expect(activate.body.result.catalog_entry.commercial_exposure).toBe('ENABLED');
   });
 });
