@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 22,
-    "total_routes": 636,
+    "total_routes": 637,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -7701,6 +7701,39 @@
                   "type": "object",
                   "properties": {
                     "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/markets/central-authority": {
+      "get": {
+        "summary": "GET /api/admin/markets/central-authority",
+        "x-route-file": "routes/admin-market-control-plane.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "domains": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "group_capabilities": {
                       "type": "string",
                       "x-observed": true
                     }

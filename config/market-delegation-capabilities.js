@@ -150,4 +150,49 @@ function autonomyStats(rows = CAPABILITIES) {
   return { live: live.length, total: delegable.length, rate: delegable.length ? live.length / delegable.length : 0 };
 }
 
-module.exports = { CAPABILITIES, EFFECTS, AMOUNT_BEARING, autonomyStats, autonomyDenominator };
+// Autorité centrale : cinq domaines où l'accès central n'est JAMAIS impliqué par le rôle
+// admin mais par une autorisation explicite, révocable, dans une table `*_global_access_grants`
+// (doctrine « admin_role_never_implies_canonical_* »). Le SQL de lecture reste dans chaque
+// middleware `require-<domaine>-global-authority.js` : ce registre ne fait que les déclarer.
+const CENTRAL_AUTHORITY = Object.freeze({
+  dashboard: Object.freeze({ table: 'dashboard_global_access_grants', guard: 'middleware/require-dashboard-global-authority.js' }),
+  catalog: Object.freeze({ table: 'catalog_global_access_grants', guard: 'middleware/require-catalog-global-authority.js' }),
+  decision_signal: Object.freeze({ table: 'decision_signal_global_access_grants', guard: 'middleware/require-decision-signal-global-authority.js' }),
+  pricing: Object.freeze({ table: 'pricing_global_access_grants', guard: 'middleware/require-pricing-global-authority.js' }),
+  sourcing: Object.freeze({ table: 'sourcing_global_access_grants', guard: 'middleware/require-sourcing-global-authority.js' }),
+});
+
+// Chaque capability de groupe ou CENTRAL_ONLY déclare sa table d'autorisation centrale, ou null
+// quand le code ne la fait appliquer par aucune table à ce jour (le registre la liste, aucune
+// route ne la consomme : c'est un constat, pas une décision). Toute nouvelle capability de
+// groupe doit être ajoutée ici, sinon le chargement échoue.
+const GROUP_CAPABILITY_AUTHORITY = Object.freeze({
+  'dashboard.global.read': 'dashboard',
+  'group_cost.allocate': null,
+  'user.role.set': null,
+  'market.create': null,
+  'market_config.update': null,
+});
+
+function centralAuthorityFor(capability) {
+  const domain = GROUP_CAPABILITY_AUTHORITY[capability];
+  return domain ? { domain, ...CENTRAL_AUTHORITY[domain] } : null;
+}
+
+(function assertGroupCapabilitiesDeclared() {
+  const central = CAPABILITIES.filter(row => row.authority_scope === 'GROUP' || row.delegation_mode === 'CENTRAL_ONLY');
+  for (const row of central) {
+    if (!Object.prototype.hasOwnProperty.call(GROUP_CAPABILITY_AUTHORITY, row.capability)) {
+      throw new Error(`capability de groupe sans autorité centrale déclarée (domaine ou null) : ${row.capability}`);
+    }
+  }
+  for (const [capability, domain] of Object.entries(GROUP_CAPABILITY_AUTHORITY)) {
+    if (!central.some(row => row.capability === capability)) throw new Error(`autorité centrale déclarée pour une capability non centrale : ${capability}`);
+    if (domain !== null && !CENTRAL_AUTHORITY[domain]) throw new Error(`domaine d'autorité centrale inconnu : ${domain}`);
+  }
+}());
+
+module.exports = {
+  CAPABILITIES, EFFECTS, AMOUNT_BEARING, CENTRAL_AUTHORITY, GROUP_CAPABILITY_AUTHORITY,
+  centralAuthorityFor, autonomyStats, autonomyDenominator,
+};

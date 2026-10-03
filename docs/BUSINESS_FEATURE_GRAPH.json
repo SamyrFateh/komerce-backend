@@ -20,6 +20,7 @@
       "features/loyalty.feature.js",
       "features/market.feature.js",
       "features/market-autonomy.feature.js",
+      "features/market-control-plane.feature.js",
       "features/market-delegation.feature.js",
       "features/market-operator-dashboard.feature.js",
       "features/notifications.feature.js",
@@ -48,7 +49,7 @@
     "dashRoot": "public"
   },
   "scope": {
-    "businessManifestsResolved": 39,
+    "businessManifestsResolved": 40,
     "businessManifestsBroken": 0,
     "declaredOnlyNodes": 0,
     "dashRepoMounted": true,
@@ -360,6 +361,22 @@
         "owner": "backend-core",
         "since": "2026-09",
         "service": "Permettre à un responsable pays explicitement scopé manager de décider un prix local, d’en voir l’impact économique, puis de l’activer sans approbation centrale lorsque les gates autorisent la position ; LOCAL_ACTIVE devient alors la seule vérité locale consommable par le buyer path.",
+        "businessKind": "business-feature",
+        "kindSource": "manifest.classification.kind",
+        "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
+        "repo": "backend",
+        "declaredOnly": false,
+        "resolvable": true
+      },
+      {
+        "id": "feature:market-control-plane",
+        "name": "market-control-plane",
+        "file": "features/market-control-plane.feature.js",
+        "legacyType": "feature",
+        "status": "staging",
+        "owner": "backend-core",
+        "since": "2026-10",
+        "service": "Montrer à l’administration centrale, pour chaque marché, l’état réel de sa mise en exploitation et la liste explicite des écarts, sans rien écrire ni décider d’autorisation.",
         "businessKind": "business-feature",
         "kindSource": "manifest.classification.kind",
         "governedBy": "docs/doctrine/FEATURE_DOCTRINE.md",
@@ -8969,6 +8986,76 @@
       {
         "feature": "infrastructure",
         "category": "scripts",
+        "declared": "scripts/lib/agent-context-impact.js",
+        "resolvedPath": "scripts/lib/agent-context-impact.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/lib/agent-context-pack.js",
+        "resolvedPath": "scripts/lib/agent-context-pack.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/lib/agent-context-handoff.js",
+        "resolvedPath": "scripts/lib/agent-context-handoff.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/lib/preflight-stamp.js",
+        "resolvedPath": "scripts/lib/preflight-stamp.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/hooks/pre-push",
+        "resolvedPath": "scripts/hooks/pre-push",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/agent-checkpoint.js",
+        "resolvedPath": "scripts/agent-checkpoint.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/lib/security-guard-tokens.js",
+        "resolvedPath": "scripts/lib/security-guard-tokens.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/market-guard-inventory.js",
+        "resolvedPath": "scripts/market-guard-inventory.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": ".github/workflows/wip-branch-cleanup.yml",
+        "resolvedPath": ".github/workflows/wip-branch-cleanup.yml",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": ".claude/settings.json",
+        "resolvedPath": ".claude/settings.json",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
         "declared": "scripts/map-check.js",
         "resolvedPath": "scripts/map-check.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9104,6 +9191,20 @@
         "category": "scripts",
         "declared": "scripts/setup-hooks.sh",
         "resolvedPath": "scripts/setup-hooks.sh",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/setup-hooks.ps1",
+        "resolvedPath": "scripts/setup-hooks.ps1",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/setup-hooks-runner.js",
+        "resolvedPath": "scripts/setup-hooks-runner.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10222,6 +10323,55 @@
       {
         "feature": "infrastructure",
         "category": "tests",
+        "declared": "tests/unit/agent-context-impact.test.js",
+        "resolvedPath": "tests/unit/agent-context-impact.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/agent-context-pack.test.js",
+        "resolvedPath": "tests/unit/agent-context-pack.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/agent-context-handoff.test.js",
+        "resolvedPath": "tests/unit/agent-context-handoff.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/agent-guardrails-hooks.test.js",
+        "resolvedPath": "tests/unit/agent-guardrails-hooks.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/agent-checkpoint.test.js",
+        "resolvedPath": "tests/unit/agent-checkpoint.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/security-guard-tokens.test.js",
+        "resolvedPath": "tests/unit/security-guard-tokens.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/market-guard-inventory.test.js",
+        "resolvedPath": "tests/unit/market-guard-inventory.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
         "declared": "tests/unit/alerts-contract-check.test.js",
         "resolvedPath": "tests/unit/alerts-contract-check.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10371,6 +10521,13 @@
         "category": "tests",
         "declared": "tests/unit/pr-preflight.test.js",
         "resolvedPath": "tests/unit/pr-preflight.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/pr-preflight-ci-parity.test.js",
+        "resolvedPath": "tests/unit/pr-preflight-ci-parity.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12033,6 +12190,48 @@
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
+        "feature": "market-control-plane",
+        "category": "services",
+        "declared": "services/market-control-plane.js",
+        "resolvedPath": "services/market-control-plane.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "market-control-plane",
+        "category": "services",
+        "declared": "services/central-authority.js",
+        "resolvedPath": "services/central-authority.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "market-control-plane",
+        "category": "routes",
+        "declared": "routes/admin-market-control-plane.js",
+        "resolvedPath": "routes/admin-market-control-plane.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "market-control-plane",
+        "category": "tests",
+        "declared": "tests/unit/market-control-plane-service.test.js",
+        "resolvedPath": "tests/unit/market-control-plane-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-control-plane",
+        "category": "tests",
+        "declared": "tests/unit/admin-market-control-plane-routes.test.js",
+        "resolvedPath": "tests/unit/admin-market-control-plane-routes.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-control-plane",
+        "category": "tests",
+        "declared": "tests/unit/central-authority.test.js",
+        "resolvedPath": "tests/unit/central-authority.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
         "feature": "market-delegation",
         "category": "migrations",
         "declared": "migrations/193_market_delegation_capability_registry.sql",
@@ -12126,6 +12325,13 @@
       {
         "feature": "market-delegation",
         "category": "migrations",
+        "declared": "migrations/270_capability_registry_effect_amount_bearing.sql",
+        "resolvedPath": "migrations/270_capability_registry_effect_amount_bearing.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "migrations",
         "declared": "migrations/210_market_delegation_structure_event_record_live.sql",
         "resolvedPath": "migrations/210_market_delegation_structure_event_record_live.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -12135,6 +12341,13 @@
         "category": "migrations",
         "declared": "migrations/212_market_delegation_execution_ceiling.sql",
         "resolvedPath": "migrations/212_market_delegation_execution_ceiling.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "config",
+        "declared": "config/market-delegation-capabilities.js",
+        "resolvedPath": "config/market-delegation-capabilities.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -12352,6 +12565,13 @@
         "category": "tests",
         "declared": "tests/unit/market-delegation-p0.test.js",
         "resolvedPath": "tests/unit/market-delegation-p0.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-delegation",
+        "category": "tests",
+        "declared": "tests/unit/capability-registry-effect.test.js",
+        "resolvedPath": "tests/unit/capability-registry-effect.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -20579,6 +20799,30 @@
         "status": "resolved-owned"
       },
       {
+        "feature": "market-control-plane",
+        "entry": "GET /api/admin/markets",
+        "method": "GET",
+        "path": "/api/admin/markets",
+        "routeFile": "routes/admin-market-control-plane.js",
+        "status": "resolved-owned"
+      },
+      {
+        "feature": "market-control-plane",
+        "entry": "GET /api/admin/markets/central-authority",
+        "method": "GET",
+        "path": "/api/admin/markets/central-authority",
+        "routeFile": null,
+        "status": "not-in-openapi-contract"
+      },
+      {
+        "feature": "market-control-plane",
+        "entry": "GET /api/admin/markets/:marketCode/control-plane",
+        "method": "GET",
+        "path": "/api/admin/markets/{id}/control-plane",
+        "routeFile": "routes/admin-market-control-plane.js",
+        "status": "resolved-owned"
+      },
+      {
         "feature": "market-delegation",
         "entry": "GET /api/market-delegation/markets/:marketCode/team",
         "method": "GET",
@@ -22971,6 +23215,36 @@
         "status": "resolved"
       },
       {
+        "feature": "market-control-plane",
+        "fn": "listMarkets()",
+        "file": null,
+        "status": "documented-signature-no-file"
+      },
+      {
+        "feature": "market-control-plane",
+        "fn": "getControlPlane()",
+        "file": null,
+        "status": "documented-signature-no-file"
+      },
+      {
+        "feature": "market-control-plane",
+        "fn": "computeGaps()",
+        "file": null,
+        "status": "documented-signature-no-file"
+      },
+      {
+        "feature": "market-control-plane",
+        "fn": "central()",
+        "file": null,
+        "status": "documented-signature-no-file"
+      },
+      {
+        "feature": "market-control-plane",
+        "fn": "overview()",
+        "file": null,
+        "status": "documented-signature-no-file"
+      },
+      {
         "feature": "market-delegation",
         "fn": "replaceCeiling",
         "file": "services/market-delegation-service.js",
@@ -24638,6 +24912,72 @@
         "from": "market-autonomy",
         "to": "auth-identity",
         "raw": "auth-identity — création optionnelle d’un compte client depuis le lien d’invitation avant acceptation explicite",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
+        "to": "market",
+        "raw": "market (markets comme référentiel lu)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
+        "to": "market-delegation",
+        "raw": "market-delegation (affectation, équipe, plafond, politique de caisse lus ; normalizeMarketCode)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
+        "to": "providers-services",
+        "raw": "providers-services (fournisseurs de paiement du marché lus)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
+        "to": "logistics",
+        "raw": "logistics (relais lus)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
+        "to": "dashboard",
+        "raw": "dashboard (dashboard_global_access_grants et require-dashboard-global-authority : autorisation centrale explicite lue)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
+        "to": "catalog",
+        "raw": "catalog (catalog_global_access_grants et require-catalog-global-authority : autorisation centrale explicite lue)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
+        "to": "decision-signals",
+        "raw": "decision-signals (decision_signal_global_access_grants et son middleware : autorisation centrale explicite lue)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
+        "to": "economic-engine",
+        "raw": "economic-engine (pricing_global_access_grants et require-pricing-global-authority : autorisation centrale explicite lue)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
+        "to": "sourcing",
+        "raw": "sourcing (sourcing_global_access_grants et require-sourcing-global-authority : autorisation centrale explicite lue)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
+        "to": "auth",
+        "raw": "auth (garde des routes centrales)",
+        "resolved": true
+      },
+      {
+        "from": "market-control-plane",
+        "to": "infrastructure",
+        "raw": "infrastructure (DB et bootstrap)",
         "resolved": true
       },
       {
@@ -31946,6 +32286,10 @@
               {
                 "sourceFileId": "routes/admin-action-center.js",
                 "targetFile": "services/market-delegation-service.js"
+              },
+              {
+                "sourceFileId": "tests/unit/decision-signals-market-scope-contract.test.js",
+                "targetFile": "config/market-delegation-capabilities.js"
               }
             ]
           }
@@ -33671,6 +34015,22 @@
               {
                 "sourceFileId": "bootstrap/api-routes.js",
                 "targetFile": "routes/admin-loyalty.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "infrastructure",
+        "to": "market-control-plane",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "bootstrap/api-routes.js",
+                "targetFile": "routes/admin-market-control-plane.js"
               }
             ]
           }
@@ -35530,6 +35890,199 @@
               {
                 "table": "currency_parities",
                 "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-control-plane",
+        "to": "auth",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-market-control-plane.js",
+                "targetFile": "middleware/auth.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-control-plane",
+        "to": "catalog",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/central-authority.js",
+                "targetFile": "middleware/require-catalog-global-authority.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-control-plane",
+        "to": "dashboard",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/central-authority.js",
+                "targetFile": "middleware/require-dashboard-global-authority.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-control-plane",
+        "to": "decision-signals",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/central-authority.js",
+                "targetFile": "middleware/require-decision-signal-global-authority.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-control-plane",
+        "to": "economic-engine",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/central-authority.js",
+                "targetFile": "middleware/require-pricing-global-authority.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-control-plane",
+        "to": "infrastructure",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/admin-market-control-plane.js",
+                "targetFile": "db.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-control-plane",
+        "to": "logistics",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "relais",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-control-plane",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "markets",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-control-plane",
+        "to": "market-delegation",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/market-control-plane.js",
+                "targetFile": "services/market-delegation-service.js"
+              },
+              {
+                "sourceFileId": "services/central-authority.js",
+                "targetFile": "config/market-delegation-capabilities.js"
+              },
+              {
+                "sourceFileId": "tests/unit/central-authority.test.js",
+                "targetFile": "config/market-delegation-capabilities.js"
+              }
+            ]
+          },
+          {
+            "channel": "data-read",
+            "evidence": [
+              {
+                "table": "market_operating_assignments",
+                "mode": "R"
+              },
+              {
+                "table": "assignment_memberships",
+                "mode": "R"
+              },
+              {
+                "table": "membership_capabilities",
+                "mode": "R"
+              },
+              {
+                "table": "assignment_capability_ceiling",
+                "mode": "R"
+              },
+              {
+                "table": "market_cash_control_policies",
+                "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "market-control-plane",
+        "to": "sourcing",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/central-authority.js",
+                "targetFile": "middleware/require-sourcing-global-authority.js"
               }
             ]
           }
@@ -41788,7 +42341,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1783
+        "filesObserved": 1807
       },
       "boutique": {
         "filesObserved": 214,
@@ -41823,7 +42376,7 @@
     ],
     "familySummary": {
       "PROJECTION": 0,
-      "COMPOSITION_ROOT_WIRING": 19,
+      "COMPOSITION_ROOT_WIRING": 20,
       "NON_RUNTIME_TEST": 14,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
@@ -41971,6 +42524,21 @@
       {
         "from": "infrastructure",
         "to": "loyalty",
+        "family": "COMPOSITION_ROOT_WIRING",
+        "evidenceRole": "RUNTIME_ONLY",
+        "consumerKind": "technical-foundation",
+        "providerKind": "business-feature",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "application-wiring-not-consumption",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
+        "from": "infrastructure",
+        "to": "market-control-plane",
         "family": "COMPOSITION_ROOT_WIRING",
         "evidenceRole": "RUNTIME_ONLY",
         "consumerKind": "technical-foundation",
@@ -42333,7 +42901,7 @@
     "matrix": {
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|business-feature|business-file-import": 2,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|frontend-transversal|business-file-import": 1,
-      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 7,
+      "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-feature|business-file-import": 8,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|import-mixed": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|piloting-capability|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_ONLY|technical-foundation|business-transversal|business-file-import": 2,
@@ -42625,6 +43193,7 @@
         "documents",
         "economic-engine",
         "local-stock",
+        "market-control-plane",
         "market-delegation",
         "notifications",
         "orders",
@@ -42971,6 +43540,7 @@
         "dashboard",
         "local-stock",
         "market-autonomy",
+        "market-control-plane",
         "market-delegation",
         "providers-services",
         "recommendations",
@@ -43779,7 +44349,8 @@
     "pricing_global_access_grants": {
       "writers": [],
       "readers": [
-        "economic-engine"
+        "economic-engine",
+        "market-control-plane"
       ],
       "lifecycleOwner": null,
       "resolution": "no-declared-writer"
@@ -44132,19 +44703,6 @@
       "lifecycleOwner": "market-autonomy",
       "resolution": "declared-table-owner"
     },
-    "capability_registry": {
-      "writers": [
-        {
-          "feature": "market-delegation",
-          "mode": "RW",
-          "declaredOwner": true,
-          "technical": false
-        }
-      ],
-      "readers": [],
-      "lifecycleOwner": "market-delegation",
-      "resolution": "declared-table-owner"
-    },
     "market_operating_assignments": {
       "writers": [
         {
@@ -44155,8 +44713,39 @@
         }
       ],
       "readers": [
+        "market-control-plane",
         "payments",
         "settlement"
+      ],
+      "lifecycleOwner": "market-delegation",
+      "resolution": "declared-table-owner"
+    },
+    "assignment_memberships": {
+      "writers": [
+        {
+          "feature": "market-delegation",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "market-control-plane"
+      ],
+      "lifecycleOwner": "market-delegation",
+      "resolution": "declared-table-owner"
+    },
+    "membership_capabilities": {
+      "writers": [
+        {
+          "feature": "market-delegation",
+          "mode": "RW",
+          "declaredOwner": true,
+          "technical": false
+        }
+      ],
+      "readers": [
+        "market-control-plane"
       ],
       "lifecycleOwner": "market-delegation",
       "resolution": "declared-table-owner"
@@ -44170,11 +44759,22 @@
           "technical": false
         }
       ],
-      "readers": [],
+      "readers": [
+        "market-control-plane"
+      ],
       "lifecycleOwner": "market-delegation",
       "resolution": "declared-table-owner"
     },
-    "assignment_memberships": {
+    "market_payment_providers": {
+      "writers": [],
+      "readers": [
+        "market-control-plane",
+        "payments"
+      ],
+      "lifecycleOwner": null,
+      "resolution": "no-declared-writer"
+    },
+    "market_cash_control_policies": {
       "writers": [
         {
           "feature": "market-delegation",
@@ -44183,11 +44783,46 @@
           "technical": false
         }
       ],
-      "readers": [],
+      "readers": [
+        "market-control-plane",
+        "payments"
+      ],
       "lifecycleOwner": "market-delegation",
       "resolution": "declared-table-owner"
     },
-    "membership_capabilities": {
+    "dashboard_global_access_grants": {
+      "writers": [],
+      "readers": [
+        "market-control-plane"
+      ],
+      "lifecycleOwner": null,
+      "resolution": "no-declared-writer"
+    },
+    "catalog_global_access_grants": {
+      "writers": [],
+      "readers": [
+        "market-control-plane"
+      ],
+      "lifecycleOwner": null,
+      "resolution": "no-declared-writer"
+    },
+    "decision_signal_global_access_grants": {
+      "writers": [],
+      "readers": [
+        "market-control-plane"
+      ],
+      "lifecycleOwner": null,
+      "resolution": "no-declared-writer"
+    },
+    "sourcing_global_access_grants": {
+      "writers": [],
+      "readers": [
+        "market-control-plane"
+      ],
+      "lifecycleOwner": null,
+      "resolution": "no-declared-writer"
+    },
+    "capability_registry": {
       "writers": [
         {
           "feature": "market-delegation",
@@ -44249,21 +44884,6 @@
         }
       ],
       "readers": [],
-      "lifecycleOwner": "market-delegation",
-      "resolution": "declared-table-owner"
-    },
-    "market_cash_control_policies": {
-      "writers": [
-        {
-          "feature": "market-delegation",
-          "mode": "RW",
-          "declaredOwner": true,
-          "technical": false
-        }
-      ],
-      "readers": [
-        "payments"
-      ],
       "lifecycleOwner": "market-delegation",
       "resolution": "declared-table-owner"
     },
@@ -44425,14 +45045,6 @@
       "readers": [],
       "lifecycleOwner": "payments",
       "resolution": "single-writer"
-    },
-    "market_payment_providers": {
-      "writers": [],
-      "readers": [
-        "payments"
-      ],
-      "lifecycleOwner": null,
-      "resolution": "no-declared-writer"
     },
     "mobile_money_transactions": {
       "writers": [
@@ -44811,8 +45423,8 @@
   "bigMap": {
     "perRepo": {
       "backend": {
-        "manifestsDiscovered": 35,
-        "manifestsConnected": 35,
+        "manifestsDiscovered": 36,
+        "manifestsConnected": 36,
         "technicalNodesTotal": 547,
         "technicalNodesOwned": 547,
         "technicalOrphans": 0
@@ -44866,6 +45478,7 @@
         "loyalty",
         "market",
         "market-autonomy",
+        "market-control-plane",
         "market-delegation",
         "market-operator-dashboard",
         "platform",
@@ -44912,8 +45525,20 @@
   },
   "drifts": {
     "error": [],
-    "warn": [],
-    "debt": [],
+    "warn": [
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "market-control-plane / GET /api/admin/markets/central-authority",
+        "msg": "\"GET /api/admin/markets/central-authority\" déclaré par market-control-plane mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      }
+    ],
+    "debt": [
+      {
+        "type": "EXPOSED-ROUTE-UNRESOLVED",
+        "ref": "market-control-plane / GET /api/admin/markets/central-authority",
+        "msg": "\"GET /api/admin/markets/central-authority\" déclaré par market-control-plane mais absent du contrat OpenAPI généré (docs/contract/openapi.json)"
+      }
+    ],
     "expectedTopology": [
       {
         "type": "DASH-MANIFEST-DUPLICATE-COPY",
@@ -44974,6 +45599,11 @@
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "infrastructure -> loyalty",
         "msg": "dépendance cross-feature observée (canal: static-code, 2 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"loyalty\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "infrastructure -> market-control-plane",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"infrastructure\" vers \"market-control-plane\""
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
@@ -45199,11 +45829,11 @@
       }
     ],
     "summary": {
-      "signals": 0,
-      "debt": 0,
-      "expectedTopology": 44,
+      "signals": 1,
+      "debt": 1,
+      "expectedTopology": 45,
       "generatorLimitations": 12,
-      "classifiedCandidates": 56
+      "classifiedCandidates": 58
     }
   }
 }

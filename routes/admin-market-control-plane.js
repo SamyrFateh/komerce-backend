@@ -5,8 +5,8 @@
  * @layer         route
  * @criticality   medium
  * @inputs        central admin actor, canonical market code in path
- * @outputs       read-only market list and per-market control view with gap report
- * @depends       db.js, middleware/auth.js, services/market-control-plane.js
+ * @outputs       read-only market list, per-market control view with gap report, and active central authority overview
+ * @depends       db.js, middleware/auth.js, services/market-control-plane.js, services/central-authority.js
  * @used-by       bootstrap/api-routes.js, central admin workspace
  * @db-read       none
  * @db-write      none
@@ -23,6 +23,7 @@ const router = express.Router();
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const controlPlane = require('../services/market-control-plane');
+const centralAuthority = require('../services/central-authority');
 
 // Vue centrale par rôle (Q4 du chantier) : déclarée ici, jamais implicite.
 const centralAdmin = [authenticate, requireRole(['admin'])];
@@ -36,6 +37,15 @@ function sendKnownError(res, error) {
 router.get('/', ...centralAdmin, async (req, res, next) => {
   try {
     res.json({ markets: await controlPlane.listMarkets(db) });
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+// Autorité centrale (lecture seule) : qui détient une autorisation explicite active, par domaine.
+router.get('/central-authority', ...centralAdmin, async (req, res, next) => {
+  try {
+    res.json(await centralAuthority.overview(db));
   } catch (error) {
     if (!sendKnownError(res, error)) next(error);
   }
