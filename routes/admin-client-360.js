@@ -6,26 +6,42 @@
  * @criticality   high
  * @inputs        authenticated_admin, client_phone
  * @outputs       authorized_client_360_projection
- * @depends       middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/client-360
+ * @depends       middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/client-360
  * @used-by       bootstrap/api-routes.js
- * @db-read       orders, operator_market_scopes, dashboard_global_access_grants
+ * @db-read       orders, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      entity_360_reunites_without_recomputing, server_market_scope_is_authority, client_security_global_only
+ * @doctrine      entity_360_reunites_without_recomputing, capability_is_the_authority_not_role, client_security_global_only
  * @impact-areas  admin-dashboard, clients, market-authorization, auth-passkey
- * @version       2026-08
+ * @version       2026-10-d6
  */
 
 'use strict';
 
 const express = require('express');
-const { authenticate, requireAdmin } = require('../middleware/auth');
-const { attachAuthorizedMarkets } = require('../middleware/require-market-scope');
+const { authenticate, requireRole } = require('../middleware/auth');
+const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
+const { attachAuthorizedMarketsForCapability } = require('../middleware/require-market-delegated-capability');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const client360 = require('../services/client-360');
 const log = require('../utils/logger').child({ module: 'admin-client-360' });
 
 const router = express.Router();
+const attachClientReadMarkets = attachAuthorizedMarketsForCapability('client.read', { audit: false });
+
+async function attachClient360Authority(req, res, next) {
+  try {
+    const globalAllowed = await hasDashboardGlobalAuthority(req.user && req.user.id);
+    if (globalAllowed) {
+      req.dashboardGlobalAuthority = true;
+      return next();
+    }
+    return attachClientReadMarkets(req, res, next);
+  } catch (err) {
+    return next(err);
+  }
+}
+
 
 async function resolveClientAccess(req, res, next) {
   try {
@@ -37,10 +53,8 @@ async function resolveClientAccess(req, res, next) {
       });
     }
 
-    const globalAllowed = await hasDashboardGlobalAuthority(req.user && req.user.id);
-    const marketIds = globalAllowed
-      ? null
-      : Array.from(req.authorizedMarkets || []);
+    const globalAllowed = req.dashboardGlobalAuthority === true;
+    const marketIds = globalAllowed ? null : Array.from(req.authorizedMarkets || []);
 
     if (!globalAllowed && marketIds.length === 0) {
       return res.status(403).json({
@@ -72,8 +86,9 @@ async function resolveClientAccess(req, res, next) {
 router.get(
   '/clients/:clientPhone',
   authenticate,
-  requireAdmin,
-  attachAuthorizedMarkets,
+  attachMarketDelegatedRoleFor(['admin', 'market_operator']),
+  requireRole(['admin', 'market_operator']),
+  attachClient360Authority,
   resolveClientAccess,
   async (req, res, next) => {
     try {
@@ -91,4 +106,4 @@ router.get(
 );
 
 module.exports = router;
-module.exports._test = { resolveClientAccess };
+module.exports._test = { attachClient360Authority, resolveClientAccess };

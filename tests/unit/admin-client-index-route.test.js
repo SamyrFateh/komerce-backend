@@ -7,20 +7,27 @@
  */
 
 let mockGlobalAllowed = false;
-let mockAllowedMarkets = new Set(['market-km-id']);
+let mockClientReadGranted = true;
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
   requireAdmin: (req, res, next) => next(),
+  requireRole: roles => (req, res, next) => roles.includes(req.user.role)
+    ? next()
+    : res.status(403).json({ code: 'role_forbidden' }),
 }));
 
-jest.mock('../../middleware/require-market-scope', () => ({
-  attachAuthorizedMarkets: (req, res, next) => { req.authorizedMarkets = new Set(mockAllowedMarkets); next(); },
-  requireMarketScope: resolver => (req, res, next) => {
-    const id = resolver(req);
-    return req.authorizedMarkets && req.authorizedMarkets.has(id)
-      ? next()
-      : res.status(403).json({ code: 'market_scope_forbidden' });
+jest.mock('../../middleware/require-market-delegated-role', () => ({
+  attachMarketDelegatedRoleFor: () => (req, res, next) => next(),
+}));
+
+jest.mock('../../middleware/require-market-delegated-capability', () => ({
+  requireMarketDelegatedCapability: capability => (req, res, next) => {
+    if (!mockClientReadGranted) {
+      return res.status(403).json({ code: 'MARKET_CAPABILITY_REQUIRED', error: `${capability} required` });
+    }
+    req.marketDelegatedCapability = { capability, market_code: req.params.marketCode, market_id: 'market-km-id' };
+    return next();
   },
 }));
 
@@ -53,7 +60,7 @@ function app() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockGlobalAllowed = false;
-  mockAllowedMarkets = new Set(['market-km-id']);
+  mockClientReadGranted = true;
   db.query.mockResolvedValue({ rows: [{ id: 'market-km-id', code: 'KM', name: 'Comores', currency: 'KMF' }] });
   clientIndex.listClients.mockResolvedValue({ clients: [], pagination: { page: 1, total: 0 } });
 });
@@ -69,15 +76,16 @@ test('route marché résout KM côté serveur puis transmet uniquement son UUID 
   expect(res.headers['cache-control']).toContain('no-store');
 });
 
-test('opérateur sans MarketScope ne peut pas lister un autre marché', async () => {
-  mockAllowedMarkets = new Set();
+test('sans client.read la lecture marché est refusée', async () => {
+  mockClientReadGranted = false;
   const res = await request(app()).get('/api/admin/entities/clients/market/KM');
   expect(res.status).toBe(403);
+  expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
   expect(clientIndex.listClients).not.toHaveBeenCalled();
 });
 
-test('autorité globale explicite peut sélectionner un marché sans scope local', async () => {
-  mockAllowedMarkets = new Set();
+test('autorité globale explicite peut sélectionner un marché sans capability locale', async () => {
+  mockClientReadGranted = false;
   mockGlobalAllowed = true;
   const res = await request(app()).get('/api/admin/entities/clients/market/KM');
   expect(res.status).toBe(200);

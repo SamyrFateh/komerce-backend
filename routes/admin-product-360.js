@@ -6,26 +6,42 @@
  * @criticality   high
  * @inputs        authenticated_admin, product_ref
  * @outputs       authorized_product_360_projection
- * @depends       middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/product-360
+ * @depends       middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/product-360
  * @used-by       bootstrap/api-routes.js
- * @db-read       operator_market_scopes, dashboard_global_access_grants, products
+ * @db-read       market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants, products
  * @db-write      none
  * @db-txn        none
- * @doctrine      entity_360_reunites_without_recomputing, server_market_scope_is_authority, product_ref_is_business_identity
+ * @doctrine      entity_360_reunites_without_recomputing, capability_is_the_authority_not_role, product_ref_is_business_identity
  * @impact-areas  admin-dashboard, catalog, commerce, sourcing, economic-engine, market-authorization
- * @version       2026-08
+ * @version       2026-10-d6
  */
 
 'use strict';
 
 const express = require('express');
-const { authenticate, requireAdmin } = require('../middleware/auth');
-const { attachAuthorizedMarkets } = require('../middleware/require-market-scope');
+const { authenticate, requireRole } = require('../middleware/auth');
+const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
+const { attachAuthorizedMarketsForCapability } = require('../middleware/require-market-delegated-capability');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const product360 = require('../services/product-360');
 const log = require('../utils/logger').child({ module: 'admin-product-360' });
 
 const router = express.Router();
+const attachCatalogReadMarkets = attachAuthorizedMarketsForCapability('catalog.read', { audit: false });
+
+async function attachProduct360Authority(req, res, next) {
+  try {
+    const globalAllowed = await hasDashboardGlobalAuthority(req.user && req.user.id);
+    if (globalAllowed) {
+      req.dashboardGlobalAuthority = true;
+      return next();
+    }
+    return attachCatalogReadMarkets(req, res, next);
+  } catch (err) {
+    return next(err);
+  }
+}
+
 
 async function resolveProductAccess(req, res, next) {
   try {
@@ -37,7 +53,7 @@ async function resolveProductAccess(req, res, next) {
       });
     }
 
-    const globalAllowed = await hasDashboardGlobalAuthority(req.user && req.user.id);
+    const globalAllowed = req.dashboardGlobalAuthority === true;
     const marketIds = globalAllowed ? null : Array.from(req.authorizedMarkets || []);
 
     if (!globalAllowed && marketIds.length === 0) {
@@ -70,8 +86,9 @@ async function resolveProductAccess(req, res, next) {
 router.get(
   '/products/:productRef',
   authenticate,
-  requireAdmin,
-  attachAuthorizedMarkets,
+  attachMarketDelegatedRoleFor(['admin', 'market_operator']),
+  requireRole(['admin', 'market_operator']),
+  attachProduct360Authority,
   resolveProductAccess,
   async (req, res, next) => {
     try {
@@ -89,4 +106,4 @@ router.get(
 );
 
 module.exports = router;
-module.exports._test = { resolveProductAccess };
+module.exports._test = { attachProduct360Authority, resolveProductAccess };
