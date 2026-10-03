@@ -84,6 +84,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
     const orderId = uuid();
     const itemId = uuid();
     const productSupplierId = uuid();
+    const supplierSku = `SKU-${tag(label)}`;
     const supplierUnitRef = `UNIT-${tag(label)}`;
     const identity = {
       provider: 'noon',
@@ -99,7 +100,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
       `INSERT INTO product_skus
          (id, product_id, sku, stock, is_active, source, supplier_sku, supplier_unit_ref, supplier_order_identity)
        VALUES ($1,$2,$3,50,true,'SUPPLIER',$4,$5,$6::jsonb)`,
-      [skuId, productId, `K-${tag(label)}`, `SKU-${tag(label)}`, supplierUnitRef, JSON.stringify(identity)]
+      [skuId, productId, `K-${tag(label)}`, supplierSku, supplierUnitRef, JSON.stringify(identity)]
     );
     await q(
       `INSERT INTO product_suppliers
@@ -119,7 +120,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
       [itemId, orderId, productId, quantity, skuId]
     );
 
-    return { productId, skuId, orderId, itemId, productSupplierId, supplierUnitRef, identity };
+    return { productId, skuId, orderId, itemId, productSupplierId, supplierSku, supplierUnitRef, identity };
   }
 
   /** Réception Hub : écritures canoniques d'une allocation par ligne + placement RECEIVE (hub-operations ensuite). */
@@ -220,7 +221,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
     expect(line.order_id).toBe(seeded.orderId);
     expect(line.order_item_id).toBe(seeded.itemId);
     expect(line.product_sku_id).toBe(seeded.skuId);
-    expect(line.supplier_sku).toBe(`SKU-${tag('a0')}`);
+    expect(line.supplier_sku).toBe(seeded.supplierSku);
     expect(line.supplier_unit_ref).toBe(seeded.supplierUnitRef);
     expect(line.supplier_order_identity).toEqual(seeded.identity);
     expect(Number(line.quantity)).toBe(1);
