@@ -210,6 +210,7 @@ npm run map:check
 - Ne pas créer de document horodaté, prompt bis, ZIP, patch ou rapport parallèle lorsqu'un document canonique existe déjà.
 - Les preuves reproductibles sont des commandes et des tests. Ne pas committer leurs logs bruts ; consigner un résumé et la commande, sauf preuve externe non régénérable et compacte.
 - Toute nouvelle instruction d'agent doit remplacer une instruction obsolète, jamais s'empiler avec elle.
+- Sandbox jetable : dans une session Claude Code cloud, `.claude/settings.json` sauvegarde automatiquement l'arbre de travail sur `wip/<branche>` (après les éditions, au plus toutes les 2 min, et à chaque fin de tour). Une session interrompue se reprend avec `npm run agent:restore -- <branche>`. `wip/*` n'est jamais une PR : livrer passe toujours par `pr:preflight` puis la branche normale.
 
 ## 7.1. Économie de tokens — contexte compilé obligatoire
 

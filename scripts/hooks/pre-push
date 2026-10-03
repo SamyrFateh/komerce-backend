@@ -1,5 +1,5 @@
 #!/bin/sh
-# KOMERCE-HOOK pre-push-stamp v1
+# KOMERCE-HOOK pre-push-stamp v2
 # Léger (millisecondes) : aucun gate lourd. Le commit poussé doit être celui
 # pour lequel `npm run pr:preflight` est passé au vert sur un arbre propre.
 STAMP="$(git rev-parse --git-path komerce-preflight-green)"
@@ -10,6 +10,8 @@ STATUS=0
 while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
   [ -z "$LOCAL_SHA" ] && continue
   [ "$LOCAL_SHA" = "$ZERO" ] && continue
+  # wip/* : sauvegardes de sandbox (scripts/agent-checkpoint.js), sans CI ni PR.
+  case "$REMOTE_REF" in refs/heads/wip/*) continue ;; esac
   if [ "$LOCAL_SHA" != "$GREEN" ]; then
     echo "✖ pre-push Komerce : $LOCAL_REF ($LOCAL_SHA) n'a pas de pr:preflight vert."
     echo "  Lancer : npm run pr:preflight  (arbre propre, sur le commit à pousser)"

@@ -28,18 +28,25 @@ function install({ stdio = 'inherit', exec = execFileSync, platform = process.pl
 }
 
 /**
- * Idempotent et silencieux : installe seulement si le pre-push manque.
+ * Idempotent et silencieux : installe si le pre-push manque ou si le hook géré
+ * installé diffère de scripts/hooks/pre-push (mise à jour propagée).
  * Retourne true si une installation a eu lieu. N'échoue jamais l'appelant.
  */
 function ensureInstalled({
   env = process.env,
   hooksDir = path.join(ROOT, '.git', 'hooks'),
   exists = fs.existsSync,
+  read = file => fs.readFileSync(file, 'utf8'),
   exec = execFileSync,
   platform = process.platform,
 } = {}) {
   if (env.CI || !exists(path.join(ROOT, '.git'))) return false;
-  if (exists(path.join(hooksDir, 'pre-push'))) return false;
+  const installed = path.join(hooksDir, 'pre-push');
+  if (exists(installed)) {
+    const current = read(installed);
+    // Hook personnel conservé ; hook géré déjà à jour : rien à faire.
+    if (!/KOMERCE-HOOK/.test(current) || current === read(path.join(ROOT, 'scripts', 'hooks', 'pre-push'))) return false;
+  }
   try {
     install({ stdio: 'ignore', exec, platform });
     return true;
@@ -49,7 +56,9 @@ function ensureInstalled({
 }
 
 if (require.main === module) {
-  if (!process.env.CI) install();
+  // --ensure : hook SessionStart des sessions Claude Code (.claude/settings.json).
+  if (process.argv.includes('--ensure')) ensureInstalled();
+  else if (!process.env.CI) install();
 }
 
 module.exports = { ensureInstalled, install, installerCommand };

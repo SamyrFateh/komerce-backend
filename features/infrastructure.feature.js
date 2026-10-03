@@ -167,6 +167,8 @@ module.exports = {
       'scripts/lib/agent-context-handoff.js',
       'scripts/lib/preflight-stamp.js',
       'scripts/hooks/pre-push',
+      'scripts/agent-checkpoint.js',
+      '.claude/settings.json',
       'scripts/map-check.js',
       'scripts/migrate.js',
       'scripts/npm-audit-exceptions.json',
@@ -366,6 +368,7 @@ module.exports = {
       'tests/unit/agent-context-pack.test.js',
       'tests/unit/agent-context-handoff.test.js',
       'tests/unit/agent-guardrails-hooks.test.js',
+      'tests/unit/agent-checkpoint.test.js',
       'tests/unit/alerts-contract-check.test.js',
       'tests/unit/collision-count-wording-check.test.js',
       'tests/unit/concept-impact-gate.test.js',
@@ -532,6 +535,10 @@ module.exports = {
     {
       statement: 'le hook pre-push géré ne lance aucun gate : il refuse seulement un commit qui n’est pas celui tamponné par un pr:preflight vert sur arbre propre ; les hooks s’installent via prepare, agent:context et pr:preflight, jamais en CI, et un hook personnel est conservé',
       test: 'tests/unit/agent-guardrails-hooks.test.js',
+    },
+    {
+      statement: 'un sandbox d’agent (CLAUDE_CODE_REMOTE=true) sauvegarde son arbre de travail sur wip/<branche> sans toucher branche, index ni arbre ; wip/* est la seule exemption du tampon pre-push, ne déclenche aucune CI et se restaure par npm run agent:restore',
+      test: 'tests/unit/agent-checkpoint.test.js',
     },
   ],
 
