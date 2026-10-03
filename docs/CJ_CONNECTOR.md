@@ -7,6 +7,7 @@ Komerce can ingest CJdropshipping products through the canonical supplier-import
 - `source_type=api`
 - `supplier_id=cj`
 - official CJ API v2 `product/listV2`
+- targeted product resolution uses `product/query`, then authoritative inventory enrichment via `product/stock/getInventoryByPid`
 - authentication through `CJ-Access-Token`
 - secret bootstrap with `CJ_API_KEY` or direct `CJ_ACCESS_TOKEN`
 - raw supplier lineage is preserved in `raw_payload.cj`
@@ -34,6 +35,8 @@ The canonical dispatch forwards only supported search filters:
 - `verified_warehouse`
 
 The connector requests CJ `enable_description` and `enable_category` features and returns normalized supplier-product V2 contracts.
+
+For targeted products, `product/query` is not treated as an inventory authority: its variants may contain no inventory fields. Komerce therefore reads `product/stock/getInventoryByPid` and merges `variantInventories[].inventory[]` by exact `vid` before normalization. Missing per-VID inventory stays unknown/zero-safe; the connector never fabricates SKU stock from product-level totals. Detail and inventory calls remain paced to respect CJ's request-rate limits.
 
 ## Showcase image bootstrap
 
