@@ -8,10 +8,12 @@
  * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, market_price_decisions, market_corridor_projection, activation_preview, action_results, structure_cost_event_fact, structure_cost_event_history, market_cost_attribution_journal
  * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js, services/market-cost-attribution-service.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, operator_market_scopes, pricing_global_access_grants, charges, economic_structure_cost_events, users
+ * @db-read       markets, products, product_market_exposure, operator_market_scopes, pricing_global_access_grants, charges, economic_structure_cost_events, users
  * @db-write      none
- * @db-txn        none
- * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, country_manager_owns_local_strategy, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views, market_corridor_is_observation_not_gate, pricing_market_viability_period_structure_truth
+ * @db-write-via:catalog-market-exposure-service product_market_exposure
+ * @db-write-via:market-delegation-service market_delegation_audit
+ * @db-txn        catalog_entry_projection_owned_by_market_delegation_service
+ * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, country_manager_owns_local_strategy, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views, market_corridor_is_observation_not_gate, pricing_market_viability_period_structure_truth, local_active_implies_market_catalog_entry
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
  * @version       2026-09
  */
@@ -36,6 +38,7 @@ const marketDecisionProjection = require('../services/pricing-market-decision-pr
 const pricingMarketCorridor = require('../services/pricing-market-corridor');
 const marketCommercialPrice = require('../services/market-commercial-price-service');
 const marketLocalPriceActivation = require('../services/market-local-price-activation-service');
+const marketDelegationCatalog = require('../services/market-delegation-catalog-service');
 const pricingPeriodStructure = require('../services/pricing-period-structure');
 const marketCostAttribution = require('../services/market-cost-attribution-service');
 const { decorateMarketDecision } = marketDecisionProjection;
@@ -347,17 +350,60 @@ router.post('/market/:marketCode/products/:productRef/local-price', requireLocal
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post('/market/:marketCode/products/:productRef/local-price/activate', requireLocalStrategyCapability('pricing.activate'), async (req, res, next) => {
-  try {
-    sendAction(res, 'activate_market_local_price', await marketLocalPriceActivation.activateLocalPrice({
-      market: req.workspaceMarket,
-      productRef: req.params.productRef,
-      actorId: req.user.id,
-      reason: req.body && req.body.reason,
-      source: req.body && req.body.source,
-    }));
-  } catch (error) { handleError(error, res, next); }
-});
+router.post('/market/:marketCode/products/:productRef/local-price/activate', requireLocalStrategyCapability('pricing.activate'), requireLocalStrategyCapability('catalog.expose'), async (req, res, next) => {
+    try {
+      const activation = await marketLocalPriceActivation.activateLocalPrice({
+        market: req.workspaceMarket,
+        productRef: req.params.productRef,
+        actorId: req.user.id,
+        reason: req.body && req.body.reason,
+        source: req.body && req.body.source,
+      });
+
+      // Doctrine : un prix LOCAL_ACTIVE est le dernier geste commercial normal.
+      // Il implique l'entrée au catalogue du marché. L'exposition reste une
+      // projection technique distincte afin de permettre ensuite une suspension
+      // explicite, mais elle n'est plus une seconde décision humaine.
+      const { rows } = await db.query(
+        `SELECT p.id,
+                COALESCE(pme.commercial_exposure, 'DISABLED') AS commercial_exposure
+           FROM products p
+           LEFT JOIN product_market_exposure pme
+             ON pme.product_id = p.id
+            AND pme.market_id = $2::uuid
+          WHERE p.product_ref = $1
+          LIMIT 1`,
+        [req.params.productRef, req.workspaceMarket.id]
+      );
+      if (!rows[0]) {
+        const error = new Error('Produit introuvable après activation du prix local.');
+        error.status = 404;
+        error.code = 'market_price_product_not_found';
+        throw error;
+      }
+
+      let catalogEntry = {
+        product_id: rows[0].id,
+        market_id: req.workspaceMarket.id,
+        commercial_exposure: rows[0].commercial_exposure,
+        already_catalogued: rows[0].commercial_exposure === 'ENABLED',
+      };
+      if (rows[0].commercial_exposure !== 'ENABLED') {
+        catalogEntry = await marketDelegationCatalog.setExposure(db, {
+          marketCode: req.workspaceMarket.code,
+          actorUserId: req.user.id,
+          productId: rows[0].id,
+          exposure: 'ENABLED',
+        });
+      }
+
+      sendAction(res, 'activate_market_local_price', {
+        ...activation,
+        catalog_entry: catalogEntry,
+      });
+    } catch (error) { handleError(error, res, next); }
+  }
+);
 
 router.post('/market/:marketCode/products/:productRef/local-price/reset', requireLocalStrategyCapability('pricing.decide'), async (req, res, next) => {
   try {

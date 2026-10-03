@@ -5,8 +5,8 @@
  * @layer         ui-workspace
  * @criticality   high
  * @inputs        ready_to_sell_projection, market_code, existing catalog/pricing APIs
- * @outputs       local_price_decision, activation_request, market_exposure_request
- * @depends       catalog market validation/exposure APIs, pricing local-price APIs
+ * @outputs       local_price_decision, activation_request
+ * @depends       catalog market validation APIs, pricing local-price APIs
  * @used-by       public/dashboards/canonical/js/market-catalog.js
  * @db-read       none
  * @db-write      none
@@ -73,6 +73,11 @@
           source: 'market_ready_to_sell',
         },
       });
+    }
+
+    // Une seule décision humaine : activer le prix. Le serveur projette alors
+    // automatiquement l'entrée du produit au catalogue du marché.
+    if (!row.local_price_active || !row.exposure_enabled) {
       await request(priceBase + '/activate', {
         method: 'POST',
         body: {
@@ -80,15 +85,6 @@
           source: 'market_ready_to_sell',
         },
       });
-    }
-
-    // validateForMarket() expose déjà le candidat. Pour un produit publié,
-    // l'exposition n'est activée qu'après le prix LOCAL_ACTIVE.
-    if (!row.exposure_enabled && row.catalog_state !== 'candidate') {
-      await request(
-        `/api/market-delegation/markets/${market}/catalog/exposure/${productId}`,
-        { method: 'PUT', body: { commercial_exposure: 'ENABLED' } }
-      );
     }
     return true;
   }
@@ -119,7 +115,7 @@
       <div>
         <span class="kmc-workspace-kicker">DERNIER GESTE COMMERCIAL</span>
         <h2 class="kmc-section-title">Produits prêts à vendre</h2>
-        <p class="kmc-workspace-note">Fiches déjà certifiées et préparées. Décidez uniquement le prix pays ; Komerce recontrôle les gates avant toute visibilité Boutique.</p>
+        <p class="kmc-workspace-note">Fiches déjà certifiées et préparées. Décidez uniquement le prix pays ; son activation fait entrer automatiquement le produit au catalogue du marché après recontrôle des gates.</p>
       </div>
       <div class="kmc-ready-summary">
         <strong>${Number(summary.ready || 0)} prêts</strong>
@@ -263,7 +259,7 @@
       const button = doc.createElement('button');
       button.type = 'button';
       button.className = 'kmc-workspace-action';
-      button.textContent = row.local_price_active ? 'Exposer maintenant' : 'Mettre en vente';
+      button.textContent = row.local_price_active ? 'Finaliser le catalogue' : 'Mettre en vente';
       button.disabled = !row.can_approve || row.decision_state?.key === 'BLOCKED'
         || (!row.local_price_active && !(number(input.value) > 0));
       actionCell.appendChild(button);
