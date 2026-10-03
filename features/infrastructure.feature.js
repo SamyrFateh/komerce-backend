@@ -549,6 +549,10 @@ module.exports = {
       statement: 'l’inventaire des gardes legacy require-market-scope (npm run market:guard-inventory) dérive de l’analyseur de gen-security-360, sans second analyseur : toute route d’un fichier qui importe le middleware y figure avec son fichier source, ses rôles et l’autorité centrale lue par le fichier (EXPLICIT_CENTRAL ou ROLE_ONLY) ; une route gardée sans fichier source échoue fort',
       test: 'tests/unit/market-guard-inventory.test.js',
     },
+    {
+      statement: 'Security360 reconnaît une capability marché exacte comme une garde d’autorisation forte sur une route /api/admin ; elle n’exige jamais un faux requireRole admin quand requireMarketDelegatedCapability, requireSingleMarketDelegatedCapability ou attachMarketExecutionRoleFor porte déjà l’autorité',
+      test: 'tests/unit/security-guard-tokens.test.js',
+    },
   ],
 
 };

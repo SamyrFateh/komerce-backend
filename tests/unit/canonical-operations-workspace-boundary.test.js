@@ -97,12 +97,16 @@ test('rôles opérationnels réels sont admis sans ouvrir les dashboards admin',
   expect(appSource).toContain("'agent_hub'");
   expect(appSource).toContain("'agent_relais'");
   expect(appSource).toContain("'agent_transitaire'");
-  expect(workspaceRoute).toContain("requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_relais', 'market_operator'])");
+  expect(workspaceRoute).not.toContain('requireWorkspaceReadRole');
+  expect(workspaceRoute).toContain("requireMarketDelegatedCapability('operations.read'");
   expect(workspaceRoute).toContain("requireHubWorkspaceAction = requireRole(['admin', 'agent_hub'])");
   expect(workspaceRoute).toContain("requireRelayWorkspaceAction = requireRole(['admin', 'agent_relais'])");
   expect(workspaceRoute).toContain('attachMarketExecutionRoleFor');
   expect(workspaceRoute).toContain('execution.order.mark_ordered');
   expect(workspaceRoute).toContain('execution.cash.confirm');
+  expect(workspaceRoute).toContain('forceCapability: true');
+  expect(workspaceRoute).not.toContain('require-market-scope');
+  expect(workspaceRoute).not.toContain('attachAuthorizedMarkets');
   expect(dashboardRoute).toContain("requireCanonicalContextRole = requireRole(['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire', 'finance'])");
   expect(dashboardRoute).toMatch(/'\/operations\/market\/:marketCode',[\s\S]*?authenticate,[\s\S]*?requireAdmin,/);
 });

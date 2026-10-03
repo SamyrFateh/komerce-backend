@@ -35,7 +35,7 @@ Consequences:
 - every read and mutation route contains `/market/:marketCode`;
 - the browser market code is only a requested view/action context;
 - the server resolves it to the active `markets` row;
-- authorization is checked against server-side operator scopes or explicit central global authority;
+- authorization is checked against exact market capabilities; read may also use explicit dashboard global authority, while `agent_relais` is additionally bounded by its server-side `relais.market_id`;
 - a client-provided `market_id` / `marketId` is rejected in query and body.
 
 ## Role authorization
@@ -46,34 +46,34 @@ The real operational roles in the Komerce user model are:
 - `agent_hub`;
 - `agent_relais`.
 
-The Workspace read surface accepts these three roles, but mutation authority is deliberately split by responsibility.
+The Workspace never derives Market ID authority from `users.role`. A delegated member may keep any persisted role (including `client`) and still use this surface when the exact capability is present. The execution bridge projects a request-local compatibility role only after capability proof.
 
-| Capability | `admin` | `agent_hub` | `agent_relais` |
-| --- | :---: | :---: | :---: |
-| read selected-market Workspace | ✅ | ✅ | ✅ |
-| mark order as ordered | ✅ | ✅ | ❌ |
-| run automatic distribution | ✅ | ✅ | ❌ |
-| ship parcel | ✅ | ✅ | ❌ |
-| assign inventory to parcel | ✅ | ✅ | ❌ |
-| confirm relay cash | ✅ | ❌ | ✅ |
-| receive parcel at relay | ✅ | ❌ | ✅ |
-| hand parcel to client | ✅ | ❌ | ✅ |
+| Action | Exact authority | Compatibility role after proof |
+| --- | --- | --- |
+| read selected-market Workspace | `operations.read` (or explicit dashboard-global read grant; persisted `agent_relais` may use its server relay binding) | none |
+| mark order as ordered | `execution.order.mark_ordered` | `agent_hub` |
+| run automatic distribution | `execution.distribution.run` | `agent_hub` |
+| ship parcel | `execution.parcel.ship` | `agent_hub` |
+| assign inventory to parcel | `execution.inventory.assign` | `agent_hub` |
+| confirm relay cash | `execution.cash.confirm` | `agent_relais` |
+| receive parcel at relay | `execution.parcel.receive` | `agent_relais` |
+| hand parcel to client | `execution.parcel.collect` | `agent_relais` |
 
-Role checks never replace MarketScope. A permitted role acting outside its authorized market is still rejected.
+The compatibility role is not an authority source. It exists only so historical domain services can keep their role-shaped interface after market-delegation has already authorized and audited the action.
 
-`/api/admin/dashboard/context` accepts these operational roles only so the Canonical runtime can resolve their server-side market context. This does **not** open the read-oriented admin dashboards: `/commerce`, `/operations`, `/finance` and their market endpoints retain their existing admin authorization.
+`/api/admin/dashboard/context` may resolve presentation context, but it never grants `operations.read` or an `execution.*` capability. Workspace authority is re-proved on every API request.
 
 ## Market authorization
 
 Route order:
 
 1. authenticated session;
-2. Workspace read role authorization (`admin | agent_hub | agent_relais`);
-3. reject client `market_id` authority;
-4. resolve active market from `:marketCode`;
-5. load `operator_market_scopes` server-side;
-6. authorize that exact market;
-7. for mutations, enforce the Hub or Relais action role;
+2. reject client `market_id` authority;
+3. resolve active market from `:marketCode`;
+4. for reads, require `operations.read`, except an explicit dashboard-global read grant; a persisted `agent_relais` may instead read only the market of its server-side relais;
+5. for mutations, require the exact `execution.*` capability on the selected Market ID and audit it;
+6. project the request-local Hub or Relais compatibility role, then pass the existing role-shaped domain boundary;
+7. if the persisted actor is `agent_relais`, require its `relais.market_id` to equal the selected market;
 8. execute the Workspace service.
 
 An explicit central global grant may authorize a drill into the selected market, but it does not create a global mutation mode.
@@ -81,10 +81,10 @@ An explicit central global grant may authorize a drill into the selected market,
 Examples:
 
 - CM operator → CM: allowed;
-- CM operator → CG: `403 market_scope_denied`;
-- central global authority → CG: allowed **after CG is explicitly selected**;
-- `agent_hub` → `confirm-cash`: `403`;
-- `agent_relais` → `mark-ordered`: `403`;
+- CM capability holder → CG: `403 MARKET_CAPABILITY_REQUIRED`;
+- central dashboard authority → CG: read allowed **after CG is explicitly selected**, mutation still requires the exact `execution.*` capability;
+- `agent_hub` without `execution.cash.confirm` → `403`; with that explicit capability, the request receives the Relais compatibility role;
+- `agent_relais` without `execution.order.mark_ordered` → `403`; capability possession, not `users.role`, decides the Hub action;
 - `?market_id=<CG UUID>`: `400 client_market_id_forbidden`;
 - `{ "market_id": "<CG UUID>" }`: `400 client_market_id_forbidden`.
 
@@ -164,7 +164,7 @@ All mutations are POST and all are market-scoped.
 
 `POST /market/:marketCode/orders/:reference/mark-ordered`
 
-Authorized roles: `admin`, `agent_hub`.
+Exact authority: `execution.order.mark_ordered` on the selected market. After proof, the request uses compatibility role `agent_hub`.
 
 The Workspace validates that the order belongs to the selected market, then delegates the status change to `order-status-machine`.
 
@@ -174,7 +174,7 @@ The Workspace does not implement its own order state machine.
 
 `POST /market/:marketCode/distribution/run`
 
-Authorized roles: `admin`, `agent_hub`.
+Exact authority: `execution.distribution.run` on the selected market. After proof, the request uses compatibility role `agent_hub`.
 
 The Workspace first selects only unassigned orders whose `orders.market_id` equals the server-resolved market.
 
@@ -192,7 +192,7 @@ The historical global `distributeAll()` is **not** called by Canonical.
 
 `POST /market/:marketCode/parcels/:reference/ship`
 
-Authorized roles: `admin`, `agent_hub`.
+Exact authority: `execution.parcel.ship` on the selected market. After proof, the request uses compatibility role `agent_hub`.
 
 Delegates to `scan-engine.processScan` with event `shipped`.
 
@@ -200,7 +200,7 @@ Delegates to `scan-engine.processScan` with event `shipped`.
 
 `POST /market/:marketCode/orders/:reference/confirm-cash`
 
-Authorized roles: `admin`, `agent_relais`.
+Exact authority: `execution.cash.confirm` on the selected market. After proof, the request uses compatibility role `agent_relais`. A persisted `agent_relais` must additionally belong to a relais of that market.
 
 The Workspace validates market ownership before delegating to `confirmCashAndCreateParcel`.
 
@@ -217,7 +217,7 @@ Notifications and invoice issuance remain post-commit, non-blocking side effects
 
 `POST /market/:marketCode/parcels/:reference/receive`
 
-Authorized roles: `admin`, `agent_relais`.
+Exact authority: `execution.parcel.receive` on the selected market. After proof, the request uses compatibility role `agent_relais`. A persisted `agent_relais` must additionally belong to a relais of that market.
 
 Delegates to `scan-engine.processScan` with event `relais_received`.
 
@@ -225,7 +225,7 @@ Delegates to `scan-engine.processScan` with event `relais_received`.
 
 `POST /market/:marketCode/parcels/:reference/collect`
 
-Authorized roles: `admin`, `agent_relais`.
+Exact authority: `execution.parcel.collect` on the selected market. After proof, the request uses compatibility role `agent_relais`. A persisted `agent_relais` must additionally belong to a relais of that market.
 
 Delegates to `scan-engine.processScan` with event `customer_collected`.
 
@@ -235,7 +235,7 @@ The scan engine remains responsible for append-only history, sequence validation
 
 `POST /market/:marketCode/inventory/items/:itemId/assign`
 
-Authorized roles: `admin`, `agent_hub`.
+Exact authority: `execution.inventory.assign` on the selected market. After proof, the request uses compatibility role `agent_hub`.
 
 Body:
 

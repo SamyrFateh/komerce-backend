@@ -111,20 +111,26 @@ describe('market-delegation runtime compatibility bridge', () => {
     expect(assignmentProjectionCalls.length).toBeGreaterThanOrEqual(3);
   });
 
-  test('les surfaces legacy gardent un requireRole statique après le pré-guard', () => {
-    const files = [
+  test('les surfaces encore legacy gardent un requireRole statique après le pré-guard ; D3 Operations en est sortie', () => {
+    const legacyFiles = [
       'routes/admin-dashboard-market.js',
       'routes/admin-pricing-workspace.js',
-      'routes/admin-operations-workspace.js',
       'routes/admin/partners.js',
       'routes/hub.js',
       'routes/hub-dashboard.js',
       'routes/relay-dashboard.js',
     ];
-    for (const file of files) {
+    for (const file of legacyFiles) {
       const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
       expect(source).toContain('attachMarketDelegatedRoleFor');
       expect(source).toMatch(/requireRole\(\s*\[[^\]]*['"]market_operator['"]/);
     }
+
+    const operations = fs.readFileSync(path.join(ROOT, 'routes', 'admin-operations-workspace.js'), 'utf8');
+    expect(operations).not.toContain('attachMarketDelegatedRoleFor');
+    expect(operations).not.toContain('require-market-scope');
+    expect(operations).toContain("requireMarketDelegatedCapability('operations.read'");
+    expect(operations).toContain('attachMarketExecutionRoleFor');
+    expect(operations).toContain('forceCapability: true');
   });
 });

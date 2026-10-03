@@ -22,8 +22,7 @@ module.exports = {
   doctrine: 'docs/contract/DASHBOARD_MARKET_SCOPE_2C.md',
 
   // ── Autorite ─────────────────────────────────────────────────────────────
-  authority: 'backend-core — tout changement de rôle ou de scope marché sur ' +
-    'cette surface doit être validé par le propriétaire de middleware/require-market-scope.js.',
+  authority: 'backend-core — toute autorité marché de cette surface doit être validée par market-delegation ; operator_market_scopes reste une projection de compatibilité, jamais la source de droit des workspaces migrés.',
 
   // ── Service rendu ────────────────────────────────────────────────────────
   service: 'Permettre à un opérateur pays (market_operator) de se connecter au ' +
@@ -35,7 +34,7 @@ module.exports = {
   // ── Perimetre ────────────────────────────────────────────────────────────
   perimeter: {
     in: [
-      'Operations Workspace (routes/admin-operations-workspace.js, possédé par `dashboard`) : pilotage Hub/Relais market-scoped ; mutations terrain restent agent_hub/agent_relais selon capability',
+      'Operations Workspace (routes/admin-operations-workspace.js, possédé par `dashboard`) : lecture par operations.read ; mutations par execution.* exacte ; users.role sert seulement de compatibilité request-local après autorisation',
       'Catalogue pays : exposition/configuration produit × marché via les primitives market-scoped ; aucune mutation de la vérité catalogue globale',
       'Expéditions & Douane : visibilité, supervision et configuration du marché ; gestes physiques/transit spécialisés restent soumis aux capabilities dédiées',
       'Finance pays : recettes, coûts, marges, rapprochements, justificatifs et configuration locale livrée ; actes comptables sensibles restent explicitement délégués',
@@ -48,8 +47,8 @@ module.exports = {
     out: [
       'Dashboard Legacy (admin/) — gelé, market_operator volontairement exclu de ROLE_SHELLS',
       'Catalogue GLOBAL / vérité produit globale / requireCatalogGlobalAuthority — reste une autorité centrale ; ne pas confondre avec Catalogue pays',
-      'Mutations Hub physiques (scan, pack, seal, ship) — capacités spécialisées agent_hub/admin sauf délégation future explicite',
-      'Mutations terrain relais (réception, remise, cash) — capacités spécialisées agent_relais/admin sauf délégation future explicite',
+      'Mutations Hub physiques — capabilities execution.* explicites ; le rôle persistant ne constitue jamais l’autorité marché',
+      'Mutations terrain relais — capabilities execution.* explicites ; un agent_relais persistant reste en plus borné par son relais_id physique',
       'Actes comptables globaux, consolidation cross-market et autorités financières centrales — hors délégation pays',
       'Sourcing global — reste séparé tant que sa délégation pays n\'est pas explicitement décidée',
       'Pricing mutations globales (apply strategy, update competitor global) — réservées aux autorités correspondantes ; la décision locale reste au pays',
@@ -60,7 +59,9 @@ module.exports = {
 
   // ── Primitives utilisées (déjà en place, ne pas recréer) ─────────────────
   primitives_consumed: [
-    'middleware/require-market-scope.js — requireMarketScopeRole, attachAuthorizedMarketsForOperator',
+    'middleware/require-market-scope.js — projection legacy encore consommée par les surfaces D non migrées ; jamais autorité des workspaces D1/D2/D3',
+    'middleware/require-market-delegated-capability.js — operations.read et autres capabilities market-scoped exactes',
+    'middleware/require-market-execution-capability.js — execution.* exacte + rôle de compatibilité request-local après preuve',
     'services/dashboard-admin-context.js — resolveDashboardAdminContext (mode market/global)',
     'routes/admin-dashboard-market.js — endpoints /market/:marketCode scopés',
     'routes/hub-dashboard.js — hubRead/hubSupervise avec filtre market_id dans service',
@@ -95,7 +96,7 @@ module.exports = {
   // ── Invariants ───────────────────────────────────────────────────────────
   invariants: [
     'Le scope serveur est l\'autorité — le navigateur ne choisit jamais son marché',
-    'Un market_operator sans scope actif dans operator_market_scopes n\'accède à rien',
+    'Une projection operator_market_scopes ne suffit jamais à elle seule : les workspaces migrés exigent membership/capability ou une autorité centrale explicite',
     'Le Responsable pays doit disposer des outils correspondant à sa responsabilité : Catalogue pays, Atelier, Commandes, Opérations, Douane, Expéditions et Finance pays',
     'Un guard actuellement trop restrictif sur une responsabilité cible est un gap d\'implémentation à fermer, pas une justification pour retirer cette responsabilité de la doctrine',
     'Catalogue pays ne peut jamais modifier silencieusement la vérité catalogue globale',
@@ -103,8 +104,8 @@ module.exports = {
     'Les mutations terrain relais (réception/remise/cash) restent exclusivement derrière des capabilities terrain explicites',
     'Finance pays ne donne jamais implicitement une autorité comptable globale ou cross-market',
     'Les utility links d\'autorité globale sont masqués pour les profils non autorisés',
-    'agent_hub garde les droits Hub correspondant à son périmètre opérationnel',
-    'agent_relais reste limité à son relais_id physique pour ses gestes terrain',
+    'agent_hub ne tire aucun Market ID de users.role ; les gestes du Workspace Opérations exigent leur execution.* exacte',
+    'agent_relais reste limité à son relais_id physique pour ses gestes terrain, en plus de la capability execution.* exacte',
     'Le dashboard Legacy (admin/) ne reçoit jamais market_operator dans ROLE_SHELLS — il est gelé',
     'Le provisioning est idempotent — ne recrée ni user ni scope existant',
     'Le seed staging ne crée, n\'expose ni ne nettoie jamais une donnée d\'un autre Market ID',
@@ -115,7 +116,7 @@ module.exports = {
   contract: {
     exposes: [],
     consumes: [
-      'market (operator_market_scopes, markets, Currency Boundary)',
+      'market (markets, Currency Boundary ; operator_market_scopes uniquement comme projection de compatibilité des surfaces non encore migrées)',
       'auth (authenticate, requireRole + capabilities market-scoped)',
       'dashboard (admin-dashboard-market routes, admin-context, canonical navigation/app.js, operations workspace, admin-finance-accounting-workspace — projection Finance pays et actions explicitement déléguées, jamais autorité globale implicite)',
       'catalog (vérité globale en lecture si nécessaire + projection/configuration product_market_exposure via son service owner)',
@@ -130,8 +131,7 @@ module.exports = {
   // ── Ce qui reste à faire après / autour de ce lot ────────────────────────
   next: [
     'Livrer la surface Catalogue pays market-scoped à partir de catalog-market-exposure-service.js',
-    'Séparer dans shipping-customs les droits lecture/configuration pays des gestes spécialisés et ouvrir les premiers au market_operator',
-    'Livrer Finance pays market-scoped au market_operator sans élargir les autorités comptables globales',
+    'D1 Expéditions & Douane et D2 Finance sont livrés ; poursuivre le retrait de require-market-scope domaine par domaine jusqu’à inventaire legacy zéro',
     'Ajouter les E2E staging market_operator sur Catalogue pays + Douane + Expéditions + Finance pays avec preuve d\'isolation inter-marchés',
     'Requête panier moyen réel + distribution mono-article',
     'Réconciliation d\'un shipment pilote sur données réelles',

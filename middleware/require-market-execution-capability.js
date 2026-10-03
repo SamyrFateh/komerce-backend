@@ -11,9 +11,9 @@
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling
  * @db-write      market_delegation_audit
  * @db-txn        none
- * @doctrine      execution_is_explicit_capability, audit_before_domain_mutation, users_role_never_mutated, native_terrain_roles_keep_native_boundary
+ * @doctrine      execution_is_explicit_capability, audit_before_domain_mutation, users_role_never_mutated, native_role_bypass_must_be_explicit
  * @impact-areas  market-delegation, dashboard, operations, authorization
- * @version       2026-09
+ * @version       2026-10-d3
  */
 'use strict';
 
@@ -39,7 +39,7 @@ function safeResourceParams(params = {}) {
     .map(([key, value]) => [key, value == null ? null : String(value).slice(0, 200)]));
 }
 
-function attachMarketExecutionRoleFor({ capability, compatibilityRole, nativeRoles = [] }) {
+function attachMarketExecutionRoleFor({ capability, compatibilityRole, nativeRoles = [], forceCapability = false }) {
   if (!String(capability || '').startsWith('execution.')) {
     throw new TypeError('execution capability requise');
   }
@@ -49,11 +49,11 @@ function attachMarketExecutionRoleFor({ capability, compatibilityRole, nativeRol
   return async (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: 'Authentification requise.', code: 'AUTH_REQUIRED' });
 
-    // Les rôles terrain/admin historiques ne passent jamais par le fallback
-    // capability. S'ils sont admis pour cette action, le requireRole aval les
-    // accepte ; sinon il les refuse en 403 comme avant ce bridge. Cela évite
-    // qu'un agent_hub tente d'emprunter une capability relais (ou inversement).
-    if (native.has(req.user.role) || NATIVE_OPERATIONAL_ROLES.has(req.user.role)) return next();
+    // Le bypass natif n'est jamais implicite : une surface qui veut conserver
+    // une compatibilité historique doit l'annoncer via nativeRoles. D3 force
+    // les capabilities exactes sur le Workspace Opérations, y compris pour
+    // admin/agent_hub/agent_relais.
+    if (!forceCapability && (native.has(req.user.role) || NATIVE_OPERATIONAL_ROLES.has(req.user.role))) return next();
 
     try {
       const authz = await resolveAuthorization(db, {

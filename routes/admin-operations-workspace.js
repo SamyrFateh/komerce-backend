@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        authenticated_operator, requested_market_code, workspace_action
  * @outputs       authorized_operations_workspace_projection, authorized_domain_mutations
- * @depends       db, middleware/auth, middleware/require-market-delegated-role, middleware/require-market-execution-capability, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/operations-workspace
+ * @depends       db, middleware/auth, middleware/require-market-execution-capability, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/operations-workspace
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, operator_market_scopes, dashboard_global_access_grants
+ * @db-read       markets, users, relais, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_single_market_action_context, server_market_scope_is_authority, client_market_id_forbidden, workspace_role_least_privilege
+ * @doctrine      workspace_single_market_action_context, capability_is_market_authority, relay_binding_is_server_authority, client_market_id_forbidden, workspace_role_least_privilege
  * @impact-areas  admin-dashboard, logistics, inventory, orders, payments, market-authorization
- * @version       2026-09
+ * @version       2026-10-d3
  */
 
 'use strict';
@@ -21,9 +21,7 @@
 const express = require('express');
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { attachMarketExecutionRoleFor } = require('../middleware/require-market-execution-capability');
-const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
 const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const workspace = require('../services/operations-workspace');
@@ -31,11 +29,11 @@ const log = require('../utils/logger').child({ module: 'admin-operations-workspa
 
 const router = express.Router();
 const MARKET_CODE = /^[A-Z]{2}$/;
-// La lecture garde la projection market_operator legacy. Les mutations terrain
-// restent compatibles avec les rôles natifs, mais une membership peut aussi
-// consommer UNE capability execution.* exacte sans mutation de users.role.
-const attachWorkspaceReadDelegation = attachMarketDelegatedRoleFor(['admin', 'agent_hub', 'agent_relais', 'market_operator']);
-const requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_relais', 'market_operator']);
+// D3 : la capability borne la surface et le Market ID. La lecture est portée
+// par operations.read ou par l'autorité dashboard globale explicite ; un
+// agent_relais peut lire son propre marché via son rattachement relais serveur.
+// users.role n'accorde aucun droit marché : les execution.* projettent ensuite
+// un rôle de compatibilité request-local pour les moteurs historiques.
 const requireHubWorkspaceAction = requireRole(['admin', 'agent_hub']);
 const requireRelayWorkspaceAction = requireRole(['admin', 'agent_relais']);
 
@@ -43,7 +41,7 @@ function attachHubExecutionCapability(capability) {
   return attachMarketExecutionRoleFor({
     capability,
     compatibilityRole: 'agent_hub',
-    nativeRoles: ['admin', 'agent_hub'],
+    forceCapability: true,
   });
 }
 
@@ -51,7 +49,7 @@ function attachRelayExecutionCapability(capability) {
   return attachMarketExecutionRoleFor({
     capability,
     compatibilityRole: 'agent_relais',
-    nativeRoles: ['admin', 'agent_relais'],
+    forceCapability: true,
   });
 }
 
@@ -100,45 +98,51 @@ async function resolveRequestedMarket(req, res, next) {
   }
 }
 
-function requireWorkspaceMarketAccess(req, res, next) {
-  const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
-  const marketGuard = requireMarketScope(() => targetMarketId);
-
-  // Une action EXECUTION a déjà prouvé assignment + membership + capability
-  // sur le marketCode serveur ; elle n'a pas besoin d'un scope legacy projeté.
-  if (req.marketExecution && String(req.marketExecution.market_id) === String(targetMarketId)) {
+async function requireRelayMarketBinding(req, res, next) {
+  try {
+    const actorId = req.user && req.user.id;
+    const marketId = req.workspaceMarket && req.workspaceMarket.id;
+    const { rows } = await db.query(
+      `SELECT u.id AS user_id, r.id AS relais_id, r.market_id
+         FROM users u
+         JOIN relais r ON r.id = u.relais_id
+        WHERE u.id = $1
+          AND r.market_id = $2
+        LIMIT 1`,
+      [actorId, marketId]
+    );
+    if (!rows.length) {
+      return res.status(403).json({
+        error: 'Le relais de l’agent ne correspond pas au marché sélectionné.',
+        code: 'relay_actor_market_mismatch',
+      });
+    }
+    req.relayMarketAuthority = rows[0];
     return next();
+  } catch (err) {
+    return next(err);
   }
+}
 
-  if (req.authorizedMarkets && req.authorizedMarkets.has(targetMarketId)) {
-    return marketGuard(req, res, next);
+function requireWorkspaceReadAccess(req, res, next) {
+  if (req.user && req.user.role === 'agent_relais') {
+    return requireRelayMarketBinding(req, res, next);
   }
-
   return hasDashboardGlobalAuthority(req.user && req.user.id)
     .then(globalAllowed => {
       if (globalAllowed) {
         req.workspaceGlobalAuthority = true;
         return next();
       }
-      return marketGuard(req, res, next);
+      return requireMarketDelegatedCapability('operations.read', { audit: false })(req, res, next);
     })
     .catch(next);
 }
 
-// MARKET-DELEGATION LOT B (audit operations.read) : GET /market/:marketCode
-// était gated par le bundle legacy (attachWorkspaceReadDelegation +
-// requireWorkspaceMarketAccess), jamais par la capability exacte — révoquer
-// operations.read seule ne retirait rien tant que operator_market_scopes
-// restait actif. Les rôles natifs (admin/agent_hub/agent_relais) gardent leur
-// accès terrain inchangé ; seul market_operator doit désormais prouver
-// operations.read (requires_audit=false au registre).
-const NATIVE_WORKSPACE_ROLES = new Set(['admin', 'agent_hub', 'agent_relais']);
-function requireWorkspaceReadCapability() {
-  const capabilityGuard = requireMarketDelegatedCapability('operations.read', { audit: false });
-  return (req, res, next) => {
-    if (req.user && NATIVE_WORKSPACE_ROLES.has(req.user.role)) return next();
-    return capabilityGuard(req, res, next);
-  };
+function requireRelayPhysicalMarket(req, res, next) {
+  const persistedRole = req.user && (req.user.persisted_role || req.user.role);
+  if (persistedRole !== 'agent_relais') return next();
+  return requireRelayMarketBinding(req, res, next);
 }
 
 function actionActor(req) {
@@ -173,11 +177,7 @@ router.use(
 // uniquement après preuve de la capability exacte.
 router.get(
   '/market/:marketCode',
-  attachWorkspaceReadDelegation,
-  requireWorkspaceReadRole,
-  attachAuthorizedMarkets,
-  requireWorkspaceMarketAccess,
-  requireWorkspaceReadCapability(),
+  requireWorkspaceReadAccess,
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
@@ -194,8 +194,6 @@ router.post(
   '/market/:marketCode/orders/:reference/mark-ordered',
   attachHubExecutionCapability('execution.order.mark_ordered'),
   requireHubWorkspaceAction,
-  attachAuthorizedMarkets,
-  requireWorkspaceMarketAccess,
   async (req, res, next) => {
     try {
       const result = await workspace.markOrdered(
@@ -214,8 +212,6 @@ router.post(
   '/market/:marketCode/distribution/run',
   attachHubExecutionCapability('execution.distribution.run'),
   requireHubWorkspaceAction,
-  attachAuthorizedMarkets,
-  requireWorkspaceMarketAccess,
   async (req, res, next) => {
     try {
       const result = await workspace.runDistribution(req.workspaceMarket);
@@ -230,8 +226,6 @@ router.post(
   '/market/:marketCode/parcels/:reference/ship',
   attachHubExecutionCapability('execution.parcel.ship'),
   requireHubWorkspaceAction,
-  attachAuthorizedMarkets,
-  requireWorkspaceMarketAccess,
   async (req, res, next) => {
     try {
       const result = await workspace.scanParcel(
@@ -251,8 +245,7 @@ router.post(
   '/market/:marketCode/orders/:reference/confirm-cash',
   attachRelayExecutionCapability('execution.cash.confirm'),
   requireRelayWorkspaceAction,
-  attachAuthorizedMarkets,
-  requireWorkspaceMarketAccess,
+  requireRelayPhysicalMarket,
   async (req, res, next) => {
     try {
       const result = await workspace.confirmCash(
@@ -271,8 +264,7 @@ router.post(
   '/market/:marketCode/parcels/:reference/receive',
   attachRelayExecutionCapability('execution.parcel.receive'),
   requireRelayWorkspaceAction,
-  attachAuthorizedMarkets,
-  requireWorkspaceMarketAccess,
+  requireRelayPhysicalMarket,
   async (req, res, next) => {
     try {
       const result = await workspace.scanParcel(
@@ -292,8 +284,7 @@ router.post(
   '/market/:marketCode/parcels/:reference/collect',
   attachRelayExecutionCapability('execution.parcel.collect'),
   requireRelayWorkspaceAction,
-  attachAuthorizedMarkets,
-  requireWorkspaceMarketAccess,
+  requireRelayPhysicalMarket,
   async (req, res, next) => {
     try {
       const result = await workspace.scanParcel(
@@ -313,8 +304,6 @@ router.post(
   '/market/:marketCode/inventory/items/:itemId/assign',
   attachHubExecutionCapability('execution.inventory.assign'),
   requireHubWorkspaceAction,
-  attachAuthorizedMarkets,
-  requireWorkspaceMarketAccess,
   async (req, res, next) => {
     try {
       const parcelReference = req.body && req.body.parcel_ref;
@@ -334,8 +323,9 @@ module.exports = router;
 module.exports._test = {
   rejectClientMarketAuthority,
   resolveRequestedMarket,
-  requireWorkspaceMarketAccess,
-  requireWorkspaceReadCapability,
+  requireRelayMarketBinding,
+  requireWorkspaceReadAccess,
+  requireRelayPhysicalMarket,
   actionActor,
   sendWorkspaceError,
 };
