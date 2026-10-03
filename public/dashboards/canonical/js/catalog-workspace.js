@@ -246,6 +246,13 @@
     }
   }
 
+  function wrapTable(doc, table) {
+    const wrap = doc.createElement('div');
+    wrap.className = 'kmc-workspace-table-wrap';
+    wrap.appendChild(table);
+    return wrap;
+  }
+
   function td(doc, value) {
     const cell = doc.createElement('td');
     cell.textContent = value == null || value === '' ? '—' : String(value);
