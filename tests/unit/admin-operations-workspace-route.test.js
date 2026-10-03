@@ -6,9 +6,27 @@
  * @test-requires none
  */
 
-let mockAllowedMarkets = new Set(['market-cm-id']);
+const fs = require('fs');
+const path = require('path');
+
 let mockGlobalAllowed = false;
 let mockUserRole = 'admin';
+let mockRelayMarketIds = new Set(['market-cm-id']);
+let mockGrantedCapabilities = new Set();
+
+const EXECUTION_CAPS = [
+  'execution.order.mark_ordered',
+  'execution.distribution.run',
+  'execution.parcel.ship',
+  'execution.inventory.assign',
+  'execution.parcel.receive',
+  'execution.parcel.collect',
+  'execution.cash.confirm',
+];
+
+function grant(capability, marketCode = 'CM') {
+  mockGrantedCapabilities.add(`${capability}@${marketCode}`);
+}
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => {
@@ -29,33 +47,15 @@ jest.mock('../../middleware/auth', () => ({
   },
 }));
 
-jest.mock('../../middleware/require-market-scope', () => ({
-  attachAuthorizedMarkets: (req, res, next) => {
-    req.authorizedMarkets = new Set(mockAllowedMarkets);
-    next();
-  },
-  requireMarketScope: getTarget => (req, res, next) => {
-    const target = getTarget(req);
-    if (!req.authorizedMarkets || !req.authorizedMarkets.has(target)) {
-      return res.status(403).json({ error: 'Marché hors périmètre', code: 'market_scope_denied' });
-    }
-    return next();
-  },
-}));
-
 jest.mock('../../middleware/require-dashboard-global-authority', () => ({
   hasDashboardGlobalAuthority: jest.fn(async () => mockGlobalAllowed),
 }));
 
-// LOT B (audit operations.read) : GET /market/:marketCode est désormais
-// gated, pour market_operator, par resolveAuthorization(...,
-// requiredCapability: 'operations.read'), plus seulement par
-// operator_market_scopes. mockGrantedMarketCodes simule la détention réelle
-// de la capability déléguée (distincte du scope legacy simulé plus haut).
-let mockGrantedMarketCodes = new Set(['CM']);
 const mockResolveAuthorization = jest.fn();
+const mockAudit = jest.fn(async () => undefined);
 jest.mock('../../services/market-delegation-service', () => ({
   resolveAuthorization: (...args) => mockResolveAuthorization(...args),
+  audit: (...args) => mockAudit(...args),
 }));
 
 const mockBuildWorkspace = jest.fn();
@@ -90,12 +90,21 @@ jest.mock('../../utils/logger', () => ({
 
 jest.mock('../../db', () => ({
   query: jest.fn(async (sql, params) => {
-    if (String(sql).includes('FROM markets')) {
+    const text = String(sql);
+    if (text.includes('FROM markets')) {
       const code = params[0];
       const ids = { CM: 'market-cm-id', CG: 'market-cg-id' };
       return {
         rows: ids[code]
           ? [{ id: ids[code], code, name: `Market ${code}`, currency: 'XAF' }]
+          : [],
+      };
+    }
+    if (text.includes('FROM users u') && text.includes('JOIN relais r')) {
+      const marketId = params[1];
+      return {
+        rows: mockRelayMarketIds.has(marketId)
+          ? [{ user_id: params[0], relais_id: 'relay-cm', market_id: marketId }]
           : [],
       };
     }
@@ -107,6 +116,11 @@ const express = require('express');
 const request = require('supertest');
 const router = require('../../routes/admin-operations-workspace');
 
+const routeSource = fs.readFileSync(
+  path.join(__dirname, '..', '..', 'routes', 'admin-operations-workspace.js'),
+  'utf8'
+);
+
 function app() {
   const instance = express();
   instance.use(express.json());
@@ -116,20 +130,28 @@ function app() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockAllowedMarkets = new Set(['market-cm-id']);
   mockGlobalAllowed = false;
   mockUserRole = 'admin';
-  mockGrantedMarketCodes = new Set(['CM']);
+  mockRelayMarketIds = new Set(['market-cm-id']);
+  mockGrantedCapabilities = new Set(['operations.read@CM']);
+  for (const capability of EXECUTION_CAPS) grant(capability, 'CM');
+
   mockResolveAuthorization.mockImplementation(async (_db, { marketCode, requiredCapability }) => {
-    if (requiredCapability === 'operations.read' && mockGrantedMarketCodes.has(marketCode)) {
+    if (mockGrantedCapabilities.has(`${requiredCapability}@${marketCode}`)) {
       const marketId = marketCode === 'CM' ? 'market-cm-id' : marketCode === 'CG' ? 'market-cg-id' : `market-${marketCode}-id`;
-      return { market_id: marketId, market_code: marketCode, assignment_id: 'assignment-1', membership_id: 'membership-1' };
+      return {
+        market_id: marketId,
+        market_code: marketCode,
+        assignment_id: 'assignment-1',
+        membership_id: 'membership-1',
+      };
     }
-    const error = new Error('Capability operations.read requise ou absente du ceiling actif.');
+    const error = new Error(`Capability ${requiredCapability} requise.`);
     error.code = 'MARKET_CAPABILITY_REQUIRED';
     error.status = 403;
     throw error;
   });
+
   mockBuildWorkspace.mockResolvedValue({
     scope: { code: 'CM', name: 'Market CM', currency: 'XAF' },
     summary: {},
@@ -144,165 +166,198 @@ beforeEach(() => {
   mockAssignInventory.mockResolvedValue({ item_id: 'item-1', parcel_ref: 'PCL-CM-001', assigned: true });
 });
 
-test('admin ouvre uniquement le Workspace CM autorisé', async () => {
-  const res = await request(app()).get('/api/admin/workspaces/operations/market/CM');
-
-  expect(res.status).toBe(200);
-  expect(res.headers['cache-control']).toContain('no-store');
-  expect(mockBuildWorkspace).toHaveBeenCalledWith({
-    market: expect.objectContaining({ id: 'market-cm-id', code: 'CM' }),
-  });
+test('D3 retire complètement require-market-scope du Workspace Opérations', () => {
+  expect(routeSource).not.toMatch(/require\(['"][^'"]*require-market-scope/);
+  expect(routeSource).not.toMatch(/\b(?:attachAuthorizedMarkets|requireMarketScope|operator_market_scopes)\b/);
+  expect(routeSource).toContain("requireMarketDelegatedCapability('operations.read'");
+  expect(routeSource).toContain('forceCapability: true');
 });
 
-test.each(['agent_hub', 'agent_relais'])('%s peut lire le Workspace de son marché', async role => {
-  mockUserRole = role;
-
-  const res = await request(app()).get('/api/admin/workspaces/operations/market/CM');
-
-  expect(res.status).toBe(200);
-  expect(mockBuildWorkspace).toHaveBeenCalledTimes(1);
-});
-
-test('un client ne peut jamais entrer dans le Workspace', async () => {
-  mockUserRole = 'client';
-
-  const res = await request(app()).get('/api/admin/workspaces/operations/market/CM');
-
-  expect(res.status).toBe(403);
-  expect(res.body.code).toBe('role_forbidden');
-  expect(mockBuildWorkspace).not.toHaveBeenCalled();
-});
-
-test('opérateur CM ne peut pas ouvrir CG', async () => {
-  const res = await request(app()).get('/api/admin/workspaces/operations/market/CG');
-
-  expect(res.status).toBe(403);
-  expect(res.body.code).toBe('market_scope_denied');
-  expect(mockBuildWorkspace).not.toHaveBeenCalled();
-});
-
-test('market_operator avec operations.read sur CM lit son Workspace (capability exacte)', async () => {
-  mockUserRole = 'market_operator';
-  mockGrantedMarketCodes = new Set(['CM']);
-
-  const res = await request(app()).get('/api/admin/workspaces/operations/market/CM');
-
-  expect(res.status).toBe(200);
-  expect(mockBuildWorkspace).toHaveBeenCalledWith({
-    market: expect.objectContaining({ id: 'market-cm-id', code: 'CM' }),
-  });
+test('admin lit CM uniquement avec operations.read ou autorité globale explicite', async () => {
+  const ok = await request(app()).get('/api/admin/workspaces/operations/market/CM');
+  expect(ok.status).toBe(200);
   expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
     marketCode: 'CM',
     requiredCapability: 'operations.read',
   }));
+
+  mockGrantedCapabilities.delete('operations.read@CM');
+  const denied = await request(app()).get('/api/admin/workspaces/operations/market/CM');
+  expect(denied.status).toBe(403);
+  expect(denied.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+
+  mockGlobalAllowed = true;
+  const global = await request(app()).get('/api/admin/workspaces/operations/market/CG');
+  expect(global.status).toBe(200);
 });
 
-test('révocation de operations.read retire l’accès market_operator même avec un scope marché toujours actif', async () => {
+test('agent_hub ne tire aucun Market ID de son rôle : operations.read est obligatoire', async () => {
+  mockUserRole = 'agent_hub';
+  const ok = await request(app()).get('/api/admin/workspaces/operations/market/CM');
+  expect(ok.status).toBe(200);
+
+  mockGrantedCapabilities.delete('operations.read@CM');
+  const denied = await request(app()).get('/api/admin/workspaces/operations/market/CM');
+  expect(denied.status).toBe(403);
+  expect(denied.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+});
+
+test('agent_relais lit uniquement le marché de son relais serveur', async () => {
+  mockUserRole = 'agent_relais';
+  mockGrantedCapabilities.clear();
+
+  const own = await request(app()).get('/api/admin/workspaces/operations/market/CM');
+  const cross = await request(app()).get('/api/admin/workspaces/operations/market/CG');
+
+  expect(own.status).toBe(200);
+  expect(cross.status).toBe(403);
+  expect(cross.body.code).toBe('relay_actor_market_mismatch');
+  expect(mockResolveAuthorization).not.toHaveBeenCalled();
+});
+
+test('market_operator CM ne peut pas lire CG', async () => {
   mockUserRole = 'market_operator';
-  mockAllowedMarkets = new Set(['market-cm-id']); // scope legacy toujours actif sur CM
-  mockGrantedMarketCodes = new Set(); // mais la capability déléguée est révoquée
-
-  const res = await request(app()).get('/api/admin/workspaces/operations/market/CM');
-
+  const res = await request(app()).get('/api/admin/workspaces/operations/market/CG');
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
   expect(mockBuildWorkspace).not.toHaveBeenCalled();
 });
 
-test('les rôles natifs (admin/agent_hub/agent_relais) ne passent jamais par la capability déléguée', async () => {
-  mockGrantedMarketCodes = new Set(); // aucune capability déléguée nulle part
-  mockUserRole = 'agent_hub';
+test('un membre sans rôle opérationnel lit uniquement avec operations.read', async () => {
+  mockUserRole = 'client';
 
-  const res = await request(app()).get('/api/admin/workspaces/operations/market/CM');
+  const allowed = await request(app()).get('/api/admin/workspaces/operations/market/CM');
+  expect(allowed.status).toBe(200);
+  expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+    marketCode: 'CM',
+    requiredCapability: 'operations.read',
+  }));
 
-  expect(res.status).toBe(200);
-  expect(mockResolveAuthorization).not.toHaveBeenCalled();
+  mockGrantedCapabilities.delete('operations.read@CM');
+  const denied = await request(app()).get('/api/admin/workspaces/operations/market/CM');
+  expect(denied.status).toBe(403);
+  expect(denied.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
 });
 
-test('autorité globale explicite peut agir après sélection explicite de CG', async () => {
-  mockGlobalAllowed = true;
-
-  const res = await request(app()).get('/api/admin/workspaces/operations/market/CG');
-
-  expect(res.status).toBe(200);
-  expect(mockBuildWorkspace).toHaveBeenCalledWith({
-    market: expect.objectContaining({ id: 'market-cg-id', code: 'CG' }),
-  });
-});
-
-test('market_id en query est rejeté avant le service', async () => {
-  const res = await request(app())
-    .get('/api/admin/workspaces/operations/market/CM?market_id=market-cg-id');
-
-  expect(res.status).toBe(400);
-  expect(res.body.code).toBe('client_market_id_forbidden');
-  expect(mockBuildWorkspace).not.toHaveBeenCalled();
-});
-
-test('market_id en body est rejeté avant une mutation', async () => {
-  const res = await request(app())
+test('market_id navigateur est rejeté avant toute autorité', async () => {
+  const read = await request(app()).get('/api/admin/workspaces/operations/market/CM?market_id=market-cg-id');
+  const act = await request(app())
     .post('/api/admin/workspaces/operations/market/CM/distribution/run')
     .send({ market_id: 'market-cg-id' });
 
-  expect(res.status).toBe(400);
-  expect(res.body.code).toBe('client_market_id_forbidden');
-  expect(mockRunDistribution).not.toHaveBeenCalled();
+  expect(read.status).toBe(400);
+  expect(act.status).toBe(400);
+  expect(read.body.code).toBe('client_market_id_forbidden');
+  expect(act.body.code).toBe('client_market_id_forbidden');
 });
 
-test('mark-ordered reçoit le marché serveur et l acteur authentifié', async () => {
+test('admin ne peut muter sans la capability execution exacte', async () => {
+  mockGrantedCapabilities.delete('execution.order.mark_ordered@CM');
   const res = await request(app())
     .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/mark-ordered')
     .send({});
 
-  expect(res.status).toBe(200);
-  expect(mockMarkOrdered).toHaveBeenCalledWith(
-    'CMD-CM-001',
-    expect.objectContaining({ id: 'market-cm-id', code: 'CM' }),
-    expect.objectContaining({ id: 'admin-1', role: 'admin', full_name: 'admin Test' })
-  );
-});
-
-test('agent_hub peut commander mais ne peut pas encaisser au relais', async () => {
-  mockUserRole = 'agent_hub';
-
-  const hubAction = await request(app())
-    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/mark-ordered')
-    .send({});
-  const relayAction = await request(app())
-    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/confirm-cash')
-    .send({});
-
-  expect(hubAction.status).toBe(200);
-  expect(relayAction.status).toBe(403);
-  expect(mockMarkOrdered).toHaveBeenCalledTimes(1);
-  expect(mockConfirmCash).not.toHaveBeenCalled();
-});
-
-test('agent_relais peut encaisser mais ne peut pas commander au sourcing', async () => {
-  mockUserRole = 'agent_relais';
-
-  const relayAction = await request(app())
-    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/confirm-cash')
-    .send({});
-  const hubAction = await request(app())
-    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/mark-ordered')
-    .send({});
-
-  expect(relayAction.status).toBe(200);
-  expect(hubAction.status).toBe(403);
-  expect(mockConfirmCash).toHaveBeenCalledTimes(1);
+  expect(res.status).toBe(403);
+  expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
   expect(mockMarkOrdered).not.toHaveBeenCalled();
 });
 
-test('assign inventory ne reçoit que parcel_ref, jamais market_id', async () => {
-  const res = await request(app())
+test('chaque mutation Hub exige sa capability exacte et audite avant mutation', async () => {
+  const mark = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/mark-ordered').send({});
+  const distribute = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/distribution/run').send({});
+  const ship = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/parcels/PCL-CM-001/ship').send({});
+  const assign = await request(app())
     .post('/api/admin/workspaces/operations/market/CM/inventory/items/item-1/assign')
     .send({ parcel_ref: 'PCL-CM-001' });
 
+  expect([mark.status, distribute.status, ship.status, assign.status]).toEqual([200, 200, 200, 200]);
+  for (const capability of [
+    'execution.order.mark_ordered',
+    'execution.distribution.run',
+    'execution.parcel.ship',
+    'execution.inventory.assign',
+  ]) {
+    expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      marketCode: 'CM',
+      requiredCapability: capability,
+    }));
+  }
+  expect(mockAudit).toHaveBeenCalledTimes(4);
+});
+
+test('une execution capability exacte projette le rôle de compatibilité sans modifier users.role', async () => {
+  mockUserRole = 'client';
+  mockGrantedCapabilities = new Set(['execution.distribution.run@CM']);
+
+  const res = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/distribution/run').send({});
+
   expect(res.status).toBe(200);
-  expect(mockAssignInventory).toHaveBeenCalledWith(
-    'item-1',
+  expect(mockRunDistribution).toHaveBeenCalledTimes(1);
+  expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+    requiredCapability: 'execution.distribution.run',
+    marketCode: 'CM',
+  }));
+  expect(mockAudit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+    capability: 'execution.distribution.run',
+    action: 'EXECUTION_AUTHORIZED',
+  }));
+});
+
+test('agent_relais exige capability + rattachement physique au même marché', async () => {
+  mockUserRole = 'agent_relais';
+
+  const own = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/confirm-cash').send({});
+  expect(own.status).toBe(200);
+  expect(mockConfirmCash).toHaveBeenCalledTimes(1);
+
+  mockGrantedCapabilities.add('execution.cash.confirm@CG');
+  const cross = await request(app())
+    .post('/api/admin/workspaces/operations/market/CG/orders/CMD-CG-001/confirm-cash').send({});
+  expect(cross.status).toBe(403);
+  expect(cross.body.code).toBe('relay_actor_market_mismatch');
+  expect(mockConfirmCash).toHaveBeenCalledTimes(1);
+});
+
+test('users.role seul ne bloque ni n accorde une action : seule la capability exacte décide', async () => {
+  mockUserRole = 'agent_hub';
+  mockGrantedCapabilities = new Set(['execution.cash.confirm@CM']);
+
+  const res = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/orders/CMD-CM-001/confirm-cash').send({});
+
+  expect(res.status).toBe(200);
+  expect(mockConfirmCash).toHaveBeenCalledTimes(1);
+});
+
+test('market_operator peut consommer une execution capability explicitement déléguée', async () => {
+  mockUserRole = 'market_operator';
+  const res = await request(app())
+    .post('/api/admin/workspaces/operations/market/CM/parcels/PCL-CM-001/ship').send({});
+
+  expect(res.status).toBe(200);
+  expect(mockScanParcel).toHaveBeenCalledWith(
     'PCL-CM-001',
-    expect.objectContaining({ id: 'market-cm-id', code: 'CM' })
+    'ship',
+    expect.objectContaining({ id: 'market-cm-id', code: 'CM' }),
+    expect.objectContaining({ role: 'agent_hub' })
   );
+});
+
+test('autorité dashboard globale ne donne aucun droit de mutation Opérations', async () => {
+  mockGlobalAllowed = true;
+  mockGrantedCapabilities.clear();
+
+  const read = await request(app()).get('/api/admin/workspaces/operations/market/CG');
+  const act = await request(app())
+    .post('/api/admin/workspaces/operations/market/CG/distribution/run').send({});
+
+  expect(read.status).toBe(200);
+  expect(act.status).toBe(403);
+  expect(act.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+  expect(mockRunDistribution).not.toHaveBeenCalled();
 });

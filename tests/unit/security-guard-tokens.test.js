@@ -23,6 +23,18 @@ describe('security-guard-tokens', () => {
     expect(lib.LEGACY_SCOPE_GUARDS).toHaveLength(4);
   });
 
+  test('tokens : une capability exacte est une autorisation forte, distincte du rôle admin', () => {
+    for (const name of lib.STRONG_AUTHZ_GUARDS) {
+      const t = lib.tokens(`${name}('operations.read')`);
+      expect(t.authz).toBe(true);
+      expect(t.authn).toBe(true);
+      expect(t.admin).toBe(false);
+      expect(t.capabilityGuards.has(name)).toBe(true);
+      expect(lib.hasGuards(t)).toBe(true);
+    }
+    expect(lib.tokens('resolveAuthorizationSomewhere')).toMatchObject({ authz: false });
+  });
+
   test('hasGuards : une garde scope marché seule suffit', () => {
     expect(lib.hasGuards(lib.tokens('attachAuthorizedMarkets'))).toBe(true);
     expect(lib.hasGuards(null)).toBe(false);
@@ -67,5 +79,17 @@ describe('security-guard-tokens', () => {
     expect(Array.from(aliases.requireOrderRead.marketGuards)).toEqual(['requireMarketScope']);
     expect(aliases.requireOrderRead.authn).toBe(false);
     expect(lib.wrapperAliases('')).toEqual({});
+  });
+
+  test('wrapperAliases : une fonction qui appelle directement une capability exacte devient une garde forte', () => {
+    const src = [
+      'function requireOperationsRead(req, res, next) {',
+      "  return requireMarketDelegatedCapability('operations.read', { audit: false })(req, res, next);",
+      '}',
+    ].join('\n');
+    const aliases = lib.wrapperAliases(src);
+    expect(aliases.requireOperationsRead.authz).toBe(true);
+    expect(aliases.requireOperationsRead.authn).toBe(true);
+    expect(Array.from(aliases.requireOperationsRead.capabilityGuards)).toEqual(['requireMarketDelegatedCapability']);
   });
 });

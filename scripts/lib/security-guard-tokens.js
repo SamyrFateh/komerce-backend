@@ -5,7 +5,7 @@
  * @layer         tooling
  * @criticality   high
  * @inputs        source text of an Express route chain or route file
- * @outputs       guard facts per chain: authn, admin, roles, legacy market-scope guards
+ * @outputs       guard facts per chain: authn, admin, strong authz, roles, legacy market-scope guards
  * @depends       none
  * @used-by       scripts/gen-security-360.js
  * @db-read       none
@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      docs/SECURITY_360.md (jamais de faux négatif silencieux)
  * @impact-areas  governance, security
- * @version       2026-10-v1
+ * @version       2026-10-v2
  */
 'use strict';
 
@@ -34,8 +34,16 @@ const LEGACY_SCOPE_GUARDS = Object.freeze([
 
 const LEGACY_SCOPE_RE = new RegExp(`\\b(${LEGACY_SCOPE_GUARDS.join('|')})\\b`, 'g');
 
+const STRONG_AUTHZ_GUARDS = Object.freeze([
+  'requireMarketDelegatedCapability',
+  'requireSingleMarketDelegatedCapability',
+  'attachMarketExecutionRoleFor',
+]);
+
+const STRONG_AUTHZ_RE = new RegExp(`\\b(${STRONG_AUTHZ_GUARDS.join('|')})\\b`, 'g');
+
 function emptyGuards() {
-  return { authn: false, roles: new Set(), admin: false, marketGuards: new Set() };
+  return { authn: false, authz: false, roles: new Set(), admin: false, marketGuards: new Set(), capabilityGuards: new Set() };
 }
 
 function tokens(s) {
@@ -47,27 +55,37 @@ function tokens(s) {
     r[1].split(',').forEach(x => { const v = x.trim().replace(/['"`]/g, ''); if (v) out.roles.add(v); });
   }
   for (const m of s.matchAll(LEGACY_SCOPE_RE)) out.marketGuards.add(m[1]);
+  for (const m of s.matchAll(STRONG_AUTHZ_RE)) {
+    out.authz = true;
+    out.authn = true;
+    out.capabilityGuards.add(m[1]);
+  }
   return out;
 }
 
 function hasGuards(t) {
-  return Boolean(t && (t.authn || t.admin || t.roles.size || (t.marketGuards && t.marketGuards.size)));
+  return Boolean(t && (t.authn || t.authz || t.admin || t.roles.size || (t.marketGuards && t.marketGuards.size) || (t.capabilityGuards && t.capabilityGuards.size)));
 }
 
 function mergeInto(t, a) {
   t.authn = t.authn || a.authn;
+  t.authz = t.authz || a.authz;
   t.admin = t.admin || a.admin;
   a.roles.forEach(r => t.roles.add(r));
   if (!t.marketGuards) t.marketGuards = new Set();
   (a.marketGuards || []).forEach(g => t.marketGuards.add(g));
+  if (!t.capabilityGuards) t.capabilityGuards = new Set();
+  (a.capabilityGuards || []).forEach(g => t.capabilityGuards.add(g));
 }
 
 function cloneGuards(source) {
   return {
     authn: Boolean(source && source.authn),
+    authz: Boolean(source && source.authz),
     roles: new Set(source && source.roles ? source.roles : []),
     admin: Boolean(source && source.admin),
     marketGuards: new Set(source && source.marketGuards ? source.marketGuards : []),
+    capabilityGuards: new Set(source && source.capabilityGuards ? source.capabilityGuards : []),
   };
 }
 
@@ -83,14 +101,15 @@ function wrapperAliases(src) {
   const aliases = {};
   for (const m of String(src).matchAll(/(?:async\s+)?function\s+(\w+)\s*\([^)]*\)\s*\{[\s\S]*?\n\}/g)) {
     const found = tokens(m[0]);
-    if (!found.marketGuards.size) continue;
-    aliases[m[1]] = { ...emptyGuards(), marketGuards: found.marketGuards };
+    if (!found.marketGuards.size && !found.authz) continue;
+    aliases[m[1]] = cloneGuards(found);
   }
   return aliases;
 }
 
 module.exports = {
   LEGACY_SCOPE_GUARDS,
+  STRONG_AUTHZ_GUARDS,
   cloneGuards,
   emptyGuards,
   hasGuards,

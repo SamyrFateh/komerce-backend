@@ -1930,12 +1930,7 @@
       "roles": [
         "admin",
         "agent_hub"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-operations-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/inventory/items/{itemId}/assign",
@@ -1943,12 +1938,7 @@
       "roles": [
         "admin",
         "agent_hub"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-operations-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/confirm-cash",
@@ -1956,12 +1946,7 @@
       "roles": [
         "admin",
         "agent_relais"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-operations-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/mark-ordered",
@@ -1969,12 +1954,7 @@
       "roles": [
         "admin",
         "agent_hub"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-operations-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/collect",
@@ -1982,12 +1962,7 @@
       "roles": [
         "admin",
         "agent_relais"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-operations-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/receive",
@@ -1995,12 +1970,7 @@
       "roles": [
         "admin",
         "agent_relais"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-operations-workspace.js"
+      ]
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/ship",
@@ -2008,27 +1978,12 @@
       "roles": [
         "admin",
         "agent_hub"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-operations-workspace.js"
+      ]
     },
     {
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "agent_hub",
-        "agent_relais",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-operations-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/competitors/{competitorRef}/deactivate",

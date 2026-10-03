@@ -123,7 +123,7 @@ function applyRouterUses(inherited, uses, routePath, sourceIndex) {
 // nom revient à ne rien trouver (les regex étaient codées en dur sur 'router').
 function staticGuards(routeFile, prefix, seen, acc, inherited, varName) {
   seen = seen || new Set(); acc = acc || [];
-  inherited = inherited || { authn: false, roles: new Set(), admin: false };
+  inherited = inherited || { authn: false, authz: false, roles: new Set(), admin: false };
   varName = varName || 'router';
   const vEsc = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   if (seen.has(routeFile + '@' + prefix + '@' + varName)) return acc; seen.add(routeFile + '@' + prefix + '@' + varName);
@@ -156,7 +156,7 @@ function staticGuards(routeFile, prefix, seen, acc, inherited, varName) {
     for (const name of Object.keys(alias)) if (new RegExp('\\b' + name + '\\b').test(chain)) mergeInto(t, alias[name]);
     const route = norm(prefix + '/' + m[2]);
     seenRoutes.add(m[1].toUpperCase() + ' ' + route);
-    acc.push({ method: m[1].toUpperCase(), route, authn: t.authn, admin: t.admin || t.roles.has('admin'), roles: [...t.roles], marketGuards: [...t.marketGuards].sort(), file: routeFile });
+    acc.push({ method: m[1].toUpperCase(), route, authn: t.authn, authz: t.authz, admin: t.admin || t.roles.has('admin'), roles: [...t.roles], marketGuards: [...t.marketGuards].sort(), capabilityGuards: [...(t.capabilityGuards || [])].sort(), file: routeFile });
   }
   // Passe complémentaire : routes avec un HANDLER NOMMÉ plutôt qu'inline, ex.
   // `router.get('/x', authenticate, requireAdmin, namedHandler);` — le pattern
@@ -171,7 +171,7 @@ function staticGuards(routeFile, prefix, seen, acc, inherited, varName) {
     const t = guardsAt(m[2], m.index);
     mergeInto(t, tokens(chain));
     for (const name of Object.keys(alias)) if (new RegExp('\\b' + name + '\\b').test(chain)) mergeInto(t, alias[name]);
-    acc.push({ method: m[1].toUpperCase(), route, authn: t.authn, admin: t.admin || t.roles.has('admin'), roles: [...t.roles], marketGuards: [...t.marketGuards].sort(), file: routeFile });
+    acc.push({ method: m[1].toUpperCase(), route, authn: t.authn, authz: t.authz, admin: t.admin || t.roles.has('admin'), roles: [...t.roles], marketGuards: [...t.marketGuards].sort(), capabilityGuards: [...(t.capabilityGuards || [])].sort(), file: routeFile });
   }
   // sous-routeurs (héritent fileBase)
   const v2spec = {};
@@ -324,11 +324,11 @@ function classify(method, p) {
     return { method, path: p, level: 'UNKNOWN', severity: 'audit', roles: [], authn: null, disposition: null };
   }
   let level = 'PROTECTED', severity = 'ok', appliedDisposition = null;
-  if (isAdminPath && !best.admin) { level = 'ADMIN_NO_GUARD'; severity = 'high'; }
+  if (isAdminPath && !best.admin && !best.authz) { level = 'ADMIN_NO_GUARD'; severity = 'high'; }
   else if (!best.authn && disposition) { level = 'PUBLIC'; severity = 'ok'; appliedDisposition = disposition; }
   else if (!best.authn && !isPublicOk) { level = 'UNPROTECTED'; severity = 'medium'; }
   else if (!best.authn && isPublicOk) { level = 'PUBLIC'; severity = 'ok'; }
-  return { method, path: p, level, severity, roles: best.roles, marketGuards: best.marketGuards || [], file: best.file || null, authn: best.authn, disposition: appliedDisposition };
+  return { method, path: p, level, severity, roles: best.roles, marketGuards: best.marketGuards || [], capabilityGuards: best.capabilityGuards || [], file: best.file || null, authn: best.authn, authz: best.authz, disposition: appliedDisposition };
 }
 
 const dispositionErrors = validateDispositions();
