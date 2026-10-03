@@ -13,8 +13,8 @@ Ne pas coder puis corriger. Coder avec l'analyse en tête.
 Toute intervention commence par :
 
 1. identifier la feature ou les fichiers probables ;
-2. exécuter `npm run agent:context -- --brief --feature <feature>` ou `--brief --files <paths>` ;
-3. annoncer un plan d'attaque court à partir de cette projection ;
+2. exécuter `npm run agent:context -- --pack <type> --feature <feature>` (ou `--files <paths>`) selon le type de changement, puis `npm run arch:impact -- <fichier|feature>` avant de modifier ;
+3. annoncer un plan d'attaque court à partir de ces projections ;
 4. ouvrir seulement les sources explicitement nécessaires ;
 5. exécuter les gates applicables
 
@@ -24,9 +24,10 @@ Un agent ne doit pas démarrer depuis un ancien audit, un rapport daté, un prom
 
 Avant toute analyse ou modification substantielle, utiliser les atouts déjà présents dans le dépôt dans cet ordre :
 
-1. `npm run agent:context -- --brief` pour obtenir le scope, les owners et les gates avec un budget ~600–800 tokens ;
-2. `npm run agent:context -- --expand <feature|file>` uniquement si une ambiguïté réelle subsiste ;
-3. lecture ciblée d'une source brute seulement si l'expansion ne suffit pas.
+1. `npm run agent:context -- --pack <ui|authz|migration|service|route> --feature <f>` : le contexte minimal du type de changement (autorité, invariants pertinents, gardes, routes, tables, tests), sans liste tronquée en silence ;
+2. `npm run arch:impact -- <fichier|feature>` : la portée avant de coder (écrivains et lecteurs des tables, écrivains hors feature, consommateurs, routes, tests liés, artefacts à régénérer, prochain numéro de migration) ;
+3. `npm run agent:context -- --brief` seulement pour s'orienter quand la feature est inconnue, `--expand` en cas d'ambiguïté ;
+4. lecture ciblée d'une source brute seulement si ces projections ne suffisent pas.
 
 Règle d'économie : **ne jamais commencer par un clone complet, un fetch complet, un scan global, une lecture exhaustive des sorties générées ou une suite de tests complète quand une preuve ciblée suffit**.
 
@@ -119,10 +120,10 @@ Exceptions : lecture simple, explication sans modification, commande triviale ex
 ## 2. Parcours obligatoire
 
 1. Identifier la feature ou les fichiers probables.
-2. Exécuter `npm run agent:context -- --brief --feature <feature>` ou `--brief --files <paths>`.
+2. Exécuter `npm run agent:context -- --pack <type> --feature <feature>` et `npm run arch:impact -- <fichier|feature>`.
 3. Qualifier l'opération : Create, Read, Update, Delete/Archive/Deprecate.
-4. Utiliser le brief pour vérifier scope, ownership et gates ; si une décision exige périmètre, autorité, invariants, headers ou `mustCheck`, appeler `npm run agent:context -- --expand <feature|file>`.
-5. Ouvrir une source brute uniquement si l'expansion ciblée ne suffit pas à trancher.
+4. Utiliser le pack et l'impact pour vérifier scope, ownership, autorité, invariants, `mustCheck` et tests ; `--expand <feature|file>` seulement si une ambiguïté subsiste.
+5. Ouvrir une source brute uniquement si ces projections ne suffisent pas à trancher.
 6. Annoncer le plan d'attaque avant de modifier.
 7. Si l'intention métier change, mettre à jour la carte dans la même PR.
 8. Régénérer les sorties dérivées pertinentes.
@@ -201,7 +202,7 @@ npm run map:check
 - `main` est l'unique branche d'intégration. Les branches PR éphémères sont autorisées ; ne pas rechercher ou réactiver une ancienne branche `agent/*` sauf demande humaine explicite.
 - `.agent/README.md` est la seule instruction active sous `.agent/`.
 - `.agent/LEDGER.md` contient uniquement le chantier courant et les prochains actes décidés. Un palier clos n'est jamais rouvert à cause d'un ancien state, worklog, audit ou compteur.
-- Lecture minimale obligatoire : `AGENTS.md` → `npm run agent:context -- --brief` → `--expand <feature|file>` si nécessaire → fichiers directement utiles. `CARTE_FIRST_INDEX`, carte complète et `.agent/LEDGER.md` ne sont lus directement que si la projection signale un manque.
+- Lecture minimale obligatoire : `AGENTS.md` → `npm run agent:context -- --pack <type>` → `npm run arch:impact -- <cible>` → fichiers directement utiles. `CARTE_FIRST_INDEX`, carte complète et `.agent/LEDGER.md` ne sont lus directement que si la projection signale un manque.
 - Ne pas scanner par défaut les archives, rapports datés, preuves brutes, anciens prompts, sorties générées volumineuses ou historiques de tâches. Les ouvrir seulement lorsqu'un fichier actif les référence précisément ou qu'une preuve ne peut pas être régénérée.
 - Préférer les recherches ciblées et les extraits courts. Ne pas recopier des fichiers entiers dans les rapports ou réponses.
 - Ne pas créer de document horodaté, prompt bis, ZIP, patch ou rapport parallèle lorsqu'un document canonique existe déjà.
@@ -216,11 +217,13 @@ Le chemin normal est **de ne pas la relire**.
 Après chargement de ce fichier racine, l'agent doit compiler son contexte ciblé :
 
 ```bash
-npm run agent:context -- --brief --feature <feature>
-# ou, si les fichiers sont déjà connus
-npm run agent:context -- --brief --files path/a.js,path/b.js
-# uniquement si ambiguïté
-npm run agent:context -- --expand <feature|file>
+# contexte minimal selon le type de changement : ui | authz | migration | service | route
+npm run agent:context -- --pack authz --feature <feature>
+npm run agent:context -- --pack service --files path/a.js,path/b.js
+# portée avant de coder (fichier ou feature)
+npm run arch:impact -- <fichier|feature>
+# orientation si la feature est inconnue ; --expand uniquement si ambiguïté
+npm run agent:context -- --brief --files path/a.js
 ```
 
 Cette projection dérive les cartes Feature First, headers `@komerce-arch`,
@@ -231,7 +234,8 @@ Règles :
 - ne pas relire `AGENTS.md`, `CARTE_FIRST_INDEX`, une carte entière, le graphe entier ou le Ledger entier si `agent:context` a déjà fourni l'information nécessaire ;
 - ouvrir ensuite uniquement le code ou la doctrine explicitement requis par le changement ;
 - si le contexte compilé est insuffisant, élargir une source à la fois et justifier l'élargissement ;
-- les gates restent `npm run pr:preflight` ; le compilateur réduit la lecture, jamais la preuve.
+- les gates restent `npm run pr:preflight` ; le compilateur réduit la lecture, jamais la preuve ;
+- **économie de tours** (mesure 2026-10-03 : chaque réponse relit ~400 k tokens de contexte, le coût suit le nombre de tours) : regrouper les commandes indépendantes en un seul appel ; attendre la CI par une seule commande bloquante, jamais par sondages répétés ; un seul push par PR, après `pr:preflight` vert.
 
 
 ## 8. Règles techniques non négociables

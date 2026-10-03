@@ -74,18 +74,22 @@ Le chemin normal n'est plus de relire manuellement toutes les sources ci-dessus.
 La commande suivante compile uniquement le contexte utile au chantier :
 
 ```bash
-npm run agent:context -- --brief --feature <feature>
-# ou
-npm run agent:context -- --brief --files path/a.js,path/b.js
-
-# si et seulement si une ambiguïté subsiste
-npm run agent:context -- --expand <feature|file>
+# contexte minimal selon le type de changement : ui | authz | migration | service | route
+npm run agent:context -- --pack <type> --feature <feature>   # ou --files path/a.js
+# portée avant de coder : écrivains/lecteurs, consommateurs, routes, tests liés, artefacts
+npm run arch:impact -- <fichier|feature>
+# orientation si la feature est inconnue ; --expand si et seulement si ambiguïté
+npm run agent:context -- --brief --files path/a.js
 ```
 
 La projection est dérivée des cartes Feature First, headers `@komerce-arch`,
-`interventionIndex.mustCheck`, du diff et du ledger actif. Elle n'est jamais
-une nouvelle source de vérité.
+`interventionIndex.mustCheck`, `FEATURE_360`, du registre de routes, de
+`SECURITY_360`, du diff et du ledger actif. Elle n'est jamais une nouvelle source
+de vérité. Une liste n'est jamais tronquée en silence : au-delà de sa limite, la
+projection donne le total et renvoie à `--json`.
 
-Budget d'entrée : 2800 caractères maximum, soit environ 700 tokens pour `--brief`.
-Le mode complet à 6000 caractères reste disponible pour compatibilité, mais le
-chemin normal est brief → expand ciblé → source brute seulement si nécessaire.
+Chemin normal : pack → impact → source brute seulement si nécessaire. Mesure du
+2026-10-03 : le coût d'une session suit le nombre de tours (~400 k tokens de
+contexte relus par réponse) et l'exploration représente 60 % des tokens renvoyés
+par les outils ; sur la revue du Control Plane, `--impact` a ramené 11 appels
+d'exploration à 3 (−54 % de tokens d'exploration).
