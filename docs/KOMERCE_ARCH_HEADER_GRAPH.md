@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 650
-- Files with full headers: 605
+- Scanned code files: 651
+- Files with full headers: 606
 - Files with lite headers: 45
-- Files with any headers: 650
+- Files with any headers: 651
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 1567
-- Edges: 7808
-- DB tables: 181
-- Doctrines: 544
+- Graph nodes: 1570
+- Edges: 7822
+- DB tables: 182
+- Doctrines: 545
 - Impact areas: 192
-- Unresolved code edges: 772
+- Unresolved code edges: 775
 - Tables multi-écrivains directs (>=2): 78
 - Avertissements db-write / db-write-via en chevauchement: 8
 
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 27
 - decision-signals: 12
 - documents: 15
-- economic-engine: 56
+- economic-engine: 57
 - external-provider-contracts: 1
 - incident-management: 5
 - infrastructure: 23
@@ -88,7 +88,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 130
 - route-manifest: 1
 - schema: 1
-- service: 342
+- service: 343
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -419,6 +419,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/local-stock-decision-projection.js — local-stock-decision-projection (local-stock, high, full)
 - services/local-stock-service.js — local-stock-local-stock-service (local-stock, high, full)
 - services/market-commercial-price-service.js — market-commercial-price-decision-owner (market-autonomy, high, full)
+- services/market-cost-attribution-service.js — economic-engine-market-cost-attribution (economic-engine, high, full)
 - services/market-delegation-catalog-service.js — market-delegation-catalog-service (market-delegation, high, full)
 - services/market-delegation-client-case-service.js — market-delegation-client-case-service (market-delegation, high, full)
 - services/market-delegation-local-offer-service.js — market-delegation-local-offer-service (market-delegation, high, full)
@@ -737,6 +738,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/loyalty-service.js -> loyalty_rewards
 - WRITE routes/loyalty.js -> loyalty_tiers
 - WRITE services/market-cash-control-policy-service.js -> market_cash_control_policies
+- WRITE services/market-cost-attribution-service.js -> market_cost_attributions
 - WRITE middleware/require-market-delegated-capability.js -> market_delegation_audit
 - WRITE middleware/require-market-execution-capability.js -> market_delegation_audit
 - WRITE services/market-delegation-service.js -> market_delegation_audit
@@ -745,7 +747,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/pricing-market-corridor.js -> market_price_observations
 - WRITE services/market-settlement-service.js -> market_settlement_events
 - WRITE services/market-settlement-service.js -> market_settlements
-- WRITE services/market-delegation-team-service.js -> market_team_invitations
 
 ## DB Write-Via Edges (délégation déclarée)
 
@@ -947,6 +948,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 ## Unresolved Code Edges
 
 - uses: (see files.tests in features/purchasing.feature.js — not yet -> services/suppliers/purchasing-validators.js ((see files.tests in features/purchasing.feature.js — not yet)
+- uses: @none -> services/market-cost-attribution-service.js (@none)
 - uses: admin-dashboard -> routes/admin-boutique-categories.js (admin-dashboard)
 - uses: admin-dashboards -> routes/economic.js (admin-dashboards)
 - uses: admin-dashboards -> services/economic-engine-queries.js (admin-dashboards)
@@ -1065,7 +1067,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - depends: public/boutique/js/b-komerce.js -> documents API (documents API)
 - depends: public/boutique/js/b-komerce.js -> wallet API (wallet API)
 - depends: public/boutique/js/b-passkey-enrollment.js -> browser WebAuthn API (browser WebAuthn API)
-- depends: public/boutique/js/b-passkey-login.js -> browser WebAuthn API (browser WebAuthn API)
 
 ## Files Still Without Headers Or Aggregation
 

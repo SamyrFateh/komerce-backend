@@ -13,19 +13,19 @@
     "public/boutique/js"
   ],
   "totals": {
-    "scannedCodeFiles": 650,
-    "filesWithFullHeaders": 605,
+    "scannedCodeFiles": 651,
+    "filesWithFullHeaders": 606,
     "filesWithLiteHeaders": 45,
-    "filesWithAnyHeaders": 650,
+    "filesWithAnyHeaders": 651,
     "filesWithoutHeaders": 0,
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
-    "graphNodes": 1567,
-    "edges": 7808,
-    "dbTables": 181,
-    "doctrines": 544,
+    "graphNodes": 1570,
+    "edges": 7822,
+    "dbTables": 182,
+    "doctrines": 545,
     "impactAreas": 192,
-    "unresolvedCodeEdges": 772,
+    "unresolvedCodeEdges": 775,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 78
   },
@@ -40,7 +40,7 @@
     "decision-signals": 12,
     "market-delegation": 29,
     "market": 3,
-    "economic-engine": 56,
+    "economic-engine": 57,
     "sourcing": 36,
     "logistics": 48,
     "boutique": 22,
@@ -108,7 +108,7 @@
     "schema": 1,
     "route": 130,
     "entrypoint": 1,
-    "service": 342,
+    "service": 343,
     "external-adapter": 2,
     "machine": 1,
     "utility": 2,
@@ -119,7 +119,7 @@
   "byCriticality": {
     "critical": 95,
     "medium": 134,
-    "high": 367,
+    "high": 368,
     "low": 54
   },
   "nodes": [
@@ -13783,9 +13783,12 @@
         "services/pricing-apply.js",
         "services/apply-pricing-updates.js",
         "services/pricing-strategy-service.js",
-        "services/sourcing-mutations.js"
+        "services/sourcing-mutations.js",
+        "scripts/catalog-taxonomy-provenance-backfill.js"
       ],
       "dbRead": [
+        "boutique_categories",
+        "boutique_subcategories",
         "order_items",
         "orders",
         "product_variants",
@@ -14444,7 +14447,7 @@
         "utils/rules.js",
         "services/product-admin-service.js",
         "services/catalog-approval.js",
-        "services/catalog-enrichment.js",
+        "services/catalog-overrides.js",
         "services/boutique-taxonomy-admin.js",
         "services/catalog-commercial-assortment.js"
       ],
@@ -14471,7 +14474,8 @@
         "global_catalog_not_market_scoped",
         "commercial_catalog_is_union_of_approved_products_from_closed_kirs",
         "reuse_domain_mutation_authorities",
-        "product_ref_is_public_identity"
+        "product_ref_is_public_identity",
+        "no_paid_ai_api_for_fr_preparation"
       ],
       "impactAreas": [
         "admin-dashboard",
@@ -17935,6 +17939,54 @@
         "admin-dashboard"
       ],
       "version": "2026-09"
+    },
+    {
+      "id": "services/market-cost-attribution-service.js",
+      "file": "services/market-cost-attribution-service.js",
+      "type": "file",
+      "headerType": "full",
+      "role": "economic-engine-market-cost-attribution",
+      "domain": "economic-engine",
+      "layer": "service",
+      "criticality": "high",
+      "owner": null,
+      "purpose": null,
+      "inputs": [
+        "economic_structure_cost_event_id",
+        "allocation_policies",
+        "actor_id",
+        "reason"
+      ],
+      "outputs": [
+        "market_cost_attributions"
+      ],
+      "depends": [
+        "db",
+        "services/pricing-period-structure.js"
+      ],
+      "usedBy": [
+        "@none"
+      ],
+      "dbRead": [
+        "economic_structure_cost_events",
+        "market_cost_attributions"
+      ],
+      "dbWrite": [
+        "market_cost_attributions"
+      ],
+      "dbWriteVia": [],
+      "dbTxn": [
+        "BEGIN/COMMIT with advisory lock per source event"
+      ],
+      "doctrine": [
+        "pricing_market_viability_cost_scope"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "governance"
+      ],
+      "version": "2026-10"
     },
     {
       "id": "services/market-delegation-catalog-service.js",
@@ -31838,6 +31890,11 @@
       "table": "product_market_price_draft_events"
     },
     {
+      "id": "db:market_cost_attributions",
+      "type": "db-table",
+      "table": "market_cost_attributions"
+    },
+    {
       "id": "db:ceiling_templates",
       "type": "db-table",
       "table": "ceiling_templates"
@@ -33461,6 +33518,11 @@
       "id": "doctrine:product_ref_is_public_identity",
       "type": "doctrine",
       "doctrine": "product_ref_is_public_identity"
+    },
+    {
+      "id": "doctrine:no_paid_ai_api_for_fr_preparation",
+      "type": "doctrine",
+      "doctrine": "no_paid_ai_api_for_fr_preparation"
     },
     {
       "id": "doctrine:dashboard_no_business_recompute",
@@ -35598,6 +35660,11 @@
       "area": "platform-ops"
     },
     {
+      "id": "impact:governance",
+      "type": "impact-area",
+      "area": "governance"
+    },
+    {
       "id": "impact:pickup",
       "type": "impact-area",
       "area": "pickup"
@@ -35616,11 +35683,6 @@
       "id": "impact:auth-identity",
       "type": "impact-area",
       "area": "auth-identity"
-    },
-    {
-      "id": "impact:governance",
-      "type": "impact-area",
-      "area": "governance"
     },
     {
       "id": "impact:operational-flow",
@@ -55633,6 +55695,24 @@
       "label": "services/sourcing-mutations.js"
     },
     {
+      "from": "scripts/catalog-taxonomy-provenance-backfill.js",
+      "to": "services/catalog-product-mutation-service.js",
+      "type": "uses",
+      "label": "scripts/catalog-taxonomy-provenance-backfill.js"
+    },
+    {
+      "from": "services/catalog-product-mutation-service.js",
+      "to": "db:boutique_categories",
+      "type": "db-read",
+      "label": "boutique_categories"
+    },
+    {
+      "from": "services/catalog-product-mutation-service.js",
+      "to": "db:boutique_subcategories",
+      "type": "db-read",
+      "label": "boutique_subcategories"
+    },
+    {
       "from": "services/catalog-product-mutation-service.js",
       "to": "db:order_items",
       "type": "db-read",
@@ -56588,9 +56668,9 @@
     },
     {
       "from": "services/catalog-workspace.js",
-      "to": "services/catalog-enrichment.js",
+      "to": "services/catalog-overrides.js",
       "type": "depends",
-      "label": "services/catalog-enrichment.js"
+      "label": "services/catalog-overrides.js"
     },
     {
       "from": "services/catalog-workspace.js",
@@ -56687,6 +56767,12 @@
       "to": "doctrine:product_ref_is_public_identity",
       "type": "doctrine",
       "label": "product_ref_is_public_identity"
+    },
+    {
+      "from": "services/catalog-workspace.js",
+      "to": "doctrine:no_paid_ai_api_for_fr_preparation",
+      "type": "doctrine",
+      "label": "no_paid_ai_api_for_fr_preparation"
     },
     {
       "from": "services/catalog-workspace.js",
@@ -62485,6 +62571,66 @@
       "to": "impact:admin-dashboard",
       "type": "impact",
       "label": "admin-dashboard"
+    },
+    {
+      "from": "services/market-cost-attribution-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "services/market-cost-attribution-service.js",
+      "to": "services/pricing-period-structure.js",
+      "type": "depends",
+      "label": "services/pricing-period-structure.js"
+    },
+    {
+      "from": "@none",
+      "to": "services/market-cost-attribution-service.js",
+      "type": "uses",
+      "label": "@none"
+    },
+    {
+      "from": "services/market-cost-attribution-service.js",
+      "to": "db:economic_structure_cost_events",
+      "type": "db-read",
+      "label": "economic_structure_cost_events"
+    },
+    {
+      "from": "services/market-cost-attribution-service.js",
+      "to": "db:market_cost_attributions",
+      "type": "db-read",
+      "label": "market_cost_attributions"
+    },
+    {
+      "from": "services/market-cost-attribution-service.js",
+      "to": "db:market_cost_attributions",
+      "type": "db-write",
+      "label": "market_cost_attributions"
+    },
+    {
+      "from": "services/market-cost-attribution-service.js",
+      "to": "doctrine:pricing_market_viability_cost_scope",
+      "type": "doctrine",
+      "label": "pricing_market_viability_cost_scope"
+    },
+    {
+      "from": "services/market-cost-attribution-service.js",
+      "to": "impact:economic-engine",
+      "type": "impact",
+      "label": "economic-engine"
+    },
+    {
+      "from": "services/market-cost-attribution-service.js",
+      "to": "impact:pricing",
+      "type": "impact",
+      "label": "pricing"
+    },
+    {
+      "from": "services/market-cost-attribution-service.js",
+      "to": "impact:governance",
+      "type": "impact",
+      "label": "governance"
     },
     {
       "from": "services/market-delegation-catalog-service.js",
@@ -96200,7 +96346,6 @@
         "impact:sourcing",
         "routes/sourcing-scanner.js",
         "services/catalog-overrides.js",
-        "services/catalog-workspace.js",
         "services/prompts/catalog-enrichment.prompt.js",
         "services/sourcing-candidate-actions.js",
         "utils/logger.js",
@@ -96449,6 +96594,7 @@
         "impact:catalog",
         "services/catalog-approval.js",
         "services/catalog-enrichment.js",
+        "services/catalog-workspace.js",
         "services/product-admin-service.js"
       ]
     },
@@ -96530,10 +96676,13 @@
         "services/pricing-apply.js",
         "services/apply-pricing-updates.js",
         "services/pricing-strategy-service.js",
-        "services/sourcing-mutations.js"
+        "services/sourcing-mutations.js",
+        "scripts/catalog-taxonomy-provenance-backfill.js"
       ],
       "ownedFiles": [],
       "dbRead": [
+        "boutique_categories",
+        "boutique_subcategories",
         "order_items",
         "orders",
         "product_variants",
@@ -96552,6 +96701,8 @@
         "economic-engine"
       ],
       "mustCheck": [
+        "db:boutique_categories",
+        "db:boutique_subcategories",
         "db:order_items",
         "db:orders",
         "db:product_variants",
@@ -97169,7 +97320,7 @@
         "utils/rules.js",
         "services/product-admin-service.js",
         "services/catalog-approval.js",
-        "services/catalog-enrichment.js",
+        "services/catalog-overrides.js",
         "services/boutique-taxonomy-admin.js",
         "services/catalog-commercial-assortment.js"
       ],
@@ -97194,7 +97345,8 @@
         "global_catalog_not_market_scoped",
         "commercial_catalog_is_union_of_approved_products_from_closed_kirs",
         "reuse_domain_mutation_authorities",
-        "product_ref_is_public_identity"
+        "product_ref_is_public_identity",
+        "no_paid_ai_api_for_fr_preparation"
       ],
       "impactAreas": [
         "admin-dashboard",
@@ -97212,6 +97364,7 @@
         "db:sourcing_candidates",
         "doctrine:commercial_catalog_is_union_of_approved_products_from_closed_kirs",
         "doctrine:global_catalog_not_market_scoped",
+        "doctrine:no_paid_ai_api_for_fr_preparation",
         "doctrine:product_ref_is_public_identity",
         "doctrine:reuse_domain_mutation_authorities",
         "doctrine:workspace_acts_dashboard_observes",
@@ -97222,7 +97375,7 @@
         "services/boutique-taxonomy-admin.js",
         "services/catalog-approval.js",
         "services/catalog-commercial-assortment.js",
-        "services/catalog-enrichment.js",
+        "services/catalog-overrides.js",
         "services/product-admin-service.js",
         "utils/rules.js"
       ]
@@ -100694,6 +100847,47 @@
         "routes/admin-pricing-workspace.js",
         "services/market-local-price-activation-service.js",
         "services/market-local-price-state-transition.js"
+      ]
+    },
+    "services/market-cost-attribution-service.js": {
+      "role": "economic-engine-market-cost-attribution",
+      "domain": "economic-engine",
+      "criticality": "high",
+      "headerType": "full",
+      "owner": null,
+      "purpose": null,
+      "directDependsOn": [
+        "db",
+        "services/pricing-period-structure.js"
+      ],
+      "directUsedBy": [
+        "@none"
+      ],
+      "ownedFiles": [],
+      "dbRead": [
+        "economic_structure_cost_events",
+        "market_cost_attributions"
+      ],
+      "dbWrite": [
+        "market_cost_attributions"
+      ],
+      "dbWriteVia": [],
+      "doctrines": [
+        "pricing_market_viability_cost_scope"
+      ],
+      "impactAreas": [
+        "economic-engine",
+        "pricing",
+        "governance"
+      ],
+      "mustCheck": [
+        "db:economic_structure_cost_events",
+        "db:market_cost_attributions",
+        "doctrine:pricing_market_viability_cost_scope",
+        "impact:economic-engine",
+        "impact:governance",
+        "impact:pricing",
+        "services/pricing-period-structure.js"
       ]
     },
     "services/market-delegation-catalog-service.js": {
@@ -105459,6 +105653,7 @@
         "impact:governance",
         "impact:pricing",
         "routes/admin-pricing-workspace.js",
+        "services/market-cost-attribution-service.js",
         "services/market-delegation-structure-event-service.js",
         "services/pricing-market-coverage.js"
       ]
@@ -116583,6 +116778,12 @@
       "label": "db contract supplied by caller"
     },
     {
+      "from": "scripts/catalog-taxonomy-provenance-backfill.js",
+      "to": "services/catalog-product-mutation-service.js",
+      "type": "uses",
+      "label": "scripts/catalog-taxonomy-provenance-backfill.js"
+    },
+    {
       "from": "services/catalog-product-read-cutover-trial.js",
       "to": "db.js",
       "type": "depends",
@@ -117355,6 +117556,18 @@
       "to": "db.js",
       "type": "depends",
       "label": "db.js"
+    },
+    {
+      "from": "services/market-cost-attribution-service.js",
+      "to": "db",
+      "type": "depends",
+      "label": "db"
+    },
+    {
+      "from": "@none",
+      "to": "services/market-cost-attribution-service.js",
+      "type": "uses",
+      "label": "@none"
     },
     {
       "from": "market-delegation routes",

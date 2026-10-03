@@ -1675,6 +1675,13 @@
       {
         "feature": "catalog",
         "category": "scripts",
+        "declared": "scripts/catalog-taxonomy-provenance-backfill.js",
+        "resolvedPath": "scripts/catalog-taxonomy-provenance-backfill.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
         "declared": "scripts/catalog-cj-certified-500-watch-audit.js",
         "resolvedPath": "scripts/catalog-cj-certified-500-watch-audit.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3537,6 +3544,13 @@
       {
         "feature": "catalog",
         "category": "tests",
+        "declared": "tests/unit/catalog-taxonomy-provenance-backfill.test.js",
+        "resolvedPath": "tests/unit/catalog-taxonomy-provenance-backfill.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
         "declared": "tests/unit/catalog-change-intake.test.js",
         "resolvedPath": "tests/unit/catalog-change-intake.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4825,6 +4839,20 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/catalog-workspace.js",
+        "resolvedPath": "public/dashboards/canonical/js/catalog-workspace.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/operations-workspace.css",
+        "resolvedPath": "public/dashboards/canonical/css/operations-workspace.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/purchasing-workspace.js",
         "resolvedPath": "public/dashboards/canonical/js/purchasing-workspace.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -4918,6 +4946,13 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/pricing-workspace.js",
         "resolvedPath": "public/dashboards/canonical/js/pricing-workspace.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/js/pricing-product-focus.js",
+        "resolvedPath": "public/dashboards/canonical/js/pricing-product-focus.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5702,6 +5737,13 @@
         "category": "tests",
         "declared": "tests/unit/pricing-workspace-decision.test.js",
         "resolvedPath": "tests/unit/pricing-workspace-decision.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "tests",
+        "declared": "tests/unit/pricing-product-focus.test.js",
+        "resolvedPath": "tests/unit/pricing-product-focus.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7044,6 +7086,13 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "services/market-cost-attribution-service.js",
+        "resolvedPath": "services/market-cost-attribution-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/sourcing-analysis.js",
         "resolvedPath": "services/sourcing-analysis.js",
         "status": "resolved-in-technical-graph"
@@ -7351,6 +7400,13 @@
       },
       {
         "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/267_market_cost_attributions.sql",
+        "resolvedPath": "migrations/267_market_cost_attributions.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
         "category": "dash",
         "declared": "dashboards/admin/js/views/PricingView.js",
         "resolvedPath": "public/dashboards/admin/js/views/PricingView.js",
@@ -7634,6 +7690,20 @@
         "category": "tests",
         "declared": "tests/unit/pricing-period-structure.test.js",
         "resolvedPath": "tests/unit/pricing-period-structure.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/pricing-period-structure-allocate-pool.test.js",
+        "resolvedPath": "tests/unit/pricing-period-structure-allocate-pool.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/market-cost-attribution-service.test.js",
+        "resolvedPath": "tests/unit/market-cost-attribution-service.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -8899,6 +8969,20 @@
       {
         "feature": "infrastructure",
         "category": "scripts",
+        "declared": "scripts/pr-preflight.js",
+        "resolvedPath": "scripts/pr-preflight.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
+        "declared": "scripts/agent-context.js",
+        "resolvedPath": "scripts/agent-context.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "scripts",
         "declared": "scripts/predeploy-gate.js",
         "resolvedPath": "scripts/predeploy-gate.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9361,6 +9445,13 @@
       {
         "feature": "infrastructure",
         "category": "docs",
+        "declared": "docs/doctrine/AGENT_TOKEN_ECONOMY.md",
+        "resolvedPath": "docs/doctrine/AGENT_TOKEN_ECONOMY.md",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "docs",
         "declared": "docs/komerce-arch-header-audit.json",
         "resolvedPath": "docs/komerce-arch-header-audit.json",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -9594,13 +9685,6 @@
         "category": "ci",
         "declared": ".github/workflows-disabled/lot8-reconcile-current-main-once.yml",
         "resolvedPath": ".github/workflows-disabled/lot8-reconcile-current-main-once.yml",
-        "status": "resolved-on-disk-out-of-arch-scan-scope"
-      },
-      {
-        "feature": "infrastructure",
-        "category": "ci",
-        "declared": ".github/workflows/pr-governance.yml",
-        "resolvedPath": ".github/workflows/pr-governance.yml",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -10089,6 +10173,13 @@
       {
         "feature": "infrastructure",
         "category": "tests",
+        "declared": "tests/unit/agent-context.test.js",
+        "resolvedPath": "tests/unit/agent-context.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
         "declared": "tests/unit/alerts-contract-check.test.js",
         "resolvedPath": "tests/unit/alerts-contract-check.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -10231,6 +10322,13 @@
         "category": "tests",
         "declared": "tests/unit/pr-enforcement-workflow-governance.test.js",
         "resolvedPath": "tests/unit/pr-enforcement-workflow-governance.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "infrastructure",
+        "category": "tests",
+        "declared": "tests/unit/pr-preflight.test.js",
+        "resolvedPath": "tests/unit/pr-preflight.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -14463,6 +14561,13 @@
       },
       {
         "feature": "purchasing",
+        "category": "services",
+        "declared": "services/purchasing-completion-service.js",
+        "resolvedPath": "services/purchasing-completion-service.js",
+        "status": "resolved-in-technical-graph"
+      },
+      {
+        "feature": "purchasing",
         "category": "routes",
         "declared": "routes/purchasing.js",
         "resolvedPath": "routes/purchasing.js",
@@ -14571,6 +14676,34 @@
         "category": "tests",
         "declared": "tests/unit/purchasing-engagement-service.test.js",
         "resolvedPath": "tests/unit/purchasing-engagement-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/purchasing-completion-service.test.js",
+        "resolvedPath": "tests/unit/purchasing-completion-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/hub-operations-grouped-completion.test.js",
+        "resolvedPath": "tests/unit/hub-operations-grouped-completion.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/unit/allegro-golden-native-money-grouped-proof.test.js",
+        "resolvedPath": "tests/unit/allegro-golden-native-money-grouped-proof.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "tests",
+        "declared": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
+        "resolvedPath": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -29050,6 +29183,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "scripts/catalog-taxonomy-provenance-backfill.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "scripts/catalog-cj-certified-500-watch-audit.js",
                 "targetFile": "db.js"
               },
@@ -29240,6 +29377,10 @@
               {
                 "sourceFileId": "tests/unit/allegro-sandbox-client.test.js",
                 "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/allegro-golden-preflight-contract.test.js",
+                "targetFile": "scripts/ci-migrate.js"
               },
               {
                 "sourceFileId": "tests/unit/catalog-712-transfer.test.js",
@@ -32391,6 +32532,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "services/market-cost-attribution-service.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/sourcing-analysis.js",
                 "targetFile": "utils/logger.js"
               },
@@ -32508,6 +32653,14 @@
               },
               {
                 "sourceFileId": "tests/unit/pricing-period-structure.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/pricing-period-structure-allocate-pool.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-cost-attribution-service.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -34908,6 +35061,10 @@
           {
             "channel": "static-code",
             "evidence": [
+              {
+                "sourceFileId": "services/hub-operations.js",
+                "targetFile": "services/purchasing-completion-service.js"
+              },
               {
                 "sourceFileId": "routes/pickup-secret.js",
                 "targetFile": "services/purchasing-trigger-service.js"
@@ -39129,6 +39286,22 @@
       },
       {
         "from": "purchasing",
+        "to": "decision-signals",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
+                "targetFile": "services/signal-service.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "OBSERVED_UNDECLARED"
+      },
+      {
+        "from": "purchasing",
         "to": "external-provider-contracts",
         "channels": [
           {
@@ -39215,6 +39388,14 @@
                 "targetFile": "utils/logger.js"
               },
               {
+                "sourceFileId": "services/purchasing-completion-service.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-completion-service.js",
+                "targetFile": "utils/logger.js"
+              },
+              {
                 "sourceFileId": "routes/purchasing.js",
                 "targetFile": "db.js"
               },
@@ -39244,6 +39425,14 @@
               },
               {
                 "sourceFileId": "tests/unit/purchasing-engagement-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/purchasing-completion-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/hub-operations-grouped-completion.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -39323,6 +39512,18 @@
                 "targetFile": "services/hub-reference.js"
               },
               {
+                "sourceFileId": "services/purchasing-completion-service.js",
+                "targetFile": "services/scan-operations.js"
+              },
+              {
+                "sourceFileId": "tests/unit/hub-operations-grouped-completion.test.js",
+                "targetFile": "services/hub-physical-identity.js"
+              },
+              {
+                "sourceFileId": "tests/unit/hub-operations-grouped-completion.test.js",
+                "targetFile": "services/hub-operations.js"
+              },
+              {
                 "sourceFileId": "tests/unit/purchasing-receive-service.test.js",
                 "targetFile": "services/scan-operations.js"
               }
@@ -39368,6 +39569,10 @@
                 "targetFile": "services/notification-service.js"
               },
               {
+                "sourceFileId": "services/purchasing-completion-service.js",
+                "targetFile": "utils/alerts.js"
+              },
+              {
                 "sourceFileId": "tests/unit/purchasing-trigger-service.test.js",
                 "targetFile": "services/notification-service.js"
               },
@@ -39402,6 +39607,10 @@
               {
                 "sourceFileId": "services/purchasing-admin-service.js",
                 "targetFile": "services/order-mutation-service.js"
+              },
+              {
+                "sourceFileId": "services/purchasing-completion-service.js",
+                "targetFile": "services/order-status-machine.js"
               },
               {
                 "sourceFileId": "tests/e2e-api/purchasing.no-duplicate-po.e2e.test.js",
@@ -41445,6 +41654,11 @@
           "raw": "resolved"
         },
         {
+          "sourceFileId": "scripts/agent-context.js",
+          "kind": "require",
+          "raw": "abs"
+        },
+        {
           "sourceFileId": "scripts/predeploy-gate.js",
           "kind": "require",
           "raw": "fp"
@@ -41480,7 +41694,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1761
+        "filesObserved": 1778
       },
       "boutique": {
         "filesObserved": 214,
@@ -41516,7 +41730,7 @@
     "familySummary": {
       "PROJECTION": 0,
       "COMPOSITION_ROOT_WIRING": 19,
-      "NON_RUNTIME_TEST": 13,
+      "NON_RUNTIME_TEST": 14,
       "TECHNICAL_PRIMITIVE": 0,
       "BUSINESS_TRANSVERSAL_SERVICE": 0,
       "CROSS_FEATURE_DIRECT_IMPORT": 0,
@@ -41931,6 +42145,21 @@
         "exceptionReasons": []
       },
       {
+        "from": "purchasing",
+        "to": "decision-signals",
+        "family": "NON_RUNTIME_TEST",
+        "evidenceRole": "TEST_ONLY",
+        "consumerKind": "business-feature",
+        "providerKind": "piloting-capability",
+        "channels": [
+          "static-code"
+        ],
+        "couplingObserved": "business-file-import",
+        "policy": "non-runtime-evidence",
+        "exceptionRequired": false,
+        "exceptionReasons": []
+      },
+      {
         "from": "refunds",
         "to": "auth",
         "family": "NON_RUNTIME_TEST",
@@ -42022,6 +42251,7 @@
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-transversal|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|technical-transversal|business-feature|business-file-import": 1,
       "COMPOSITION_ROOT_WIRING|RUNTIME_AND_TEST|technical-transversal|business-feature|business-file-import": 1,
+      "NON_RUNTIME_TEST|TEST_ONLY|business-feature|piloting-capability|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-transversal|technical-transversal|technical-primitive": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|integration-adapter|business-feature|business-file-import": 1,
       "NON_RUNTIME_TEST|TEST_ONLY|business-feature|business-transversal|technical-primitive": 1
@@ -44489,8 +44719,8 @@
       "backend": {
         "manifestsDiscovered": 35,
         "manifestsConnected": 35,
-        "technicalNodesTotal": 545,
-        "technicalNodesOwned": 545,
+        "technicalNodesTotal": 547,
+        "technicalNodesOwned": 547,
         "technicalOrphans": 0
       },
       "dash": {
@@ -44738,6 +44968,11 @@
       },
       {
         "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
+        "ref": "purchasing -> decision-signals",
+        "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"purchasing\" vers \"decision-signals\""
+      },
+      {
+        "type": "OBSERVED-UNDECLARED-FEATURE-DEPENDENCY",
         "ref": "refunds -> auth",
         "msg": "dépendance cross-feature observée (canal: static-code, 1 preuve(s)) sans contract.consumes déclaré chez \"refunds\" vers \"auth\""
       },
@@ -44811,7 +45046,7 @@
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
         "ref": "scope:backend",
-        "msg": "23 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE) — limitation du modèle statique O5, jamais inventé"
+        "msg": "24 appel(s) require()/import() dynamique(s) non résolu(s) statiquement dans le scope backend (ex. tests/unit/modal-mobile-canonical.test.js: CSS_BUNDLES_PATH | tests/integration/txg03-hub-dashboard.test.js: TARGET | tests/unit/canonical-purchasing-workspace-boundary.test.js: path.join(ROOT, WORKSPACE) — limitation du modèle statique O5, jamais inventé"
       },
       {
         "type": "DYNAMIC-LOCAL-DEPENDENCY-UNRESOLVED",
@@ -44872,9 +45107,9 @@
     "summary": {
       "signals": 0,
       "debt": 0,
-      "expectedTopology": 43,
+      "expectedTopology": 44,
       "generatorLimitations": 12,
-      "classifiedCandidates": 55
+      "classifiedCandidates": 56
     }
   }
 }

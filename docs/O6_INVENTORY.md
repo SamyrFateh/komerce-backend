@@ -10,14 +10,14 @@
 |---|---|
 | PROJECTION | 0 |
 | COMPOSITION_ROOT_WIRING | 19 |
-| NON_RUNTIME_TEST | 13 |
+| NON_RUNTIME_TEST | 14 |
 | TECHNICAL_PRIMITIVE | 0 |
 | BUSINESS_TRANSVERSAL_SERVICE | 0 |
 | CROSS_FEATURE_DIRECT_IMPORT | 0 |
 | BUSINESS_FEATURE_INTERFACE | 0 |
 | PILOTING_CAPABILITY | 0 |
 | UNCLASSIFIED | 0 |
-| **TOTAL** | **32** |
+| **TOTAL** | **33** |
 
 ## The 94 pairs (from → to)
 
@@ -50,6 +50,7 @@
 | platform-ops → providers-services | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | platform-ops → recommendations | COMPOSITION_ROOT_WIRING | RUNTIME_ONLY | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
 | platform-ops → shared-cart | COMPOSITION_ROOT_WIRING | RUNTIME_AND_TEST | technical-transversal | business-feature | static-code | business-file-import | application-wiring-not-consumption | — | `` |
+| purchasing → decision-signals | NON_RUNTIME_TEST | TEST_ONLY | business-feature | piloting-capability | static-code | business-file-import | non-runtime-evidence | — | `` |
 | refunds → auth | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | technical-transversal | static-code | technical-primitive | non-runtime-evidence | — | `` |
 | refunds → payments | NON_RUNTIME_TEST | TEST_ONLY | business-transversal | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
 | sourcing → purchasing | NON_RUNTIME_TEST | TEST_ONLY | business-feature | business-feature | static-code | business-file-import | non-runtime-evidence | — | `` |
