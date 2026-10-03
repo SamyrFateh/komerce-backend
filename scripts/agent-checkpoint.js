@@ -39,10 +39,21 @@ const path = require('path');
 const STATE = 'komerce-checkpoint.json';
 const INDEX = 'komerce-checkpoint.index';
 
+// Variables posées par git pour ses hooks : elles désigneraient le dépôt
+// appelant au lieu de `cwd` (un hook pre-commit lançant ce script, ou ses tests).
+const REPO_ENV = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_PREFIX', 'GIT_COMMON_DIR',
+  'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_QUARANTINE_PATH'];
+
+function cleanEnv(env = process.env) {
+  const out = { ...env };
+  for (const key of REPO_ENV) delete out[key];
+  return out;
+}
+
 function makeGit(cwd, extraEnv = {}) {
   return (args, envOverride = {}) => {
     const r = cp.spawnSync('git', args, {
-      cwd, encoding: 'utf8', env: { ...process.env, ...extraEnv, ...envOverride },
+      cwd, encoding: 'utf8', env: { ...cleanEnv(), ...extraEnv, ...envOverride },
     });
     if (r.status !== 0) throw new Error((r.stderr || r.stdout || `git ${args[0]} failed`).trim());
     return String(r.stdout || '').trim();
@@ -146,4 +157,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { checkpoint, main, restore, wipBranch };
+module.exports = { checkpoint, cleanEnv, main, restore, wipBranch };

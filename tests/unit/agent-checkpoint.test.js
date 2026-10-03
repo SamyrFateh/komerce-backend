@@ -4,13 +4,13 @@ const cp = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { checkpoint, restore, wipBranch, main } = require('../../scripts/agent-checkpoint');
+const { checkpoint, cleanEnv, restore, wipBranch, main } = require('../../scripts/agent-checkpoint');
 
 const SANDBOX = { CLAUDE_CODE_REMOTE: 'true', CLAUDE_CODE_REMOTE_SESSION_ID: 'session_01ABCDEFGHIJKL' };
 const ID = { GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' };
 
 function run(cwd, ...args) {
-  return cp.execFileSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, ...ID } }).trim();
+  return cp.execFileSync('git', args, { cwd, encoding: 'utf8', env: { ...cleanEnv(), ...ID } }).trim();
 }
 
 function setup() {
@@ -77,6 +77,10 @@ describe('agent-checkpoint', () => {
     expect(() => restore('', { cwd: fresh })).toThrow(/branche manquante/);
   });
 
+  test('cleanEnv retire les variables de dépôt posées par les hooks git, garde le reste', () => {
+    expect(cleanEnv({ GIT_DIR: '.git', GIT_INDEX_FILE: 'i', GIT_SSL_CAINFO: 'ca', PATH: 'p' })).toEqual({ GIT_SSL_CAINFO: 'ca', PATH: 'p' });
+  });
+
   test('nom de branche wip : main par session, HEAD détachée', () => {
     const git = args => ({ 'rev-parse --abbrev-ref HEAD': 'main', 'rev-parse --short=8 HEAD': 'abcd1234' })[args.join(' ')];
     expect(wipBranch(git, SANDBOX)).toBe('wip/main-ABCDEFGHIJKL');
@@ -88,12 +92,15 @@ describe('agent-checkpoint', () => {
   test('main : --verbose explique un saut ; aucune sauvegarde hors sandbox', () => {
     const log = jest.spyOn(console, 'log').mockImplementation(() => {});
     const before = process.env.CLAUDE_CODE_REMOTE;
+    const ci = process.env.CI;
     try {
       delete process.env.CLAUDE_CODE_REMOTE;
+      delete process.env.CI; // le test doit rester déterministe en CI comme en local
       main(['--verbose']);
       expect(log).toHaveBeenLastCalledWith(expect.stringMatching(/ignoré : hors sandbox/));
     } finally {
       if (before === undefined) delete process.env.CLAUDE_CODE_REMOTE; else process.env.CLAUDE_CODE_REMOTE = before;
+      if (ci !== undefined) process.env.CI = ci;
       log.mockRestore();
     }
   });
