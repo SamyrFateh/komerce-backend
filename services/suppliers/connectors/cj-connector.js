@@ -13,7 +13,7 @@
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md, docs/doctrine/DOCTRINE_CATALOGUE.md, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md
  * @impact-areas  catalog, sourcing, supplier-import, purchasing
- * @version       2026-09-v3
+ * @version       2026-10-v4
  */
 'use strict';
 
@@ -26,6 +26,7 @@ const BASE_URL = 'https://developers.cjdropshipping.com/api2.0/v1';
 const AUTH_PATH = '/authentication/getAccessToken';
 const PRODUCT_LIST_V2_PATH = '/product/listV2';
 const PRODUCT_QUERY_PATH = '/product/query';
+const PRODUCT_STOCK_BY_PID_PATH = '/product/stock/getInventoryByPid';
 const API_KEY_ENV = 'CJ_API_KEY';
 const ACCESS_TOKEN_ENV = 'CJ_ACCESS_TOKEN';
 const MAX_PAGE_SIZE = 100;
@@ -180,6 +181,40 @@ function buildVariantOptionModel(raw = {}, variants = []) {
   }
 
   return { axes: axes.length ? axes : null, optionsByVid };
+}
+
+function sumInventoryRows(rows) {
+  const values = toArray(rows)
+    .map((row) => nonNegativeIntegerOrNull(row?.totalInventory ?? row?.totalInventoryNum))
+    .filter((value) => value !== null);
+  return values.length ? values.reduce((sum, value) => sum + value, 0) : null;
+}
+
+function mergeAuthoritativeInventory(raw = {}, inventoryData = {}) {
+  const variantInventoryByVid = new Map(
+    toArray(inventoryData?.variantInventories)
+      .map((entry) => [String(entry?.vid || '').trim(), toArray(entry?.inventory).filter(Boolean)])
+      .filter(([vid]) => vid)
+  );
+
+  const variants = toArray(raw.variants).map((variant) => {
+    const vid = String(variant?.vid || '').trim();
+    const authoritative = variantInventoryByVid.get(vid);
+    if (!authoritative) return variant;
+    return {
+      ...variant,
+      inventories: authoritative,
+      inventoryNum: sumInventoryRows(authoritative),
+    };
+  });
+
+  const productInventory = sumInventoryRows(inventoryData?.inventories);
+
+  return {
+    ...raw,
+    ...(productInventory !== null ? { totalVerifiedInventory: productInventory } : {}),
+    variants,
+  };
 }
 
 function buildCommandableStructure(raw = {}) {
@@ -406,6 +441,25 @@ function buildProductListUrl(options = {}) {
   return url;
 }
 
+async function fetchProductInventoryByPid(productId, options = {}) {
+  const fetchImpl = options.fetchImpl || fetch;
+  const env = options.env || process.env;
+  const accessToken = options.accessToken || await getAccessToken({ fetchImpl, env, credentials: options.credentials || null });
+  const pid = String(productId || '').trim();
+  if (!pid) throw new Error('[CJdropshipping] product id requis pour le stock');
+  const url = new URL(`${BASE_URL}${PRODUCT_STOCK_BY_PID_PATH}`);
+  url.searchParams.set('pid', pid);
+  const response = await fetchImpl(url, {
+    method: 'GET',
+    headers: { Accept: 'application/json', 'CJ-Access-Token': accessToken },
+  });
+  const body = await parseJsonResponse(response, `stock produit ${pid}`);
+  if (!body?.data || typeof body.data !== 'object') {
+    throw new Error(`[CJdropshipping] stock produit ${pid} absent`);
+  }
+  return { inventory: body.data, request_id: body.requestId ?? null };
+}
+
 async function fetchProductDetail(productId, options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
   const env = options.env || process.env;
@@ -422,7 +476,24 @@ async function fetchProductDetail(productId, options = {}) {
   if (!body?.data || typeof body.data !== 'object') {
     throw new Error(`[CJdropshipping] détail produit ${pid} absent`);
   }
-  return { product: body.data, request_id: body.requestId ?? null };
+
+  if (options.includeInventory === false) {
+    return { product: body.data, request_id: body.requestId ?? null };
+  }
+
+  const sleepImpl = options.sleepImpl || defaultSleep;
+  const delayMs = boundedInteger(
+    options.detailDelayMs ?? options.detail_delay_ms ?? env.CJ_PRODUCT_DETAIL_DELAY_MS,
+    DEFAULT_DETAIL_DELAY_MS,
+    10000
+  );
+  if (delayMs > 0) await sleepImpl(delayMs);
+
+  const stock = await fetchProductInventoryByPid(pid, { fetchImpl, env, accessToken });
+  return {
+    product: mergeAuthoritativeInventory(body.data, stock.inventory),
+    request_id: body.requestId ?? stock.request_id ?? null,
+  };
 }
 
 function boundedInteger(value, fallback, max) {
@@ -458,7 +529,7 @@ async function fetchProductDetailsPaced(productIds, options = {}) {
     let attempt = 0;
     while (true) {
       try {
-        const detail = await fetchProductDetail(productId, { fetchImpl, env, accessToken });
+        const detail = await fetchProductDetail(productId, { ...options, fetchImpl, env, accessToken });
         results.push({ productId, raw: detail.product, request_id: detail.request_id, error: null });
         break;
       } catch (error) {
@@ -570,6 +641,7 @@ module.exports = {
   isConfigured,
   inactiveReason,
   normalizeCjProduct,
+  mergeAuthoritativeInventory,
   variantStock,
   buildVariantOptionModel,
   buildCommandableStructure,
@@ -577,6 +649,7 @@ module.exports = {
   getAccessToken,
   testConnection,
   buildProductListUrl,
+  fetchProductInventoryByPid,
   fetchProductDetail,
   fetchProductDetailsPaced,
   fetchProducts,
