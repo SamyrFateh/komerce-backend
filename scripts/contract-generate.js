@@ -388,6 +388,20 @@ const KNOWN_RESPONSES = {
     get: { fields: ['events'], source: 'route-read' },
     post: { fields: ['ok','action','result'], source: 'route-read' }
   },
+  // Attribution des faits GROUP aux marchés : tests/unit/admin-pricing-workspace-
+  // market-cost-attribution-route.test.js asserte ok/action/result sur les POST
+  // → 'test' ; le GET relaie le payload de listEventAttributions (non asserté
+  // champ par champ côté route) → 'route-read'.
+  '/api/admin/workspaces/pricing/structure-events/{eventId}/attributions': {
+    get: { fields: ['event_id','event_amount_kmf','active_total_kmf','conserved','attributions'], source: 'route-read' },
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/pricing/structure-events/{eventId}/attributions/reverse': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/pricing/structure-events/{eventId}/attributions/correct': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
   // corridor / price-observations : tests/unit/admin-pricing-workspace-market-route.test.js
   // vérifie statut + appel du mock service, jamais res.body → 'route-read'.
   '/api/admin/workspaces/pricing/market/{marketCode}/corridor': {
