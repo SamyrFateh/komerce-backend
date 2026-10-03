@@ -1,0 +1,46 @@
+# Nettoyage des sauvegardes de sandbox d'agent (scripts/agent-checkpoint.js).
+# Les sessions d'agent ne peuvent pas supprimer de branche (proxy GitHub) :
+# GitHub s'en charge ici, et UNIQUEMENT sous refs/heads/wip/.
+#   - PR mergée ou fermée depuis <branche> : wip/<branche> supprimée ;
+#   - chaque nuit : toute wip/* dont le checkpoint a plus de 7 jours.
+name: wip branch cleanup
+
+on:
+  pull_request:
+    types: [closed]
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const PREFIX = 'heads/wip/';
+            async function drop(ref) {
+              if (!ref.startsWith(PREFIX)) throw new Error(`refus : ${ref} hors ${PREFIX}`);
+              try {
+                await github.rest.git.deleteRef({ owner, repo, ref });
+                core.info(`supprimée : ${ref}`);
+              } catch (error) {
+                if (error.status !== 422 && error.status !== 404) throw error;
+              }
+            }
+            if (context.eventName === 'pull_request') {
+              await drop(`${PREFIX}${context.payload.pull_request.head.ref}`);
+              return;
+            }
+            const cutoff = Date.now() - 7 * 24 * 3600 * 1000;
+            const refs = await github.paginate(github.rest.git.listMatchingRefs, { owner, repo, ref: PREFIX });
+            for (const r of refs) {
+              const { data: commit } = await github.rest.git.getCommit({ owner, repo, commit_sha: r.object.sha });
+              if (new Date(commit.committer.date).getTime() < cutoff) await drop(r.ref.replace(/^refs\//, ''));
+            }

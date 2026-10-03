@@ -99,7 +99,11 @@ function checkpoint({
 
   const target = wipBranch(git, env);
   if (state.tree === tree && state.head === head && state.target === target) return { skipped: 'inchangé', target };
-  if (tree === git(['rev-parse', 'HEAD^{tree}']) && !state.tree) return { skipped: 'rien à sauvegarder', target };
+  // Arbre propre et HEAD déjà présent sur le remote : rien que GitHub n'ait déjà.
+  // Arbre propre mais commits non poussés : on sauvegarde (ils seraient perdus).
+  if (tree === git(['rev-parse', 'HEAD^{tree}']) && git(['branch', '-r', '--contains', 'HEAD'])) {
+    return { skipped: 'rien à sauvegarder', target };
+  }
 
   const commit = git(['commit-tree', tree, '-p', head, '-m', `wip: checkpoint ${target} ${new Date(now).toISOString()}`],
     { GIT_AUTHOR_NAME: 'komerce-checkpoint', GIT_AUTHOR_EMAIL: 'checkpoint@komerce.invalid',

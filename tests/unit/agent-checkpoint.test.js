@@ -35,7 +35,11 @@ describe('agent-checkpoint', () => {
 
   test('photo de l’arbre (suivis, non suivis, suppressions) poussée vers wip/<branche> sans toucher branche ni index', () => {
     const { remote, work } = setup();
-    expect(checkpoint({ cwd: work, env: SANDBOX }).skipped).toBe('rien à sauvegarder');
+    expect(checkpoint({ cwd: work, env: SANDBOX, now: 1 }).pushed).toBe('wip/feat/x'); // commit non poussé
+    run(work, 'push', '-q', 'origin', 'feat/x');
+    run(work, 'commit', '-q', '--allow-empty', '-m', 'déjà sauvegardé puis poussé');
+    run(work, 'push', '-q', 'origin', 'feat/x');
+    expect(checkpoint({ cwd: work, env: SANDBOX, now: 2 }).skipped).toBe('rien à sauvegarder');
 
     fs.writeFileSync(path.join(work, 'a.txt'), 'modifié\n');
     fs.writeFileSync(path.join(work, 'new.txt'), 'nouveau\n');
@@ -103,5 +107,14 @@ describe('agent-checkpoint', () => {
       if (ci !== undefined) process.env.CI = ci;
       log.mockRestore();
     }
+  });
+});
+
+describe('wip-branch-cleanup.yml', () => {
+  const yml = fs.readFileSync(path.join(__dirname, '../../.github/workflows/wip-branch-cleanup.yml'), 'utf8');
+  test('ne supprime que sous refs/heads/wip/ et refuse tout autre ref', () => {
+    expect(yml).toContain("const PREFIX = 'heads/wip/';");
+    expect(yml).toMatch(/if \(!ref\.startsWith\(PREFIX\)\) throw/);
+    expect((yml.match(/deleteRef/g) || [])).toHaveLength(1);
   });
 });
