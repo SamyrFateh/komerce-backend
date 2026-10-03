@@ -7093,6 +7093,13 @@
       {
         "feature": "economic-engine",
         "category": "services",
+        "declared": "scripts/market-cost-attribution-conservation-check.js",
+        "resolvedPath": "scripts/market-cost-attribution-conservation-check.js",
+        "status": "resolved-on-disk-no-header"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "services",
         "declared": "services/sourcing-analysis.js",
         "resolvedPath": "services/sourcing-analysis.js",
         "status": "resolved-in-technical-graph"
@@ -7407,6 +7414,13 @@
       },
       {
         "feature": "economic-engine",
+        "category": "migrations",
+        "declared": "migrations/269_market_cost_attributions_conservation_guard.sql",
+        "resolvedPath": "migrations/269_market_cost_attributions_conservation_guard.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
         "category": "dash",
         "declared": "dashboards/admin/js/views/PricingView.js",
         "resolvedPath": "public/dashboards/admin/js/views/PricingView.js",
@@ -7702,8 +7716,22 @@
       {
         "feature": "economic-engine",
         "category": "tests",
+        "declared": "tests/unit/pricing-period-structure-attributions.test.js",
+        "resolvedPath": "tests/unit/pricing-period-structure-attributions.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
         "declared": "tests/unit/market-cost-attribution-service.test.js",
         "resolvedPath": "tests/unit/market-cost-attribution-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/unit/market-cost-attribution-conservation-audit.test.js",
+        "resolvedPath": "tests/unit/market-cost-attribution-conservation-audit.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -7865,6 +7893,13 @@
         "category": "tests",
         "declared": "tests/integration/cost-allocation-conservation-real-db.test.js",
         "resolvedPath": "tests/integration/cost-allocation-conservation-real-db.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "economic-engine",
+        "category": "tests",
+        "declared": "tests/integration/market-cost-attributions-conservation-real-db.test.js",
+        "resolvedPath": "tests/integration/market-cost-attributions-conservation-real-db.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -32575,6 +32610,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "scripts/market-cost-attribution-conservation-check.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "services/sourcing-analysis.js",
                 "targetFile": "utils/logger.js"
               },
@@ -32699,7 +32738,15 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "tests/unit/pricing-period-structure-attributions.test.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "tests/unit/market-cost-attribution-service.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/unit/market-cost-attribution-conservation-audit.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -32744,6 +32791,10 @@
               },
               {
                 "sourceFileId": "tests/integration/cost-allocation-conservation-real-db.test.js",
+                "targetFile": "db.js"
+              },
+              {
+                "sourceFileId": "tests/integration/market-cost-attributions-conservation-real-db.test.js",
                 "targetFile": "db.js"
               },
               {
@@ -32825,6 +32876,10 @@
               {
                 "sourceFileId": "services/transport-pricing.js",
                 "targetFile": "services/transport-rails.js"
+              },
+              {
+                "sourceFileId": "tests/integration/market-cost-attributions-conservation-real-db.test.js",
+                "targetFile": "tests/integration/test-harness/seed-helpers.js"
               },
               {
                 "sourceFileId": "tests/integration/sourcing-engine-routes.test.js",
@@ -41733,7 +41788,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1779
+        "filesObserved": 1783
       },
       "boutique": {
         "filesObserved": 214,
