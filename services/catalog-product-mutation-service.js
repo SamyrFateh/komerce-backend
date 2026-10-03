@@ -58,7 +58,7 @@ async function applyPrice(db, productId, priceKmf) {
  * @param {string} subcategoryKey
  * @returns {Promise<object|null>}
  */
-async function assignBoutiqueTaxonomy(db, productId, categoryKey, subcategoryKey) {
+async function resolveBoutiqueTaxonomy(db, categoryKey, subcategoryKey) {
   const category = String(categoryKey || '').trim();
   const subcategory = String(subcategoryKey || '').trim();
   if (!category || !subcategory) {
@@ -86,6 +86,11 @@ async function assignBoutiqueTaxonomy(db, productId, categoryKey, subcategoryKey
     error.code = 'boutique_taxonomy_invalid';
     throw error;
   }
+  return valid;
+}
+
+async function assignBoutiqueTaxonomy(db, productId, categoryKey, subcategoryKey) {
+  const valid = await resolveBoutiqueTaxonomy(db, categoryKey, subcategoryKey);
 
   const { rows: [updated] } = await db.query(
     `UPDATE products
@@ -359,6 +364,7 @@ async function replaceVariantsForSourcing(dbPool, productId, variants) {
 
 module.exports = {
   applyPrice,
+  resolveBoutiqueTaxonomy,
   assignBoutiqueTaxonomy,
   updateSourcingFields,
   bulkAssignSourcingRail,
