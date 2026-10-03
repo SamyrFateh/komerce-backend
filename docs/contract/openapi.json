@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 22,
-    "total_routes": 634,
+    "total_routes": 636,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -7672,6 +7672,102 @@
                       "x-observed": true
                     },
                     "settlement": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/markets": {
+      "get": {
+        "summary": "GET /api/admin/markets",
+        "x-route-file": "routes/admin-market-control-plane.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/markets/{marketCode}/control-plane": {
+      "get": {
+        "summary": "GET /api/admin/markets/{marketCode}/control-plane",
+        "x-route-file": "routes/admin-market-control-plane.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "market": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "assignment": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "ceiling": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "team": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "paymentProviders": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "cashPolicy": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "relaisActive": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "gaps": {
                       "type": "string",
                       "x-observed": true
                     }

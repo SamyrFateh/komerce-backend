@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-03T11:48:11.988Z",
+  "generatedAt": "2026-10-03T12:33:31.866Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 694,
-    "protected": 639,
+    "total": 696,
+    "protected": 641,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1152,6 +1152,20 @@
       "roles": [
         "admin",
         "finance"
+      ]
+    },
+    {
+      "key": "GET /api/admin/markets/{marketCode}/control-plane",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/markets",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
       ]
     },
     {

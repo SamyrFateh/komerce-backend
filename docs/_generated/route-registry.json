@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-03T00:50:19.724Z",
+  "generatedAt": "2026-10-03T12:32:48.515Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 672,
+  "count": 674,
   "routes": [
     {
       "method": "GET",
@@ -905,6 +905,26 @@
       "mountPrefix": "/api/admin/market-settlements",
       "localPath": "/settlements/:settlementId/paid",
       "routeFile": "routes/admin-market-settlement.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/markets",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/",
+      "routeFile": "routes/admin-market-control-plane.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/markets/:marketCode/control-plane",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/:marketCode/control-plane",
+      "routeFile": "routes/admin-market-control-plane.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]

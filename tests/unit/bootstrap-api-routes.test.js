@@ -225,5 +225,15 @@ describe('bootstrap/api-routes', () => {
         .map(c => c[0]);
       expect(paths).toEqual(expect.arrayContaining(['/api/simulator', '/api/admin/simulator']));
     });
+
+    test('le Control Plane marché est monté une fois sur /api/admin/markets (routeur réel, lecture seule)', () => {
+      const apiRoutes = loadApiRoutes();
+      const app = fakeApp();
+      apiRoutes.mountApiRoutesAfterStripeOwnedBlocks(app);
+
+      const mounts = app.use.mock.calls.filter(c => c[0] === '/api/admin/markets');
+      expect(mounts).toHaveLength(1);
+      expect(typeof mounts[0][1]).toBe('function');
+    });
   });
 });

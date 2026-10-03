@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        express_app
  * @outputs       mounted_api_routes
- * @depends       routes/orders.js, routes/payments.js, routes/payments-mobile-money.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/integrations-aliexpress.js, routes/market-delegation-team.js, routes/market-delegation-cash-control.js, routes/market-delegation-network.js, routes/market-delegation-provider.js, routes/market-delegation-catalog.js, routes/market-delegation-local-offer.js, routes/market-delegation-client-case.js, routes/market-delegation-settlement.js, routes/market-delegation-structure-event.js, routes/market-delegation-performance.js, routes/market-delegation-market-config.js, routes/admin-market-settlement.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-action-center.js
+ * @depends       routes/orders.js, routes/payments.js, routes/payments-mobile-money.js, routes/otp.js, routes/meta-whatsapp.js, routes/economic-engine.js, routes/boutique-suggestions.js, routes/catalog-product-detail.js, routes/shared-cart-saved.js, routes/integrations-aliexpress.js, routes/market-delegation-team.js, routes/market-delegation-cash-control.js, routes/market-delegation-network.js, routes/market-delegation-provider.js, routes/market-delegation-catalog.js, routes/market-delegation-local-offer.js, routes/market-delegation-client-case.js, routes/market-delegation-settlement.js, routes/market-delegation-structure-event.js, routes/market-delegation-performance.js, routes/market-delegation-market-config.js, routes/admin-market-settlement.js, routes/admin-market-control-plane.js, routes/admin-order-360.js, routes/admin-client-360.js, routes/admin-product-360.js, routes/admin-operations-workspace.js, routes/admin-shipping-customs-workspace.js, routes/admin-catalog-workspace.js, routes/admin-finance-accounting-workspace.js, routes/admin-sourcing-workspace.js, routes/admin-pricing-workspace.js, routes/admin-action-center.js
  * @db-write      none
  * @db-read       none
  * @used-by       server.js
@@ -148,6 +148,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const adminCatalogWorkspaceRouter = require('../routes/admin-catalog-workspace');
   const adminFinanceAccountingWorkspaceRouter = require('../routes/admin-finance-accounting-workspace');
   const adminMarketSettlementRouter = require('../routes/admin-market-settlement');
+  const adminMarketControlPlaneRouter = require('../routes/admin-market-control-plane');
   const adminSourcingWorkspaceRouter = require('../routes/admin-sourcing-workspace');
   const adminPricingWorkspaceRouter = require('../routes/admin-pricing-workspace');
   const adminActionCenterRouter = require('../routes/admin-action-center');
@@ -168,6 +169,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/admin/workspaces/catalog', adminCatalogWorkspaceRouter);
   app.use('/api/admin/workspaces/accounting', adminFinanceAccountingWorkspaceRouter);
   app.use('/api/admin/market-settlements', adminMarketSettlementRouter);
+  app.use('/api/admin/markets', adminMarketControlPlaneRouter);
   app.use('/api/admin/workspaces/sourcing', adminSourcingWorkspaceRouter);
   app.use('/api/admin/workspaces/pricing', adminPricingWorkspaceRouter);
   app.use('/api/admin/action-center', adminActionCenterRouter);

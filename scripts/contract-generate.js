@@ -503,6 +503,12 @@ const KNOWN_RESPONSES = {
   '/api/admin/dashboard/orders/market/{marketCode}': {
     get: { fields: ['scope','summary','signals','funnel','priority_orders','kpis','lifecycle','payment_mix','work_queues','data_quality'], source: 'service-read' }
   },
+  // Control Plane marché (lecture seule) : clés vérifiées par
+  // tests/unit/market-control-plane-service.test.js et admin-market-control-plane-routes.test.js.
+  '/api/admin/markets': { get: { fields: ['markets'], source: 'test' } },
+  '/api/admin/markets/{marketCode}/control-plane': {
+    get: { fields: ['market','assignment','ceiling','team','paymentProviders','cashPolicy','relaisActive','gaps'], source: 'test' }
+  },
   '/api/admin/market-settlements/markets/{marketCode}/settlements': {
     get: { fields: ['market','assignment_id','settlements'], source: 'route-read' }
   },
