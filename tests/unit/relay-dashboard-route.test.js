@@ -17,6 +17,8 @@
 
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const request = require('supertest');
 
@@ -49,6 +51,33 @@ jest.mock('../../middleware/require-market-delegated-role', () => ({
   attachMarketDelegatedRoleFor: () => (req, res, next) => next(),
 }));
 
+let mockOperationsReadGranted = true;
+let mockOperationsReadMarkets = new Set(['km-uuid']);
+let mockHubSuperviseGrantedMarkets = new Set(['CM']);
+const MARKET_ID_BY_CODE = { CM: 'km-uuid', YT: 'yt-uuid', CG: 'cg-uuid' };
+
+jest.mock('../../middleware/require-market-delegated-capability', () => ({
+  attachAuthorizedMarketsForCapability: (capability) => (req, res, next) => {
+    if (!mockOperationsReadGranted) {
+      return res.status(403).json({ error: `Capability ${capability} requise.`, code: 'MARKET_CAPABILITY_REQUIRED' });
+    }
+    req.authorizedMarkets = new Set(mockOperationsReadMarkets);
+    return next();
+  },
+  requireMarketDelegatedCapability: (capability) => (req, res, next) => {
+    const code = req.params.marketCode;
+    if (!mockHubSuperviseGrantedMarkets.has(code)) {
+      return res.status(403).json({ error: `Capability ${capability} requise.`, code: 'MARKET_CAPABILITY_REQUIRED' });
+    }
+    req.marketDelegatedCapability = {
+      capability,
+      market_code: code,
+      market_id: MARKET_ID_BY_CODE[code],
+    };
+    return next();
+  },
+}));
+
 jest.mock('../../services/relay-dashboard-queries', () => ({
   getDashboardKPIs: jest.fn(),
   getOrders: jest.fn(),
@@ -71,6 +100,9 @@ describe('routes/relay-dashboard', () => {
     jest.clearAllMocks();
     mockDbQuery.mockReset();
     mockUser = { id: 'agent-1', role: 'agent_relais', relais_id: 'relais-1', full_name: 'Agent Un' };
+    mockOperationsReadGranted = true;
+    mockOperationsReadMarkets = new Set(['km-uuid']);
+    mockHubSuperviseGrantedMarkets = new Set(['CM']);
   });
 
   test('refuse un rôle non autorisé (ex: client)', async () => {
@@ -265,57 +297,86 @@ describe('routes/relay-dashboard', () => {
     });
   });
 
-  describe('market_operator', () => {
+  describe('market_operator D5', () => {
     beforeEach(() => {
       mockUser = { id: 'op-1', role: 'market_operator', full_name: 'Op Un' };
     });
 
-    test('GET /dashboard : scope résolu depuis operator_market_scopes et transmis au service', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ market_id: 'km-uuid' }] });
+    test('GET /dashboard : operations.read injecte uniquement les Market IDs autorisés', async () => {
       queries.getDashboardKPIs.mockResolvedValueOnce({ pending: 1 });
+
       const res = await request(buildApp()).get('/api/relay-dashboard/dashboard');
+
       expect(res.status).toBe(200);
       const [, opts] = queries.getDashboardKPIs.mock.calls[0];
       expect(opts.authorizedMarkets).toEqual(new Set(['km-uuid']));
+      expect(mockDbQuery).not.toHaveBeenCalled();
     });
 
-    test('POST /orders/:id/comment : autorisé pour un manager sur le marché de la commande', async () => {
+    test('GET /dashboard : révocation operations.read retire immédiatement la lecture', async () => {
+      mockOperationsReadGranted = false;
+
+      const res = await request(buildApp()).get('/api/relay-dashboard/dashboard');
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+      expect(queries.getDashboardKPIs).not.toHaveBeenCalled();
+    });
+
+    test('POST /orders/:id/comment : hub.supervise autorise la mutation sur le marché exact', async () => {
       mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ market_id: 'km-uuid' }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-X', market_id: 'km-uuid' }] })
-        .mockResolvedValueOnce({ rows: [{ role: 'manager' }] })
+        .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-X', market_id: 'km-uuid', market_code: 'CM' }] })
         .mockResolvedValueOnce({ rows: [{ id: 'c1', text: 'ok' }] });
+
       const res = await request(buildApp()).post('/api/relay-dashboard/orders/o1/comment').send({ text: 'ok' });
+
       expect(res.status).toBe(201);
       expect(res.body.comment).toEqual({ id: 'c1', text: 'ok' });
+      expect(mockDbQuery).toHaveBeenCalledTimes(2);
     });
 
-    test('POST /orders/:id/comment : 403 market_scope_role_insufficient pour un viewer', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ market_id: 'km-uuid' }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-X', market_id: 'km-uuid' }] })
-        .mockResolvedValueOnce({ rows: [{ role: 'viewer' }] });
+    test('POST /orders/:id/comment : sans hub.supervise la mutation est refusée', async () => {
+      mockHubSuperviseGrantedMarkets = new Set();
+      mockDbQuery.mockResolvedValueOnce({
+        rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-X', market_id: 'km-uuid', market_code: 'CM' }],
+      });
+
       const res = await request(buildApp()).post('/api/relay-dashboard/orders/o1/comment').send({ text: 'ok' });
+
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('market_scope_role_insufficient');
+      expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+      expect(mockDbQuery).toHaveBeenCalledTimes(1);
     });
 
-    test('POST /orders/:id/comment : 403 market_scope_denied si le marché n\'est pas autorisé', async () => {
-      mockDbQuery
-        .mockResolvedValueOnce({ rows: [{ market_id: 'km-uuid' }] })
-        .mockResolvedValueOnce({ rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-X', market_id: 'yt-uuid' }] });
+    test('POST /orders/:id/comment : capability CM ne donne aucun droit sur YT', async () => {
+      mockDbQuery.mockResolvedValueOnce({
+        rows: [{ id: 'o1', reference: 'CMD-1', status: 'available', relais_id: 'relais-X', market_id: 'yt-uuid', market_code: 'YT' }],
+      });
+
       const res = await request(buildApp()).post('/api/relay-dashboard/orders/o1/comment').send({ text: 'ok' });
+
       expect(res.status).toBe(403);
-      expect(res.body.code).toBe('market_scope_denied');
+      expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+      expect(mockDbQuery).toHaveBeenCalledTimes(1);
     });
 
-    test('GET /orders/:id : accessible sans exiger le rôle manager (lecture)', async () => {
-      mockDbQuery.mockResolvedValueOnce({ rows: [{ market_id: 'km-uuid' }] });
+    test('GET /orders/:id : operations.read suffit en lecture, hub.supervise n’est pas requis', async () => {
+      mockHubSuperviseGrantedMarkets = new Set();
       queries.getOrderDetail.mockResolvedValueOnce({ id: 'o1', reference: 'CMD-1' });
+
       const res = await request(buildApp()).get('/api/relay-dashboard/orders/o1');
+
       expect(res.status).toBe(200);
       const [, , opts] = queries.getOrderDetail.mock.calls[0];
       expect(opts.authorizedMarkets).toEqual(new Set(['km-uuid']));
     });
+  });
+
+  test('D5 retire complètement require-market-scope du Relay Dashboard', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', '..', 'routes', 'relay-dashboard.js'), 'utf8');
+    expect(source).not.toMatch(/require\(['"][^'"]*require-market-scope/);
+    expect(source).not.toMatch(/attachAuthorizedMarketsForOperator|resolveMarketScopeRole|hasMarketScopeRole/);
+    expect(source).toContain("attachAuthorizedMarketsForCapability('operations.read'");
+    expect(source).toContain("requireMarketDelegatedCapability('hub.supervise'");
   });
 });
