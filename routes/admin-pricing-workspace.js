@@ -350,11 +350,7 @@ router.post('/market/:marketCode/products/:productRef/local-price', requireLocal
   } catch (error) { handleError(error, res, next); }
 });
 
-router.post(
-  '/market/:marketCode/products/:productRef/local-price/activate',
-  requireLocalStrategyCapability('pricing.activate'),
-  requireLocalStrategyCapability('catalog.expose'),
-  async (req, res, next) => {
+router.post('/market/:marketCode/products/:productRef/local-price/activate', requireLocalStrategyCapability('pricing.activate'), requireLocalStrategyCapability('catalog.expose'), async (req, res, next) => {
     try {
       const activation = await marketLocalPriceActivation.activateLocalPrice({
         market: req.workspaceMarket,
