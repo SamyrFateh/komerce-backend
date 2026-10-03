@@ -13,6 +13,12 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+function fromScratchJob(workflow) {
+  const start = workflow.indexOf('  from_scratch:');
+  const end = workflow.indexOf('\n  ', workflow.indexOf('runs-on:', start));
+  return workflow.slice(start, end);
+}
+
 const {
   classify,
   isProviderProofOnlyFile,
@@ -130,11 +136,11 @@ describe('strict CJ isolated pilot proof-only CI scope', () => {
     expect(workflow).toContain("needs.changes.outputs.db_rebuild_required == 'true'");
     expect(workflow).toContain("needs.changes.outputs.integration_required == 'true'");
     expect(workflow).toContain("needs.changes.outputs.e2e_api_required == 'true'");
-    expect(workflow).toContain("needs: [changes, backend]");
+    expect(fromScratchJob(workflow)).toContain('needs: changes');
   expect(workflow).toContain("needs.changes.outputs.db_rebuild_required == 'true'");
   expect(workflow).toContain("needs.changes.outputs.integration_required == 'true'");
   expect(workflow).toContain("needs.changes.outputs.e2e_api_required == 'true'");
-  expect(workflow).toContain("needs.backend.result == 'success'");
+  expect(fromScratchJob(workflow)).not.toContain('needs.backend');
   });
 });
 
@@ -149,11 +155,11 @@ test('mandatory PR workflow requires focused gate; standalone batch remains manu
   expect(workflow).toContain("needs.changes.outputs.db_rebuild_required == 'true'");
   expect(workflow).toContain("needs.changes.outputs.integration_required == 'true'");
   expect(workflow).toContain("needs.changes.outputs.e2e_api_required == 'true'");
-  expect(workflow).toContain("needs: [changes, backend]");
+  expect(fromScratchJob(workflow)).toContain('needs: changes');
     expect(workflow).toContain("needs.changes.outputs.db_rebuild_required == 'true'");
     expect(workflow).toContain("needs.changes.outputs.integration_required == 'true'");
     expect(workflow).toContain("needs.changes.outputs.e2e_api_required == 'true'");
-    expect(workflow).toContain("needs.backend.result == 'success'");
+    expect(fromScratchJob(workflow)).not.toContain('needs.backend');
   expect(batch).toContain('  workflow_dispatch:');
   expect(batch).not.toMatch(/^\s{2}pull_request:/m);
 });
