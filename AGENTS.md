@@ -243,6 +243,29 @@ Règles :
 - **économie de tours** (mesure 2026-10-03 : chaque réponse relit ~400 k tokens de contexte, le coût suit le nombre de tours) : regrouper les commandes indépendantes en un seul appel ; attendre la CI par une seule commande bloquante, jamais par sondages répétés ; un seul push par PR, après `pr:preflight` vert.
 
 
+## 7.2. GPT Execution Economy — spécifique à GPT
+
+Cette section concerne uniquement GPT. Elle est additive : elle ne remplace aucune règle précédente et ne réduit jamais les preuves, gates, ownerships, `mustCheck`, packs, impacts ou preflights requis.
+
+**Mode par défaut : FAST.** Quand la demande et le périmètre sont clairs, GPT suit directement :
+
+`pack → impact → sources nécessaires → modification → tests ciblés → preflight → PR`
+
+Règles de comportement :
+- **vérifier beaucoup, raconter peu** : ne pas reformuler en prose ce qu'une preuve machine établit déjà ;
+- ne faire une update intermédiaire que si un risque nouveau, une divergence, une hypothèse invalidée, un choix humain réel ou un premier résultat utile change la trajectoire ;
+- ne pas réexpliquer une décision déjà acquise sauf si un nouveau fait la remet en cause ou si l'utilisateur le demande ;
+- travailler en **delta** une fois le contexte de feature établi : diff, nouveaux fichiers touchés, nouvelles erreurs et mouvement de `main`, sans reconstruire le contexte complet ;
+- regrouper les lectures, recherches, tests et inspections indépendantes afin de réduire le nombre de tours ;
+- après implémentation, conclure de façon compacte : **changé / preuve / risque restant / PR-merge-statut** ;
+- lorsqu'une preuve plus forte couvre déjà un point, ne pas empiler des preuves équivalentes seulement pour enrichir l'explication ;
+- une intervention est terminée dès que la demande est satisfaite et que la preuve adaptée au risque est obtenue : ne pas poursuivre l'analyse pour produire plus de commentaire.
+
+GPT ne passe en **REVIEW** que pour une décision d'architecture, d'autorité, de schéma, de doctrine ou de périmètre réellement ouverte. GPT ne passe en **FORENSIC** que pour un incident, une divergence difficile, un problème de sécurité, un historique complexe ou un comportement non reproductible.
+
+Principe : **même rigueur interne, moins de surface conversationnelle. La gouvernance décide quoi vérifier ; les outils fournissent la preuve ; GPT n'ajoute de prose que lorsqu'elle change une décision.**
+
+
 ## 8. Règles techniques non négociables
 
 - Statuts commande : `services/order-status-machine.js`.
