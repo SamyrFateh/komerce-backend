@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T00:53:52.719Z",
+  "generatedAt": "2026-10-03T11:48:11.988Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
     "total": 694,
@@ -748,7 +748,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-dashboard-market.js"
     },
     {
       "key": "GET /api/admin/dashboard/commerce",
@@ -789,7 +794,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-dashboard-market.js"
     },
     {
       "key": "GET /api/admin/dashboard/finance",
@@ -811,7 +821,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-dashboard-market.js"
     },
     {
       "key": "GET /api/admin/dashboard/operations",
@@ -826,7 +841,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-dashboard-market.js"
     },
     {
       "key": "GET /api/admin/dashboard/orders",
@@ -841,7 +861,11 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets"
+      ],
+      "file": "routes/admin-dashboard-market.js"
     },
     {
       "key": "GET /api/admin/dashboard/unified",
@@ -967,14 +991,23 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets"
+      ],
+      "file": "routes/admin-client-360.js"
     },
     {
       "key": "GET /api/admin/entities/clients/market/{marketCode}",
       "level": "PROTECTED",
       "roles": [
         "admin"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-client-index.js"
     },
     {
       "key": "GET /api/admin/entities/clients",
@@ -988,14 +1021,23 @@
       "level": "PROTECTED",
       "roles": [
         "admin"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-order-360.js"
     },
     {
       "key": "GET /api/admin/entities/products/{productRef}",
       "level": "PROTECTED",
       "roles": [
         "admin"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets"
+      ],
+      "file": "routes/admin-product-360.js"
     },
     {
       "key": "GET /api/admin/finance-config/schema",
@@ -1139,7 +1181,11 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/admin/partners.js"
     },
     {
       "key": "GET /api/admin/partners/{id}",
@@ -1147,7 +1193,11 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/admin/partners.js"
     },
     {
       "key": "PUT /api/admin/partners/{id}",
@@ -1155,7 +1205,11 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/admin/partners.js"
     },
     {
       "key": "GET /api/admin/partners/stats",
@@ -1163,7 +1217,11 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/admin/partners.js"
     },
     {
       "key": "GET /api/admin/partners",
@@ -1171,7 +1229,11 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/admin/partners.js"
     },
     {
       "key": "POST /api/admin/partners",
@@ -1179,7 +1241,11 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/admin/partners.js"
     },
     {
       "key": "PUT /api/admin/pricing-components/{id}/toggle",
@@ -1707,7 +1773,12 @@
         "finance",
         "agent_relais",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-finance-accounting-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/deposits/{depositRef}/verify",
@@ -1717,7 +1788,12 @@
         "finance",
         "agent_relais",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-finance-accounting-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/accounting/market/{marketCode}/deposits",
@@ -1727,7 +1803,12 @@
         "finance",
         "agent_relais",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-finance-accounting-workspace.js"
     },
     {
       "key": "GET /api/admin/workspaces/accounting/market/{marketCode}",
@@ -1737,7 +1818,12 @@
         "finance",
         "agent_relais",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-finance-accounting-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/catalog/approval/{productRef}/approve",
@@ -1843,7 +1929,12 @@
       "roles": [
         "admin",
         "agent_hub"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-operations-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/inventory/items/{itemId}/assign",
@@ -1851,7 +1942,12 @@
       "roles": [
         "admin",
         "agent_hub"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-operations-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/confirm-cash",
@@ -1859,7 +1955,12 @@
       "roles": [
         "admin",
         "agent_relais"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-operations-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/mark-ordered",
@@ -1867,7 +1968,12 @@
       "roles": [
         "admin",
         "agent_hub"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-operations-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/collect",
@@ -1875,7 +1981,12 @@
       "roles": [
         "admin",
         "agent_relais"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-operations-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/receive",
@@ -1883,7 +1994,12 @@
       "roles": [
         "admin",
         "agent_relais"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-operations-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/operations/market/{marketCode}/parcels/{reference}/ship",
@@ -1891,7 +2007,12 @@
       "roles": [
         "admin",
         "agent_hub"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-operations-workspace.js"
     },
     {
       "key": "GET /api/admin/workspaces/operations/market/{marketCode}",
@@ -1901,7 +2022,12 @@
         "agent_hub",
         "agent_relais",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-operations-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/competitors/{competitorRef}/deactivate",
@@ -1923,7 +2049,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/cost-components/{key}/update",
@@ -1931,7 +2062,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/cost-components",
@@ -1953,7 +2089,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/commercial-prices",
@@ -1961,7 +2102,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/corridor",
@@ -1969,7 +2115,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/reset",
@@ -1977,7 +2128,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/toggle",
@@ -1985,7 +2141,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/update",
@@ -1993,7 +2154,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/decision-policy/history",
@@ -2001,7 +2167,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/decision-policy",
@@ -2009,7 +2180,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/decision",
@@ -2017,7 +2193,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/price-observations/{observationRef}/deactivate",
@@ -2025,7 +2206,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/price-observations",
@@ -2033,7 +2219,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/activate",
@@ -2041,7 +2232,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/activation-preview",
@@ -2049,7 +2245,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/reset",
@@ -2057,7 +2258,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price",
@@ -2065,7 +2271,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/simulate-impact",
@@ -2073,7 +2284,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/structure-events",
@@ -2081,7 +2297,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/structure-events",
@@ -2089,7 +2310,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}",
@@ -2097,7 +2323,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/products/{productRef}/apply-price",
@@ -2112,7 +2343,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/simulate",
@@ -2169,7 +2405,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/pricing/structure-events",
@@ -2177,7 +2418,12 @@
       "roles": [
         "admin",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-pricing-workspace.js"
     },
     {
       "key": "GET /api/admin/workspaces/pricing",
@@ -2194,7 +2440,12 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-shipping-customs-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/deactivate",
@@ -2204,7 +2455,12 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-shipping-customs-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/declare",
@@ -2214,7 +2470,12 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-shipping-customs-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments/{reference}/update",
@@ -2224,7 +2485,12 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-shipping-customs-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/customs/shipments",
@@ -2234,7 +2500,12 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-shipping-customs-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/shipping-customs/market/{marketCode}/parcels/{reference}/confirm-transit",
@@ -2244,7 +2515,12 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-shipping-customs-workspace.js"
     },
     {
       "key": "GET /api/admin/workspaces/shipping-customs/market/{marketCode}",
@@ -2254,7 +2530,12 @@
         "agent_hub",
         "agent_transitaire",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarkets",
+        "requireMarketScope"
+      ],
+      "file": "routes/admin-shipping-customs-workspace.js"
     },
     {
       "key": "POST /api/admin/workspaces/sourcing/candidates/{candidateRef}/promote",
@@ -2992,7 +3273,11 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/hub-dashboard.js"
     },
     {
       "key": "POST /api/hub-dash/orders/{id}/auto-prepare",
@@ -3017,7 +3302,11 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/hub-dashboard.js"
     },
     {
       "key": "POST /api/hub-dash/orders/{id}/create-parcel",
@@ -3034,7 +3323,11 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/hub-dashboard.js"
     },
     {
       "key": "POST /api/hub-dash/orders/{id}/incident",
@@ -3043,7 +3336,11 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/hub-dashboard.js"
     },
     {
       "key": "POST /api/hub-dash/orders/{id}/start-prep",
@@ -3060,7 +3357,11 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/hub-dashboard.js"
     },
     {
       "key": "POST /api/hub-dash/parcels/{id}/add-item",
@@ -3101,7 +3402,11 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/hub-dashboard.js"
     },
     {
       "key": "GET /api/hub-dash/validate/{id}",
@@ -3110,7 +3415,11 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/hub-dashboard.js"
     },
     {
       "key": "POST /api/hub/auto-distribute/cleanup",
@@ -3247,7 +3556,11 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/hub.js"
     },
     {
       "key": "POST /api/hub/photo",
@@ -3288,7 +3601,11 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/hub.js"
     },
     {
       "key": "GET /api/hub/stats/week",
@@ -3297,7 +3614,11 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/hub.js"
     },
     {
       "key": "GET /api/hub/today",
@@ -3306,7 +3627,11 @@
         "admin",
         "agent_hub",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/hub.js"
     },
     {
       "key": "POST /api/hub/transition",
@@ -4435,7 +4760,11 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/relay-dashboard.js"
     },
     {
       "key": "PATCH /api/relay/orders/{id}/client-absent",
@@ -4444,7 +4773,11 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/relay-dashboard.js"
     },
     {
       "key": "POST /api/relay/orders/{id}/comment",
@@ -4453,7 +4786,11 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/relay-dashboard.js"
     },
     {
       "key": "POST /api/relay/orders/{id}/escalate",
@@ -4462,7 +4799,11 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/relay-dashboard.js"
     },
     {
       "key": "POST /api/relay/orders/{id}/incident",
@@ -4471,7 +4812,11 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/relay-dashboard.js"
     },
     {
       "key": "GET /api/relay/orders/{id}",
@@ -4480,7 +4825,11 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/relay-dashboard.js"
     },
     {
       "key": "GET /api/relay/orders",
@@ -4489,7 +4838,11 @@
         "admin",
         "agent_relais",
         "market_operator"
-      ]
+      ],
+      "marketGuards": [
+        "attachAuthorizedMarketsForOperator"
+      ],
+      "file": "routes/relay-dashboard.js"
     },
     {
       "key": "GET /api/scans/{order_id}",
