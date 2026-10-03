@@ -37,7 +37,7 @@ test('la mise en vente compose les writers canoniques sans market_id navigateur'
   expect(JSON.stringify(calls)).not.toMatch(/market_id|marketId/);
 });
 
-test('un produit déjà publié reçoit le prix avant l’exposition', async () => {
+test('un produit déjà publié entre au catalogue via la seule activation du prix', async () => {
   const calls = [];
   await ui.approveOne({
     row: {
@@ -55,7 +55,27 @@ test('un produit déjà publié reçoit le prix avant l’exposition', async () 
   expect(calls.map(call => call.url)).toEqual([
     '/api/admin/workspaces/pricing/market/KM/products/KPR-2/local-price',
     '/api/admin/workspaces/pricing/market/KM/products/KPR-2/local-price/activate',
-    '/api/market-delegation/markets/KM/catalog/exposure/p2',
+  ]);
+});
+
+test('un prix déjà LOCAL_ACTIVE mais non catalogué est réparé par la même activation idempotente', async () => {
+  const calls = [];
+  await ui.approveOne({
+    row: {
+      product_id: 'p3',
+      product_ref: 'KPR-3',
+      catalog_state: 'published',
+      local_price_active: true,
+      exposure_enabled: false,
+    },
+    amount: 21000,
+    marketCode: 'KM',
+    request: async (url, options) => { calls.push({ url, options }); return {}; },
+    feedback: () => {},
+  });
+
+  expect(calls.map(call => call.url)).toEqual([
+    '/api/admin/workspaces/pricing/market/KM/products/KPR-3/local-price/activate',
   ]);
 });
 
