@@ -18,6 +18,54 @@ describe('catalog-product-mutation-service', () => {
     expect(db.query.mock.calls[0][1]).toEqual([12000, 'p1']);
   });
 
+  test('assignBoutiqueTaxonomy valide la paire active puis n écrit que les clés Boutique', async () => {
+    const db = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [{ category: 'Mode & Beauté', subcategory: 'Enfant' }] })
+        .mockResolvedValueOnce({
+          rows: [{
+            id: 'p1',
+            product_ref: 'KPR-1',
+            category: 'enfants',
+            subcategory: null,
+            boutique_category_key: 'Mode & Beauté',
+            boutique_subcategory_key: 'Enfant',
+          }],
+        }),
+    };
+
+    const result = await service.assignBoutiqueTaxonomy(
+      db,
+      'p1',
+      'Mode & Beauté',
+      'Enfant'
+    );
+
+    expect(result.boutique_category_key).toBe('Mode & Beauté');
+    expect(result.boutique_subcategory_key).toBe('Enfant');
+    expect(result.category).toBe('enfants');
+    expect(db.query.mock.calls[0][0]).toContain('FROM boutique_categories');
+    expect(db.query.mock.calls[1][0]).toContain('SET boutique_category_key = $1');
+    expect(db.query.mock.calls[1][0]).not.toMatch(/SET\s+category\s*=/);
+    expect(db.query.mock.calls[1][1]).toEqual(['Mode & Beauté', 'Enfant', 'p1']);
+  });
+
+  test('assignBoutiqueTaxonomy refuse une paire inactive sans écrire products', async () => {
+    const db = { query: jest.fn().mockResolvedValueOnce({ rows: [] }) };
+
+    await expect(service.assignBoutiqueTaxonomy(
+      db,
+      'p1',
+      'Mode & Beauté',
+      'Inconnue'
+    )).rejects.toMatchObject({
+      code: 'boutique_taxonomy_invalid',
+      status: 422,
+    });
+
+    expect(db.query).toHaveBeenCalledTimes(1);
+  });
+
   test('updateSourcingFields preserves the legacy weight_g -> weight_kg mapping', async () => {
     const db = { query: jest.fn().mockResolvedValue({ rows: [{ id: 'p1', weight_kg: 1.25 }] }) };
 
