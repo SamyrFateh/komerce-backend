@@ -139,6 +139,7 @@
     "pr:preflight": "node scripts/pr-preflight.js",
     "agent:context": "node scripts/agent-context.js",
     "arch:impact": "node scripts/agent-context.js --impact",
+    "market:guard-inventory": "node scripts/market-guard-inventory.js",
     "agent:checkpoint": "node scripts/agent-checkpoint.js --force --verbose",
     "agent:restore": "node scripts/agent-checkpoint.js --restore"
   },

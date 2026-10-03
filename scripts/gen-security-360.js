@@ -38,27 +38,10 @@ const norm = p => ('/' + p.split('/').filter(Boolean).join('/'))
   .replace(/:([A-Za-z0-9_]+)/g, '{$1}').replace(/\/+$/, '') || '/';
 const read = f => { try { return fs.readFileSync(path.join(ROOT, f), 'utf8'); } catch { return null; } };
 
-// ── analyse STATIQUE des gardes (récupère authn + rôles) ─────────────────────
-function tokens(s) {
-  const out = { authn: false, roles: new Set(), admin: false };
-  if (/\b(authenticate|softAuthenticate|requireInternalKey|authenticateOrCreateGuest)\b/.test(s)) out.authn = true;
-  if (/\b(requireAdmin|requireAdminOrFounder)\b/.test(s)) { out.admin = true; out.authn = true; out.roles.add('admin'); }
-  for (const r of s.matchAll(/requireRole\(\s*\[([^\]]*)\]/g)) {
-    out.authn = true;
-    r[1].split(',').forEach(x => { const v = x.trim().replace(/['"`]/g, ''); if (v) out.roles.add(v); });
-  }
-  return out;
-}
-function mergeInto(t, a) { t.authn = t.authn || a.authn; t.admin = t.admin || a.admin; a.roles.forEach(r => t.roles.add(r)); }
-
-
-function cloneGuards(source) {
-  return {
-    authn: Boolean(source && source.authn),
-    roles: new Set(source && source.roles ? source.roles : []),
-    admin: Boolean(source && source.admin),
-  };
-}
+// ── analyse STATIQUE des gardes (récupère authn + rôles + gardes scope marché) ──
+// tokens / mergeInto / cloneGuards vivent dans scripts/lib/security-guard-tokens.js
+// (module pur, testé) : ce script s'exécute dès qu'on le require.
+const { cloneGuards, hasGuards, mergeInto, tokens, wrapperAliases } = require('./lib/security-guard-tokens');
 
 function mergeAliasRefs(target, source, aliases) {
   for (const name of Object.keys(aliases)) {
@@ -70,11 +53,13 @@ function parseGuardAliases(src) {
   const aliases = {};
   for (const m of src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*\[([\s\S]*?)\]\s*;/g)) {
     const parsed = tokens(m[2]);
-    if (parsed.authn || parsed.admin || parsed.roles.size) aliases[m[1]] = parsed;
+    if (hasGuards(parsed)) aliases[m[1]] = parsed;
   }
   for (const m of src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*(requireRole\(\s*\[[\s\S]*?\]\s*\))\s*;/g)) {
     aliases[m[1]] = tokens(m[2]);
   }
+  const wrappers = wrapperAliases(src);
+  for (const name of Object.keys(wrappers)) if (!aliases[name]) aliases[name] = wrappers[name];
   return aliases;
 }
 
@@ -114,7 +99,7 @@ function collectRouterGuardUses(src, vEsc, aliases) {
     const chain = scoped ? body.slice(scoped[0].length) : body;
     const guard = tokens(chain);
     mergeAliasRefs(guard, chain, aliases);
-    if (guard.authn || guard.admin || guard.roles.size) uses.push({ index: match.index, scope, guard });
+    if (hasGuards(guard)) uses.push({ index: match.index, scope, guard });
     re.lastIndex = closeIndex + 1;
   }
   return uses;
@@ -171,7 +156,7 @@ function staticGuards(routeFile, prefix, seen, acc, inherited, varName) {
     for (const name of Object.keys(alias)) if (new RegExp('\\b' + name + '\\b').test(chain)) mergeInto(t, alias[name]);
     const route = norm(prefix + '/' + m[2]);
     seenRoutes.add(m[1].toUpperCase() + ' ' + route);
-    acc.push({ method: m[1].toUpperCase(), route, authn: t.authn, admin: t.admin || t.roles.has('admin'), roles: [...t.roles] });
+    acc.push({ method: m[1].toUpperCase(), route, authn: t.authn, admin: t.admin || t.roles.has('admin'), roles: [...t.roles], marketGuards: [...t.marketGuards].sort(), file: routeFile });
   }
   // Passe complémentaire : routes avec un HANDLER NOMMÉ plutôt qu'inline, ex.
   // `router.get('/x', authenticate, requireAdmin, namedHandler);` — le pattern
@@ -186,7 +171,7 @@ function staticGuards(routeFile, prefix, seen, acc, inherited, varName) {
     const t = guardsAt(m[2], m.index);
     mergeInto(t, tokens(chain));
     for (const name of Object.keys(alias)) if (new RegExp('\\b' + name + '\\b').test(chain)) mergeInto(t, alias[name]);
-    acc.push({ method: m[1].toUpperCase(), route, authn: t.authn, admin: t.admin || t.roles.has('admin'), roles: [...t.roles] });
+    acc.push({ method: m[1].toUpperCase(), route, authn: t.authn, admin: t.admin || t.roles.has('admin'), roles: [...t.roles], marketGuards: [...t.marketGuards].sort(), file: routeFile });
   }
   // sous-routeurs (héritent fileBase)
   const v2spec = {};
@@ -343,7 +328,7 @@ function classify(method, p) {
   else if (!best.authn && disposition) { level = 'PUBLIC'; severity = 'ok'; appliedDisposition = disposition; }
   else if (!best.authn && !isPublicOk) { level = 'UNPROTECTED'; severity = 'medium'; }
   else if (!best.authn && isPublicOk) { level = 'PUBLIC'; severity = 'ok'; }
-  return { method, path: p, level, severity, roles: best.roles, authn: best.authn, disposition: appliedDisposition };
+  return { method, path: p, level, severity, roles: best.roles, marketGuards: best.marketGuards || [], file: best.file || null, authn: best.authn, disposition: appliedDisposition };
 }
 
 const dispositionErrors = validateDispositions();
@@ -388,7 +373,7 @@ const projection = {
   summary: report.summary,
   flagged: report.flagged,
   dispositions: report.dispositions,
-  routes: routes.map(r => ({ key: key(r), level: r.level, roles: r.roles })),
+  routes: routes.map(r => ({ key: key(r), level: r.level, roles: r.roles, ...(r.marketGuards && r.marketGuards.length ? { marketGuards: r.marketGuards, file: r.file } : {}) })),
 };
 function renderMarkdown(generatedAt) {
   return ['# Security 360 — couverture des gardes (hybride runtime + statique)', '',

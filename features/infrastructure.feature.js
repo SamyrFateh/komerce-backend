@@ -168,6 +168,8 @@ module.exports = {
       'scripts/lib/preflight-stamp.js',
       'scripts/hooks/pre-push',
       'scripts/agent-checkpoint.js',
+      'scripts/lib/security-guard-tokens.js',
+      'scripts/market-guard-inventory.js',
       '.github/workflows/wip-branch-cleanup.yml',
       '.claude/settings.json',
       'scripts/map-check.js',
@@ -370,6 +372,8 @@ module.exports = {
       'tests/unit/agent-context-handoff.test.js',
       'tests/unit/agent-guardrails-hooks.test.js',
       'tests/unit/agent-checkpoint.test.js',
+      'tests/unit/security-guard-tokens.test.js',
+      'tests/unit/market-guard-inventory.test.js',
       'tests/unit/alerts-contract-check.test.js',
       'tests/unit/collision-count-wording-check.test.js',
       'tests/unit/concept-impact-gate.test.js',
@@ -540,6 +544,10 @@ module.exports = {
     {
       statement: 'un sandbox d’agent (CLAUDE_CODE_REMOTE=true) sauvegarde son arbre de travail sur wip/<branche> sans toucher branche, index ni arbre ; wip/* est la seule exemption du tampon pre-push, ne déclenche aucune CI, se restaure par npm run agent:restore et est supprimée par GitHub (PR fermée ou checkpoint de plus de 7 jours, jamais hors refs/heads/wip/)',
       test: 'tests/unit/agent-checkpoint.test.js',
+    },
+    {
+      statement: 'l’inventaire des gardes legacy require-market-scope (npm run market:guard-inventory) dérive de l’analyseur de gen-security-360, sans second analyseur : toute route d’un fichier qui importe le middleware y figure avec son fichier source, ses rôles et l’autorité centrale lue par le fichier (EXPLICIT_CENTRAL ou ROLE_ONLY) ; une route gardée sans fichier source échoue fort',
+      test: 'tests/unit/market-guard-inventory.test.js',
     },
   ],
 
