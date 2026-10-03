@@ -27,10 +27,11 @@ describe('Boutique responsive matrix', () => {
     expect(css).toMatch(/--sc-reserve-w:\s*clamp\(208px,\s*21vw,\s*224px\)/);
   });
 
-  test('desktop ≥1200 devient fluide selon la largeur réellement disponible', () => {
+  test('desktop ≥1200 garde un module de carte stable même avec peu de produits', () => {
     expect(css).toMatch(/@media\s*\(min-width:\s*1200px\)/);
     expect(css).toMatch(/--sc-reserve-w:\s*clamp\(260px,\s*calc\(80px\s*\+\s*15vw\),\s*296px\)/);
-    expect(css).toMatch(/grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(260px,\s*1fr\)\)/);
+    expect(css).toContain('grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));');
+    expect(css).not.toContain('grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));');
   });
 
   test('la hauteur compacte la navigation indépendamment de la largeur', () => {

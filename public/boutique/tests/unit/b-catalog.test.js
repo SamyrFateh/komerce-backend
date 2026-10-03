@@ -275,6 +275,23 @@ describe('b-catalog — rendu et pagination', () => {
     expect(mockDom.grid.classList.contains('k-grid-has-sections')).toBe(true);
   });
 
+  test('la home desktop conserve une catégorie réelle avec seulement deux produits', () => {
+    mockState.filtered = [
+      product('mode-1', 'Mode & Beauté'),
+      product('mode-2', 'Mode & Beauté'),
+    ];
+    mockState.products = [...mockState.filtered];
+
+    catalog.renderGrid();
+
+    const args = mockRenderHomeSections.mock.calls.at(-1)[0];
+    expect(args.isMobile).toBe(false);
+    expect(args.items.map((item) => item.id)).toEqual(
+      expect.arrayContaining(['mode-1', 'mode-2'])
+    );
+    expect(args.items).toHaveLength(2);
+  });
+
   test('monte le mode flat-subcat mobile', () => {
     mockIsDesktop.mockReturnValue(false);
     mockState.flatSubcat = 'Téléphones';
@@ -458,16 +475,15 @@ describe('b-catalog — navigation et recherche', () => {
   // (cf. js/b-catalog.js — _resetSearchFilter, L745). Sans cette
   // restauration, un clic sur un résultat de recherche laisse
   // state.filtered narrow : le rendu suivant applique _balancedPick() à
-  // cette liste étroite et produit 0 carte pour 1, 2 ou 3 résultats
-  // (MIN_PER_SECTION=4, rejet du reliquat impair). Ce test échoue si
-  // _resetSearchFilter() est retiré de l'écouteur de clic du dropdown.
+  // cette liste étroite au lieu de restaurer le catalogue complet. Ce test
+  // échoue si _resetSearchFilter() est retiré de l'écouteur de clic du dropdown.
   test.each([1, 2, 3])(
     'clic sur un résultat de recherche (%i correspondance(s)) : la grille se re-rend non vide',
     (hitCount) => {
       jest.useFakeTimers();
       mockState.activeCat = 'all';
-      // 3 catégories × 5 produits — de quoi survivre à _balancedPick une
-      // fois state.filtered restauré au catalogue complet.
+      // 3 catégories × 5 produits — vérifie que la restauration revient
+      // bien au catalogue complet avant le rendu de vitrine.
       mockState.products = [
         ...Array.from({ length: 5 }, (_, i) => product(`tech-${i}`, 'Tech')),
         ...Array.from({ length: 5 }, (_, i) => product(`mode-${i}`, 'Mode')),

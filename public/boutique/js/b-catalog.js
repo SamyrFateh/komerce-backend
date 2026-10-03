@@ -550,15 +550,9 @@ function renderGrid() {
   const useSections = state.activeCat === 'all' || _isMobile;
 
   // ── RECHERCHE ACTIVE : jamais d'équilibrage ──────────────────────────────
-  // _balancedPick est un sélecteur de VITRINE (éviter qu'une catégorie riche
-  // écrase la home). Appliqué à un résultat de recherche, il DÉTRUIT des
-  // résultats que l'utilisateur a explicitement demandés, via trois mécanismes :
-  //   1. MIN_PER_SECTION=4  → une catégorie < 4 résultats part au reliquat ;
-  //                           un reliquat < 4 est jeté.
-  //   2. count = take%2 ? take-1 : take → tout nombre impair perd un produit
-  //                           (contrainte de grille visuelle appliquée à de la
-  //                           pertinence).
-  //   3. take >= 2 ? ... : 0 → un résultat UNIQUE donne toujours ZÉRO.
+  // _balancedPick est un sélecteur de VITRINE : il limite uniquement la
+  // densité des catégories riches. Les catégories maigres restent présentes ;
+  // une recherche, elle, conserve toujours la liste exhaustive demandée.
   //
   // Mesuré en prod (969 produits, 2026-07-17) — filtre vs rendu :
   //   "chaussure" 15 trouvés → 14 rendus | "football"  10 → 8
@@ -674,7 +668,11 @@ function _shuffle(arr) {
 }
 
 function _balancedPick(list, pageSize, maxPerCat) {
-  const MIN_PER_SECTION = 4;
+  // Une vitrine peut limiter la densité d'une catégorie riche, mais elle ne
+  // doit jamais faire disparaître une catégorie publiable parce qu'elle ne
+  // contient que 1, 2 ou 3 produits. Chaque catégorie réelle reste donc une
+  // section candidate ; le plafond ne sert qu'à limiter le nombre de cartes
+  // préchargées par section.
   const byCat = new Map();
   const order = [];
   for (const p of list) {
@@ -682,28 +680,20 @@ function _balancedPick(list, pageSize, maxPerCat) {
     if (!byCat.has(cat)) { byCat.set(cat, []); order.push(cat); }
     byCat.get(cat).push(p);
   }
-  const rich = [];
-  const thin = [];
-  for (const cat of order) {
-    const prods = byCat.get(cat);
-    if (prods.length >= MIN_PER_SECTION) rich.push({ cat, prods });
-    else thin.push(...prods);
-  }
-  if (thin.length >= MIN_PER_SECTION) rich.push({ cat: 'Autres', prods: thin });
 
-  const nCats = rich.length || 1;
-  const basePerCat = Math.floor(pageSize / nCats);
-  let perCat = basePerCat >= 2 ? (basePerCat % 2 === 0 ? basePerCat : basePerCat - 1) : 2;
-  // Cap dur si l'appelant impose un max (ex : 4 cartes/section sur la home desktop)
+  const nCats = Math.max(order.length, 1);
+  const basePerCat = Math.max(1, Math.floor(pageSize / nCats));
+  let perCat = basePerCat;
+  // Cap dur si l'appelant impose un max (ex : 16 cartes/section sur la home desktop).
   if (typeof maxPerCat === 'number' && maxPerCat > 0) {
     perCat = Math.min(perCat, maxPerCat);
   }
+
   const flat = [];
-  for (const section of rich) {
-    const shuffled = _shuffle([...section.prods]);
+  for (const cat of order) {
+    const shuffled = _shuffle([...byCat.get(cat)]);
     const take = Math.min(perCat, shuffled.length);
-    const count = take >= 2 ? (take % 2 === 0 ? take : take - 1) : 0;
-    for (let i = 0; i < count; i++) flat.push(shuffled[i]);
+    for (let i = 0; i < take; i++) flat.push(shuffled[i]);
   }
   return flat;
 }

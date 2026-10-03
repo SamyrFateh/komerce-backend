@@ -89,7 +89,10 @@
 
   .k-grid,
   .k-sec-grid {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    /* auto-fill conserve les pistes vides : avec 1 ou 2 produits, les cartes
+       gardent le module catalogue standard au lieu de s'étirer sur toute la
+       largeur disponible. */
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: clamp(14px, 1vw, 18px);
   }
 }
