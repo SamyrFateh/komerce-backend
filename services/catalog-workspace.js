@@ -14,7 +14,7 @@
  * @db-txn        delegated_to_domain_authority
  * @doctrine      workspace_acts_dashboard_observes, global_catalog_not_market_scoped, commercial_catalog_is_union_of_approved_products_from_closed_kirs, reuse_domain_mutation_authorities, product_ref_is_public_identity, no_paid_ai_api_for_fr_preparation
  * @impact-areas  admin-dashboard, catalog, boutique
- * @version       2026-09
+ * @version       2026-10
  */
 
 'use strict';
@@ -148,9 +148,20 @@ function sourcingDecisionOrderSql(alias = 'sc') {
   END`;
 }
 
-async function queryApprovalQueue({ limit = 50, offset = 0 } = {}) {
+async function queryApprovalQueue({ limit = 50, offset = 0, productRef = null } = {}) {
   const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
   const safeOffset = Math.max(Number.parseInt(offset, 10) || 0, 0);
+  const focusedRef = String(productRef || '').trim() || null;
+  const params = [];
+  const sqlParam = index => String.fromCharCode(36) + index;
+  let focusOrder = '';
+  if (focusedRef) {
+    params.push(focusedRef);
+    focusOrder = 'CASE WHEN p.product_ref = ' + sqlParam(params.length) + ' THEN 0 ELSE 1 END ASC,';
+  }
+  params.push(safeLimit, safeOffset);
+  const limitParam = sqlParam(params.length - 1);
+  const offsetParam = sqlParam(params.length);
   const decisionOrder = sourcingDecisionOrderSql('sc');
   const { rows } = await db.query(`
     SELECT p.product_ref, p.name, p.description, p.name_source, p.description_source,
@@ -183,7 +194,8 @@ async function queryApprovalQueue({ limit = 50, offset = 0 } = {}) {
      WHERE p.lifecycle_status = 'candidate'
        AND p.is_active = FALSE
        AND p.content_source IN ('connector_raw', 'ai_enriched', 'manual')
-     ORDER BY p.needs_review ASC,
+     ORDER BY ${focusOrder}
+              p.needs_review ASC,
               ${decisionOrder} ASC,
               CASE LOWER(COALESCE(sc.confidence,'low'))
                 WHEN 'high' THEN 0
@@ -193,8 +205,8 @@ async function queryApprovalQueue({ limit = 50, offset = 0 } = {}) {
               (COALESCE(sc.stock_available, p.stock, 0) > 0) DESC,
               p.enrichment_confidence DESC NULLS LAST,
               p.created_at ASC
-     LIMIT $1 OFFSET $2
-  `, [safeLimit, safeOffset]);
+     LIMIT ${limitParam} OFFSET ${offsetParam}
+  `, params);
   return rows.map(row => ({
     product_ref: row.product_ref,
     name: row.name,
@@ -253,6 +265,7 @@ async function queryApprovalBreakdown() {
 async function buildWorkspace(query = {}) {
   const approvalLimit = Math.min(Math.max(Number(query.approval_limit) || 50, 1), 100);
   const approvalOffset = Math.max(Number.parseInt(query.approval_offset, 10) || 0, 0);
+  const approvalProductRef = String(query.product_ref || '').trim() || null;
   const [summary, catalogCap, categories, products, approval, approvalBreakdown] = await Promise.all([
     querySummary(),
     queryCatalogCap(),
@@ -262,7 +275,7 @@ async function buildWorkspace(query = {}) {
       category: query.category,
       limit: query.limit || 200,
     }),
-    queryApprovalQueue({ limit: approvalLimit, offset: approvalOffset }),
+    queryApprovalQueue({ limit: approvalLimit, offset: approvalOffset, productRef: approvalProductRef }),
     queryApprovalBreakdown(),
   ]);
   const approvalTotal = Number(summary.approval_pending) || 0;
