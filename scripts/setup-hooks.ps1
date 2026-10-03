@@ -18,25 +18,13 @@ function Test-KomerceHook {
     return [bool](Select-String -Path $Path -Pattern 'KOMERCE-HOOK|Coffre-fort Komerce|reprise gouvernance' -Quiet -ErrorAction SilentlyContinue)
 }
 
-function Pause-KomerceHook {
-    param([string]$Path)
-    if (-not (Test-Path $Path)) { return }
-    if (-not (Test-KomerceHook $Path)) {
-        Write-Host "Hook personnel conserve: $Path"
-        return
-    }
-
-    $backup = "$Path.komerce-paused"
-    if (-not (Test-Path $backup)) {
-        Move-Item -Force $Path $backup
-        Write-Host "Ancien hook Komerce sauvegarde: $backup"
-    } else {
-        Remove-Item -Force $Path
-        Write-Host 'Ancien hook Komerce retire; sauvegarde deja presente.'
-    }
+# pre-push : uniquement la verification legere du tampon pr:preflight vert
+# (scripts/hooks/pre-push, execute par le sh de Git for Windows).
+if ((Test-Path $prePush) -and -not (Test-KomerceHook $prePush)) {
+    Write-Host "Hook pre-push personnel conserve: $prePush"
+} else {
+    Copy-Item -Force (Join-Path $root 'scripts\hooks\pre-push') $prePush
 }
-
-Pause-KomerceHook $prePush
 
 if ((Test-Path $preCommit) -and -not (Test-KomerceHook $preCommit)) {
     Write-Host 'Hook pre-commit personnel detecte - installation Komerce ignoree.'
@@ -171,6 +159,6 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 Write-Host 'OK Hooks Komerce - niveaux 1-5 installes depuis PowerShell.'
 Write-Host '   pre-commit : technique + registry + schema + Boutique source + tests unitaires lies'
-Write-Host '   pre-push   : toujours desactive'
+Write-Host '   pre-push   : tampon pr:preflight vert uniquement (millisecondes)'
 Write-Host '   lourds     : Carte First complet / rebuild CSS-dist / coverage / integration / E2E / 360 / meta en pause'
 Write-Host '   timings    : affiches gate par gate a chaque commit'

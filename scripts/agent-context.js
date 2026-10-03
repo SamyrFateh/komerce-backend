@@ -6,8 +6,8 @@
  * @layer         tooling
  * @criticality   high
  * @inputs        feature manifests, @komerce-arch headers, interventionIndex, git diff
- * @outputs       compact agent context projection, change-impact projection (--impact), context packs (--pack)
- * @depends       scripts/pr-enforcement-scope.js, scripts/lib/agent-context-impact.js, scripts/lib/agent-context-pack.js, scripts/run-staged-related-tests.js, docs/komerce-arch-header-graph.json
+ * @outputs       compact agent context projection, change-impact projection (--impact), context packs (--pack), mission brief (--handoff)
+ * @depends       scripts/pr-enforcement-scope.js, scripts/lib/agent-context-impact.js, scripts/lib/agent-context-pack.js, scripts/lib/agent-context-handoff.js, scripts/setup-hooks-runner.js, scripts/run-staged-related-tests.js, docs/komerce-arch-header-graph.json
  * @used-by       coding agents, AGENTS.md
  * @db-read       none
  * @db-write      none
@@ -24,6 +24,7 @@ const cp = require('child_process');
 const { classify, classifyDiff } = require('./pr-enforcement-scope');
 const impactLib = require('./lib/agent-context-impact');
 const packLib = require('./lib/agent-context-pack');
+const handoffLib = require('./lib/agent-context-handoff');
 
 const ROOT = path.resolve(__dirname, '..');
 const FEATURE_ROOTS = [
@@ -477,8 +478,28 @@ function buildPacks(type, options = {}) {
   }));
 }
 
+// --handoff <type> --feature <f> | --files <a,b> [--task "..."] : brief autonome
+// pour un agent externe à budget limité (packs + impacts des fichiers + règles AGENTS.md).
+function buildHandoff(type, options = {}) {
+  const files = (options.files || []).map(norm).filter(Boolean);
+  const packs = buildPacks(type, options);
+  const impacts = files.map(file => buildImpact(file, options));
+  const agentsMd = options.agentsMd != null ? options.agentsMd : fs.readFileSync(path.join(ROOT, 'AGENTS.md'), 'utf8');
+  return handoffLib.renderHandoff({ task: options.task, packs, impacts, agentsMd });
+}
+
 function main() {
   const args = process.argv.slice(2);
+  require('./setup-hooks-runner').ensureInstalled();
+  const handoffType = argValue(args, '--handoff', '');
+  if (handoffType) {
+    process.stdout.write(buildHandoff(handoffType, {
+      files: argValue(args, '--files', '').split(','),
+      featureNames: argValue(args, '--feature', '').split(',').map(v => v.trim()).filter(Boolean),
+      task: argValue(args, '--task', ''),
+    }) + '\n');
+    return;
+  }
   const packType = argValue(args, '--pack', '');
   if (packType) {
     const packs = buildPacks(packType, {
@@ -548,6 +569,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+  buildHandoff,
   buildImpact,
   buildPacks,
   flattenFiles,

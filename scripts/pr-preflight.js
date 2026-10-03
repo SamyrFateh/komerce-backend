@@ -6,8 +6,8 @@
  * @layer         tooling
  * @criticality   high
  * @inputs        git diff versus base branch, existing canonical governance gates, .github/workflows/pr-enforcement.yml (parité)
- * @outputs       fail-fast preflight verdict before opening or updating a PR — rejoue tout gate CI reproductible localement
- * @depends       scripts/pr-enforcement-scope.js, npm scripts declared in package.json
+ * @outputs       fail-fast preflight verdict before opening or updating a PR — rejoue tout gate CI reproductible localement ; tampon pre-push sur HEAD quand vert
+ * @depends       scripts/pr-enforcement-scope.js, scripts/lib/preflight-stamp.js, scripts/setup-hooks-runner.js, npm scripts declared in package.json
  * @used-by       AGENTS.md, developers and coding agents before PR creation
  * @db-read       none
  * @db-write      none
@@ -21,6 +21,7 @@
 const cp = require('child_process');
 const path = require('path');
 const { classifyDiff } = require('./pr-enforcement-scope');
+const stamp = require('./lib/preflight-stamp');
 
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
@@ -319,7 +320,18 @@ function main() {
   const baseSha = resolveBase(baseRef);
   const headSha = git(['rev-parse', headRef]);
   const scope = classifyDiff(baseSha, headSha);
-  const plan = buildPlan(scope, baseSha, headSha, { treeSnapshot: trackedChanges() });
+  const treeSnapshot = trackedChanges();
+  const plan = buildPlan(scope, baseSha, headSha, { treeSnapshot });
+  const dryRun = has('--dry-run');
+  require('./setup-hooks-runner').ensureInstalled();
+  const markGreen = () => {
+    const reason = stamp.refusal({ dryRun, headRef, dirtyFiles: treeSnapshot.size });
+    if (reason) {
+      console.log(`(tampon pre-push non posé : ${reason})`);
+      return;
+    }
+    stamp.writeGreen({ sha: headSha, gitPath: name => git(['rev-parse', '--git-path', name]) });
+  };
 
   console.log('\nKOMERCE — GREEN BEFORE PR');
   console.log(`base: ${baseRef} (${baseSha.slice(0, 8)})`);
@@ -329,10 +341,12 @@ function main() {
 
   if (!scope.changedFiles.length) {
     console.log('\n✔ Aucun changement à valider.');
+    markGreen();
     return;
   }
 
-  runPlan(plan, has('--dry-run'));
+  runPlan(plan, dryRun);
+  markGreen();
   console.log('\n✔ PRE-FLIGHT VERT — la PR peut maintenant servir de preuve indépendante.');
 }
 

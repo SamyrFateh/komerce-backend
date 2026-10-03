@@ -149,3 +149,16 @@ describe('agent-context --pack (câblage)', () => {
     expect(() => buildPacks('authz', { ...opts, files: ['docs/x.md'] })).toThrow(/Features : widgets/);
   });
 });
+
+describe('agent-context --handoff (câblage)', () => {
+  const { buildHandoff } = require('../../scripts/agent-context');
+  test('packs + impacts des fichiers + règles AGENTS.md', () => {
+    const out = buildHandoff('route', {
+      graph, routes, security, feature360, features: [entry], readSource, files: ['routes/w.js'], isFile: true,
+      skipTests: true, task: 'm', agentsMd: '## 8. R\n- règle\n',
+    });
+    expect(out).toContain('MISSION KOMERCE : m');
+    expect(out).toContain('PACK route · feature widgets');
+    expect(out).toContain('IMPACT routes/w.js');
+  });
+});
