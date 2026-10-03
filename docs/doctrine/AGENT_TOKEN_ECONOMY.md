@@ -80,6 +80,8 @@ npm run agent:context -- --pack <type> --feature <feature>   # ou --files path/a
 npm run arch:impact -- <fichier|feature>
 # orientation si la feature est inconnue ; --expand si et seulement si ambiguïté
 npm run agent:context -- --brief --files path/a.js
+# délégation à un agent externe (GPT, Sonnet à budget limité) : brief autonome
+npm run agent:context -- --handoff <type> --feature <feature> --task "<mission>"
 ```
 
 La projection est dérivée des cartes Feature First, headers `@komerce-arch`,
@@ -93,3 +95,7 @@ Chemin normal : pack → impact → source brute seulement si nécessaire. Mesur
 contexte relus par réponse) et l'exploration représente 60 % des tokens renvoyés
 par les outils ; sur la revue du Control Plane, `--impact` a ramené 11 appels
 d'exploration à 3 (−54 % de tokens d'exploration).
+
+`--handoff` assemble, sans règle nouvelle, les règles non négociables extraites
+d'AGENTS.md (§0.1 dette, §8, §9), le pack, l'impact des fichiers passés et la
+définition de fini : l'agent délégué n'a pas à lire AGENTS.md ni les cartes.

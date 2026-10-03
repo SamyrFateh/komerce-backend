@@ -17,26 +17,14 @@ is_managed_hook() {
   [[ -f "$hook" ]] && grep -Eqi 'KOMERCE-HOOK|Coffre-fort Komerce|reprise gouvernance' "$hook"
 }
 
-pause_managed_hook() {
-  local hook="$1"
-  local backup="${hook}.komerce-paused"
-
-  [[ -f "$hook" ]] || return 0
-  if ! is_managed_hook "$hook"; then
-    echo "Hook personnel conserve: ${hook#$ROOT/}"
-    return 0
-  fi
-
-  if [[ ! -e "$backup" ]]; then
-    mv "$hook" "$backup"
-    echo "Ancien hook Komerce sauvegarde: ${backup#$ROOT/}"
-  else
-    rm -f "$hook"
-    echo "Ancien hook Komerce retire; sauvegarde deja presente."
-  fi
-}
-
-pause_managed_hook "$PRE_PUSH"
+# pre-push : uniquement la vérification légère du tampon pr:preflight vert
+# (scripts/hooks/pre-push). Les gates lourds restent en pause.
+if [[ -f "$PRE_PUSH" ]] && ! is_managed_hook "$PRE_PUSH"; then
+  echo "Hook pre-push personnel conserve: ${PRE_PUSH#$ROOT/}"
+else
+  cp "$ROOT/scripts/hooks/pre-push" "$PRE_PUSH"
+  chmod +x "$PRE_PUSH"
+fi
 
 if [[ -f "$PRE_COMMIT" ]] && ! is_managed_hook "$PRE_COMMIT"; then
   echo "Hook pre-commit personnel detecte - installation Komerce ignoree."
@@ -178,6 +166,6 @@ chmod +x "$PRE_COMMIT"
 
 echo "OK Hooks Komerce v7 - niveaux 1-5 + preflight gouvernance installes."
 echo "   pre-commit : technique + registry + feature-schema + touched-files + docs-lint + schema + Boutique source + tests unitaires lies"
-echo "   pre-push   : toujours desactive"
+echo "   pre-push   : tampon pr:preflight vert uniquement (millisecondes)"
 echo "   lourds     : rebuild CSS-dist / coverage / integration / E2E / 360 / meta en pause"
 echo "   timings    : affiches gate par gate a chaque commit"

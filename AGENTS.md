@@ -155,6 +155,8 @@ Cette commande réutilise les gates canoniques selon le diff. Ne pas ouvrir une 
 
 Le preflight rejoue toute commande de la CI reproductible localement ; les seules exceptions (corps de PR, couverture globale, base PostgreSQL reconstruite) sont déclarées dans `CI_ONLY` de `scripts/pr-preflight.js` avec leur raison, et un test de parité échoue si la CI gagne un gate sans le preflight. Un diff qui touche une migration exige l'historique git complet (`git fetch --unshallow origin`), comme la CI.
 
+Un preflight vert sur arbre propre tamponne le commit HEAD ; le hook pre-push géré (installé par `prepare`, `agent:context` et `pr:preflight`) refuse tout commit poussé sans ce tampon. Il ne lance aucun gate.
+
 Les commandes unitaires restent disponibles pour le diagnostic (`feature:registry`, `gate:schema`, `gate:touched-files`, `gate:docs-lint`, etc.), mais le chemin normal est le preflight unique.
 
 ## 4.1. Clôture autonome de PR — merge sans intervention externe
@@ -224,6 +226,8 @@ npm run agent:context -- --pack service --files path/a.js,path/b.js
 npm run arch:impact -- <fichier|feature>
 # orientation si la feature est inconnue ; --expand uniquement si ambiguïté
 npm run agent:context -- --brief --files path/a.js
+# déléguer à un agent externe à budget limité : brief autonome (règles §8 + pack + impact + définition de fini)
+npm run agent:context -- --handoff <type> --feature <feature> --task "<mission>"
 ```
 
 Cette projection dérive les cartes Feature First, headers `@komerce-arch`,

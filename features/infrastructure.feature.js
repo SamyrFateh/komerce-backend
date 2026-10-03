@@ -164,6 +164,9 @@ module.exports = {
       'scripts/lib/npm-audit-core.js',
       'scripts/lib/agent-context-impact.js',
       'scripts/lib/agent-context-pack.js',
+      'scripts/lib/agent-context-handoff.js',
+      'scripts/lib/preflight-stamp.js',
+      'scripts/hooks/pre-push',
       'scripts/map-check.js',
       'scripts/migrate.js',
       'scripts/npm-audit-exceptions.json',
@@ -184,6 +187,8 @@ module.exports = {
       'scripts/run-security-360.js',
       'scripts/seed.js',
       'scripts/setup-hooks.sh',
+      'scripts/setup-hooks.ps1',
+      'scripts/setup-hooks-runner.js',
       'scripts/test-settings-api.sh',
       'scripts/touched-files-feature-gate.js',
       'scripts/touched-tests-gate.js',
@@ -359,6 +364,8 @@ module.exports = {
       'tests/unit/agent-context.test.js',
       'tests/unit/agent-context-impact.test.js',
       'tests/unit/agent-context-pack.test.js',
+      'tests/unit/agent-context-handoff.test.js',
+      'tests/unit/agent-guardrails-hooks.test.js',
       'tests/unit/alerts-contract-check.test.js',
       'tests/unit/collision-count-wording-check.test.js',
       'tests/unit/concept-impact-gate.test.js',
@@ -521,6 +528,10 @@ module.exports = {
     {
       statement: 'npm run pr:preflight rejoue toute commande de .github/workflows/pr-enforcement.yml reproductible localement ; toute exception est déclarée dans CI_ONLY avec sa raison, et les projections exclues du contrôle d’arbre sont exactement celles que la CI restaure',
       test: 'tests/unit/pr-preflight-ci-parity.test.js',
+    },
+    {
+      statement: 'le hook pre-push géré ne lance aucun gate : il refuse seulement un commit qui n’est pas celui tamponné par un pr:preflight vert sur arbre propre ; les hooks s’installent via prepare, agent:context et pr:preflight, jamais en CI, et un hook personnel est conservé',
+      test: 'tests/unit/agent-guardrails-hooks.test.js',
     },
   ],
 
