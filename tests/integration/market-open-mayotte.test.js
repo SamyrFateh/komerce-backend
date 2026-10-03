@@ -28,7 +28,9 @@ if (!hasIntegrationEnv) {
 } else {
   let db;
   let getMarketCurrency, formatAmountForMarket;
-  let resolveAuthorizedMarkets;
+  let resolveAuthorizedMarkets, provisioning;
+  const delegationMemberships = [];
+  const createdAssignments = [];
   let mayotteId, comoresId;
 
   const PFX = 'itest-m10+';
@@ -38,6 +40,7 @@ if (!hasIntegrationEnv) {
     db = require('../../db');
     ({ getMarketCurrency, formatAmountForMarket } = require('../../utils/currency'));
     ({ resolveAuthorizedMarkets } = require('../../middleware/require-market-scope'));
+    provisioning = require('../../services/market-operator-provisioning');
 
     const yt = await db.query(`SELECT id FROM markets WHERE code = 'YT'`);
     const km = await db.query(`SELECT id FROM markets WHERE code = 'KM'`);
@@ -46,8 +49,16 @@ if (!hasIntegrationEnv) {
   });
 
   afterAll(async () => {
-    await db.query(`DELETE FROM operator_market_scopes WHERE user_id IN
-      (SELECT id FROM users WHERE email LIKE $1)`, [`${PFX}%`]);
+    if (delegationMemberships.length) {
+      await db.query('DELETE FROM operator_market_scopes WHERE projected_from_membership_id = ANY($1)', [delegationMemberships]);
+      await db.query('DELETE FROM market_delegation_audit WHERE membership_id = ANY($1)', [delegationMemberships]);
+      await db.query('DELETE FROM membership_capabilities WHERE membership_id = ANY($1)', [delegationMemberships]);
+      await db.query('DELETE FROM assignment_memberships WHERE id = ANY($1)', [delegationMemberships]);
+    }
+    if (createdAssignments.length) {
+      await db.query('DELETE FROM assignment_capability_ceiling WHERE assignment_id = ANY($1)', [createdAssignments]);
+      await db.query('DELETE FROM market_operating_assignments WHERE id = ANY($1)', [createdAssignments]);
+    }
     await db.query(`DELETE FROM users WHERE email LIKE $1`, [`${PFX}%`]);
   });
 
@@ -81,10 +92,19 @@ if (!hasIntegrationEnv) {
     );
     const userId = u.rows[0].id;
 
-    await db.query(
-      `INSERT INTO operator_market_scopes (user_id, market_id, role) VALUES ($1, $2, 'manager')`,
-      [userId, comoresId]
+    const existingAssignment = await db.query(
+      `SELECT id FROM market_operating_assignments WHERE market_id = $1 AND status = 'ACTIVE' LIMIT 1`,
+      [comoresId]
     );
+    const delegated = await provisioning.ensureOperatorMembership(db, {
+      userId,
+      marketId: comoresId,
+      marketCode: 'KM',
+      scope: 'manager',
+      allowRoleChange: true,
+    });
+    delegationMemberships.push(delegated.membershipId);
+    if (!existingAssignment.rows.length) createdAssignments.push(delegated.assignmentId);
 
     const scopes = await resolveAuthorizedMarkets(userId);
     expect(scopes.has(comoresId)).toBe(true);

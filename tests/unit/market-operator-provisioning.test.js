@@ -6,6 +6,7 @@ jest.mock('../../services/market-delegation-service', () => ({
   activeMembershipForUser: jest.fn(),
   addMembership: jest.fn(),
   replaceMembershipCapabilities: jest.fn(),
+  revokeMembership: jest.fn(),
 }));
 jest.mock('../../services/market-scope-projector', () => ({
   projectAssignment: jest.fn(),
@@ -29,6 +30,7 @@ beforeEach(() => {
   delegation.resolveActiveAssignmentByMarketCode.mockResolvedValue({ assignment_id: 'a1' });
   delegation.activeMembershipForUser.mockResolvedValue(null);
   delegation.addMembership.mockResolvedValue({ id: 'mem1' });
+  delegation.revokeMembership.mockResolvedValue({ id: 'mem1', assignment_id: 'a1', revoked_at: 't2' });
   projector.desiredScopesForAssignment.mockResolvedValue([]);
   client.query.mockResolvedValue({ rows: [{ capability: 'pricing.decide' }] });
 });
@@ -105,6 +107,96 @@ describe('market-operator-provisioning', () => {
       membershipId: 'mem1', capabilities: ['pricing.decide'], actorUserId: 'admin1', actorIsCentral: true,
     });
     expect(projector.projectAssignment).toHaveBeenCalledWith(client, 'a1');
+  });
+
+  describe('révocation opérateur via la délégation', () => {
+    test('révoque la membership puis reprojette, sans writer direct de scope', async () => {
+      client.query.mockResolvedValueOnce({ rows: [{ id: 'm1', code: 'CM' }] });
+      delegation.resolveActiveAssignmentByMarketCode.mockResolvedValue({ assignment_id: 'a1' });
+      delegation.activeMembershipForUser.mockResolvedValue({ id: 'mem1' });
+      adminService.listActiveScopesForUsers.mockResolvedValue([{ id: 's1', market_code: 'CM', scope_role: 'manager' }]);
+
+      const out = await svc.revokeOperatorScope(client, { userId: 'u1', marketCode: 'cm', revokedBy: 'admin1' });
+
+      expect(out.status).toBe('revoked');
+      expect(delegation.revokeMembership).toHaveBeenCalledWith(client, {
+        membershipId: 'mem1', actorUserId: 'admin1', allowLastGrantor: true,
+      });
+      expect(projector.projectAssignment).toHaveBeenCalledWith(client, 'a1');
+      expect(out.revoked.market_code).toBe('CM');
+    });
+
+    test('marché introuvable → market_not_found sans mutation', async () => {
+      client.query.mockResolvedValueOnce({ rows: [] });
+      await expect(svc.revokeOperatorScope(client, { userId: 'u1', marketCode: 'ZZ' }))
+        .resolves.toEqual({ status: 'market_not_found', revoked: null });
+      expect(delegation.revokeMembership).not.toHaveBeenCalled();
+    });
+
+    test('erreur inattendue de résolution pendant révocation : propagée', async () => {
+      client.query.mockResolvedValueOnce({ rows: [{ id: 'm1', code: 'CM' }] });
+      delegation.resolveActiveAssignmentByMarketCode.mockRejectedValueOnce(new Error('boom-revoke'));
+      await expect(svc.revokeOperatorScope(client, { userId: 'u1', marketCode: 'CM' }))
+        .rejects.toThrow('boom-revoke');
+    });
+
+    test('sans assignment ou membership active → not_active', async () => {
+      client.query.mockResolvedValueOnce({ rows: [{ id: 'm1', code: 'CM' }] });
+      delegation.resolveActiveAssignmentByMarketCode.mockRejectedValueOnce(
+        Object.assign(new Error('x'), { code: 'MARKET_ASSIGNMENT_NOT_ACTIVE' })
+      );
+      await expect(svc.revokeOperatorScope(client, { userId: 'u1', marketCode: 'CM' }))
+        .resolves.toEqual({ status: 'not_active', revoked: null });
+
+      client.query.mockResolvedValueOnce({ rows: [{ id: 'm1', code: 'CM' }] });
+      delegation.resolveActiveAssignmentByMarketCode.mockResolvedValueOnce({ assignment_id: 'a1' });
+      delegation.activeMembershipForUser.mockResolvedValueOnce(null);
+      await expect(svc.revokeOperatorScope(client, { userId: 'u1', marketCode: 'CM' }))
+        .resolves.toEqual({ status: 'not_active', revoked: null });
+    });
+
+    test('projection absente : retourne une preuve de révocation issue de la membership', async () => {
+      client.query.mockResolvedValueOnce({ rows: [{ id: 'm1', code: 'CM' }] });
+      delegation.resolveActiveAssignmentByMarketCode.mockResolvedValueOnce({ assignment_id: 'a1' });
+      delegation.activeMembershipForUser.mockResolvedValueOnce({ id: 'mem1' });
+      adminService.listActiveScopesForUsers.mockResolvedValueOnce([]);
+      delegation.revokeMembership.mockResolvedValueOnce({ id: 'mem1', revoked_at: 't2' });
+
+      const out = await svc.revokeOperatorScope(client, { userId: 'u1', marketCode: 'CM' });
+      expect(out).toEqual({
+        status: 'revoked',
+        revoked: {
+          membership_id: 'mem1',
+          market_id: 'm1',
+          market_code: 'CM',
+          revoked_at: 't2',
+          revoked_by: null,
+        },
+      });
+    });
+
+    test('aucune membership active → révocation globale vide', async () => {
+      client.query.mockResolvedValueOnce({ rows: [] });
+      await expect(svc.revokeAllOperatorScopes(client, { userId: 'u1' })).resolves.toEqual([]);
+      expect(delegation.revokeMembership).not.toHaveBeenCalled();
+      expect(projector.projectAssignment).not.toHaveBeenCalled();
+    });
+
+    test('révoque toutes les memberships actives puis reprojette chaque assignment', async () => {
+      client.query.mockResolvedValueOnce({ rows: [
+        { membership_id: 'mem1', assignment_id: 'a1' },
+        { membership_id: 'mem2', assignment_id: 'a2' },
+      ] });
+      delegation.revokeMembership
+        .mockResolvedValueOnce({ id: 'mem1' })
+        .mockResolvedValueOnce({ id: 'mem2' });
+
+      const out = await svc.revokeAllOperatorScopes(client, { userId: 'u1', revokedBy: 'admin1' });
+      expect(out).toHaveLength(2);
+      expect(delegation.revokeMembership).toHaveBeenCalledTimes(2);
+      expect(projector.projectAssignment.mock.calls).toEqual([[client, 'a1'], [client, 'a2']]);
+      expect(client.query.mock.calls[0][0]).toMatch(/FROM assignment_memberships/);
+    });
   });
 
   describe('grantOperatorScope (contrat de la route admin)', () => {

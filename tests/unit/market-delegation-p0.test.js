@@ -69,6 +69,14 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     expect(migration).toMatch(/market-operator-default/);
   });
 
+  test('migration 271 interdit tout nouveau scope actif sans membership, sans invalider le legacy révoqué', () => {
+    const migration = read('migrations/271_operator_market_scopes_projection_required.sql');
+    expect(migration).toMatch(/ADD CONSTRAINT operator_market_scopes_projection_or_revoked_chk/);
+    expect(migration).toMatch(/CHECK \(projected_from_membership_id IS NOT NULL OR revoked_at IS NOT NULL\)/);
+    expect(migration).toMatch(/NOT VALID/);
+    expect(migration).not.toMatch(/VALIDATE CONSTRAINT/);
+  });
+
   test('new assignments never seed CENTRAL_ONLY capabilities from stale templates', () => {
     const service = read('services/market-delegation-service.js');
     const migration = read('migrations/268_market_delegation_template_central_only_cleanup.sql');

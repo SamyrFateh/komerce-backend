@@ -121,6 +121,7 @@ module.exports = {
       'migrations/207_market_delegation_catalog_expose_live.sql',
       'migrations/209_market_delegation_settlement_live.sql',
       'migrations/270_capability_registry_effect_amount_bearing.sql',
+      'migrations/271_operator_market_scopes_projection_required.sql',
       'migrations/210_market_delegation_structure_event_record_live.sql',
       'migrations/212_market_delegation_execution_ceiling.sql',
     ],
@@ -320,7 +321,7 @@ module.exports = {
   authority: 'backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées, ni la vérité monétaire du settlement.',
 
   invariants: [
-    { statement: 'un scope marché d’opérateur n’est attribué que par une membership de délégation (ensureOperatorMembership) ; aucun chemin applicatif d’attribution n’écrit operator_market_scopes directement, la route admin et le script CLI partagent la même logique', test: 'tests/unit/market-operator-provisioning.test.js' },
+    { statement: 'un scope marché d’opérateur n’est attribué ou révoqué que par une membership de délégation ; aucun chemin applicatif admin n’écrit operator_market_scopes directement, attribution et révocation reprojettent depuis la membership', test: 'tests/unit/market-operator-provisioning.test.js' },
     { statement: 'un Market ID possède au plus un Market Operating Assignment ACTIVE', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'aucune capability GROUP ou CENTRAL_ONLY ne peut entrer dans un ceiling marché', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'les capabilities d’un membre sont toujours un sous-ensemble du ceiling actif de son assignment', test: 'tests/unit/market-delegation-p0.test.js' },
