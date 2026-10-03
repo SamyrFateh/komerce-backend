@@ -376,8 +376,13 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
+      # Toujours exécuté : le bootstrap ci-dessous tourne sans condition et
+      # `scripts/ci-migrate.js` résout son baseline via `git log -- <dump>`. Sur un
+      # checkout à profondeur 1 il prendrait HEAD pour baseline, considérerait toutes
+      # les migrations comme déjà présentes dans le dump et n'en appliquerait presque
+      # aucune. Ce job peut tourner pour un simple risque d'intégration (SQL ajouté
+      # dans un service) sans `db_rebuild_required`.
       - name: Fetch full history for migration baseline resolution
-        if: needs.changes.outputs.db_rebuild_required == 'true'
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
