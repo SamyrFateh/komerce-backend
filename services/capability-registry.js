@@ -43,6 +43,8 @@ function validateRegistry(rows = CAPABILITIES) {
     if (row.class === 'BOUNDARY' && row.authority_scope !== 'GROUP') {
       errors.push(`boundary_must_be_group:${row.capability}`);
     }
+    if (row.effect !== 'READ' && row.effect !== 'ACT') errors.push(`effect_missing:${row.capability}`);
+    if (typeof row.amount_bearing !== 'boolean') errors.push(`amount_bearing_missing:${row.capability}`);
   }
   const stats = autonomyStats(rows);
   return { ok: errors.length === 0, errors, stats };
@@ -57,7 +59,8 @@ async function listCapabilities(executor, { className = null } = {}) {
     where = ' WHERE class = $1';
   }
   const { rows } = await db.query(
-    `SELECT capability, class, domain, authority_scope, delegation_mode, requires_audit, status
+    `SELECT capability, class, domain, authority_scope, delegation_mode, requires_audit, status,
+            effect, amount_bearing
        FROM capability_registry${where}
       ORDER BY class, domain, capability`, params
   );

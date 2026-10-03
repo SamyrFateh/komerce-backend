@@ -80,8 +80,8 @@ async function seedCapabilities(client) {
   for (const row of CAPABILITIES) {
     await client.query(
       `INSERT INTO capability_registry
-         (capability, class, domain, authority_scope, delegation_mode, requires_audit, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
+         (capability, class, domain, authority_scope, delegation_mode, requires_audit, status, effect, amount_bearing)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
        ON CONFLICT (capability) DO UPDATE SET
          class = EXCLUDED.class,
          domain = EXCLUDED.domain,
@@ -89,6 +89,8 @@ async function seedCapabilities(client) {
          delegation_mode = EXCLUDED.delegation_mode,
          requires_audit = EXCLUDED.requires_audit,
          status = EXCLUDED.status,
+         effect = EXCLUDED.effect,
+         amount_bearing = EXCLUDED.amount_bearing,
          updated_at = NOW()`,
       [
         row.capability,
@@ -98,6 +100,8 @@ async function seedCapabilities(client) {
         row.delegation_mode,
         row.requires_audit,
         row.status,
+        row.effect,
+        row.amount_bearing,
       ]
     );
   }

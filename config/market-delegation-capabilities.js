@@ -1,5 +1,71 @@
 'use strict';
 
+// Effet de chaque capability, DÉCLARÉ une par une : READ ne modifie rien, ACT
+// agit. L'effet n'est jamais déduit du nom (un test l'impose) : il décide de ce
+// qu'un marché SUSPENDED laisse faire (READ oui, ACT non). Toute nouvelle
+// capability doit être ajoutée ici, sinon le chargement échoue.
+// À trancher en revue : pricing.simulate et hub.supervise sont déclarées ACT
+// (refus par défaut en SUSPENDED) ; passer l'une en READ est un choix humain.
+const EFFECTS = Object.freeze({
+  'pricing.read': 'READ',
+  'pricing.simulate': 'ACT',
+  'pricing.cost_component.update': 'ACT',
+  'pricing.cost_component.reset': 'ACT',
+  'pricing.decide': 'ACT',
+  'pricing.activate': 'ACT',
+  'pricing.policy.set': 'ACT',
+  'market.observation.record': 'ACT',
+  'structure.event.record': 'ACT',
+  'dashboard.market.read': 'READ',
+  'decision_signal.manage': 'ACT',
+  'operations.read': 'READ',
+  'hub.supervise': 'ACT',
+  'logistics.read': 'READ',
+  'client.read': 'READ',
+  'client.case.handle': 'ACT',
+  'team.read': 'READ',
+  'team.grant': 'ACT',
+  'team.revoke': 'ACT',
+  'team.invite': 'ACT',
+  'network.read': 'READ',
+  'network.create': 'ACT',
+  'network.update': 'ACT',
+  'network.suspend': 'ACT',
+  'provider.manage': 'ACT',
+  'market_config.read': 'READ',
+  'market_config.update': 'ACT',
+  'finance.read': 'READ',
+  'finance.act': 'ACT',
+  'settlement.receive': 'ACT',
+  'catalog.expose': 'ACT',
+  'catalog.read': 'READ',
+  'local_offer.manage': 'ACT',
+  'cash_control.policy.manage': 'ACT',
+  'execution.order.mark_ordered': 'ACT',
+  'execution.distribution.run': 'ACT',
+  'execution.parcel.ship': 'ACT',
+  'execution.inventory.assign': 'ACT',
+  'execution.parcel.receive': 'ACT',
+  'execution.parcel.collect': 'ACT',
+  'execution.cash.confirm': 'ACT',
+  'group_cost.allocate': 'ACT',
+  'dashboard.global.read': 'READ',
+  'user.role.set': 'ACT',
+  'market.create': 'ACT',
+});
+
+// Capabilities dont l'exécution porte un montant (F3 du plan Control Plane).
+// Les limites financières ne s'appliqueront qu'à elles (PR E).
+const AMOUNT_BEARING = Object.freeze(['execution.cash.confirm', 'settlement.receive', 'finance.act']);
+
+function declaredEffect(capability) {
+  const effect = EFFECTS[capability];
+  if (effect !== 'READ' && effect !== 'ACT') {
+    throw new Error(`capability sans effet déclaré (READ|ACT) : ${capability}`);
+  }
+  return effect;
+}
+
 const CAPABILITIES = Object.freeze([
   ['pricing.read','DELEGATION','pricing','MARKET','DELEGABLE',false,'LIVE'],
   ['pricing.simulate','DELEGATION','pricing','MARKET','DELEGABLE',false,'LIVE'],
@@ -61,6 +127,8 @@ const CAPABILITIES = Object.freeze([
 ].map(([capability, className, domain, authorityScope, delegationMode, requiresAudit, status]) => Object.freeze({
   capability, class: className, domain, authority_scope: authorityScope,
   delegation_mode: delegationMode, requires_audit: requiresAudit, status,
+  effect: declaredEffect(capability),
+  amount_bearing: AMOUNT_BEARING.includes(capability),
 })));
 
 // Le KPI d'autonomie ne mesure que les capabilities MARKET réellement
@@ -82,4 +150,4 @@ function autonomyStats(rows = CAPABILITIES) {
   return { live: live.length, total: delegable.length, rate: delegable.length ? live.length / delegable.length : 0 };
 }
 
-module.exports = { CAPABILITIES, autonomyStats, autonomyDenominator };
+module.exports = { CAPABILITIES, EFFECTS, AMOUNT_BEARING, autonomyStats, autonomyDenominator };
