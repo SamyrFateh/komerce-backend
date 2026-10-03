@@ -1675,6 +1675,13 @@
       {
         "feature": "catalog",
         "category": "scripts",
+        "declared": "scripts/catalog-taxonomy-provenance-backfill.js",
+        "resolvedPath": "scripts/catalog-taxonomy-provenance-backfill.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "scripts",
         "declared": "scripts/catalog-cj-certified-500-watch-audit.js",
         "resolvedPath": "scripts/catalog-cj-certified-500-watch-audit.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -3532,6 +3539,13 @@
         "category": "tests",
         "declared": "tests/unit/catalog-product-mutation-service.test.js",
         "resolvedPath": "tests/unit/catalog-product-mutation-service.test.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "catalog",
+        "category": "tests",
+        "declared": "tests/unit/catalog-taxonomy-provenance-backfill.test.js",
+        "resolvedPath": "tests/unit/catalog-taxonomy-provenance-backfill.test.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -29169,6 +29183,10 @@
                 "targetFile": "db.js"
               },
               {
+                "sourceFileId": "scripts/catalog-taxonomy-provenance-backfill.js",
+                "targetFile": "db.js"
+              },
+              {
                 "sourceFileId": "scripts/catalog-cj-certified-500-watch-audit.js",
                 "targetFile": "db.js"
               },
@@ -41676,7 +41694,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 1776
+        "filesObserved": 1778
       },
       "boutique": {
         "filesObserved": 214,

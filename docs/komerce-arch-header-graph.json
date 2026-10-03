@@ -21,11 +21,11 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1570,
-    "edges": 7819,
+    "edges": 7822,
     "dbTables": 182,
     "doctrines": 545,
     "impactAreas": 192,
-    "unresolvedCodeEdges": 774,
+    "unresolvedCodeEdges": 775,
     "dbWriteViaOverlapWarnings": 8,
     "multiWriterTables": 78
   },
@@ -13783,9 +13783,12 @@
         "services/pricing-apply.js",
         "services/apply-pricing-updates.js",
         "services/pricing-strategy-service.js",
-        "services/sourcing-mutations.js"
+        "services/sourcing-mutations.js",
+        "scripts/catalog-taxonomy-provenance-backfill.js"
       ],
       "dbRead": [
+        "boutique_categories",
+        "boutique_subcategories",
         "order_items",
         "orders",
         "product_variants",
@@ -55692,6 +55695,24 @@
       "label": "services/sourcing-mutations.js"
     },
     {
+      "from": "scripts/catalog-taxonomy-provenance-backfill.js",
+      "to": "services/catalog-product-mutation-service.js",
+      "type": "uses",
+      "label": "scripts/catalog-taxonomy-provenance-backfill.js"
+    },
+    {
+      "from": "services/catalog-product-mutation-service.js",
+      "to": "db:boutique_categories",
+      "type": "db-read",
+      "label": "boutique_categories"
+    },
+    {
+      "from": "services/catalog-product-mutation-service.js",
+      "to": "db:boutique_subcategories",
+      "type": "db-read",
+      "label": "boutique_subcategories"
+    },
+    {
       "from": "services/catalog-product-mutation-service.js",
       "to": "db:order_items",
       "type": "db-read",
@@ -96655,10 +96676,13 @@
         "services/pricing-apply.js",
         "services/apply-pricing-updates.js",
         "services/pricing-strategy-service.js",
-        "services/sourcing-mutations.js"
+        "services/sourcing-mutations.js",
+        "scripts/catalog-taxonomy-provenance-backfill.js"
       ],
       "ownedFiles": [],
       "dbRead": [
+        "boutique_categories",
+        "boutique_subcategories",
         "order_items",
         "orders",
         "product_variants",
@@ -96677,6 +96701,8 @@
         "economic-engine"
       ],
       "mustCheck": [
+        "db:boutique_categories",
+        "db:boutique_subcategories",
         "db:order_items",
         "db:orders",
         "db:product_variants",
@@ -116750,6 +116776,12 @@
       "to": "db contract supplied by caller",
       "type": "depends",
       "label": "db contract supplied by caller"
+    },
+    {
+      "from": "scripts/catalog-taxonomy-provenance-backfill.js",
+      "to": "services/catalog-product-mutation-service.js",
+      "type": "uses",
+      "label": "scripts/catalog-taxonomy-provenance-backfill.js"
     },
     {
       "from": "services/catalog-product-read-cutover-trial.js",

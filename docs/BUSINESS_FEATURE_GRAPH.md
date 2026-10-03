@@ -180,7 +180,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - middleware: 1
 - ci: 24
 - utils: 1
-- scripts: 31
+- scripts: 32
 - services: 69
 - schemas: 4
 - migrations: 22
@@ -189,7 +189,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - routes: 7
 - boutique: 39
 - dash: 1
-- tests: 192
+- tests: 193
 - tables owned (lifecycle): 17 — `products`, `boutique_categories`, `boutique_subcategories`, `catalog_field_overrides`, `catalog_terminology_reference`, `catalog_enrichment_runs`, `catalog_media`, `product_skus`, `product_sku_media`, `product_variants`, `product_content_profile`, `product_content_sections`, `product_market_exposure`, `product_attributes`, `supplier_catalog_imports`, `supplier_catalog_sync_checkpoints`, `supplier_oauth_connections`
 - tables written: 17
 - interfaces exposed: 47
@@ -2150,7 +2150,7 @@ Meta Graph monté : oui.
 
 ### Coverage par scope
 
-- backend : 1776 fichier(s) `.js`/`.mjs` observés (canal A)
+- backend : 1778 fichier(s) `.js`/`.mjs` observés (canal A)
 - boutique : 214 fichier(s) observés, dont 15 sous manifest non-canonique (canonicalFeature=null)
 - dash : 78 fichier(s) observés
   - _dash static-string local dependency file coverage: COMPLETE (fichiers .js déclarés, résolus)_
@@ -2198,7 +2198,7 @@ Meta Graph monté : oui.
 | catalog | customs | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | catalog | economic-engine | static-code | 12 | **DECLARED_AND_OBSERVED** |
 | catalog | external-provider-contracts | static-code | 5 | **DECLARED_AND_OBSERVED** |
-| catalog | infrastructure | static-code | 99 | **DECLARED_AND_OBSERVED** |
+| catalog | infrastructure | static-code | 100 | **DECLARED_AND_OBSERVED** |
 | catalog | logistics | static-code | 8 | **DECLARED_AND_OBSERVED** |
 | catalog | market | data-read | 1 | **DECLARED_AND_OBSERVED** |
 | catalog | market-autonomy | static-code, data-read | 4 | **DECLARED_AND_OBSERVED** |
