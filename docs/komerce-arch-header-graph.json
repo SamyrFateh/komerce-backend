@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1570,
-    "edges": 7824,
+    "edges": 7825,
     "dbTables": 182,
     "doctrines": 545,
     "impactAreas": 192,
@@ -22750,12 +22750,14 @@
         "structure_cost_event",
         "canonical_period_bounds",
         "optional_market_id",
-        "optional_allocation_policies"
+        "optional_allocation_policies",
+        "active_market_cost_attributions"
       ],
       "outputs": [
         "append_only_structure_fact",
         "period_structure_truth",
         "governed_group_allocation",
+        "attributed_group_structure_share",
         "structure_cost_event_history"
       ],
       "depends": [
@@ -22767,6 +22769,7 @@
       "dbRead": [
         "charges",
         "economic_structure_cost_events",
+        "market_cost_attributions",
         "markets",
         "orders",
         "users"
@@ -70160,6 +70163,12 @@
     },
     {
       "from": "services/pricing-period-structure.js",
+      "to": "db:market_cost_attributions",
+      "type": "db-read",
+      "label": "market_cost_attributions"
+    },
+    {
+      "from": "services/pricing-period-structure.js",
       "to": "db:markets",
       "type": "db-read",
       "label": "markets"
@@ -105648,6 +105657,7 @@
       "dbRead": [
         "charges",
         "economic_structure_cost_events",
+        "market_cost_attributions",
         "markets",
         "orders",
         "users"
@@ -105667,6 +105677,7 @@
       "mustCheck": [
         "db:charges",
         "db:economic_structure_cost_events",
+        "db:market_cost_attributions",
         "db:markets",
         "db:orders",
         "db:users",

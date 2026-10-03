@@ -4,11 +4,11 @@
  * @domain        economic-engine
  * @layer         service
  * @criticality   high
- * @inputs        structure_cost_event, canonical_period_bounds, optional_market_id, optional_allocation_policies
- * @outputs       append_only_structure_fact, period_structure_truth, governed_group_allocation, structure_cost_event_history
+ * @inputs        structure_cost_event, canonical_period_bounds, optional_market_id, optional_allocation_policies, active_market_cost_attributions
+ * @outputs       append_only_structure_fact, period_structure_truth, governed_group_allocation, attributed_group_structure_share, structure_cost_event_history
  * @depends       db
  * @used-by       routes/admin-pricing-workspace.js
- * @db-read       charges, economic_structure_cost_events, markets, orders, users
+ * @db-read       charges, economic_structure_cost_events, market_cost_attributions, markets, orders, users
  * @db-write      economic_structure_cost_events
  * @db-txn        append_only_fact_recording
  * @doctrine      pricing_market_viability_period_structure_truth
@@ -37,6 +37,12 @@
  * `PAID_ORDER_COUNT` vient des commandes payées non annulées/non remboursées ;
  * le fallback égalitaire exige une liste de marchés explicite et reste LOW.
  * Si une politique ou une assiette manque, le marché reste NOT_DECISIONAL.
+ *
+ * Charges de structure mutualisées attribuées : quand un événement GROUP a des
+ * attributions actives dans `market_cost_attributions`, la table fait foi pour
+ * CET événement (lecture au prorata du recouvrement de période) et il est
+ * exclu de la ventilation à la volée — jamais lu des deux côtés. Des
+ * attributions actives non conservées rendent la lecture NOT_DECISIONAL.
  */
 
 'use strict';
@@ -814,6 +820,95 @@ async function allocateGroupPools(truth, period, marketId, rawPolicies) {
   };
 }
 
+function amountToCents(value) {
+  return Math.round(Number(value) * 100);
+}
+
+// Attributions ACTIVES d'un lot d'événements GROUP : ATTRIBUTION qu'aucun
+// REVERSAL ne cible (même définition que market-cost-attribution-service).
+// Lecture seule ; la table reste écrite par ce seul service.
+async function loadActiveAttributions(eventIds) {
+  const byEvent = new Map();
+  const { rows } = await db.query(
+    `SELECT a.source_event_id, a.market_id, a.amount_kmf
+       FROM market_cost_attributions a
+      WHERE a.source_event_id = ANY($1::uuid[])
+        AND a.event_kind = 'ATTRIBUTION'
+        AND NOT EXISTS (
+          SELECT 1 FROM market_cost_attributions r WHERE r.reverses_id = a.id
+        )`,
+    [eventIds]
+  );
+  for (const row of rows) {
+    const key = String(row.source_event_id);
+    const entry = byEvent.get(key) || { total_cents: 0, by_market: new Map() };
+    const cents = amountToCents(row.amount_kmf);
+    entry.total_cents += cents;
+    const marketKey = String(row.market_id);
+    entry.by_market.set(marketKey, (entry.by_market.get(marketKey) || 0) + cents);
+    byEvent.set(key, entry);
+  }
+  return byEvent;
+}
+
+// Sépare, événement par événement, les charges de structure mutualisées déjà
+// attribuées (lues dans market_cost_attributions) de celles qui restent à
+// ventiler à la volée. Un même événement n'est JAMAIS lu des deux côtés : dès
+// qu'une attribution active existe, la table fait foi pour cet événement.
+// Une attribution active non conservée (somme ≠ montant de l'événement) rend
+// la lecture non décisionnelle, sans repli à la volée.
+async function resolveAttributedGroupShare(evidence, period, marketId) {
+  const groupRows = evidence.filter((row) => row.scope_kind === SCOPE_KINDS.GROUP);
+  const active = await loadActiveAttributions(groupRows.map((row) => row.event_id));
+
+  const attributedEvents = [];
+  const nonConserved = [];
+  const remainingEvidence = [];
+  let marketAttributedKmf = 0;
+  let attributedPoolKmf = 0;
+
+  for (const row of evidence) {
+    const entry = row.scope_kind === SCOPE_KINDS.GROUP ? active.get(String(row.event_id)) : null;
+    if (!entry) {
+      remainingEvidence.push(row);
+      continue;
+    }
+    if (entry.total_cents !== amountToCents(row.full_event_amount_kmf)) {
+      nonConserved.push({
+        event_id: row.event_id,
+        event_amount_kmf: row.full_event_amount_kmf,
+        active_total_kmf: entry.total_cents / 100,
+      });
+      continue;
+    }
+    const ratio = overlapRatio(row, period.from, period.to);
+    const marketAmount = (entry.by_market.get(String(marketId)) || 0) / 100;
+    const marketRecognized = roundKmf(marketAmount * ratio);
+    marketAttributedKmf += marketRecognized;
+    attributedPoolKmf += Number(row.recognized_amount_kmf || 0);
+    attributedEvents.push({
+      event_id: row.event_id,
+      charge_id: row.charge_id,
+      recognized_amount_kmf: row.recognized_amount_kmf,
+      market_attributed_kmf: marketRecognized,
+    });
+  }
+
+  return {
+    attributed_events: attributedEvents,
+    non_conserved: nonConserved,
+    remaining_evidence: remainingEvidence,
+    summary: {
+      source: 'market_cost_attributions',
+      attributed_event_count: attributedEvents.length,
+      attributed_group_pool_kmf: roundKmf(attributedPoolKmf),
+      market_attributed_kmf: roundKmf(marketAttributedKmf),
+      events: attributedEvents,
+      non_conserved_events: nonConserved,
+    },
+  };
+}
+
 async function computePeriodStructureTruth(options = {}) {
   const period = parsePeriod(options.from, options.to);
   const marketId = options.marketId || null;
@@ -835,12 +930,37 @@ async function computePeriodStructureTruth(options = {}) {
   );
 
   const truth = aggregateRows(rows, period, marketId);
-  if (!marketId || Math.abs(truth.group_pool_kmf) === 0 || options.allocationPolicies == null) {
+  if (!marketId || Math.abs(truth.group_pool_kmf) === 0) {
     return truth;
   }
 
+  const attribution = await resolveAttributedGroupShare(truth.evidence, period, marketId);
+  const hasAttributed = attribution.attributed_events.length > 0;
+  const withAttribution = hasAttributed || attribution.non_conserved.length > 0
+    ? { attribution: attribution.summary }
+    : {};
+
+  if (attribution.non_conserved.length > 0) {
+    return {
+      ...truth,
+      ...withAttribution,
+      status: 'NOT_DECISIONAL_ATTRIBUTION_NOT_CONSERVED',
+      shared_allocation_applied: false,
+      market_shared_n3_kmf: null,
+      market_n3_total_kmf: null,
+      market_n3_decisional: false,
+    };
+  }
+
+  const remainingTruth = hasAttributed ? { evidence: attribution.remaining_evidence } : truth;
+  const hasRemainingPool = groupPoolsByCharge(remainingTruth.evidence).length > 0;
+
+  if (hasRemainingPool && options.allocationPolicies == null) {
+    return { ...truth, ...withAttribution };
+  }
+
   const allocation = await allocateGroupPools(
-    truth,
+    remainingTruth,
     period,
     marketId,
     options.allocationPolicies
@@ -849,6 +969,7 @@ async function computePeriodStructureTruth(options = {}) {
   if (!allocation.decisional) {
     return {
       ...truth,
+      ...withAttribution,
       status: 'NOT_DECISIONAL_SHARED_ALLOCATION_POLICY',
       allocation,
       shared_allocation_applied: false,
@@ -858,9 +979,12 @@ async function computePeriodStructureTruth(options = {}) {
     };
   }
 
-  const marketShared = allocation.market_shared_n3_kmf;
+  const marketShared = roundKmf(
+    allocation.market_shared_n3_kmf + attribution.summary.market_attributed_kmf
+  );
   return {
     ...truth,
+    ...withAttribution,
     status: 'MARKET_PERIOD_TRUTH_ALLOCATED',
     allocation,
     shared_allocation_applied: true,
