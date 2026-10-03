@@ -215,18 +215,31 @@
     ];
   }
 
+  function setInlineActionFeedback(target, message, tone = 'neutral') {
+    if (!target) return;
+    target.className = `kmc-catalog-action-feedback is-${tone}`;
+    target.textContent = message || '';
+  }
+
   async function runAction(context, button, options) {
     const previous = button.textContent;
+    const inlineFeedback = options.feedbackTarget || null;
+    const runningMessage = options.runningMessage || 'Action en cours…';
     button.disabled = true;
     button.textContent = 'En cours…';
-    setFeedback(context.root, options.runningMessage || 'Action en cours…');
+    setFeedback(context.root, runningMessage);
+    setInlineActionFeedback(inlineFeedback, runningMessage);
     try {
       const result = await jsonRequest(context.fetch, options.url, { method: 'POST', body: options.body || {} });
-      setFeedback(context.root, options.successMessage || 'Action appliquée.', 'positive');
+      const successMessage = options.successMessage || 'Action appliquée.';
+      setFeedback(context.root, successMessage, 'positive');
+      setInlineActionFeedback(inlineFeedback, successMessage, 'positive');
       await context.reload();
       return result;
     } catch (error) {
-      setFeedback(context.root, actionErrorMessage(error), 'critical');
+      const message = actionErrorMessage(error);
+      setFeedback(context.root, message, 'critical');
+      setInlineActionFeedback(inlineFeedback, message, 'critical');
       button.disabled = false;
       button.textContent = previous;
       return null;
@@ -880,6 +893,9 @@
       actions.className = 'kmc-catalog-actions-cell';
       const actionContent = doc.createElement('div');
       actionContent.className = 'kmc-catalog-actions-inner';
+      const actionFeedback = text(doc, 'div', 'kmc-catalog-action-feedback', '');
+      actionFeedback.setAttribute('data-catalog-action-feedback', '');
+      actionFeedback.setAttribute('role', 'status');
 
       const mustPrepareFrench = needsFrenchPreparation(row);
       const priceReady = hasPublishablePrice(row);
@@ -916,11 +932,12 @@
           ? 'Valider après relecture'
           : 'Ajouter à la sélection';
         const approve = makeButton(doc, approveLabel, 'approve');
-        approve.addEventListener('click', () => {
+        approve.addEventListener('click', async () => {
           if (!context.confirm(`Ajouter ${row.product_ref} · ${row.name} à la sélection publiée ?`)) return;
-          runAction(context, approve, {
+          await runAction(context, approve, {
             url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/approve`,
             successMessage: `${row.product_ref} ajouté à la sélection publiée.`,
+            feedbackTarget: actionFeedback,
           });
         });
         actionContent.appendChild(approve);
@@ -947,6 +964,7 @@
           url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/override`,
           body: { fields, reason },
           successMessage: `${row.product_ref} corrigé puis ajouté à la sélection.`,
+          feedbackTarget: actionFeedback,
         });
       });
       if (!mustPrepareFrench && priceReady) actionContent.appendChild(correct);
@@ -959,10 +977,12 @@
           url: `${ENDPOINT}/approval/${encodeURIComponent(row.product_ref)}/reject`,
           body: { reason: reason.trim() },
           successMessage: `${row.product_ref} écarté de la sélection.`,
+          feedbackTarget: actionFeedback,
         });
       });
       actionContent.appendChild(reject);
       actions.appendChild(actionContent);
+      actions.appendChild(actionFeedback);
       tr.appendChild(actions);
       tbody.appendChild(tr);
     });
