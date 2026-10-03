@@ -7,7 +7,7 @@
  * @inputs        authenticated user, canonical marketCode, exact DELEGATION capability
  * @outputs       403 on missing/outside-ceiling capability, request-local authz proof otherwise
  * @depends       db.js, services/market-delegation-service.js
- * @used-by       routes/admin-pricing-workspace.js
+ * @used-by       routes/admin-pricing-workspace.js, routes/transitaire-api.js
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling
  * @db-write      market_delegation_audit
  * @db-txn        none
@@ -18,7 +18,7 @@
 'use strict';
 
 const db = require('../db');
-const { resolveAuthorization, audit } = require('../services/market-delegation-service');
+const { resolveAuthorization, resolveSingleMarketAuthorization, audit } = require('../services/market-delegation-service');
 
 function sendDelegationError(res, error) {
   if (!error || !error.code || !error.status) return false;
@@ -41,6 +41,53 @@ function correlationId(req) {
  * still need a central/global bypass (e.g. pricing global authority) must
  * check that before this middleware runs — it does not know about roles.
  */
+function requireSingleMarketDelegatedCapability(capability, options = {}) {
+  if (!capability || typeof capability !== 'string') {
+    throw new TypeError('capability requise');
+  }
+  const shouldAudit = options.audit !== false;
+
+  return async (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: 'Authentification requise.', code: 'AUTH_REQUIRED' });
+
+    try {
+      const authz = await resolveSingleMarketAuthorization(db, {
+        userId: req.user.id,
+        requiredCapability: capability,
+      });
+
+      if (shouldAudit) {
+        await audit(db, {
+          actorUserId: req.user.id,
+          assignmentId: authz.assignment_id,
+          membershipId: authz.membership_id,
+          capability,
+          action: 'DELEGATION_CAPABILITY_AUTHORIZED',
+          after: {
+            source: req.baseUrl || 'single_market_delegated_capability',
+            market_code: authz.market_code,
+            method: req.method,
+            path: req.path,
+          },
+          correlationId: correlationId(req),
+        });
+      }
+
+      req.marketDelegatedCapability = {
+        capability,
+        assignment_id: authz.assignment_id,
+        membership_id: authz.membership_id,
+        market_id: authz.market_id,
+        market_code: authz.market_code,
+      };
+      return next();
+    } catch (error) {
+      if (sendDelegationError(res, error)) return undefined;
+      return next(error);
+    }
+  };
+}
+
 function requireMarketDelegatedCapability(capability, options = {}) {
   if (!capability || typeof capability !== 'string') {
     throw new TypeError('capability requise');
@@ -100,4 +147,5 @@ function requireMarketDelegatedCapability(capability, options = {}) {
 
 module.exports = {
   requireMarketDelegatedCapability,
+  requireSingleMarketDelegatedCapability,
 };

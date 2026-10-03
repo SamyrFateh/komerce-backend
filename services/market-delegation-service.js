@@ -244,6 +244,68 @@ async function grantableCapabilitiesForActor(executor, { assignmentId, actorUser
 // capability requise est à la fois détenue par le membre et toujours dans le
 // ceiling actif de l'assignment. Utilisée par team/network/provider — un seul
 // point de vérité pour "qui peut faire quoi sur quel marché".
+async function resolveSingleMarketAuthorization(executor, { userId, requiredCapability }) {
+  const db = requireExecutor(executor);
+  if (!userId) throw delegationError('AUTH_REQUIRED', 'Authentification requise.', 401);
+  if (!requiredCapability) throw new TypeError('requiredCapability requis');
+
+  const { rows } = await db.query(
+    `SELECT m.id AS market_id,
+            m.code AS market_code,
+            m.name AS market_name,
+            m.currency,
+            a.id AS assignment_id,
+            am.id AS membership_id,
+            am.user_id AS membership_user_id,
+            EXISTS (
+              SELECT 1
+                FROM membership_capabilities mc
+                JOIN assignment_capability_ceiling acc
+                  ON acc.assignment_id = a.id
+                 AND acc.capability = mc.capability
+                 AND acc.revoked_at IS NULL
+               WHERE mc.membership_id = am.id
+                 AND mc.capability = $2
+                 AND mc.revoked_at IS NULL
+            ) AS has_capability
+       FROM assignment_memberships am
+       JOIN market_operating_assignments a
+         ON a.id = am.assignment_id
+        AND a.status = 'ACTIVE'
+       JOIN markets m
+         ON m.id = a.market_id
+        AND m.is_active = TRUE
+      WHERE am.user_id = $1::uuid
+        AND am.status = 'ACTIVE'
+      ORDER BY m.code`,
+    [userId, requiredCapability]
+  );
+
+  if (!rows.length) {
+    throw delegationError(
+      'MARKET_CAPABILITY_REQUIRED',
+      `Capability ${requiredCapability} requise sur une membership marché active.`,
+      403
+    );
+  }
+  if (rows.length !== 1) {
+    throw delegationError(
+      'MARKET_SINGLE_ASSIGNMENT_REQUIRED',
+      'Cette fonction opérationnelle exige exactement un marché actif.',
+      409
+    );
+  }
+  if (!rows[0].has_capability) {
+    throw delegationError(
+      'MARKET_CAPABILITY_REQUIRED',
+      `Capability ${requiredCapability} requise sur une membership marché active.`,
+      403
+    );
+  }
+  const { has_capability: _proof, ...authorization } = rows[0];
+  return authorization;
+}
+
 async function resolveAuthorization(executor, { userId, marketCode, requiredCapability }) {
   const db = requireExecutor(executor);
   if (!userId) throw delegationError('AUTH_REQUIRED', 'Authentification requise.', 401);
@@ -335,6 +397,28 @@ async function addMembership(executor, { assignmentId, userId, actorUserId = nul
   if (existing) {
     await grantMembershipCapabilities(db, { membershipId: existing.id, capabilities, actorUserId, actorIsCentral, correlationId });
     return existing;
+  }
+
+  const { rows: [targetUser] } = await db.query(
+    `SELECT role,
+            EXISTS (
+              SELECT 1
+                FROM assignment_memberships other
+               WHERE other.user_id = $1::uuid
+                 AND other.status = 'ACTIVE'
+                 AND other.assignment_id <> $2::uuid
+            ) AS has_other_active_market
+       FROM users
+      WHERE id = $1::uuid
+      LIMIT 1`,
+    [userId, assignmentId]
+  );
+  if (targetUser && targetUser.role === 'agent_transitaire' && targetUser.has_other_active_market) {
+    throw delegationError(
+      'TRANSITAIRE_MARKET_MEMBERSHIP_CONFLICT',
+      'Un transitaire ne peut être affecté qu’à un seul marché actif.',
+      409
+    );
   }
 
   await assertGrantAllowed(db, { assignmentId, capabilities, actorUserId, actorIsCentral });
@@ -523,6 +607,7 @@ module.exports = {
   delegationError,
   normalizeMarketCode,
   resolveActiveAssignmentByMarketCode,
+  resolveSingleMarketAuthorization,
   resolveAuthorization,
   audit,
   createAssignment,

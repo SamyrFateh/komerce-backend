@@ -373,7 +373,7 @@ module.exports = {
       'purchasing (lecture seule de purchase_orders : HUB-001 snapshotte l identité d achat exacte déjà persistée ; aucune mutation/heuristique fournisseur)',
       'loyalty (recalcul de palier apres collecte cash relais / scan preparation — services/loyalty-service.js recalculateLoyalty/handleOrderConfirmed, O7.3 provider loyalty)',
       'market (autorisation de lecture Hub terrain scopée côté serveur — routes/hub.js consomme middleware/require-market-scope.js ; HUB-001 hérite orders.market_id, jamais de market_id client)',
-      'market-delegation (bridge request-local des memberships projetées vers les lectures Hub déjà ouvertes à market_operator)',
+      'market-delegation (capabilities marché explicites ; D1 lie agent_transitaire à une unique membership active, logistics.read pour les lectures et execution.transit.confirm pour la mutation transit ; users.role ne donne aucun droit marché)',
     ],
   },
 
@@ -412,5 +412,7 @@ module.exports = {
       test: 'tests/integration/hub-physical-identity-postgres.test.js' },
     { statement: 'HUB-001 : un constat LOST/STOLEN/DESTROYED/DAMAGED_UNUSABLE et son événement outbox F0 sont atomiques dans la transaction de l appelant et idempotents au rejeu',
       test: 'tests/integration/hub-physical-identity-postgres.test.js' },
+    { statement: 'un agent_transitaire ne lit et ne confirme le transit que sur son unique marché délégué ; une ressource d’un autre Market ID est invisible (404)',
+      test: 'tests/unit/transitaire-api.test.js' },
   ],
 };

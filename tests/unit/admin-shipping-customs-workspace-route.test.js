@@ -6,7 +6,6 @@
  * @test-requires none
  */
 
-let mockAllowedMarkets = new Set(['market-cm-id']);
 let mockGlobalAllowed = false;
 let mockUserRole = 'admin';
 
@@ -29,20 +28,6 @@ jest.mock('../../middleware/auth', () => ({
   },
 }));
 
-jest.mock('../../middleware/require-market-scope', () => ({
-  attachAuthorizedMarkets: (req, res, next) => {
-    req.authorizedMarkets = new Set(mockAllowedMarkets);
-    next();
-  },
-  requireMarketScope: getTarget => (req, res, next) => {
-    const target = getTarget(req);
-    if (!req.authorizedMarkets || !req.authorizedMarkets.has(target)) {
-      return res.status(403).json({ error: 'Marché hors périmètre', code: 'market_scope_denied' });
-    }
-    return next();
-  },
-}));
-
 jest.mock('../../middleware/require-dashboard-global-authority', () => ({
   hasDashboardGlobalAuthority: jest.fn(async () => mockGlobalAllowed),
 }));
@@ -54,9 +39,11 @@ jest.mock('../../middleware/require-dashboard-global-authority', () => ({
 // détention réelle de la capability déléguée (distincte du scope legacy
 // simulé plus haut).
 let mockGrantedMarketCodes = new Set(['CM']);
+let mockTransitMarketCodes = new Set(['CM']);
 const mockResolveAuthorization = jest.fn();
 jest.mock('../../services/market-delegation-service', () => ({
   resolveAuthorization: (...args) => mockResolveAuthorization(...args),
+  audit: jest.fn(async () => undefined),
 }));
 
 const mockBuildWorkspace = jest.fn();
@@ -117,16 +104,21 @@ function app() {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockAllowedMarkets = new Set(['market-cm-id']);
   mockGlobalAllowed = false;
   mockUserRole = 'admin';
   mockGrantedMarketCodes = new Set(['CM']);
+  mockTransitMarketCodes = new Set(['CM']);
   mockResolveAuthorization.mockImplementation(async (_db, { marketCode, requiredCapability }) => {
-    if (requiredCapability === 'logistics.read' && mockGrantedMarketCodes.has(marketCode)) {
+    const allowed = requiredCapability === 'logistics.read'
+      ? mockGrantedMarketCodes.has(marketCode)
+      : requiredCapability === 'execution.transit.confirm'
+        ? mockTransitMarketCodes.has(marketCode)
+        : false;
+    if (allowed) {
       const marketId = marketCode === 'CM' ? 'market-cm-id' : marketCode === 'CG' ? 'market-cg-id' : `market-${marketCode}-id`;
       return { market_id: marketId, market_code: marketCode, assignment_id: 'assignment-1', membership_id: 'membership-1' };
     }
-    const error = new Error('Capability logistics.read requise ou absente du ceiling actif.');
+    const error = new Error(`Capability ${requiredCapability} requise ou absente du ceiling actif.`);
     error.code = 'MARKET_CAPABILITY_REQUIRED';
     error.status = 403;
     throw error;
@@ -169,10 +161,10 @@ test('market_operator lit son flux mais ne reçoit aucun geste transit/douane sp
   expect(mockCreateCustomsShipment).not.toHaveBeenCalled();
 });
 
-test('opérateur CM ne peut pas ouvrir CG', async () => {
+test('acteur sans logistics.read sur CG ne peut pas ouvrir CG', async () => {
   const res = await request(app()).get('/api/admin/workspaces/shipping-customs/market/CG');
   expect(res.status).toBe(403);
-  expect(res.body.code).toBe('market_scope_denied');
+  expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
   expect(mockBuildWorkspace).not.toHaveBeenCalled();
 });
 
@@ -192,10 +184,9 @@ test('market_operator avec logistics.read sur CM lit le Workspace (capability ex
   }));
 });
 
-test('révocation de logistics.read retire l’accès market_operator même avec un scope marché toujours actif', async () => {
+test('révocation de logistics.read retire l’accès market_operator', async () => {
   mockUserRole = 'market_operator';
-  mockAllowedMarkets = new Set(['market-cm-id']); // scope legacy toujours actif sur CM
-  mockGrantedMarketCodes = new Set(); // mais la capability déléguée est révoquée
+  mockGrantedMarketCodes = new Set();
 
   const res = await request(app()).get('/api/admin/workspaces/shipping-customs/market/CM');
 
@@ -204,8 +195,9 @@ test('révocation de logistics.read retire l’accès market_operator même avec
   expect(mockBuildWorkspace).not.toHaveBeenCalled();
 });
 
-test('les rôles natifs (admin/agent_hub/agent_transitaire) ne passent jamais par la capability déléguée', async () => {
-  mockGrantedMarketCodes = new Set(); // aucune capability déléguée nulle part
+test('autorité centrale explicite court-circuite la capability marché', async () => {
+  mockGrantedMarketCodes = new Set();
+  mockGlobalAllowed = true;
   mockUserRole = 'agent_hub';
 
   const res = await request(app()).get('/api/admin/workspaces/shipping-customs/market/CM');
@@ -237,19 +229,39 @@ test('market_id client est rejeté avant lecture ou mutation', async () => {
   expect(mockConfirmTransit).not.toHaveBeenCalled();
 });
 
-test('agent_transitaire confirme le transit avec la référence métier et le marché serveur', async () => {
+test('agent_transitaire confirme le transit seulement avec execution.transit.confirm sur ce marché', async () => {
   mockUserRole = 'agent_transitaire';
   const res = await request(app())
     .post('/api/admin/workspaces/shipping-customs/market/CM/parcels/PCL-CM-001/confirm-transit')
     .send({ notes: 'Départ confirmé' });
 
   expect(res.status).toBe(200);
+  expect(mockResolveAuthorization).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+    marketCode: 'CM',
+    requiredCapability: 'execution.transit.confirm',
+  }));
   expect(mockConfirmTransit).toHaveBeenCalledWith(
     'PCL-CM-001',
     expect.objectContaining({ id: 'market-cm-id', code: 'CM' }),
     expect.objectContaining({ id: 'agent_transitaire-1', role: 'agent_transitaire' }),
     'Départ confirmé'
   );
+});
+
+test('agent_transitaire CM est refusé sur CG en lecture et en transit', async () => {
+  mockUserRole = 'agent_transitaire';
+  mockGrantedMarketCodes = new Set(['CM']);
+  mockTransitMarketCodes = new Set(['CM']);
+
+  const read = await request(app()).get('/api/admin/workspaces/shipping-customs/market/CG');
+  const transit = await request(app())
+    .post('/api/admin/workspaces/shipping-customs/market/CG/parcels/PCL-CG-001/confirm-transit')
+    .send({});
+
+  expect(read.status).toBe(403);
+  expect(transit.status).toBe(403);
+  expect(mockBuildWorkspace).not.toHaveBeenCalled();
+  expect(mockConfirmTransit).not.toHaveBeenCalled();
 });
 
 test('agent_hub conserve le transit historique mais ne peut pas écrire la douane', async () => {

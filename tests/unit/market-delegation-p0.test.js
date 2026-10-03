@@ -56,6 +56,10 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
   test('cash policy belongs to partner delegation while cash confirmation stays field execution', () => {
     expect(CAPABILITIES.find(row => row.capability === 'cash_control.policy.manage')).toMatchObject({ class: 'DELEGATION', authority_scope: 'MARKET', delegation_mode: 'DELEGABLE', requires_audit: true });
     expect(CAPABILITIES.find(row => row.capability === 'execution.cash.confirm')).toMatchObject({ class: 'EXECUTION', authority_scope: 'MARKET', requires_audit: true });
+    expect(CAPABILITIES.find(row => row.capability === 'execution.transit.confirm')).toMatchObject({
+      class: 'EXECUTION', domain: 'operations', authority_scope: 'MARKET',
+      delegation_mode: 'DELEGABLE', requires_audit: true, status: 'LIVE', effect: 'ACT',
+    });
   });
 
   test('assignment schema enforces one ACTIVE mandate per Market ID and subset guards', () => {
@@ -75,6 +79,17 @@ describe('market-delegation P0 invariants + current autonomy checkpoint', () => 
     expect(migration).toMatch(/CHECK \(projected_from_membership_id IS NOT NULL OR revoked_at IS NOT NULL\)/);
     expect(migration).toMatch(/NOT VALID/);
     expect(migration).not.toMatch(/VALIDATE CONSTRAINT/);
+  });
+
+  test('migration 272 active le transit market-scoped sans auto-accorder un transitaire legacy', () => {
+    const migration = read('migrations/272_market_delegation_transit_execution_capability.sql');
+    expect(migration).toMatch(/execution\.transit\.confirm/);
+    expect(migration).toMatch(/'EXECUTION','operations','MARKET','DELEGABLE'/);
+    expect(migration).toMatch(/TRUE,'LIVE','ACT',FALSE/);
+    expect(migration).toMatch(/INSERT INTO ceiling_template_capabilities/);
+    expect(migration).toMatch(/INSERT INTO assignment_capability_ceiling/);
+    expect(migration).not.toMatch(/INSERT INTO membership_capabilities/);
+    expect(migration).not.toMatch(/UPDATE\s+users/i);
   });
 
   test('new assignments never seed CENTRAL_ONLY capabilities from stale templates', () => {

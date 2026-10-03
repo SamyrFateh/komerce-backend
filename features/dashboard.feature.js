@@ -253,7 +253,7 @@ module.exports = {
       'business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)',
       'decision-signals (services/radar-queries.js — routes/admin-radar.js ; Commerce réutilise son vocabulaire de projection sans persistance market implicite)',
       'market (autorité horizontale des partenaires pays via requireMarketScope et operator_market_scopes)',
-      'market-delegation (bridge request-local pour les lectures market_operator + consommation exacte et auditée des capabilities execution.* sur les mutations Operations Workspace)',
+      'market-delegation (capabilities marché exactes pour les workspaces ; Shipping & Customs consomme logistics.read et, pour agent_transitaire, execution.transit.confirm ; Operations consomme les capabilities execution.* dédiées)',
       'sourcing (lecture des lots KIR et de leurs candidats pour le cockpit décisionnel)',
       'catalog (lecture de readiness et des décisions Catalogue)',
       'market-autonomy (lecture du statut de prix local LOCAL_ACTIVE pour déterminer une approbation réelle à la vente)',

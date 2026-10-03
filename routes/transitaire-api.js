@@ -6,12 +6,12 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, services/*
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-capability.js, services/*
  * @used-by       bootstrap/api-routes.js
- * @db-read       orders, parcel_items, parcels, relais, scan_events, users
+ * @db-read       orders, parcel_items, parcels, relais, scan_events, users, markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling
  * @db-write      parcels, scan_events
  * @db-txn        resolve_before_behavior_change
- * @doctrine      resolve_before_behavior_change
+ * @doctrine      resolve_before_behavior_change, transitaire_one_market, capability_is_the_authority_not_role
  * @impact-areas  logistics
  * @version       2026-06
  */
@@ -29,14 +29,32 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { requireSingleMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const { transitionOrderStatus } = require('../services/order-status-machine');
 const { syncScanToParcels } = require('../utils/parcelSync');
 const log = require('../utils/logger').child({ module: 'transitaire-api' });
 
 const guard = [authenticate, requireRole(['admin', 'agent_hub', 'agent_transitaire'])];
 
+function requireTransitaireCapability(capability, options = {}) {
+  const delegated = requireSingleMarketDelegatedCapability(capability, options);
+  return (req, res, next) => {
+    if (!req.user || req.user.role !== 'agent_transitaire') return next();
+    return delegated(req, res, next);
+  };
+}
+
+const transitaireReadGuard = [...guard, requireTransitaireCapability('logistics.read', { audit: false })];
+const transitaireTransitGuard = [...guard, requireTransitaireCapability('execution.transit.confirm')];
+
+function delegatedMarketId(req) {
+  return req.user && req.user.role === 'agent_transitaire'
+    ? req.marketDelegatedCapability && req.marketDelegatedCapability.market_id
+    : null;
+}
+
 // ── GET /parcels — List parcels ready for transit (shipped) ──
-router.get('/parcels', ...guard, async (req, res, next) => {
+router.get('/parcels', ...transitaireReadGuard, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT p.id, p.reference, p.status, p.weight_kg,
@@ -49,8 +67,9 @@ router.get('/parcels', ...guard, async (req, res, next) => {
       LEFT JOIN users u ON u.id = o.user_id
       LEFT JOIN relais r ON r.id = COALESCE(p.relais_id, o.relais_id)
       WHERE p.status = 'shipped'
+        ${delegatedMarketId(req) ? 'AND o.market_id = $1::uuid' : ''}
       ORDER BY p.shipped_at ASC
-    `);
+    `, delegatedMarketId(req) ? [delegatedMarketId(req)] : []);
 
     // Count items per parcel
     for (const p of rows) {
@@ -65,17 +84,20 @@ router.get('/parcels', ...guard, async (req, res, next) => {
 });
 
 // ── POST /ship — Confirm transit (shipped → in_transit) ──
-router.post('/ship', ...guard, async (req, res, next) => {
+router.post('/ship', ...transitaireTransitGuard, async (req, res, next) => {
   try {
     const { parcel_id, notes } = req.body;
     if (!parcel_id) return res.status(400).json({ error: 'parcel_id requis' });
 
     // 1. Load parcel
     const { rows: [parcel] } = await db.query(
-      `SELECT p.*, o.id AS order_id FROM parcels p LEFT JOIN orders o ON o.id = p.order_id WHERE p.id = $1`,
+      `SELECT p.*, o.id AS order_id, o.market_id FROM parcels p LEFT JOIN orders o ON o.id = p.order_id WHERE p.id = $1`,
       [parcel_id]
     );
     if (!parcel) return res.status(404).json({ error: 'Colis introuvable' });
+    if (delegatedMarketId(req) && String(parcel.market_id || '') !== String(delegatedMarketId(req))) {
+      return res.status(404).json({ error: 'Colis introuvable' });
+    }
     if (parcel.status !== 'shipped') {
       return res.status(400).json({ error: `Colis en statut "${parcel.status}" — doit être "shipped" pour confirmer le transit` });
     }
@@ -145,37 +167,44 @@ router.post('/ship', ...guard, async (req, res, next) => {
 });
 
 // ── GET /stats — Transitaire KPIs ──
-router.get('/stats', ...guard, async (req, res, next) => {
+router.get('/stats', ...transitaireReadGuard, async (req, res, next) => {
   try {
+    const marketId = delegatedMarketId(req);
+    const marketClause = marketId
+      ? 'AND EXISTS (SELECT 1 FROM orders o WHERE o.id = p.order_id AND o.market_id = $1::uuid)'
+      : '';
+    const params = marketId ? [marketId] : [];
     const { rows: [stats] } = await db.query(`
       SELECT
-        (SELECT COUNT(*)::int FROM parcels WHERE status = 'shipped') AS ready_to_ship,
-        (SELECT COUNT(*)::int FROM parcels WHERE status = 'in_transit') AS in_transit,
-        (SELECT COUNT(*)::int FROM parcels WHERE status IN ('shipped', 'in_transit')) AS total_active,
-        (SELECT COALESCE(SUM(weight_kg), 0)::numeric(10,2) FROM parcels WHERE status = 'shipped') AS total_weight_shipped,
-        (SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (NOW() - shipped_at)) / 3600), 0)::numeric(10,1)
-         FROM parcels WHERE status = 'shipped' AND shipped_at IS NOT NULL) AS avg_wait_hours,
-        (SELECT COUNT(*)::int FROM parcels 
-         WHERE status = 'shipped' AND shipped_at IS NOT NULL 
-           AND shipped_at < NOW() - INTERVAL '48 hours') AS overdue_shipments
-    `);
+        (SELECT COUNT(*)::int FROM parcels p WHERE p.status = 'shipped' ${marketClause}) AS ready_to_ship,
+        (SELECT COUNT(*)::int FROM parcels p WHERE p.status = 'in_transit' ${marketClause}) AS in_transit,
+        (SELECT COUNT(*)::int FROM parcels p WHERE p.status IN ('shipped', 'in_transit') ${marketClause}) AS total_active,
+        (SELECT COALESCE(SUM(p.weight_kg), 0)::numeric(10,2) FROM parcels p WHERE p.status = 'shipped' ${marketClause}) AS total_weight_shipped,
+        (SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (NOW() - p.shipped_at)) / 3600), 0)::numeric(10,1)
+         FROM parcels p WHERE p.status = 'shipped' AND p.shipped_at IS NOT NULL ${marketClause}) AS avg_wait_hours,
+        (SELECT COUNT(*)::int FROM parcels p
+         WHERE p.status = 'shipped' AND p.shipped_at IS NOT NULL
+           AND p.shipped_at < NOW() - INTERVAL '48 hours' ${marketClause}) AS overdue_shipments
+    `, params);
 
     res.json(stats);
   } catch (err) { next(err); }
 });
 
 // ── GET /history — Recent transit events ──
-router.get('/history', ...guard, async (req, res, next) => {
+router.get('/history', ...transitaireReadGuard, async (req, res, next) => {
   try {
     const { rows } = await db.query(`
       SELECT se.id, se.event_type, se.created_at, se.actor_name, se.notes,
              p.reference AS parcel_ref
       FROM scan_events se
       JOIN parcels p ON p.id = se.parcel_id
+      LEFT JOIN orders o ON o.id = p.order_id
       WHERE se.event_type = 'transit_confirmed' AND se.status = 'applied'
+        ${delegatedMarketId(req) ? 'AND o.market_id = $1::uuid' : ''}
       ORDER BY se.created_at DESC
       LIMIT 50
-    `);
+    `, delegatedMarketId(req) ? [delegatedMarketId(req)] : []);
 
     res.json({ events: rows });
   } catch (err) { next(err); }
