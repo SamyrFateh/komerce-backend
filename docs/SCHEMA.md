@@ -739,3 +739,11 @@ section: ### 4.10 Sourcing et fournisseurs
 role: Evenement par produit d'un run d'import (debut, fin, issue, prix source) pour le cockpit live, telemetrie best-effort sans autorite metier.
 -->
 
+<!-- schema-pending
+object: market_cost_attributions
+kind: table
+migration: 267
+section: ### 4.7 Moteur économique
+role: Journal append-only d'attribution des charges de structure mutualisées (economic_structure_cost_events scope_kind GROUP) aux marchés. Événements ATTRIBUTION/REVERSAL, FK source_event_id, gardes immutabilité et validation reversal.
+-->
+

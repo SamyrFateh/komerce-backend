@@ -167,6 +167,7 @@ module.exports = {
       'migrations/168_pricing_market_decision_policy_events.sql',
       'migrations/191_cost_component_economic_classification.sql',
       'migrations/192_market_price_observations.sql',
+      'migrations/267_market_cost_attributions.sql',
     ],
     dash: [
       // dashboards/admin views — Lot 4
