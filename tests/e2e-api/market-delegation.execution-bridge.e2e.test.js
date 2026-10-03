@@ -8,7 +8,7 @@ const { createMarketDelegationFixture, makeApp } = require('../helpers/marketDel
 
 jest.setTimeout(60000);
 const ROOT = path.join(__dirname, '..', '..');
-const EXEC = ["execution.order.mark_ordered","execution.distribution.run","execution.parcel.ship","execution.inventory.assign","execution.parcel.receive","execution.parcel.collect","execution.cash.confirm"];
+const EXEC = ["execution.order.mark_ordered","execution.distribution.run","execution.parcel.ship","execution.inventory.assign","execution.parcel.receive","execution.parcel.collect","execution.cash.confirm","execution.transit.confirm"];
 
 describeE2E('E2E-MA-EXEC — délégation terrain explicite', ({ db }) => {
   let fx;

@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        authenticated_operator, requested_market_code, workspace_action
  * @outputs       authorized_shipping_customs_projection, authorized_domain_mutations
- * @depends       db, middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/shipping-customs-workspace
+ * @depends       db, middleware/auth, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/shipping-customs-workspace
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, operator_market_scopes, dashboard_global_access_grants
+ * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      workspace_single_market_action_context, server_market_scope_is_authority, client_market_id_forbidden, workspace_role_least_privilege
+ * @doctrine      workspace_single_market_action_context, capability_is_the_authority_not_role, client_market_id_forbidden, workspace_role_least_privilege
  * @impact-areas  admin-dashboard, logistics, customs, market-authorization
- * @version       2026-09
+ * @version       2026-10-d1
  */
 
 'use strict';
@@ -21,7 +21,6 @@
 const express = require('express');
 const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
 const { hasDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const workspace = require('../services/shipping-customs-workspace');
@@ -35,21 +34,28 @@ const requireWorkspaceReadRole = requireRole(['admin', 'agent_hub', 'agent_trans
 const requireTransitAction = requireRole(['admin', 'agent_hub', 'agent_transitaire']);
 const requireCustomsAction = requireRole(['admin']);
 
-// MARKET-DELEGATION LOT B (audit logistics.read, migration 251) : GET
-// /market/:marketCode était gardé par le rôle + operator_market_scopes
-// hérités, jamais par une capability exacte — aucune n'existait pour cette
-// surface. Les gestes transit/douane restent hors périmètre
-// (requireTransitAction/requireCustomsAction, non délégués) ; seule la
-// lecture du Workspace est concernée. Rôles natifs (admin/agent_hub/
-// agent_transitaire) inchangés ; seul market_operator doit désormais
-// prouver logistics.read (requires_audit=false au registre).
-const NATIVE_WORKSPACE_ROLES = new Set(['admin', 'agent_hub', 'agent_transitaire']);
-function requireWorkspaceReadCapability() {
-  const capabilityGuard = requireMarketDelegatedCapability('logistics.read', { audit: false });
-  return (req, res, next) => {
-    if (req.user && NATIVE_WORKSPACE_ROLES.has(req.user.role)) return next();
-    return capabilityGuard(req, res, next);
-  };
+// D1 Market Control Plane : operator_market_scopes n'est plus une autorité
+// de ce workspace. Hors autorité dashboard globale explicite, toute lecture
+// prouve logistics.read sur le marketCode serveur. agent_transitaire doit en
+// plus prouver execution.transit.confirm pour confirmer un transit.
+const requireLogisticsRead = requireMarketDelegatedCapability('logistics.read', { audit: false });
+const requireTransitExecution = requireMarketDelegatedCapability('execution.transit.confirm');
+
+function requireWorkspaceMarketAccess(req, res, next) {
+  return hasDashboardGlobalAuthority(req.user && req.user.id)
+    .then(globalAllowed => {
+      if (globalAllowed) {
+        req.workspaceGlobalAuthority = true;
+        return next();
+      }
+      return requireLogisticsRead(req, res, next);
+    })
+    .catch(next);
+}
+
+function requireTransitExecutionForTransitaire(req, res, next) {
+  if (!req.user || req.user.role !== 'agent_transitaire') return next();
+  return requireTransitExecution(req, res, next);
 }
 
 function rejectClientMarketAuthority(req, res, next) {
@@ -94,24 +100,6 @@ async function resolveRequestedMarket(req, res, next) {
   }
 }
 
-function requireWorkspaceMarketAccess(req, res, next) {
-  const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
-  const marketGuard = requireMarketScope(() => targetMarketId);
-
-  if (req.authorizedMarkets && req.authorizedMarkets.has(targetMarketId)) {
-    return marketGuard(req, res, next);
-  }
-
-  return hasDashboardGlobalAuthority(req.user && req.user.id)
-    .then(globalAllowed => {
-      if (globalAllowed) {
-        req.workspaceGlobalAuthority = true;
-        return next();
-      }
-      return marketGuard(req, res, next);
-    })
-    .catch(next);
-}
 
 function actionActor(req) {
   return {
@@ -138,11 +126,10 @@ router.use(
   requireWorkspaceReadRole,
   rejectClientMarketAuthority,
   resolveRequestedMarket,
-  attachAuthorizedMarkets,
   requireWorkspaceMarketAccess
 );
 
-router.get('/market/:marketCode', requireWorkspaceReadCapability(), async (req, res, next) => {
+router.get('/market/:marketCode', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     const payload = await workspace.buildWorkspace({ market: req.workspaceMarket });
@@ -153,7 +140,7 @@ router.get('/market/:marketCode', requireWorkspaceReadCapability(), async (req, 
   }
 });
 
-router.post('/market/:marketCode/parcels/:reference/confirm-transit', requireTransitAction, async (req, res, next) => {
+router.post('/market/:marketCode/parcels/:reference/confirm-transit', requireTransitAction, requireTransitExecutionForTransitaire, async (req, res, next) => {
   try {
     const result = await workspace.confirmTransit(
       req.params.reference,
@@ -222,6 +209,7 @@ module.exports._test = {
   rejectClientMarketAuthority,
   resolveRequestedMarket,
   requireWorkspaceMarketAccess,
+  requireTransitExecutionForTransitaire,
   actionActor,
   sendWorkspaceError,
 };
