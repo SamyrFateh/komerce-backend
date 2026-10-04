@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        authenticated_operator, requested_market_code, dashboard_filters
  * @outputs       authorized_market_pilotage_projection, authorized_market_commerce_projection, authorized_market_operations_projection, authorized_market_finance_projection, global_dashboard_gate, canonical_admin_context
- * @depends       db, middleware/auth, middleware/require-market-delegated-role, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-finance-canonical, services/dashboard-admin-context
+ * @depends       db, middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-finance-canonical, services/dashboard-admin-context
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, operator_market_scopes, dashboard_global_access_grants
+ * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
  * @db-write      none
  * @db-txn        none
- * @doctrine      server_market_scope_is_authority, server_global_context_explicit
+ * @doctrine      capability_is_the_authority_not_role, server_global_context_explicit
  * @impact-areas  dashboard, admin-dashboard, market-authorization
- * @version       2026-08
+ * @version       2026-10-d6
  */
 
 'use strict';
@@ -22,7 +22,6 @@ const express = require('express');
 const db = require('../db');
 const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
-const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
 const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const {
   hasDashboardGlobalAuthority,
@@ -98,53 +97,28 @@ function parseFilters(req) {
   };
 }
 
-// Scope legacy (operator_market_scopes) — reste la seule autorité pour
-// commerce/operations/orders/finance market-scoped : ce LOT B ne couvre que
-// /unified/market/:marketCode (cf. requireUnifiedMarketReadCapability
-// ci-dessous). Ne pas étendre ici tant que ces 4 routes n'ont pas leur
-// propre audit et leur propre couverture de test contre la capability
-// dashboard.market.read.
-function requireDashboardMarketRead(req, res, next) {
-  const targetMarketId = req.dashboardMarket && req.dashboardMarket.id;
-  const marketGuard = requireMarketScope(() => targetMarketId);
-
-  if (req.authorizedMarkets && req.authorizedMarkets.has(targetMarketId)) {
-    return marketGuard(req, res, next);
-  }
-
-  return hasDashboardGlobalAuthority(req.user && req.user.id)
-    .then(globalAllowed => {
-      if (globalAllowed) {
-        req.dashboardGlobalAuthority = true;
-        return next();
-      }
-      return marketGuard(req, res, next);
-    })
-    .catch(next);
+// D6 Market Control Plane — l'autorité globale explicite reste prioritaire.
+// Hors grant global, chaque projection market-scoped exige sa capability exacte.
+function requireDashboardMarketCapability(capability) {
+  const delegated = requireMarketDelegatedCapability(capability, { audit: false });
+  return function requireDashboardMarketCapabilityMiddleware(req, res, next) {
+    return hasDashboardGlobalAuthority(req.user && req.user.id)
+      .then(globalAllowed => {
+        if (globalAllowed) {
+          req.dashboardGlobalAuthority = true;
+          return next();
+        }
+        return delegated(req, res, next);
+      })
+      .catch(next);
+  };
 }
 
-// LOT B (audit dashboard.market.read) : /unified/market/:marketCode était
-// gated par le scope legacy operator_market_scopes (attachAuthorizedMarkets +
-// requireMarketScope), jamais par la capability exacte dashboard.market.read
-// — révoquer la capability seule ne retirait rien tant que le scope restait
-// actif. L'autorité globale explicite continue de court-circuiter avant
-// toute résolution DELEGATION (elle voit tous les marchés par construction).
-// capability_is_the_authority_not_role s'applique sans bypass de rôle natif :
-// admin lui-même doit prouver dashboard.market.read s'il n'a pas l'autorité
-// globale. requires_audit=false au registre pour cette capability de lecture.
-const requireUnifiedMarketReadCapability = requireMarketDelegatedCapability('dashboard.market.read', { audit: false });
-
-function requireUnifiedMarketRead(req, res, next) {
-  return hasDashboardGlobalAuthority(req.user && req.user.id)
-    .then(globalAllowed => {
-      if (globalAllowed) {
-        req.dashboardGlobalAuthority = true;
-        return next();
-      }
-      return requireUnifiedMarketReadCapability(req, res, next);
-    })
-    .catch(next);
-}
+const requirePilotageMarketRead = requireDashboardMarketCapability('dashboard.market.read');
+const requireCommerceMarketRead = requireDashboardMarketCapability('dashboard.market.read');
+const requireOrdersMarketRead = requireDashboardMarketCapability('dashboard.market.read');
+const requireOperationsMarketRead = requireDashboardMarketCapability('operations.read');
+const requireFinanceMarketRead = requireDashboardMarketCapability('finance.read');
 
 router.get(
   '/context',
@@ -175,8 +149,7 @@ router.get(
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
-  attachAuthorizedMarkets,
-  requireUnifiedMarketRead,
+  requirePilotageMarketRead,
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
@@ -197,8 +170,7 @@ router.get(
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
-  attachAuthorizedMarkets,
-  requireDashboardMarketRead,
+  requireCommerceMarketRead,
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
@@ -218,8 +190,7 @@ router.get(
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
-  attachAuthorizedMarkets,
-  requireDashboardMarketRead,
+  requireOperationsMarketRead,
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
@@ -239,8 +210,7 @@ router.get(
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
-  attachAuthorizedMarkets,
-  requireDashboardMarketRead,
+  requireOrdersMarketRead,
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
@@ -260,8 +230,7 @@ router.get(
   requireMarketDashboardReadRole,
   rejectClientMarketId,
   resolveRequestedMarket,
-  attachAuthorizedMarkets,
-  requireDashboardMarketRead,
+  requireFinanceMarketRead,
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
@@ -345,6 +314,5 @@ module.exports._test = {
   rejectClientMarketId,
   resolveRequestedMarket,
   parseFilters,
-  requireDashboardMarketRead,
-  requireUnifiedMarketRead,
+  requireDashboardMarketCapability,
 };

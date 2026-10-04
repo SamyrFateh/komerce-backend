@@ -748,12 +748,7 @@
       "roles": [
         "admin",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-dashboard-market.js"
+      ]
     },
     {
       "key": "GET /api/admin/dashboard/commerce",
@@ -794,12 +789,7 @@
       "roles": [
         "admin",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-dashboard-market.js"
+      ]
     },
     {
       "key": "GET /api/admin/dashboard/finance",
@@ -821,12 +811,7 @@
       "roles": [
         "admin",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-dashboard-market.js"
+      ]
     },
     {
       "key": "GET /api/admin/dashboard/operations",
@@ -841,12 +826,7 @@
       "roles": [
         "admin",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-dashboard-market.js"
+      ]
     },
     {
       "key": "GET /api/admin/dashboard/orders",
@@ -861,11 +841,7 @@
       "roles": [
         "admin",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets"
-      ],
-      "file": "routes/admin-dashboard-market.js"
+      ]
     },
     {
       "key": "GET /api/admin/dashboard/unified",
