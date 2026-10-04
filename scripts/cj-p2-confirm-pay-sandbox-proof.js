@@ -23,6 +23,7 @@ const contract = require('../services/suppliers/cj-purchasing-contract');
 const ALLOW_FLAG = 'KOMERCE_ALLOW_CJ_P2_CONFIRM_PAY';
 const DEFAULT_PRODUCT_REF = 'KPR-131962';
 const FREIGHT_PATH = '/logistic/freightCalculate';
+const CJ_MIN_CALL_GAP_MS = 1100;
 
 function guard(env = process.env) {
   const runtime = String(env.KOMERCE_ENV || env.NODE_ENV || '').trim().toLowerCase();
@@ -112,7 +113,18 @@ async function run(env = process.env, deps = {}) {
     String(env.KOMERCE_CJ_P2_PRODUCT_REF || DEFAULT_PRODUCT_REF).trim()
   );
   const accessToken = await cj.getAccessToken({ env });
-  const call = deps.invoke || invoke;
+  const rawCall = deps.invoke || invoke;
+  const sleep = deps.sleep || (ms => new Promise(resolve => setTimeout(resolve, ms)));
+  let lastCallAt = 0;
+  const call = async (...args) => {
+    const waitMs = CJ_MIN_CALL_GAP_MS - (Date.now() - lastCallAt);
+    if (waitMs > 0) await sleep(waitMs);
+    try {
+      return await rawCall(...args);
+    } finally {
+      lastCallAt = Date.now();
+    }
+  };
   const orderNumber = String(
     env.KOMERCE_CJ_P2_ORDER_NUMBER || `KOM-P2-${sku.product_sku_id}-${Date.now()}`
   ).slice(0, 200);
@@ -216,4 +228,4 @@ if (require.main === module) {
     .finally(() => db.pool.end());
 }
 
-module.exports = { ALLOW_FLAG, FREIGHT_PATH, guard, DEFAULT_DESTINATION, selectExactSku, invoke, resolveLogistic, run };
+module.exports = { ALLOW_FLAG, FREIGHT_PATH, CJ_MIN_CALL_GAP_MS, guard, DEFAULT_DESTINATION, selectExactSku, invoke, resolveLogistic, run };
