@@ -11,13 +11,22 @@ let mockGlobalAllowed = false;
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
-  requireAdmin: (req, res, next) => next(),
+  requireRole: roles => (req, res, next) => roles.includes(req.user.role)
+    ? next()
+    : res.status(403).json({ code: 'role_forbidden' }),
 }));
 
-jest.mock('../../middleware/require-market-scope', () => ({
-  attachAuthorizedMarkets: (req, res, next) => {
+jest.mock('../../middleware/require-market-delegated-role', () => ({
+  attachMarketDelegatedRoleFor: () => (req, res, next) => next(),
+}));
+
+jest.mock('../../middleware/require-market-delegated-capability', () => ({
+  attachAuthorizedMarketsForCapability: capability => (req, res, next) => {
+    if (!mockAllowedMarkets.size) {
+      return res.status(403).json({ code: 'MARKET_CAPABILITY_REQUIRED', error: `${capability} required` });
+    }
     req.authorizedMarkets = new Set(mockAllowedMarkets);
-    next();
+    return next();
   },
 }));
 
@@ -72,7 +81,7 @@ beforeEach(() => {
   });
 });
 
-test('opérateur CM résout le client uniquement dans son MarketScope', async () => {
+test('opérateur CM résout le client uniquement dans ses marchés client.read', async () => {
   const res = await request(app()).get('/api/admin/entities/clients/%2B2691234567');
 
   expect(res.status).toBe(200);
@@ -107,13 +116,13 @@ test('autorité globale explicite voit la projection globale et les facettes com
   );
 });
 
-test('opérateur sans marché autorisé est refusé avant toute résolution client', async () => {
+test('opérateur sans client.read est refusé avant toute résolution client', async () => {
   mockAllowedMarkets = new Set();
 
   const res = await request(app()).get('/api/admin/entities/clients/%2B2691234567');
 
   expect(res.status).toBe(403);
-  expect(res.body.code).toBe('client_market_scope_required');
+  expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
   expect(mockResolveClient).not.toHaveBeenCalled();
   expect(mockLoadClient360).not.toHaveBeenCalled();
 });

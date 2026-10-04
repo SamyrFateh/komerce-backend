@@ -140,5 +140,17 @@ describe('market-delegation runtime compatibility bridge', () => {
     expect(relay).not.toContain('require-market-scope');
     expect(relay).toContain("attachAuthorizedMarketsForCapability('operations.read'");
     expect(relay).toContain("requireMarketDelegatedCapability('hub.supervise'");
+
+    const entity360 = {
+      'routes/admin-client-index.js': 'client.read',
+      'routes/admin-client-360.js': 'client.read',
+      'routes/admin-product-360.js': 'catalog.read',
+      'routes/admin-order-360.js': 'operations.read',
+    };
+    for (const [file, capability] of Object.entries(entity360)) {
+      const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
+      expect(source).not.toContain('require-market-scope');
+      expect(source).toContain(capability);
+    }
   });
 });

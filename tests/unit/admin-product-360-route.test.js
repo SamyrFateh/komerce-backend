@@ -11,13 +11,22 @@ let mockGlobalAllowed = false;
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
-  requireAdmin: (req, res, next) => next(),
+  requireRole: roles => (req, res, next) => roles.includes(req.user.role)
+    ? next()
+    : res.status(403).json({ code: 'role_forbidden' }),
 }));
 
-jest.mock('../../middleware/require-market-scope', () => ({
-  attachAuthorizedMarkets: (req, res, next) => {
+jest.mock('../../middleware/require-market-delegated-role', () => ({
+  attachMarketDelegatedRoleFor: () => (req, res, next) => next(),
+}));
+
+jest.mock('../../middleware/require-market-delegated-capability', () => ({
+  attachAuthorizedMarketsForCapability: capability => (req, res, next) => {
+    if (!mockAllowedMarkets.size) {
+      return res.status(403).json({ code: 'MARKET_CAPABILITY_REQUIRED', error: `${capability} required` });
+    }
     req.authorizedMarkets = new Set(mockAllowedMarkets);
-    next();
+    return next();
   },
 }));
 
@@ -84,13 +93,13 @@ test('opérateur pays lit le produit global mais ses facettes sont market-scoped
   expect(JSON.stringify(res.body)).not.toContain('11111111-1111-4111-8111-111111111111');
 });
 
-test('aucun marché autorisé ferme la route avant les facettes', async () => {
+test('absence de catalog.read ferme la route avant les facettes', async () => {
   mockAllowedMarkets = new Set();
 
   const res = await request(app()).get('/api/admin/entities/products/KPR-000123');
 
   expect(res.status).toBe(403);
-  expect(res.body.code).toBe('product_market_scope_required');
+  expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
   expect(mockResolveProduct).not.toHaveBeenCalled();
   expect(mockLoadProduct360).not.toHaveBeenCalled();
 });

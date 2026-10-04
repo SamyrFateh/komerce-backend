@@ -6,22 +6,23 @@
  * @criticality   high
  * @inputs        authenticated_admin, requested_market_code, client_search, client_sort, pagination
  * @outputs       authorized_client_index_projection
- * @depends       db, middleware/auth, middleware/require-market-scope, middleware/require-dashboard-global-authority, services/client-index
+ * @depends       db, middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/client-index
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, operator_market_scopes, dashboard_global_access_grants, orders, users, recipients
+ * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants, orders, users, recipients
  * @db-write      none
  * @db-txn        none
- * @doctrine      server_market_scope_is_authority, server_global_context_explicit, client_index_finds_client_360
+ * @doctrine      capability_is_the_authority_not_role, server_global_context_explicit, client_index_finds_client_360
  * @impact-areas  admin-dashboard, clients, market-authorization
- * @version       2026-08
+ * @version       2026-10-d6
  */
 
 'use strict';
 
 const express = require('express');
 const db = require('../db');
-const { authenticate, requireAdmin } = require('../middleware/auth');
-const { attachAuthorizedMarkets, requireMarketScope } = require('../middleware/require-market-scope');
+const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
+const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
+const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const {
   hasDashboardGlobalAuthority,
   requireDashboardGlobalAuthority,
@@ -76,16 +77,17 @@ async function resolveRequestedMarket(req, res, next) {
   }
 }
 
+const requireClientReadCapability = requireMarketDelegatedCapability('client.read', { audit: false });
+
 function requireClientIndexMarketRead(req, res, next) {
-  const targetMarketId = req.clientIndexMarket && req.clientIndexMarket.id;
-  const marketGuard = requireMarketScope(() => targetMarketId);
-
-  if (req.authorizedMarkets && req.authorizedMarkets.has(targetMarketId)) {
-    return marketGuard(req, res, next);
-  }
-
   return hasDashboardGlobalAuthority(req.user && req.user.id)
-    .then(globalAllowed => globalAllowed ? next() : marketGuard(req, res, next))
+    .then(globalAllowed => {
+      if (globalAllowed) {
+        req.dashboardGlobalAuthority = true;
+        return next();
+      }
+      return requireClientReadCapability(req, res, next);
+    })
     .catch(next);
 }
 
@@ -114,7 +116,7 @@ async function globalHandler(req, res, next) {
   }
 }
 
-router.get('/clients/market/:marketCode', authenticate, requireAdmin, rejectClientMarketIdentity, resolveRequestedMarket, attachAuthorizedMarkets, requireClientIndexMarketRead, marketHandler);
+router.get('/clients/market/:marketCode', authenticate, attachMarketDelegatedRoleFor(['admin', 'market_operator']), requireRole(['admin', 'market_operator']), rejectClientMarketIdentity, resolveRequestedMarket, requireClientIndexMarketRead, marketHandler);
 
 router.get('/clients', authenticate, requireAdmin, rejectClientMarketIdentity, requireDashboardGlobalAuthority, globalHandler);
 
