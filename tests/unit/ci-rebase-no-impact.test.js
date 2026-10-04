@@ -59,8 +59,10 @@ describe('CI rebase no-impact proof', () => {
     const auto = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-auto-update.yml'), 'utf8');
     const enforcement = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-enforcement.yml'), 'utf8');
     expect(auto).toContain('pull_request_target:');
+    expect(auto).toContain('push:');
     expect(auto).toContain('github.event.pull_request.head.repo.full_name == github.repository');
     expect(auto).toContain('/update-branch');
+    expect(auto).toContain('/pulls?state=open&base=main&per_page=100');
     expect(auto).toContain('expected_head_sha');
     expect(enforcement).toContain('rebase_no_impact: ${{ steps.rebase_proof.outputs.rebase_no_impact }}');
     expect(enforcement).toContain("needs.changes.outputs.rebase_no_impact != 'true'");
