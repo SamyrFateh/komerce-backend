@@ -36,19 +36,6 @@ test('grouped proof refuse production et exige le sandbox', () => {
     .toThrow('KOMERCE_CJ_SANDBOX=1 requis');
 });
 
-test('shipmentOrderId est résolu depuis create puis read-back', () => {
-  expect(proof.resolveShipmentOrderId(
-    { shipment_order_id: 'SHIP-CREATE' },
-    { shipment_order_id: 'SHIP-RB' }
-  )).toBe('SHIP-CREATE');
-  expect(proof.resolveShipmentOrderId(
-    { shipment_order_id: null },
-    { shipment_order_id: 'SHIP-RB' }
-  )).toBe('SHIP-RB');
-  expect(() => proof.resolveShipmentOrderId({}, {}))
-    .toThrow('CJ_P2_GROUPED_SHIPMENT_ORDER_ID_MISSING');
-});
-
 test('sandbox simulatePay parent utilise shipmentOrderId, jamais orderId', () => {
   expect(contract.buildSandboxSimulatePayParentPayload('SHIP-1')).toEqual({
     shipmentOrderId: 'SHIP-1',
@@ -84,4 +71,40 @@ test('grouped proof demande une route commune pour les deux VIDs', async () => {
 
 test('grouped proof respecte plus de 1 seconde entre appels CJ', () => {
   expect(proof.CJ_MIN_CALL_GAP_MS).toBeGreaterThan(1000);
+});
+
+
+test('cart payload utilise les CJ order codes des sous-ordres', () => {
+  expect(contract.buildCartPayload(['SD-1', 'SD-2'])).toEqual({
+    cjOrderIdList: ['SD-1', 'SD-2'],
+  });
+});
+
+test('addCartConfirm fournit le vrai shipmentOrderId parent', () => {
+  expect(contract.parseAddCartConfirmResponse({
+    success: true,
+    data: {
+      successCount: 2,
+      submitSuccess: true,
+      shipmentsId: 'SHIP-PARENT-1',
+    },
+  })).toMatchObject({
+    shipment_order_id: 'SHIP-PARENT-1',
+    success_count: 2,
+  });
+});
+
+test('saveGenerateParentOrder conserve parent et payId', () => {
+  expect(contract.parseSaveGenerateParentOrderResponse({
+    success: true,
+    data: {
+      submitSuccess: true,
+      payId: 'PAY-1',
+      orderMoney: 42.5,
+    },
+  }, 'SHIP-PARENT-1')).toMatchObject({
+    shipment_order_id: 'SHIP-PARENT-1',
+    pay_id: 'PAY-1',
+    order_money: 42.5,
+  });
 });

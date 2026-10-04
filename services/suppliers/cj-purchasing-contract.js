@@ -25,6 +25,9 @@ const ENDPOINTS = Object.freeze({
   pay_balance_v2: '/api2.0/v1/shopping/pay/payBalanceV2',
   sandbox_simulate_pay: '/api2.0/v1/shopping/sandbox/simulatePay',
   freight_calculate: '/api2.0/v1/logistic/freightCalculate',
+  add_cart: '/api2.0/v1/shopping/order/addCart',
+  add_cart_confirm: '/api2.0/v1/shopping/order/addCartConfirm',
+  save_generate_parent_order: '/api2.0/v1/shopping/order/saveGenerateParentOrder',
 });
 
 function assertString(value, code, max = 200) {
@@ -134,6 +137,7 @@ function readOrderDetailFacts(body) {
     order_id: data.orderId || data.cjOrderId || null,
     order_number: data.orderNumber || data.orderNum || data.platformOrderId || null,
     shipment_order_id: data.shipmentOrderId || data.shipmentOrderID || data.shipment_order_id || null,
+    cj_order_code: data.cjOrderCode || data.cjOrderId || null,
     status: data.orderStatus || null,
     variants: products.flatMap((item) => {
       const directVid = item.variantId ?? item.vid ?? null;
@@ -226,6 +230,48 @@ function buildSandboxSimulatePayPayload(orderId) {
   return { orderId: assertString(orderId, 'CJ_ORDER_ID_REQUIRED', 200) };
 }
 
+function buildCartPayload(cjOrderCodes) {
+  if (!Array.isArray(cjOrderCodes) || cjOrderCodes.length < 1) {
+    throw new Error('CJ_CART_ORDER_CODES_REQUIRED');
+  }
+  return {
+    cjOrderIdList: cjOrderCodes.map(code =>
+      assertString(code, 'CJ_CART_ORDER_CODE_INVALID', 200)
+    ),
+  };
+}
+
+function parseAddCartConfirmResponse(body) {
+  if (!body || body.success !== true || !body.data?.submitSuccess) {
+    throw new Error('CJ_ADD_CART_CONFIRM_REJECTED');
+  }
+  return {
+    shipment_order_id: assertString(
+      body.data.shipmentsId,
+      'CJ_SHIPMENT_ORDER_ID_MISSING',
+      200
+    ),
+    success_count: Number(body.data.successCount || 0),
+    request_id: body.requestId ? String(body.requestId) : null,
+  };
+}
+
+function parseSaveGenerateParentOrderResponse(body, expectedShipmentOrderId) {
+  if (!body || body.success !== true || !body.data?.submitSuccess) {
+    throw new Error('CJ_SAVE_PARENT_ORDER_REJECTED');
+  }
+  return {
+    shipment_order_id: assertString(
+      expectedShipmentOrderId,
+      'CJ_SHIPMENT_ORDER_ID_REQUIRED',
+      200
+    ),
+    pay_id: body.data.payId ? String(body.data.payId) : null,
+    order_money: body.data.orderMoney ?? null,
+    request_id: body.requestId ? String(body.requestId) : null,
+  };
+}
+
 function buildSandboxSimulatePayParentPayload(shipmentOrderId) {
   return {
     shipmentOrderId: assertString(
@@ -281,6 +327,9 @@ module.exports = {
   buildPayBalanceV2Payload,
   parsePayBalanceV2Response,
   buildSandboxSimulatePayPayload,
+  buildCartPayload,
+  parseAddCartConfirmResponse,
+  parseSaveGenerateParentOrderResponse,
   buildSandboxSimulatePayParentPayload,
   parseSandboxSimulatePayResponse,
   verifyPaidOrderDetail,
