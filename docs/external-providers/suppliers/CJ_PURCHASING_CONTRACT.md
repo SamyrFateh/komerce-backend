@@ -178,3 +178,18 @@ Registration requires:
     + P3 pipeline PASS
 
 Until then CJ remains non-auto-ordering in execution-adapter-registry.
+
+
+## P1 retry / duplicate recovery — observed 2026-10-04
+
+The sandbox proof observed CJ code `1603003` with message `Order exist, please do not duplicate create` when replaying the same stable `orderNumber`.
+
+For P1, Komerce therefore treats `1603003` as a **duplicate signal, never as success by itself**:
+
+1. do not call `createOrderV2` again;
+2. call `getOrderDetail` with the same stable Komerce `orderNumber` in the documented `orderId` parameter (CJ documents this parameter as accepting a custom order id or CJ order id);
+3. accept the replay only after exact read-back verifies the same order number, VID, quantity, and an unpaid/non-committed status;
+4. any unresolved or mismatched read-back stays fail-closed;
+5. no payment and no `confirmOrder` are performed by this proof.
+
+This is evidence for duplicate-safe recovery at the create/read-back boundary. It is not yet certification of the full production `placeOrder` path.
