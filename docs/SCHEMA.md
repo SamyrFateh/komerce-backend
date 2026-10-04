@@ -327,7 +327,7 @@ role: Vue unique de progression d'achat par ligne (MISSION_PURCHASE_LINES, PR 2)
 
 | Table | Rôle |
 |---|---|
-| `markets` | Référentiel canonique des marchés/pays opérés par Komerce. Vérifiée live Railway. |
+| `markets` | Référentiel canonique des marchés/pays opérés par Komerce. Vérifiée live Railway. **Migration 278 (`intended_migration_schema`)** : + `lifecycle_status` TEXT NOT NULL, cycle canonique `PROVISIONING | ACTIVE | SUSPENDED | CLOSED` ; `is_active` reste une projection de compatibilité contrainte à TRUE pour `ACTIVE`/`SUSPENDED` et FALSE sinon. + `storefront_texts` JSONB objet pour le contenu/configuration storefront, sans autorité implicite. |
 | `operator_market_scopes` | Projection de compatibilité des autorisations marché. Vérifiée live Railway. **Migration 195** : + `projected_from_membership_id` UUID nullable, FK vers `assignment_memberships(id)`. **Migration 271 (schema-pending)** : toute nouvelle ligne active doit avoir `projected_from_membership_id`; `NULL` n’est toléré que pour une ligne legacy déjà révoquée (`revoked_at IS NOT NULL`), via CHECK `NOT VALID` pour ne pas invalider l’historique existant. |
 | `currency_parities` | Parités de devise par marché utilisées par la Currency Boundary. Vérifiée live Railway. |
 | `dashboard_global_access_grants` | Grants explicites pour les surfaces Dashboard globales ; aucune élévation globale implicite. Vérifiée live Railway. |
