@@ -1,0 +1,17 @@
+{
+  "schema_version": "1",
+  "contract": "komerce-supplier-execution-certification-v1",
+  "gate": {
+    "gate": "SUPPLIER_EXECUTION_CERTIFIED",
+    "version": "supplier-execution-certified-v1",
+    "required": 14,
+    "proof_matrix": "docs/certification/SUPPLIER_EXECUTION_PROOF_MATRIX.md"
+  },
+  "explicitly_unproven": [
+    "supplier_payment_production",
+    "supplier_payment_reconciliation",
+    "expected_vs_debited_amount_reconciliation",
+    "payment_replay_without_double_debit",
+    "b2b_accounting_reconciliation"
+  ]
+}
