@@ -243,7 +243,9 @@ function buildCartPayload(cjOrderCodes) {
 
 function parseAddCartConfirmResponse(body) {
   if (!body || body.success !== true || !body.data?.submitSuccess) {
-    throw new Error('CJ_ADD_CART_CONFIRM_REJECTED');
+    const error = new Error('CJ_ADD_CART_CONFIRM_REJECTED');
+    error.payload = body ?? null;
+    throw error;
   }
   return {
     shipment_order_id: assertString(
@@ -258,7 +260,9 @@ function parseAddCartConfirmResponse(body) {
 
 function parseSaveGenerateParentOrderResponse(body, expectedShipmentOrderId) {
   if (!body || body.success !== true || !body.data?.submitSuccess) {
-    throw new Error('CJ_SAVE_PARENT_ORDER_REJECTED');
+    const error = new Error('CJ_SAVE_PARENT_ORDER_REJECTED');
+    error.payload = body ?? null;
+    throw error;
   }
   return {
     shipment_order_id: assertString(
