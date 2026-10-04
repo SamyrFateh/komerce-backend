@@ -193,3 +193,29 @@ For P1, Komerce therefore treats `1603003` as a **duplicate signal, never as suc
 5. no payment and no `confirmOrder` are performed by this proof.
 
 This is evidence for duplicate-safe recovery at the create/read-back boundary. It is not yet certification of the full production `placeOrder` path.
+
+
+## P2 grouped parent capability — proof contract
+
+CJ documents two distinct sandbox payment identities:
+
+- `orderId`: simulate payment for one sandbox sub-order;
+- `shipmentOrderId`: batch simulate payment for all sandbox sub-orders under a parent.
+
+The grouped capability is therefore tested independently from the proven single-order path.
+
+Bounded proof:
+
+    exact CJ product with >=2 active supplier VIDs
+    → freightCalculate on both VIDs
+    → createOrderV2(isSandbox=1, payType=3, products=[...])
+    → getOrderDetail
+    → resolve a real shipmentOrderId from create/read-back
+    → sandbox simulatePay({ shipmentOrderId })
+    → paid-state read-back
+
+This proof is allowed to conclude only from observed provider behavior:
+
+    grouped_parent_payment = PROVEN | UNPROVEN
+
+It must not infer grouped support from the existence of `payBalanceV2` alone.
