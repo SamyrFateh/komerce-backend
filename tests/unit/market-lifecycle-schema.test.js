@@ -15,4 +15,12 @@ describe('Market Control Plane M5 — market lifecycle schema', () => {
     expect(sql).toMatch(/storefront_texts JSONB NOT NULL DEFAULT '\{\}'::jsonb/);
     expect(sql).toMatch(/jsonb_typeof\(storefront_texts\) = 'object'/);
   });
+
+  test('reference market seed preserves lifecycle/is_active compatibility after migration 278', () => {
+    const seed = fs.readFileSync(path.join(ROOT, 'scripts', 'seed-reference-data.js'), 'utf8');
+    expect(seed).toMatch(/columnExists\(client, 'markets', 'lifecycle_status'\)/);
+    expect(seed).toMatch(/market\.is_active \? 'ACTIVE' : 'PROVISIONING'/);
+    expect(seed).toMatch(/is_active, lifecycle_status/);
+    expect(seed).toMatch(/lifecycle_status = EXCLUDED\.lifecycle_status/);
+  });
 });
