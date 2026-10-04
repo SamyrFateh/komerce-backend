@@ -68,13 +68,13 @@ async function resolveActiveAssignmentByMarketCode(executor, marketCode) {
   return row;
 }
 
-async function audit(db, { actorUserId = null, assignmentId = null, membershipId = null, capability = null, action, before = null, after = null, correlationId = null }) {
+async function audit(db, { actorUserId = null, marketId = null, assignmentId = null, membershipId = null, capability = null, action, before = null, after = null, correlationId = null }) {
   await db.query(
     `INSERT INTO market_delegation_audit
-      (actor_user_id, assignment_id, membership_id, capability, action, payload_before, payload_after, correlation_id)
-     VALUES ($1::uuid,$2::uuid,$3::uuid,$4,$5,$6::jsonb,$7::jsonb,$8)`,
+      (actor_user_id, assignment_id, membership_id, capability, action, payload_before, payload_after, correlation_id, market_id)
+     VALUES ($1::uuid,$2::uuid,$3::uuid,$4,$5,$6::jsonb,$7::jsonb,$8,$9::uuid)`,
     [actorUserId, assignmentId, membershipId, capability, action,
-      before == null ? null : JSON.stringify(before), after == null ? null : JSON.stringify(after), correlationId]
+      before == null ? null : JSON.stringify(before), after == null ? null : JSON.stringify(after), correlationId, marketId]
   );
 }
 
@@ -103,7 +103,7 @@ async function createAssignment(executor, { marketId, actorUserId = null, effect
         AND cr.delegation_mode = 'DELEGABLE'
      ON CONFLICT DO NOTHING`, [assignment.id, actorUserId, template.id]
   );
-  await audit(db, { actorUserId, assignmentId: assignment.id, action: 'ASSIGNMENT_CREATED', after: { market_id: marketId, status, template_id: template.id }, correlationId });
+  await audit(db, { actorUserId, marketId, assignmentId: assignment.id, action: 'ASSIGNMENT_CREATED', after: { market_id: marketId, status, template_id: template.id }, correlationId });
   return assignment;
 }
 
