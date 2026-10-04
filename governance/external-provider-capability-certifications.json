@@ -141,19 +141,22 @@
       },
       {
         "capability": "purchasing.readiness",
-        "classification": "GAP",
-        "availability": "IMPLEMENTED_NOT_RUNTIME_REGISTERED",
+        "classification": "CONFIRMED",
+        "availability": "RUNTIME_REGISTERED_GUARDED",
         "highest_proof": "P1",
-        "environment": "SANDBOX_PROOF_ONLY",
+        "environment": "SANDBOX_PROOF_PRODUCTION_GUARDED",
         "evidence": [
           "services/suppliers/cj-fulfillment-adapter.js",
+          "services/suppliers/execution-adapter-registry.js",
+          "services/procurement-execution-context.js",
           "tests/unit/cj-fulfillment-adapter.test.js",
-          "scripts/cj-p1-create-readback-proof.js"
+          "tests/unit/procurement-execution-boundary.test.js"
         ],
         "limitations": [
-          "adapter exists but is deliberately absent from execution-adapter-registry",
-          "production procurement destination/logistics wiring is not yet complete",
-          "provider-authority/runtime cutover remains fail-closed"
+          "runtime adapter is registered but create execution remains disabled unless KOMERCE_CJ_AUTO_ORDER_ENABLED=1",
+          "a complete KOMERCE_PROCUREMENT_HUB_DESTINATION_JSON is required",
+          "CJ logistic name and origin country must be configured",
+          "payment and confirmOrder remain outside the proved/activated contract"
         ]
       }
     ]

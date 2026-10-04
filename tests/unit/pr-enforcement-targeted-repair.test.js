@@ -34,8 +34,8 @@ describe('PR enforcement — targeted repair rerun', () => {
   });
 
   test('previously green heavy jobs stay skipped on proven repair or no-impact base sync', () => {
-    expect(workflow).toContain("needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.dashboard == 'true'");
-    expect(workflow).toContain("needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.governance == 'true'");
+    expect(workflow).toContain("needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.reuse_dashboard != 'true' && needs.changes.outputs.dashboard == 'true'");
+    expect(workflow).toContain("needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.reuse_governance != 'true' && needs.changes.outputs.governance == 'true'");
     expect(fromScratchJob(workflow)).toContain('needs: changes');
     expect(workflow).toContain("needs.changes.outputs.rebase_no_impact != 'true'");
     expect(workflow).toContain("needs.changes.outputs.unit_repair_only != 'true'");
