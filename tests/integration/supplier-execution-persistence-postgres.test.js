@@ -107,6 +107,25 @@ describeDb('supplier execution persistence — migration 279 (REAL_DB)', () => {
         (SELECT count(*)::int FROM ${current}.supplier_execution_group_members) AS members
     `);
     expect(counts).toEqual({ orders: 2, lines: 2, groups: 1, members: 2 });
+
+    const { rows: resumed } = await pool.query(`
+      SELECT
+        g.supplier_parent_order_id,
+        g.payment_ref,
+        o.supplier_order_id
+      FROM ${current}.supplier_execution_groups g
+      JOIN ${current}.supplier_execution_group_members gm
+        ON gm.supplier_execution_group_id = g.id
+      JOIN ${current}.supplier_execution_orders o
+        ON o.id = gm.supplier_execution_order_id
+      WHERE g.purchase_order_id = $1
+      ORDER BY o.supplier_order_id
+    `, [po]);
+
+    expect(resumed).toEqual([
+      { supplier_parent_order_id: 'PARENT-1', payment_ref: 'PAY-1', supplier_order_id: 'ORDER-1' },
+      { supplier_parent_order_id: 'PARENT-1', payment_ref: 'PAY-1', supplier_order_id: 'ORDER-2' },
+    ]);
   });
 
   test('refuse un même identifiant natif deux fois chez le même provider', async () => {
