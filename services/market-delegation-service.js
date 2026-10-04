@@ -682,13 +682,13 @@ async function setCeilingAmountLimits(executor, {
   const db = requireExecutor(executor);
   const entries = Object.entries(limits || {}).sort(([a],[b]) => a.localeCompare(b));
   const { rows: requiredRows } = await db.query(
-    `SELECT capability
+    `SELECT acc.capability
        FROM assignment_capability_ceiling acc
        JOIN capability_registry cr ON cr.capability=acc.capability
       WHERE acc.assignment_id=$1::uuid
         AND acc.revoked_at IS NULL
         AND cr.amount_bearing=TRUE
-      ORDER BY capability`,
+      ORDER BY acc.capability`,
     [assignmentId]
   );
   const required = requiredRows.map(row => row.capability);
