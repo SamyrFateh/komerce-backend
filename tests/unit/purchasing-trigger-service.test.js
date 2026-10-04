@@ -365,3 +365,12 @@ describe('purchasing-trigger-service — couverture par les lignes (PR 2)', () =
     expect(result.purchase_orders[0]).toMatchObject({ status: 'already_exists', purchase_order_id: '00000000-0000-0000-0000-000000000303' });
   });
 });
+
+
+test('purchasing trigger transmet la vraie PO au contexte d exécution avant toute boundary provider', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'), 'utf8');
+  expect(src).toMatch(/buildProcurementExecutionContext\(\{ purchaseOrderId, purchaseLineId, item, supplierTagRequest \}\)/);
+  expect(src).toMatch(/resolveAutoOrderResult\([^\n]+po\.id, historicalLine\?\.id \|\| null, supplierTagRequest\)/);
+});

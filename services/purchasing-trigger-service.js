@@ -24,6 +24,7 @@ const { createAlert } = require('../utils/alerts');
 const { validateAdapter } = require('./suppliers/supplier-fulfillment-adapter-contract');
 const { EXECUTION_ADAPTER_REGISTRY } = require('./suppliers/execution-adapter-registry');
 const { evaluateProcurementExecutionBoundary } = require('./suppliers/procurement-execution-boundary');
+const { buildProcurementExecutionContext } = require('./procurement-execution-context');
 const { buildSupplierTagRequest } = require('./hub-reference');
 const {
   requireSupplierMoney,
@@ -120,7 +121,7 @@ async function callSupplierAPI(ps, item) {
  * réelle (aucun adapter n'a placeOrder), donc le comportement observable
  * (fallback manuel) est identique dans les deux branches.
  */
-async function resolveAutoOrderResult(client, exactSku, canonicalMoney, item, purchaseTarget, supplierTagRequest = null) {
+async function resolveAutoOrderResult(client, exactSku, canonicalMoney, item, purchaseTarget, purchaseOrderId, purchaseLineId = null, supplierTagRequest = null) {
   if (!exactSku) return callSupplierAPI(purchaseTarget, item);
 
   const boundary = await evaluateProcurementExecutionBoundary({
@@ -128,7 +129,10 @@ async function resolveAutoOrderResult(client, exactSku, canonicalMoney, item, pu
     quantity: item.quantity,
     canonicalUnit: canonicalMoney.canonical_unit,
     preflight: canonicalMoney.preflight,
-    context: { item, supplier_tag_request: supplierTagRequest },
+    context: {
+      item,
+      ...buildProcurementExecutionContext({ purchaseOrderId, purchaseLineId, item, supplierTagRequest }),
+    },
     adapters: EXECUTION_ADAPTER_REGISTRY,
   });
   if (!boundary.crossed) {
@@ -283,12 +287,12 @@ async function triggerPurchasing(orderId, options = {}) {
           item.quantity, unitPriceAed, money.amount, money.currency, triggerMode]);
 
         // PR 1 — écriture double : la ligne d'achat naît avec la PO, dans la même transaction.
-        await insertHistoricalPurchaseLine(client, { purchaseOrderId: po.id, item, ps, snapshot, quantity: item.quantity });
+        const historicalLine = await insertHistoricalPurchaseLine(client, { purchaseOrderId: po.id, item, ps, snapshot, quantity: item.quantity });
 
         const supplierTagRequest = buildSupplierTagRequest(po.id);
 
         if (ps.auto_order) {
-          const apiResult = await resolveAutoOrderResult(client, exactSku, canonicalMoney, item, purchaseTarget, supplierTagRequest);
+          const apiResult = await resolveAutoOrderResult(client, exactSku, canonicalMoney, item, purchaseTarget, po.id, historicalLine?.id || null, supplierTagRequest);
           if (apiResult.success) {
             await client.query(`UPDATE purchase_orders SET status='confirmed', supplier_order_id=$1, tracking_url=$2, ordered_at=NOW(), updated_at=NOW() WHERE id=$3`, [apiResult.supplier_order_id, apiResult.tracking_url || null, po.id]);
             await confirmHistoricalPurchaseLine(client, po.id, { quantity: item.quantity, unitPrice: money.amount });
