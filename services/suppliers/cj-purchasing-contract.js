@@ -132,6 +132,7 @@ function readOrderDetailFacts(body) {
   return {
     order_id: data.orderId || data.cjOrderId || null,
     order_number: data.orderNumber || data.orderNum || data.platformOrderId || null,
+    shipment_order_id: data.shipmentOrderId || data.shipmentOrderID || data.shipment_order_id || null,
     status: data.orderStatus || null,
     variants: products.flatMap((item) => {
       const directVid = item.variantId ?? item.vid ?? null;
