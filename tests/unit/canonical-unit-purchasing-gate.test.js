@@ -128,8 +128,8 @@ describe('evaluateCanonicalProcurementReadiness (GAP-4A)', () => {
 
   test('provider inconnu de l\'autorité (capability UNKNOWN) → HARD_STOP, jamais NOT_REQUIRED par défaut', async () => {
     const out = await evaluateCanonicalProcurementReadiness({
-      productSkuId: 'sku1', adapters: { cj: adapter('cj') },
-      resolveFn: async () => resolved(soi('cj', { vid: 'V1' })),
+      productSkuId: 'sku1', adapters: { unknown_provider: adapter('unknown_provider') },
+      resolveFn: async () => resolved(soi('unknown_provider', { ref: 'X1' })),
     });
     expect(out).toMatchObject({ status: 'BLOCKED_SUPPLIER_IDENTITY', ready: false, reason: 'REMOTE_PREFLIGHT_REQUIREMENT_UNKNOWN' });
   });
