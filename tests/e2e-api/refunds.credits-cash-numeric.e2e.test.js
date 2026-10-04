@@ -40,8 +40,8 @@ describeE2E('E2E-REFUNDS-CREDITS-CASH-NUMERIC — flux financiers integer -> num
     cleanup = createCleanup(db);
 
     await db.query(
-      `INSERT INTO markets (id, code, name, currency, minor_unit, is_active)
-       VALUES ($1, $2, $3, 'KMF', 0, TRUE)`,
+      `INSERT INTO markets (id, code, name, currency, minor_unit, is_active, lifecycle_status)
+       VALUES ($1, $2, $3, 'KMF', 0, TRUE, 'ACTIVE')`,
       [marketId, tag('L7').slice(0, 2).toUpperCase(), tag('marche-e2e-lot7')]
     );
     cleanup.track('markets', 'id', marketId);
