@@ -489,13 +489,37 @@ jobs:
             --base "$BASE_SHA" \
             --head "$HEAD_SHA" \
             --github-output "$GITHUB_OUTPUT"
+      - id: integration_scope
+        name: Compute Feature-first integration blast radius
+        if: needs.changes.outputs.integration_required == 'true'
+        env:
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
+        run: |
+          node scripts/integration-impact-scope.js \
+            --base "$BASE_SHA" \
+            --head "$HEAD_SHA" \
+            --github-output "$GITHUB_OUTPUT"
       - name: Rebuild PostgreSQL from canonical schema-only snapshot
         run: |
           PGPASSWORD=komerce psql -h localhost -U komerce -d komerce_test -f docs/db/railway-live-schema.sql
           node scripts/ci-db-bootstrap.js
-      - name: Integration DB proofs
-        if: needs.changes.outputs.integration_required == 'true'
-        run: npm run test:integration
+      - name: Integration DB proofs (targeted)
+        if: needs.changes.outputs.integration_required == 'true' && steps.integration_scope.outputs.mode == 'targeted'
+        env:
+          INTEGRATION_SUITES: ${{ steps.integration_scope.outputs.suites }}
+        run: |
+          echo "Targeted integration features: ${{ steps.integration_scope.outputs.features }}"
+          echo "Targeted integration suites: $INTEGRATION_SUITES"
+          node scripts/run-integration-tests.js --files="$INTEGRATION_SUITES"
+      - name: Integration DB proofs (full fallback)
+        if: needs.changes.outputs.integration_required == 'true' && steps.integration_scope.outputs.mode == 'full'
+        run: |
+          echo "Full integration required: ${{ steps.integration_scope.outputs.reason }}"
+          npm run test:integration
+      - name: Integration DB proofs (skip)
+        if: needs.changes.outputs.integration_required == 'true' && steps.integration_scope.outputs.mode == 'skip'
+        run: echo "No integration runtime impact: ${{ steps.integration_scope.outputs.reason }}"
       - name: Feature-first E2E API proofs (targeted)
         if: needs.changes.outputs.e2e_api_required == 'true' && steps.e2e_scope.outputs.mode == 'targeted'
         env:
