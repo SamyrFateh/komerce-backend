@@ -48,7 +48,7 @@ describe('market-delegation team service', () => {
           id: 'inv1',
           assignment_id: 'a1',
           email: params[1],
-          requested_capabilities: JSON.parse(params[3]),
+          requested_capabilities: JSON.parse(params[5]),
           invited_by_membership_id: params[4],
           status: 'PENDING',
           expires_at: '2026-09-12T20:00:00Z',
