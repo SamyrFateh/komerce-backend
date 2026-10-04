@@ -1131,14 +1131,14 @@
       ]
     },
     {
-      "key": "POST /api/admin/markets",
+      "key": "GET /api/admin/markets",
       "level": "PROTECTED",
       "roles": [
         "admin"
       ]
     },
     {
-      "key": "GET /api/admin/markets",
+      "key": "POST /api/admin/markets",
       "level": "PROTECTED",
       "roles": [
         "admin"
