@@ -134,7 +134,13 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
 
     const result = await triggerPurchasing('o1');
 
-    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'api_failed_notified', purchase_order_id: '00000000-0000-0000-0000-000000000102', inbound_tag: 'KOM-IN-00000000000000000000000000000102' }]);
+    expect(result.purchase_orders).toEqual([{
+      item: 'Sac Ali',
+      status: 'api_failed_notified',
+      purchase_order_id: '00000000-0000-0000-0000-000000000102',
+      inbound_tag: 'KOM-IN-00000000000000000000000000000102',
+      error: expect.stringContaining('Adapter d\'exécution absent ou invalide pour noon'),
+    }]);
     expect(notifyText).toHaveBeenCalledWith('+269900000', expect.stringContaining('À commander'), 'purchase_manual', 'o1');
   });
 
@@ -325,6 +331,7 @@ describe('purchasing-trigger-service — couverture par les lignes (PR 2)', () =
     const client = makeClient([
       { rows: [supplierRow()] },
       { rows: [{ id: '00000000-0000-0000-0000-000000000202', status: 'confirmed', effective_quantity: 2 }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000202', status: 'confirmed', trigger_mode: 'manual', supplier_order_id: null }] },
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -372,7 +379,7 @@ test('purchasing trigger transmet la vraie PO au contexte d exécution avant tou
   const path = require('path');
   const src = fs.readFileSync(path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'), 'utf8');
   expect(src).toMatch(/buildProcurementExecutionContext\(\{ purchaseOrderId, purchaseLineId, item, supplierTagRequest \}\)/);
-  expect(src).toMatch(/resolveAutoOrderResult\([^\n]+po\.id, historicalLine\?\.id \|\| null, supplierTagRequest\)/);
+  expect(src).toMatch(/resolveAutoOrderResult\([\s\S]*?task\.purchaseOrderId,[\s\S]*?task\.purchaseLineId,[\s\S]*?task\.supplierTagRequest/);
 });
 
 
