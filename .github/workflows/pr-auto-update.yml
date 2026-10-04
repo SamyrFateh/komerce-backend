@@ -1,0 +1,64 @@
+name: PR auto update
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pr-auto-update-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    name: Auto-update branch from main
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Update internal PR when behind and conflict-free
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          PR_URL="https://api.github.com/repos/$REPOSITORY/pulls/$PR_NUMBER"
+          STATE="unknown"
+          for attempt in 1 2 3 4 5; do
+            curl -fsSL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "$PR_URL" > /tmp/pr.json
+            STATE="$(node -e 'const p=require("/tmp/pr.json"); process.stdout.write(String(p.mergeable_state||"unknown"))')"
+            echo "mergeable_state=$STATE"
+            [ "$STATE" != "unknown" ] && break
+            sleep 2
+          done
+
+          case "$STATE" in
+            behind)
+              curl -fsSL -X PUT \
+                -H "Authorization: Bearer $GH_TOKEN" \
+                -H "Accept: application/vnd.github+json" \
+                -H "Content-Type: application/json" \
+                "https://api.github.com/repos/$REPOSITORY/pulls/$PR_NUMBER/update-branch" \
+                -d "{\"expected_head_sha\":\"$EXPECTED_HEAD_SHA\"}"
+              echo "Branch update requested; synchronize will trigger PR enforcement on the new HEAD."
+              ;;
+            dirty)
+              echo "Conflict detected: automatic update intentionally skipped."
+              ;;
+            *)
+              echo "No mechanical branch update required for state=$STATE."
+              ;;
+          esac
