@@ -112,3 +112,28 @@ describe('evaluateProcurementExecutionBoundary — franchissement complet', () =
     expect(out).toMatchObject({ crossed: false, reason: 'PLACE_ORDER_ERROR', place_order_invoked: true });
   });
 });
+
+
+test('PLACE_ORDER_ERROR conserve code et message provider non sensibles', async () => {
+  const error = Object.assign(new Error('provider rejected'), {
+    payload: { code: 12345, message: 'sandbox contract rejected' },
+  });
+  const adapter = fullAdapter('cj', { placeOrder: jest.fn(async () => { throw error; }) });
+  const out = await evaluateProcurementExecutionBoundary({
+    identity: soi('cj', { vid: 'V1' }),
+    quantity: 1,
+    canonicalUnit: {},
+    adapters: { cj: adapter },
+  });
+
+  expect(out).toMatchObject({
+    crossed: false,
+    reason: 'PLACE_ORDER_ERROR',
+    place_order_invoked: true,
+    evidence: {
+      provider: 'cj',
+      provider_code: 12345,
+      provider_message: 'sandbox contract rejected',
+    },
+  });
+});
