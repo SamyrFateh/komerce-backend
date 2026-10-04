@@ -6,18 +6,19 @@
  * @criticality   high
  * @inputs        purchase_order_id, optional Allegro checkoutForm id
  * @outputs       discovered/verified supplier purchase reconciliation and PO confirmation
- * @depends       db.js, services/suppliers/allegro-purchase-reconciliation.js, services/purchasing-admin-service.js
+ * @depends       db.js, services/suppliers/allegro-purchase-reconciliation.js, services/suppliers/supplier-order-identity.js, services/purchasing-admin-service.js
  * @used-by       operator CLI / Golden E2E
- * @db-read       purchase_orders
+ * @db-read       purchase_orders, purchase_lines, v_purchase_line_market
  * @db-write      purchase_orders, orders (delegated confirmation snapshot)
  * @db-txn        delegated
- * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md
+ * @doctrine      docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md, docs/doctrine/DOCTRINE_PURCHASING_PROVIDER_GOLDEN_E2E.md
  * @impact-areas  purchasing, supplier-integration, e2e
  */
 'use strict';
 
 const db = require('../db');
 const reconciliation = require('../services/suppliers/allegro-purchase-reconciliation');
+const { identitiesMatch } = require('../services/suppliers/supplier-order-identity');
 const { confirmPurchaseOrder } = require('../services/purchasing-admin-service');
 
 function purchaseOrderId(value) {
@@ -61,7 +62,7 @@ async function loadConfirmedScope(dbImpl, po) {
   if (scope.order_id !== po.order_id) throw new Error('PURCHASE_SCOPE_ORDER_MISMATCH');
   if (scope.product_sku_id !== po.product_sku_id) throw new Error('PURCHASE_SCOPE_SKU_MISMATCH');
   if (scope.supplier_unit_ref !== po.supplier_unit_ref) throw new Error('PURCHASE_SCOPE_UNIT_MISMATCH');
-  if (JSON.stringify(scope.supplier_order_identity) !== JSON.stringify(po.supplier_order_identity)) {
+  if (!identitiesMatch(scope.supplier_order_identity, po.supplier_order_identity)) {
     throw new Error('PURCHASE_SCOPE_IDENTITY_MISMATCH');
   }
   if (!scope.market_id) throw new Error('PURCHASE_SCOPE_MARKET_MISSING');
