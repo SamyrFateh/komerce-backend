@@ -2,8 +2,19 @@
   "schema_version": 1,
   "doctrine": "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md",
   "purpose": "Capability-level reconciliation of historical provider certifications. This file does not create provider capabilities; it classifies what existing evidence actually proves.",
-  "classifications": ["CONFIRMED", "RECLASSIFIED", "GAP"],
-  "proof_levels": ["UNQUALIFIED", "P0", "P1", "P2", "P3", "P4"],
+  "classifications": [
+    "CONFIRMED",
+    "RECLASSIFIED",
+    "GAP"
+  ],
+  "proof_levels": [
+    "UNQUALIFIED",
+    "P0",
+    "P1",
+    "P2",
+    "P3",
+    "P4"
+  ],
   "providers": {
     "allegro": [
       {
@@ -108,6 +119,23 @@
         ],
         "limitations": [
           "historical sourcing and authoritative stock proofs must be projected capability-by-capability before assigning P-levels"
+        ]
+      },
+      {
+        "capability": "purchasing.contract",
+        "classification": "GAP",
+        "availability": "DOCUMENTED_NOT_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_API_DOCUMENTED",
+        "evidence": [
+          "docs/external-providers/suppliers/CJ_PURCHASING_CONTRACT.md",
+          "services/suppliers/cj-purchasing-contract.js"
+        ],
+        "limitations": [
+          "official buyer-side create/read-back surface documented",
+          "account/business readiness not yet proved",
+          "no live create/read-back proof",
+          "idempotence and payment commitment remain unproved"
         ]
       },
       {
