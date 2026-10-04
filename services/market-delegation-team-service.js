@@ -19,6 +19,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { normalizePhone } = require('../utils/phone');
 const {
   normalizeCapabilities,
   delegationError,
@@ -47,6 +48,11 @@ function requireExecutor(executor) {
 function normalizeEmail(value) {
   const email = String(value || '').trim().toLowerCase();
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+}
+
+function normalizeInvitationChannel(value) {
+  const channel = String(value || 'EMAIL').trim().toUpperCase();
+  return channel === 'EMAIL' || channel === 'WHATSAPP' ? channel : null;
 }
 
 function invitationTokenHash(token) {
@@ -82,8 +88,12 @@ async function listTeam(executor, { assignmentId }) {
   const { rows: invitations } = await db.query(
     `SELECT id,
             email_normalized AS email,
+            phone_e164,
+            channel,
             requested_capabilities,
             invited_by_membership_id,
+            invited_by_user_id,
+            grants_operating_lead,
             status,
             expires_at,
             accepted_at,
@@ -114,30 +124,47 @@ async function memberInAssignment(executor, { assignmentId, membershipId, forUpd
 async function inviteTeamMember(executor, {
   assignmentId,
   actorUserId,
-  actorMembershipId,
-  email,
+  actorMembershipId = null,
+  email = null,
+  phone = null,
+  channel = 'EMAIL',
+  grantsOperatingLead = false,
+  actorIsCentral = false,
   capabilities,
   correlationId = null,
   ttlHours = INVITATION_TTL_HOURS,
 }) {
   const db = requireExecutor(executor);
-  const emailNormalized = normalizeEmail(email);
-  if (!emailNormalized) throw delegationError('TEAM_INVITE_EMAIL_INVALID', 'Email d’invitation invalide.', 400);
+  const normalizedChannel = normalizeInvitationChannel(channel);
+  if (!normalizedChannel) throw delegationError('TEAM_INVITE_CHANNEL_INVALID', 'Canal d’invitation invalide.', 400);
+  const emailNormalized = email == null ? null : normalizeEmail(email);
+  const phoneE164 = phone == null ? null : normalizePhone(phone);
+  if (normalizedChannel === 'EMAIL' && !emailNormalized) {
+    throw delegationError('TEAM_INVITE_EMAIL_INVALID', 'Email d’invitation invalide.', 400);
+  }
+  if (normalizedChannel === 'WHATSAPP' && !phoneE164) {
+    throw delegationError('TEAM_INVITE_PHONE_INVALID', 'Téléphone WhatsApp invalide ; E.164 requis.', 400);
+  }
+  if (grantsOperatingLead && !actorIsCentral) {
+    throw delegationError('TEAM_INVITE_LEAD_CENTRAL_ONLY', 'Seul le central peut désigner le responsable opérationnel.', 403);
+  }
+  if (!actorIsCentral && !actorMembershipId) {
+    throw delegationError('TEAM_INVITER_MEMBERSHIP_REQUIRED', 'Membership invitante requise.', 403);
+  }
   const requested = normalizeCapabilities(capabilities);
 
   await assertGrantAllowed(db, {
     assignmentId,
     capabilities: requested,
     actorUserId,
-    actorIsCentral: false,
+    actorIsCentral,
   });
 
   const { rows: users } = await db.query(
-    `SELECT id, full_name, email, role
-       FROM users
-      WHERE lower(email)= $1
-      LIMIT 1`,
-    [emailNormalized]
+    normalizedChannel === 'EMAIL'
+      ? `SELECT id, full_name, email, phone, role FROM users WHERE lower(email)= $1 LIMIT 1`
+      : `SELECT id, full_name, email, phone, role FROM users WHERE phone = $1 LIMIT 1`,
+    [normalizedChannel === 'EMAIL' ? emailNormalized : phoneE164]
   );
   if (users[0]) {
     const membership = await addMembership(db, {
@@ -145,9 +172,25 @@ async function inviteTeamMember(executor, {
       userId: users[0].id,
       actorUserId,
       capabilities: requested,
-      actorIsCentral: false,
+      actorIsCentral,
       correlationId,
     });
+    if (grantsOperatingLead) {
+      await db.query(
+        `UPDATE assignment_memberships
+            SET is_operating_lead=TRUE
+          WHERE id=$1::uuid AND assignment_id=$2::uuid AND status='ACTIVE'`,
+        [membership.id, assignmentId]
+      );
+      await audit(db, {
+        actorUserId,
+        assignmentId,
+        membershipId: membership.id,
+        action: 'OPERATING_LEAD_ASSIGNED',
+        after: { source: 'DIRECT_EXISTING_USER_INVITATION' },
+        correlationId,
+      });
+    }
     return {
       kind: 'membership',
       membership,
@@ -164,25 +207,31 @@ async function inviteTeamMember(executor, {
     `UPDATE market_team_invitations
         SET status='REVOKED',
             revoked_at=NOW(),
-            revoked_by_membership_id=$3::uuid,
+            revoked_by_membership_id=$4::uuid,
             updated_at=NOW()
       WHERE assignment_id=$1::uuid
-        AND email_normalized=$2
-        AND status='PENDING'`,
-    [assignmentId, emailNormalized, actorMembershipId]
+        AND status='PENDING'
+        AND channel=$2
+        AND (
+          ($2='EMAIL' AND email_normalized=$3)
+          OR ($2='WHATSAPP' AND phone_e164=$3)
+        )`,
+    [assignmentId, normalizedChannel, normalizedChannel === 'EMAIL' ? emailNormalized : phoneE164, actorMembershipId]
   );
 
   const rawToken = crypto.randomBytes(32).toString('base64url');
   const tokenHash = invitationTokenHash(rawToken);
   const { rows } = await db.query(
     `INSERT INTO market_team_invitations
-      (assignment_id, email_normalized, token_hash, requested_capabilities,
-       invited_by_membership_id, expires_at)
-     VALUES ($1::uuid,$2,$3,$4::jsonb,$5::uuid,NOW() + ($6::text || ' hours')::interval)
-     RETURNING id, assignment_id, email_normalized AS email,
-               requested_capabilities, invited_by_membership_id,
-               status, expires_at, created_at`,
-    [assignmentId, emailNormalized, tokenHash, JSON.stringify(requested), actorMembershipId, String(Number(ttlHours))]
+      (assignment_id, email_normalized, phone_e164, channel, token_hash, requested_capabilities,
+       invited_by_membership_id, invited_by_user_id, grants_operating_lead, expires_at)
+     VALUES ($1::uuid,$2,$3,$4,$5,$6::jsonb,$7::uuid,$8::uuid,$9,
+             NOW() + ($10::text || ' hours')::interval)
+     RETURNING id, assignment_id, email_normalized AS email, phone_e164, channel,
+               requested_capabilities, invited_by_membership_id, invited_by_user_id,
+               grants_operating_lead, status, expires_at, created_at`,
+    [assignmentId, emailNormalized, phoneE164, normalizedChannel, tokenHash,
+      JSON.stringify(requested), actorMembershipId, actorUserId, grantsOperatingLead, String(Number(ttlHours))]
   );
   const invitation = rows[0];
   await audit(db, {
@@ -193,7 +242,10 @@ async function inviteTeamMember(executor, {
     after: {
       invitation_id: invitation.id,
       email: emailNormalized,
+      phone_e164: phoneE164,
+      channel: normalizedChannel,
       requested_capabilities: requested,
+      grants_operating_lead: grantsOperatingLead,
       expires_at: invitation.expires_at,
     },
     correlationId,
@@ -215,11 +267,10 @@ async function acceptInvitation(executor, { token, userId, correlationId = null 
   const { rows } = await db.query(
     `SELECT i.*,
             a.status AS assignment_status,
-            inviter.user_id AS inviter_user_id,
             inviter.status AS inviter_membership_status
        FROM market_team_invitations i
        JOIN market_operating_assignments a ON a.id = i.assignment_id
-       JOIN assignment_memberships inviter ON inviter.id = i.invited_by_membership_id
+       LEFT JOIN assignment_memberships inviter ON inviter.id = i.invited_by_membership_id
       WHERE i.token_hash=$1
       LIMIT 1
       FOR UPDATE OF i`,
@@ -242,12 +293,12 @@ async function acceptInvitation(executor, { token, userId, correlationId = null 
   if (invitation.assignment_status !== 'ACTIVE') {
     throw delegationError('MARKET_ASSIGNMENT_NOT_ACTIVE', 'Le mandat marché n’est plus actif.', 409);
   }
-  if (invitation.inviter_membership_status !== 'ACTIVE') {
+  if (invitation.invited_by_membership_id && invitation.inviter_membership_status !== 'ACTIVE') {
     throw delegationError('TEAM_INVITER_NOT_ACTIVE', 'Le membre invitant n’est plus actif.', 409);
   }
 
   const { rows: users } = await db.query(
-    `SELECT id, full_name, email, role
+    `SELECT id, full_name, email, phone, role
        FROM users
       WHERE id=$1::uuid
       LIMIT 1`,
@@ -255,19 +306,39 @@ async function acceptInvitation(executor, { token, userId, correlationId = null 
   );
   const user = users[0];
   if (!user) throw delegationError('USER_NOT_FOUND', 'Utilisateur introuvable.', 404);
-  if (normalizeEmail(user.email) !== invitation.email_normalized) {
+  if (invitation.channel === 'EMAIL' && normalizeEmail(user.email) !== invitation.email_normalized) {
     throw delegationError('TEAM_INVITATION_EMAIL_MISMATCH', 'Cette invitation appartient à un autre email.', 403);
+  }
+  if (invitation.channel === 'WHATSAPP' && normalizePhone(user.phone) !== invitation.phone_e164) {
+    throw delegationError('TEAM_INVITATION_PHONE_MISMATCH', 'Cette invitation appartient à un autre téléphone.', 403);
   }
 
   const requested = normalizeCapabilities(invitation.requested_capabilities);
   const membership = await addMembership(db, {
     assignmentId: invitation.assignment_id,
     userId: user.id,
-    actorUserId: invitation.inviter_user_id,
+    actorUserId: invitation.invited_by_user_id,
     capabilities: requested,
-    actorIsCentral: false,
+    actorIsCentral: !invitation.invited_by_membership_id,
     correlationId,
   });
+
+  if (invitation.grants_operating_lead) {
+    await db.query(
+      `UPDATE assignment_memberships
+          SET is_operating_lead=TRUE
+        WHERE id=$1::uuid AND assignment_id=$2::uuid AND status='ACTIVE'`,
+      [membership.id, invitation.assignment_id]
+    );
+    await audit(db, {
+      actorUserId: invitation.invited_by_user_id,
+      assignmentId: invitation.assignment_id,
+      membershipId: membership.id,
+      action: 'OPERATING_LEAD_ASSIGNED',
+      after: { source: 'INVITATION_ACCEPTED' },
+      correlationId,
+    });
+  }
 
   await db.query(
     `UPDATE market_team_invitations
@@ -371,6 +442,8 @@ module.exports = {
   INVITATION_TTL_HOURS,
   normalizeMarketCode,
   normalizeEmail,
+  normalizeInvitationChannel,
+  normalizePhone,
   invitationTokenHash,
   resolveActiveAssignmentByMarketCode,
   resolveAuthorization,
