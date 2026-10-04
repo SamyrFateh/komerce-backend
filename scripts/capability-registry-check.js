@@ -7,15 +7,15 @@ const { validateRegistry } = require('../services/capability-registry');
 
 const CHECKPOINT = Object.freeze({
   lot: 'market-delegation-authority-ui-gaps',
-  total: 46,
+  total: 48,
   // `delegation` = dénominateur KPI d'autonomie (class DELEGATION AND
   // authority_scope MARKET AND delegation_mode DELEGABLE). market_config.update
   // (DELEGATION mais CENTRAL_ONLY/CENTRAL_HELD depuis la migration 246) n'y
-  // appartient plus : 34 lignes class=DELEGATION au total, 33 réellement
-  // délégables. D1 ajoute execution.transit.confirm en classe EXECUTION :
-  // le total passe à 46 sans changer le dénominateur DELEGATION.
-  delegation: 33,
-  live: 33,
+  // appartient plus : 36 lignes class=DELEGATION au total, 35 réellement
+  // délégables. D8 ajoute partners.read + partners.manage en DELEGATION LIVE :
+  // le total passe à 48 et le dénominateur DELEGATION à 35.
+  delegation: 35,
+  live: 35,
   p0_live: 15,
 });
 
