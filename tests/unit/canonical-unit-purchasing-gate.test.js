@@ -82,8 +82,8 @@ test('manual/CSV sans SOI reste sourcing mais Purchasing blocked; placeOrder est
 
 describe('evaluateCanonicalProcurementReadiness (GAP-4A)', () => {
   // allegro/aliexpress : preflight distant REQUIRED (provider-authority).
-  // local/whatsapp/noon/amazon_uae : NOT_REQUIRED. 'cj' n'existe pas dans
-  // l'autorité provider — sert ici à prouver le cas UNKNOWN fail-closed.
+  // local/whatsapp/noon/amazon_uae : NOT_REQUIRED. Un provider réellement inconnu
+  // sert à prouver le cas UNKNOWN fail-closed.
 
   test('provider REQUIRED + adapter présent + evaluate ready → FULFILLMENT_READY avec money exposé, sans payload construit', async () => {
     const a = adapter('allegro');
@@ -128,8 +128,8 @@ describe('evaluateCanonicalProcurementReadiness (GAP-4A)', () => {
 
   test('provider inconnu de l\'autorité (capability UNKNOWN) → HARD_STOP, jamais NOT_REQUIRED par défaut', async () => {
     const out = await evaluateCanonicalProcurementReadiness({
-      productSkuId: 'sku1', adapters: { cj: adapter('cj') },
-      resolveFn: async () => resolved(soi('cj', { vid: 'V1' })),
+      productSkuId: 'sku1', adapters: { unknown_provider: adapter('unknown_provider') },
+      resolveFn: async () => resolved(soi('unknown_provider', { ref: 'X1' })),
     });
     expect(out).toMatchObject({ status: 'BLOCKED_SUPPLIER_IDENTITY', ready: false, reason: 'REMOTE_PREFLIGHT_REQUIREMENT_UNKNOWN' });
   });

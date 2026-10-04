@@ -43,11 +43,13 @@ function extractPlatformsFromSchema(filePath) {
 
 function extractPlatformsFromMigration() {
   const dir = path.join(ROOT, 'migrations');
-  const file = fs.readdirSync(dir).find(f => f.includes('supplier_platform_allegro'));
-  if (!file) throw new Error('Migration file not found');
-  const src = fs.readFileSync(path.join(dir, file), 'utf8');
+  const files = fs.readdirSync(dir)
+    .filter(f => /supplier_platform_(allegro|cj)/.test(f))
+    .sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+  if (!files.length) throw new Error('Supplier platform migration file not found');
+  const src = fs.readFileSync(path.join(dir, files.at(-1)), 'utf8');
   const match = src.match(/ADD CONSTRAINT\s+suppliers_platform_check[\s\S]*?ARRAY\[([^\]]+)\]/);
-  if (!match) throw new Error('ADD CONSTRAINT not found in migration');
+  if (!match) throw new Error('ADD CONSTRAINT not found in latest supplier platform migration');
   return match[1].split(',').map(s => s.trim().replace(/::text/g, '').replace(/['"]/g, '')).filter(Boolean);
 }
 
@@ -64,7 +66,7 @@ beforeAll(() => {
 
 const HISTORICAL = ['noon', 'amazon_uae', 'aliexpress', 'local', 'whatsapp'];
 
-describe('supplier platform — ajout Allegro (migration 240)', () => {
+describe('supplier platform — contrainte canonique évolutive', () => {
 
   // A. allegro accepté
   test('A — "allegro" est dans PLATFORMS du validator', () => {
@@ -115,7 +117,7 @@ describe('supplier platform — ajout Allegro (migration 240)', () => {
     for (const p of HISTORICAL) expect(platforms).toContain(p);
   });
 
-  // E. schema.sql synchrone avec migration
+  // E. schema.sql synchrone avec la dernière migration de plateforme
   test('E — db/schema.sql contient allegro', () => {
     expect(extractPlatformsFromSchema(path.join(ROOT, 'db', 'schema.sql'))).toContain('allegro');
   });

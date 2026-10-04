@@ -103,6 +103,7 @@ module.exports = {
       'routes/purchasing.js',
     ],
     migrations: [
+      'migrations/275_supplier_platform_cj.sql',
       'migrations/225_purchase_orders_exact_supplier_identity.sql',
       'migrations/239_purchase_orders_canonical_supplier_money.sql',
       'migrations/263_purchase_lines_foundation.sql',
