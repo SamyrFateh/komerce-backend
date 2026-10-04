@@ -134,7 +134,13 @@ describe('purchasing-trigger-service — triggerPurchasing', () => {
 
     const result = await triggerPurchasing('o1');
 
-    expect(result.purchase_orders).toEqual([{ item: 'Sac Ali', status: 'api_failed_notified', purchase_order_id: '00000000-0000-0000-0000-000000000102', inbound_tag: 'KOM-IN-00000000000000000000000000000102' }]);
+    expect(result.purchase_orders).toEqual([{
+      item: 'Sac Ali',
+      status: 'api_failed_notified',
+      purchase_order_id: '00000000-0000-0000-0000-000000000102',
+      inbound_tag: 'KOM-IN-00000000000000000000000000000102',
+      error: expect.stringContaining('Adapter d\'exécution absent ou invalide pour noon'),
+    }]);
     expect(notifyText).toHaveBeenCalledWith('+269900000', expect.stringContaining('À commander'), 'purchase_manual', 'o1');
   });
 
@@ -325,6 +331,7 @@ describe('purchasing-trigger-service — couverture par les lignes (PR 2)', () =
     const client = makeClient([
       { rows: [supplierRow()] },
       { rows: [{ id: '00000000-0000-0000-0000-000000000202', status: 'confirmed', effective_quantity: 2 }] },
+      { rows: [{ id: '00000000-0000-0000-0000-000000000202', status: 'confirmed', trigger_mode: 'manual', supplier_order_id: null }] },
     ]);
     db.getClient.mockResolvedValue(client);
 
@@ -372,5 +379,58 @@ test('purchasing trigger transmet la vraie PO au contexte d exécution avant tou
   const path = require('path');
   const src = fs.readFileSync(path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'), 'utf8');
   expect(src).toMatch(/buildProcurementExecutionContext\(\{ purchaseOrderId, purchaseLineId, item, supplierTagRequest \}\)/);
-  expect(src).toMatch(/resolveAutoOrderResult\([^\n]+po\.id, historicalLine\?\.id \|\| null, supplierTagRequest\)/);
+  expect(src).toMatch(/resolveAutoOrderResult\([\s\S]*?task\.purchaseOrderId,[\s\S]*?task\.purchaseLineId,[\s\S]*?task\.supplierTagRequest/);
+});
+
+
+describe('auto-order externe — persistance avant mutation fournisseur', () => {
+  test('un adapter d exécution complet est appelé après COMMIT, jamais avant', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const src = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'),
+      'utf8'
+    );
+
+    const queueAt = src.indexOf('autoExecutionTasks.push({');
+    const commitAt = src.indexOf("await client.query('COMMIT')");
+    const postCommitLoopAt = src.indexOf('for (const task of autoExecutionTasks)');
+    const providerCallAt = src.indexOf(
+      'const apiResult = await resolveAutoOrderResult(',
+      postCommitLoopAt
+    );
+
+    expect(queueAt).toBeGreaterThan(-1);
+    expect(commitAt).toBeGreaterThan(queueAt);
+    expect(postCommitLoopAt).toBeGreaterThan(commitAt);
+    expect(providerCallAt).toBeGreaterThan(postCommitLoopAt);
+  });
+
+  test('une tentative provider ambiguë reste pending pour replay stable et ne bascule pas en manuel', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const src = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'),
+      'utf8'
+    );
+
+    expect(src).toContain("status: 'api_pending_retry'");
+    expect(src).toMatch(/apiResult\.place_order_invoked \|\| apiResult\.reason === 'PLACE_ORDER_ERROR'/);
+    expect(src).toContain("existingPo.status === 'pending'");
+    expect(src).toContain("!existingPo.supplier_order_id");
+    expect(src).toContain('buildSupplierTagRequest(existingPo.id)');
+  });
+
+  test('les adapters sans placeOrder complet conservent le fallback manuel historique', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const src = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'),
+      'utf8'
+    );
+
+    expect(src).toContain('validateExecutionAdapter(');
+    expect(src).toContain("status: 'api_failed_notified'");
+    expect(src).toContain("trigger_mode='manual'");
+  });
 });

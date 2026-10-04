@@ -39,8 +39,8 @@ const adapterContract = require('./supplier-fulfillment-adapter-contract');
 
 const NOT_REACHED = 'EXECUTION_BOUNDARY_NOT_REACHED';
 
-function notReached(reason, evidence = {}) {
-  return { crossed: false, status: NOT_REACHED, reason, evidence, place_order_invoked: false };
+function notReached(reason, evidence = {}, placeOrderInvoked = false) {
+  return { crossed: false, status: NOT_REACHED, reason, evidence, place_order_invoked: placeOrderInvoked };
 }
 
 /**
@@ -88,7 +88,7 @@ async function evaluateProcurementExecutionBoundary({
   try {
     result = await adapterCheck.adapter.placeOrder(payload, context);
   } catch (error) {
-    return notReached('PLACE_ORDER_ERROR', { provider: identity.provider, error_name: error?.name || 'Error' });
+    return notReached('PLACE_ORDER_ERROR', { provider: identity.provider, error_name: error?.name || 'Error' }, true);
   }
 
   return {

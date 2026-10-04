@@ -109,6 +109,6 @@ describe('evaluateProcurementExecutionBoundary — franchissement complet', () =
   test('placeOrder lève → not reached fail-closed, payload déjà construit n\'est pas perdu silencieusement', async () => {
     const adapter = fullAdapter('cj', { placeOrder: jest.fn(async () => { throw new Error('provider down'); }) });
     const out = await evaluateProcurementExecutionBoundary({ identity: soi('cj', { vid: 'V1' }), adapters: { cj: adapter } });
-    expect(out).toMatchObject({ crossed: false, reason: 'PLACE_ORDER_ERROR' });
+    expect(out).toMatchObject({ crossed: false, reason: 'PLACE_ORDER_ERROR', place_order_invoked: true });
   });
 });

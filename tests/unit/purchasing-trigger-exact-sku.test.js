@@ -113,7 +113,7 @@ describe('purchasing exact SKU procurement', () => {
         api_secret_enc: null, lead_time_days: 5, supplier_url: null,
       }] };
       if (sql.includes('FROM v_purchase_line_progress')) return { rows: [] };
-      if (sql.startsWith('SELECT id, status FROM purchase_orders')) return { rows: [] };
+      if (sql.startsWith('SELECT id, status') && sql.includes('FROM purchase_orders')) return { rows: [] };
       if (sql.includes('INSERT INTO purchase_orders')) {
         insertParams = params;
         return { rows: [{ id: '00000000-0000-0000-0000-000000000201' }] };
@@ -207,7 +207,7 @@ describe('purchasing exact SKU procurement', () => {
         api_secret_enc: null, lead_time_days: 5, supplier_url: null,
       }] };
       if (sql.includes('FROM v_purchase_line_progress')) return { rows: [] };
-      if (sql.startsWith('SELECT id, status FROM purchase_orders')) return { rows: [] };
+      if (sql.startsWith('SELECT id, status') && sql.includes('FROM purchase_orders')) return { rows: [] };
       if (sql.includes('INSERT INTO purchase_orders')) return { rows: [{ id: '00000000-0000-0000-0000-000000000201' }] };
       if (sql.includes('INSERT INTO purchase_lines')) return { rows: [{ id: 'line-1' }] };
       if (sql.startsWith('UPDATE purchase_orders')) { updateSql = sql; return { rows: [] }; }
@@ -218,8 +218,11 @@ describe('purchasing exact SKU procurement', () => {
     const result = await triggerPurchasing(ORDER.id);
 
     expect(result.purchase_orders[0]).toEqual({
-      item: 'T-shirt', status: 'api_failed_notified', purchase_order_id: '00000000-0000-0000-0000-000000000201',
-    inbound_tag: 'KOM-IN-00000000000000000000000000000201',
+      item: 'T-shirt',
+      status: 'api_failed_notified',
+      purchase_order_id: '00000000-0000-0000-0000-000000000201',
+      inbound_tag: 'KOM-IN-00000000000000000000000000000201',
+      error: 'Procurement Execution Boundary non atteinte (EXECUTION_ADAPTER_INCOMPLETE)',
     });
     // Mode manuel — jamais 'confirmed' — puisque la boundary n'est jamais franchie aujourd'hui.
     expect(updateSql).toContain("status='notified'");
@@ -276,7 +279,7 @@ describe('purchasing exact SKU procurement', () => {
         if (sql.includes('FROM product_skus')) return { rows: [SKU_ROW] };
         if (sql.includes('FROM product_suppliers')) return { rows: [PS_ROW] };
         if (sql.includes('FROM v_purchase_line_progress')) return { rows: [] };
-        if (sql.startsWith('SELECT id, status FROM purchase_orders')) return { rows: [] };
+        if (sql.startsWith('SELECT id, status') && sql.includes('FROM purchase_orders')) return { rows: [] };
         throw new Error(`SQL inattendu: ${sql}`);
       });
       db.getClient.mockResolvedValue(client);
@@ -322,7 +325,7 @@ describe('purchasing exact SKU procurement', () => {
       const client = makeClient((sql) => {
         if (sql.includes('FROM product_suppliers')) return { rows: [{ ...PS_ROW, auto_order: false, platform: 'alibaba', supplier_price_aed: 12 }] };
         if (sql.includes('FROM v_purchase_line_progress')) return { rows: [] };
-        if (sql.startsWith('SELECT id, status FROM purchase_orders')) return { rows: [] };
+        if (sql.startsWith('SELECT id, status') && sql.includes('FROM purchase_orders')) return { rows: [] };
         if (sql.includes('INSERT INTO purchase_orders')) return { rows: [{ id: '00000000-0000-0000-0000-000000000301' }] };
         if (sql.includes('INSERT INTO purchase_lines')) return { rows: [{ id: 'line-hist' }] };
         if (sql.startsWith('UPDATE purchase_orders')) return { rows: [] };

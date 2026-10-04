@@ -285,6 +285,8 @@ module.exports = {
       test: 'tests/unit/purchasing-canonical-money.test.js' },
     { statement: 'une capacité de livraison provider ne franchit la frontière Purchasing que sous forme ShippingCapability canonique ; les champs natifs restent dans l\'adapter et tout fait décisionnel inconnu bloque au lieu d\'être inventé',
       test: 'tests/unit/allegro-shipping-capability-adapter.test.js' },
+    { statement: 'toute mutation fournisseur automatique est exécutée après le COMMIT qui persiste la Purchase Order ; si placeOrder a été tenté mais que son résultat est ambigu, la PO reste pending et le replay reprend la même purchase_order.id comme execution_key au lieu de recréer une PO ou de basculer silencieusement en manuel',
+      test: 'tests/unit/purchasing-trigger-service.test.js' },
     { statement: 'CJ encapsule son contrat natif dans un adapter dédié : readiness exacte, buildOrderPayload et placeOrder idempotent avec recovery du code duplicate 1603003 ; le core lui transmet une execution_key dérivée de la vraie PO et une destination Procurement Hub provider-neutral ; l adapter est enregistré dans le registry runtime mais reste fail-closed sans destination complète et sans KOMERCE_CJ_AUTO_ORDER_ENABLED=1',
       test: 'tests/unit/cj-fulfillment-adapter.test.js' },
     { statement: 'Fulfillment Ready est un verdict dynamique SKU × quantité × Procurement Route ; identité résolue seule ne suffit pas et aucun preflight ne peut appeler placeOrder ni un paiement',
