@@ -28,6 +28,8 @@ function truthy(v) {
 }
 
 function guard(env = process.env) {
+  const runtime = String(env.KOMERCE_ENV || env.NODE_ENV || '').trim().toLowerCase();
+  if (runtime === 'production') throw new Error('REFUS: CJ P1 create/read-back interdit en production');
   if (!truthy(env[ALLOW_FLAG])) throw new Error(`${ALLOW_FLAG}=1 requis`);
   if (!env.DATABASE_URL) throw new Error('DATABASE_URL requis');
   return true;

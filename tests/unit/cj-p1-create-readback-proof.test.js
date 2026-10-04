@@ -37,7 +37,15 @@ function env() {
 }
 
 test('CJ P1 guard exige le flag explicite', () => {
-  expect(() => proof.guard({ DATABASE_URL: 'x' })).toThrow('KOMERCE_ALLOW_CJ_P1_CREATE_READBACK=1 requis');
+  expect(() => proof.guard({ DATABASE_URL: 'x', KOMERCE_ENV: 'staging' })).toThrow('KOMERCE_ALLOW_CJ_P1_CREATE_READBACK=1 requis');
+});
+
+test('CJ P1 guard refuse explicitement la production', () => {
+  expect(() => proof.guard({
+    DATABASE_URL: 'x',
+    KOMERCE_ENV: 'production',
+    KOMERCE_ALLOW_CJ_P1_CREATE_READBACK: '1',
+  })).toThrow('CJ P1 create/read-back interdit en production');
 });
 
 test('CJ P1 vérifie exactement order + VID + quantité + statut non payé', () => {
