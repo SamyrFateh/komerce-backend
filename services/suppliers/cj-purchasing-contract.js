@@ -242,18 +242,22 @@ function buildCartPayload(cjOrderCodes) {
 }
 
 function parseAddCartConfirmResponse(body) {
-  if (!body || body.success !== true || !body.data?.submitSuccess) {
+  if (!body || body.success !== true || !body.data) {
     const error = new Error('CJ_ADD_CART_CONFIRM_REJECTED');
     error.payload = body ?? null;
     throw error;
   }
+  const shipmentOrderId = assertString(
+    body.data.shipmentsId,
+    'CJ_SHIPMENT_ORDER_ID_MISSING',
+    200
+  );
   return {
-    shipment_order_id: assertString(
-      body.data.shipmentsId,
-      'CJ_SHIPMENT_ORDER_ID_MISSING',
-      200
-    ),
+    shipment_order_id: shipmentOrderId,
     success_count: Number(body.data.successCount || 0),
+    submit_success: body.data.submitSuccess === true,
+    result: body.data.result ?? null,
+    intercept_orders: Array.isArray(body.data.interceptOrders) ? body.data.interceptOrders : [],
     request_id: body.requestId ? String(body.requestId) : null,
   };
 }
