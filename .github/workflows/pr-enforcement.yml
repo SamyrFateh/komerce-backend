@@ -1,13 +1,8 @@
 name: PR enforcement
 
 on:
-  # Bootstrap de la bascule : conservé pour certifier cette PR uniquement.
-  # Une micro-PR suivante supprimera pull_request une fois le dispatcher trusted
-  # présent sur main.
-  pull_request:
-    branches:
-      - main
-    types: [opened, edited, synchronize, reopened, ready_for_review]
+  # Le dispatcher trusted (pull_request_target) est l'unique entrée PR.
+  # Le workflow lourd ne s'exécute que sur les coordonnées exactes dispatchées.
   workflow_dispatch:
     inputs:
       pr_number:

@@ -18,7 +18,9 @@ describe('PR enforcement trusted dispatch', () => {
     expect(enforcement).toContain('base_ref:');
   });
 
-  test('trusted pull_request_target only dispatches internal PRs', () => {
+  test('trusted pull_request_target is the unique PR entry point', () => {
+    expect(enforcement).not.toMatch(/^\s{2}pull_request:/m);
+    expect(enforcement).toContain('workflow_dispatch:');
     expect(dispatcher).toContain('pull_request_target:');
     expect(dispatcher).toContain('github.event.pull_request.head.repo.full_name == github.repository');
     expect(dispatcher).toContain('/actions/workflows/pr-enforcement.yml/dispatches');
