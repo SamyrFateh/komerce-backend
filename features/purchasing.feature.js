@@ -289,6 +289,8 @@ module.exports = {
       test: 'tests/unit/allegro-shipping-capability-adapter.test.js' },
     { statement: 'toute mutation fournisseur automatique est exécutée après le COMMIT qui persiste la Purchase Order ; si placeOrder a été tenté mais que son résultat est ambigu, la PO reste pending et le replay reprend la même purchase_order.id comme execution_key au lieu de recréer une PO ou de basculer silencieusement en manuel',
       test: 'tests/unit/purchasing-trigger-service.test.js' },
+    { statement: 'le platform CJ runtime reprend la valeur Api du contrat P1 prouvé par défaut ; un échec placeOrder conserve uniquement code et message provider bornés afin que le Golden puisse diagnostiquer un rejet sans exposer credentials ni payload sensible',
+      test: 'tests/unit/cj-fulfillment-adapter.test.js' },
     { statement: 'le Golden CJ de niveau orchestration doit partir d une commande B2C payée dans une DB Postgres jetable, traverser le vrai triggerPurchasing, créer une PO Komerce avant toute mutation provider, créer uniquement un ordre CJ sandbox non payé, persister supplier_order_id puis prouver qu un replay ne crée aucune seconde PO',
       test: 'tests/unit/cj-golden-trigger-purchasing-proof.test.js' },
     { statement: 'un Golden CJ runtime ne peut utiliser createOrderV2 sandbox que sous KOMERCE_CJ_SANDBOX=1 explicite ; sans ce flag l adapter ne fabrique jamais isSandbox silencieusement, et le proof isolé doit combiner sandbox + payType=3 + interdiction payment/confirmOrder',

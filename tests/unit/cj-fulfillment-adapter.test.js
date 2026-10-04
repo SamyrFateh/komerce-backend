@@ -267,3 +267,58 @@ test('buildOrderPayload ne suppose jamais sandbox sans flag explicite', async ()
   expect(payload.sandbox).toBe(false);
   expect(payload.native.isSandbox).toBeUndefined();
 });
+
+
+test('buildOrderPayload utilise platform Api par défaut comme le P1 prouvé', async () => {
+  const payload = await adapter.buildOrderPayload({
+    items: [{ identity, supplier_unit_ref: 'VID-1', quantity: 1 }],
+    preflights: [{ ready: true, evidence: { auto_order_ready: true } }],
+    context: {
+      execution_key: 'po-1',
+      procurement_destination: {
+        postal_code: '10001',
+        country_code: 'US',
+        country: 'United States',
+        province: 'New York',
+        city: 'New York',
+        customer_name: 'Komerce Sandbox',
+        address1: '350 5th Ave',
+        phone: '2127363100',
+      },
+      env: {
+        KOMERCE_CJ_LOGISTIC_NAME: 'CJPacket',
+        KOMERCE_CJ_FROM_COUNTRY_CODE: 'CN',
+        KOMERCE_CJ_SANDBOX: '1',
+      },
+    },
+  });
+
+  expect(payload.native.platform).toBe('Api');
+});
+
+test('buildOrderPayload accepte un override platform explicite sans branche provider dans le core', async () => {
+  const payload = await adapter.buildOrderPayload({
+    items: [{ identity, supplier_unit_ref: 'VID-1', quantity: 1 }],
+    preflights: [{ ready: true, evidence: { auto_order_ready: true } }],
+    context: {
+      execution_key: 'po-2',
+      platform: 'Custom',
+      procurement_destination: {
+        postal_code: '10001',
+        country_code: 'US',
+        country: 'United States',
+        province: 'New York',
+        city: 'New York',
+        customer_name: 'Komerce Sandbox',
+        address1: '350 5th Ave',
+        phone: '2127363100',
+      },
+      env: {
+        KOMERCE_CJ_LOGISTIC_NAME: 'CJPacket',
+        KOMERCE_CJ_FROM_COUNTRY_CODE: 'CN',
+      },
+    },
+  });
+
+  expect(payload.native.platform).toBe('Custom');
+});
