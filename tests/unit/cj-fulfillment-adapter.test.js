@@ -210,3 +210,60 @@ test('placeOrder autorisation runtime reste derrière le flag explicite CJ', asy
   expect(out.payment_invoked).toBe(false);
   expect(out.confirmation_invoked).toBe(false);
 });
+
+
+test('buildOrderPayload peut activer le sandbox CJ uniquement par flag runtime explicite', async () => {
+  const payload = await adapter.buildOrderPayload({
+    items: [{ identity, supplier_unit_ref: 'VID-1', quantity: 1 }],
+    preflights: [{ ready: true, evidence: { auto_order_ready: true } }],
+    context: {
+      execution_key: 'po-sandbox-1',
+      procurement_destination: {
+        postal_code: '10001',
+        country_code: 'US',
+        country: 'United States',
+        province: 'New York',
+        city: 'New York',
+        customer_name: 'Komerce Sandbox',
+        address1: '350 5th Ave',
+        phone: '2127363100',
+      },
+      env: {
+        KOMERCE_CJ_LOGISTIC_NAME: 'CJPacket',
+        KOMERCE_CJ_FROM_COUNTRY_CODE: 'CN',
+        KOMERCE_CJ_SANDBOX: '1',
+      },
+    },
+  });
+
+  expect(payload.sandbox).toBe(true);
+  expect(payload.native.isSandbox).toBe(1);
+  expect(payload.native.payType).toBe(3);
+});
+
+test('buildOrderPayload ne suppose jamais sandbox sans flag explicite', async () => {
+  const payload = await adapter.buildOrderPayload({
+    items: [{ identity, supplier_unit_ref: 'VID-1', quantity: 1 }],
+    preflights: [{ ready: true, evidence: { auto_order_ready: true } }],
+    context: {
+      execution_key: 'po-prod-shaped-1',
+      procurement_destination: {
+        postal_code: '10001',
+        country_code: 'US',
+        country: 'United States',
+        province: 'New York',
+        city: 'New York',
+        customer_name: 'Komerce Hub',
+        address1: '350 5th Ave',
+        phone: '2127363100',
+      },
+      env: {
+        KOMERCE_CJ_LOGISTIC_NAME: 'CJPacket',
+        KOMERCE_CJ_FROM_COUNTRY_CODE: 'CN',
+      },
+    },
+  });
+
+  expect(payload.sandbox).toBe(false);
+  expect(payload.native.isSandbox).toBeUndefined();
+});
