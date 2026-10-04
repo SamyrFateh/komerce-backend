@@ -1,0 +1,114 @@
+name: Isolated CJ P1 create-readback
+
+on:
+  issues:
+    types: [opened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: isolated-cj-p1-create-readback
+  cancel-in-progress: false
+
+jobs:
+  cj-p1:
+    name: CJ P1 — sandbox create + exact read-back
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.actor == github.repository_owner &&
+       github.event.issue.title == '[isolated-op] cj-p1-create-readback')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      CI: '1'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      CJ_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
+      KOMERCE_ALLOW_CJ_P1_CREATE_READBACK: '1'
+      KOMERCE_CJ_P1_PRODUCT_REF: 'KPR-131962'
+      KOMERCE_CJ_P1_DESTINATION_JSON: ${{ secrets.KOMERCE_CJ_P1_DESTINATION_JSON }}
+      KOMERCE_CJ_P1_LOGISTIC_NAME: ${{ secrets.KOMERCE_CJ_P1_LOGISTIC_NAME }}
+      KOMERCE_CJ_P1_FROM_COUNTRY_CODE: ${{ secrets.KOMERCE_CJ_P1_FROM_COUNTRY_CODE }}
+
+    steps:
+      - name: Checkout protected main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Assert isolated non-production runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$KOMERCE_ENV" = 'staging'
+          test "$NODE_ENV" = 'test'
+          test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_DATABASE_URL manquant'; exit 1; }
+          test -n "${CJ_ACCESS_TOKEN:-}" || { echo '::error::KOMERCE_CJ_PROOF_ACCESS_TOKEN manquant'; exit 1; }
+          test -n "${KOMERCE_CJ_P1_DESTINATION_JSON:-}" || { echo '::error::KOMERCE_CJ_P1_DESTINATION_JSON manquant'; exit 1; }
+          test -n "${KOMERCE_CJ_P1_LOGISTIC_NAME:-}" || { echo '::error::KOMERCE_CJ_P1_LOGISTIC_NAME manquant'; exit 1; }
+          test -n "${KOMERCE_CJ_P1_FROM_COUNTRY_CODE:-}" || { echo '::error::KOMERCE_CJ_P1_FROM_COUNTRY_CODE manquant'; exit 1; }
+
+      - name: Run CJ P1 sandbox create/read-back
+        id: proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(timeout 600s node scripts/cj-p1-create-readback-proof.js)"
+          printf '%s
+' "$output"
+          compact="$(printf '%s
+' "$output" | tr '
+' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-12000)"
+          {
+            echo 'summary<<EOF'
+            echo "$compact"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write proof summary
+        if: always()
+        shell: bash
+        env:
+          PROOF_SUMMARY: ${{ steps.proof.outputs.summary }}
+        run: |
+          {
+            echo '## CJ P1 sandbox create/read-back'
+            echo
+            echo '- runtime: staging/test'
+            echo '- target: KPR-131962'
+            echo '- create: sandbox only'
+            echo '- payType: 3'
+            echo '- payment: forbidden'
+            echo '- confirmOrder: forbidden'
+            echo '- proof: exact order + VID + quantity read-back'
+            if [ -n "${PROOF_SUMMARY:-}" ]; then echo "- result: `$PROOF_SUMMARY`"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Close successful command issue
+        if: success() && github.event_name == 'issues'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PROOF_SUMMARY: ${{ steps.proof.outputs.summary }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY"             --body "CJ P1 sandbox create/read-back completed successfully. No payment or confirmation invoked.\n\nResult: `$PROOF_SUMMARY`"
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
