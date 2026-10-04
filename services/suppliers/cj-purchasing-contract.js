@@ -226,6 +226,16 @@ function buildSandboxSimulatePayPayload(orderId) {
   return { orderId: assertString(orderId, 'CJ_ORDER_ID_REQUIRED', 200) };
 }
 
+function buildSandboxSimulatePayParentPayload(shipmentOrderId) {
+  return {
+    shipmentOrderId: assertString(
+      shipmentOrderId,
+      'CJ_SHIPMENT_ORDER_ID_REQUIRED',
+      200
+    ),
+  };
+}
+
 function parseSandboxSimulatePayResponse(body) {
   if (!body || body.result !== true || body.data !== true) {
     throw new Error('CJ_SANDBOX_SIMULATE_PAY_REJECTED');
@@ -271,6 +281,7 @@ module.exports = {
   buildPayBalanceV2Payload,
   parsePayBalanceV2Response,
   buildSandboxSimulatePayPayload,
+  buildSandboxSimulatePayParentPayload,
   parseSandboxSimulatePayResponse,
   verifyPaidOrderDetail,
 };
