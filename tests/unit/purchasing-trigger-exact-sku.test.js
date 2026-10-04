@@ -218,8 +218,11 @@ describe('purchasing exact SKU procurement', () => {
     const result = await triggerPurchasing(ORDER.id);
 
     expect(result.purchase_orders[0]).toEqual({
-      item: 'T-shirt', status: 'api_failed_notified', purchase_order_id: '00000000-0000-0000-0000-000000000201',
-    inbound_tag: 'KOM-IN-00000000000000000000000000000201',
+      item: 'T-shirt',
+      status: 'api_failed_notified',
+      purchase_order_id: '00000000-0000-0000-0000-000000000201',
+      inbound_tag: 'KOM-IN-00000000000000000000000000000201',
+      error: 'Procurement Execution Boundary non atteinte (EXECUTION_ADAPTER_INCOMPLETE)',
     });
     // Mode manuel — jamais 'confirmed' — puisque la boundary n'est jamais franchie aujourd'hui.
     expect(updateSql).toContain("status='notified'");
