@@ -88,7 +88,12 @@ async function evaluateProcurementExecutionBoundary({
   try {
     result = await adapterCheck.adapter.placeOrder(payload, context);
   } catch (error) {
-    return notReached('PLACE_ORDER_ERROR', { provider: identity.provider, error_name: error?.name || 'Error' }, true);
+    return notReached('PLACE_ORDER_ERROR', {
+      provider: identity.provider,
+      error_name: error?.name || 'Error',
+      provider_code: error?.payload?.code ?? null,
+      provider_message: error?.payload?.message ? String(error.payload.message).slice(0, 300) : null,
+    }, true);
   }
 
   return {
