@@ -103,7 +103,7 @@ module.exports = {
       'routes/purchasing.js',
     ],
     migrations: [
-      'migrations/274_supplier_platform_cj.sql',
+      'migrations/275_supplier_platform_cj.sql',
       'migrations/225_purchase_orders_exact_supplier_identity.sql',
       'migrations/239_purchase_orders_canonical_supplier_money.sql',
       'migrations/263_purchase_lines_foundation.sql',
@@ -117,7 +117,8 @@ module.exports = {
       'scripts/aliexpress-readiness-golden-proof.js',
       'scripts/cj-p1-create-readback-proof.js',
     ],
-    tests: [      'tests/unit/purchase-line-snapshot.test.js',
+    tests: [
+      'tests/unit/purchase-line-snapshot.test.js',
       'tests/unit/purchase-lines-parity-check.test.js',
       'tests/integration/purchase-lines-postgres.test.js',
       'tests/integration/purchase-line-progress-postgres.test.js',
