@@ -28,9 +28,31 @@ function po(overrides = {}) {
   };
 }
 
-function deps(row = po()) {
+function scopeRow(overrides = {}) {
   return {
-    dbImpl: { query: jest.fn().mockResolvedValue({ rows: row ? [row] : [] }) },
+    purchase_line_id: '44444444-4444-4444-8444-444444444444',
+    order_item_id: '55555555-5555-4555-8555-555555555555',
+    order_id: orderId,
+    market_id: '66666666-6666-4666-8666-666666666666',
+    product_sku_id: '33333333-3333-4333-8333-333333333333',
+    supplier_id: '77777777-7777-4777-8777-777777777777',
+    supplier_unit_ref: '123',
+    supplier_order_identity: identity,
+    confirmed_quantity: 1,
+    confirmed_unit_price: '10.00',
+    supplier_currency: 'PLN',
+    ...overrides,
+  };
+}
+
+function deps(row = po(), scope = scopeRow()) {
+  const query = jest.fn(async (sql) => {
+    if (/FROM purchase_orders/.test(sql)) return { rows: row ? [row] : [] };
+    if (/FROM purchase_lines/.test(sql)) return { rows: scope ? [scope] : [] };
+    throw new Error(`SQL inattendu: ${sql}`);
+  });
+  return {
+    dbImpl: { query },
     discover: jest.fn().mockResolvedValue({
       checkoutFormId: checkoutId,
       provider_status: 'READY_FOR_PROCESSING',
@@ -76,6 +98,13 @@ test('one-argument runner discovers the exact paid Allegro order then confirms t
     purchase_confirmed: true,
     discovered_checkout_form: true,
     proof: { supplier_order_id: checkoutId },
+    scope: {
+      order_id: orderId,
+      market_id: '66666666-6666-4666-8666-666666666666',
+      confirmed_quantity: 1,
+      confirmed_unit_price: '10.00',
+      supplier_currency: 'PLN',
+    },
   });
 });
 
@@ -98,6 +127,15 @@ test('verified Allegro order confirms exactly the persisted Komerce PO', async (
     discovered_checkout_form: false,
     purchase_order_status: 'confirmed',
     proof: { verified: true, supplier_order_id: checkoutId },
+    scope: {
+      purchase_line_id: '44444444-4444-4444-8444-444444444444',
+      order_id: orderId,
+      market_id: '66666666-6666-4666-8666-666666666666',
+      product_sku_id: '33333333-3333-4333-8333-333333333333',
+      confirmed_quantity: 1,
+      confirmed_unit_price: '10.00',
+      supplier_currency: 'PLN',
+    },
   });
 });
 
@@ -118,6 +156,21 @@ test('confirmed PO cannot be rebound to a different Allegro order', async () => 
 test('non-reconcilable statuses and incomplete historical POs fail closed', async () => {
   await expect(run([poId, checkoutId], deps(po({ status: 'cancelled' })))).rejects.toThrow('STATUS_NOT_RECONCILABLE');
   await expect(run([poId, checkoutId], deps(po({ product_sku_id: null })))).rejects.toThrow('EXACT_IDENTITY_REQUIRED');
+});
+
+
+test.each([
+  ['aucune ligne active', null, 'PURCHASE_SCOPE_NOT_EXACT_0'],
+  ['mauvais order', scopeRow({ order_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' }), 'PURCHASE_SCOPE_ORDER_MISMATCH'],
+  ['mauvais SKU', scopeRow({ product_sku_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' }), 'PURCHASE_SCOPE_SKU_MISMATCH'],
+  ['mauvaise unité', scopeRow({ supplier_unit_ref: '999' }), 'PURCHASE_SCOPE_UNIT_MISMATCH'],
+  ['marché absent', scopeRow({ market_id: null }), 'PURCHASE_SCOPE_MARKET_MISSING'],
+  ['quantité confirmée incohérente', scopeRow({ confirmed_quantity: 2 }), 'PURCHASE_SCOPE_QUANTITY_MISMATCH'],
+  ['prix confirmé incohérent', scopeRow({ confirmed_unit_price: '11.00' }), 'PURCHASE_SCOPE_CONFIRMED_PRICE_MISMATCH'],
+  ['devise incohérente', scopeRow({ supplier_currency: 'EUR' }), 'PURCHASE_SCOPE_CURRENCY_MISMATCH'],
+])('scope confirmé fail-closed — %s', async (_label, scope, code) => {
+  const d = deps(po(), scope);
+  await expect(run([poId, checkoutId], d)).rejects.toThrow(code);
 });
 
 test('bad args and missing PO fail before reconciliation', async () => {
