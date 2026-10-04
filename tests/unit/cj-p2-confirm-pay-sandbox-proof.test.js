@@ -1,0 +1,82 @@
+'use strict';
+
+/**
+ * @test-kind unit
+ * @test-runner jest
+ * @test-requires none
+ */
+
+jest.mock('../../db', () => ({
+  query: jest.fn(),
+  pool: { end: jest.fn() },
+}));
+jest.mock('../../services/suppliers/connectors/cj-connector', () => ({
+  BASE_URL: 'https://developers.cjdropshipping.com/api2.0/v1',
+  getAccessToken: jest.fn(async () => 'token'),
+}));
+
+const proof = require('../../scripts/cj-p2-confirm-pay-sandbox-proof');
+const contract = require('../../services/suppliers/cj-purchasing-contract');
+
+function env(extra = {}) {
+  return {
+    DATABASE_URL: 'postgres://ephemeral',
+    NODE_ENV: 'test',
+    KOMERCE_ENV: 'staging',
+    KOMERCE_ALLOW_CJ_P2_CONFIRM_PAY: '1',
+    KOMERCE_CJ_SANDBOX: '1',
+    ...extra,
+  };
+}
+
+test('P2 refuse production', () => {
+  expect(() => proof.guard(env({ KOMERCE_ENV: 'production' })))
+    .toThrow('CJ P2 confirm/pay interdit en production');
+});
+
+test('P2 exige une autorisation dédiée et sandbox explicite', () => {
+  const noAllow = env();
+  delete noAllow.KOMERCE_ALLOW_CJ_P2_CONFIRM_PAY;
+  expect(() => proof.guard(noAllow)).toThrow('KOMERCE_ALLOW_CJ_P2_CONFIRM_PAY=1 requis');
+  expect(() => proof.guard(env({ KOMERCE_CJ_SANDBOX: '0' })))
+    .toThrow('KOMERCE_CJ_SANDBOX=1 requis');
+});
+
+test('contrat confirmOrder exige et vérifie le même orderId', () => {
+  expect(contract.buildConfirmOrderPayload('CJ-1')).toEqual({ orderId: 'CJ-1' });
+  expect(contract.parseConfirmOrderResponse({
+    result: true,
+    data: 'CJ-1',
+    requestId: 'REQ-1',
+  }, 'CJ-1')).toMatchObject({
+    order_id: 'CJ-1',
+    confirmation_verdict: 'confirmed_unpaid',
+  });
+  expect(() => contract.parseConfirmOrderResponse({
+    result: true,
+    data: 'CJ-OTHER',
+  }, 'CJ-1')).toThrow('CJ_CONFIRM_ORDER_ID_MISMATCH');
+});
+
+test('contrat payBalanceV2 utilise shipmentOrderId sans payId obligatoire', () => {
+  expect(contract.buildPayBalanceV2Payload('SHIP-1')).toEqual({
+    shipmentOrderId: 'SHIP-1',
+  });
+  expect(contract.parsePayBalanceV2Response({
+    result: true,
+    data: null,
+    requestId: 'REQ-2',
+  })).toMatchObject({
+    payment_verdict: 'paid',
+  });
+});
+
+test('read-back payé accepte uniquement les états post-paiement connus', () => {
+  expect(contract.verifyPaidOrderDetail({
+    data: { orderId: 'CJ-1', orderStatus: 'PENDING', productList: [] },
+  }, 'CJ-1')).toMatchObject({ status: 'PENDING' });
+
+  expect(() => contract.verifyPaidOrderDetail({
+    data: { orderId: 'CJ-1', orderStatus: 'UNPAID', productList: [] },
+  }, 'CJ-1')).toThrow('CJ_PAID_STATUS_UNEXPECTED:UNPAID');
+});
