@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, services/notification-service.js, services/hub-reference.js, services/purchase-line-snapshot.js, services/suppliers/supplier-order-identity.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/procurement-execution-boundary.js, services/suppliers/execution-adapter-registry.js, utils/logger.js
+ * @depends       db, services/notification-service.js, services/hub-reference.js, services/purchase-line-snapshot.js, services/supplier-execution-persistence.js, services/suppliers/supplier-order-identity.js, services/suppliers/canonical-unit-purchasing-gate.js, services/suppliers/procurement-execution-boundary.js, services/suppliers/execution-adapter-registry.js, utils/logger.js
  * @used-by       routes/cash.js, routes/purchasing.js
  * @db-read       order_items, orders, product_skus, product_suppliers, products, purchase_lines, purchase_orders, relais, suppliers
- * @db-write      alerts, purchase_lines, purchase_orders
+ * @db-write      alerts, purchase_lines, purchase_orders, supplier_execution_orders, supplier_execution_order_lines, supplier_execution_events
  * @db-txn        resolve_before_behavior_change
  * @doctrine      resolve_before_behavior_change, docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md, docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md, docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md
  * @impact-areas  purchasing, supplier-integration
@@ -25,6 +25,7 @@ const { validateAdapter, validateExecutionAdapter } = require('./suppliers/suppl
 const { EXECUTION_ADAPTER_REGISTRY } = require('./suppliers/execution-adapter-registry');
 const { evaluateProcurementExecutionBoundary } = require('./suppliers/procurement-execution-boundary');
 const { buildProcurementExecutionContext } = require('./procurement-execution-context');
+const { persistSupplierOrderExecution } = require('./supplier-execution-persistence');
 const { buildSupplierTagRequest } = require('./hub-reference');
 const {
   requireSupplierMoney,
@@ -147,7 +148,11 @@ async function resolveAutoOrderResult(client, exactSku, canonicalMoney, item, pu
   }
   return {
     success: true,
+    provider: boundary.provider || canonicalMoney.supplier_order_identity.provider,
     supplier_order_id: boundary.result?.supplier_order_id || null,
+    supplier_order_code: boundary.result?.supplier_order_code || null,
+    provider_status: boundary.result?.readback_status || null,
+    execution_recovery: boundary.result?.execution_recovery || null,
     tracking_url: boundary.result?.tracking_url || null,
   };
 }
@@ -427,6 +432,16 @@ async function triggerPurchasing(orderId, options = {}) {
         const autoClient = await db.getClient();
         try {
           await autoClient.query('BEGIN');
+          await persistSupplierOrderExecution(autoClient, {
+            purchaseOrderId: task.purchaseOrderId,
+            purchaseLineId: task.purchaseLineId,
+            quantity: task.item.quantity,
+            provider: apiResult.provider,
+            supplierOrderId: apiResult.supplier_order_id,
+            supplierOrderCode: apiResult.supplier_order_code,
+            providerStatus: apiResult.provider_status,
+            executionRecovery: apiResult.execution_recovery,
+          });
           await autoClient.query(
             `UPDATE purchase_orders
                 SET status='confirmed', supplier_order_id=$1, tracking_url=$2,
