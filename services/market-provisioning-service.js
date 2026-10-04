@@ -124,6 +124,7 @@ async function provisionMarket(executor, {
     channel: lead.channel || (lead.phone ? 'WHATSAPP' : 'EMAIL'),
     grantsOperatingLead: true,
     capabilities,
+    capabilityLimits: financialLimits,
     correlationId,
   });
 
