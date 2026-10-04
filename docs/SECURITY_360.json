@@ -1166,7 +1166,7 @@
         "market_operator"
       ],
       "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
+        "attachAuthorizedMarketsForCapability"
       ],
       "file": "routes/admin/partners.js"
     },
@@ -1178,7 +1178,7 @@
         "market_operator"
       ],
       "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
+        "attachAuthorizedMarketsForCapability"
       ],
       "file": "routes/admin/partners.js"
     },
@@ -1190,7 +1190,7 @@
         "market_operator"
       ],
       "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
+        "attachAuthorizedMarketsForCapability"
       ],
       "file": "routes/admin/partners.js"
     },
@@ -1202,7 +1202,7 @@
         "market_operator"
       ],
       "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
+        "attachAuthorizedMarketsForCapability"
       ],
       "file": "routes/admin/partners.js"
     },
@@ -1214,7 +1214,7 @@
         "market_operator"
       ],
       "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
+        "attachAuthorizedMarketsForCapability"
       ],
       "file": "routes/admin/partners.js"
     },
@@ -1226,7 +1226,7 @@
         "market_operator"
       ],
       "marketGuards": [
-        "attachAuthorizedMarketsForOperator"
+        "attachAuthorizedMarketsForCapability"
       ],
       "file": "routes/admin/partners.js"
     },
