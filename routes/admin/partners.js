@@ -6,14 +6,14 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-scope.js, middleware/validate.js, validators, services/partner-admin-service.js
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, middleware/validate.js, validators, services/partner-admin-service.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, operator_market_scopes
+ * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling
  * @db-write      none
  * @db-txn        delegated_to_partner_admin_service
- * @doctrine      legacy_http_contract_preserved, single_partner_mutation_authority, market_operator_scoping (GAP-3)
+ * @doctrine      legacy_http_contract_preserved, capability_is_the_authority_not_role, single_partner_mutation_authority
  * @impact-areas  dashboard, admin-dashboard, partners, market
- * @version       2026-09
+ * @version       2026-10-d8
  */
 
 'use strict';
@@ -23,19 +23,30 @@ const router = express.Router();
 const db = require('../../db');
 const { authenticate, requireRole } = require('../../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../../middleware/require-market-delegated-role');
-const { attachAuthorizedMarketsForOperator, resolveMarketScopeRole, hasMarketScopeRole } = require('../../middleware/require-market-scope');
+const { attachAuthorizedMarketsForCapability } = require('../../middleware/require-market-delegated-capability');
 const { validate } = require('../../middleware/validate');
 const { admin } = require('../../validators');
 const partnerAdmin = require('../../services/partner-admin-service');
 
-// ── GAP-3 (2026-09) ──────────────────────────────────────────────────────
-// Ouvert en plus au market_operator. Lecture = viewer ou manager (guard
-// suffit). Mutation = manager obligatoire, vérifié en ligne via
-// ensureManagerForCountryCode — le filtrage marché passe par
-// partners.country_code (résolu contre markets.code), pas par un market_id
-// direct absent de cette table. attachAuthorizedMarketsForOperator ne fait
-// rien pour admin — aucun changement de comportement pour ce rôle.
-const guard = [authenticate, attachMarketDelegatedRoleFor(['admin', 'market_operator']), requireRole(['admin', 'market_operator']), attachAuthorizedMarketsForOperator];
+// D8 Market Control Plane — le registre historique partners est multi-types :
+// provider.manage ne constitue donc jamais son autorité. Les lectures exigent
+// partners.read ; les mutations exigent partners.manage. L'admin central
+// conserve son comportement historique, tandis que l'autorité market_operator
+// provient exclusivement des assignments/memberships/capabilities canoniques.
+const baseGuard = [
+  authenticate,
+  attachMarketDelegatedRoleFor(['admin', 'market_operator']),
+  requireRole(['admin', 'market_operator']),
+];
+const attachPartnerReadMarkets = attachAuthorizedMarketsForCapability('partners.read', { audit: false });
+const attachPartnerManageMarkets = attachAuthorizedMarketsForCapability('partners.manage', { audit: true });
+
+function allowCentralAdminOr(delegatedGuard) {
+  return (req, res, next) => req.user.role === 'admin' ? next() : delegatedGuard(req, res, next);
+}
+
+const readGuard = [...baseGuard, allowCentralAdminOr(attachPartnerReadMarkets)];
+const manageGuard = [...baseGuard, allowCentralAdminOr(attachPartnerManageMarkets)];
 
 function handlePartnerError(err, res, next) {
   if (err instanceof partnerAdmin.PartnerAdminError || err?.status) {
@@ -60,40 +71,26 @@ async function resolveAuthorizedCountryCodes(authorizedMarkets) {
 }
 
 /**
- * market_operator uniquement (admin retourne null immédiatement) : vérifie
- * que countryCode résout vers un marché autorisé ET que le scope sur ce
- * marché est 'manager' — jamais 'viewer', une mutation n'est jamais une
- * simple lecture. Aucun market_id fourni par le client n'est une autorité :
- * countryCode vient toujours de la ressource serveur (partner existant) ou
- * du champ validé du body, jamais interprété comme preuve d'accès en soi.
+ * Pour market_operator uniquement, countryCode est résolu côté serveur vers
+ * le Market ID puis comparé aux marchés autorisés pour la capability exacte.
+ * Le code pays n'est jamais une preuve d'autorité en soi.
  */
-async function ensureManagerForCountryCode(req, countryCode) {
+async function ensureCapabilityAccessForCountryCode(req, countryCode, capability) {
   if (req.user.role !== 'market_operator') return null;
   const marketId = await resolveMarketIdByCode(countryCode);
-  if (!marketId || !req.authorizedMarkets.has(marketId)) {
-    return { status: 403, body: { error: 'Hors de votre périmètre marché', code: 'market_scope_denied' } };
-  }
-  const actualRole = await resolveMarketScopeRole(req.user.id, marketId);
-  if (!hasMarketScopeRole(actualRole, 'manager')) {
+  if (!marketId || !req.authorizedMarkets || !req.authorizedMarkets.has(marketId)) {
     return {
       status: 403,
-      body: { error: `Scope ${actualRole || 'aucun'} insuffisant — manager requis`, code: 'market_scope_role_insufficient' },
+      body: {
+        error: `Capability ${capability} requise sur ce marché`,
+        code: 'MARKET_CAPABILITY_REQUIRED',
+      },
     };
   }
   return null;
 }
 
-/** Lecture (viewer ou manager suffit) — même résolution country_code → market_id. */
-async function ensureReadAccessForCountryCode(req, countryCode) {
-  if (req.user.role !== 'market_operator') return null;
-  const marketId = await resolveMarketIdByCode(countryCode);
-  if (!marketId || !req.authorizedMarkets.has(marketId)) {
-    return { status: 403, body: { error: 'Hors de votre périmètre marché', code: 'market_scope_denied' } };
-  }
-  return null;
-}
-
-router.get('/partners', ...guard, async (req, res) => {
+router.get('/partners', ...readGuard, async (req, res) => {
   try {
     const active = req.query.active === undefined
       ? undefined
@@ -123,7 +120,7 @@ router.get('/partners', ...guard, async (req, res) => {
   }
 });
 
-router.get('/partners/stats', ...guard, async (req, res) => {
+router.get('/partners/stats', ...readGuard, async (req, res) => {
   try {
     if (req.user.role === 'market_operator') {
       const codes = await resolveAuthorizedCountryCodes(req.authorizedMarkets);
@@ -135,39 +132,39 @@ router.get('/partners/stats', ...guard, async (req, res) => {
   }
 });
 
-router.get('/partners/:id', ...guard, async (req, res, next) => {
+router.get('/partners/:id', ...readGuard, async (req, res, next) => {
   try {
     const result = await partnerAdmin.getPartner(req.params.id);
     if (!result) return res.status(404).json({ error: 'Partenaire introuvable' });
     if (req.user.role === 'market_operator') {
-      const denial = await ensureReadAccessForCountryCode(req, result.partner.country_code);
+      const denial = await ensureCapabilityAccessForCountryCode(req, result.partner.country_code, 'partners.read');
       if (denial) return res.status(denial.status).json(denial.body);
     }
     res.json(result);
   } catch (err) { next(err); }
 });
 
-router.post('/partners', ...guard, validate(admin.createPartner), async (req, res, next) => {
+router.post('/partners', ...manageGuard, validate(admin.createPartner), async (req, res, next) => {
   try {
     if (req.user.role === 'market_operator') {
-      const denial = await ensureManagerForCountryCode(req, req.body.country_code);
+      const denial = await ensureCapabilityAccessForCountryCode(req, req.body.country_code, 'partners.manage');
       if (denial) return res.status(denial.status).json(denial.body);
     }
     res.status(201).json(await partnerAdmin.createPartner(req.body));
   } catch (err) { handlePartnerError(err, res, next); }
 });
 
-router.put('/partners/:id', ...guard, validate(admin.updatePartner), async (req, res, next) => {
+router.put('/partners/:id', ...manageGuard, validate(admin.updatePartner), async (req, res, next) => {
   try {
     if (req.user.role === 'market_operator') {
       const existing = await partnerAdmin.getPartner(req.params.id);
       if (!existing) return res.status(404).json({ error: 'Partenaire introuvable' });
-      const denial = await ensureManagerForCountryCode(req, existing.partner.country_code);
+      const denial = await ensureCapabilityAccessForCountryCode(req, existing.partner.country_code, 'partners.manage');
       if (denial) return res.status(denial.status).json(denial.body);
       // Un changement de country_code doit aussi être autorisé côté marché
       // cible — sinon on pourrait faire "sortir" un partenaire de son scope.
       if (req.body.country_code && req.body.country_code !== existing.partner.country_code) {
-        const denialTarget = await ensureManagerForCountryCode(req, req.body.country_code);
+        const denialTarget = await ensureCapabilityAccessForCountryCode(req, req.body.country_code, 'partners.manage');
         if (denialTarget) return res.status(denialTarget.status).json(denialTarget.body);
       }
     }
@@ -175,12 +172,12 @@ router.put('/partners/:id', ...guard, validate(admin.updatePartner), async (req,
   } catch (err) { handlePartnerError(err, res, next); }
 });
 
-router.delete('/partners/:id', ...guard, validate(admin.deletePartner), async (req, res, next) => {
+router.delete('/partners/:id', ...manageGuard, validate(admin.deletePartner), async (req, res, next) => {
   try {
     if (req.user.role === 'market_operator') {
       const existing = await partnerAdmin.getPartner(req.params.id);
       if (!existing) return res.status(404).json({ error: 'Partenaire introuvable' });
-      const denial = await ensureManagerForCountryCode(req, existing.partner.country_code);
+      const denial = await ensureCapabilityAccessForCountryCode(req, existing.partner.country_code, 'partners.manage');
       if (denial) return res.status(denial.status).json(denial.body);
     }
     res.json(await partnerAdmin.deletePartner(req.params.id));

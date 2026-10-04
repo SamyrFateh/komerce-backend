@@ -204,7 +204,9 @@ describe('route boundary invariants', () => {
     expect(relay).not.toContain('require-market-scope');
     expect(relay).toContain("attachAuthorizedMarketsForCapability('operations.read'");
     expect(relay).toContain("requireMarketDelegatedCapability('hub.supervise'");
-    expect(partners).toContain('resolveMarketScopeRole');
-    expect(partners).toContain("hasMarketScopeRole(actualRole, 'manager')");
+    expect(partners).not.toContain('require-market-scope');
+    expect(partners).not.toContain('resolveMarketScopeRole');
+    expect(partners).toContain("attachAuthorizedMarketsForCapability('partners.read'");
+    expect(partners).toContain("attachAuthorizedMarketsForCapability('partners.manage'");
   });
 });

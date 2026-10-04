@@ -38,6 +38,7 @@ const STRONG_AUTHZ_GUARDS = Object.freeze([
   'requireMarketDelegatedCapability',
   'requireSingleMarketDelegatedCapability',
   'attachMarketExecutionRoleFor',
+  'attachAuthorizedMarketsForCapability',
 ]);
 
 const STRONG_AUTHZ_RE = new RegExp(`\\b(${STRONG_AUTHZ_GUARDS.join('|')})\\b`, 'g');

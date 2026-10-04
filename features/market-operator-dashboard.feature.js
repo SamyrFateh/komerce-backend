@@ -69,7 +69,7 @@ module.exports = {
     'routes/admin-client-index.js + admin-client-360.js — D6 : client.read ou dashboard global explicite',
     'routes/admin-product-360.js — D6 : catalog.read ou dashboard global explicite',
     'routes/admin-order-360.js — D6 : operations.read ou dashboard global explicite',
-    'routes/admin/partners.js — CRUD scopé country_code, manager requis pour mutations',
+    'routes/admin/partners.js — D8 : partners.read borne les lectures par country_code ; partners.manage borne création/modification/suppression et tout changement de marché',
     'routes/admin-pricing-workspace.js — lecture/décision locale scopée pour market_operator selon capabilities',
     'services/catalog-market-exposure-service.js — exposition produit x marché fail-closed',
     'services/market-commercial-price-service.js — décision locale DRAFT_PENDING_GATE sans activation forcée',
@@ -134,7 +134,7 @@ module.exports = {
   // ── Ce qui reste à faire après / autour de ce lot ────────────────────────
   next: [
     'Livrer la surface Catalogue pays market-scoped à partir de catalog-market-exposure-service.js',
-    'D1 Expéditions & Douane et D2 Finance sont livrés ; poursuivre le retrait de require-market-scope domaine par domaine jusqu’à inventaire legacy zéro',
+    'D1 Expéditions & Douane, D2 Finance et D8 Partners sont livrés ; poursuivre le retrait de require-market-scope domaine par domaine jusqu’à inventaire legacy zéro',
     'Ajouter les E2E staging market_operator sur Catalogue pays + Douane + Expéditions + Finance pays avec preuve d\'isolation inter-marchés',
     'Requête panier moyen réel + distribution mono-article',
     'Réconciliation d\'un shipment pilote sur données réelles',

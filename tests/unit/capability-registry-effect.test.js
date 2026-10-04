@@ -13,7 +13,7 @@ const seed = fs.readFileSync(path.join(ROOT, 'scripts', 'seed-reference-data.js'
 
 const EXPECTED_READ = [
   'client.read', 'dashboard.global.read', 'dashboard.market.read', 'finance.read', 'logistics.read',
-  'market_config.read', 'catalog.read', 'network.read', 'operations.read', 'pricing.read', 'team.read',
+  'market_config.read', 'catalog.read', 'network.read', 'operations.read', 'partners.read', 'pricing.read', 'team.read',
 ].sort();
 
 function quotedList(sql, anchor) {
@@ -29,10 +29,10 @@ describe('capability_registry — effect et amount_bearing déclarés', () => {
     for (const row of CAPABILITIES) expect(['READ', 'ACT']).toContain(row.effect);
   });
 
-  test('les 11 capacités de lecture sont figées ; toute autre est ACT', () => {
+  test('les 12 capacités de lecture sont figées ; toute autre est ACT', () => {
     const reads = CAPABILITIES.filter(c => c.effect === 'READ').map(c => c.capability).sort();
     expect(reads).toEqual(EXPECTED_READ);
-    expect(CAPABILITIES.filter(c => c.effect === 'ACT')).toHaveLength(CAPABILITIES.length - 11);
+    expect(CAPABILITIES.filter(c => c.effect === 'ACT')).toHaveLength(CAPABILITIES.length - 12);
   });
 
   test('amount_bearing : exactement les trois capacités à montant de la V1', () => {
@@ -50,9 +50,9 @@ describe('capability_registry — effect et amount_bearing déclarés', () => {
   });
 });
 
-describe('migration 270 — alignée sur la configuration, sans effet d’autorisation', () => {
+describe('migration 270 — snapshot historique avant D8, sans effet d’autorisation', () => {
   test('les listes SQL READ et montant sont celles de la configuration', () => {
-    expect(quotedList(migration, "SET effect = 'READ'")).toEqual(EXPECTED_READ);
+    expect(quotedList(migration, "SET effect = 'READ'")).toEqual(EXPECTED_READ.filter(name => name !== 'partners.read'));
     expect(quotedList(migration, 'SET amount_bearing = TRUE')).toEqual(AMOUNT_BEARING.slice().sort());
   });
 
