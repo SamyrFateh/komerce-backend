@@ -74,6 +74,8 @@ jest.mock('../../utils/logger', () => ({
   child: jest.fn(() => ({ warn: jest.fn(), error: jest.fn(), info: jest.fn(), debug: jest.fn() })),
 }));
 
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const request = require('supertest');
 const router = require('../../routes/admin-dashboard-market');
@@ -297,5 +299,17 @@ describe('verrou des agrégats globaux montés après le routeur market', () => 
     const res = await request(makeApp()).get('/api/admin/dashboard/unified');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ mode: 'global' });
+  });
+});
+
+describe('D6 capability authority contract', () => {
+  test('admin-dashboard-market ne consomme plus require-market-scope et mappe chaque projection à sa capability exacte', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', '..', 'routes', 'admin-dashboard-market.js'), 'utf8');
+    expect(source).not.toMatch(/require\(['"][^'"]*require-market-scope/);
+    expect(source).not.toMatch(/attachAuthorizedMarkets|requireMarketScope|operator_market_scopes/);
+    expect(source).toContain("requireDashboardMarketCapability('dashboard.market.read')");
+    expect(source).toContain("requireDashboardMarketCapability('operations.read')");
+    expect(source).toContain("requireDashboardMarketCapability('finance.read')");
+    expect(source).toContain('requireDashboardGlobalAuthority');
   });
 });
