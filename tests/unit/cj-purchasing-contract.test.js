@@ -242,3 +242,17 @@ test('CJ contract — read-back expose shipmentOrderId quand createOrderV2 ne le
     shipment_order_id: 'SHIP-1',
   });
 });
+
+
+test('CJ contract — sandbox simulatePay utilise le CJ orderId direct', () => {
+  expect(contract.buildSandboxSimulatePayPayload('CJ-1')).toEqual({ orderId: 'CJ-1' });
+  expect(contract.parseSandboxSimulatePayResponse({
+    result: true,
+    data: true,
+    requestId: 'REQ-SIM',
+  })).toMatchObject({
+    provider: 'cj',
+    sandbox: true,
+    payment_verdict: 'simulated_paid',
+  });
+});

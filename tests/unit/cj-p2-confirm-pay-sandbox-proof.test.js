@@ -96,3 +96,25 @@ test('P2 accepte shipmentOrderId issu du read-back si absent du create', () => {
     shipmentOrderId: 'SHIP-RB-1',
   });
 });
+
+
+test('P2 sandbox paie un ordre direct par orderId sans parent shipmentOrderId', () => {
+  expect(contract.buildSandboxSimulatePayPayload('CJ-ORDER-1')).toEqual({
+    orderId: 'CJ-ORDER-1',
+  });
+  expect(contract.parseSandboxSimulatePayResponse({
+    result: true,
+    data: true,
+    requestId: 'REQ-SIM',
+  })).toMatchObject({
+    sandbox: true,
+    payment_verdict: 'simulated_paid',
+  });
+});
+
+test('P2 sandbox refuse une simulation provider non confirmée', () => {
+  expect(() => contract.parseSandboxSimulatePayResponse({
+    result: true,
+    data: false,
+  })).toThrow('CJ_SANDBOX_SIMULATE_PAY_REJECTED');
+});
