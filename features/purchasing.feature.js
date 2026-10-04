@@ -63,6 +63,7 @@ module.exports = {
     'docs/doctrine/DOCTRINE_PURCHASING_PROVIDER_GOLDEN_E2E.md',
     'docs/allegro-sandbox.md',
     'docs/allegro-shipping-capability-p2.md',
+    'docs/external-providers/suppliers/CJ_PURCHASING_CONTRACT.md',
   ],
 
   files: {
@@ -82,6 +83,7 @@ module.exports = {
       'services/suppliers/purchase-order-confirmation-boundary.js',
       'services/suppliers/canonical-unit-cutover-comparison.js',
       'services/suppliers/aliexpress-fulfillment-adapter.js',
+      'services/suppliers/cj-purchasing-contract.js',
       'services/purchasing-receive-service.js',
       'services/purchasing-cancel-service.js',
       'services/receive-purchase-order.js',
@@ -146,6 +148,7 @@ module.exports = {
       'tests/unit/canonical-unit-cutover-comparison.test.js',
       'tests/unit/aliexpress-purchase-preflight.test.js',
       'tests/unit/aliexpress-readiness-golden-proof.test.js',
+      'tests/unit/cj-purchasing-contract.test.js',
       'tests/unit/supplier-fulfillment-readiness.test.js',
       'tests/unit/receive-purchase-order.test.js',
       'tests/unit/repair-ordered-purchasing.test.js',
