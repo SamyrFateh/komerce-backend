@@ -182,6 +182,22 @@ describe('route boundary invariants', () => {
     expect(source.match(/requireRole\(\['admin', 'agent_hub', 'market_operator'\]\)/g)).toHaveLength(2);
   });
 
+  test('Entity 360 market reads are capability-based and keep dashboard global authority explicit', () => {
+    const clientIndex = read('routes/admin-client-index.js');
+    const client360 = read('routes/admin-client-360.js');
+    const product360 = read('routes/admin-product-360.js');
+    const order360 = read('routes/admin-order-360.js');
+
+    for (const source of [clientIndex, client360, product360, order360]) {
+      expect(source).not.toContain('require-market-scope');
+      expect(source).toContain('hasDashboardGlobalAuthority');
+    }
+    expect(clientIndex).toContain("requireMarketDelegatedCapability('client.read'");
+    expect(client360).toContain("attachAuthorizedMarketsForCapability('client.read'");
+    expect(product360).toContain("attachAuthorizedMarketsForCapability('catalog.read'");
+    expect(order360).toContain("attachAuthorizedMarketsForCapability('operations.read'");
+  });
+
   test('Relay Dashboard est capability-based ; Partners reste le dernier consommateur role-scope de ce groupe', () => {
     const relay = read('routes/relay-dashboard.js');
     const partners = read('routes/admin/partners.js');

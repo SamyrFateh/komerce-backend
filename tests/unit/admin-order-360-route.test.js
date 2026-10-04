@@ -11,18 +11,22 @@ let mockGlobalAllowed = false;
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
-  requireAdmin: (req, res, next) => next(),
+  requireRole: roles => (req, res, next) => roles.includes(req.user.role)
+    ? next()
+    : res.status(403).json({ code: 'role_forbidden' }),
 }));
 
-jest.mock('../../middleware/require-market-scope', () => ({
-  attachAuthorizedMarkets: (req, res, next) => {
+jest.mock('../../middleware/require-market-delegated-role', () => ({
+  attachMarketDelegatedRoleFor: () => (req, res, next) => next(),
+}));
+
+jest.mock('../../middleware/require-market-delegated-capability', () => ({
+  attachAuthorizedMarketsForCapability: capability => (req, res, next) => {
+    if (!mockAllowedMarkets.size) {
+      return res.status(403).json({ code: 'MARKET_CAPABILITY_REQUIRED', error: `${capability} required` });
+    }
     req.authorizedMarkets = new Set(mockAllowedMarkets);
-    next();
-  },
-  requireMarketScope: getTargetMarketId => (req, res, next) => {
-    const target = getTargetMarketId(req);
-    if (!req.authorizedMarkets.has(target)) return res.status(403).json({ code: 'market_scope_denied' });
-    next();
+    return next();
   },
 }));
 
@@ -72,7 +76,7 @@ beforeEach(() => {
   });
 });
 
-test('opérateur CM lit une commande CM après résolution serveur', async () => {
+test('operations.read CM permet de lire une commande CM après résolution serveur', async () => {
   const res = await request(app()).get('/api/admin/entities/orders/CMD-CM-001');
 
   expect(res.status).toBe(200);
@@ -82,13 +86,13 @@ test('opérateur CM lit une commande CM après résolution serveur', async () =>
   expect(JSON.stringify(res.body)).not.toContain('market-cm-id');
 });
 
-test('opérateur CM ne lit pas une commande CG', async () => {
+test('operations.read CM ne permet pas de lire une commande CG', async () => {
   mockResolveOrder.mockResolvedValue({ invalid: false, order: resolvedOrder('market-cg-id', 'CG') });
 
   const res = await request(app()).get('/api/admin/entities/orders/CMD-CG-001');
 
   expect(res.status).toBe(403);
-  expect(res.body.code).toBe('market_scope_denied');
+  expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
   expect(mockLoadOrder360).not.toHaveBeenCalled();
 });
 

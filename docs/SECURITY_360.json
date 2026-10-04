@@ -990,24 +990,17 @@
       "key": "GET /api/admin/entities/clients/{clientPhone}",
       "level": "PROTECTED",
       "roles": [
-        "admin"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets"
-      ],
-      "file": "routes/admin-client-360.js"
+        "admin",
+        "market_operator"
+      ]
     },
     {
       "key": "GET /api/admin/entities/clients/market/{marketCode}",
       "level": "PROTECTED",
       "roles": [
-        "admin"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-client-index.js"
+        "admin",
+        "market_operator"
+      ]
     },
     {
       "key": "GET /api/admin/entities/clients",
@@ -1020,24 +1013,17 @@
       "key": "GET /api/admin/entities/orders/{orderReference}",
       "level": "PROTECTED",
       "roles": [
-        "admin"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-order-360.js"
+        "admin",
+        "market_operator"
+      ]
     },
     {
       "key": "GET /api/admin/entities/products/{productRef}",
       "level": "PROTECTED",
       "roles": [
-        "admin"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets"
-      ],
-      "file": "routes/admin-product-360.js"
+        "admin",
+        "market_operator"
+      ]
     },
     {
       "key": "GET /api/admin/finance-config/schema",
