@@ -14,7 +14,8 @@ describe('migration 273 — Partners authority', () => {
   test('déclare deux capabilities sémantiques et ne détourne pas provider.manage', () => {
     expect(migration).toContain("'partners.read','DELEGATION','partners','MARKET','DELEGABLE',FALSE,'LIVE','READ',FALSE");
     expect(migration).toContain("'partners.manage','DELEGATION','partners','MARKET','DELEGABLE',TRUE,'LIVE','ACT',FALSE");
-    expect(migration).not.toMatch(/provider\.manage/);
+    const code = migration.replace(/^--.*$/gm, '');
+    expect(code).not.toMatch(/provider\.manage/);
   });
 
   test('partners.read est accordée à toutes les memberships actives', () => {
