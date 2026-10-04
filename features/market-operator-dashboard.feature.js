@@ -59,11 +59,11 @@ module.exports = {
 
   // ── Primitives utilisées (déjà en place, ne pas recréer) ─────────────────
   primitives_consumed: [
-    'middleware/require-market-scope.js — projection legacy encore consommée uniquement par les surfaces D non migrées ; jamais autorité des workspaces D1/D2/D3, du Hub D4, du Relay D5 ni des Entity 360 D6',
+    'middleware/require-market-scope.js — projection legacy encore consommée uniquement par les surfaces D non migrées ; jamais autorité des workspaces D1/D2/D3, du Hub D4, du Relay D5, des Entity 360 D6 ni du Dashboard Market D7',
     'middleware/require-market-delegated-capability.js — operations.read et autres capabilities market-scoped exactes',
     'middleware/require-market-execution-capability.js — execution.* exacte + rôle de compatibilité request-local après preuve',
     'services/dashboard-admin-context.js — resolveDashboardAdminContext (mode market/global)',
-    'routes/admin-dashboard-market.js — endpoints /market/:marketCode scopés',
+    'routes/admin-dashboard-market.js — D7 : dashboard.market.read pour Pilotage/Commerce/Orders, operations.read pour Operations, finance.read pour Finance ; autorité dashboard globale explicite inchangée',
     'routes/hub-dashboard.js — D4 : operations.read dérive les Market IDs lisibles ; hub.supervise protège incident/escalade/commentaire ; mutations physiques restent centrales',
     'routes/relay-dashboard.js — D5 : operations.read borne les lectures market_operator, hub.supervise les mutations de supervision, agent_relais reste borné par relais_id',
     'routes/admin-client-index.js + admin-client-360.js — D6 : client.read ou dashboard global explicite',

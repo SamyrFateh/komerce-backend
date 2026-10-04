@@ -15,16 +15,18 @@ jest.mock('../../middleware/auth', () => ({
   requireRole: () => (req, res, next) => next(),
 }));
 
-jest.mock('../../middleware/require-market-scope', () => ({
-  attachAuthorizedMarkets: (req, res, next) => {
-    req.authorizedMarkets = new Set(mockAllowedMarkets);
-    next();
-  },
-  requireMarketScope: getTargetMarketId => (req, res, next) => {
-    const target = getTargetMarketId(req);
-    if (!req.authorizedMarkets.has(target)) {
-      return res.status(403).json({ code: 'market_scope_denied' });
+let mockMarketCapabilityGranted = true;
+let mockGrantedMarketCodes = new Set(['CM']);
+jest.mock('../../middleware/require-market-delegated-capability', () => ({
+  requireMarketDelegatedCapability: required => (req, res, next) => {
+    if (!mockMarketCapabilityGranted || required !== 'dashboard.market.read' || !mockGrantedMarketCodes.has(req.params.marketCode)) {
+      return res.status(403).json({ code: 'MARKET_CAPABILITY_REQUIRED' });
     }
+    req.marketDelegatedCapability = {
+      capability: required,
+      market_id: req.dashboardMarket && req.dashboardMarket.id,
+      market_code: req.params.marketCode,
+    };
     next();
   },
 }));
@@ -69,6 +71,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockAllowedMarkets = new Set(['market-cm-id']);
   mockGlobalAllowed = false;
+  mockMarketCapabilityGranted = true;
+  mockGrantedMarketCodes = new Set(['CM']);
   mockQuery.mockImplementation(async (sql, params) => {
     if (String(sql).includes('FROM markets') && params[0] === 'CM') {
       return { rows: [{ id: 'market-cm-id', code: 'CM', name: 'Cameroun', currency: 'XAF' }] };
@@ -101,7 +105,7 @@ describe('routes Commerce Canonical', () => {
     const res = await request(app()).get('/api/admin/dashboard/commerce/market/CG');
 
     expect(res.status).toBe(403);
-    expect(res.body.code).toBe('market_scope_denied');
+    expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
     expect(mockBuildCommerce).not.toHaveBeenCalled();
   });
 
