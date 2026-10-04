@@ -21,7 +21,7 @@
 const db = require('../db');
 const { notifyText } = require('../services/notification-service');
 const { createAlert } = require('../utils/alerts');
-const { validateAdapter } = require('./suppliers/supplier-fulfillment-adapter-contract');
+const { validateAdapter, validateExecutionAdapter } = require('./suppliers/supplier-fulfillment-adapter-contract');
 const { EXECUTION_ADAPTER_REGISTRY } = require('./suppliers/execution-adapter-registry');
 const { evaluateProcurementExecutionBoundary } = require('./suppliers/procurement-execution-boundary');
 const { buildProcurementExecutionContext } = require('./procurement-execution-context');
@@ -274,6 +274,7 @@ async function triggerPurchasing(orderId, options = {}) {
             existingPo.status === 'pending' &&
             !existingPo.supplier_order_id &&
             ps.auto_order &&
+            validateExecutionAdapter(ps.platform, EXECUTION_ADAPTER_REGISTRY[String(ps.platform || '').trim().toLowerCase()]).ok &&
             exactSku &&
             canonicalMoney
           );
@@ -339,20 +340,47 @@ async function triggerPurchasing(orderId, options = {}) {
         const supplierTagRequest = buildSupplierTagRequest(po.id);
 
         if (ps.auto_order) {
-          const resultIndex = results.length;
-          results.push({
-            item: item.product_name,
-            status: 'auto_order_pending_execution',
-            purchase_order_id: po.id,
-            inbound_tag: supplierTagRequest.reference,
-          });
-          autoExecutionTasks.push({
-            resultIndex, order, item, exactSku, canonicalMoney, purchaseTarget,
-            purchaseOrderId: po.id,
-            purchaseLineId: historicalLine?.id || null,
-            supplierTagRequest,
-            money,
-          });
+          const executionAdapter = validateExecutionAdapter(
+            ps.platform,
+            EXECUTION_ADAPTER_REGISTRY[String(ps.platform || '').trim().toLowerCase()]
+          );
+          if (exactSku && executionAdapter.ok) {
+            const resultIndex = results.length;
+            results.push({
+              item: item.product_name,
+              status: 'auto_order_pending_execution',
+              purchase_order_id: po.id,
+              inbound_tag: supplierTagRequest.reference,
+            });
+            autoExecutionTasks.push({
+              resultIndex, order, item, exactSku, canonicalMoney, purchaseTarget,
+              purchaseOrderId: po.id,
+              purchaseLineId: historicalLine?.id || null,
+              supplierTagRequest,
+              money,
+            });
+          } else {
+            // Adapter incomplet = aucune mutation fournisseur possible :
+            // on conserve le fallback manuel historique inline.
+            const apiResult = await resolveAutoOrderResult(
+              client, exactSku, canonicalMoney, item, purchaseTarget,
+              po.id, historicalLine?.id || null, supplierTagRequest
+            );
+            await notifyAdminManual(order, item, purchaseTarget, supplierTagRequest);
+            await client.query(
+              `UPDATE purchase_orders
+                  SET status='notified', trigger_mode='manual', updated_at=NOW()
+                WHERE id=$1`,
+              [po.id]
+            );
+            results.push({
+              item: item.product_name,
+              status: 'api_failed_notified',
+              purchase_order_id: po.id,
+              inbound_tag: supplierTagRequest.reference,
+              ...(apiResult?.error ? { error: apiResult.error } : {}),
+            });
+          }
         } else if (ps.platform === 'whatsapp') {
           await notifySupplierWhatsApp(client, purchaseTarget, order, item, po.id, supplierTagRequest);
           await client.query(`UPDATE purchase_orders SET status='notified', ordered_at=NOW(), updated_at=NOW() WHERE id=$1`, [po.id]);
