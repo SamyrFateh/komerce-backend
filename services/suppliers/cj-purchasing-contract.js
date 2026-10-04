@@ -23,6 +23,7 @@ const ENDPOINTS = Object.freeze({
   get_order_detail: '/api2.0/v1/shopping/order/getOrderDetail',
   confirm_order: '/api2.0/v1/shopping/order/confirmOrder',
   pay_balance_v2: '/api2.0/v1/shopping/pay/payBalanceV2',
+  sandbox_simulate_pay: '/api2.0/v1/shopping/sandbox/simulatePay',
   freight_calculate: '/api2.0/v1/logistic/freightCalculate',
 });
 
@@ -220,6 +221,23 @@ function parsePayBalanceV2Response(body) {
   };
 }
 
+
+function buildSandboxSimulatePayPayload(orderId) {
+  return { orderId: assertString(orderId, 'CJ_ORDER_ID_REQUIRED', 200) };
+}
+
+function parseSandboxSimulatePayResponse(body) {
+  if (!body || body.result !== true || body.data !== true) {
+    throw new Error('CJ_SANDBOX_SIMULATE_PAY_REJECTED');
+  }
+  return {
+    provider,
+    sandbox: true,
+    payment_verdict: 'simulated_paid',
+    request_id: body.requestId ? String(body.requestId) : null,
+  };
+}
+
 function verifyPaidOrderDetail(body, expectedOrderId) {
   const facts = readOrderDetailFacts(body);
   if (facts.order_id !== String(expectedOrderId)) throw new Error('CJ_PAID_READBACK_ORDER_MISMATCH');
@@ -244,5 +262,7 @@ module.exports = {
   parseConfirmOrderResponse,
   buildPayBalanceV2Payload,
   parsePayBalanceV2Response,
+  buildSandboxSimulatePayPayload,
+  parseSandboxSimulatePayResponse,
   verifyPaidOrderDetail,
 };
