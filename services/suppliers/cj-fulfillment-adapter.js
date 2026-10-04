@@ -126,13 +126,16 @@ async function buildOrderPayload({ items, preflights, context = {} } = {}) {
   const destination = context.procurement_destination || context.destination;
   if (!destination) throw new Error('CJ_PROCUREMENT_DESTINATION_REQUIRED');
 
+  const env = context.env || process.env;
+  const executionKey = String(context.execution_key || '').trim();
+  const orderNumber = String(context.order_number || (executionKey ? `KOM-PO-${executionKey}` : '')).slice(0, 200);
   const native = contract.buildCreateOrderV2Payload({
-    orderNumber: context.order_number,
+    orderNumber,
     identity: item.identity,
     quantity: item.quantity,
     destination,
-    logisticName: context.logistic_name,
-    fromCountryCode: context.from_country_code,
+    logisticName: context.logistic_name || env.KOMERCE_CJ_LOGISTIC_NAME,
+    fromCountryCode: context.from_country_code || env.KOMERCE_CJ_FROM_COUNTRY_CODE,
     platform: 'komerce',
     storeLineItemId: context.store_line_item_id || null,
     remark: context.remark || null,
@@ -153,9 +156,9 @@ async function buildOrderPayload({ items, preflights, context = {} } = {}) {
 }
 
 async function placeOrder(payload, context = {}) {
-  if (context.cj_execution_authorized !== true) {
-    throw new Error('CJ_EXECUTION_NOT_AUTHORIZED');
-  }
+  const env = context.env || process.env;
+  const authorized = context.cj_execution_authorized === true || env.KOMERCE_CJ_AUTO_ORDER_ENABLED === '1';
+  if (!authorized) throw new Error('CJ_EXECUTION_NOT_AUTHORIZED');
   if (!payload || payload.provider !== provider || !payload.native || !payload.expected) {
     throw new Error('CJ_EXECUTION_PAYLOAD_INVALID');
   }
