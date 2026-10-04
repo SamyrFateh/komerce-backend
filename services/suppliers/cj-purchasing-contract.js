@@ -59,6 +59,7 @@ function buildCreateOrderV2Payload({
   platform = 'komerce',
   storeLineItemId = null,
   remark = null,
+  sandbox = false,
 } = {}) {
   const { vid } = extractIdentity(identity);
   if (!Number.isSafeInteger(quantity) || quantity < 1) throw new Error('CJ_QUANTITY_INVALID');
@@ -78,6 +79,7 @@ function buildCreateOrderV2Payload({
     fromCountryCode: assertCountry(fromCountryCode, 'CJ_FROM_COUNTRY_CODE_REQUIRED'),
     platform: assertString(platform, 'CJ_PLATFORM_REQUIRED', 50),
     payType: 3,
+    ...(sandbox ? { isSandbox: 1 } : {}),
     products: [{
       vid,
       quantity,
