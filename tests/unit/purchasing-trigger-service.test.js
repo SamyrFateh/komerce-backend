@@ -434,3 +434,15 @@ describe('auto-order externe — persistance avant mutation fournisseur', () => 
     expect(src).toContain("trigger_mode='manual'");
   });
 });
+
+
+test('api_pending_retry peut remonter une evidence provider bornée sans secret', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'),
+    'utf8'
+  );
+  expect(src).toContain('evidence: boundary.evidence || {}');
+  expect(src).toContain('evidence: apiResult.evidence || {}');
+});
