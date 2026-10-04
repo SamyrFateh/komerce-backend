@@ -119,8 +119,12 @@ jobs:
             exit 0
           fi
 
-          if ! git fetch --no-tags --depth=128 origin "$PREVIOUS_HEAD" "$BASE_SHA"; then
-            echo "Previous head/base ancestry unavailable; full CI retained."
+          # Le checkout PR est fetch-depth=1 : le HEAD courant est marqué
+          # shallow et git merge-base peut alors nier à tort que PREVIOUS_HEAD
+          # en est l'ancêtre, même pour le merge mécanique créé par update-branch.
+          # On approfondit explicitement les trois lignées avant la preuve.
+          if ! git fetch --no-tags --depth=128 origin "$PREVIOUS_HEAD" "$BASE_SHA" "$HEAD_SHA"; then
+            echo "Previous/current head or base ancestry unavailable; full CI retained."
             exit 0
           fi
 
