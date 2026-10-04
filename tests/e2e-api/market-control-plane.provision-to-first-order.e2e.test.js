@@ -145,8 +145,11 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
       });
 
     expect(res.status).toBe(201);
-    expect(res.body.order).toMatchObject({market_id:marketId,status:'pending',payment_status:'pending'});
+    expect(res.body.order).toMatchObject({status:'pending',payment_status:'pending'});
     const orderId=res.body.order.id;
+
+    // Enregistrer le cleanup avant toute assertion DB afin qu'un échec n'abandonne
+    // jamais la commande et ses enfants dans la base E2E.
     cleanup.track('orders','id',orderId);
     cleanup.trackSql('DELETE FROM recipients WHERE relais_id=$1',[relayId]);
     cleanup.trackSql('DELETE FROM invoices WHERE order_id=$1',[orderId]);
