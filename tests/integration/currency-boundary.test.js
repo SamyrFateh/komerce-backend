@@ -35,17 +35,17 @@ if (!hasIntegrationEnv) {
       require('../../utils/currency'));
 
     const km = await db.query(
-      `INSERT INTO markets (code, name, currency, minor_unit)
-       VALUES ('T3', 'Marché Test KMF', 'KMF', 0)
-       ON CONFLICT (code) DO UPDATE SET currency = EXCLUDED.currency
+      `INSERT INTO markets (code, name, currency, minor_unit, is_active, lifecycle_status)
+       VALUES ('T3', 'Marché Test KMF', 'KMF', 0, TRUE, 'ACTIVE')
+       ON CONFLICT (code) DO UPDATE SET currency = EXCLUDED.currency, is_active = TRUE, lifecycle_status = 'ACTIVE'
        RETURNING id`
     );
     marketKmfId = km.rows[0].id;
 
     const eur = await db.query(
-      `INSERT INTO markets (code, name, currency, minor_unit)
-       VALUES ('T4', 'Marché Test EUR', 'EUR', 2)
-       ON CONFLICT (code) DO UPDATE SET currency = EXCLUDED.currency
+      `INSERT INTO markets (code, name, currency, minor_unit, is_active, lifecycle_status)
+       VALUES ('T4', 'Marché Test EUR', 'EUR', 2, TRUE, 'ACTIVE')
+       ON CONFLICT (code) DO UPDATE SET currency = EXCLUDED.currency, is_active = TRUE, lifecycle_status = 'ACTIVE'
        RETURNING id`
     );
     marketEurId = eur.rows[0].id;
@@ -84,8 +84,8 @@ if (!hasIntegrationEnv) {
        'jusqu\'à invalidation explicite — comportement documenté, pas un bug',
     async () => {
       const tmp = await db.query(
-        `INSERT INTO markets (code, name, currency, minor_unit)
-         VALUES ('T5', 'Marché Temporaire', 'XAF', 0) RETURNING id`
+        `INSERT INTO markets (code, name, currency, minor_unit, is_active, lifecycle_status)
+         VALUES ('T5', 'Marché Temporaire', 'XAF', 0, TRUE, 'ACTIVE') RETURNING id`
       );
       const tmpId = tmp.rows[0].id;
 

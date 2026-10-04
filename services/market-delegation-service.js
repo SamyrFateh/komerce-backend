@@ -50,13 +50,14 @@ async function resolveActiveAssignmentByMarketCode(executor, marketCode) {
             m.code AS market_code,
             m.name AS market_name,
             m.currency,
+            m.lifecycle_status,
             a.id AS assignment_id,
             a.status AS assignment_status
        FROM markets m
        LEFT JOIN market_operating_assignments a
          ON a.market_id = m.id AND a.status = 'ACTIVE'
       WHERE m.code = $1
-        AND m.is_active = TRUE
+        AND m.lifecycle_status IN ('ACTIVE','SUSPENDED')
       LIMIT 1`,
     [code]
   );
@@ -262,7 +263,7 @@ async function listAuthorizedMarketsForCapability(executor, { userId, requiredCa
         AND a.status = 'ACTIVE'
        JOIN markets m
          ON m.id = a.market_id
-        AND m.is_active = TRUE
+        AND m.lifecycle_status IN ('ACTIVE','SUSPENDED')
        JOIN membership_capabilities mc
          ON mc.membership_id = am.id
         AND mc.capability = $2
@@ -271,6 +272,9 @@ async function listAuthorizedMarketsForCapability(executor, { userId, requiredCa
          ON acc.assignment_id = a.id
         AND acc.capability = $2
         AND acc.revoked_at IS NULL
+       JOIN capability_registry cr
+         ON cr.capability = acc.capability
+        AND (m.lifecycle_status = 'ACTIVE' OR cr.effect = 'READ')
       WHERE am.user_id = $1::uuid
         AND am.status = 'ACTIVE'
       ORDER BY m.code`,
@@ -299,6 +303,9 @@ async function resolveSingleMarketAuthorization(executor, { userId, requiredCapa
                   ON acc.assignment_id = a.id
                  AND acc.capability = mc.capability
                  AND acc.revoked_at IS NULL
+                JOIN capability_registry cr
+                  ON cr.capability = acc.capability
+                 AND (m.lifecycle_status = 'ACTIVE' OR cr.effect = 'READ')
                WHERE mc.membership_id = am.id
                  AND mc.capability = $2
                  AND mc.revoked_at IS NULL
@@ -309,7 +316,7 @@ async function resolveSingleMarketAuthorization(executor, { userId, requiredCapa
         AND a.status = 'ACTIVE'
        JOIN markets m
          ON m.id = a.market_id
-        AND m.is_active = TRUE
+        AND m.lifecycle_status IN ('ACTIVE','SUSPENDED')
       WHERE am.user_id = $1::uuid
         AND am.status = 'ACTIVE'
       ORDER BY m.code`,
@@ -361,16 +368,24 @@ async function resolveAuthorization(executor, { userId, marketCode, requiredCapa
 
   if (requiredCapability) {
     const { rows } = await db.query(
-      `SELECT 1
-         FROM assignment_capability_ceiling
-        WHERE assignment_id=$1::uuid
-          AND capability=$2
-          AND revoked_at IS NULL
+      `SELECT cr.effect
+         FROM assignment_capability_ceiling acc
+         JOIN capability_registry cr ON cr.capability = acc.capability
+        WHERE acc.assignment_id=$1::uuid
+          AND acc.capability=$2
+          AND acc.revoked_at IS NULL
         LIMIT 1`,
       [assignment.assignment_id, requiredCapability]
     );
     if (!rows[0]) {
       throw delegationError('MARKET_CAPABILITY_OUTSIDE_CEILING', 'Capability absente du ceiling actif.', 403);
+    }
+    if (assignment.lifecycle_status === 'SUSPENDED' && rows[0].effect !== 'READ') {
+      throw delegationError(
+        'MARKET_SUSPENDED',
+        'Marché suspendu : seules les capabilities READ restent autorisées.',
+        409
+      );
     }
   }
 

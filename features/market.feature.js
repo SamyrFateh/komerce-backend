@@ -79,6 +79,7 @@ module.exports = {
       'migrations/141_market_open_congo.sql',
       'migrations/142_currency_parities.sql',
       'migrations/143_orders_display_snapshot.sql',
+      'migrations/278_market_lifecycle.sql',
     ],
     services: [
       'middleware/require-market-scope.js',
@@ -99,6 +100,7 @@ module.exports = {
       'tests/integration/f1-market-integrity-destructive.test.js',
       'tests/unit/f1-market-integrity-migration.test.js',
       'tests/unit/market-operator-governance-gaps.test.js',
+      'tests/unit/market-lifecycle-schema.test.js',
     ],
   },
 
@@ -147,7 +149,7 @@ module.exports = {
 
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
-    'markets est un référentiel pur — aucune colonne ni logique d\'autorisation n\'y est ajoutée',
+    'markets porte désormais le lifecycle canonique PROVISIONING/ACTIVE/SUSPENDED/CLOSED et storefront_texts ; aucune autorisation utilisateur n’est dérivée de ces champs',
     'ouvrir un marché est un INSERT dans une migration, jamais un ALTER TABLE',
     'operator_market_scopes (M1) = historique d\'accès grain user, jamais source du settlement (grain organisation, différé)',
     'révocation d\'un scope = UPDATE revoked_at, jamais DELETE — l\'historique d\'accès n\'est pas reconstructible sinon',
