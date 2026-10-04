@@ -80,3 +80,19 @@ test('read-back payé accepte uniquement les états post-paiement connus', () =>
     data: { orderId: 'CJ-1', orderStatus: 'UNPAID', productList: [] },
   }, 'CJ-1')).toThrow('CJ_PAID_STATUS_UNEXPECTED:UNPAID');
 });
+
+
+test('P2 accepte shipmentOrderId issu du read-back si absent du create', () => {
+  const facts = contract.readOrderDetailFacts({
+    data: {
+      orderId: 'CJ-1',
+      shipmentOrderId: 'SHIP-RB-1',
+      orderStatus: 'CREATED',
+      productList: [],
+    },
+  });
+  expect(facts.shipment_order_id).toBe('SHIP-RB-1');
+  expect(contract.buildPayBalanceV2Payload(facts.shipment_order_id)).toEqual({
+    shipmentOrderId: 'SHIP-RB-1',
+  });
+});
