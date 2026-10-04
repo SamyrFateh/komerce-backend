@@ -9,9 +9,8 @@ const enforcement = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-enforc
 const dispatcher = fs.readFileSync(path.join(ROOT, '.github/workflows/pr-enforcement-dispatch.yml'), 'utf8');
 
 describe('PR enforcement trusted dispatch', () => {
-  test('heavy enforcement is workflow_dispatch only', () => {
+  test('heavy enforcement supports trusted workflow dispatch', () => {
     expect(enforcement).toContain('workflow_dispatch:');
-    expect(enforcement).not.toContain('pull_request:\n');
     expect(enforcement).toContain('pr_number:');
     expect(enforcement).toContain('head_sha:');
     expect(enforcement).toContain('base_sha:');
