@@ -22,6 +22,7 @@ const {
   isSupportedProvider,
   normalizeProviderCode,
   remotePreflightRequirement,
+  reconciliationRequirement,
 } = require('../../services/suppliers/provider-authority');
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -47,7 +48,7 @@ describe('provider-authority — liste canonique', () => {
   });
 
   test('PROVIDERS contient tous les providers réels connus', () => {
-    for (const p of ['noon', 'amazon_uae', 'aliexpress', 'local', 'whatsapp', 'allegro']) {
+    for (const p of ['noon', 'amazon_uae', 'aliexpress', 'local', 'whatsapp', 'allegro', 'cj']) {
       expect(PROVIDERS).toContain(p);
     }
   });
@@ -187,7 +188,7 @@ describe('provider-authority — aucune fixture de test ne mime "manual" comme p
 
 
 test('CJ est un provider canonique avec preflight distant requis et reconciliation non requise', () => {
-  expect(authority.isSupportedProvider('cj')).toBe(true);
-  expect(authority.remotePreflightRequirement('cj')).toBe(authority.PREFLIGHT_REQUIREMENT.REQUIRED);
-  expect(authority.reconciliationRequirement('cj')).toBe(authority.PREFLIGHT_REQUIREMENT.NOT_REQUIRED);
+  expect(isSupportedProvider('cj')).toBe(true);
+  expect(remotePreflightRequirement('cj')).toBe(PREFLIGHT_REQUIREMENT.REQUIRED);
+  expect(reconciliationRequirement('cj')).toBe(PREFLIGHT_REQUIREMENT.NOT_REQUIRED);
 });
