@@ -145,3 +145,68 @@ test('placeOrder refuse toute exécution sans autorisation explicite', async () 
   }, {})).rejects.toThrow('CJ_EXECUTION_NOT_AUTHORIZED');
   expect(connector.getAccessToken).not.toHaveBeenCalled();
 });
+
+
+test('buildOrderPayload dérive orderNumber et logistique depuis le contexte runtime canonique', async () => {
+  const payload = await adapter.buildOrderPayload({
+    items: [{ identity, supplier_unit_ref: 'VID-1', quantity: 1 }],
+    preflights: [{ ready: true, evidence: { auto_order_ready: true } }],
+    context: {
+      execution_key: '00000000-0000-0000-0000-000000000201',
+      procurement_destination: {
+        postal_code: '00000',
+        country_code: 'AE',
+        country: 'United Arab Emirates',
+        province: 'Dubai',
+        city: 'Dubai',
+        customer_name: 'Komerce Hub',
+        address1: 'Hub address',
+        phone: '+971000000000',
+      },
+      store_line_item_id: 'line-1',
+      env: {
+        KOMERCE_CJ_LOGISTIC_NAME: 'CJPacket',
+        KOMERCE_CJ_FROM_COUNTRY_CODE: 'CN',
+      },
+    },
+  });
+
+  expect(payload.native).toMatchObject({
+    orderNumber: 'KOM-PO-00000000-0000-0000-0000-000000000201',
+    logisticName: 'CJPacket',
+    fromCountryCode: 'CN',
+    payType: 3,
+    products: [{ vid: 'VID-1', quantity: 1, storeLineItemId: 'line-1' }],
+  });
+});
+
+test('placeOrder autorisation runtime reste derrière le flag explicite CJ', async () => {
+  connector.getAccessToken.mockResolvedValue('token');
+  const invoke = jest.fn()
+    .mockResolvedValueOnce({
+      result: true,
+      data: { orderId: 'CJ-2', orderNumber: 'KOM-PO-2' },
+    })
+    .mockResolvedValueOnce({
+      result: true,
+      data: {
+        orderId: 'CJ-2',
+        orderNum: 'KOM-PO-2',
+        orderStatus: 'CREATED',
+        productList: [{ vid: 'VID-1', quantity: 1 }],
+      },
+    });
+
+  const out = await adapter.placeOrder({
+    provider: 'cj',
+    native: { orderNumber: 'KOM-PO-2', payType: 3, products: [{ vid: 'VID-1', quantity: 1 }] },
+    expected: { order_number: 'KOM-PO-2', vid: 'VID-1', quantity: 1 },
+  }, {
+    env: { KOMERCE_CJ_AUTO_ORDER_ENABLED: '1' },
+    invoke,
+  });
+
+  expect(out.supplier_order_id).toBe('CJ-2');
+  expect(out.payment_invoked).toBe(false);
+  expect(out.confirmation_invoked).toBe(false);
+});
