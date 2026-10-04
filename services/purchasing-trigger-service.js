@@ -142,6 +142,7 @@ async function resolveAutoOrderResult(client, exactSku, canonicalMoney, item, pu
       error: `Procurement Execution Boundary non atteinte (${boundary.reason})`,
       reason: boundary.reason,
       place_order_invoked: boundary.place_order_invoked === true,
+      evidence: boundary.evidence || {},
     };
   }
   return {
@@ -464,6 +465,7 @@ async function triggerPurchasing(orderId, options = {}) {
           purchase_order_id: task.purchaseOrderId,
           inbound_tag: task.supplierTagRequest.reference,
           error: apiResult.error,
+          evidence: apiResult.evidence || {},
         };
         continue;
       }
