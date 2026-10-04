@@ -183,6 +183,52 @@ function verifyOrderDetail({
   return facts;
 }
 
+
+function buildConfirmOrderPayload(orderId) {
+  return { orderId: assertString(orderId, 'CJ_ORDER_ID_REQUIRED', 200) };
+}
+
+function parseConfirmOrderResponse(body, expectedOrderId) {
+  if (!body || body.result !== true) throw new Error('CJ_CONFIRM_ORDER_REJECTED');
+  const confirmed = assertString(body.data, 'CJ_CONFIRM_ORDER_ID_MISSING', 200);
+  const expected = assertString(expectedOrderId, 'CJ_ORDER_ID_REQUIRED', 200);
+  if (confirmed !== expected) throw new Error('CJ_CONFIRM_ORDER_ID_MISMATCH');
+  return {
+    provider,
+    order_id: confirmed,
+    request_id: body.requestId ? String(body.requestId) : null,
+    confirmation_verdict: 'confirmed_unpaid',
+  };
+}
+
+function buildPayBalanceV2Payload(shipmentOrderId, payId = null) {
+  const payload = {
+    shipmentOrderId: assertString(shipmentOrderId, 'CJ_SHIPMENT_ORDER_ID_REQUIRED', 200),
+  };
+  if (payId) payload.payId = assertString(payId, 'CJ_PAY_ID_INVALID', 200);
+  return payload;
+}
+
+function parsePayBalanceV2Response(body) {
+  if (!body || body.result !== true) throw new Error('CJ_PAY_BALANCE_REJECTED');
+  return {
+    provider,
+    payment_result: body.data ?? null,
+    request_id: body.requestId ? String(body.requestId) : null,
+    payment_verdict: 'paid',
+  };
+}
+
+function verifyPaidOrderDetail(body, expectedOrderId) {
+  const facts = readOrderDetailFacts(body);
+  if (facts.order_id !== String(expectedOrderId)) throw new Error('CJ_PAID_READBACK_ORDER_MISMATCH');
+  const status = String(facts.status || '').toUpperCase();
+  if (!['PENDING', 'PROCESSING', 'UNSHIPPED', 'SHIPPED', 'DELIVERED'].includes(status)) {
+    throw new Error(`CJ_PAID_STATUS_UNEXPECTED:${facts.status || 'UNKNOWN'}`);
+  }
+  return facts;
+}
+
 module.exports = {
   provider,
   ENDPOINTS,
@@ -193,4 +239,9 @@ module.exports = {
   isDuplicateCreateError,
   readOrderDetailFacts,
   verifyOrderDetail,
+  buildConfirmOrderPayload,
+  parseConfirmOrderResponse,
+  buildPayBalanceV2Payload,
+  parsePayBalanceV2Response,
+  verifyPaidOrderDetail,
 };
