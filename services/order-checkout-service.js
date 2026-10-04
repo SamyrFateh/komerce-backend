@@ -11,7 +11,7 @@
  *                services/order-checkout-persistence.js, services/local-stock-service.js,
  *                services/market-local-price-resolution-service.js
  * @used-by       routes/orders/create.js
- * @db-read       orders, product_skus, product_variants, products, recipients, relais, shared_cart_items, shared_carts
+ * @db-read       orders, product_skus, product_variants, products, recipients, relais, markets, shared_cart_items, shared_carts
  * @db-write      order_items, order_status_history, orders, recipients
  * @doctrine-note cart_shares n'est plus écrit ici directement (campagne WRITER-NOT-OWNER
  *                2026-08) — voir services/cart-share-service.js markShareConvertedToOrder
@@ -168,6 +168,24 @@ async function runOrderCheckout({ user, body }) {
     if (!relais) {
       await client.query('ROLLBACK');
       return fail(404, { error: 'Relais introuvable' });
+    }
+
+    const { rows: [checkoutMarket] } = await client.query(
+      'SELECT lifecycle_status FROM markets WHERE id=$1::uuid LIMIT 1',
+      [relais.market_id]
+    );
+    if (!checkoutMarket || checkoutMarket.lifecycle_status !== 'ACTIVE') {
+      await client.query('ROLLBACK');
+      if (checkoutMarket && checkoutMarket.lifecycle_status === 'SUSPENDED') {
+        return fail(409, {
+          error: 'Ce marché est temporairement suspendu.',
+          code: 'MARKET_SUSPENDED',
+        });
+      }
+      return fail(409, {
+        error: 'Ce marché n’est pas ouvert aux commandes.',
+        code: 'MARKET_NOT_ACTIVE',
+      });
     }
 
     let routing = { destination_island: null, routing_mode: null, transit_hub: null };

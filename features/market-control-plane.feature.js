@@ -47,6 +47,7 @@ module.exports = {
       'POST /api/admin/markets : provisionne un marché PROVISIONING en composant les writers canoniques market + market-delegation + invitation équipe',
       'GET /api/admin/markets/central-authority : titulaires actifs des cinq autorisations centrales explicites (dashboard, catalog, decision_signal, pricing, sourcing) et autorité déclarée de chaque capability de groupe',
       'GET /api/admin/markets/:marketCode/control-plane : affectation, équipe et capacités, plafond, fournisseurs de paiement, politique de caisse, relais actifs, écarts',
+      'POST /api/admin/markets/:marketCode/lifecycle : transition lifecycle centrale ; ACTIVE exige readiness plate-forme ET exploitation vertes',
       'rapport d’écarts calculé (computeGaps) + deux verdicts readiness indépendants : platform et operations ; MARKET_INACTIVE n’est pas un blocker de readiness pendant PROVISIONING',
     ],
     out: [
@@ -73,6 +74,7 @@ module.exports = {
       'tests/unit/central-authority.test.js',
       'tests/unit/market-provisioning-service.test.js',
       'tests/unit/market-control-plane-readiness.test.js',
+      'tests/unit/market-control-plane-lifecycle-gate.test.js',
     ],
   },
 
@@ -96,14 +98,15 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 4,
-    totalRoutes: 4,
+    authedRoutesDetected: 5,
+    totalRoutes: 5,
     note: 'Les 4 routes exigent authenticate + rôle admin déclaré. Les GET sont en lecture seule ; le POST orchestre les writers propriétaires et ne peut créer qu’un marché PROVISIONING.',
   },
 
   contract: {
     exposes: [
       'POST /api/admin/markets', // admin central — provisionne, n’active pas
+      'POST /api/admin/markets/:marketCode/lifecycle', // admin central — ACTIVE gated par readiness
       'GET /api/admin/markets', // admin central
       'GET /api/admin/markets/central-authority', // admin central
       'GET /api/admin/markets/:marketCode/control-plane', // admin central
@@ -114,6 +117,7 @@ module.exports = {
       'computeGaps()',
       'readinessFromGaps()',
       'provisionMarket()',
+      'setMarketLifecycle()',
       'central()',
       'overview()',
     ],

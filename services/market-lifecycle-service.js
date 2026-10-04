@@ -72,4 +72,54 @@ async function createProvisioningMarket(executor, {
   return rows[0];
 }
 
-module.exports = { createProvisioningMarket, normalizeCurrency };
+
+const ALLOWED_TRANSITIONS = Object.freeze({
+  PROVISIONING: Object.freeze(['ACTIVE','CLOSED']),
+  ACTIVE: Object.freeze(['SUSPENDED','CLOSED']),
+  SUSPENDED: Object.freeze(['ACTIVE','CLOSED']),
+  CLOSED: Object.freeze([]),
+});
+
+async function transitionMarketLifecycle(executor, { marketCode, targetStatus }) {
+  const db = requireExecutor(executor);
+  const code = normalizeMarketCode(marketCode);
+  const target = String(targetStatus || '').trim().toUpperCase();
+  if (!code) throw lifecycleError('MARKET_CODE_INVALID', 'Code marché invalide.', 400);
+  if (!Object.prototype.hasOwnProperty.call(ALLOWED_TRANSITIONS, target)) {
+    throw lifecycleError('MARKET_LIFECYCLE_STATUS_INVALID', 'Statut lifecycle invalide.', 400);
+  }
+
+  const { rows } = await db.query(
+    `SELECT id,code,lifecycle_status,is_active
+       FROM markets
+      WHERE code=$1
+      LIMIT 1
+      FOR UPDATE`,
+    [code]
+  );
+  const current = rows[0];
+  if (!current) throw lifecycleError('MARKET_NOT_FOUND', 'Marché introuvable.', 404);
+  if (current.lifecycle_status === target) return { before: current, after: current, changed: false };
+
+  const allowed = ALLOWED_TRANSITIONS[current.lifecycle_status] || [];
+  if (!allowed.includes(target)) {
+    throw lifecycleError(
+      'MARKET_LIFECYCLE_TRANSITION_FORBIDDEN',
+      `Transition ${current.lifecycle_status} -> ${target} interdite.`,
+      409
+    );
+  }
+
+  const isActive = target === 'ACTIVE' || target === 'SUSPENDED';
+  const { rows: updated } = await db.query(
+    `UPDATE markets
+        SET lifecycle_status=$2,
+            is_active=$3
+      WHERE id=$1::uuid
+      RETURNING id,code,lifecycle_status,is_active`,
+    [current.id, target, isActive]
+  );
+  return { before: current, after: updated[0], changed: true };
+}
+
+module.exports = { ALLOWED_TRANSITIONS, createProvisioningMarket, normalizeCurrency, transitionMarketLifecycle };

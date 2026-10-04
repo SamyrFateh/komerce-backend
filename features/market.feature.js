@@ -103,6 +103,7 @@ module.exports = {
       'tests/unit/market-operator-governance-gaps.test.js',
       'tests/unit/market-lifecycle-schema.test.js',
       'tests/unit/market-lifecycle-writer.test.js',
+      'tests/unit/market-lifecycle-transition.test.js',
     ],
   },
 
@@ -152,6 +153,7 @@ module.exports = {
   // ── Invariants propres ───────────────────────────────────────────────────
   invariants: [
     'markets porte désormais le lifecycle canonique PROVISIONING/ACTIVE/SUSPENDED/CLOSED et storefront_texts ; aucune autorisation utilisateur n’est dérivée de ces champs',
+    'market-lifecycle-service est le seul writer runtime de lifecycle_status/is_active ; CLOSED est terminal et toute transition suit la matrice explicite',
     'provisionner un marché crée une ligne PROVISIONING via market-lifecycle-service ; les migrations ne servent qu’à faire évoluer le schéma ou aux seeds historiques',
     'operator_market_scopes (M1) = historique d\'accès grain user, jamais source du settlement (grain organisation, différé)',
     'révocation d\'un scope = UPDATE revoked_at, jamais DELETE — l\'historique d\'accès n\'est pas reconstructible sinon',

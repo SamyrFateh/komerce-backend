@@ -169,6 +169,7 @@ module.exports = {
       'tests/unit/orders-aggregator-route.test.js',
       'tests/unit/orders-cancel-route.test.js',
       'tests/unit/orders-create-route.test.js',
+      'tests/unit/order-checkout-market-lifecycle.test.js',
       'tests/unit/orders-detail.test.js',
       'tests/unit/orders-list.test.js',
       'tests/unit/orders-status-route.test.js',
@@ -306,7 +307,7 @@ module.exports = {
         'consumeAllocationsForOrder/releaseAllocationsForOrder sur les transitions ' +
         'confirmed/cancelled ; preuve: routes/orders/create.js -> services/local-stock-service.js ; ' +
         'services/order-status-machine.js -> services/local-stock-service.js)',
-      'market (P3 — resolveDisplaySnapshot() résout le contexte marché du client ' +
+      'market (F4 — le checkout vérifie lifecycle_status depuis relais.market_id serveur et refuse toute commande hors ACTIVE ; P3 — resolveDisplaySnapshot() résout le contexte marché du client ' +
         'via utils/currency.js ; preuve: services/order-display-snapshot.js -> utils/currency.js)',
       'purchasing (engagement fournisseur + sync annulation via syncPurchaseOrdersOnOrderCancel ; aucun SQL direct orders -> purchase_orders)',
       'loyalty (remise palier au checkout + recalcul apres commande — services/loyalty-service.js getLoyaltyDiscount/recalculateLoyalty, O7.3 provider loyalty)',
