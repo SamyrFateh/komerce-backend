@@ -293,7 +293,7 @@ module.exports = {
       test: 'tests/unit/purchasing-trigger-service.test.js' },
     { statement: 'le platform CJ runtime reprend la valeur Api du contrat P1 prouvé par défaut ; un échec placeOrder conserve uniquement code et message provider bornés afin que le Golden puisse diagnostiquer un rejet sans exposer credentials ni payload sensible',
       test: 'tests/unit/cj-fulfillment-adapter.test.js' },
-    { statement: 'le passage CJ de created_unpaid vers engagement financier doit rester une capacité séparée : en preuve P2 sandbox seulement, confirmOrder puis payBalanceV2 sont exercés derrière des gardes explicites, avec isSandbox=1 obligatoire et sans activation dans le runtime production tant que la persistance comptable B2B n est pas raccordée',
+    { statement: 'le passage CJ de created_unpaid vers engagement financier doit rester une capacité séparée : en preuve P2 sandbox seulement, confirmOrder puis sandbox simulatePay(orderId) sont exercés derrière des gardes explicites, avec isSandbox=1 obligatoire ; aucun parent shipmentOrderId ni checkout artificiel n est requis pour une PO simple, et aucun paiement runtime production n est ouvert tant que la persistance comptable B2B n est pas raccordée',
       test: 'tests/unit/cj-p2-confirm-pay-sandbox-proof.test.js' },
     { statement: 'le Golden CJ de niveau orchestration doit partir d une commande B2C payée dans une DB Postgres jetable, traverser le vrai triggerPurchasing, créer une PO Komerce avant toute mutation provider, créer uniquement un ordre CJ sandbox non payé, persister supplier_order_id puis prouver qu un replay ne crée aucune seconde PO',
       test: 'tests/unit/cj-golden-trigger-purchasing-proof.test.js' },
