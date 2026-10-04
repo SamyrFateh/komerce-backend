@@ -482,3 +482,58 @@ sont tous corrélés, sans fait financier orphelin et sans perte de scope.
 Pour AliExpress, Allegro, CJ puis tout futur provider :
 
 > on ne teste pas le provider en bloc ; on qualifie capability par capability, P0 → P4, puis on compose seulement les capabilities vertes dans le Golden full-chain.
+
+
+## 17. Chantiers suivants déjà retenus
+
+### R1 — Provider Certification Reconciliation
+
+Les certifications historiques ne sont pas rejouées aveuglément. Elles sont relues capability par capability et classées :
+
+- CONFIRMED : la preuve existante correspond exactement à la capability et au niveau P0→P4 revendiqués ;
+- RECLASSIFIED : la preuve reste valide mais son ancien label était trop large ;
+- GAP : la capability n'est pas réellement prouvée et doit être rejouée.
+
+La cible de projection minimale est :
+
+    provider
+    capability
+    environment
+    highest_proof
+    evidence
+    last_verified_at
+    limitations
+    status
+
+### M0→M5 — INTERNAL_MANAGED / Komerce fournisseur sans API
+
+Komerce doit aussi supporter un fournisseur/catalogue propriétaire sans API, alimenté par CSV, XLSX ou saisie manuelle, sans backdoor vers products.
+
+Modes d'exécution distingués :
+
+    API_EXTERNAL
+    MANUAL_EXTERNAL
+    INTERNAL_MANAGED
+
+Le mode INTERNAL_MANAGED passe par le même modèle canonique :
+
+    CSV / XLSX / saisie
+    → staging/import
+    → validation
+    → Normalized Supplier Contract
+    → Canonical Product / SKU
+    → stock et coût internes
+    → catalogue
+    → réservation / fulfillment interne
+    → comptabilité scopée
+
+Ordre prévu :
+
+- M0 : doctrine INTERNAL_MANAGED ;
+- M1 : contrat CSV/XLSX canonique ;
+- M2 : adapter fichier → modèle normalisé ;
+- M3 : stock/prix/variantes/médias internes ;
+- M4 : Purchasing interne, réservation et fulfillment ;
+- M5 : Golden E2E catalogue propriétaire.
+
+Règle : saisie manuelle, CSV et Excel ne contournent jamais la Raffinerie ni les invariants de SKU/SOI, stock, coût, scope et audit.
