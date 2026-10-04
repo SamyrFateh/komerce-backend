@@ -49,7 +49,7 @@ describe('market-delegation team service', () => {
           assignment_id: 'a1',
           email: params[1],
           requested_capabilities: JSON.parse(params[5]),
-          invited_by_membership_id: params[4],
+          invited_by_membership_id: params[6],
           status: 'PENDING',
           expires_at: '2026-09-12T20:00:00Z',
           created_at: '2026-09-09T20:00:00Z',
@@ -71,7 +71,7 @@ describe('market-delegation team service', () => {
     expect(result.invitation.email).toBe('new.member@example.com');
     const insertCall = db.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO market_team_invitations'));
     expect(insertCall).toBeTruthy();
-    const persistedTokenHash = insertCall[1][2];
+    const persistedTokenHash = insertCall[1][4];
     expect(persistedTokenHash).toBe(team.invitationTokenHash(result.token));
     expect(persistedTokenHash).not.toBe(result.token);
   });
