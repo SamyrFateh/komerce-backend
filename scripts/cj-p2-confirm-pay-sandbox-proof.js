@@ -22,6 +22,7 @@ const contract = require('../services/suppliers/cj-purchasing-contract');
 
 const ALLOW_FLAG = 'KOMERCE_ALLOW_CJ_P2_CONFIRM_PAY';
 const DEFAULT_PRODUCT_REF = 'KPR-131962';
+const FREIGHT_PATH = '/logistic/freightCalculate';
 
 function guard(env = process.env) {
   const runtime = String(env.KOMERCE_ENV || env.NODE_ENV || '').trim().toLowerCase();
@@ -87,6 +88,24 @@ async function invoke(path, { method = 'GET', body = null, query = null, accessT
   return payload;
 }
 
+async function resolveLogistic({ call, accessToken, vid, fromCountryCode, destination, preferred }) {
+  const quote = await call(FREIGHT_PATH, {
+    method: 'POST',
+    body: {
+      startCountryCode: fromCountryCode,
+      endCountryCode: destination.country_code,
+      products: [{ quantity: 1, vid }],
+    },
+    accessToken,
+  });
+  const routes = Array.isArray(quote?.data) ? quote.data
+    .map(route => String(route?.logisticName || '').trim())
+    .filter(Boolean) : [];
+  if (!routes.length) throw new Error('CJ_P2_NO_LOGISTIC_ROUTE');
+  if (preferred && routes.includes(preferred)) return preferred;
+  return routes[0];
+}
+
 async function run(env = process.env, deps = {}) {
   guard(env);
   const sku = await (deps.selectExactSku || selectExactSku)(
@@ -98,13 +117,25 @@ async function run(env = process.env, deps = {}) {
     env.KOMERCE_CJ_P2_ORDER_NUMBER || `KOM-P2-${sku.product_sku_id}-${Date.now()}`
   ).slice(0, 200);
 
+  const identity = contract.extractIdentity(sku.supplier_order_identity);
+  const fromCountryCode = String(env.KOMERCE_CJ_P2_FROM_COUNTRY_CODE || 'CN').trim();
+  const preferredLogistic = String(env.KOMERCE_CJ_P2_LOGISTIC_NAME || '').trim();
+  const logisticName = await (deps.resolveLogistic || resolveLogistic)({
+    call,
+    accessToken,
+    vid: identity.vid,
+    fromCountryCode,
+    destination: DEFAULT_DESTINATION,
+    preferred: preferredLogistic || null,
+  });
+
   const createPayload = contract.buildCreateOrderV2Payload({
     orderNumber,
     identity: sku.supplier_order_identity,
     quantity: 1,
     destination: DEFAULT_DESTINATION,
-    logisticName: String(env.KOMERCE_CJ_P2_LOGISTIC_NAME || 'CJPacket').trim(),
-    fromCountryCode: String(env.KOMERCE_CJ_P2_FROM_COUNTRY_CODE || 'CN').trim(),
+    logisticName,
+    fromCountryCode,
     platform: 'Api',
     storeLineItemId: sku.product_sku_id,
     remark: 'Komerce CJ P2 sandbox confirm + simulated balance pay proof',
@@ -126,7 +157,7 @@ async function run(env = process.env, deps = {}) {
     created,
     detail: beforeConfirm,
     expectedOrderNumber: orderNumber,
-    expectedVid: contract.extractIdentity(sku.supplier_order_identity).vid,
+    expectedVid: identity.vid,
     expectedQuantity: 1,
   });
 
@@ -169,6 +200,7 @@ async function run(env = process.env, deps = {}) {
     confirmation_verdict: confirmed.confirmation_verdict,
     payment_verdict: payment.payment_verdict,
     payment_mode: 'sandbox_simulate_pay_order_id',
+    logistic_name: logisticName,
   };
   console.log(`[cj-p2-confirm-pay-sandbox-proof] ${JSON.stringify(result)}`);
   return result;
@@ -184,4 +216,4 @@ if (require.main === module) {
     .finally(() => db.pool.end());
 }
 
-module.exports = { ALLOW_FLAG, guard, DEFAULT_DESTINATION, selectExactSku, invoke, run };
+module.exports = { ALLOW_FLAG, FREIGHT_PATH, guard, DEFAULT_DESTINATION, selectExactSku, invoke, resolveLogistic, run };
