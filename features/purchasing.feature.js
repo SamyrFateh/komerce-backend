@@ -136,6 +136,7 @@ module.exports = {
       'tests/unit/supplier-execution-persistence.test.js',
       'tests/unit/purchasing-engagement-service.test.js',
       'tests/unit/purchasing-completion-service.test.js',
+      'tests/unit/purchasing-grouped-service.test.js',
       'tests/unit/hub-operations-grouped-completion.test.js',
       'tests/unit/allegro-golden-native-money-grouped-proof.test.js',
       'tests/e2e-api/purchasing.grouped-flow.e2e.test.js',

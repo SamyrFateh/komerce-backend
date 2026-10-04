@@ -221,6 +221,7 @@ module.exports = {
       'tests/unit/pricing-period-structure-attributions.test.js',
       'tests/unit/market-cost-attribution-service.test.js',
       'tests/unit/market-cost-attribution-conservation-audit.test.js',
+      'tests/unit/market-cost-attribution-conservation-check.test.js',
       'tests/unit/admin-pricing-workspace-market-cost-attribution-route.test.js',
       'tests/unit/pricing-market-coverage.test.js',
       'tests/unit/pricing-risk-period.test.js',
