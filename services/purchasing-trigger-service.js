@@ -172,11 +172,18 @@ async function loadSupplierMapping(client, item, exactSku) {
 async function findExistingPo(client, orderId, item, productSupplierId) {
   // PR 2 : un item déjà couvert par les lignes (quel que soit le fournisseur) ne se rachète jamais.
   const coverage = await findItemCoverage(client, item);
-  if (coverage) return coverage;
+  if (coverage) {
+    if (!coverage.id) return coverage;
+    const { rows: [coveredPo] } = await client.query(
+      'SELECT id, status, trigger_mode, supplier_order_id FROM purchase_orders WHERE id = $1 LIMIT 1',
+      [coverage.id]
+    );
+    return coveredPo || coverage;
+  }
   // Repli historique inchangé : PO antérieures à la 225 (sans order_item_id), items sans id, couverture partielle.
   if (item.id) {
     const { rows: [existingPo] } = await client.query(`
-      SELECT id, status FROM purchase_orders
+      SELECT id, status, trigger_mode, supplier_order_id FROM purchase_orders
       WHERE product_supplier_id = $1 AND status != 'cancelled'
         AND (order_item_id = $2 OR (order_item_id IS NULL AND order_id = $3))
       ORDER BY CASE WHEN order_item_id = $2 THEN 0 ELSE 1 END, created_at ASC LIMIT 1
@@ -184,7 +191,7 @@ async function findExistingPo(client, orderId, item, productSupplierId) {
     return existingPo || null;
   }
   const { rows: [existingPo] } = await client.query(`
-    SELECT id, status FROM purchase_orders
+    SELECT id, status, trigger_mode, supplier_order_id FROM purchase_orders
     WHERE order_id = $1 AND product_supplier_id = $2 AND status != 'cancelled'
     ORDER BY created_at ASC LIMIT 1
   `, [orderId, productSupplierId]);
