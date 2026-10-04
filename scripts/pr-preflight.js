@@ -217,6 +217,12 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
         'tests/unit/sourcing-certification.test.js',
         '--runInBand', '--silent',
       ]),
+      command('Supplier execution certification invariants', npxBin, [
+        'jest',
+        'tests/unit/supplier-execution-certification.test.js',
+        '--runInBand', '--silent',
+      ]),
+      nodeRun('Supplier execution certification manifest', 'scripts/check-supplier-execution-certification-manifest.js'),
       npmRun('Backend feature guard', 'feature:check'),
       nodeRun('Contract consumer check', 'scripts/contract-check.js'),
       npmRun('Security 360 freshness and ratchet', 'security:360:check'),

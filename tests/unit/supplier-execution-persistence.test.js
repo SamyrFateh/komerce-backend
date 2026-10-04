@@ -88,3 +88,41 @@ test('refuse une ligne sans quantité positive', async () => {
     supplierOrderId: 'CJ-1',
   })).rejects.toThrow('SUPPLIER_EXECUTION_QUANTITY_INVALID');
 });
+
+
+test('un second provider utilise exactement le même contrat canonique sans branche dédiée', async () => {
+  const client = clientWith([
+    [{ id: 'exec-foo', purchase_order_id: 'po-foo', provider: 'foosupply', supplier_order_id: 'PURCHASE-77' }],
+    [],
+    [],
+  ]);
+
+  const out = await persistSupplierOrderExecution(client, {
+    purchaseOrderId: 'po-foo',
+    purchaseLineId: 'line-foo',
+    quantity: 3,
+    provider: 'FooSupply',
+    supplierOrderId: 'PURCHASE-77',
+    supplierOrderCode: 'VISIBLE-77',
+    providerStatus: 'ACCEPTED',
+  });
+
+  expect(out).toMatchObject({
+    id: 'exec-foo',
+    provider: 'foosupply',
+    supplier_order_id: 'PURCHASE-77',
+  });
+  expect(client.query.mock.calls[0][1].slice(0, 5)).toEqual([
+    'po-foo', 'foosupply', 'PURCHASE-77', 'VISIBLE-77', 'ACCEPTED',
+  ]);
+});
+
+test('le service canonique ne contient aucun champ natif CJ', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'services', 'supplier-execution-persistence.js'),
+    'utf8'
+  );
+  expect(src).not.toMatch(/shipmentOrderId|cjOrderCode|payId|CJ_/);
+});
