@@ -38,3 +38,13 @@ test('lifecycle activation is gated by readiness and audited', () => {
   expect(source).toMatch(/MARKET_NOT_READY_FOR_ACTIVATION/);
   expect(source).toMatch(/MARKET_LIFECYCLE_CHANGED/);
 });
+
+
+test('provisioning H composes payment cash and relay writers', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '..', '..', 'services', 'market-provisioning-service.js'), 'utf8');
+  expect(source).toMatch(/configureProvisioningProvider/);
+  expect(source).toMatch(/initializeProvisioningCashPolicy/);
+  expect(source).toMatch(/relaisMutation\.createRelais/);
+});
