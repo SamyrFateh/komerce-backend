@@ -225,3 +225,20 @@ test('CJ contract — read-back financier refuse UNPAID après paiement', () => 
     data: { orderId: 'CJ-1', orderStatus: 'UNPAID', productList: [] },
   }, 'CJ-1')).toThrow('CJ_PAID_STATUS_UNEXPECTED:UNPAID');
 });
+
+
+test('CJ contract — read-back expose shipmentOrderId quand createOrderV2 ne le renvoie pas', () => {
+  expect(contract.readOrderDetailFacts({
+    data: {
+      orderId: 'CJ-1',
+      orderNum: 'KOM-1',
+      shipmentOrderId: 'SHIP-1',
+      orderStatus: 'CREATED',
+      productList: [{ vid: 'VID-1', quantity: 1 }],
+    },
+  })).toMatchObject({
+    order_id: 'CJ-1',
+    order_number: 'KOM-1',
+    shipment_order_id: 'SHIP-1',
+  });
+});

@@ -118,18 +118,19 @@ async function run(env = process.env, deps = {}) {
     method: 'POST', body: createPayload, accessToken,
   });
   const created = contract.parseCreateOrderResponse(createBody);
-  if (!created.shipment_order_id) throw new Error('CJ_P2_SHIPMENT_ORDER_ID_MISSING');
 
   const beforeConfirm = await call(contract.ENDPOINTS.get_order_detail, {
     method: 'GET', query: contract.buildOrderDetailQuery(created.external_ref), accessToken,
   });
-  contract.verifyOrderDetail({
+  const beforeConfirmFacts = contract.verifyOrderDetail({
     created,
     detail: beforeConfirm,
     expectedOrderNumber: orderNumber,
     expectedVid: contract.extractIdentity(sku.supplier_order_identity).vid,
     expectedQuantity: 1,
   });
+  const shipmentOrderId = created.shipment_order_id || beforeConfirmFacts.shipment_order_id;
+  if (!shipmentOrderId) throw new Error('CJ_P2_SHIPMENT_ORDER_ID_MISSING_AFTER_READBACK');
 
   const confirmBody = await call(contract.ENDPOINTS.confirm_order, {
     method: 'PATCH',
@@ -148,7 +149,7 @@ async function run(env = process.env, deps = {}) {
 
   const payBody = await call(contract.ENDPOINTS.pay_balance_v2, {
     method: 'POST',
-    body: contract.buildPayBalanceV2Payload(created.shipment_order_id),
+    body: contract.buildPayBalanceV2Payload(shipmentOrderId),
     accessToken,
   });
   const payment = contract.parsePayBalanceV2Response(payBody);
@@ -164,7 +165,7 @@ async function run(env = process.env, deps = {}) {
     real_charge_possible: false,
     order_number: orderNumber,
     cj_order_id: created.external_ref,
-    shipment_order_id: created.shipment_order_id,
+    shipment_order_id: shipmentOrderId,
     confirm_status: confirmFacts.status,
     paid_status: paidFacts.status,
     confirmation_verdict: confirmed.confirmation_verdict,
