@@ -6,8 +6,8 @@ const express = require('express');
 const request = require('supertest');
 
 let mockUser = { id: 'operator-1', role: 'market_operator' };
-let readMarkets = new Set(['market-cm']);
-let manageMarkets = new Set(['market-cm']);
+let mockReadMarkets = new Set(['market-cm']);
+let mockManageMarkets = new Set(['market-cm']);
 
 jest.mock('../../middleware/auth', () => ({
   authenticate: (req, res, next) => { req.user = mockUser; next(); },
@@ -22,7 +22,7 @@ jest.mock('../../middleware/require-market-delegated-role', () => ({
 
 jest.mock('../../middleware/require-market-delegated-capability', () => ({
   attachAuthorizedMarketsForCapability: capability => (req, res, next) => {
-    const markets = capability === 'partners.manage' ? manageMarkets : readMarkets;
+    const markets = capability === 'partners.manage' ? mockManageMarkets : mockReadMarkets;
     if (!markets.size) return res.status(403).json({ code: 'MARKET_CAPABILITY_REQUIRED' });
     req.authorizedMarkets = new Set(markets);
     next();
@@ -71,8 +71,8 @@ function app() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockUser = { id: 'operator-1', role: 'market_operator' };
-  readMarkets = new Set(['market-cm']);
-  manageMarkets = new Set(['market-cm']);
+  mockReadMarkets = new Set(['market-cm']);
+  mockManageMarkets = new Set(['market-cm']);
 });
 
 test('partners.read borne la liste aux pays autorisés', async () => {
@@ -89,7 +89,7 @@ test('country demandé hors partners.read ne fuit aucune donnée', async () => {
 });
 
 test('absence de partners.manage ferme une mutation avant le service', async () => {
-  manageMarkets = new Set();
+  mockManageMarkets = new Set();
   const res = await request(app()).post('/api/admin/partners').send({ name: 'X', partner_type: 'supplier', country_code: 'CM' });
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
@@ -112,8 +112,8 @@ test('changement de country_code exige partners.manage sur source et destination
 
 test('admin central conserve le contrat historique sans capability marché', async () => {
   mockUser = { id: 'admin-1', role: 'admin' };
-  readMarkets = new Set();
-  manageMarkets = new Set();
+  mockReadMarkets = new Set();
+  mockManageMarkets = new Set();
   const res = await request(app()).get('/api/admin/partners?country=KM');
   expect(res.status).toBe(200);
   expect(mockPartnerAdmin.listPartners).toHaveBeenCalledWith(expect.objectContaining({ country: 'KM' }));
