@@ -27,6 +27,12 @@ function makeClient(script = []) {
         return { rows: [], rowCount: 0 };
       }
 
+      if (
+        normalized === 'SELECT lifecycle_status FROM markets WHERE id=$1::uuid LIMIT 1'
+      ) {
+        return { rows: [{ lifecycle_status: 'ACTIVE' }], rowCount: 1 };
+      }
+
       const next = queue.shift();
       if (!next) {
         throw new Error(`No mock query result for SQL: ${normalized}`);
