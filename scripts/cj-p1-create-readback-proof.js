@@ -111,18 +111,31 @@ async function invoke(path, { method = 'GET', body = null, accessToken, query = 
 
 function readBackFacts(body) {
   const data = body?.data || {};
-  const products = Array.isArray(data.productInfoList) ? data.productInfoList : [];
+  const products = [
+    ...(Array.isArray(data.productInfoList) ? data.productInfoList : []),
+    ...(Array.isArray(data.productList) ? data.productList : []),
+  ];
   return {
     order_id: data.orderId || data.cjOrderId || null,
     order_number: data.orderNumber || data.orderNum || data.platformOrderId || null,
     status: data.orderStatus || null,
     variants: products.flatMap((item) => {
-      const direct = item.variantId ? [{ vid: String(item.variantId), quantity: Number(item.quantity) }] : [];
+      const directVid = item.variantId ?? item.vid ?? null;
+      const direct = directVid
+        ? [{ vid: String(directVid), quantity: Number(item.quantity), store_line_item_id: item.storeLineItemId || null }]
+        : [];
       const subs = Array.isArray(item.subOrderProducts)
-        ? item.subOrderProducts.map((sub) => ({ vid: String(sub.variantId || ''), quantity: Number(sub.quantity) }))
+        ? item.subOrderProducts.map((sub) => ({
+            vid: String(sub.variantId ?? sub.vid ?? ''),
+            quantity: Number(sub.quantity),
+            store_line_item_id: sub.storeLineItemId || item.storeLineItemId || null,
+          }))
         : [];
       return [...direct, ...subs].filter((x) => x.vid);
     }),
+    response_product_shape: Array.isArray(data.productList)
+      ? 'productList[].vid'
+      : (Array.isArray(data.productInfoList) ? 'productInfoList[].variantId' : 'unknown'),
   };
 }
 
@@ -135,7 +148,11 @@ function verifyReadBack({ created, detail, expectedOrderNumber, expectedVid, exp
   const variant = facts.variants.find((v) => v.vid === expectedVid && v.quantity === expectedQuantity);
 
   if (!sameOrder) throw new Error('CJ_P1_READBACK_ORDER_MISMATCH');
-  if (!variant) throw new Error('CJ_P1_READBACK_VARIANT_MISMATCH');
+  if (!variant) {
+    const err = new Error('CJ_P1_READBACK_VARIANT_MISMATCH');
+    err.readback = facts;
+    throw err;
+  }
   if (!['CREATED', 'IN_CART', 'UNPAID'].includes(String(facts.status || '').toUpperCase())) {
     throw new Error(`CJ_P1_UNEXPECTED_STATUS:${facts.status || 'UNKNOWN'}`);
   }
@@ -214,6 +231,7 @@ async function run(env = process.env, deps = {}) {
     readback_status: readback.status,
     exact_vid_verified: true,
     exact_quantity_verified: true,
+    readback_product_shape: readback.response_product_shape,
   };
 
   console.log(`[cj-p1-create-readback-proof] ${JSON.stringify(result)}`);
@@ -225,6 +243,7 @@ if (require.main === module) {
     .catch((error) => {
       console.error(`[cj-p1-create-readback-proof] FAILED: ${error.stack || error}`);
       if (error.payload) console.error(`[cj-p1-create-readback-proof] provider=${JSON.stringify(error.payload)}`);
+      if (error.readback) console.error(`[cj-p1-create-readback-proof] readback=${JSON.stringify(error.readback)}`);
       process.exitCode = 1;
     })
     .finally(() => db.pool.end());
