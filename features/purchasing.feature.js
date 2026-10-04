@@ -113,6 +113,7 @@ module.exports = {
       'scripts/allegro-sandbox-purchase-proof.js',
       'scripts/allegro-shipping-capability-proof.js',
       'scripts/aliexpress-readiness-golden-proof.js',
+      'scripts/cj-p1-create-readback-proof.js',
     ],
     tests: [
       'tests/unit/purchase-line-snapshot.test.js',
@@ -153,6 +154,7 @@ module.exports = {
       'tests/unit/aliexpress-purchase-preflight.test.js',
       'tests/unit/aliexpress-readiness-golden-proof.test.js',
       'tests/unit/cj-purchasing-contract.test.js',
+      'tests/unit/cj-p1-create-readback-proof.test.js',
       'tests/unit/supplier-fulfillment-readiness.test.js',
       'tests/unit/receive-purchase-order.test.js',
       'tests/unit/repair-ordered-purchasing.test.js',
