@@ -35,9 +35,20 @@ function guard(env = process.env) {
   return true;
 }
 
+const DEFAULT_SANDBOX_DESTINATION = Object.freeze({
+  postal_code: '10001',
+  country_code: 'US',
+  country: 'United States',
+  province: 'New York',
+  city: 'New York',
+  customer_name: 'Komerce Sandbox',
+  address1: '350 5th Ave',
+  phone: '2127363100',
+});
+
 function parseDestination(env = process.env) {
   const raw = String(env.KOMERCE_CJ_P1_DESTINATION_JSON || '').trim();
-  if (!raw) throw new Error('KOMERCE_CJ_P1_DESTINATION_JSON requis');
+  if (!raw) return { ...DEFAULT_SANDBOX_DESTINATION };
   let parsed;
   try { parsed = JSON.parse(raw); } catch (_) { throw new Error('KOMERCE_CJ_P1_DESTINATION_JSON invalide'); }
   return parsed;
@@ -144,8 +155,8 @@ async function run(env = process.env, deps = {}) {
 
   const orderNumber = String(env.KOMERCE_CJ_P1_ORDER_NUMBER || `KOM-P1-${exactSku.product_sku_id}`).slice(0, 50);
   const destination = parseDestination(env);
-  const logisticName = String(env.KOMERCE_CJ_P1_LOGISTIC_NAME || '').trim();
-  const fromCountryCode = String(env.KOMERCE_CJ_P1_FROM_COUNTRY_CODE || '').trim();
+  const logisticName = String(env.KOMERCE_CJ_P1_LOGISTIC_NAME || 'CJPacket').trim();
+  const fromCountryCode = String(env.KOMERCE_CJ_P1_FROM_COUNTRY_CODE || 'CN').trim();
 
   const createPayload = contract.buildCreateOrderV2Payload({
     orderNumber,
@@ -224,6 +235,7 @@ module.exports = {
   DEFAULT_PRODUCT_REF,
   truthy,
   guard,
+  DEFAULT_SANDBOX_DESTINATION,
   parseDestination,
   selectExactSku,
   invoke,
