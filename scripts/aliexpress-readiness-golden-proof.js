@@ -78,7 +78,9 @@ function assertA2(verdict, soldSku) {
   if (!String(evidence.currency || '').trim()) throw new Error('ALIEXPRESS_READINESS_LIVE_CURRENCY_MISSING');
   if (!String(evidence.supplier_origin_country_code || '').trim()) throw new Error('ALIEXPRESS_READINESS_ORIGIN_MISSING');
   if (!String(evidence.destination_country_code || '').trim()) throw new Error('ALIEXPRESS_READINESS_DESTINATION_MISSING');
-  if (evidence.freight_available !== true) throw new Error('ALIEXPRESS_READINESS_FREIGHT_NOT_PROVEN');
+  if (evidence.freight?.success === false || evidence.freight?.has_options !== true) {
+    throw new Error('ALIEXPRESS_READINESS_FREIGHT_NOT_PROVEN');
+  }
   if (evidence.payment_invoked !== false) throw new Error('ALIEXPRESS_READINESS_PAYMENT_MUST_BE_FALSE');
   if (evidence.place_order_invoked !== false) throw new Error('ALIEXPRESS_READINESS_EVIDENCE_PLACE_ORDER_MUST_BE_FALSE');
   if (verdict.supplier_unit_ref !== soldSku.supplier_unit_ref) throw new Error('ALIEXPRESS_READINESS_UNIT_REF_MISMATCH');
@@ -126,7 +128,7 @@ async function run(argv = process.argv.slice(2), {
       currency: evidence.currency,
       supplier_origin_country_code: evidence.supplier_origin_country_code,
       destination_country_code: evidence.destination_country_code,
-      freight_available: true,
+      freight: evidence.freight,
     },
     mutation: {
       place_order_invoked: false,
