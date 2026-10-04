@@ -26,9 +26,9 @@ describe('PR enforcement trusted dispatch', () => {
   });
 
   test('workflow dispatch certifies the exact supplied PR head and branch', () => {
-    expect(enforcement).toContain('ref: ${{ inputs.head_sha }}');
-    expect(enforcement).toContain('BASE_SHA: ${{ inputs.base_sha }}');
-    expect(enforcement).toContain('HEAD_REF: ${{ inputs.head_ref }}');
+    expect(enforcement).toContain('ref: ${{ inputs.head_sha || github.event.pull_request.head.sha }}');
+    expect(enforcement).toContain('BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}');
+    expect(enforcement).toContain('HEAD_REF: ${{ inputs.head_ref || github.event.pull_request.head.ref }}');
     expect(enforcement).toContain('event=workflow_dispatch&branch=$BRANCH_ENCODED');
   });
 });
