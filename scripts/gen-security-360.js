@@ -51,13 +51,37 @@ function mergeAliasRefs(target, source, aliases) {
 
 function parseGuardAliases(src) {
   const aliases = {};
-  for (const m of src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*\[([\s\S]*?)\]\s*;/g)) {
-    const parsed = tokens(m[2]);
-    if (hasGuards(parsed)) aliases[m[1]] = parsed;
+
+  // Factory aliases, ex.:
+  // const attachRead = attachAuthorizedMarketsForCapability('catalog.read')
+  // Ils portent une autorité forte même lorsque la route ne contient ensuite
+  // que le nom de variable.
+  for (const m of src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*((?:requireMarketDelegatedCapability|requireSingleMarketDelegatedCapability|attachMarketExecutionRoleFor|attachAuthorizedMarketsForCapability)\s*\([\s\S]*?\))\s*;/g)) {
+    aliases[m[1]] = tokens(m[2]);
   }
+
   for (const m of src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*(requireRole\(\s*\[[\s\S]*?\]\s*\))\s*;/g)) {
     aliases[m[1]] = tokens(m[2]);
   }
+
+  // Les tableaux de gardes peuvent composer d'autres aliases déjà connus.
+  // On itère jusqu'au point fixe afin que [...baseGuard, wrapper(readGuard)]
+  // conserve authn/rôles/capability sans exiger que les factories soient
+  // écrites en toutes lettres dans chaque route.
+  const arrays = Array.from(src.matchAll(/(?:const|let)\s+(\w+)\s*=\s*\[([\s\S]*?)\]\s*;/g));
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const m of arrays) {
+      const parsed = tokens(m[2]);
+      mergeAliasRefs(parsed, m[2], aliases);
+      if (hasGuards(parsed) && !aliases[m[1]]) {
+        aliases[m[1]] = parsed;
+        changed = true;
+      }
+    }
+  }
+
   const wrappers = wrapperAliases(src);
   for (const name of Object.keys(wrappers)) if (!aliases[name]) aliases[name] = wrappers[name];
   return aliases;
