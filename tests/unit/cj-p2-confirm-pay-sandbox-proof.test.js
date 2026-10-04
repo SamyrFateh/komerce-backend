@@ -165,3 +165,8 @@ test('P2 retombe sur la première route CJ si la préférence est indisponible',
     preferred: 'CJPacket',
   })).resolves.toBe('CJPacket Ordinary');
 });
+
+
+test('P2 expose un intervalle de sécurité supérieur à 1 seconde entre appels CJ', () => {
+  expect(proof.CJ_MIN_CALL_GAP_MS).toBeGreaterThan(1000);
+});
