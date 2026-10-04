@@ -32,6 +32,8 @@ describe('security-guard-tokens', () => {
       expect(t.capabilityGuards.has(name)).toBe(true);
       expect(lib.hasGuards(t)).toBe(true);
     }
+    expect(lib.STRONG_AUTHZ_GUARDS).toContain('attachAuthorizedMarketsForCapability');
+    expect(lib.tokens("attachAuthorizedMarketsForCapability('partners.read')").authz).toBe(true);
     expect(lib.tokens('resolveAuthorizationSomewhere')).toMatchObject({ authz: false });
   });
 

@@ -32,6 +32,8 @@ const EFFECTS = Object.freeze({
   'network.update': 'ACT',
   'network.suspend': 'ACT',
   'provider.manage': 'ACT',
+  'partners.read': 'READ',
+  'partners.manage': 'ACT',
   'market_config.read': 'READ',
   'market_config.update': 'ACT',
   'finance.read': 'READ',
@@ -100,6 +102,8 @@ const CAPABILITIES = Object.freeze([
   ['network.update','DELEGATION','network','MARKET','DELEGABLE',true,'LIVE'],
   ['network.suspend','DELEGATION','network','MARKET','DELEGABLE',true,'LIVE'],
   ['provider.manage','DELEGATION','network','MARKET','DELEGABLE',true,'LIVE'],
+  ['partners.read','DELEGATION','partners','MARKET','DELEGABLE',false,'LIVE'],
+  ['partners.manage','DELEGATION','partners','MARKET','DELEGABLE',true,'LIVE'],
   ['market_config.read','DELEGATION','market-config','MARKET','DELEGABLE',false,'LIVE'],
   // Audit schéma (migration 135_markets_foundation.sql, jamais altérée) : hors
   // code/currency/minor_unit (réservés central) et is_active (même autorité que
