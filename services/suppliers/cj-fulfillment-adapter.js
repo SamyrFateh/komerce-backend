@@ -137,7 +137,7 @@ async function buildOrderPayload({ items, preflights, context = {} } = {}) {
     destination,
     logisticName: context.logistic_name || env.KOMERCE_CJ_LOGISTIC_NAME,
     fromCountryCode: context.from_country_code || env.KOMERCE_CJ_FROM_COUNTRY_CODE,
-    platform: 'komerce',
+    platform: context.platform || env.KOMERCE_CJ_PLATFORM || 'Api',
     storeLineItemId: context.store_line_item_id || null,
     remark: context.remark || null,
     sandbox,
