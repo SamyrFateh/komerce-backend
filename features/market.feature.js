@@ -104,6 +104,7 @@ module.exports = {
       'tests/unit/market-lifecycle-schema.test.js',
       'tests/unit/market-lifecycle-writer.test.js',
       'tests/unit/market-lifecycle-transition.test.js',
+      'tests/unit/market-lifecycle-service.test.js',
     ],
   },
 

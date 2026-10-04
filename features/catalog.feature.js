@@ -335,6 +335,8 @@ module.exports = {
     ],
     tests: [
       'tests/unit/catalog-certification-gate-b.test.js',
+      'tests/unit/pipeline-certification-scenario-core.test.js',
+      'tests/unit/e2e-catalog-500-plan.test.js',
       'tests/unit/gate-b-publication-torture.test.js',
       'tests/unit/gate-b-physical-bounds.test.js',
       'tests/unit/gate-b-semantic-torture.test.js',
