@@ -123,32 +123,37 @@
       },
       {
         "capability": "purchasing.contract",
-        "classification": "GAP",
-        "availability": "DOCUMENTED_NOT_PROVEN",
-        "highest_proof": "UNQUALIFIED",
-        "environment": "LIVE_API_DOCUMENTED",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P1",
+        "environment": "SANDBOX",
         "evidence": [
           "docs/external-providers/suppliers/CJ_PURCHASING_CONTRACT.md",
-          "services/suppliers/cj-purchasing-contract.js"
+          "services/suppliers/cj-purchasing-contract.js",
+          "scripts/cj-p1-create-readback-proof.js"
         ],
         "limitations": [
-          "official buyer-side create/read-back surface documented",
-          "account/business readiness not yet proved",
-          "no live create/read-back proof",
-          "idempotence and payment commitment remain unproved"
+          "P1 sandbox create/read-back proved on exact CJ VID and quantity",
+          "native duplicate rejection code 1603003 and recovery by stable orderNumber proved",
+          "payment and confirmOrder remain outside the proof",
+          "production placeOrder runtime is not enabled"
         ]
       },
       {
         "capability": "purchasing.readiness",
         "classification": "GAP",
-        "availability": "NOT_IMPLEMENTED",
-        "highest_proof": "UNQUALIFIED",
-        "environment": "UNPROVEN",
+        "availability": "IMPLEMENTED_NOT_RUNTIME_REGISTERED",
+        "highest_proof": "P1",
+        "environment": "SANDBOX_PROOF_ONLY",
         "evidence": [
-          "services/suppliers/execution-adapter-registry.js"
+          "services/suppliers/cj-fulfillment-adapter.js",
+          "tests/unit/cj-fulfillment-adapter.test.js",
+          "scripts/cj-p1-create-readback-proof.js"
         ],
         "limitations": [
-          "CJ has no registered fulfillment adapter"
+          "adapter exists but is deliberately absent from execution-adapter-registry",
+          "production procurement destination/logistics wiring is not yet complete",
+          "provider-authority/runtime cutover remains fail-closed"
         ]
       }
     ]
