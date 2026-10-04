@@ -71,10 +71,10 @@ async function resolveActiveAssignmentByMarketCode(executor, marketCode) {
 async function audit(db, { actorUserId = null, marketId = null, assignmentId = null, membershipId = null, capability = null, action, before = null, after = null, correlationId = null }) {
   await db.query(
     `INSERT INTO market_delegation_audit
-      (actor_user_id, market_id, assignment_id, membership_id, capability, action, payload_before, payload_after, correlation_id)
-     VALUES ($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5,$6,$7::jsonb,$8::jsonb,$9)`,
-    [actorUserId, marketId, assignmentId, membershipId, capability, action,
-      before == null ? null : JSON.stringify(before), after == null ? null : JSON.stringify(after), correlationId]
+      (actor_user_id, assignment_id, membership_id, capability, action, payload_before, payload_after, correlation_id, market_id)
+     VALUES ($1::uuid,$2::uuid,$3::uuid,$4,$5,$6::jsonb,$7::jsonb,$8,$9::uuid)`,
+    [actorUserId, assignmentId, membershipId, capability, action,
+      before == null ? null : JSON.stringify(before), after == null ? null : JSON.stringify(after), correlationId, marketId]
   );
 }
 
