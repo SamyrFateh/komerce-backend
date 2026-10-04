@@ -129,6 +129,7 @@ async function buildOrderPayload({ items, preflights, context = {} } = {}) {
   const env = context.env || process.env;
   const executionKey = String(context.execution_key || '').trim();
   const orderNumber = String(context.order_number || (executionKey ? `KOM-PO-${executionKey}` : '')).slice(0, 200);
+  const sandbox = context.sandbox === true || env.KOMERCE_CJ_SANDBOX === '1';
   const native = contract.buildCreateOrderV2Payload({
     orderNumber,
     identity: item.identity,
@@ -139,7 +140,7 @@ async function buildOrderPayload({ items, preflights, context = {} } = {}) {
     platform: 'komerce',
     storeLineItemId: context.store_line_item_id || null,
     remark: context.remark || null,
-    sandbox: context.sandbox === true,
+    sandbox,
   });
   const { vid } = contract.extractIdentity(item.identity);
 
@@ -151,7 +152,7 @@ async function buildOrderPayload({ items, preflights, context = {} } = {}) {
       vid,
       quantity: item.quantity,
     },
-    sandbox: context.sandbox === true,
+    sandbox,
   };
 }
 
