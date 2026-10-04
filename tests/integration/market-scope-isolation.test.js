@@ -57,17 +57,17 @@ if (!hasIntegrationEnv) {
     // Deux marchés de test, distincts de KM pour ne jamais interférer avec
     // le seed réel (M0 n'insère que KM).
     const mkA = await db.query(
-      `INSERT INTO markets (code, name, currency, minor_unit)
-       VALUES ('QX', 'Marché Test 1', 'TST', 0)
-       ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
+      `INSERT INTO markets (code, name, currency, minor_unit, is_active, lifecycle_status)
+       VALUES ('QX', 'Marché Test 1', 'TST', 0, TRUE, 'ACTIVE')
+       ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, is_active = TRUE, lifecycle_status = 'ACTIVE'
        RETURNING id`
     );
     marketA = mkA.rows[0].id;
 
     const mkB = await db.query(
-      `INSERT INTO markets (code, name, currency, minor_unit)
-       VALUES ('QY', 'Marché Test 2', 'TST', 0)
-       ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name
+      `INSERT INTO markets (code, name, currency, minor_unit, is_active, lifecycle_status)
+       VALUES ('QY', 'Marché Test 2', 'TST', 0, TRUE, 'ACTIVE')
+       ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, is_active = TRUE, lifecycle_status = 'ACTIVE'
        RETURNING id`
     );
     marketB = mkB.rows[0].id;
