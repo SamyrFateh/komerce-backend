@@ -111,6 +111,7 @@ test('placeOrder récupère un duplicate sans seconde création et vérifie le r
         orderId: 'CJ-1',
         orderNum: 'KOM-PO-1',
         orderStatus: 'CREATED',
+        cjOrderCode: 'SD-1',
         productList: [{ vid: 'VID-1', quantity: 1 }],
       },
     });
@@ -127,6 +128,7 @@ test('placeOrder récupère un duplicate sans seconde création et vérifie le r
 
   expect(out).toMatchObject({
     supplier_order_id: 'CJ-1',
+    supplier_order_code: 'SD-1',
     execution_recovery: 'RECOVERED_AFTER_DUPLICATE',
     exact_vid_verified: true,
     exact_quantity_verified: true,

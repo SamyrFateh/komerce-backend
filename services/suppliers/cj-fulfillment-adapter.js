@@ -226,6 +226,7 @@ async function placeOrder(payload, context = {}) {
     order_number: created.order_number,
     commitment_verdict: created.commitment_verdict,
     execution_recovery: executionRecovery,
+    supplier_order_code: readback.cj_order_code || null,
     readback_status: readback.status,
     exact_vid_verified: true,
     exact_quantity_verified: true,

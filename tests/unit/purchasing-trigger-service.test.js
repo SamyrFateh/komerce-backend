@@ -446,3 +446,27 @@ test('api_pending_retry peut remonter une evidence provider bornée sans secret'
   expect(src).toContain('evidence: boundary.evidence || {}');
   expect(src).toContain('evidence: apiResult.evidence || {}');
 });
+
+
+test('auto-order persiste supplier execution avant confirmation locale de la PO', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'services', 'purchasing-trigger-service.js'),
+    'utf8'
+  );
+
+  const loopAt = src.indexOf('for (const task of autoExecutionTasks)');
+  const persistAt = src.indexOf('await persistSupplierOrderExecution(autoClient', loopAt);
+  const updateAt = src.indexOf('UPDATE purchase_orders', persistAt);
+  const confirmAt = src.indexOf('await confirmHistoricalPurchaseLine', updateAt);
+  const commitAt = src.indexOf("await autoClient.query('COMMIT')", confirmAt);
+
+  expect(persistAt).toBeGreaterThan(loopAt);
+  expect(updateAt).toBeGreaterThan(persistAt);
+  expect(confirmAt).toBeGreaterThan(updateAt);
+  expect(commitAt).toBeGreaterThan(confirmAt);
+  expect(src).toContain('supplierOrderCode: apiResult.supplier_order_code');
+  expect(src).toContain('providerStatus: apiResult.provider_status');
+  expect(src).toContain('executionRecovery: apiResult.execution_recovery');
+});
