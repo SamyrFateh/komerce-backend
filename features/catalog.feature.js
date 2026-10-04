@@ -262,6 +262,7 @@ module.exports = {
       'docs/doctrine/DOCTRINE_CERTIFICATION_CATALOGUE_SOURCING.md',
       'docs/doctrine/DOCTRINE_CATALOG_CHANGE_INTAKE.md',
       'docs/doctrine/DOCTRINE_INGESTION_CATALOGUE.md',
+      'docs/doctrine/DOCTRINE_INTERNAL_MANAGED_CATALOG.md',
       'docs/doctrine/DOCTRINE_PRODUCT_DETAIL_CONTRACT.md',
       'docs/specs/DECISION_MODELE_STOCK_SKU.md',
       'docs/CJ_CONNECTOR.md',
