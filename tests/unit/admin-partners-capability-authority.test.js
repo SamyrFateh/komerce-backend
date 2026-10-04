@@ -48,7 +48,7 @@ const mockDbQuery = jest.fn(async (sql, params) => {
 });
 jest.mock('../../db', () => ({ query: (...args) => mockDbQuery(...args) }));
 
-const partnerAdmin = {
+const mockPartnerAdmin = {
   PartnerAdminError: class PartnerAdminError extends Error {},
   listPartners: jest.fn(async () => [{ id: 'p1', country_code: 'CM' }]),
   getStats: jest.fn(async () => []),
@@ -57,7 +57,7 @@ const partnerAdmin = {
   updatePartner: jest.fn(async (id, body) => ({ id, ...body })),
   deletePartner: jest.fn(async id => ({ deleted: true, id })),
 };
-jest.mock('../../services/partner-admin-service', () => partnerAdmin);
+jest.mock('../../services/partner-admin-service', () => mockPartnerAdmin);
 
 const router = require('../../routes/admin/partners');
 
@@ -78,14 +78,14 @@ beforeEach(() => {
 test('partners.read borne la liste aux pays autorisés', async () => {
   const res = await request(app()).get('/api/admin/partners');
   expect(res.status).toBe(200);
-  expect(partnerAdmin.listPartners).toHaveBeenCalledWith(expect.objectContaining({ countryIn: ['CM'] }));
+  expect(mockPartnerAdmin.listPartners).toHaveBeenCalledWith(expect.objectContaining({ countryIn: ['CM'] }));
 });
 
 test('country demandé hors partners.read ne fuit aucune donnée', async () => {
   const res = await request(app()).get('/api/admin/partners?country=KM');
   expect(res.status).toBe(200);
   expect(res.body).toEqual([]);
-  expect(partnerAdmin.listPartners).not.toHaveBeenCalled();
+  expect(mockPartnerAdmin.listPartners).not.toHaveBeenCalled();
 });
 
 test('absence de partners.manage ferme une mutation avant le service', async () => {
@@ -93,21 +93,21 @@ test('absence de partners.manage ferme une mutation avant le service', async () 
   const res = await request(app()).post('/api/admin/partners').send({ name: 'X', partner_type: 'supplier', country_code: 'CM' });
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
-  expect(partnerAdmin.createPartner).not.toHaveBeenCalled();
+  expect(mockPartnerAdmin.createPartner).not.toHaveBeenCalled();
 });
 
 test('partners.manage autorise une création sur son marché', async () => {
   const res = await request(app()).post('/api/admin/partners').send({ name: 'X', partner_type: 'supplier', country_code: 'CM' });
   expect(res.status).toBe(201);
-  expect(partnerAdmin.createPartner).toHaveBeenCalled();
+  expect(mockPartnerAdmin.createPartner).toHaveBeenCalled();
 });
 
 test('changement de country_code exige partners.manage sur source et destination', async () => {
-  partnerAdmin.getPartner.mockResolvedValueOnce({ partner: { id: 'p1', country_code: 'CM' }, stats: null });
+  mockPartnerAdmin.getPartner.mockResolvedValueOnce({ partner: { id: 'p1', country_code: 'CM' }, stats: null });
   const res = await request(app()).put('/api/admin/partners/p1').send({ country_code: 'KM' });
   expect(res.status).toBe(403);
   expect(res.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
-  expect(partnerAdmin.updatePartner).not.toHaveBeenCalled();
+  expect(mockPartnerAdmin.updatePartner).not.toHaveBeenCalled();
 });
 
 test('admin central conserve le contrat historique sans capability marché', async () => {
@@ -116,5 +116,5 @@ test('admin central conserve le contrat historique sans capability marché', asy
   manageMarkets = new Set();
   const res = await request(app()).get('/api/admin/partners?country=KM');
   expect(res.status).toBe(200);
-  expect(partnerAdmin.listPartners).toHaveBeenCalledWith(expect.objectContaining({ country: 'KM' }));
+  expect(mockPartnerAdmin.listPartners).toHaveBeenCalledWith(expect.objectContaining({ country: 'KM' }));
 });
