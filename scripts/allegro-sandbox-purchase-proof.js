@@ -43,6 +43,38 @@ async function loadPurchaseOrder(dbImpl, id) {
   return po;
 }
 
+async function loadConfirmedScope(dbImpl, po) {
+  const { rows } = await dbImpl.query(`
+    SELECT pl.id AS purchase_line_id, pl.order_item_id, vm.order_id, vm.market_id,
+           pl.product_sku_id, pl.supplier_id, pl.supplier_unit_ref,
+           pl.supplier_order_identity, pl.confirmed_quantity,
+           pl.confirmed_unit_price, pl.supplier_currency
+      FROM purchase_lines pl
+      JOIN v_purchase_line_market vm ON vm.line_id = pl.id
+     WHERE pl.purchase_order_id = $1
+       AND pl.cancelled_at IS NULL
+     ORDER BY pl.id
+  `, [po.id]);
+
+  if (rows.length !== 1) throw new Error(`PURCHASE_SCOPE_NOT_EXACT_${rows.length}`);
+  const scope = rows[0];
+  if (scope.order_id !== po.order_id) throw new Error('PURCHASE_SCOPE_ORDER_MISMATCH');
+  if (scope.product_sku_id !== po.product_sku_id) throw new Error('PURCHASE_SCOPE_SKU_MISMATCH');
+  if (scope.supplier_unit_ref !== po.supplier_unit_ref) throw new Error('PURCHASE_SCOPE_UNIT_MISMATCH');
+  if (JSON.stringify(scope.supplier_order_identity) !== JSON.stringify(po.supplier_order_identity)) {
+    throw new Error('PURCHASE_SCOPE_IDENTITY_MISMATCH');
+  }
+  if (!scope.market_id) throw new Error('PURCHASE_SCOPE_MARKET_MISSING');
+  if (Number(scope.confirmed_quantity) !== Number(po.qty)) throw new Error('PURCHASE_SCOPE_QUANTITY_MISMATCH');
+  if (Number(scope.confirmed_unit_price) !== Number(po.supplier_unit_price)) {
+    throw new Error('PURCHASE_SCOPE_CONFIRMED_PRICE_MISMATCH');
+  }
+  if (String(scope.supplier_currency || '').toUpperCase() !== String(po.supplier_currency || '').toUpperCase()) {
+    throw new Error('PURCHASE_SCOPE_CURRENCY_MISMATCH');
+  }
+  return scope;
+}
+
 async function run(argv, {
   dbImpl = db,
   discover = reconciliation.discoverCheckoutForm,
@@ -85,6 +117,7 @@ async function run(argv, {
     if (po.supplier_order_id !== proof.supplier_order_id) {
       throw new Error('PURCHASE_ORDER_ALREADY_CONFIRMED_WITH_DIFFERENT_SUPPLIER_ORDER');
     }
+    const scope = await loadConfirmedScope(dbImpl, po);
     return {
       purchase_order_id: po.id,
       order_id: po.order_id,
@@ -92,12 +125,14 @@ async function run(argv, {
       already_confirmed: true,
       discovered_checkout_form: Boolean(discovery),
       proof,
+      scope,
     };
   }
 
   const confirmed = await confirm(po.id, po.order_id, {
     supplier_order_id: proof.supplier_order_id,
   });
+  const scope = await loadConfirmedScope(dbImpl, po);
   return {
     purchase_order_id: po.id,
     order_id: po.order_id,
@@ -106,6 +141,7 @@ async function run(argv, {
     discovered_checkout_form: Boolean(discovery),
     purchase_order_status: confirmed?.purchase_order?.status || 'confirmed',
     proof,
+    scope,
   };
 }
 
@@ -116,4 +152,4 @@ if (require.main === module) {
     .finally(async () => { await db.pool.end(); process.exit(process.exitCode || 0); });
 }
 
-module.exports = { purchaseOrderId, loadPurchaseOrder, run };
+module.exports = { purchaseOrderId, loadPurchaseOrder, loadConfirmedScope, run };
