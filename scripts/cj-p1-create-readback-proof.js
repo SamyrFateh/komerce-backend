@@ -110,57 +110,15 @@ async function invoke(path, { method = 'GET', body = null, accessToken, query = 
 }
 
 function readBackFacts(body) {
-  const data = body?.data || {};
-  const products = [
-    ...(Array.isArray(data.productInfoList) ? data.productInfoList : []),
-    ...(Array.isArray(data.productList) ? data.productList : []),
-  ];
-  return {
-    order_id: data.orderId || data.cjOrderId || null,
-    order_number: data.orderNumber || data.orderNum || data.platformOrderId || null,
-    status: data.orderStatus || null,
-    variants: products.flatMap((item) => {
-      const directVid = item.variantId ?? item.vid ?? null;
-      const direct = directVid
-        ? [{ vid: String(directVid), quantity: Number(item.quantity), store_line_item_id: item.storeLineItemId || null }]
-        : [];
-      const subs = Array.isArray(item.subOrderProducts)
-        ? item.subOrderProducts.map((sub) => ({
-            vid: String(sub.variantId ?? sub.vid ?? ''),
-            quantity: Number(sub.quantity),
-            store_line_item_id: sub.storeLineItemId || item.storeLineItemId || null,
-          }))
-        : [];
-      return [...direct, ...subs].filter((x) => x.vid);
-    }),
-    response_product_shape: Array.isArray(data.productList)
-      ? 'productList[].vid'
-      : (Array.isArray(data.productInfoList) ? 'productInfoList[].variantId' : 'unknown'),
-  };
+  return contract.readOrderDetailFacts(body);
 }
 
-function verifyReadBack({ created, detail, expectedOrderNumber, expectedVid, expectedQuantity }) {
-  const facts = readBackFacts(detail);
-  const sameOrder =
-    facts.order_id === created.external_ref
-    || facts.order_number === expectedOrderNumber
-    || created.order_number === expectedOrderNumber;
-  const variant = facts.variants.find((v) => v.vid === expectedVid && v.quantity === expectedQuantity);
-
-  if (!sameOrder) throw new Error('CJ_P1_READBACK_ORDER_MISMATCH');
-  if (!variant) {
-    const err = new Error('CJ_P1_READBACK_VARIANT_MISMATCH');
-    err.readback = facts;
-    throw err;
-  }
-  if (!['CREATED', 'IN_CART', 'UNPAID'].includes(String(facts.status || '').toUpperCase())) {
-    throw new Error(`CJ_P1_UNEXPECTED_STATUS:${facts.status || 'UNKNOWN'}`);
-  }
-  return facts;
+function verifyReadBack(args) {
+  return contract.verifyOrderDetail(args);
 }
 
 function isDuplicateCreateError(error) {
-  return Number(error?.payload?.code) === 1603003;
+  return contract.isDuplicateCreateError(error);
 }
 
 async function resolveCreatedOrDuplicate({
@@ -182,8 +140,6 @@ async function resolveCreatedOrDuplicate({
   } catch (error) {
     if (!isDuplicateCreateError(error)) throw error;
 
-    // CJ documents getOrderDetail.orderId as supporting both custom order id
-    // and CJ order id. Our stable orderNumber is therefore the recovery key.
     const detailBody = await call(contract.ENDPOINTS.get_order_detail, {
       method: 'GET',
       query: contract.buildOrderDetailQuery(orderNumber),

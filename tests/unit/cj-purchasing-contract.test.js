@@ -112,3 +112,70 @@ test('CJ contract — create response without exact ids is rejected', () => {
   expect(() => contract.parseCreateOrderResponse({ result: true, data: { orderNumber: 'KOM-1' } }))
     .toThrow('CJ_ORDER_ID_MISSING');
 });
+
+
+test('CJ contract — duplicate signal is recognized only by native code 1603003', () => {
+  expect(contract.isDuplicateCreateError({ payload: { code: 1603003 } })).toBe(true);
+  expect(contract.isDuplicateCreateError({ payload: { code: 1603002 } })).toBe(false);
+  expect(contract.isDuplicateCreateError(new Error('Order exist'))).toBe(false);
+});
+
+test('CJ contract — normalize productList[].vid and verify exact order/VID/quantity', () => {
+  const detail = {
+    result: true,
+    data: {
+      orderId: 'CJ-ORDER-1',
+      orderNum: 'KOM-ORD-001',
+      orderStatus: 'CREATED',
+      productList: [{ vid: 'VID-1', quantity: 1, storeLineItemId: 'ITEM-001' }],
+    },
+  };
+
+  expect(contract.readOrderDetailFacts(detail)).toMatchObject({
+    order_id: 'CJ-ORDER-1',
+    order_number: 'KOM-ORD-001',
+    status: 'CREATED',
+    response_product_shape: 'productList[].vid',
+    variants: [{ vid: 'VID-1', quantity: 1, store_line_item_id: 'ITEM-001' }],
+  });
+
+  expect(contract.verifyOrderDetail({
+    created: { external_ref: 'CJ-ORDER-1', order_number: 'KOM-ORD-001' },
+    detail,
+    expectedOrderNumber: 'KOM-ORD-001',
+    expectedVid: 'VID-1',
+    expectedQuantity: 1,
+  })).toMatchObject({
+    order_id: 'CJ-ORDER-1',
+    order_number: 'KOM-ORD-001',
+    status: 'CREATED',
+  });
+});
+
+test('CJ contract — read-back mismatch and committed status fail closed', () => {
+  const base = {
+    result: true,
+    data: {
+      orderId: 'CJ-ORDER-1',
+      orderNum: 'KOM-ORD-001',
+      orderStatus: 'CREATED',
+      productList: [{ vid: 'VID-1', quantity: 1 }],
+    },
+  };
+
+  expect(() => contract.verifyOrderDetail({
+    created: { external_ref: 'CJ-ORDER-1', order_number: 'KOM-ORD-001' },
+    detail: base,
+    expectedOrderNumber: 'KOM-ORD-001',
+    expectedVid: 'OTHER-VID',
+    expectedQuantity: 1,
+  })).toThrow('CJ_READBACK_VARIANT_MISMATCH');
+
+  expect(() => contract.verifyOrderDetail({
+    created: { external_ref: 'CJ-ORDER-1', order_number: 'KOM-ORD-001' },
+    detail: { ...base, data: { ...base.data, orderStatus: 'PAID' } },
+    expectedOrderNumber: 'KOM-ORD-001',
+    expectedVid: 'VID-1',
+    expectedQuantity: 1,
+  })).toThrow('CJ_UNEXPECTED_ORDER_STATUS:PAID');
+});
