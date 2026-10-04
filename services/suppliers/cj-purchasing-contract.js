@@ -308,6 +308,39 @@ function buildSandboxSimulatePayParentPayload(shipmentOrderId) {
   };
 }
 
+
+function reconcileSandboxParentAmount(parent = {}) {
+  const orderMoney = Number(parent.order_money);
+  const info = parent.payment_information || {};
+  const actualPayment = Number(info.actualPayment);
+  const orderOriginalAmount = Number(info.orderOriginalAmount);
+
+  if (![orderMoney, actualPayment, orderOriginalAmount].every(Number.isFinite)) {
+    throw new Error('CJ_SANDBOX_PAYMENT_AMOUNT_FACTS_MISSING');
+  }
+  if (orderMoney <= 0 || actualPayment <= 0 || orderOriginalAmount <= 0) {
+    throw new Error('CJ_SANDBOX_PAYMENT_AMOUNT_INVALID');
+  }
+  if (orderMoney !== actualPayment || orderMoney !== orderOriginalAmount) {
+    const error = new Error('CJ_SANDBOX_PAYMENT_AMOUNT_MISMATCH');
+    error.reconciliation = {
+      order_money: orderMoney,
+      actual_payment: actualPayment,
+      order_original_amount: orderOriginalAmount,
+    };
+    throw error;
+  }
+
+  return {
+    expected_amount: orderMoney,
+    provider_actual_payment: actualPayment,
+    provider_order_original_amount: orderOriginalAmount,
+    currency: null,
+    amount_verdict: 'provider_amounts_match',
+    real_debit_verified: false,
+  };
+}
+
 function parseSandboxSimulatePayResponse(body) {
   if (!body || body.result !== true || body.data !== true) {
     throw new Error('CJ_SANDBOX_SIMULATE_PAY_REJECTED');
@@ -357,6 +390,7 @@ module.exports = {
   parseAddCartConfirmResponse,
   parseSaveGenerateParentOrderResponse,
   buildSandboxSimulatePayParentPayload,
+  reconcileSandboxParentAmount,
   parseSandboxSimulatePayResponse,
   verifyPaidOrderDetail,
 };
