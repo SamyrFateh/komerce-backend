@@ -98,6 +98,8 @@ const CI_ONLY = Object.freeze({
   'scripts/ci-rebase-no-impact.js': 'preuve CI de synchronisation sans impact : dépend du dernier workflow PR vert, de ses jobs et des SHA avant/après update',
   'test:unit:coverage': 'suite complète + seuil global (~6 min) : en local, tests liés, et suite complète forcée dès qu’une migration change',
   'scripts/ci-db-bootstrap.js': 'exige un PostgreSQL reconstruit (job from-scratch)',
+  'scripts/integration-impact-scope.js': 'calcule le rayon integration du job from-scratch ; la preuve s’exécute en CI sur la DB éphémère',
+  'scripts/run-integration-tests.js': 'runner des preuves integration sur PostgreSQL éphémère (job from-scratch)',
   'test:integration': 'exige un PostgreSQL reconstruit (job from-scratch)',
   'scripts/e2e-impact-scope.js': 'exige un PostgreSQL reconstruit (job from-scratch)',
   'scripts/run-e2e-feature-tests.js': 'exige un PostgreSQL reconstruit (job from-scratch)',
