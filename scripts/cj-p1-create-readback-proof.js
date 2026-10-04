@@ -159,6 +159,53 @@ function verifyReadBack({ created, detail, expectedOrderNumber, expectedVid, exp
   return facts;
 }
 
+function isDuplicateCreateError(error) {
+  return Number(error?.payload?.code) === 1603003;
+}
+
+async function resolveCreatedOrDuplicate({
+  call,
+  createPayload,
+  accessToken,
+  orderNumber,
+}) {
+  try {
+    const createBody = await call(contract.ENDPOINTS.create_order_v2, {
+      method: 'POST',
+      body: createPayload,
+      accessToken,
+    });
+    return {
+      created: contract.parseCreateOrderResponse(createBody),
+      recovery: 'CREATED_NOW',
+    };
+  } catch (error) {
+    if (!isDuplicateCreateError(error)) throw error;
+
+    // CJ documents getOrderDetail.orderId as supporting both custom order id
+    // and CJ order id. Our stable orderNumber is therefore the recovery key.
+    const detailBody = await call(contract.ENDPOINTS.get_order_detail, {
+      method: 'GET',
+      query: contract.buildOrderDetailQuery(orderNumber),
+      accessToken,
+    });
+    const facts = readBackFacts(detailBody);
+    if (!facts.order_id && !facts.order_number) {
+      throw new Error('CJ_P1_DUPLICATE_NOT_RESOLVABLE');
+    }
+    return {
+      created: {
+        provider: 'cj',
+        external_ref: facts.order_id || orderNumber,
+        order_number: facts.order_number || orderNumber,
+        commitment_verdict: 'created_unpaid',
+      },
+      recovery: 'RECOVERED_AFTER_DUPLICATE',
+      recovered_detail: detailBody,
+    };
+  }
+}
+
 async function run(env = process.env, deps = {}) {
   guard(env);
 
@@ -195,14 +242,15 @@ async function run(env = process.env, deps = {}) {
   const accessToken = await cj.getAccessToken({ env });
   const call = deps.invoke || invoke;
 
-  const createBody = await call(contract.ENDPOINTS.create_order_v2, {
-    method: 'POST',
-    body: createPayload,
+  const execution = await resolveCreatedOrDuplicate({
+    call,
+    createPayload,
     accessToken,
+    orderNumber,
   });
-  const created = contract.parseCreateOrderResponse(createBody);
+  const created = execution.created;
 
-  const detailBody = await call(contract.ENDPOINTS.get_order_detail, {
+  const detailBody = execution.recovered_detail || await call(contract.ENDPOINTS.get_order_detail, {
     method: 'GET',
     query: contract.buildOrderDetailQuery(created.external_ref),
     accessToken,
@@ -228,6 +276,7 @@ async function run(env = process.env, deps = {}) {
     order_number: orderNumber,
     cj_order_id: created.external_ref,
     commitment_verdict: created.commitment_verdict,
+    execution_recovery: execution.recovery,
     readback_status: readback.status,
     exact_vid_verified: true,
     exact_quantity_verified: true,
@@ -260,5 +309,7 @@ module.exports = {
   invoke,
   readBackFacts,
   verifyReadBack,
+  isDuplicateCreateError,
+  resolveCreatedOrDuplicate,
   run,
 };

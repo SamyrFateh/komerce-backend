@@ -173,3 +173,50 @@ test('CJ P1 lit le nouveau read-back CJ productList[].vid', () => {
     expectedQuantity: 1,
   })).toMatchObject({ response_product_shape: 'productList[].vid' });
 });
+
+
+test('CJ P1 reconnaît uniquement le code duplicate 1603003', () => {
+  expect(proof.isDuplicateCreateError({ payload: { code: 1603003 } })).toBe(true);
+  expect(proof.isDuplicateCreateError({ payload: { code: 1603002 } })).toBe(false);
+  expect(proof.isDuplicateCreateError(new Error('Order exist'))).toBe(false);
+});
+
+test('CJ P1 récupère un ordre existant par orderNumber après duplicate', async () => {
+  const calls = [];
+  const call = jest.fn(async (path, opts) => {
+    calls.push({ path, opts });
+    if (path === '/api2.0/v1/shopping/order/createOrderV2') {
+      const err = new Error('duplicate');
+      err.payload = { code: 1603003, result: false, message: 'Order exist, please do not duplicate create' };
+      throw err;
+    }
+    if (path === '/api2.0/v1/shopping/order/getOrderDetail') {
+      expect(opts.query).toEqual({ orderId: 'KOM-P1-LINE-1' });
+      return {
+        result: true,
+        data: {
+          orderId: 'CJ-EXISTING-1',
+          orderNum: 'KOM-P1-LINE-1',
+          orderStatus: 'CREATED',
+          productList: [{ vid: 'VID-1', quantity: 1 }],
+        },
+      };
+    }
+    throw new Error('unexpected call');
+  });
+
+  const recovered = await proof.resolveCreatedOrDuplicate({
+    call,
+    createPayload: { orderNumber: 'KOM-P1-LINE-1' },
+    accessToken: 'token',
+    orderNumber: 'KOM-P1-LINE-1',
+  });
+
+  expect(recovered.recovery).toBe('RECOVERED_AFTER_DUPLICATE');
+  expect(recovered.created).toMatchObject({
+    external_ref: 'CJ-EXISTING-1',
+    order_number: 'KOM-P1-LINE-1',
+    commitment_verdict: 'created_unpaid',
+  });
+  expect(calls).toHaveLength(2);
+});
