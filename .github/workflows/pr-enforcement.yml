@@ -372,6 +372,11 @@ jobs:
           tests/unit/catalog-certification.test.js
           tests/unit/sourcing-certification.test.js
           --runInBand --silent
+      - name: Supplier execution certification invariants
+        if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
+        run: |
+          npx jest tests/unit/supplier-execution-certification.test.js --runInBand --silent
+          node scripts/check-supplier-execution-certification-manifest.js
       - name: Contract consumer check
         if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
         run: node scripts/contract-check.js
