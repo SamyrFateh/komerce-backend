@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "doctrine": "docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md",
+  "purpose": "Capability-level reconciliation of historical provider certifications. This file does not create provider capabilities; it classifies what existing evidence actually proves.",
+  "classifications": ["CONFIRMED", "RECLASSIFIED", "GAP"],
+  "proof_levels": ["UNQUALIFIED", "P0", "P1", "P2", "P3", "P4"],
+  "providers": {
+    "allegro": [
+      {
+        "capability": "sourcing.exact_unit",
+        "classification": "RECLASSIFIED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/external-providers/suppliers/ALLEGRO_SANDBOX.md"
+        ],
+        "limitations": [
+          "authorized seller offers only",
+          "sandbox proof does not imply production behavior"
+        ]
+      },
+      {
+        "capability": "purchasing.manual_procurement",
+        "classification": "RECLASSIFIED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/external-providers/suppliers/ALLEGRO_SANDBOX.md",
+          "scripts/allegro-sandbox-purchase-proof.js"
+        ],
+        "limitations": [
+          "purchase executed by a separate human Sandbox buyer",
+          "no buyer-side automatic order creation"
+        ]
+      },
+      {
+        "capability": "purchasing.reconcile",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/external-providers/suppliers/ALLEGRO_SANDBOX.md",
+          "services/suppliers/allegro-purchase-reconciliation.js"
+        ],
+        "limitations": [
+          "reconciles provider evidence after the external purchase"
+        ]
+      },
+      {
+        "capability": "purchasing.auto_order",
+        "classification": "CONFIRMED",
+        "availability": "CLOSED",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/external-providers/suppliers/ALLEGRO_SANDBOX.md",
+          "services/suppliers/execution-adapter-registry.js"
+        ],
+        "limitations": [
+          "no supported buyer placeOrder API has been proved"
+        ]
+      }
+    ],
+    "aliexpress": [
+      {
+        "capability": "purchasing.readiness",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_LIVE_RECONCILED",
+        "highest_proof": "P3",
+        "environment": "STAGING_REQUIRED",
+        "evidence": [
+          "services/suppliers/aliexpress-fulfillment-adapter.js",
+          "services/suppliers/canonical-unit-purchasing-gate.js",
+          "scripts/aliexpress-readiness-golden-proof.js"
+        ],
+        "limitations": [
+          "Golden A2 live execution still requires an isolated staging environment",
+          "no provider mutation is part of this capability"
+        ]
+      },
+      {
+        "capability": "purchasing.auto_order",
+        "classification": "GAP",
+        "availability": "CLOSED",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "UNPROVEN",
+        "evidence": [
+          "services/suppliers/execution-adapter-registry.js"
+        ],
+        "limitations": [
+          "adapter does not expose placeOrder",
+          "buyer-side order creation contract not proved"
+        ]
+      }
+    ],
+    "cj": [
+      {
+        "capability": "sourcing.catalog_stock",
+        "classification": "GAP",
+        "availability": "EXISTING_EVIDENCE_NOT_RECONCILED",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_READ_ONLY",
+        "evidence": [
+          "services/suppliers/connectors/cj-connector.js"
+        ],
+        "limitations": [
+          "historical sourcing and authoritative stock proofs must be projected capability-by-capability before assigning P-levels"
+        ]
+      },
+      {
+        "capability": "purchasing.readiness",
+        "classification": "GAP",
+        "availability": "NOT_IMPLEMENTED",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "UNPROVEN",
+        "evidence": [
+          "services/suppliers/execution-adapter-registry.js"
+        ],
+        "limitations": [
+          "CJ has no registered fulfillment adapter"
+        ]
+      }
+    ]
+  }
+}
