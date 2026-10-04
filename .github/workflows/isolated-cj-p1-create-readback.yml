@@ -1,6 +1,6 @@
 name: Isolated CJ P1 create-readback
 
-on:
+'on':
   issues:
     types: [opened]
   workflow_dispatch:
@@ -16,11 +16,7 @@ concurrency:
 jobs:
   cj-p1:
     name: CJ P1 — sandbox create + exact read-back
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issues' &&
-       github.event.issue.user.login == github.repository_owner &&
-       github.event.issue.title == '[isolated-op] cj-p1-create-readback')
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.issue.user.login == github.repository_owner && github.event.issue.title == '[isolated-op] cj-p1-create-readback')
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -71,11 +67,8 @@ jobs:
         run: |
           set -euo pipefail
           output="$(timeout 600s node scripts/cj-p1-create-readback-proof.js)"
-          printf '%s
-' "$output"
-          compact="$(printf '%s
-' "$output" | tr '
-' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-12000)"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-12000)"
           {
             echo 'summary<<EOF'
             echo "$compact"
@@ -98,7 +91,7 @@ jobs:
             echo '- payment: forbidden'
             echo '- confirmOrder: forbidden'
             echo '- proof: exact order + VID + quantity read-back'
-            if [ -n "${PROOF_SUMMARY:-}" ]; then echo "- result: `$PROOF_SUMMARY`"; fi
+            if [ -n "${PROOF_SUMMARY:-}" ]; then echo "- result: $PROOF_SUMMARY"; fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Close successful command issue
@@ -110,5 +103,6 @@ jobs:
           PROOF_SUMMARY: ${{ steps.proof.outputs.summary }}
         run: |
           set -euo pipefail
-          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY"             --body "CJ P1 sandbox create/read-back completed successfully. No payment or confirmation invoked.\n\nResult: `$PROOF_SUMMARY`"
+          body="$(printf 'CJ P1 sandbox create/read-back completed successfully. No payment or confirmation invoked.\n\nResult: %s' "$PROOF_SUMMARY")"
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$body"
           gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
