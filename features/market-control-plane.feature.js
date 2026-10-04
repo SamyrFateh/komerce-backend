@@ -126,6 +126,7 @@ module.exports = {
       'market (markets comme référentiel lu)',
       'market-delegation (affectation, équipe, plafond, politique de caisse lus ; normalizeMarketCode)',
       'providers-services (fournisseurs de paiement du marché lus)',
+      'payments (configuration initiale du provider paiement via le writer canonique market-payment-provider-config-service)',
       'logistics (relais lus)',
       'dashboard (dashboard_global_access_grants et require-dashboard-global-authority : autorisation centrale explicite lue)',
       'catalog (catalog_global_access_grants et require-catalog-global-authority : autorisation centrale explicite lue)',
