@@ -120,7 +120,28 @@ test('addCartConfirm rejeté conserve le payload provider pour diagnostic', () =
     contract.parseAddCartConfirmResponse(body);
     throw new Error('expected rejection');
   } catch (error) {
-    expect(error.message).toBe('CJ_ADD_CART_CONFIRM_REJECTED');
+    expect(error.message).toBe('CJ_SHIPMENT_ORDER_ID_MISSING');
     expect(error.payload).toBe(body);
   }
+});
+
+
+test('addCartConfirm ambigu mais matérialisé conserve shipmentOrderId sans prétendre succès final', () => {
+  expect(contract.parseAddCartConfirmResponse({
+    success: true,
+    code: 200,
+    data: {
+      successCount: 2,
+      submitSuccess: false,
+      shipmentsId: 'CJ26100457942791057581',
+      result: 0,
+      interceptOrders: [],
+    },
+  })).toMatchObject({
+    shipment_order_id: 'CJ26100457942791057581',
+    success_count: 2,
+    submit_success: false,
+    result: 0,
+    intercept_orders: [],
+  });
 });
