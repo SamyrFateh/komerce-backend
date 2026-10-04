@@ -111,9 +111,8 @@ describe('market-delegation runtime compatibility bridge', () => {
     expect(assignmentProjectionCalls.length).toBeGreaterThanOrEqual(3);
   });
 
-  test('les surfaces encore legacy gardent un requireRole statique après le pré-guard ; D3/D4/D5 en sont sorties', () => {
+  test('les surfaces encore legacy gardent un requireRole statique après le pré-guard ; D3 à D7 en sont sorties', () => {
     const legacyFiles = [
-      'routes/admin-dashboard-market.js',
       'routes/admin-pricing-workspace.js',
       'routes/admin/partners.js',
     ];
@@ -140,6 +139,12 @@ describe('market-delegation runtime compatibility bridge', () => {
     expect(relay).not.toContain('require-market-scope');
     expect(relay).toContain("attachAuthorizedMarketsForCapability('operations.read'");
     expect(relay).toContain("requireMarketDelegatedCapability('hub.supervise'");
+
+    const dashboardMarket = fs.readFileSync(path.join(ROOT, 'routes', 'admin-dashboard-market.js'), 'utf8');
+    expect(dashboardMarket).not.toContain('require-market-scope');
+    expect(dashboardMarket).toContain("requireDashboardMarketCapability('dashboard.market.read'");
+    expect(dashboardMarket).toContain("requireDashboardMarketCapability('operations.read'");
+    expect(dashboardMarket).toContain("requireDashboardMarketCapability('finance.read'");
 
     const entity360 = {
       'routes/admin-client-index.js': 'client.read',
