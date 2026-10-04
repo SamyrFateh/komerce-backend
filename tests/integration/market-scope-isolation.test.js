@@ -92,6 +92,7 @@ if (!hasIntegrationEnv) {
 
   afterAll(async () => {
     await db.query(`DELETE FROM operator_market_scopes WHERE user_id = ANY($1)`, [[userMarketA, userNoScope]]);
+    await db.query('DELETE FROM market_delegation_audit WHERE market_id = ANY($1)', [[marketA, marketB]]);
     if (delegationMemberships.length) {
       await db.query('DELETE FROM market_delegation_audit WHERE membership_id = ANY($1)', [delegationMemberships]);
       await db.query('DELETE FROM membership_capabilities WHERE membership_id = ANY($1)', [delegationMemberships]);
