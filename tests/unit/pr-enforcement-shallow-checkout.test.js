@@ -37,8 +37,8 @@ describe('PR enforcement — shallow checkout ratchet', () => {
     expect(workflow).toContain('git fetch --no-tags --filter=blob:none --unshallow origin');
     expect(workflow).toContain('refs/heads/${HEAD_REF}:refs/remotes/origin/${HEAD_REF}');
     expect(workflow).toContain('refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}');
-    expect(workflow).toContain('HEAD_REF: ${{ github.event.pull_request.head.ref }}');
-    expect(workflow).toContain('BASE_REF: ${{ github.event.pull_request.base.ref }}');
+    expect(workflow).toContain('HEAD_REF: ${{ inputs.head_ref || github.event.pull_request.head.ref }}');
+    expect(workflow).toContain('BASE_REF: ${{ inputs.base_ref || github.event.pull_request.base.ref }}');
     expect(workflow).not.toContain('name: Fetch base branch history for schema baseline');
   });
 
