@@ -65,6 +65,9 @@ describe('CI rebase no-impact proof', () => {
     expect(auto).not.toContain('/pulls?state=open&base=main&per_page=100');
     expect(auto).not.toContain('Auto-update open PRs after main advances');
     expect(auto).toContain('expected_head_sha');
+    expect(auto).toContain('PR_SYNC_TOKEN');
+    expect(auto).not.toContain('GH_TOKEN: ${{ github.token }}');
+    expect(auto).not.toContain('|| github.token');
     expect(enforcement).toContain('rebase_no_impact: ${{ steps.rebase_proof.outputs.rebase_no_impact }}');
     expect(enforcement).toContain("needs.changes.outputs.rebase_no_impact != 'true'");
     expect(enforcement).toContain('git fetch --no-tags --depth=128 origin "$PREVIOUS_HEAD" "$BASE_SHA" "$HEAD_SHA"');

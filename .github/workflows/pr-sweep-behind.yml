@@ -1,0 +1,42 @@
+name: PR sweep behind
+
+# Synchronise au plus UNE PR BEHIND à la fois. Le sweep ne touche que les PR
+# internes dont l'auto-merge est déjà activé et s'abstient sans token attribuable.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: pr-sweep-behind
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: Sweep oldest behind PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Update oldest eligible BEHIND PR
+        env:
+          PR_SYNC_TOKEN: ${{ secrets.PR_SYNC_TOKEN || secrets.SCHEMA_REFRESH_PR_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${PR_SYNC_TOKEN:-}" ]; then
+            echo "::notice::PR sweep skipped: no attributable PR_SYNC_TOKEN/SCHEMA_REFRESH_PR_TOKEN configured."
+            exit 0
+          fi
+          GH_TOKEN="$PR_SYNC_TOKEN" node scripts/ci-pr-sweep.js

@@ -26,13 +26,18 @@ jobs:
     steps:
       - name: Update internal PR when behind and conflict-free
         env:
-          GH_TOKEN: ${{ github.token }}
+          PR_SYNC_TOKEN: ${{ secrets.PR_SYNC_TOKEN || secrets.SCHEMA_REFRESH_PR_TOKEN }}
           REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         shell: bash
         run: |
           set -euo pipefail
+          if [ -z "${PR_SYNC_TOKEN:-}" ]; then
+            echo "::notice::PR sync skipped: no attributable PR_SYNC_TOKEN/SCHEMA_REFRESH_PR_TOKEN configured."
+            exit 0
+          fi
+          GH_TOKEN="$PR_SYNC_TOKEN"
           PR_URL="https://api.github.com/repos/$REPOSITORY/pulls/$PR_NUMBER"
           STATE="unknown"
           for attempt in 1 2 3 4 5; do
