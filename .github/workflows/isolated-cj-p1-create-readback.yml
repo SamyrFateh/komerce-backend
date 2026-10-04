@@ -29,9 +29,6 @@ jobs:
       CJ_ACCESS_TOKEN: ${{ secrets.KOMERCE_CJ_PROOF_ACCESS_TOKEN }}
       KOMERCE_ALLOW_CJ_P1_CREATE_READBACK: '1'
       KOMERCE_CJ_P1_PRODUCT_REF: 'KPR-131962'
-      KOMERCE_CJ_P1_DESTINATION_JSON: ${{ secrets.KOMERCE_CJ_P1_DESTINATION_JSON }}
-      KOMERCE_CJ_P1_LOGISTIC_NAME: ${{ secrets.KOMERCE_CJ_P1_LOGISTIC_NAME }}
-      KOMERCE_CJ_P1_FROM_COUNTRY_CODE: ${{ secrets.KOMERCE_CJ_P1_FROM_COUNTRY_CODE }}
 
     steps:
       - name: Checkout protected main only
@@ -57,9 +54,6 @@ jobs:
           test "$NODE_ENV" = 'test'
           test -n "${DATABASE_URL:-}" || { echo '::error::RAILWAY_DATABASE_URL manquant'; exit 1; }
           test -n "${CJ_ACCESS_TOKEN:-}" || { echo '::error::KOMERCE_CJ_PROOF_ACCESS_TOKEN manquant'; exit 1; }
-          test -n "${KOMERCE_CJ_P1_DESTINATION_JSON:-}" || { echo '::error::KOMERCE_CJ_P1_DESTINATION_JSON manquant'; exit 1; }
-          test -n "${KOMERCE_CJ_P1_LOGISTIC_NAME:-}" || { echo '::error::KOMERCE_CJ_P1_LOGISTIC_NAME manquant'; exit 1; }
-          test -n "${KOMERCE_CJ_P1_FROM_COUNTRY_CODE:-}" || { echo '::error::KOMERCE_CJ_P1_FROM_COUNTRY_CODE manquant'; exit 1; }
 
       - name: Run CJ P1 sandbox create/read-back
         id: proof
