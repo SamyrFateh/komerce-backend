@@ -50,9 +50,9 @@ describe('capability_registry — effect et amount_bearing déclarés', () => {
   });
 });
 
-describe('migration 270 — alignée sur la configuration, sans effet d’autorisation', () => {
+describe('migration 270 — snapshot historique avant D8, sans effet d’autorisation', () => {
   test('les listes SQL READ et montant sont celles de la configuration', () => {
-    expect(quotedList(migration, "SET effect = 'READ'")).toEqual(EXPECTED_READ);
+    expect(quotedList(migration, "SET effect = 'READ'")).toEqual(EXPECTED_READ.filter(name => name !== 'partners.read'));
     expect(quotedList(migration, 'SET amount_bearing = TRUE')).toEqual(AMOUNT_BEARING.slice().sort());
   });
 
