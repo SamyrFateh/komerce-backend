@@ -89,12 +89,6 @@ async function invoke(path, { method = 'GET', body = null, query = null, accessT
   return payload;
 }
 
-function resolveShipmentOrderId(created, detailFacts) {
-  const id = String(created?.shipment_order_id || detailFacts?.shipment_order_id || '').trim();
-  if (!id) throw new Error('CJ_P2_GROUPED_SHIPMENT_ORDER_ID_MISSING');
-  return id;
-}
-
 async function resolveLogistic({ call, accessToken, vids, fromCountryCode, destination }) {
   const quote = await call(contract.ENDPOINTS.freight_calculate, {
     method: 'POST',
@@ -110,6 +104,57 @@ async function resolveLogistic({ call, accessToken, vids, fromCountryCode, desti
     .filter(Boolean) : [];
   if (!routes.length) throw new Error('CJ_P2_GROUPED_NO_COMMON_LOGISTIC_ROUTE');
   return routes[0];
+}
+
+async function createSandboxSubOrder({
+  sku,
+  identity,
+  index,
+  orderNumberBase,
+  logisticName,
+  fromCountryCode,
+  call,
+  accessToken,
+}) {
+  const orderNumber = `${orderNumberBase}-${index + 1}`.slice(0, 200);
+  const payload = contract.buildCreateOrderV2Payload({
+    orderNumber,
+    identity: sku.supplier_order_identity,
+    quantity: 1,
+    destination: DEFAULT_DESTINATION,
+    logisticName,
+    fromCountryCode,
+    platform: 'Api',
+    storeLineItemId: String(sku.product_sku_id),
+    remark: 'Komerce CJ grouped parent sandbox proof',
+    sandbox: true,
+  });
+
+  const createBody = await call(contract.ENDPOINTS.create_order_v2, {
+    method: 'POST',
+    body: payload,
+    accessToken,
+  });
+  const created = contract.parseCreateOrderResponse(createBody);
+
+  const detailBody = await call(contract.ENDPOINTS.get_order_detail, {
+    method: 'GET',
+    query: contract.buildOrderDetailQuery(created.external_ref),
+    accessToken,
+  });
+  const facts = contract.verifyOrderDetail({
+    created,
+    detail: detailBody,
+    expectedOrderNumber: orderNumber,
+    expectedVid: identity.vid,
+    expectedQuantity: 1,
+  });
+  if (!facts.cj_order_code) {
+    const error = new Error('CJ_P2_GROUPED_CJ_ORDER_CODE_MISSING');
+    error.readback = facts;
+    throw error;
+  }
+  return { created, facts, orderNumber, cjOrderCode: facts.cj_order_code };
 }
 
 async function run(env = process.env, deps = {}) {
@@ -132,7 +177,9 @@ async function run(env = process.env, deps = {}) {
     }
   };
 
-  const fromCountryCode = String(env.KOMERCE_CJ_P2_GROUPED_FROM_COUNTRY_CODE || 'CN').trim();
+  const fromCountryCode = String(
+    env.KOMERCE_CJ_P2_GROUPED_FROM_COUNTRY_CODE || 'CN'
+  ).trim();
   const logisticName = await resolveLogistic({
     call,
     accessToken,
@@ -140,83 +187,87 @@ async function run(env = process.env, deps = {}) {
     fromCountryCode,
     destination: DEFAULT_DESTINATION,
   });
-  const orderNumber = String(
+  const orderNumberBase = String(
     env.KOMERCE_CJ_P2_GROUPED_ORDER_NUMBER || `KOM-P2G-${Date.now()}`
-  ).slice(0, 200);
+  ).slice(0, 180);
 
-  const createPayload = {
-    orderNumber,
-    shippingZip: DEFAULT_DESTINATION.postal_code,
-    shippingCountryCode: DEFAULT_DESTINATION.country_code,
-    shippingCountry: DEFAULT_DESTINATION.country,
-    shippingProvince: DEFAULT_DESTINATION.province,
-    shippingCity: DEFAULT_DESTINATION.city,
-    shippingCustomerName: DEFAULT_DESTINATION.customer_name,
-    shippingAddress: DEFAULT_DESTINATION.address1,
-    shippingPhone: DEFAULT_DESTINATION.phone,
-    logisticName,
-    fromCountryCode,
-    platform: 'Api',
-    payType: 3,
-    isSandbox: 1,
-    products: skus.map((sku, index) => ({
-      vid: identities[index].vid,
-      quantity: 1,
-      storeLineItemId: String(sku.product_sku_id),
-    })),
-  };
+  const subOrders = [];
+  for (let index = 0; index < skus.length; index += 1) {
+    subOrders.push(await createSandboxSubOrder({
+      sku: skus[index],
+      identity: identities[index],
+      index,
+      orderNumberBase,
+      logisticName,
+      fromCountryCode,
+      call,
+      accessToken,
+    }));
+  }
 
-  const createBody = await call(contract.ENDPOINTS.create_order_v2, {
-    method: 'POST', body: createPayload, accessToken,
-  });
-  const created = contract.parseCreateOrderResponse(createBody);
+  const cjOrderCodes = subOrders.map(order => order.cjOrderCode);
 
-  const detailBody = await call(contract.ENDPOINTS.get_order_detail, {
-    method: 'GET',
-    query: contract.buildOrderDetailQuery(created.external_ref),
+  const addCartBody = await call(contract.ENDPOINTS.add_cart, {
+    method: 'POST',
+    body: contract.buildCartPayload(cjOrderCodes),
     accessToken,
   });
-  const facts = contract.readOrderDetailFacts(detailBody);
-  if (facts.order_number && facts.order_number !== orderNumber) {
-    throw new Error('CJ_P2_GROUPED_READBACK_ORDER_NUMBER_MISMATCH');
-  }
-  for (const identity of identities) {
-    if (!facts.variants.some(row => row.vid === identity.vid && row.quantity === 1)) {
-      const error = new Error('CJ_P2_GROUPED_READBACK_VARIANT_MISMATCH');
-      error.readback = facts;
-      throw error;
-    }
+  if (addCartBody?.success !== true || Number(addCartBody?.data?.successCount || 0) < 2) {
+    const error = new Error('CJ_P2_GROUPED_ADD_CART_REJECTED');
+    error.payload = addCartBody;
+    throw error;
   }
 
-  const shipmentOrderId = resolveShipmentOrderId(created, facts);
+  const confirmCartBody = await call(contract.ENDPOINTS.add_cart_confirm, {
+    method: 'POST',
+    body: contract.buildCartPayload(cjOrderCodes),
+    accessToken,
+  });
+  const cartConfirmed = contract.parseAddCartConfirmResponse(confirmCartBody);
+
+  const parentBody = await call(contract.ENDPOINTS.save_generate_parent_order, {
+    method: 'POST',
+    body: { shipmentOrderId: cartConfirmed.shipment_order_id },
+    accessToken,
+  });
+  const parent = contract.parseSaveGenerateParentOrderResponse(
+    parentBody,
+    cartConfirmed.shipment_order_id
+  );
+
   const payBody = await call(contract.ENDPOINTS.sandbox_simulate_pay, {
     method: 'POST',
-    body: contract.buildSandboxSimulatePayParentPayload(shipmentOrderId),
+    body: contract.buildSandboxSimulatePayParentPayload(parent.shipment_order_id),
     accessToken,
   });
   const payment = contract.parseSandboxSimulatePayResponse(payBody);
 
-  const afterPay = await call(contract.ENDPOINTS.get_order_detail, {
-    method: 'GET',
-    query: contract.buildOrderDetailQuery(created.external_ref),
-    accessToken,
-  });
-  const paidFacts = contract.readOrderDetailFacts(afterPay);
-  const status = String(paidFacts.status || '').toUpperCase();
-  if (!['PENDING', 'PROCESSING', 'UNSHIPPED', 'SHIPPED', 'DELIVERED'].includes(status)) {
-    throw new Error(`CJ_P2_GROUPED_PAID_STATUS_UNEXPECTED:${paidFacts.status || 'UNKNOWN'}`);
+  const paidStatuses = [];
+  for (const subOrder of subOrders) {
+    const afterPay = await call(contract.ENDPOINTS.get_order_detail, {
+      method: 'GET',
+      query: contract.buildOrderDetailQuery(subOrder.created.external_ref),
+      accessToken,
+    });
+    const paidFacts = contract.verifyPaidOrderDetail(
+      afterPay,
+      subOrder.created.external_ref,
+      subOrder.orderNumber
+    );
+    paidStatuses.push(paidFacts.status);
   }
 
   const result = {
     proof: 'CJ_P2_GROUPED_PARENT_SANDBOX',
     sandbox: true,
     real_charge_possible: false,
-    order_number: orderNumber,
-    cj_order_id: created.external_ref,
-    shipment_order_id: shipmentOrderId,
+    sub_order_ids: subOrders.map(order => order.created.external_ref),
+    cj_order_codes: cjOrderCodes,
+    shipment_order_id: parent.shipment_order_id,
+    pay_id: parent.pay_id,
     item_count: identities.length,
     logistic_name: logisticName,
-    paid_status: paidFacts.status,
+    paid_statuses: paidStatuses,
     payment_verdict: payment.payment_verdict,
     payment_mode: 'sandbox_simulate_pay_shipment_order_id',
   };
@@ -250,7 +301,7 @@ module.exports = {
   guard,
   selectTwoExactSkus,
   invoke,
-  resolveShipmentOrderId,
   resolveLogistic,
+  createSandboxSubOrder,
   run,
 };
