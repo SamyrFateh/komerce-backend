@@ -39,6 +39,15 @@ describe('admin-pricing-workspace — mapping endpoint → capability (MARKET-DE
     expect(match[0]).toMatch(new RegExp(`require(Pricing|LocalStrategy)Capability\\('${capability.replace(/\./g, '\\.')}'\\)`));
   });
 
+  test('D9 supprime entièrement require-market-scope du workspace marché', () => {
+    expect(routeSource).not.toContain('require-market-scope');
+    expect(routeSource).not.toContain('requireMarketScope');
+    expect(routeSource).not.toContain('resolveMarketScopeRole');
+    expect(routeSource).not.toContain('attachAuthorizedMarkets');
+    expect(routeSource).not.toContain('attachMarketDelegatedRoleFor');
+    expect(routeSource).not.toMatch(/requireRole\(\s*\[[^\]]*market_operator/);
+  });
+
   test('les deux anciens gardes rôle→scope (requireMarketPricingManager, requireCountryStrategyManager) ont disparu', () => {
     // Ils existaient avant le fix (Gap 1) ; seules leurs remplaçantes
     // requirePricingCapability / requireLocalStrategyCapability subsistent.

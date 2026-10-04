@@ -112,15 +112,15 @@ describe('market-delegation runtime compatibility bridge', () => {
     expect(assignmentProjectionCalls.length).toBeGreaterThanOrEqual(3);
   });
 
-  test('les surfaces encore legacy gardent un requireRole statique après le pré-guard ; D3 à D8 en sont sorties de require-market-scope', () => {
-    const legacyFiles = [
-      'routes/admin-pricing-workspace.js',
-    ];
-    for (const file of legacyFiles) {
-      const source = fs.readFileSync(path.join(ROOT, file), 'utf8');
-      expect(source).toContain('attachMarketDelegatedRoleFor');
-      expect(source).toMatch(/requireRole\(\s*\[[^\]]*['"]market_operator['"]/);
-    }
+  test('D3 à D9 sont sorties de require-market-scope ; Pricing ne dépend plus du bridge de rôle pour autoriser', () => {
+    const pricing = fs.readFileSync(path.join(ROOT, 'routes', 'admin-pricing-workspace.js'), 'utf8');
+    expect(pricing).not.toContain('require-market-scope');
+    expect(pricing).not.toContain('requireMarketScope');
+    expect(pricing).not.toContain('resolveMarketScopeRole');
+    expect(pricing).not.toContain('attachMarketDelegatedRoleFor');
+    expect(pricing).toContain("requirePricingReadCapability('pricing.read'");
+    expect(pricing).toContain("requirePricingCapability('pricing.policy.set'");
+    expect(pricing).toContain("requireLocalStrategyCapability('pricing.decide'");
 
     const partners = fs.readFileSync(path.join(ROOT, 'routes', 'admin', 'partners.js'), 'utf8');
     expect(partners).not.toContain('require-market-scope');

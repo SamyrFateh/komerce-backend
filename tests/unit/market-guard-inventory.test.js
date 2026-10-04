@@ -60,24 +60,29 @@ describe('market-guard-inventory', () => {
     expect(bare).toContain('rôles — ·');
   });
 
-  test('main : JSON, checklist ou résumé sur les données réelles du dépôt', () => {
+  test('main : l’inventaire réel est à zéro après D9', () => {
     const write = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
     try {
       inventory.main(['--json']);
-      expect(JSON.parse(write.mock.calls[0][0]).summary.routes).toBeGreaterThan(0);
+      expect(JSON.parse(write.mock.calls[0][0]).summary).toEqual({
+        files: 0,
+        routes: 0,
+        explicitCentralRoutes: 0,
+        roleOnlyRoutes: 0,
+      });
       inventory.main(['--checklist']);
-      expect(write.mock.calls[1][0]).toContain('- [ ] ');
+      expect(write.mock.calls[1][0]).not.toContain('- [ ] ');
       inventory.main([]);
-      expect(write.mock.calls[2][0]).toContain('à trancher en PR D');
+      expect(write.mock.calls[2][0]).toContain('0 routes dans 0 fichiers');
     } finally {
       write.mockRestore();
     }
   });
 
-  test('garde contre l’angle mort : tout fichier de routes qui importe require-market-scope figure dans l’inventaire réel', () => {
+  test('garde contre régression : aucune route runtime ne réimporte require-market-scope après D9', () => {
     const security360 = JSON.parse(fs.readFileSync(path.join(ROOT, 'docs/SECURITY_360.json'), 'utf8'));
     const graph360 = JSON.parse(fs.readFileSync(path.join(ROOT, 'docs/komerce-arch-header-graph.json'), 'utf8'));
-    const inventoried = new Set(inventory.buildInventory({ security: security360, graph: graph360 }).files.map(f => f.file));
+    const inventoried = inventory.buildInventory({ security: security360, graph: graph360 });
     const importers = [];
     const walk = dir => {
       for (const entry of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
@@ -87,7 +92,7 @@ describe('market-guard-inventory', () => {
       }
     };
     walk('routes');
-    expect(importers.length).toBeGreaterThan(0);
-    expect(importers.filter(f => !inventoried.has(f))).toEqual([]);
+    expect(importers).toEqual([]);
+    expect(inventoried.summary.routes).toBe(0);
   });
 });

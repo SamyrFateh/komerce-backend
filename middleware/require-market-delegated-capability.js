@@ -130,6 +130,7 @@ function requireSingleMarketDelegatedCapability(capability, options = {}) {
         membership_id: authz.membership_id,
         market_id: authz.market_id,
         market_code: authz.market_code,
+        capabilities: Array.isArray(authz.capabilities) ? authz.capabilities : [],
       };
       return next();
     } catch (error) {
@@ -187,6 +188,7 @@ function requireMarketDelegatedCapability(capability, options = {}) {
         membership_id: authz.membership_id,
         market_id: authz.market_id,
         market_code: authz.market_code,
+        capabilities: Array.isArray(authz.capabilities) ? authz.capabilities : [],
       };
       return next();
     } catch (error) {
