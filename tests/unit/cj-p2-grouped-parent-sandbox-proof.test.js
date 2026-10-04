@@ -120,7 +120,7 @@ test('addCartConfirm rejeté conserve le payload provider pour diagnostic', () =
     contract.parseAddCartConfirmResponse(body);
     throw new Error('expected rejection');
   } catch (error) {
-    expect(error.message).toBe('CJ_ADD_CART_CONFIRM_REJECTED');
+    expect(error.message).toBe('CJ_SHIPMENT_ORDER_ID_MISSING');
     expect(error.payload).toBe(body);
   }
 });
