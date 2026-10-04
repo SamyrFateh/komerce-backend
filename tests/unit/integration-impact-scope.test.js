@@ -14,13 +14,13 @@ function manifest(name, files, tests = [], type = 'feature', consumes = []) {
 describe('integration-impact-scope', () => {
   test('cible les suites d integration déclarées par la feature propriétaire', () => {
     const manifests = [
-      manifest('market-delegation', ['migrations/274_x.sql'], ['tests/integration/market-delegation-audit-postgres.test.js']),
+      manifest('market-delegation', ['migrations/274_x.sql'], ['tests/integration/market-scope-isolation.test.js']),
     ];
     const result = computeImpact(['migrations/274_x.sql'], { manifests });
     expect(result.mode).toBe('targeted');
     expect(result.features).toEqual(['market-delegation']);
-    expect(result.suites).toEqual([]);
-    expect(result.reason).toMatch(/no declared integration proof|Feature First/);
+    expect(result.suites).toEqual(['tests/integration/market-scope-isolation.test.js']);
+    expect(result.reason).toMatch(/Feature First/);
   });
 
   test('reste full sur une surface DB globale', () => {
