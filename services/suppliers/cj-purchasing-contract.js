@@ -238,9 +238,17 @@ function parseSandboxSimulatePayResponse(body) {
   };
 }
 
-function verifyPaidOrderDetail(body, expectedOrderId) {
+function verifyPaidOrderDetail(body, expectedOrderId, expectedOrderNumber = null) {
   const facts = readOrderDetailFacts(body);
-  if (facts.order_id !== String(expectedOrderId)) throw new Error('CJ_PAID_READBACK_ORDER_MISMATCH');
+  const sameOrderId = facts.order_id && facts.order_id === String(expectedOrderId);
+  const sameOrderNumber = expectedOrderNumber
+    && facts.order_number
+    && facts.order_number === String(expectedOrderNumber);
+  if (!sameOrderId && !sameOrderNumber) {
+    const error = new Error('CJ_PAID_READBACK_ORDER_MISMATCH');
+    error.readback = facts;
+    throw error;
+  }
   const status = String(facts.status || '').toUpperCase();
   if (!['PENDING', 'PROCESSING', 'UNSHIPPED', 'SHIPPED', 'DELIVERED'].includes(status)) {
     throw new Error(`CJ_PAID_STATUS_UNEXPECTED:${facts.status || 'UNKNOWN'}`);

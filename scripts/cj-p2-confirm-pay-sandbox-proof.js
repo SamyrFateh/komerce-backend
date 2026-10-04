@@ -198,7 +198,7 @@ async function run(env = process.env, deps = {}) {
   const afterPay = await call(contract.ENDPOINTS.get_order_detail, {
     method: 'GET', query: contract.buildOrderDetailQuery(created.external_ref), accessToken,
   });
-  const paidFacts = contract.verifyPaidOrderDetail(afterPay, created.external_ref);
+  const paidFacts = contract.verifyPaidOrderDetail(afterPay, created.external_ref, orderNumber);
 
   const result = {
     proof: 'CJ_P2_CONFIRM_PAY_SANDBOX',
