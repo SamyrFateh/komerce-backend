@@ -36,7 +36,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: pr-enforcement-${{ inputs.pr_number }}
+  group: pr-enforcement-${{ inputs.pr_number || github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
@@ -78,7 +78,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.head_sha }}
+          ref: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
           fetch-depth: 1
 
       # ── Fast-fail : body PR (plan d'attaque) ────────────────────────────────
@@ -88,29 +88,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ inputs.pr_number }}
+          PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
         run: node scripts/pr-governance-check.js
 
       # CI FAST-4 : le classifier a besoin des deux arbres, pas de tout l'historique.
       - name: Fetch PR base commit only
         env:
-          BASE_SHA: ${{ inputs.base_sha }}
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
         run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
       - id: scope
         name: Classify changed files
         env:
-          BASE_SHA: ${{ inputs.base_sha }}
-          HEAD_SHA: ${{ inputs.head_sha }}
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
         run: node scripts/pr-enforcement-scope.js --base "$BASE_SHA" --head "$HEAD_SHA" --github-output "$GITHUB_OUTPUT"
       - id: rebase_proof
         name: Detect green base-sync with no impact
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ inputs.pr_number }}
-          HEAD_SHA: ${{ inputs.head_sha }}
-          HEAD_REF: ${{ inputs.head_ref }}
-          BASE_SHA: ${{ inputs.base_sha }}
+          PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
+          HEAD_SHA: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ inputs.head_ref || github.event.pull_request.head.ref }}
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
         shell: bash
         run: |
           set -u
@@ -174,9 +174,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ inputs.pr_number }}
-          HEAD_SHA: ${{ inputs.head_sha }}
-          HEAD_REF: ${{ inputs.head_ref }}
+          PR_NUMBER: ${{ inputs.pr_number || github.event.pull_request.number }}
+          HEAD_SHA: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ inputs.head_ref || github.event.pull_request.head.ref }}
           GOLDEN_SCOPE: ${{ steps.scope.outputs.golden }}
         shell: bash
         run: |
@@ -268,7 +268,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.head_sha }}
+          ref: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
           fetch-depth: 1
       - name: Deepen git history (tests/unit/allegro-golden-preflight-contract.test.js — G-01/G-02 — résout le vrai commit de baseline de docs/db/railway-live-schema.sql via `git log -1 -- <dump>` ; sous shallow, retombe sur HEAD, faux positif de baseline, incident #1594)
         if: needs.changes.outputs.unit_repair_only != 'true'
@@ -288,8 +288,8 @@ jobs:
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          git fetch origin ${{ inputs.base_ref }} --depth=1
-          node scripts/touched-tests-gate.js --base origin/${{ inputs.base_ref }} --strict
+          git fetch origin ${{ inputs.base_ref || github.event.pull_request.base.ref }} --depth=1
+          node scripts/touched-tests-gate.js --base origin/${{ inputs.base_ref || github.event.pull_request.base.ref }} --strict
 
       - name: Npm audit gate
         if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
@@ -357,7 +357,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.head_sha }}
+          ref: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
@@ -385,27 +385,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.head_sha }}
+          ref: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
           fetch-depth: 1
       - name: Fetch PR history for migration/schema gates
         env:
-          HEAD_REF: ${{ inputs.head_ref }}
-          BASE_REF: ${{ inputs.base_ref }}
+          HEAD_REF: ${{ inputs.head_ref || github.event.pull_request.head.ref }}
+          BASE_REF: ${{ inputs.base_ref || github.event.pull_request.base.ref }}
         run: |
           git fetch --no-tags --filter=blob:none --unshallow origin \
             "+refs/heads/${HEAD_REF}:refs/remotes/origin/${HEAD_REF}" \
             "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
       - name: Migration immutability
         env:
-          BASE_SHA: ${{ inputs.base_sha }}
-          HEAD_SHA: ${{ inputs.head_sha }}
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
         run: node scripts/check-migration-immutability.js --base "$BASE_SHA" --head "$HEAD_SHA"
       - name: Schema freshness
         run: node scripts/check-schema-freshness.js
       - name: Schema intent documentation
         env:
-          BASE_SHA: ${{ inputs.base_sha }}
-          HEAD_SHA: ${{ inputs.head_sha }}
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
         run: node scripts/check-schema-intent-doc.js --base "$BASE_SHA" --head "$HEAD_SHA"
       - name: Schema anti-resurrection
         if: needs.changes.outputs.schema_dump == 'true'
@@ -464,15 +464,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.head_sha }}
+          ref: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
           fetch-depth: 1
       - name: Fetch full history for migration baseline resolution
         # ci-db-bootstrap/ci-migrate résout la baseline depuis git log.
         # Le job from-scratch exécute toujours ce bootstrap, y compris quand il
         # est déclenché par integration_required/e2e_api_required sans diff migration.
         env:
-          HEAD_REF: ${{ inputs.head_ref }}
-          BASE_REF: ${{ inputs.base_ref }}
+          HEAD_REF: ${{ inputs.head_ref || github.event.pull_request.head.ref }}
+          BASE_REF: ${{ inputs.base_ref || github.event.pull_request.base.ref }}
         run: |
           git fetch --no-tags --filter=blob:none --unshallow origin \
             "+refs/heads/${HEAD_REF}:refs/remotes/origin/${HEAD_REF}" \
@@ -486,8 +486,8 @@ jobs:
         name: Compute Feature-first E2E blast radius
         if: needs.changes.outputs.e2e_api_required == 'true'
         env:
-          BASE_SHA: ${{ inputs.base_sha }}
-          HEAD_SHA: ${{ inputs.head_sha }}
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
         run: |
           node scripts/e2e-impact-scope.js \
             --base "$BASE_SHA" \
@@ -526,7 +526,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.head_sha }}
+          ref: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -544,12 +544,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.head_sha }}
+          ref: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
           fetch-depth: 1
       - name: Fetch PR base commit for sanitize diff
         if: needs.changes.outputs.boutique_js == 'true'
         env:
-          BASE_SHA: ${{ inputs.base_sha }}
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
         run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
       - uses: actions/setup-node@v4
         with:
@@ -588,7 +588,7 @@ jobs:
       - name: Sanitization on added front lines
         if: needs.changes.outputs.boutique_js == 'true'
         env:
-          BASE_SHA: ${{ inputs.base_sha }}
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
         run: node scripts/arch-doctrine-sanitize-check.js --diff="$BASE_SHA"
       - name: Related Boutique unit tests
         if: needs.changes.outputs.boutique_js == 'true' || needs.changes.outputs.boutique_unit == 'true' || needs.changes.outputs.boutique_css == 'true'
@@ -616,16 +616,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.head_sha }}
+          ref: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
           fetch-depth: 1
       - name: Fetch PR base commit for debt-zero comparison
         env:
-          BASE_SHA: ${{ inputs.base_sha }}
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
         run: git fetch --no-tags --depth=1 origin "$BASE_SHA"
       - name: Debt Zero — forbid baseline and exemption growth
         env:
-          BASE_SHA: ${{ inputs.base_sha }}
-          HEAD_SHA: ${{ inputs.head_sha }}
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
         run: node scripts/debt-zero-gate.js --base "$BASE_SHA" --head "$HEAD_SHA"
       # Les sources canoniques restent bloquantes. Le graphe technique doit être
       # hydraté AVANT les projections métier qui le consomment ; sinon un
