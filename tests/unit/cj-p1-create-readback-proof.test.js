@@ -68,7 +68,7 @@ test('CJ P1 échoue si le VID read-back diverge', () => {
     created: { external_ref: 'CJ-1', order_number: 'KOM-1' },
     detail: { data: { orderId: 'CJ-1', orderStatus: 'CREATED', productInfoList: [{ variantId: 'OTHER', quantity: 1 }] } },
     expectedOrderNumber: 'KOM-1', expectedVid: 'VID-1', expectedQuantity: 1,
-  })).toThrow('CJ_P1_READBACK_VARIANT_MISMATCH');
+  })).toThrow('CJ_READBACK_VARIANT_MISMATCH');
 });
 
 test('CJ P1 run crée uniquement sandbox payType=3 puis read-back', async () => {
