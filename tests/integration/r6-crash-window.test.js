@@ -56,8 +56,8 @@ beforeAll(async () => {
   // market_id est désormais NOT NULL sur relais (doctrine market-scoping) —
   // fixture dédiée R6 pour ne pas dépendre d'un marché de seed externe.
   await pool.query(`
-    INSERT INTO markets (id, code, name, currency, minor_unit, is_active)
-    VALUES ('${R6_MARKET}', 'R6', 'R6 Test Market', 'KMF', 0, TRUE)
+    INSERT INTO markets (id, code, name, currency, minor_unit, is_active, lifecycle_status)
+    VALUES ('${R6_MARKET}', 'R6', 'R6 Test Market', 'KMF', 0, TRUE, 'ACTIVE')
     ON CONFLICT (id) DO NOTHING
   `);
   await pool.query(`
