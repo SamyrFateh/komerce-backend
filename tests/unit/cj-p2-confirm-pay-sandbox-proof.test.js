@@ -118,3 +118,50 @@ test('P2 sandbox refuse une simulation provider non confirmée', () => {
     data: false,
   })).toThrow('CJ_SANDBOX_SIMULATE_PAY_REJECTED');
 });
+
+
+test('P2 résout une logistique réellement retournée par CJ', async () => {
+  const call = jest.fn(async (path) => {
+    expect(path).toBe('/logistic/freightCalculate');
+    return {
+      result: true,
+      data: [
+        { logisticName: 'CJPacket Ordinary' },
+        { logisticName: 'CJPacket Sensitive' },
+      ],
+    };
+  });
+  await expect(proof.resolveLogistic({
+    call,
+    accessToken: 'token',
+    vid: 'VID-1',
+    fromCountryCode: 'CN',
+    destination: { country_code: 'US' },
+    preferred: 'CJPacket Sensitive',
+  })).resolves.toBe('CJPacket Sensitive');
+
+  expect(call).toHaveBeenCalledWith('/logistic/freightCalculate', expect.objectContaining({
+    method: 'POST',
+    body: {
+      startCountryCode: 'CN',
+      endCountryCode: 'US',
+      products: [{ quantity: 1, vid: 'VID-1' }],
+    },
+    accessToken: 'token',
+  }));
+});
+
+test('P2 retombe sur la première route CJ si la préférence est indisponible', async () => {
+  const call = jest.fn(async () => ({
+    result: true,
+    data: [{ logisticName: 'CJPacket Ordinary' }],
+  }));
+  await expect(proof.resolveLogistic({
+    call,
+    accessToken: 'token',
+    vid: 'VID-1',
+    fromCountryCode: 'CN',
+    destination: { country_code: 'US' },
+    preferred: 'CJPacket',
+  })).resolves.toBe('CJPacket Ordinary');
+});
