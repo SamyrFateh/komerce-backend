@@ -127,10 +127,6 @@ async function provisionMarket(executor, {
     correlationId,
   });
 
-  if (leadResult.kind === 'membership') {
-    await projectAssignment(executor, assignment.id);
-  }
-
   const initialPaymentProvider = paymentProvider
     ? await configureProvisioningProvider(executor, {
         marketId: market.id,
@@ -197,9 +193,10 @@ async function setMarketLifecycle(executor, {
   actorUserId, marketCode, targetStatus, correlationId = null,
 }) {
   const target = String(targetStatus || '').trim().toUpperCase();
+  let activationControl = null;
   if (target === 'ACTIVE') {
-    const control = await controlPlane.getControlPlane(executor, marketCode);
-    if (!control.readiness.ready_for_activation) {
+    activationControl = await controlPlane.getControlPlane(executor, marketCode);
+    if (!activationControl.readiness.ready_for_activation) {
       throw provisionError(
         'MARKET_NOT_READY_FOR_ACTIVATION',
         'Activation refusée : readiness plate-forme et exploitation doivent être vertes.',
@@ -218,6 +215,9 @@ async function setMarketLifecycle(executor, {
       after: { lifecycle_status: result.after.lifecycle_status, is_active: result.after.is_active },
       correlationId,
     });
+  }
+  if (target === 'ACTIVE' && activationControl?.assignment?.id) {
+    await projectAssignment(executor, activationControl.assignment.id);
   }
   return result;
 }
