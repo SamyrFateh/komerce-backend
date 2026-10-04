@@ -1940,28 +1940,12 @@
     {
       "key": "POST /api/admin/workspaces/pricing/cost-components/{key}/toggle",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/cost-components/{key}/update",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/cost-components",
@@ -1980,249 +1964,97 @@
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/charges",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/commercial-prices",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/corridor",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/reset",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/toggle",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/cost-components/{key}/update",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/decision-policy/history",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/decision-policy",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/decision",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/price-observations/{observationRef}/deactivate",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/price-observations",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/activate",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/activation-preview",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price/reset",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/products/{productRef}/local-price",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/simulate-impact",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}/structure-events",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/market/{marketCode}/structure-events",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "GET /api/admin/workspaces/pricing/market/{marketCode}",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/products/{productRef}/apply-price",
@@ -2234,15 +2066,7 @@
     {
       "key": "POST /api/admin/workspaces/pricing/simulate-impact",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/simulate",
@@ -2296,28 +2120,12 @@
     {
       "key": "GET /api/admin/workspaces/pricing/structure-events",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "POST /api/admin/workspaces/pricing/structure-events",
       "level": "PROTECTED",
-      "roles": [
-        "admin",
-        "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarkets",
-        "requireMarketScope"
-      ],
-      "file": "routes/admin-pricing-workspace.js"
+      "roles": []
     },
     {
       "key": "GET /api/admin/workspaces/pricing",

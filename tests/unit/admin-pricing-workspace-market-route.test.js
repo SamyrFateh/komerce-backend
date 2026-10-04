@@ -11,25 +11,6 @@ jest.mock('../../middleware/auth', () => ({
   requireRole: roles => (req, res, next) => roles.includes(req.user.role) ? next() : res.status(403).json({ code: 'role_forbidden' }),
 }));
 
-jest.mock('../../middleware/require-market-scope', () => ({
-  attachAuthorizedMarkets: (req, res, next) => { req.authorizedMarkets = new Set(mockAuthorized); next(); },
-  requireMarketScope: getter => (req, res, next) => req.authorizedMarkets.has(getter(req))
-    ? next()
-    : res.status(403).json({ code: 'market_scope_denied' }),
-  resolveMarketScopeRole: jest.fn(async () => mockScopeRole),
-  requireMarketScopeRole: requiredRole => getter => (req, res, next) => {
-    if (req.user.role !== 'market_operator') return next();
-    const target = getter(req);
-    if (!target || !req.authorizedMarkets.has(target)) {
-      return res.status(403).json({ code: 'market_scope_denied' });
-    }
-    if (requiredRole === 'manager' && mockScopeRole !== 'manager') {
-      return res.status(403).json({ code: 'market_scope_role_insufficient' });
-    }
-    return next();
-  },
-}));
-
 jest.mock('../../middleware/require-pricing-global-authority', () => ({
   hasPricingGlobalAuthority: jest.fn(async () => mockCentralPricing),
   requirePricingGlobalAuthority: (req, res, next) => mockCentralPricing ? next() : res.status(403).json({ code: 'pricing_global_access_denied' }),
@@ -63,9 +44,22 @@ const mockReadCapabilities = new Set(['pricing.read', 'pricing.simulate']);
 
 jest.mock('../../services/market-delegation-service', () => ({
   resolveAuthorization: jest.fn(async (_executor, { marketCode, requiredCapability }) => {
-    const granted = mockReadCapabilities.has(requiredCapability)
-      ? (mockPricingReadGranted ? mockReadCapabilities : new Set())
-      : (mockGrantedCapabilities || (mockScopeRole === 'manager' ? mockAllPricingCapabilities : new Set()));
+    const marketId = marketCode === 'CM' ? 'market-cm' : 'market-cg';
+    if (!mockAuthorized.has(marketId)) {
+      const error = new Error('Aucune membership active sur ce Market ID.');
+      error.code = 'MARKET_MEMBERSHIP_REQUIRED';
+      error.status = 403;
+      throw error;
+    }
+
+    const granted = new Set();
+    if (mockPricingReadGranted) {
+      for (const capability of mockReadCapabilities) granted.add(capability);
+    }
+    const management = mockGrantedCapabilities
+      || (mockScopeRole === 'manager' ? mockAllPricingCapabilities : new Set());
+    for (const capability of management) granted.add(capability);
+
     if (!granted.has(requiredCapability)) {
       const error = new Error(`Capability ${requiredCapability} requise.`);
       error.code = 'MARKET_CAPABILITY_REQUIRED';
@@ -73,7 +67,7 @@ jest.mock('../../services/market-delegation-service', () => ({
       throw error;
     }
     return {
-      market_id: marketCode === 'CM' ? 'market-cm' : 'market-cg',
+      market_id: marketId,
       market_code: marketCode,
       assignment_id: 'assignment-1',
       membership_id: 'membership-1',
@@ -342,11 +336,10 @@ test('autorité Pricing globale peut gérer coûts et politique mais ne prend pa
 
   const localPrice = await request(app()).post('/api/admin/workspaces/pricing/market/CM/products/KPR-1/local-price').send({ amount: 1000, reason: 'central' });
   expect(localPrice.status).toBe(403);
-  // requireLocalStrategyCapability n'admet jamais le bypass pricingGlobalAuthority
-  // (doctrine country_manager_owns_local_strategy) — même un admin central sans
-  // la capability pricing.decide sur ce marché reçoit le refus capability, pas
-  // un raccourci de rôle.
-  expect(localPrice.body.code).toBe('MARKET_CAPABILITY_REQUIRED');
+  // requireLocalStrategyCapability n'admet jamais le bypass pricingGlobalAuthority.
+  // Sans membership locale, l'admin central est refusé avant même l'évaluation
+  // de pricing.decide : aucune autorité locale n'est synthétisée depuis son rôle.
+  expect(localPrice.body.code).toBe('MARKET_MEMBERSHIP_REQUIRED');
 });
 
 test('opérateur CM reçoit 403 sur modèle, décision et corridor CG', async () => {
@@ -371,8 +364,8 @@ test('market_operator ne peut jamais atteindre le pricing global', async () => {
 // pricing.simulate n'avaient encore aucun consommateur réel avant ce lot —
 // révoquer la capability seule (sans toucher au rôle scope) doit fermer la
 // lecture et la simulation, et un manager ne bypass jamais ce guard.
-describe('pricing.read / pricing.simulate priment sur le rôle scope (LOT B)', () => {
-  test('révocation de pricing.read ferme la lecture du workspace même pour un manager avec scope actif', async () => {
+describe('pricing.read / pricing.simulate priment sur toute compatibilité de rôle (LOT B)', () => {
+  test('révocation de pricing.read ferme la lecture du workspace même pour un manager', async () => {
     mockPricingReadGranted = false;
     const res = await request(app()).get('/api/admin/workspaces/pricing/market/CM');
     expect(res.status).toBe(403);

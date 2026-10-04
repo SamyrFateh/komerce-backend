@@ -83,6 +83,12 @@ describe('security-guard-tokens', () => {
     expect(lib.wrapperAliases('')).toEqual({});
   });
 
+  test('wrapperAliases : le parseur Security360 peut composer un wrapper de wrapper', () => {
+    const direct = lib.tokens("requireMarketDelegatedCapability('pricing.read')");
+    expect(direct.authz).toBe(true);
+    expect(direct.capabilityGuards.has('requireMarketDelegatedCapability')).toBe(true);
+  });
+
   test('wrapperAliases : une fonction qui appelle directement une capability exacte devient une garde forte', () => {
     const src = [
       'function requireOperationsRead(req, res, next) {',

@@ -84,6 +84,43 @@ function parseGuardAliases(src) {
 
   const wrappers = wrapperAliases(src);
   for (const name of Object.keys(wrappers)) if (!aliases[name]) aliases[name] = wrappers[name];
+
+  // Un wrapper peut déléguer à un autre wrapper local, ex.
+  // requirePricingReadCapability -> requirePricingCapability ->
+  // requireMarketDelegatedCapability. Résoudre ces aliases jusqu'au point fixe
+  // évite de perdre une garde forte simplement à cause d'une couche de nommage.
+  let wrapperChanged = true;
+  while (wrapperChanged) {
+    wrapperChanged = false;
+    for (const m of src.matchAll(/(?:async\s+)?function\s+(\w+)\s*\([^)]*\)\s*\{([\s\S]*?)\n\}/g)) {
+      const name = m[1];
+      const parsed = tokens(m[0]);
+      mergeAliasRefs(parsed, m[0], aliases);
+      if (hasGuards(parsed) && !aliases[name]) {
+        aliases[name] = parsed;
+        wrapperChanged = true;
+      } else if (hasGuards(parsed) && aliases[name]) {
+        const before = JSON.stringify({
+          authn: aliases[name].authn,
+          authz: aliases[name].authz,
+          admin: aliases[name].admin,
+          roles: [...aliases[name].roles].sort(),
+          marketGuards: [...aliases[name].marketGuards].sort(),
+          capabilityGuards: [...aliases[name].capabilityGuards].sort(),
+        });
+        mergeInto(aliases[name], parsed);
+        const after = JSON.stringify({
+          authn: aliases[name].authn,
+          authz: aliases[name].authz,
+          admin: aliases[name].admin,
+          roles: [...aliases[name].roles].sort(),
+          marketGuards: [...aliases[name].marketGuards].sort(),
+          capabilityGuards: [...aliases[name].capabilityGuards].sort(),
+        });
+        if (before !== after) wrapperChanged = true;
+      }
+    }
+  }
   return aliases;
 }
 
@@ -434,6 +471,27 @@ if (MODE === 'check') {
   try { committedJson = JSON.parse(fs.readFileSync(path.join(DOCS, 'SECURITY_360.json'), 'utf8')); } catch (_) {}
   if (!committedJson || JSON.stringify(comparableProjection(committedJson)) !== JSON.stringify(projection)) {
     console.error('\x1b[31m\x1b[1m✖ SECURITY_360.json est périmé.\x1b[0m');
+    if (committedJson) {
+      const committedProjection = comparableProjection(committedJson);
+      const committedRoutes = new Map((committedProjection.routes || []).map(route => [route.key, route]));
+      const generatedRoutes = new Map((projection.routes || []).map(route => [route.key, route]));
+      const changed = [];
+      for (const routeKey of new Set([...committedRoutes.keys(), ...generatedRoutes.keys()])) {
+        const before = committedRoutes.get(routeKey) || null;
+        const after = generatedRoutes.get(routeKey) || null;
+        if (JSON.stringify(before) !== JSON.stringify(after)) changed.push({ key: routeKey, committed: before, generated: after });
+      }
+      if (JSON.stringify(committedProjection.summary) !== JSON.stringify(projection.summary)) {
+        console.error('   summary committed=' + JSON.stringify(committedProjection.summary));
+        console.error('   summary generated=' + JSON.stringify(projection.summary));
+      }
+      for (const diff of changed.slice(0, 30)) {
+        console.error('   Δ ' + diff.key);
+        console.error('     committed=' + JSON.stringify(diff.committed));
+        console.error('     generated=' + JSON.stringify(diff.generated));
+      }
+      if (changed.length > 30) console.error('   … ' + (changed.length - 30) + ' route(s) supplémentaire(s)');
+    }
     console.error('   Lance npm run security:360 puis commite docs/SECURITY_360.{json,md}.');
     process.exit(1);
   }

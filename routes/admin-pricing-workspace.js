@@ -6,16 +6,16 @@
  * @criticality   high
  * @inputs        authenticated_pricing_operator, resolved_market_code, business_refs, pricing_payload, governed_market_decision_policy, structure_cost_event, allocation_policies, attribution_reason
  * @outputs       canonical_pricing_projection, market_cost_projection, market_decision_projection, market_price_decisions, market_corridor_projection, activation_preview, action_results, structure_cost_event_fact, structure_cost_event_history, market_cost_attribution_journal
- * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-pricing-global-authority.js, middleware/require-market-scope.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js, services/market-cost-attribution-service.js
+ * @depends       db.js, middleware/auth.js, middleware/require-pricing-global-authority.js, middleware/require-market-delegated-capability.js, services/pricing-workspace.js, services/pricing-market-decision-policy.js, services/pricing-market-decision-projection.js, services/pricing-market-corridor.js, services/market-commercial-price-service.js, services/market-local-price-activation-service.js, services/pricing-period-structure.js, services/market-cost-attribution-service.js
  * @used-by       bootstrap/api-routes.js
- * @db-read       markets, products, product_market_exposure, operator_market_scopes, pricing_global_access_grants, charges, economic_structure_cost_events, users
+ * @db-read       markets, products, product_market_exposure, pricing_global_access_grants, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, charges, economic_structure_cost_events, users
  * @db-write      none
  * @db-write-via:catalog-market-exposure-service product_market_exposure
  * @db-write-via:market-delegation-service market_delegation_audit
  * @db-txn        catalog_entry_projection_owned_by_market_delegation_service
- * @doctrine      global_pricing_authority_or_server_market_scope, viewer_reads_manager_writes, country_manager_owns_local_strategy, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views, market_corridor_is_observation_not_gate, pricing_market_viability_period_structure_truth, local_active_implies_market_catalog_entry
+ * @doctrine      capability_is_the_authority_not_role, global_pricing_authority_or_exact_market_capability, viewer_reads_manager_writes, country_manager_owns_local_strategy, browser_business_refs_only, simulation_is_read_only, market_decision_policy_is_append_only, one_contribution_many_views, market_corridor_is_observation_not_gate, pricing_market_viability_period_structure_truth, local_active_implies_market_catalog_entry
  * @impact-areas  pricing, economic-engine, admin-dashboard, market-authorization
- * @version       2026-09
+ * @version       2026-10-d9
  */
 
 'use strict';
@@ -24,13 +24,7 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 const { authenticate, requireRole } = require('../middleware/auth');
-const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
 const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
-const {
-  attachAuthorizedMarkets,
-  requireMarketScope,
-  resolveMarketScopeRole,
-} = require('../middleware/require-market-scope');
 const { hasPricingGlobalAuthority, requirePricingGlobalAuthority } = require('../middleware/require-pricing-global-authority');
 const workspace = require('../services/pricing-workspace');
 const marketDecisionPolicy = require('../services/pricing-market-decision-policy');
@@ -85,24 +79,18 @@ async function resolveRequestedMarket(req, res, next) {
   } catch (error) { return next(error); }
 }
 
-async function requireMarketPricingAccess(req, res, next) {
-  const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
-
-  // L'autorité Pricing centrale d'un admin reste prioritaire sur un éventuel
-  // grant local. Un market_operator n'emprunte jamais cette branche.
+async function attachPricingAuthorityContext(req, res, next) {
+  // Ce middleware n'autorise rien. Il identifie seulement l'autorité Pricing
+  // centrale ; chaque endpoint porte ensuite sa capability exacte.
   if (req.user && req.user.role === 'admin') {
     try {
-      if (await hasPricingGlobalAuthority(req.user.id)) {
-        req.pricingGlobalAuthority = true;
-        return next();
-      }
+      if (await hasPricingGlobalAuthority(req.user.id)) req.pricingGlobalAuthority = true;
     } catch (error) { return next(error); }
   }
-
-  return requireMarketScope(() => targetMarketId)(req, res, next);
+  return next();
 }
 
-async function marketAccessProjection(req) {
+function marketAccessProjection(req) {
   if (req.pricingGlobalAuthority) {
     return {
       role: 'global_admin',
@@ -116,26 +104,35 @@ async function marketAccessProjection(req) {
     };
   }
 
-  const targetMarketId = req.workspaceMarket && req.workspaceMarket.id;
-  const scopeRole = req.user && req.user.role === 'market_operator'
-    ? await resolveMarketScopeRole(req.user.id, targetMarketId)
-    : null;
-  const canManage = scopeRole === 'manager';
+  const capabilities = new Set(
+    req.marketDelegatedCapability && Array.isArray(req.marketDelegatedCapability.capabilities)
+      ? req.marketDelegatedCapability.capabilities
+      : []
+  );
+  const canManageCosts = capabilities.has('pricing.cost_component.update')
+    && capabilities.has('pricing.cost_component.reset');
+  const canManageDecisionPolicy = capabilities.has('pricing.policy.set');
+  const canDraftLocalPrices = capabilities.has('pricing.decide');
+  const canActivateLocalPrices = capabilities.has('pricing.activate') && capabilities.has('catalog.expose');
+  const canManageMarketObservations = capabilities.has('market.observation.record');
+  const localStrategyOwner = canDraftLocalPrices && canActivateLocalPrices && canManageMarketObservations;
+  const canManage = canManageCosts || canManageDecisionPolicy || canDraftLocalPrices
+    || canActivateLocalPrices || canManageMarketObservations;
 
   return {
-    role: scopeRole || 'viewer',
+    role: canManage ? 'manager' : 'viewer',
     read_only: !canManage,
-    can_manage_costs: canManage,
-    can_manage_decision_policy: canManage,
-    can_draft_local_prices: canManage,
-    can_activate_local_prices: canManage,
-    can_manage_market_observations: canManage,
-    local_strategy_owner: canManage,
+    can_manage_costs: canManageCosts,
+    can_manage_decision_policy: canManageDecisionPolicy,
+    can_draft_local_prices: canDraftLocalPrices,
+    can_activate_local_prices: canActivateLocalPrices,
+    can_manage_market_observations: canManageMarketObservations,
+    local_strategy_owner: localStrategyOwner,
   };
 }
 
 // L'autorité Pricing centrale d'un admin (déjà vérifiée par
-// requireMarketPricingAccess → req.pricingGlobalAuthority) reste prioritaire
+// attachPricingAuthorityContext → req.pricingGlobalAuthority) reste prioritaire
 // et court-circuite la vérification de capability marché : un market_operator
 // n'emprunte jamais cette branche, donc aucun bypass n'est ouvert pour lui.
 // En dessous de ce bypass, la seule autorité est la capability exacte du
@@ -203,19 +200,16 @@ function handleDecisionPolicyError(error, res, next) {
 router.use(
   '/market/:marketCode',
   authenticate,
-  attachMarketDelegatedRoleFor(['admin', 'market_operator']),
-  requireRole(['admin', 'market_operator']),
   rejectBrowserAuthority,
   resolveRequestedMarket,
-  attachAuthorizedMarkets,
-  requireMarketPricingAccess
+  attachPricingAuthorityContext
 );
 
 router.get('/market/:marketCode', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
   try {
     res.set('Cache-Control', 'private, no-store');
     const projection = await workspace.buildMarketWorkspace({ market: req.workspaceMarket });
-    const access = await marketAccessProjection(req);
+    const access = marketAccessProjection(req);
     res.json({
       ...projection,
       access,
@@ -451,7 +445,7 @@ router.post('/market/:marketCode/cost-components/:key/reset', requirePricingCapa
 // Ajustements de charge structurelle (N3) — formulaire séparé côté client,
 // jamais un champ éditable inline. Le marché n'est jamais accepté du corps de
 // la requête : il vient exclusivement de req.workspaceMarket (résolu par
-// resolveRequestedMarket + attachAuthorizedMarkets ci-dessus). scope_kind est
+// resolveRequestedMarket ci-dessus). scope_kind est
 // forcé à MARKET_DIRECT ici — un market_operator ne peut jamais écrire un
 // fait GROUP (mutualisé), qui affecte tous les marchés.
 router.get('/market/:marketCode/charges', requirePricingReadCapability('pricing.read'), async (req, res, next) => {
