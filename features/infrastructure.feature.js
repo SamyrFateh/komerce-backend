@@ -190,6 +190,7 @@ module.exports = {
       'scripts/run-e2e-feature-tests.js',
       'scripts/e2e-impact-scope.js',
       'scripts/integration-impact-scope.js',
+      'scripts/ci-gate-reuse.js',
       'scripts/run-security-360.js',
       'scripts/seed.js',
       'scripts/setup-hooks.sh',
@@ -449,6 +450,7 @@ module.exports = {
       'tests/unit/schema-sync-summary.test.js',
       'tests/unit/e2e-impact-scope.test.js',
       'tests/unit/integration-impact-scope.test.js',
+      'tests/unit/ci-gate-reuse.test.js',
       'tests/unit/run-e2e-feature-tests.test.js',
       // tests/unit/rules-engine.test.js — transféré à business-rules (arbitrage B)
       'tests/unit/upload.test.js',

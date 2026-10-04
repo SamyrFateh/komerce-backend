@@ -71,6 +71,14 @@ jobs:
       unit_repair_reason: ${{ steps.repair.outputs.unit_repair_reason }}
       rebase_no_impact: ${{ steps.rebase_proof.outputs.rebase_no_impact }}
       rebase_no_impact_reason: ${{ steps.rebase_proof.outputs.rebase_no_impact_reason }}
+      reuse_backend: ${{ steps.gate_reuse.outputs.reuse_backend }}
+      reuse_migrations: ${{ steps.gate_reuse.outputs.reuse_migrations }}
+      reuse_from_scratch: ${{ steps.gate_reuse.outputs.reuse_from_scratch }}
+      reuse_dashboard: ${{ steps.gate_reuse.outputs.reuse_dashboard }}
+      reuse_boutique: ${{ steps.gate_reuse.outputs.reuse_boutique }}
+      reuse_governance: ${{ steps.gate_reuse.outputs.reuse_governance }}
+      reuse_provider_contracts: ${{ steps.gate_reuse.outputs.reuse_provider_contracts }}
+      reuse_previous_head: ${{ steps.gate_reuse.outputs.reuse_previous_head }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -98,6 +106,68 @@ jobs:
           BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
         run: node scripts/pr-enforcement-scope.js --base "$BASE_SHA" --head "$HEAD_SHA" --github-output "$GITHUB_OUTPUT"
+      - id: gate_reuse
+        name: Reuse prior green gates when latest HEAD delta has no impact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ inputs.head_sha || github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ inputs.head_ref || github.event.pull_request.head.ref }}
+          BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -u
+          for gate in backend migrations from_scratch dashboard boutique governance provider_contracts; do
+            echo "reuse_${gate}=false" >> "$GITHUB_OUTPUT"
+            echo "reuse_${gate}_reason=no-prior-proof" >> "$GITHUB_OUTPUT"
+          done
+          echo "reuse_previous_head=" >> "$GITHUB_OUTPUT"
+
+          BRANCH_ENCODED="$(node -p 'encodeURIComponent(process.env.HEAD_REF)')"
+          RUNS_URL="https://api.github.com/repos/$REPOSITORY/actions/workflows/pr-enforcement.yml/runs?event=workflow_dispatch&branch=$BRANCH_ENCODED&status=completed&per_page=50"
+          if ! curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$RUNS_URL" > /tmp/gate-reuse-runs.json; then
+            echo "Previous workflow metadata unavailable; no proof reused."
+            exit 0
+          fi
+
+          PREVIOUS_META="$(node -e '
+            const fs=require("fs");
+            const data=JSON.parse(fs.readFileSync("/tmp/gate-reuse-runs.json","utf8"));
+            const head=String(process.env.HEAD_SHA||"");
+            const run=(data.workflow_runs||[]).find(r => r.head_sha && r.head_sha !== head);
+            process.stdout.write(run ? String(run.id)+" "+String(run.head_sha) : "");
+          ')"
+          PREVIOUS_RUN_ID="${PREVIOUS_META%% *}"
+          PREVIOUS_HEAD="${PREVIOUS_META#* }"
+          if [ -z "$PREVIOUS_RUN_ID" ] || [ -z "$PREVIOUS_HEAD" ] || [ "$PREVIOUS_HEAD" = "$PREVIOUS_META" ]; then
+            echo "No prior completed PR-enforcement run found; no proof reused."
+            exit 0
+          fi
+
+          if ! git fetch --no-tags --depth=128 origin "$PREVIOUS_HEAD" "$BASE_SHA" "$HEAD_SHA"; then
+            echo "Previous/current ancestry unavailable; no proof reused."
+            exit 0
+          fi
+
+          if ! curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPOSITORY/actions/runs/$PREVIOUS_RUN_ID/jobs?per_page=100" \
+            > /tmp/gate-reuse-jobs.json; then
+            echo "Previous job metadata unavailable; no proof reused."
+            exit 0
+          fi
+
+          node scripts/ci-gate-reuse.js \
+            --previous-head "$PREVIOUS_HEAD" \
+            --current-head "$HEAD_SHA" \
+            --current-base "$BASE_SHA" \
+            --jobs-json /tmp/gate-reuse-jobs.json \
+            --github-output "$GITHUB_OUTPUT"
+
       - id: rebase_proof
         name: Detect green base-sync with no impact
         env:
@@ -258,7 +328,7 @@ jobs:
     needs: changes
     # CI FAST-2 : le Golden partage ce runner avec Backend. Un changement du
     # harnais Golden seul ouvre ce job sans exécuter les gates backend inutiles.
-    if: needs.changes.outputs.rebase_no_impact != 'true' && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.golden == 'true')
+    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.reuse_backend != 'true' && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.golden == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -345,7 +415,7 @@ jobs:
   provider_contracts:
     name: Isolated provider contract proof gates
     needs: changes
-    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.provider_proof_only == 'true'
+    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.reuse_provider_contracts != 'true' && needs.changes.outputs.provider_proof_only == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 7
     permissions:
@@ -375,7 +445,7 @@ jobs:
   migrations:
     name: Migration and schema gates
     needs: changes
-    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.migrations == 'true'
+    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.reuse_migrations != 'true' && needs.changes.outputs.migrations == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -422,6 +492,7 @@ jobs:
     if: >-
       needs.changes.outputs.rebase_no_impact != 'true' &&
       needs.changes.outputs.unit_repair_only != 'true' &&
+      needs.changes.outputs.reuse_from_scratch != 'true' &&
       (
         needs.changes.outputs.db_rebuild_required == 'true' ||
         needs.changes.outputs.integration_required == 'true' ||
@@ -541,7 +612,7 @@ jobs:
   dashboard:
     name: Dashboard canonical gates
     needs: changes
-    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.dashboard == 'true'
+    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.reuse_dashboard != 'true' && needs.changes.outputs.dashboard == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -559,7 +630,7 @@ jobs:
   boutique:
     name: Boutique source gates
     needs: changes
-    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.boutique == 'true'
+    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.reuse_boutique != 'true' && needs.changes.outputs.boutique == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -631,7 +702,7 @@ jobs:
   governance:
     name: Governance and feature-first gates
     needs: changes
-    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.governance == 'true'
+    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.reuse_governance != 'true' && needs.changes.outputs.governance == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
