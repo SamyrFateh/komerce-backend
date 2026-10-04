@@ -29,6 +29,7 @@ on:
 permissions:
   contents: read
   actions: read
+  statuses: write
 
 concurrency:
   group: pr-enforcement-${{ inputs.pr_number || github.event.pull_request.number }}
@@ -674,6 +675,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Aggregate scoped results
+        id: aggregate
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
           BACKEND_RESULT: ${{ needs.backend.result }}
@@ -699,3 +701,27 @@ jobs:
               exit 1
             fi
           done
+
+      - name: Publish trusted Required verdict status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ inputs.head_sha }}
+          AGGREGATE_OUTCOME: ${{ steps.aggregate.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          state=failure
+          description='Trusted PR enforcement failed'
+          if [ "$AGGREGATE_OUTCOME" = 'success' ]; then
+            state=success
+            description='Trusted PR enforcement passed'
+          fi
+          payload="$(node -e "process.stdout.write(JSON.stringify({state:process.argv[1],context:'Required verdict',description:process.argv[2]}))" "$state" "$description")"
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${{ github.repository }}/statuses/$HEAD_SHA" \
+            --data-binary "$payload"
+          test "$state" = success

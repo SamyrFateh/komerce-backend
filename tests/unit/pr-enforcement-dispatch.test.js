@@ -16,6 +16,7 @@ describe('PR enforcement trusted dispatch', () => {
     expect(enforcement).toContain('base_sha:');
     expect(enforcement).toContain('head_ref:');
     expect(enforcement).toContain('base_ref:');
+    expect(enforcement).toContain('statuses: write');
   });
 
   test('trusted pull_request_target is the unique PR entry point', () => {
@@ -32,5 +33,7 @@ describe('PR enforcement trusted dispatch', () => {
     expect(enforcement).toContain('BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}');
     expect(enforcement).toContain('HEAD_REF: ${{ inputs.head_ref || github.event.pull_request.head.ref }}');
     expect(enforcement).toContain('event=workflow_dispatch&branch=$BRANCH_ENCODED');
+    expect(enforcement).toContain("context:'Required verdict'");
+    expect(enforcement).toContain('/statuses/$HEAD_SHA');
   });
 });
