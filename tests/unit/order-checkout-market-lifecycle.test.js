@@ -24,7 +24,7 @@ describe('orders checkout — market lifecycle guard', () => {
   test('guard executes before pricing and order persistence', () => {
     const guard = source.indexOf("SELECT lifecycle_status FROM markets");
     expect(guard).toBeGreaterThan(0);
-    expect(guard).toBeLessThan(source.indexOf('applyActiveMarketPricesToCheckoutItems'));
-    expect(guard).toBeLessThan(source.indexOf('insertOrderRow(client'));
+    expect(guard).toBeLessThan(source.indexOf('marketPricing = await applyActiveMarketPricesToCheckoutItems'));
+    expect(guard).toBeLessThan(source.indexOf('const order = await insertOrderRow(client'));
   });
 });
