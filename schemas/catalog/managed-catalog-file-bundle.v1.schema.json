@@ -1,0 +1,97 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "komerce://schemas/catalog/managed-catalog-file-bundle.v1.schema.json",
+  "title": "ManagedCatalogFileBundle.v1",
+  "description": "Contrat tabulaire canonique intermédiaire pour CSV/XLSX INTERNAL_MANAGED. Les transports fichier convergent vers ce bundle avant mapping vers NormalizedSupplierProduct V2.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "source_type", "supplier_name", "fulfillment_mode", "products", "units", "media"],
+  "properties": {
+    "schema_version": { "const": "1" },
+    "source_type": { "enum": ["csv", "xlsx"] },
+    "supplier_name": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "fulfillment_mode": { "enum": ["SUPPLIER_DIRECT", "INTERNAL_STOCK"] },
+    "products": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_product_key", "product_name", "currency"],
+        "properties": {
+          "source_product_key": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "product_name": { "type": "string", "minLength": 2, "maxLength": 300 },
+          "supplier_product_id": { "type": ["string", "null"], "maxLength": 128 },
+          "supplier_category": { "type": ["string", "null"], "maxLength": 200 },
+          "description": { "type": ["string", "null"], "maxLength": 10000 },
+          "brand": { "type": ["string", "null"], "maxLength": 200 },
+          "currency": { "enum": ["AED", "EUR", "USD", "KMF", "PLN"] },
+          "purchase_price": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10000000 },
+          "stock_available": { "type": ["integer", "null"], "minimum": 0 },
+          "weight_kg": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 500 },
+          "dim_l_cm": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 1000 },
+          "dim_w_cm": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 1000 },
+          "dim_h_cm": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 1000 },
+          "source_locale": { "type": ["string", "null"], "minLength": 2, "maxLength": 35 },
+          "active": { "type": ["boolean", "null"] }
+        }
+      }
+    },
+    "units": {
+      "type": "array",
+      "maxItems": 500000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_product_key", "supplier_sku", "option_values"],
+        "properties": {
+          "source_product_key": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "supplier_sku": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "supplier_unit_ref": { "type": ["string", "null"], "minLength": 1, "maxLength": 256 },
+          "option_values": {
+            "type": "object",
+            "maxProperties": 20,
+            "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 200 }
+          },
+          "stock_available": { "type": ["integer", "null"], "minimum": 0 },
+          "purchase_price": { "type": ["number", "null"], "exclusiveMinimum": 0, "maximum": 10000000 },
+          "currency": { "type": ["string", "null"], "enum": ["AED", "EUR", "USD", "KMF", "PLN", null] },
+          "supplier_order_identity": {
+            "type": ["object", "null"],
+            "additionalProperties": false,
+            "required": ["provider", "version", "payload"],
+            "properties": {
+              "provider": { "type": "string", "minLength": 1, "maxLength": 100, "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+              "version": { "type": "integer", "minimum": 1, "maximum": 1000 },
+              "payload": { "type": "object", "minProperties": 1, "maxProperties": 50 }
+            }
+          },
+          "active": { "type": ["boolean", "null"] }
+        }
+      }
+    },
+    "media": {
+      "type": "array",
+      "maxItems": 1000000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_product_key", "media_ref", "url", "role"],
+        "properties": {
+          "source_product_key": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "media_ref": { "type": "string", "minLength": 1, "maxLength": 128 },
+          "url": { "type": "string", "format": "uri", "maxLength": 2000 },
+          "role": { "enum": ["PRODUCT", "SCENE", "DETAIL", "SIZE_GUIDE", "OTHER"] },
+          "alt": { "type": ["string", "null"], "maxLength": 500 },
+          "option_values": {
+            "type": ["object", "null"],
+            "maxProperties": 20,
+            "additionalProperties": { "type": "string", "minLength": 1, "maxLength": 200 }
+          },
+          "display_order": { "type": ["integer", "null"], "minimum": 0, "maximum": 10000 }
+        }
+      }
+    }
+  }
+}
