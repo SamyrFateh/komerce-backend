@@ -262,6 +262,12 @@ Règles de comportement :
 - lorsqu'une preuve plus forte couvre déjà un point, ne pas empiler des preuves équivalentes seulement pour enrichir l'explication ;
 - une intervention est terminée dès que la demande est satisfaite et que la preuve adaptée au risque est obtenue : ne pas poursuivre l'analyse pour produire plus de commentaire.
 
+### PR rouge et synchronisation de branche
+
+- **PR rouge reproductible** : la CI ne devient jamais la boucle de développement. Identifier le premier gate rouge ; s'il n'est pas déclaré `CI_ONLY`, revenir au gate canonique / `npm run pr:preflight`, corriger la cause, puis ne repousser qu'après retour au vert reproductible. Les pushes successifs « log CI → petit patch → repush » sont interdits sauf preuve réellement CI_ONLY.
+- **PR behind** : pour une branche interne au dépôt, non draft et sans conflit, la synchronisation avec `main` est automatique ; l'agent ne demande pas à l'utilisateur d'effectuer un rebase/update mécanique. Un conflit ou une branche externe reste humain.
+- **REBASE_NO_IMPACT** : après une synchronisation automatique, la CI peut réutiliser le dernier `Required verdict` vert et skipper les jobs lourds uniquement si la preuve fail-closed établit simultanément : ancien HEAD vert ancêtre du nouveau, patch PR strictement identique, aucun fichier commun avec le delta de `main`, aucune intersection avec `arch:impact`, aucun fichier global à risque. Toute preuve absente ou ambiguë retombe sur la CI normale complète.
+
 GPT ne passe en **REVIEW** que pour une décision d'architecture, d'autorité, de schéma, de doctrine ou de périmètre réellement ouverte. GPT ne passe en **FORENSIC** que pour un incident, une divergence difficile, un problème de sécurité, un historique complexe ou un comportement non reproductible.
 
 Principe : **même rigueur interne, moins de surface conversationnelle. La gouvernance décide quoi vérifier ; les outils fournissent la preuve ; GPT n'ajoute de prose que lorsqu'elle change une décision.**

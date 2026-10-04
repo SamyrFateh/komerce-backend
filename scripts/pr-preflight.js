@@ -95,6 +95,7 @@ const CI_ONLY = Object.freeze({
   'scripts/pr-governance-check.js': 'lit le corps de PR via l’API GitHub : n’existe qu’après ouverture de la PR',
   'scripts/pr-enforcement-scope.js': 'classification du diff : réutilisée en processus par le preflight (classifyDiff)',
   'scripts/ci-unit-repair-scope.js': 'optimisation CI des pushes de réparation de tests (saute les jobs lourds) : aucun gate à rejouer',
+  'scripts/ci-rebase-no-impact.js': 'preuve CI de synchronisation sans impact : dépend du dernier workflow PR vert, de ses jobs et des SHA avant/après update',
   'test:unit:coverage': 'suite complète + seuil global (~6 min) : en local, tests liés, et suite complète forcée dès qu’une migration change',
   'scripts/ci-db-bootstrap.js': 'exige un PostgreSQL reconstruit (job from-scratch)',
   'test:integration': 'exige un PostgreSQL reconstruit (job from-scratch)',

@@ -48,6 +48,8 @@ jobs:
       unit_repair_only: ${{ steps.repair.outputs.unit_repair_only }}
       unit_repair_files: ${{ steps.repair.outputs.unit_repair_files }}
       unit_repair_reason: ${{ steps.repair.outputs.unit_repair_reason }}
+      rebase_no_impact: ${{ steps.rebase_proof.outputs.rebase_no_impact }}
+      rebase_no_impact_reason: ${{ steps.rebase_proof.outputs.rebase_no_impact_reason }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,8 +77,71 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: node scripts/pr-enforcement-scope.js --base "$BASE_SHA" --head "$HEAD_SHA" --github-output "$GITHUB_OUTPUT"
+      - id: rebase_proof
+        name: Detect green base-sync with no impact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set -u
+          echo "rebase_no_impact=false" >> "$GITHUB_OUTPUT"
+          echo "rebase_no_impact_reason=no-previous-green-proof" >> "$GITHUB_OUTPUT"
+
+          RUNS_URL="https://api.github.com/repos/$REPOSITORY/actions/workflows/pr-enforcement.yml/runs?event=pull_request&status=completed&per_page=50"
+          if ! curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$RUNS_URL" > /tmp/rebase-previous-runs.json; then
+            echo "Previous workflow metadata unavailable; full CI retained."
+            exit 0
+          fi
+
+          PREVIOUS_META="$(node -e '
+            const fs=require("fs");
+            const data=JSON.parse(fs.readFileSync("/tmp/rebase-previous-runs.json","utf8"));
+            const pr=String(process.env.PR_NUMBER||"");
+            const head=String(process.env.HEAD_SHA||"");
+            const run=(data.workflow_runs||[]).find(r =>
+              r.conclusion==="success"
+              && r.head_sha !== head
+              && (r.pull_requests||[]).some(p => String(p.number)===pr)
+            );
+            process.stdout.write(run ? String(run.id)+" "+String(run.head_sha||"") : "");
+          ')"
+          PREVIOUS_RUN_ID="${PREVIOUS_META%% *}"
+          PREVIOUS_HEAD="${PREVIOUS_META#* }"
+          if [ -z "$PREVIOUS_RUN_ID" ] || [ -z "$PREVIOUS_HEAD" ] || [ "$PREVIOUS_HEAD" = "$PREVIOUS_META" ]; then
+            echo "No previous green PR-enforcement run found; full CI retained."
+            exit 0
+          fi
+
+          if ! git fetch --no-tags --depth=128 origin "$PREVIOUS_HEAD" "$BASE_SHA"; then
+            echo "Previous head/base ancestry unavailable; full CI retained."
+            exit 0
+          fi
+
+          if ! curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPOSITORY/actions/runs/$PREVIOUS_RUN_ID/jobs?per_page=100" \
+            > /tmp/rebase-previous-jobs.json; then
+            echo "Previous job metadata unavailable; full CI retained."
+            exit 0
+          fi
+
+          node scripts/ci-rebase-no-impact.js \
+            --previous-head "$PREVIOUS_HEAD" \
+            --current-head "$HEAD_SHA" \
+            --current-base "$BASE_SHA" \
+            --jobs-json /tmp/rebase-previous-jobs.json \
+            --github-output "$GITHUB_OUTPUT"
       - id: repair
         name: Detect safe targeted unit-test repair
+        if: steps.rebase_proof.outputs.rebase_no_impact != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
@@ -141,28 +206,28 @@ jobs:
 
           node scripts/ci-unit-repair-scope.js             --base "$PREVIOUS_HEAD"             --head "$HEAD_SHA"             --jobs-json /tmp/previous-jobs.json             --failed-log /tmp/previous-backend.log             --golden "$GOLDEN_SCOPE"             --github-output "$GITHUB_OUTPUT"
       - name: CJ pilot report syntax — targeted proof-only check
-        if: steps.repair.outputs.unit_repair_only != 'true' && steps.scope.outputs.cj_pilot_proof_only == 'true'
+        if: steps.rebase_proof.outputs.rebase_no_impact != 'true' && steps.repair.outputs.unit_repair_only != 'true' && steps.scope.outputs.cj_pilot_proof_only == 'true'
         run: node --check scripts/cj-three-real-staging-pilot.js
       - name: Feature card schema — zero debt
-        if: steps.repair.outputs.unit_repair_only != 'true'
+        if: steps.rebase_proof.outputs.rebase_no_impact != 'true' && steps.repair.outputs.unit_repair_only != 'true'
         run: node scripts/feature-schema-check.js --strict --full
       - name: Docs history — zero debt
-        if: steps.repair.outputs.unit_repair_only != 'true'
+        if: steps.rebase_proof.outputs.rebase_no_impact != 'true' && steps.repair.outputs.unit_repair_only != 'true'
         run: node scripts/docs-history-lint.js --strict --full
       - name: Impact suppression hygiene
-        if: steps.repair.outputs.unit_repair_only != 'true'
+        if: steps.rebase_proof.outputs.rebase_no_impact != 'true' && steps.repair.outputs.unit_repair_only != 'true'
         run: node scripts/impact-suppression-check.js
       # Le registre commité est une projection, jamais une vérité autonome.
       # On le régénère depuis les montages Express du HEAD avant le gate afin
       # qu'une projection stale ne produise ni faux vert ni faux rouge.
       - name: Hydrate route registry for feature audit
-        if: steps.repair.outputs.unit_repair_only != 'true'
+        if: steps.rebase_proof.outputs.rebase_no_impact != 'true' && steps.repair.outputs.unit_repair_only != 'true'
         run: node scripts/gen-route-registry.js
       - name: Feature audit — strict veto
-        if: steps.repair.outputs.unit_repair_only != 'true'
+        if: steps.rebase_proof.outputs.rebase_no_impact != 'true' && steps.repair.outputs.unit_repair_only != 'true'
         run: node scripts/feature-audit.js --strict
       - name: Restore ephemeral route registry
-        if: always() && steps.repair.outputs.unit_repair_only != 'true'
+        if: always() && steps.rebase_proof.outputs.rebase_no_impact != 'true' && steps.repair.outputs.unit_repair_only != 'true'
         run: git restore --source=HEAD -- docs/_generated/route-registry.json
 
   backend:
@@ -170,7 +235,7 @@ jobs:
     needs: changes
     # CI FAST-2 : le Golden partage ce runner avec Backend. Un changement du
     # harnais Golden seul ouvre ce job sans exécuter les gates backend inutiles.
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.golden == 'true'
+    if: needs.changes.outputs.rebase_no_impact != 'true' && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.golden == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -257,7 +322,7 @@ jobs:
   provider_contracts:
     name: Isolated provider contract proof gates
     needs: changes
-    if: needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.provider_proof_only == 'true'
+    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.provider_proof_only == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 7
     permissions:
@@ -287,7 +352,7 @@ jobs:
   migrations:
     name: Migration and schema gates
     needs: changes
-    if: needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.migrations == 'true'
+    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.migrations == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -332,6 +397,7 @@ jobs:
     # ~3 min p90 au verdict). Un échec backend bloque toujours le merge via
     # Required verdict.
     if: >-
+      needs.changes.outputs.rebase_no_impact != 'true' &&
       needs.changes.outputs.unit_repair_only != 'true' &&
       (
         needs.changes.outputs.db_rebuild_required == 'true' ||
@@ -427,7 +493,7 @@ jobs:
   dashboard:
     name: Dashboard canonical gates
     needs: changes
-    if: needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.dashboard == 'true'
+    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.dashboard == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -445,7 +511,7 @@ jobs:
   boutique:
     name: Boutique source gates
     needs: changes
-    if: needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.boutique == 'true'
+    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.boutique == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -517,7 +583,7 @@ jobs:
   governance:
     name: Governance and feature-first gates
     needs: changes
-    if: needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.governance == 'true'
+    if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.governance == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
