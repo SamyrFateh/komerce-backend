@@ -247,11 +247,17 @@ function parseAddCartConfirmResponse(body) {
     error.payload = body ?? null;
     throw error;
   }
-  const shipmentOrderId = assertString(
-    body.data.shipmentsId,
-    'CJ_SHIPMENT_ORDER_ID_MISSING',
-    200
-  );
+  let shipmentOrderId;
+  try {
+    shipmentOrderId = assertString(
+      body.data.shipmentsId,
+      'CJ_SHIPMENT_ORDER_ID_MISSING',
+      200
+    );
+  } catch (error) {
+    error.payload = body;
+    throw error;
+  }
   return {
     shipment_order_id: shipmentOrderId,
     success_count: Number(body.data.successCount || 0),
