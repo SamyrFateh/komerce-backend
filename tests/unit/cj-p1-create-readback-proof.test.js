@@ -138,3 +138,38 @@ test('CJ P1 utilise des defaults sandbox non sensibles si destination/logistique
     city: 'New York',
   });
 });
+
+
+test('CJ P1 lit le nouveau read-back CJ productList[].vid', () => {
+  const facts = proof.readBackFacts({
+    data: {
+      orderId: 'CJ-2',
+      orderNum: 'KOM-2',
+      orderStatus: 'CREATED',
+      productList: [{ vid: 'VID-2', quantity: 1, storeLineItemId: 'LINE-2' }],
+    },
+  });
+
+  expect(facts).toMatchObject({
+    order_id: 'CJ-2',
+    order_number: 'KOM-2',
+    status: 'CREATED',
+    response_product_shape: 'productList[].vid',
+    variants: [{ vid: 'VID-2', quantity: 1, store_line_item_id: 'LINE-2' }],
+  });
+
+  expect(proof.verifyReadBack({
+    created: { external_ref: 'CJ-2', order_number: 'KOM-2' },
+    detail: {
+      data: {
+        orderId: 'CJ-2',
+        orderNum: 'KOM-2',
+        orderStatus: 'CREATED',
+        productList: [{ vid: 'VID-2', quantity: 1 }],
+      },
+    },
+    expectedOrderNumber: 'KOM-2',
+    expectedVid: 'VID-2',
+    expectedQuantity: 1,
+  })).toMatchObject({ response_product_shape: 'productList[].vid' });
+});
