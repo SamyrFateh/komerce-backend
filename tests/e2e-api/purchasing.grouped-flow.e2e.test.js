@@ -22,9 +22,16 @@
 
 jest.mock('../../services/notification-service', () => ({ notifyText: jest.fn().mockResolvedValue(true) }));
 jest.mock('../../services/suppliers/canonical-unit-purchasing-gate', () => ({
-  evaluateCanonicalProcurementReadiness: jest.fn().mockResolvedValue({
-    ready: true, status: 'FULFILLMENT_READY', preflight: { ready: true, evidence: { manual_procurement_ready: true } },
-  }),
+  evaluateCanonicalProcurementReadiness: jest.fn(async ({ soldIdentity }) => ({
+    ready: true,
+    status: 'FULFILLMENT_READY',
+    canonical_unit_id: 'e2e-a0-canonical-unit',
+    canonical_unit: { current_state: { is_active: true, stock_available: 50, purchase_price: 10, currency: 'USD' } },
+    supplier_unit_ref: soldIdentity?.payload?.supplier_unit_ref || 'E2E-A0-UNIT',
+    identity: soldIdentity,
+    money: { unit_price: 10, currency: 'USD' },
+    preflight: { ready: true, evidence: { manual_procurement_ready: true } },
+  })),
 }));
 const mockScan3 = jest.fn().mockResolvedValue(undefined);
 jest.mock('../../services/scan-operations', () => ({ ...jest.requireActual('../../services/scan-operations'), triggerScan3: (...a) => mockScan3(...a) }));
@@ -42,6 +49,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
   const relaisByMarket = { KM: uuid(), CM: uuid(), CG: uuid() };
   const supplier1 = uuid();
   const supplier2 = uuid();
+  const supplier3 = uuid();
   const IDENTITY = JSON.stringify({ provider: 'noon', version: 1, payload: { supplier_sku: 'U1' } });
   let cleanup;
   let hubRef;
@@ -68,6 +76,51 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, 10, 'USD', 'DXB') RETURNING id`,
       [itemId, supplier, skuId, `SKU-${tag(label)}`, `UNIT-${tag(label)}`, IDENTITY, quantity]);
     return { productId, skuId, orderId, itemId, lineId: line.id };
+  }
+
+  async function seedTriggeredExactNeed(label, { market = 'KM', quantity = 1 } = {}) {
+    const productId = uuid();
+    const skuId = uuid();
+    const orderId = uuid();
+    const itemId = uuid();
+    const productSupplierId = uuid();
+    const supplierSku = `SKU-${tag(label)}`;
+    const supplierUnitRef = `UNIT-${tag(label)}`;
+    const identity = {
+      provider: 'noon',
+      version: 1,
+      payload: { supplier_unit_ref: supplierUnitRef },
+    };
+
+    await q(
+      'INSERT INTO products (id, name, price_kmf, stock, price_aed, inventory_model) VALUES ($1, $2, 25000, 0, 200, $3)',
+      [productId, `E2E Grouped ${tag(label)}`, 'SKU']
+    );
+    await q(
+      `INSERT INTO product_skus
+         (id, product_id, sku, stock, is_active, source, supplier_sku, supplier_unit_ref, supplier_order_identity)
+       VALUES ($1,$2,$3,50,true,'SUPPLIER',$4,$5,$6::jsonb)`,
+      [skuId, productId, `K-${tag(label)}`, supplierSku, supplierUnitRef, JSON.stringify(identity)]
+    );
+    await q(
+      `INSERT INTO product_suppliers
+         (id, product_id, supplier_id, supplier_sku, supplier_price_aed, min_order_qty, priority, is_active)
+       VALUES ($1,$2,$3,$4,77,1,1,true)`,
+      [productSupplierId, productId, supplier3, `GENERIC-${tag(label)}`]
+    );
+    await q(
+      `INSERT INTO orders (id, user_id, relais_id, market_id, reference, status, payment_status, payment_mode, total_kmf, total_eur)
+       VALUES ($1,$2,$3,(SELECT id FROM markets WHERE code = $4),$5,'ordered','paid','cash_relais',25000,50)`,
+      [orderId, clientId, relaisByMarket[market], market, `E2EA0-${tag(label)}`.toUpperCase()]
+    );
+    await q(
+      `INSERT INTO order_items
+         (id, order_id, product_id, quantity, price_kmf, sku_id, fulfillment_source)
+       VALUES ($1,$2,$3,$4,25000,$5,'IMPORT')`,
+      [itemId, orderId, productId, quantity, skuId]
+    );
+
+    return { productId, skuId, orderId, itemId, productSupplierId, supplierSku, supplierUnitRef, identity };
   }
 
   /** Réception Hub : écritures canoniques d'une allocation par ligne + placement RECEIVE (hub-operations ensuite). */
@@ -97,7 +150,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
     // tests/e2e-api/settlement.state-machine.e2e.test.js. Ids littéraux : uuid() locaux, aucune entrée externe.
     const ordersOfRun = `SELECT id FROM orders WHERE user_id = '${clientId}'`;
     const itemsOfRun = `SELECT id FROM order_items WHERE order_id IN (${ordersOfRun})`;
-    const suppliers = `'${supplier1}', '${supplier2}'`;
+    const suppliers = `'${supplier1}', '${supplier2}', '${supplier3}'`;
     const relaisIds = Object.values(relaisByMarket).map((r) => `'${r}'`).join(', ');
     cleanup.trackSql(`
       SET session_replication_role = replica;
@@ -110,6 +163,7 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
       DELETE FROM order_status_history WHERE order_id IN (${ordersOfRun});
       DELETE FROM order_items WHERE order_id IN (${ordersOfRun});
       DELETE FROM orders WHERE user_id = '${clientId}';
+      DELETE FROM product_suppliers WHERE supplier_id IN (${suppliers});
       DELETE FROM product_skus WHERE supplier_sku LIKE 'SKU-${RUN_TAG}%';
       DELETE FROM products WHERE name LIKE 'E2E Grouped ${RUN_TAG}%';
       DELETE FROM relais WHERE id IN (${relaisIds});
@@ -128,11 +182,88 @@ describeE2E('E2E-P0-PURCHASING — achats regroupés : flux complet', ({ db }) =
       await q(`INSERT INTO suppliers (id, name, platform, contact_phone, auto_order, is_active)
                VALUES ($1, $2, 'whatsapp', '+971500000001', false, true)`, [id, `E2E Fournisseur ${n} ${tag(n)}`]);
     }
+    await q(`INSERT INTO suppliers (id, name, platform, contact_phone, auto_order, is_active)
+             VALUES ($1, $2, 'noon', '+971500000003', false, true)`,
+      [supplier3, `E2E Fournisseur A0 ${tag('S3')}`]);
   });
 
   afterAll(async () => {
     delete process.env.KOMERCE_GROUPED_PURCHASING;
     if (cleanup) await cleanup.run();
+  });
+
+  it('A0 — paid order → exact SKU/SOI → purchase_line → PO draft → même scope KM, sans double achat', async () => {
+    const { triggerPurchasing } = require('../../services/purchasing-trigger-service');
+    const seeded = await seedTriggeredExactNeed('a0', { market: 'KM', quantity: 1 });
+
+    const first = await triggerPurchasing(seeded.orderId);
+    expect(first.purchase_orders).toHaveLength(1);
+    expect(first.purchase_orders[0]).toMatchObject({
+      status: 'line_opened',
+      purchase_order_id: null,
+    });
+    const lineId = first.purchase_orders[0].purchase_line_id;
+    expect(lineId).toBeTruthy();
+
+    const line = await one(
+      `SELECT pl.id, pl.purchase_order_id, pl.order_item_id, pl.product_sku_id,
+              pl.supplier_sku, pl.supplier_unit_ref, pl.supplier_order_identity,
+              pl.quantity, pl.supplier_unit_price, pl.supplier_currency,
+              vm.order_id, vm.market_id, mk.code AS market_code
+         FROM purchase_lines pl
+         JOIN v_purchase_line_market vm ON vm.line_id = pl.id
+         JOIN markets mk ON mk.id = vm.market_id
+        WHERE pl.id = $1`,
+      [lineId]
+    );
+
+    expect(line.purchase_order_id).toBeNull();
+    expect(line.order_id).toBe(seeded.orderId);
+    expect(line.order_item_id).toBe(seeded.itemId);
+    expect(line.product_sku_id).toBe(seeded.skuId);
+    expect(line.supplier_sku).toBe(seeded.supplierSku);
+    expect(line.supplier_unit_ref).toBe(seeded.supplierUnitRef);
+    expect(line.supplier_order_identity).toEqual(seeded.identity);
+    expect(Number(line.quantity)).toBe(1);
+    expect(Number(line.supplier_unit_price)).toBe(10);
+    expect(line.supplier_currency).toBe('USD');
+    expect(line.market_code).toBe('KM');
+
+    const prepared = await grouped.preparePurchaseOrder({
+      supplier_id: supplier3,
+      procurement_hub_ref: hubRef,
+      line_ids: [lineId],
+    });
+    expect(prepared.purchase_order).toMatchObject({
+      supplier_id: supplier3,
+      status: 'draft',
+      order_id: null,
+      procurement_hub_ref: hubRef,
+    });
+    expect(prepared.lines).toHaveLength(1);
+    expect(prepared.lines[0]).toMatchObject({
+      line_id: lineId,
+      order_id: seeded.orderId,
+      order_item_id: seeded.itemId,
+      product_sku_id: seeded.skuId,
+      market_code: 'KM',
+      supplier_unit_ref: seeded.supplierUnitRef,
+    });
+
+    const second = await triggerPurchasing(seeded.orderId);
+    expect(second.purchase_orders).toHaveLength(1);
+    expect(second.purchase_orders[0]).toMatchObject({
+      status: 'already_exists',
+      purchase_order_id: prepared.purchase_order.id,
+    });
+
+    const { rows: [counts] } = await q(
+      `SELECT
+         (SELECT count(*)::int FROM purchase_lines WHERE order_item_id = $1 AND cancelled_at IS NULL) AS lines,
+         (SELECT count(*)::int FROM purchase_orders WHERE id = $2 AND status <> 'cancelled') AS pos`,
+      [seeded.itemId, prepared.purchase_order.id]
+    );
+    expect(counts).toEqual({ lines: 1, pos: 1 });
   });
 
   it('3 commandes / 2 fournisseurs : préparation, soumission, confirmation partielle, réceptions, complétude', async () => {
