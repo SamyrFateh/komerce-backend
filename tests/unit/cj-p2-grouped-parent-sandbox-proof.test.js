@@ -108,3 +108,19 @@ test('saveGenerateParentOrder conserve parent et payId', () => {
     order_money: 42.5,
   });
 });
+
+
+test('addCartConfirm rejeté conserve le payload provider pour diagnostic', () => {
+  const body = {
+    success: true,
+    code: 200,
+    data: { successCount: 2, submitSuccess: false, shipmentsId: '', result: 1 },
+  };
+  try {
+    contract.parseAddCartConfirmResponse(body);
+    throw new Error('expected rejection');
+  } catch (error) {
+    expect(error.message).toBe('CJ_ADD_CART_CONFIRM_REJECTED');
+    expect(error.payload).toBe(body);
+  }
+});
