@@ -184,3 +184,10 @@ describe('provider-authority — aucune fixture de test ne mime "manual" comme p
     expect(offenders).toEqual([]);
   });
 });
+
+
+test('CJ est un provider canonique avec preflight distant requis et reconciliation non requise', () => {
+  expect(authority.isSupportedProvider('cj')).toBe(true);
+  expect(authority.remotePreflightRequirement('cj')).toBe(authority.PREFLIGHT_REQUIREMENT.REQUIRED);
+  expect(authority.reconciliationRequirement('cj')).toBe(authority.PREFLIGHT_REQUIREMENT.NOT_REQUIRED);
+});
