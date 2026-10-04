@@ -9,15 +9,17 @@ const ROOT = path.join(__dirname, '..', '..');
 const source = fs.readFileSync(path.join(ROOT, 'routes', 'admin-market-control-plane.js'), 'utf8');
 const bootstrap = fs.readFileSync(path.join(ROOT, 'bootstrap', 'api-routes.js'), 'utf8');
 
-describe('admin market control plane — vue centrale en lecture seule', () => {
+describe('admin market control plane — lecture centrale + provisioning', () => {
   test('les deux routes exigent authenticate + rôle admin déclaré', () => {
     expect(source).toMatch(/const centralAdmin = \[authenticate, requireRole\(\['admin'\]\)\]/);
     expect(source).toMatch(/router\.get\('\/', \.\.\.centralAdmin/);
     expect(source).toMatch(/router\.get\('\/:marketCode\/control-plane', \.\.\.centralAdmin/);
   });
 
-  test('aucune écriture : seulement des GET', () => {
-    expect(source).not.toMatch(/router\.(post|put|patch|delete)\(/);
+  test('une seule écriture centrale existe : POST / pour provisionner', () => {
+    expect(source).toMatch(/router\.post\('\/', \.\.\.centralAdmin/);
+    expect(source).not.toMatch(/router\.(put|patch|delete)\(/);
+    expect(source).toMatch(/provisionMarket/);
   });
 
   test('la liste répond { markets } et la vue répond le résultat du service tel quel', () => {
@@ -31,8 +33,9 @@ describe('admin market control plane — vue centrale en lecture seule', () => {
     expect(source.indexOf("'/central-authority'")).toBeLessThan(source.indexOf("'/:marketCode/control-plane'"));
   });
 
-  test('aucun accès SQL direct dans la route', () => {
-    expect(source).not.toMatch(/db\.query|getClient/);
+  test('la route ne porte aucun SQL métier direct', () => {
+    expect(source).not.toMatch(/db\.query/);
+    expect(source).toMatch(/getClient/);
   });
 
   test('montée exactement une fois sur /api/admin/markets', () => {

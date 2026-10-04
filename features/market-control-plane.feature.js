@@ -44,12 +44,13 @@ module.exports = {
   perimeter: {
     in: [
       'GET /api/admin/markets : liste des marchés avec statut d’affectation et nombre de personnes actives',
+      'POST /api/admin/markets : provisionne un marché PROVISIONING en composant les writers canoniques market + market-delegation + invitation équipe',
       'GET /api/admin/markets/central-authority : titulaires actifs des cinq autorisations centrales explicites (dashboard, catalog, decision_signal, pricing, sourcing) et autorité déclarée de chaque capability de groupe',
       'GET /api/admin/markets/:marketCode/control-plane : affectation, équipe et capacités, plafond, fournisseurs de paiement, politique de caisse, relais actifs, écarts',
-      'rapport d’écarts calculé (computeGaps) : MARKET_INACTIVE, NO_ASSIGNMENT, ASSIGNMENT_NOT_ACTIVE, EMPTY_CEILING, NO_ACTIVE_MEMBERSHIP, NO_TEAM_GRANT_HOLDER, NO_PAYMENT_PROVIDER, NO_CASH_POLICY, NO_RELAIS',
+      'rapport d’écarts calculé (computeGaps) + deux verdicts readiness indépendants : platform et operations ; MARKET_INACTIVE n’est pas un blocker de readiness pendant PROVISIONING',
     ],
     out: [
-      'toute écriture (création, suspension, délégation, correction d’un écart) : PR suivantes du chantier, services propriétaires',
+      'activation/suspension/fermeture : transitions lifecycle hors POST de provisioning ; toujours via le writer market et une porte readiness',
       'décision d’autorisation : market-delegation reste le seul moteur ; cette vue n’autorise rien',
       'référentiel markets et devise : feature market (référentiel pur)',
       'accès d’un opérateur pays à sa propre vue : hors lot, la vue est centrale',
@@ -61,6 +62,7 @@ module.exports = {
     services: [
       'services/market-control-plane.js',
       'services/central-authority.js',
+      'services/market-provisioning-service.js',
     ],
     routes: [
       'routes/admin-market-control-plane.js',
@@ -69,6 +71,8 @@ module.exports = {
       'tests/unit/market-control-plane-service.test.js',
       'tests/unit/admin-market-control-plane-routes.test.js',
       'tests/unit/central-authority.test.js',
+      'tests/unit/market-provisioning-service.test.js',
+      'tests/unit/market-control-plane-readiness.test.js',
     ],
   },
 
@@ -92,13 +96,14 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 3,
-    totalRoutes: 3,
-    note: 'Les 3 routes exigent authenticate + rôle admin, déclaré « central par rôle » (décision Q4 du chantier). Aucune écriture.',
+    authedRoutesDetected: 4,
+    totalRoutes: 4,
+    note: 'Les 4 routes exigent authenticate + rôle admin déclaré. Les GET sont en lecture seule ; le POST orchestre les writers propriétaires et ne peut créer qu’un marché PROVISIONING.',
   },
 
   contract: {
     exposes: [
+      'POST /api/admin/markets', // admin central — provisionne, n’active pas
       'GET /api/admin/markets', // admin central
       'GET /api/admin/markets/central-authority', // admin central
       'GET /api/admin/markets/:marketCode/control-plane', // admin central
@@ -107,6 +112,8 @@ module.exports = {
       'listMarkets()',
       'getControlPlane()',
       'computeGaps()',
+      'readinessFromGaps()',
+      'provisionMarket()',
       'central()',
       'overview()',
     ],
@@ -125,10 +132,10 @@ module.exports = {
     ],
   },
 
-  authority: 'backend-core — cette feature ne décide ni n’écrit rien : toute évolution vers une écriture ou une autorisation passe par market-delegation ou par le service propriétaire de la table concernée.',
+  authority: 'backend-core — le Control Plane orchestre le provisioning mais n’écrit aucune table métier directement : chaque mutation passe par le service propriétaire (market ou market-delegation).',
 
   invariants: [
-    'la vue est strictement en lecture seule : aucun INSERT, UPDATE ou DELETE, aucun appel de service d’écriture',
+    'les vues restent en lecture seule ; POST /api/admin/markets orchestre uniquement des writers propriétaires et crée toujours PROVISIONING, jamais ACTIVE',
     'la vue n’accorde aucun droit : l’accès central est le rôle admin déclaré, jamais déduit d’un scope ou d’un rôle d’opérateur',
     'un écart est signalé, jamais réparé ni masqué',
     'central(X, domaine) est l’unique porte vers les cinq autorisations centrales explicites : elle délègue aux fonctions existantes des middlewares, sans SQL d’autorisation dupliqué, et le rôle admin n’en implique aucune',

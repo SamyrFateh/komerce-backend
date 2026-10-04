@@ -5,10 +5,13 @@
 const { GAP_MESSAGES, computeGaps, getControlPlane, listMarkets } = require('../../services/market-control-plane');
 
 const healthy = () => ({
-  market: { id: 'm1', code: 'KM', is_active: true },
-  assignment: { id: 'a1', status: 'ACTIVE' },
-  ceiling: ['team.grant', 'network.read'],
-  team: [{ membership_id: 'x', user_id: 'u', capabilities: ['team.grant'] }],
+  market: { id: 'm1', code: 'KM', is_active: true, lifecycle_status:'ACTIVE' },
+  assignment: { id: 'a1', status: 'ACTIVE', central_referent_user_id:'central-u' },
+  ceiling: [
+    { capability:'team.grant', amount_bearing:false, limit_amount:null },
+    { capability:'finance.act', amount_bearing:true, limit_amount:1000 },
+  ],
+  team: [{ membership_id: 'x', user_id: 'u', is_operating_lead:true, capabilities: ['team.grant'] }],
   paymentProviders: [{ provider: 'orange_money', is_enabled: true }],
   cashPolicy: { cash_enabled: true, confirmation_mode: 'SINGLE' },
   relaisActive: 2,
@@ -82,7 +85,7 @@ describe('getControlPlane / listMarkets — lecture seule', () => {
 
   test('marché sans affectation : vue partielle et écarts', async () => {
     const db = fakeDb([
-      ['FROM markets WHERE code', [{ id: 'm1', code: 'CG', name: 'Congo', currency: 'XAF', minor_unit: 0, is_active: false }]],
+      ['FROM markets WHERE code', [{ id: 'm1', code: 'CG', name: 'Congo', currency: 'XAF', minor_unit: 0, is_active: false, lifecycle_status:'PROVISIONING' }]],
       ['FROM relais', [{ n: 0 }]],
     ]);
     const view = await getControlPlane(db, ' cg ');
@@ -95,20 +98,21 @@ describe('getControlPlane / listMarkets — lecture seule', () => {
 
   test('marché complet : équipe et plafond lus, aucun écart, aucune écriture', async () => {
     const db = fakeDb([
-      ['FROM markets WHERE code', [{ id: 'm1', code: 'KM', name: 'Comores', currency: 'KMF', minor_unit: 0, is_active: true }]],
-      ['FROM market_operating_assignments', [{ id: 'a1', status: 'ACTIVE' }]],
-      ['FROM assignment_capability_ceiling', [{ capability: 'team.grant' }]],
-      ['FROM assignment_memberships', [{ membership_id: 'x', user_id: 'u', capabilities: ['team.grant'] }]],
+      ['FROM markets WHERE code', [{ id: 'm1', code: 'KM', name: 'Comores', currency: 'KMF', minor_unit: 0, is_active: true, lifecycle_status:'ACTIVE' }]],
+      ['FROM market_operating_assignments', [{ id: 'a1', status: 'ACTIVE', central_referent_user_id:'central-u' }]],
+      ['FROM assignment_capability_ceiling', [{ capability: 'team.grant', amount_bearing:false, limit_amount:null }]],
+      ['FROM assignment_memberships', [{ membership_id: 'x', user_id: 'u', is_operating_lead:true, capabilities: ['team.grant'] }]],
       ['FROM market_payment_providers', [{ provider: 'orange_money', currency: 'KMF', is_enabled: true, priority: 1 }]],
       ['FROM market_cash_control_policies', [{ cash_enabled: true, confirmation_mode: 'SINGLE' }]],
       ['FROM relais', [{ n: 3 }]],
     ]);
     const view = await getControlPlane(db, 'KM');
     expect(Object.keys(view).sort()).toEqual(
-      ['assignment', 'cashPolicy', 'ceiling', 'gaps', 'market', 'paymentProviders', 'relaisActive', 'team']
+      ['assignment', 'cashPolicy', 'ceiling', 'gaps', 'market', 'paymentProviders', 'readiness', 'relaisActive', 'team']
     );
     expect(view.gaps).toEqual([]);
     expect(view.team[0].capabilities).toEqual(['team.grant']);
+    expect(view.readiness.ready_for_activation).toBe(true);
     expect(db.calls.every(sql => /^\s*SELECT/i.test(sql))).toBe(true);
   });
 

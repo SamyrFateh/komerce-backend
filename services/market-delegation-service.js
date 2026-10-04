@@ -652,6 +652,79 @@ async function revokeMembership(executor, { membershipId, actorUserId = null, co
   return rows[0];
 }
 
+
+async function setCentralReferent(executor, {
+  assignmentId, userId, actorUserId = null, marketId = null, authorityDomains = [], correlationId = null,
+}) {
+  const db = requireExecutor(executor);
+  const { rows } = await db.query(
+    `UPDATE market_operating_assignments
+        SET central_referent_user_id=$2::uuid, updated_at=NOW()
+      WHERE id=$1::uuid
+      RETURNING id, market_id, central_referent_user_id`,
+    [assignmentId, userId]
+  );
+  if (!rows[0]) throw delegationError('MARKET_ASSIGNMENT_NOT_FOUND', 'Affectation marché introuvable.', 404);
+  await audit(db, {
+    actorUserId,
+    marketId: marketId || rows[0].market_id,
+    assignmentId,
+    action: 'CENTRAL_REFERENT_ASSIGNED',
+    after: { user_id: userId, authority_domains: authorityDomains },
+    correlationId,
+  });
+  return rows[0];
+}
+
+async function setCeilingAmountLimits(executor, {
+  assignmentId, limits, actorUserId = null, marketId = null, correlationId = null,
+}) {
+  const db = requireExecutor(executor);
+  const entries = Object.entries(limits || {}).sort(([a],[b]) => a.localeCompare(b));
+  const { rows: requiredRows } = await db.query(
+    `SELECT capability
+       FROM assignment_capability_ceiling acc
+       JOIN capability_registry cr ON cr.capability=acc.capability
+      WHERE acc.assignment_id=$1::uuid
+        AND acc.revoked_at IS NULL
+        AND cr.amount_bearing=TRUE
+      ORDER BY capability`,
+    [assignmentId]
+  );
+  const required = requiredRows.map(row => row.capability);
+  const supplied = entries.map(([capability]) => capability);
+  if (required.length !== supplied.length || required.some((capability, i) => capability !== supplied[i])) {
+    throw delegationError(
+      'MARKET_CAPABILITY_LIMITS_INCOMPLETE',
+      `Limites requises: ${required.join(', ')}.`,
+      400
+    );
+  }
+  for (const [capability, rawAmount] of entries) {
+    const amount = Number(rawAmount);
+    if (!Number.isFinite(amount) || amount < 0) {
+      throw delegationError('MARKET_CAPABILITY_LIMIT_INVALID', `Limite invalide pour ${capability}.`, 400);
+    }
+    await db.query(
+      `UPDATE assignment_capability_ceiling
+          SET limit_amount=$3
+        WHERE assignment_id=$1::uuid
+          AND capability=$2
+          AND revoked_at IS NULL`,
+      [assignmentId, capability, amount]
+    );
+  }
+  await audit(db, {
+    actorUserId,
+    marketId,
+    assignmentId,
+    action: 'CEILING_AMOUNT_LIMITS_SET',
+    after: Object.fromEntries(entries.map(([capability, amount]) => [capability, Number(amount)])),
+    correlationId,
+  });
+  return Object.fromEntries(entries.map(([capability, amount]) => [capability, Number(amount)]));
+}
+
 module.exports = {
   normalizeCapabilities,
   delegationError,
@@ -663,6 +736,8 @@ module.exports = {
   audit,
   createAssignment,
   setAssignmentStatus,
+  setCentralReferent,
+  setCeilingAmountLimits,
   replaceCeiling,
   activeMembershipForUser,
   activeMembershipCapabilities,

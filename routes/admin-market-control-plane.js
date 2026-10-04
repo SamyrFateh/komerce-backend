@@ -24,15 +24,52 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const controlPlane = require('../services/market-control-plane');
 const centralAuthority = require('../services/central-authority');
+const { provisionMarket } = require('../services/market-provisioning-service');
 
 // Vue centrale par rôle (Q4 du chantier) : déclarée ici, jamais implicite.
 const centralAdmin = [authenticate, requireRole(['admin'])];
+
+async function withTransaction(work) {
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+    const result = await work(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    try { await client.query('ROLLBACK'); } catch (_) { /* preserve original */ }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 function sendKnownError(res, error) {
   if (!error || !error.code || !error.status) return false;
   res.status(error.status).json({ error: error.message, code: error.code });
   return true;
 }
+
+router.post('/', ...centralAdmin, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const result = await withTransaction(client => provisionMarket(client, {
+      actorUserId: req.user.id,
+      code: body.code,
+      name: body.name,
+      currency: body.currency,
+      minorUnit: body.minor_unit,
+      storefrontTexts: body.storefront_texts || {},
+      centralReferentUserId: body.central_referent_user_id,
+      financialLimits: body.financial_limits || {},
+      lead: body.lead || {},
+      correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
+    }));
+    res.status(201).json(result);
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
 
 router.get('/', ...centralAdmin, async (req, res, next) => {
   try {

@@ -7713,6 +7713,53 @@
             "description": "Too Many Requests — rate limit exceeded"
           }
         }
+      },
+      "post": {
+        "summary": "POST /api/admin/markets",
+        "x-route-file": "routes/admin-market-control-plane.js",
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "market": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "assignment_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "central_referent_user_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lead": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "readiness": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "gaps": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
       }
     },
     "/api/admin/markets/central-authority": {
