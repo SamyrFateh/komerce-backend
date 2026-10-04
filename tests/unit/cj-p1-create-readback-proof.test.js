@@ -124,3 +124,17 @@ test('CJ P1 run crée uniquement sandbox payType=3 puis read-back', async () => 
     commitment_verdict: 'created_unpaid',
   });
 });
+
+
+test('CJ P1 utilise des defaults sandbox non sensibles si destination/logistique/origine absentes', () => {
+  const e = {
+    DATABASE_URL: 'postgres://test',
+    KOMERCE_ALLOW_CJ_P1_CREATE_READBACK: '1',
+    KOMERCE_ENV: 'staging',
+  };
+  expect(proof.parseDestination(e)).toMatchObject({
+    country_code: 'US',
+    country: 'United States',
+    city: 'New York',
+  });
+});
