@@ -107,6 +107,7 @@ module.exports = {
       'scripts/purchase-lines-parity-check.js',
       'scripts/allegro-sandbox-purchase-proof.js',
       'scripts/allegro-shipping-capability-proof.js',
+      'scripts/aliexpress-readiness-golden-proof.js',
     ],
     tests: [
       'tests/unit/purchase-line-snapshot.test.js',
@@ -144,6 +145,7 @@ module.exports = {
       'tests/unit/purchasing-readiness-vocabulary-mapping.test.js',
       'tests/unit/canonical-unit-cutover-comparison.test.js',
       'tests/unit/aliexpress-purchase-preflight.test.js',
+      'tests/unit/aliexpress-readiness-golden-proof.test.js',
       'tests/unit/supplier-fulfillment-readiness.test.js',
       'tests/unit/receive-purchase-order.test.js',
       'tests/unit/repair-ordered-purchasing.test.js',
