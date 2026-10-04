@@ -224,6 +224,11 @@ async function run(env = process.env, deps = {}) {
     accessToken,
   });
   const cartConfirmed = contract.parseAddCartConfirmResponse(confirmCartBody);
+  if (cartConfirmed.success_count < subOrders.length || cartConfirmed.intercept_orders.length) {
+    const error = new Error('CJ_P2_GROUPED_CART_CONFIRM_INCOMPLETE');
+    error.payload = confirmCartBody;
+    throw error;
+  }
 
   const parentBody = await call(contract.ENDPOINTS.save_generate_parent_order, {
     method: 'POST',
@@ -268,6 +273,8 @@ async function run(env = process.env, deps = {}) {
     item_count: identities.length,
     logistic_name: logisticName,
     paid_statuses: paidStatuses,
+    cart_submit_success: cartConfirmed.submit_success,
+    cart_result: cartConfirmed.result,
     payment_verdict: payment.payment_verdict,
     payment_mode: 'sandbox_simulate_pay_shipment_order_id',
   };
