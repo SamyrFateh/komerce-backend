@@ -145,3 +145,54 @@ test('addCartConfirm ambigu mais matérialisé conserve shipmentOrderId sans pr�
     intercept_orders: [],
   });
 });
+
+
+test('saveGenerateParentOrder matérialisé accepte payId même si submitSuccess=false', () => {
+  expect(contract.parseSaveGenerateParentOrderResponse({
+    success: true,
+    code: 200,
+    data: {
+      orderMoney: 62.07,
+      payId: 'P2106837253178396672',
+      result: 0,
+      submitSuccess: false,
+      unMatchOrderCodes: [],
+      unMatchProductCodes: [],
+      interceptOrders: [],
+      paymentInformation: {
+        actualPayment: 62.07,
+        payableAmount: 0,
+      },
+    },
+  }, 'SHIP-1')).toMatchObject({
+    shipment_order_id: 'SHIP-1',
+    pay_id: 'P2106837253178396672',
+    order_money: 62.07,
+    submit_success: false,
+    result: 0,
+  });
+});
+
+test('saveGenerateParentOrder reste fail-closed sans payId ou avec mismatch/intercept', () => {
+  expect(() => contract.parseSaveGenerateParentOrderResponse({
+    success: true,
+    data: {
+      payId: '',
+      submitSuccess: false,
+      unMatchOrderCodes: [],
+      unMatchProductCodes: [],
+      interceptOrders: [],
+    },
+  }, 'SHIP-1')).toThrow('CJ_SAVE_PARENT_ORDER_REJECTED');
+
+  expect(() => contract.parseSaveGenerateParentOrderResponse({
+    success: true,
+    data: {
+      payId: 'PAY-1',
+      submitSuccess: false,
+      unMatchOrderCodes: ['SD-X'],
+      unMatchProductCodes: [],
+      interceptOrders: [],
+    },
+  }, 'SHIP-1')).toThrow('CJ_SAVE_PARENT_ORDER_REJECTED');
+});
