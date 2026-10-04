@@ -170,3 +170,28 @@ test('P2 retombe sur la première route CJ si la préférence est indisponible',
 test('P2 expose un intervalle de sécurité supérieur à 1 seconde entre appels CJ', () => {
   expect(proof.CJ_MIN_CALL_GAP_MS).toBeGreaterThan(1000);
 });
+
+
+test('read-back payé accepte le même ordre identifié par orderNumber si CJ omet orderId', () => {
+  expect(contract.verifyPaidOrderDetail({
+    data: {
+      orderNumber: 'KOM-P2-42',
+      orderStatus: 'PENDING',
+      productList: [],
+    },
+  }, 'CJ-1', 'KOM-P2-42')).toMatchObject({
+    order_number: 'KOM-P2-42',
+    status: 'PENDING',
+  });
+});
+
+test('read-back payé refuse si ni orderId ni orderNumber ne correspondent', () => {
+  expect(() => contract.verifyPaidOrderDetail({
+    data: {
+      orderId: 'CJ-OTHER',
+      orderNumber: 'KOM-OTHER',
+      orderStatus: 'PENDING',
+      productList: [],
+    },
+  }, 'CJ-1', 'KOM-P2-42')).toThrow('CJ_PAID_READBACK_ORDER_MISMATCH');
+});
