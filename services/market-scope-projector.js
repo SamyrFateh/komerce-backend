@@ -13,7 +13,7 @@
  * @db-txn        caller-owned
  * @doctrine      operator_market_scopes_is_market_owned_projection, granular_members_fail_closed_on_legacy_roles
  * @impact-areas  market, authorization, delegation
- * @version       2026-09
+ * @version       2026-10-d8
  */
 'use strict';
 
@@ -37,6 +37,7 @@ const LEGACY_VIEWER_CAPABILITIES = Object.freeze([
   'market_config.read',
   'finance.read',
   'catalog.read',
+  'partners.read',
 ]);
 
 function requireExecutor(executor) {
