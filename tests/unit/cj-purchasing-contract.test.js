@@ -179,3 +179,49 @@ test('CJ contract — read-back mismatch and committed status fail closed', () =
     expectedQuantity: 1,
   })).toThrow('CJ_UNEXPECTED_ORDER_STATUS:PAID');
 });
+
+
+test('CJ contract — confirmOrder vérifie strictement le même orderId', () => {
+  expect(contract.buildConfirmOrderPayload('CJ-1')).toEqual({ orderId: 'CJ-1' });
+  expect(contract.parseConfirmOrderResponse({
+    result: true,
+    data: 'CJ-1',
+    requestId: 'REQ-C',
+  }, 'CJ-1')).toMatchObject({
+    provider: 'cj',
+    order_id: 'CJ-1',
+    confirmation_verdict: 'confirmed_unpaid',
+  });
+  expect(() => contract.parseConfirmOrderResponse({
+    result: true,
+    data: 'CJ-2',
+  }, 'CJ-1')).toThrow('CJ_CONFIRM_ORDER_ID_MISMATCH');
+});
+
+test('CJ contract — payBalanceV2 exige shipmentOrderId et accepte payId optionnel', () => {
+  expect(contract.buildPayBalanceV2Payload('SHIP-1')).toEqual({
+    shipmentOrderId: 'SHIP-1',
+  });
+  expect(contract.buildPayBalanceV2Payload('SHIP-1', 'PAY-1')).toEqual({
+    shipmentOrderId: 'SHIP-1',
+    payId: 'PAY-1',
+  });
+  expect(contract.parsePayBalanceV2Response({
+    result: true,
+    data: null,
+    requestId: 'REQ-P',
+  })).toMatchObject({
+    provider: 'cj',
+    payment_verdict: 'paid',
+  });
+});
+
+test('CJ contract — read-back financier refuse UNPAID après paiement', () => {
+  expect(contract.verifyPaidOrderDetail({
+    data: { orderId: 'CJ-1', orderStatus: 'PENDING', productList: [] },
+  }, 'CJ-1')).toMatchObject({ order_id: 'CJ-1', status: 'PENDING' });
+
+  expect(() => contract.verifyPaidOrderDetail({
+    data: { orderId: 'CJ-1', orderStatus: 'UNPAID', productList: [] },
+  }, 'CJ-1')).toThrow('CJ_PAID_STATUS_UNEXPECTED:UNPAID');
+});
