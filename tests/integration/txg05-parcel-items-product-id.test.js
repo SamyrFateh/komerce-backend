@@ -65,8 +65,8 @@ async function resetOrderState() {
     ON CONFLICT (id) DO NOTHING;
   `);
   await pool.query(`
-    INSERT INTO markets (id, code, name, currency, minor_unit, is_active)
-    VALUES ('${MARKET_ID}', 'TX5', 'TXG-05 Test Market', 'KMF', 0, TRUE)
+    INSERT INTO markets (id, code, name, currency, minor_unit, is_active, lifecycle_status)
+    VALUES ('${MARKET_ID}', 'TX5', 'TXG-05 Test Market', 'KMF', 0, TRUE, 'ACTIVE')
     ON CONFLICT (id) DO NOTHING;
   `);
   await pool.query(`

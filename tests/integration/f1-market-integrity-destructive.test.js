@@ -28,10 +28,10 @@ jest.setTimeout(30000);
 
 async function resetFixture() {
   await pool.query(`
-    INSERT INTO markets (id, code, name, currency, minor_unit, is_active)
+    INSERT INTO markets (id, code, name, currency, minor_unit, is_active, lifecycle_status)
     VALUES
-      ('${MARKET_KM}', 'F1KM', 'F1 Test Market KM', 'KMF', 0, TRUE),
-      ('${MARKET_CM}', 'F1CM', 'F1 Test Market CM', 'XAF', 0, TRUE)
+      ('${MARKET_KM}', 'F1KM', 'F1 Test Market KM', 'KMF', 0, TRUE, 'ACTIVE'),
+      ('${MARKET_CM}', 'F1CM', 'F1 Test Market CM', 'XAF', 0, TRUE, 'ACTIVE')
     ON CONFLICT (id) DO NOTHING;
   `);
   await pool.query(`

@@ -53,7 +53,25 @@ async function columnExists(client, tableName, columnName) {
 async function seedMarkets(client) {
   if (!(await tableExists(client, 'markets'))) return { skipped: true, count: 0 };
 
+  const withLifecycle = await columnExists(client, 'markets', 'lifecycle_status');
+
   for (const market of REFERENCE_MARKETS) {
+    if (withLifecycle) {
+      const lifecycleStatus = market.is_active ? 'ACTIVE' : 'PROVISIONING';
+      await client.query(
+        `INSERT INTO markets (code, name, currency, minor_unit, is_active, lifecycle_status)
+         VALUES ($1,$2,$3,$4,$5,$6)
+         ON CONFLICT (code) DO UPDATE SET
+           name = EXCLUDED.name,
+           currency = EXCLUDED.currency,
+           minor_unit = EXCLUDED.minor_unit,
+           is_active = EXCLUDED.is_active,
+           lifecycle_status = EXCLUDED.lifecycle_status`,
+        [market.code, market.name, market.currency, market.minor_unit, market.is_active, lifecycleStatus]
+      );
+      continue;
+    }
+
     await client.query(
       `INSERT INTO markets (code, name, currency, minor_unit, is_active)
        VALUES ($1,$2,$3,$4,$5)
