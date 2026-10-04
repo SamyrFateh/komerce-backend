@@ -1164,11 +1164,7 @@
       "roles": [
         "admin",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForCapability"
-      ],
-      "file": "routes/admin/partners.js"
+      ]
     },
     {
       "key": "GET /api/admin/partners/{id}",
@@ -1176,11 +1172,7 @@
       "roles": [
         "admin",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForCapability"
-      ],
-      "file": "routes/admin/partners.js"
+      ]
     },
     {
       "key": "PUT /api/admin/partners/{id}",
@@ -1188,11 +1180,7 @@
       "roles": [
         "admin",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForCapability"
-      ],
-      "file": "routes/admin/partners.js"
+      ]
     },
     {
       "key": "GET /api/admin/partners/stats",
@@ -1200,11 +1188,7 @@
       "roles": [
         "admin",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForCapability"
-      ],
-      "file": "routes/admin/partners.js"
+      ]
     },
     {
       "key": "GET /api/admin/partners",
@@ -1212,11 +1196,7 @@
       "roles": [
         "admin",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForCapability"
-      ],
-      "file": "routes/admin/partners.js"
+      ]
     },
     {
       "key": "POST /api/admin/partners",
@@ -1224,11 +1204,7 @@
       "roles": [
         "admin",
         "market_operator"
-      ],
-      "marketGuards": [
-        "attachAuthorizedMarketsForCapability"
-      ],
-      "file": "routes/admin/partners.js"
+      ]
     },
     {
       "key": "PUT /api/admin/pricing-components/{id}/toggle",
