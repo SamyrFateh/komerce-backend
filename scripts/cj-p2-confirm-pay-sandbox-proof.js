@@ -6,7 +6,7 @@
  * @layer         script
  * @criticality   high
  * @inputs        CJ sandbox credentials, exact CJ product/SOI, sandbox destination
- * @outputs       create -> confirm -> payBalanceV2 -> paid read-back proof
+ * @outputs       create -> confirm -> sandbox simulatePay(orderId) -> paid read-back proof
  * @depends       db.js, services/suppliers/connectors/cj-connector.js, services/suppliers/cj-purchasing-contract.js
  * @db-read       products, product_skus
  * @db-write      none
@@ -122,15 +122,13 @@ async function run(env = process.env, deps = {}) {
   const beforeConfirm = await call(contract.ENDPOINTS.get_order_detail, {
     method: 'GET', query: contract.buildOrderDetailQuery(created.external_ref), accessToken,
   });
-  const beforeConfirmFacts = contract.verifyOrderDetail({
+  contract.verifyOrderDetail({
     created,
     detail: beforeConfirm,
     expectedOrderNumber: orderNumber,
     expectedVid: contract.extractIdentity(sku.supplier_order_identity).vid,
     expectedQuantity: 1,
   });
-  const shipmentOrderId = created.shipment_order_id || beforeConfirmFacts.shipment_order_id;
-  if (!shipmentOrderId) throw new Error('CJ_P2_SHIPMENT_ORDER_ID_MISSING_AFTER_READBACK');
 
   const confirmBody = await call(contract.ENDPOINTS.confirm_order, {
     method: 'PATCH',
@@ -147,12 +145,12 @@ async function run(env = process.env, deps = {}) {
     throw new Error(`CJ_P2_EXPECTED_UNPAID_AFTER_CONFIRM:${confirmFacts.status || 'UNKNOWN'}`);
   }
 
-  const payBody = await call(contract.ENDPOINTS.pay_balance_v2, {
+  const payBody = await call(contract.ENDPOINTS.sandbox_simulate_pay, {
     method: 'POST',
-    body: contract.buildPayBalanceV2Payload(shipmentOrderId),
+    body: contract.buildSandboxSimulatePayPayload(created.external_ref),
     accessToken,
   });
-  const payment = contract.parsePayBalanceV2Response(payBody);
+  const payment = contract.parseSandboxSimulatePayResponse(payBody);
 
   const afterPay = await call(contract.ENDPOINTS.get_order_detail, {
     method: 'GET', query: contract.buildOrderDetailQuery(created.external_ref), accessToken,
@@ -165,11 +163,12 @@ async function run(env = process.env, deps = {}) {
     real_charge_possible: false,
     order_number: orderNumber,
     cj_order_id: created.external_ref,
-    shipment_order_id: shipmentOrderId,
+    cj_order_id: created.external_ref,
     confirm_status: confirmFacts.status,
     paid_status: paidFacts.status,
     confirmation_verdict: confirmed.confirmation_verdict,
     payment_verdict: payment.payment_verdict,
+    payment_mode: 'sandbox_simulate_pay_order_id',
   };
   console.log(`[cj-p2-confirm-pay-sandbox-proof] ${JSON.stringify(result)}`);
   return result;
