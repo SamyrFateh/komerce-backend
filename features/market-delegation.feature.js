@@ -119,6 +119,7 @@ module.exports = {
       'migrations/201_market_network_promotion_agent_optional.sql',
       'migrations/203_market_delegation_provider_manage_live.sql',
       'migrations/273_market_delegation_partners_authority.sql',
+      'migrations/274_market_delegation_audit_market.sql',
       'migrations/204_market_delegation_local_offer_manage_live.sql',
       'migrations/205_market_delegation_client_case_handle_live.sql',
       'migrations/207_market_delegation_catalog_expose_live.sql',
@@ -172,6 +173,7 @@ module.exports = {
       'tests/unit/provision-market-operator.test.js',
       'tests/unit/market-operator-provisioning.test.js',
       'tests/unit/market-delegation-p0.test.js',
+      'tests/unit/market-delegation-audit-market.test.js',
       'tests/unit/capability-registry-effect.test.js',
       'tests/unit/market-delegation-transitaire-authority.test.js',
       'tests/unit/market-delegation-hub-authority.test.js',
@@ -328,6 +330,7 @@ module.exports = {
   authority: 'backend-core — cette feature possède la délégation d’autorité marché et son équipe ; elle ne possède ni le référentiel market, ni operator_market_scopes, ni users.role, ni les règles GROUP, ni les fonctions terrain mutualisées, ni la vérité monétaire du settlement.',
 
   invariants: [
+    { statement: 'chaque audit de délégation peut porter directement son Market ID avant même la création complète de l assignment ; lorsqu assignment ou membership sont présents, la base impose la cohérence du Market ID', test: 'tests/unit/market-delegation-audit-market.test.js' },
     { statement: 'un scope marché d’opérateur n’est attribué ou révoqué que par une membership de délégation ; aucun chemin applicatif admin n’écrit operator_market_scopes directement, attribution et révocation reprojettent depuis la membership', test: 'tests/unit/market-operator-provisioning.test.js' },
     { statement: 'un Market ID possède au plus un Market Operating Assignment ACTIVE', test: 'tests/unit/market-delegation-p0.test.js' },
     { statement: 'un agent_transitaire ne peut avoir qu’une seule membership marché ACTIVE ; logistics.read et execution.transit.confirm sont prouvées par cette membership, jamais par users.role', test: 'tests/unit/market-delegation-transitaire-authority.test.js' },
