@@ -19,6 +19,9 @@ describe('market-delegation team service', () => {
     expect(team.normalizeMarketCode('Congo')).toBeNull();
     expect(team.normalizeEmail(' Manager@Example.COM ')).toBe('manager@example.com');
     expect(team.normalizeEmail('bad')).toBeNull();
+    expect(team.normalizeInvitationChannel(' whatsapp ')).toBe('WHATSAPP');
+    expect(team.normalizeInvitationChannel('sms')).toBeNull();
+    expect(team.normalizePhone('+33699272526')).toBe('+33699272526');
     const token = 'raw-token-that-must-not-be-persisted-123456';
     const hash = team.invitationTokenHash(token);
     expect(hash).toHaveLength(64);
@@ -73,11 +76,27 @@ describe('market-delegation team service', () => {
     expect(persistedTokenHash).not.toBe(result.token);
   });
 
-  test('acceptance code revalidates invitation capabilities through non-central addMembership', () => {
+  test('M4 supports WhatsApp recipient and central-only operating lead intent', () => {
+    const migration = fs.readFileSync(path.join(ROOT, 'migrations', '277_market_team_invitation_channels.sql'), 'utf8');
+    expect(migration).toMatch(/phone_e164 TEXT/);
+    expect(migration).toMatch(/channel TEXT NOT NULL DEFAULT 'EMAIL'/);
+    expect(migration).toMatch(/invited_by_user_id UUID REFERENCES users\(id\)/);
+    expect(migration).toMatch(/grants_operating_lead BOOLEAN NOT NULL DEFAULT FALSE/);
+    expect(migration).toMatch(/channel IN \('EMAIL','WHATSAPP'\)/);
+    expect(migration).toMatch(/lead_requires_central/);
+
     const source = fs.readFileSync(path.join(ROOT, 'services', 'market-delegation-team-service.js'), 'utf8');
-    expect(source).toMatch(/actorUserId:\s*invitation\.inviter_user_id/);
+    expect(source).toMatch(/TEAM_INVITE_LEAD_CENTRAL_ONLY/);
+    expect(source).toMatch(/TEAM_INVITATION_PHONE_MISMATCH/);
+    expect(source).toMatch(/OPERATING_LEAD_ASSIGNED/);
+    expect(source).toMatch(/actorIsCentral: !invitation\.invited_by_membership_id/);
+  });
+
+  test('acceptance code revalidates invitation capabilities through inviter authority', () => {
+    const source = fs.readFileSync(path.join(ROOT, 'services', 'market-delegation-team-service.js'), 'utf8');
+    expect(source).toMatch(/actorUserId:\s*invitation\.invited_by_user_id/);
     expect(source).toMatch(/capabilities:\s*requested/);
-    expect(source).toMatch(/actorIsCentral:\s*false/);
+    expect(source).toMatch(/actorIsCentral:\s*!invitation\.invited_by_membership_id/);
     expect(source).toMatch(/TEAM_INVITATION_EMAIL_MISMATCH/);
     expect(source).toMatch(/TEAM_INVITER_NOT_ACTIVE/);
   });
