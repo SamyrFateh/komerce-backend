@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        none (static composition root)
  * @outputs       map of provider code -> fulfillment adapter object
- * @depends       services/suppliers/allegro-fulfillment-adapter.js, services/suppliers/aliexpress-fulfillment-adapter.js
+ * @depends       services/suppliers/allegro-fulfillment-adapter.js, services/suppliers/aliexpress-fulfillment-adapter.js, services/suppliers/cj-fulfillment-adapter.js
  * @used-by       services/purchasing-trigger-service.js (GAP-2, GAP-4A/4B, GAP-5)
  * @db-read       none
  * @db-write      none
@@ -35,18 +35,21 @@
  * Un provider est enregistré une seule fois dans cette map ; ses capacités
  * sont vérifiées par le consommateur correspondant, sans deuxième registre.
  *
- * Aucun des deux adapters actuels n'expose `placeOrder` — c'est un fait
- * du domaine (ni Allegro ni AliExpress n'offrent de buyer checkout API
- * dans le contrat prouvé par Komerce), pas une lacune de ce registre.
+ * CJ expose désormais buildOrderPayload + placeOrder après preuve P1 réelle.
+ * Son exécution reste fail-closed derrière KOMERCE_CJ_AUTO_ORDER_ENABLED=1
+ * et la présence d'une destination Procurement Hub complète. Allegro et
+ * AliExpress restent sans buyer placeOrder prouvé.
  */
 'use strict';
 
 const allegroFulfillmentAdapter = require('./allegro-fulfillment-adapter');
 const aliexpressFulfillmentAdapter = require('./aliexpress-fulfillment-adapter');
+const cjFulfillmentAdapter = require('./cj-fulfillment-adapter');
 
 const EXECUTION_ADAPTER_REGISTRY = Object.freeze({
   allegro: allegroFulfillmentAdapter,
   aliexpress: aliexpressFulfillmentAdapter,
+  cj: cjFulfillmentAdapter,
 });
 
 module.exports = { EXECUTION_ADAPTER_REGISTRY };

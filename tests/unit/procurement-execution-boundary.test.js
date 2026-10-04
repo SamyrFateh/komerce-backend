@@ -30,14 +30,26 @@ function fullAdapter(provider, overrides = {}) {
   };
 }
 
-describe('caractérisation — aucun adapter réel n\'a placeOrder+buildOrderPayload aujourd\'hui', () => {
-  test('allegro et aliexpress ne satisfont jamais validateExecutionAdapter (fait du domaine, pas une lacune)', async () => {
-    for (const provider of Object.keys(EXECUTION_ADAPTER_REGISTRY)) {
+describe('caractérisation — seuls les providers sans buyer placeOrder restent incomplets', () => {
+  test('allegro et aliexpress restent hors boundary automatique', async () => {
+    for (const provider of ['allegro', 'aliexpress']) {
       const out = await evaluateProcurementExecutionBoundary({
         identity: soi(provider, { x: 1 }), quantity: 1, canonicalUnit: {}, adapters: EXECUTION_ADAPTER_REGISTRY,
       });
       expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'EXECUTION_ADAPTER_INCOMPLETE' });
     }
+  });
+
+  test('CJ est un execution adapter complet mais reste fail-closed sans contexte runtime', async () => {
+    const out = await evaluateProcurementExecutionBoundary({
+      identity: soi('cj', { pid: 'P', vid: 'V', variant_sku: 'S' }),
+      quantity: 1,
+      canonicalUnit: { supplier_unit_ref: 'V' },
+      preflight: { ready: true, evidence: { auto_order_ready: true } },
+      adapters: EXECUTION_ADAPTER_REGISTRY,
+      context: {},
+    });
+    expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'BUILD_ORDER_PAYLOAD_ERROR' });
   });
 });
 
