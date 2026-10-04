@@ -196,3 +196,33 @@ test('saveGenerateParentOrder reste fail-closed sans payId ou avec mismatch/inte
     },
   }, 'SHIP-1')).toThrow('CJ_SAVE_PARENT_ORDER_REJECTED');
 });
+
+
+test('reconcileSandboxParentAmount valide les montants provider avant simulatePay', () => {
+  const contract = require('../../services/suppliers/cj-purchasing-contract');
+  expect(contract.reconcileSandboxParentAmount({
+    order_money: 62.07,
+    payment_information: {
+      actualPayment: 62.07,
+      orderOriginalAmount: 62.07,
+    },
+  })).toEqual({
+    expected_amount: 62.07,
+    provider_actual_payment: 62.07,
+    provider_order_original_amount: 62.07,
+    currency: null,
+    amount_verdict: 'provider_amounts_match',
+    real_debit_verified: false,
+  });
+});
+
+test('reconcileSandboxParentAmount refuse tout mismatch provider', () => {
+  const contract = require('../../services/suppliers/cj-purchasing-contract');
+  expect(() => contract.reconcileSandboxParentAmount({
+    order_money: 62.07,
+    payment_information: {
+      actualPayment: 61.00,
+      orderOriginalAmount: 62.07,
+    },
+  })).toThrow('CJ_SANDBOX_PAYMENT_AMOUNT_MISMATCH');
+});
