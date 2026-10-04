@@ -30,8 +30,8 @@ describe('Market Control Plane M2 — audit market identity', () => {
 
     expect(db.query).toHaveBeenCalledTimes(1);
     const [sql, params] = db.query.mock.calls[0];
-    expect(sql).toMatch(/actor_user_id, market_id, assignment_id/);
-    expect(params[1]).toBe('00000000-0000-0000-0000-000000000001');
-    expect(params[5]).toBe('MARKET_PROVISIONING_STARTED');
+    expect(sql).toMatch(/actor_user_id, assignment_id, membership_id/);
+    expect(params[8]).toBe('00000000-0000-0000-0000-000000000001');
+    expect(params[4]).toBe('MARKET_PROVISIONING_STARTED');
   });
 });
