@@ -137,7 +137,12 @@ async function resolveAutoOrderResult(client, exactSku, canonicalMoney, item, pu
   });
   if (!boundary.crossed) {
     log.info(`[PURCHASING] Procurement Execution Boundary non atteinte pour ${canonicalMoney.supplier_order_identity.provider} — mode manuel:`, boundary.reason);
-    return { success: false, error: `Procurement Execution Boundary non atteinte (${boundary.reason}) — mode manuel` };
+    return {
+      success: false,
+      error: `Procurement Execution Boundary non atteinte (${boundary.reason})`,
+      reason: boundary.reason,
+      place_order_invoked: boundary.place_order_invoked === true,
+    };
   }
   return {
     success: true,
@@ -215,6 +220,7 @@ async function alertItemFailure(client, orderId, item, savepointIdx, itemErr) {
 async function triggerPurchasing(orderId, options = {}) {
   const readinessContext = options.context || {};
   const results = [];
+  const autoExecutionTasks = [];
   const { rows: [order] } = await db.query(`SELECT o.*, r.name AS relais_name FROM orders o LEFT JOIN relais r ON r.id = o.relais_id WHERE o.id = $1`, [orderId]);
   if (!order) throw new Error(`Commande introuvable : ${orderId}`);
   const { rows: items } = await db.query(`
@@ -256,7 +262,41 @@ async function triggerPurchasing(orderId, options = {}) {
         }
         const existingPo = await findExistingPo(client, orderId, item, ps.id);
         if (existingPo) {
-          results.push({ item: item.product_name, status: 'already_exists', purchase_order_id: existingPo.id, purchase_order_status: existingPo.status, inbound_tag: existingPo.id ? buildSupplierTagRequest(existingPo.id).reference : null });
+          const resumableAuto = Boolean(
+            existingPo.id &&
+            existingPo.status === 'pending' &&
+            !existingPo.supplier_order_id &&
+            ps.auto_order &&
+            exactSku &&
+            canonicalMoney
+          );
+          if (resumableAuto) {
+            const { rows: [existingLine] } = await client.query(
+              `SELECT id FROM purchase_lines
+                WHERE purchase_order_id = $1 AND cancelled_at IS NULL
+                ORDER BY created_at ASC LIMIT 1`,
+              [existingPo.id]
+            );
+            const supplierTagRequest = buildSupplierTagRequest(existingPo.id);
+            const resumeSnapshot = { ...buildPurchaseTarget(ps, exactSku, canonicalMoney), productSkuId: exactSku.id };
+            const resultIndex = results.length;
+            results.push({
+              item: item.product_name,
+              status: 'auto_order_pending_retry',
+              purchase_order_id: existingPo.id,
+              inbound_tag: supplierTagRequest.reference,
+            });
+            autoExecutionTasks.push({
+              resultIndex, order, item, exactSku, canonicalMoney,
+              purchaseTarget: resumeSnapshot.purchaseTarget,
+              purchaseOrderId: existingPo.id,
+              purchaseLineId: existingLine?.id || null,
+              supplierTagRequest,
+              money: resumeSnapshot.money,
+            });
+          } else {
+            results.push({ item: item.product_name, status: 'already_exists', purchase_order_id: existingPo.id, purchase_order_status: existingPo.status, inbound_tag: existingPo.id ? buildSupplierTagRequest(existingPo.id).reference : null });
+          }
           await client.query(`RELEASE SAVEPOINT po_item_${idx}`);
           continue;
         }
@@ -292,16 +332,20 @@ async function triggerPurchasing(orderId, options = {}) {
         const supplierTagRequest = buildSupplierTagRequest(po.id);
 
         if (ps.auto_order) {
-          const apiResult = await resolveAutoOrderResult(client, exactSku, canonicalMoney, item, purchaseTarget, po.id, historicalLine?.id || null, supplierTagRequest);
-          if (apiResult.success) {
-            await client.query(`UPDATE purchase_orders SET status='confirmed', supplier_order_id=$1, tracking_url=$2, ordered_at=NOW(), updated_at=NOW() WHERE id=$3`, [apiResult.supplier_order_id, apiResult.tracking_url || null, po.id]);
-            await confirmHistoricalPurchaseLine(client, po.id, { quantity: item.quantity, unitPrice: money.amount });
-            results.push({ item: item.product_name, status: 'auto_ordered', purchase_order_id: po.id, supplier_order_id: apiResult.supplier_order_id, inbound_tag: supplierTagRequest.reference });
-          } else {
-            await notifyAdminManual(order, item, purchaseTarget, supplierTagRequest);
-            await client.query(`UPDATE purchase_orders SET status='notified', trigger_mode='manual', updated_at=NOW() WHERE id=$1`, [po.id]);
-            results.push({ item: item.product_name, status: 'api_failed_notified', purchase_order_id: po.id, inbound_tag: supplierTagRequest.reference });
-          }
+          const resultIndex = results.length;
+          results.push({
+            item: item.product_name,
+            status: 'auto_order_pending_execution',
+            purchase_order_id: po.id,
+            inbound_tag: supplierTagRequest.reference,
+          });
+          autoExecutionTasks.push({
+            resultIndex, order, item, exactSku, canonicalMoney, purchaseTarget,
+            purchaseOrderId: po.id,
+            purchaseLineId: historicalLine?.id || null,
+            supplierTagRequest,
+            money,
+          });
         } else if (ps.platform === 'whatsapp') {
           await notifySupplierWhatsApp(client, purchaseTarget, order, item, po.id, supplierTagRequest);
           await client.query(`UPDATE purchase_orders SET status='notified', ordered_at=NOW(), updated_at=NOW() WHERE id=$1`, [po.id]);
@@ -323,6 +367,98 @@ async function triggerPurchasing(orderId, options = {}) {
     throw globalErr;
   } finally {
     client.release();
+  }
+
+  // Les mutations fournisseur automatiques sont exécutées UNIQUEMENT après
+  // le COMMIT qui a figé purchase_order.id. Ainsi, un timeout/réponse perdue
+  // ne peut jamais faire disparaître la clé idempotente locale utilisée par
+  // l'adapter provider. Un rejeu retrouve la même PO pending et reprend avec
+  // la même execution_key.
+  for (const task of autoExecutionTasks) {
+    try {
+      const apiResult = await resolveAutoOrderResult(
+        null,
+        task.exactSku,
+        task.canonicalMoney,
+        task.item,
+        task.purchaseTarget,
+        task.purchaseOrderId,
+        task.purchaseLineId,
+        task.supplierTagRequest
+      );
+
+      if (apiResult.success) {
+        const autoClient = await db.getClient();
+        try {
+          await autoClient.query('BEGIN');
+          await autoClient.query(
+            `UPDATE purchase_orders
+                SET status='confirmed', supplier_order_id=$1, tracking_url=$2,
+                    ordered_at=NOW(), updated_at=NOW()
+              WHERE id=$3 AND status='pending'`,
+            [apiResult.supplier_order_id, apiResult.tracking_url || null, task.purchaseOrderId]
+          );
+          await confirmHistoricalPurchaseLine(autoClient, task.purchaseOrderId, {
+            quantity: task.item.quantity,
+            unitPrice: task.money.amount,
+          });
+          await autoClient.query('COMMIT');
+        } catch (error) {
+          await autoClient.query('ROLLBACK').catch(() => {});
+          throw error;
+        } finally {
+          autoClient.release();
+        }
+        results[task.resultIndex] = {
+          item: task.item.product_name,
+          status: 'auto_ordered',
+          purchase_order_id: task.purchaseOrderId,
+          supplier_order_id: apiResult.supplier_order_id,
+          inbound_tag: task.supplierTagRequest.reference,
+        };
+        continue;
+      }
+
+      if (apiResult.place_order_invoked || apiResult.reason === 'PLACE_ORDER_ERROR') {
+        // État fournisseur potentiellement ambigu : surtout ne pas dégrader
+        // en manuel ni changer la clé de replay. La PO reste pending et sera
+        // reprise avec le même id lors du prochain trigger.
+        results[task.resultIndex] = {
+          item: task.item.product_name,
+          status: 'api_pending_retry',
+          purchase_order_id: task.purchaseOrderId,
+          inbound_tag: task.supplierTagRequest.reference,
+          error: apiResult.error,
+        };
+        continue;
+      }
+
+      await notifyAdminManual(task.order, task.item, task.purchaseTarget, task.supplierTagRequest);
+      await db.query(
+        `UPDATE purchase_orders
+            SET status='notified', trigger_mode='manual', updated_at=NOW()
+          WHERE id=$1 AND status='pending'`,
+        [task.purchaseOrderId]
+      );
+      results[task.resultIndex] = {
+        item: task.item.product_name,
+        status: 'api_failed_notified',
+        purchase_order_id: task.purchaseOrderId,
+        inbound_tag: task.supplierTagRequest.reference,
+      };
+    } catch (error) {
+      // Après COMMIT, toute erreur inattendue laisse volontairement la PO
+      // pending : la clé d'exécution persiste et un replay peut récupérer
+      // l'ordre fournisseur par l'idempotency contract de l'adapter.
+      log.error(`[PURCHASING] Auto-order post-commit pending retry for ${task.purchaseOrderId}:`, error.message);
+      results[task.resultIndex] = {
+        item: task.item.product_name,
+        status: 'api_pending_retry',
+        purchase_order_id: task.purchaseOrderId,
+        inbound_tag: task.supplierTagRequest.reference,
+        error: error.message,
+      };
+    }
   }
 
   const createdPOs = results.filter(r => r.purchase_order_id != null && r.status !== 'already_exists');
