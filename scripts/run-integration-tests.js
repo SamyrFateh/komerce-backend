@@ -29,6 +29,17 @@ function listSuites() {
     .map(name => path.join('tests', 'integration', name).replace(/\\/g, '/'));
 }
 
+function requestedSuites(allSuites) {
+  const arg = process.argv.find(value => value.startsWith('--files='));
+  if (!arg) return allSuites;
+  const requested = arg.slice('--files='.length).split(',').map(value => value.trim()).filter(Boolean);
+  const known = new Set(allSuites);
+  for (const suite of requested) {
+    if (!known.has(suite)) throw new Error(`Unknown integration suite: ${suite}`);
+  }
+  return requested;
+}
+
 function runSuite(suite) {
   console.log(`\n── ${suite} ──`);
   const result = spawnSync(
@@ -66,7 +77,7 @@ async function main() {
   }
   console.log(`POSTGRES: available — ${preflight.reason}`);
 
-  const suites = listSuites();
+  const suites = requestedSuites(listSuites());
   const failures = [];
 
   for (const suite of suites) {
