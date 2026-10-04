@@ -519,7 +519,8 @@ jobs:
           npm run test:integration
       - name: Integration DB proofs (skip)
         if: needs.changes.outputs.integration_required == 'true' && steps.integration_scope.outputs.mode == 'skip'
-        run: echo "No integration runtime impact: ${{ steps.integration_scope.outputs.reason }}"
+        run: |
+          echo "No integration runtime impact: ${{ steps.integration_scope.outputs.reason }}"
       - name: Feature-first E2E API proofs (targeted)
         if: needs.changes.outputs.e2e_api_required == 'true' && steps.e2e_scope.outputs.mode == 'targeted'
         env:
