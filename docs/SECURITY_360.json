@@ -2,8 +2,8 @@
   "generatedAt": "2026-10-03T14:37:53.913Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 697,
-    "protected": 642,
+    "total": 698,
+    "protected": 643,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1125,6 +1125,13 @@
     },
     {
       "key": "GET /api/admin/markets/central-authority",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/markets",
       "level": "PROTECTED",
       "roles": [
         "admin"
