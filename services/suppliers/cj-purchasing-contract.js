@@ -269,9 +269,18 @@ function parseAddCartConfirmResponse(body) {
 }
 
 function parseSaveGenerateParentOrderResponse(body, expectedShipmentOrderId) {
-  if (!body || body.success !== true || !body.data?.submitSuccess) {
+  if (!body || body.success !== true || !body.data) {
     const error = new Error('CJ_SAVE_PARENT_ORDER_REJECTED');
     error.payload = body ?? null;
+    throw error;
+  }
+  const payId = body.data.payId ? String(body.data.payId).trim() : '';
+  const interceptOrders = Array.isArray(body.data.interceptOrders) ? body.data.interceptOrders : [];
+  const unMatchOrderCodes = Array.isArray(body.data.unMatchOrderCodes) ? body.data.unMatchOrderCodes : [];
+  const unMatchProductCodes = Array.isArray(body.data.unMatchProductCodes) ? body.data.unMatchProductCodes : [];
+  if (!payId || interceptOrders.length || unMatchOrderCodes.length || unMatchProductCodes.length) {
+    const error = new Error('CJ_SAVE_PARENT_ORDER_REJECTED');
+    error.payload = body;
     throw error;
   }
   return {
@@ -280,8 +289,11 @@ function parseSaveGenerateParentOrderResponse(body, expectedShipmentOrderId) {
       'CJ_SHIPMENT_ORDER_ID_REQUIRED',
       200
     ),
-    pay_id: body.data.payId ? String(body.data.payId) : null,
+    pay_id: payId,
     order_money: body.data.orderMoney ?? null,
+    submit_success: body.data.submitSuccess === true,
+    result: body.data.result ?? null,
+    payment_information: body.data.paymentInformation ?? null,
     request_id: body.requestId ? String(body.requestId) : null,
   };
 }
