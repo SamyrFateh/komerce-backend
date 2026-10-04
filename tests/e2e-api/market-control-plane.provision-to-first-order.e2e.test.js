@@ -88,6 +88,7 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
         storefront_texts:{welcome:'Bienvenue E2E'},
       });
 
+    if(res.status!==201) throw new Error(`PROVISION_FAILED:${res.status}:${JSON.stringify(res.body)}`);
     expect(res.status).toBe(201);
     expect(res.body.market.lifecycle_status).toBe('PROVISIONING');
     expect(res.body.readiness).toMatchObject({
