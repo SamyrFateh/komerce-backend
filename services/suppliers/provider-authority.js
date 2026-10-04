@@ -47,6 +47,7 @@ const PROVIDERS = Object.freeze([
   'local',
   'whatsapp',
   'allegro',
+  'cj',
 ]);
 
 const PROVIDER_SET = new Set(PROVIDERS);
@@ -66,6 +67,7 @@ const PROVIDER_SET = new Set(PROVIDERS);
 const REMOTE_PREFLIGHT_REQUIRED = Object.freeze({
   allegro: true,
   aliexpress: true,
+  cj: true,
   noon: false,
   amazon_uae: false,
   local: false,
@@ -102,6 +104,7 @@ const PREFLIGHT_REQUIREMENT = Object.freeze({
 const RECONCILIATION_REQUIRED = Object.freeze({
   allegro: true,
   aliexpress: false,
+  cj: false,
   noon: false,
   amazon_uae: false,
   local: false,
