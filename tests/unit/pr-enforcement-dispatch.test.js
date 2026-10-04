@@ -16,9 +16,12 @@ describe('PR enforcement trusted dispatch', () => {
     expect(enforcement).toContain('base_sha:');
     expect(enforcement).toContain('head_ref:');
     expect(enforcement).toContain('base_ref:');
+    expect(enforcement).toContain('statuses: write');
   });
 
-  test('trusted pull_request_target only dispatches internal PRs', () => {
+  test('trusted pull_request_target is the unique PR entry point', () => {
+    expect(enforcement).not.toMatch(/^\s{2}pull_request:/m);
+    expect(enforcement).toContain('workflow_dispatch:');
     expect(dispatcher).toContain('pull_request_target:');
     expect(dispatcher).toContain('github.event.pull_request.head.repo.full_name == github.repository');
     expect(dispatcher).toContain('/actions/workflows/pr-enforcement.yml/dispatches');
@@ -30,5 +33,7 @@ describe('PR enforcement trusted dispatch', () => {
     expect(enforcement).toContain('BASE_SHA: ${{ inputs.base_sha || github.event.pull_request.base.sha }}');
     expect(enforcement).toContain('HEAD_REF: ${{ inputs.head_ref || github.event.pull_request.head.ref }}');
     expect(enforcement).toContain('event=workflow_dispatch&branch=$BRANCH_ENCODED');
+    expect(enforcement).toContain("context:'Required verdict'");
+    expect(enforcement).toContain('/statuses/$HEAD_SHA');
   });
 });
