@@ -509,13 +509,13 @@ La cible de projection minimale est :
 
 Komerce doit aussi supporter un fournisseur/catalogue propriétaire sans API, alimenté par CSV, XLSX ou saisie manuelle, sans backdoor vers products.
 
-Modes d'exécution distingués :
+INTERNAL_MANAGED ne devient pas un provider ni un mode d'exécution unique. M0 sépare trois axes indépendants :
 
-    API_EXTERNAL
-    MANUAL_EXTERNAL
-    INTERNAL_MANAGED
+    canal d'ingestion = API | CSV | XLSX | MANUAL
+    identité fournisseur = acteur économique réel
+    fulfillment = SUPPLIER_DIRECT | INTERNAL_STOCK
 
-Le mode INTERNAL_MANAGED passe par le même modèle canonique :
+Le catalogue géré en interne passe par le même modèle canonique :
 
     CSV / XLSX / saisie
     → staging/import
@@ -533,7 +533,7 @@ Ordre prévu :
 - M1 : contrat CSV/XLSX canonique ;
 - M2 : adapter fichier → modèle normalisé ;
 - M3 : stock/prix/variantes/médias internes ;
-- M4 : Purchasing interne, réservation et fulfillment ;
+- M4 : séparer MANUAL_EXTERNAL de INTERNAL_STOCK ; réservation et fulfillment ;
 - M5 : Golden E2E catalogue propriétaire.
 
-Règle : saisie manuelle, CSV et Excel ne contournent jamais la Raffinerie ni les invariants de SKU/SOI, stock, coût, scope et audit.
+Règle : saisie manuelle, CSV et Excel ne contournent jamais la Raffinerie ni les invariants de SKU/SOI, stock, coût, scope et audit. Pour INTERNAL_STOCK, une vente ne crée pas artificiellement une dette fournisseur : le coût provient du stock acquis/produit en amont.
