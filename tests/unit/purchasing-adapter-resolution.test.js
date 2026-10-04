@@ -116,18 +116,18 @@ describe('purchasing-trigger-service.js ne contient plus aucun littéral de prov
 // ═════════════════════════════════════════════════════════════════════════════
 
 describe('execution-adapter-registry — composition root', () => {
-  test('contient exactement les adapters fulfillment connus (allegro, aliexpress)', () => {
-    expect(Object.keys(EXECUTION_ADAPTER_REGISTRY).sort()).toEqual(['aliexpress', 'allegro']);
+  test('contient exactement les adapters fulfillment runtime connus', () => {
+    expect(Object.keys(EXECUTION_ADAPTER_REGISTRY).sort()).toEqual(['aliexpress', 'allegro', 'cj']);
   });
 
   test('est gelé (Object.frozen)', () => {
     expect(Object.isFrozen(EXECUTION_ADAPTER_REGISTRY)).toBe(true);
   });
 
-  test('aucun adapter enregistré n\'expose placeOrder aujourd\'hui (fait du domaine, pas une lacune)', () => {
-    for (const adapter of Object.values(EXECUTION_ADAPTER_REGISTRY)) {
-      expect(typeof adapter.placeOrder).not.toBe('function');
-    }
+  test('seul CJ expose placeOrder dans le registry runtime', () => {
+    expect(typeof EXECUTION_ADAPTER_REGISTRY.cj.placeOrder).toBe('function');
+    expect(typeof EXECUTION_ADAPTER_REGISTRY.allegro.placeOrder).not.toBe('function');
+    expect(typeof EXECUTION_ADAPTER_REGISTRY.aliexpress.placeOrder).not.toBe('function');
   });
 });
 
