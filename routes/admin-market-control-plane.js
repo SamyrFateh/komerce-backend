@@ -24,7 +24,7 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const controlPlane = require('../services/market-control-plane');
 const centralAuthority = require('../services/central-authority');
-const { provisionMarket } = require('../services/market-provisioning-service');
+const { provisionMarket, setMarketLifecycle } = require('../services/market-provisioning-service');
 
 // Vue centrale par rôle (Q4 du chantier) : déclarée ici, jamais implicite.
 const centralAdmin = [authenticate, requireRole(['admin'])];
@@ -66,6 +66,20 @@ router.post('/', ...centralAdmin, async (req, res, next) => {
       correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
     }));
     res.status(201).json(result);
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+router.post('/:marketCode/lifecycle', ...centralAdmin, async (req, res, next) => {
+  try {
+    const result = await withTransaction(client => setMarketLifecycle(client, {
+      actorUserId: req.user.id,
+      marketCode: req.params.marketCode,
+      targetStatus: req.body && req.body.status,
+      correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
+    }));
+    res.json(result);
   } catch (error) {
     if (!sendKnownError(res, error)) next(error);
   }

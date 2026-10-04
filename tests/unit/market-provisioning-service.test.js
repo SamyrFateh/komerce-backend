@@ -27,3 +27,14 @@ describe('Market Control Plane G — provisioning composition', () => {
     expect(source).toMatch(/CENTRAL_REFERENT_AUTHORITY_REQUIRED/);
   });
 });
+
+
+test('lifecycle activation is gated by readiness and audited', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '..', '..', 'services', 'market-provisioning-service.js'), 'utf8');
+  expect(source).toMatch(/target === 'ACTIVE'/);
+  expect(source).toMatch(/ready_for_activation/);
+  expect(source).toMatch(/MARKET_NOT_READY_FOR_ACTIVATION/);
+  expect(source).toMatch(/MARKET_LIFECYCLE_CHANGED/);
+});

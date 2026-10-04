@@ -20,7 +20,7 @@
  */
 'use strict';
 
-const { createProvisioningMarket } = require('./market-lifecycle-service');
+const { createProvisioningMarket, transitionMarketLifecycle } = require('./market-lifecycle-service');
 const delegation = require('./market-delegation-service');
 const { targetCapabilitiesForScope } = require('./market-operator-provisioning');
 const { inviteTeamMember } = require('./market-delegation-team-service');
@@ -128,4 +128,34 @@ async function provisionMarket(executor, {
   };
 }
 
-module.exports = { assertCentralReferent, provisionMarket };
+
+async function setMarketLifecycle(executor, {
+  actorUserId, marketCode, targetStatus, correlationId = null,
+}) {
+  const target = String(targetStatus || '').trim().toUpperCase();
+  if (target === 'ACTIVE') {
+    const control = await controlPlane.getControlPlane(executor, marketCode);
+    if (!control.readiness.ready_for_activation) {
+      throw provisionError(
+        'MARKET_NOT_READY_FOR_ACTIVATION',
+        'Activation refusée : readiness plate-forme et exploitation doivent être vertes.',
+        409
+      );
+    }
+  }
+
+  const result = await transitionMarketLifecycle(executor, { marketCode, targetStatus: target });
+  if (result.changed) {
+    await delegation.audit(executor, {
+      actorUserId,
+      marketId: result.after.id,
+      action: 'MARKET_LIFECYCLE_CHANGED',
+      before: { lifecycle_status: result.before.lifecycle_status, is_active: result.before.is_active },
+      after: { lifecycle_status: result.after.lifecycle_status, is_active: result.after.is_active },
+      correlationId,
+    });
+  }
+  return result;
+}
+
+module.exports = { assertCentralReferent, provisionMarket, setMarketLifecycle };

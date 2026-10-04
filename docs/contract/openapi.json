@@ -29538,6 +29538,53 @@
           }
         }
       }
+    },
+    "/api/admin/markets/{marketCode}/lifecycle": {
+      "post": {
+        "summary": "POST /api/admin/markets/{marketCode}/lifecycle",
+        "x-route-file": "routes/admin-market-control-plane.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "before": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "after": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "changed": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
     }
   },
   "x-inventory-source": "runtime-introspection"
