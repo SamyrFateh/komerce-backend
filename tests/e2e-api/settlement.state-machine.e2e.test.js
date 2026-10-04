@@ -91,8 +91,8 @@ describeE2E('E2E-SETTLEMENT — state machine DB (SQL direct)', ({ db }) => {
       const code = await reserveMarketCode(exclude);
       try {
         await db.query(
-          `INSERT INTO markets (id, code, name, currency, minor_unit, is_active)
-           VALUES ($1, $2, $3, 'XAF', 0, TRUE)`,
+          `INSERT INTO markets (id, code, name, currency, minor_unit, is_active, lifecycle_status)
+           VALUES ($1, $2, $3, 'XAF', 0, TRUE, 'ACTIVE')`,
           [id, code, tag(label)]
         );
         return code;
