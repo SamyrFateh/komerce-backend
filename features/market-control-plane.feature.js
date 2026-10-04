@@ -44,7 +44,7 @@ module.exports = {
   perimeter: {
     in: [
       'GET /api/admin/markets : liste des marchés avec statut d’affectation et nombre de personnes actives',
-      'POST /api/admin/markets : provisionne un marché PROVISIONING en composant les writers canoniques market + market-delegation + invitation équipe',
+      'POST /api/admin/markets : provisionne un marché PROVISIONING en composant les writers canoniques market + market-delegation + payments + logistics ; paiement initial, cash policy et premier relais peuvent rendre la readiness réellement verte avant activation',
       'GET /api/admin/markets/central-authority : titulaires actifs des cinq autorisations centrales explicites (dashboard, catalog, decision_signal, pricing, sourcing) et autorité déclarée de chaque capability de groupe',
       'GET /api/admin/markets/:marketCode/control-plane : affectation, équipe et capacités, plafond, fournisseurs de paiement, politique de caisse, relais actifs, écarts',
       'POST /api/admin/markets/:marketCode/lifecycle : transition lifecycle centrale ; ACTIVE exige readiness plate-forme ET exploitation vertes',
@@ -75,6 +75,7 @@ module.exports = {
       'tests/unit/market-provisioning-service.test.js',
       'tests/unit/market-control-plane-readiness.test.js',
       'tests/unit/market-control-plane-lifecycle-gate.test.js',
+      'tests/e2e-api/market-control-plane.provision-to-first-order.e2e.test.js',
     ],
   },
 
