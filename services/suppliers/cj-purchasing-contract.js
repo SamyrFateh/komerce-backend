@@ -118,6 +118,71 @@ function buildOrderDetailQuery(orderId) {
   return { orderId: assertString(orderId, 'CJ_ORDER_ID_REQUIRED', 200) };
 }
 
+
+function isDuplicateCreateError(error) {
+  return Number(error?.payload?.code) === 1603003;
+}
+
+function readOrderDetailFacts(body) {
+  const data = body?.data || {};
+  const products = [
+    ...(Array.isArray(data.productInfoList) ? data.productInfoList : []),
+    ...(Array.isArray(data.productList) ? data.productList : []),
+  ];
+  return {
+    order_id: data.orderId || data.cjOrderId || null,
+    order_number: data.orderNumber || data.orderNum || data.platformOrderId || null,
+    status: data.orderStatus || null,
+    variants: products.flatMap((item) => {
+      const directVid = item.variantId ?? item.vid ?? null;
+      const direct = directVid
+        ? [{ vid: String(directVid), quantity: Number(item.quantity), store_line_item_id: item.storeLineItemId || null }]
+        : [];
+      const subs = Array.isArray(item.subOrderProducts)
+        ? item.subOrderProducts.map((sub) => ({
+            vid: String(sub.variantId ?? sub.vid ?? ''),
+            quantity: Number(sub.quantity),
+            store_line_item_id: sub.storeLineItemId || item.storeLineItemId || null,
+          }))
+        : [];
+      return [...direct, ...subs].filter((row) => row.vid);
+    }),
+    response_product_shape: Array.isArray(data.productList)
+      ? 'productList[].vid'
+      : (Array.isArray(data.productInfoList) ? 'productInfoList[].variantId' : 'unknown'),
+  };
+}
+
+function verifyOrderDetail({
+  created,
+  detail,
+  expectedOrderNumber,
+  expectedVid,
+  expectedQuantity,
+} = {}) {
+  const facts = readOrderDetailFacts(detail);
+  const sameOrder =
+    facts.order_id === created?.external_ref
+    || facts.order_number === expectedOrderNumber
+    || created?.order_number === expectedOrderNumber;
+  if (!sameOrder) throw new Error('CJ_READBACK_ORDER_MISMATCH');
+
+  const variant = facts.variants.find((row) =>
+    row.vid === String(expectedVid)
+    && row.quantity === Number(expectedQuantity)
+  );
+  if (!variant) {
+    const error = new Error('CJ_READBACK_VARIANT_MISMATCH');
+    error.readback = facts;
+    throw error;
+  }
+
+  if (!['CREATED', 'IN_CART', 'UNPAID'].includes(String(facts.status || '').toUpperCase())) {
+    throw new Error(`CJ_UNEXPECTED_ORDER_STATUS:${facts.status || 'UNKNOWN'}`);
+  }
+  return facts;
+}
+
 module.exports = {
   provider,
   ENDPOINTS,
@@ -125,4 +190,7 @@ module.exports = {
   buildCreateOrderV2Payload,
   parseCreateOrderResponse,
   buildOrderDetailQuery,
+  isDuplicateCreateError,
+  readOrderDetailFacts,
+  verifyOrderDetail,
 };
