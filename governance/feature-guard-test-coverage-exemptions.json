@@ -106,28 +106,5 @@
     ],
     "kind": "same-feature-naming-mismatch",
     "justification": "Les deux sont déclarés dans sourcing. 'sourcing-integrity-service' n'apparaît pas tel quel dans le nom du test 'sourcing-integrity-audit' qui le requiert pourtant explicitement."
-  },
-  "scripts/market-cost-attribution-conservation-check.js": {
-    "files": [
-      "tests/unit/market-cost-attribution-conservation-audit.test.js"
-    ],
-    "kind": "same-feature-naming-mismatch",
-    "justification": "Le script et ce test sont déclarés dans economic-engine. Le test requiert explicitement le script et vérifie parseEventIds/main, mais son nom ajoute '-audit' et ne contient donc pas le radical complet attendu par testBaseKey."
-  },
-  "services/market-lifecycle-service.js": {
-    "files": [
-      "tests/unit/market-lifecycle-writer.test.js",
-      "tests/unit/market-lifecycle-transition.test.js"
-    ],
-    "kind": "same-feature-naming-mismatch",
-    "justification": "Le service et ses tests sont déclarés dans market. Les tests requièrent explicitement le writer/lifecycle et couvrent création + matrice de transitions, mais leurs noms ne contiennent pas le radical complet 'market-lifecycle-service'."
-  },
-  "services/purchasing-grouped-service.js": {
-    "files": [
-      "tests/e2e-api/purchasing.grouped-flow.e2e.test.js",
-      "tests/integration/purchase-lines-grouped-postgres.test.js"
-    ],
-    "kind": "same-feature-naming-mismatch",
-    "justification": "Le service et ces tests sont déclarés dans purchasing. Le flux E2E requiert explicitement purchasing-grouped-service et l'intégration couvre la persistance grouped, mais aucun nom de test ne reprend le suffixe '-service'."
   }
 }
