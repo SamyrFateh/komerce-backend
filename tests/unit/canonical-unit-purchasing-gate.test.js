@@ -82,8 +82,8 @@ test('manual/CSV sans SOI reste sourcing mais Purchasing blocked; placeOrder est
 
 describe('evaluateCanonicalProcurementReadiness (GAP-4A)', () => {
   // allegro/aliexpress : preflight distant REQUIRED (provider-authority).
-  // local/whatsapp/noon/amazon_uae : NOT_REQUIRED. 'cj' n'existe pas dans
-  // l'autorité provider — sert ici à prouver le cas UNKNOWN fail-closed.
+  // local/whatsapp/noon/amazon_uae : NOT_REQUIRED. Un provider réellement inconnu
+  // sert à prouver le cas UNKNOWN fail-closed.
 
   test('provider REQUIRED + adapter présent + evaluate ready → FULFILLMENT_READY avec money exposé, sans payload construit', async () => {
     const a = adapter('allegro');
