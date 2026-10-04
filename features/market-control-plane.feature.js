@@ -100,7 +100,7 @@ module.exports = {
     status: 'CONFIRMED_PROTECTED',
     authedRoutesDetected: 5,
     totalRoutes: 5,
-    note: 'Les 4 routes exigent authenticate + rôle admin déclaré. Les GET sont en lecture seule ; le POST orchestre les writers propriétaires et ne peut créer qu’un marché PROVISIONING.',
+    note: 'Les 5 routes exigent authenticate + rôle admin déclaré. Les GET sont en lecture seule ; le POST orchestre les writers propriétaires et ne peut créer qu’un marché PROVISIONING.',
   },
 
   contract: {
