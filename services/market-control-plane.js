@@ -8,7 +8,7 @@
  * @outputs       per-market control view (assignment, team, ceiling, payment, cash policy, relais) and gap report
  * @depends       db.js, services/market-delegation-service.js
  * @used-by       routes/admin-market-control-plane.js
- * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais
+ * @db-read       markets, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais
  * @db-write      none
  * @db-txn        none
  * @doctrine      control_plane_is_read_only, gaps_are_reported_never_repaired, no_second_authorization_engine
