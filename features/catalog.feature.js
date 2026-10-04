@@ -371,6 +371,7 @@ module.exports = {
       'tests/unit/csv-connector.test.js',
       'tests/unit/manual-connector.test.js',
       'tests/unit/manual-connector-source-v2.test.js',
+      'tests/unit/internal-managed-m0-contract.test.js',
       'tests/unit/noon-connector.test.js',
       'tests/unit/cj-connector.test.js',
       'tests/unit/aliexpress-connector.test.js',
