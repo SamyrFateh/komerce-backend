@@ -82,7 +82,7 @@ async function persistSupplierPaymentProof(client, {
   }
 
   if (debitConfirmed === true && sandbox !== true && simulated !== true) {
-    await client.query(`
+    const { rows: promoted } = await client.query(`
       UPDATE supplier_execution_payments
          SET real_debit_verified = true,
              observed_amount = COALESCE(observed_amount, $1),
@@ -95,6 +95,10 @@ async function persistSupplierPaymentProof(client, {
          AND currency = $4
        RETURNING id
     `, [amount, text(paymentRef), paymentId, ccy]);
+
+    if (promoted.length !== 1) {
+      throw new Error('SUPPLIER_PAYMENT_PROOF_PROMOTION_REFUSED');
+    }
 
     await client.query(`
       INSERT INTO supplier_execution_events
