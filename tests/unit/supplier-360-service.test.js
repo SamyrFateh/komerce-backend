@@ -4,6 +4,7 @@
 jest.mock('../../db', () => ({ query: jest.fn() }));
 const db = require('../../db');
 const supplier360 = require('../../services/supplier-360');
+const capabilityEvidence = require('../../services/suppliers/provider-capability-certifications');
 
 const ID = '11111111-1111-4111-8111-111111111111';
 
@@ -22,6 +23,10 @@ test('resolveSupplier valide UUID et ne sélectionne jamais les secrets eux-mêm
   expect(sql).toContain('has_api_secret');
   expect(sql).not.toMatch(/SELECT[^]*api_key_enc\s*(?:,|FROM)/i);
   expect(sql).not.toMatch(/SELECT[^]*api_secret_enc\s*(?:,|FROM)/i);
+});
+
+test('Supplier 360 conserve le projecteur partagé supplier-connectivity comme API de compatibilité', () => {
+  expect(supplier360.projectCapabilityCertifications).toBe(capabilityEvidence.projectCapabilityCertifications);
 });
 
 test('projectCapabilityCertifications conserve preuve, environnement et limites sans inventer activation runtime', () => {

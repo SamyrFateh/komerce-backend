@@ -257,6 +257,31 @@ test('Product 360 reprend les valeurs économiques persistées sans recalculer l
   expect(result.economics.doctrine).toBe('persisted_cost_truth_only');
 });
 
+test('Product 360 sépare vendabilité catalogue et preuves manual/auto du provider', async () => {
+  mockQueries({
+    suppliers: [{
+      supplier_id: '22222222-2222-4222-8222-222222222222',
+      supplier_name: 'Allegro Poland', platform: 'allegro', supplier_sku: 'ALG-1',
+      supplier_url: null, supplier_price_aed: 42.5, min_order_qty: 1, priority: 1,
+      is_active: true, last_checked_at: null, notes: null,
+    }],
+  });
+
+  const result = await product360.loadProduct360(product({ is_active: true, is_available: false }), {
+    marketIds: null, includeCentral: true,
+  });
+
+  expect(result.product).toEqual(expect.objectContaining({ is_active: true, is_available: false }));
+  expect(result.central.suppliers[0].purchasing_modes).toEqual(expect.objectContaining({
+    provider: 'allegro',
+    authority: 'observational_proof_only',
+    manual_procurement: expect.objectContaining({ availability: 'PROVEN', highest_proof: 'P4' }),
+    auto_order: expect.objectContaining({ availability: 'CLOSED', highest_proof: 'UNQUALIFIED' }),
+  }));
+  expect(result.data_quality.purchasing_mode_truth)
+    .toBe('external_provider_capability_certification_ledger_observational_only');
+});
+
 test('autorité centrale seule charge fournisseurs et audits sans exposer secrets ni UUID', async () => {
   mockQueries({
     suppliers: [{

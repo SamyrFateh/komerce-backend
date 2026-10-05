@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        supplier_uuid
  * @outputs       supplier_360_readonly_projection
- * @depends       db, services/suppliers/provider-authority.js, governance/external-provider-capability-certifications.json
+ * @depends       db, services/suppliers/provider-capability-certifications.js
  * @used-by       routes/admin-supplier-360.js
  * @db-read       suppliers, product_suppliers, products, purchase_orders, orders, supplier_execution_orders, supplier_execution_payments
  * @db-write      none
@@ -18,8 +18,7 @@
 'use strict';
 
 const db = require('../db');
-const providerAuthority = require('./suppliers/provider-authority');
-const capabilityCertificationRegistry = require('../governance/external-provider-capability-certifications.json');
+const capabilityEvidence = require('./suppliers/provider-capability-certifications');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -43,32 +42,7 @@ async function resolveSupplier(value, q = db) {
   return { invalid: false, supplier: row || null };
 }
 
-function projectCapabilityCertifications(platform, registry = capabilityCertificationRegistry) {
-  const provider = providerAuthority.normalizeProviderCode(platform);
-  const supported = providerAuthority.isSupportedProvider(provider);
-  const rawRecords = supported && registry && registry.providers && Array.isArray(registry.providers[provider])
-    ? registry.providers[provider]
-    : [];
-
-  const records = rawRecords.map(row => Object.freeze({
-    capability: row.capability,
-    classification: row.classification,
-    availability: row.availability,
-    highest_proof: row.highest_proof,
-    environment: row.environment,
-    evidence: Object.freeze(Array.isArray(row.evidence) ? row.evidence.map(String) : []),
-    limitations: Object.freeze(Array.isArray(row.limitations) ? row.limitations.map(String) : []),
-  }));
-
-  return Object.freeze({
-    provider: supported ? provider : null,
-    resolution: !supported ? 'UNSUPPORTED_PROVIDER' : (records.length ? 'RECORDED' : 'NO_RECORD'),
-    source: 'governance/external-provider-capability-certifications.json',
-    authority: 'observational_proof_only',
-    records: Object.freeze(records),
-  });
-}
-
+const { projectCapabilityCertifications } = capabilityEvidence;
 async function loadSupplier360(supplier, q = db) {
   if (!supplier || !supplier.id) throw new Error('supplier_360_resolved_supplier_required');
 

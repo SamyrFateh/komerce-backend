@@ -121,6 +121,16 @@ test('Product 360 réserve les identités fournisseur exactes à la facette cent
   expect(source).toContain("'Provider'");
 });
 
+test('purchasingModeLabel présente la preuve sans transformer CLOSED ou NO_RECORD en activation runtime', () => {
+  expect(product360.purchasingModeLabel({
+    resolution: 'RECORDED',
+    availability: 'CLOSED',
+    highest_proof: 'UNQUALIFIED',
+    environment: 'SANDBOX',
+  })).toBe('CLOSED · UNQUALIFIED · SANDBOX');
+  expect(product360.purchasingModeLabel({ resolution: 'NO_RECORD' })).toBe('NO_RECORD');
+});
+
 test('variantLabel ne fait que présenter le variant_combo serveur', () => {
   expect(product360.variantLabel({ couleur: 'Noir', taille: 'M' })).toBe('couleur: Noir · taille: M');
   expect(product360.variantLabel(null)).toBe('Défaut');

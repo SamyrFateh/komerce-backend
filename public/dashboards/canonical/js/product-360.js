@@ -5,14 +5,14 @@
  * @layer         ui-orchestration
  * @criticality   medium
  * @inputs        canonical_admin_session, product_ref
- * @outputs       canonical_product_360
+ * @outputs       canonical_product_360, supplier_purchasing_mode_evidence
  * @depends       primitives, navigation
  * @used-by       canonical admin entrypoint
  * @db-read       none
  * @db-write      none
  * @db-txn        none
  * @doctrine      entity_360_reunites_without_recomputing, canonical_admin_no_legacy_imports, product_ref_is_business_identity
- * @impact-areas  admin-dashboard, catalog, commerce, inventory, sourcing, economic-engine
+ * @impact-areas  admin-dashboard, catalog, commerce, inventory, sourcing, economic-engine, supplier-connectivity, purchasing
  * @version       2026-08
  */
 
@@ -141,6 +141,11 @@
   function variantLabel(combo) {
     if (!combo || typeof combo !== 'object') return 'Défaut';
     return Object.entries(combo).map(([k, v]) => `${k}: ${v}`).join(' · ') || 'Défaut';
+  }
+
+  function purchasingModeLabel(mode) {
+    if (!mode || mode.resolution !== 'RECORDED') return mode && mode.resolution || 'NO_RECORD';
+    return [mode.availability, mode.highest_proof, mode.environment].filter(Boolean).join(' · ');
   }
 
   function supplierDrills(suppliers, productRef) {
@@ -286,6 +291,8 @@
           { key: 'price', label: 'Prix achat', align: 'right' },
           { key: 'moq', label: 'MOQ', align: 'right' },
           { key: 'priority', label: 'Priorité', align: 'right' },
+          { key: 'manual', label: 'Achat manuel' },
+          { key: 'auto', label: 'Achat automatique' },
           { key: 'checked', label: 'Dernier contrôle' },
         ],
         rows: (central.suppliers || []).map(row => ({
@@ -295,6 +302,8 @@
           price: formatAed(row.supplier_price_aed),
           moq: formatNumber(row.min_order_qty),
           priority: formatNumber(row.priority),
+          manual: purchasingModeLabel(row.purchasing_modes && row.purchasing_modes.manual_procurement),
+          auto: purchasingModeLabel(row.purchasing_modes && row.purchasing_modes.auto_order),
           checked: formatDate(row.last_checked_at),
         })),
         emptyText: 'Aucun fournisseur mappé.',
@@ -413,6 +422,7 @@
     marketLabel,
     variantLabel,
     supplierDrills,
+    purchasingModeLabel,
     metricItems,
     renderPayload,
     jsonRequest,
