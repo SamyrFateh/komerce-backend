@@ -112,10 +112,13 @@ describe('AliExpress purchase preflight', () => {
     })).toThrow(/BLOCKED_SUPPLIER_IDENTITY.*sku_id natif/i);
 
     const placeOrder = preflight.buildPlaceOrderBusinessParams(resolved, {
-      address: 'Hub staging',
+      address1: 'Hub staging',
       city: 'Dubai',
-      country: 'AE',
-      full_name: 'Komerce Staging',
+      country_code: 'AE',
+      province: 'Dubai',
+      postal_code: '00000',
+      customer_name: 'Komerce Staging',
+      phone: '+971500000000',
     });
     const placeOrderDto = JSON.parse(placeOrder.param_place_order_request4_open_api_d_t_o);
     expect(placeOrderDto.product_items[0].sku_attr).toBe('14:Field Green');
@@ -130,10 +133,13 @@ describe('AliExpress purchase preflight', () => {
   test('prépare le payload place-order officiel sans l’exécuter', () => {
     const resolved = preflight.resolveOrderableUnit(contract(), 'AE-SKU-RED-M', 1);
     const params = preflight.buildPlaceOrderBusinessParams(resolved, {
-      address: 'Hub staging',
+      address1: 'Hub staging',
       city: 'Dubai',
-      country: 'AE',
-      full_name: 'Komerce Staging',
+      country_code: 'AE',
+      province: 'Dubai',
+      postal_code: '00000',
+      customer_name: 'Komerce Staging',
+      phone: '+971500000000',
     }, { logistics_service_name: 'TEST-LINE' });
     const dto = JSON.parse(params.param_place_order_request4_open_api_d_t_o);
     expect(dto.logistics_address.country).toBe('AE');
@@ -143,6 +149,30 @@ describe('AliExpress purchase preflight', () => {
       sku_attr: '14:10;5:361386',
       logistics_service_name: 'TEST-LINE',
     }]);
+  });
+
+  test('traduit la destination canonique vers le DTO AliExpress et construit single_order_query', () => {
+    expect(preflight.normalizePlaceOrderAddress({
+      address1: '7 Test Street',
+      city: 'Dubai',
+      country_code: 'ae',
+      province: 'Dubai',
+      postal_code: '00000',
+      customer_name: 'Komerce Hub',
+      phone: '+971500000000',
+    })).toEqual(expect.objectContaining({
+      address: '7 Test Street',
+      city: 'Dubai',
+      country: 'AE',
+      province: 'Dubai',
+      zip: '00000',
+      contact_person: 'Komerce Hub',
+      full_name: 'Komerce Hub',
+      mobile_no: '+971500000000',
+    }));
+    expect(preflight.buildOrderDetailBusinessParams('123456789')).toEqual({
+      single_order_query: JSON.stringify({ order_id: '123456789' }),
+    });
   });
 
   test('fail-closed si le stock exact du SKU est inconnu', () => {

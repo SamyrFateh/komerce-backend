@@ -167,13 +167,38 @@ function buildFreightBusinessParams(resolved, destination = {}) {
   };
 }
 
+function normalizePlaceOrderAddress(logisticsAddress) {
+  const source = logisticsAddress && typeof logisticsAddress === 'object' ? logisticsAddress : {};
+  const address = {
+    address: String(source.address || source.address1 || '').trim(),
+    ...(String(source.address2 || '').trim() ? { address2: String(source.address2).trim() } : {}),
+    city: String(source.city || '').trim(),
+    contact_person: String(source.contact_person || source.customer_name || source.full_name || '').trim(),
+    country: String(source.country_code || source.country || '').trim().toUpperCase(),
+    full_name: String(source.full_name || source.customer_name || source.contact_person || '').trim(),
+    mobile_no: String(source.mobile_no || source.phone || '').trim(),
+    province: String(source.province || '').trim(),
+    zip: String(source.zip || source.postal_code || '').trim(),
+    locale: String(source.locale || 'en_US').trim(),
+  };
+  for (const [key, value] of Object.entries(address)) {
+    if (!value && ['address', 'city', 'contact_person', 'country', 'full_name', 'mobile_no', 'province', 'zip'].includes(key)) {
+      throw new Error(`ALIEXPRESS_LOGISTICS_ADDRESS_${key.toUpperCase()}_REQUIRED`);
+    }
+  }
+  return address;
+}
+
+function buildOrderDetailBusinessParams(orderId) {
+  const id = String(orderId || '').trim();
+  if (!/^\d{5,30}$/.test(id)) throw new Error('ALIEXPRESS_ORDER_ID_INVALID');
+  return { single_order_query: JSON.stringify({ order_id: id }) };
+}
+
 function buildPlaceOrderBusinessParams(resolved, logisticsAddress, options = {}) {
   if (!resolved) throw new Error('resolved unit requis');
   requireCanonicalIdentity(resolved);
-  const address = logisticsAddress && typeof logisticsAddress === 'object' ? { ...logisticsAddress } : null;
-  if (!address || !String(address.address || '').trim()) {
-    throw new Error('logistics_address.address requis pour préparer place-order');
-  }
+  const address = normalizePlaceOrderAddress(logisticsAddress);
 
   const item = {
     product_count: positiveInt(resolved.quantity),
@@ -221,6 +246,8 @@ module.exports = {
   normalizeSupplierLegDestination,
   buildFreightQuoteParams,
   buildFreightBusinessParams,
+  normalizePlaceOrderAddress,
+  buildOrderDetailBusinessParams,
   buildPlaceOrderBusinessParams,
   summarizeFreightResponse,
   classifyApiError,

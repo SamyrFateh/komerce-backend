@@ -193,10 +193,13 @@ describe('AliExpress fulfillment adapter', () => {
       }],
       context: {
         procurement_destination: {
-          address: 'Hub Komerce',
+          address1: 'Hub Komerce',
           city: 'Dubai',
-          country: 'AE',
           country_code: 'AE',
+          province: 'Dubai',
+          postal_code: '00000',
+          customer_name: 'Komerce Hub',
+          phone: '+971500000000',
         },
       },
     });
@@ -208,7 +211,15 @@ describe('AliExpress fulfillment adapter', () => {
       sku_attr: '14:Beige;200001036:1m',
       logistics_service_name: 'CAINIAO_FULFILLMENT_STD',
     })]);
-    expect(native.logistics_address).toEqual(expect.objectContaining({ address: 'Hub Komerce', country_code: 'AE' }));
+    expect(native.logistics_address).toEqual(expect.objectContaining({
+      address: 'Hub Komerce',
+      city: 'Dubai',
+      country: 'AE',
+      province: 'Dubai',
+      zip: '00000',
+      contact_person: 'Komerce Hub',
+      mobile_no: '+971500000000',
+    }));
   });
 
   test('placeOrder reste fermé sans opt-in runtime', async () => {
@@ -238,7 +249,7 @@ describe('AliExpress fulfillment adapter', () => {
     expect(invokeTop).toHaveBeenNthCalledWith(
       2,
       'aliexpress.trade.ds.order.get',
-      { order_id: '123456789' },
+      { single_order_query: JSON.stringify({ order_id: '123456789' }) },
       expect.any(Object)
     );
     expect(out).toMatchObject({
