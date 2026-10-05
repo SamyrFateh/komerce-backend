@@ -77,11 +77,18 @@ test('cap dépassé arrête avant confirm et payBalanceV2',async()=>{
     }
     if(path===contract.ENDPOINTS.create_order_v2){
       expect(args.body.isSandbox).toBeUndefined();
+      expect(args.body.iossType).toBe(3);
       return {result:true,data:{
         orderId:'CJ-1',
         orderNumber:'KOM-REAL-1',
-        productAmount:19,
+        productAmount:5,
         postageAmount:2,
+        actualPayment:7,
+        iossAmount:0,
+        iossTaxHandlingFee:0,
+        actualPayment:21,
+        iossAmount:12,
+        iossTaxHandlingFee:2,
       }};
     }
     if(path===contract.ENDPOINTS.get_order_detail){
@@ -89,6 +96,11 @@ test('cap dépassé arrête avant confirm et payBalanceV2',async()=>{
         orderId:'CJ-1',
         orderNumber:'KOM-REAL-1',
         orderStatus:'CREATED',
+        orderAmount:21,
+        productAmount:5,
+        postageAmount:2,
+        iossAmount:12,
+        iossTaxHandlingFee:2,
         productList:[{vid:'V',quantity:1}],
       }};
     }
@@ -126,11 +138,15 @@ test('succès appelle payBalanceV2 exactement une fois puis billingHistory',asyn
     }
     if(path===contract.ENDPOINTS.create_order_v2){
       expect(args.body.isSandbox).toBeUndefined();
+      expect(args.body.iossType).toBe(3);
       return {result:true,data:{
         orderId:'CJ-1',
         orderNumber:'KOM-REAL-1',
         productAmount:5,
         postageAmount:2,
+        actualPayment:7,
+        iossAmount:0,
+        iossTaxHandlingFee:0,
       }};
     }
     if(path===contract.ENDPOINTS.get_order_detail){
@@ -140,6 +156,11 @@ test('succès appelle payBalanceV2 exactement une fois puis billingHistory',asyn
           orderId:'CJ-1',
           orderNumber:'KOM-REAL-1',
           orderStatus:'CREATED',
+          orderAmount:7,
+          productAmount:5,
+          postageAmount:2,
+          iossAmount:0,
+          iossTaxHandlingFee:0,
           productList:[{vid:'V',quantity:1}],
         }};
       }
