@@ -30,6 +30,7 @@ function normalizeLimit(raw) {
 
 async function getSupplierPaymentReview(options = {}, q = db) {
   const limit = normalizeLimit(options.limit === undefined ? 50 : options.limit);
+  const includeInternalIdentity = options.include_internal_identity === true;
   const limitClause = limit == null ? '' : 'LIMIT $1';
   const params = limit == null ? [] : [limit];
 
@@ -62,7 +63,7 @@ async function getSupplierPaymentReview(options = {}, q = db) {
 
   const count = rows.length ? Number(rows[0].total_count) || 0 : 0;
   const items = rows.map(row => Object.freeze({
-    payment_id: row.payment_id,
+    ...(includeInternalIdentity ? { payment_id: row.payment_id } : {}),
     purchase_order_id: row.purchase_order_id,
     provider: row.provider,
     payment_ref: row.payment_ref || null,
