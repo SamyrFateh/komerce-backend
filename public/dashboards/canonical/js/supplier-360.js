@@ -67,6 +67,19 @@
     ];
   }
 
+  function certificationRows(certifications) {
+    const records = certifications && Array.isArray(certifications.records) ? certifications.records : [];
+    return records.map(row => ({
+      capability: row.capability,
+      availability: row.availability,
+      environment: row.environment,
+      proof: row.highest_proof,
+      classification: row.classification,
+      evidence: (row.evidence || []).join(' · '),
+      limitations: (row.limitations || []).join(' · '),
+    }));
+  }
+
   function renderPayload(rootNode, ui, doc, payload) {
     const supplier = payload.supplier;
     rootNode.className = 'kmc-admin-shell kmc-entity-shell';
@@ -107,6 +120,25 @@
         { champ: 'Secret API présent', valeur: supplier.has_api_secret ? 'Oui' : 'Non' },
       ],
       emptyText: 'Aucune identité fournisseur.',
+    });
+
+    const certifications = supplier.capability_certifications || { records: [] };
+    renderTable(rootNode, ui, {
+      title: 'Capabilities & certifications observées',
+      description: 'Projection read-only du registre de preuves provider. Ces lignes décrivent une preuve, un environnement et ses limites ; elles n’activent jamais une capability runtime.',
+      columns: [
+        { key: 'capability', label: 'Capability' },
+        { key: 'availability', label: 'Disponibilité prouvée' },
+        { key: 'environment', label: 'Environnement' },
+        { key: 'proof', label: 'Preuve max' },
+        { key: 'classification', label: 'Classification' },
+        { key: 'evidence', label: 'Evidence' },
+        { key: 'limitations', label: 'Limites' },
+      ],
+      rows: certificationRows(certifications),
+      emptyText: certifications.resolution === 'NO_RECORD'
+        ? 'Aucune certification capability enregistrée pour ce provider.'
+        : 'Provider sans certification capability résolue.',
     });
 
     const returnTo = '/admin/suppliers/' + encodeURIComponent(supplier.id);
@@ -222,5 +254,5 @@
     }
   }
 
-  return Object.freeze({ ENDPOINT_PREFIX, supplierIdFromPath, metricItems, renderPayload, jsonRequest, mount });
+  return Object.freeze({ ENDPOINT_PREFIX, supplierIdFromPath, certificationRows, metricItems, renderPayload, jsonRequest, mount });
 });
