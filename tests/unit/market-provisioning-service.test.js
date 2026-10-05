@@ -48,3 +48,16 @@ test('provisioning H composes payment cash and relay writers', () => {
   expect(source).toMatch(/initializeProvisioningCashPolicy/);
   expect(source).toMatch(/relaisMutation\.createRelais/);
 });
+
+
+describe('historical market reprovision', () => {
+  test('reuses the same canonical provisioning composition', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '..', '..', 'services', 'market-provisioning-service.js'), 'utf8');
+    expect(source).toMatch(/async function configureProvisioningMarket/);
+    expect(source).toMatch(/async function reprovisionMarket/);
+    expect(source.match(/return configureProvisioningMarket\(executor/g)).toHaveLength(2);
+    expect(source).toMatch(/loadProvisioningMarket/);
+  });
+});
