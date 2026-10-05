@@ -5,14 +5,15 @@
  * @layer         route
  * @criticality   medium
  * @inputs        central admin actor, canonical market code in path
- * @outputs       read-only market list, per-market control view with gap report, and active central authority overview
+ * @outputs       market list/control view, provisioning/reprovisioning/lifecycle mutations, central authority overview
  * @depends       db.js, middleware/auth.js, services/market-control-plane.js, services/central-authority.js
  * @used-by       bootstrap/api-routes.js, central admin workspace
  * @db-read       none
  * @db-write      none
+ * @db-write-via:market-provisioning-service markets, market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities, market_cash_control_policies, market_payment_providers, relais
  * @db-read-via:market-control-plane markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais
- * @db-txn        none
- * @doctrine      control_plane_is_read_only, central_by_role_declared, no_second_authorization_engine
+ * @db-txn        explicit for mutation routes
+ * @doctrine      control_plane_orchestrates_owned_writers, central_by_role_declared, no_second_authorization_engine
  * @impact-areas  market-delegation, market, authorization
  * @version       2026-10-v1
  */
@@ -24,7 +25,7 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const controlPlane = require('../services/market-control-plane');
 const centralAuthority = require('../services/central-authority');
-const { provisionMarket, setMarketLifecycle } = require('../services/market-provisioning-service');
+const { provisionMarket, reprovisionMarket, setMarketLifecycle } = require('../services/market-provisioning-service');
 
 // Vue centrale par rôle (Q4 du chantier) : déclarée ici, jamais implicite.
 const centralAdmin = [authenticate, requireRole(['admin'])];
@@ -60,6 +61,26 @@ router.post('/', ...centralAdmin, async (req, res, next) => {
       currency: body.currency,
       minorUnit: body.minor_unit,
       storefrontTexts: body.storefront_texts || {},
+      centralReferentUserId: body.central_referent_user_id,
+      financialLimits: body.financial_limits || {},
+      lead: body.lead || {},
+      paymentProvider: body.payment_provider || null,
+      cashPolicy: body.cash_policy || null,
+      initialRelais: body.initial_relais || null,
+      correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
+    }));
+    res.status(201).json(result);
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+router.post('/:marketCode/reprovision', ...centralAdmin, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const result = await withTransaction(client => reprovisionMarket(client, {
+      actorUserId: req.user.id,
+      marketCode: req.params.marketCode,
       centralReferentUserId: body.central_referent_user_id,
       financialLimits: body.financial_limits || {},
       lead: body.lead || {},

@@ -14,3 +14,15 @@ describe('market-lifecycle-service', () => {
     expect(ALLOWED_TRANSITIONS.CLOSED).toEqual([]);
   });
 });
+
+
+describe('reprovision lookup guard', () => {
+  test('source requires PROVISIONING without ACTIVE assignment', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '..', '..', 'services', 'market-lifecycle-service.js'), 'utf8');
+    expect(source).toMatch(/MARKET_REPROVISION_REQUIRES_PROVISIONING/);
+    expect(source).toMatch(/MARKET_REPROVISION_ACTIVE_ASSIGNMENT/);
+    expect(source).toMatch(/market_operating_assignments/);
+  });
+});

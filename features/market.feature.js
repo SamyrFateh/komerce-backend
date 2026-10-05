@@ -69,6 +69,9 @@ module.exports = {
 
   // ── Perimetre fichiers ───────────────────────────────────────────────────
   files: {
+    scripts: [
+      'scripts/cm-cg-market-reprovision-reset.js',
+    ],
     migrations: [
       'migrations/135_markets_foundation.sql',
       'migrations/136_operator_market_scopes.sql',
@@ -104,6 +107,7 @@ module.exports = {
       'tests/unit/market-lifecycle-schema.test.js',
       'tests/unit/market-lifecycle-writer.test.js',
       'tests/unit/market-lifecycle-transition.test.js',
+      'tests/unit/cm-cg-market-reprovision-reset.test.js',
       'tests/unit/market-lifecycle-service.test.js',
     ],
   },
@@ -155,7 +159,7 @@ module.exports = {
   invariants: [
     'markets porte désormais le lifecycle canonique PROVISIONING/ACTIVE/SUSPENDED/CLOSED et storefront_texts ; aucune autorisation utilisateur n’est dérivée de ces champs',
     'market-lifecycle-service est le seul writer runtime de lifecycle_status/is_active ; CLOSED est terminal et toute transition suit la matrice explicite',
-    'provisionner un marché crée une ligne PROVISIONING via market-lifecycle-service ; les migrations ne servent qu’à faire évoluer le schéma ou aux seeds historiques',
+    'provisionner un nouveau marché crée une ligne PROVISIONING ; reprovisionner un Market ID historique exige explicitement un état PROVISIONING sans assignment ACTIVE et conserve l’identité/historique du marché',
     'operator_market_scopes (M1) = historique d\'accès grain user, jamais source du settlement (grain organisation, différé)',
     'révocation d\'un scope = UPDATE revoked_at, jamais DELETE — l\'historique d\'accès n\'est pas reconstructible sinon',
     'MarketContext (parcours acheteur) est un contexte client commutable, jamais une autorisation',

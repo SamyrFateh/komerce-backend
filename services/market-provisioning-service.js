@@ -23,7 +23,7 @@
  */
 'use strict';
 
-const { createProvisioningMarket, transitionMarketLifecycle } = require('./market-lifecycle-service');
+const { createProvisioningMarket, loadProvisioningMarket, transitionMarketLifecycle } = require('./market-lifecycle-service');
 const delegation = require('./market-delegation-service');
 const { targetCapabilitiesForScope } = require('./market-operator-provisioning');
 const { inviteTeamMember } = require('./market-delegation-team-service');
@@ -57,13 +57,9 @@ async function assertCentralReferent(executor, userId) {
   return domains;
 }
 
-async function provisionMarket(executor, {
+async function configureProvisioningMarket(executor, {
+  market,
   actorUserId,
-  code,
-  name,
-  currency,
-  minorUnit = 0,
-  storefrontTexts = {},
   centralReferentUserId,
   financialLimits = {},
   lead = {},
@@ -75,9 +71,6 @@ async function provisionMarket(executor, {
   if (!executor || typeof executor.query !== 'function') throw new TypeError('market-provisioning-service: executor.query requis');
   const referentDomains = await assertCentralReferent(executor, centralReferentUserId);
 
-  const market = await createProvisioningMarket(executor, {
-    code, name, currency, minorUnit, storefrontTexts, actorUserId, correlationId,
-  });
   await delegation.audit(executor, {
     actorUserId,
     marketId: market.id,
@@ -189,6 +182,47 @@ async function provisionMarket(executor, {
   };
 }
 
+async function provisionMarket(executor, {
+  actorUserId,
+  code,
+  name,
+  currency,
+  minorUnit = 0,
+  storefrontTexts = {},
+  centralReferentUserId,
+  financialLimits = {},
+  lead = {},
+  paymentProvider = null,
+  cashPolicy = null,
+  initialRelais = null,
+  correlationId = null,
+}) {
+  const market = await createProvisioningMarket(executor, {
+    code, name, currency, minorUnit, storefrontTexts, actorUserId, correlationId,
+  });
+  return configureProvisioningMarket(executor, {
+    market, actorUserId, centralReferentUserId, financialLimits, lead,
+    paymentProvider, cashPolicy, initialRelais, correlationId,
+  });
+}
+
+async function reprovisionMarket(executor, {
+  actorUserId,
+  marketCode,
+  centralReferentUserId,
+  financialLimits = {},
+  lead = {},
+  paymentProvider = null,
+  cashPolicy = null,
+  initialRelais = null,
+  correlationId = null,
+}) {
+  const market = await loadProvisioningMarket(executor, { marketCode });
+  return configureProvisioningMarket(executor, {
+    market, actorUserId, centralReferentUserId, financialLimits, lead,
+    paymentProvider, cashPolicy, initialRelais, correlationId,
+  });
+}
 
 async function setMarketLifecycle(executor, {
   actorUserId, marketCode, targetStatus, correlationId = null,
@@ -223,4 +257,4 @@ async function setMarketLifecycle(executor, {
   return result;
 }
 
-module.exports = { assertCentralReferent, provisionMarket, setMarketLifecycle };
+module.exports = { assertCentralReferent, configureProvisioningMarket, provisionMarket, reprovisionMarket, setMarketLifecycle };

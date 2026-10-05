@@ -43,3 +43,15 @@ describe('admin market control plane — lecture centrale + provisioning', () =>
     expect(bootstrap.match(/app\.use\('\/api\/admin\/markets', adminMarketControlPlaneRouter\)/g) || []).toHaveLength(1);
   });
 });
+
+
+describe('historical market reprovision route', () => {
+  test('exposes one guarded central reprovision mutation', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const source = fs.readFileSync(path.join(__dirname, '..', '..', 'routes', 'admin-market-control-plane.js'), 'utf8');
+    expect(source).toMatch(/router\.post\('\/:marketCode\/reprovision'/);
+    expect(source).toMatch(/\.\.\.centralAdmin/);
+    expect(source).toMatch(/reprovisionMarket/);
+  });
+});

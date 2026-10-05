@@ -8,7 +8,7 @@
  * @outputs       canonical market row in PROVISIONING, audited lifecycle transitions
  * @depends       none
  * @used-by       services/market-provisioning-service.js
- * @db-read       markets
+ * @db-read       markets, market_operating_assignments
  * @db-write      markets
  * @db-txn        caller-owned
  * @doctrine      market_owns_market_lifecycle, lifecycle_never_grants_user_authority
@@ -122,4 +122,42 @@ async function transitionMarketLifecycle(executor, { marketCode, targetStatus })
   return { before: current, after: updated[0], changed: true };
 }
 
-module.exports = { ALLOWED_TRANSITIONS, createProvisioningMarket, normalizeCurrency, transitionMarketLifecycle };
+
+async function loadProvisioningMarket(executor, { marketCode }) {
+  const db = requireExecutor(executor);
+  const code = normalizeMarketCode(marketCode);
+  if (!code) throw lifecycleError('MARKET_CODE_INVALID', 'Code marché invalide.', 400);
+  const { rows } = await db.query(
+    `SELECT id,code,name,currency,minor_unit,is_active,lifecycle_status,storefront_texts,created_at
+       FROM markets
+      WHERE code=$1
+      LIMIT 1
+      FOR UPDATE`,
+    [code]
+  );
+  const market = rows[0];
+  if (!market) throw lifecycleError('MARKET_NOT_FOUND', 'Marché introuvable.', 404);
+  if (market.lifecycle_status !== 'PROVISIONING' || market.is_active) {
+    throw lifecycleError(
+      'MARKET_REPROVISION_REQUIRES_PROVISIONING',
+      'Le reprovisioning exige un marché PROVISIONING et inactif.',
+      409
+    );
+  }
+  const { rows: activeAssignments } = await db.query(
+    `SELECT id FROM market_operating_assignments
+      WHERE market_id=$1::uuid AND status='ACTIVE'
+      LIMIT 1`,
+    [market.id]
+  );
+  if (activeAssignments[0]) {
+    throw lifecycleError(
+      'MARKET_REPROVISION_ACTIVE_ASSIGNMENT',
+      'Un assignment ACTIVE existe encore pour ce marché.',
+      409
+    );
+  }
+  return market;
+}
+
+module.exports = { ALLOWED_TRANSITIONS, createProvisioningMarket, loadProvisioningMarket, normalizeCurrency, transitionMarketLifecycle };
