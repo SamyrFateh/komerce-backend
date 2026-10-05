@@ -270,7 +270,8 @@ describe('PUT /api/admin/boutique-categories/:key — modification', () => {
 
   it('nominal → 200, UPDATE avec champs fournis, recharge via getCategoryWithSubcats, cache invalidé', async () => {
     mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Nouveau', before_snapshot: { key: 'phones', label: 'Ancien' } }] }) // CTE UPDATE + before
+      .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Ancien' }] }) // snapshot before
+      .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Nouveau' }] }) // UPDATE
       .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Nouveau' }] }) // getCategoryWithSubcats SELECT cat
       .mockResolvedValueOnce({ rows: [{ id: 'sc1' }] }); // SELECT subs
 
@@ -278,7 +279,7 @@ describe('PUT /api/admin/boutique-categories/:key — modification', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ key: 'phones', label: 'Nouveau', subcategories: [{ id: 'sc1' }] });
     expect(mockInvalidateCategoriesCache).toHaveBeenCalledTimes(1);
-    const [sql, params] = mockDbQuery.mock.calls[0];
+    const [sql, params] = mockDbQuery.mock.calls[1];
     expect(sql).toContain('label = $1');
     expect(sql).toContain('updated_at = NOW()');
     expect(params).toEqual(['Nouveau', 'phones']);
@@ -286,13 +287,13 @@ describe('PUT /api/admin/boutique-categories/:key — modification', () => {
 
   it('champs ignorés non whitelistés (ex: key) → non inclus dans l\'UPDATE', async () => {
     mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ key: 'phones', before_snapshot: { key: 'phones', label: 'Ancien' } }] })
+      .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Ancien' }] })
+      .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Nouveau' }] })
       .mockResolvedValueOnce({ rows: [{ key: 'phones' }] })
       .mockResolvedValueOnce({ rows: [] });
     await request(buildApp()).put('/api/admin/boutique-categories/phones').send({ key: 'autre', label: 'Nouveau' });
-    const [sql, params] = mockDbQuery.mock.calls[0];
-    const updateClause = sql.slice(sql.indexOf('UPDATE boutique_categories'), sql.indexOf('RETURNING c.*'));
-    expect(updateClause).not.toContain('c.key = $1');
+    const [sql, params] = mockDbQuery.mock.calls[1];
+    expect(sql).not.toContain('SET key = $1');
     expect(params).toEqual(['Nouveau', 'phones']);
   });
 
@@ -437,33 +438,38 @@ describe('PUT /api/admin/boutique-categories/:key/subcategories/:subKey — modi
   });
 
   it('nominal → 200, UPDATE scoped sur category_key ET key, cache invalidé', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1', label: 'iPhone 15', before_snapshot: { id: 'sc1', label: 'iPhone' } }] });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', category_key: 'phones', key: 'iphone', label: 'iPhone' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', label: 'iPhone 15' }] });
     const res = await request(buildApp()).put('/api/admin/boutique-categories/phones/subcategories/iphone').send({ label: 'iPhone 15' });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: 'sc1', label: 'iPhone 15' });
     expect(mockInvalidateCategoriesCache).toHaveBeenCalledTimes(1);
-    const [sql, params] = mockDbQuery.mock.calls[0];
+    const [sql, params] = mockDbQuery.mock.calls[1];
     expect(sql).toContain('WHERE category_key = $2 AND key = $3');
     expect(params).toEqual(['iPhone 15', 'phones', 'iphone']);
   });
 
   it('customs_category_key est administrable sur une sous-catégorie', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1', customs_category_key: 'phones', before_snapshot: { id: 'sc1', customs_category_key: null } }] });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', category_key: 'phones', key: 'iphone', customs_category_key: null }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', customs_category_key: 'phones' }] });
     const res = await request(buildApp())
       .put('/api/admin/boutique-categories/phones/subcategories/iphone')
       .send({ customs_category_key: 'phones' });
     expect(res.status).toBe(200);
-    const [sql, params] = mockDbQuery.mock.calls[0];
+    const [sql, params] = mockDbQuery.mock.calls[1];
     expect(sql).toContain('customs_category_key = $1');
     expect(params).toEqual(['phones', 'phones', 'iphone']);
   });
 
   it('champ "key" non whitelisté → ignoré dans l\'UPDATE', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1', display_order: 2, before_snapshot: { id: 'sc1', display_order: 1 } }] });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', category_key: 'phones', key: 'iphone', display_order: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', display_order: 2 }] });
     await request(buildApp()).put('/api/admin/boutique-categories/phones/subcategories/iphone').send({ key: 'autre', display_order: 2 });
-    const [sql, params] = mockDbQuery.mock.calls[0];
-    const updateClause = sql.slice(sql.indexOf('UPDATE boutique_subcategories'), sql.indexOf('RETURNING boutique_subcategories.*'));
-    expect(updateClause).not.toContain('key = $1');
+    const [sql, params] = mockDbQuery.mock.calls[1];
+    expect(sql).not.toContain('SET key = $1');
     expect(params).toEqual([2, 'phones', 'iphone']);
   });
 
