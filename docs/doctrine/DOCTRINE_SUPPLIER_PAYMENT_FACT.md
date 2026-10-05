@@ -61,3 +61,27 @@ Après migration 280 :
     production provider debit = UNPROVEN
     ambiguous debit recovery = UNPROVEN
     B2B accounting reconciliation = UNPROVEN
+
+
+## Lifecycle applicatif
+
+Le service `supplier-payment-state.js` applique la machine suivante :
+
+```
+prepared
+  → requested
+      → succeeded
+      → rejected
+      → ambiguous
+```
+
+Règles de sûreté :
+
+- seul `prepared` autorise un premier appel provider ;
+- `requested` bloque un appel concurrent ;
+- `ambiguous` ne peut jamais être rejoué aveuglément : une réconciliation/read-back est obligatoire ;
+- `succeeded` interdit tout second paiement ;
+- `rejected` exige une décision/revue explicite avant une nouvelle tentative ;
+- un même `payment_execution_key` rejoué avec un scope, montant, devise ou target différent est refusé.
+
+Ce service n'appelle aucun provider. Il prépare la frontière de sûreté pour le futur orchestrateur de paiement.
