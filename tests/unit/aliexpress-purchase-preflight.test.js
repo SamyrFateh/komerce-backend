@@ -54,15 +54,50 @@ describe('AliExpress purchase preflight', () => {
       send_goods_country_code: 'CN',
     });
 
-    expect(params).toEqual({
+    expect(Object.keys(params)).toEqual(['aeopFreightCalculateForBuyerDTO']);
+    const dto = JSON.parse(params.aeopFreightCalculateForBuyerDTO);
+    expect(dto).toEqual({
       country_code: 'AE',
       send_goods_country_code: 'CN',
       product_id: 10000012345,
       product_num: 1,
       sku_id: '12000000000098765',
     });
-    expect(params).not.toHaveProperty('price');
-    expect(params).not.toHaveProperty('sku_attr');
+    expect(dto).not.toHaveProperty('price');
+    expect(dto).not.toHaveProperty('sku_attr');
+  });
+
+  test('résume les options freight.get et choisit deterministiquement la moins chère', () => {
+    const out = preflight.summarizeFreightResponse({
+      result: {
+        success: true,
+        aeop_freight_calculate_result_for_buyer_dtolist: {
+          aeop_freight_calculate_result_for_buyer_d_t_o: [
+            {
+              service_name: 'FAST',
+              estimated_delivery_time: '5-8',
+              freight: { cent: '550', currency_code: 'USD' },
+            },
+            {
+              service_name: 'ECONOMY',
+              estimated_delivery_time: '10-15',
+              freight: { cent: '250', currency_code: 'USD' },
+              tracking_available: 'true',
+            },
+          ],
+        },
+      },
+    });
+    expect(out).toMatchObject({
+      success: true,
+      has_options: true,
+      option_count: 2,
+      service_name: 'ECONOMY',
+      freight_amount: 2.5,
+      freight_currency: 'USD',
+      estimated_delivery_time: '10-15',
+      tracking_available: 'true',
+    });
   });
 
   test('refuse un id composite utilisé à tort comme sku_id natif', () => {
