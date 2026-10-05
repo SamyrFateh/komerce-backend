@@ -192,6 +192,7 @@ module.exports = {
       'tests/unit/market-delegation-legacy-backfill.test.js',
       'tests/unit/market-delegation-runtime-bridge.test.js',
       'tests/unit/market-cash-control-policy-service.test.js',
+      'tests/unit/market-cash-control-provisioning.test.js',
       'tests/unit/market-delegation-cash-control-routes.test.js',
       'tests/unit/market-delegation-network-service.test.js',
       'tests/unit/market-delegation-network-routes.test.js',

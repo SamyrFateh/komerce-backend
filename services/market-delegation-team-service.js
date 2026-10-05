@@ -131,6 +131,7 @@ async function inviteTeamMember(executor, {
   grantsOperatingLead = false,
   actorIsCentral = false,
   capabilities,
+  capabilityLimits = {},
   correlationId = null,
   ttlHours = INVITATION_TTL_HOURS,
 }) {
@@ -172,6 +173,7 @@ async function inviteTeamMember(executor, {
       userId: users[0].id,
       actorUserId,
       capabilities: requested,
+      capabilityLimits,
       actorIsCentral,
       correlationId,
     });

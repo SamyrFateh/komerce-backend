@@ -63,6 +63,9 @@ router.post('/', ...centralAdmin, async (req, res, next) => {
       centralReferentUserId: body.central_referent_user_id,
       financialLimits: body.financial_limits || {},
       lead: body.lead || {},
+      paymentProvider: body.payment_provider || null,
+      cashPolicy: body.cash_policy || null,
+      initialRelais: body.initial_relais || null,
       correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
     }));
     res.status(201).json(result);

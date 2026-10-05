@@ -172,8 +172,50 @@ async function updateMarketCashPolicy(executor, {
   return { authz, policy: after };
 }
 
+
+async function initializeProvisioningCashPolicy(executor, {
+  assignmentId, marketId, actorUserId = null, payload, correlationId = null,
+}) {
+  const db = requireExecutor(executor);
+  const next = normalizePolicyInput(payload);
+  const { rows: markets } = await db.query(
+    `SELECT lifecycle_status FROM markets WHERE id=$1::uuid LIMIT 1 FOR UPDATE`,
+    [marketId]
+  );
+  if (!markets[0]) throw policyError('MARKET_NOT_FOUND', 'Marché introuvable.', 404);
+  if (markets[0].lifecycle_status !== 'PROVISIONING') {
+    throw policyError('CASH_POLICY_PROVISIONING_ONLY', 'Initialisation cash réservée au statut PROVISIONING.', 409);
+  }
+
+  const { rows } = await db.query(
+    `INSERT INTO market_cash_control_policies
+      (assignment_id, market_id, cash_enabled, confirmation_mode, updated_by_membership_id)
+     VALUES ($1::uuid,$2::uuid,$3,$4,NULL)
+     ON CONFLICT (assignment_id) DO UPDATE SET
+       market_id=EXCLUDED.market_id,
+       cash_enabled=EXCLUDED.cash_enabled,
+       confirmation_mode=EXCLUDED.confirmation_mode,
+       updated_by_membership_id=NULL,
+       updated_at=NOW()
+     RETURNING id, assignment_id, market_id, cash_enabled, confirmation_mode,
+               updated_by_membership_id, created_at, updated_at`,
+    [assignmentId, marketId, next.cash_enabled, next.confirmation_mode]
+  );
+  const after = serializePolicy(rows[0]);
+  await audit(db, {
+    actorUserId,
+    marketId,
+    assignmentId,
+    action: 'CASH_CONTROL_POLICY_PROVISIONED',
+    after,
+    correlationId,
+  });
+  return after;
+}
+
 module.exports = {
   DEFAULT_POLICY,
+  initializeProvisioningCashPolicy,
   normalizePolicyInput,
   loadPolicyForAssignment,
   readMarketCashPolicy,

@@ -129,3 +129,12 @@ describe('market-delegation team service', () => {
     expect(sql).toMatch(/token_hash TEXT NOT NULL UNIQUE/);
   });
 });
+
+
+test('direct existing-user invitation forwards explicit capability limits', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '..', '..', 'services', 'market-delegation-team-service.js'), 'utf8');
+  expect(source).toMatch(/capabilityLimits = \{\}/);
+  expect(source).toMatch(/capabilityLimits,/);
+});
