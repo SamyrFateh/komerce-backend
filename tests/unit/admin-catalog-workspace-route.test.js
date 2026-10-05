@@ -177,3 +177,16 @@ test('erreur certification conserve reasons et version jusque dans la réponse H
     certification_version: 'v-test',
   }));
 });
+
+test('taxonomie Canonical transmet l’acteur authentifié au workspace owner', async () => {
+  mockCreateCategory.mockResolvedValue({ key: 'Maison', label: 'Maison' });
+  const res = await request(app())
+    .post('/api/admin/workspaces/catalog/categories')
+    .send({ key: 'Maison', label: 'Maison' });
+
+  expect(res.status).toBe(201);
+  expect(mockCreateCategory).toHaveBeenCalledWith(
+    { key: 'Maison', label: 'Maison' },
+    expect.objectContaining({ id: 'admin-central', role: 'admin' })
+  );
+});

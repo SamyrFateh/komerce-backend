@@ -41,6 +41,11 @@ jest.mock('../../utils/categories-cache', () => ({
   invalidateCategoriesCache: (...args) => mockInvalidateCategoriesCache(...args),
 }));
 
+const mockRecordTaxonomyMutation = jest.fn().mockResolvedValue({ id: 'audit-1' });
+jest.mock('../../services/catalog-taxonomy-audit', () => ({
+  recordTaxonomyMutation: (...args) => mockRecordTaxonomyMutation(...args),
+}));
+
 const categoriesRouter = require('../../routes/admin-boutique-categories');
 
 function buildApp() {
@@ -198,6 +203,17 @@ describe('POST /api/admin/boutique-categories — création', () => {
     expect(params).toEqual([
       'phones', 'Téléphones', 'Téléphones', '📦', null, [], null, 99, true, true, true, null, null, null,
     ]);
+    expect(mockRecordTaxonomyMutation).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'CATEGORY_CREATED',
+        actor: expect.objectContaining({
+          id: 'admin-1',
+          role: 'admin',
+          source_surface: 'legacy_admin_taxonomy',
+        }),
+      })
+    );
   });
 
   it('short_label fourni → utilisé au lieu du fallback sur label', async () => {
@@ -254,6 +270,7 @@ describe('PUT /api/admin/boutique-categories/:key — modification', () => {
 
   it('nominal → 200, UPDATE avec champs fournis, recharge via getCategoryWithSubcats, cache invalidé', async () => {
     mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Ancien' }] }) // snapshot before
       .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Nouveau' }] }) // UPDATE
       .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Nouveau' }] }) // getCategoryWithSubcats SELECT cat
       .mockResolvedValueOnce({ rows: [{ id: 'sc1' }] }); // SELECT subs
@@ -262,7 +279,7 @@ describe('PUT /api/admin/boutique-categories/:key — modification', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ key: 'phones', label: 'Nouveau', subcategories: [{ id: 'sc1' }] });
     expect(mockInvalidateCategoriesCache).toHaveBeenCalledTimes(1);
-    const [sql, params] = mockDbQuery.mock.calls[0];
+    const [sql, params] = mockDbQuery.mock.calls[1];
     expect(sql).toContain('label = $1');
     expect(sql).toContain('updated_at = NOW()');
     expect(params).toEqual(['Nouveau', 'phones']);
@@ -270,13 +287,13 @@ describe('PUT /api/admin/boutique-categories/:key — modification', () => {
 
   it('champs ignorés non whitelistés (ex: key) → non inclus dans l\'UPDATE', async () => {
     mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ key: 'phones' }] })
+      .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Ancien' }] })
+      .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Nouveau' }] })
       .mockResolvedValueOnce({ rows: [{ key: 'phones' }] })
       .mockResolvedValueOnce({ rows: [] });
     await request(buildApp()).put('/api/admin/boutique-categories/phones').send({ key: 'autre', label: 'Nouveau' });
-    const [sql, params] = mockDbQuery.mock.calls[0];
-    const setClause = sql.split('WHERE')[0];
-    expect(setClause).not.toContain('key =');
+    const [sql, params] = mockDbQuery.mock.calls[1];
+    expect(sql).not.toContain('SET key = $1');
     expect(params).toEqual(['Nouveau', 'phones']);
   });
 
@@ -301,12 +318,14 @@ describe('DELETE /api/admin/boutique-categories/:key — soft-delete', () => {
   });
 
   it('nominal → 200, is_active=FALSE, cache invalidé', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ key: 'phones', is_active: false }] });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ key: 'phones', is_active: true }] })
+      .mockResolvedValueOnce({ rows: [{ key: 'phones', is_active: false }] });
     const res = await request(buildApp()).delete('/api/admin/boutique-categories/phones');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ deactivated: true, category: { key: 'phones', is_active: false } });
     expect(mockInvalidateCategoriesCache).toHaveBeenCalledTimes(1);
-    expect(mockDbQuery).toHaveBeenCalledWith(expect.stringContaining('SET is_active = FALSE'), ['phones']);
+    expect(mockDbQuery.mock.calls[1]).toEqual([expect.stringContaining('SET is_active = FALSE'), ['phones']]);
   });
 
   it('erreur DB → 500', async () => {
@@ -421,32 +440,38 @@ describe('PUT /api/admin/boutique-categories/:key/subcategories/:subKey — modi
   });
 
   it('nominal → 200, UPDATE scoped sur category_key ET key, cache invalidé', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1', label: 'iPhone 15' }] });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', category_key: 'phones', key: 'iphone', label: 'iPhone' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', label: 'iPhone 15' }] });
     const res = await request(buildApp()).put('/api/admin/boutique-categories/phones/subcategories/iphone').send({ label: 'iPhone 15' });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: 'sc1', label: 'iPhone 15' });
     expect(mockInvalidateCategoriesCache).toHaveBeenCalledTimes(1);
-    const [sql, params] = mockDbQuery.mock.calls[0];
+    const [sql, params] = mockDbQuery.mock.calls[1];
     expect(sql).toContain('WHERE category_key = $2 AND key = $3');
     expect(params).toEqual(['iPhone 15', 'phones', 'iphone']);
   });
 
   it('customs_category_key est administrable sur une sous-catégorie', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1', customs_category_key: 'phones' }] });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', category_key: 'phones', key: 'iphone', customs_category_key: null }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', customs_category_key: 'phones' }] });
     const res = await request(buildApp())
       .put('/api/admin/boutique-categories/phones/subcategories/iphone')
       .send({ customs_category_key: 'phones' });
     expect(res.status).toBe(200);
-    const [sql, params] = mockDbQuery.mock.calls[0];
+    const [sql, params] = mockDbQuery.mock.calls[1];
     expect(sql).toContain('customs_category_key = $1');
     expect(params).toEqual(['phones', 'phones', 'iphone']);
   });
 
   it('champ "key" non whitelisté → ignoré dans l\'UPDATE', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1' }] });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', category_key: 'phones', key: 'iphone', display_order: 1 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', display_order: 2 }] });
     await request(buildApp()).put('/api/admin/boutique-categories/phones/subcategories/iphone').send({ key: 'autre', display_order: 2 });
-    const [sql, params] = mockDbQuery.mock.calls[0];
-    expect(sql).not.toContain('key = $1');
+    const [sql, params] = mockDbQuery.mock.calls[1];
+    expect(sql).not.toContain('SET key = $1');
     expect(params).toEqual([2, 'phones', 'iphone']);
   });
 
@@ -472,24 +497,30 @@ describe('DELETE /api/admin/boutique-categories/:key/subcategories/:subKey', () 
   });
 
   it('sans ?hard → soft delete (is_active=FALSE), deactivated:true', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1', is_active: false }] });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', category_key: 'phones', key: 'iphone', is_active: true }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', is_active: false }] });
     const res = await request(buildApp()).delete('/api/admin/boutique-categories/phones/subcategories/iphone');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ deactivated: true, subcategory: { id: 'sc1', is_active: false } });
-    expect(mockDbQuery).toHaveBeenCalledWith(expect.stringContaining('SET is_active = FALSE'), ['phones', 'iphone']);
+    expect(mockDbQuery.mock.calls[1]).toEqual([expect.stringContaining('SET is_active = FALSE'), ['phones', 'iphone']]);
     expect(mockInvalidateCategoriesCache).toHaveBeenCalledTimes(1);
   });
 
   it('?hard=true → DELETE réel, deleted:true', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1' }] });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', category_key: 'phones', key: 'iphone' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1' }] });
     const res = await request(buildApp()).delete('/api/admin/boutique-categories/phones/subcategories/iphone?hard=true');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ deleted: true, subcategory: { id: 'sc1' } });
-    expect(mockDbQuery).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM boutique_subcategories'), ['phones', 'iphone']);
+    expect(mockDbQuery.mock.calls[1]).toEqual([expect.stringContaining('DELETE FROM boutique_subcategories'), ['phones', 'iphone']]);
   });
 
   it('?hard=autre_chose → traité comme falsy, reste en soft-delete', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1' }] });
+    mockDbQuery
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', category_key: 'phones', key: 'iphone', is_active: true }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sc1', is_active: false }] });
     const res = await request(buildApp()).delete('/api/admin/boutique-categories/phones/subcategories/iphone?hard=1');
     expect(res.body.deactivated).toBe(true);
   });
