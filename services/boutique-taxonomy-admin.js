@@ -150,12 +150,26 @@ async function updateCategory(key, payload = {}, q = db, actor = null) {
 
 async function deactivateCategory(key, q = db, actor = null) {
   return withTaxonomyMutation(q, async tx => {
-    const { rows: [before] } = await tx.query('SELECT * FROM boutique_categories WHERE key = $1', [key]);
-    if (!before) throw new TaxonomyAdminError(404, 'Catégorie introuvable', 'category_not_found');
-    const { rows: [row] } = await tx.query(
-      `UPDATE boutique_categories SET is_active = FALSE, updated_at = NOW() WHERE key = $1 RETURNING *`,
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(c.*) AS before_snapshot
+           FROM boutique_categories c
+          WHERE c.key = $1
+          FOR UPDATE
+       ),
+       updated AS (
+         UPDATE boutique_categories c
+            SET is_active = FALSE, updated_at = NOW()
+          FROM before
+         WHERE c.key = $1
+         RETURNING c.*
+       )
+       SELECT updated.*, before.before_snapshot
+         FROM updated CROSS JOIN before`,
       [key]
     );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Catégorie introuvable', 'category_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
     await recordTaxonomyMutation(tx, {
       action: 'CATEGORY_DEACTIVATED',
       entityType: 'category',
@@ -240,15 +254,25 @@ async function updateSubcategory(categoryKey, subcategoryKey, payload = {}, q = 
 
 async function deactivateSubcategory(categoryKey, subcategoryKey, { hard = false } = {}, q = db, actor = null) {
   return withTaxonomyMutation(q, async tx => {
-    const { rows: [before] } = await tx.query(
-      'SELECT * FROM boutique_subcategories WHERE category_key = $1 AND key = $2',
+    const mutation = hard
+      ? 'DELETE FROM boutique_subcategories s USING before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*'
+      : 'UPDATE boutique_subcategories s SET is_active = FALSE FROM before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*';
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(s.*) AS before_snapshot
+           FROM boutique_subcategories s
+          WHERE s.category_key = $1 AND s.key = $2
+          FOR UPDATE
+       ),
+       changed AS (
+         ${mutation}
+       )
+       SELECT changed.*, before.before_snapshot
+         FROM changed CROSS JOIN before`,
       [categoryKey, subcategoryKey]
     );
-    if (!before) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
-    const sql = hard
-      ? 'DELETE FROM boutique_subcategories WHERE category_key = $1 AND key = $2 RETURNING *'
-      : 'UPDATE boutique_subcategories SET is_active = FALSE WHERE category_key = $1 AND key = $2 RETURNING *';
-    const { rows: [row] } = await tx.query(sql, [categoryKey, subcategoryKey]);
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
     await recordTaxonomyMutation(tx, {
       action: hard ? 'SUBCATEGORY_DELETED' : 'SUBCATEGORY_DEACTIVATED',
       entityType: 'subcategory',
