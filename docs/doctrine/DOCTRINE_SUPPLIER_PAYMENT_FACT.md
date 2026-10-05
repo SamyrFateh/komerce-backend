@@ -85,3 +85,16 @@ Règles de sûreté :
 - un même `payment_execution_key` rejoué avec un scope, montant, devise ou target différent est refusé.
 
 Ce service n'appelle aucun provider. Il prépare la frontière de sûreté pour le futur orchestrateur de paiement.
+
+
+## Recovery provider après résultat ambigu
+
+Pour CJ, le recovery est asymétrique par sécurité :
+
+- tous les sous-ordres observés dans un état post-paiement connu + montant observé = montant attendu → l'état local `ambiguous` peut être résolu en `succeeded` ;
+- sous-ordres encore `UNPAID/CREATED/IN_CART` → simple observation, **jamais** une autorisation automatique de repayer ;
+- états mixtes ou inconnus → unresolved ;
+- mismatch de montant → unresolved ;
+- dans tous les cas de ce lot, `real_debit_verified=false` reste explicite.
+
+Raison : une lecture négative ou retardée ne prouve pas qu'un premier débit n'a pas été pris en compte. Seule une preuve positive peut fermer l'ambiguïté sans nouveau side-effect.
