@@ -67,7 +67,7 @@ const detailResult = {
     ae_item_sku_info_dtos: {
       ae_item_sku_info_d_t_o: [
         {
-          id: 'sku-black-s',
+          id: '14:193;5:100014064#Black S',
           sku_code: 'AE-SPK-BLK-S',
           sku_available_stock: 12,
           offer_sale_price: '9.90',
@@ -78,21 +78,23 @@ const detailResult = {
               {
                 sku_property_id: 14,
                 sku_property_name: 'Color',
-                sku_property_value: '14:193',
+                sku_property_value: 'black',
+                property_value_id: 193,
                 property_value_definition_name: 'Black',
                 sku_image: 'https://ae01.alicdn.com/kf/black.jpg',
               },
               {
                 sku_property_id: 5,
                 sku_property_name: 'Size',
-                sku_property_value: '100014064',
+                sku_property_value: 'S',
+                property_value_id: 100014064,
                 property_value_definition_name: 'S',
               },
             ],
           },
         },
         {
-          id: 'sku-white-m',
+          id: '14:29;5:361386#White M',
           sku_code: 'AE-SPK-WHT-M',
           sku_available_stock: 8,
           offer_sale_price: '10.50',
@@ -103,14 +105,16 @@ const detailResult = {
               {
                 sku_property_id: 14,
                 sku_property_name: 'Color',
-                sku_property_value: '14:29',
+                sku_property_value: 'white',
+                property_value_id: 29,
                 property_value_definition_name: 'White',
                 sku_image: 'https://ae01.alicdn.com/kf/white.jpg',
               },
               {
                 sku_property_id: 5,
                 sku_property_name: 'Size',
-                sku_property_value: '361386',
+                sku_property_value: 'M',
+                property_value_id: 361386,
                 property_value_definition_name: 'M',
               },
             ],
@@ -295,6 +299,11 @@ describe('aliexpress-connector', () => {
       expect.objectContaining({ key: 'p_14', display_name: 'Color', values: ['Black', 'White'] }),
       expect.objectContaining({ key: 'p_5', display_name: 'Size', values: ['S', 'M'] }),
     ]));
+    expect(product.sellable_units[0].supplier_order_identity.payload.sku_attr)
+      .toBe('14:193;5:100014064');
+    expect(product.sellable_units[0].supplier_order_identity.payload.sku_attr)
+      .not.toContain('black');
+
     expect(product.sellable_units).toEqual(expect.arrayContaining([
       expect.objectContaining({
         supplier_sku: 'AE-SPK-BLK-S',
