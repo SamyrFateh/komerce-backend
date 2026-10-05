@@ -2,6 +2,28 @@
 
 Cette liste sépare les informations promises par les mocks des données effectivement disponibles. Elle doit diminuer au fil des lots ; elle ne doit jamais être masquée par des valeurs synthétiques.
 
+## Backoffice : exécution fournisseur et administration
+
+Diagnostic ciblé sur `3ff9525bb`, à revalider en delta à chaque lot.
+Cette section distingue la présence des faits métier de leur exposition : une
+table disponible ne prouve ni une API de lecture complète ni une UI livrée.
+Ordre d'exécution : `DASHBOARD_DECISION_VISUAL_V1_MIGRATION_ORDER.md`.
+
+| Besoin | Constat vérifié / limite | Source et prochain acte |
+|---|---|---|
+| Shell commun | Déjà implémenté ; pas de reconstruction à prévoir | `public/dashboards/canonical/js/navigation-policy-v4.js`, `app.js` ; corriger seulement les parcours concernés. |
+| Détail d'exécution fournisseur d'une PO | Manque de projection dans la lecture actuelle : `getGroupedPurchaseOrder` retourne PO/lignes/marchés | `routes/purchasing.js`, `services/purchasing-grouped-service.js` ; lot 1, lecture des liens persistés sous l'autorité purchasing. |
+| Identité fournisseur dans Achats | Le formulaire de confirmation permet encore la saisie de `supplier_order_id` ; l'écran ne projette pas les nouvelles tables d'exécution | `public/dashboards/canonical/js/purchasing-workspace.js` ; lot 2, distinguer le parcours manuel de l'exécution automatisée, sans supprimer aveuglément la confirmation manuelle. |
+| Exécution, paiement, preuve | Faits persistés disponibles ; exposition BO à construire et contrat à vérifier | `services/supplier-execution-persistence.js`, `supplier-payment-state.js`, `supplier-payment-proof-persistence.js` ; le dernier écrit `real_debit_verified` seulement via sa procédure propriétaire. |
+| Finance / Order 360 / Product 360 | Aucun usage direct des nouveaux identifiants/tables recherché dans les services actuels ; la continuité complète reste à prouver | `services/dashboard-finance-canonical.js`, `order-360.js`, `product-360.js` ; lots 2, 3 et 5. L'absence de référence directe n'exclut pas un lecteur indirect : vérifier les contrats avant modification. |
+| Fournisseurs / Supplier 360 | `/admin/suppliers` reste Legacy selon le README Canonical ; aucun équivalent 360 n'est attesté par cet inventaire ciblé | `public/dashboards/canonical/README.md` ; lot 4, séparer observation 360 et commandes d'administration. |
+| Administration transversale | Partiellement présente : Paramètres et Accès pays sont déjà référencés par la navigation. La couverture complète n'est pas encore qualifiée | `public/dashboards/canonical/js/navigation.js`, `navigation-policy-v4.js` ; lot 6, vérifier chaque surface/commande/guard/audit. Ne pas conclure que toute l'administration est absente. |
+| Exceptions nouvelles / KPI | Candidats à contractualiser, pas indicateurs déjà disponibles | Besoin d'achat restant, PO bloquée, paiement ambigu, preuve attendue absente, réception en retard : définir population, condition canonique, owner et drill avant affichage. Sans délai contractuel, ne pas inventer un retard. |
+
+Périmètre non attesté par ce diagnostic : état des données live, activation des
+capabilities par environnement, couverture exhaustive de l'administration et
+validation visuelle navigateur. Ces éléments ne sont pas déclarés terminés.
+
 ## Pilotage
 
 | Information cible | Statut | Motif |
