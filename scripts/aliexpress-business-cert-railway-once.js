@@ -307,9 +307,16 @@ async function main() {
   const mode = String(process.env.KOMERCE_ALIEXPRESS_CERT_MODE || 'readiness').trim().toLowerCase();
   if (!['readiness','order'].includes(mode)) throw new Error('ALIEXPRESS_CERT_MODE_INVALID');
 
-  const target = new Pool({ connectionString: process.env.DATABASE_URL, ssl: sslFor(process.env.DATABASE_URL), max: 2 });
+  const target = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: sslFor(process.env.DATABASE_URL),
+    max: 2,
+    options: '-c search_path=public',
+  });
   try {
     const initialized = await initializeDisposable(target);
+    await target.query('SET search_path TO public');
+    console.log('DISPOSABLE_DB_SEARCH_PATH=public');
     console.log(`DISPOSABLE_DB_INITIALIZED=${initialized}`);
     const targeted = [
       ['migrations/227_sourcing_resolution_foundation.sql',
@@ -326,6 +333,7 @@ async function main() {
     for (const [file, probe] of targeted) {
       const { rows:[state] } = await target.query(probe);
       if (!state?.ready) {
+        console.log(`DISPOSABLE_DB_PATCH_APPLYING=${path.basename(file)}`);
         await target.query(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'));
         console.log(`DISPOSABLE_DB_PATCH=${path.basename(file)}`);
       }
