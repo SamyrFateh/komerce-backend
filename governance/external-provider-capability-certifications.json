@@ -32,6 +32,23 @@
         ]
       },
       {
+        "capability": "purchasing.readiness",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/external-providers/suppliers/ALLEGRO_SANDBOX.md",
+          "services/suppliers/allegro-fulfillment-adapter.js",
+          "scripts/allegro-golden-prebuyer-proof.js"
+        ],
+        "limitations": [
+          "readiness is proved for the exact authorized Sandbox offer only",
+          "the provider path is manual procurement; readiness does not imply buyer-side automatic order creation",
+          "sandbox proof does not imply production behavior"
+        ]
+      },
+      {
         "capability": "purchasing.manual_procurement",
         "classification": "RECLASSIFIED",
         "availability": "PROVEN",
