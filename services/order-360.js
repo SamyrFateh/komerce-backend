@@ -4,16 +4,16 @@
  * @domain        admin-dashboard
  * @layer         service
  * @criticality   high
- * @inputs        server_resolved_order
- * @outputs       order_360_projection
+ * @inputs        server_resolved_order, projection_options
+ * @outputs       order_360_projection, authorized_purchasing_projection
  * @depends       db
  * @used-by       routes/admin-order-360.js
- * @db-read       orders, users, relais, markets, order_items, products, parcels, parcel_items, order_status_history, scans, order_incidents, order_comments, client_notifications, invoices, transaction_documents
+ * @db-read       orders, users, relais, markets, order_items, products, parcels, parcel_items, order_status_history, scans, order_incidents, order_comments, client_notifications, invoices, transaction_documents, purchase_orders, purchase_lines, suppliers
  * @db-write      none
  * @db-txn        none
  * @doctrine      entity_360_reunites_without_recomputing, server_market_scope_is_authority
- * @impact-areas  admin-dashboard, orders, logistics, notifications, documents, finance, market-authorization
- * @version       2026-08
+ * @impact-areas  admin-dashboard, orders, logistics, notifications, documents, finance, purchasing, market-authorization
+ * @version       2026-10
  */
 
 'use strict';
@@ -89,12 +89,12 @@ function publicOrder(order) {
   });
 }
 
-async function loadOrder360(order) {
+async function loadOrder360(order, { includePurchasing = false } = {}) {
   if (!order || !order.id) throw new Error('order_360_resolved_order_required');
 
   const orderId = order.id;
   const [itemsResult, parcelsResult, parcelItemsResult, historyResult, scansResult,
-    incidentsResult, commentsResult, notificationsResult, invoicesResult, documentsResult] = await Promise.all([
+    incidentsResult, commentsResult, notificationsResult, invoicesResult, documentsResult, purchasingResult] = await Promise.all([
     db.query(`
       SELECT oi.id, oi.product_id, oi.quantity, oi.price_kmf,
              p.product_ref, p.name AS product_name, p.category, p.image_url
@@ -168,6 +168,24 @@ async function loadOrder360(order) {
       WHERE order_id = $1::uuid
       ORDER BY issued_at DESC
     `, [orderId]),
+    includePurchasing
+      ? db.query(`
+          SELECT po.id, po.status::text AS status, po.procurement_hub_ref,
+                 po.supplier_order_id, po.created_at, po.updated_at,
+                 s.name AS supplier_name, s.platform AS supplier_platform
+            FROM purchase_orders po
+            JOIN suppliers s ON s.id = po.supplier_id
+           WHERE po.order_id = $1::uuid
+              OR EXISTS (
+                   SELECT 1
+                     FROM purchase_lines pl
+                     JOIN order_items poi ON poi.id = pl.order_item_id
+                    WHERE pl.purchase_order_id = po.id
+                      AND poi.order_id = $1::uuid
+                 )
+           ORDER BY po.created_at ASC, po.id ASC
+        `, [orderId])
+      : Promise.resolve({ rows: [] }),
   ]);
 
   const parcelItemsByParcel = new Map();
@@ -235,6 +253,16 @@ async function loadOrder360(order) {
 
   const openIncidents = incidents.filter(row => !['resolved', 'closed'].includes(row.status)).length;
   const totalQuantity = items.reduce((sum, row) => sum + row.quantity, 0);
+  const purchaseOrders = purchasingResult.rows.map(row => Object.freeze({
+    id: row.id,
+    status: row.status,
+    supplier_name: row.supplier_name || null,
+    supplier_platform: row.supplier_platform || null,
+    procurement_hub_ref: row.procurement_hub_ref || null,
+    supplier_order_id: row.supplier_order_id || null,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }));
 
   return Object.freeze({
     order: publicOrder(order),
@@ -270,12 +298,18 @@ async function loadOrder360(order) {
       created_at: row.created_at,
     }))),
     documents: Object.freeze(documents),
+    ...(includePurchasing ? {
+      purchasing: Object.freeze({
+        purchase_orders: Object.freeze(purchaseOrders),
+      }),
+    } : {}),
     data_quality: Object.freeze({
       generated_at: new Date().toISOString(),
       source_tables: Object.freeze([
         'orders', 'order_items', 'products', 'parcels', 'parcel_items',
         'order_status_history', 'scans', 'order_incidents', 'order_comments',
         'client_notifications', 'invoices', 'transaction_documents',
+        ...(includePurchasing ? ['purchase_orders', 'purchase_lines', 'suppliers'] : []),
       ]),
     }),
   });
