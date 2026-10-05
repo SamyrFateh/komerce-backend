@@ -150,8 +150,10 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
 
     // Enregistrer le cleanup avant toute assertion DB afin qu'un échec n'abandonne
     // jamais la commande et ses enfants dans la base E2E.
-    cleanup.track('orders','id',orderId);
+    // createCleanup exécute en LIFO : enregistrer recipients AVANT orders
+    // garantit enfants order -> order -> recipient -> relais au nettoyage.
     cleanup.trackSql('DELETE FROM recipients WHERE relais_id=$1',[relayId]);
+    cleanup.track('orders','id',orderId);
     cleanup.trackSql('DELETE FROM invoices WHERE order_id=$1',[orderId]);
     cleanup.trackSql('DELETE FROM order_items WHERE order_id=$1',[orderId]);
     cleanup.trackSql('DELETE FROM order_status_history WHERE order_id=$1',[orderId]);
