@@ -196,6 +196,8 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/entities/clients/{clientPhone}', method: 'get', schema: null },
   // LOT 3C — Canonical Product 360
   { prefix: '/api/admin/entities/products/{productRef}', method: 'get', schema: null },
+  // LOT 4 — Canonical Supplier 360 read-only
+  { prefix: '/api/admin/entities/suppliers/{supplierId}', method: 'get', schema: null },
   // LOT 4A — Canonical Operations / Hub-Relais Workspace (single-market actions)
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/mark-ordered', method: 'post', schema: null },
