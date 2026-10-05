@@ -21,6 +21,28 @@ test('metricItems compte seulement les faits projetés sans score inventé', () 
   expect(metrics.map(row => row.key)).toEqual(['mappings', 'po', 'execution', 'payments']);
 });
 
+test('certificationRows garde disponibilité, environnement, preuve et limites séparés', () => {
+  expect(supplier360.certificationRows({
+    records: [{
+      capability: 'purchasing.manual_procurement',
+      availability: 'PROVEN',
+      environment: 'SANDBOX',
+      highest_proof: 'P4',
+      classification: 'RECLASSIFIED',
+      evidence: ['proof/a', 'proof/b'],
+      limitations: ['human buyer'],
+    }],
+  })).toEqual([{
+    capability: 'purchasing.manual_procurement',
+    availability: 'PROVEN',
+    environment: 'SANDBOX',
+    proof: 'P4',
+    classification: 'RECLASSIFIED',
+    evidence: 'proof/a · proof/b',
+    limitations: 'human buyer',
+  }]);
+});
+
 test('mount charge le namespace Supplier 360', async () => {
   const root = {};
   const fetch = jest.fn().mockResolvedValue({
