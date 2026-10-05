@@ -34,6 +34,7 @@
   const DRILL_ROLE_MAP = Object.freeze({
     'accounting-workspace': Object.freeze(['admin', 'finance', 'agent_relais']),
     'pricing-workspace': Object.freeze(['admin', 'market_operator']),
+    'purchasing-workspace': Object.freeze(['admin']),
   });
 
   function visibleDrillSchema(schema, user) {
@@ -161,6 +162,24 @@
         emptyText: 'Aucun encaissement sur la période.',
       },
       {
+        id: 'paiements-fournisseur-exceptions',
+        title: 'Paiements fournisseur à vérifier',
+        description: 'Population globale uniquement : résultat ambigu ou rejeté, rapprochement non matched, ou débit non encore prouvé. Aucun total multi-devise n’est calculé.',
+        type: 'table',
+        source: 'finance.supplier-payment-exceptions',
+        columns: [
+          { key: 'provider', label: 'Provider' },
+          { key: 'po', label: 'PO' },
+          { key: 'exception', label: 'Exception' },
+          { key: 'statut', label: 'Statut' },
+          { key: 'rapprochement', label: 'Rapprochement' },
+          { key: 'attendu', label: 'Attendu', align: 'right' },
+          { key: 'observe', label: 'Observé', align: 'right' },
+          { key: 'debit-verifie', label: 'Débit vérifié' },
+        ],
+        emptyText: 'Aucune exception de paiement fournisseur sur le périmètre global.',
+      },
+      {
         id: 'remboursements-recents',
         title: 'Remboursements récents',
         description: 'Les remboursements finalisés sur la période financière sélectionnée.',
@@ -178,6 +197,7 @@
     drill: [
       { id: 'accounting-workspace', label: 'Comptabilité & encaissements', href: '/admin/workspaces/accounting' },
       { id: 'pricing-workspace', label: 'Pricing & coûts', href: '/admin/workspaces/pricing' },
+      { id: 'purchasing-workspace', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing' },
     ],
   });
 
@@ -337,6 +357,27 @@
     }));
   }
 
+  function formatSupplierAmount(value, currency) {
+    if (value == null || value === '') return '—';
+    return `${String(value)}${currency ? ` ${currency}` : ''}`;
+  }
+
+  function projectSupplierPaymentExceptions(payload) {
+    const rows = Array.isArray(payload && payload.supplier_payment_exceptions)
+      ? payload.supplier_payment_exceptions
+      : [];
+    return rows.map(row => ({
+      provider: row.provider || '—',
+      po: row.purchase_order_id || '—',
+      exception: row.exception_type || '—',
+      statut: row.status || '—',
+      rapprochement: row.reconciliation_status || '—',
+      attendu: formatSupplierAmount(row.expected_amount, row.currency),
+      observe: formatSupplierAmount(row.observed_amount, row.currency),
+      'debit-verifie': row.real_debit_verified === true ? 'Oui' : 'Non',
+    }));
+  }
+
   function projectRefunds(payload) {
     const rows = payload && payload.refunds && Array.isArray(payload.refunds.recent)
       ? payload.refunds.recent
@@ -358,6 +399,7 @@
       'finance.cost-families': projectCostFamilies(payload),
       'finance.relay-profitability': projectRelayProfitability(payload),
       'finance.payment-mix': projectPaymentMix(payload),
+      'finance.supplier-payment-exceptions': projectSupplierPaymentExceptions(payload),
       'finance.refunds': projectRefunds(payload),
     });
   }
@@ -444,6 +486,8 @@
     projectCostFamilies,
     projectRelayProfitability,
     projectPaymentMix,
+    formatSupplierAmount,
+    projectSupplierPaymentExceptions,
     projectRefunds,
     resolveSources,
     endpointForContext,
