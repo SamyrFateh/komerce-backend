@@ -5,20 +5,21 @@
  * @layer         service
  * @criticality   high
  * @inputs        stable_product_ref, server_market_scope, global_authority
- * @outputs       product_360_projection
- * @depends       db
+ * @outputs       product_360_projection, central_supplier_purchasing_mode_evidence
+ * @depends       db, services/suppliers/provider-capability-certifications.js
  * @used-by       routes/admin-product-360.js
  * @db-read       products, product_variants, product_skus, order_items, orders, markets, order_item_cost_imputations, order_item_real_cost_allocations, product_suppliers, suppliers, price_history, alerts, users
  * @db-write      none
  * @db-txn        none
  * @doctrine      entity_360_reunites_without_recomputing, server_market_scope_is_authority, product_ref_is_business_identity, sourcing_and_audit_global_only
- * @impact-areas  admin-dashboard, catalog, commerce, inventory, sourcing, economic-engine, market-authorization
+ * @impact-areas  admin-dashboard, catalog, commerce, inventory, sourcing, economic-engine, supplier-connectivity, purchasing, market-authorization
  * @version       2026-08
  */
 
 'use strict';
 
 const db = require('../db');
+const capabilityEvidence = require('./suppliers/provider-capability-certifications');
 
 const PRODUCT_REF = /^KPR-\d{6,}$/i;
 
@@ -296,6 +297,7 @@ async function loadProduct360(product, options = {}) {
     is_active: Boolean(row.is_active),
     last_checked_at: row.last_checked_at || null,
     notes: row.notes || null,
+    purchasing_modes: capabilityEvidence.projectPurchasingModeEvidence(row.platform),
   }));
 
   const priceHistory = priceAuditResult.rows.map(row => Object.freeze({
@@ -401,6 +403,7 @@ async function loadProduct360(product, options = {}) {
       legacy_variant_stock_rule: inventoryModel === 'SKU' ? null : 'variant_rows_not_summed',
       cross_market_customer_rule: 'customers_count_is_per_market_only',
       cost_truth: 'order_item_cost_imputations + order_item_real_cost_allocations',
+      purchasing_mode_truth: includeCentral ? 'external_provider_capability_certification_ledger_observational_only' : null,
       source_tables: Object.freeze([
         'products', 'product_variants', 'product_skus', 'order_items', 'orders', 'markets',
         'order_item_cost_imputations', 'order_item_real_cost_allocations',
