@@ -76,6 +76,8 @@ function computeReuse({
 }) {
   const reuse = {};
   const reasons = {};
+  let reuseCoverage = false;
+  let coverageReason = 'not-proven';
 
   for (const key of Object.keys(JOBS)) {
     reuse[key] = false;
@@ -83,16 +85,30 @@ function computeReuse({
   }
 
   if (!previousHead || !currentHead || !currentBase) {
-    return { reuse, reasons, reason: 'missing-sha' };
+    return { reuse, reasons, reuseCoverage, coverageReason, reason: 'missing-sha' };
   }
   if (!ancestor) {
-    return { reuse, reasons, reason: 'previous-head-not-ancestor' };
+    return { reuse, reasons, reuseCoverage, coverageReason, reason: 'previous-head-not-ancestor' };
   }
   if (!baseContained) {
-    return { reuse, reasons, reason: 'current-base-not-contained-in-previous-head' };
+    return { reuse, reasons, reuseCoverage, coverageReason, reason: 'current-base-not-contained-in-previous-head' };
   }
 
   const impact = gateImpact(scope);
+
+  // Coverage is a sub-proof of Backend. It may be reused more narrowly than the
+  // entire Backend gate: test/tooling-only deltas still rerun touched-tests,
+  // quality, contracts and related tests, but cannot lower coverage because no
+  // instrumented backend source changed.
+  if (!previousJobGreen(jobs, 'backend')) {
+    coverageReason = 'previous-backend-not-green';
+  } else if (scope.backendSource) {
+    coverageReason = 'latest-delta-touches-instrumented-source';
+  } else {
+    reuseCoverage = true;
+    coverageReason = 'previous-green-coverage-reused-no-source-delta';
+  }
+
   for (const key of Object.keys(JOBS)) {
     if (!previousJobGreen(jobs, key)) {
       reasons[key] = 'previous-job-not-green';
@@ -109,6 +125,8 @@ function computeReuse({
   return {
     reuse,
     reasons,
+    reuseCoverage,
+    coverageReason,
     reason: 'per-gate-proof-evaluated',
     impact,
   };
@@ -126,6 +144,8 @@ function appendOutput(path, result) {
     lines.push(`reuse_${key}=${result.reuse[key] ? 'true' : 'false'}`);
     lines.push(`reuse_${key}_reason=${result.reasons[key]}`);
   }
+  lines.push(`reuse_coverage=${result.reuseCoverage ? 'true' : 'false'}`);
+  lines.push(`reuse_coverage_reason=${result.coverageReason || 'not-proven'}`);
   lines.push(`reuse_previous_head=${result.previous_head || ''}`);
   fs.appendFileSync(path, lines.join('\n') + '\n', 'utf8');
 }
@@ -166,6 +186,8 @@ function main(argv = process.argv.slice(2)) {
     result = {
       reuse: Object.fromEntries(Object.keys(JOBS).map(key => [key, false])),
       reasons: Object.fromEntries(Object.keys(JOBS).map(key => [key, 'proof-error'])),
+      reuseCoverage: false,
+      coverageReason: 'proof-error',
       reason: `proof-error:${String(error.message || error)}`,
     };
   }

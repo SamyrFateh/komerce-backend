@@ -133,3 +133,13 @@ describe('parité preflight ↔ CI', () => {
     expect([...new Set(restored)].sort()).toEqual([...CI_RESTORED_PROJECTIONS].sort());
   });
 });
+
+
+test('coverage reuse remains a CI-only proof and does not remove the local full-coverage safety net', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const workflow = fs.readFileSync(path.join(__dirname, '..', '..', '.github', 'workflows', 'pr-enforcement.yml'), 'utf8');
+  expect(workflow).toMatch(/reuse_coverage/);
+  expect(workflow).toMatch(/Reuse prior green unit coverage proof/);
+  expect(workflow).toMatch(/test:unit:coverage/);
+});

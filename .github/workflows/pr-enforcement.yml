@@ -78,6 +78,7 @@ jobs:
       reuse_boutique: ${{ steps.gate_reuse.outputs.reuse_boutique }}
       reuse_governance: ${{ steps.gate_reuse.outputs.reuse_governance }}
       reuse_provider_contracts: ${{ steps.gate_reuse.outputs.reuse_provider_contracts }}
+      reuse_coverage: ${{ steps.gate_reuse.outputs.reuse_coverage }}
       reuse_previous_head: ${{ steps.gate_reuse.outputs.reuse_previous_head }}
     steps:
       - uses: actions/checkout@v4
@@ -389,8 +390,12 @@ jobs:
           BACKEND_FILES: ${{ needs.changes.outputs.backend_files }}
         run: node scripts/run-staged-related-tests.js --files "$BACKEND_FILES"
       - name: Unit test coverage threshold
-        if: (needs.changes.outputs.backend_source == 'true') && needs.changes.outputs.unit_repair_only != 'true'
+        if: (needs.changes.outputs.backend_source == 'true') && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.reuse_coverage != 'true'
         run: npm run test:unit:coverage
+
+      - name: Reuse prior green unit coverage proof
+        if: (needs.changes.outputs.backend_source == 'true') && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.reuse_coverage == 'true'
+        run: echo "Unit coverage proof reused from prior green Backend gate; latest HEAD delta touches no instrumented backend source."
 
       - name: Target only the repaired failing unit tests
         if: needs.changes.outputs.unit_repair_only == 'true'

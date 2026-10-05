@@ -26,6 +26,10 @@ describe('PR enforcement trusted dispatch', () => {
     expect(dispatcher).toContain('github.event.pull_request.head.repo.full_name == github.repository');
     expect(dispatcher).toContain('/actions/workflows/pr-enforcement.yml/dispatches');
     expect(dispatcher).toContain('actions: write');
+    expect(dispatcher).toContain('statuses: write');
+    expect(dispatcher).toContain("state:'pending'");
+    expect(dispatcher).toContain("context:'Required verdict'");
+    expect(dispatcher).toContain('/statuses/$HEAD_SHA');
   });
 
   test('workflow dispatch certifies the exact supplied PR head and branch', () => {
