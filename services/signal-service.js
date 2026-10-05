@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload, optional_server_resolved_market_id, optional_transaction_executor
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js
+ * @depends       db, utils/logger.js, services/supplier-payment-review.js
  * @used-by       routes/signals.js, bootstrap/feature-wiring.js, services/action-center-workspace.js,
  *                services/incident-escalation.js
- * @db-read       cash_collections, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, parcels, purchase_orders, v_purchase_line_progress
+ * @db-read       cash_collections, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, parcels, purchase_orders, v_purchase_line_progress, supplier_execution_payments
  * @db-write      signals
  * @db-txn        optional_caller_owned_transaction_for_upsert
  * @doctrine      resolve_before_behavior_change, market_scope_is_server_authority, preserve_caller_transaction
@@ -30,6 +30,7 @@
 
 let db = require('../db');
 let log = require('../utils/logger').child({ module: 'signal-service' });
+const { getSupplierPaymentReview } = require('./supplier-payment-review');
 
 /* ═══════════════════════════════════════════════════════════════
    UPSERT — insert or update one active derived fact
@@ -176,6 +177,52 @@ async function expireOldSignals() {
 }
 
 let GENERATORS = {};
+
+GENERATORS.supplier_payment_review = async function() {
+  try {
+    const review = await getSupplierPaymentReview({ limit: 50 });
+    let generated = 0;
+    const entityIds = [];
+
+    for (const payment of review.items) {
+      entityIds.push(payment.payment_id);
+      const mismatched = payment.reconciliation_status === 'mismatched';
+      await upsertSignal({
+        signal_type: 'supplier_payment_review',
+        severity: mismatched ? 'critical' : 'warning',
+        title: `Paiement fournisseur à revoir — ${payment.provider || 'provider'}`,
+        summary: [
+          payment.status || 'statut inconnu',
+          `rapprochement ${payment.reconciliation_status || 'inconnu'}`,
+          payment.review_reason || null,
+        ].filter(Boolean).join(' · '),
+        source_module: 'signal-service',
+        target_shell: 'bo',
+        target_view: 'purchasing',
+        target_filters: {},
+        owner_role: 'admin',
+        entity_type: 'supplier_payment',
+        entity_id: payment.payment_id,
+        recommendation: 'Ouvrir la PO dans Achats et traiter la réconciliation fournisseur',
+        confidence: 'high',
+        meta: {
+          provider: payment.provider || null,
+          review_reason: payment.review_reason || null,
+        },
+      });
+      generated++;
+    }
+
+    // Avec une file tronquée, ne jamais auto-résoudre des paiements actifs non lus.
+    if (!review.truncated) {
+      await autoResolveSignals('supplier_payment_review', entityIds);
+    }
+    return { generated, truncated: review.truncated === true };
+  } catch (e) {
+    log.warn({ err: e }, '[signal-service] supplier_payment_review error:');
+    return { generated: 0, error: e.message };
+  }
+};
 
 GENERATORS.parcel_blocked = async function() {
   try {
