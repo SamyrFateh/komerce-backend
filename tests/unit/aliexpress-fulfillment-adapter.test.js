@@ -219,6 +219,7 @@ describe('AliExpress fulfillment adapter', () => {
       zip: '00000',
       contact_person: 'Komerce Hub',
       mobile_no: '500000000',
+      phone_country: '+971',
     }));
   });
 

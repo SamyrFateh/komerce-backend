@@ -204,8 +204,9 @@ describe('AliExpress purchase preflight', () => {
       contact_person: 'Komerce Hub',
       full_name: 'Komerce Hub',
       mobile_no: '500000000',
+      phone_country: '+971',
     }));
-    expect(preflight.normalizePlaceOrderAddress({
+    const localUae = preflight.normalizePlaceOrderAddress({
       address1: '7 Test Street',
       city: 'Dubai',
       country_code: 'AE',
@@ -213,7 +214,10 @@ describe('AliExpress purchase preflight', () => {
       postal_code: '00000',
       customer_name: 'Komerce Hub',
       phone: '0500000000',
-    }).mobile_no).toBe('500000000');
+      phone_country: '00971',
+    });
+    expect(localUae.mobile_no).toBe('500000000');
+    expect(localUae.phone_country).toBe('+971');
 
     expect(() => preflight.normalizePlaceOrderAddress({
       address1: '7 Test Street',
