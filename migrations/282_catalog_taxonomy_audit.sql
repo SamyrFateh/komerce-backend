@@ -1,3 +1,7 @@
+-- @migration 282_catalog_taxonomy_audit.sql
+-- @domain    catalog
+-- @purpose   Journal append-only des mutations administratives de taxonomie Catalogue.
+--
 -- Migration 282 — audit append-only des mutations de taxonomie Catalogue.
 -- Owner: catalog
 -- Toute mutation catégorie / sous-catégorie doit conserver acteur, action et snapshots.
