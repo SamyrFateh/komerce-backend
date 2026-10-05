@@ -159,15 +159,33 @@ async function run(env=process.env,deps={}) {
     remark:'Komerce bounded real debit proof',
     sandbox:false,
   });
+  createPayload.iossType = 3;
   if (Object.prototype.hasOwnProperty.call(createPayload,'isSandbox')) {
     throw new Error('CJ_REAL_SANDBOX_FLAG_FORBIDDEN');
   }
 
-  const created=contract.parseCreateOrderResponse(await call(contract.ENDPOINTS.create_order_v2,{
+  const createBody=await call(contract.ENDPOINTS.create_order_v2,{
     method:'POST',
     body:createPayload,
     accessToken,
-  }));
+  });
+  const created=contract.parseCreateOrderResponse(createBody);
+  const actualPayment=Number(createBody?.data?.actualPayment);
+  const iossAmount=Number(createBody?.data?.iossAmount || 0);
+  const iossTaxHandlingFee=Number(createBody?.data?.iossTaxHandlingFee || 0);
+  if (!Number.isFinite(actualPayment) || actualPayment <= 0) {
+    throw new Error('CJ_REAL_ACTUAL_PAYMENT_INVALID');
+  }
+  if (actualPayment > cap) {
+    const error=new Error('CJ_REAL_DEBIT_CAP_EXCEEDED');
+    error.amounts={
+      actual_payment:actualPayment,
+      ioss_amount:Number.isFinite(iossAmount)?iossAmount:null,
+      ioss_tax_handling_fee:Number.isFinite(iossTaxHandlingFee)?iossTaxHandlingFee:null,
+      cap,
+    };
+    throw error;
+  }
 
   const detailBefore=await call(contract.ENDPOINTS.get_order_detail,{
     method:'GET',
@@ -184,15 +202,10 @@ async function run(env=process.env,deps={}) {
 
   const productAmount=Number(created.product_amount);
   const postageAmount=Number(created.postage_amount);
-  const expectedTotal=productAmount+postageAmount;
-  if (![productAmount,postageAmount,expectedTotal].every(Number.isFinite) || expectedTotal <= 0) {
+  if (![productAmount,postageAmount].every(Number.isFinite)) {
     throw new Error('CJ_REAL_ORDER_AMOUNT_INVALID');
   }
-  if (expectedTotal > cap) {
-    const error=new Error('CJ_REAL_DEBIT_CAP_EXCEEDED');
-    error.amounts={product_amount:productAmount,postage_amount:postageAmount,total:expectedTotal,cap};
-    throw error;
-  }
+  const expectedTotal=actualPayment;
 
   await call(contract.ENDPOINTS.confirm_order,{
     method:'POST',
@@ -245,6 +258,8 @@ async function run(env=process.env,deps={}) {
     logistic_name:route.logisticName,
     product_amount:productAmount,
     postage_amount:postageAmount,
+    ioss_amount:Number.isFinite(iossAmount)?iossAmount:null,
+    ioss_tax_handling_fee:Number.isFinite(iossTaxHandlingFee)?iossTaxHandlingFee:null,
     expected_total:expectedTotal,
     hard_cap_usd:cap,
     prepay_status:facts.status,
