@@ -64,6 +64,9 @@ jest.mock('../../services/purchasing-grouped-service', () => ({
   cancelLine: jest.fn(),
 }));
 
+jest.mock('../../services/purchasing-order-detail', () => ({ getPurchaseOrderDetail: jest.fn() }));
+jest.mock('../../services/purchasing-canonical-money', () => ({ resolveCanonicalMappingMoney: jest.fn() }));
+
 jest.mock('../../services/purchasing-engagement-service', () => ({
   submitPurchaseOrder: jest.fn(),
   confirmGroupedPurchaseOrder: jest.fn(),
@@ -73,6 +76,8 @@ jest.mock('../../services/purchasing-engagement-service', () => ({
 
 const db = require('../../db');
 const grouped = require('../../services/purchasing-grouped-service');
+const { getPurchaseOrderDetail } = require('../../services/purchasing-order-detail');
+const { resolveCanonicalMappingMoney } = require('../../services/purchasing-canonical-money');
 const engagement = require('../../services/purchasing-engagement-service');
 const { processReceive } = require('../../services/purchasing-receive-service');
 const {
@@ -251,6 +256,19 @@ describe('POST /api/purchasing/suppliers — créer un fournisseur', () => {
 });
 
 describe('POST /api/purchasing/suppliers/:id/map — mapper produit → fournisseur', () => {
+  it.each([0, -1, 'invalid'])('refuse un prix fournisseur invalide (%s)', async (supplier_price_aed) => {
+    const res = await request(app).post('/api/purchasing/suppliers/s1/map').send({ product_id: 'p1', supplier_sku: 'SKU1', supplier_price_aed });
+    expect(res.status).toBe(400);
+    expect(db.query).not.toHaveBeenCalled();
+  });
+
+  it('accepte la monnaie canonique sans inventer de prix AED', async () => {
+    resolveCanonicalMappingMoney.mockResolvedValueOnce({ unit_price: 12, currency: 'PLN' });
+    db.query.mockResolvedValueOnce({ rows: [{ id: 'map-canonical', supplier_price_aed: null }] });
+    const res = await request(app).post('/api/purchasing/suppliers/s1/map').send({ product_id: 'p1', supplier_sku: 'SKU1' });
+    expect(res.status).toBe(201);
+    expect(db.query.mock.calls[0][1][4]).toBeNull();
+  });
   it('400 si product_id manquant', async () => {
     const res = await request(app)
       .post('/api/purchasing/suppliers/s1/map')
@@ -519,6 +537,35 @@ describe('DELETE /api/purchasing/po/:po_id', () => {
 describe('forme regroupée — routes (PR 4)', () => {
   const PO = '00000000-0000-0000-0000-0000000000a1';
 
+  it.each(['/po/prepare', '/po/:po_id/detach', '/lines/:id/cancel', '/po/:po_id/confirm', '/lines', '/lines/:id/settle'])('la frontière %s accepte un body absent et laisse le service le valider', async (routePath) => {
+    const router = require('../../routes/purchasing');
+    const route = router.stack.find(layer => layer.route && layer.route.path === routePath && layer.route.methods.post).route;
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+    await route.stack[route.stack.length - 1].handle({ params: { po_id: PO, id: 'L1' }, user: currentUser }, res, next);
+    expect(next).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalled();
+  });
+
+  it('la préparation relaie le refus métier sans produire une PO réussie', async () => {
+    grouped.preparePurchaseOrder.mockRejectedValueOnce(Object.assign(new Error('invalid lines'), { status: 400, code: 'INVALID_INPUT' }));
+    const res = await request(app).post('/api/purchasing/po/prepare').send({});
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('INVALID_INPUT');
+  });
+
+  it.each([
+    ['/po/00000000-0000-0000-0000-0000000000a1/detach', 'detachLines'],
+    ['/lines/L1/cancel', 'cancelLine'],
+    ['/lines', 'createManualLine'],
+  ])('relaie le refus métier de %s', async (routePath, operation) => {
+    const service = operation === 'createManualLine' ? engagement : grouped;
+    service[operation].mockRejectedValueOnce(Object.assign(new Error('refused'), { status: 409, code: 'REFUSED' }));
+    const res = await request(app).post(`/api/purchasing${routePath}`).send({});
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('REFUSED');
+  });
+
   it('GET /open-lines est servi avant /:order_id', async () => {
     grouped.listOpenLines.mockResolvedValueOnce({ groups: [], total_lines: 0 });
     const res = await request(app).get('/api/purchasing/open-lines');
@@ -536,12 +583,28 @@ describe('forme regroupée — routes (PR 4)', () => {
   });
 
   it('GET /po/:po_id lit une PO regroupée (lignes + marchés) ; erreur relayée', async () => {
-    grouped.getGroupedPurchaseOrder.mockResolvedValueOnce({ purchase_order: { id: PO }, lines: [], markets: [], multi_market: false });
+    const detail = { purchase_order: { id: PO }, lines: [], markets: [], multi_market: false, supplier_execution: { orders: [], payments: [], proofs: [] } };
+    getPurchaseOrderDetail.mockResolvedValueOnce(detail);
     const ok = await request(app).get(`/api/purchasing/po/${PO}`);
     expect(ok.status).toBe(200);
-    expect(grouped.getGroupedPurchaseOrder).toHaveBeenCalledWith(PO);
-    grouped.getGroupedPurchaseOrder.mockRejectedValueOnce(Object.assign(new Error('introuvable'), { status: 404, code: 'PURCHASE_ORDER_NOT_FOUND' }));
+    expect(ok.body).toEqual(detail);
+    expect(getPurchaseOrderDetail).toHaveBeenCalledWith(PO);
+    getPurchaseOrderDetail.mockRejectedValueOnce(Object.assign(new Error('introuvable'), { status: 404, code: 'PURCHASE_ORDER_NOT_FOUND' }));
     expect((await request(app).get(`/api/purchasing/po/${PO}`)).status).toBe(404);
+  });
+
+  it.each([undefined, { role: 'market_operator' }, { role: 'finance' }])('GET détail ne lit rien sans autorité admin (%j)', async (user) => {
+    currentUser = user;
+    const res = await request(app).get(`/api/purchasing/po/${PO}?market_id=KM`);
+    expect(res.status).toBe(user ? 403 : 401);
+    expect(getPurchaseOrderDetail).not.toHaveBeenCalled();
+  });
+
+  it('GET détail conserve le rejet des PO historiques et ne masque pas une panne SQL', async () => {
+    getPurchaseOrderDetail.mockRejectedValueOnce(Object.assign(new Error('historique'), { status: 409, code: 'PURCHASE_ORDER_NOT_GROUPED' }));
+    expect((await request(app).get(`/api/purchasing/po/${PO}`)).body.code).toBe('PURCHASE_ORDER_NOT_GROUPED');
+    getPurchaseOrderDetail.mockRejectedValueOnce(new Error('db down'));
+    expect((await request(app).get(`/api/purchasing/po/${PO}`)).status).toBe(500);
   });
 
   it('POST /po/prepare → 201, corps et acteur transmis', async () => {

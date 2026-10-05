@@ -49,9 +49,10 @@ attendre un nouveau chantier de shell.
 
 Entrée : `GET /api/purchasing/po/:po_id`, aujourd'hui délégué à
 `services/purchasing-grouped-service.js::getGroupedPurchaseOrder`.
-Le contrat actuel retourne PO, lignes et marchés ; il ne lit pas les tables
-`supplier_execution_*`. Le lot 1 ajoute une projection au périmètre purchasing,
-en réutilisant les liens persistés et les gardes existantes.
+Le lecteur regroupé retourne PO, lignes et marchés. La route compose désormais
+ce détail via `services/purchasing-order-detail.js`, qui ajoute les collections
+`supplier_execution` avec les liens persistés et les gardes existantes.
+Le contrat exact et les preuves du lot 1 sont consignés dans le registre des gaps.
 
 Avant de modifier : pack `service` de `purchasing`, impact de la cible, puis
 headers/mustCheck et schémas nécessaires. Vérifier les cardinalités, le scope,

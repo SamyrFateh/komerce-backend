@@ -73,6 +73,7 @@ module.exports = {
 
   files: {
     services: [
+      'services/purchasing-order-detail.js',
       'services/suppliers/allegro-fulfillment-adapter.js',
       'services/suppliers/allegro-purchase-reconciliation.js',
       'services/suppliers/allegro-shipping-capability-adapter.js',
@@ -140,6 +141,8 @@ module.exports = {
       'scripts/check-supplier-execution-certification-manifest.js',
     ],
     tests: [
+      'tests/unit/purchasing-order-detail.test.js',
+      'tests/integration/purchasing-order-detail-postgres.test.js',
       'tests/unit/purchase-line-snapshot.test.js',
       'tests/unit/procurement-execution-context.test.js',
       'tests/unit/purchase-lines-parity-check.test.js',
@@ -304,6 +307,7 @@ module.exports = {
   authority: 'backend-core — tout changement du flux d\'engagement fournisseur (Procurement Route, readiness dynamique, déclenchement, confirmation, réception, annulation) doit rester derrière les services propriétaires purchasing ; supplier-connectivity possède l\'identité provider, la Supplier Order Identity et le contrat générique d\'adapter',
 
   invariants: [
+    'le détail GET /api/purchasing/po/:po_id conserve son guard admin et son contrat PO regroupée ; supplier_execution projette en lecture seule ordres, liens de lignes, groupes, membres, paiements, preuves et événements depuis un même snapshot SQL, sans appel provider, nouveau verdict ni agrégat monétaire ; montants décimaux en texte et devises explicites, aucun facts/message provider brut exposé',
     { statement: 'les lecteurs d\'achat (signaux, GET /api/purchasing, complétude de réception, scans Hub, stock-sync) lisent l\'engagé et le reçu par ligne via v_purchase_line_progress, jamais purchase_orders.qty/received_qty ; la vue redonne exactement l\'ancien calcul pour les PO historiques (avec ligne, sans ligne avant 225, annulées) et is_order_complete la consomme ; un item déjà couvert par les lignes (autre fournisseur compris) ne se rachète pas',
       test: 'tests/integration/purchase-line-progress-postgres.test.js' },
     { statement: 'purchase_lines (PR 1, migration 263) : la quantité effective achetée d\'un order_item (0 si annulée, sinon COALESCE(settled, confirmed, quantity)) ne dépasse jamais order_items.quantity — garde base I1 sous verrou FOR UPDATE sur order_items ; une ligne confirmée/réglée/annulée est figée (one-shot) et ne se supprime pas directement',
