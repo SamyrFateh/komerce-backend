@@ -74,7 +74,12 @@ Legacy et Canonical utilisent donc la **même** autorité pour :
 
 - création / modification / désactivation catégorie ;
 - création / modification / désactivation sous-catégorie ;
-- invalidation du cache catégories.
+- invalidation du cache catégories ;
+- audit append-only de chaque mutation dans `catalog_taxonomy_audit`.
+
+Depuis la migration 282, mutation et audit partagent la même transaction owner :
+l'audit conserve action, acteur, surface d'origine et snapshots avant/après.
+L'audit reste un fait d'observation ; il ne confère aucune autorité.
 
 Canonical n’expose pas le hard-delete de sous-catégorie.
 
