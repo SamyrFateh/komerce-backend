@@ -117,14 +117,26 @@
         { key: 'price', label: 'Prix AED' }, { key: 'active', label: 'Actif' },
       ],
       rows: (payload.mappings || []).map(row => ({
-        product: row.product_ref
-          ? { text: row.product_name || row.product_ref, href: contextualHref('/admin/products/' + encodeURIComponent(row.product_ref), returnTo, 'Retour au fournisseur') }
-          : row.product_name,
+        product: [row.product_ref, row.product_name].filter(Boolean).join(' · '),
         sku: row.supplier_sku,
         price: row.supplier_price_aed,
         active: row.is_active ? 'Oui' : 'Non',
       })),
       emptyText: 'Aucun mapping catalogue.',
+    });
+
+    const productNavigation = doc.createElement('section');
+    rootNode.appendChild(productNavigation);
+    ui.AlertPanel.render(productNavigation, {
+      title: 'Navigation catalogue',
+      emptyText: 'Aucun produit navigable.',
+      items: (payload.mappings || []).filter(row => row.product_ref).map(row => ({
+        level: 'info',
+        title: row.product_name || row.product_ref,
+        message: row.product_ref,
+        href: contextualHref('/admin/products/' + encodeURIComponent(row.product_ref), returnTo, 'Retour au fournisseur'),
+        actionLabel: 'Product 360',
+      })),
     });
 
     renderTable(rootNode, ui, {
@@ -135,7 +147,7 @@
         { key: 'hub', label: 'Hub' }, { key: 'supplier_ref', label: 'Réf. fournisseur' }, { key: 'date', label: 'Créée' },
       ],
       rows: (payload.purchase_orders || []).map(row => ({
-        po: { text: String(row.id || '').slice(0, 8), href: contextualHref('/admin/workspaces/purchasing?po=' + encodeURIComponent(row.id), returnTo, 'Retour au fournisseur') },
+        po: String(row.id || '').slice(0, 8),
         order: row.order_reference || '—',
         status: row.status,
         hub: row.procurement_hub_ref,
@@ -143,6 +155,20 @@
         date: formatDate(row.created_at),
       })),
       emptyText: 'Aucune Purchase Order.',
+    });
+
+    const purchasingNavigation = doc.createElement('section');
+    rootNode.appendChild(purchasingNavigation);
+    ui.AlertPanel.render(purchasingNavigation, {
+      title: 'Navigation Achats',
+      emptyText: 'Aucune PO navigable.',
+      items: (payload.purchase_orders || []).map(row => ({
+        level: 'info',
+        title: 'PO ' + String(row.id || '').slice(0, 8),
+        message: [row.order_reference, row.status, row.supplier_order_id].filter(Boolean).join(' · '),
+        href: contextualHref('/admin/workspaces/purchasing?po=' + encodeURIComponent(row.id), returnTo, 'Retour au fournisseur'),
+        actionLabel: 'Ouvrir dans Achats',
+      })),
     });
 
     renderTable(rootNode, ui, {
