@@ -6,10 +6,11 @@
  * @criticality   high
  * @inputs        product_id, admin_user, reject_reason, override_fields
  * @outputs       queue_page, approved_product, rejected_product, overridden_product
- * @depends       db.js, services/catalog-overrides.js, services/catalog-certification.js, services/product-publication-guard.js, services/product-sku-service.js, utils/alerts.js, utils/rules.js
+ * @depends       db.js, services/catalog-overrides.js, services/catalog-certification.js, services/product-publication-guard.js, services/product-sku-service.js, services/catalog-publication-decision-audit.js, utils/alerts.js, utils/rules.js
  * @used-by       routes/admin/catalog-approval.js, services/catalog-workspace.js
  * @db-read       catalog_media, products
  * @db-write      products
+ * @db-write-via:catalog-publication-decision-audit catalog_publication_decision_audit
  * @db-write-via:alerts-persistence-boundary alerts
  * @db-txn        first_publication_serialized_by_catalog_cap_lock
  * @doctrine      docs/doctrine/DOCTRINE_CATALOGUE.md §5, §6, §7, §9
@@ -38,6 +39,7 @@ const { upsertOverrides, finalizeReviewedManualPreparation } = require('./catalo
 const { certifyCatalogProduct } = require('./catalog-certification');
 const { validatePublicationUpdate } = require('./product-publication-guard');
 const { activateProductSkuInventoryModel } = require('./product-sku-service');
+const { recordCatalogPublicationDecision } = require('./catalog-publication-decision-audit');
 const log = require('../utils/logger').child({ module: 'catalog-approval' });
 
 const PENDING_SOURCES = Object.freeze(['connector_raw', 'ai_enriched', 'manual']);
@@ -221,6 +223,14 @@ async function approveProduct(q = db, productId, adminUser) {
 
     const result = await publish(tx, reviewed);
     if (result.status === 200) {
+      await recordCatalogPublicationDecision(tx, {
+        action: 'CATALOG_PRODUCT_APPROVED',
+        productId,
+        productRef: result.body.product_ref || before.product_ref,
+        actor: adminUser,
+        before,
+        after: result.body,
+      });
       log.info(`Approuvé par ${adminUser?.id || 'admin'} — produit ${productId}`);
     }
     return result;
@@ -232,38 +242,53 @@ async function rejectProduct(q = db, productId, { reason } = {}, adminUser) {
     return { status: 400, body: { error: 'Raison de rejet obligatoire' } };
   }
 
-  const before = await loadCandidate(q, productId);
-  if (!before) return { status: 404, body: { error: 'Produit introuvable' } };
-  if (!isPending(before)) {
-    return { status: 409, body: { error: 'Candidat déjà décidé ou hors file de curation', code: 'not_pending' } };
-  }
+  const work = async tx => {
+    const before = await loadCandidate(tx, productId);
+    if (!before) return { status: 404, body: { error: 'Produit introuvable' } };
+    if (!isPending(before)) {
+      return { status: 409, body: { error: 'Candidat déjà décidé ou hors file de curation', code: 'not_pending' } };
+    }
 
-  const { rows: [product] } = await q.query(
-    `UPDATE products
-        SET is_active = FALSE,
-            lifecycle_status = 'rejected',
-            needs_review = FALSE,
-            updated_at = NOW()
-      WHERE id = $1
-      RETURNING *`,
-    [productId]
-  );
+    const { rows: [product] } = await tx.query(
+      `UPDATE products
+          SET is_active = FALSE,
+              lifecycle_status = 'rejected',
+              needs_review = FALSE,
+              updated_at = NOW()
+        WHERE id = $1
+        RETURNING *`,
+      [productId]
+    );
 
-  try {
-    await createAlert(q, {
-      type: 'catalog_approval_reject',
-      entityType: 'product',
-      entityId: productId,
-      severity: 'low',
-      title: `Produit rejeté en approbation: ${reason}`,
-      description: `Raison: ${reason} — décidé par ${adminUser?.id || 'admin'}`,
+    await recordCatalogPublicationDecision(tx, {
+      action: 'CATALOG_PRODUCT_REJECTED',
+      productId,
+      productRef: product.product_ref || before.product_ref,
+      actor: adminUser,
+      reason,
+      before,
+      after: product,
     });
-  } catch (err) {
-    log.warn({ err }, '[catalog-approval] trace rejet ignorée:');
-  }
 
-  log.info(`Rejeté par ${adminUser?.id || 'admin'} — produit ${productId}: ${reason}`);
-  return { status: 200, body: product };
+    try {
+      await createAlert(tx, {
+        type: 'catalog_approval_reject',
+        entityType: 'product',
+        entityId: productId,
+        severity: 'low',
+        title: `Produit rejeté en approbation: ${reason}`,
+        description: `Raison: ${reason} — décidé par ${adminUser?.id || 'admin'}`,
+      });
+    } catch (err) {
+      log.warn({ err }, '[catalog-approval] alerte rejet ignorée:');
+    }
+
+    log.info(`Rejeté par ${adminUser?.id || 'admin'} — produit ${productId}: ${reason}`);
+    return { status: 200, body: product };
+  };
+
+  if (q === db && typeof db.withTransaction === 'function') return db.withTransaction(work);
+  return work(q);
 }
 
 async function overrideAndApprove(q = db, productId, { fields, reason } = {}, adminUser) {
@@ -325,6 +350,16 @@ async function overrideAndApprove(q = db, productId, { fields, reason } = {}, ad
     }
 
     const result = { status: 200, body: { ...product, overridden: overrideResult.overridden } };
+    await recordCatalogPublicationDecision(tx, {
+      action: 'CATALOG_PRODUCT_OVERRIDDEN_AND_APPROVED',
+      productId,
+      productRef: product.product_ref || before.product_ref,
+      actor: adminUser,
+      reason: reason || null,
+      overriddenFields: overrideResult.overridden,
+      before,
+      after: product,
+    });
     log.info(`Corrigé + approuvé par ${adminUser?.id || 'admin'} — produit ${productId} (${overrideResult.overridden.join(', ')})`);
     return result;
   });
