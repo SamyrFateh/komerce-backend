@@ -143,3 +143,14 @@ test('coverage reuse remains a CI-only proof and does not remove the local full-
   expect(workflow).toMatch(/Reuse prior green unit coverage proof/);
   expect(workflow).toMatch(/test:unit:coverage/);
 });
+
+
+test('full unit coverage subsumes the targeted related-tests run', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const workflow = fs.readFileSync(path.join(__dirname, '..', '..', '.github', 'workflows', 'pr-enforcement.yml'), 'utf8');
+  expect(workflow).toMatch(/Related unit tests subsumed by full coverage/);
+  expect(workflow).toMatch(/backend_source == 'true'/);
+  expect(workflow).toMatch(/reuse_coverage != 'true'/);
+  expect(workflow).toMatch(/npm run test:unit:coverage/);
+});
