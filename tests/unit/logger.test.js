@@ -21,64 +21,49 @@
 
 'use strict';
 
-function captureStdout(fn) {
-  // pino écrit via sonic-boom, qui appelle fs.write(1, …) (asynchrone) ou fs.writeSync(1, …), ou
-  // process.stdout.write selon la version / l'environnement : on capture les trois chemins pour ne
-  // pas dépendre de ce détail. Le rappel de fs.write est appelé tout de suite pour libérer sonic-boom.
-  const fs = require('fs');
-  const originalWrite = process.stdout.write.bind(process.stdout);
-  const originalWriteSync = fs.writeSync;
-  const originalFsWrite = fs.write;
+const { Writable } = require('stream');
+
+function createCapturedLogger() {
   const chunks = [];
-  process.stdout.write = (chunk) => { chunks.push(chunk.toString()); return true; };
-  fs.writeSync = (fd, data, ...rest) => {
-    if (fd === 1) {
-      chunks.push(data.toString());
-      return Buffer.byteLength(data.toString());
-    }
-    return originalWriteSync.call(fs, fd, data, ...rest);
+  const destination = new Writable({
+    write(chunk, _encoding, callback) {
+      chunks.push(chunk.toString());
+      callback();
+    },
+  });
+  const base = require('../../utils/logger');
+  const log = base.createForTest(destination);
+  return {
+    log,
+    entries() {
+      return chunks.join('')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
+    },
   };
-  fs.write = (fd, data, ...rest) => {
-    if (fd !== 1) return originalFsWrite.call(fs, fd, data, ...rest);
-    const text = data.toString();
-    chunks.push(text);
-    const callback = rest[rest.length - 1];
-    if (typeof callback === 'function') callback(null, Buffer.byteLength(text));
-    return undefined;
-  };
-  try {
-    fn();
-  } finally {
-    process.stdout.write = originalWrite;
-    fs.writeSync = originalWriteSync;
-    fs.write = originalFsWrite;
-  }
-  return chunks.join('')
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
+}
+
+function captureLog(fn) {
+  const { log, entries } = createCapturedLogger();
+  fn(log);
+  return entries();
 }
 
 describe('utils/logger — pino actif (masquage PII + redact)', () => {
-  let log;
-
-  beforeAll(() => {
-    jest.resetModules();
-    log = require('../../utils/logger');
-  });
 
   test('masque un numéro de téléphone (champ "phone")', () => {
-    const [entry] = captureStdout(() => log.info({ phone: '+2690612345' }, 'test'));
+    const [entry] = captureLog((log) => log.info({ phone: '+2690612345' }, 'test'));
     expect(entry.phone).toBe('+269•••45');
   });
 
   test('masque un email (champ "email")', () => {
-    const [entry] = captureStdout(() => log.info({ email: 'sam@gmail.com' }, 'test'));
+    const [entry] = captureLog((log) => log.info({ email: 'sam@gmail.com' }, 'test'));
     expect(entry.email).toBe('s***@gmail.com');
   });
 
   test('masque les champs PII imbriqués (profondeur > 1)', () => {
-    const [entry] = captureStdout(() =>
+    const [entry] = captureLog((log) =>
       log.info({ user: { phone: '+2690612345', name: 'Ali' } }, 'nested')
     );
     expect(entry.user.phone).toBe('+269•••45');
@@ -86,58 +71,58 @@ describe('utils/logger — pino actif (masquage PII + redact)', () => {
   });
 
   test('champ phone non-string → garde-fou typeof, laissé intact', () => {
-    const [entry] = captureStdout(() => log.info({ phone: 12345 }, 'test'));
+    const [entry] = captureLog((log) => log.info({ phone: 12345 }, 'test'));
     expect(entry.phone).toBe(12345);
   });
 
   test('maskPhone : valeur trop courte (< 4 chars) → "•••"', () => {
-    const [entry] = captureStdout(() => log.info({ phone: '12' }, 'test'));
+    const [entry] = captureLog((log) => log.info({ phone: '12' }, 'test'));
     expect(entry.phone).toBe('•••');
   });
 
   test('maskEmail : valeur sans "@" → "•••"', () => {
-    const [entry] = captureStdout(() => log.info({ email: 'not-an-email' }, 'test'));
+    const [entry] = captureLog((log) => log.info({ email: 'not-an-email' }, 'test'));
     expect(entry.email).toBe('•••');
   });
 
   test('maskEmail : "@" en première position (indexOf < 1) → "•••"', () => {
-    const [entry] = captureStdout(() => log.info({ email: '@gmail.com' }, 'test'));
+    const [entry] = captureLog((log) => log.info({ email: '@gmail.com' }, 'test'));
     expect(entry.email).toBe('•••');
   });
 
   test('champ non-PII reste intact', () => {
-    const [entry] = captureStdout(() => log.info({ orderId: 'order-1' }, 'test'));
+    const [entry] = captureLog((log) => log.info({ orderId: 'order-1' }, 'test'));
     expect(entry.orderId).toBe('order-1');
   });
 
   test('serializer "req" : extrait method/url/id/ip uniquement', () => {
-    const [entry] = captureStdout(() =>
+    const [entry] = captureLog((log) =>
       log.info({ req: { method: 'POST', url: '/api/orders', id: 'req-42', ip: '9.9.9.9', extra: 'ignored' } }, 'test')
     );
     expect(entry.req).toEqual({ method: 'POST', url: '/api/orders', id: 'req-42', ip: '9.9.9.9' });
   });
 
   test('serializer "res" : extrait statusCode uniquement', () => {
-    const [entry] = captureStdout(() =>
+    const [entry] = captureLog((log) =>
       log.info({ res: { statusCode: 201, headers: { ignored: true } } }, 'test')
     );
     expect(entry.res).toEqual({ statusCode: 201 });
   });
 
   test('serializer "err" : sérialise une Error (stack/message présents)', () => {
-    const [entry] = captureStdout(() => log.error({ err: new Error('boom') }, 'test'));
+    const [entry] = captureLog((log) => log.error({ err: new Error('boom') }, 'test'));
     expect(entry.err.message).toBe('boom');
     expect(entry.err.stack).toEqual(expect.any(String));
   });
 
   test('objet sans aucun champ PII → renvoyé sans copie (comportement observable via égalité de contenu)', () => {
-    const [entry] = captureStdout(() => log.info({ a: 1, b: { c: 2 } }, 'test'));
+    const [entry] = captureLog((log) => log.info({ a: 1, b: { c: 2 } }, 'test'));
     expect(entry.a).toBe(1);
     expect(entry.b.c).toBe(2);
   });
 
   test('redact : password/token/secret/creditCard → [REDACTED]', () => {
-    const [entry] = captureStdout(() =>
+    const [entry] = captureLog((log) =>
       log.info({ password: 'x', token: 'y', secret: 'z', creditCard: '4111' }, 'test')
     );
     expect(entry.password).toBe('[REDACTED]');
@@ -147,7 +132,7 @@ describe('utils/logger — pino actif (masquage PII + redact)', () => {
   });
 
   test('redact : champs imbriqués via "*.password" etc.', () => {
-    const [entry] = captureStdout(() =>
+    const [entry] = captureLog((log) =>
       log.info({ user: { password: 'x', token: 'y' } }, 'test')
     );
     expect(entry.user.password).toBe('[REDACTED]');
@@ -155,38 +140,38 @@ describe('utils/logger — pino actif (masquage PII + redact)', () => {
   });
 
   test('base fields service/env présents sur chaque entrée', () => {
-    const [entry] = captureStdout(() => log.info('hello'));
+    const [entry] = captureLog((log) => log.info('hello'));
     expect(entry.service).toBe('komerce-backend');
     expect(entry.env).toBe('test');
   });
 
   test('forModule ajoute le champ "module" au contexte du child logger', () => {
+    const { log, entries } = createCapturedLogger();
     const child = log.forModule('sms');
-    const [entry] = captureStdout(() => child.info('ping'));
+    child.info('ping');
+    const [entry] = entries();
     expect(entry.module).toBe('sms');
   });
 
   test('forModule accepte un contexte supplémentaire fusionné', () => {
+    const { log, entries } = createCapturedLogger();
     const child = log.forModule('wallet', { userId: 'user-1' });
-    const [entry] = captureStdout(() => child.info('ping'));
+    child.info('ping');
+    const [entry] = entries();
     expect(entry.module).toBe('wallet');
     expect(entry.userId).toBe('user-1');
   });
 
   test('child (alias legacy) fonctionne comme forModule', () => {
+    const { log, entries } = createCapturedLogger();
     const child = log.child({ module: 'orders' });
-    const [entry] = captureStdout(() => child.info('ping'));
+    child.info('ping');
+    const [entry] = entries();
     expect(entry.module).toBe('orders');
   });
 });
 
 describe('utils/logger — httpLogger middleware', () => {
-  let log;
-
-  beforeAll(() => {
-    jest.resetModules();
-    log = require('../../utils/logger');
-  });
 
   function makeReqRes(status, overrides = {}) {
     const handlers = {};
@@ -207,7 +192,7 @@ describe('utils/logger — httpLogger middleware', () => {
     const { req, res, handlers } = makeReqRes(200);
     const next = jest.fn();
 
-    const entries = captureStdout(() => {
+    const entries = captureLog((log) => {
       log.httpLogger(req, res, next);
       expect(next).toHaveBeenCalled();
       handlers.finish();
@@ -224,31 +209,31 @@ describe('utils/logger — httpLogger middleware', () => {
 
   test('status >= 500 → niveau error (50)', () => {
     const { req, res, handlers } = makeReqRes(500);
-    const [entry] = captureStdout(() => { log.httpLogger(req, res, jest.fn()); handlers.finish(); });
+    const [entry] = captureLog((log) => { log.httpLogger(req, res, jest.fn()); handlers.finish(); });
     expect(entry.level).toBe(50);
   });
 
   test('status >= 400 (et < 500) → niveau warn (40)', () => {
     const { req, res, handlers } = makeReqRes(404);
-    const [entry] = captureStdout(() => { log.httpLogger(req, res, jest.fn()); handlers.finish(); });
+    const [entry] = captureLog((log) => { log.httpLogger(req, res, jest.fn()); handlers.finish(); });
     expect(entry.level).toBe(40);
   });
 
   test('status < 400 → niveau info (30)', () => {
     const { req, res, handlers } = makeReqRes(200);
-    const [entry] = captureStdout(() => { log.httpLogger(req, res, jest.fn()); handlers.finish(); });
+    const [entry] = captureLog((log) => { log.httpLogger(req, res, jest.fn()); handlers.finish(); });
     expect(entry.level).toBe(30);
   });
 
   test('req.id absent → fallback sur le header x-request-id', () => {
     const { req, res, handlers } = makeReqRes(200, { id: undefined, headers: { 'x-request-id': 'hdr-req-id' } });
-    const [entry] = captureStdout(() => { log.httpLogger(req, res, jest.fn()); handlers.finish(); });
+    const [entry] = captureLog((log) => { log.httpLogger(req, res, jest.fn()); handlers.finish(); });
     expect(entry.request_id).toBe('hdr-req-id');
   });
 
   test('req.user absent → user_id à null (garde optional chaining)', () => {
     const { req, res, handlers } = makeReqRes(200, { user: undefined });
-    const [entry] = captureStdout(() => { log.httpLogger(req, res, jest.fn()); handlers.finish(); });
+    const [entry] = captureLog((log) => { log.httpLogger(req, res, jest.fn()); handlers.finish(); });
     expect(entry.user_id).toBeNull();
   });
 });
