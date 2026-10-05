@@ -150,8 +150,12 @@ async function main() {
     const initialized = await initializeDisposable(target);
     console.log(`DISPOSABLE_DB_INITIALIZED=${initialized}`);
     const targeted = [
+      ['migrations/227_sourcing_resolution_foundation.sql',
+        "SELECT to_regclass('public.sourcing_resolution_bindings') IS NOT NULL AS ready"],
       ['migrations/250_boutique_subcategory_customs_affinity.sql',
         "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='boutique_subcategories' AND column_name='customs_category_key') AS ready"],
+      ['migrations/256_provider_runtime_certification.sql',
+        "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='sourcing_sources' AND column_name='production_certified_capture_id') AS ready"],
       ['migrations/257_import_runtime_runs.sql',
         "SELECT to_regclass('public.import_runtime_runs') IS NOT NULL AS ready"],
       ['migrations/258_import_runtime_item_events.sql',
