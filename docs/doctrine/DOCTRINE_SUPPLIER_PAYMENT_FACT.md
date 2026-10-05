@@ -122,3 +122,33 @@ Invariants :
 - le provider est injecté : ce service ne connaît aucun endpoint CJ et reste provider-neutral.
 
 Ce lot ne branche encore aucun endpoint de paiement production.
+
+
+## Preuve d'un débit monétaire réel
+
+Le statut provider `paid` ou l'état post-paiement d'un ordre ne suffit pas à établir un débit réel.
+
+Pour autoriser `real_debit_verified=true`, Komerce exige simultanément :
+
+- paiement local `succeeded` ;
+- `reconciliation_status=matched` ;
+- provider identique ;
+- montant observé = montant attendu ;
+- devise identique ;
+- `payment_ref` stable ;
+- `proof_source` monétaire explicite ;
+- `proof_ref` stable vers le fait de débit ;
+- `debit_confirmed=true` ;
+- `sandbox=false` ;
+- `simulated=false`.
+
+Exemples de preuves admissibles à terme : transaction de balance provider, journal de wallet provider, ou autre ledger financier provider documenté et relisible.
+
+Ne sont jamais suffisants seuls :
+
+- réponse `payBalanceV2: paid` ;
+- statut d'ordre `UNSHIPPED/PROCESSING` ;
+- `simulatePay` ;
+- `payBalanceV2` sur commandes `isSandbox=1`.
+
+Cette frontière appartient à Purchasing. La projection de ce fait vers les coûts/comptes B2B appartient ensuite à Economic Engine/Finance et doit rester un consommateur, pas un second écrivain du fait de paiement fournisseur.
