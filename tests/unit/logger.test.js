@@ -147,7 +147,7 @@ describe('utils/logger — pino actif (masquage PII + redact)', () => {
 
   test('forModule ajoute le champ "module" au contexte du child logger', () => {
     const { log, entries } = createCapturedLogger();
-    const child = log.child({ module: 'sms' });
+    const child = log.forModule('sms');
     child.info('ping');
     const [entry] = entries();
     expect(entry.module).toBe('sms');
@@ -155,7 +155,7 @@ describe('utils/logger — pino actif (masquage PII + redact)', () => {
 
   test('forModule accepte un contexte supplémentaire fusionné', () => {
     const { log, entries } = createCapturedLogger();
-    const child = log.child({ module: 'wallet', userId: 'user-1' });
+    const child = log.forModule('wallet', { userId: 'user-1' });
     child.info('ping');
     const [entry] = entries();
     expect(entry.module).toBe('wallet');
