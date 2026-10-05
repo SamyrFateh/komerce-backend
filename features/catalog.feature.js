@@ -220,6 +220,7 @@ module.exports = {
       'services/prompts/catalog-enrichment.prompt.js',
       'services/catalog-overrides.js',
       'services/catalog-approval.js',
+      'services/catalog-taxonomy-audit.js',
       'services/boutique-taxonomy-admin.js',
       'services/catalog-workspace.js',
       'services/catalog-commercial-assortment.js',
@@ -255,6 +256,7 @@ module.exports = {
       'migrations/245_products_boutique_taxonomy.sql',
       'migrations/250_boutique_subcategory_customs_affinity.sql',
       'migrations/259_products_draft_price_deferred.sql',
+      'migrations/282_catalog_taxonomy_audit.sql',
     ],
     config: [
       'config/import-profiles/komerce-test-dummyjson.v1.json',
@@ -501,6 +503,7 @@ module.exports = {
       'tests/unit/catalog-sync-checkpoint.test.js',
       'tests/unit/json-connector.test.js',
       'tests/unit/catalog-approval.test.js',
+      'tests/unit/catalog-taxonomy-audit.test.js',
       'tests/unit/integrations-aliexpress-route.test.js',
       'tests/unit/admin-catalog-approval-route.test.js',
       'tests/unit/catalog-enrichment-editorial-invariants.test.js',
@@ -550,6 +553,7 @@ module.exports = {
     tables: [
       'boutique_categories: RW',
       'boutique_subcategories: RW',
+      'catalog_taxonomy_audit: W',
       'catalog_exclusions: R',
       'catalog_field_overrides: RW',
       'catalog_glossary: R',

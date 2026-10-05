@@ -224,8 +224,8 @@ test('update résout product_ref côté serveur puis délègue product-admin-ser
 
 test('taxonomie Canonical délègue au service partagé', async () => {
   mockCreateCategory.mockResolvedValue({ key: 'Tech', label: 'Tech' });
-  await workspace.createCategory({ key: 'Tech', label: 'Tech' });
-  expect(mockCreateCategory).toHaveBeenCalledWith({ key: 'Tech', label: 'Tech' });
+  await workspace.createCategory({ key: 'Tech', label: 'Tech' }, { id: 'central-admin', role: 'admin' });
+  expect(mockCreateCategory).toHaveBeenCalledWith({ key: 'Tech', label: 'Tech' }, undefined, expect.objectContaining({ source_surface: 'canonical_catalog_workspace' }));
 });
 
 test('file de curation expose la vérité source pour comparaison avant/après', async () => {
