@@ -81,6 +81,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
       'finance.cost-families',
       'finance.relay-profitability',
       'finance.payment-mix',
+      'finance.supplier-payment-exceptions',
       'finance.refunds',
     ]);
     expect(schema.drill.map(item => item.href)).toEqual([
