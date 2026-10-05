@@ -78,7 +78,7 @@ async function copyEncryptedOauth(target) {
 }
 async function ensureCanonicalSku(db) {
   const existing = await db.query(`
-    SELECT ps.id, p.product_ref
+    SELECT ps.id, ps.product_id, p.product_ref
       FROM product_skus ps
       JOIN products p ON p.id=ps.product_id
      WHERE ps.is_active=TRUE
@@ -86,7 +86,39 @@ async function ensureCanonicalSku(db) {
        AND ps.supplier_order_identity->>'provider'='aliexpress'
      ORDER BY ps.id LIMIT 1
   `);
-  if (existing.rows.length) return existing.rows[0];
+  if (existing.rows.length) {
+    const row = existing.rows[0];
+    const linkage = require('../services/sourcing-catalog-product-linkage');
+    const canonicalProductIds = await linkage.findCanonicalProductIdsForCatalogProduct(row.product_id, db.query.bind(db));
+    const trace = await db.query(`
+      SELECT sc.id AS candidate_id, sc.import_id,
+             (SELECT COUNT(*)::int FROM sourcing_captures c
+               WHERE NULLIF(c.stats->>'import_id','')::uuid = sc.import_id) AS captures,
+             (SELECT COUNT(*)::int
+                FROM sourcing_observations o
+                JOIN sourcing_captures c ON c.capture_id=o.capture_id
+               WHERE NULLIF(c.stats->>'import_id','')::uuid = sc.import_id
+                 AND o.grain::text='product'
+                 AND o.source_ref=sc.supplier_product_id) AS product_observations,
+             (SELECT COUNT(*)::int
+                FROM sourcing_resolution_bindings rb
+                JOIN sourcing_observations o ON o.observation_id=rb.observation_id
+                JOIN sourcing_captures c ON c.capture_id=o.capture_id
+               WHERE NULLIF(c.stats->>'import_id','')::uuid = sc.import_id
+                 AND o.grain::text='product'
+                 AND o.source_ref=sc.supplier_product_id
+                 AND rb.ended_at IS NULL) AS active_product_bindings
+        FROM sourcing_candidates sc
+       WHERE sc.product_id=$1
+       ORDER BY sc.updated_at DESC LIMIT 1
+    `, [row.product_id]);
+    console.log(`ALIEXPRESS_CERT_EXISTING_CHAIN=${JSON.stringify({
+      product_ref: row.product_ref,
+      canonical_product_ids: canonicalProductIds,
+      ...(trace.rows[0] || {}),
+    })}`);
+    return row;
+  }
 
   let { rows } = await db.query(`
     SELECT id, state, product_id, import_id, supplier_name, supplier_product_id, raw_payload,
