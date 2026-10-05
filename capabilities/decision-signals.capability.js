@@ -71,7 +71,6 @@ module.exports = {
       'tests/unit/radar-alerts-treasury-commerce-signals.test.js',
       'tests/unit/signals.test.js',
       'tests/unit/signal-service.test.js',
-      'tests/unit/supplier-payment-review.test.js',
       'tests/unit/signal-admin-service.test.js',
       'tests/unit/action-center-workspace.test.js',
       'tests/unit/admin-action-center-route.test.js',
