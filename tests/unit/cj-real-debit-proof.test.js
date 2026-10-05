@@ -133,11 +133,15 @@ test('succès appelle payBalanceV2 exactement une fois puis billingHistory',asyn
     }
     if(path===contract.ENDPOINTS.create_order_v2){
       expect(args.body.isSandbox).toBeUndefined();
+      expect(args.body.iossType).toBe(3);
       return {result:true,data:{
         orderId:'CJ-1',
         orderNumber:'KOM-REAL-1',
         productAmount:5,
         postageAmount:2,
+        actualPayment:7,
+        iossAmount:0,
+        iossTaxHandlingFee:0,
       }};
     }
     if(path===contract.ENDPOINTS.get_order_detail){
