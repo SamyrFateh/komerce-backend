@@ -89,21 +89,28 @@
         ],
         "limitations": [
           "Golden A2 live execution still requires an isolated staging environment",
-          "no provider mutation is part of this capability"
+          "no provider mutation is part of the readiness capability"
         ]
       },
       {
         "capability": "purchasing.auto_order",
         "classification": "GAP",
-        "availability": "CLOSED",
-        "highest_proof": "UNQUALIFIED",
-        "environment": "UNPROVEN",
+        "availability": "RUNTIME_REGISTERED_GUARDED_NOT_LIVE_PROVEN",
+        "highest_proof": "P0",
+        "environment": "STAGING_PROOF_REQUIRED",
         "evidence": [
-          "services/suppliers/execution-adapter-registry.js"
+          "services/suppliers/aliexpress-fulfillment-adapter.js",
+          "services/suppliers/aliexpress-purchase-preflight.js",
+          "services/suppliers/execution-adapter-registry.js",
+          "tests/unit/aliexpress-fulfillment-adapter.test.js",
+          "tests/unit/procurement-execution-boundary.test.js"
         ],
         "limitations": [
-          "adapter does not expose placeOrder",
-          "buyer-side order creation contract not proved"
+          "AliExpress AE-Dropshipper documents aliexpress.trade.buy.placeorder and aliexpress.trade.ds.order.get",
+          "execution remains disabled unless KOMERCE_ALIEXPRESS_AUTO_ORDER_ENABLED=1 or an explicit injected proof authorization is present",
+          "live account permission and real create/read-back are not yet proved",
+          "AliExpress placeOrder exposes no Komerce-controlled native idempotency key in the current contract, so production automatic retry after an ambiguous create remains closed",
+          "payment is not part of this capability"
         ]
       }
     ],
