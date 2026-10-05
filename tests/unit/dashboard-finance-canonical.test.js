@@ -209,6 +209,8 @@ test('Finance globale ne fabrique aucun filtre marché', async () => {
     reconciliation_status: 'mismatched',
     review_reason: 'PAYMENT_RECONCILIATION_MISMATCH',
   }));
+  expect(payload.supplier_payment_review.items.every(item => !Object.prototype.hasOwnProperty.call(item, 'payment_id'))).toBe(true);
+  expect(JSON.stringify(payload.supplier_payment_review)).not.toContain('payment_id');
   expect(payload.data_quality.source_tables).toContain('supplier_execution_payments');
 });
 
