@@ -24,7 +24,38 @@ test('resolveSupplier valide UUID et ne sélectionne jamais les secrets eux-mêm
   expect(sql).not.toMatch(/SELECT[^]*api_secret_enc\s*(?:,|FROM)/i);
 });
 
-test('loadSupplier360 conserve prix décimal en texte et sépare exécution/paiement', async () => {
+test('projectCapabilityCertifications conserve preuve, environnement et limites sans inventer activation runtime', () => {
+  const projection = supplier360.projectCapabilityCertifications('CJ', {
+    providers: {
+      cj: [{
+        capability: 'purchasing.auto_order',
+        classification: 'GAP',
+        availability: 'GUARDED',
+        highest_proof: 'P1',
+        environment: 'SANDBOX',
+        evidence: ['proof/a'],
+        limitations: ['production disabled'],
+      }],
+    },
+  });
+  expect(projection).toEqual(expect.objectContaining({
+    provider: 'cj',
+    resolution: 'RECORDED',
+    authority: 'observational_proof_only',
+  }));
+  expect(projection.records[0]).toEqual(expect.objectContaining({
+    capability: 'purchasing.auto_order',
+    availability: 'GUARDED',
+    highest_proof: 'P1',
+    environment: 'SANDBOX',
+  }));
+  expect(projection.records[0].limitations).toEqual(['production disabled']);
+
+  expect(supplier360.projectCapabilityCertifications('unknown', { providers: {} }))
+    .toEqual(expect.objectContaining({ provider: null, resolution: 'UNSUPPORTED_PROVIDER', records: [] }));
+});
+
+test('loadSupplier360 conserve prix décimal en texte, sépare exécution/paiement et joint le registre de preuve provider', async () => {
   const q = { query: jest.fn()
     .mockResolvedValueOnce({ rows: [{
       product_ref: 'KPR-000001', product_name: 'Produit', supplier_sku: 'SKU-1',
@@ -53,7 +84,10 @@ test('loadSupplier360 conserve prix décimal en texte et sépare exécution/paie
     real_debit_verified_count: 0,
   }));
   expect(result.data_quality.credentials_projection).toBe('presence_flags_only');
-  expect(result.data_quality.capability_status).toBe('not_projected');
-  expect(result.data_quality.certification_status).toBe('not_projected');
+  expect(result.supplier.capability_certifications.provider).toBe('cj');
+  expect(result.supplier.capability_certifications.authority).toBe('observational_proof_only');
+  expect(result.supplier.capability_certifications.records.length).toBeGreaterThan(0);
+  expect(result.data_quality.capability_status).toBe('certification_ledger_projected_readonly');
+  expect(result.data_quality.certification_status).toBe('RECORDED');
   expect(q.query).toHaveBeenCalledTimes(4);
 });
