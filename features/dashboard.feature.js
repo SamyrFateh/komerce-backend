@@ -407,6 +407,7 @@ module.exports = {
       'services/operations-workspace.js',
       'services/order-360.js',
       'services/product-360.js',
+      'services/supplier-360.js',
       'services/shipping-customs-workspace.js',
       'services/import-lot-registry.js',
     ],
@@ -424,6 +425,7 @@ module.exports = {
       'routes/admin-operations-workspace.js',
       'routes/admin-order-360.js',
       'routes/admin-product-360.js',
+      'routes/admin-supplier-360.js',
       'routes/admin-shipping-customs-workspace.js',
       'routes/admin-finance-accounting-workspace.js',
       'routes/admin-radar.js',
@@ -475,6 +477,7 @@ module.exports = {
       'dashboards/canonical/js/pricing-product-focus.js',
       'dashboards/canonical/js/action-center.js',
       'dashboards/canonical/js/client-index.js',
+      'dashboards/canonical/js/supplier-360.js',
 
       // ── Legacy 1 — admin actuel, gelé maintenance corrective ──────
       'dashboards/admin/index.html',
