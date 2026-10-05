@@ -19,11 +19,11 @@ Cette surface n’est ni un Dashboard pur ni un Workspace métier classique : se
 
 ## Portée d’autorité
 
-### Global central, pas market-scoped
+### Scope global central et scopes marché explicites
 
-La table `signals` ne porte actuellement aucun `market_id` canonique. Le LOT 4G ne fabrique donc pas une fausse dimension pays.
+Le modèle actuel porte `signals.market_id` : `NULL` est un fait global explicite, une valeur non nulle est un fait borné au Market ID canonique résolu côté serveur. L’Action Center global et les vues marché restent strictement isolés.
 
-L’Action Center est central/global jusqu’à ce que la génération des signaux porte une vraie propriété marché vérifiable côté serveur.
+Un générateur ne peut produire un signal marché que lorsqu’une propriété marché vérifiable appartient à sa source. Le nouveau `supplier_payment_review` reste volontairement global : une PO fournisseur peut être multi-marchés et aucune ventilation financière canonique ne permet de lui attribuer un Market ID sans invention.
 
 Le navigateur ne peut fournir aucun :
 
