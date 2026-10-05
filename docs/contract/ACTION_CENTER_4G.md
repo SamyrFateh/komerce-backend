@@ -19,11 +19,11 @@ Cette surface n’est ni un Dashboard pur ni un Workspace métier classique : se
 
 ## Portée d’autorité
 
-### Global central, pas market-scoped
+### Scope global central et scopes marché explicites
 
-La table `signals` ne porte actuellement aucun `market_id` canonique. Le LOT 4G ne fabrique donc pas une fausse dimension pays.
+Le modèle actuel porte `signals.market_id` : `NULL` est un fait global explicite, une valeur non nulle est un fait borné au Market ID canonique résolu côté serveur. L’Action Center global et les vues marché restent strictement isolés.
 
-L’Action Center est central/global jusqu’à ce que la génération des signaux porte une vraie propriété marché vérifiable côté serveur.
+Un générateur ne peut produire un signal marché que lorsqu’une propriété marché vérifiable appartient à sa source. Le nouveau `supplier_payment_review` reste volontairement global : une PO fournisseur peut être multi-marchés et aucune ventilation financière canonique ne permet de lui attribuer un Market ID sans invention.
 
 Le navigateur ne peut fournir aucun :
 
@@ -154,8 +154,9 @@ Le serveur résout uniquement les drill-down qu’il sait convertir en référen
 - product → Product 360 par `product_ref`
 - parcel → Order 360 parent lorsque la commande est résoluble
 - cash collection → Order 360 parent lorsque la commande est résoluble
+- supplier payment → détail exact de la PO dans Achats fournisseurs, **global uniquement**, via la population Purchasing canonique `ambiguous` / `rejected` / `mismatched`
 
-Sinon aucun lien n’est inventé.
+Sinon aucun lien n’est inventé. Un signal `supplier_payment` porteur d’un Market ID ne résout jamais de PO : aucune allocation marché du paiement fournisseur n’est fabriquée.
 
 ## API d’action
 
@@ -212,3 +213,12 @@ Cette preuve s’ajoute aux gardes runtime `authenticate + requireAdmin + requir
 - Shared Carts ;
 - Settings ;
 - simulateur opérationnel staging.
+
+
+## Extension 2026-10 — paiement fournisseur
+
+Le type `supplier_payment_review` dérive exclusivement du lecteur Purchasing `services/supplier-payment-review.js`. L’identité active est le paiement fournisseur (`entity_type=supplier_payment`), pas la PO : plusieurs paiements à revoir d’une même PO restent des faits distincts.
+
+Le générateur est global (`market_id=NULL`) et reprend exactement la condition canonique : `status IN ('ambiguous','rejected') OR reconciliation_status='mismatched'`. `requested`, `real_debit_verified=false` seul et l’absence de preuve ne deviennent pas des alertes par inférence. Une divergence de rapprochement reprend la sévérité critique déjà utilisée par Finance ; les autres cas restent warning.
+
+La génération lit au plus 50 éléments par passe. Si la population est tronquée, elle **n’auto-résout aucun ancien signal** afin de ne pas conclure à tort qu’un paiement non lu est revenu à la normale. Quand la population complète est visible, la disparition de la condition Purchasing auto-résout le signal dérivé. Les actions Action Center ne modifient toujours que `signals`.

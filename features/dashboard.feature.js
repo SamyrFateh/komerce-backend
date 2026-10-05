@@ -247,7 +247,7 @@ module.exports = {
       'customs',
       'documents',
       'notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)',
-      'purchasing (repare les commandes sans purchase order — services/repair-ordered-without-purchase-orders.js, O7.3 provider purchasing)',
+      'purchasing (répare les commandes sans purchase order via services/repair-ordered-without-purchase-orders.js ; Order 360 consomme en lecture seule les PO liées ; Finance globale consomme en lecture seule la file canonique de paiements fournisseur à revoir, sans ventilation marché)',
       // Déclarations FF-C1 (2026-07-29) — arêtes réelles, dashboard est
       // business-transversal (arbitrage 2026-07-29), consommations métier ordinaires.
       'business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)',
@@ -339,6 +339,10 @@ module.exports = {
       test: 'tests/unit/admin-dashboard-market.test.js' },
     { statement: 'Entity 360 n’utilise plus operator_market_scopes comme autorité : Client Index/360 exigent client.read, Product 360 catalog.read, Order 360 operations.read ; dashboard.global.read reste l’alternative centrale explicite',
       test: 'tests/unit/admin-order-360-route.test.js' },
+    { statement: 'Order 360 ne projette les bons de commande fournisseur et leurs drills vers /admin/workspaces/purchasing?po= que lorsque le caller satisfait déjà la même frontière de rôle admin que routes/purchasing.js ; market_operator conserve Order 360 sans données Purchasing. Le drill porte un return_to exact vers la commande et ne crée aucune nouvelle autorité ni mutation',
+      test: 'tests/unit/admin-order-360-route.test.js' },
+    { statement: 'Finance globale consomme le lecteur Purchasing propriétaire supplier-payment-review pour projeter une file exacte de revue fournisseur : status ambiguous/rejected ou reconciliation_status mismatched uniquement. Cette file est absente de Finance marché faute de ventilation canonique multi-marché ; requested n’est jamais qualifié de retard et real_debit_verified=false n’est jamais une exception à lui seul. Les montants restent natifs par devise, sans total multi-devise, aucun UUID paiement interne n’est publié et chaque ligne drille vers la PO Purchasing propriétaire',
+      test: 'tests/unit/dashboard-finance-canonical.test.js' },
     'un filtre pays du DashboardSchema est présentationnel : canonical ne charge jamais un agrégat global pour le filtrer ensuite côté client',
       'market est l\'unité de délégation business ; corridor reste une dimension technique/logistique sans autorité',
     'le cockpit Démo / Staging ne possède aucune transition : il délègue à la route orders et lit les notifications/documents réellement persistés',

@@ -16,6 +16,7 @@ beforeEach(() => jest.clearAllMocks());
 test('family mapping is server-owned', () => {
   expect(service.familyForType('parcel_blocked')).toBe('ops');
   expect(service.familyForType('margin_drift')).toBe('eco');
+  expect(service.familyForType('supplier_payment_review')).toBe('eco');
   expect(service.familyForType('stock_rupture')).toBe('sourcing');
   expect(service.familyForType('best_seller_local_unavailable')).toBe('sourcing');
   expect(service.familyForType('dispute_sensitive')).toBe('disputes');

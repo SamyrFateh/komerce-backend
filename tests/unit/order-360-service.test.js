@@ -77,6 +77,11 @@ test('loadOrder360 agrège les facettes sans exposer leurs UUID', async () => {
     if (text.includes('FROM client_notifications')) return { rows: [{ event_key: 'order.shipped', severity: 'info', title: 'Expédiée', message: 'En route', status: 'open', created_at: '2026-08-21T00:00:00Z', acknowledged_at: null, resolved_at: null }] };
     if (text.includes('FROM invoices')) return { rows: [{ invoice_number: 'INV-001', payment_status: 'paid', delivered_via: 'account', delivered_at: null, created_at: '2026-08-20T00:00:00Z' }] };
     if (text.includes('FROM transaction_documents')) return { rows: [{ document_type: 'invoice', reference: 'DOC-001', status: 'issued', file_url: '/files/doc.pdf', issued_at: '2026-08-20T00:00:00Z' }] };
+    if (text.includes('FROM purchase_orders po')) return { rows: [{
+      id: 'po-grouped-id', status: 'confirmed', procurement_hub_ref: 'DXB',
+      supplier_order_id: 'CJ-42', supplier_name: 'CJdropshipping', supplier_platform: 'cj',
+      created_at: '2026-08-20T00:00:00Z', updated_at: '2026-08-21T00:00:00Z',
+    }] };
     return { rows: [] };
   });
 
@@ -84,15 +89,39 @@ test('loadOrder360 agrège les facettes sans exposer leurs UUID', async () => {
     id: 'order-id', market_id: 'market-id', user_id: 'user-id', reference: 'CMD-CM-001',
     status: 'shipped', payment_status: 'paid', payment_mode: 'stripe_eur', total_kmf: '6000',
     market_code: 'CM', market_name: 'Cameroun', market_currency: 'XAF',
-  });
+  }, { includePurchasing: true });
 
   expect(payload.summary).toEqual(expect.objectContaining({ items: 1, quantity: 2, parcels: 1, open_incidents: 1, notifications: 1, documents: 1 }));
   expect(payload.parcels[0]).toEqual(expect.objectContaining({ reference: 'COL-001', tracking_number: 'TRK001' }));
   expect(payload.incidents[0].priority).toBe('high');
+  expect(payload.purchasing.purchase_orders).toEqual([
+    expect.objectContaining({
+      id: 'po-grouped-id',
+      status: 'confirmed',
+      supplier_name: 'CJdropshipping',
+      procurement_hub_ref: 'DXB',
+      supplier_order_id: 'CJ-42',
+    }),
+  ]);
+  expect(payload.data_quality.source_tables).toEqual(expect.arrayContaining(['purchase_orders', 'purchase_lines', 'suppliers']));
   const serialized = JSON.stringify(payload);
   expect(serialized).not.toContain('order-id');
   expect(serialized).not.toContain('parcel-id');
   expect(serialized).not.toContain('item-id');
   expect(serialized).not.toContain('market-id');
   expect(serialized).not.toContain('user-id');
+});
+
+
+test('loadOrder360 n’expose pas la projection Purchasing quand le caller n’a pas le guard Achats', async () => {
+  mockQuery.mockResolvedValue({ rows: [] });
+
+  const payload = await service.loadOrder360({
+    id: 'order-id', reference: 'CMD-CM-002', status: 'ordered',
+    payment_status: 'paid', payment_mode: 'stripe_eur', total_kmf: '1000',
+  }, { includePurchasing: false });
+
+  expect(payload).not.toHaveProperty('purchasing');
+  expect(payload.data_quality.source_tables).not.toContain('purchase_orders');
+  expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('FROM purchase_orders po'))).toBe(false);
 });

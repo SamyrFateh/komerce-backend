@@ -6,20 +6,21 @@
  * @criticality   high
  * @inputs        dashboard_period, server_resolved_market
  * @outputs       canonical_finance_projection
- * @depends       db, dashboard-metrics, dashboard-metrics/_helpers
+ * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, supplier-payment-review
  * @used-by       routes/admin-dashboard-market.js
  * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, finance_event_date_is_authoritative
- * @impact-areas  admin-dashboard, finance, economic-engine, market-authorization
- * @version       2026-09
+ * @impact-areas  admin-dashboard, finance, economic-engine, purchasing, market-authorization
+ * @version       2026-10
  */
 
 'use strict';
 
 const db = require('../db');
 const metrics = require('./dashboard-metrics');
+const { getSupplierPaymentReview } = require('./supplier-payment-review');
 const {
   buildFiltersClause,
   makeKpi,
@@ -430,6 +431,7 @@ async function buildFinance(query = {}, options = {}) {
     costFamilies,
     costingOrders,
     relayProfitability,
+    supplierPaymentReview,
   ] = await Promise.all([
     metrics.getCAEncaisse(window.filters),
     metrics.getCoutEstime(window.filters),
@@ -448,6 +450,7 @@ async function buildFinance(query = {}, options = {}) {
     getCostFamilyBreakdown(window.filters),
     getRecentCostingOrders(window.filters, { limit: 20 }),
     getRelayProfitability(window.filters),
+    market ? Promise.resolve(null) : getSupplierPaymentReview({ limit: 50 }),
   ]);
 
   return Object.freeze({
@@ -485,6 +488,7 @@ async function buildFinance(query = {}, options = {}) {
       total_kmf: Number(row.total_kmf) || 0,
       created_at: row.created_at,
     }))),
+    ...(supplierPaymentReview ? { supplier_payment_review: supplierPaymentReview } : {}),
     data_quality: Object.freeze({
       generated_at: new Date(options.now || Date.now()).toISOString(),
       scope_enforced: true,
@@ -495,6 +499,7 @@ async function buildFinance(query = {}, options = {}) {
       }),
       relay_real_margin_basis: 'actual_cost_orders_only',
       economic_global_engine_consumed: false,
+      supplier_payment_review_basis: supplierPaymentReview ? supplierPaymentReview.basis : null,
       source_tables: Object.freeze([
         'orders',
         'refunds',
@@ -502,6 +507,7 @@ async function buildFinance(query = {}, options = {}) {
         'order_item_cost_imputations',
         'order_item_real_cost_allocations',
         'relais',
+        ...(supplierPaymentReview ? ['supplier_execution_payments'] : []),
       ]),
     }),
   });
@@ -521,5 +527,6 @@ module.exports = {
   getCostFamilyBreakdown,
   getRecentCostingOrders,
   getRelayProfitability,
+  getSupplierPaymentReview,
   buildFinance,
 };

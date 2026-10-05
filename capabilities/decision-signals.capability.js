@@ -24,6 +24,7 @@ module.exports = {
   perimeter: {
     in: [
       'generation de signaux depuis des requetes radar cross-feature (cash, colis, incidents)',
+      'generation globale du signal supplier_payment_review depuis la population canonique Purchasing ambiguous/rejected/mismatched',
       'cycle de vie du signal : acknowledge / resolve / snooze',
       'consultation admin des signaux (routes/signals.js)',
       'Action Center Canonical global : uniquement les signaux market_id NULL',
@@ -70,6 +71,7 @@ module.exports = {
       'tests/unit/radar-alerts-treasury-commerce-signals.test.js',
       'tests/unit/signals.test.js',
       'tests/unit/signal-service.test.js',
+      'tests/unit/decision-signals.capability.test.js',
       'tests/unit/signal-admin-service.test.js',
       'tests/unit/action-center-workspace.test.js',
       'tests/unit/admin-action-center-route.test.js',
@@ -100,6 +102,7 @@ module.exports = {
     'le Centre d’actions global ne lit ni ne mute jamais les signaux pays',
     'le Centre d’actions pays ne lit ni ne mute jamais un autre Market ID et le navigateur ne fournit jamais le market_id autoritatif',
     'toute mutation lifecycle pays et son audit de délégation partagent une seule transaction DB',
+    'supplier_payment_review reste global : aucune allocation Market ID n’est inventée pour une PO potentiellement multi-marchés ; disparition de la condition source auto-résout le signal seulement quand la population a été lue sans troncature',
   ],
 
   contract: {
@@ -118,6 +121,7 @@ module.exports = {
       "auth (garde de route et contexte d’identité)",
       "infrastructure (acces DB et transaction partagée)",
       "logistics (lecture ou orchestration logistique)",
+      "purchasing (lecture de la population canonique supplier_payment_review ; aucune mutation du paiement fournisseur)",
       "business-rules (lecture du referentiel de regles metier)",
       "market-delegation (resolution serveur du Market ID, capability dashboard.market.read / decision_signal.manage et audit des mutations pays)",
     ],
