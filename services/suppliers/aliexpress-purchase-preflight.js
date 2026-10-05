@@ -179,11 +179,15 @@ function normalizePlaceOrderAddress(logisticsAddress) {
   const source = logisticsAddress && typeof logisticsAddress === 'object' ? logisticsAddress : {};
   const country = String(source.country_code || source.country || '').trim().toUpperCase();
   let mobileNo = String(source.mobile_no || source.phone || '').trim();
+  let phoneCountry = String(source.phone_country || source.phoneCountry || '').trim();
   if (country === 'AE') {
     mobileNo = mobileNo.replace(/[\s()-]/g, '');
     if (mobileNo.startsWith('+971')) mobileNo = mobileNo.slice(4);
     else if (mobileNo.startsWith('00971')) mobileNo = mobileNo.slice(5);
     if (mobileNo.startsWith('0')) mobileNo = mobileNo.slice(1);
+
+    if (!phoneCountry) phoneCountry = '+971';
+    else if (phoneCountry === '971' || phoneCountry === '00971') phoneCountry = '+971';
   }
   const address = {
     address: String(source.address || source.address1 || '').trim(),
@@ -193,12 +197,16 @@ function normalizePlaceOrderAddress(logisticsAddress) {
     country,
     full_name: String(source.full_name || source.customer_name || source.contact_person || '').trim(),
     mobile_no: mobileNo,
+    ...(phoneCountry ? { phone_country: phoneCountry } : {}),
     province: String(source.province || '').trim(),
     zip: String(source.zip || source.postal_code || '').trim(),
     locale: String(source.locale || 'en_US').trim(),
   };
   if (country === 'AE' && !/^5\d{8}$/.test(address.mobile_no)) {
     throw new Error('ALIEXPRESS_LOGISTICS_ADDRESS_MOBILE_NO_AE_INVALID');
+  }
+  if (country === 'AE' && address.phone_country !== '+971') {
+    throw new Error('ALIEXPRESS_LOGISTICS_ADDRESS_PHONE_COUNTRY_AE_INVALID');
   }
   for (const [key, value] of Object.entries(address)) {
     if (!value && ['address', 'city', 'contact_person', 'country', 'full_name', 'mobile_no', 'province', 'zip'].includes(key)) {
