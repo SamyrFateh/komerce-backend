@@ -111,7 +111,11 @@ async function callSupplierAPI(ps, item) {
     log.info(`[PURCHASING] Adapter ${check.provider} sans capacité placeOrder — mode manuel:`, ps.supplier_sku);
     return { success: false, error: `Adapter ${check.provider} sans capacité placeOrder — mode manuel` };
   }
-  return check.adapter.placeOrder(ps, item);
+  // Un adapter d'exécution complet ne peut jamais être invoqué depuis le
+  // chemin legacy sans SKU/SOI exacte. L'exécution fournisseur passe
+  // exclusivement par Procurement Execution Boundary.
+  log.info(`[PURCHASING] Adapter ${check.provider} exécutable mais identité canonique absente — mode manuel:`, ps.supplier_sku);
+  return { success: false, error: `Adapter ${check.provider} exige une identité fournisseur canonique exacte — mode manuel` };
 }
 
 /**
@@ -497,6 +501,7 @@ async function triggerPurchasing(orderId, options = {}) {
         status: 'api_failed_notified',
         purchase_order_id: task.purchaseOrderId,
         inbound_tag: task.supplierTagRequest.reference,
+        ...(apiResult?.error ? { error: apiResult.error } : {}),
       };
     } catch (error) {
       // Après COMMIT, toute erreur inattendue laisse volontairement la PO

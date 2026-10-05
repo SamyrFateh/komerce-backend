@@ -37,8 +37,10 @@
  *
  * CJ expose désormais buildOrderPayload + placeOrder après preuve P1 réelle.
  * Son exécution reste fail-closed derrière KOMERCE_CJ_AUTO_ORDER_ENABLED=1
- * et la présence d'une destination Procurement Hub complète. Allegro et
- * AliExpress restent sans buyer placeOrder prouvé.
+ * et la présence d'une destination Procurement Hub complète. AliExpress
+ * expose désormais le contrat documenté placeOrder + order read-back derrière
+ * KOMERCE_ALIEXPRESS_AUTO_ORDER_ENABLED=1, mais reste non prouvé live et sans
+ * retry automatique sûr après résultat ambigu. Allegro reste manuel.
  */
 'use strict';
 

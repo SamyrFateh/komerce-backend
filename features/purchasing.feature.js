@@ -377,6 +377,8 @@ module.exports = {
       test: 'tests/unit/supplier-fulfillment-readiness.test.js' },
     { statement: 'pour AliExpress freight.calculate, l\'identité SKU reste résolue en amont mais le fret utilise uniquement le DTO complexe produit × quantité × destination hub encapsulé sous param_aeop_freight_calculate_for_buyer_d_t_o ; aucun sku_id n\'est inventé',
       test: 'tests/unit/aliexpress-purchase-preflight.test.js' },
+    { statement: 'AliExpress expose un execution adapter provider-owned pour aliexpress.trade.buy.placeorder suivi obligatoirement de aliexpress.trade.ds.order.get ; l\'exécution reste fail-closed sans KOMERCE_ALIEXPRESS_AUTO_ORDER_ENABLED=1, ne déclenche aucun paiement et ne prétend pas fournir un retry automatique sûr tant qu\'aucune clé d\'idempotence provider contrôlable par Komerce n\'est prouvée',
+      test: 'tests/unit/aliexpress-fulfillment-adapter.test.js' },
     'purchasing peut consommer et lire la commande cliente, mais ne possède jamais son cycle de vie — toute mutation de orders.status continue de passer exclusivement par order-status-machine.js (feature orders)',
     'une réception ne peut être appliquée qu\'à un bon de commande existant et cohérent',
     'aucun consommateur cross-feature ne modifie purchase_orders directement : la synchronisation d\'annulation passe par purchasing-cancel-service.js',

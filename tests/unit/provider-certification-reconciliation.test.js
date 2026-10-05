@@ -11,7 +11,7 @@ test('R1 — le ledger capability-level réel est cohérent et ne sur-certifie p
   const report = reconciliation.run({ root: ROOT });
   expect(report.summary.total_capabilities).toBeGreaterThanOrEqual(8);
   expect(report.summary.p4).toBeGreaterThanOrEqual(3);
-  expect(report.summary.closed).toBeGreaterThanOrEqual(2);
+  expect(report.summary.closed).toBeGreaterThanOrEqual(1);
 
   const allegroAuto = report.rows.find(
     row => row.provider === 'allegro' && row.capability === 'purchasing.auto_order'
@@ -20,6 +20,15 @@ test('R1 — le ledger capability-level réel est cohérent et ne sur-certifie p
     classification: 'CONFIRMED',
     availability: 'CLOSED',
     highest_proof: 'UNQUALIFIED',
+  });
+
+  const aliAuto = report.rows.find(
+    row => row.provider === 'aliexpress' && row.capability === 'purchasing.auto_order'
+  );
+  expect(aliAuto).toMatchObject({
+    classification: 'GAP',
+    availability: 'RUNTIME_REGISTERED_GUARDED_NOT_LIVE_PROVEN',
+    highest_proof: 'P0',
   });
 
   const aliReadiness = report.rows.find(

@@ -187,7 +187,7 @@ describe('purchasing exact SKU procurement', () => {
     expect(createAlert).toHaveBeenCalledWith(client, expect.objectContaining({ type: 'purchasing_po_creation_failed' }));
   });
 
-  it('GAP-4B — exact-sku + auto_order=true retombe en mode manuel (aucun adapter n\'a placeOrder+buildOrderPayload), jamais un crash', async () => {
+  it('GAP-4B — AliExpress exact-sku reste en mode manuel sans opt-in d exécution, jamais un crash', async () => {
     const item = {
       id: 'oi-auto', product_id: 'p1', product_name: 'T-shirt', category: 'mode',
       quantity: 1, sku_id: 'sku-black-m', fulfillment_source: 'IMPORT', price_aed: 50,
@@ -222,11 +222,14 @@ describe('purchasing exact SKU procurement', () => {
       status: 'api_failed_notified',
       purchase_order_id: '00000000-0000-0000-0000-000000000201',
       inbound_tag: 'KOM-IN-00000000000000000000000000000201',
-      error: 'Procurement Execution Boundary non atteinte (EXECUTION_ADAPTER_INCOMPLETE)',
+      error: 'Procurement Execution Boundary non atteinte (BUILD_ORDER_PAYLOAD_ERROR)',
     });
-    // Mode manuel — jamais 'confirmed' — puisque la boundary n'est jamais franchie aujourd'hui.
-    expect(updateSql).toContain("status='notified'");
-    expect(updateSql).toContain("trigger_mode='manual'");
+    // Mode manuel — jamais 'confirmed' — car l'exécution AliExpress est fermée sans opt-in.
+    const postCommitUpdate = db.query.mock.calls.find(([sql]) =>
+      String(sql).includes("SET status='notified', trigger_mode='manual'")
+    );
+    expect(postCommitUpdate).toBeTruthy();
+    expect(updateSql).toBeNull();
   });
 
   it('IMPORT + sku_id sans SOI bloque avant le mapping fournisseur', async () => {
