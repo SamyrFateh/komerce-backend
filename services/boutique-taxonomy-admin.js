@@ -129,11 +129,1552 @@ async function updateCategory(key, payload = {}, q = db, actor = null) {
     if (!before) throw new TaxonomyAdminError(404, 'Catégorie introuvable', 'category_not_found');
     const values = fields.map(field => payload[field]);
     values.push(key);
+    const set = fields.map((field, index) => field + ' = 
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_UPDATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return getCategoryWithSubcats(key, tx);
+  });
+}
+
+async function deactivateCategory(key, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(c.*) AS before_snapshot
+           FROM boutique_categories c
+          WHERE c.key = $1
+          FOR UPDATE
+       ),
+       updated AS (
+         UPDATE boutique_categories c
+            SET is_active = FALSE, updated_at = NOW()
+          FROM before
+         WHERE c.key = $1
+         RETURNING c.*
+       )
+       SELECT updated.*, before.before_snapshot
+         FROM updated CROSS JOIN before`,
+      [key]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Catégorie introuvable', 'category_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_DEACTIVATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return { deactivated: true, category: row };
+  });
+}
+
+async function createSubcategory(categoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    if (!payload.key || !payload.label) throw new TaxonomyAdminError(400, 'key et label obligatoires');
+    const parent = await tx.query('SELECT 1 FROM boutique_categories WHERE key = $1', [categoryKey]);
+    if (!parent.rows.length) throw new TaxonomyAdminError(404, 'Catégorie parente introuvable', 'category_not_found');
+    try {
+      const { rows: [row] } = await tx.query(
+        `INSERT INTO boutique_subcategories
+          (category_key, key, label, short_label, icon, display_order, is_active, customs_category_key)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         RETURNING *`,
+        [categoryKey, payload.key, payload.label, payload.short_label || payload.label,
+         payload.icon || '✨', payload.display_order !== undefined ? payload.display_order : 99,
+         payload.is_active !== false, payload.customs_category_key || null]
+      );
+      await recordTaxonomyMutation(tx, {
+        action: 'SUBCATEGORY_CREATED',
+        entityType: 'subcategory',
+        categoryKey,
+        subcategoryKey: row.key,
+        actor,
+        sourceSurface: sourceSurface(actor),
+        before: null,
+        after: row,
+      });
+      invalidateCategoriesCache();
+      return row;
+    } catch (err) {
+      if (err.code === '23505') throw new TaxonomyAdminError(409, 'Une sous-catégorie avec cette clé existe déjà dans cette catégorie', 'subcategory_key_conflict');
+      throw err;
+    }
+  });
+}
+
+async function updateSubcategory(categoryKey, subcategoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const allowed = ['label','short_label','icon','display_order','is_active','customs_category_key'];
+    const fields = allowed.filter(field => payload[field] !== undefined);
+    if (!fields.length) throw new TaxonomyAdminError(400, 'Aucun champ à mettre à jour');
+    const { rows: [before] } = await tx.query(
+      'SELECT * FROM boutique_subcategories WHERE category_key = $1 AND key = $2',
+      [categoryKey, subcategoryKey]
+    );
+    if (!before) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const values = fields.map(field => payload[field]);
+    values.push(categoryKey, subcategoryKey);
+    const set = fields.map((field, index) => field + ' = 
+    await recordTaxonomyMutation(tx, {
+      action: 'SUBCATEGORY_UPDATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return row;
+  });
+}
+
+async function deactivateSubcategory(categoryKey, subcategoryKey, { hard = false } = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const mutation = hard
+      ? 'DELETE FROM boutique_subcategories s USING before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*'
+      : 'UPDATE boutique_subcategories s SET is_active = FALSE FROM before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*';
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(s.*) AS before_snapshot
+           FROM boutique_subcategories s
+          WHERE s.category_key = $1 AND s.key = $2
+          FOR UPDATE
+       ),
+       changed AS (
+         ${mutation}
+       )
+       SELECT changed.*, before.before_snapshot
+         FROM changed CROSS JOIN before`,
+      [categoryKey, subcategoryKey]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: hard ? 'SUBCATEGORY_DELETED' : 'SUBCATEGORY_DEACTIVATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: hard ? null : row,
+    });
+    invalidateCategoriesCache();
+    return hard ? { deleted: true, subcategory: row } : { deactivated: true, subcategory: row };
+  });
+}
+
+module.exports = {
+  TaxonomyAdminError,
+  getCategoryWithSubcats,
+  listCategories,
+  listSubcategories,
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  createSubcategory,
+  updateSubcategory,
+  deactivateSubcategory,
+};
+ + (index + 1)).join(', ');
+    const keyPlaceholder = '
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_UPDATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return getCategoryWithSubcats(key, tx);
+  });
+}
+
+async function deactivateCategory(key, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(c.*) AS before_snapshot
+           FROM boutique_categories c
+          WHERE c.key = $1
+          FOR UPDATE
+       ),
+       updated AS (
+         UPDATE boutique_categories c
+            SET is_active = FALSE, updated_at = NOW()
+          FROM before
+         WHERE c.key = $1
+         RETURNING c.*
+       )
+       SELECT updated.*, before.before_snapshot
+         FROM updated CROSS JOIN before`,
+      [key]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Catégorie introuvable', 'category_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_DEACTIVATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return { deactivated: true, category: row };
+  });
+}
+
+async function createSubcategory(categoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    if (!payload.key || !payload.label) throw new TaxonomyAdminError(400, 'key et label obligatoires');
+    const parent = await tx.query('SELECT 1 FROM boutique_categories WHERE key = $1', [categoryKey]);
+    if (!parent.rows.length) throw new TaxonomyAdminError(404, 'Catégorie parente introuvable', 'category_not_found');
+    try {
+      const { rows: [row] } = await tx.query(
+        `INSERT INTO boutique_subcategories
+          (category_key, key, label, short_label, icon, display_order, is_active, customs_category_key)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         RETURNING *`,
+        [categoryKey, payload.key, payload.label, payload.short_label || payload.label,
+         payload.icon || '✨', payload.display_order !== undefined ? payload.display_order : 99,
+         payload.is_active !== false, payload.customs_category_key || null]
+      );
+      await recordTaxonomyMutation(tx, {
+        action: 'SUBCATEGORY_CREATED',
+        entityType: 'subcategory',
+        categoryKey,
+        subcategoryKey: row.key,
+        actor,
+        sourceSurface: sourceSurface(actor),
+        before: null,
+        after: row,
+      });
+      invalidateCategoriesCache();
+      return row;
+    } catch (err) {
+      if (err.code === '23505') throw new TaxonomyAdminError(409, 'Une sous-catégorie avec cette clé existe déjà dans cette catégorie', 'subcategory_key_conflict');
+      throw err;
+    }
+  });
+}
+
+async function updateSubcategory(categoryKey, subcategoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const allowed = ['label','short_label','icon','display_order','is_active','customs_category_key'];
+    const fields = allowed.filter(field => payload[field] !== undefined);
+    if (!fields.length) throw new TaxonomyAdminError(400, 'Aucun champ à mettre à jour');
+    const { rows: [before] } = await tx.query(
+      'SELECT * FROM boutique_subcategories WHERE category_key = $1 AND key = $2',
+      [categoryKey, subcategoryKey]
+    );
+    if (!before) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const values = fields.map(field => payload[field]);
+    values.push(categoryKey, subcategoryKey);
     const set = fields.map((field, index) => `${field} = ${index + 1}`).join(', ');
     const { rows: [row] } = await tx.query(
-      `UPDATE boutique_categories SET ${set}, updated_at = NOW() WHERE key = ${fields.length + 1} RETURNING *`,
+      `UPDATE boutique_subcategories SET ${set}
+        WHERE category_key = ${fields.length + 1} AND key = ${fields.length + 2}
+        RETURNING *`,
       values
     );
+    await recordTaxonomyMutation(tx, {
+      action: 'SUBCATEGORY_UPDATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return row;
+  });
+}
+
+async function deactivateSubcategory(categoryKey, subcategoryKey, { hard = false } = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const mutation = hard
+      ? 'DELETE FROM boutique_subcategories s USING before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*'
+      : 'UPDATE boutique_subcategories s SET is_active = FALSE FROM before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*';
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(s.*) AS before_snapshot
+           FROM boutique_subcategories s
+          WHERE s.category_key = $1 AND s.key = $2
+          FOR UPDATE
+       ),
+       changed AS (
+         ${mutation}
+       )
+       SELECT changed.*, before.before_snapshot
+         FROM changed CROSS JOIN before`,
+      [categoryKey, subcategoryKey]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: hard ? 'SUBCATEGORY_DELETED' : 'SUBCATEGORY_DEACTIVATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: hard ? null : row,
+    });
+    invalidateCategoriesCache();
+    return hard ? { deleted: true, subcategory: row } : { deactivated: true, subcategory: row };
+  });
+}
+
+module.exports = {
+  TaxonomyAdminError,
+  getCategoryWithSubcats,
+  listCategories,
+  listSubcategories,
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  createSubcategory,
+  updateSubcategory,
+  deactivateSubcategory,
+};
+ + (fields.length + 1);
+    const sql = 'UPDATE boutique_categories SET ' + set +
+      ', updated_at = NOW() WHERE key = ' + keyPlaceholder + ' RETURNING *';
+    const { rows: [row] } = await tx.query(sql, values);
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_UPDATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return getCategoryWithSubcats(key, tx);
+  });
+}
+
+async function deactivateCategory(key, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(c.*) AS before_snapshot
+           FROM boutique_categories c
+          WHERE c.key = $1
+          FOR UPDATE
+       ),
+       updated AS (
+         UPDATE boutique_categories c
+            SET is_active = FALSE, updated_at = NOW()
+          FROM before
+         WHERE c.key = $1
+         RETURNING c.*
+       )
+       SELECT updated.*, before.before_snapshot
+         FROM updated CROSS JOIN before`,
+      [key]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Catégorie introuvable', 'category_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_DEACTIVATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return { deactivated: true, category: row };
+  });
+}
+
+async function createSubcategory(categoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    if (!payload.key || !payload.label) throw new TaxonomyAdminError(400, 'key et label obligatoires');
+    const parent = await tx.query('SELECT 1 FROM boutique_categories WHERE key = $1', [categoryKey]);
+    if (!parent.rows.length) throw new TaxonomyAdminError(404, 'Catégorie parente introuvable', 'category_not_found');
+    try {
+      const { rows: [row] } = await tx.query(
+        `INSERT INTO boutique_subcategories
+          (category_key, key, label, short_label, icon, display_order, is_active, customs_category_key)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         RETURNING *`,
+        [categoryKey, payload.key, payload.label, payload.short_label || payload.label,
+         payload.icon || '✨', payload.display_order !== undefined ? payload.display_order : 99,
+         payload.is_active !== false, payload.customs_category_key || null]
+      );
+      await recordTaxonomyMutation(tx, {
+        action: 'SUBCATEGORY_CREATED',
+        entityType: 'subcategory',
+        categoryKey,
+        subcategoryKey: row.key,
+        actor,
+        sourceSurface: sourceSurface(actor),
+        before: null,
+        after: row,
+      });
+      invalidateCategoriesCache();
+      return row;
+    } catch (err) {
+      if (err.code === '23505') throw new TaxonomyAdminError(409, 'Une sous-catégorie avec cette clé existe déjà dans cette catégorie', 'subcategory_key_conflict');
+      throw err;
+    }
+  });
+}
+
+async function updateSubcategory(categoryKey, subcategoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const allowed = ['label','short_label','icon','display_order','is_active','customs_category_key'];
+    const fields = allowed.filter(field => payload[field] !== undefined);
+    if (!fields.length) throw new TaxonomyAdminError(400, 'Aucun champ à mettre à jour');
+    const { rows: [before] } = await tx.query(
+      'SELECT * FROM boutique_subcategories WHERE category_key = $1 AND key = $2',
+      [categoryKey, subcategoryKey]
+    );
+    if (!before) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const values = fields.map(field => payload[field]);
+    values.push(categoryKey, subcategoryKey);
+    const set = fields.map((field, index) => `${field} = ${index + 1}`).join(', ');
+    const { rows: [row] } = await tx.query(
+      `UPDATE boutique_subcategories SET ${set}
+        WHERE category_key = ${fields.length + 1} AND key = ${fields.length + 2}
+        RETURNING *`,
+      values
+    );
+    await recordTaxonomyMutation(tx, {
+      action: 'SUBCATEGORY_UPDATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return row;
+  });
+}
+
+async function deactivateSubcategory(categoryKey, subcategoryKey, { hard = false } = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const mutation = hard
+      ? 'DELETE FROM boutique_subcategories s USING before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*'
+      : 'UPDATE boutique_subcategories s SET is_active = FALSE FROM before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*';
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(s.*) AS before_snapshot
+           FROM boutique_subcategories s
+          WHERE s.category_key = $1 AND s.key = $2
+          FOR UPDATE
+       ),
+       changed AS (
+         ${mutation}
+       )
+       SELECT changed.*, before.before_snapshot
+         FROM changed CROSS JOIN before`,
+      [categoryKey, subcategoryKey]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: hard ? 'SUBCATEGORY_DELETED' : 'SUBCATEGORY_DEACTIVATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: hard ? null : row,
+    });
+    invalidateCategoriesCache();
+    return hard ? { deleted: true, subcategory: row } : { deactivated: true, subcategory: row };
+  });
+}
+
+module.exports = {
+  TaxonomyAdminError,
+  getCategoryWithSubcats,
+  listCategories,
+  listSubcategories,
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  createSubcategory,
+  updateSubcategory,
+  deactivateSubcategory,
+};
+ + (index + 1)).join(', ');
+    const categoryPlaceholder = '
+    await recordTaxonomyMutation(tx, {
+      action: 'SUBCATEGORY_UPDATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return row;
+  });
+}
+
+async function deactivateSubcategory(categoryKey, subcategoryKey, { hard = false } = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const mutation = hard
+      ? 'DELETE FROM boutique_subcategories s USING before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*'
+      : 'UPDATE boutique_subcategories s SET is_active = FALSE FROM before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*';
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(s.*) AS before_snapshot
+           FROM boutique_subcategories s
+          WHERE s.category_key = $1 AND s.key = $2
+          FOR UPDATE
+       ),
+       changed AS (
+         ${mutation}
+       )
+       SELECT changed.*, before.before_snapshot
+         FROM changed CROSS JOIN before`,
+      [categoryKey, subcategoryKey]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: hard ? 'SUBCATEGORY_DELETED' : 'SUBCATEGORY_DEACTIVATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: hard ? null : row,
+    });
+    invalidateCategoriesCache();
+    return hard ? { deleted: true, subcategory: row } : { deactivated: true, subcategory: row };
+  });
+}
+
+module.exports = {
+  TaxonomyAdminError,
+  getCategoryWithSubcats,
+  listCategories,
+  listSubcategories,
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  createSubcategory,
+  updateSubcategory,
+  deactivateSubcategory,
+};
+ + (index + 1)).join(', ');
+    const keyPlaceholder = '
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_UPDATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return getCategoryWithSubcats(key, tx);
+  });
+}
+
+async function deactivateCategory(key, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(c.*) AS before_snapshot
+           FROM boutique_categories c
+          WHERE c.key = $1
+          FOR UPDATE
+       ),
+       updated AS (
+         UPDATE boutique_categories c
+            SET is_active = FALSE, updated_at = NOW()
+          FROM before
+         WHERE c.key = $1
+         RETURNING c.*
+       )
+       SELECT updated.*, before.before_snapshot
+         FROM updated CROSS JOIN before`,
+      [key]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Catégorie introuvable', 'category_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_DEACTIVATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return { deactivated: true, category: row };
+  });
+}
+
+async function createSubcategory(categoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    if (!payload.key || !payload.label) throw new TaxonomyAdminError(400, 'key et label obligatoires');
+    const parent = await tx.query('SELECT 1 FROM boutique_categories WHERE key = $1', [categoryKey]);
+    if (!parent.rows.length) throw new TaxonomyAdminError(404, 'Catégorie parente introuvable', 'category_not_found');
+    try {
+      const { rows: [row] } = await tx.query(
+        `INSERT INTO boutique_subcategories
+          (category_key, key, label, short_label, icon, display_order, is_active, customs_category_key)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         RETURNING *`,
+        [categoryKey, payload.key, payload.label, payload.short_label || payload.label,
+         payload.icon || '✨', payload.display_order !== undefined ? payload.display_order : 99,
+         payload.is_active !== false, payload.customs_category_key || null]
+      );
+      await recordTaxonomyMutation(tx, {
+        action: 'SUBCATEGORY_CREATED',
+        entityType: 'subcategory',
+        categoryKey,
+        subcategoryKey: row.key,
+        actor,
+        sourceSurface: sourceSurface(actor),
+        before: null,
+        after: row,
+      });
+      invalidateCategoriesCache();
+      return row;
+    } catch (err) {
+      if (err.code === '23505') throw new TaxonomyAdminError(409, 'Une sous-catégorie avec cette clé existe déjà dans cette catégorie', 'subcategory_key_conflict');
+      throw err;
+    }
+  });
+}
+
+async function updateSubcategory(categoryKey, subcategoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const allowed = ['label','short_label','icon','display_order','is_active','customs_category_key'];
+    const fields = allowed.filter(field => payload[field] !== undefined);
+    if (!fields.length) throw new TaxonomyAdminError(400, 'Aucun champ à mettre à jour');
+    const { rows: [before] } = await tx.query(
+      'SELECT * FROM boutique_subcategories WHERE category_key = $1 AND key = $2',
+      [categoryKey, subcategoryKey]
+    );
+    if (!before) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const values = fields.map(field => payload[field]);
+    values.push(categoryKey, subcategoryKey);
+    const set = fields.map((field, index) => `${field} = ${index + 1}`).join(', ');
+    const { rows: [row] } = await tx.query(
+      `UPDATE boutique_subcategories SET ${set}
+        WHERE category_key = ${fields.length + 1} AND key = ${fields.length + 2}
+        RETURNING *`,
+      values
+    );
+    await recordTaxonomyMutation(tx, {
+      action: 'SUBCATEGORY_UPDATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return row;
+  });
+}
+
+async function deactivateSubcategory(categoryKey, subcategoryKey, { hard = false } = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const mutation = hard
+      ? 'DELETE FROM boutique_subcategories s USING before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*'
+      : 'UPDATE boutique_subcategories s SET is_active = FALSE FROM before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*';
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(s.*) AS before_snapshot
+           FROM boutique_subcategories s
+          WHERE s.category_key = $1 AND s.key = $2
+          FOR UPDATE
+       ),
+       changed AS (
+         ${mutation}
+       )
+       SELECT changed.*, before.before_snapshot
+         FROM changed CROSS JOIN before`,
+      [categoryKey, subcategoryKey]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: hard ? 'SUBCATEGORY_DELETED' : 'SUBCATEGORY_DEACTIVATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: hard ? null : row,
+    });
+    invalidateCategoriesCache();
+    return hard ? { deleted: true, subcategory: row } : { deactivated: true, subcategory: row };
+  });
+}
+
+module.exports = {
+  TaxonomyAdminError,
+  getCategoryWithSubcats,
+  listCategories,
+  listSubcategories,
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  createSubcategory,
+  updateSubcategory,
+  deactivateSubcategory,
+};
+ + (fields.length + 1);
+    const sql = 'UPDATE boutique_categories SET ' + set +
+      ', updated_at = NOW() WHERE key = ' + keyPlaceholder + ' RETURNING *';
+    const { rows: [row] } = await tx.query(sql, values);
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_UPDATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return getCategoryWithSubcats(key, tx);
+  });
+}
+
+async function deactivateCategory(key, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(c.*) AS before_snapshot
+           FROM boutique_categories c
+          WHERE c.key = $1
+          FOR UPDATE
+       ),
+       updated AS (
+         UPDATE boutique_categories c
+            SET is_active = FALSE, updated_at = NOW()
+          FROM before
+         WHERE c.key = $1
+         RETURNING c.*
+       )
+       SELECT updated.*, before.before_snapshot
+         FROM updated CROSS JOIN before`,
+      [key]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Catégorie introuvable', 'category_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_DEACTIVATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return { deactivated: true, category: row };
+  });
+}
+
+async function createSubcategory(categoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    if (!payload.key || !payload.label) throw new TaxonomyAdminError(400, 'key et label obligatoires');
+    const parent = await tx.query('SELECT 1 FROM boutique_categories WHERE key = $1', [categoryKey]);
+    if (!parent.rows.length) throw new TaxonomyAdminError(404, 'Catégorie parente introuvable', 'category_not_found');
+    try {
+      const { rows: [row] } = await tx.query(
+        `INSERT INTO boutique_subcategories
+          (category_key, key, label, short_label, icon, display_order, is_active, customs_category_key)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         RETURNING *`,
+        [categoryKey, payload.key, payload.label, payload.short_label || payload.label,
+         payload.icon || '✨', payload.display_order !== undefined ? payload.display_order : 99,
+         payload.is_active !== false, payload.customs_category_key || null]
+      );
+      await recordTaxonomyMutation(tx, {
+        action: 'SUBCATEGORY_CREATED',
+        entityType: 'subcategory',
+        categoryKey,
+        subcategoryKey: row.key,
+        actor,
+        sourceSurface: sourceSurface(actor),
+        before: null,
+        after: row,
+      });
+      invalidateCategoriesCache();
+      return row;
+    } catch (err) {
+      if (err.code === '23505') throw new TaxonomyAdminError(409, 'Une sous-catégorie avec cette clé existe déjà dans cette catégorie', 'subcategory_key_conflict');
+      throw err;
+    }
+  });
+}
+
+async function updateSubcategory(categoryKey, subcategoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const allowed = ['label','short_label','icon','display_order','is_active','customs_category_key'];
+    const fields = allowed.filter(field => payload[field] !== undefined);
+    if (!fields.length) throw new TaxonomyAdminError(400, 'Aucun champ à mettre à jour');
+    const { rows: [before] } = await tx.query(
+      'SELECT * FROM boutique_subcategories WHERE category_key = $1 AND key = $2',
+      [categoryKey, subcategoryKey]
+    );
+    if (!before) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const values = fields.map(field => payload[field]);
+    values.push(categoryKey, subcategoryKey);
+    const set = fields.map((field, index) => `${field} = ${index + 1}`).join(', ');
+    const { rows: [row] } = await tx.query(
+      `UPDATE boutique_subcategories SET ${set}
+        WHERE category_key = ${fields.length + 1} AND key = ${fields.length + 2}
+        RETURNING *`,
+      values
+    );
+    await recordTaxonomyMutation(tx, {
+      action: 'SUBCATEGORY_UPDATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return row;
+  });
+}
+
+async function deactivateSubcategory(categoryKey, subcategoryKey, { hard = false } = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const mutation = hard
+      ? 'DELETE FROM boutique_subcategories s USING before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*'
+      : 'UPDATE boutique_subcategories s SET is_active = FALSE FROM before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*';
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(s.*) AS before_snapshot
+           FROM boutique_subcategories s
+          WHERE s.category_key = $1 AND s.key = $2
+          FOR UPDATE
+       ),
+       changed AS (
+         ${mutation}
+       )
+       SELECT changed.*, before.before_snapshot
+         FROM changed CROSS JOIN before`,
+      [categoryKey, subcategoryKey]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: hard ? 'SUBCATEGORY_DELETED' : 'SUBCATEGORY_DEACTIVATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: hard ? null : row,
+    });
+    invalidateCategoriesCache();
+    return hard ? { deleted: true, subcategory: row } : { deactivated: true, subcategory: row };
+  });
+}
+
+module.exports = {
+  TaxonomyAdminError,
+  getCategoryWithSubcats,
+  listCategories,
+  listSubcategories,
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  createSubcategory,
+  updateSubcategory,
+  deactivateSubcategory,
+};
+ + (fields.length + 1);
+    const keyPlaceholder = '
+    await recordTaxonomyMutation(tx, {
+      action: 'SUBCATEGORY_UPDATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return row;
+  });
+}
+
+async function deactivateSubcategory(categoryKey, subcategoryKey, { hard = false } = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const mutation = hard
+      ? 'DELETE FROM boutique_subcategories s USING before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*'
+      : 'UPDATE boutique_subcategories s SET is_active = FALSE FROM before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*';
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(s.*) AS before_snapshot
+           FROM boutique_subcategories s
+          WHERE s.category_key = $1 AND s.key = $2
+          FOR UPDATE
+       ),
+       changed AS (
+         ${mutation}
+       )
+       SELECT changed.*, before.before_snapshot
+         FROM changed CROSS JOIN before`,
+      [categoryKey, subcategoryKey]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: hard ? 'SUBCATEGORY_DELETED' : 'SUBCATEGORY_DEACTIVATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: hard ? null : row,
+    });
+    invalidateCategoriesCache();
+    return hard ? { deleted: true, subcategory: row } : { deactivated: true, subcategory: row };
+  });
+}
+
+module.exports = {
+  TaxonomyAdminError,
+  getCategoryWithSubcats,
+  listCategories,
+  listSubcategories,
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  createSubcategory,
+  updateSubcategory,
+  deactivateSubcategory,
+};
+ + (index + 1)).join(', ');
+    const keyPlaceholder = '
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_UPDATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return getCategoryWithSubcats(key, tx);
+  });
+}
+
+async function deactivateCategory(key, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(c.*) AS before_snapshot
+           FROM boutique_categories c
+          WHERE c.key = $1
+          FOR UPDATE
+       ),
+       updated AS (
+         UPDATE boutique_categories c
+            SET is_active = FALSE, updated_at = NOW()
+          FROM before
+         WHERE c.key = $1
+         RETURNING c.*
+       )
+       SELECT updated.*, before.before_snapshot
+         FROM updated CROSS JOIN before`,
+      [key]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Catégorie introuvable', 'category_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_DEACTIVATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return { deactivated: true, category: row };
+  });
+}
+
+async function createSubcategory(categoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    if (!payload.key || !payload.label) throw new TaxonomyAdminError(400, 'key et label obligatoires');
+    const parent = await tx.query('SELECT 1 FROM boutique_categories WHERE key = $1', [categoryKey]);
+    if (!parent.rows.length) throw new TaxonomyAdminError(404, 'Catégorie parente introuvable', 'category_not_found');
+    try {
+      const { rows: [row] } = await tx.query(
+        `INSERT INTO boutique_subcategories
+          (category_key, key, label, short_label, icon, display_order, is_active, customs_category_key)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         RETURNING *`,
+        [categoryKey, payload.key, payload.label, payload.short_label || payload.label,
+         payload.icon || '✨', payload.display_order !== undefined ? payload.display_order : 99,
+         payload.is_active !== false, payload.customs_category_key || null]
+      );
+      await recordTaxonomyMutation(tx, {
+        action: 'SUBCATEGORY_CREATED',
+        entityType: 'subcategory',
+        categoryKey,
+        subcategoryKey: row.key,
+        actor,
+        sourceSurface: sourceSurface(actor),
+        before: null,
+        after: row,
+      });
+      invalidateCategoriesCache();
+      return row;
+    } catch (err) {
+      if (err.code === '23505') throw new TaxonomyAdminError(409, 'Une sous-catégorie avec cette clé existe déjà dans cette catégorie', 'subcategory_key_conflict');
+      throw err;
+    }
+  });
+}
+
+async function updateSubcategory(categoryKey, subcategoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const allowed = ['label','short_label','icon','display_order','is_active','customs_category_key'];
+    const fields = allowed.filter(field => payload[field] !== undefined);
+    if (!fields.length) throw new TaxonomyAdminError(400, 'Aucun champ à mettre à jour');
+    const { rows: [before] } = await tx.query(
+      'SELECT * FROM boutique_subcategories WHERE category_key = $1 AND key = $2',
+      [categoryKey, subcategoryKey]
+    );
+    if (!before) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const values = fields.map(field => payload[field]);
+    values.push(categoryKey, subcategoryKey);
+    const set = fields.map((field, index) => `${field} = ${index + 1}`).join(', ');
+    const { rows: [row] } = await tx.query(
+      `UPDATE boutique_subcategories SET ${set}
+        WHERE category_key = ${fields.length + 1} AND key = ${fields.length + 2}
+        RETURNING *`,
+      values
+    );
+    await recordTaxonomyMutation(tx, {
+      action: 'SUBCATEGORY_UPDATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return row;
+  });
+}
+
+async function deactivateSubcategory(categoryKey, subcategoryKey, { hard = false } = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const mutation = hard
+      ? 'DELETE FROM boutique_subcategories s USING before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*'
+      : 'UPDATE boutique_subcategories s SET is_active = FALSE FROM before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*';
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(s.*) AS before_snapshot
+           FROM boutique_subcategories s
+          WHERE s.category_key = $1 AND s.key = $2
+          FOR UPDATE
+       ),
+       changed AS (
+         ${mutation}
+       )
+       SELECT changed.*, before.before_snapshot
+         FROM changed CROSS JOIN before`,
+      [categoryKey, subcategoryKey]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: hard ? 'SUBCATEGORY_DELETED' : 'SUBCATEGORY_DEACTIVATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: hard ? null : row,
+    });
+    invalidateCategoriesCache();
+    return hard ? { deleted: true, subcategory: row } : { deactivated: true, subcategory: row };
+  });
+}
+
+module.exports = {
+  TaxonomyAdminError,
+  getCategoryWithSubcats,
+  listCategories,
+  listSubcategories,
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  createSubcategory,
+  updateSubcategory,
+  deactivateSubcategory,
+};
+ + (fields.length + 1);
+    const sql = 'UPDATE boutique_categories SET ' + set +
+      ', updated_at = NOW() WHERE key = ' + keyPlaceholder + ' RETURNING *';
+    const { rows: [row] } = await tx.query(sql, values);
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_UPDATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return getCategoryWithSubcats(key, tx);
+  });
+}
+
+async function deactivateCategory(key, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(c.*) AS before_snapshot
+           FROM boutique_categories c
+          WHERE c.key = $1
+          FOR UPDATE
+       ),
+       updated AS (
+         UPDATE boutique_categories c
+            SET is_active = FALSE, updated_at = NOW()
+          FROM before
+         WHERE c.key = $1
+         RETURNING c.*
+       )
+       SELECT updated.*, before.before_snapshot
+         FROM updated CROSS JOIN before`,
+      [key]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Catégorie introuvable', 'category_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_DEACTIVATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return { deactivated: true, category: row };
+  });
+}
+
+async function createSubcategory(categoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    if (!payload.key || !payload.label) throw new TaxonomyAdminError(400, 'key et label obligatoires');
+    const parent = await tx.query('SELECT 1 FROM boutique_categories WHERE key = $1', [categoryKey]);
+    if (!parent.rows.length) throw new TaxonomyAdminError(404, 'Catégorie parente introuvable', 'category_not_found');
+    try {
+      const { rows: [row] } = await tx.query(
+        `INSERT INTO boutique_subcategories
+          (category_key, key, label, short_label, icon, display_order, is_active, customs_category_key)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         RETURNING *`,
+        [categoryKey, payload.key, payload.label, payload.short_label || payload.label,
+         payload.icon || '✨', payload.display_order !== undefined ? payload.display_order : 99,
+         payload.is_active !== false, payload.customs_category_key || null]
+      );
+      await recordTaxonomyMutation(tx, {
+        action: 'SUBCATEGORY_CREATED',
+        entityType: 'subcategory',
+        categoryKey,
+        subcategoryKey: row.key,
+        actor,
+        sourceSurface: sourceSurface(actor),
+        before: null,
+        after: row,
+      });
+      invalidateCategoriesCache();
+      return row;
+    } catch (err) {
+      if (err.code === '23505') throw new TaxonomyAdminError(409, 'Une sous-catégorie avec cette clé existe déjà dans cette catégorie', 'subcategory_key_conflict');
+      throw err;
+    }
+  });
+}
+
+async function updateSubcategory(categoryKey, subcategoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const allowed = ['label','short_label','icon','display_order','is_active','customs_category_key'];
+    const fields = allowed.filter(field => payload[field] !== undefined);
+    if (!fields.length) throw new TaxonomyAdminError(400, 'Aucun champ à mettre à jour');
+    const { rows: [before] } = await tx.query(
+      'SELECT * FROM boutique_subcategories WHERE category_key = $1 AND key = $2',
+      [categoryKey, subcategoryKey]
+    );
+    if (!before) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const values = fields.map(field => payload[field]);
+    values.push(categoryKey, subcategoryKey);
+    const set = fields.map((field, index) => `${field} = ${index + 1}`).join(', ');
+    const { rows: [row] } = await tx.query(
+      `UPDATE boutique_subcategories SET ${set}
+        WHERE category_key = ${fields.length + 1} AND key = ${fields.length + 2}
+        RETURNING *`,
+      values
+    );
+    await recordTaxonomyMutation(tx, {
+      action: 'SUBCATEGORY_UPDATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return row;
+  });
+}
+
+async function deactivateSubcategory(categoryKey, subcategoryKey, { hard = false } = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const mutation = hard
+      ? 'DELETE FROM boutique_subcategories s USING before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*'
+      : 'UPDATE boutique_subcategories s SET is_active = FALSE FROM before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*';
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(s.*) AS before_snapshot
+           FROM boutique_subcategories s
+          WHERE s.category_key = $1 AND s.key = $2
+          FOR UPDATE
+       ),
+       changed AS (
+         ${mutation}
+       )
+       SELECT changed.*, before.before_snapshot
+         FROM changed CROSS JOIN before`,
+      [categoryKey, subcategoryKey]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: hard ? 'SUBCATEGORY_DELETED' : 'SUBCATEGORY_DEACTIVATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: hard ? null : row,
+    });
+    invalidateCategoriesCache();
+    return hard ? { deleted: true, subcategory: row } : { deactivated: true, subcategory: row };
+  });
+}
+
+module.exports = {
+  TaxonomyAdminError,
+  getCategoryWithSubcats,
+  listCategories,
+  listSubcategories,
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  createSubcategory,
+  updateSubcategory,
+  deactivateSubcategory,
+};
+ + (fields.length + 2);
+    const sql = 'UPDATE boutique_subcategories SET ' + set +
+      ' WHERE category_key = ' + categoryPlaceholder +
+      ' AND key = ' + keyPlaceholder +
+      ' RETURNING *';
+    const { rows: [row] } = await tx.query(sql, values);
+    await recordTaxonomyMutation(tx, {
+      action: 'SUBCATEGORY_UPDATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return row;
+  });
+}
+
+async function deactivateSubcategory(categoryKey, subcategoryKey, { hard = false } = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const mutation = hard
+      ? 'DELETE FROM boutique_subcategories s USING before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*'
+      : 'UPDATE boutique_subcategories s SET is_active = FALSE FROM before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*';
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(s.*) AS before_snapshot
+           FROM boutique_subcategories s
+          WHERE s.category_key = $1 AND s.key = $2
+          FOR UPDATE
+       ),
+       changed AS (
+         ${mutation}
+       )
+       SELECT changed.*, before.before_snapshot
+         FROM changed CROSS JOIN before`,
+      [categoryKey, subcategoryKey]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: hard ? 'SUBCATEGORY_DELETED' : 'SUBCATEGORY_DEACTIVATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: hard ? null : row,
+    });
+    invalidateCategoriesCache();
+    return hard ? { deleted: true, subcategory: row } : { deactivated: true, subcategory: row };
+  });
+}
+
+module.exports = {
+  TaxonomyAdminError,
+  getCategoryWithSubcats,
+  listCategories,
+  listSubcategories,
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  createSubcategory,
+  updateSubcategory,
+  deactivateSubcategory,
+};
+ + (index + 1)).join(', ');
+    const keyPlaceholder = '
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_UPDATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return getCategoryWithSubcats(key, tx);
+  });
+}
+
+async function deactivateCategory(key, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(c.*) AS before_snapshot
+           FROM boutique_categories c
+          WHERE c.key = $1
+          FOR UPDATE
+       ),
+       updated AS (
+         UPDATE boutique_categories c
+            SET is_active = FALSE, updated_at = NOW()
+          FROM before
+         WHERE c.key = $1
+         RETURNING c.*
+       )
+       SELECT updated.*, before.before_snapshot
+         FROM updated CROSS JOIN before`,
+      [key]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Catégorie introuvable', 'category_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: 'CATEGORY_DEACTIVATED',
+      entityType: 'category',
+      categoryKey: key,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return { deactivated: true, category: row };
+  });
+}
+
+async function createSubcategory(categoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    if (!payload.key || !payload.label) throw new TaxonomyAdminError(400, 'key et label obligatoires');
+    const parent = await tx.query('SELECT 1 FROM boutique_categories WHERE key = $1', [categoryKey]);
+    if (!parent.rows.length) throw new TaxonomyAdminError(404, 'Catégorie parente introuvable', 'category_not_found');
+    try {
+      const { rows: [row] } = await tx.query(
+        `INSERT INTO boutique_subcategories
+          (category_key, key, label, short_label, icon, display_order, is_active, customs_category_key)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+         RETURNING *`,
+        [categoryKey, payload.key, payload.label, payload.short_label || payload.label,
+         payload.icon || '✨', payload.display_order !== undefined ? payload.display_order : 99,
+         payload.is_active !== false, payload.customs_category_key || null]
+      );
+      await recordTaxonomyMutation(tx, {
+        action: 'SUBCATEGORY_CREATED',
+        entityType: 'subcategory',
+        categoryKey,
+        subcategoryKey: row.key,
+        actor,
+        sourceSurface: sourceSurface(actor),
+        before: null,
+        after: row,
+      });
+      invalidateCategoriesCache();
+      return row;
+    } catch (err) {
+      if (err.code === '23505') throw new TaxonomyAdminError(409, 'Une sous-catégorie avec cette clé existe déjà dans cette catégorie', 'subcategory_key_conflict');
+      throw err;
+    }
+  });
+}
+
+async function updateSubcategory(categoryKey, subcategoryKey, payload = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const allowed = ['label','short_label','icon','display_order','is_active','customs_category_key'];
+    const fields = allowed.filter(field => payload[field] !== undefined);
+    if (!fields.length) throw new TaxonomyAdminError(400, 'Aucun champ à mettre à jour');
+    const { rows: [before] } = await tx.query(
+      'SELECT * FROM boutique_subcategories WHERE category_key = $1 AND key = $2',
+      [categoryKey, subcategoryKey]
+    );
+    if (!before) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const values = fields.map(field => payload[field]);
+    values.push(categoryKey, subcategoryKey);
+    const set = fields.map((field, index) => `${field} = ${index + 1}`).join(', ');
+    const { rows: [row] } = await tx.query(
+      `UPDATE boutique_subcategories SET ${set}
+        WHERE category_key = ${fields.length + 1} AND key = ${fields.length + 2}
+        RETURNING *`,
+      values
+    );
+    await recordTaxonomyMutation(tx, {
+      action: 'SUBCATEGORY_UPDATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: row,
+    });
+    invalidateCategoriesCache();
+    return row;
+  });
+}
+
+async function deactivateSubcategory(categoryKey, subcategoryKey, { hard = false } = {}, q = db, actor = null) {
+  return withTaxonomyMutation(q, async tx => {
+    const mutation = hard
+      ? 'DELETE FROM boutique_subcategories s USING before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*'
+      : 'UPDATE boutique_subcategories s SET is_active = FALSE FROM before WHERE s.category_key = $1 AND s.key = $2 RETURNING s.*';
+    const { rows: [rawRow] } = await tx.query(
+      `WITH before AS (
+         SELECT to_jsonb(s.*) AS before_snapshot
+           FROM boutique_subcategories s
+          WHERE s.category_key = $1 AND s.key = $2
+          FOR UPDATE
+       ),
+       changed AS (
+         ${mutation}
+       )
+       SELECT changed.*, before.before_snapshot
+         FROM changed CROSS JOIN before`,
+      [categoryKey, subcategoryKey]
+    );
+    if (!rawRow) throw new TaxonomyAdminError(404, 'Sous-catégorie introuvable', 'subcategory_not_found');
+    const { before_snapshot: before, ...row } = rawRow;
+    await recordTaxonomyMutation(tx, {
+      action: hard ? 'SUBCATEGORY_DELETED' : 'SUBCATEGORY_DEACTIVATED',
+      entityType: 'subcategory',
+      categoryKey,
+      subcategoryKey,
+      actor,
+      sourceSurface: sourceSurface(actor),
+      before,
+      after: hard ? null : row,
+    });
+    invalidateCategoriesCache();
+    return hard ? { deleted: true, subcategory: row } : { deactivated: true, subcategory: row };
+  });
+}
+
+module.exports = {
+  TaxonomyAdminError,
+  getCategoryWithSubcats,
+  listCategories,
+  listSubcategories,
+  createCategory,
+  updateCategory,
+  deactivateCategory,
+  createSubcategory,
+  updateSubcategory,
+  deactivateSubcategory,
+};
+ + (fields.length + 1);
+    const sql = 'UPDATE boutique_categories SET ' + set +
+      ', updated_at = NOW() WHERE key = ' + keyPlaceholder + ' RETURNING *';
+    const { rows: [row] } = await tx.query(sql, values);
     await recordTaxonomyMutation(tx, {
       action: 'CATEGORY_UPDATED',
       entityType: 'category',
