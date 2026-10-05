@@ -226,3 +226,51 @@ test('reconcileSandboxParentAmount refuse tout mismatch provider', () => {
     },
   })).toThrow('CJ_SANDBOX_PAYMENT_AMOUNT_MISMATCH');
 });
+
+
+test('grouped sandbox peut exercer payBalanceV2 sur un parent 100% sandbox sans charge réelle', async () => {
+  const contract = require('../../services/suppliers/cj-purchasing-contract');
+  expect(contract.buildPayBalanceV2Payload('SHIP-1', 'PAY-1')).toEqual({
+    shipmentOrderId: 'SHIP-1',
+    payId: 'PAY-1',
+  });
+  expect(contract.parsePayBalanceV2Response({
+    result: true,
+    data: true,
+    requestId: 'REQ-PAY',
+  })).toMatchObject({
+    payment_verdict: 'paid',
+    request_id: 'REQ-PAY',
+  });
+});
+
+test('mode grouped payment inconnu reste fail-closed', async () => {
+  const env = {
+    DATABASE_URL: 'postgres://ephemeral',
+    NODE_ENV: 'test',
+    KOMERCE_ENV: 'staging',
+    KOMERCE_ALLOW_CJ_P2_GROUPED_PARENT: '1',
+    KOMERCE_CJ_SANDBOX: '1',
+    KOMERCE_CJ_P2_GROUPED_PAYMENT_MODE: 'something-else',
+  };
+  const proof = require('../../scripts/cj-p2-grouped-parent-sandbox-proof');
+  const skus = [
+    { product_sku_id:'sku-1', supplier_order_identity:{ provider:'cj', version:1, payload:{ pid:'p1', vid:'v1', variant_sku:'s1' } } },
+    { product_sku_id:'sku-2', supplier_order_identity:{ provider:'cj', version:1, payload:{ pid:'p2', vid:'v2', variant_sku:'s2' } } },
+  ];
+  const invoke = jest.fn()
+    .mockResolvedValueOnce({ data:[{ logisticName:'Route' }] })
+    .mockResolvedValueOnce({ result:true, data:{ orderId:'O1', orderNumber:'K-1' } })
+    .mockResolvedValueOnce({ data:{ orderId:'O1', cjOrderCode:'C1', orderStatus:'CREATED', productList:[{ vid:'v1', quantity:1 }] } })
+    .mockResolvedValueOnce({ result:true, data:{ orderId:'O2', orderNumber:'K-2' } })
+    .mockResolvedValueOnce({ data:{ orderId:'O2', cjOrderCode:'C2', orderStatus:'CREATED', productList:[{ vid:'v2', quantity:1 }] } })
+    .mockResolvedValueOnce({ success:true, data:{ successCount:2 } })
+    .mockResolvedValueOnce({ success:true, data:{ shipmentsId:'SHIP-1', successCount:2, interceptOrders:[], result:0, submitSuccess:true } })
+    .mockResolvedValueOnce({ success:true, data:{ payId:'PAY-1', orderMoney:10, paymentInformation:{ actualPayment:10, orderOriginalAmount:10 }, interceptOrders:[], unMatchOrderCodes:[], unMatchProductCodes:[], submitSuccess:true } });
+
+  await expect(proof.run(env, {
+    selectTwoExactSkus: async () => skus,
+    invoke,
+    sleep: async () => {},
+  })).rejects.toThrow('CJ_P2_GROUPED_PAYMENT_MODE_UNSUPPORTED');
+});

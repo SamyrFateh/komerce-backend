@@ -318,6 +318,8 @@ module.exports = {
       test: 'tests/unit/cj-p2-confirm-pay-sandbox-proof.test.js' },
     { statement: 'la capacité CJ parent/grouped est prouvée séparément : un proof sandbox multi-lignes doit obtenir ou relire un shipmentOrderId réel puis exercer explicitement une opération batch simulatePay(shipmentOrderId), sans réutiliser la preuve orderId individuelle ni conclure avant observation provider',
       test: 'tests/unit/cj-p2-grouped-parent-sandbox-proof.test.js' },
+    { statement: 'le proof CJ grouped peut aussi exercer le vrai endpoint payBalanceV2 sur un parent composé exclusivement de sous-ordres isSandbox=1 ; ce mode reste interdit hors sandbox et doit publier real_charge_possible=false, afin de prouver le contrat de l endpoint sans aucun débit réel',
+      test: 'tests/unit/cj-p2-grouped-parent-sandbox-proof.test.js' },
     { statement: 'le proof CJ grouped rapproche avant simulatePay les faits provider orderMoney, paymentInformation.actualPayment et paymentInformation.orderOriginalAmount ; leur égalité prouve uniquement la cohérence de montant du parent sandbox, avec real_debit_verified=false explicite, et ne prouve ni débit de balance production ni rapprochement comptable B2B',
       test: 'tests/unit/cj-p2-grouped-parent-sandbox-proof.test.js' },
     { statement: 'un paiement fournisseur possède un fait canonique persistant distinct de l appel provider : supplier_execution_payments cible exactement un sous-ordre ou un parent, impose une payment_execution_key unique par provider, porte montant attendu/observé + devise + rapprochement et ne peut déclarer real_debit_verified=true que pour un paiement succeeded ; la migration 280 ne déclenche aucun débit',
