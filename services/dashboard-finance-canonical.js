@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        dashboard_period, server_resolved_market
  * @outputs       canonical_finance_projection
- * @depends       db, dashboard-metrics, dashboard-metrics/_helpers
+ * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, supplier-payment-review
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais, supplier_execution_payments
+ * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, finance_event_date_is_authoritative
@@ -20,6 +20,7 @@
 
 const db = require('../db');
 const metrics = require('./dashboard-metrics');
+const { getSupplierPaymentReview } = require('./supplier-payment-review');
 const {
   buildFiltersClause,
   makeKpi,
@@ -405,60 +406,6 @@ async function getRelayProfitability(filters = {}) {
       actual_orders: actualOrders,
       cost_coverage_pct: orders > 0 ? Number(((actualOrders / orders) * 100).toFixed(1)) : null,
     });
-  });
-}
-
-async function getSupplierPaymentReview(options = {}) {
-  const limit = Math.min(100, Math.max(1, Number(options.limit) || 50));
-  const { rows } = await db.query(`
-    SELECT
-      purchase_order_id,
-      provider,
-      payment_ref,
-      expected_amount::text AS expected_amount,
-      observed_amount::text AS observed_amount,
-      currency,
-      status,
-      reconciliation_status,
-      real_debit_verified,
-      created_at,
-      updated_at,
-      COUNT(*) OVER()::int AS total_count,
-      CASE
-        WHEN status = 'ambiguous' THEN 'PAYMENT_AMBIGUOUS_RECONCILIATION_REQUIRED'
-        WHEN status = 'rejected' THEN 'PAYMENT_REJECTED_REVIEW_REQUIRED'
-        WHEN reconciliation_status = 'mismatched' THEN 'PAYMENT_RECONCILIATION_MISMATCH'
-        ELSE NULL
-      END AS review_reason
-    FROM supplier_execution_payments
-    WHERE status IN ('ambiguous', 'rejected')
-       OR reconciliation_status = 'mismatched'
-    ORDER BY updated_at DESC, id DESC
-    LIMIT $1
-  `, [limit]);
-
-  const count = rows.length ? Number(rows[0].total_count) || 0 : 0;
-  const items = rows.map(row => Object.freeze({
-    purchase_order_id: row.purchase_order_id,
-    provider: row.provider,
-    payment_ref: row.payment_ref || null,
-    expected_amount: row.expected_amount,
-    observed_amount: row.observed_amount,
-    currency: row.currency,
-    status: row.status,
-    reconciliation_status: row.reconciliation_status,
-    real_debit_verified: row.real_debit_verified === true,
-    review_reason: row.review_reason,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    drill_to: `/admin/workspaces/purchasing?po=${encodeURIComponent(row.purchase_order_id)}`,
-  }));
-
-  return Object.freeze({
-    count,
-    items: Object.freeze(items),
-    truncated: count > items.length,
-    basis: 'current_state_all_time',
   });
 }
 

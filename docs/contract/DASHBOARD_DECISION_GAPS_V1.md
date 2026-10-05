@@ -18,7 +18,7 @@ Ordre d'exécution : `DASHBOARD_DECISION_VISUAL_V1_MIGRATION_ORDER.md`.
 | Finance / Order 360 / Product 360 | Order 360 ouvre les PO liées vers Achats avec retour contextuel. Finance globale projette la file exacte des paiements fournisseur à revoir et drille vers la PO ; Finance marché reste volontairement sans ces faits faute de ventilation canonique multi-marché. Product 360 ne les consomme pas encore | `services/order-360.js`, `dashboard-finance-canonical.js`, UI Canonical ; lots 2 et premier sous-lot 3 fermés. Lot 5 reste à traiter. |
 | Fournisseurs / Supplier 360 | `/admin/suppliers` reste Legacy selon le README Canonical ; aucun équivalent 360 n'est attesté par cet inventaire ciblé | `public/dashboards/canonical/README.md` ; lot 4, séparer observation 360 et commandes d'administration. |
 | Administration transversale | Partiellement présente : Paramètres et Accès pays sont déjà référencés par la navigation. La couverture complète n'est pas encore qualifiée | `public/dashboards/canonical/js/navigation.js`, `navigation-policy-v4.js` ; lot 6, vérifier chaque surface/commande/guard/audit. Ne pas conclure que toute l'administration est absente. |
-| Exceptions nouvelles / KPI | Paiement fournisseur ambigu/rejeté/mismatched désormais contractualisé en file globale exacte ; autres candidats non prouvés | `supplier_execution_payments` fournit une population canonique pour `ambiguous`, `rejected` et `mismatched`. `requested` n’est pas un retard ; `real_debit_verified=false` et absence de preuve ne sont pas des exceptions universelles. Besoin d'achat restant, PO bloquée et réception en retard restent à contractualiser. |
+| Exceptions nouvelles / KPI | Paiement fournisseur ambigu/rejeté/mismatched désormais contractualisé en file globale exacte **et** en signal Action Center global `supplier_payment_review` ; autres candidats non prouvés | Purchasing possède le prédicat unique via `supplier-payment-review.js`; Finance et decision-signals le consomment. Signal = un paiement, drill vers sa PO, aucune allocation marché. `requested`, `real_debit_verified=false` seul et absence de preuve ne sont pas des exceptions universelles. Besoin d'achat restant, PO bloquée et réception en retard restent à contractualiser. |
 
 Périmètre non attesté par ce diagnostic : état des données live, activation des
 capabilities par environnement, couverture exhaustive de l'administration et
@@ -216,7 +216,7 @@ Preuves reproductibles : `tests/unit/purchasing-order-detail.test.js`,
 | Commandes au costing incomplet | `PROJECTABLE` | `costing_orders.cost_status` et couverture disponibles ; aucune action métier n'est inventée |
 | Mix de paiement | `PROVEN` | collection `payment_mix` |
 | Rentabilité relais | `PROVEN` avec garde de couverture | `relay_profitability`; marge réelle explicitement inconnue lorsque le costing ne permet pas de la calculer |
-| Alertes Finance dédiées | `BACKEND_GAP` | aucune collection d'alertes Finance dédiée ; seuls les warnings KPI / data quality peuvent être projetés |
+| Alertes Finance dédiées | `PROJECTABLE` / Action Center `PROVEN` | la file fournisseur à revoir produit désormais `supplier_payment_review` dans l’Action Center global ; Finance garde sa file détaillée sans créer une seconde lifecycle d’alerte |
 | Workspaces autorisés | `PROVEN` | `FINANCE_SCHEMA.drill` filtré par rôle |
 | Fraîcheur / qualité | `PROVEN` quand champs présents | `data_quality` |
 
