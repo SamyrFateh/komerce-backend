@@ -125,3 +125,55 @@ describe('CI per-gate green proof reuse', () => {
     expect(Object.values(result.reuse).every(value => value === false)).toBe(true);
   });
 });
+
+
+describe('CI coverage proof reuse', () => {
+  const allGreenJobs = normalizeJobs({ jobs: [
+    { name:'Backend gates', conclusion:'success' },
+    { name:'Migration and schema gates', conclusion:'success' },
+    { name:'From-scratch DB + integration + E2E API', conclusion:'success' },
+    { name:'Dashboard canonical gates', conclusion:'success' },
+    { name:'Boutique source gates', conclusion:'success' },
+    { name:'Governance and feature-first gates', conclusion:'success' },
+    { name:'Isolated provider contract proof gates', conclusion:'success' },
+  ] });
+
+  test('reuses coverage proof for test-only delta while backend itself still reruns', () => {
+    const result = computeReuse({
+      previousHead:'old', currentHead:'new', currentBase:'base',
+      jobs:allGreenJobs, ancestor:true, baseContained:true,
+      scope:{
+        backend:true, backendSource:false, golden:false, migrations:false,
+        dbRebuildRequired:false, integrationRequired:false, e2eApiRequired:false,
+        dashboard:false, boutique:false, governance:true, providerProofOnly:false,
+      },
+    });
+    expect(result.reuse.backend).toBe(false);
+    expect(result.reuseCoverage).toBe(true);
+    expect(result.coverageReason).toBe('previous-green-coverage-reused-no-source-delta');
+  });
+
+  test('never reuses coverage when instrumented backend source changed', () => {
+    const result = computeReuse({
+      previousHead:'old', currentHead:'new', currentBase:'base',
+      jobs:allGreenJobs, ancestor:true, baseContained:true,
+      scope:{
+        backend:true, backendSource:true, golden:false, migrations:false,
+        dbRebuildRequired:false, integrationRequired:false, e2eApiRequired:false,
+        dashboard:false, boutique:false, governance:true, providerProofOnly:false,
+      },
+    });
+    expect(result.reuseCoverage).toBe(false);
+    expect(result.coverageReason).toBe('latest-delta-touches-instrumented-source');
+  });
+
+  test('fails closed for coverage without a previous green backend proof', () => {
+    const result = computeReuse({
+      previousHead:'old', currentHead:'new', currentBase:'base',
+      jobs:greenJobs, ancestor:true, baseContained:true,
+      scope:{ backend:true, backendSource:false },
+    });
+    expect(result.reuseCoverage).toBe(false);
+    expect(result.coverageReason).toBe('previous-backend-not-green');
+  });
+});
