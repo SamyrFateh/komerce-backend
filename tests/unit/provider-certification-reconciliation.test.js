@@ -26,17 +26,18 @@ test('R1 — le ledger capability-level réel est cohérent et ne sur-certifie p
     row => row.provider === 'aliexpress' && row.capability === 'purchasing.auto_order'
   );
   expect(aliAuto).toMatchObject({
-    classification: 'GAP',
-    availability: 'RUNTIME_REGISTERED_GUARDED_NOT_LIVE_PROVEN',
-    highest_proof: 'P0',
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
   });
 
   const aliReadiness = report.rows.find(
     row => row.provider === 'aliexpress' && row.capability === 'purchasing.readiness'
   );
   expect(aliReadiness).toMatchObject({
-    classification: 'GAP',
-    highest_proof: 'P3',
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
   });
 });
 

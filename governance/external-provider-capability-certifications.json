@@ -78,37 +78,39 @@
     "aliexpress": [
       {
         "capability": "purchasing.readiness",
-        "classification": "GAP",
-        "availability": "IMPLEMENTED_NOT_LIVE_RECONCILED",
-        "highest_proof": "P3",
-        "environment": "STAGING_REQUIRED",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "LIVE_STAGING",
         "evidence": [
           "services/suppliers/aliexpress-fulfillment-adapter.js",
           "services/suppliers/canonical-unit-purchasing-gate.js",
-          "scripts/aliexpress-readiness-golden-proof.js"
+          "scripts/aliexpress-readiness-golden-proof.js",
+          "scripts/aliexpress-business-certification.js"
         ],
         "limitations": [
-          "Golden A2 live execution still requires an isolated staging environment",
+          "live readiness is proved on an isolated staging runtime against the real AliExpress provider",
           "no provider mutation is part of the readiness capability"
         ]
       },
       {
         "capability": "purchasing.auto_order",
-        "classification": "GAP",
-        "availability": "RUNTIME_REGISTERED_GUARDED_NOT_LIVE_PROVEN",
-        "highest_proof": "P0",
-        "environment": "STAGING_PROOF_REQUIRED",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "LIVE_STAGING_GUARDED",
         "evidence": [
           "services/suppliers/aliexpress-fulfillment-adapter.js",
           "services/suppliers/aliexpress-purchase-preflight.js",
           "services/suppliers/execution-adapter-registry.js",
+          "scripts/aliexpress-business-order-golden-proof.js",
+          "scripts/aliexpress-business-certification.js",
           "tests/unit/aliexpress-fulfillment-adapter.test.js",
           "tests/unit/procurement-execution-boundary.test.js"
         ],
         "limitations": [
-          "AliExpress AE-Dropshipper documents aliexpress.trade.buy.placeorder and aliexpress.trade.ds.order.get",
-          "execution remains disabled unless KOMERCE_ALIEXPRESS_AUTO_ORDER_ENABLED=1 or an explicit injected proof authorization is present",
-          "live account permission and real create/read-back are not yet proved",
+          "real AliExpress unpaid order creation and provider read-back are proved on the exact canonical supplier unit",
+          "execution remains guarded unless KOMERCE_ALIEXPRESS_AUTO_ORDER_ENABLED=1 or an explicit injected proof authorization is present",
           "AliExpress placeOrder exposes no Komerce-controlled native idempotency key in the current contract, so production automatic retry after an ambiguous create remains closed",
           "payment is not part of this capability"
         ]
