@@ -287,7 +287,9 @@ async function buildOrderPayload({ items, preflights, context = {} } = {}) {
     };
     const skuAttr = String(identity.payload?.sku_attr || '').trim();
     if (skuAttr) native.sku_attr = skuAttr;
-    if (pf.evidence.freight?.service_name) native.logistics_service_name = String(pf.evidence.freight.service_name);
+    const logisticsServiceName = String(pf.evidence.freight?.service_name || '').trim();
+    if (!logisticsServiceName) throw new Error('ALIEXPRESS_LOGISTICS_SERVICE_REQUIRED');
+    native.logistics_service_name = logisticsServiceName;
     return native;
   });
 
