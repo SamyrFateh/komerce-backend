@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, orders, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, purchasing-workspace, pricing-workspace, action-center, order-360, client-index, client-360, product-360, demo-order-flow
+ * @depends       canonical admin-context, pilotage, commerce, orders, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, purchasing-workspace, pricing-workspace, action-center, order-360, client-index, client-360, product-360, supplier-360, demo-order-flow
  * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/orders, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/workspaces/purchasing, /admin/workspaces/pricing, /admin/action-center, /admin/orders/:reference, /admin/clients, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
