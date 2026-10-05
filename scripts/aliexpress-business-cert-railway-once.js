@@ -202,13 +202,18 @@ async function ensureCanonicalSku(db) {
     [product.id, candidate.id]
   );
 
-  const supplierSku = '14:193#Black';
-  const supplierUnitRef = '12000056903119243';
-  const soi = {
-    provider: 'aliexpress',
-    version: 1,
-    payload: { sku_id: supplierUnitRef, sku_attr: '14:black' },
-  };
+  const sellableUnits = Array.isArray(candidate.normalized_source_contract?.sellable_units)
+    ? candidate.normalized_source_contract.sellable_units
+    : [];
+  const proofUnit = sellableUnits.find((unit) =>
+    unit?.supplier_order_identity?.provider === 'aliexpress'
+    && unit?.supplier_unit_ref
+    && unit?.supplier_sku
+  );
+  if (!proofUnit) throw new Error('ALIEXPRESS_CERT_PROOF_UNIT_MISSING');
+  const supplierSku = String(proofUnit.supplier_sku);
+  const supplierUnitRef = String(proofUnit.supplier_unit_ref);
+  const soi = proofUnit.supplier_order_identity;
   const proofSku = await db.query(`
     INSERT INTO product_skus (
       product_id, sku, stock, is_active, supplier_sku, source,
