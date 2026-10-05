@@ -18,6 +18,7 @@
 
 const preflight = require('./aliexpress-purchase-preflight');
 const connected = require('./connectors/aliexpress-connected-connector');
+const adapterContract = require('./supplier-fulfillment-adapter-contract');
 
 const provider = 'aliexpress';
 
@@ -218,9 +219,135 @@ async function evaluate({ db, row, identity, quantity, destination, context = {}
 
   return result(VERDICT.READY, {
     ...evidence,
+    execution_mode: 'api',
+    auto_order_ready: true,
     place_order_invoked: false,
     payment_invoked: false,
   });
+}
+
+function orderResultRoot(payload = {}) {
+  return payload?.result || payload?.resp_result?.result || payload;
+}
+
+function parseCreatedOrder(payload = {}) {
+  const root = orderResultRoot(payload);
+  const success = root?.is_success ?? root?.success ?? root?.result_success;
+  if (success === false) {
+    throw new Error(`ALIEXPRESS_PLACE_ORDER_REJECTED:${root?.error_msg || root?.error_message || root?.msg || 'unknown'}`);
+  }
+  const raw = root?.order_list?.number ?? root?.order_list ?? root?.order_id ?? root?.trade_id ?? null;
+  const ids = (Array.isArray(raw) ? raw : [raw])
+    .flatMap((value) => Array.isArray(value) ? value : [value])
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+  if (!ids.length) throw new Error('ALIEXPRESS_PLACE_ORDER_ID_MISSING');
+  return { supplier_order_ids: [...new Set(ids)] };
+}
+
+function parseOrderDetail(payload = {}) {
+  const root = orderResultRoot(payload);
+  const orderId = String(root?.order_id || root?.id || root?.trade_id || root?.orderId || '').trim() || null;
+  const status = String(root?.order_status || root?.status || root?.orderStatus || '').trim() || null;
+  const child = root?.child_order_list?.ae_child_order_info || root?.child_order_list || root?.child_orders || [];
+  const children = Array.isArray(child) ? child : (child ? [child] : []);
+  return { order_id: orderId, status, child_orders: children };
+}
+
+async function buildOrderPayload({ items, preflights, context = {} } = {}) {
+  const checked = adapterContract.validateItems(items);
+  if (!checked.ok) throw new Error('INVALID_ITEMS');
+  if (!Array.isArray(preflights) || preflights.length !== items.length) {
+    throw new Error('ALIEXPRESS_PREFLIGHTS_REQUIRED');
+  }
+  const destination = context.procurement_destination || context.destination;
+  if (!destination || !String(destination.address || '').trim()) {
+    throw new Error('ALIEXPRESS_PROCUREMENT_DESTINATION_REQUIRED');
+  }
+
+  const productItems = items.map((item, index) => {
+    const pf = preflights[index];
+    if (!pf?.ready || pf?.evidence?.provider !== provider || pf?.evidence?.auto_order_ready !== true) {
+      throw new Error('ALIEXPRESS_PREFLIGHT_REQUIRED');
+    }
+    const identity = item.identity;
+    if (!identity || identity.provider !== provider || identity.version !== 1) {
+      throw new Error('ALIEXPRESS_IDENTITY_REQUIRED');
+    }
+    const supplierProductId = String(
+      identity.payload?.product_id || pf.evidence.supplier_product_id || ''
+    ).trim();
+    if (!/^\d{5,20}$/.test(supplierProductId)) throw new Error('ALIEXPRESS_PRODUCT_ID_REQUIRED');
+
+    const native = {
+      product_count: item.quantity,
+      product_id: Number(supplierProductId),
+    };
+    const skuAttr = String(identity.payload?.sku_attr || '').trim();
+    if (skuAttr) native.sku_attr = skuAttr;
+    if (pf.evidence.freight?.service_name) native.logistics_service_name = String(pf.evidence.freight.service_name);
+    return native;
+  });
+
+  return {
+    provider,
+    native: {
+      param_place_order_request4_open_api_d_t_o: JSON.stringify({
+        logistics_address: { ...destination },
+        product_items: productItems,
+      }),
+    },
+    expected: {
+      quantity: items.reduce((sum, item) => sum + item.quantity, 0),
+      product_count: items.length,
+    },
+  };
+}
+
+async function placeOrder(payload, context = {}) {
+  const env = context.env || process.env;
+  const authorized = context.aliexpress_execution_authorized === true
+    || env.KOMERCE_ALIEXPRESS_AUTO_ORDER_ENABLED === '1';
+  if (!authorized) throw new Error('ALIEXPRESS_EXECUTION_NOT_AUTHORIZED');
+  if (!payload || payload.provider !== provider || !payload.native) {
+    throw new Error('ALIEXPRESS_EXECUTION_PAYLOAD_INVALID');
+  }
+
+  const api = context.aliexpressConnected || connected;
+  const created = parseCreatedOrder(await api.invokeTop(
+    preflight.METHODS.PLACE_ORDER,
+    payload.native,
+    { env }
+  ));
+
+  const details = [];
+  for (const supplierOrderId of created.supplier_order_ids) {
+    // Read-back is mandatory: creation alone is not an execution proof.
+    // eslint-disable-next-line no-await-in-loop
+    const detailPayload = await api.invokeTop(
+      preflight.METHODS.ORDER_DETAIL,
+      { order_id: supplierOrderId },
+      { env }
+    );
+    const detail = parseOrderDetail(detailPayload);
+    if (detail.order_id && detail.order_id !== supplierOrderId) {
+      throw new Error('ALIEXPRESS_ORDER_READBACK_ID_MISMATCH');
+    }
+    details.push({ ...detail, order_id: detail.order_id || supplierOrderId });
+  }
+
+  return {
+    provider,
+    supplier_order_id: created.supplier_order_ids[0],
+    supplier_order_ids: created.supplier_order_ids,
+    commitment_verdict: 'created_unpaid',
+    execution_recovery: 'CREATED_NOW_NO_NATIVE_IDEMPOTENCY',
+    readback_status: details[0]?.status || null,
+    readback_orders: details,
+    payment_invoked: false,
+    confirmation_invoked: false,
+    tracking_url: null,
+  };
 }
 
 module.exports = {
@@ -229,4 +356,9 @@ module.exports = {
   resolveSendGoodsCountry,
   classify,
   evaluate,
+  orderResultRoot,
+  parseCreatedOrder,
+  parseOrderDetail,
+  buildOrderPayload,
+  placeOrder,
 };
