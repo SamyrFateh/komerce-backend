@@ -203,7 +203,7 @@ describe('GENERATORS.supplier_payment_review', () => {
     const { GENERATORS } = loadService();
     expect(await GENERATORS.supplier_payment_review()).toEqual({ generated: 2, truncated: false });
 
-    expect(mockSupplierPaymentReview).toHaveBeenCalledWith({ limit: 50 });
+    expect(mockSupplierPaymentReview).toHaveBeenCalledWith({ limit: 50, include_internal_identity: true });
     expect(mockQuery.mock.calls[0][1]).toEqual(expect.arrayContaining([
       'supplier_payment_review',
       'warning',
