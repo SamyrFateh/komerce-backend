@@ -41,8 +41,9 @@ jest.mock('../../utils/categories-cache', () => ({
   invalidateCategoriesCache: (...args) => mockInvalidateCategoriesCache(...args),
 }));
 
+const mockRecordTaxonomyMutation = jest.fn().mockResolvedValue({ id: 'audit-1' });
 jest.mock('../../services/catalog-taxonomy-audit', () => ({
-  recordTaxonomyMutation: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+  recordTaxonomyMutation: (...args) => mockRecordTaxonomyMutation(...args),
 }));
 
 const categoriesRouter = require('../../routes/admin-boutique-categories');
@@ -202,6 +203,17 @@ describe('POST /api/admin/boutique-categories — création', () => {
     expect(params).toEqual([
       'phones', 'Téléphones', 'Téléphones', '📦', null, [], null, 99, true, true, true, null, null, null,
     ]);
+    expect(mockRecordTaxonomyMutation).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        action: 'CATEGORY_CREATED',
+        actor: expect.objectContaining({
+          id: 'admin-1',
+          role: 'admin',
+          source_surface: 'legacy_admin_taxonomy',
+        }),
+      })
+    );
   });
 
   it('short_label fourni → utilisé au lieu du fallback sur label', async () => {
