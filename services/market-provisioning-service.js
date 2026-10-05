@@ -6,13 +6,16 @@
  * @criticality   high
  * @inputs        central admin, market identity, central referent, first operating lead
  * @outputs       PROVISIONING market, ACTIVE assignment, first lead invitation/membership, readiness
- * @depends       services/market-lifecycle-service.js, services/market-delegation-service.js, services/market-operator-provisioning.js, services/market-delegation-team-service.js, services/central-authority.js, services/market-control-plane.js
+ * @depends       services/market-lifecycle-service.js, services/market-delegation-service.js, services/market-operator-provisioning.js, services/market-delegation-team-service.js, services/market-scope-projector.js, services/market-cash-control-policy-service.js, services/market-payment-provider-config-service.js, services/relais-mutation-service.js, services/central-authority.js, services/market-control-plane.js
  * @used-by       routes/admin-market-control-plane.js
  * @db-read       central authority grant tables
  * @db-write      none
  * @db-write-via:market-lifecycle-service markets
  * @db-write-via:market-delegation-service market_operating_assignments, assignment_capability_ceiling, market_delegation_audit
  * @db-write-via:market-delegation-team-service market_team_invitations, assignment_memberships, membership_capabilities
+ * @db-write-via:market-cash-control-policy-service market_cash_control_policies
+ * @db-write-via:market-payment-provider-config-service market_payment_providers
+ * @db-write-via:relais-mutation-service relais
  * @db-txn        caller-owned
  * @doctrine      compose_existing_primitives, provisioning_is_not_activation, readiness_precedes_activation
  * @impact-areas  market, market-delegation, market-control-plane, authorization
@@ -24,6 +27,10 @@ const { createProvisioningMarket, transitionMarketLifecycle } = require('./marke
 const delegation = require('./market-delegation-service');
 const { targetCapabilitiesForScope } = require('./market-operator-provisioning');
 const { inviteTeamMember } = require('./market-delegation-team-service');
+const { projectAssignment } = require('./market-scope-projector');
+const { initializeProvisioningCashPolicy } = require('./market-cash-control-policy-service');
+const { configureProvisioningProvider } = require('./market-payment-provider-config-service');
+const relaisMutation = require('./relais-mutation-service');
 const centralAuthority = require('./central-authority');
 const controlPlane = require('./market-control-plane');
 
@@ -60,6 +67,9 @@ async function provisionMarket(executor, {
   centralReferentUserId,
   financialLimits = {},
   lead = {},
+  paymentProvider = null,
+  cashPolicy = null,
+  initialRelais = null,
   correlationId = null,
 }) {
   if (!executor || typeof executor.query !== 'function') throw new TypeError('market-provisioning-service: executor.query requis');
@@ -114,8 +124,56 @@ async function provisionMarket(executor, {
     channel: lead.channel || (lead.phone ? 'WHATSAPP' : 'EMAIL'),
     grantsOperatingLead: true,
     capabilities,
+    capabilityLimits: financialLimits,
     correlationId,
   });
+
+  const initialPaymentProvider = paymentProvider
+    ? await configureProvisioningProvider(executor, {
+        marketId: market.id,
+        provider: paymentProvider.provider,
+        currency: paymentProvider.currency || market.currency,
+        priority: paymentProvider.priority || 10,
+      })
+    : null;
+
+  const initialCashPolicy = cashPolicy
+    ? await initializeProvisioningCashPolicy(executor, {
+        assignmentId: assignment.id,
+        marketId: market.id,
+        actorUserId,
+        payload: cashPolicy,
+        correlationId,
+      })
+    : null;
+
+  const initialRelay = initialRelais
+    ? await relaisMutation.createRelais(executor, {
+        marketId: market.id,
+        name: initialRelais.name,
+        agentName: initialRelais.agent_name,
+        phone: initialRelais.phone,
+        address: initialRelais.address,
+        zone: initialRelais.zone,
+        hours: initialRelais.hours,
+        island: initialRelais.island,
+        islandCode: initialRelais.island_code,
+        latitude: initialRelais.latitude,
+        longitude: initialRelais.longitude,
+        photoUrl: initialRelais.photo_url,
+      })
+    : null;
+
+  if (initialRelay) {
+    await delegation.audit(executor, {
+      actorUserId,
+      marketId: market.id,
+      assignmentId: assignment.id,
+      action: 'NETWORK_RELAIS_PROVISIONED',
+      after: initialRelay,
+      correlationId,
+    });
+  }
 
   const control = await controlPlane.getControlPlane(executor, market.code);
   return {
@@ -123,6 +181,9 @@ async function provisionMarket(executor, {
     assignment_id: assignment.id,
     central_referent_user_id: centralReferentUserId,
     lead: leadResult,
+    initial_payment_provider: initialPaymentProvider,
+    initial_cash_policy: initialCashPolicy,
+    initial_relais: initialRelay,
     readiness: control.readiness,
     gaps: control.gaps,
   };
@@ -133,9 +194,10 @@ async function setMarketLifecycle(executor, {
   actorUserId, marketCode, targetStatus, correlationId = null,
 }) {
   const target = String(targetStatus || '').trim().toUpperCase();
+  let activationControl = null;
   if (target === 'ACTIVE') {
-    const control = await controlPlane.getControlPlane(executor, marketCode);
-    if (!control.readiness.ready_for_activation) {
+    activationControl = await controlPlane.getControlPlane(executor, marketCode);
+    if (!activationControl.readiness.ready_for_activation) {
       throw provisionError(
         'MARKET_NOT_READY_FOR_ACTIVATION',
         'Activation refusée : readiness plate-forme et exploitation doivent être vertes.',
@@ -154,6 +216,9 @@ async function setMarketLifecycle(executor, {
       after: { lifecycle_status: result.after.lifecycle_status, is_active: result.after.is_active },
       correlationId,
     });
+  }
+  if (target === 'ACTIVE' && activationControl?.assignment?.id) {
+    await projectAssignment(executor, activationControl.assignment.id);
   }
   return result;
 }

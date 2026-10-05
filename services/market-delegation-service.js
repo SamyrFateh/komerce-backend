@@ -441,11 +441,11 @@ async function assertGrantAllowed(db, { assignmentId, capabilities, actorUserId 
   return { requested, grantorMembership };
 }
 
-async function addMembership(executor, { assignmentId, userId, actorUserId = null, capabilities = [], actorIsCentral = false, correlationId = null }) {
+async function addMembership(executor, { assignmentId, userId, actorUserId = null, capabilities = [], capabilityLimits = {}, actorIsCentral = false, correlationId = null }) {
   const db = requireExecutor(executor);
   const existing = await activeMembershipForUser(db, assignmentId, userId);
   if (existing) {
-    await grantMembershipCapabilities(db, { membershipId: existing.id, capabilities, actorUserId, actorIsCentral, correlationId });
+    await grantMembershipCapabilities(db, { membershipId: existing.id, capabilities, capabilityLimits, actorUserId, actorIsCentral, correlationId });
     return existing;
   }
 
@@ -478,12 +478,12 @@ async function addMembership(executor, { assignmentId, userId, actorUserId = nul
      RETURNING *`, [assignmentId, userId, actorUserId]
   );
   const membership = rows[0];
-  await grantMembershipCapabilities(db, { membershipId: membership.id, capabilities, actorUserId, actorIsCentral, correlationId });
+  await grantMembershipCapabilities(db, { membershipId: membership.id, capabilities, capabilityLimits, actorUserId, actorIsCentral, correlationId });
   await audit(db, { actorUserId, assignmentId, membershipId: membership.id, action: 'MEMBERSHIP_CREATED', after: { user_id: userId }, correlationId });
   return membership;
 }
 
-async function grantMembershipCapabilities(executor, { membershipId, capabilities, actorUserId = null, actorIsCentral = false, correlationId = null }) {
+async function grantMembershipCapabilities(executor, { membershipId, capabilities, capabilityLimits = {}, actorUserId = null, actorIsCentral = false, correlationId = null }) {
   const db = requireExecutor(executor);
   const { rows: targetRows } = await db.query(
     `SELECT id, assignment_id FROM assignment_memberships
@@ -504,13 +504,16 @@ async function grantMembershipCapabilities(executor, { membershipId, capabilitie
 
   for (const capability of requested) {
     const { rowCount } = await db.query(
-      `INSERT INTO membership_capabilities (membership_id, capability, granted_by)
-       SELECT $1::uuid,$2,$3::uuid
+      `INSERT INTO membership_capabilities (membership_id, capability, granted_by, limit_amount)
+       SELECT $1::uuid,$2,$3::uuid,$4
        WHERE NOT EXISTS (
          SELECT 1 FROM membership_capabilities
           WHERE membership_id=$1::uuid AND capability=$2 AND revoked_at IS NULL
        )`,
-      [membershipId, capability, actorUserId]
+      [membershipId, capability, actorUserId,
+        Object.prototype.hasOwnProperty.call(capabilityLimits || {}, capability)
+          ? Number(capabilityLimits[capability])
+          : null]
     );
     if (rowCount) {
       await audit(db, { actorUserId, assignmentId: target.assignment_id, membershipId, capability, action: 'CAPABILITY_GRANTED', correlationId });
@@ -682,13 +685,13 @@ async function setCeilingAmountLimits(executor, {
   const db = requireExecutor(executor);
   const entries = Object.entries(limits || {}).sort(([a],[b]) => a.localeCompare(b));
   const { rows: requiredRows } = await db.query(
-    `SELECT capability
+    `SELECT acc.capability
        FROM assignment_capability_ceiling acc
        JOIN capability_registry cr ON cr.capability=acc.capability
       WHERE acc.assignment_id=$1::uuid
         AND acc.revoked_at IS NULL
         AND cr.amount_bearing=TRUE
-      ORDER BY capability`,
+      ORDER BY acc.capability`,
     [assignmentId]
   );
   const required = requiredRows.map(row => row.capability);

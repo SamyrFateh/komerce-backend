@@ -103,6 +103,7 @@
     { path: '/admin/suppliers',         view: 'SuppliersView',         label: 'Fournisseurs',          icon: '🏭', shell: 'bo', section: 'FINANCE', roles: ['admin','sourcing'] },
 
     // ══ BO — Config ══
+    { path: '/admin/markets',           view: 'MarketsView',           label: 'Marchés',               icon: '🌍', shell: 'bo', section: 'CONFIG', roles: ['admin'] },
     { path: '/admin/settings',          view: 'SettingsView',          label: 'Paramètres',            icon: '⚙️', shell: 'bo', section: 'CONFIG', roles: ['admin'] },
     { path: '/admin/simulator',         view: 'SimulatorView',         label: 'Simulateur',            icon: '🧪', shell: 'bo', section: 'CONFIG', roles: ['admin'] },
     { path: '/admin/shared-carts',      view: 'SharedCartsView',       label: 'Paniers partagés',      icon: '🛒', shell: 'bo', section: 'CONFIG', roles: ['admin','support'] },

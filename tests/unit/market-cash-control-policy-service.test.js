@@ -134,3 +134,9 @@ describe('market cash control policy', () => {
     expect(error.code).toBe('CASH_POLICY_FIELD_FORBIDDEN');
   });
 });
+
+
+test('provisioning writer remains available for Market Control Plane H', () => {
+  const { initializeProvisioningCashPolicy } = require('../../services/market-cash-control-policy-service');
+  expect(typeof initializeProvisioningCashPolicy).toBe('function');
+});

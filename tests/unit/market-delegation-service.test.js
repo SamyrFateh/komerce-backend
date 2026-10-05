@@ -9,3 +9,12 @@ describe('market-delegation-service — provisioning writers', () => {
     expect(typeof delegation.setCeilingAmountLimits).toBe('function');
   });
 });
+
+
+test('explicit member limits are part of the grant writer contract', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '..', '..', 'services', 'market-delegation-service.js'), 'utf8');
+  expect(source).toMatch(/capabilityLimits = \{\}/);
+  expect(source).toMatch(/membership_capabilities \(membership_id, capability, granted_by, limit_amount\)/);
+});

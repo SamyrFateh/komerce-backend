@@ -437,6 +437,27 @@
     );
   }
 
+  // ── Market Control Plane ────────────────────────────────────────────────
+  function getMarkets() {
+    return fetchJSON(`${BASE_API}/admin/markets`);
+  }
+  function getMarketCentralAuthority() {
+    return fetchJSON(`${BASE_API}/admin/markets/central-authority`);
+  }
+  function getMarketControlPlane(code) {
+    return fetchJSON(`${BASE_API}/admin/markets/${encodeURIComponent(code)}/control-plane`);
+  }
+  function provisionMarket(body) {
+    return fetchMutation(`${BASE_API}/admin/markets`, 'POST', body);
+  }
+  function setMarketLifecycle(code, status) {
+    return fetchMutation(
+      `${BASE_API}/admin/markets/${encodeURIComponent(code)}/lifecycle`,
+      'POST',
+      { status }
+    );
+  }
+
   // ── Lot 6 — Settings ──────────────────────────────────────────────────────
 
   /** Toutes les règles groupées par catégorie. Retourne { categories } */
@@ -640,6 +661,13 @@
     setSourcingSourceAutopilot,
     setSourcingSourceCapability,
 
+
+    // Market Control Plane
+    getMarkets,
+    getMarketCentralAuthority,
+    getMarketControlPlane,
+    provisionMarket,
+    setMarketLifecycle,
 
     // Lot 6 — Settings (9)
     getSettings,

@@ -10,7 +10,7 @@ describe('Market Control Plane — activation gate', () => {
   test('ACTIVE requires both readiness verdicts and lifecycle changes are audited', () => {
     const source = fs.readFileSync(path.join(ROOT, 'services', 'market-provisioning-service.js'), 'utf8');
     expect(source).toMatch(/target === 'ACTIVE'/);
-    expect(source).toMatch(/control\.readiness\.ready_for_activation/);
+    expect(source).toMatch(/activationControl\.readiness\.ready_for_activation/);
     expect(source).toMatch(/MARKET_NOT_READY_FOR_ACTIVATION/);
     expect(source).toMatch(/transitionMarketLifecycle/);
     expect(source).toMatch(/MARKET_LIFECYCLE_CHANGED/);
