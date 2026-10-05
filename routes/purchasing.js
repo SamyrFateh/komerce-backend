@@ -65,6 +65,7 @@ const { resolveCanonicalMappingMoney } = require('../services/purchasing-canonic
 const { processReceive }    = require('../services/purchasing-receive-service');
 const { deleteSupplier, confirmPurchaseOrder, cancelPurchaseOrder } = require('../services/purchasing-admin-service');
 const grouped = require('../services/purchasing-grouped-service');
+const { getPurchaseOrderDetail } = require('../services/purchasing-order-detail');
 const engagement = require('../services/purchasing-engagement-service');
 
 const guard = [authenticate, requireRole(['admin'])];
@@ -120,7 +121,7 @@ router.get('/open-lines', ...guard, async (req, res, next) => {
 });
 
 router.get('/po/:po_id', ...guard, async (req, res, next) => {
-  try { res.json(await grouped.getGroupedPurchaseOrder(req.params.po_id)); } catch (err) { groupedError(err, res, next); }
+  try { res.json(await getPurchaseOrderDetail(req.params.po_id)); } catch (err) { groupedError(err, res, next); }
 });
 
 router.post('/po/prepare', ...guard, async (req, res, next) => {
