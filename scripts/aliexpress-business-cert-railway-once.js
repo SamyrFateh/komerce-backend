@@ -113,6 +113,17 @@ async function ensureCanonicalSku(db) {
   const { promoteCandidate } = require('../services/sourcing-candidate-actions');
   const candidate = rows[0];
   const verdict = evaluateSourcingCandidateOutcome(candidate);
+  console.log(`ALIEXPRESS_CERT_CANDIDATE=${JSON.stringify({
+    id: candidate.id,
+    state: candidate.state,
+    supplier_product_id: candidate.supplier_product_id,
+    sourcing_decision: candidate.scan_result?.sourcing_decision || null,
+    eligibility: candidate.scan_result?.eligibility || null,
+    recommended_price_kmf: candidate.scan_result?.recommended_price_kmf ?? null,
+    test_price_kmf: candidate.scan_result?.test_price_kmf ?? null,
+    source_contract_version: candidate.normalized_source_contract?.schema_version || null,
+    verdict,
+  })}`);
   if (!(verdict?.outcome_valid && verdict?.sourcing_certified)) {
     throw new Error(`ALIEXPRESS_CERT_NOT_SOURCING_CERTIFIED:${verdict?.outcome || 'unknown'}`);
   }
