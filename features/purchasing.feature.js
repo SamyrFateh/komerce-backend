@@ -47,6 +47,7 @@ module.exports = {
       'complétude d\'achat après réception Hub (PR 7) : purchasing-completion-service passe une PO regroupée en hub_received quand toutes ses lignes non annulées sont reçues et une commande ordered en preparation (puis SCAN 3) quand chaque item non LOCAL_STOCK est couvert ET reçu, appelée après COMMIT par hub-operations, jamais bloquante (alerte purchasing_completion_failed) ; deleteSupplier annule les lignes ouvertes et refuse les PO en brouillon ; signaux lus sur les lignes',
       'Supplier money canonique : pour une ligne SKU/SOI exacte, la PO snapshotte supplier_unit_price + supplier_currency depuis la Canonical Unit ; aucun prix natif non-AED ne peut être écrit dans unit_price_aed',
       'Golden E2E achat provider + full-chain : chaque capacité fournisseur est qualifiée P0→P4 séparément, puis la chaîne B2C paid → purchase_line/PO → provider evidence → coût B2B → compta B2B/B2C scopée → rapprochement est prouvée sans gate de confirmation humaine Komerce',
+      'Réconciliation fournisseur canonique : ORDER, PAYMENT et FULFILLMENT restent trois scopes distincts ; chaque comparaison expected → observed → evidence produit uniquement MATCHED, NOT_FOUND, MISMATCH, AMBIGUOUS ou PENDING, fail-closed et sans interprétation de statut provider dans le coeur',
     ],
     out: [
       'cycle de vie de la commande cliente elle-même — orders reste seul propriétaire de order-status-machine.js ' +
@@ -64,6 +65,7 @@ module.exports = {
     'docs/doctrine/DOCTRINE_PURCHASING_PROVIDER_GOLDEN_E2E.md',
     'docs/doctrine/DOCTRINE_SUPPLIER_EXECUTION_PERSISTENCE.md',
     'docs/doctrine/DOCTRINE_SUPPLIER_PAYMENT_FACT.md',
+    'docs/doctrine/DOCTRINE_SUPPLIER_RECONCILIATION.md',
     'docs/certification/SUPPLIER_EXECUTION_PROOF_MATRIX.md',
     'docs/doctrine/DOCTRINE_PURCHASING_CAPABILITY_DRIVEN_EXECUTION.md',
     'docs/allegro-sandbox.md',
@@ -86,6 +88,7 @@ module.exports = {
       'services/supplier-payment-proof-persistence.js',
       'services/supplier-execution-certification.js',
       'services/supplier-execution-persistence.js',
+      'services/suppliers/supplier-reconciliation-contract.js',
       'services/suppliers/execution-adapter-registry.js',
       'services/purchasing-canonical-money.js',
       'services/suppliers/purchasing-validators.js',
@@ -166,6 +169,7 @@ module.exports = {
       'tests/integration/supplier-payment-proofs-postgres.test.js',
       'tests/unit/supplier-execution-persistence.test.js',
       'tests/unit/supplier-execution-certification.test.js',
+      'tests/unit/supplier-reconciliation-contract.test.js',
       'tests/unit/purchasing-engagement-service.test.js',
       'tests/unit/purchasing-completion-service.test.js',
       'tests/unit/purchasing-grouped-service.test.js',
