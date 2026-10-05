@@ -248,6 +248,8 @@ module.exports = {
       'documents',
       'notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)',
       'purchasing (répare les commandes sans purchase order via services/repair-ordered-without-purchase-orders.js ; Order 360 consomme en lecture seule les PO liées ; Finance globale consomme en lecture seule la file canonique de paiements fournisseur à revoir, sans ventilation marché)',
+      'supplier-connectivity (Supplier 360 normalise suppliers.platform via provider-authority avant toute projection de preuve ; aucune activation runtime n est dérivée)',
+      'external-provider-contracts (Supplier 360 lit le registre de certifications capability en projection observationnelle : availability, environnement, P-level, evidence et limitations ; aucune capability métier n est créée)',
       // Déclarations FF-C1 (2026-07-29) — arêtes réelles, dashboard est
       // business-transversal (arbitrage 2026-07-29), consommations métier ordinaires.
       'business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)',
