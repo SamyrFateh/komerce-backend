@@ -4,7 +4,7 @@
  * @domain        admin-dashboard
  * @layer         ui-orchestration
  * @criticality   high
- * @inputs        authenticated_admin, purchasing_grouped_api_projection
+ * @inputs        authenticated_admin, purchasing_grouped_api_projection, supplier_execution_projection
  * @outputs       canonical_purchasing_workspace_dom, authorized_purchasing_action_requests
  * @depends       canonical primitives
  * @used-by       canonical admin entrypoint
@@ -365,6 +365,125 @@
     slot.appendChild(form);
   }
 
+  function formatExactAmount(amount, currency) {
+    if (amount == null || amount === '') return '—';
+    return `${String(amount)}${currency ? ` ${currency}` : ''}`;
+  }
+
+  function formatBoolean(value) {
+    if (value == null) return '—';
+    return value ? 'Oui' : 'Non';
+  }
+
+  function renderExecutionTable(doc, parent, title, columns, rows, values, dataName) {
+    if (!rows.length) return;
+    const block = doc.createElement('div');
+    block.className = 'kmc-purchasing-execution-block';
+    block.setAttribute('data-purchasing-execution-block', dataName);
+    block.appendChild(text(doc, 'h4', 'kmc-purchasing-execution-title', title));
+    const table = doc.createElement('table');
+    table.className = 'kmc-workspace-table kmc-purchasing-execution-table';
+    table.innerHTML = `<thead><tr>${columns.map((column) => `<th>${column}</th>`).join('')}</tr></thead>`;
+    const tbody = doc.createElement('tbody');
+    rows.forEach((row) => {
+      const tr = doc.createElement('tr');
+      values(row).forEach((value) => tr.appendChild(td(doc, value)));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    block.appendChild(wrapTable(doc, table));
+    parent.appendChild(block);
+  }
+
+  function renderSupplierExecution(doc, slot, execution) {
+    const source = execution || {};
+    const orders = source.orders || [];
+    const orderLines = source.order_lines || [];
+    const groups = source.groups || [];
+    const groupMembers = source.group_members || [];
+    const payments = source.payments || [];
+    const proofs = source.proofs || [];
+    const events = source.events || [];
+    const total = orders.length + orderLines.length + groups.length + groupMembers.length + payments.length + proofs.length + events.length;
+
+    const section = doc.createElement('div');
+    section.className = 'kmc-purchasing-execution';
+    section.setAttribute('data-purchasing-execution', '');
+    section.appendChild(text(doc, 'h3', 'kmc-purchasing-execution-heading', 'Exécution fournisseur'));
+    section.appendChild(text(
+      doc,
+      'p',
+      'kmc-workspace-subtitle',
+      'Faits persistés par Purchasing : ordres, liens, paiements, preuves et événements. Les statuts sont affichés sans interprétation locale.'
+    ));
+
+    if (!total) {
+      section.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune exécution fournisseur persistée pour cette commande.'));
+      slot.appendChild(section);
+      return;
+    }
+
+    renderExecutionTable(doc, section, 'Ordres fournisseur',
+      ['Provider', 'Commande fournisseur', 'Code', 'Statut provider', 'Créé'],
+      orders,
+      (row) => [row.provider, row.supplier_order_id, row.supplier_order_code, row.provider_status, row.created_at],
+      'orders');
+
+    renderExecutionTable(doc, section, 'Liens ordre ↔ ligne',
+      ['Ordre', 'Ligne d’achat', 'Quantité'],
+      orderLines,
+      (row) => [shortId(row.supplier_execution_order_id), shortId(row.purchase_line_id), row.quantity],
+      'order-lines');
+
+    renderExecutionTable(doc, section, 'Groupes fournisseur',
+      ['Provider', 'Commande parente', 'Réf. paiement', 'Statut provider', 'Statut paiement'],
+      groups,
+      (row) => [row.provider, row.supplier_parent_order_id, row.payment_ref, row.provider_status, row.payment_status],
+      'groups');
+
+    renderExecutionTable(doc, section, 'Membres des groupes',
+      ['Groupe', 'Ordre'],
+      groupMembers,
+      (row) => [shortId(row.supplier_execution_group_id), shortId(row.supplier_execution_order_id)],
+      'group-members');
+
+    renderExecutionTable(doc, section, 'Paiements fournisseur',
+      ['Provider', 'Réf. paiement', 'Attendu', 'Observé', 'Statut', 'Rapprochement', 'Débit vérifié'],
+      payments,
+      (row) => [
+        row.provider,
+        row.payment_ref || row.payment_execution_key,
+        formatExactAmount(row.expected_amount, row.currency),
+        formatExactAmount(row.observed_amount, row.currency),
+        row.status,
+        row.reconciliation_status,
+        formatBoolean(row.real_debit_verified),
+      ],
+      'payments');
+
+    renderExecutionTable(doc, section, 'Preuves de paiement',
+      ['Provider', 'Source', 'Référence', 'Montant observé', 'Débit confirmé', 'Sandbox', 'Simulée'],
+      proofs,
+      (row) => [
+        row.provider,
+        row.proof_source,
+        row.proof_ref || row.payment_ref || row.provider_order_id,
+        formatExactAmount(row.observed_amount, row.currency),
+        formatBoolean(row.debit_confirmed),
+        formatBoolean(row.sandbox),
+        formatBoolean(row.simulated),
+      ],
+      'proofs');
+
+    renderExecutionTable(doc, section, 'Événements d’exécution',
+      ['Provider', 'Opération', 'Résultat', 'Request ID', 'Code provider', 'Créé'],
+      events,
+      (row) => [row.provider, row.operation, row.outcome, row.provider_request_id, row.provider_code, row.created_at],
+      'events');
+
+    slot.appendChild(section);
+  }
+
   function renderPurchaseOrder(rootNode, ui, doc, detail, context) {
     const po = detail.purchase_order;
     const slot = createSection(
@@ -414,6 +533,7 @@
     });
     table.appendChild(tbody);
     slot.appendChild(wrapTable(doc, table));
+    renderSupplierExecution(doc, slot, detail.supplier_execution);
 
     const bar = doc.createElement('div');
     bar.className = 'kmc-workspace-section-actions';
