@@ -162,7 +162,7 @@ try {
   // Test seam: lets logger tests observe Pino output without monkey-patching
   // process.stdout/fs.write, which breaks when Jest workers run in parallel.
   Object.defineProperty(logger, 'createForTest', {
-    value: (destination) => createPinoLogger(pino, destination),
+    value: (destination) => decorateLogger(createPinoLogger(pino, destination)),
     enumerable: false,
   });
 
@@ -189,39 +189,38 @@ try {
   logger = makeConsoleLogger();
 }
 
-function forModule(module, extra = {}) {
-  return logger.child({ module, ...extra });
+function decorateLogger(instance) {
+  instance.forModule = (module, extra = {}) => instance.child({ module, ...extra });
+  instance.httpLogger = (req, res, next) => {
+    const start = Date.now();
+    const child = instance.forModule('http', {
+      request_id: req.id || req.headers['x-request-id'],
+    });
+
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      const level = res.statusCode >= 500 ? 'error'
+                 : res.statusCode >= 400 ? 'warn'
+                 : 'info';
+
+      child[level](
+        {
+          method: req.method,
+          url: req.originalUrl,
+          status: res.statusCode,
+          duration_ms: duration,
+          ip: req.ip,
+          user_id: req.user?.id || null,
+        },
+        `${req.method} ${req.originalUrl} → ${res.statusCode} (${duration}ms)`
+      );
+    });
+
+    next();
+  };
+  return instance;
 }
 
-function httpLogger(req, res, next) {
-  const start = Date.now();
-  const child = forModule('http', {
-    request_id: req.id || req.headers['x-request-id'],
-  });
-
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    const level = res.statusCode >= 500 ? 'error'
-               : res.statusCode >= 400 ? 'warn'
-               : 'info';
-
-    child[level](
-      {
-        method: req.method,
-        url: req.originalUrl,
-        status: res.statusCode,
-        duration_ms: duration,
-        ip: req.ip,
-        user_id: req.user?.id || null,
-      },
-      `${req.method} ${req.originalUrl} → ${res.statusCode} (${duration}ms)`
-    );
-  });
-
-  next();
-}
-
-logger.forModule = forModule;
-logger.httpLogger = httpLogger;
+logger = decorateLogger(logger);
 
 module.exports = logger;
