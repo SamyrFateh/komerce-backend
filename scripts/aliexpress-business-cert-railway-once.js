@@ -86,7 +86,7 @@ async function copyEncryptedOauth(target) {
 }
 async function ensureCanonicalSku(db) {
   const existing = await db.query(`
-    SELECT ps.id, ps.product_id, p.product_ref
+    SELECT ps.id, ps.product_id, ps.supplier_sku, ps.supplier_unit_ref, ps.supplier_order_identity, p.product_ref
       FROM product_skus ps
       JOIN products p ON p.id=ps.product_id
      WHERE ps.is_active=TRUE
@@ -99,7 +99,7 @@ async function ensureCanonicalSku(db) {
     const linkage = require('../services/sourcing-catalog-product-linkage');
     const canonicalProductIds = await linkage.findCanonicalProductIdsForCatalogProduct(row.product_id, db.query.bind(db));
     const trace = await db.query(`
-      SELECT sc.id AS candidate_id, sc.import_id,
+      SELECT sc.id AS candidate_id, sc.import_id, sc.normalized_source_contract,
              (SELECT COUNT(*)::int FROM sourcing_captures c
                WHERE NULLIF(c.stats->>'import_id','')::uuid = sc.import_id) AS captures,
              (SELECT COUNT(*)::int
@@ -138,6 +138,36 @@ async function ensureCanonicalSku(db) {
       const shadowResolver = require('../services/sourcing-shadow-resolution-service');
       const resolution = await shadowResolver.resolveCaptureShadow(capture.rows[0].capture_id);
       console.log(`ALIEXPRESS_CERT_SHADOW_RESOLUTION=${JSON.stringify(resolution)}`);
+    }
+
+    const units = Array.isArray(trace.rows[0]?.normalized_source_contract?.sellable_units)
+      ? trace.rows[0].normalized_source_contract.sellable_units
+      : [];
+    const canonicalUnit = units.find((unit) =>
+      String(unit?.supplier_unit_ref || '') === String(row.supplier_unit_ref || '')
+      && unit?.supplier_order_identity?.provider === 'aliexpress'
+    );
+    if (canonicalUnit) {
+      const desiredIdentity = canonicalUnit.supplier_order_identity;
+      if (JSON.stringify(row.supplier_order_identity || {}) !== JSON.stringify(desiredIdentity)) {
+        await db.query(`
+          UPDATE product_skus
+             SET supplier_sku=$2,
+                 supplier_unit_ref=$3,
+                 supplier_order_identity=$4::jsonb,
+                 updated_at=now()
+           WHERE id=$1
+        `, [
+          row.id,
+          String(canonicalUnit.supplier_sku),
+          String(canonicalUnit.supplier_unit_ref),
+          JSON.stringify(desiredIdentity),
+        ]);
+        row.supplier_sku = String(canonicalUnit.supplier_sku);
+        row.supplier_unit_ref = String(canonicalUnit.supplier_unit_ref);
+        row.supplier_order_identity = desiredIdentity;
+        console.log('ALIEXPRESS_CERT_EXISTING_SKU_RECONCILED=true');
+      }
     }
     return row;
   }
