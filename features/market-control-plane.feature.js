@@ -48,6 +48,7 @@ module.exports = {
       'GET /api/admin/markets/central-authority : titulaires actifs des cinq autorisations centrales explicites (dashboard, catalog, decision_signal, pricing, sourcing) et autorité déclarée de chaque capability de groupe',
       'GET /api/admin/markets/:marketCode/control-plane : affectation, équipe et capacités, plafond, fournisseurs de paiement, politique de caisse, relais actifs, écarts',
       'POST /api/admin/markets/:marketCode/lifecycle : transition lifecycle centrale ; ACTIVE exige readiness plate-forme ET exploitation vertes',
+      'POST /api/admin/markets/:marketCode/reprovision : reconstruit la configuration opérationnelle d’un Market ID historique déjà remis en PROVISIONING, sans recréer son identité',
       'rapport d’écarts calculé (computeGaps) + deux verdicts readiness indépendants : platform et operations ; MARKET_INACTIVE n’est pas un blocker de readiness pendant PROVISIONING',
     ],
     out: [
@@ -73,6 +74,7 @@ module.exports = {
       'tests/unit/admin-market-control-plane-routes.test.js',
       'tests/unit/central-authority.test.js',
       'tests/unit/market-provisioning-service.test.js',
+      'tests/unit/market-reprovisioning-service.test.js',
       'tests/unit/market-control-plane-readiness.test.js',
       'tests/unit/market-control-plane-lifecycle-gate.test.js',
       'tests/e2e-api/market-control-plane.provision-to-first-order.e2e.test.js',
@@ -99,8 +101,8 @@ module.exports = {
 
   security: {
     status: 'CONFIRMED_PROTECTED',
-    authedRoutesDetected: 5,
-    totalRoutes: 5,
+    authedRoutesDetected: 6,
+    totalRoutes: 6,
     note: 'Les 5 routes exigent authenticate + rôle admin déclaré. Les GET sont en lecture seule ; le POST orchestre les writers propriétaires et ne peut créer qu’un marché PROVISIONING.',
   },
 
@@ -108,6 +110,7 @@ module.exports = {
     exposes: [
       'POST /api/admin/markets', // admin central — provisionne, n’active pas
       'POST /api/admin/markets/:marketCode/lifecycle', // admin central — ACTIVE gated par readiness
+      'POST /api/admin/markets/:marketCode/reprovision', // admin central — recompose un Market ID historique PROVISIONING
       'GET /api/admin/markets', // admin central
       'GET /api/admin/markets/central-authority', // admin central
       'GET /api/admin/markets/:marketCode/control-plane', // admin central
@@ -118,6 +121,7 @@ module.exports = {
       'computeGaps()',
       'readinessFromGaps()',
       'provisionMarket()',
+      'reprovisionMarket()',
       'setMarketLifecycle()',
       'central()',
       'overview()',
