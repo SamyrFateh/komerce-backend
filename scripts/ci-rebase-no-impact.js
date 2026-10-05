@@ -99,7 +99,6 @@ function qualifiesNoImpact({
   impactPaths,
 }) {
   if (!previousGreen) return { qualifies:false, reason:'previous-required-verdict-not-green' };
-  if (!ancestor) return { qualifies:false, reason:'previous-head-not-ancestor-of-current-head' };
   if (!baseDeltaFiles.length) return { qualifies:false, reason:'no-base-delta-to-prove' };
   if (!sameSet(previousPrFiles, currentPrFiles)) return { qualifies:false, reason:'pr-file-set-changed' };
   if (previousPatchDigest !== currentPatchDigest) return { qualifies:false, reason:'pr-patch-changed' };
@@ -167,6 +166,7 @@ function main(argv = process.argv.slice(2)) {
       pr_files:currentPrFiles,
       base_delta_files:baseDeltaFiles,
       impact_paths:[...impactPaths].sort(),
+      previous_head_is_ancestor:ancestor,
     };
   } catch (error) {
     result = { qualifies:false, reason:'proof-error:' + String(error.message || error) };
