@@ -192,3 +192,12 @@ Une écriture est admissible lorsqu'elle correspond de façon unique à :
 Le `billingHistory.id` devient le `proof_ref` durable.
 
 Cette preuve reste distincte de la réponse `payBalanceV2` et du read-back de statut d'ordre.
+
+
+## Rapprochement runtime CJ
+
+Le service cj-billing-history-reconciliation.js ne déclenche aucun paiement provider.
+
+Flux canonique : paiement fournisseur succeeded + matched, résolution des sous-ordres CJ, lecture billingHistory, agrégation, preuve unique, vérification real debit, persistance de la preuve, puis promotion real_debit_verified.
+
+Règles : déjà vérifié = no-op ; état local non prêt = refus avant lecture ; zéro preuve = non vérifié ; plusieurs preuves = ambigu ; preuve rejetée = aucune persistance ; aucune mutation provider.
