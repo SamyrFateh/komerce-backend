@@ -34,7 +34,10 @@ async function loadPaymentContext(client, paymentId) {
   const payment = rows[0];
   if (!payment) throw new Error('SUPPLIER_PAYMENT_NOT_FOUND');
   if (payment.provider !== 'cj') throw new Error('CJ_PAYMENT_PROVIDER_MISMATCH');
+  return { payment };
+}
 
+async function loadPaymentOrderIds(client, payment) {
   let orderIds = [];
   if (payment.supplier_execution_group_id) {
     const result = await client.query(`
@@ -56,7 +59,7 @@ async function loadPaymentContext(client, paymentId) {
   }
 
   if (!orderIds.length) throw new Error('CJ_PAYMENT_ORDER_IDS_MISSING');
-  return { payment, orderIds };
+  return orderIds;
 }
 
 async function reconcileCjBillingHistory(client, {
@@ -67,7 +70,7 @@ async function reconcileCjBillingHistory(client, {
     throw new Error('CJ_BILLING_HISTORY_READER_REQUIRED');
   }
 
-  const { payment, orderIds } = await loadPaymentContext(client, supplierPaymentId);
+  const { payment } = await loadPaymentContext(client, supplierPaymentId);
 
   if (payment.status !== 'succeeded' || payment.reconciliation_status !== 'matched') {
     throw new Error('CJ_BILLING_RECONCILIATION_PAYMENT_NOT_READY');
@@ -80,6 +83,8 @@ async function reconcileCjBillingHistory(client, {
       proof: null,
     };
   }
+
+  const orderIds = await loadPaymentOrderIds(client, payment);
 
   const responses = [];
   for (const orderId of orderIds) {
@@ -159,5 +164,6 @@ async function reconcileCjBillingHistory(client, {
 
 module.exports = {
   loadPaymentContext,
+  loadPaymentOrderIds,
   reconcileCjBillingHistory,
 };
