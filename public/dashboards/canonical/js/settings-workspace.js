@@ -5,7 +5,7 @@
  * @layer         ui-orchestration
  * @criticality   medium
  * @inputs        authenticated_admin, settings_rules_taxes_dims_audit
- * @outputs       canonical_settings_workspace_dom
+ * @outputs       canonical_settings_workspace_dom, retired_pricing_matrices_readonly_projection
  * @depends       canonical primitives
  * @used-by       canonical admin entrypoint
  * @db-read       none
@@ -27,13 +27,16 @@
  *
  * 4 onglets :
  *   1. Règles       — liste groupée par catégorie, recherche, panneau slide-in
- *   2. Taxes        — grille éditable par catégorie
- *   3. Dimensions   — grille L×l×H par catégorie
+ *   2. Taxes        — lecture forensic de la matrice legacy retirée
+ *   3. Dimensions   — lecture forensic de la matrice legacy retirée
  *   4. Historique   — audit trail global
  *
  * API : GET/PATCH /api/admin/rules, POST /api/admin/rules/:key/reset,
- *       GET/PUT /api/admin/pricing-matrices/taxes|dims,
+ *       GET /api/admin/pricing-matrices/taxes|dims (forensic read-only),
  *       GET /api/admin/rules/audit
+ *
+ * Les PUT pricing-matrices répondent volontairement 410 côté serveur depuis LOT 1A.
+ * Cette UI ne les appelle plus et renvoie vers customs_categories comme source runtime.
  */
 
 (function (global) {
@@ -65,9 +68,7 @@
     patchSettingRule: (key, body) => _fetchJSON(`${BASE_API}/admin/rules/${encodeURIComponent(key)}`, { method: 'PATCH', body }),
     resetSettingRule: key => _fetchJSON(`${BASE_API}/admin/rules/${encodeURIComponent(key)}/reset`, { method: 'POST' }),
     getSettingsTaxes: () => _fetchJSON(`${BASE_API}/admin/pricing-matrices/taxes`),
-    putSettingsTaxes: (category, body) => _fetchJSON(`${BASE_API}/admin/pricing-matrices/taxes/${encodeURIComponent(category)}`, { method: 'PUT', body }),
     getSettingsDims: () => _fetchJSON(`${BASE_API}/admin/pricing-matrices/dims`),
-    putSettingsDims: (category, body) => _fetchJSON(`${BASE_API}/admin/pricing-matrices/dims/${encodeURIComponent(category)}`, { method: 'PUT', body }),
     getSettingsAudit: () => _fetchJSON(`${BASE_API}/admin/rules/audit`),
   };
 
@@ -456,95 +457,52 @@
     } catch (err) { alert('Erreur : ' + err.message); }
   }
 
-  /* ── Tab Taxes ──────────────────────────────────────────────────────── */
+  /* ── Tabs Taxes / Dimensions — forensic read-only ─────────────────── */
   function _renderTaxesTab(container) {
     container.innerHTML = `
-      <div class="sv-matrix">
-        <p>⚠️ <strong>Zone critique</strong> — Ces taux impactent directement le calcul de prix de vente. Toute modification s'applique immédiatement. Justification obligatoire.</p>
+      <div class="sv-matrix" data-retired-matrix="taxes">
+        <p><strong>Lecture seule · matrice legacy retirée.</strong> Ces valeurs sont conservées uniquement pour forensic/compatibilité et ne pilotent plus le pricing runtime.</p>
+        <p>Source de vérité runtime : <code>customs_categories.{douane_pct,tva_pct,taxe_add_pct}</code>.</p>
         <table>
           <thead><tr>
-            <th>Catégorie</th><th>Douane</th><th>TVA</th><th>Taxe add.</th><th>Dernière modif</th><th style="text-align:right">Action</th>
+            <th>Catégorie</th><th>Douane</th><th>TVA</th><th>Taxe add.</th><th>Dernière modif</th>
           </tr></thead>
           <tbody>
             ${_data.taxes.map(t => `
               <tr data-cat="${t.category}" data-type="taxes">
                 <td><strong>${_esc(t.label_fr)}</strong><br><small style="color:var(--text-secondary)">${t.category}</small></td>
-                <td><input type="number" step="0.0001" min="0" max="1" value="${t.douane_pct}" data-field="douane_pct"></td>
-                <td><input type="number" step="0.0001" min="0" max="1" value="${t.tva_pct}" data-field="tva_pct"></td>
-                <td><input type="number" step="0.0001" min="0" max="1" value="${t.taxe_add_pct}" data-field="taxe_add_pct"></td>
-                <td style="font-size:var(--fs-sm);color:var(--text-secondary)">${t.updated_at ? _fmtDate(t.updated_at) : '—'}<br>${t.updated_by_name||''}</td>
-                <td style="text-align:right"><button class="sv-matrix-save" disabled>💾 Enregistrer</button></td>
+                <td>${_esc(t.douane_pct)}</td>
+                <td>${_esc(t.tva_pct)}</td>
+                <td>${_esc(t.taxe_add_pct)}</td>
+                <td style="font-size:var(--fs-sm);color:var(--text-secondary)">${t.updated_at ? _fmtDate(t.updated_at) : '—'}<br>${_esc(t.updated_by_name||'')}</td>
               </tr>`).join('')}
           </tbody>
         </table>
       </div>`;
-    _attachMatrixListeners(container);
   }
 
-  /* ── Tab Dims ───────────────────────────────────────────────────────── */
   function _renderDimsTab(container) {
     container.innerHTML = `
-      <div class="sv-matrix">
-        <p>📐 Dimensions standard par catégorie (L × l × H en cm). Utilisées pour calculer le volume et le fret.</p>
+      <div class="sv-matrix" data-retired-matrix="dims">
+        <p><strong>Lecture seule · matrice legacy retirée.</strong> Ces dimensions sont conservées uniquement pour forensic/compatibilité et ne pilotent plus le calcul runtime.</p>
+        <p>Source de vérité runtime : <code>customs_categories.{default_dim_l_cm,default_dim_w_cm,default_dim_h_cm}</code>.</p>
         <table>
           <thead><tr>
-            <th>Catégorie</th><th>Longueur (cm)</th><th>Largeur (cm)</th><th>Hauteur (cm)</th><th>Volume (cm³)</th><th>Dernière modif</th><th style="text-align:right">Action</th>
+            <th>Catégorie</th><th>Longueur (cm)</th><th>Largeur (cm)</th><th>Hauteur (cm)</th><th>Volume (cm³)</th><th>Dernière modif</th>
           </tr></thead>
           <tbody>
             ${_data.dims.map(d => `
               <tr data-cat="${d.category}" data-type="dims">
                 <td><strong>${_esc(d.label_fr)}</strong><br><small style="color:var(--text-secondary)">${d.category}</small></td>
-                <td><input type="number" step="1" min="1" max="200" value="${d.length_cm}" data-field="length_cm"></td>
-                <td><input type="number" step="1" min="1" max="200" value="${d.width_cm}" data-field="width_cm"></td>
-                <td><input type="number" step="1" min="1" max="200" value="${d.height_cm}" data-field="height_cm"></td>
-                <td style="color:var(--text-secondary)">${(d.length_cm*d.width_cm*d.height_cm).toLocaleString('fr-FR')}</td>
-                <td style="font-size:var(--fs-sm);color:var(--text-secondary)">${d.updated_at ? _fmtDate(d.updated_at) : '—'}<br>${d.updated_by_name||''}</td>
-                <td style="text-align:right"><button class="sv-matrix-save" disabled>💾 Enregistrer</button></td>
+                <td>${_esc(d.length_cm)}</td>
+                <td>${_esc(d.width_cm)}</td>
+                <td>${_esc(d.height_cm)}</td>
+                <td style="color:var(--text-secondary)">${(Number(d.length_cm)*Number(d.width_cm)*Number(d.height_cm)).toLocaleString('fr-FR')}</td>
+                <td style="font-size:var(--fs-sm);color:var(--text-secondary)">${d.updated_at ? _fmtDate(d.updated_at) : '—'}<br>${_esc(d.updated_by_name||'')}</td>
               </tr>`).join('')}
           </tbody>
         </table>
       </div>`;
-    _attachMatrixListeners(container);
-  }
-
-  function _attachMatrixListeners(container) {
-    container.querySelectorAll('tr[data-cat]').forEach(tr => {
-      const inputs  = tr.querySelectorAll('input');
-      const saveBtn = tr.querySelector('.sv-matrix-save');
-      const originals = {};
-      inputs.forEach(i => { originals[i.dataset.field] = i.value; });
-      inputs.forEach(i => {
-        i.addEventListener('input', () => {
-          const dirty = Array.from(inputs).some(inp => inp.value !== originals[inp.dataset.field]);
-          tr.classList.toggle('dirty', dirty);
-          saveBtn.disabled = !dirty;
-        });
-      });
-      saveBtn.addEventListener('click', () => _saveMatrixRow(tr));
-    });
-  }
-
-  async function _saveMatrixRow(tr) {
-    const type   = tr.dataset.type;
-    const cat    = tr.dataset.cat;
-    const reason = prompt(`Justification (min 10 car.) pour modifier ${type === 'taxes' ? 'les taxes' : 'les dimensions'} de "${cat}" :`);
-    if (!reason || reason.trim().length < 10) { alert('Justification trop courte.'); return; }
-
-    const body = { reason: reason.trim() };
-    tr.querySelectorAll('input').forEach(i => { body[i.dataset.field] = Number(i.value); });
-
-    try {
-      if (type === 'taxes') {
-        await SettingsApi.putSettingsTaxes(cat, body);
-      } else {
-        await SettingsApi.putSettingsDims(cat, body);
-      }
-      _toast(`✓ ${type} de "${cat}" mis à jour.`);
-      const fresh = await (type === 'taxes' ? SettingsApi.getSettingsTaxes() : SettingsApi.getSettingsDims());
-      if (type === 'taxes') _data.taxes = fresh.taxes;
-      else                  _data.dims  = fresh.dims;
-      _render(_root);
-    } catch (err) { alert('Erreur : ' + err.message); }
   }
 
   /* ── Tab Audit ──────────────────────────────────────────────────────── */
