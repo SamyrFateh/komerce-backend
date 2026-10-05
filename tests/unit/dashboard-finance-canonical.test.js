@@ -53,6 +53,28 @@ beforeEach(() => {
     if (text.includes('AS estimated_cost_kmf')) {
       return { rows: [{ reference: 'CMD-C', status: 'collected', payment_status: 'paid', total_kmf: '20000', created_at: '2026-08-20T00:00:00.000Z', estimated_cost_kmf: '11000', real_cost_kmf: '12000', has_imputation: true, expected_cost_types: String(finance.EXPECTED_COST_TYPES.length) }] };
     }
+    if (text.includes('FROM supplier_execution_payments')) {
+      return { rows: [
+        {
+          purchase_order_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          provider: 'cj', payment_ref: 'PAY-1',
+          expected_amount: '19.9900', observed_amount: null, currency: 'USD',
+          status: 'ambiguous', reconciliation_status: 'unverified', real_debit_verified: false,
+          review_reason: 'PAYMENT_AMBIGUOUS_RECONCILIATION_REQUIRED',
+          created_at: '2026-10-01T00:00:00.000Z', updated_at: '2026-10-05T00:00:00.000Z',
+          total_count: 2,
+        },
+        {
+          purchase_order_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+          provider: 'aliexpress', payment_ref: 'PAY-2',
+          expected_amount: '88.0000', observed_amount: '90.0000', currency: 'CNY',
+          status: 'succeeded', reconciliation_status: 'mismatched', real_debit_verified: false,
+          review_reason: 'PAYMENT_RECONCILIATION_MISMATCH',
+          created_at: '2026-10-02T00:00:00.000Z', updated_at: '2026-10-05T01:00:00.000Z',
+          total_count: 2,
+        },
+      ] };
+    }
     return { rows: [] };
   });
 });
@@ -103,6 +125,9 @@ test('Finance market applique le scope serveur aux métriques et projections', a
   expect(payload.costing_kpis.map(item => item.key)).toEqual(['cout_estime', 'cout_reel', 'marge_estimee', 'marge_variable_reelle', 'marge_consolidee']);
   expect(payload.data_quality.economic_global_engine_consumed).toBe(false);
   expect(payload.data_quality.relay_real_margin_basis).toBe('actual_cost_orders_only');
+  expect(payload).not.toHaveProperty('supplier_payment_review');
+  expect(payload.data_quality.supplier_payment_review_basis).toBeNull();
+  expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('FROM supplier_execution_payments'))).toBe(false);
   expect(JSON.stringify(payload)).not.toContain('market-cm-id');
 });
 
@@ -159,4 +184,49 @@ test('Finance globale ne fabrique aucun filtre marché', async () => {
     expect(String(sql)).not.toContain('o.market_id');
     expect(params).toHaveLength(2);
   });
+  expect(payload.supplier_payment_review).toEqual(expect.objectContaining({
+    count: 2,
+    basis: 'current_state_all_time',
+    truncated: false,
+  }));
+  expect(payload.supplier_payment_review.items[0]).toEqual(expect.objectContaining({
+    provider: 'cj',
+    expected_amount: '19.9900',
+    observed_amount: null,
+    currency: 'USD',
+    status: 'ambiguous',
+    reconciliation_status: 'unverified',
+    real_debit_verified: false,
+    review_reason: 'PAYMENT_AMBIGUOUS_RECONCILIATION_REQUIRED',
+    drill_to: '/admin/workspaces/purchasing?po=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  }));
+  expect(payload.supplier_payment_review.items[1]).toEqual(expect.objectContaining({
+    provider: 'aliexpress',
+    expected_amount: '88.0000',
+    observed_amount: '90.0000',
+    currency: 'CNY',
+    status: 'succeeded',
+    reconciliation_status: 'mismatched',
+    review_reason: 'PAYMENT_RECONCILIATION_MISMATCH',
+  }));
+  expect(payload.supplier_payment_review.items.every(item => !Object.prototype.hasOwnProperty.call(item, 'payment_id'))).toBe(true);
+  expect(JSON.stringify(payload.supplier_payment_review)).not.toContain('payment_id');
+  expect(payload.data_quality.source_tables).toContain('supplier_execution_payments');
+});
+
+
+test('la file fournisseur utilise uniquement les états canoniques de revue, sans inventer retard ni preuve manquante', async () => {
+  mockQuery.mockResolvedValueOnce({ rows: [] });
+
+  const review = await finance.getSupplierPaymentReview({ limit: 25 });
+
+  expect(review).toEqual({ count: 0, items: [], truncated: false, basis: 'current_state_all_time' });
+  const [sql, params] = mockQuery.mock.calls[0];
+  const text = String(sql);
+  expect(text).toContain("status IN ('ambiguous', 'rejected')");
+  expect(text).toContain("reconciliation_status = 'mismatched'");
+  expect(text).not.toContain("status = 'requested'");
+  expect(text).not.toContain('real_debit_verified = false');
+  expect(text).not.toMatch(/proof/i);
+  expect(params).toEqual([25]);
 });

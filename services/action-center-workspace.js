@@ -8,11 +8,11 @@
  * @outputs       canonical_action_center_projection, signal_lifecycle_results
  * @depends       db.js, services/signal-admin-service.js, services/signal-service.js
  * @used-by       routes/admin-action-center.js
- * @db-read       orders, products, parcels, cash_collections
+ * @db-read       orders, products, parcels, cash_collections, supplier_execution_payments
  * @db-write      none
  * @db-txn        none
  * @doctrine      action_center_manages_derived_signals_only, browser_business_refs_only, exact_market_scope_or_global_null
- * @impact-areas  decision-signals, admin-dashboard, orders, catalog, logistics, market-authorization
+ * @impact-areas  decision-signals, admin-dashboard, orders, catalog, logistics, purchasing, market-authorization
  * @version       2026-09
  */
 
@@ -67,12 +67,14 @@ async function resolveEntityBusinessRefs(signals, marketId = null) {
     product: new Map(),
     parcel: new Map(),
     cash_collection: new Map(),
+    supplier_payment: new Map(),
   };
 
   const orderIds = [...(idsByType.get('order') || [])];
   const productIds = [...(idsByType.get('product') || [])];
   const parcelIds = [...(idsByType.get('parcel') || [])];
   const cashIds = [...(idsByType.get('cash_collection') || [])];
+  const supplierPaymentIds = [...(idsByType.get('supplier_payment') || [])];
   const queries = [];
 
   if (orderIds.length) {
@@ -128,6 +130,20 @@ async function resolveEntityBusinessRefs(signals, marketId = null) {
       label: row.order_reference ? `Cash · ${row.order_reference}` : 'Encaissement cash',
       parent_order_ref: row.order_reference || null,
       href: row.order_reference ? `/admin/orders/${encodeURIComponent(row.order_reference)}` : null,
+    }))));
+  }
+
+  if (supplierPaymentIds.length && marketId == null) {
+    queries.push(db.query(
+      `SELECT p.id::text AS internal_id, p.provider, p.payment_ref, p.purchase_order_id
+         FROM supplier_execution_payments p
+        WHERE p.id::text = ANY($1::text[])`,
+      [supplierPaymentIds]
+    ).then(({ rows }) => rows.forEach(row => maps.supplier_payment.set(row.internal_id, {
+      type: 'supplier_payment',
+      ref: row.payment_ref || null,
+      label: row.payment_ref ? `${row.provider || 'Provider'} · ${row.payment_ref}` : `${row.provider || 'Provider'} · paiement fournisseur`,
+      href: row.purchase_order_id ? `/admin/workspaces/purchasing?po=${encodeURIComponent(row.purchase_order_id)}` : null,
     }))));
   }
 

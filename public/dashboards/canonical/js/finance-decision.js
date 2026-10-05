@@ -4,16 +4,16 @@
  * @domain        admin-dashboard
  * @layer         ui-orchestration
  * @criticality   medium
- * @inputs        canonical_finance_payload, decision_primitives
- * @outputs       decision_first_finance_dom
+ * @inputs        canonical_finance_payload, supplier_payment_review, decision_primitives
+ * @outputs       decision_first_finance_dom, global_supplier_payment_review_queue
  * @depends       finance, primitives, decision-primitives
  * @used-by       canonical admin Finance runtime
  * @db-read       none
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, decision_first_dashboard_visuals
- * @impact-areas  admin-dashboard, finance, economic-engine
- * @version       2026-09
+ * @impact-areas  admin-dashboard, finance, economic-engine, purchasing
+ * @version       2026-10
  */
 'use strict';
 
@@ -50,6 +50,7 @@
     const pendingPayments = kpi(payload, 'paiements_en_attente');
     const incompleteCosts = kpi(payload, 'cmds_cout_incomplet');
     const refunds = kpi(payload, 'remboursements');
+    const supplierReview = payload && payload.supplier_payment_review;
     const variances = (Array.isArray(payload && payload.costing_orders) ? payload.costing_orders : [])
       .filter(row => row && Number.isFinite(Number(row.variance_kmf)) && Number(row.variance_kmf) !== 0);
 
@@ -89,6 +90,18 @@
         actionLabel: 'Voir les écarts →',
       });
     }
+    if (supplierReview && Number(supplierReview.count) > 0) {
+      items.push({
+        key: 'supplier-payments-review',
+        label: 'Paiements fournisseur à revoir',
+        helper: 'État courant : ambigu, rejeté ou rapprochement mismatched — hors filtre période',
+        value: base.formatNumber(supplierReview.count, 0),
+        tone: 'warning',
+        icon: '!',
+        href: '#finance-supplier-payments',
+        actionLabel: 'Voir la file →',
+      });
+    }
     if (refunds && Number(refunds.value) > 0) {
       const refundCount = payload && payload.refunds && Number.isFinite(Number(payload.refunds.count))
         ? Number(payload.refunds.count) : null;
@@ -103,7 +116,7 @@
         actionLabel: 'Voir les remboursements →',
       });
     }
-    return items.slice(0, 4);
+    return items.slice(0, 5);
   }
 
   function metricItems(payload, base) {
@@ -258,6 +271,29 @@
     }));
   }
 
+  function supplierPaymentReviewItems(payload, base) {
+    const review = payload && payload.supplier_payment_review;
+    const rows = review && Array.isArray(review.items) ? review.items : [];
+    return rows.map(row => ({
+      title: `${row.provider || 'Provider'} · PO ${base.shortId(row.purchase_order_id)}`,
+      helper: [
+        row.status || 'statut inconnu',
+        `rapprochement ${row.reconciliation_status || 'inconnu'}`,
+        row.review_reason || null,
+        `débit réel prouvé ${row.real_debit_verified === true ? 'oui' : 'non'}`,
+        base.formatDate(row.updated_at),
+      ].filter(Boolean).join(' · '),
+      value: row.observed_amount == null
+        ? `attendu ${base.formatExactAmount(row.expected_amount, row.currency)} · observé —`
+        : `attendu ${base.formatExactAmount(row.expected_amount, row.currency)} · observé ${base.formatExactAmount(row.observed_amount, row.currency)}`,
+      tone: row.reconciliation_status === 'mismatched' ? 'critical' : 'warning',
+      href: row.drill_to
+        ? base.contextualHref(row.drill_to, '/admin/finance', 'Retour à Finance')
+        : undefined,
+      actionLabel: row.drill_to ? 'Ouvrir dans Achats →' : undefined,
+    }));
+  }
+
   function drillCards(base, user) {
     const schema = base.visibleDrillSchema(base.FINANCE_SCHEMA, user);
     return (Array.isArray(schema.drill) ? schema.drill : []).map(item => ({
@@ -352,6 +388,17 @@
       host.className = 'kmc-cockpit-decisions';
       decisionUi.DecisionStrip.render(host, { items: decisions });
       dashboard.appendChild(host);
+    }
+
+    const supplierPayments = supplierPaymentReviewItems(payload, base);
+    if (supplierPayments.length) {
+      const review = payload.supplier_payment_review || {};
+      const description = review.truncated
+        ? `${supplierPayments.length} sur ${base.formatNumber(review.count, 0)} affiché(s) — état courant, hors filtre période. Aucun total multi-devise.`
+        : 'État courant des paiements fournisseur ambigus, rejetés ou mismatched. Aucun total multi-devise.';
+      const section = cardSection(doc, 'Paiements fournisseur à revoir', description, 'finance-supplier-payments');
+      decisionUi.RankedList.render(section.body, { items: supplierPayments });
+      dashboard.appendChild(section.section);
     }
 
     const kpis = cardSection(doc, 'Indicateurs financiers', 'Valeurs canoniques de la période sélectionnée.', 'finance-kpis');
@@ -473,6 +520,7 @@
       projectPaymentItems: payload => paymentItems(payload, base),
       projectRelayItems: payload => relayItems(payload, base),
       projectRefundItems: payload => refundItems(payload, base),
+      projectSupplierPaymentReviewItems: payload => supplierPaymentReviewItems(payload, base),
       projectDrillCards: user => drillCards(base, user),
       projectTrust: payload => trust(payload, base),
     };
@@ -493,6 +541,7 @@
     paymentItems,
     relayItems,
     refundItems,
+    supplierPaymentReviewItems,
     drillCards,
     trust,
     render,

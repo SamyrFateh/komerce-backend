@@ -133,12 +133,20 @@ function buildFreightQuoteParams(resolved, destination = {}) {
     );
   }
 
-  return {
+  const dto = {
     country_code: countryCode,
     send_goods_country_code: sendGoodsCountryCode,
     product_id: Number(resolved.supplier_product_id),
     product_num: positiveInt(resolved.quantity),
     sku_id: nativeSkuId,
+  };
+  if (destination.province_code) dto.province_code = String(destination.province_code);
+  if (destination.city_code) dto.city_code = String(destination.city_code);
+  if (destination.price != null) dto.price = String(destination.price);
+  if (destination.price_currency) dto.price_currency = String(destination.price_currency).toUpperCase();
+
+  return {
+    aeopFreightCalculateForBuyerDTO: JSON.stringify(dto),
   };
 }
 
@@ -219,13 +227,50 @@ function buildPlaceOrderBusinessParams(resolved, logisticsAddress, options = {})
 function summarizeFreightResponse(payload = {}) {
   const root = payload?.result || payload?.resp_result?.result || payload;
   const success = root?.success ?? root?.result_success ?? null;
-  const list = root?.aeop_freight_calculate_result_for_buyer_d_t_o_list
+  const raw = root?.aeop_freight_calculate_result_for_buyer_d_t_o_list
     || root?.aeop_freight_calculate_result_for_buyer_dtolist
     || root?.result
     || null;
+  const nested = raw?.aeop_freight_calculate_result_for_buyer_d_t_o
+    || raw?.aeop_freight_calculate_result_for_buyer_dto
+    || raw;
+  const options = Array.isArray(nested) ? nested : (nested ? [nested] : []);
+
+  function amountOf(option) {
+    const freight = option?.freight || {};
+    const direct = Number(freight.amount);
+    if (Number.isFinite(direct) && direct >= 0) return direct;
+    const cent = Number(freight.cent);
+    return Number.isFinite(cent) && cent >= 0 ? cent / 100 : null;
+  }
+
+  const usable = options
+    .map((option) => ({
+      option,
+      service_name: String(option?.service_name || option?.logistics_service_name || '').trim() || null,
+      amount: amountOf(option),
+    }))
+    .filter((row) => row.service_name);
+
+  usable.sort((a, b) => {
+    if (a.amount == null && b.amount != null) return 1;
+    if (a.amount != null && b.amount == null) return -1;
+    if (a.amount != null && b.amount != null && a.amount !== b.amount) return a.amount - b.amount;
+    return a.service_name.localeCompare(b.service_name);
+  });
+  const selected = usable[0] || null;
+  const freight = selected?.option?.freight || {};
+
   return {
     success: success == null ? null : Boolean(success),
-    has_options: Boolean(list),
+    has_options: usable.length > 0,
+    option_count: usable.length,
+    service_name: selected?.service_name || null,
+    shipping_method: selected?.option?.shipping_method || null,
+    estimated_delivery_time: selected?.option?.estimated_delivery_time || null,
+    freight_amount: selected?.amount ?? null,
+    freight_currency: String(freight.currency_code || '').trim().toUpperCase() || null,
+    tracking_available: selected?.option?.tracking_available ?? null,
     error: root?.error_desc || root?.error_msg || null,
   };
 }

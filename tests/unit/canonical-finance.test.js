@@ -52,6 +52,39 @@ function payloadFixture() {
         { order_reference: 'CMD-R', refund_method: 'stripe', amount_kmf: 1000, completed_at: '2026-08-23T00:00:00.000Z' },
       ],
     },
+    supplier_payment_review: {
+      count: 2,
+      truncated: false,
+      basis: 'current_state_all_time',
+      items: [
+        {
+          purchase_order_id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+          provider: 'cj',
+          expected_amount: '19.9900',
+          observed_amount: null,
+          currency: 'USD',
+          status: 'ambiguous',
+          reconciliation_status: 'unverified',
+          real_debit_verified: false,
+          review_reason: 'PAYMENT_AMBIGUOUS_RECONCILIATION_REQUIRED',
+          updated_at: '2026-10-05T00:00:00.000Z',
+          drill_to: '/admin/workspaces/purchasing?po=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        },
+        {
+          purchase_order_id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+          provider: 'aliexpress',
+          expected_amount: '88.0000',
+          observed_amount: '90.0000',
+          currency: 'CNY',
+          status: 'succeeded',
+          reconciliation_status: 'mismatched',
+          real_debit_verified: false,
+          review_reason: 'PAYMENT_RECONCILIATION_MISMATCH',
+          updated_at: '2026-10-05T01:00:00.000Z',
+          drill_to: '/admin/workspaces/purchasing?po=bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        },
+      ],
+    },
   };
 }
 
@@ -113,6 +146,16 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     });
     expect(sources['finance.payment-mix'][0]).toEqual({ mode: 'stripe_eur', commandes: '3', montant: '90 000 KMF' });
     expect(sources['finance.refunds'][0]).toEqual(expect.objectContaining({ commande: 'CMD-R', methode: 'stripe', montant: '1 000 KMF' }));
+    expect(sources['finance.supplier-payment-review'][0]).toEqual(expect.objectContaining({
+      po: 'aaaaaaaa',
+      provider: 'cj',
+      expected: '19.9900 USD',
+      observed: '—',
+      status: 'ambiguous',
+      reconciliation: 'unverified',
+      real_debit_verified: 'Non',
+      review_reason: 'PAYMENT_AMBIGUOUS_RECONCILIATION_REQUIRED',
+    }));
   });
 
   test('la couche decision-first Finance ne fabrique ni seuil de variance ni rapprochement', () => {
@@ -123,6 +166,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
       'Paiements en attente',
       'Coûts incomplets',
       'Variances observées',
+      'Paiements fournisseur à revoir',
       'Remboursements période',
     ]);
     expect(decisions.some(item => /variances élevées|à suivre|non rapprochés/i.test(item.label))).toBe(false);
@@ -162,6 +206,33 @@ describe('LOT 2F-CANON — Finance vivant', () => {
       value: '1 000 KMF',
     }));
     expect(financeDecision.drillCards(finance, { role: 'admin' })).toHaveLength(2);
+  });
+
+  test('la file fournisseur garde statut, rapprochement et preuve de débit distincts, sans somme multi-devise', () => {
+    const payload = payloadFixture();
+    const items = financeDecision.supplierPaymentReviewItems(payload, finance);
+
+    expect(items).toHaveLength(2);
+    expect(items[0]).toEqual(expect.objectContaining({
+      title: 'cj · PO aaaaaaaa',
+      helper: expect.stringContaining('ambiguous · rapprochement unverified'),
+      value: 'attendu 19.9900 USD · observé —',
+      tone: 'warning',
+    }));
+    expect(items[0].helper).toContain('débit réel prouvé non');
+    expect(items[1]).toEqual(expect.objectContaining({
+      title: 'aliexpress · PO bbbbbbbb',
+      helper: expect.stringContaining('succeeded · rapprochement mismatched'),
+      value: 'attendu 88.0000 CNY · observé 90.0000 CNY',
+      tone: 'critical',
+    }));
+    expect(items.some(item => /USD.*CNY|CNY.*USD/.test(item.value))).toBe(false);
+
+    const decisions = financeDecision.decisionItems(payload, finance);
+    expect(decisions.find(item => item.key === 'supplier-payments-review')).toEqual(expect.objectContaining({
+      value: '2',
+      href: '#finance-supplier-payments',
+    }));
   });
 
   test('les cartes de décision utilisent le drill_to serveur quand il existe, jamais une ancre partagée par défaut', () => {

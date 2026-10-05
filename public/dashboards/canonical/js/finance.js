@@ -4,16 +4,16 @@
  * @domain        admin-dashboard
  * @layer         ui-orchestration
  * @criticality   medium
- * @inputs        canonical_admin_session, server_resolved_admin_context, requested_market_view, period
- * @outputs       canonical_finance_dashboard
+ * @inputs        canonical_admin_session, server_resolved_admin_context, requested_market_view, period, supplier_payment_review
+ * @outputs       canonical_finance_dashboard, global_supplier_payment_review_projection
  * @depends       admin-context, dashboard-schema, dashboard-renderer, primitives
  * @used-by       canonical admin entrypoint
  * @db-read       none
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, canonical_admin_no_legacy_imports, server_market_scope_is_authority
- * @impact-areas  admin-dashboard, finance, economic-engine, market-authorization
- * @version       2026-09
+ * @impact-areas  admin-dashboard, finance, economic-engine, purchasing, market-authorization
+ * @version       2026-10
  */
 
 'use strict';
@@ -222,6 +222,22 @@
     return `${prefix}${formatNumber(numeric, 0)} KMF`;
   }
 
+  function formatExactAmount(value, currency) {
+    if (value == null || value === '') return '—';
+    return `${String(value)}${currency ? ` ${currency}` : ''}`;
+  }
+
+  function shortId(value) {
+    return String(value || '').slice(0, 8);
+  }
+
+  function contextualHref(path, returnTo, label) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    return nav && typeof nav.withReturnTo === 'function'
+      ? nav.withReturnTo(path, returnTo, label)
+      : path;
+  }
+
   function formatDate(value) {
     const date = value ? new Date(value) : null;
     if (!date || Number.isNaN(date.getTime())) return '—';
@@ -349,6 +365,25 @@
     }));
   }
 
+  function projectSupplierPaymentReview(payload) {
+    const review = payload && payload.supplier_payment_review;
+    const rows = review && Array.isArray(review.items) ? review.items : [];
+    return rows.map(row => ({
+      po: shortId(row.purchase_order_id),
+      provider: row.provider || '—',
+      expected: formatExactAmount(row.expected_amount, row.currency),
+      observed: formatExactAmount(row.observed_amount, row.currency),
+      status: row.status || '—',
+      reconciliation: row.reconciliation_status || '—',
+      real_debit_verified: row.real_debit_verified === true ? 'Oui' : 'Non',
+      review_reason: row.review_reason || '—',
+      updated_at: formatDate(row.updated_at),
+      href: row.drill_to
+        ? contextualHref(row.drill_to, '/admin/finance', 'Retour à Finance')
+        : null,
+    }));
+  }
+
   function resolveSources(payload) {
     return Object.freeze({
       'finance.metrics': projectMetrics(payload),
@@ -359,6 +394,7 @@
       'finance.relay-profitability': projectRelayProfitability(payload),
       'finance.payment-mix': projectPaymentMix(payload),
       'finance.refunds': projectRefunds(payload),
+      'finance.supplier-payment-review': projectSupplierPaymentReview(payload),
     });
   }
 
@@ -436,6 +472,9 @@
     formatNumber,
     formatKmf,
     formatSignedKmf,
+    formatExactAmount,
+    shortId,
+    contextualHref,
     formatDate,
     projectMetrics,
     projectTrend,
@@ -445,6 +484,7 @@
     projectRelayProfitability,
     projectPaymentMix,
     projectRefunds,
+    projectSupplierPaymentReview,
     resolveSources,
     endpointForContext,
     jsonRequest,
