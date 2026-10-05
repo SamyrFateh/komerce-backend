@@ -222,7 +222,15 @@ async function main() {
     console.log(`ALIEXPRESS_CANONICAL_SKU_READY=${sku.product_ref}`);
 
     const cert = require('./aliexpress-business-certification');
-    const report = await cert.run([`--mode=${mode}`], { env: process.env, query: db.query.bind(db) });
+    let report;
+    try {
+      report = await cert.run([`--mode=${mode}`], { env: process.env, query: db.query.bind(db) });
+    } catch (error) {
+      if (Array.isArray(error?.failures)) {
+        console.log(`ALIEXPRESS_CERT_FAILURES=${JSON.stringify(error.failures)}`);
+      }
+      throw error;
+    }
     console.log(`ALIEXPRESS_CERT_FINAL=${JSON.stringify(report)}`);
     await db.pool.end();
   } finally {
