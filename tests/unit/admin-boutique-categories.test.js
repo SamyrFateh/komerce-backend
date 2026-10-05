@@ -41,6 +41,10 @@ jest.mock('../../utils/categories-cache', () => ({
   invalidateCategoriesCache: (...args) => mockInvalidateCategoriesCache(...args),
 }));
 
+jest.mock('../../services/catalog-taxonomy-audit', () => ({
+  recordTaxonomyMutation: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+}));
+
 const categoriesRouter = require('../../routes/admin-boutique-categories');
 
 function buildApp() {
