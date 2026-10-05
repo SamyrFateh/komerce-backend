@@ -92,10 +92,10 @@ async function run(argv = process.argv.slice(2), {
           readiness: {
             provider: readiness.provider,
             supplier_unit_ref: readiness.supplier_unit_ref,
-            stock_available: readiness.stock_available,
-            unit_price: readiness.unit_price,
-            currency: readiness.currency,
-            freight: readiness.freight,
+            stock_available: readiness.live?.stock_available ?? null,
+            unit_price: readiness.live?.unit_price ?? null,
+            currency: readiness.live?.currency ?? null,
+            freight: readiness.live?.freight ?? null,
           },
           mutation: { place_order_invoked: false, payment_invoked: false },
         };
