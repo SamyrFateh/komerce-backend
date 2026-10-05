@@ -146,7 +146,7 @@ async function run(env=process.env,deps={}) {
   const route=cheapestRoute(freightBody);
   if (!route) throw new Error('CJ_REAL_NO_LOGISTIC_ROUTE');
 
-  const orderNumber=String(env.KOMERCE_CJ_REAL_ORDER_NUMBER || `KOM-REAL-${Date.now()}`).slice(0,50);
+  const orderNumber=req(env,'KOMERCE_CJ_REAL_ORDER_NUMBER').slice(0,50);
   const createPayload=contract.buildCreateOrderV2Payload({
     orderNumber,
     identity:sku.supplier_order_identity,
@@ -159,15 +159,39 @@ async function run(env=process.env,deps={}) {
     remark:'Komerce bounded real debit proof',
     sandbox:false,
   });
+  createPayload.iossType = 3;
   if (Object.prototype.hasOwnProperty.call(createPayload,'isSandbox')) {
     throw new Error('CJ_REAL_SANDBOX_FLAG_FORBIDDEN');
   }
 
-  const created=contract.parseCreateOrderResponse(await call(contract.ENDPOINTS.create_order_v2,{
-    method:'POST',
-    body:createPayload,
-    accessToken,
-  }));
+  let created;
+  try {
+    const createBody=await call(contract.ENDPOINTS.create_order_v2,{
+      method:'POST',
+      body:createPayload,
+      accessToken,
+    });
+    created=contract.parseCreateOrderResponse(createBody);
+  } catch (error) {
+    if (!contract.isDuplicateCreateError(error)) throw error;
+    const duplicateDetail=await call(contract.ENDPOINTS.get_order_detail,{
+      method:'GET',
+      query:contract.buildOrderDetailQuery(orderNumber),
+      accessToken,
+    });
+    const duplicateFacts=contract.readOrderDetailFacts(duplicateDetail);
+    if (!duplicateFacts.order_id) throw new Error('CJ_REAL_DUPLICATE_NOT_RESOLVABLE');
+    created={
+      provider:'cj',
+      external_ref:String(duplicateFacts.order_id),
+      order_number:orderNumber,
+      shipment_order_id:duplicateFacts.shipment_order_id || null,
+      product_amount:null,
+      postage_amount:null,
+      currency:'USD',
+      commitment_verdict:'created_unpaid',
+    };
+  }
 
   const detailBefore=await call(contract.ENDPOINTS.get_order_detail,{
     method:'GET',
@@ -182,15 +206,24 @@ async function run(env=process.env,deps={}) {
     expectedQuantity:1,
   });
 
-  const productAmount=Number(created.product_amount);
-  const postageAmount=Number(created.postage_amount);
-  const expectedTotal=productAmount+postageAmount;
-  if (![productAmount,postageAmount,expectedTotal].every(Number.isFinite) || expectedTotal <= 0) {
+  const productAmount=Number(detailBefore?.data?.productAmount);
+  const postageAmount=Number(detailBefore?.data?.postageAmount);
+  const expectedTotal=Number(detailBefore?.data?.orderAmount);
+  const iossAmount=Number(detailBefore?.data?.iossAmount || 0);
+  const iossTaxHandlingFee=Number(detailBefore?.data?.iossTaxHandlingFee || 0);
+  if (!Number.isFinite(expectedTotal) || expectedTotal <= 0) {
     throw new Error('CJ_REAL_ORDER_AMOUNT_INVALID');
   }
   if (expectedTotal > cap) {
     const error=new Error('CJ_REAL_DEBIT_CAP_EXCEEDED');
-    error.amounts={product_amount:productAmount,postage_amount:postageAmount,total:expectedTotal,cap};
+    error.amounts={
+      order_amount:expectedTotal,
+      product_amount:Number.isFinite(productAmount)?productAmount:null,
+      postage_amount:Number.isFinite(postageAmount)?postageAmount:null,
+      ioss_amount:Number.isFinite(iossAmount)?iossAmount:null,
+      ioss_tax_handling_fee:Number.isFinite(iossTaxHandlingFee)?iossTaxHandlingFee:null,
+      cap,
+    };
     throw error;
   }
 
@@ -245,6 +278,8 @@ async function run(env=process.env,deps={}) {
     logistic_name:route.logisticName,
     product_amount:productAmount,
     postage_amount:postageAmount,
+    ioss_amount:Number.isFinite(iossAmount)?iossAmount:null,
+    ioss_tax_handling_fee:Number.isFinite(iossTaxHandlingFee)?iossTaxHandlingFee:null,
     expected_total:expectedTotal,
     hard_cap_usd:cap,
     prepay_status:facts.status,
