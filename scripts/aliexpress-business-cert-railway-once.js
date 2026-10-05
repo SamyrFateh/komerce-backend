@@ -149,9 +149,21 @@ async function main() {
   try {
     const initialized = await initializeDisposable(target);
     console.log(`DISPOSABLE_DB_INITIALIZED=${initialized}`);
-    const ciMigrate = require('./ci-migrate');
-    await ciMigrate.main();
-    console.log('DISPOSABLE_DB_MIGRATIONS=applied');
+    const targeted = [
+      ['migrations/250_boutique_subcategory_customs_affinity.sql',
+        "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='boutique_subcategories' AND column_name='customs_category_key') AS ready"],
+      ['migrations/257_import_runtime_runs.sql',
+        "SELECT to_regclass('public.import_runtime_runs') IS NOT NULL AS ready"],
+      ['migrations/258_import_runtime_item_events.sql',
+        "SELECT to_regclass('public.import_runtime_item_events') IS NOT NULL AS ready"],
+    ];
+    for (const [file, probe] of targeted) {
+      const { rows:[state] } = await target.query(probe);
+      if (!state?.ready) {
+        await target.query(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'));
+        console.log(`DISPOSABLE_DB_PATCH=${path.basename(file)}`);
+      }
+    }
     await copyEncryptedOauth(target);
 
     // db.js is loaded only after the disposable schema exists.
