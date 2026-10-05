@@ -88,11 +88,9 @@ function maskPiiFields(obj) {
 
 let logger;
 
-try {
-  const pino = require('pino');
-
+function createPinoLogger(pino, destination) {
   let transport;
-  if (isDev && !isTest) {
+  if (isDev && !isTest && !destination) {
     try {
       transport = {
         target: 'pino-pretty',
@@ -108,7 +106,7 @@ try {
     }
   }
 
-  logger = pino({
+  const options = {
     level: process.env.LOG_LEVEL || (isDev ? 'debug' : 'info'),
     base: {
       service: 'komerce-backend',
@@ -152,6 +150,20 @@ try {
       censor: '[REDACTED]',
     },
     timestamp: pino.stdTimeFunctions.isoTime,
+  };
+
+  return destination ? pino(options, destination) : pino(options);
+}
+
+try {
+  const pino = require('pino');
+  logger = createPinoLogger(pino);
+
+  // Test seam: lets logger tests observe Pino output without monkey-patching
+  // process.stdout/fs.write, which breaks when Jest workers run in parallel.
+  Object.defineProperty(logger, 'createForTest', {
+    value: (destination) => createPinoLogger(pino, destination),
+    enumerable: false,
   });
 
 } catch (_) {
