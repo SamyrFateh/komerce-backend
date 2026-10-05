@@ -270,7 +270,7 @@ describe('PUT /api/admin/boutique-categories/:key — modification', () => {
 
   it('nominal → 200, UPDATE avec champs fournis, recharge via getCategoryWithSubcats, cache invalidé', async () => {
     mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Nouveau' }] }) // UPDATE
+      .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Nouveau', before_snapshot: { key: 'phones', label: 'Ancien' } }] }) // CTE UPDATE + before
       .mockResolvedValueOnce({ rows: [{ key: 'phones', label: 'Nouveau' }] }) // getCategoryWithSubcats SELECT cat
       .mockResolvedValueOnce({ rows: [{ id: 'sc1' }] }); // SELECT subs
 
@@ -286,13 +286,13 @@ describe('PUT /api/admin/boutique-categories/:key — modification', () => {
 
   it('champs ignorés non whitelistés (ex: key) → non inclus dans l\'UPDATE', async () => {
     mockDbQuery
-      .mockResolvedValueOnce({ rows: [{ key: 'phones' }] })
+      .mockResolvedValueOnce({ rows: [{ key: 'phones', before_snapshot: { key: 'phones', label: 'Ancien' } }] })
       .mockResolvedValueOnce({ rows: [{ key: 'phones' }] })
       .mockResolvedValueOnce({ rows: [] });
     await request(buildApp()).put('/api/admin/boutique-categories/phones').send({ key: 'autre', label: 'Nouveau' });
     const [sql, params] = mockDbQuery.mock.calls[0];
-    const setClause = sql.split('WHERE')[0];
-    expect(setClause).not.toContain('key =');
+    const updateClause = sql.slice(sql.indexOf('UPDATE boutique_categories'), sql.indexOf('RETURNING c.*'));
+    expect(updateClause).not.toContain('c.key = $1');
     expect(params).toEqual(['Nouveau', 'phones']);
   });
 
@@ -437,7 +437,7 @@ describe('PUT /api/admin/boutique-categories/:key/subcategories/:subKey — modi
   });
 
   it('nominal → 200, UPDATE scoped sur category_key ET key, cache invalidé', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1', label: 'iPhone 15' }] });
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1', label: 'iPhone 15', before_snapshot: { id: 'sc1', label: 'iPhone' } }] });
     const res = await request(buildApp()).put('/api/admin/boutique-categories/phones/subcategories/iphone').send({ label: 'iPhone 15' });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: 'sc1', label: 'iPhone 15' });
@@ -448,7 +448,7 @@ describe('PUT /api/admin/boutique-categories/:key/subcategories/:subKey — modi
   });
 
   it('customs_category_key est administrable sur une sous-catégorie', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1', customs_category_key: 'phones' }] });
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1', customs_category_key: 'phones', before_snapshot: { id: 'sc1', customs_category_key: null } }] });
     const res = await request(buildApp())
       .put('/api/admin/boutique-categories/phones/subcategories/iphone')
       .send({ customs_category_key: 'phones' });
@@ -459,10 +459,11 @@ describe('PUT /api/admin/boutique-categories/:key/subcategories/:subKey — modi
   });
 
   it('champ "key" non whitelisté → ignoré dans l\'UPDATE', async () => {
-    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1' }] });
+    mockDbQuery.mockResolvedValueOnce({ rows: [{ id: 'sc1', display_order: 2, before_snapshot: { id: 'sc1', display_order: 1 } }] });
     await request(buildApp()).put('/api/admin/boutique-categories/phones/subcategories/iphone').send({ key: 'autre', display_order: 2 });
     const [sql, params] = mockDbQuery.mock.calls[0];
-    expect(sql).not.toContain('key = $1');
+    const updateClause = sql.slice(sql.indexOf('UPDATE boutique_subcategories'), sql.indexOf('RETURNING boutique_subcategories.*'));
+    expect(updateClause).not.toContain('key = $1');
     expect(params).toEqual([2, 'phones', 'iphone']);
   });
 
