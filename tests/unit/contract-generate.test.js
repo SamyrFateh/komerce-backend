@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const source = fs.readFileSync(path.join(__dirname, '..', '..', 'scripts', 'contract-generate.js'), 'utf8');
-const contract = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'docs', 'contract', 'openapi.json'), 'utf8');
+const contract = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'docs', 'contract', 'openapi.json'), 'utf8'));
 
 test('le contrat généré enregistre Supplier 360 avec sa forme top-level prouvée', () => {
   expect(source).toContain("/api/admin/entities/suppliers/{supplierId}");
