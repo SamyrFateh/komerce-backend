@@ -33,12 +33,14 @@ function modeFromArgv(argv = process.argv.slice(2)) {
 }
 
 function assertRuntime(mode, env = process.env) {
-  if (String(env.KOMERCE_ENV || '').trim().toLowerCase() !== 'staging') {
-    throw new Error('REFUS: KOMERCE_ENV=staging requis');
-  }
   if (!env.DATABASE_URL) throw new Error('DATABASE_URL requis');
-  if (mode === 'execute' && String(env.KOMERCE_MARKET_RESET_ACK || '') !== ACK) {
-    throw new Error(`REFUS: KOMERCE_MARKET_RESET_ACK=${ACK} requis pour --execute`);
+  if (mode === 'execute') {
+    if (String(env.KOMERCE_ENV || '').trim().toLowerCase() !== 'staging') {
+      throw new Error('REFUS: KOMERCE_ENV=staging requis pour --execute');
+    }
+    if (String(env.KOMERCE_MARKET_RESET_ACK || '') !== ACK) {
+      throw new Error(`REFUS: KOMERCE_MARKET_RESET_ACK=${ACK} requis pour --execute`);
+    }
   }
 }
 
