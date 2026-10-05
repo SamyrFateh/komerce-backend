@@ -309,6 +309,8 @@ module.exports = {
       test: 'tests/unit/cj-p2-confirm-pay-sandbox-proof.test.js' },
     { statement: 'la capacité CJ parent/grouped est prouvée séparément : un proof sandbox multi-lignes doit obtenir ou relire un shipmentOrderId réel puis exercer explicitement une opération batch simulatePay(shipmentOrderId), sans réutiliser la preuve orderId individuelle ni conclure avant observation provider',
       test: 'tests/unit/cj-p2-grouped-parent-sandbox-proof.test.js' },
+    { statement: 'le proof CJ grouped rapproche avant simulatePay les faits provider orderMoney, paymentInformation.actualPayment et paymentInformation.orderOriginalAmount ; leur égalité prouve uniquement la cohérence de montant du parent sandbox, avec real_debit_verified=false explicite, et ne prouve ni débit de balance production ni rapprochement comptable B2B',
+      test: 'tests/unit/cj-p2-grouped-parent-sandbox-proof.test.js' },
     { statement: 'le dialogue fournisseur persistant est provider-neutral : les sous-ordres, leurs rattachements aux purchase_lines, les parents/groupes et les événements vivent dans supplier_execution_* ; un même identifiant natif est unique par provider, un parent ne peut regrouper que des sous-ordres de la même PO et du même provider, et aucun secret/payload provider brut n y est stocké',
       test: 'tests/integration/supplier-execution-persistence-postgres.test.js' },
     { statement: 'après une création provider réussie, Purchasing persiste le sous-ordre canonique supplier_execution_orders et son lien purchase_line dans la même transaction que la confirmation locale ; un replay récupère le même couple provider + supplier_order_id et tout rebind vers une autre PO est refusé',

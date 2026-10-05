@@ -240,6 +240,8 @@ async function run(env = process.env, deps = {}) {
     cartConfirmed.shipment_order_id
   );
 
+  const amountReconciliation = contract.reconcileSandboxParentAmount(parent);
+
   const payBody = await call(contract.ENDPOINTS.sandbox_simulate_pay, {
     method: 'POST',
     body: contract.buildSandboxSimulatePayParentPayload(parent.shipment_order_id),
@@ -277,6 +279,7 @@ async function run(env = process.env, deps = {}) {
     cart_result: cartConfirmed.result,
     payment_verdict: payment.payment_verdict,
     payment_mode: 'sandbox_simulate_pay_shipment_order_id',
+    amount_reconciliation: amountReconciliation,
   };
   console.log(`[cj-p2-grouped-parent-sandbox-proof] ${JSON.stringify(result)}`);
   return result;
