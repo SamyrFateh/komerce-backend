@@ -61,6 +61,9 @@ module.exports = {
   },
 
   files: {
+    scripts: [
+      'scripts/cm-cg-market-delegation-audit.js',
+    ],
     services: [
       'services/market-control-plane.js',
       'services/central-authority.js',
@@ -77,6 +80,7 @@ module.exports = {
       'tests/unit/market-reprovisioning-service.test.js',
       'tests/unit/market-control-plane-readiness.test.js',
       'tests/unit/market-control-plane-lifecycle-gate.test.js',
+      'tests/unit/cm-cg-market-delegation-audit.test.js',
       'tests/e2e-api/market-control-plane.provision-to-first-order.e2e.test.js',
     ],
   },
