@@ -122,3 +122,73 @@ Invariants :
 - le provider est injecté : ce service ne connaît aucun endpoint CJ et reste provider-neutral.
 
 Ce lot ne branche encore aucun endpoint de paiement production.
+
+
+## Preuve d'un débit monétaire réel
+
+Le statut provider `paid` ou l'état post-paiement d'un ordre ne suffit pas à établir un débit réel.
+
+Pour autoriser `real_debit_verified=true`, Komerce exige simultanément :
+
+- paiement local `succeeded` ;
+- `reconciliation_status=matched` ;
+- provider identique ;
+- montant observé = montant attendu ;
+- devise identique ;
+- `payment_ref` stable ;
+- `proof_source` monétaire explicite ;
+- `proof_ref` stable vers le fait de débit ;
+- `debit_confirmed=true` ;
+- `sandbox=false` ;
+- `simulated=false`.
+
+Exemples de preuves admissibles à terme : transaction de balance provider, journal de wallet provider, ou autre ledger financier provider documenté et relisible.
+
+Ne sont jamais suffisants seuls :
+
+- réponse `payBalanceV2: paid` ;
+- statut d'ordre `UNSHIPPED/PROCESSING` ;
+- `simulatePay` ;
+- `payBalanceV2` sur commandes `isSandbox=1`.
+
+Cette frontière appartient à Purchasing. La projection de ce fait vers les coûts/comptes B2B appartient ensuite à Economic Engine/Finance et doit rester un consommateur, pas un second écrivain du fait de paiement fournisseur.
+
+
+## Conservation de la preuve monétaire
+
+Les preuves positives de débit sont conservées dans `supplier_execution_payment_proofs`.
+
+Chaque preuve contient uniquement des faits bornés :
+
+- `supplier_payment_id` ;
+- `provider` ;
+- `proof_source` ;
+- `proof_ref` ;
+- identifiant d'ordre provider éventuel ;
+- `payment_ref` éventuelle ;
+- montant observé ;
+- devise ;
+- indicateurs `debit_confirmed`, `sandbox`, `simulated` ;
+- date provider éventuelle ;
+- faits provider minimaux sanitisés.
+
+Jamais de payload brut ni de credential.
+
+Une preuve native est unique par `provider + proof_source + proof_ref`. Un replay identique est idempotent ; rattacher la même preuve à un autre paiement est interdit.
+
+### CJ
+
+Pour CJ, la preuve cible est `POST /shopping/wallet/billingHistory`.
+
+Une écriture est admissible lorsqu'elle correspond de façon unique à :
+
+- l'ordre CJ attendu ;
+- `typeDesc = Order Payment` ;
+- `paymentTypeDesc = Balance` ;
+- statut success ;
+- montant attendu ;
+- mouvement débiteur.
+
+Le `billingHistory.id` devient le `proof_ref` durable.
+
+Cette preuve reste distincte de la réponse `payBalanceV2` et du read-back de statut d'ordre.

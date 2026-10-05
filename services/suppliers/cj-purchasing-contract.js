@@ -23,6 +23,7 @@ const ENDPOINTS = Object.freeze({
   get_order_detail: '/api2.0/v1/shopping/order/getOrderDetail',
   confirm_order: '/api2.0/v1/shopping/order/confirmOrder',
   pay_balance_v2: '/api2.0/v1/shopping/pay/payBalanceV2',
+  billing_history: '/api2.0/v1/shopping/wallet/billingHistory',
   sandbox_simulate_pay: '/api2.0/v1/shopping/sandbox/simulatePay',
   freight_calculate: '/api2.0/v1/logistic/freightCalculate',
   add_cart: '/api2.0/v1/shopping/order/addCart',
@@ -226,6 +227,102 @@ function parsePayBalanceV2Response(body) {
 }
 
 
+function buildBillingHistoryQuery({
+  orderId,
+  startDay = null,
+  endDay = null,
+  pageNum = 1,
+  pageSize = 20,
+} = {}) {
+  const payload = {
+    pageNum: Number.isSafeInteger(pageNum) && pageNum > 0 ? pageNum : 1,
+    pageSize: Number.isSafeInteger(pageSize) && pageSize > 0 && pageSize <= 100 ? pageSize : 20,
+    orderId: assertString(orderId, 'CJ_BILLING_ORDER_ID_REQUIRED', 64),
+    tradeTypeList: [1],
+  };
+  if (startDay) payload.startDay = assertString(startDay, 'CJ_BILLING_START_DAY_INVALID', 10);
+  if (endDay) payload.endDay = assertString(endDay, 'CJ_BILLING_END_DAY_INVALID', 10);
+  return payload;
+}
+
+function parseBillingHistoryDebitEvidence(body, {
+  expectedOrderIds = [],
+  expectedAmount,
+} = {}) {
+  if (!body || body.result !== true || !body.data || !Array.isArray(body.data.list)) {
+    throw new Error('CJ_BILLING_HISTORY_REJECTED');
+  }
+
+  const acceptedIds = new Set(
+    (Array.isArray(expectedOrderIds) ? expectedOrderIds : [expectedOrderIds])
+      .map(v => String(v || '').trim())
+      .filter(Boolean)
+  );
+  const amount = Number(expectedAmount);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error('CJ_BILLING_EXPECTED_AMOUNT_INVALID');
+  }
+
+  const candidates = body.data.list.filter(row => {
+    const orderId = String(row?.cjOrderId || '').trim();
+    const typeDesc = String(row?.typeDesc || '').trim();
+    const paymentType = String(row?.paymentTypeDesc || '').trim();
+    const status = String(row?.status || '').trim();
+    const copeMoney = Number(row?.copeMoney);
+    const displayAmount = String(row?.amount || '').trim();
+
+    return acceptedIds.has(orderId)
+      && typeDesc === 'Order Payment'
+      && paymentType === 'Balance'
+      && status === '1'
+      && Number.isFinite(copeMoney)
+      && copeMoney === amount
+      && /^-\$/.test(displayAmount);
+  });
+
+  if (candidates.length === 0) {
+    return {
+      verified: false,
+      reason: 'CJ_BILLING_DEBIT_NOT_FOUND',
+      evidence: null,
+    };
+  }
+  if (candidates.length > 1) {
+    return {
+      verified: false,
+      reason: 'CJ_BILLING_DEBIT_AMBIGUOUS',
+      evidence: null,
+    };
+  }
+
+  const row = candidates[0];
+  const proofRef = assertString(row.id, 'CJ_BILLING_RECORD_ID_MISSING', 64);
+
+  return {
+    verified: true,
+    reason: null,
+    evidence: {
+      provider: 'cj',
+      payment_ref: null,
+      observed_amount: Number(row.copeMoney),
+      currency: 'USD',
+      proof_source: 'cj_wallet_billing_history',
+      proof_ref: proofRef,
+      debit_confirmed: true,
+      sandbox: false,
+      simulated: false,
+      provider_order_id: String(row.cjOrderId),
+      payment_type: 'Balance',
+      status: 'Success',
+      after_transaction_amount: row.afterTransactionMoney == null
+        ? null
+        : Number(row.afterTransactionMoney),
+      occurred_at: row.createDate ? String(row.createDate) : null,
+    },
+  };
+}
+
+
 function buildSandboxSimulatePayPayload(orderId) {
   return { orderId: assertString(orderId, 'CJ_ORDER_ID_REQUIRED', 200) };
 }
@@ -385,6 +482,8 @@ module.exports = {
   parseConfirmOrderResponse,
   buildPayBalanceV2Payload,
   parsePayBalanceV2Response,
+  buildBillingHistoryQuery,
+  parseBillingHistoryDebitEvidence,
   buildSandboxSimulatePayPayload,
   buildCartPayload,
   parseAddCartConfirmResponse,
