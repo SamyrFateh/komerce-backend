@@ -133,7 +133,7 @@ async function resolveEntityBusinessRefs(signals, marketId = null) {
     }))));
   }
 
-  if (supplierPaymentIds.length) {
+  if (supplierPaymentIds.length && marketId == null) {
     queries.push(db.query(
       `SELECT p.id::text AS internal_id, p.provider, p.payment_ref, p.purchase_order_id
          FROM supplier_execution_payments p
