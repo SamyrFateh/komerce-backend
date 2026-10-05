@@ -120,6 +120,45 @@ test('Order signal drill-down is resolved by business order reference inside sco
   expect(mockDbQuery.mock.calls[0][1]).toEqual([['order-uuid'], null]);
 });
 
+test('Supplier payment signal resolves to Purchasing PO without exposing internal payment UUID', async () => {
+  mockAdmin.familyForType.mockReturnValue('eco');
+  mockAdmin.listSignals.mockResolvedValue({
+    signals: [{
+      signal_ref: 'KSG-000020',
+      signal_type: 'supplier_payment_review',
+      severity: 'critical',
+      title: 'Paiement fournisseur à revoir — cj',
+      status: 'open',
+      entity_type: 'supplier_payment',
+      entity_id: 'payment-internal-uuid',
+      market_id: null,
+    }],
+    total: 1, limit: 100, offset: 0,
+  });
+  mockDbQuery.mockResolvedValueOnce({ rows: [{
+    internal_id: 'payment-internal-uuid',
+    provider: 'cj',
+    payment_ref: 'PAY-42',
+    purchase_order_id: '22222222-2222-4222-8222-222222222222',
+  }] });
+
+  const result = await workspace.buildWorkspace();
+
+  expect(result.signals[0]).toMatchObject({
+    family: 'eco',
+    entity: {
+      type: 'supplier_payment',
+      ref: 'PAY-42',
+      label: 'cj · PAY-42',
+      href: '/admin/workspaces/purchasing?po=22222222-2222-4222-8222-222222222222',
+    },
+  });
+  expect(JSON.stringify(result)).not.toContain('payment-internal-uuid');
+  const [sql, params] = mockDbQuery.mock.calls[0];
+  expect(String(sql)).toContain('FROM supplier_execution_payments');
+  expect(params).toEqual([['payment-internal-uuid']]);
+});
+
 test('Canonical lifecycle delegates by signal_ref and exact market scope', async () => {
   mockAdmin.acknowledgeByRef.mockResolvedValue({ signal_ref: 'KSG-000003', status: 'acknowledged' });
   mockAdmin.snoozeByRef.mockResolvedValue({ signal_ref: 'KSG-000003', status: 'snoozed', snoozed_until: 'later' });
