@@ -152,3 +152,43 @@ Ne sont jamais suffisants seuls :
 - `payBalanceV2` sur commandes `isSandbox=1`.
 
 Cette frontière appartient à Purchasing. La projection de ce fait vers les coûts/comptes B2B appartient ensuite à Economic Engine/Finance et doit rester un consommateur, pas un second écrivain du fait de paiement fournisseur.
+
+
+## Conservation de la preuve monétaire
+
+Les preuves positives de débit sont conservées dans `supplier_execution_payment_proofs`.
+
+Chaque preuve contient uniquement des faits bornés :
+
+- `supplier_payment_id` ;
+- `provider` ;
+- `proof_source` ;
+- `proof_ref` ;
+- identifiant d'ordre provider éventuel ;
+- `payment_ref` éventuelle ;
+- montant observé ;
+- devise ;
+- indicateurs `debit_confirmed`, `sandbox`, `simulated` ;
+- date provider éventuelle ;
+- faits provider minimaux sanitisés.
+
+Jamais de payload brut ni de credential.
+
+Une preuve native est unique par `provider + proof_source + proof_ref`. Un replay identique est idempotent ; rattacher la même preuve à un autre paiement est interdit.
+
+### CJ
+
+Pour CJ, la preuve cible est `POST /shopping/wallet/billingHistory`.
+
+Une écriture est admissible lorsqu'elle correspond de façon unique à :
+
+- l'ordre CJ attendu ;
+- `typeDesc = Order Payment` ;
+- `paymentTypeDesc = Balance` ;
+- statut success ;
+- montant attendu ;
+- mouvement débiteur.
+
+Le `billingHistory.id` devient le `proof_ref` durable.
+
+Cette preuve reste distincte de la réponse `payBalanceV2` et du read-back de statut d'ordre.
