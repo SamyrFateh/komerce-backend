@@ -68,15 +68,15 @@ describe('boutique-taxonomy-admin', () => {
     const before = { category_key: 'maison', key: 'deco', is_active: true };
     const deleted = { category_key: 'maison', key: 'deco', is_active: true };
     const q = {
-      query: jest.fn()
-        .mockResolvedValueOnce({ rows: [before] })
-        .mockResolvedValueOnce({ rows: [deleted] }),
+      query: jest.fn().mockResolvedValueOnce({
+        rows: [{ ...deleted, before_snapshot: before }],
+      }),
     };
     const actor = { id: '11111111-1111-4111-8111-111111111111', role: 'admin', source_surface: 'test' };
     const result = await deactivateSubcategory('maison', 'deco', { hard: true }, q, actor);
 
-    expect(q.query.mock.calls[1][0]).toContain('DELETE FROM boutique_subcategories');
-    expect(q.query.mock.calls[1][1]).toEqual(['maison', 'deco']);
+    expect(q.query.mock.calls[0][0]).toContain('DELETE FROM boutique_subcategories');
+    expect(q.query.mock.calls[0][1]).toEqual(['maison', 'deco']);
     expect(result).toEqual({ deleted: true, subcategory: deleted });
     expect(mockAudit).toHaveBeenCalledWith(q, expect.objectContaining({
       action: 'SUBCATEGORY_DELETED',
