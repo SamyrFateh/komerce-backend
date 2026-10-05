@@ -89,7 +89,7 @@ async function ensureCanonicalSku(db) {
   if (existing.rows.length) return existing.rows[0];
 
   let { rows } = await db.query(`
-    SELECT id, state, product_id, supplier_name, supplier_product_id, raw_payload,
+    SELECT id, state, product_id, import_id, supplier_name, supplier_product_id, raw_payload,
            scan_result, normalized_source_contract, rejected_reason
       FROM sourcing_candidates
      WHERE supplier_name='AliExpress' AND supplier_product_id=$1
@@ -100,7 +100,7 @@ async function ensureCanonicalSku(db) {
     const golden = require('./aliexpress-golden-e2e');
     await golden.executeImport(PRODUCT_ID, process.env);
     ({ rows } = await db.query(`
-      SELECT id, state, product_id, supplier_name, supplier_product_id, raw_payload,
+      SELECT id, state, product_id, import_id, supplier_name, supplier_product_id, raw_payload,
              scan_result, normalized_source_contract, rejected_reason
         FROM sourcing_candidates
        WHERE supplier_name='AliExpress' AND supplier_product_id=$1
@@ -176,6 +176,33 @@ async function ensureCanonicalSku(db) {
   if (exposed.rows[0]?.exposed === true) {
     throw new Error('ALIEXPRESS_CERT_PROOF_PRODUCT_MUST_REMAIN_UNEXPOSED');
   }
+
+  const linkage = require('../services/sourcing-catalog-product-linkage');
+  const canonicalProductIds = await linkage.findCanonicalProductIdsForCatalogProduct(product.id, db.query.bind(db));
+  const chain = await db.query(`
+    SELECT
+      (SELECT COUNT(*)::int FROM sourcing_captures c
+        WHERE NULLIF(c.stats->>'import_id','')::uuid = $1::uuid) AS captures,
+      (SELECT COUNT(*)::int
+         FROM sourcing_observations o
+         JOIN sourcing_captures c ON c.capture_id=o.capture_id
+        WHERE NULLIF(c.stats->>'import_id','')::uuid = $1::uuid
+          AND o.grain::text='product'
+          AND o.source_ref=$2) AS product_observations,
+      (SELECT COUNT(*)::int
+         FROM sourcing_resolution_bindings rb
+         JOIN sourcing_observations o ON o.observation_id=rb.observation_id
+         JOIN sourcing_captures c ON c.capture_id=o.capture_id
+        WHERE NULLIF(c.stats->>'import_id','')::uuid = $1::uuid
+          AND o.grain::text='product'
+          AND o.source_ref=$2
+          AND rb.ended_at IS NULL) AS active_product_bindings
+  `, [candidate.import_id, PRODUCT_ID]);
+  console.log(`ALIEXPRESS_CERT_CANONICAL_CHAIN=${JSON.stringify({
+    import_id: candidate.import_id || null,
+    canonical_product_ids: canonicalProductIds,
+    ...(chain.rows[0] || {}),
+  })}`);
 
   console.log(`ALIEXPRESS_CERT_PROOF_SKU_CREATED=${proofSku.rows[0].id}`);
   return { id: proofSku.rows[0].id, product_ref: product.product_ref };
