@@ -1,0 +1,141 @@
+name: Isolated AliExpress business certification
+
+'on':
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Proof level'
+        required: true
+        type: choice
+        default: readiness
+        options:
+          - readiness
+          - order
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: isolated-aliexpress-business-certification
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    name: AliExpress business certification
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+       github.event.issue.user.login == github.repository_owner &&
+       (github.event.issue.title == '[isolated-op] aliexpress-business-certification-readiness' ||
+        github.event.issue.title == '[isolated-op] aliexpress-business-certification-order'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: '1'
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
+      RAILWAY_PROJECT_ID: '1c5c37ab-557b-41b1-885a-8b3ead573795'
+      RAILWAY_SERVICE_ID: ${{ vars.KOMERCE_STAGING_RAILWAY_SERVICE_ID }}
+      RAILWAY_ENVIRONMENT_ID: ${{ vars.KOMERCE_STAGING_RAILWAY_ENVIRONMENT_ID }}
+
+    steps:
+      - name: Resolve proof mode
+        id: mode
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_TITLE: ${{ github.event.issue.title || '' }}
+          DISPATCH_MODE: ${{ inputs.mode || '' }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = 'workflow_dispatch' ]; then
+            mode="$DISPATCH_MODE"
+          else
+            case "$ISSUE_TITLE" in
+              '[isolated-op] aliexpress-business-certification-readiness') mode='readiness' ;;
+              '[isolated-op] aliexpress-business-certification-order') mode='order' ;;
+              *) echo '::error::Unsupported certification command'; exit 1 ;;
+            esac
+          fi
+          case "$mode" in readiness|order) ;; *) echo '::error::Invalid mode'; exit 1 ;; esac
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+      - name: Require isolated staging target
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${RAILWAY_TOKEN:-}" || { echo '::error::RAILWAY_STAGING_TOKEN missing'; exit 1; }
+          test -n "${RAILWAY_SERVICE_ID:-}" || { echo '::error::KOMERCE_STAGING_RAILWAY_SERVICE_ID missing'; exit 1; }
+          test -n "${RAILWAY_ENVIRONMENT_ID:-}" || { echo '::error::KOMERCE_STAGING_RAILWAY_ENVIRONMENT_ID missing'; exit 1; }
+          test "$RAILWAY_SERVICE_ID" != '48ee010d-a1c3-4c47-9028-c1aacf90e00f' || { echo '::error::Production service forbidden'; exit 1; }
+          test "$RAILWAY_ENVIRONMENT_ID" != '7a0ce7dc-93a0-4bfa-88c9-088f70e8883a' || { echo '::error::Production environment forbidden'; exit 1; }
+
+      - name: Checkout protected main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Railway CLI
+        run: npm install --global @railway/cli
+
+      - name: Run bounded certification
+        id: proof
+        shell: bash
+        env:
+          MODE: ${{ steps.mode.outputs.mode }}
+        run: |
+          set -euo pipefail
+          extra=()
+          if [ "$MODE" = 'order' ]; then
+            extra+=(KOMERCE_ALLOW_ALIEXPRESS_ORDER_PROOF=1)
+          fi
+          output="$(
+            timeout 600s railway run               --project "$RAILWAY_PROJECT_ID"               --environment "$RAILWAY_ENVIRONMENT_ID"               --service "$RAILWAY_SERVICE_ID"               --no-local               env                 NODE_ENV=test                 KOMERCE_ENV=staging                 KOMERCE_ALLOW_ALIEXPRESS_BUSINESS_CERTIFICATION=1                 "${extra[@]}"                 node scripts/aliexpress-business-certification.js "--mode=$MODE"
+          )"
+          printf '%s\n' "$output"
+          compact="$(printf '%s\n' "$output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g' | cut -c1-12000)"
+          {
+            echo 'summary<<EOF'
+            echo "$compact"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write proof summary
+        if: always()
+        env:
+          MODE: ${{ steps.mode.outputs.mode }}
+          PROOF_SUMMARY: ${{ steps.proof.outputs.summary }}
+        run: |
+          {
+            echo '## AliExpress business certification'
+            echo
+            echo "- mode: $MODE"
+            echo '- runtime: isolated staging only'
+            echo '- provider payment: never invoked'
+            echo '- order mode: exactly one create attempt on the selected SKU; no automatic retry after ambiguity'
+            if [ -n "${PROOF_SUMMARY:-}" ]; then echo "- result: $PROOF_SUMMARY"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Close successful command issue
+        if: success() && github.event_name == 'issues'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          MODE: ${{ steps.mode.outputs.mode }}
+          PROOF_SUMMARY: ${{ steps.proof.outputs.summary }}
+        run: |
+          body="$(printf 'AliExpress business certification completed. Mode: %s. Provider payment was not invoked.\n\nResult: %s' "$MODE" "$PROOF_SUMMARY")"
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body "$body"
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
