@@ -159,6 +159,34 @@ test('Supplier payment signal resolves to Purchasing PO without exposing interna
   expect(params).toEqual([['payment-internal-uuid']]);
 });
 
+test('un signal supplier_payment market-scoped ne résout jamais une PO fournisseur', async () => {
+  const market = { id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', code: 'CM', name: 'Cameroun', currency: 'XAF' };
+  mockAdmin.familyForType.mockReturnValue('eco');
+  mockAdmin.listSignals.mockResolvedValue({
+    signals: [{
+      signal_ref: 'KSG-000021',
+      signal_type: 'supplier_payment_review',
+      severity: 'warning',
+      title: 'Paiement fournisseur à revoir',
+      status: 'open',
+      entity_type: 'supplier_payment',
+      entity_id: 'payment-internal-uuid',
+      market_id: market.id,
+    }],
+    total: 1, limit: 100, offset: 0,
+  });
+
+  const result = await workspace.buildMarketWorkspace(market);
+
+  expect(result.signals[0].entity).toEqual({
+    type: 'supplier_payment',
+    ref: null,
+    label: 'supplier_payment',
+    href: null,
+  });
+  expect(mockDbQuery).not.toHaveBeenCalled();
+});
+
 test('Canonical lifecycle delegates by signal_ref and exact market scope', async () => {
   mockAdmin.acknowledgeByRef.mockResolvedValue({ signal_ref: 'KSG-000003', status: 'acknowledged' });
   mockAdmin.snoozeByRef.mockResolvedValue({ signal_ref: 'KSG-000003', status: 'snoozed', snoozed_until: 'later' });
