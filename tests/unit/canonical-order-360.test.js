@@ -79,3 +79,41 @@ test('mount charge la référence dans le namespace Entity 360', async () => {
   expect(ui.UIState.render).toHaveBeenNthCalledWith(1, root, 'loading', 'Chargement de la commande…');
   expect(ui.UIState.render).toHaveBeenLastCalledWith(root, 'error', 'Commande introuvable');
 });
+
+
+test('purchaseOrderDrills ouvre la PO dans Achats avec retour contextuel vers Order 360', () => {
+  const previous = globalThis.KomerceCanonicalNavigation;
+  globalThis.KomerceCanonicalNavigation = {
+    withReturnTo(path, returnTo, label) {
+      const q = new URLSearchParams();
+      q.set('return_to', returnTo);
+      q.set('return_label', label);
+      return path + (path.includes('?') ? '&' : '?') + q.toString();
+    },
+  };
+
+  try {
+    const drills = order360.purchaseOrderDrills({
+      purchase_orders: [{
+        id: 'cccccccc-cccc-4ccc-8ccc-000000000001',
+        status: 'confirmed',
+        supplier_name: 'CJdropshipping',
+        supplier_platform: 'cj',
+        procurement_hub_ref: 'DXB',
+        supplier_order_id: 'CJ-42',
+      }],
+    }, 'CMD-CM-001');
+
+    expect(drills).toHaveLength(1);
+    expect(drills[0]).toEqual(expect.objectContaining({
+      title: 'CJdropshipping · PO cccccccc',
+      message: 'confirmed · Hub DXB · Commande fournisseur CJ-42',
+      actionLabel: 'Ouvrir dans Achats',
+    }));
+    expect(drills[0].href).toContain('/admin/workspaces/purchasing?po=cccccccc-cccc-4ccc-8ccc-000000000001');
+    expect(drills[0].href).toContain('return_to=%2Fadmin%2Forders%2FCMD-CM-001');
+    expect(drills[0].href).toContain('return_label=Retour+%C3%A0+la+commande');
+  } finally {
+    globalThis.KomerceCanonicalNavigation = previous;
+  }
+});
