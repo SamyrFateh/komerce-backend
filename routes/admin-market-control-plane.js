@@ -5,14 +5,15 @@
  * @layer         route
  * @criticality   medium
  * @inputs        central admin actor, canonical market code in path
- * @outputs       read-only market list, per-market control view with gap report, and active central authority overview
+ * @outputs       market list/control view, provisioning/reprovisioning/lifecycle mutations, central authority overview
  * @depends       db.js, middleware/auth.js, services/market-control-plane.js, services/central-authority.js
  * @used-by       bootstrap/api-routes.js, central admin workspace
  * @db-read       none
  * @db-write      none
+ * @db-write-via:market-provisioning-service markets, market_operating_assignments, assignment_capability_ceiling, assignment_memberships, membership_capabilities, market_cash_control_policies, market_payment_providers, relais
  * @db-read-via:market-control-plane markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais
- * @db-txn        none
- * @doctrine      control_plane_is_read_only, central_by_role_declared, no_second_authorization_engine
+ * @db-txn        explicit for mutation routes
+ * @doctrine      control_plane_orchestrates_owned_writers, central_by_role_declared, no_second_authorization_engine
  * @impact-areas  market-delegation, market, authorization
  * @version       2026-10-v1
  */
