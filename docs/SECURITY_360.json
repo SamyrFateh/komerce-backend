@@ -302,13 +302,6 @@
   ],
   "routes": [
     {
-      "key": "GET /api/admin/entities/suppliers/{supplierId}",
-      "level": "PROTECTED",
-      "roles": [
-        "admin"
-      ]
-    },
-    {
       "key": "POST /api/admin/action-center/generate",
       "level": "PROTECTED",
       "roles": [
@@ -1006,6 +999,13 @@
       "roles": [
         "admin",
         "market_operator"
+      ]
+    },
+    {
+      "key": "GET /api/admin/entities/suppliers/{supplierId}",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
       ]
     },
     {
