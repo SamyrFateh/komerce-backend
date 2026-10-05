@@ -699,6 +699,10 @@ const KNOWN_RESPONSES = {
   '/api/admin/entities/products/{productRef}': {
     get: { fields: ['product','scope','summary','inventory','performance','economics','central','timeline','data_quality'], source: 'test' }
   },
+  // LOT 4 — réponse Supplier 360 read-only consommée par Canonical.
+  '/api/admin/entities/suppliers/{supplierId}': {
+    get: { fields: ['supplier','mappings','purchase_orders','execution','payments','data_quality'], source: 'test' }
+  },
   // LOT 3B — réponse Client 360 consommée par Canonical.
   '/api/admin/entities/clients/{clientPhone}': {
     get: { fields: ['client','scope','summary','finance','orders','top_products','shared_lists','notifications','security','timeline','data_quality'], source: 'test' }
