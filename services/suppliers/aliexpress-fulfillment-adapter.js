@@ -217,10 +217,13 @@ async function evaluate({ db, row, identity, quantity, destination, context = {}
     );
   }
 
+  const executionAuthorized = context.aliexpress_execution_authorized === true
+    || context.env?.KOMERCE_ALIEXPRESS_AUTO_ORDER_ENABLED === '1'
+    || process.env.KOMERCE_ALIEXPRESS_AUTO_ORDER_ENABLED === '1';
   return result(VERDICT.READY, {
     ...evidence,
-    execution_mode: 'api',
-    auto_order_ready: true,
+    execution_mode: executionAuthorized ? 'api' : 'manual',
+    auto_order_ready: executionAuthorized,
     place_order_invoked: false,
     payment_invoked: false,
   });
