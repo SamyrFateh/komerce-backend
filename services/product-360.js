@@ -111,7 +111,9 @@ async function loadProduct360(product, options = {}) {
   `, [productId]);
 
   const skusPromise = db.query(`
-    SELECT sku, supplier_sku, variant_combo, stock, price_kmf, is_active, created_at, updated_at
+    SELECT sku, supplier_sku, supplier_unit_ref,
+           supplier_order_identity->>'provider' AS supplier_provider,
+           variant_combo, stock, price_kmf, is_active, created_at, updated_at
     FROM product_skus
     WHERE product_id = $1::uuid
     ORDER BY is_active DESC, created_at ASC
@@ -167,6 +169,7 @@ async function loadProduct360(product, options = {}) {
   const suppliersPromise = includeCentral
     ? db.query(`
         SELECT
+          s.id AS supplier_id,
           s.name AS supplier_name,
           s.platform,
           ps.supplier_sku,
@@ -239,6 +242,10 @@ async function loadProduct360(product, options = {}) {
   const skus = skusResult.rows.map(row => Object.freeze({
     sku: row.sku || null,
     supplier_sku: row.supplier_sku || null,
+    ...(includeCentral ? {
+      supplier_unit_ref: row.supplier_unit_ref || null,
+      supplier_provider: row.supplier_provider || null,
+    } : {}),
     variant_combo: row.variant_combo || null,
     stock: Number(row.stock) || 0,
     price_kmf: row.price_kmf == null ? null : Number(row.price_kmf),
@@ -278,6 +285,7 @@ async function loadProduct360(product, options = {}) {
   const r = realCostsResult.rows[0] || {};
 
   const suppliers = suppliersResult.rows.map(row => Object.freeze({
+    id: row.supplier_id,
     name: row.supplier_name,
     platform: row.platform,
     supplier_sku: row.supplier_sku,
