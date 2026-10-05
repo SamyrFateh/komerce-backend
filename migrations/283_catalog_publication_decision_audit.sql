@@ -5,11 +5,13 @@
 -- Owner: catalog
 -- approve / reject / override+approve conservent acteur, raison et snapshots minimaux.
 -- L'exposition marché reste auditée séparément dans market_delegation_audit.
+-- L'audit survit à une suppression administrative du produit : product_id devient NULL,
+-- tandis que product_ref et les snapshots conservent la preuve historique.
 
 CREATE TABLE IF NOT EXISTS public.catalog_publication_decision_audit (
   id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   action             text NOT NULL,
-  product_id         uuid NOT NULL REFERENCES public.products(id) ON DELETE RESTRICT,
+  product_id         uuid NULL REFERENCES public.products(id) ON DELETE SET NULL,
   product_ref        text NOT NULL,
   actor_user_id      uuid NULL REFERENCES public.users(id) ON DELETE SET NULL,
   actor_role         text NULL,
