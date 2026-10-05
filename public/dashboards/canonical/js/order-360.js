@@ -4,16 +4,16 @@
  * @domain        admin-dashboard
  * @layer         ui-orchestration
  * @criticality   medium
- * @inputs        canonical_admin_session, order_reference
- * @outputs       canonical_order_360
+ * @inputs        canonical_admin_session, order_reference, authorized_purchasing_projection
+ * @outputs       canonical_order_360, contextual_purchasing_drills
  * @depends       primitives
  * @used-by       canonical admin entrypoint
  * @db-read       none
  * @db-write      none
  * @db-txn        none
  * @doctrine      entity_360_reunites_without_recomputing, canonical_admin_no_legacy_imports
- * @impact-areas  admin-dashboard, orders, logistics, notifications, documents, finance, clients, products
- * @version       2026-08
+ * @impact-areas  admin-dashboard, orders, logistics, notifications, documents, finance, clients, products, purchasing
+ * @version       2026-10
  */
 
 'use strict';
@@ -124,6 +124,31 @@
     }));
   }
 
+  function shortId(value) {
+    return String(value || '').slice(0, 8);
+  }
+
+  function purchaseOrderDrills(purchasing, orderReference) {
+    const rows = purchasing && Array.isArray(purchasing.purchase_orders)
+      ? purchasing.purchase_orders
+      : [];
+    return rows.filter(row => row && row.id).map(row => ({
+      level: 'info',
+      title: [row.supplier_name || row.supplier_platform || 'Fournisseur', `PO ${shortId(row.id)}`].join(' · '),
+      message: [
+        row.status || null,
+        row.procurement_hub_ref ? `Hub ${row.procurement_hub_ref}` : null,
+        row.supplier_order_id ? `Commande fournisseur ${row.supplier_order_id}` : null,
+      ].filter(Boolean).join(' · '),
+      href: contextualHref(
+        `/admin/workspaces/purchasing?po=${encodeURIComponent(row.id)}`,
+        `/admin/orders/${encodeURIComponent(orderReference)}`,
+        'Retour à la commande'
+      ),
+      actionLabel: 'Ouvrir dans Achats',
+    }));
+  }
+
   function renderTableSection(rootNode, ui, doc, options) {
     const section = ui.Section.create({ title: options.title, description: options.description });
     rootNode.appendChild(section.element);
@@ -187,6 +212,16 @@
       emptyText: 'Aucune référence produit navigable.',
       items: productDrills(payload.items, payload.order.reference),
     });
+
+    if (payload.purchasing) {
+      const purchasing = doc.createElement('section');
+      rootNode.appendChild(purchasing);
+      ui.AlertPanel.render(purchasing, {
+        title: 'Achats fournisseurs',
+        emptyText: 'Aucun bon de commande fournisseur lié à cette commande.',
+        items: purchaseOrderDrills(payload.purchasing, payload.order.reference),
+      });
+    }
 
     renderTableSection(rootNode, ui, doc, {
       title: 'Colis',
@@ -324,6 +359,7 @@
     formatKmf,
     formatDate,
     productDrills,
+    purchaseOrderDrills,
     metricItems,
     renderPayload,
     jsonRequest,

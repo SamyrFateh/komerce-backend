@@ -8,9 +8,10 @@
 
 let mockAllowedMarkets = new Set(['market-cm-id']);
 let mockGlobalAllowed = false;
+let mockRole = 'admin';
 
 jest.mock('../../middleware/auth', () => ({
-  authenticate: (req, res, next) => { req.user = { id: 'admin-1', role: 'admin' }; next(); },
+  authenticate: (req, res, next) => { req.user = { id: 'user-1', role: mockRole }; next(); },
   requireRole: roles => (req, res, next) => roles.includes(req.user.role)
     ? next()
     : res.status(403).json({ code: 'role_forbidden' }),
@@ -69,6 +70,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockAllowedMarkets = new Set(['market-cm-id']);
   mockGlobalAllowed = false;
+  mockRole = 'admin';
   mockResolveOrder.mockResolvedValue({ invalid: false, order: resolvedOrder() });
   mockLoadOrder360.mockResolvedValue({
     order: { reference: 'CMD-CM-001', market: { code: 'CM' } },
@@ -82,8 +84,20 @@ test('operations.read CM permet de lire une commande CM après résolution serve
   expect(res.status).toBe(200);
   expect(res.headers['cache-control']).toContain('no-store');
   expect(mockResolveOrder).toHaveBeenCalledWith('CMD-CM-001');
-  expect(mockLoadOrder360).toHaveBeenCalledWith(expect.objectContaining({ market_id: 'market-cm-id' }));
+  expect(mockLoadOrder360).toHaveBeenCalledWith(expect.objectContaining({ market_id: 'market-cm-id' }), { includePurchasing: true });
   expect(JSON.stringify(res.body)).not.toContain('market-cm-id');
+});
+
+test('market_operator garde Order 360 mais sans projection Achats admin-only', async () => {
+  mockRole = 'market_operator';
+
+  const res = await request(app()).get('/api/admin/entities/orders/CMD-CM-001');
+
+  expect(res.status).toBe(200);
+  expect(mockLoadOrder360).toHaveBeenCalledWith(
+    expect.objectContaining({ market_id: 'market-cm-id' }),
+    { includePurchasing: false }
+  );
 });
 
 test('operations.read CM ne permet pas de lire une commande CG', async () => {
