@@ -92,7 +92,8 @@ describe('AliExpress fulfillment adapter', () => {
     expect(out.evidence.provider).toBe('aliexpress');
     expect(out.evidence.supplier_origin_country_code).toBe('CN');
     expect(out.evidence.exact_unit_resolved).toBe(true);
-    expect(out.evidence.auto_order_ready).toBe(true);
+    expect(out.evidence.auto_order_ready).toBe(false);
+    expect(out.evidence.execution_mode).toBe('manual');
     expect(out.evidence.place_order_invoked).toBe(false);
     expect(out.evidence.payment_invoked).toBe(false);
     expect(buildFreightQuoteParams).toHaveBeenCalledWith(
@@ -104,6 +105,48 @@ describe('AliExpress fulfillment adapter', () => {
       expect.objectContaining({ sku_id: '12000052119244345' }),
       expect.any(Object)
     );
+  });
+
+  test('n annonce auto_order_ready que sous autorisation explicite', async () => {
+    const out = await adapter.evaluate(baseArgs({
+      env: { KOMERCE_ALIEXPRESS_AUTO_ORDER_ENABLED: '1' },
+      aliexpressConnected: {
+        fetchProducts: jest.fn(async () => ({ products: [liveProduct()] })),
+        invokeTop: jest.fn(async () => ({
+          result: {
+            success: true,
+            aeop_freight_calculate_result_for_buyer_dtolist: {
+              aeop_freight_calculate_result_for_buyer_d_t_o: [{ service_name: 'CAINIAO_FULFILLMENT_STD' }],
+            },
+          },
+        })),
+      },
+      aliexpressPreflight: {
+        METHODS: { FREIGHT: 'aliexpress.logistics.buyer.freight.get' },
+        resolveOrderableUnit: jest.fn(() => ({
+          supplier_sku: '14:771#1pcs;200001036:200746126',
+          raw_sku_id: '12000052119244345',
+          stock_available: 205,
+          unit_price: 3.19,
+          currency: 'USD',
+        })),
+        buildFreightQuoteParams: jest.fn(() => ({
+          country_code: 'AE',
+          send_goods_country_code: 'CN',
+          product_id: 1005010358671233,
+          product_num: 1,
+          sku_id: '12000052119244345',
+        })),
+        summarizeFreightResponse: jest.fn(() => ({ success: true, has_options: true, error: null })),
+        classifyApiError: jest.fn(() => 'other'),
+      },
+    }));
+
+    expect(out.ready).toBe(true);
+    expect(out.evidence.auto_order_ready).toBe(true);
+    expect(out.evidence.execution_mode).toBe('api');
+    expect(out.evidence.place_order_invoked).toBe(false);
+    expect(out.evidence.payment_invoked).toBe(false);
   });
 
   test('ne fabrique jamais une origine fournisseur absente', async () => {
