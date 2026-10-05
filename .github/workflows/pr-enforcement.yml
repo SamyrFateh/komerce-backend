@@ -385,10 +385,14 @@ jobs:
         if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
         run: npm run security:360:check
       - name: Related unit tests
-        if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true'
+        if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true' && ((needs.changes.outputs.backend_source != 'true') || needs.changes.outputs.reuse_coverage == 'true')
         env:
           BACKEND_FILES: ${{ needs.changes.outputs.backend_files }}
         run: node scripts/run-staged-related-tests.js --files "$BACKEND_FILES"
+
+      - name: Related unit tests subsumed by full coverage
+        if: (needs.changes.outputs.backend == 'true') && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.backend_source == 'true' && needs.changes.outputs.reuse_coverage != 'true'
+        run: echo "Skipped targeted related tests because the immediately following full unit coverage run executes the same Jest unit scope as a strict superset."
       - name: Unit test coverage threshold
         if: (needs.changes.outputs.backend_source == 'true') && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.reuse_coverage != 'true'
         run: npm run test:unit:coverage

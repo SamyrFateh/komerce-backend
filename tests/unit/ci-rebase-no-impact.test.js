@@ -34,7 +34,6 @@ describe('CI rebase no-impact proof', () => {
 
   test.each([
     ['ancien verdict non vert', { previousGreen:false }, 'previous-required-verdict-not-green'],
-    ['HEAD précédent non ancêtre', { ancestor:false }, 'previous-head-not-ancestor-of-current-head'],
     ['ensemble de fichiers PR modifié', { currentPrFiles:['routes/b.js'] }, 'pr-file-set-changed'],
     ['patch PR modifié', { currentPatchDigest:'different' }, 'pr-patch-changed'],
     ['main touche directement la PR', { baseDeltaFiles:['routes/a.js'] }, 'base-touched-pr-file:routes/a.js'],
@@ -42,6 +41,23 @@ describe('CI rebase no-impact proof', () => {
     ['main touche un fichier global', { baseDeltaFiles:['package-lock.json'] }, 'base-global-risk:package-lock.json'],
   ])('%s => CI complète', (_label, override, reason) => {
     expect(qualifiesNoImpact(base(override))).toEqual({ qualifies:false, reason });
+  });
+
+  test('accepte un rebase si patch, fichiers et impact de base sont inchangés', () => {
+    expect(qualifiesNoImpact(base({ ancestor:false }))).toEqual({
+      qualifies:true,
+      reason:'green-base-sync-patch-and-impact-unchanged',
+    });
+  });
+
+  test('un rebase reste fail-closed si le patch PR change', () => {
+    expect(qualifiesNoImpact(base({
+      ancestor:false,
+      currentPatchDigest:'different',
+    }))).toEqual({
+      qualifies:false,
+      reason:'pr-patch-changed',
+    });
   });
 
   test('le workflow précédent doit avoir scope + Required verdict verts', () => {
