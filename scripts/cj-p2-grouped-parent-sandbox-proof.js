@@ -21,6 +21,8 @@ const cj = require('../services/suppliers/connectors/cj-connector');
 const contract = require('../services/suppliers/cj-purchasing-contract');
 
 const ALLOW_FLAG = 'KOMERCE_ALLOW_CJ_P2_GROUPED_PARENT';
+const PAYMENT_MODE_SIMULATE = 'simulatePay';
+const PAYMENT_MODE_BALANCE_V2 = 'payBalanceV2';
 const DEFAULT_PRODUCT_REF = 'KPR-131962';
 const DEFAULT_DESTINATION = Object.freeze({
   postal_code: '10001',
@@ -242,12 +244,36 @@ async function run(env = process.env, deps = {}) {
 
   const amountReconciliation = contract.reconcileSandboxParentAmount(parent);
 
-  const payBody = await call(contract.ENDPOINTS.sandbox_simulate_pay, {
-    method: 'POST',
-    body: contract.buildSandboxSimulatePayParentPayload(parent.shipment_order_id),
-    accessToken,
-  });
-  const payment = contract.parseSandboxSimulatePayResponse(payBody);
+  const paymentMode = String(
+    env.KOMERCE_CJ_P2_GROUPED_PAYMENT_MODE || PAYMENT_MODE_SIMULATE
+  ).trim();
+
+  let payment;
+  if (paymentMode === PAYMENT_MODE_BALANCE_V2) {
+    const payBody = await call(contract.ENDPOINTS.pay_balance_v2, {
+      method: 'POST',
+      body: contract.buildPayBalanceV2Payload(parent.shipment_order_id, parent.pay_id),
+      accessToken,
+    });
+    payment = {
+      ...contract.parsePayBalanceV2Response(payBody),
+      sandbox: true,
+      real_charge_possible: false,
+      payment_mode: 'sandbox_payBalanceV2',
+    };
+  } else if (paymentMode === PAYMENT_MODE_SIMULATE) {
+    const payBody = await call(contract.ENDPOINTS.sandbox_simulate_pay, {
+      method: 'POST',
+      body: contract.buildSandboxSimulatePayParentPayload(parent.shipment_order_id),
+      accessToken,
+    });
+    payment = {
+      ...contract.parseSandboxSimulatePayResponse(payBody),
+      payment_mode: 'sandbox_simulate_pay_shipment_order_id',
+    };
+  } else {
+    throw new Error('CJ_P2_GROUPED_PAYMENT_MODE_UNSUPPORTED');
+  }
 
   const paidStatuses = [];
   for (const subOrder of subOrders) {
@@ -278,7 +304,7 @@ async function run(env = process.env, deps = {}) {
     cart_submit_success: cartConfirmed.submit_success,
     cart_result: cartConfirmed.result,
     payment_verdict: payment.payment_verdict,
-    payment_mode: 'sandbox_simulate_pay_shipment_order_id',
+    payment_mode: payment.payment_mode,
     amount_reconciliation: amountReconciliation,
   };
   console.log(`[cj-p2-grouped-parent-sandbox-proof] ${JSON.stringify(result)}`);
@@ -306,6 +332,8 @@ if (require.main === module) {
 
 module.exports = {
   ALLOW_FLAG,
+  PAYMENT_MODE_SIMULATE,
+  PAYMENT_MODE_BALANCE_V2,
   CJ_MIN_CALL_GAP_MS,
   DEFAULT_DESTINATION,
   guard,

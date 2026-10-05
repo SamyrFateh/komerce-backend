@@ -285,3 +285,35 @@ B2B accounting reconciliation is complete
 ```
 
 The canonical proof result therefore carries `real_debit_verified=false`.
+
+
+## payBalanceV2 sandbox-safe proof
+
+CJ documents that `payBalanceV2` itself performs simulated payment when every child order of the parent was created with `isSandbox=1`; sandbox and normal orders cannot be mixed in the same parent.
+
+Komerce therefore permits a dedicated proof mode:
+
+```
+KOMERCE_CJ_SANDBOX=1
+KOMERCE_CJ_P2_GROUPED_PAYMENT_MODE=payBalanceV2
+```
+
+The proof:
+
+```
+create sandbox children
+→ build real parent
+→ reconcile parent amount
+→ POST payBalanceV2(shipmentOrderId, payId)
+→ read back every child
+```
+
+This validates the exact payment endpoint contract while retaining:
+
+```
+sandbox = true
+real_charge_possible = false
+real_debit_verified = false
+```
+
+It does not authorize production payment or prove a real CJ balance debit.
