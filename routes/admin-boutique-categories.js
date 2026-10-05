@@ -5,7 +5,7 @@
  * @layer         route
  * @criticality   high
  * @inputs        admin_category_payload, subcategory_payload, ordering
- * @outputs       category_config, subcategory_config, taxonomy_mutation_result
+ * @outputs       category_config, subcategory_config, taxonomy_mutation_result, audited_taxonomy_mutation
  * @depends       middleware/auth.js, services/boutique-taxonomy-admin.js
  * @used-by       bootstrap/api-routes.js, admin-dashboard, shop-schema-sync
  * @db-read       none
@@ -57,19 +57,19 @@ router.get('/:key', ...guard, async (req, res, next) => {
 
 router.post('/', ...guard, async (req, res, next) => {
   try {
-    res.status(201).json(await taxonomy.createCategory(req.body));
+    res.status(201).json(await taxonomy.createCategory(req.body, undefined, { ...req.user, source_surface: 'legacy_admin_taxonomy' }));
   } catch (err) { handleTaxonomyError(err, res, next); }
 });
 
 router.put('/:key', ...guard, async (req, res, next) => {
   try {
-    res.json(await taxonomy.updateCategory(req.params.key, req.body));
+    res.json(await taxonomy.updateCategory(req.params.key, req.body, undefined, { ...req.user, source_surface: 'legacy_admin_taxonomy' }));
   } catch (err) { handleTaxonomyError(err, res, next); }
 });
 
 router.delete('/:key', ...guard, async (req, res, next) => {
   try {
-    res.json(await taxonomy.deactivateCategory(req.params.key));
+    res.json(await taxonomy.deactivateCategory(req.params.key, undefined, { ...req.user, source_surface: 'legacy_admin_taxonomy' }));
   } catch (err) { handleTaxonomyError(err, res, next); }
 });
 
@@ -81,13 +81,13 @@ router.get('/:key/subcategories', ...guard, async (req, res, next) => {
 
 router.post('/:key/subcategories', ...guard, async (req, res, next) => {
   try {
-    res.status(201).json(await taxonomy.createSubcategory(req.params.key, req.body));
+    res.status(201).json(await taxonomy.createSubcategory(req.params.key, req.body, undefined, { ...req.user, source_surface: 'legacy_admin_taxonomy' }));
   } catch (err) { handleTaxonomyError(err, res, next); }
 });
 
 router.put('/:key/subcategories/:subKey', ...guard, async (req, res, next) => {
   try {
-    res.json(await taxonomy.updateSubcategory(req.params.key, req.params.subKey, req.body));
+    res.json(await taxonomy.updateSubcategory(req.params.key, req.params.subKey, req.body, undefined, { ...req.user, source_surface: 'legacy_admin_taxonomy' }));
   } catch (err) { handleTaxonomyError(err, res, next); }
 });
 
@@ -96,7 +96,9 @@ router.delete('/:key/subcategories/:subKey', ...guard, async (req, res, next) =>
     res.json(await taxonomy.deactivateSubcategory(
       req.params.key,
       req.params.subKey,
-      { hard: req.query.hard === 'true' }
+      { hard: req.query.hard === 'true' },
+      undefined,
+      { ...req.user, source_surface: 'legacy_admin_taxonomy' }
     ));
   } catch (err) { handleTaxonomyError(err, res, next); }
 });
