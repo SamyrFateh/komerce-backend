@@ -39,32 +39,43 @@ jobs:
           fi
           GH_TOKEN="$PR_SYNC_TOKEN"
           PR_URL="https://api.github.com/repos/$REPOSITORY/pulls/$PR_NUMBER"
-          STATE="unknown"
-          for attempt in 1 2 3 4 5; do
-            curl -fsSL \
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$PR_URL" > /tmp/pr.json
+
+          BASE_SHA="$(node -e 'const p=require("/tmp/pr.json"); process.stdout.write(String(p.base?.sha||""))')"
+          HEAD_SHA="$(node -e 'const p=require("/tmp/pr.json"); process.stdout.write(String(p.head?.sha||""))')"
+          MERGEABLE="$(node -e 'const p=require("/tmp/pr.json"); process.stdout.write(String(p.mergeable))')"
+          MERGEABLE_STATE="$(node -e 'const p=require("/tmp/pr.json"); process.stdout.write(String(p.mergeable_state||"unknown"))')"
+
+          if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ]; then
+            echo "::error::Unable to resolve PR base/head SHA."
+            exit 1
+          fi
+
+          COMPARE_URL="https://api.github.com/repos/$REPOSITORY/compare/$HEAD_SHA...$BASE_SHA"
+          curl -fsSL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$COMPARE_URL" > /tmp/compare.json
+
+          BEHIND_BY="$(node -e 'const c=require("/tmp/compare.json"); process.stdout.write(String(c.behind_by||0))')"
+          echo "mergeable_state=$MERGEABLE_STATE mergeable=$MERGEABLE behind_by=$BEHIND_BY"
+
+          if [ "$MERGEABLE" = "false" ] && [ "$MERGEABLE_STATE" = "dirty" ]; then
+            echo "Conflict detected: automatic update intentionally skipped."
+            exit 0
+          fi
+
+          if [ "$BEHIND_BY" -gt 0 ]; then
+            curl -fsSL -X PUT \
               -H "Authorization: Bearer $GH_TOKEN" \
               -H "Accept: application/vnd.github+json" \
-              "$PR_URL" > /tmp/pr.json
-            STATE="$(node -e 'const p=require("/tmp/pr.json"); process.stdout.write(String(p.mergeable_state||"unknown"))')"
-            echo "mergeable_state=$STATE"
-            [ "$STATE" != "unknown" ] && break
-            sleep 2
-          done
-
-          case "$STATE" in
-            behind)
-              curl -fsSL -X PUT \
-                -H "Authorization: Bearer $GH_TOKEN" \
-                -H "Accept: application/vnd.github+json" \
-                -H "Content-Type: application/json" \
-                "https://api.github.com/repos/$REPOSITORY/pulls/$PR_NUMBER/update-branch" \
-                -d "{\"expected_head_sha\":\"$EXPECTED_HEAD_SHA\"}"
-              echo "Branch update requested; synchronize will trigger PR enforcement on the new HEAD."
-              ;;
-            dirty)
-              echo "Conflict detected: automatic update intentionally skipped."
-              ;;
-            *)
-              echo "No mechanical branch update required for state=$STATE."
-              ;;
-          esac
+              -H "Content-Type: application/json" \
+              "https://api.github.com/repos/$REPOSITORY/pulls/$PR_NUMBER/update-branch" \
+              -d "{\"expected_head_sha\":\"$EXPECTED_HEAD_SHA\"}"
+            echo "Branch update requested; synchronize will trigger PR enforcement on the new HEAD."
+          else
+            echo "No mechanical branch update required; PR head already contains current base."
+          fi
