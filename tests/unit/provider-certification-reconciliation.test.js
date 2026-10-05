@@ -13,6 +13,15 @@ test('R1 — le ledger capability-level réel est cohérent et ne sur-certifie p
   expect(report.summary.p4).toBeGreaterThanOrEqual(3);
   expect(report.summary.closed).toBeGreaterThanOrEqual(1);
 
+  const allegroReadiness = report.rows.find(
+    row => row.provider === 'allegro' && row.capability === 'purchasing.readiness'
+  );
+  expect(allegroReadiness).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+  });
+
   const allegroAuto = report.rows.find(
     row => row.provider === 'allegro' && row.capability === 'purchasing.auto_order'
   );
