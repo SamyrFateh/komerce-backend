@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 22,
-    "total_routes": 639,
+    "total_routes": 640,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -5865,6 +5865,65 @@
                       "x-observed": true
                     },
                     "timeline": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/entities/suppliers/{supplierId}": {
+      "get": {
+        "summary": "GET /api/admin/entities/suppliers/{supplierId}",
+        "x-route-file": "routes/admin-supplier-360.js",
+        "parameters": [
+          {
+            "name": "supplierId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "supplier": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "mappings": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "purchase_orders": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "execution": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "payments": {
                       "type": "string",
                       "x-observed": true
                     },

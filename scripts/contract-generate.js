@@ -196,6 +196,8 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/entities/clients/{clientPhone}', method: 'get', schema: null },
   // LOT 3C — Canonical Product 360
   { prefix: '/api/admin/entities/products/{productRef}', method: 'get', schema: null },
+  // LOT 4 — Canonical Supplier 360 read-only
+  { prefix: '/api/admin/entities/suppliers/{supplierId}', method: 'get', schema: null },
   // LOT 4A — Canonical Operations / Hub-Relais Workspace (single-market actions)
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/mark-ordered', method: 'post', schema: null },
@@ -696,6 +698,10 @@ const KNOWN_RESPONSES = {
   // LOT 3C — réponse Product 360 consommée par Canonical.
   '/api/admin/entities/products/{productRef}': {
     get: { fields: ['product','scope','summary','inventory','performance','economics','central','timeline','data_quality'], source: 'test' }
+  },
+  // LOT 4 — réponse Supplier 360 read-only consommée par Canonical.
+  '/api/admin/entities/suppliers/{supplierId}': {
+    get: { fields: ['supplier','mappings','purchase_orders','execution','payments','data_quality'], source: 'test' }
   },
   // LOT 3B — réponse Client 360 consommée par Canonical.
   '/api/admin/entities/clients/{clientPhone}': {

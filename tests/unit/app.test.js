@@ -5,3 +5,11 @@ const s=fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','adm
 test('admin app registers MarketsView route',()=>{
   expect(s).toMatch(/\/admin\/markets[\s\S]*MarketsView/);
 });
+
+
+const canonicalApp=fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','canonical','js','app.js'),'utf8');
+test('canonical app route Supplier 360 vers sa surface dédiée',()=>{
+  expect(canonicalApp).toContain("SUPPLIER_360: 'supplier-360'");
+  expect(canonicalApp).toContain("return SURFACES.SUPPLIER_360");
+  expect(canonicalApp).toContain('KomerceCanonicalSupplier360.mount');
+});

@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        user_session, server_resolved_admin_context, url_path, requested_market_view
  * @outputs       canonical_admin_boot_state, canonical_market_selection
- * @depends       canonical admin-context, pilotage, commerce, orders, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, purchasing-workspace, pricing-workspace, action-center, order-360, client-index, client-360, product-360, demo-order-flow
+ * @depends       canonical admin-context, pilotage, commerce, orders, operations, finance, operations-workspace, shipping-customs-workspace, catalog-workspace, finance-accounting-workspace, sourcing-workspace, purchasing-workspace, pricing-workspace, action-center, order-360, client-index, client-360, product-360, supplier-360, demo-order-flow
  * @used-by       /admin, /admin/pilotage, /admin/commerce, /admin/orders, /admin/operations, /admin/finance, /admin/workspaces/operations, /admin/workspaces/shipping-customs, /admin/workspaces/catalog, /admin/workspaces/accounting, /admin/workspaces/sourcing, /admin/workspaces/purchasing, /admin/workspaces/pricing, /admin/action-center, /admin/orders/:reference, /admin/clients, /admin/clients/:phone, /admin/products/:productRef, /admin/demo, /admin-next aliases
  * @db-read       none
  * @db-write      none
@@ -43,6 +43,7 @@
     CLIENT_INDEX: 'client-index',
     CLIENT_360: 'client-360',
     PRODUCT_360: 'product-360',
+    SUPPLIER_360: 'supplier-360',
     DEMO: 'demo',
     SETTINGS: 'settings',
   });
@@ -155,6 +156,7 @@
     if (path === '/admin/clients' || path === '/admin-next/clients') return SURFACES.CLIENT_INDEX;
     if (/^\/admin\/clients\/[^/]+$/.test(path)) return SURFACES.CLIENT_360;
     if (/^\/admin\/products\/[^/]+$/.test(path)) return SURFACES.PRODUCT_360;
+    if (/^\/admin\/suppliers\/[^/]+$/.test(path)) return SURFACES.SUPPLIER_360;
     if (path === '/admin/workspaces/operations' || path === '/admin-next/workspaces/operations') {
       return SURFACES.OPERATIONS_WORKSPACE;
     }
@@ -541,6 +543,18 @@
     });
   }
 
+  function renderSupplier360(root, user) {
+    if (!global.KomerceCanonicalSupplier360) throw new Error('canonical_supplier_360_module_missing');
+    return global.KomerceCanonicalSupplier360.mount({
+      root,
+      user,
+      pathname: global.location.pathname,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+      ui: global.KomerceCanonicalUI,
+    });
+  }
+
   function renderMarketSurfaceShell(root, user, adminContext, options) {
     if (!root || typeof root.replaceChildren !== 'function' || typeof root.appendChild !== 'function') {
       throw new Error('canonical_admin_shell_root_missing');
@@ -697,6 +711,7 @@
     if (surface === SURFACES.CLIENT_INDEX) return renderClientIndexShell(root, user, adminContext);
     if (surface === SURFACES.CLIENT_360) return renderClient360(root, user, adminContext);
     if (surface === SURFACES.PRODUCT_360) return renderProduct360(root, user);
+    if (surface === SURFACES.SUPPLIER_360) return renderSupplier360(root, user);
     if (surface === SURFACES.OPERATIONS_WORKSPACE) return renderOperationsWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.SHIPPING_CUSTOMS_WORKSPACE) return renderShippingCustomsWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.CATALOG_WORKSPACE) return renderCatalogWorkspace(root, user, adminContext);
