@@ -98,3 +98,27 @@ Pour CJ, le recovery est asymétrique par sécurité :
 - dans tous les cas de ce lot, `real_debit_verified=false` reste explicite.
 
 Raison : une lecture négative ou retardée ne prouve pas qu'un premier débit n'a pas été pris en compte. Seule une preuve positive peut fermer l'ambiguïté sans nouveau side-effect.
+
+
+## Orchestration provider-neutral
+
+Le service `supplier-payment-orchestrator.js` encadre le futur side-effect provider :
+
+```
+prepare/replay same payment fact
+→ canInvokeProviderPayment
+→ mark requested
+→ invoke provider once
+→ succeeded | rejected | ambiguous
+```
+
+Invariants :
+
+- `requested` est persisté avant le side-effect provider ;
+- une exception provider non explicitement classée est `ambiguous`, jamais un retry local ;
+- un résultat provider non concluant est `ambiguous` ;
+- un rejet explicitement déterministe peut devenir `rejected` ;
+- `ambiguous` et `succeeded` bloquent toute nouvelle invocation ;
+- le provider est injecté : ce service ne connaît aucun endpoint CJ et reste provider-neutral.
+
+Ce lot ne branche encore aucun endpoint de paiement production.
