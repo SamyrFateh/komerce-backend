@@ -66,6 +66,7 @@ const { processReceive }    = require('../services/purchasing-receive-service');
 const { deleteSupplier, confirmPurchaseOrder, cancelPurchaseOrder } = require('../services/purchasing-admin-service');
 const grouped = require('../services/purchasing-grouped-service');
 const { getPurchaseOrderDetail } = require('../services/purchasing-order-detail');
+const { getSupplier360 } = require('../services/supplier-360');
 const engagement = require('../services/purchasing-engagement-service');
 
 const guard = [authenticate, requireRole(['admin'])];
@@ -197,6 +198,18 @@ router.get('/suppliers', ...guard, async (req, res, next) => {
 
     res.json(safe);
   } catch(err) { next(err); }
+});
+
+// ─── GET /api/purchasing/suppliers/:id — Supplier 360 read-only ────────────────
+
+router.get('/suppliers/:id', ...guard, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    res.json(await getSupplier360(req.params.id));
+  } catch (err) {
+    if (err && err.status) return res.status(err.status).json({ error: err.message, code: err.code || undefined });
+    next(err);
+  }
 });
 
 // ─── POST /api/purchasing/suppliers — créer un fournisseur ───────────────────
