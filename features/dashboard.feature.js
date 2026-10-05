@@ -113,7 +113,6 @@ module.exports = {
       'signals: R',
       'sms_log: RW',
       'suppliers_stats: R',
-      'supplier_execution_payments: R',  // consumer read-only ; propriétaire : purchasing
       'transaction_documents: R',
       'users: R',   // W-via auth-identity/user-mutation-service ? LOT12
       'wallet_transactions: W',
@@ -342,7 +341,7 @@ module.exports = {
       test: 'tests/unit/admin-order-360-route.test.js' },
     { statement: 'Order 360 ne projette les bons de commande fournisseur et leurs drills vers /admin/workspaces/purchasing?po= que lorsque le caller satisfait déjà la même frontière de rôle admin que routes/purchasing.js ; market_operator conserve Order 360 sans données Purchasing. Le drill porte un return_to exact vers la commande et ne crée aucune nouvelle autorité ni mutation',
       test: 'tests/unit/admin-order-360-route.test.js' },
-    { statement: 'Finance globale peut consommer en lecture seule les faits supplier_execution_payments pour projeter une file exacte de revue fournisseur : status ambiguous/rejected ou reconciliation_status mismatched uniquement. Cette file est absente de Finance marché faute de ventilation canonique multi-marché ; requested n’est jamais qualifié de retard et real_debit_verified=false n’est jamais une exception à lui seul. Les montants restent natifs par devise, sans total multi-devise, et chaque ligne drille vers la PO Purchasing propriétaire',
+    { statement: 'Finance globale consomme le lecteur Purchasing propriétaire supplier-payment-review pour projeter une file exacte de revue fournisseur : status ambiguous/rejected ou reconciliation_status mismatched uniquement. Cette file est absente de Finance marché faute de ventilation canonique multi-marché ; requested n’est jamais qualifié de retard et real_debit_verified=false n’est jamais une exception à lui seul. Les montants restent natifs par devise, sans total multi-devise, aucun UUID paiement interne n’est publié et chaque ligne drille vers la PO Purchasing propriétaire',
       test: 'tests/unit/dashboard-finance-canonical.test.js' },
     'un filtre pays du DashboardSchema est présentationnel : canonical ne charge jamais un agrégat global pour le filtrer ensuite côté client',
       'market est l\'unité de délégation business ; corridor reste une dimension technique/logistique sans autorité',
