@@ -50,6 +50,12 @@ beforeEach(() => {
     if (text.includes('GROUP BY alc.cost_type::text')) {
       return { rows: [{ cost_type: 'product_purchase', orders: '4', amount_kmf: '40000' }] };
     }
+    if (text.includes('FROM supplier_execution_payments')) {
+      return { rows: [
+        { id: 'pay-1', purchase_order_id: 'po-1', provider: 'CJ', payment_ref: 'PAY-1', payment_execution_key: 'KEY-1', expected_amount: '19.9900', observed_amount: null, currency: 'USD', status: 'ambiguous', reconciliation_status: 'unverified', real_debit_verified: false, updated_at: '2026-10-05T10:00:00.000Z' },
+        { id: 'pay-2', purchase_order_id: 'po-2', provider: 'CJ', payment_ref: 'PAY-2', payment_execution_key: 'KEY-2', expected_amount: '12.5000', observed_amount: '12.5000', currency: 'USD', status: 'succeeded', reconciliation_status: 'matched', real_debit_verified: false, updated_at: '2026-10-05T09:00:00.000Z' },
+      ] };
+    }
     if (text.includes('AS estimated_cost_kmf')) {
       return { rows: [{ reference: 'CMD-C', status: 'collected', payment_status: 'paid', total_kmf: '20000', created_at: '2026-08-20T00:00:00.000Z', estimated_cost_kmf: '11000', real_cost_kmf: '12000', has_imputation: true, expected_cost_types: String(finance.EXPECTED_COST_TYPES.length) }] };
     }
@@ -159,4 +165,45 @@ test('Finance globale ne fabrique aucun filtre marché', async () => {
     expect(String(sql)).not.toContain('o.market_id');
     expect(params).toHaveLength(2);
   });
+});
+
+
+test('Finance globale projette les exceptions de paiement fournisseur sans agrégat monétaire', async () => {
+  const payload = await finance.buildFinance(
+    { period: '30' },
+    { now: new Date('2026-10-05T12:00:00.000Z') }
+  );
+
+  expect(payload.supplier_payment_exceptions).toEqual([
+    expect.objectContaining({
+      purchase_order_id: 'po-1',
+      expected_amount: '19.9900',
+      observed_amount: null,
+      currency: 'USD',
+      status: 'ambiguous',
+      reconciliation_status: 'unverified',
+      real_debit_verified: false,
+      exception_type: 'ambiguous_result',
+    }),
+    expect.objectContaining({
+      purchase_order_id: 'po-2',
+      expected_amount: '12.5000',
+      observed_amount: '12.5000',
+      exception_type: 'debit_not_verified',
+    }),
+  ]);
+  expect(payload.data_quality.supplier_payment_scope).toBe('global_admin_only_no_market_allocation');
+  expect(payload.data_quality.source_tables).toContain('supplier_execution_payments');
+});
+
+test('Finance market ne lit ni ne répartit les paiements fournisseur multi-marchés', async () => {
+  const payload = await finance.buildFinance(
+    { period: '30' },
+    { market: { id: 'market-cm-id', code: 'CM', name: 'Cameroun', currency: 'XAF' }, now: new Date('2026-10-05T12:00:00.000Z') }
+  );
+
+  expect(payload.supplier_payment_exceptions).toEqual([]);
+  expect(payload.data_quality.supplier_payment_scope).toBe('not_projected_market_scope');
+  expect(payload.data_quality.source_tables).not.toContain('supplier_execution_payments');
+  expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('FROM supplier_execution_payments'))).toBe(false);
 });
