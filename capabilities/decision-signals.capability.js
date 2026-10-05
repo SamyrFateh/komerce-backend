@@ -52,7 +52,6 @@ module.exports = {
       'services/radar-alerts/payment-signals.js',
       'services/radar-alerts/treasury-signals.js',
       'services/signal-service.js',
-      'services/supplier-payment-review.js',
       'services/signal-admin-service.js',
       'services/action-center-workspace.js',
     ],
@@ -86,7 +85,6 @@ module.exports = {
   db: {
     tables: [
       'signals: RW',
-      'supplier_execution_payments: R',
     ],
   },
 
