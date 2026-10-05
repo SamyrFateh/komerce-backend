@@ -180,7 +180,7 @@ let GENERATORS = {};
 
 GENERATORS.supplier_payment_review = async function() {
   try {
-    const review = await getSupplierPaymentReview({ limit: 50 });
+    const review = await getSupplierPaymentReview({ limit: 50, include_internal_identity: true });
     let generated = 0;
     const entityIds = [];
 
