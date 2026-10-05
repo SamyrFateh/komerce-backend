@@ -93,6 +93,34 @@ test('Product 360 ouvre Pricing directement sur le produit courant', () => {
   expect(source).toContain('encodeURIComponent(product.product_ref)');
 });
 
+test('supplierDrills ouvre Supplier 360 avec retour contextuel au produit', () => {
+  const previous = global.KomerceCanonicalNavigation;
+  global.KomerceCanonicalNavigation = {
+    withReturnTo: (path, returnTo, label) => `${path}?return_to=${encodeURIComponent(returnTo)}&return_label=${encodeURIComponent(label)}`,
+  };
+  try {
+    expect(product360.supplierDrills([
+      { id: '22222222-2222-4222-8222-222222222222', name: 'CJ' },
+      { id: null, name: 'Legacy sans identité' },
+    ], 'KPR-000123')).toEqual([{
+      label: 'CJ',
+      href: '/admin/suppliers/22222222-2222-4222-8222-222222222222?return_to=%2Fadmin%2Fproducts%2FKPR-000123&return_label=Retour%20au%20produit',
+    }]);
+  } finally {
+    global.KomerceCanonicalNavigation = previous;
+  }
+});
+
+test('Product 360 réserve les identités fournisseur exactes à la facette centrale', () => {
+  const source = require('fs').readFileSync(
+    require('path').join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'product-360.js'),
+    'utf8'
+  );
+  expect(source).toContain("central.visibility === 'global'");
+  expect(source).toContain("'Réf. unité fournisseur'");
+  expect(source).toContain("'Provider'");
+});
+
 test('variantLabel ne fait que présenter le variant_combo serveur', () => {
   expect(product360.variantLabel({ couleur: 'Noir', taille: 'M' })).toBe('couleur: Noir · taille: M');
   expect(product360.variantLabel(null)).toBe('Défaut');

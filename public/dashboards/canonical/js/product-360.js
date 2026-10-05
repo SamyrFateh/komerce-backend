@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        canonical_admin_session, product_ref
  * @outputs       canonical_product_360
- * @depends       primitives
+ * @depends       primitives, navigation
  * @used-by       canonical admin entrypoint
  * @db-read       none
  * @db-write      none
@@ -24,6 +24,13 @@
   if (root) root.KomerceCanonicalProduct360 = api;
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createProduct360() {
   const ENDPOINT_PREFIX = '/api/admin/entities/products/';
+
+  function contextualHref(path, returnTo, label) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    return nav && typeof nav.withReturnTo === 'function'
+      ? nav.withReturnTo(path, returnTo, label)
+      : path;
+  }
 
   function productRefFromPath(pathname) {
     const match = String(pathname || '').match(/^\/admin\/products\/([^/]+)$/);
@@ -136,6 +143,20 @@
     return Object.entries(combo).map(([k, v]) => `${k}: ${v}`).join(' · ') || 'Défaut';
   }
 
+  function supplierDrills(suppliers, productRef) {
+    const returnTo = `/admin/products/${encodeURIComponent(productRef)}`;
+    return (Array.isArray(suppliers) ? suppliers : [])
+      .filter(row => row && row.id)
+      .map(row => ({
+        label: row.name || row.platform || String(row.id).slice(0, 8),
+        href: contextualHref(
+          `/admin/suppliers/${encodeURIComponent(row.id)}`,
+          returnTo,
+          'Retour au produit'
+        ),
+      }));
+  }
+
   function renderPayload(rootNode, ui, doc, payload) {
     const product = payload.product || {};
     const inventory = payload.inventory || {};
@@ -179,6 +200,10 @@
         { key: 'type', label: 'Type' },
         { key: 'unite', label: 'Unité' },
         { key: 'sku', label: 'SKU' },
+        ...(central.visibility === 'global' ? [
+          { key: 'supplier_unit_ref', label: 'Réf. unité fournisseur' },
+          { key: 'supplier_provider', label: 'Provider' },
+        ] : []),
         { key: 'stock', label: 'Stock', align: 'right' },
         { key: 'prix', label: 'Prix', align: 'right' },
       ],
@@ -189,6 +214,10 @@
             : 'SKU préparé',
           unite: variantLabel(row.variant_combo),
           sku: row.sku || row.supplier_sku,
+          ...(central.visibility === 'global' ? {
+            supplier_unit_ref: row.supplier_unit_ref || '—',
+            supplier_provider: row.supplier_provider || '—',
+          } : {}),
           stock: formatNumber(row.stock),
           prix: row.price_kmf == null ? 'Prix produit' : formatKmf(row.price_kmf),
         })),
@@ -196,6 +225,7 @@
           type: 'Variante legacy',
           unite: `${row.variant_type}: ${row.variant_value}`,
           sku: row.sku,
+          ...(central.visibility === 'global' ? { supplier_unit_ref: '—', supplier_provider: '—' } : {}),
           stock: formatNumber(row.stock),
           prix: row.price_kmf == null ? 'Prix produit' : formatKmf(row.price_kmf),
         })),
@@ -269,6 +299,25 @@
         })),
         emptyText: 'Aucun fournisseur mappé.',
       });
+
+      const supplierLinks = supplierDrills(central.suppliers, product.product_ref);
+      const supplierSection = ui.Section.create({
+        title: 'Fiches fournisseurs',
+        description: 'Navigation vers Supplier 360 en lecture seule, avec retour au produit.',
+      });
+      rootNode.appendChild(supplierSection.element);
+      if (!supplierLinks.length) {
+        supplierSection.slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun fournisseur navigable.'));
+      } else {
+        const nav = doc.createElement('nav');
+        nav.className = 'kmc-entity-nav';
+        supplierLinks.forEach(item => {
+          const link = text(doc, 'a', 'kmc-entity-nav-link', item.label);
+          link.setAttribute('href', item.href);
+          nav.appendChild(link);
+        });
+        supplierSection.slot.appendChild(nav);
+      }
 
       renderTableSection(rootNode, ui, {
         title: 'Historique prix',
@@ -363,6 +412,7 @@
     formatDate,
     marketLabel,
     variantLabel,
+    supplierDrills,
     metricItems,
     renderPayload,
     jsonRequest,
