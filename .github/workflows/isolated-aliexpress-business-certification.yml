@@ -37,10 +37,10 @@ jobs:
       CI: '1'
       NODE_ENV: test
       KOMERCE_ENV: staging
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
       RAILWAY_PROJECT_ID: '1c5c37ab-557b-41b1-885a-8b3ead573795'
-      RAILWAY_SERVICE_ID: ${{ vars.KOMERCE_STAGING_RAILWAY_SERVICE_ID }}
-      RAILWAY_ENVIRONMENT_ID: ${{ vars.KOMERCE_STAGING_RAILWAY_ENVIRONMENT_ID }}
+      RAILWAY_SERVICE_ID: '19569a7c-2f31-4daf-8b1b-b2948f88f003'
+      RAILWAY_ENVIRONMENT_ID: '7a0ce7dc-93a0-4bfa-88c9-088f70e8883a'
 
     steps:
       - name: Resolve proof mode
@@ -68,11 +68,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${RAILWAY_TOKEN:-}" || { echo '::error::RAILWAY_STAGING_TOKEN missing'; exit 1; }
-          test -n "${RAILWAY_SERVICE_ID:-}" || { echo '::error::KOMERCE_STAGING_RAILWAY_SERVICE_ID missing'; exit 1; }
-          test -n "${RAILWAY_ENVIRONMENT_ID:-}" || { echo '::error::KOMERCE_STAGING_RAILWAY_ENVIRONMENT_ID missing'; exit 1; }
-          test "$RAILWAY_SERVICE_ID" != '48ee010d-a1c3-4c47-9028-c1aacf90e00f' || { echo '::error::Production service forbidden'; exit 1; }
-          test "$RAILWAY_ENVIRONMENT_ID" != '7a0ce7dc-93a0-4bfa-88c9-088f70e8883a' || { echo '::error::Production environment forbidden'; exit 1; }
+          test -n "${RAILWAY_TOKEN:-}" || { echo '::error::RAILWAY_TOKEN missing'; exit 1; }
+          test "$RAILWAY_SERVICE_ID" = '19569a7c-2f31-4daf-8b1b-b2948f88f003' || { echo '::error::Disposable certification context required'; exit 1; }
+          test "$RAILWAY_SERVICE_ID" != '48ee010d-a1c3-4c47-9028-c1aacf90e00f' || { echo '::error::Backend production service forbidden'; exit 1; }
 
       - name: Checkout protected main only
         uses: actions/checkout@v4
@@ -89,6 +87,132 @@ jobs:
 
       - name: Install Railway CLI
         run: npm install --global @railway/cli
+
+      - name: Prepare disposable canonical AliExpress corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 600s railway run \
+            --project "$RAILWAY_PROJECT_ID" \
+            --environment "$RAILWAY_ENVIRONMENT_ID" \
+            --service "$RAILWAY_SERVICE_ID" \
+            --no-local \
+            bash -lc '
+              set -euo pipefail
+              test "$KOMERCE_ENV" = staging
+              test -n "$DATABASE_URL"
+              test -n "$PROD_DATABASE_URL"
+              test "$DATABASE_URL" != "$PROD_DATABASE_URL"
+
+              psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql >/dev/null
+              node scripts/ci-migrate.js >/dev/null
+
+              node - <<"NODE"
+              const { Pool } = require("pg");
+              const sslFor = value => String(value || "").includes("sslmode=require")
+                ? { rejectUnauthorized: false }
+                : false;
+              const prod = new Pool({ connectionString: process.env.PROD_DATABASE_URL, ssl: sslFor(process.env.PROD_DATABASE_URL) });
+              const target = new Pool({ connectionString: process.env.DATABASE_URL, ssl: sslFor(process.env.DATABASE_URL) });
+              (async () => {
+                const { rows } = await prod.query(`
+                  SELECT supplier_key,
+                         access_token_ciphertext, access_token_iv, access_token_tag,
+                         refresh_token_ciphertext, refresh_token_iv, refresh_token_tag,
+                         access_expires_at, refresh_expires_at,
+                         provider_user_id, provider_user_nick, token_type,
+                         created_at, updated_at, last_refreshed_at
+                    FROM supplier_oauth_connections
+                   WHERE supplier_key = $1
+                `, ["aliexpress"]);
+                if (rows.length !== 1) throw new Error(`ALIEXPRESS_OAUTH_ROW_COUNT_${rows.length}`);
+                const r = rows[0];
+                await target.query(`
+                  INSERT INTO supplier_oauth_connections (
+                    supplier_key,
+                    access_token_ciphertext, access_token_iv, access_token_tag,
+                    refresh_token_ciphertext, refresh_token_iv, refresh_token_tag,
+                    access_expires_at, refresh_expires_at,
+                    provider_user_id, provider_user_nick, token_type,
+                    created_at, updated_at, last_refreshed_at
+                  ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+                  ON CONFLICT (supplier_key) DO UPDATE SET
+                    access_token_ciphertext=EXCLUDED.access_token_ciphertext,
+                    access_token_iv=EXCLUDED.access_token_iv,
+                    access_token_tag=EXCLUDED.access_token_tag,
+                    refresh_token_ciphertext=EXCLUDED.refresh_token_ciphertext,
+                    refresh_token_iv=EXCLUDED.refresh_token_iv,
+                    refresh_token_tag=EXCLUDED.refresh_token_tag,
+                    access_expires_at=EXCLUDED.access_expires_at,
+                    refresh_expires_at=EXCLUDED.refresh_expires_at,
+                    provider_user_id=EXCLUDED.provider_user_id,
+                    provider_user_nick=EXCLUDED.provider_user_nick,
+                    token_type=EXCLUDED.token_type,
+                    updated_at=EXCLUDED.updated_at,
+                    last_refreshed_at=EXCLUDED.last_refreshed_at
+                `, [
+                  r.supplier_key,
+                  r.access_token_ciphertext, r.access_token_iv, r.access_token_tag,
+                  r.refresh_token_ciphertext, r.refresh_token_iv, r.refresh_token_tag,
+                  r.access_expires_at, r.refresh_expires_at,
+                  r.provider_user_id, r.provider_user_nick, r.token_type,
+                  r.created_at, r.updated_at, r.last_refreshed_at
+                ]);
+                console.log("ALIEXPRESS_OAUTH_COPY=encrypted_row_only");
+              })().finally(async () => { await prod.end(); await target.end(); });
+              NODE
+
+              node scripts/aliexpress-golden-e2e.js \
+                --execute-import \
+                --supplier-product-id=1005011891302792
+
+              node - <<"NODE"
+              const db = require("./db");
+              const { evaluateSourcingCandidateOutcome } = require("./services/sourcing-certification");
+              const { promoteCandidate } = require("./services/sourcing-candidate-actions");
+              (async () => {
+                const { rows } = await db.query(`
+                  SELECT id, state, product_id, supplier_product_id, scan_result,
+                         normalized_source_contract, rejected_reason
+                    FROM sourcing_candidates
+                   WHERE supplier_name = $1 AND supplier_product_id = $2
+                   ORDER BY updated_at DESC
+                   LIMIT 1
+                `, ["AliExpress", "1005011891302792"]);
+                if (rows.length !== 1) throw new Error(`ALIEXPRESS_CERT_CANDIDATE_COUNT_${rows.length}`);
+                const row = rows[0];
+                const verdict = evaluateSourcingCandidateOutcome(row);
+                if (!(verdict?.outcome_valid && verdict?.sourcing_certified)) {
+                  throw new Error(`ALIEXPRESS_CERT_NOT_SOURCING_CERTIFIED:${verdict?.outcome || "unknown"}`);
+                }
+                const price = Number(row.scan_result?.test_price_kmf);
+                if (!(price > 0)) throw new Error("ALIEXPRESS_CERT_TEST_PRICE_MISSING");
+                const authority = String(row.scan_result?.recommended_price_authority || row.scan_result?.price_authority || "");
+                if (authority !== "ECONOMIC_REFERENCE_NOT_MARKET_DECISION") {
+                  throw new Error(`ALIEXPRESS_CERT_PRICE_AUTHORITY:${authority || "missing"}`);
+                }
+                const promoted = await promoteCandidate(row.id, {
+                  price_kmf: Math.round(price),
+                  enrichment_mode: "source_only"
+                }, null);
+                const check = await db.query(`
+                  SELECT p.product_ref, p.is_active, p.lifecycle_status, ps.id AS product_sku_id
+                    FROM products p
+                    JOIN product_skus ps ON ps.product_id = p.id
+                   WHERE p.id = $1
+                     AND ps.is_active = TRUE
+                     AND ps.supplier_order_identity->>\x27provider\x27 = \x27aliexpress\x27
+                   ORDER BY ps.id
+                   LIMIT 1
+                `, [promoted.product_id]);
+                if (check.rows.length !== 1) throw new Error("ALIEXPRESS_CERT_PROMOTED_SKU_MISSING");
+                if (check.rows[0].is_active === true) throw new Error("ALIEXPRESS_CERT_PRODUCT_MUST_REMAIN_INACTIVE");
+                console.log(`ALIEXPRESS_CANONICAL_SKU_READY=${check.rows[0].product_ref}`);
+              })()
+                .catch(error => { console.error(error); process.exitCode = 1; })
+                .finally(() => db.pool.end());
+              NODE
+            '
 
       - name: Run bounded certification
         id: proof
