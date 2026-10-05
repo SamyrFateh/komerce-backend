@@ -203,8 +203,28 @@ describe('AliExpress purchase preflight', () => {
       zip: '00000',
       contact_person: 'Komerce Hub',
       full_name: 'Komerce Hub',
-      mobile_no: '+971500000000',
+      mobile_no: '500000000',
     }));
+    expect(preflight.normalizePlaceOrderAddress({
+      address1: '7 Test Street',
+      city: 'Dubai',
+      country_code: 'AE',
+      province: 'Dubai',
+      postal_code: '00000',
+      customer_name: 'Komerce Hub',
+      phone: '0500000000',
+    }).mobile_no).toBe('500000000');
+
+    expect(() => preflight.normalizePlaceOrderAddress({
+      address1: '7 Test Street',
+      city: 'Dubai',
+      country_code: 'AE',
+      province: 'Dubai',
+      postal_code: '00000',
+      customer_name: 'Komerce Hub',
+      phone: '+33123456789',
+    })).toThrow('ALIEXPRESS_LOGISTICS_ADDRESS_MOBILE_NO_AE_INVALID');
+
     expect(preflight.buildOrderDetailBusinessParams('123456789')).toEqual({
       single_order_query: JSON.stringify({ order_id: '123456789' }),
     });
