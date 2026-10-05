@@ -8,7 +8,7 @@
  * @outputs       canonical market row in PROVISIONING, audited lifecycle transitions
  * @depends       none
  * @used-by       services/market-provisioning-service.js
- * @db-read       markets
+ * @db-read       markets, market_operating_assignments
  * @db-write      markets
  * @db-txn        caller-owned
  * @doctrine      market_owns_market_lifecycle, lifecycle_never_grants_user_authority
