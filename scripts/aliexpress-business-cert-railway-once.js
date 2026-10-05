@@ -16,6 +16,14 @@ function sslFor(url) {
   return String(url || '').includes('sslmode=require') ? { rejectUnauthorized: false } : false;
 }
 async function initializeDisposable(target) {
+  const reset = ['1','true','yes'].includes(String(process.env.KOMERCE_ALIEXPRESS_CERT_RESET || '').trim().toLowerCase());
+  if (reset) {
+    const prodUrl = required('PROD_DATABASE_URL');
+    const targetUrl = required('DATABASE_URL');
+    if (prodUrl === targetUrl) throw new Error('DISPOSABLE_DB_MUST_DIFFER_FROM_PROD');
+    await target.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public');
+    console.log('DISPOSABLE_DB_RESET=true');
+  }
   const { rows:[row] } = await target.query("SELECT to_regclass('public.sourcing_candidates') AS exists");
   if (row?.exists) return false;
   const sql = fs.readFileSync(path.join(__dirname, '..', 'docs', 'db', 'railway-live-schema.sql'), 'utf8');
