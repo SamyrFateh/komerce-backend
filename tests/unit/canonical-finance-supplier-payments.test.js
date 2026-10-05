@@ -35,16 +35,8 @@ test('projette les montants fournisseur comme texte exact, sans conversion multi
   }]);
 });
 
-test('le drill Achats fournisseurs est visible uniquement à admin', () => {
-  const admin = finance.visibleDrillSchema(finance.FINANCE_SCHEMA, { role: 'admin' });
-  const marketOperator = finance.visibleDrillSchema(finance.FINANCE_SCHEMA, { role: 'market_operator' });
-  const financeRole = finance.visibleDrillSchema(finance.FINANCE_SCHEMA, { role: 'finance' });
-
-  expect(admin.drill).toEqual(expect.arrayContaining([
-    expect.objectContaining({ id: 'purchasing-workspace', href: '/admin/workspaces/purchasing' }),
-  ]));
-  expect(marketOperator.drill.some(item => item.id === 'purchasing-workspace')).toBe(false);
-  expect(financeRole.drill.some(item => item.id === 'purchasing-workspace')).toBe(false);
+test('3A n’ajoute pas de drill Achats générique : le prochain drill doit cibler la PO exacte', () => {
+  expect(finance.FINANCE_SCHEMA.drill.some(item => item.id === 'purchasing-workspace')).toBe(false);
 });
 
 test('le schéma Finance expose une table dédiée sans KPI ou total fournisseur inventé', () => {
