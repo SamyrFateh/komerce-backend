@@ -117,6 +117,20 @@ async function ensureCanonicalSku(db) {
       canonical_product_ids: canonicalProductIds,
       ...(trace.rows[0] || {}),
     })}`);
+
+    if (!canonicalProductIds.length && Number(trace.rows[0]?.active_product_bindings || 0) === 0) {
+      const capture = await db.query(`
+        SELECT c.capture_id
+          FROM sourcing_captures c
+         WHERE NULLIF(c.stats->>'import_id','')::uuid = $1::uuid
+         ORDER BY c.started_at DESC
+         LIMIT 1
+      `, [trace.rows[0]?.import_id]);
+      if (capture.rows.length !== 1) throw new Error('ALIEXPRESS_CERT_CAPTURE_NOT_EXACT');
+      const shadowResolver = require('../services/sourcing-shadow-resolution-service');
+      const resolution = await shadowResolver.resolveCaptureShadow(capture.rows[0].capture_id);
+      console.log(`ALIEXPRESS_CERT_SHADOW_RESOLUTION=${JSON.stringify(resolution)}`);
+    }
     return row;
   }
 
