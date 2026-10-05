@@ -222,6 +222,40 @@ describe('AliExpress fulfillment adapter', () => {
     }));
   });
 
+  test('refuse de construire une commande sans service logistique prouvé', async () => {
+    await expect(adapter.buildOrderPayload({
+      items: [{
+        identity: {
+          provider: 'aliexpress',
+          version: 1,
+          payload: { product_id: '1005010358671233', sku_id: '12000052119244345', sku_attr: '14:Beige' },
+        },
+        supplier_unit_ref: '12000052119244345',
+        quantity: 1,
+      }],
+      preflights: [{
+        ready: true,
+        evidence: {
+          provider: 'aliexpress',
+          auto_order_ready: true,
+          supplier_product_id: '1005010358671233',
+          freight: { success: true, has_options: true },
+        },
+      }],
+      context: {
+        procurement_destination: {
+          address1: 'Hub Komerce',
+          city: 'Dubai',
+          country_code: 'AE',
+          province: 'Dubai',
+          postal_code: '00000',
+          customer_name: 'Komerce Hub',
+          phone: '+971500000000',
+        },
+      },
+    })).rejects.toThrow('ALIEXPRESS_LOGISTICS_SERVICE_REQUIRED');
+  });
+
   test('placeOrder reste fermé sans opt-in runtime', async () => {
     await expect(adapter.placeOrder({ provider: 'aliexpress', native: { x: 1 } }, { env: {} }))
       .rejects.toThrow('ALIEXPRESS_EXECUTION_NOT_AUTHORIZED');
