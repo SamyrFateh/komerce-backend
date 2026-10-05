@@ -157,10 +157,6 @@
       .sv-matrix th{background:var(--bg-secondary);padding:10px;text-align:left;font-size:var(--fs-sm);color:var(--text-secondary);text-transform:uppercase;letter-spacing:.8px;border-bottom:2px solid var(--border)}
       .sv-matrix td{padding:10px;border-bottom:1px solid var(--border)}
       .sv-matrix tr:last-child td{border-bottom:none}
-      .sv-matrix input[type=number]{width:88px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;text-align:right;background:var(--bg-card);color:var(--text-primary);font-family:inherit}
-      .sv-matrix-save{padding:6px 14px;border-radius:6px;font-size:var(--fs-sm);font-weight:600;border:none;cursor:pointer;background:var(--bg-secondary);color:var(--text-secondary);font-family:inherit;transition:all .15s}
-      .sv-matrix tr.dirty .sv-matrix-save{background:#3b82f6;color:#fff}
-      .sv-matrix tr.dirty .sv-matrix-save:hover{background:#2563eb}
 
       /* Audit table */
       .sv-audit-table{width:100%;border-collapse:collapse;background:var(--bg-card);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
