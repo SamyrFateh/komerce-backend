@@ -167,6 +167,13 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
 | `catalog_taxonomy_audit` | Journal append-only des mutations de taxonomie admin (catégorie/sous-catégorie), avec acteur, surface source et snapshots avant/après. **Migration 282 (`intended_migration_schema`)**. Écrit dans la même transaction que la mutation par `boutique-taxonomy-admin`. |
+<!-- schema-pending
+object: catalog_taxonomy_audit
+kind: table
+migration: 282
+section: ### 4.5 Paniers et catalogue
+role: Journal append-only des mutations de taxonomie admin avec acteur, surface source et snapshots avant/après ; l'audit reste observationnel et ne confère aucune autorité.
+-->
 | `catalog_glossary` | Glossaire EN→FR autoritaire Komerce (doctrine catalogue §4). `term_fr='='` signifie ne pas traduire. Mémoire des corrections validées : une décision Komerce gagne toujours sur une référence externe. Migration 098, confirmée live. |
 <!-- schema-pending
 object: catalog_terminology_reference
