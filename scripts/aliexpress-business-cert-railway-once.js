@@ -149,6 +149,9 @@ async function main() {
   try {
     const initialized = await initializeDisposable(target);
     console.log(`DISPOSABLE_DB_INITIALIZED=${initialized}`);
+    const ciMigrate = require('./ci-migrate');
+    await ciMigrate.main();
+    console.log('DISPOSABLE_DB_MIGRATIONS=applied');
     await copyEncryptedOauth(target);
 
     // db.js is loaded only after the disposable schema exists.
