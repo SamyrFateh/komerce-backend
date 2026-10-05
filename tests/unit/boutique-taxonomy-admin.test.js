@@ -64,6 +64,30 @@ describe('boutique-taxonomy-admin', () => {
       .rejects.toBeInstanceOf(TaxonomyAdminError);
   });
 
+  it('paramètre les UPDATE de sous-catégorie et audite le snapshot avant/après', async () => {
+    const before = { category_key: 'maison', key: 'deco', label: 'Déco' };
+    const after = { category_key: 'maison', key: 'deco', label: 'Décoration' };
+    const q = {
+      query: jest.fn()
+        .mockResolvedValueOnce({ rows: [before] })
+        .mockResolvedValueOnce({ rows: [after] }),
+    };
+
+    const actor = { id: '11111111-1111-4111-8111-111111111111', role: 'admin', source_surface: 'test' };
+    const result = await updateSubcategory('maison', 'deco', { label: 'Décoration' }, q, actor);
+
+    expect(result).toEqual(after);
+    expect(q.query.mock.calls[1][0]).toContain('SET label = $1');
+    expect(q.query.mock.calls[1][0]).toContain('WHERE category_key = $2 AND key = $3');
+    expect(q.query.mock.calls[1][1]).toEqual(['Décoration', 'maison', 'deco']);
+    expect(mockAudit).toHaveBeenCalledWith(q, expect.objectContaining({
+      action: 'SUBCATEGORY_UPDATED',
+      before,
+      after,
+      actor,
+    }));
+  });
+
   it('distingue désactivation et hard delete et conserve la preuve avant/après', async () => {
     const before = { category_key: 'maison', key: 'deco', is_active: true };
     const deleted = { category_key: 'maison', key: 'deco', is_active: true };
