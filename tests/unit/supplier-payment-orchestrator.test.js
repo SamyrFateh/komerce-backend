@@ -64,7 +64,8 @@ test('happy path marque requested avant appel provider puis succeeded', async ()
     invokeProviderPayment:invoke,
   });
 
-  expect(state.markPaymentRequested).toHaveBeenCalledBefore(invoke);
+  expect(state.markPaymentRequested.mock.invocationCallOrder[0])
+    .toBeLessThan(invoke.mock.invocationCallOrder[0]);
   expect(state.markPaymentSucceeded).toHaveBeenCalledWith({}, expect.objectContaining({
     provider:'cj',
     paymentExecutionKey:'PEK-1',
