@@ -124,10 +124,10 @@ describe('execution-adapter-registry — composition root', () => {
     expect(Object.isFrozen(EXECUTION_ADAPTER_REGISTRY)).toBe(true);
   });
 
-  test('seul CJ expose placeOrder dans le registry runtime', () => {
+  test('CJ et AliExpress exposent placeOrder ; Allegro reste manuel', () => {
     expect(typeof EXECUTION_ADAPTER_REGISTRY.cj.placeOrder).toBe('function');
+    expect(typeof EXECUTION_ADAPTER_REGISTRY.aliexpress.placeOrder).toBe('function');
     expect(typeof EXECUTION_ADAPTER_REGISTRY.allegro.placeOrder).not.toBe('function');
-    expect(typeof EXECUTION_ADAPTER_REGISTRY.aliexpress.placeOrder).not.toBe('function');
   });
 });
 
