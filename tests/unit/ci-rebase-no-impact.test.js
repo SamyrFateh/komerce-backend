@@ -78,6 +78,8 @@ describe('CI rebase no-impact proof', () => {
     expect(auto).not.toMatch(/^\s{2}push:/m);
     expect(auto).toContain('github.event.pull_request.head.repo.full_name == github.repository');
     expect(auto).toContain('/update-branch');
+    expect(auto).toContain('COMPARE_URL=');
+    expect(auto).toContain('BEHIND_BY=');
     expect(auto).not.toContain('/pulls?state=open&base=main&per_page=100');
     expect(auto).not.toContain('Auto-update open PRs after main advances');
     expect(auto).toContain('expected_head_sha');
