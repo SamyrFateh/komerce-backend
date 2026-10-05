@@ -16,6 +16,7 @@
  */
 
 let mockQuery;
+let mockSupplierPaymentReview;
 jest.mock('../../db', () => ({
   get query() { return mockQuery; }
 }));
@@ -26,6 +27,7 @@ jest.mock('../../utils/logger', () => ({
 
 beforeEach(() => {
   mockQuery = jest.fn();
+  mockSupplierPaymentReview = jest.fn().mockResolvedValue({ count: 0, items: [], truncated: false, basis: 'current_state_all_time' });
   jest.resetModules();
 });
 
@@ -35,6 +37,7 @@ function loadService() {
   jest.mock('../../utils/logger', () => ({
     child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
   }));
+  jest.mock('../../services/supplier-payment-review', () => ({ getSupplierPaymentReview: (...args) => mockSupplierPaymentReview(...args) }));
   return require('../../services/signal-service');
 }
 
@@ -164,6 +167,87 @@ describe('generateSignals', () => {
     const { generateSignals } = loadService();
     const result = await generateSignals(['parcel_blocked']);
     expect(result.generators.parcel_blocked).toMatchObject({ generated: 0 });
+  });
+});
+
+describe('GENERATORS.supplier_payment_review', () => {
+  test('dérive un signal global par paiement avec la même population Purchasing', async () => {
+    mockSupplierPaymentReview.mockResolvedValueOnce({
+      count: 2,
+      truncated: false,
+      basis: 'current_state_all_time',
+      items: [
+        {
+          payment_id: 'payment-1',
+          purchase_order_id: 'po-1',
+          provider: 'cj',
+          status: 'ambiguous',
+          reconciliation_status: 'unverified',
+          review_reason: 'PAYMENT_AMBIGUOUS_RECONCILIATION_REQUIRED',
+        },
+        {
+          payment_id: 'payment-2',
+          purchase_order_id: 'po-2',
+          provider: 'aliexpress',
+          status: 'succeeded',
+          reconciliation_status: 'mismatched',
+          review_reason: 'PAYMENT_RECONCILIATION_MISMATCH',
+        },
+      ],
+    });
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'sig-1' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig-2' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.supplier_payment_review()).toEqual({ generated: 2, truncated: false });
+
+    expect(mockSupplierPaymentReview).toHaveBeenCalledWith({ limit: 50 });
+    expect(mockQuery.mock.calls[0][1]).toEqual(expect.arrayContaining([
+      'supplier_payment_review',
+      'warning',
+      expect.stringContaining('cj'),
+    ]));
+    expect(mockQuery.mock.calls[0][1][9]).toBe('supplier_payment');
+    expect(mockQuery.mock.calls[0][1][10]).toBe('payment-1');
+    expect(mockQuery.mock.calls[0][1][15]).toBeNull();
+
+    expect(mockQuery.mock.calls[1][1][1]).toBe('critical');
+    expect(mockQuery.mock.calls[1][1][10]).toBe('payment-2');
+
+    const [resolveSql, resolveParams] = mockQuery.mock.calls[2];
+    expect(resolveSql).toContain("status = 'resolved'");
+    expect(resolveParams).toEqual(['supplier_payment_review', ['payment-1', 'payment-2'], null]);
+  });
+
+  test('file tronquée : génère les éléments lus mais refuse un faux auto-resolve', async () => {
+    mockSupplierPaymentReview.mockResolvedValueOnce({
+      count: 60,
+      truncated: true,
+      basis: 'current_state_all_time',
+      items: [{
+        payment_id: 'payment-1',
+        provider: 'cj',
+        status: 'rejected',
+        reconciliation_status: 'unverified',
+        review_reason: 'PAYMENT_REJECTED_REVIEW_REQUIRED',
+      }],
+    });
+    mockQuery = jest.fn().mockResolvedValueOnce({ rows: [{ id: 'sig-1' }] });
+
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.supplier_payment_review()).toEqual({ generated: 1, truncated: true });
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+  });
+
+  test('disparition complète de la population auto-résout le type global', async () => {
+    mockSupplierPaymentReview.mockResolvedValueOnce({ count: 0, items: [], truncated: false, basis: 'current_state_all_time' });
+    mockQuery = jest.fn().mockResolvedValueOnce({ rowCount: 1 });
+
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.supplier_payment_review()).toEqual({ generated: 0, truncated: false });
+    expect(mockQuery.mock.calls[0][1]).toEqual(['supplier_payment_review', null]);
   });
 });
 
