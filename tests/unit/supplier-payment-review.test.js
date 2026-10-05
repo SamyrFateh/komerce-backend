@@ -35,7 +35,7 @@ test('préserve identité paiement, montants texte et drill PO exact', async () 
     total_count: 2,
   }] }) };
 
-  const review = await getSupplierPaymentReview({ limit: 1 }, q);
+  const review = await getSupplierPaymentReview({ limit: 1, include_internal_identity: true }, q);
 
   expect(review).toMatchObject({ count: 2, truncated: true, basis: 'current_state_all_time' });
   expect(review.items[0]).toEqual(expect.objectContaining({
@@ -60,4 +60,25 @@ test('normalise la limite sans permettre une lecture Finance démesurée', () =>
   expect(normalizeLimit(12.8)).toBe(12);
   expect(normalizeLimit(999)).toBe(100);
   expect(normalizeLimit(null)).toBeNull();
+});
+
+
+test('par défaut le contrat public ne publie jamais l’UUID interne du paiement', async () => {
+  const q = { query: jest.fn().mockResolvedValue({ rows: [{
+    payment_id: '11111111-1111-4111-8111-111111111111',
+    purchase_order_id: '22222222-2222-4222-8222-222222222222',
+    provider: 'cj',
+    expected_amount: '1.0000',
+    observed_amount: null,
+    currency: 'USD',
+    status: 'rejected',
+    reconciliation_status: 'unverified',
+    real_debit_verified: false,
+    review_reason: 'PAYMENT_REJECTED_REVIEW_REQUIRED',
+    total_count: 1,
+  }] }) };
+
+  const review = await getSupplierPaymentReview({ limit: 50 }, q);
+  expect(review.items[0]).not.toHaveProperty('payment_id');
+  expect(JSON.stringify(review)).not.toContain('11111111-1111-4111-8111-111111111111');
 });
