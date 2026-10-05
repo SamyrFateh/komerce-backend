@@ -365,6 +365,7 @@ function buildRichStructure(productId, detail = {}, feed = {}) {
     const nativeUnitRef = rawSupplierUnitRef(sku);
     const supplierUnitRef = nativeUnitRef || skuAttr || null;
     const identityPayload = {};
+    if (productId) identityPayload.product_id = String(productId);
     if (nativeUnitRef) identityPayload.sku_id = nativeUnitRef;
     if (skuAttr) identityPayload.sku_attr = skuAttr;
     const supplierOrderIdentity = supplierUnitRef && Object.keys(identityPayload).length
