@@ -24,7 +24,7 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const controlPlane = require('../services/market-control-plane');
 const centralAuthority = require('../services/central-authority');
-const { provisionMarket, setMarketLifecycle } = require('../services/market-provisioning-service');
+const { provisionMarket, reprovisionMarket, setMarketLifecycle } = require('../services/market-provisioning-service');
 
 // Vue centrale par rôle (Q4 du chantier) : déclarée ici, jamais implicite.
 const centralAdmin = [authenticate, requireRole(['admin'])];
@@ -60,6 +60,26 @@ router.post('/', ...centralAdmin, async (req, res, next) => {
       currency: body.currency,
       minorUnit: body.minor_unit,
       storefrontTexts: body.storefront_texts || {},
+      centralReferentUserId: body.central_referent_user_id,
+      financialLimits: body.financial_limits || {},
+      lead: body.lead || {},
+      paymentProvider: body.payment_provider || null,
+      cashPolicy: body.cash_policy || null,
+      initialRelais: body.initial_relais || null,
+      correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
+    }));
+    res.status(201).json(result);
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+router.post('/:marketCode/reprovision', ...centralAdmin, async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    const result = await withTransaction(client => reprovisionMarket(client, {
+      actorUserId: req.user.id,
+      marketCode: req.params.marketCode,
       centralReferentUserId: body.central_referent_user_id,
       financialLimits: body.financial_limits || {},
       lead: body.lead || {},
