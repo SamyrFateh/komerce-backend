@@ -247,7 +247,7 @@ module.exports = {
       'customs',
       'documents',
       'notifications (réconciliation idempotente des jalons client affichés dans le cockpit de démo)',
-      'purchasing (repare les commandes sans purchase order — services/repair-ordered-without-purchase-orders.js, O7.3 provider purchasing)',
+      'purchasing (répare les commandes sans purchase order via services/repair-ordered-without-purchase-orders.js ; Order 360 consomme aussi en lecture seule les PO liées pour l’admin déjà autorisé par le guard Achats)',
       // Déclarations FF-C1 (2026-07-29) — arêtes réelles, dashboard est
       // business-transversal (arbitrage 2026-07-29), consommations métier ordinaires.
       'business-rules (utils/rules.js — routes/dashboard-shared.js lit une règle en vigueur)',
@@ -338,6 +338,8 @@ module.exports = {
     { statement: 'Dashboard Market Canonical ne consomme plus operator_market_scopes : Pilotage/Commerce/Orders exigent dashboard.market.read, Operations exige operations.read, Finance exige finance.read ; dashboard.global.read reste l’alternative centrale explicite',
       test: 'tests/unit/admin-dashboard-market.test.js' },
     { statement: 'Entity 360 n’utilise plus operator_market_scopes comme autorité : Client Index/360 exigent client.read, Product 360 catalog.read, Order 360 operations.read ; dashboard.global.read reste l’alternative centrale explicite',
+      test: 'tests/unit/admin-order-360-route.test.js' },
+    { statement: 'Order 360 ne projette les bons de commande fournisseur et leurs drills vers /admin/workspaces/purchasing?po= que lorsque le caller satisfait déjà la même frontière de rôle admin que routes/purchasing.js ; market_operator conserve Order 360 sans données Purchasing. Le drill porte un return_to exact vers la commande et ne crée aucune nouvelle autorité ni mutation',
       test: 'tests/unit/admin-order-360-route.test.js' },
     'un filtre pays du DashboardSchema est présentationnel : canonical ne charge jamais un agrégat global pour le filtrer ensuite côté client',
       'market est l\'unité de délégation business ; corridor reste une dimension technique/logistique sans autorité',
