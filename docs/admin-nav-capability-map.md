@@ -21,7 +21,7 @@ inventer une nouvelle politique.
 | Catalogue              | `/admin/workspaces/catalog` | `GET/POST /api/admin/workspaces/catalog/*`                      | `guard = [authenticate, requireRole(['admin']), requireCatalogGlobalAuthority]` | **admin uniquement** |
 | Commandes              | `/admin/commerce`       | `GET /api/admin/dashboard/commerce` (global) ou `.../commerce/market/:code` | global → `requireAdmin + requireDashboardGlobalAuthority` ; marché → `requireMarketDashboardReadRole` (admin, market_operator) | **admin, market_operator** |
 | Marchés                | admin → `/dashboards/canonical/access.html`<br>market_operator → `/dashboards/canonical/market-autonomy.html` | admin : `/api/admin/users?role=market_operator`, `/api/admin/dashboard/context`<br>market_operator : `/api/admin/workspaces/pricing/market/:code*` (même guard que l'Atelier économique) | admin : gestion utilisateurs (admin only, à confirmer si la route existe encore) ; market_operator : `requireRole(['admin','market_operator'])` | **admin, market_operator** |
-| Paramètres             | `/admin/settings`       | `GET/PATCH/POST /api/admin/rules/*`, `GET/PUT /api/admin/pricing-matrices/*` | `authenticate, requireAdmin` sur toutes les routes | **admin uniquement** |
+| Paramètres             | `/admin/settings`       | `GET/PATCH/POST /api/admin/rules/*`; `GET /api/admin/pricing-matrices/*` forensic uniquement (`PUT` = 410 retiré) | `authenticate, requireAdmin` sur toutes les routes | **admin uniquement** |
 
 ### Constat central
 

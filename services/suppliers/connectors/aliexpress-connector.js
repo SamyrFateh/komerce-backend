@@ -278,11 +278,34 @@ function extractSkuProperties(sku = {}) {
 }
 
 function buildSkuAttr(sku = {}) {
+  const rawSkuId = String(sku?.id ?? '').trim();
+  if (rawSkuId && rawSkuId.includes(':')) {
+    const normalized = rawSkuId
+      .split(';')
+      .map((part) => part.trim().split('#')[0].trim())
+      .filter((part) => /^\d+:\d+$/.test(part));
+    if (normalized.length) return normalized.join(';');
+  }
+
   const pairs = [];
   for (const prop of toArray(sku?.ae_sku_property_dtos?.ae_sku_property_d_t_o)) {
     const propertyId = String(prop?.sku_property_id ?? '').trim();
-    const valueId = String(prop?.sku_property_value ?? '').trim();
-    if (!propertyId || propertyId === '0' || !valueId || valueId === '0') continue;
+    if (!propertyId || propertyId === '0') continue;
+
+    const explicitValueId = String(
+      prop?.property_value_id
+      ?? prop?.sku_property_value_id
+      ?? ''
+    ).trim();
+    let valueId = explicitValueId;
+
+    if (!valueId) {
+      const raw = String(prop?.sku_property_value ?? '').trim();
+      const prefixed = raw.match(/^\d+:(\d+)$/);
+      valueId = prefixed?.[1] || (/^\d+$/.test(raw) ? raw : '');
+    }
+
+    if (!valueId || valueId === '0') continue;
     pairs.push(`${propertyId}:${valueId}`);
   }
   return pairs.length ? pairs.join(';') : null;
