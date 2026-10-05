@@ -34,7 +34,6 @@
   const DRILL_ROLE_MAP = Object.freeze({
     'accounting-workspace': Object.freeze(['admin', 'finance', 'agent_relais']),
     'pricing-workspace': Object.freeze(['admin', 'market_operator']),
-    'purchasing-workspace': Object.freeze(['admin']),
   });
 
   function visibleDrillSchema(schema, user) {
@@ -197,7 +196,6 @@
     drill: [
       { id: 'accounting-workspace', label: 'Comptabilité & encaissements', href: '/admin/workspaces/accounting' },
       { id: 'pricing-workspace', label: 'Pricing & coûts', href: '/admin/workspaces/pricing' },
-      { id: 'purchasing-workspace', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing' },
     ],
   });
 
