@@ -4,6 +4,21 @@
 **Source : AliExpress Open Platform officielle**  
 **Principe : données AliExpress réelles → Komerce staging ; aucun achat fournisseur réel tant que le gate Auto-Order n'est pas explicitement ouvert.**
 
+## 0. Mise à jour 2026-10-05 — contrat d'ordre AE-Dropshipper
+
+La famille officielle AE-Dropshipper documente désormais/encore explicitement `aliexpress.trade.buy.placeorder` et `aliexpress.trade.ds.order.get`. Komerce expose donc le contrat d'exécution correspondant dans l'adapter AliExpress, derrière un opt-in runtime explicite.
+
+Cette ouverture ne vaut pas certification live :
+
+- readiness live et permissions du compte doivent encore être rejouées en staging isolé ;
+- create + read-back réel doivent être prouvés ;
+- aucun paiement AliExpress n'est déclenché par cet adapter ;
+- aucune clé d'idempotence native contrôlée par Komerce n'est aujourd'hui prouvée, donc un résultat de création ambigu ne peut pas être rejoué automatiquement en production.
+
+Le statut cible est **Business Ready avec niveau d'automatisation explicite**, pas imitation du modèle CJ.
+
+---
+
 ## 1. Objectif
 
 Faire d'AliExpress une source fournisseur réellement exploitable par Komerce, depuis la découverte produit jusqu'au fulfillment, sans court-circuiter la Raffinerie, le moteur économique, l'approbation catalogue, les règles Market et la gouvernance.
