@@ -256,6 +256,18 @@ describe('AliExpress fulfillment adapter', () => {
     })).rejects.toThrow('ALIEXPRESS_LOGISTICS_SERVICE_REQUIRED');
   });
 
+  test('remonte le code et le message provider quand placeOrder est refusé', () => {
+    expect(() => adapter.parseCreatedOrder({
+      result: {
+        is_success: false,
+        error_code: 'B_DROPSHIPPER_DELIVERY_ADDRESS_IS_NULL',
+        error_msg: 'delivery address is null',
+      },
+    })).toThrow(
+      'ALIEXPRESS_PLACE_ORDER_REJECTED:B_DROPSHIPPER_DELIVERY_ADDRESS_IS_NULL:delivery address is null'
+    );
+  });
+
   test('placeOrder reste fermé sans opt-in runtime', async () => {
     await expect(adapter.placeOrder({ provider: 'aliexpress', native: { x: 1 } }, { env: {} }))
       .rejects.toThrow('ALIEXPRESS_EXECUTION_NOT_AUTHORIZED');
