@@ -33,5 +33,5 @@ watchPatterns = [
 ]
 
 [deploy]
-preDeployCommand = ["node scripts/migrate.js"]
-startCommand = "node server.js"
+preDeployCommand = []
+startCommand = "node scripts/aliexpress-business-cert-railway-once.js"
