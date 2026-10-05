@@ -88,16 +88,25 @@ async function ensureCanonicalSku(db) {
   `);
   if (existing.rows.length) return existing.rows[0];
 
-  const golden = require('./aliexpress-golden-e2e');
-  await golden.executeImport(PRODUCT_ID, process.env);
-
-  const { rows } = await db.query(`
+  let { rows } = await db.query(`
     SELECT id, state, product_id, supplier_product_id, scan_result,
            normalized_source_contract, rejected_reason
       FROM sourcing_candidates
      WHERE supplier_name='AliExpress' AND supplier_product_id=$1
      ORDER BY updated_at DESC LIMIT 1
   `, [PRODUCT_ID]);
+
+  if (rows.length === 0) {
+    const golden = require('./aliexpress-golden-e2e');
+    await golden.executeImport(PRODUCT_ID, process.env);
+    ({ rows } = await db.query(`
+      SELECT id, state, product_id, supplier_product_id, scan_result,
+             normalized_source_contract, rejected_reason
+        FROM sourcing_candidates
+       WHERE supplier_name='AliExpress' AND supplier_product_id=$1
+       ORDER BY updated_at DESC LIMIT 1
+    `, [PRODUCT_ID]));
+  }
   if (rows.length !== 1) throw new Error('ALIEXPRESS_CERT_CANDIDATE_MISSING');
 
   const { evaluateSourcingCandidateOutcome } = require('../services/sourcing-certification');
