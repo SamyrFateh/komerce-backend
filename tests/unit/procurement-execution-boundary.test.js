@@ -10,9 +10,8 @@
  *
  * GAP-4B — Procurement Execution Boundary. N'est franchie que si un
  * adapter expose buildOrderPayload ET placeOrder sur LE MÊME provider.
- * Aujourd'hui aucun adapter du registry réel (allegro, aliexpress) ne
- * satisfait ce contrat — voir la caractérisation dédiée ci-dessous, qui
- * fige ce fait pour que toute évolution future du registry le remarque.
+ * Allegro reste volontairement manuel. AliExpress et CJ exposent désormais
+ * le contrat d'exécution mais restent fail-closed sans contexte/opt-in runtime.
  */
 
 const { evaluateProcurementExecutionBoundary, NOT_REACHED } = require('../../services/suppliers/procurement-execution-boundary');
@@ -30,14 +29,24 @@ function fullAdapter(provider, overrides = {}) {
   };
 }
 
-describe('caractérisation — seuls les providers sans buyer placeOrder restent incomplets', () => {
-  test('allegro et aliexpress restent hors boundary automatique', async () => {
-    for (const provider of ['allegro', 'aliexpress']) {
-      const out = await evaluateProcurementExecutionBoundary({
-        identity: soi(provider, { x: 1 }), quantity: 1, canonicalUnit: {}, adapters: EXECUTION_ADAPTER_REGISTRY,
-      });
-      expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'EXECUTION_ADAPTER_INCOMPLETE' });
-    }
+describe('caractérisation — capabilities runtime réelles', () => {
+  test('Allegro reste hors boundary automatique', async () => {
+    const out = await evaluateProcurementExecutionBoundary({
+      identity: soi('allegro', { offer_id: '1' }), quantity: 1, canonicalUnit: {}, adapters: EXECUTION_ADAPTER_REGISTRY,
+    });
+    expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'EXECUTION_ADAPTER_INCOMPLETE' });
+  });
+
+  test('AliExpress est un execution adapter complet mais reste fail-closed sans destination/preflight', async () => {
+    const out = await evaluateProcurementExecutionBoundary({
+      identity: soi('aliexpress', { product_id: '1005010358671233', sku_id: '12000052119244345', sku_attr: '14:Beige' }),
+      quantity: 1,
+      canonicalUnit: { supplier_unit_ref: '12000052119244345' },
+      preflight: { ready: true, evidence: { provider: 'aliexpress', auto_order_ready: true, supplier_product_id: '1005010358671233' } },
+      adapters: EXECUTION_ADAPTER_REGISTRY,
+      context: {},
+    });
+    expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'BUILD_ORDER_PAYLOAD_ERROR' });
   });
 
   test('CJ est un execution adapter complet mais reste fail-closed sans contexte runtime', async () => {
