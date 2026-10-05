@@ -54,7 +54,9 @@ jobs:
             exit 1
           fi
 
-          COMPARE_URL="https://api.github.com/repos/$REPOSITORY/compare/$HEAD_SHA...$BASE_SHA"
+          # GitHub compare is base...head. To know whether the PR head is
+          # behind its base, compare BASE...HEAD and read behind_by.
+          COMPARE_URL="https://api.github.com/repos/$REPOSITORY/compare/$BASE_SHA...$HEAD_SHA"
           curl -fsSL \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
