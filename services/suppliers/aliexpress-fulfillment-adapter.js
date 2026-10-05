@@ -264,9 +264,8 @@ async function buildOrderPayload({ items, preflights, context = {} } = {}) {
     throw new Error('ALIEXPRESS_PREFLIGHTS_REQUIRED');
   }
   const destination = context.procurement_destination || context.destination;
-  if (!destination || !String(destination.address || '').trim()) {
-    throw new Error('ALIEXPRESS_PROCUREMENT_DESTINATION_REQUIRED');
-  }
+  if (!destination) throw new Error('ALIEXPRESS_PROCUREMENT_DESTINATION_REQUIRED');
+  const logisticsAddress = preflight.normalizePlaceOrderAddress(destination);
 
   const productItems = items.map((item, index) => {
     const pf = preflights[index];
@@ -296,7 +295,7 @@ async function buildOrderPayload({ items, preflights, context = {} } = {}) {
     provider,
     native: {
       param_place_order_request4_open_api_d_t_o: JSON.stringify({
-        logistics_address: { ...destination },
+        logistics_address: logisticsAddress,
         product_items: productItems,
       }),
     },
@@ -329,7 +328,7 @@ async function placeOrder(payload, context = {}) {
     // eslint-disable-next-line no-await-in-loop
     const detailPayload = await api.invokeTop(
       preflight.METHODS.ORDER_DETAIL,
-      { order_id: supplierOrderId },
+      preflight.buildOrderDetailBusinessParams(supplierOrderId),
       { env }
     );
     const detail = parseOrderDetail(detailPayload);
