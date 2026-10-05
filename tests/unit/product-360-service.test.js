@@ -159,6 +159,40 @@ test('Product 360 expose le supplier_sku quand le SKU interne n’a pas de libel
   });
 });
 
+test('identité de commande SKU : visible au central, absente du scope marché et sans JSON provider brut', async () => {
+  const sku = {
+    sku: 'SKU-CJ-1',
+    supplier_sku: 'CJ-SKU-123',
+    supplier_unit_ref: 'CJ-UNIT-987',
+    supplier_provider: 'CJ',
+    supplier_order_identity: { provider: 'CJ', secretish: 'must-not-project' },
+    variant_combo: { couleur: 'Noir' },
+    stock: 4,
+    price_kmf: 51000,
+    is_active: true,
+  };
+  mockQueries({ variants: [], skus: [sku] });
+
+  const central = await product360.loadProduct360(product({ inventory_model: 'SKU' }), {
+    marketIds: null, includeCentral: true,
+  });
+  expect(central.inventory.skus[0]).toMatchObject({
+    supplier_sku: 'CJ-SKU-123',
+    supplier_unit_ref: 'CJ-UNIT-987',
+    supplier_provider: 'CJ',
+  });
+  expect(JSON.stringify(central.inventory.skus[0])).not.toContain('supplier_order_identity');
+  expect(JSON.stringify(central.inventory.skus[0])).not.toContain('secretish');
+
+  jest.clearAllMocks();
+  mockQueries({ variants: [], skus: [sku] });
+  const market = await product360.loadProduct360(product({ inventory_model: 'SKU' }), {
+    marketIds: ['market-cm-id'], includeCentral: false,
+  });
+  expect(market.inventory.skus[0]).not.toHaveProperty('supplier_unit_ref');
+  expect(market.inventory.skus[0]).not.toHaveProperty('supplier_provider');
+});
+
 test('mode SKU somme uniquement les SKU actifs', async () => {
   mockQueries({
     variants: [],
@@ -226,6 +260,7 @@ test('Product 360 reprend les valeurs économiques persistées sans recalculer l
 test('autorité centrale seule charge fournisseurs et audits sans exposer secrets ni UUID', async () => {
   mockQueries({
     suppliers: [{
+      supplier_id: '22222222-2222-4222-8222-222222222222',
       supplier_name: 'Dubai Source', platform: 'Noon', supplier_sku: 'NOON-1', supplier_url: 'https://example.test/p',
       supplier_price_aed: 42.5, min_order_qty: 1, priority: 1, is_active: true, last_checked_at: null, notes: null,
       api_key_enc: 'MUST-NOT-LEAK',
@@ -239,6 +274,7 @@ test('autorité centrale seule charge fournisseurs et audits sans exposer secret
 
   expect(result.central.visibility).toBe('global');
   expect(result.central.suppliers).toHaveLength(1);
+  expect(result.central.suppliers[0].id).toBe('22222222-2222-4222-8222-222222222222');
   expect(result.central.price_history).toHaveLength(1);
   expect(result.central.stock_audit_count).toBe(1);
   expect(serialized).not.toContain(PRODUCT_ID);

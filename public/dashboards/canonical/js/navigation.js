@@ -203,6 +203,7 @@
     'catalog-workspace': 'catalog',
     'market-catalog': 'catalog',
     'product-360': 'catalog',
+    'supplier-360': 'catalog',
 
     commerce: 'orders',
     orders: 'orders',
@@ -255,6 +256,7 @@
     'client-index': Object.freeze({ href:'/admin/commerce', label:'Retour au commerce' }),
     'client-360': Object.freeze({ href:'/admin/clients', label:'Retour aux clients' }),
     'product-360': Object.freeze({ href:'/admin/workspaces/catalog', label:'Retour au catalogue' }),
+    'supplier-360': Object.freeze({ href:'/admin/workspaces/sourcing', label:'Retour au sourcing' }),
     demo: Object.freeze({ href:'/admin/pilotage', label:'Retour au pilotage' }),
   });
 
