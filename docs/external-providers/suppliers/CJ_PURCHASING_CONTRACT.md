@@ -251,3 +251,37 @@ Observed provider response from `saveGenerateParentOrder`:
 - `submitSuccess=false`.
 
 Komerce therefore treats `submitSuccess` as an observed provider fact, not as the sole existence criterion for a payable parent. A parent is considered materially generated for the proof only when a non-empty `payId` exists and all mismatch/intercept collections are empty. Final payment capability remains unproven until `simulatePay(shipmentOrderId)` and read-back succeed.
+
+
+## Sandbox parent amount reconciliation
+
+The grouped-parent sandbox proof now performs an amount-consistency check before `simulatePay(shipmentOrderId)`.
+
+Observed provider facts are mapped as:
+
+```
+orderMoney
+paymentInformation.actualPayment
+paymentInformation.orderOriginalAmount
+```
+
+The proof requires these three positive numeric values to be equal before simulated payment.
+
+A passing verdict means only:
+
+```
+provider parent amount facts are internally consistent
++ sandbox payment transition succeeds
++ child orders read back as paid/processing
+```
+
+It does **not** mean:
+
+```
+CJ production balance was debited
+bank/card funding was reconciled
+supplier payment accounting was posted
+B2B accounting reconciliation is complete
+```
+
+The canonical proof result therefore carries `real_debit_verified=false`.
