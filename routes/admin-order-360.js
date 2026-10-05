@@ -5,14 +5,14 @@
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_admin, order_reference
- * @outputs       authorized_order_360_projection
+ * @outputs       authorized_order_360_projection, purchasing_projection_only_when_admin_guard_matches
  * @depends       middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/order-360
  * @used-by       bootstrap/api-routes.js
  * @db-read       orders, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
  * @db-write      none
  * @db-txn        none
  * @doctrine      entity_360_reunites_without_recomputing, capability_is_the_authority_not_role, fail_closed_unresolved_market
- * @impact-areas  admin-dashboard, orders, market-authorization
+ * @impact-areas  admin-dashboard, orders, purchasing, market-authorization
  * @version       2026-10-d6
  */
 
@@ -88,7 +88,11 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await order360.loadOrder360(req.order360Order);
+      // Parité stricte avec routes/purchasing.js : le drill Achats n'est projeté
+      // que pour un acteur déjà admis par le guard requireRole(['admin']).
+      const payload = await order360.loadOrder360(req.order360Order, {
+        includePurchasing: Boolean(req.user && req.user.role === 'admin'),
+      });
       return res.json(payload);
     } catch (err) {
       log.error({ err, orderReference: req.params.orderReference }, '[admin-order-360] read failed');
