@@ -8,7 +8,11 @@ const reset = require('../../scripts/cm-cg-market-reprovision-reset');
 const ROOT = path.join(__dirname, '..', '..');
 
 describe('CG/CM controlled reprovision reset', () => {
-  test('scope is hard-coded and execution requires explicit staging acknowledgement', () => {
+  test('scope is hard-coded, dry-run is read-only anywhere, execution requires staging acknowledgement', () => {
+    expect(() => reset.assertRuntime('dry-run', {
+      KOMERCE_ENV: 'production',
+      DATABASE_URL: 'postgres://x/y',
+    })).not.toThrow();
     expect(reset.TARGET_CODES).toEqual(['CG', 'CM']);
     expect(() => reset.assertRuntime('execute', {
       KOMERCE_ENV: 'staging',
