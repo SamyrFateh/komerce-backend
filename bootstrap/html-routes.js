@@ -155,6 +155,12 @@ function mountHtmlRoutes(app, rootDir) {
     sendCanonicalAdmin(res);
   });
 
+  // Supplier 360 Canonical est une fiche read-only ; la liste /admin/suppliers
+  // reste Legacy tant que sa parité d'administration n'est pas prouvée.
+  app.get('/admin/suppliers/:supplierId', (req, res) => {
+    sendCanonicalAdmin(res);
+  });
+
   // Les URLs de construction restent des aliases temporaires mais ne créent
   // plus une seconde URL produit : elles ramènent systématiquement vers le
   // pathname stable correspondant.
