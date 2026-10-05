@@ -177,18 +177,29 @@ function buildFreightBusinessParams(resolved, destination = {}) {
 
 function normalizePlaceOrderAddress(logisticsAddress) {
   const source = logisticsAddress && typeof logisticsAddress === 'object' ? logisticsAddress : {};
+  const country = String(source.country_code || source.country || '').trim().toUpperCase();
+  let mobileNo = String(source.mobile_no || source.phone || '').trim();
+  if (country === 'AE') {
+    mobileNo = mobileNo.replace(/[\s()-]/g, '');
+    if (mobileNo.startsWith('+971')) mobileNo = mobileNo.slice(4);
+    else if (mobileNo.startsWith('00971')) mobileNo = mobileNo.slice(5);
+    if (mobileNo.startsWith('0')) mobileNo = mobileNo.slice(1);
+  }
   const address = {
     address: String(source.address || source.address1 || '').trim(),
     ...(String(source.address2 || '').trim() ? { address2: String(source.address2).trim() } : {}),
     city: String(source.city || '').trim(),
     contact_person: String(source.contact_person || source.customer_name || source.full_name || '').trim(),
-    country: String(source.country_code || source.country || '').trim().toUpperCase(),
+    country,
     full_name: String(source.full_name || source.customer_name || source.contact_person || '').trim(),
-    mobile_no: String(source.mobile_no || source.phone || '').trim(),
+    mobile_no: mobileNo,
     province: String(source.province || '').trim(),
     zip: String(source.zip || source.postal_code || '').trim(),
     locale: String(source.locale || 'en_US').trim(),
   };
+  if (country === 'AE' && !/^5\d{8}$/.test(address.mobile_no)) {
+    throw new Error('ALIEXPRESS_LOGISTICS_ADDRESS_MOBILE_NO_AE_INVALID');
+  }
   for (const [key, value] of Object.entries(address)) {
     if (!value && ['address', 'city', 'contact_person', 'country', 'full_name', 'mobile_no', 'province', 'zip'].includes(key)) {
       throw new Error(`ALIEXPRESS_LOGISTICS_ADDRESS_${key.toUpperCase()}_REQUIRED`);
