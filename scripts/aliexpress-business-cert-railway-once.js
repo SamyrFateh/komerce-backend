@@ -89,8 +89,8 @@ async function ensureCanonicalSku(db) {
   if (existing.rows.length) return existing.rows[0];
 
   let { rows } = await db.query(`
-    SELECT id, state, product_id, supplier_product_id, scan_result,
-           normalized_source_contract, rejected_reason
+    SELECT id, state, product_id, supplier_name, supplier_product_id, raw_payload,
+           scan_result, normalized_source_contract, rejected_reason
       FROM sourcing_candidates
      WHERE supplier_name='AliExpress' AND supplier_product_id=$1
      ORDER BY updated_at DESC LIMIT 1
@@ -100,8 +100,8 @@ async function ensureCanonicalSku(db) {
     const golden = require('./aliexpress-golden-e2e');
     await golden.executeImport(PRODUCT_ID, process.env);
     ({ rows } = await db.query(`
-      SELECT id, state, product_id, supplier_product_id, scan_result,
-             normalized_source_contract, rejected_reason
+      SELECT id, state, product_id, supplier_name, supplier_product_id, raw_payload,
+             scan_result, normalized_source_contract, rejected_reason
         FROM sourcing_candidates
        WHERE supplier_name='AliExpress' AND supplier_product_id=$1
        ORDER BY updated_at DESC LIMIT 1
@@ -110,7 +110,6 @@ async function ensureCanonicalSku(db) {
   if (rows.length !== 1) throw new Error('ALIEXPRESS_CERT_CANDIDATE_MISSING');
 
   const { evaluateSourcingCandidateOutcome } = require('../services/sourcing-certification');
-  const { promoteCandidate } = require('../services/sourcing-candidate-actions');
   const candidate = rows[0];
   const verdict = evaluateSourcingCandidateOutcome(candidate);
   console.log(`ALIEXPRESS_CERT_CANDIDATE=${JSON.stringify({
@@ -118,41 +117,68 @@ async function ensureCanonicalSku(db) {
     state: candidate.state,
     supplier_product_id: candidate.supplier_product_id,
     sourcing_decision: candidate.scan_result?.sourcing_decision || null,
-    eligibility: candidate.scan_result?.eligibility || null,
-    recommended_price_kmf: candidate.scan_result?.recommended_price_kmf ?? null,
-    test_price_kmf: candidate.scan_result?.test_price_kmf ?? null,
     source_contract_version: candidate.normalized_source_contract?.schema_version || null,
     verdict,
   })}`);
-  if (!(verdict?.outcome_valid && verdict?.sourcing_certified)) {
-    throw new Error(`ALIEXPRESS_CERT_NOT_SOURCING_CERTIFIED:${verdict?.outcome || 'unknown'}`);
+
+  if (String(candidate.normalized_source_contract?.schema_version || '') !== '2') {
+    throw new Error('ALIEXPRESS_CERT_SOURCE_CONTRACT_V2_REQUIRED');
   }
-  const price = Number(candidate.scan_result?.test_price_kmf);
-  if (!(price > 0)) throw new Error('ALIEXPRESS_CERT_TEST_PRICE_MISSING');
-  const authority = String(candidate.scan_result?.recommended_price_authority || candidate.scan_result?.price_authority || '');
-  if (authority !== 'ECONOMIC_REFERENCE_NOT_MARKET_DECISION') {
-    throw new Error(`ALIEXPRESS_CERT_PRICE_AUTHORITY:${authority || 'missing'}`);
+
+  // Purchasing proof is intentionally independent from merchandising/sourcing
+  // decisions. A WATCH product must never be promoted to the catalogue just to
+  // prove provider execution. In this disposable DB only, create an inactive,
+  // unexposed parent product plus one active supplier SKU that is linked back
+  // to the already-resolved canonical product through sourcing_candidates.
+  const proofProduct = await db.query(`
+    INSERT INTO products (
+      name, price_kmf, stock, is_active, is_available,
+      lifecycle_status, inventory_model, source, sourcing_source
+    ) VALUES (
+      'AliExpress purchasing certification fixture',
+      1, 0, FALSE, FALSE,
+      'candidate', 'SKU', 'ALIEXPRESS_CERT_PROOF', 'AliExpress'
+    )
+    RETURNING id, product_ref
+  `);
+  const product = proofProduct.rows[0];
+
+  await db.query(
+    'UPDATE sourcing_candidates SET product_id=$1, updated_at=now() WHERE id=$2',
+    [product.id, candidate.id]
+  );
+
+  const supplierSku = '14:193#Black';
+  const supplierUnitRef = '12000056903119243';
+  const soi = {
+    provider: 'aliexpress',
+    version: 1,
+    payload: { sku_id: supplierUnitRef, sku_attr: '14:black' },
+  };
+  const proofSku = await db.query(`
+    INSERT INTO product_skus (
+      product_id, sku, stock, is_active, supplier_sku, source,
+      supplier_unit_ref, supplier_order_identity
+    ) VALUES ($1,$2,1,TRUE,$3,'SUPPLIER',$4,$5::jsonb)
+    RETURNING id
+  `, [
+    product.id,
+    'ALIEXPRESS-CERT-PROOF',
+    supplierSku,
+    supplierUnitRef,
+    JSON.stringify(soi),
+  ]);
+
+  const exposed = await db.query(
+    'SELECT EXISTS(SELECT 1 FROM product_market_exposure WHERE product_id=$1) AS exposed',
+    [product.id]
+  );
+  if (exposed.rows[0]?.exposed === true) {
+    throw new Error('ALIEXPRESS_CERT_PROOF_PRODUCT_MUST_REMAIN_UNEXPOSED');
   }
-  const promoted = await promoteCandidate(candidate.id, {
-    price_kmf: Math.round(price),
-    enrichment_mode: 'source_only',
-  }, null);
-  const check = await db.query(`
-    SELECT p.product_ref, p.is_active, p.lifecycle_status, ps.id AS product_sku_id,
-           EXISTS(SELECT 1 FROM product_market_exposure pme WHERE pme.product_id=p.id) AS exposed
-      FROM products p
-      JOIN product_skus ps ON ps.product_id=p.id
-     WHERE p.id=$1
-       AND ps.is_active=TRUE
-       AND ps.source='SUPPLIER'
-       AND ps.supplier_order_identity->>'provider'='aliexpress'
-     ORDER BY ps.id LIMIT 1
-  `, [promoted.product_id]);
-  if (check.rows.length !== 1) throw new Error('ALIEXPRESS_CERT_PROMOTED_SKU_MISSING');
-  if (check.rows[0].is_active === true || check.rows[0].exposed === true) {
-    throw new Error('ALIEXPRESS_CERT_DRAFT_MUST_REMAIN_INACTIVE_UNEXPOSED');
-  }
-  return { id: check.rows[0].product_sku_id, product_ref: check.rows[0].product_ref };
+
+  console.log(`ALIEXPRESS_CERT_PROOF_SKU_CREATED=${proofSku.rows[0].id}`);
+  return { id: proofSku.rows[0].id, product_ref: product.product_ref };
 }
 
 async function main() {
