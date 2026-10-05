@@ -31,6 +31,7 @@ jobs:
       KOMERCE_CJ_SANDBOX: '1'
       KOMERCE_CJ_P2_GROUPED_PRODUCT_REF: 'KPR-131962'
       KOMERCE_CJ_P2_GROUPED_FROM_COUNTRY_CODE: 'CN'
+      KOMERCE_CJ_P2_GROUPED_PAYMENT_MODE: 'payBalanceV2'
 
     steps:
       - name: Checkout protected main only
@@ -54,6 +55,7 @@ jobs:
           test "$NODE_ENV" = 'test'
           test "$KOMERCE_CJ_SANDBOX" = '1'
           test "$KOMERCE_ALLOW_CJ_P2_GROUPED_PARENT" = '1'
+          test "$KOMERCE_CJ_P2_GROUPED_PAYMENT_MODE" = 'payBalanceV2'
           test -n "${DATABASE_URL:-}"
           test -n "${CJ_ACCESS_TOKEN:-}"
 
@@ -82,7 +84,7 @@ jobs:
             echo '- runtime: staging/test'
             echo '- create: two exact CJ VIDs, isSandbox=1, payType=3'
             echo '- parent identity: real shipmentOrderId from create/read-back'
-            echo '- batch operation: simulatePay(shipmentOrderId)'
+            echo '- batch operation: payBalanceV2(shipmentOrderId, payId) on 100% sandbox parent'
             echo '- real charge: impossible by proof guard'
             if [ -n "${PROOF_SUMMARY:-}" ]; then echo "- result: $PROOF_SUMMARY"; fi
           } >> "$GITHUB_STEP_SUMMARY"
