@@ -302,6 +302,11 @@ describe('aliexpress-connector', () => {
         stock_available: 12,
         purchase_price: 9.9,
         currency: 'USD',
+        supplier_order_identity: expect.objectContaining({
+          provider: 'aliexpress',
+          version: 1,
+          payload: expect.objectContaining({ product_id: '4000102715995' }),
+        }),
       }),
       expect.objectContaining({
         supplier_sku: 'AE-SPK-WHT-M',
