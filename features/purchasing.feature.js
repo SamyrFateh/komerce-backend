@@ -132,6 +132,7 @@ module.exports = {
       'scripts/allegro-shipping-capability-proof.js',
       'scripts/aliexpress-readiness-golden-proof.js',
       'scripts/aliexpress-business-order-golden-proof.js',
+      'scripts/aliexpress-business-certification.js',
       'scripts/cj-p1-create-readback-proof.js',
       'scripts/cj-golden-trigger-purchasing-proof.js',
       'scripts/cj-p2-confirm-pay-sandbox-proof.js',
