@@ -10,6 +10,7 @@ permissions:
   actions: write
   contents: read
   pull-requests: read
+  statuses: write
 
 concurrency:
   group: pr-enforcement-dispatch-${{ github.event.pull_request.number }}
@@ -34,6 +35,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+
+          pending_payload="$(node -e "process.stdout.write(JSON.stringify({state:'pending',context:'Required verdict',description:'Trusted PR enforcement in progress'}))")"
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/$REPOSITORY/statuses/$HEAD_SHA" \
+            -d "$pending_payload"
+
           node - <<'NODE' > /tmp/dispatch.json
           const payload = {
             ref: process.env.HEAD_REF,
