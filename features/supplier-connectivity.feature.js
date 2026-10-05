@@ -73,11 +73,13 @@ module.exports = {
   files: {
     services: [
       'services/suppliers/provider-authority.js',
+      'services/suppliers/provider-capability-certifications.js',
       'services/suppliers/supplier-order-identity.js',
       'services/suppliers/supplier-fulfillment-adapter-contract.js',
     ],
     tests: [
       'tests/unit/provider-authority.test.js',
+      'tests/unit/provider-capability-certifications.test.js',
       'tests/unit/supplier-order-identity.test.js',
       'tests/unit/supplier-fulfillment-adapter-contract.test.js',
       'tests/unit/supplier-platform-allegro.test.js',

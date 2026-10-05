@@ -6,18 +6,19 @@
  * @criticality   high
  * @inputs        supplier_uuid
  * @outputs       supplier_360_readonly_projection
- * @depends       db
+ * @depends       db, services/suppliers/provider-capability-certifications.js
  * @used-by       routes/admin-supplier-360.js
  * @db-read       suppliers, product_suppliers, products, purchase_orders, orders, supplier_execution_orders, supplier_execution_payments
  * @db-write      none
  * @db-txn        none
- * @doctrine      entity_360_reunites_without_recomputing, supplier_secrets_never_exposed
+ * @doctrine      entity_360_reunites_without_recomputing, supplier_secrets_never_exposed, docs/doctrine/DOCTRINE_EXTERNAL_PROVIDER_CONTRACT_PROOFS.md
  * @impact-areas  admin-dashboard, purchasing, catalog, supplier-connectivity
  * @version       2026-10
  */
 'use strict';
 
 const db = require('../db');
+const capabilityEvidence = require('./suppliers/provider-capability-certifications');
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -41,8 +42,11 @@ async function resolveSupplier(value, q = db) {
   return { invalid: false, supplier: row || null };
 }
 
+const { projectCapabilityCertifications } = capabilityEvidence;
 async function loadSupplier360(supplier, q = db) {
   if (!supplier || !supplier.id) throw new Error('supplier_360_resolved_supplier_required');
+
+  const capabilityCertifications = projectCapabilityCertifications(supplier.platform);
 
   const [mappingsResult, posResult, executionResult, paymentResult] = await Promise.all([
     q.query(`
@@ -134,6 +138,7 @@ async function loadSupplier360(supplier, q = db) {
       deleted_at: supplier.deleted_at || null,
       has_api_key: Boolean(supplier.has_api_key),
       has_api_secret: Boolean(supplier.has_api_secret),
+      capability_certifications: capabilityCertifications,
       created_at: supplier.created_at,
       updated_at: supplier.updated_at,
     }),
@@ -145,8 +150,8 @@ async function loadSupplier360(supplier, q = db) {
       generated_at: new Date().toISOString(),
       purchase_orders_limit: 100,
       credentials_projection: 'presence_flags_only',
-      capability_status: 'not_projected',
-      certification_status: 'not_projected',
+      capability_status: 'certification_ledger_projected_readonly',
+      certification_status: capabilityCertifications.resolution,
       source_tables: Object.freeze([
         'suppliers', 'product_suppliers', 'products', 'purchase_orders', 'orders',
         'supplier_execution_orders', 'supplier_execution_payments',
@@ -155,4 +160,4 @@ async function loadSupplier360(supplier, q = db) {
   });
 }
 
-module.exports = { UUID, normalizeSupplierId, resolveSupplier, loadSupplier360 };
+module.exports = { UUID, normalizeSupplierId, projectCapabilityCertifications, resolveSupplier, loadSupplier360 };

@@ -237,7 +237,9 @@ function parseCreatedOrder(payload = {}) {
   const root = orderResultRoot(payload);
   const success = root?.is_success ?? root?.success ?? root?.result_success;
   if (success === false) {
-    throw new Error(`ALIEXPRESS_PLACE_ORDER_REJECTED:${root?.error_msg || root?.error_message || root?.msg || 'unknown'}`);
+    const code = String(root?.error_code || root?.code || root?.sub_code || 'UNKNOWN').trim();
+    const message = String(root?.error_msg || root?.error_message || root?.msg || '').trim();
+    throw new Error(`ALIEXPRESS_PLACE_ORDER_REJECTED:${code}${message ? `:${message}` : ''}`);
   }
   const raw = root?.order_list?.number ?? root?.order_list ?? root?.order_id ?? root?.trade_id ?? null;
   const ids = (Array.isArray(raw) ? raw : [raw])
