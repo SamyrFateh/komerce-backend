@@ -54,6 +54,8 @@ test('migration 282 crée un ledger append-only borné aux actions de taxonomie'
     path.join(__dirname, '..', '..', 'migrations', '282_catalog_taxonomy_audit.sql'),
     'utf8'
   );
+  expect(sql).toContain('-- @migration 282_catalog_taxonomy_audit.sql');
+  expect(sql).toContain('-- @domain    catalog');
   expect(sql).toContain('CREATE TABLE IF NOT EXISTS public.catalog_taxonomy_audit');
   expect(sql).toContain('actor_user_id');
   expect(sql).toContain('before_snapshot');
