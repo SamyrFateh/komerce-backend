@@ -12,7 +12,7 @@ Ordre d'exécution : `DASHBOARD_DECISION_VISUAL_V1_MIGRATION_ORDER.md`.
 | Besoin | Constat vérifié / limite | Source et prochain acte |
 |---|---|---|
 | Shell commun | Déjà implémenté ; pas de reconstruction à prévoir | `public/dashboards/canonical/js/navigation-policy-v4.js`, `app.js` ; corriger seulement les parcours concernés. |
-| Détail d'exécution fournisseur d'une PO | Manque de projection dans la lecture actuelle : `getGroupedPurchaseOrder` retourne PO/lignes/marchés | `routes/purchasing.js`, `services/purchasing-grouped-service.js` ; lot 1, lecture des liens persistés sous l'autorité purchasing. |
+| Détail d'exécution fournisseur d'une PO | Projection API implémentée : le détail PO regroupée ajoute `supplier_execution` ; présentation UI restant au lot 2 | `routes/purchasing.js`, `services/purchasing-order-detail.js` ; lecture des liens persistés sous l'autorité purchasing, contrat ci-dessous. |
 | Identité fournisseur dans Achats | Le formulaire de confirmation permet encore la saisie de `supplier_order_id` ; l'écran ne projette pas les nouvelles tables d'exécution | `public/dashboards/canonical/js/purchasing-workspace.js` ; lot 2, distinguer le parcours manuel de l'exécution automatisée, sans supprimer aveuglément la confirmation manuelle. |
 | Exécution, paiement, preuve | Faits persistés disponibles ; exposition BO à construire et contrat à vérifier | `services/supplier-execution-persistence.js`, `supplier-payment-state.js`, `supplier-payment-proof-persistence.js` ; le dernier écrit `real_debit_verified` seulement via sa procédure propriétaire. |
 | Finance / Order 360 / Product 360 | Aucun usage direct des nouveaux identifiants/tables recherché dans les services actuels ; la continuité complète reste à prouver | `services/dashboard-finance-canonical.js`, `order-360.js`, `product-360.js` ; lots 2, 3 et 5. L'absence de référence directe n'exclut pas un lecteur indirect : vérifier les contrats avant modification. |
@@ -23,6 +23,40 @@ Ordre d'exécution : `DASHBOARD_DECISION_VISUAL_V1_MIGRATION_ORDER.md`.
 Périmètre non attesté par ce diagnostic : état des données live, activation des
 capabilities par environnement, couverture exhaustive de l'administration et
 validation visuelle navigateur. Ces éléments ne sont pas déclarés terminés.
+
+### Contrat de lecture PO — lot 1
+
+`GET /api/purchasing/po/:po_id` conserve les gardes admin et les champs
+`purchase_order`, `lines`, `markets`, `multi_market`. Les erreurs UUID, PO absente
+et PO historique restent celles du lecteur regroupé. Il ajoute :
+
+| Collection `supplier_execution` | Identité / liens |
+|---|---|
+| `orders` | `id`, `provider`, `supplier_order_id`, `supplier_order_code`, statut et dates observés |
+| `order_lines` | `supplier_execution_order_id`, `purchase_line_id`, `quantity` ; liens limités à cette PO |
+| `groups` | `id`, `provider`, `supplier_parent_order_id`, `payment_ref`, statuts et dates observés |
+| `group_members` | Identifiants groupe / sous-ordre ; même PO et provider |
+| `payments` | Identité et cible ordre OU groupe, `payment_execution_key`, références, montants/devise, statut, rapprochement, `real_debit_verified`, dates |
+| `proofs` | Identité et `supplier_payment_id`, source/référence, montant/devise, débit confirmé, sandbox/simulation et dates |
+| `events` | Identité et cible, opération/verdict, code et référence de requête provider, date ; aucun message libre ni `facts` |
+
+Ces sept collections partagent le snapshot d'une seule requête PostgreSQL ;
+le détail PO/lignes préexistant est chargé auparavant et ne fait pas partie de
+ce snapshot. Ordres/groupes/paiements/preuves/événements sont ordonnés par date
+puis identifiant ; les liens sont ordonnés par leurs identifiants.
+L'absence de faits produit des tableaux vides, jamais une réussite implicite.
+Une panne de lecture reste une erreur, pas une projection vide.
+
+Les montants attendus/observés sont des chaînes décimales avec devise explicite,
+sans somme ni conversion. Un paiement parent apparaît une seule fois, même
+avec plusieurs sous-ordres/lignes. Les faits de paiement, rapprochement et preuve
+restent indépendants : aucune promotion de `real_debit_verified` par ce lecteur.
+Les colonnes JSON opaques et messages provider sont exclus de la projection
+d'exécution. Aucun appel provider, activation, nouveau paiement ou migration.
+
+Preuves reproductibles : `tests/unit/purchasing-order-detail.test.js`,
+`tests/unit/purchasing-route.test.js` et
+`tests/integration/purchasing-order-detail-postgres.test.js` (PostgreSQL requis).
 
 ## Pilotage
 
