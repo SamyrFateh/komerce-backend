@@ -143,6 +143,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const adminClientIndexRouter = require('../routes/admin-client-index');
   const adminClient360Router = require('../routes/admin-client-360');
   const adminProduct360Router = require('../routes/admin-product-360');
+  const adminSupplier360Router = require('../routes/admin-supplier-360');
   const adminOperationsWorkspaceRouter = require('../routes/admin-operations-workspace');
   const adminShippingCustomsWorkspaceRouter = require('../routes/admin-shipping-customs-workspace');
   const adminCatalogWorkspaceRouter = require('../routes/admin-catalog-workspace');
@@ -164,6 +165,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/admin/entities',    adminClientIndexRouter);
   app.use('/api/admin/entities',    adminClient360Router);
   app.use('/api/admin/entities',    adminProduct360Router);
+  app.use('/api/admin/entities',    adminSupplier360Router);
   app.use('/api/admin/workspaces/operations', adminOperationsWorkspaceRouter);
   app.use('/api/admin/workspaces/shipping-customs', adminShippingCustomsWorkspaceRouter);
   app.use('/api/admin/workspaces/catalog', adminCatalogWorkspaceRouter);
