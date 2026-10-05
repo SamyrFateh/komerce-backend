@@ -43,6 +43,7 @@
     CLIENT_INDEX: 'client-index',
     CLIENT_360: 'client-360',
     PRODUCT_360: 'product-360',
+    SUPPLIER_360: 'supplier-360',
     DEMO: 'demo',
     SETTINGS: 'settings',
   });
@@ -155,6 +156,7 @@
     if (path === '/admin/clients' || path === '/admin-next/clients') return SURFACES.CLIENT_INDEX;
     if (/^\/admin\/clients\/[^/]+$/.test(path)) return SURFACES.CLIENT_360;
     if (/^\/admin\/products\/[^/]+$/.test(path)) return SURFACES.PRODUCT_360;
+    if (/^\/admin\/suppliers\/[^/]+$/.test(path)) return SURFACES.SUPPLIER_360;
     if (path === '/admin/workspaces/operations' || path === '/admin-next/workspaces/operations') {
       return SURFACES.OPERATIONS_WORKSPACE;
     }
@@ -541,6 +543,18 @@
     });
   }
 
+  function renderSupplier360(root, user) {
+    if (!global.KomerceCanonicalSupplier360) throw new Error('canonical_supplier_360_module_missing');
+    return global.KomerceCanonicalSupplier360.mount({
+      root,
+      user,
+      pathname: global.location.pathname,
+      document: global.document,
+      fetch: global.fetch.bind(global),
+      ui: global.KomerceCanonicalUI,
+    });
+  }
+
   function renderMarketSurfaceShell(root, user, adminContext, options) {
     if (!root || typeof root.replaceChildren !== 'function' || typeof root.appendChild !== 'function') {
       throw new Error('canonical_admin_shell_root_missing');
@@ -697,6 +711,7 @@
     if (surface === SURFACES.CLIENT_INDEX) return renderClientIndexShell(root, user, adminContext);
     if (surface === SURFACES.CLIENT_360) return renderClient360(root, user, adminContext);
     if (surface === SURFACES.PRODUCT_360) return renderProduct360(root, user);
+    if (surface === SURFACES.SUPPLIER_360) return renderSupplier360(root, user);
     if (surface === SURFACES.OPERATIONS_WORKSPACE) return renderOperationsWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.SHIPPING_CUSTOMS_WORKSPACE) return renderShippingCustomsWorkspaceShell(root, user, adminContext);
     if (surface === SURFACES.CATALOG_WORKSPACE) return renderCatalogWorkspace(root, user, adminContext);
