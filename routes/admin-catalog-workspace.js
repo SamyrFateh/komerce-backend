@@ -110,37 +110,37 @@ router.post('/approval/:productRef/override', async (req, res, next) => {
 
 router.post('/categories', async (req, res, next) => {
   try {
-    res.status(201).json({ ok: true, action: 'category_created', result: await workspace.createCategory(req.body) });
+    res.status(201).json({ ok: true, action: 'category_created', result: await workspace.createCategory(req.body, req.user) });
   } catch (err) { sendError(err, res, next); }
 });
 
 router.post('/categories/:key/update', async (req, res, next) => {
   try {
-    res.json({ ok: true, action: 'category_updated', result: await workspace.updateCategory(req.params.key, req.body) });
+    res.json({ ok: true, action: 'category_updated', result: await workspace.updateCategory(req.params.key, req.body, req.user) });
   } catch (err) { sendError(err, res, next); }
 });
 
 router.post('/categories/:key/deactivate', async (req, res, next) => {
   try {
-    res.json({ ok: true, action: 'category_deactivated', result: await workspace.deactivateCategory(req.params.key) });
+    res.json({ ok: true, action: 'category_deactivated', result: await workspace.deactivateCategory(req.params.key, req.user) });
   } catch (err) { sendError(err, res, next); }
 });
 
 router.post('/categories/:key/subcategories', async (req, res, next) => {
   try {
-    res.status(201).json({ ok: true, action: 'subcategory_created', result: await workspace.createSubcategory(req.params.key, req.body) });
+    res.status(201).json({ ok: true, action: 'subcategory_created', result: await workspace.createSubcategory(req.params.key, req.body, req.user) });
   } catch (err) { sendError(err, res, next); }
 });
 
 router.post('/categories/:key/subcategories/:subKey/update', async (req, res, next) => {
   try {
-    res.json({ ok: true, action: 'subcategory_updated', result: await workspace.updateSubcategory(req.params.key, req.params.subKey, req.body) });
+    res.json({ ok: true, action: 'subcategory_updated', result: await workspace.updateSubcategory(req.params.key, req.params.subKey, req.body, req.user) });
   } catch (err) { sendError(err, res, next); }
 });
 
 router.post('/categories/:key/subcategories/:subKey/deactivate', async (req, res, next) => {
   try {
-    res.json({ ok: true, action: 'subcategory_deactivated', result: await workspace.deactivateSubcategory(req.params.key, req.params.subKey) });
+    res.json({ ok: true, action: 'subcategory_deactivated', result: await workspace.deactivateSubcategory(req.params.key, req.params.subKey, req.user) });
   } catch (err) { sendError(err, res, next); }
 });
 
