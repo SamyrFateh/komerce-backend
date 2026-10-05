@@ -8,7 +8,7 @@
  * @outputs       canonical_finance_projection
  * @depends       db, dashboard-metrics, dashboard-metrics/_helpers
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais
+ * @db-read       orders, refunds, order_items, order_item_cost_imputations, order_item_real_cost_allocations, relais, supplier_execution_payments
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, finance_event_date_is_authoritative
@@ -408,6 +408,44 @@ async function getRelayProfitability(filters = {}) {
   });
 }
 
+async function getSupplierPaymentExceptions(q = db) {
+  const { rows } = await q.query(`
+    SELECT id, purchase_order_id, provider, payment_ref, payment_execution_key,
+           expected_amount::text AS expected_amount, observed_amount::text AS observed_amount,
+           currency, status, reconciliation_status, real_debit_verified, updated_at
+      FROM supplier_execution_payments
+     WHERE status IN ('ambiguous', 'rejected')
+        OR (
+          status = 'succeeded'
+          AND (
+            reconciliation_status IS DISTINCT FROM 'matched'
+            OR real_debit_verified = FALSE
+          )
+        )
+     ORDER BY updated_at DESC, id
+     LIMIT 50
+  `);
+
+  return rows.map(row => Object.freeze({
+    id: row.id,
+    purchase_order_id: row.purchase_order_id,
+    provider: row.provider,
+    payment_ref: row.payment_ref || row.payment_execution_key || null,
+    expected_amount: row.expected_amount,
+    observed_amount: row.observed_amount,
+    currency: row.currency,
+    status: row.status,
+    reconciliation_status: row.reconciliation_status,
+    real_debit_verified: row.real_debit_verified === true,
+    exception_type: row.status === 'ambiguous'
+      ? 'ambiguous_result'
+      : (row.status === 'rejected'
+        ? 'rejected'
+        : (row.reconciliation_status !== 'matched' ? 'reconciliation_unmatched' : 'debit_not_verified')),
+    updated_at: row.updated_at,
+  }));
+}
+
 async function buildFinance(query = {}, options = {}) {
   const market = options.market || null;
   const window = buildPeriod(query, market && market.id, options.now || new Date());
@@ -430,6 +468,7 @@ async function buildFinance(query = {}, options = {}) {
     costFamilies,
     costingOrders,
     relayProfitability,
+    supplierPaymentExceptions,
   ] = await Promise.all([
     metrics.getCAEncaisse(window.filters),
     metrics.getCoutEstime(window.filters),
@@ -448,6 +487,7 @@ async function buildFinance(query = {}, options = {}) {
     getCostFamilyBreakdown(window.filters),
     getRecentCostingOrders(window.filters, { limit: 20 }),
     getRelayProfitability(window.filters),
+    market ? Promise.resolve([]) : getSupplierPaymentExceptions(),
   ]);
 
   return Object.freeze({
@@ -478,6 +518,7 @@ async function buildFinance(query = {}, options = {}) {
       ...refunds.summary,
       recent: Object.freeze(recentRefunds),
     }),
+    supplier_payment_exceptions: Object.freeze(supplierPaymentExceptions),
     incomplete_cost_orders: Object.freeze(incompleteOrders.map(row => Object.freeze({
       reference: row.reference,
       status: row.status,
@@ -494,6 +535,7 @@ async function buildFinance(query = {}, options = {}) {
         refunds: 'refunds.completed_at',
       }),
       relay_real_margin_basis: 'actual_cost_orders_only',
+      supplier_payment_scope: market ? 'not_projected_market_scope' : 'global_admin_only_no_market_allocation',
       economic_global_engine_consumed: false,
       source_tables: Object.freeze([
         'orders',
@@ -502,6 +544,7 @@ async function buildFinance(query = {}, options = {}) {
         'order_item_cost_imputations',
         'order_item_real_cost_allocations',
         'relais',
+        ...(market ? [] : ['supplier_execution_payments']),
       ]),
     }),
   });
@@ -521,5 +564,6 @@ module.exports = {
   getCostFamilyBreakdown,
   getRecentCostingOrders,
   getRelayProfitability,
+  getSupplierPaymentExceptions,
   buildFinance,
 };
