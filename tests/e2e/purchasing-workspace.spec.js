@@ -4,7 +4,7 @@
  * @brief Parcours navigateur de l'espace /admin/workspaces/purchasing : liste groupée (fournisseur + Hub,
  *        marché visible par ligne), sélection, préparation (un double clic ne crée qu'une commande),
  *        détail brouillon (détacher), soumission, confirmation partielle (reliquat), refus de
- *        soumission, absence de débordement mobile et desktop.
+ *        soumission, projection de l’exécution fournisseur persistée, absence de débordement mobile et desktop.
  *        API simulée avec état : aucun serveur ni base requis.
  */
 'use strict';
@@ -45,6 +45,10 @@ function makeLine(n, market, qty, extra = {}) {
   };
 }
 
+function emptyExecution() {
+  return { orders: [], order_lines: [], groups: [], group_members: [], payments: [], proofs: [], events: [] };
+}
+
 function summarize(lines) {
   const byMarket = new Map();
   lines.filter((l) => !l.cancelled).forEach((l) => {
@@ -62,6 +66,7 @@ function createFakeApi({ submitRefusal = false } = {}) {
   const state = {
     lines: [makeLine(1, KM, 5), makeLine(2, CM, 3), makeLine(3, KM, 4)],
     pos: new Map(),
+    executions: new Map(),
     calls: [],
     nextPo: 1,
     nextRemnant: 9,
@@ -94,7 +99,7 @@ function createFakeApi({ submitRefusal = false } = {}) {
       const po = state.pos.get(poMatch[1]);
       if (!po) return { status: 404, json: { error: 'PO introuvable', code: 'PURCHASE_ORDER_NOT_FOUND' } };
       const action = poMatch[2];
-      if (!action && method === 'GET') return { status: 200, json: { purchase_order: po, lines: poLines(po.id), ...summarize(poLines(po.id)) } };
+      if (!action && method === 'GET') return { status: 200, json: { purchase_order: po, lines: poLines(po.id), ...summarize(poLines(po.id)), supplier_execution: state.executions.get(po.id) || emptyExecution() } };
       if (action === 'detach') {
         state.lines.forEach((l) => { if (body.line_ids.includes(l.line_id)) l.purchase_order_id = null; });
         return { status: 200, json: { purchase_order_id: po.id, detached: body.line_ids, remaining_lines: poLines(po.id).length } };
@@ -254,6 +259,55 @@ test.describe('Achats fournisseurs — espace canonique', () => {
     await expect(remnant).toHaveCount(1);
     await expect(remnant.locator('td').nth(2)).toHaveText('KM');
     await expect(remnant.locator('td').nth(5)).toHaveText('3');
+  });
+
+  test('détail PO : affiche ordres, paiements, preuves et états ambigus sans les convertir en succès', async ({ page }) => {
+    const api = createFakeApi();
+    await mountWorkspace(page, api);
+    await page.locator('tr[data-purchasing-line] input[type=checkbox]').nth(0).check();
+    await page.locator('[data-workspace-action="prepare-po"]').click();
+    const poId = 'cccccccc-cccc-4ccc-8ccc-000000000001';
+    api.state.executions.set(poId, {
+      orders: [{
+        id: 'exec-order-1', provider: 'CJ', supplier_order_id: 'CJ-42', supplier_order_code: 'CJ-CODE-42',
+        provider_status: 'awaiting_supplier', created_at: '2026-10-05T10:00:00Z', updated_at: '2026-10-05T10:01:00Z',
+      }],
+      order_lines: [{ supplier_execution_order_id: 'exec-order-1', purchase_line_id: '00000000-0000-4000-8000-000000000001', quantity: 5 }],
+      groups: [{
+        id: 'exec-group-1', provider: 'CJ', supplier_parent_order_id: 'CJ-PARENT-7', payment_ref: 'PAY-7',
+        provider_status: 'partial', payment_status: 'pending', created_at: '2026-10-05T10:02:00Z', updated_at: '2026-10-05T10:03:00Z',
+      }],
+      group_members: [{ supplier_execution_group_id: 'exec-group-1', supplier_execution_order_id: 'exec-order-1' }],
+      payments: [{
+        id: 'payment-1', provider: 'CJ', payment_execution_key: 'pay-key-1', supplier_execution_order_id: null,
+        supplier_execution_group_id: 'exec-group-1', payment_ref: 'PAY-7', expected_amount: '19.9900',
+        observed_amount: null, currency: 'USD', status: 'ambiguous', reconciliation_status: 'unverified',
+        real_debit_verified: false, created_at: '2026-10-05T10:04:00Z', updated_at: '2026-10-05T10:05:00Z',
+      }],
+      proofs: [{
+        id: 'proof-1', supplier_payment_id: 'payment-1', provider: 'CJ', proof_source: 'billingHistory',
+        proof_ref: 'BH-1', provider_order_id: 'CJ-PARENT-7', payment_ref: 'PAY-7', observed_amount: '19.9900',
+        currency: 'USD', debit_confirmed: false, sandbox: false, simulated: false,
+        occurred_at: '2026-10-05T10:06:00Z', created_at: '2026-10-05T10:07:00Z',
+      }],
+      events: [{
+        id: 'event-1', provider: 'CJ', supplier_execution_order_id: 'exec-order-1', supplier_execution_group_id: null,
+        operation: 'pay', outcome: 'unknown', provider_request_id: 'REQ-42', provider_code: 'TIMEOUT',
+        created_at: '2026-10-05T10:08:00Z',
+      }],
+    });
+
+    await page.evaluate(() => window.__mounted.reload());
+
+    const execution = page.locator('[data-purchasing-execution]');
+    await expect(execution).toBeVisible();
+    await expect(execution.locator('[data-purchasing-execution-block="orders"]')).toContainText('awaiting_supplier');
+    await expect(execution.locator('[data-purchasing-execution-block="payments"]')).toContainText('19.9900 USD');
+    await expect(execution.locator('[data-purchasing-execution-block="payments"]')).toContainText('ambiguous');
+    await expect(execution.locator('[data-purchasing-execution-block="payments"]')).toContainText('unverified');
+    await expect(execution.locator('[data-purchasing-execution-block="proofs"]')).toContainText('billingHistory');
+    await expect(execution.locator('[data-purchasing-execution-block="events"]')).toContainText('unknown');
+    await expect(execution).not.toContainText('OK');
   });
 
   test('quantité confirmée au-delà de la demande : refus côté écran, aucun appel serveur', async ({ page }) => {
