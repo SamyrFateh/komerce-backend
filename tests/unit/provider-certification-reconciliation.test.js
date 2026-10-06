@@ -178,8 +178,7 @@ test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal sc
 
 
 test('catalog and ops provider capabilities remain scoped to preserved evidence', () => {
-  const { loadCapabilityLedger, reconcileCapabilityLedger } = require('../../services/provider-capability-certifications');
-  const report = reconcileCapabilityLedger({ ledger: loadCapabilityLedger() });
+  const report = reconciliation.run({ root: ROOT });
 
   expect(report.rows.find(
     row => row.provider === 'aliexpress' && row.capability === 'sourcing.exact_unit'
