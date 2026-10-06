@@ -2,8 +2,8 @@
   "generatedAt": "2026-10-03T14:37:53.913Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 701,
-    "protected": 646,
+    "total": 702,
+    "protected": 647,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3441,6 +3441,13 @@
     },
     {
       "key": "GET /api/loyalty/users",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/market-delegation/central/team-matrix",
       "level": "PROTECTED",
       "roles": [
         "admin"

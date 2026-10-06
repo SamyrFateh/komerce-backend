@@ -5,16 +5,16 @@
  * @layer         service
  * @criticality   high
  * @inputs        authenticated user, market code, email, membership, capabilities, invitation token
- * @outputs       team read model, invitations, membership mutations
+ * @outputs       team read model, central market team matrix, invitations, membership mutations
  * @depends       services/market-delegation-service.js, crypto
  * @used-by       routes/market-delegation-team.js
- * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, users, market_team_invitations
+ * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, users, market_team_invitations, market_delegation_audit
  * @db-write      market_team_invitations
  * @db-write-via:market-delegation-service assignment_memberships, membership_capabilities, market_delegation_audit
  * @db-txn        caller-owned
  * @doctrine      team_authority_is_capability_based, invitation_revalidated_on_acceptance
  * @impact-areas  market, delegation, team, authorization
- * @version       2026-09
+ * @version       2026-10
  */
 'use strict';
 
@@ -107,6 +107,93 @@ async function listTeam(executor, { assignmentId }) {
   );
 
   return { members, invitations };
+}
+
+async function listCentralTeamMatrix(executor) {
+  const db = requireExecutor(executor);
+  const { rows } = await db.query(
+    `SELECT m.id AS market_id,
+            m.code AS market_code,
+            m.name AS market_name,
+            m.currency,
+            m.lifecycle_status,
+            a.id AS assignment_id,
+            a.status AS assignment_status,
+            a.central_referent_user_id,
+            COALESCE(team.members, '[]'::jsonb) AS members,
+            last_audit.action AS last_audit_action,
+            last_audit.actor_user_id AS last_audit_actor_user_id,
+            last_audit.occurred_at AS last_audit_at,
+            last_audit.correlation_id AS last_audit_correlation_id
+       FROM markets m
+       JOIN market_operating_assignments a
+         ON a.market_id = m.id
+        AND a.status = 'ACTIVE'
+       LEFT JOIN LATERAL (
+         SELECT jsonb_agg(
+                  jsonb_build_object(
+                    'membership_id', am.id,
+                    'user_id', am.user_id,
+                    'status', am.status,
+                    'is_operating_lead', am.is_operating_lead,
+                    'full_name', u.full_name,
+                    'email', u.email,
+                    'phone', u.phone,
+                    'user_role', u.role,
+                    'capabilities', COALESCE(caps.capabilities, '[]'::jsonb)
+                  )
+                  ORDER BY am.is_operating_lead DESC, am.granted_at ASC, am.id
+                ) AS members
+           FROM assignment_memberships am
+           JOIN users u ON u.id = am.user_id
+           LEFT JOIN LATERAL (
+             SELECT jsonb_agg(mc.capability ORDER BY mc.capability) AS capabilities
+               FROM membership_capabilities mc
+              WHERE mc.membership_id = am.id
+                AND mc.revoked_at IS NULL
+           ) caps ON TRUE
+          WHERE am.assignment_id = a.id
+            AND am.status = 'ACTIVE'
+       ) team ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT mda.action,
+                mda.actor_user_id,
+                mda.occurred_at,
+                mda.correlation_id
+           FROM market_delegation_audit mda
+          WHERE mda.assignment_id = a.id
+          ORDER BY mda.occurred_at DESC, mda.id DESC
+          LIMIT 1
+       ) last_audit ON TRUE
+      WHERE m.lifecycle_status IN ('ACTIVE','SUSPENDED')
+      ORDER BY m.code`
+  );
+
+  return {
+    authority: 'dashboard_global_access_grants',
+    mode: 'read_only',
+    markets: rows.map(row => ({
+      market: {
+        id: row.market_id,
+        code: row.market_code,
+        name: row.market_name,
+        currency: row.currency,
+        lifecycle_status: row.lifecycle_status,
+      },
+      assignment: {
+        id: row.assignment_id,
+        status: row.assignment_status,
+        central_referent_user_id: row.central_referent_user_id,
+      },
+      members: Array.isArray(row.members) ? row.members : [],
+      last_mutation: row.last_audit_action ? {
+        action: row.last_audit_action,
+        actor_user_id: row.last_audit_actor_user_id,
+        at: row.last_audit_at,
+        correlation_id: row.last_audit_correlation_id,
+      } : null,
+    })),
+  };
 }
 
 async function memberInAssignment(executor, { assignmentId, membershipId, forUpdate = false }) {
@@ -450,6 +537,7 @@ module.exports = {
   resolveActiveAssignmentByMarketCode,
   resolveAuthorization,
   listTeam,
+  listCentralTeamMatrix,
   grantableCapabilitiesForActor,
   inviteTeamMember,
   acceptInvitation,
