@@ -113,6 +113,33 @@ describe('logistics-control-chain-projection', () => {
     expect(result.by_stage.RELAY).toEqual([]);
   });
 
+  test('la projection reste conservative entre Purchasing, Supplier et Hub', async () => {
+    mockQuery.mockResolvedValue({ rows: [] });
+    await projection.getControlChain({
+      market: { id: '11111111-1111-4111-8111-111111111111', code: 'CM' },
+    });
+
+    const [sql] = mockQuery.mock.calls[0];
+    expect(sql).toContain("po.status::text IN ('confirmed','shipped','hub_received')");
+    expect(sql).toContain("WHEN so.order_status = 'ordered' AND COALESCE(pf.supplier_acknowledged, FALSE) THEN 'SUPPLIER'");
+    expect(sql).toContain("WHEN so.order_status = 'ordered' THEN 'PURCHASING'");
+    expect(sql).toContain("WHEN so.order_status = 'preparation' AND COALESCE(hf.has_dispatched, FALSE) THEN 'FORWARDER'");
+    expect(sql).not.toContain("OR so.payment_status = 'paid' THEN 'PURCHASING'");
+  });
+
+  test('les incidents ouverts alimentent orange/rouge sans créer un statut dashboard', async () => {
+    mockQuery.mockResolvedValue({ rows: [] });
+    await projection.getControlChain({
+      market: { id: '11111111-1111-4111-8111-111111111111', code: 'CM' },
+    });
+
+    const [sql] = mockQuery.mock.calls[0];
+    expect(sql).toContain('FROM incidents i');
+    expect(sql).toContain("i.status IN ('open','investigating')");
+    expect(sql).toContain("WHEN 'high' THEN 'high'");
+    expect(sql).toContain("ELSE 'warning'");
+  });
+
   test('la lecture globale utilise NULL et ne fabrique aucun filtre market navigateur', async () => {
     mockQuery.mockResolvedValue({ rows: [] });
     await projection.getControlChain({ limit: 9999 });
