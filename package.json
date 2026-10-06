@@ -182,6 +182,7 @@
     "test-exclude": "8.0.0",
     "qs": "6.16.0",
     "proxy-addr": "2.0.8",
-    "fast-copy": "4.1.1"
+    "fast-copy": "4.1.1",
+    "argparse": "2.0.1"
   }
 }
