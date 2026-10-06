@@ -211,4 +211,157 @@ function indexBy(rows, key) {
   return map;
 }
 
-module.exports = { db, STAGES, STAGE_RANK, HEALTH, positiveInt, stageRank, earliestStage, stageForParcel, stageForHubState, stageForPurchaseProgress, severityHealth, deriveHealth, allocateSegments, deriveOrderStage, indexBy };
+
+async function buildMarketControlTower({ marketId, marketCode = null, limit = 250 } = {}) {
+  if (!marketId) throw new Error('control_tower_market_not_resolved');
+  const boundedLimit = Math.max(1, Math.min(1000, positiveInt(limit, 250)));
+
+  const { rows: orders } = await db.query(`
+    SELECT id, reference, status::text AS status, payment_status::text AS payment_status, created_at
+      FROM orders
+     WHERE market_id = $1
+       AND status::text NOT IN ('cancelled','refunded')
+     ORDER BY created_at DESC, id DESC
+     LIMIT $2
+  `, [marketId, boundedLimit]);
+
+  const scope = { mode: 'market', market: { id: marketId, code: marketCode } };
+  if (!orders.length) {
+    return { scope, stages: STAGES.map(key => ({ key, orders: [] })), orders: [], generated_at: new Date().toISOString() };
+  }
+
+  const orderIds = orders.map(row => row.id);
+  const [items, purchase, parcels, hub, incidents, signals] = await Promise.all([
+    db.query(`
+      SELECT id, order_id, quantity, fulfillment_source
+        FROM order_items
+       WHERE order_id = ANY($1::uuid[])
+       ORDER BY order_id, created_at, id
+    `, [orderIds]),
+    db.query(`
+      SELECT line_id, order_item_id, order_id, purchase_order_id,
+             po_status::text AS po_status, effective_quantity, received_quantity,
+             cancelled, hub_received_at
+        FROM v_purchase_line_progress
+       WHERE order_id = ANY($1::uuid[])
+    `, [orderIds]),
+    db.query(`
+      SELECT pi.order_item_id, pi.quantity,
+             p.id AS parcel_id, p.reference AS parcel_reference,
+             p.status::text AS parcel_status, p.relais_id, p.customs_cleared_at,
+             EXISTS (
+               SELECT 1
+                 FROM customs_shipment_parcels csp
+                 JOIN customs_shipments cs ON cs.id = csp.shipment_id
+                WHERE csp.parcel_id = p.id
+                  AND cs.is_active = TRUE
+                  AND cs.status::text = 'confirmed'
+             ) AS customs_confirmed
+        FROM parcel_items pi
+        JOIN parcels p ON p.id = pi.parcel_id
+       WHERE p.order_id = ANY($1::uuid[])
+         AND p.status::text <> 'cancelled'
+    `, [orderIds]),
+    db.query(`
+      SELECT a.order_id, a.order_item_id, u.id AS unit_id,
+             u.reference AS unit_reference, u.unit_type,
+             u.state::text AS unit_state, SUM(pl.quantity)::int AS quantity
+        FROM hub_purchase_allocations a
+        JOIN hub_physical_unit_placements pl ON pl.allocation_id = a.id
+        JOIN hub_physical_units u ON u.id = pl.physical_unit_id
+       WHERE a.order_id = ANY($1::uuid[])
+         AND pl.removed_at IS NULL
+       GROUP BY a.order_id, a.order_item_id, u.id, u.reference, u.unit_type, u.state
+    `, [orderIds]),
+    db.query(`
+      SELECT i.id, COALESCE(i.order_id, p.order_id) AS order_id,
+             i.incident_type, i.severity,
+             COALESCE(i.details->>'reason_code', i.details->>'type', i.incident_type) AS reason_code
+        FROM incidents i
+        LEFT JOIN parcels p ON p.id = i.parcel_id
+       WHERE i.status IN ('open','investigating')
+         AND COALESCE(i.order_id, p.order_id) = ANY($1::uuid[])
+    `, [orderIds]),
+    db.query(`
+      SELECT s.id, s.signal_ref, s.signal_type, s.severity,
+             CASE
+               WHEN s.entity_type = 'order' THEN s.entity_id::text
+               WHEN s.entity_type = 'parcel' THEN p.order_id::text
+               ELSE NULL
+             END AS order_id
+        FROM signals s
+        LEFT JOIN parcels p
+          ON s.entity_type = 'parcel' AND p.id::text = s.entity_id::text
+       WHERE s.status IN ('open','acknowledged','snoozed')
+         AND s.market_id = $1
+         AND s.entity_type IN ('order','parcel')
+    `, [marketId]),
+  ]);
+
+  const itemsByOrder = indexBy(items.rows, 'order_id');
+  const purchaseByOrder = indexBy(purchase.rows, 'order_id');
+  const parcelsByItem = indexBy(parcels.rows, 'order_item_id');
+  const hubByOrder = indexBy(hub.rows, 'order_id');
+  const incidentsByOrder = indexBy(incidents.rows, 'order_id');
+  const signalsByOrder = indexBy(signals.rows, 'order_id');
+
+  const projectedOrders = orders.map(order => {
+    const orderItems = itemsByOrder.get(String(order.id)) || [];
+    const orderPurchase = purchaseByOrder.get(String(order.id)) || [];
+    const orderHub = hubByOrder.get(String(order.id)) || [];
+    const orderParcels = orderItems.flatMap(item => parcelsByItem.get(String(item.id)) || []);
+    const health = deriveHealth({
+      incidents: incidentsByOrder.get(String(order.id)) || [],
+      signals: signalsByOrder.get(String(order.id)) || [],
+    });
+    const branches = orderItems.map(item => {
+      const segments = allocateSegments(item.quantity, item, {
+        order, purchase: orderPurchase,
+        parcels: parcelsByItem.get(String(item.id)) || [],
+        hub: orderHub,
+      });
+      return {
+        order_item_id: item.id,
+        quantity: positiveInt(item.quantity, 1),
+        fulfillment_source: item.fulfillment_source || null,
+        current_stage: earliestStage(segments.map(segment => segment.stage), 'ORDER'),
+        segments,
+      };
+    });
+    return {
+      order_id: order.id,
+      order_reference: order.reference,
+      current_stage: deriveOrderStage({
+        order, items: orderItems, purchase: orderPurchase, parcels: orderParcels, hub: orderHub,
+      }),
+      health: health.health,
+      reason_code: health.reason_code,
+      reason_source: health.source,
+      reason_ref: health.ref,
+      branches,
+    };
+  });
+
+  return {
+    scope,
+    stages: STAGES.map(key => ({
+      key,
+      orders: projectedOrders.filter(row => row.current_stage === key).map(row => ({
+        order_id: row.order_id,
+        order_reference: row.order_reference,
+        health: row.health,
+        reason_code: row.reason_code,
+      })),
+    })),
+    orders: projectedOrders,
+    generated_at: new Date().toISOString(),
+  };
+}
+
+module.exports = {
+  STAGES, STAGE_RANK, HEALTH,
+  positiveInt, stageRank, earliestStage,
+  stageForParcel, stageForHubState, stageForPurchaseProgress,
+  severityHealth, deriveHealth, allocateSegments, deriveOrderStage,
+  buildMarketControlTower,
+};
