@@ -146,10 +146,10 @@ test('résumé distingue CONFIRMED / RECLASSIFIED / GAP sans confondre highest p
 
 
 test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal scopes', () => {
-  const { projectCapabilityCertifications } = require('../../services/suppliers/provider-capability-certifications');
+  const report = reconciliation.run({ root: ROOT });
 
-  const ebay = projectCapabilityCertifications('ebay').records.find(
-    row => row.capability === 'sourcing.catalog_pipeline'
+  const ebay = report.rows.find(
+    row => row.provider === 'ebay' && row.capability === 'sourcing.catalog_pipeline'
   );
   expect(ebay).toMatchObject({
     classification: 'CONFIRMED',
@@ -157,8 +157,8 @@ test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal sc
     highest_proof: 'P3',
   });
 
-  const stripe = projectCapabilityCertifications('stripe').records.find(
-    row => row.capability === 'payments.intent_webhook_confirmation'
+  const stripe = report.rows.find(
+    row => row.provider === 'stripe' && row.capability === 'payments.intent_webhook_confirmation'
   );
   expect(stripe).toMatchObject({
     classification: 'CONFIRMED',
@@ -166,8 +166,8 @@ test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal sc
     highest_proof: 'P4',
   });
 
-  const paypal = projectCapabilityCertifications('paypal').records.find(
-    row => row.capability === 'payments.order_create_readback'
+  const paypal = report.rows.find(
+    row => row.provider === 'paypal' && row.capability === 'payments.order_create_readback'
   );
   expect(paypal).toMatchObject({
     classification: 'RECLASSIFIED',
