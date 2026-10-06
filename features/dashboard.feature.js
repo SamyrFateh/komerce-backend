@@ -85,8 +85,12 @@ module.exports = {
       'business_rules_history: R',
       'client_notifications: R',
       'customs_effective_rates: R',
+      'customs_shipment_parcels: R',
       'customs_shipments: R',
       'exchange_rates: R',
+      'hub_physical_unit_placements: R',
+      'hub_physical_units: R',
+      'hub_purchase_allocations: R',
       'incidents: R',  // W-via incident-management/incident-write-service - LOT9
       'invoices: RW',
       'order_comments: RW',
@@ -105,6 +109,8 @@ module.exports = {
       'catalog_media: R',
       'markets: R',
       'product_market_exposure: R',
+      'purchase_lines: R',
+      'purchase_orders: R',
       'product_market_price_drafts: R',  // technical-writer (campagne WRITER-NOT-OWNER, 2026-08) — idem, routes/admin/system.js uniquement (reset/seed-test) ; propriétaire réel : catalog
       'recipients: RW',
       'relais: RW',
