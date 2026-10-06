@@ -178,8 +178,7 @@ test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal sc
 
 
 test('messaging capability ledger does not confuse implementation with provider proof', () => {
-  const { loadCapabilityLedger, reconcileCapabilityLedger } = require('../../services/provider-capability-certifications');
-  const report = reconcileCapabilityLedger({ ledger: loadCapabilityLedger() });
+  const report = reconciliation.run({ root: ROOT });
 
   expect(report.rows.find(
     row => row.provider === 'meta-whatsapp' && row.capability === 'messaging.outbound_template_send'
