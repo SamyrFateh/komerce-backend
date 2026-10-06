@@ -80,14 +80,14 @@ function canonicalDestination(match, options = {}) {
   if (match.entity_type === 'CUSTOMS_SHIPMENT') {
     return Object.freeze({
       owner: 'customs',
-      href: '/admin/workspaces/shipping-customs',
+      href: options.global === true ? '/admin/workspaces/shipping-customs' : orderHref,
       fallback_href: orderHref,
     });
   }
   if (match.entity_type === 'PARCEL') {
     return Object.freeze({
       owner: 'logistics',
-      href: '/admin/workspaces/shipping-customs',
+      href: options.global === true ? '/admin/workspaces/shipping-customs' : orderHref,
       fallback_href: orderHref,
     });
   }
