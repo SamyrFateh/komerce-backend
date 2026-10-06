@@ -32,6 +32,8 @@ module.exports = {
       'Espace canonique « Achats fournisseurs » (/admin/workspaces/purchasing, domaine Opérations, rôle admin) : écran de lecture/action sur les routes /api/purchasing existantes (lignes ouvertes groupées fournisseur + Hub, préparation de brouillon, détachement, soumission, confirmation partielle) — la logique et les mutations restent dans la feature purchasing',
       'Authentification commune puis landing/navigation contextuelles ; les deep-links /admin/** restent des destinations, pas des portails séparés',
       'AdminContext canonical — projection UI d\'une autorité market déjà résolue côté serveur, jamais une source d\'autorisation locale',
+      'Logistics Control Tower canonical : projection read-only end-to-end d une commande Market de l engagement client au relais, montrant current_stage + health + cause + filiation sans créer de lifecycle, statut ou vérité métier parallèle',
+      'Tour de contrôle niveau 1 : une seule ligne cliquable par numéro de commande sous son étape gouvernante ; vert discret, orange à risque/retard, rouge action requise ; les causes structurelles agrègent des faits/signaux canoniques communs',
       'auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis',
     ],
     out: [
@@ -41,6 +43,7 @@ module.exports = {
       'nouveau développement dashboard sous public/dashboards/admin/** ou public/dashboards/admin-legacy/** hors correctif explicite',
       'import ou héritage UI de admin/** ou admin-legacy/** depuis canonical/**',
       'migration écran-par-écran des anciennes vues : elles sont des sources de besoins, pas des unités à porter',
+      'persistance d un état Control Tower concurrent : current_stage/health restent des projections dérivées des features propriétaires ; toute matérialisation future exige un besoin de performance mesuré',
     ],
   },
 
@@ -65,6 +68,7 @@ module.exports = {
       'docs/doctrine/DOCTRINE_ADMIN_DASHBOARDS.md',
       'docs/doctrine/ADMIN_INTERNAL_PORTAL_DOCTRINE.md',
       'docs/doctrine/DECISION_COCKPIT_CANON_V1.md',
+      'docs/doctrine/DOCTRINE_LOGISTICS_CONTROL_CHAIN.md',
       'docs/contract/DASHBOARD_MARKET_SCOPE_2C.md',
       'docs/contract/ACTION_CENTER_4G.md',
       'docs/contract/CLIENT_INDEX_4I.md',
