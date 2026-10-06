@@ -39,6 +39,51 @@ const HEALTH = Object.freeze({
   RED: 'RED',
 });
 
+const STRUCTURAL_ALERT_MIN_ORDERS = 3;
+
+function healthRank(health) {
+  if (health === HEALTH.RED) return 2;
+  if (health === HEALTH.ORANGE) return 1;
+  return 0;
+}
+
+function buildStructuralAlerts(orders, minOrders = STRUCTURAL_ALERT_MIN_ORDERS) {
+  const groups = new Map();
+
+  for (const order of orders || []) {
+    if (!order || order.health === HEALTH.GREEN || !order.exception || !order.exception.code) continue;
+    const key = [order.stage, order.exception.code, order.exception.owner_role || ''].join('|');
+    const current = groups.get(key) || {
+      stage: order.stage,
+      health: order.health,
+      reason_code: order.exception.code,
+      summary: order.exception.summary || null,
+      owner_role: order.exception.owner_role || null,
+      order_references: [],
+    };
+    if (healthRank(order.health) > healthRank(current.health)) current.health = order.health;
+    if (!current.summary && order.exception.summary) current.summary = order.exception.summary;
+    current.order_references.push(order.order_reference);
+    groups.set(key, current);
+  }
+
+  return Object.freeze(
+    [...groups.values()]
+      .filter(group => group.order_references.length >= minOrders)
+      .map(group => Object.freeze({
+        ...group,
+        order_count: group.order_references.length,
+        order_references: Object.freeze([...group.order_references]),
+      }))
+      .sort((a, b) =>
+        healthRank(b.health) - healthRank(a.health)
+        || b.order_count - a.order_count
+        || String(a.stage).localeCompare(String(b.stage))
+        || String(a.reason_code).localeCompare(String(b.reason_code))
+      )
+  );
+}
+
 function marketId(market) {
   return market && market.id ? market.id : null;
 }
@@ -305,12 +350,16 @@ async function getControlChain(options = {}) {
     by_stage: Object.freeze(Object.fromEntries(
       Object.entries(byStage).map(([key, list]) => [key, Object.freeze(list)])
     )),
+    structural_alerts: buildStructuralAlerts(orders),
   });
 }
 
 module.exports = {
   STAGES,
   HEALTH,
+  STRUCTURAL_ALERT_MIN_ORDERS,
+  healthRank,
+  buildStructuralAlerts,
   projectRow,
   getControlChain,
 };
