@@ -40,8 +40,8 @@
 
   const OPERATIONS_SCHEMA = Object.freeze({
     id: 'operations',
-    title: 'Opérations',
-    description: 'Voir ce qui doit avancer maintenant : commandes, logistique, relais et incidents.',
+    title: 'Commandes & logistique',
+    description: 'Suivre la position opérationnelle des commandes de bout en bout, du client au relais.',
     metrics: {
       source: 'operations.metrics',
       pick: [

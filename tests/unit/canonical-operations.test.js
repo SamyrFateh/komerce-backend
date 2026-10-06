@@ -86,6 +86,8 @@ describe('LOT 2E-CANON — Operations vivant', () => {
   test('le schéma Operations respecte DashboardSchema', () => {
     const schema = schemaContract.validateDashboardSchema(operations.OPERATIONS_SCHEMA);
     expect(schema.id).toBe('operations');
+    expect(schema.title).toBe('Commandes & logistique');
+    expect(schema.description).toMatch(/client au relais/i);
     expect(schema.metrics.source).toBe('operations.metrics');
     expect(schema.alerts.source).toBe('operations.signals');
     expect(schema.sections.map(section => section.source)).toEqual([
