@@ -16,6 +16,20 @@ beforeEach(() => {
 });
 
 describe('logistics-control-chain-projection', () => {
+  test('le vocabulaire d’étapes reste aligné sur la doctrine canonique', () => {
+    expect(projection.STAGES.map(stage => stage.key)).toEqual([
+      'ORDER',
+      'PURCHASING',
+      'SUPPLIER',
+      'HUB_RECEIVING',
+      'HUB_CONTROL',
+      'FORWARDER',
+      'TRANSPORT',
+      'CUSTOMS',
+      'RELAY',
+    ]);
+  });
+
   test('garde une commande comme identité de pilotage tout en exposant son enveloppe actuelle', () => {
     const row = projection.projectRow({
       order_reference: 'K-104829',
@@ -52,7 +66,7 @@ describe('logistics-control-chain-projection', () => {
   test('un split reste une seule ligne de commande et conserve tous les colis de filiation', () => {
     const row = projection.projectRow({
       order_reference: 'K-200',
-      current_stage: 'TRANSIT',
+      current_stage: 'TRANSPORT',
       health: 'ORANGE',
       exception_code: 'parcel_blocked',
       exception_summary: 'Retard transitaire',
@@ -73,7 +87,7 @@ describe('logistics-control-chain-projection', () => {
     mockQuery.mockResolvedValue({
       rows: [{
         order_reference: 'K-CM-1',
-        current_stage: 'PURCHASE_ORDER',
+        current_stage: 'PURCHASING',
         health: 'GREEN',
         exception_code: null,
         exception_summary: null,
@@ -94,8 +108,8 @@ describe('logistics-control-chain-projection', () => {
     const [, params] = mockQuery.mock.calls[0];
     expect(params[0]).toBe('11111111-1111-4111-8111-111111111111');
     expect(params[2]).toBe(50);
-    expect(result.by_stage.PURCHASE_ORDER).toHaveLength(1);
-    expect(result.by_stage.PURCHASE_ORDER[0].order_reference).toBe('K-CM-1');
+    expect(result.by_stage.PURCHASING).toHaveLength(1);
+    expect(result.by_stage.PURCHASING[0].order_reference).toBe('K-CM-1');
     expect(result.by_stage.RELAY).toEqual([]);
   });
 
