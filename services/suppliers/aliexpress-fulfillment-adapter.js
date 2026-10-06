@@ -255,8 +255,21 @@ function parseOrderDetail(payload = {}) {
   const orderId = String(root?.order_id || root?.id || root?.trade_id || root?.orderId || '').trim() || null;
   const status = String(root?.order_status || root?.status || root?.orderStatus || '').trim() || null;
   const child = root?.child_order_list?.ae_child_order_info || root?.child_order_list || root?.child_orders || [];
-  const children = Array.isArray(child) ? child : (child ? [child] : []);
-  return { order_id: orderId, status, child_orders: children };
+  const children = (Array.isArray(child) ? child : (child ? [child] : [])).map((item) => ({
+    child_order_id: String(item?.child_order_id || item?.order_id || item?.id || '').trim() || null,
+    sku_id: String(item?.sku_id || item?.skuId || item?.sku_id_str || '').trim() || null,
+    sku_attr: String(item?.sku_attr || item?.skuAttr || '').trim() || null,
+    quantity: Number(item?.product_count ?? item?.quantity ?? item?.productCount ?? 0),
+    logistics_no: String(item?.logistics_no || item?.logisticsNo || item?.tracking_number || '').trim() || null,
+    logistics_service: String(item?.logistics_service_name || item?.logisticsServiceName || '').trim() || null,
+  }));
+  return {
+    order_id: orderId,
+    status,
+    logistics_no: String(root?.logistics_no || root?.logisticsNo || root?.tracking_number || '').trim() || null,
+    logistics_service: String(root?.logistics_service_name || root?.logisticsServiceName || '').trim() || null,
+    child_orders: children,
+  };
 }
 
 async function buildOrderPayload({ items, preflights, context = {} } = {}) {
@@ -307,6 +320,27 @@ async function buildOrderPayload({ items, preflights, context = {} } = {}) {
       quantity: items.reduce((sum, item) => sum + item.quantity, 0),
       product_count: items.length,
     },
+  };
+}
+
+async function readOrderDetail(supplierOrderId, context = {}) {
+  const orderId = String(supplierOrderId || '').trim();
+  if (!/^\d{5,30}$/.test(orderId)) throw new Error('ALIEXPRESS_ORDER_ID_INVALID');
+
+  const api = context.aliexpressConnected || connected;
+  const env = context.env || process.env;
+  const payload = await api.invokeTop(
+    preflight.METHODS.ORDER_DETAIL,
+    preflight.buildOrderDetailBusinessParams(orderId),
+    { env }
+  );
+  const facts = parseOrderDetail(payload);
+  if (facts.order_id && facts.order_id !== orderId) {
+    throw new Error('ALIEXPRESS_ORDER_READBACK_ID_MISMATCH');
+  }
+  return {
+    raw: payload,
+    facts: { ...facts, order_id: facts.order_id || orderId },
   };
 }
 
@@ -366,5 +400,6 @@ module.exports = {
   parseCreatedOrder,
   parseOrderDetail,
   buildOrderPayload,
+  readOrderDetail,
   placeOrder,
 };
