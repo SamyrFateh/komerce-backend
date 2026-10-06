@@ -22,7 +22,7 @@ const express = require('express');
 const db = require('../db');
 const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
-const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
+const { requireMarketDelegatedCapability, attachAuthorizedMarketsForCapability } = require('../middleware/require-market-delegated-capability');
 const {
   hasDashboardGlobalAuthority,
   requireDashboardGlobalAuthority,
@@ -36,6 +36,7 @@ const commerce = require('../services/dashboard-commerce');
 const operations = require('../services/dashboard-operations');
 const finance = require('../services/dashboard-finance-canonical');
 const orders = require('../services/dashboard-orders');
+const referenceResolver = require('../services/canonical-reference-resolver');
 const log = require('../utils/logger').child({ module: 'admin-dashboard-market' });
 
 const router = express.Router();
@@ -119,6 +120,21 @@ const requireCommerceMarketRead = requireDashboardMarketCapability('dashboard.ma
 const requireOrdersMarketRead = requireDashboardMarketCapability('dashboard.market.read');
 const requireOperationsMarketRead = requireDashboardMarketCapability('operations.read');
 const requireFinanceMarketRead = requireDashboardMarketCapability('finance.read');
+const attachReferenceResolverMarkets = attachAuthorizedMarketsForCapability('operations.read', { audit: false });
+
+async function attachReferenceResolverAuthority(req, res, next) {
+  try {
+    const globalAllowed = await hasDashboardGlobalAuthority(req.user && req.user.id);
+    if (globalAllowed) {
+      req.dashboardGlobalAuthority = true;
+      return next();
+    }
+    return attachReferenceResolverMarkets(req, res, next);
+  } catch (err) {
+    return next(err);
+  }
+}
+
 
 router.get(
   '/context',
@@ -243,6 +259,31 @@ router.get(
   }
 );
 
+router.get(
+  '/reference/resolve',
+  authenticate,
+  attachMarketDashboardDelegation,
+  requireMarketDashboardReadRole,
+  attachReferenceResolverAuthority,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const payload = await referenceResolver.resolveReference(req.query.reference, {
+        role: req.user && req.user.role,
+        global: req.dashboardGlobalAuthority === true,
+        authorizedMarketIds: req.authorizedMarkets,
+      });
+      return res.json(payload);
+    } catch (err) {
+      if (err instanceof referenceResolver.CanonicalReferenceResolverError) {
+        return res.status(err.status || 400).json({ error: err.message, code: err.code });
+      }
+      log.error({ err }, '[admin-dashboard-market] reference resolver error');
+      return next(err);
+    }
+  }
+);
+
 router.use(
   authenticate,
   requireAdmin,
@@ -315,4 +356,5 @@ module.exports._test = {
   resolveRequestedMarket,
   parseFilters,
   requireDashboardMarketCapability,
+  attachReferenceResolverAuthority,
 };
