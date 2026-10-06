@@ -267,6 +267,7 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure', method: 'get', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate', method: 'post', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}', method: 'put', schema: null },
+  { prefix: '/api/market-delegation/central/team-matrix', method: 'get', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/team', method: 'get', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/team/invitations', method: 'post', schema: null },
   { prefix: '/api/market-delegation/team/invitations/{token}/accept', method: 'post', schema: null },
@@ -344,6 +345,9 @@ const ROUTE_SCHEMA_MAP = [
 const KNOWN_RESPONSES = {
   '/api/admin/dashboard/reference/resolve': {
     get: { fields: ['query','found','ambiguous','matches'], source: 'test' }
+  },
+  '/api/market-delegation/central/team-matrix': {
+    get: { fields: ['authority','mode','markets'], source: 'service-read' }
   },
   // LOT 4G — réponses Action Center consommées par Canonical.
   '/api/admin/action-center': { get: { fields: ['scope','summary','signals','pagination'], source: 'test' } },
