@@ -5,8 +5,8 @@
  * @layer         route
  * @criticality   high
  * @inputs        authenticated_operator, requested_market_code, dashboard_filters
- * @outputs       authorized_market_pilotage_projection, authorized_market_commerce_projection, authorized_market_operations_projection, authorized_market_finance_projection, global_dashboard_gate, canonical_admin_context
- * @depends       db, middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-finance-canonical, services/dashboard-admin-context
+ * @outputs       authorized_market_pilotage_projection, authorized_market_commerce_projection, authorized_market_operations_projection, authorized_market_finance_projection, canonical_reference_resolution, global_dashboard_gate, canonical_admin_context
+ * @depends       db, middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-finance-canonical, services/dashboard-admin-context, services/canonical-reference-resolver, services/market-delegation-service
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
  * @db-write      none
@@ -36,6 +36,8 @@ const commerce = require('../services/dashboard-commerce');
 const operations = require('../services/dashboard-operations');
 const finance = require('../services/dashboard-finance-canonical');
 const orders = require('../services/dashboard-orders');
+const referenceResolver = require('../services/canonical-reference-resolver');
+const { listAuthorizedMarketsForCapability } = require('../services/market-delegation-service');
 const log = require('../utils/logger').child({ module: 'admin-dashboard-market' });
 
 const router = express.Router();
@@ -119,6 +121,37 @@ const requireCommerceMarketRead = requireDashboardMarketCapability('dashboard.ma
 const requireOrdersMarketRead = requireDashboardMarketCapability('dashboard.market.read');
 const requireOperationsMarketRead = requireDashboardMarketCapability('operations.read');
 const requireFinanceMarketRead = requireDashboardMarketCapability('finance.read');
+
+async function attachReferenceResolverAuthority(req, res, next) {
+  try {
+    const globalAllowed = await hasDashboardGlobalAuthority(req.user && req.user.id);
+    if (globalAllowed) {
+      req.dashboardGlobalAuthority = true;
+      return next();
+    }
+
+    const rows = await listAuthorizedMarketsForCapability(db, {
+      userId: req.user && req.user.id,
+      requiredCapability: 'operations.read',
+    });
+    if (!rows.length) {
+      return res.status(403).json({
+        error: 'Capability operations.read requise sur au moins un marché actif.',
+        code: 'MARKET_CAPABILITY_REQUIRED',
+      });
+    }
+
+    req.authorizedMarkets = new Set(rows.map(row => row.market_id));
+    req.marketDelegatedMarkets = rows;
+    return next();
+  } catch (err) {
+    if (err && err.code && err.status) {
+      return res.status(err.status).json({ error: err.message, code: err.code });
+    }
+    return next(err);
+  }
+}
+
 
 router.get(
   '/context',
@@ -243,6 +276,31 @@ router.get(
   }
 );
 
+router.get(
+  '/reference/resolve',
+  authenticate,
+  attachMarketDashboardDelegation,
+  requireMarketDashboardReadRole,
+  attachReferenceResolverAuthority,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const payload = await referenceResolver.resolveReference(req.query.reference, {
+        role: req.user && req.user.role,
+        global: req.dashboardGlobalAuthority === true,
+        authorizedMarketIds: req.authorizedMarkets,
+      });
+      return res.json(payload);
+    } catch (err) {
+      if (err instanceof referenceResolver.CanonicalReferenceResolverError) {
+        return res.status(err.status || 400).json({ error: err.message, code: err.code });
+      }
+      log.error({ err }, '[admin-dashboard-market] reference resolver error');
+      return next(err);
+    }
+  }
+);
+
 router.use(
   authenticate,
   requireAdmin,
@@ -315,4 +373,5 @@ module.exports._test = {
   resolveRequestedMarket,
   parseFilters,
   requireDashboardMarketCapability,
+  attachReferenceResolverAuthority,
 };

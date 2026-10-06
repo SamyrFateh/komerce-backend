@@ -187,6 +187,8 @@ const ROUTE_SCHEMA_MAP = [
   // LOT 2E — Canonical Operations global + market-scoped
   { prefix: '/api/admin/dashboard/operations', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/operations/market/{marketCode}', method: 'get', schema: null },
+  // Canonical Reference Resolver — query inline validée par le service (reference requise, <= 200 caractères).
+  { prefix: '/api/admin/dashboard/reference/resolve', method: 'get', schema: null },
   // LOT 2F — Canonical Finance global + market-scoped
   { prefix: '/api/admin/dashboard/finance', method: 'get', schema: null },
   { prefix: '/api/admin/dashboard/finance/market/{marketCode}', method: 'get', schema: null },
@@ -265,6 +267,7 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure', method: 'get', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate', method: 'post', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}', method: 'put', schema: null },
+  { prefix: '/api/market-delegation/central/team-matrix', method: 'get', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/team', method: 'get', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/team/invitations', method: 'post', schema: null },
   { prefix: '/api/market-delegation/team/invitations/{token}/accept', method: 'post', schema: null },
@@ -340,6 +343,12 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  '/api/admin/dashboard/reference/resolve': {
+    get: { fields: ['query','found','ambiguous','matches'], source: 'test' }
+  },
+  '/api/market-delegation/central/team-matrix': {
+    get: { fields: ['authority','mode','markets'], source: 'service-read' }
+  },
   // LOT 4G — réponses Action Center consommées par Canonical.
   '/api/admin/action-center': { get: { fields: ['scope','summary','signals','pagination'], source: 'test' } },
   '/api/admin/action-center/generate': { post: { fields: ['ok','action','result'], source: 'test' } },
