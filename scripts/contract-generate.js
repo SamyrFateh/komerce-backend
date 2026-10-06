@@ -265,6 +265,7 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure', method: 'get', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/review/{productId}/validate', method: 'post', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}', method: 'put', schema: null },
+  { prefix: '/api/market-delegation/central/team-matrix', method: 'get', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/team', method: 'get', schema: null },
   { prefix: '/api/market-delegation/markets/{marketCode}/team/invitations', method: 'post', schema: null },
   { prefix: '/api/market-delegation/team/invitations/{token}/accept', method: 'post', schema: null },
