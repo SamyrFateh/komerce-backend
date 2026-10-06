@@ -7,6 +7,10 @@ jest.mock('../../utils/rules', () => ({ getRuleNumber: jest.fn() }));
 jest.mock('../../services/product-sku-service', () => ({
   activateProductSkuInventoryModel: jest.fn(),
 }));
+const mockDecisionAudit = jest.fn().mockResolvedValue({ id: 'audit-1' });
+jest.mock('../../services/catalog-publication-decision-audit', () => ({
+  recordCatalogPublicationDecision: (...args) => mockDecisionAudit(...args),
+}));
 
 const { upsertOverrides, finalizeReviewedManualPreparation } = require('../../services/catalog-overrides');
 const { getRuleNumber } = require('../../utils/rules');
@@ -96,6 +100,7 @@ beforeEach(() => {
   );
   activateProductSkuInventoryModel.mockReset();
   activateProductSkuInventoryModel.mockResolvedValue({ ready: true, inventory_model: 'SKU' });
+  mockDecisionAudit.mockClear();
 });
 
 describe('getApprovalQueue', () => {
@@ -229,6 +234,11 @@ describe('approveProduct', () => {
     expect(update.sql).toContain('is_available = TRUE');
     expect(update.sql).toContain('quality_validated = TRUE');
     expect(update.sql).toContain('needs_review = FALSE');
+    expect(mockDecisionAudit).toHaveBeenCalledWith(q, expect.objectContaining({
+      action: 'CATALOG_PRODUCT_APPROVED',
+      productId: PRODUCT_ID,
+      actor: { id: 'admin-1' },
+    }));
   });
 });
 
@@ -245,6 +255,12 @@ describe('rejectProduct', () => {
     expect(result.status).toBe(200);
     expect(calls.find(c => c.sql.startsWith('UPDATE products')).sql).toContain("lifecycle_status = 'rejected'");
     expect(calls.find(c => c.sql.includes('INSERT INTO alerts'))).toBeDefined();
+    expect(mockDecisionAudit).toHaveBeenCalledWith(q, expect.objectContaining({
+      action: 'CATALOG_PRODUCT_REJECTED',
+      productId: PRODUCT_ID,
+      reason: 'photo non conforme',
+      actor: { id: 'admin-1' },
+    }));
   });
 });
 
@@ -303,5 +319,12 @@ describe('overrideAndApprove', () => {
     expect(result.status).toBe(200);
     expect(result.body.overridden).toEqual(['name']);
     expect(calls.find(c => c.sql.startsWith('UPDATE products')).sql).toContain('is_active = TRUE');
+    expect(mockDecisionAudit).toHaveBeenCalledWith(q, expect.objectContaining({
+      action: 'CATALOG_PRODUCT_OVERRIDDEN_AND_APPROVED',
+      productId: PRODUCT_ID,
+      reason: 'traduction',
+      overriddenFields: ['name'],
+      actor: { id: 'admin-1' },
+    }));
   });
 });

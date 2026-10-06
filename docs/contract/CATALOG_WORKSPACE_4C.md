@@ -199,3 +199,7 @@ LOT 4C ne :
 - effectue pas le cutover final Legacy.
 
 Les variantes et médias restent explicables via Product 360 et leurs autorités existantes jusqu’à un lot dédié si nécessaire.
+
+## Audit des décisions de publication
+
+Les décisions humaines réussies `approve`, `reject` et `override + approve` sont persistées par l’owner `catalog` dans `catalog_publication_decision_audit`, dans la même transaction que la mutation produit. Le journal conserve l’acteur, la raison éventuelle, les champs overridés et des snapshots minimaux avant/après. Il ne remplace pas `market_delegation_audit`, qui reste l’autorité d’audit pour l’exposition produit × marché.
