@@ -113,6 +113,31 @@ describe('logistics-control-chain-projection', () => {
     expect(result.by_stage.RELAY).toEqual([]);
   });
 
+  test('agrège une cause structurelle seulement à partir de trois commandes partageant étape et cause', () => {
+    const impacted = ['K-301', 'K-302', 'K-303'].map((reference, index) => ({
+      order_reference: reference,
+      stage: 'PURCHASING',
+      health: index === 2 ? 'RED' : 'ORANGE',
+      exception: {
+        code: 'supplier_payment_blocked',
+        summary: 'Paiement fournisseur bloqué',
+        owner_role: 'finance',
+      },
+    }));
+
+    expect(projection.buildStructuralAlerts(impacted)).toEqual([{
+      stage: 'PURCHASING',
+      health: 'RED',
+      reason_code: 'supplier_payment_blocked',
+      summary: 'Paiement fournisseur bloqué',
+      owner_role: 'finance',
+      order_count: 3,
+      order_references: ['K-301', 'K-302', 'K-303'],
+    }]);
+
+    expect(projection.buildStructuralAlerts(impacted.slice(0, 2))).toEqual([]);
+  });
+
   test('la lecture globale utilise NULL et ne fabrique aucun filtre market navigateur', async () => {
     mockQuery.mockResolvedValue({ rows: [] });
     await projection.getControlChain({ limit: 9999 });
