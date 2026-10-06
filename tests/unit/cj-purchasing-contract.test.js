@@ -256,3 +256,36 @@ test('CJ contract — sandbox simulatePay utilise le CJ orderId direct', () => {
     payment_verdict: 'simulated_paid',
   });
 });
+
+
+test('CJ contract — read-back expose les faits fulfillment natifs bornés', () => {
+  expect(contract.readOrderDetailFacts({
+    data: {
+      orderId: 'CJ-FUL-1',
+      orderNum: 'KOM-FUL-1',
+      shipmentOrderId: 'SHIP-FUL-1',
+      cjOrderCode: 'SD-FUL-1',
+      orderStatus: 'SHIPPED',
+      subStatus: 'OUTBOUND',
+      logisticName: 'CJPacket',
+      trackNumber: 'TRACK-FUL-1',
+      trackingProvider: 'Carrier CJ',
+      trackingUrl: 'https://tracking.example/TRACK-FUL-1',
+      isSandbox: 1,
+      productInfoList: [{ variantId: 'VID-FUL-1', quantity: 2 }],
+    },
+  })).toMatchObject({
+    order_id: 'CJ-FUL-1',
+    order_number: 'KOM-FUL-1',
+    shipment_order_id: 'SHIP-FUL-1',
+    cj_order_code: 'SD-FUL-1',
+    status: 'SHIPPED',
+    sub_status: 'OUTBOUND',
+    logistic_name: 'CJPacket',
+    tracking_number: 'TRACK-FUL-1',
+    tracking_provider: 'Carrier CJ',
+    tracking_url: 'https://tracking.example/TRACK-FUL-1',
+    is_sandbox: true,
+    variants: [{ vid: 'VID-FUL-1', quantity: 2 }],
+  });
+});
