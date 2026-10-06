@@ -177,6 +177,79 @@ test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal sc
 });
 
 
+test('catalog and ops provider capabilities remain scoped to preserved evidence', () => {
+  const report = reconciliation.run({ root: ROOT });
+
+  expect(report.rows.find(
+    row => row.provider === 'aliexpress' && row.capability === 'sourcing.exact_unit'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'aliexpress' && row.capability === 'sourcing.live_stock_price'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'noon' && row.capability === 'sourcing.catalog_pipeline'
+  )).toMatchObject({
+    classification: 'GAP',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'cloudinary' && row.capability === 'media.upload'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'CLOSED_LEGACY_OR_CONFIG_ONLY',
+    highest_proof: 'UNQUALIFIED',
+  });
+});
+
+
+test('messaging capability ledger does not confuse implementation with provider proof', () => {
+  const report = reconciliation.run({ root: ROOT });
+
+  expect(report.rows.find(
+    row => row.provider === 'meta-whatsapp' && row.capability === 'messaging.outbound_template_send'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'IMPLEMENTED_NOT_PROVIDER_PROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'authkey' && row.capability === 'auth.otp_delivery'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'IMPLEMENTED_NOT_PROVIDER_PROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'brevo' && row.capability === 'messaging.transactional_email_send'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'CLIENT_IMPLEMENTED_RUNTIME_USE_UNPROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'twilio' && row.capability === 'messaging.runtime'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'CLOSED_CONFIG_ONLY',
+    highest_proof: 'UNQUALIFIED',
+  });
+});
+
+
 test('payment capability ledger keeps provider proofs scoped and fail-closed', () => {
   const report = reconciliation.run({ root: ROOT });
 

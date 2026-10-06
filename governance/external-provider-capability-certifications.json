@@ -148,6 +148,37 @@
           "proves exact provider order creation/read-back reconciliation for the Golden supplier unit",
           "does not prove supplier payment reconciliation or fulfillment reconciliation"
         ]
+      },
+      {
+        "capability": "sourcing.exact_unit",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "LIVE_STAGING",
+        "evidence": [
+          "scripts/aliexpress-business-order-golden-proof.js",
+          "scripts/aliexpress-readiness-golden-proof.js",
+          "services/suppliers/aliexpress-fulfillment-adapter.js"
+        ],
+        "limitations": [
+          "P4 is bounded to the exact Golden supplier unit identity",
+          "does not imply every AliExpress catalog item is certified"
+        ]
+      },
+      {
+        "capability": "sourcing.live_stock_price",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "LIVE_STAGING",
+        "evidence": [
+          "scripts/aliexpress-readiness-golden-proof.js",
+          "scripts/aliexpress-business-certification.js"
+        ],
+        "limitations": [
+          "live stock/price was observed for the Golden exact unit",
+          "does not certify bulk catalog freshness"
+        ]
       }
     ],
     "cj": [
@@ -374,6 +405,225 @@
         ]
       }
     ],
+    "noon": [
+      {
+        "capability": "sourcing.catalog_pipeline",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "UNKNOWN",
+        "evidence": [
+          "services/suppliers/connectors/noon-connector.js",
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "connector and normalization exist",
+          "no preserved raw/live provider proof found"
+        ]
+      }
+    ],
+    "qrserver": [
+      {
+        "capability": "documents.qr_render",
+        "classification": "GAP",
+        "availability": "RUNTIME_DEPENDENCY_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "PUBLIC_SERVICE",
+        "evidence": [
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "remote QR image URL is used in document rendering",
+          "availability/failure contract has not been provider-certified"
+        ]
+      }
+    ],
+    "imagekit": [
+      {
+        "capability": "media.upload",
+        "classification": "GAP",
+        "availability": "TOOLING_NOT_CANONICAL_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "TOOLING",
+        "evidence": [
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "certify only if this remains the canonical media path"
+        ]
+      }
+    ],
+    "cloudinary": [
+      {
+        "capability": "media.upload",
+        "classification": "CONFIRMED",
+        "availability": "CLOSED_LEGACY_OR_CONFIG_ONLY",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "NONE",
+        "evidence": [
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "legacy/config-only path; no authoritative runtime provider contract established"
+        ]
+      }
+    ],
+    "sentry": [
+      {
+        "capability": "ops.error_forwarding",
+        "classification": "GAP",
+        "availability": "OPTIONAL_RUNTIME_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "OPTIONAL",
+        "evidence": [
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "observability is optional and does not affect business correctness",
+          "provider delivery/ingestion proof not required for core transaction safety"
+        ]
+      }
+    ],
+    "meta-whatsapp": [
+      {
+        "capability": "messaging.account_read",
+        "classification": "GAP",
+        "availability": "DOC_ONLY_NOT_EXECUTED",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_ACCOUNT_READ_ONLY_CANDIDATE",
+        "evidence": [
+          "docs/external-providers/messaging/META_WHATSAPP.md",
+          "scripts/external-provider-batch-proof.js"
+        ],
+        "limitations": [
+          "bounded account metadata read contract exists but no preserved real execution is documented",
+          "does not prove send, OTP delivery, inbound webhook, delivery receipt, or read receipt"
+        ]
+      },
+      {
+        "capability": "messaging.outbound_template_send",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_RUNTIME_CANDIDATE",
+        "evidence": [
+          "services/whatsapp-meta.js",
+          "docs/external-providers/messaging/META_WHATSAPP.md"
+        ],
+        "limitations": [
+          "Graph API POST /messages adapter exists",
+          "no preserved provider send/read-back/delivery proof found in this audit"
+        ]
+      },
+      {
+        "capability": "messaging.inbound_webhook",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_RUNTIME_CANDIDATE",
+        "evidence": [
+          "services/whatsapp-meta.js",
+          "docs/external-providers/messaging/META_WHATSAPP.md"
+        ],
+        "limitations": [
+          "runtime route/signature configuration exists elsewhere in the notification stack",
+          "no preserved real inbound provider event proof found"
+        ]
+      },
+      {
+        "capability": "auth.otp_delivery",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_RUNTIME_CANDIDATE",
+        "evidence": [
+          "services/whatsapp-meta.js",
+          "services/notifications/otp-auth.js"
+        ],
+        "limitations": [
+          "OTP is a distinct auth capability and must not inherit generic messaging proof",
+          "no preserved provider delivery confirmation for an OTP was found"
+        ]
+      }
+    ],
+    "authkey": [
+      {
+        "capability": "messaging.outbound_whatsapp",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_RUNTIME_CANDIDATE",
+        "evidence": [
+          "services/notifications/otp-auth.js",
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "free-text and template fallback paths are implemented",
+          "application-level sent logging is not provider delivery proof",
+          "no preserved real provider send/read-back/delivery proof found"
+        ]
+      },
+      {
+        "capability": "auth.otp_delivery",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_RUNTIME_CANDIDATE",
+        "evidence": [
+          "services/notifications/otp-auth.js"
+        ],
+        "limitations": [
+          "OTP code generation/notification orchestration is implemented",
+          "no provider delivery acknowledgement or recipient delivery proof is preserved"
+        ]
+      }
+    ],
+    "brevo": [
+      {
+        "capability": "messaging.transactional_email_send",
+        "classification": "GAP",
+        "availability": "CLIENT_IMPLEMENTED_RUNTIME_USE_UNPROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_RUNTIME_CANDIDATE",
+        "evidence": [
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "transactional REST client exists",
+          "no active application caller and no provider delivery proof were established by the audit"
+        ]
+      }
+    ],
+    "twilio": [
+      {
+        "capability": "messaging.runtime",
+        "classification": "CONFIRMED",
+        "availability": "CLOSED_CONFIG_ONLY",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "NONE",
+        "evidence": [
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "no active runtime client confirmed"
+        ]
+      }
+    ],
+    "africas-talking": [
+      {
+        "capability": "messaging.runtime",
+        "classification": "CONFIRMED",
+        "availability": "CLOSED_CONFIG_ONLY",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "NONE",
+        "evidence": [
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "only environment/documentation references were found; no active runtime client confirmed"
+        ]
+      }
+    ],
     "mtn-momo-cg": [
       {
         "capability": "payments.auth_collections",
@@ -433,7 +683,6 @@
         "environment": "STAGING_CANDIDATE",
         "evidence": [
           "services/mobile-money/kartapay-km.js",
-          "routes/payments-mobile-money.js",
           "tests/unit/kartapay-webhook.test.js"
         ],
         "limitations": [
