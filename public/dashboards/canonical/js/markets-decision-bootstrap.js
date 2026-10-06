@@ -4,7 +4,7 @@
  * @domain        admin-dashboard
  * @layer         ui-orchestration
  * @criticality   medium
- * @inputs        authenticated_market_surfaces, server_admin_context, market_users, country_pricing_projection
+ * @inputs        authenticated_market_surfaces, central_market_team_matrix, server_admin_context, country_pricing_projection
  * @outputs       mounted_decision_first_markets_overviews
  * @depends       markets-decision, canonical market surfaces
  * @used-by       access.html, market-autonomy.html
@@ -99,14 +99,10 @@
       if (!insertAfter(hero, host)) root.prepend(host);
     }
 
-    const [contextPayload, usersPayload] = await Promise.all([
-      requestJson('/api/admin/dashboard/context'),
-      requestJson('/api/admin/users?role=market_operator&limit=100'),
-    ]);
-    global.KomerceMarketsDecision.renderAdminOverview(host, {
-      markets: marketCodesFromContext(contextPayload),
-      users: Array.isArray(usersPayload.users) ? usersPayload.users : [],
-    }, {
+    // Legacy compatibility source intentionally not used by the central runtime:
+    // /api/admin/users?role=market_operator&limit=100
+    const matrix = await requestJson('/api/market-delegation/central/team-matrix');
+    global.KomerceMarketsDecision.renderAdminOverview(host, { matrix }, {
       document: doc,
       ui: global.KomerceCanonicalUI,
       decisionUi: global.KomerceDecisionUI,
