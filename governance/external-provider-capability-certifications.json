@@ -64,7 +64,7 @@
         ]
       },
       {
-        "capability": "purchasing.reconcile",
+        "capability": "purchasing.reconcile_order",
         "classification": "CONFIRMED",
         "availability": "PROVEN",
         "highest_proof": "P4",
@@ -74,7 +74,8 @@
           "services/suppliers/allegro-purchase-reconciliation.js"
         ],
         "limitations": [
-          "reconciles provider evidence after the external purchase"
+          "reconciles provider order evidence after the external purchase",
+          "does not prove payment or fulfillment reconciliation"
         ]
       },
       {
@@ -131,6 +132,22 @@
           "AliExpress placeOrder exposes no Komerce-controlled native idempotency key in the current contract, so production automatic retry after an ambiguous create remains closed",
           "payment is not part of this capability"
         ]
+      },
+      {
+        "capability": "purchasing.reconcile_order",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "LIVE_STAGING_GUARDED",
+        "evidence": [
+          "scripts/aliexpress-business-order-golden-proof.js",
+          "scripts/aliexpress-business-certification.js",
+          "services/suppliers/aliexpress-fulfillment-adapter.js"
+        ],
+        "limitations": [
+          "proves exact provider order creation/read-back reconciliation for the Golden supplier unit",
+          "does not prove supplier payment reconciliation or fulfillment reconciliation"
+        ]
       }
     ],
     "cj": [
@@ -183,6 +200,77 @@
           "a complete KOMERCE_PROCUREMENT_HUB_DESTINATION_JSON is required",
           "CJ logistic name and origin country must be configured",
           "payment and confirmOrder remain outside the proved/activated contract"
+        ]
+      },
+      {
+        "capability": "purchasing.order_create_readback",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P1",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/external-providers/suppliers/CJ_PURCHASING_CONTRACT.md",
+          "scripts/cj-p1-create-readback-proof.js",
+          "services/suppliers/cj-purchasing-contract.js"
+        ],
+        "limitations": [
+          "exact CJ VID, quantity and stable orderNumber are verified by provider read-back",
+          "duplicate code 1603003 is accepted only after exact recovery read-back",
+          "no payment or confirmOrder is part of this capability"
+        ]
+      },
+      {
+        "capability": "purchasing.payment_sandbox",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P2",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/external-providers/suppliers/CJ_PURCHASING_CONTRACT.md",
+          "scripts/cj-p2-confirm-pay-sandbox-proof.js",
+          "tests/unit/cj-p2-confirm-pay-sandbox-proof.test.js"
+        ],
+        "limitations": [
+          "proves create -> confirmOrder -> sandbox simulatePay -> paid read-back",
+          "real_charge_possible=false",
+          "does not prove a production CJ balance debit"
+        ]
+      },
+      {
+        "capability": "purchasing.grouped_parent_payment_sandbox",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P2",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/external-providers/suppliers/CJ_PURCHASING_CONTRACT.md",
+          "scripts/cj-p2-grouped-parent-sandbox-proof.js",
+          "tests/unit/cj-p2-grouped-parent-sandbox-proof.test.js"
+        ],
+        "limitations": [
+          "proves materialized CJ parent identity and internally consistent provider parent amounts before sandbox payment",
+          "supports sandbox simulatePay/payBalanceV2 proof modes only",
+          "real_debit_verified=false"
+        ]
+      },
+      {
+        "capability": "purchasing.reconcile_payment",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_LIVE_PROVEN",
+        "highest_proof": "P2",
+        "environment": "CODE_AND_READ_ONLY_PROOF",
+        "evidence": [
+          "services/suppliers/cj-billing-history-reconciliation.js",
+          "services/supplier-real-debit-verification.js",
+          "services/supplier-payment-proof-persistence.js",
+          "scripts/cj-real-debit-proof.js",
+          "tests/unit/cj-billing-history-reconciliation.test.js",
+          "tests/unit/cj-real-debit-proof.test.js"
+        ],
+        "limitations": [
+          "billingHistory monetary reconciliation and bounded real-debit runner are implemented",
+          "no preserved live production debit execution proof was found in this audit",
+          "real_debit_verified must remain false until positive live monetary evidence is observed and persisted"
         ]
       }
     ],
