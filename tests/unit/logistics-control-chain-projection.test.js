@@ -138,6 +138,40 @@ describe('logistics-control-chain-projection', () => {
     expect(projection.buildStructuralAlerts(impacted.slice(0, 2))).toEqual([]);
   });
 
+  test('le snapshot Order 360 réutilise le même projecteur avec un order id résolu serveur', async () => {
+    mockQuery.mockResolvedValue({
+      rows: [{
+        order_reference: 'K-CM-77',
+        current_stage: 'HUB_CONTROL',
+        health: 'RED',
+        exception_code: 'hub_quarantine',
+        exception_summary: 'Unité HUB en quarantaine',
+        exception_owner_role: 'hub',
+        purchase_order_refs: ['po-internal-id'],
+        hub_unit_refs: ['KOM-RCV-77'],
+        parcel_refs: [],
+        parcels_count: 0,
+      }],
+    });
+
+    const result = await projection.getOrderControlSnapshot({
+      id: '11111111-1111-4111-8111-777777777777',
+      market_id: '22222222-2222-4222-8222-222222222222',
+      reference: 'K-CM-77',
+    });
+
+    expect(result).toEqual(expect.objectContaining({
+      order_reference: 'K-CM-77',
+      stage: 'HUB_CONTROL',
+      health: 'RED',
+      envelope: { type: 'HUB_UNIT', refs: ['KOM-RCV-77'] },
+    }));
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(String(sql)).toContain('AND ($4::uuid IS NULL OR o.id = $4::uuid)');
+    expect(params[0]).toBe('22222222-2222-4222-8222-222222222222');
+    expect(params[3]).toBe('11111111-1111-4111-8111-777777777777');
+  });
+
   test('la lecture globale utilise NULL et ne fabrique aucun filtre market navigateur', async () => {
     mockQuery.mockResolvedValue({ rows: [] });
     await projection.getControlChain({ limit: 9999 });
