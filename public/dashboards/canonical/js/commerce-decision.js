@@ -353,22 +353,6 @@
       dashboard.appendChild(host);
     }
 
-    const kpis = cardSection(doc, 'Indicateurs clés', 'Les valeurs commerciales réellement fournies par la source canonique.', 'commerce-kpis');
-
-    kpis.section.className += ' is-cockpit-truth';
-    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
-    dashboard.appendChild(kpis.section);
-
-    const topGrid = doc.createElement('div');
-    topGrid.className = 'kmc-decision-dashboard-grid-2';
-    const categories = cardSection(doc, 'Catégories', 'Classement dans l’ordre fourni par le backend.', 'commerce-categories');
-    decisionUi.RankedList.render(categories.body, { items: rankedCategories(payload, base) });
-    topGrid.appendChild(categories.section);
-    const products = cardSection(doc, 'Top produits', 'Produits qui concentrent le chiffre d’affaires encaissé.', 'commerce-products');
-    decisionUi.RankedList.render(products.body, { items: rankedProducts(payload, base) });
-    topGrid.appendChild(products.section);
-    dashboard.appendChild(topGrid);
-
     const viability = viabilityItems(payload, base);
     if (viability.length) {
       const section = cardSection(doc, 'Viabilité des meilleures ventes', 'Lecture market-scoped du corridor de prix et du moteur économique canonique.', 'commerce-viability');
