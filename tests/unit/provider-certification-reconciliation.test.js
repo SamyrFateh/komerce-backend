@@ -22,6 +22,43 @@ test('R1 — le ledger capability-level réel est cohérent et ne sur-certifie p
     highest_proof: 'P4',
   });
 
+
+  const allegroOrderReconcile = report.rows.find(
+    row => row.provider === 'allegro' && row.capability === 'purchasing.reconcile_order'
+  );
+  expect(allegroOrderReconcile).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+  });
+
+  const aliOrderReconcile = report.rows.find(
+    row => row.provider === 'aliexpress' && row.capability === 'purchasing.reconcile_order'
+  );
+  expect(aliOrderReconcile).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+  });
+
+  const cjSandboxPayment = report.rows.find(
+    row => row.provider === 'cj' && row.capability === 'purchasing.payment_sandbox'
+  );
+  expect(cjSandboxPayment).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P2',
+  });
+
+  const cjPaymentReconcile = report.rows.find(
+    row => row.provider === 'cj' && row.capability === 'purchasing.reconcile_payment'
+  );
+  expect(cjPaymentReconcile).toMatchObject({
+    classification: 'GAP',
+    availability: 'IMPLEMENTED_NOT_LIVE_PROVEN',
+    highest_proof: 'P2',
+  });
+
   const allegroAuto = report.rows.find(
     row => row.provider === 'allegro' && row.capability === 'purchasing.auto_order'
   );
@@ -104,5 +141,37 @@ test('résumé distingue CONFIRMED / RECLASSIFIED / GAP sans confondre highest p
     gap: 1,
     p4: 1,
     closed: 1,
+  });
+});
+
+
+test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal scopes', () => {
+  const report = reconciliation.run({ root: ROOT });
+
+  const ebay = report.rows.find(
+    row => row.provider === 'ebay' && row.capability === 'sourcing.catalog_pipeline'
+  );
+  expect(ebay).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P3',
+  });
+
+  const stripe = report.rows.find(
+    row => row.provider === 'stripe' && row.capability === 'payments.intent_webhook_confirmation'
+  );
+  expect(stripe).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+  });
+
+  const paypal = report.rows.find(
+    row => row.provider === 'paypal' && row.capability === 'payments.order_create_readback'
+  );
+  expect(paypal).toMatchObject({
+    classification: 'RECLASSIFIED',
+    availability: 'REPORTED_PROOF_NOT_INDEPENDENTLY_RECHECKED',
+    highest_proof: 'P1',
   });
 });

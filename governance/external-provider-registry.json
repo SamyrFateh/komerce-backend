@@ -93,7 +93,7 @@
         "provider: 'aliexpress'"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED",
+      "highest_proof": "P4",
       "onboarding": {
         "status": "defined",
         "authority": "provider_documentation",
@@ -112,7 +112,8 @@
           "Access token ou Refresh Token copié-collé"
         ],
         "completion": "Le callback OAuth rattache la session du compte à la source ; aucun token n'est saisi manuellement."
-      }
+      },
+      "qualification_note": "Capability ledger proves purchasing.readiness=P4 and purchasing.auto_order=P4 in guarded live staging; provider-wide field is only the highest observed proof and must not be read as all-capabilities-P4."
     },
     {
       "id": "cj",
@@ -120,7 +121,8 @@
       "expected_scope": "runtime",
       "consumers": [
         "catalog",
-        "sourcing"
+        "sourcing",
+        "purchasing"
       ],
       "hosts": [
         "developers.cjdropshipping.com"
@@ -131,7 +133,7 @@
         "CJdropshipping"
       ],
       "analysis_document": null,
-      "highest_proof": "UNQUALIFIED",
+      "highest_proof": "P1",
       "onboarding": {
         "status": "defined",
         "authority": "provider_documentation",
@@ -146,14 +148,18 @@
           "Copier la clé API active du compte fournisseur"
         ],
         "operator_must_obtain": [
-          { "key": "api_key", "label": "Clé API CJdropshipping" }
+          {
+            "key": "api_key",
+            "label": "Clé API CJdropshipping"
+          }
         ],
         "operator_must_not_request": [
           "Mot de passe du compte CJdropshipping",
           "Access Token ou Refresh Token temporaire"
         ],
         "completion": "Renseigner la clé API dans Komerce ; Komerce obtient et gère ensuite les tokens serveur nécessaires."
-      }
+      },
+      "qualification_note": "Capability ledger proves purchasing.contract=P1 and purchasing.readiness=P1/guarded; higher supplier payment/sourcing claims remain capability-specific and unqualified until reconciled."
     },
     {
       "id": "noon",
