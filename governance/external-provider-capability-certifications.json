@@ -328,6 +328,147 @@
           "no webhook delivery, refund, or paid-state proof is implied"
         ]
       }
+    ],
+    "meta-whatsapp": [
+      {
+        "capability": "messaging.account_read",
+        "classification": "GAP",
+        "availability": "DOC_ONLY_NOT_EXECUTED",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_ACCOUNT_READ_ONLY_CANDIDATE",
+        "evidence": [
+          "docs/external-providers/messaging/META_WHATSAPP.md",
+          "scripts/external-provider-batch-proof.js"
+        ],
+        "limitations": [
+          "bounded account metadata read contract exists but no preserved real execution is documented",
+          "does not prove send, OTP delivery, inbound webhook, delivery receipt, or read receipt"
+        ]
+      },
+      {
+        "capability": "messaging.outbound_template_send",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_RUNTIME_CANDIDATE",
+        "evidence": [
+          "services/whatsapp-meta.js",
+          "docs/external-providers/messaging/META_WHATSAPP.md"
+        ],
+        "limitations": [
+          "Graph API POST /messages adapter exists",
+          "no preserved provider send/read-back/delivery proof found in this audit"
+        ]
+      },
+      {
+        "capability": "messaging.inbound_webhook",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_RUNTIME_CANDIDATE",
+        "evidence": [
+          "services/whatsapp-meta.js",
+          "docs/external-providers/messaging/META_WHATSAPP.md"
+        ],
+        "limitations": [
+          "runtime route/signature configuration exists elsewhere in the notification stack",
+          "no preserved real inbound provider event proof found"
+        ]
+      },
+      {
+        "capability": "auth.otp_delivery",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_RUNTIME_CANDIDATE",
+        "evidence": [
+          "services/whatsapp-meta.js",
+          "services/notifications/otp-auth.js"
+        ],
+        "limitations": [
+          "OTP is a distinct auth capability and must not inherit generic messaging proof",
+          "no preserved provider delivery confirmation for an OTP was found"
+        ]
+      }
+    ],
+    "authkey": [
+      {
+        "capability": "messaging.outbound_whatsapp",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_RUNTIME_CANDIDATE",
+        "evidence": [
+          "services/notifications/otp-auth.js",
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "free-text and template fallback paths are implemented",
+          "application-level sent logging is not provider delivery proof",
+          "no preserved real provider send/read-back/delivery proof found"
+        ]
+      },
+      {
+        "capability": "auth.otp_delivery",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_RUNTIME_CANDIDATE",
+        "evidence": [
+          "services/notifications/otp-auth.js"
+        ],
+        "limitations": [
+          "OTP code generation/notification orchestration is implemented",
+          "no provider delivery acknowledgement or recipient delivery proof is preserved"
+        ]
+      }
+    ],
+    "brevo": [
+      {
+        "capability": "messaging.transactional_email_send",
+        "classification": "GAP",
+        "availability": "CLIENT_IMPLEMENTED_RUNTIME_USE_UNPROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "LIVE_RUNTIME_CANDIDATE",
+        "evidence": [
+          "utils/email.js",
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "transactional REST client exists",
+          "no active application caller and no provider delivery proof were established by the audit"
+        ]
+      }
+    ],
+    "twilio": [
+      {
+        "capability": "messaging.runtime",
+        "classification": "CONFIRMED",
+        "availability": "CLOSED_CONFIG_ONLY",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "NONE",
+        "evidence": [
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "no active runtime client confirmed"
+        ]
+      }
+    ],
+    "africas-talking": [
+      {
+        "capability": "messaging.runtime",
+        "classification": "CONFIRMED",
+        "availability": "CLOSED_CONFIG_ONLY",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "NONE",
+        "evidence": [
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
+        ],
+        "limitations": [
+          "only environment/documentation references were found; no active runtime client confirmed"
+        ]
+      }
     ]
   }
 }
