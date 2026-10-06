@@ -4,9 +4,9 @@
  * @domain        market-delegation
  * @layer         route
  * @criticality   high
- * @inputs        authenticated user, canonical market code, team payloads
- * @outputs       team read model and auditable team mutations
- * @depends       middleware/auth.js, services/market-delegation-team-service.js, services/market-scope-projector.js
+ * @inputs        authenticated user, explicit global dashboard authority, canonical market code, team payloads
+ * @outputs       central read-only team matrix, market team read model and auditable team mutations
+ * @depends       middleware/auth.js, middleware/require-dashboard-global-authority.js, services/market-delegation-team-service.js, services/market-scope-projector.js
  * @used-by       bootstrap/api-routes.js, market operator dashboard
  * @db-read       none
  * @db-write      none
@@ -15,18 +15,20 @@
  * @db-txn        explicit
  * @doctrine      capabilities_authorize_team_actions, client_market_id_never_authority, legacy_scope_is_projection
  * @impact-areas  market, delegation, team, dashboard
- * @version       2026-09
+ * @version       2026-10
  */
 'use strict';
 
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireAdmin } = require('../middleware/auth');
+const { requireDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const { projectAssignment } = require('../services/market-scope-projector');
 const {
   resolveAuthorization,
   listTeam,
+  listCentralTeamMatrix,
   grantableCapabilitiesForActor,
   inviteTeamMember,
   acceptInvitation,
@@ -77,6 +79,22 @@ async function authorization(client, req, capability) {
     requiredCapability: capability,
   });
 }
+
+router.get(
+  '/central/team-matrix',
+  authenticate,
+  requireAdmin,
+  requireDashboardGlobalAuthority,
+  async (req, res, next) => {
+    try {
+      res.set('Cache-Control', 'private, no-store');
+      const matrix = await listCentralTeamMatrix(db);
+      res.json(matrix);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
 
 router.get('/markets/:marketCode/team', authenticate, async (req, res, next) => {
   try {
