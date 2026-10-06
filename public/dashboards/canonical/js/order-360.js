@@ -109,6 +109,46 @@
     ];
   }
 
+
+  const CONTROL_STAGE_LABELS = Object.freeze({
+    ORDER: 'Commande',
+    PURCHASING: 'Achats',
+    SUPPLIER: 'Fournisseur',
+    HUB_RECEIVING: 'Réception HUB',
+    HUB_CONTROL: 'Contrôle HUB',
+    FORWARDER: 'Transitaire',
+    TRANSPORT: 'Transport',
+    CUSTOMS: 'Douane',
+    RELAY: 'Relais',
+  });
+
+  function controlPositionItem(payload) {
+    const position = payload && payload.control_position;
+    if (!position) return null;
+
+    const health = position.health || 'GREEN';
+    const stateLabel = health === 'RED' ? 'Bloquée'
+      : health === 'ORANGE' ? 'À risque'
+        : 'Normal';
+    const level = health === 'RED' ? 'critical'
+      : health === 'ORANGE' ? 'warning'
+        : 'info';
+    const envelope = position.envelope || {};
+    const refs = Array.isArray(envelope.refs) ? envelope.refs.filter(Boolean) : [];
+    const envelopeLabel = envelope.type
+      ? [envelope.type, refs.join(', ')].filter(Boolean).join(' · ')
+      : null;
+
+    return {
+      level,
+      title: `${CONTROL_STAGE_LABELS[position.stage] || position.stage || 'Étape'} · ${stateLabel}`,
+      message: [
+        position.exception && position.exception.summary,
+        envelopeLabel,
+      ].filter(Boolean).join(' · ') || 'Encapsulation courante disponible.',
+    };
+  }
+
   function productDrills(items, orderReference) {
     const seen = new Set();
     return (Array.isArray(items) ? items : []).filter(row => {
@@ -168,6 +208,17 @@
     metrics.className = 'kmc-entity-metrics';
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload) });
+
+    const controlPosition = controlPositionItem(payload);
+    if (controlPosition) {
+      const control = doc.createElement('section');
+      rootNode.appendChild(control);
+      ui.AlertPanel.render(control, {
+        title: 'Position actuelle',
+        emptyText: 'Aucune position opérationnelle active.',
+        items: [controlPosition],
+      });
+    }
 
     renderTableSection(rootNode, ui, doc, {
       title: 'Commande',
@@ -361,6 +412,7 @@
     productDrills,
     purchaseOrderDrills,
     metricItems,
+    controlPositionItem,
     renderPayload,
     jsonRequest,
     mount,
