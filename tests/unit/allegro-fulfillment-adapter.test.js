@@ -103,3 +103,37 @@ test('default context uses configured client boundary', async () => {
   const a = args(); delete a.context;
   expect((await adapter.evaluate(a)).status).toBe('SUPPLIER_UNAVAILABLE');
 });
+
+
+test('readOrderDetail relit le checkout vendeur et expose les faits fulfillment sans tracking inventé', async () => {
+  const getSellerOrder = jest.fn().mockResolvedValue({
+    id: '55555555-5555-4555-8555-555555555555',
+    status: 'READY_FOR_PROCESSING',
+    fulfillment: { status: 'SENT' },
+    delivery: { method: { name: 'Allegro One' } },
+    lineItems: [{
+      id: 'line-1',
+      offer: { id: '7782182471' },
+      quantity: 2,
+    }],
+  });
+
+  const out = await adapter.readOrderDetail(
+    '55555555-5555-4555-8555-555555555555',
+    { allegroSandboxClient: { getSellerOrder } }
+  );
+
+  expect(getSellerOrder).toHaveBeenCalledWith('55555555-5555-4555-8555-555555555555');
+  expect(out.facts).toEqual({
+    checkout_form_id: '55555555-5555-4555-8555-555555555555',
+    order_status: 'READY_FOR_PROCESSING',
+    fulfillment_status: 'SENT',
+    delivery_method: 'Allegro One',
+    line_items: [{
+      line_item_id: 'line-1',
+      offer_id: '7782182471',
+      quantity: 2,
+    }],
+  });
+  expect(out.facts).not.toHaveProperty('tracking_number');
+});
