@@ -167,6 +167,14 @@ Voir invariants I-05 et I-06 dans `ZONE_IMPACT.md`. Source de vérité : `servic
 | `boutique_categories` | Catégories boutique. |
 | `boutique_subcategories` | Sous-catégories boutique. |
 | `catalog_taxonomy_audit` | Journal append-only des mutations de taxonomie admin (catégorie/sous-catégorie), avec acteur, surface source et snapshots avant/après. **Migration 282 (`intended_migration_schema`)**. Écrit dans la même transaction que la mutation par `boutique-taxonomy-admin`. |
+| `catalog_publication_decision_audit` | Journal append-only des décisions humaines de curation globale Catalogue (`APPROVED`, `REJECTED`, `OVERRIDDEN_AND_APPROVED`) avec acteur, raison, champs overridés et snapshots minimaux avant/après. Migration 283 (`intended_migration_schema`). L’exposition pays reste auditée séparément dans `market_delegation_audit`. |
+<!-- schema-pending
+object: catalog_publication_decision_audit
+kind: table
+migration: 283
+section: ### 4.5 Paniers et catalogue
+role: Journal append-only des décisions humaines de curation globale Catalogue ; product_ref et snapshots conservent la preuve même si le produit est supprimé, product_id devenant alors NULL. L'audit n'accorde aucune autorité de publication ni d'exposition marché.
+-->
 <!-- schema-pending
 object: catalog_taxonomy_audit
 kind: table
