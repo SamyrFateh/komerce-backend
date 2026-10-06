@@ -31,7 +31,85 @@
     live: '◉',
     finance: '▤',
     settings: '⚙',
+    'control-tower': '⌂',
+    'action-center': '!',
+    'flow-commerce': '▥',
+    'flow-operations': '⇄',
+    'flow-finance': '▤',
+    'entity-orders': '◇',
+    'entity-products': '◇',
+    'entity-suppliers': '▦',
+    'entity-clients': '♙',
+    'workspace-pricing': '▥',
+    'workspace-catalog': '▣',
+    'workspace-sourcing': '◉',
+    'workspace-purchasing': '▧',
+    'workspace-operations': '◈',
+    'workspace-shipping': '⇢',
+    'workspace-accounting': '▤',
+    'markets-home': '◎',
+    'market-autonomy': '◎',
+    'market-catalog': '▣',
   });
+
+  const SIDEBAR_GROUPS = Object.freeze([
+    Object.freeze({
+      id: 'pilot',
+      label: 'Piloter',
+      items: Object.freeze([
+        Object.freeze({ id: 'control-tower', label: 'Tour de contrôle', href: '/admin/pilotage', roles: ['admin', 'market_operator'], surfaces: ['pilotage'] }),
+        Object.freeze({ id: 'action-center', label: 'Action Center', href: '/admin/action-center', roles: ['admin', 'market_operator'], surfaces: ['action-center'] }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'flows',
+      label: 'Flux',
+      items: Object.freeze([
+        Object.freeze({ id: 'flow-commerce', label: 'Commerce', href: '/admin/commerce', roles: ['admin', 'market_operator'], surfaces: ['commerce'] }),
+        Object.freeze({ id: 'flow-operations', label: 'Commandes & logistique', href: '/admin/operations', roles: ['admin', 'market_operator'], surfaces: ['operations'] }),
+        Object.freeze({ id: 'flow-finance', label: 'Finance', href: '/admin/finance', roles: ['admin', 'market_operator'], surfaces: ['finance'] }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'entities',
+      label: 'Entités',
+      items: Object.freeze([
+        Object.freeze({ id: 'entity-orders', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'], surfaces: ['orders', 'order-360'] }),
+        Object.freeze({ id: 'entity-products', label: 'Produits', href: '/admin/workspaces/catalog?view=advanced', roles: ['admin'], surfaces: ['product-360'] }),
+        Object.freeze({ id: 'entity-suppliers', label: 'Fournisseurs', href: '/admin/suppliers', roles: ['admin'], surfaces: ['supplier-360'] }),
+        Object.freeze({ id: 'entity-clients', label: 'Clients', href: '/admin/clients', roles: ['admin', 'market_operator'], capability: 'client.read', surfaces: ['client-index', 'client-360'] }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'workspaces',
+      label: 'Workspaces',
+      items: Object.freeze([
+        Object.freeze({ id: 'workspace-pricing', label: 'Atelier économique', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], surfaces: ['pricing-workspace'] }),
+        Object.freeze({ id: 'workspace-catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace'] }),
+        Object.freeze({ id: 'workspace-sourcing', label: 'Sourcing', href: '/admin/workspaces/sourcing', roles: ['admin', 'sourcing'], surfaces: ['sourcing-workspace'] }),
+        Object.freeze({ id: 'workspace-purchasing', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: ['admin'], surfaces: ['purchasing-workspace'] }),
+        Object.freeze({ id: 'workspace-operations', label: 'Hub & Relais', href: '/admin/workspaces/operations', roles: ['admin', 'agent_hub', 'agent_relais', 'market_operator'], surfaces: ['operations-workspace'] }),
+        Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], surfaces: ['shipping-customs-workspace'] }),
+        Object.freeze({ id: 'workspace-accounting', label: 'Finance / Comptabilité', href: '/admin/workspaces/accounting', roles: ['admin', 'finance', 'agent_relais', 'market_operator'], surfaces: ['accounting-workspace'] }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'markets',
+      label: 'Marchés',
+      items: Object.freeze([
+        Object.freeze({ id: 'markets-home', label: 'Marchés', href: '/dashboards/canonical/access.html', roles: ['admin'], surfaces: ['market-access'] }),
+        Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'], surfaces: ['market-autonomy'] }),
+        Object.freeze({ id: 'market-catalog', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['market_operator'], surfaces: ['market-catalog'] }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'administration',
+      label: 'Administration',
+      items: Object.freeze([
+        Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: ['admin'], surfaces: ['settings'] }),
+      ]),
+    }),
+  ]);
 
   const LOCAL_TABS = Object.freeze({
     pricing: Object.freeze([
@@ -112,6 +190,53 @@
     dedupeRole(doc, 'topbar');
     dedupeRole(doc, 'tabs');
     return navigation;
+  }
+
+  function sidebarItemVisible(item, user, adminContext) {
+    const role = roleOf(user);
+    if (!(item.roles || []).includes(role)) return false;
+    return tabCapabilityGranted(item, adminContext);
+  }
+
+  function sidebarGroupsFor(user, adminContext) {
+    return SIDEBAR_GROUPS
+      .map(group => Object.freeze({
+        ...group,
+        items: Object.freeze(group.items.filter(item => sidebarItemVisible(item, user, adminContext))),
+      }))
+      .filter(group => group.items.length > 0);
+  }
+
+  function sidebarItemActive(item, surface) {
+    if ((item.surfaces || []).includes(surface)) return true;
+    const current = String(global.location?.pathname || '');
+    return current && current === String(item.href || '').split('?')[0];
+  }
+
+  function renderGroupedSidebar(doc, header, user, adminContext, surface) {
+    const primary = header.querySelector?.('.kmc-admin-primary-nav');
+    if (!primary) return;
+    primary.replaceChildren();
+
+    sidebarGroupsFor(user, adminContext).forEach(group => {
+      const wrap = createNode(doc, 'div', 'kmc-admin-sidebar-group');
+      wrap.setAttribute('data-nav-group', group.id);
+      wrap.appendChild(createNode(doc, 'div', 'kmc-admin-sidebar-group-label', group.label));
+
+      group.items.forEach(item => {
+        const link = createNode(doc, 'a', 'kmc-admin-primary-link');
+        link.href = item.href;
+        link.setAttribute('data-dashboard', item.id);
+        if (sidebarItemActive(item, surface)) {
+          link.className += ' is-active';
+          link.setAttribute('aria-current', 'page');
+        }
+        link.appendChild(createNode(doc, 'span', 'kmc-admin-primary-icon', ICONS[item.id] || '•'));
+        link.appendChild(createNode(doc, 'span', 'kmc-admin-primary-label', item.label));
+        wrap.appendChild(link);
+      });
+      primary.appendChild(wrap);
+    });
   }
 
   function decoratePrimaryLinks(header) {
@@ -342,6 +467,7 @@
     header.setAttribute('data-shell', 'hybrid-sidebar-tabs');
     header.setAttribute('data-canonical-shell-role', 'navigation');
 
+    renderGroupedSidebar(doc, header, user, adminContext, surface);
     decoratePrimaryLinks(header);
     removeLegacySecondary(header);
     const tabs = createTabs(doc, domainId, surface, user, adminContext);
@@ -361,6 +487,8 @@
   const api = Object.freeze({
     ...base,
     LOCAL_TABS,
+    SIDEBAR_GROUPS,
+    sidebarGroupsFor,
     mount,
     _applyHybridShell: applyHybridShell,
     _activeLocalTab: activeLocalTab,
