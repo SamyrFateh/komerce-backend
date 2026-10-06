@@ -34,6 +34,28 @@ function payloadFixture() {
       signal_type: 'parcel_blocked', severity: 'critical', title: 'Colis bloqué',
       summary: 'Bloqué depuis plusieurs jours', recommendation: 'Vérifier le suivi',
     }],
+    control_chain: {
+      stages: [
+        { key: 'ORDER', label: 'Commande' },
+        { key: 'HUB_CONTROL', label: 'Contrôle HUB' },
+        { key: 'RELAY', label: 'Relais' },
+      ],
+      by_stage: {
+        ORDER: [],
+        HUB_CONTROL: [{
+          order_reference: 'CMD-1',
+          health: 'RED',
+          split: false,
+          envelope: { type: 'HUB_UNIT', refs: ['HU-1'] },
+        }],
+        RELAY: [{
+          order_reference: 'CMD-3',
+          health: 'GREEN',
+          split: false,
+          envelope: { type: 'PARCEL', refs: ['P-3'] },
+        }],
+      },
+    },
   };
 }
 
@@ -100,6 +122,29 @@ describe('LOT 2E-CANON — Operations vivant', () => {
       value: '23 j',
       tone: 'critical',
     }));
+    expect(operationsDecision.controlChainColumns(payload)).toEqual([
+      { key: 'ORDER', label: 'Commande', orders: [] },
+      {
+        key: 'HUB_CONTROL',
+        label: 'Contrôle HUB',
+        orders: [{
+          reference: 'CMD-1',
+          health: 'RED',
+          split: false,
+          href: '/admin/orders/CMD-1',
+        }],
+      },
+      {
+        key: 'RELAY',
+        label: 'Relais',
+        orders: [{
+          reference: 'CMD-3',
+          health: 'GREEN',
+          split: false,
+          href: '/admin/orders/CMD-3',
+        }],
+      },
+    ]);
     expect(operationsDecision.drillCards(operations, { role: 'admin' })).toHaveLength(2);
   });
 
