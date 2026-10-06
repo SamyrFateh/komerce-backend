@@ -11,7 +11,7 @@
  * @db-read       orders, order_items, purchase_lines, purchase_orders, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, signals
  * @db-write      none
  * @db-txn        none
- * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority, lineage_never_breaks
+ * @doctrine      DOCTRINE_LOGISTICS_CONTROL_CHAIN, dashboard_no_business_recompute, server_market_scope_is_authority
  * @impact-areas  admin-dashboard, logistics, purchasing, orders, market-authorization
  * @version       2026-10
  */
@@ -23,13 +23,12 @@ const { ACTIVE_ORDER_STATUSES } = require('./dashboard-metrics/_helpers');
 
 const STAGES = Object.freeze([
   Object.freeze({ key: 'ORDER', label: 'Commande' }),
-  Object.freeze({ key: 'PAYMENT', label: 'Paiement' }),
-  Object.freeze({ key: 'PURCHASE_ORDER', label: 'PO' }),
+  Object.freeze({ key: 'PURCHASING', label: 'Achats' }),
   Object.freeze({ key: 'SUPPLIER', label: 'Fournisseur' }),
-  Object.freeze({ key: 'HUB_RECEIVED', label: 'Réception HUB' }),
+  Object.freeze({ key: 'HUB_RECEIVING', label: 'Réception HUB' }),
   Object.freeze({ key: 'HUB_CONTROL', label: 'Contrôle HUB' }),
   Object.freeze({ key: 'FORWARDER', label: 'Transitaire' }),
-  Object.freeze({ key: 'TRANSIT', label: 'Transport' }),
+  Object.freeze({ key: 'TRANSPORT', label: 'Transport' }),
   Object.freeze({ key: 'CUSTOMS', label: 'Douane' }),
   Object.freeze({ key: 'RELAY', label: 'Relais' }),
 ]);
@@ -50,13 +49,13 @@ function toTextArray(value) {
 }
 
 function envelopeFor(row) {
-  if (['RELAY', 'CUSTOMS', 'TRANSIT', 'FORWARDER'].includes(row.current_stage)) {
+  if (['RELAY', 'CUSTOMS', 'TRANSPORT', 'FORWARDER'].includes(row.current_stage)) {
     return Object.freeze({ type: 'PARCEL', refs: Object.freeze(toTextArray(row.parcel_refs)) });
   }
-  if (['HUB_RECEIVED', 'HUB_CONTROL'].includes(row.current_stage)) {
+  if (['HUB_RECEIVING', 'HUB_CONTROL'].includes(row.current_stage)) {
     return Object.freeze({ type: 'HUB_UNIT', refs: Object.freeze(toTextArray(row.hub_unit_refs)) });
   }
-  if (['PURCHASE_ORDER', 'SUPPLIER'].includes(row.current_stage)) {
+  if (['PURCHASING', 'SUPPLIER'].includes(row.current_stage) && toTextArray(row.purchase_order_refs).length) {
     return Object.freeze({ type: 'PURCHASE_ORDER', refs: Object.freeze(toTextArray(row.purchase_order_refs)) });
   }
   return Object.freeze({ type: 'ORDER', refs: Object.freeze([String(row.order_reference)]) });
@@ -103,7 +102,7 @@ async function getControlChain(options = {}) {
     purchase_facts AS (
       SELECT oi.order_id,
              COUNT(DISTINCT pl.purchase_order_id) FILTER (WHERE pl.purchase_order_id IS NOT NULL)::int AS po_count,
-             BOOL_OR(po.status::text = 'confirmed') AS supplier_acknowledged,
+             BOOL_AND(COALESCE(po.status::text IN ('confirmed','hub_received'), FALSE)) AS supplier_acknowledged,
              ARRAY_REMOVE(ARRAY_AGG(DISTINCT po.id::text), NULL) AS purchase_order_refs,
              MAX(COALESCE(po.updated_at, pl.updated_at, pl.created_at)) AS last_purchase_at
         FROM purchase_lines pl
@@ -115,7 +114,7 @@ async function getControlChain(options = {}) {
     ),
     hub_facts AS (
       SELECT hpa.order_id,
-             BOOL_OR(hpu.state = 'RECEIVED') AS has_received,
+             BOOL_OR(hpu.state = 'RECEIVED') AS has_receiving_pending,
              BOOL_OR(hpu.state IN ('IDENTIFIED','QUALITY_CHECKED','LOCATED','ALLOCATED','PICKED','PACKED')) AS has_control,
              BOOL_OR(hpu.state = 'DISPATCHED') AS has_dispatched,
              BOOL_OR(hpu.state = 'QUARANTINED') AS has_quarantine,
@@ -212,19 +211,18 @@ async function getControlChain(options = {}) {
                -- Il garde une commande splittée à l'étape de son engagement restant
                -- au lieu de la pousser vers le morceau le plus avancé.
                WHEN so.order_status = 'available' THEN 'RELAY'
-               WHEN so.order_status = 'in_transit' AND COALESCE(paf.has_in_transit, FALSE) THEN 'TRANSIT'
+               WHEN so.order_status = 'in_transit' AND COALESCE(paf.has_in_transit, FALSE) THEN 'TRANSPORT'
                WHEN so.order_status = 'in_transit'
                     AND (COALESCE(paf.has_arrived, FALSE) OR COALESCE(cf.has_customs, FALSE)) THEN 'CUSTOMS'
-               WHEN so.order_status = 'in_transit' THEN 'TRANSIT'
+               WHEN so.order_status = 'in_transit' THEN 'TRANSPORT'
                WHEN so.order_status = 'shipped' THEN 'FORWARDER'
+               WHEN so.order_status = 'preparation' AND COALESCE(hf.has_receiving_pending, FALSE) THEN 'HUB_RECEIVING'
                WHEN so.order_status = 'preparation'
                     AND (COALESCE(hf.has_control, FALSE) OR COALESCE(hf.has_quarantine, FALSE) OR COALESCE(paf.has_preparation, FALSE)) THEN 'HUB_CONTROL'
-               WHEN so.order_status = 'preparation' AND COALESCE(hf.has_received, FALSE) THEN 'HUB_RECEIVED'
+               WHEN COALESCE(hf.has_receiving_pending, FALSE) THEN 'HUB_RECEIVING'
                WHEN COALESCE(hf.has_control, FALSE) OR COALESCE(hf.has_quarantine, FALSE) THEN 'HUB_CONTROL'
-               WHEN COALESCE(hf.has_received, FALSE) THEN 'HUB_RECEIVED'
                WHEN COALESCE(pf.supplier_acknowledged, FALSE) THEN 'SUPPLIER'
-               WHEN COALESCE(pf.po_count, 0) > 0 THEN 'PURCHASE_ORDER'
-               WHEN so.payment_status = 'paid' THEN 'PAYMENT'
+               WHEN COALESCE(pf.po_count, 0) > 0 OR so.payment_status = 'paid' THEN 'PURCHASING'
                ELSE 'ORDER'
              END AS current_stage,
              CASE
