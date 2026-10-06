@@ -217,7 +217,11 @@ async function queryMatches(reference) {
 async function resolveReference(value, options = {}) {
   const reference = normalizeReference(value);
   const rows = await queryMatches(reference);
-  if (!rows.length) {
+  const visibleRows = options.global === true
+    ? rows
+    : rows.filter(row => options.authorizedMarketIds instanceof Set
+      && options.authorizedMarketIds.has(row.market_id));
+  if (!visibleRows.length) {
     return Object.freeze({
       query: reference,
       found: false,
@@ -226,7 +230,7 @@ async function resolveReference(value, options = {}) {
   }
 
   const snapshotByOrder = new Map();
-  await Promise.all(rows.map(async row => {
+  await Promise.all(visibleRows.map(async row => {
     const key = String(row.order_id);
     if (snapshotByOrder.has(key)) return;
     const snapshot = await controlChain.getOrderControlSnapshot({
@@ -237,7 +241,7 @@ async function resolveReference(value, options = {}) {
     snapshotByOrder.set(key, snapshot);
   }));
 
-  const matches = rows.map(row => {
+  const matches = visibleRows.map(row => {
     const destination = canonicalDestination(row, options);
     const position = snapshotByOrder.get(String(row.order_id)) || null;
     return Object.freeze({
