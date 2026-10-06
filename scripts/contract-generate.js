@@ -567,6 +567,9 @@ const KNOWN_RESPONSES = {
   '/api/market-delegation/markets/{marketCode}/catalog/exposure/{productId}': {
     put: { fields: ['success','exposure'], source: 'route-read' }
   },
+  '/api/market-delegation/central/team-matrix': {
+    get: { fields: ['authority','mode','markets'], source: 'test' }
+  },
   '/api/market-delegation/markets/{marketCode}/team': {
     get: { fields: ['market','assignment_id','actor_membership_id','actor_capabilities','actor_grantable_capabilities'], source: 'route-read' }
   },
