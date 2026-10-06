@@ -168,28 +168,11 @@
       dashboard.appendChild(host);
     }
 
-    const kpis = cardSection(doc, 'Indicateurs clés', 'La santé du marché à partir des KPI canoniques prouvés.', 'pilotage-kpis');
-
-    kpis.section.className += ' is-cockpit-truth';
-    const projected = base.projectMetrics(payload);
-    const labels = { 'ca-encaisse': 'CA encaissé', 'commandes-actives': 'Commandes actives', 'marge-consolidee': 'Marge consolidée', 'alertes-critiques': 'Alertes critiques', 'completude-couts': 'Complétude coûts' };
-    ui.MetricStrip.render(kpis.body, { items: Object.entries(projected).map(([key, item]) => ({ key, label: labels[key] || key, ...item })) });
-    dashboard.appendChild(kpis.section);
-
     const cards = summaryCards(payload, base);
     if (cards.length) {
       const views = cardSection(doc, 'Les vues qui comptent maintenant', 'Les angles de décision déjà alimentés par le backend.', 'pilotage-views');
       decisionUi.SummaryCards.render(views.body, { items: cards });
       dashboard.appendChild(views.section);
-    }
-
-    const stages = flowStages(payload, base);
-    if (stages.length) {
-      const flow = cardSection(doc, 'Boucle économique', 'Du prix estimé au recalibrage : suivre la chaîne de vérité économique.', 'pilotage-flow');
-
-      flow.section.className += ' is-cockpit-flow';
-      decisionUi.FlowStrip.render(flow.body, { stages });
-      dashboard.appendChild(flow.section);
     }
 
     const bottom = doc.createElement('div');
@@ -199,12 +182,6 @@
     ui.AlertPanel.render(alertHost, { title: 'Alertes système transverses', items: base.projectAlerts(payload), emptyText: 'Aucun signal prioritaire.' });
     bottom.appendChild(alertHost);
 
-    const rules = principles(payload);
-    if (rules.length) {
-      const principleSection = cardSection(doc, 'Principes non négociables', 'Les règles qui protègent une décision fiable.', 'pilotage-principles');
-      decisionUi.InfoList.render(principleSection.body, { items: rules });
-      bottom.appendChild(principleSection.section);
-    }
     dashboard.appendChild(bottom);
 
     const footer = doc.createElement('div');
