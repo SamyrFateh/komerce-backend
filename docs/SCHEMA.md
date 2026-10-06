@@ -335,6 +335,13 @@ section: ### 4.10 Sourcing et fournisseurs
 role: Journal append-only du dialogue fournisseur : opération, outcome canonique, request id et faits sanitisés pour diagnostic et reprise crash-safe, sans credentials ni payload brut.
 -->
 <!-- schema-pending
+object: supplier_execution_fulfillments
+kind: table
+migration: 284
+section: ### 4.10 Sourcing et fournisseurs
+role: Fait canonique provider-side de fulfillment lié à un supplier_execution_order ; porte quantité attendue/observée, statut provider, tracking/carrier éventuels, preuve bornée et verdict de réconciliation. Ne prouve ni réception Hub ni remise client.
+-->
+<!-- schema-pending
 object: supplier_execution_payments
 kind: table
 migration: 280
