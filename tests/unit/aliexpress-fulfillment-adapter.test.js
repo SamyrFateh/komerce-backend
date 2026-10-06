@@ -308,3 +308,44 @@ describe('AliExpress fulfillment adapter', () => {
     });
   });
 });
+
+
+test('readOrderDetail relit la commande AliExpress et borne les faits fulfillment natifs', async () => {
+  const invokeTop = jest.fn().mockResolvedValue({
+    result: {
+      order_id: '123456789',
+      order_status: 'WAIT_BUYER_ACCEPT_GOODS',
+      logistics_no: 'TRACK-AE-1',
+      logistics_service_name: 'CAINIAO_STANDARD',
+      child_order_list: {
+        ae_child_order_info: [{
+          child_order_id: 'child-1',
+          sku_id: '12000052119244345',
+          product_count: 2,
+        }],
+      },
+    },
+  });
+
+  const out = await adapter.readOrderDetail('123456789', {
+    env: {},
+    aliexpressConnected: { invokeTop },
+  });
+
+  expect(invokeTop).toHaveBeenCalledWith(
+    'aliexpress.trade.ds.order.get',
+    { single_order_query: JSON.stringify({ order_id: '123456789' }) },
+    expect.any(Object)
+  );
+  expect(out.facts).toMatchObject({
+    order_id: '123456789',
+    status: 'WAIT_BUYER_ACCEPT_GOODS',
+    logistics_no: 'TRACK-AE-1',
+    logistics_service: 'CAINIAO_STANDARD',
+    child_orders: [{
+      child_order_id: 'child-1',
+      sku_id: '12000052119244345',
+      quantity: 2,
+    }],
+  });
+});
