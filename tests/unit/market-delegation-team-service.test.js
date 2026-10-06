@@ -29,6 +29,72 @@ describe('market-delegation team service', () => {
     expect(hash).toBe(team.invitationTokenHash(token));
   });
 
+  test('central team matrix projects all active assignments read-only with latest audited mutation', async () => {
+    const db = executor();
+    db.query.mockResolvedValueOnce({
+      rows: [{
+        market_id: 'mkt-cg',
+        market_code: 'CG',
+        market_name: 'Congo',
+        currency: 'XAF',
+        lifecycle_status: 'ACTIVE',
+        assignment_id: 'a-cg',
+        assignment_status: 'ACTIVE',
+        central_referent_user_id: 'u-central',
+        members: [{
+          membership_id: 'mem-1',
+          user_id: 'u-market',
+          status: 'ACTIVE',
+          is_operating_lead: true,
+          full_name: 'Market Lead',
+          email: 'lead@example.com',
+          phone: '+242000000000',
+          user_role: 'market_operator',
+          capabilities: ['team.read', 'pricing.read'],
+        }],
+        last_audit_action: 'MEMBERSHIP_CAPABILITIES_REPLACED',
+        last_audit_actor_user_id: 'u-central',
+        last_audit_at: '2026-10-06T08:00:00Z',
+        last_audit_correlation_id: 'corr-1',
+      }],
+    });
+
+    const result = await team.listCentralTeamMatrix(db);
+
+    expect(result).toEqual({
+      authority: 'dashboard_global_access_grants',
+      mode: 'read_only',
+      markets: [{
+        market: {
+          id: 'mkt-cg',
+          code: 'CG',
+          name: 'Congo',
+          currency: 'XAF',
+          lifecycle_status: 'ACTIVE',
+        },
+        assignment: {
+          id: 'a-cg',
+          status: 'ACTIVE',
+          central_referent_user_id: 'u-central',
+        },
+        members: [expect.objectContaining({
+          membership_id: 'mem-1',
+          is_operating_lead: true,
+          capabilities: ['team.read', 'pricing.read'],
+        })],
+        last_mutation: {
+          action: 'MEMBERSHIP_CAPABILITIES_REPLACED',
+          actor_user_id: 'u-central',
+          at: '2026-10-06T08:00:00Z',
+          correlation_id: 'corr-1',
+        },
+      }],
+    });
+    expect(db.query).toHaveBeenCalledTimes(1);
+    expect(db.query.mock.calls[0][0]).toMatch(/market_delegation_audit/);
+    expect(db.query.mock.calls[0][0]).toMatch(/m\.lifecycle_status IN \('ACTIVE','SUSPENDED'\)/);
+  });
+
   test('new-email invitation persists only SHA-256 and returns raw token once', async () => {
     const db = executor();
     db.query
