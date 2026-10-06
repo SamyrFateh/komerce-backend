@@ -72,6 +72,7 @@ module.exports = {
     scripts: [
       'scripts/cm-cg-market-reprovision-reset.js',
       'scripts/cm-cg-market-clean-reset.js',
+      'scripts/cm-cg-market-full-reset.js',
     ],
     migrations: [
       'migrations/135_markets_foundation.sql',
@@ -110,6 +111,7 @@ module.exports = {
       'tests/unit/market-lifecycle-transition.test.js',
       'tests/unit/cm-cg-market-reprovision-reset.test.js',
       'tests/unit/cm-cg-market-clean-reset.test.js',
+      'tests/unit/cm-cg-market-full-reset.test.js',
       'tests/unit/market-lifecycle-service.test.js',
     ],
   },
