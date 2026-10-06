@@ -324,3 +324,53 @@ test('buildOrderPayload accepte un override platform explicite sans branche prov
 
   expect(payload.native.platform).toBe('Custom');
 });
+
+
+test('readOrderDetail expose les faits fulfillment natifs sans mutation provider', async () => {
+  const invoke = jest.fn().mockResolvedValue({
+    result: true,
+    requestId: 'REQ-FUL-1',
+    data: {
+      orderId: 'CJ-FUL-1',
+      orderNum: 'KOM-1',
+      cjOrderCode: 'SD-FUL-1',
+      shipmentOrderId: 'SHIP-FUL-1',
+      orderStatus: 'SHIPPED',
+      subStatus: null,
+      logisticName: 'CJPacket',
+      trackNumber: 'TRACK-FUL-1',
+      trackingProvider: 'Carrier CJ',
+      trackingUrl: 'https://tracking.example/TRACK-FUL-1',
+      isSandbox: 0,
+      productInfoList: [{ variantId: 'VID-FUL-1', quantity: 2 }],
+    },
+  });
+
+  const out = await adapter.readOrderDetail('CJ-FUL-1', {
+    invoke,
+    env: { CJ_ACCESS_TOKEN: 'token' },
+  });
+
+  expect(invoke).toHaveBeenCalledWith(
+    expect.stringContaining('/shopping/order/getOrderDetail'),
+    expect.objectContaining({
+      method: 'GET',
+      query: { orderId: 'CJ-FUL-1' },
+    })
+  );
+  expect(out).toMatchObject({
+    request_id: 'REQ-FUL-1',
+    facts: {
+      order_id: 'CJ-FUL-1',
+      cj_order_code: 'SD-FUL-1',
+      shipment_order_id: 'SHIP-FUL-1',
+      status: 'SHIPPED',
+      logistic_name: 'CJPacket',
+      tracking_number: 'TRACK-FUL-1',
+      tracking_provider: 'Carrier CJ',
+      tracking_url: 'https://tracking.example/TRACK-FUL-1',
+      is_sandbox: false,
+      variants: [{ vid: 'VID-FUL-1', quantity: 2 }],
+    },
+  });
+});
