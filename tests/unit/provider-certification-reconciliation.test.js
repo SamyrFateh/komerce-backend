@@ -293,3 +293,40 @@ test('payment capability ledger keeps provider proofs scoped and fail-closed', (
     highest_proof: 'UNQUALIFIED',
   });
 });
+
+
+test('CJ validates the capability model without proof contamination', () => {
+  const report = reconciliation.run({ root: ROOT });
+
+  expect(report.rows.find(
+    row => row.provider === 'cj' && row.capability === 'sourcing.catalog_live_read'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P1',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'cj' && row.capability === 'sourcing.catalog_stock'
+  )).toMatchObject({
+    classification: 'RECLASSIFIED',
+    availability: 'EXISTING_EVIDENCE_RECONCILED',
+    highest_proof: 'P2',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'cj' && row.capability === 'purchasing.real_debit'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'IMPLEMENTED_NOT_LIVE_PROVEN',
+    highest_proof: 'P2',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'cj' && row.capability === 'purchasing.reconcile_fulfillment'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'NOT_PROVIDER_PROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+});
