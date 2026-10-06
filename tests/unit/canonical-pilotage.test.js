@@ -37,13 +37,17 @@ function payloadFixture() {
     ],
     view_blocks: [
       {
+        view: 'control_tower',
         title: 'Tour de contrôle',
         subtitle: 'Voir, comprendre, décider',
+        url: '/admin/pilotage',
         kpis_summary: [{ label: 'CA encaissé' }, { label: 'Commandes actives' }],
       },
       {
+        view: 'costing',
         title: 'Coût rendu relais',
         subtitle: 'Dire la vérité économique',
+        url: '/admin/costing',
         kpis_summary: [{ key: 'cmds_cout_incomplet', label: 'Commandes à coût incomplet', value: 3, unit: 'count' }],
       },
     ],
@@ -91,6 +95,7 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
   test('le schéma Pilotage respecte DashboardSchema V1', () => {
     const schema = schemaContract.validateDashboardSchema(pilotage.PILOTAGE_SCHEMA);
     expect(schema.id).toBe('pilotage');
+    expect(schema.title).toBe('Tour de contrôle');
     expect(schema.metrics.source).toBe('pilotage.metrics');
     expect(schema.sections.map(section => section.source)).toEqual(['pilotage.views', 'pilotage.flow']);
     expect(schema.sections[1].columns[1].label).toBe('Destination');
@@ -106,7 +111,7 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
     expect(pilotage.canonicalAdminHref('/admin/control-tower'))
       .toBe('/admin/pilotage');
     expect(pilotage.canonicalAdminHref('/admin/costing?cost_status=actual'))
-      .toBe('/admin/costing?cost_status=actual');
+      .toBe('/admin/finance?cost_status=actual');
     expect(pilotage.canonicalAdminHref('/admin/products/PRD-42'))
       .toBe('/admin/products/PRD-42');
   });
@@ -145,7 +150,13 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
       'Qualité des données',
     ]);
     expect(decisions.some(item => /aujourd/i.test(item.label))).toBe(false);
-    expect(pilotageDecision.summaryCards(payload, pilotage)).toHaveLength(2);
+    const flowCards = pilotageDecision.summaryCards(payload, pilotage);
+    expect(flowCards).toHaveLength(1);
+    expect(flowCards[0]).toEqual(expect.objectContaining({
+      key: 'costing',
+      title: 'Coût rendu relais',
+      href: '/admin/finance',
+    }));
     expect(pilotageDecision.flowStages(payload, pilotage)[0]).toEqual(expect.objectContaining({
       label: 'Commande',
       helper: 'Opérations',

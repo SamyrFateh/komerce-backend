@@ -30,6 +30,7 @@
 
   const CANONICAL_PATH_REDIRECTS = Object.freeze({
     '/admin/control-tower': '/admin/pilotage',
+    '/admin/costing': '/admin/finance',
     '/admin/orders-logistics': '/admin/operations',
     '/admin/pricing': '/admin/workspaces/pricing',
     '/admin/pricing-workshop': '/admin/workspaces/pricing',
@@ -60,8 +61,8 @@
 
   const PILOTAGE_SCHEMA = Object.freeze({
     id: 'pilotage',
-    title: 'Pilotage',
-    description: 'Voir la santé de Komerce, comprendre les signaux et décider où agir.',
+    title: 'Tour de contrôle',
+    description: 'Voir ce qui mérite une attention et descendre vers le bon flux ou espace d’action.',
     metrics: {
       source: 'pilotage.metrics',
       pick: [
