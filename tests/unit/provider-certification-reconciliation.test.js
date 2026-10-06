@@ -146,7 +146,7 @@ test('résumé distingue CONFIRMED / RECLASSIFIED / GAP sans confondre highest p
 
 
 test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal scopes', () => {
-  const { loadCapabilityLedger, reconcileCapabilityLedger } = require('../../services/provider-capability-certifications');
+  const { loadCapabilityLedger, reconcileCapabilityLedger } = require('../../services/suppliers/provider-capability-certifications');
   const ledger = loadCapabilityLedger();
   const report = reconcileCapabilityLedger({ ledger });
 
