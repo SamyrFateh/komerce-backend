@@ -123,7 +123,7 @@ async function listCentralTeamMatrix(executor) {
             COALESCE(team.members, '[]'::jsonb) AS members,
             last_audit.action AS last_audit_action,
             last_audit.actor_user_id AS last_audit_actor_user_id,
-            last_audit.created_at AS last_audit_at,
+            last_audit.occurred_at AS last_audit_at,
             last_audit.correlation_id AS last_audit_correlation_id
        FROM markets m
        JOIN market_operating_assignments a
@@ -158,11 +158,11 @@ async function listCentralTeamMatrix(executor) {
        LEFT JOIN LATERAL (
          SELECT mda.action,
                 mda.actor_user_id,
-                mda.created_at,
+                mda.occurred_at,
                 mda.correlation_id
            FROM market_delegation_audit mda
           WHERE mda.assignment_id = a.id
-          ORDER BY mda.created_at DESC, mda.id DESC
+          ORDER BY mda.occurred_at DESC, mda.id DESC
           LIMIT 1
        ) last_audit ON TRUE
       WHERE m.lifecycle_status IN ('ACTIVE','SUSPENDED')
