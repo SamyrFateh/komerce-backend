@@ -40,9 +40,11 @@ Statuses used here:
 | AliExpress | purchasing.auto_order | P4 guarded live staging | PROVEN | ambiguous retry remains closed |
 | AliExpress | purchasing.reconcile_order | evidence exists in Golden read-back | GAP | project explicit ORDER reconciliation capability |
 | AliExpress | purchasing.reconcile_payment | UNQUALIFIED | GAP | requires payment + independent monetary proof |
-| CJ | purchasing.contract | P1 Sandbox | PROVEN | determine P2/P3/P4 from existing adapter/pipeline proofs |
+| CJ | purchasing.order_create_readback | P1 Sandbox | PROVEN | exact VID/qty/orderNumber + duplicate recovery proved |
 | CJ | purchasing.readiness | P1 guarded | PROVEN AT P1 | reconcile adapter/pipeline evidence before promotion |
-| CJ | purchasing.reconcile_payment | implementation/evidence exists | GAP | reconcile payment-state + billing-history + real-debit proofs |
+| CJ | purchasing.payment_sandbox | P2 Sandbox | PROVEN | confirmOrder + simulatePay + paid read-back; no real debit |
+| CJ | purchasing.grouped_parent_payment_sandbox | P2 Sandbox | PROVEN | parent identity + amount consistency + sandbox payment; real_debit_verified=false |
+| CJ | purchasing.reconcile_payment | P2 code/read-only | GAP | live positive billingHistory debit proof still missing |
 | CJ | purchasing.reconcile_fulfillment | UNQUALIFIED | GAP | do not infer from order/payment state |
 
 ## 3. Payments
