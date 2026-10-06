@@ -317,8 +317,7 @@
         "environment": "TEST_AND_REAL_GOLDEN",
         "evidence": [
           "docs/external-providers/payments/STRIPE.md",
-          "scripts/stripe-golden-p4.js",
-          "features/payments.feature.js"
+          "scripts/stripe-golden-p4.js"
         ],
         "limitations": [
           "refund capability is certified separately from payment intent confirmation",
