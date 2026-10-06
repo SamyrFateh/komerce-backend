@@ -431,7 +431,6 @@
         "highest_proof": "UNQUALIFIED",
         "environment": "LIVE_RUNTIME_CANDIDATE",
         "evidence": [
-          "utils/email.js",
           "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
         ],
         "limitations": [
