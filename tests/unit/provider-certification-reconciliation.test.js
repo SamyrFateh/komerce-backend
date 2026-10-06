@@ -22,6 +22,43 @@ test('R1 — le ledger capability-level réel est cohérent et ne sur-certifie p
     highest_proof: 'P4',
   });
 
+
+  const allegroOrderReconcile = report.rows.find(
+    row => row.provider === 'allegro' && row.capability === 'purchasing.reconcile_order'
+  );
+  expect(allegroOrderReconcile).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+  });
+
+  const aliOrderReconcile = report.rows.find(
+    row => row.provider === 'aliexpress' && row.capability === 'purchasing.reconcile_order'
+  );
+  expect(aliOrderReconcile).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+  });
+
+  const cjSandboxPayment = report.rows.find(
+    row => row.provider === 'cj' && row.capability === 'purchasing.payment_sandbox'
+  );
+  expect(cjSandboxPayment).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P2',
+  });
+
+  const cjPaymentReconcile = report.rows.find(
+    row => row.provider === 'cj' && row.capability === 'purchasing.reconcile_payment'
+  );
+  expect(cjPaymentReconcile).toMatchObject({
+    classification: 'GAP',
+    availability: 'IMPLEMENTED_NOT_LIVE_PROVEN',
+    highest_proof: 'P2',
+  });
+
   const allegroAuto = report.rows.find(
     row => row.provider === 'allegro' && row.capability === 'purchasing.auto_order'
   );
