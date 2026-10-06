@@ -30,6 +30,7 @@
 
   const CANONICAL_PATH_REDIRECTS = Object.freeze({
     '/admin/control-tower': '/admin/pilotage',
+    '/admin/costing': '/admin/finance',
     '/admin/orders-logistics': '/admin/operations',
     '/admin/pricing': '/admin/workspaces/pricing',
     '/admin/pricing-workshop': '/admin/workspaces/pricing',
