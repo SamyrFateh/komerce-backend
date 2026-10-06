@@ -40,6 +40,15 @@ function payloadFixture() {
         { key: 'HUB_CONTROL', label: 'Contrôle HUB' },
         { key: 'RELAY', label: 'Relais' },
       ],
+      structural_alerts: [{
+        stage: 'HUB_CONTROL',
+        health: 'RED',
+        reason_code: 'hub_quarantine',
+        summary: '3 commandes bloquées au contrôle HUB',
+        owner_role: 'hub',
+        order_count: 3,
+        order_references: ['CMD-1', 'CMD-4', 'CMD-5'],
+      }],
       by_stage: {
         ORDER: [],
         HUB_CONTROL: [{
@@ -123,10 +132,16 @@ describe('LOT 2E-CANON — Operations vivant', () => {
       tone: 'critical',
     }));
     expect(operationsDecision.controlChainColumns(payload)).toEqual([
-      { key: 'ORDER', label: 'Commande', orders: [] },
+      { key: 'ORDER', label: 'Commande', alerts: [], orders: [] },
       {
         key: 'HUB_CONTROL',
         label: 'Contrôle HUB',
+        alerts: [{
+          health: 'RED',
+          count: 3,
+          code: 'hub_quarantine',
+          summary: '3 commandes bloquées au contrôle HUB',
+        }],
         orders: [{
           reference: 'CMD-1',
           health: 'RED',
@@ -137,6 +152,7 @@ describe('LOT 2E-CANON — Operations vivant', () => {
       {
         key: 'RELAY',
         label: 'Relais',
+        alerts: [],
         orders: [{
           reference: 'CMD-3',
           health: 'GREEN',

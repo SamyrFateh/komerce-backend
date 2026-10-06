@@ -27,6 +27,12 @@ describe('decision visual — operations control tower', () => {
     expect(css).toMatch(/\.kmc-control-order\.is-critical\s*\{[^}]*--control-health:\s*var\(--kmc-critical\)/s);
   });
 
+  test('les causes structurelles restent compactes au-dessus de la liste', () => {
+    expect(css).toMatch(/\.kmc-control-structural-alerts\s*\{[^}]*display:\s*grid/s);
+    expect(css).toMatch(/\.kmc-control-structural-alert\s*\{[^}]*border-radius:\s*8px/s);
+    expect(css).toMatch(/\.kmc-control-structural-count\s*\{[^}]*font-weight:\s*900/s);
+  });
+
   test('le niveau 1 conserve une ligne de commande courte et non décorative', () => {
     expect(css).toMatch(/\.kmc-control-order\s*\{[^}]*min-height:\s*27px/s);
     expect(css).toMatch(/\.kmc-control-order-ref\s*\{[^}]*text-overflow:\s*ellipsis/s);
