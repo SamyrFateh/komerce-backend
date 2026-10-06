@@ -217,7 +217,7 @@ module.exports = {
       // déclarées jusqu'ici.
       'GET /api/admin/entities/clients/:clientPhone',
       'GET /api/admin/entities/orders/:orderReference',
-      'GET /api/admin/dashboard/reference/resolve?reference=:reference',
+      'GET /api/admin/dashboard/reference/resolve',
       'GET /api/admin/entities/products/:productRef',
       'GET /api/admin/users/:id/market-scopes',
       'POST /api/admin/users/:id/market-scopes',
