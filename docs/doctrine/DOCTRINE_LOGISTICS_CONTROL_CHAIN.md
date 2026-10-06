@@ -345,3 +345,88 @@ La preuve minimale doit couvrir :
 10. Le scope Market est résolu serveur.
 11. Le drill-down peut traverser les features, mais toute action reste exécutée par la feature propriétaire.
 12. Le client reste la racine et le relais la borne opérationnelle de la Control Chain Market.
+
+
+## 14. Rôle des surfaces de pilotage
+
+La Control Tower est la surface de détection et d'orientation. Elle ne remplace pas les workspaces métiers spécialisés.
+
+Le contrat de lecture est :
+
+```text
+CONTROL TOWER
+→ Où regarder ?
+
+DASHBOARD / WORKSPACE MÉTIER
+→ Pourquoi ?
+
+ACTION CENTER
+→ Que faire maintenant ?
+
+ORDER 360
+→ Quelle est l'histoire complète de cette commande et quelle est son encapsulation courante ?
+```
+
+Conséquences :
+
+1. La Control Tower reste volontairement minimale et ne duplique pas les détails métiers.
+2. Un dashboard métier n'existe que s'il apporte un diagnostic ou une capacité d'action supplémentaire.
+3. Un même fait canonique peut apparaître dans plusieurs projections, sans créer plusieurs vérités.
+4. Le drill-down doit conduire vers la feature propriétaire de l'action, jamais vers une logique parallèle du dashboard.
+5. La duplication de KPI ou de timelines entre surfaces est à éviter lorsqu'elle n'améliore ni la compréhension ni l'action.
+
+Principe de simplicité :
+
+```text
+complexité dans le modèle et la traçabilité
+→ simplicité dans l'écran
+```
+
+## 15. La chaîne comme matrice de certification métier
+
+La matérialisation de la chaîne E2E sert aussi de grille de revue fonctionnelle.
+
+Chaque étape doit pouvoir être examinée avec la même matrice minimale :
+
+```text
+NORMAL
+EDGE CASE
+FAILURE
+RECOVERY
+PROOF
+OWNER
+CLIENT IMPACT
+```
+
+Pour chaque étape, Komerce doit pouvoir répondre :
+
+- quel est le cas normal attendu ;
+- quelle preuve canonique permet de considérer l'étape franchie ;
+- quels cas limites sont acceptables ;
+- quels cas doivent devenir ORANGE ;
+- quels cas doivent devenir RED ;
+- quelles anomalies peuvent continuer malgré tout ;
+- quelles anomalies bloquent réellement la progression ;
+- quelle action de reprise est attendue ;
+- comment la commande revient vers GREEN ;
+- quelle enveloppe porte la commande à cet instant ;
+- quel impact existe sur la promesse client.
+
+La chaîne de référence pour cette revue est :
+
+```text
+ORDER
+→ PURCHASING
+→ SUPPLIER
+→ HUB_RECEIVING
+→ HUB_CONTROL
+→ FORWARDER
+→ TRANSPORT
+→ CUSTOMS
+→ RELAY
+→ CUSTOMER HANDOVER
+```
+
+Cette matrice ne crée aucun nouveau lifecycle. Elle sert à révéler les trous de modèle, transitions ambiguës, reprises manuelles non formalisées, responsabilités mal définies et preuves manquantes.
+
+Le développement E2E doit progresser étape par étape, en privilégiant d'abord les invariants les plus structurants de `ORDER → PURCHASING → SUPPLIER`, puis en déroulant jusqu'au relais.

@@ -4,11 +4,11 @@
  * @domain        admin-dashboard
  * @layer         service
  * @criticality   high
- * @inputs        server_resolved_market
- * @outputs       canonical_logistics_control_chain_projection
+ * @inputs        server_resolved_market, optional_server_resolved_order
+ * @outputs       canonical_logistics_control_chain_projection, single_order_control_snapshot
  * @depends       db, dashboard-metrics/_helpers
- * @used-by       services/dashboard-operations.js
- * @db-read       orders, order_items, purchase_lines, purchase_orders, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, signals
+ * @used-by       services/dashboard-operations.js, services/order-360.js
+ * @db-read       orders, order_items, purchase_lines, purchase_orders, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, incidents, signals
  * @db-write      none
  * @db-txn        none
  * @doctrine      DOCTRINE_LOGISTICS_CONTROL_CHAIN, dashboard_no_business_recompute, server_market_scope_is_authority
@@ -129,12 +129,13 @@ function projectRow(row) {
 
 async function getControlChain(options = {}) {
   const limit = Math.max(1, Math.min(Number(options.limit) || 250, 500));
-  const params = [marketId(options.market), ACTIVE_ORDER_STATUSES, limit];
+  const orderId = options.orderId || null;
+  const params = [marketId(options.market), ACTIVE_ORDER_STATUSES, limit, orderId];
 
   const { rows } = await db.query(`
     WITH scoped_orders AS (
       SELECT o.id,
-             o.reference,
+             o.reference AS order_reference,
              o.market_id,
              o.status::text AS order_status,
              o.payment_status::text AS payment_status,
@@ -143,11 +144,12 @@ async function getControlChain(options = {}) {
         FROM orders o
        WHERE ($1::uuid IS NULL OR o.market_id = $1)
          AND o.status::text = ANY($2::text[])
+         AND ($4::uuid IS NULL OR o.id = $4::uuid)
     ),
     purchase_facts AS (
       SELECT oi.order_id,
              COUNT(DISTINCT pl.purchase_order_id) FILTER (WHERE pl.purchase_order_id IS NOT NULL)::int AS po_count,
-             BOOL_AND(COALESCE(po.status::text IN ('confirmed','hub_received'), FALSE)) AS supplier_acknowledged,
+             BOOL_AND(COALESCE(po.status::text IN ('confirmed','shipped','hub_received'), FALSE)) AS supplier_acknowledged,
              ARRAY_REMOVE(ARRAY_AGG(DISTINCT po.id::text), NULL) AS purchase_order_refs,
              MAX(COALESCE(po.updated_at, pl.updated_at, pl.created_at)) AS last_purchase_at
         FROM purchase_lines pl
@@ -227,6 +229,21 @@ async function getControlChain(options = {}) {
           ON s.entity_type = 'parcel'
          AND s.entity_id::text = p.id::text
        WHERE s.status IN ('open','acknowledged','snoozed')
+      UNION ALL
+      SELECT so.id AS order_id,
+             i.incident_type AS signal_type,
+             CASE i.severity
+               WHEN 'critical' THEN 'critical'
+               WHEN 'high' THEN 'high'
+               ELSE 'warning'
+             END AS severity,
+             COALESCE(i.title, i.description, i.incident_type) AS summary,
+             i.resolver_domain AS owner_role,
+             i.created_at
+        FROM incidents i
+        LEFT JOIN parcels ip ON ip.id = i.parcel_id
+        JOIN scoped_orders so ON so.id = COALESCE(i.order_id, ip.order_id)
+       WHERE i.status IN ('open','investigating')
     ),
     ranked_signals AS (
       SELECT ls.*,
@@ -264,10 +281,16 @@ async function getControlChain(options = {}) {
                WHEN so.order_status = 'preparation' AND COALESCE(hf.has_receiving_pending, FALSE) THEN 'HUB_RECEIVING'
                WHEN so.order_status = 'preparation'
                     AND (COALESCE(hf.has_control, FALSE) OR COALESCE(hf.has_quarantine, FALSE) OR COALESCE(paf.has_preparation, FALSE)) THEN 'HUB_CONTROL'
-               WHEN COALESCE(hf.has_receiving_pending, FALSE) THEN 'HUB_RECEIVING'
-               WHEN COALESCE(hf.has_control, FALSE) OR COALESCE(hf.has_quarantine, FALSE) THEN 'HUB_CONTROL'
+               WHEN so.order_status = 'preparation' AND COALESCE(hf.has_dispatched, FALSE) THEN 'FORWARDER'
+               WHEN so.order_status = 'preparation' THEN 'HUB_CONTROL'
+               -- purchasing-completion fait ORDERED -> PREPARATION seulement
+               -- quand toutes les lignes import nécessaires sont reçues au Hub.
+               -- Une branche Hub avancée ne masque donc jamais une branche
+               -- encore Purchasing/Supplier tant que l'ordre reste ORDERED.
+               WHEN so.order_status = 'ordered' AND COALESCE(pf.supplier_acknowledged, FALSE) THEN 'SUPPLIER'
+               WHEN so.order_status = 'ordered' THEN 'PURCHASING'
                WHEN COALESCE(pf.supplier_acknowledged, FALSE) THEN 'SUPPLIER'
-               WHEN COALESCE(pf.po_count, 0) > 0 OR so.payment_status = 'paid' THEN 'PURCHASING'
+               WHEN COALESCE(pf.po_count, 0) > 0 THEN 'PURCHASING'
                ELSE 'ORDER'
              END AS current_stage,
              CASE
@@ -333,6 +356,16 @@ async function getControlChain(options = {}) {
   });
 }
 
+async function getOrderControlSnapshot(order) {
+  if (!order || !order.id) throw new Error('control_tower_resolved_order_required');
+  const result = await getControlChain({
+    market: order.market_id ? { id: order.market_id } : null,
+    orderId: order.id,
+    limit: 1,
+  });
+  return result.orders.find(row => row.order_reference === order.reference) || result.orders[0] || null;
+}
+
 module.exports = {
   STAGES,
   HEALTH,
@@ -341,4 +374,5 @@ module.exports = {
   buildStructuralAlerts,
   projectRow,
   getControlChain,
+  getOrderControlSnapshot,
 };
