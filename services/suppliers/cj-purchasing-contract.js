@@ -140,6 +140,12 @@ function readOrderDetailFacts(body) {
     shipment_order_id: data.shipmentOrderId || data.shipmentOrderID || data.shipment_order_id || null,
     cj_order_code: data.cjOrderCode || data.cjOrderId || null,
     status: data.orderStatus || null,
+    sub_status: data.subStatus || null,
+    logistic_name: data.logisticName || data.logisticsName || null,
+    tracking_number: data.trackNumber || data.trackingNumber || data.cjTrackingNumber || null,
+    tracking_provider: data.trackingProvider || null,
+    tracking_url: data.trackingUrl || null,
+    is_sandbox: Number(data.isSandbox) === 1,
     variants: products.flatMap((item) => {
       const directVid = item.variantId ?? item.vid ?? null;
       const direct = directVid
