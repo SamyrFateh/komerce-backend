@@ -200,6 +200,21 @@ describe('logistics-control-chain-projection', () => {
     expect(params[3]).toBe('11111111-1111-4111-8111-777777777777');
   });
 
+  test('projette un échec de création de PO ouvert vers la commande sans nouveau lifecycle', async () => {
+    mockQuery.mockResolvedValue({ rows: [] });
+    await projection.getControlChain({
+      market: { id: '11111111-1111-4111-8111-111111111111', code: 'CM' },
+    });
+
+    const [sql] = mockQuery.mock.calls[0];
+    expect(sql).toContain('FROM alerts a');
+    expect(sql).toContain("a.type = 'purchasing_po_creation_failed'");
+    expect(sql).toContain("a.entity_type = 'order'");
+    expect(sql).toContain('a.entity_id = so.id');
+    expect(sql).toContain('a.resolved_at IS NULL');
+    expect(sql).toContain("'purchasing' AS owner_role");
+  });
+
   test('projette un signal paiement fournisseur global vers les commandes par filiation exacte', async () => {
     mockQuery.mockResolvedValue({ rows: [] });
     await projection.getControlChain({
