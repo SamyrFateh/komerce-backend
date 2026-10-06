@@ -326,8 +326,8 @@ test('CJ validates the capability model without proof contamination', () => {
     row => row.provider === 'cj' && row.capability === 'purchasing.reconcile_fulfillment'
   )).toMatchObject({
     classification: 'GAP',
-    availability: 'NOT_PROVIDER_PROVEN',
-    highest_proof: 'UNQUALIFIED',
+    availability: 'IMPLEMENTED_NOT_LIVE_PROVEN',
+    highest_proof: 'P1',
   });
 });
 
