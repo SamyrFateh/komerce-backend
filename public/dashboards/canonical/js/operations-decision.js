@@ -376,26 +376,6 @@
       dashboard.appendChild(chain.section);
     }
 
-    const kpis = cardSection(doc, 'État opérationnel', 'Les KPI disponibles sont affichés tels que fournis par la source canonique.', 'operations-kpis');
-
-    kpis.section.className += ' is-cockpit-truth';
-    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
-    dashboard.appendChild(kpis.section);
-
-    const summaries = workspaceSummary(payload, base);
-    if (summaries.length) {
-      const section = cardSection(doc, 'Les flux qui comptent maintenant', 'Regroupement de lecture uniquement : aucune valeur métier n’est recalculée.', 'operations-overview');
-      decisionUi.SummaryCards.render(section.body, { items: summaries });
-      dashboard.appendChild(section.section);
-    }
-
-    const progress = networkProgress(payload, base);
-    if (progress.length) {
-      const section = cardSection(doc, 'Qualité d’exécution réseau', 'Pourcentages directs fournis par le backend.', 'operations-network');
-      decisionUi.ProgressCards.render(section.body, { items: progress });
-      dashboard.appendChild(section.section);
-    }
-
     const executionGrid = doc.createElement('div');
     executionGrid.className = 'kmc-decision-dashboard-grid-2';
     const signals = cardSection(doc, 'Incidents & signaux', 'Signaux opérationnels ouverts et recommandations déjà fournies.', 'operations-signals');
