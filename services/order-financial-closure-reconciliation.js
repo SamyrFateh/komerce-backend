@@ -53,7 +53,7 @@ async function loadOrder(client, orderId) {
 
 async function loadIncidents(client, orderId) {
   const { rows } = await client.query(`
-    SELECT DISTINCT i.id, i.status, i.incident_type, i.resolution_type,
+    SELECT i.id, i.status, i.incident_type, i.resolution_type,
            i.resolution, i.parcel_id, i.order_item_id
       FROM incidents i
       LEFT JOIN parcels p ON p.id = i.parcel_id
