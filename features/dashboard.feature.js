@@ -34,6 +34,7 @@ module.exports = {
       'AdminContext canonical — projection UI d\'une autorité market déjà résolue côté serveur, jamais une source d\'autorisation locale',
       'Logistics Control Tower canonical : projection read-only end-to-end d une commande Market de l engagement client au relais, montrant current_stage + health + cause + filiation sans créer de lifecycle, statut ou vérité métier parallèle',
       'Tour de contrôle niveau 1 : une seule ligne cliquable par numéro de commande sous son étape gouvernante ; vert discret, orange à risque/retard, rouge action requise ; les causes structurelles agrègent des faits/signaux canoniques communs',
+      'Canonical Reference Resolver : résolution read-only d une référence opérationnelle vers son identité propriétaire, sa commande cliente, sa position Control Tower et sa destination canonique ; aucune persistance, aucun statut parallèle, aucune élévation d autorité',
       'auth-guard et composants partagés des runtimes historiques tant qu’ils restent servis',
     ],
     out: [
@@ -216,6 +217,7 @@ module.exports = {
       // déclarées jusqu'ici.
       'GET /api/admin/entities/clients/:clientPhone',
       'GET /api/admin/entities/orders/:orderReference',
+      'GET /api/admin/dashboard/reference/resolve?reference=:reference',
       'GET /api/admin/entities/products/:productRef',
       'GET /api/admin/users/:id/market-scopes',
       'POST /api/admin/users/:id/market-scopes',
@@ -418,6 +420,7 @@ module.exports = {
       'services/dashboard-finance-canonical.js',
       'services/dashboard-operations.js',
       'services/logistics-control-chain-projection.js',
+      'services/canonical-reference-resolver.js',
       'services/dashboard-orders.js',
       'services/dashboard-pilotage-market.js',
       'services/operations-workspace.js',
@@ -650,6 +653,7 @@ module.exports = {
       'tests/unit/dashboard-operations.test.js',
       'tests/unit/decision-visual.test.js',
       'tests/unit/logistics-control-chain-projection.test.js',
+      'tests/unit/canonical-reference-resolver.test.js',
       'tests/e2e-api/dashboard.control-chain-golden.e2e.test.js',
       'tests/unit/canonical-order-360-app.test.js',
       'tests/unit/canonical-order-360-boundary.test.js',
