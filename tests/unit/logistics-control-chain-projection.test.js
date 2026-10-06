@@ -145,6 +145,7 @@ describe('logistics-control-chain-projection', () => {
     });
 
     const [sql] = mockQuery.mock.calls[0];
+    expect(sql).toContain('o.reference AS order_reference');
     expect(sql).toContain("po.status::text IN ('confirmed','shipped','hub_received')");
     expect(sql).toContain("WHEN so.order_status = 'ordered' AND COALESCE(pf.supplier_acknowledged, FALSE) THEN 'SUPPLIER'");
     expect(sql).toContain("WHEN so.order_status = 'ordered' THEN 'PURCHASING'");

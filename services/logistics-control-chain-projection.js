@@ -135,7 +135,7 @@ async function getControlChain(options = {}) {
   const { rows } = await db.query(`
     WITH scoped_orders AS (
       SELECT o.id,
-             o.reference,
+             o.reference AS order_reference,
              o.market_id,
              o.status::text AS order_status,
              o.payment_status::text AS payment_status,
