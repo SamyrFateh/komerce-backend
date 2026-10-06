@@ -48,7 +48,7 @@
   const COMMERCE_SCHEMA = Object.freeze({
     id: 'commerce',
     title: 'Commerce',
-    description: 'Comprendre ce qui se vend, la valeur créée et l’avancement des commandes.',
+    description: 'Comprendre ce qui se vend, à quel rythme et où concentrer l’attention commerciale.',
     filters: [
       {
         key: 'period',
