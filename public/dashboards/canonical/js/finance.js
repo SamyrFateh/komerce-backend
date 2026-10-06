@@ -45,7 +45,7 @@
   const FINANCE_SCHEMA = Object.freeze({
     id: 'finance',
     title: 'Finance',
-    description: 'Lire l’argent encaissé, la vérité des coûts, la marge et les écarts à traiter.',
+    description: 'Voir où est l’argent, si la marge est fiable et quelles anomalies financières exigent une action.',
     filters: [
       {
         key: 'period',
