@@ -11,10 +11,18 @@ const bootstrapSource = fs.readFileSync(path.join(ROOT, 'bootstrap', 'api-routes
 const legacyMiddleware = fs.readFileSync(path.join(ROOT, 'middleware', 'require-market-scope.js'), 'utf8');
 
 describe('market-delegation team routes', () => {
-  test('all six LOT 1A routes are authenticated', () => {
+  test('all team routes are authenticated', () => {
     const routeDeclarations = routeSource.match(/router\.(get|post|put|delete)\([^\n]+/g) || [];
-    expect(routeDeclarations).toHaveLength(6);
+    expect(routeDeclarations).toHaveLength(7);
     expect(routeDeclarations.every(line => line.includes('authenticate'))).toBe(true);
+  });
+
+  test('central team matrix is read-only and requires explicit global dashboard authority', () => {
+    expect(routeSource).toMatch(/\/central\/team-matrix/);
+    expect(routeSource).toMatch(/requireAdmin/);
+    expect(routeSource).toMatch(/requireDashboardGlobalAuthority/);
+    expect(routeSource).toMatch(/listCentralTeamMatrix\(db\)/);
+    expect(routeSource).not.toMatch(/router\.(post|put|delete)\('\/central\/team-matrix/);
   });
 
   test('market_id supplied by client is rejected and marketCode is the public locator', () => {
