@@ -445,6 +445,18 @@ const KNOWN_RESPONSES = {
   },
   // D4 — Market Delegation : formes lues directement dans les routes, sauf
   // performance qui est une projection explicite du service économique.
+  // Debt Zero 2026-10-07 — dernières projections market-delegation non décrites.
+  // Index/360 : forme top-level lue dans services/client-index.js et client-360.js.
+  // Config : forme littérale lue dans routes/market-delegation-market-config.js.
+  '/api/market-delegation/markets/{marketCode}/clients': {
+    get: { fields: ['scope','query','pagination','clients','data_quality'], source: 'service-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/clients/{clientPhone}': {
+    get: { fields: ['client','scope','summary','finance','orders','top_products','shared_lists','notifications','security','timeline','data_quality'], source: 'service-read' }
+  },
+  '/api/market-delegation/markets/{marketCode}/config': {
+    get: { fields: ['market_code','name','created_at'], source: 'test' }
+  },
   '/api/market-delegation/markets/{marketCode}/client-cases/disputes': {
     get: { fields: ['market','assignment_id','actor_capabilities','disputes'], source: 'route-read' }
   },
@@ -622,6 +634,62 @@ const KNOWN_RESPONSES = {
   '/api/admin/workspaces/sourcing/sources/{sourceRef}/activate': { post: { fields: ['ok','action','result'], source: 'route-read' } },
   '/api/admin/workspaces/sourcing/sources/{sourceRef}/deactivate': { post: { fields: ['ok','action','result'], source: 'route-read' } },
 
+  // Debt Zero 2026-10-07 — fermeture des dernières réponses UNKNOWN du Sourcing.
+  // Les enveloppes sendAction() sont lues directement dans routes/admin-sourcing-workspace.js.
+  // Les projections nues sont lues dans leurs services canoniques.
+  '/api/admin/workspaces/sourcing/import-passages': {
+    get: { fields: ['passages','offset','next_offset'], source: 'service-read' }
+  },
+  '/api/admin/workspaces/sourcing/import-runs/{runRef}/population': {
+    get: { fields: ['kind','total','listed','items','unlisted'], source: 'service-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources/catalog': {
+    get: { fields: ['connectors'], source: 'service-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/sourcing/sources/requests': {
+    post: { fields: ['ok','action','result'], source: 'test' }
+  },
+  '/api/admin/workspaces/sourcing/sources/requests/{requestRef}': {
+    patch: { fields: ['ok','action','result'], source: 'route-read' },
+    delete: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}': {
+    patch: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/archive': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/restore': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/test-connection': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/status': {
+    get: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/credentials': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/test': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/rotate': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/credentials/revoke': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/prepare': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+  '/api/admin/workspaces/sourcing/sources/{sourceRef}/capabilities/{capability}': {
+    post: { fields: ['ok','action','result'], source: 'route-read' }
+  },
+
   // D2 — AliExpress OAuth : la route délègue à un service dont la projection sûre
   // est explicite. Les réponses non JSON sont remplacées plus bas par RESPONSE_OVERRIDES.
   '/api/integrations/aliexpress/oauth/start': { get: { fields: ['_redirect_only'], source: 'test' } },
@@ -648,6 +716,7 @@ const KNOWN_RESPONSES = {
   '/api/admin/workspaces/catalog/products': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/catalog/products/{productRef}/update': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/catalog/products/{productRef}/deactivate': { post: { fields: ['ok','action','result'], source: 'test' } },
+  '/api/admin/workspaces/catalog/approval/{productRef}/prepare-fr': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/catalog/approval/{productRef}/approve': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/catalog/approval/{productRef}/reject': { post: { fields: ['ok','action','result'], source: 'test' } },
   '/api/admin/workspaces/catalog/approval/{productRef}/override': { post: { fields: ['ok','action','result'], source: 'test' } },
