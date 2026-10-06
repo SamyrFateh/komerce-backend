@@ -130,6 +130,88 @@
     };
   }
 
+  function centralMatrixRows(matrix) {
+    return Array.isArray(matrix && matrix.markets) ? matrix.markets : [];
+  }
+
+  function centralProjection(matrix) {
+    const rows = centralMatrixRows(matrix);
+    const members = rows.flatMap(row => Array.isArray(row && row.members) ? row.members : []);
+    const leads = members.filter(member => member && member.is_operating_lead === true);
+    const marketsWithoutLead = rows.filter(row => !(Array.isArray(row && row.members) ? row.members : [])
+      .some(member => member && member.is_operating_lead === true));
+    const capabilityGrants = members.reduce((total, member) => total + (Array.isArray(member && member.capabilities) ? member.capabilities.length : 0), 0);
+    const suspended = rows.filter(row => row && row.market && row.market.lifecycle_status === 'SUSPENDED');
+    return Object.freeze({ rows, members, leads, marketsWithoutLead, capabilityGrants, suspended });
+  }
+
+  function centralDecisionItems(matrix) {
+    const projection = centralProjection(matrix);
+    const items = [];
+    if (projection.marketsWithoutLead.length) {
+      items.push({
+        key: 'markets-without-operating-lead',
+        label: 'Marchés sans responsable opérationnel',
+        helper: projection.marketsWithoutLead.map(row => row && row.market && row.market.code).filter(Boolean).join(', '),
+        value: String(projection.marketsWithoutLead.length),
+        tone: 'warning',
+        icon: '!',
+        href: '#market-access-management',
+        actionLabel: 'Gérer les équipes →',
+      });
+    }
+    if (projection.suspended.length) {
+      items.push({
+        key: 'suspended-markets',
+        label: 'Marchés suspendus',
+        helper: projection.suspended.map(row => row && row.market && row.market.code).filter(Boolean).join(', '),
+        value: String(projection.suspended.length),
+        tone: 'warning',
+        icon: '•',
+        href: '#market-access-management',
+        actionLabel: 'Voir les marchés →',
+      });
+    }
+    return items.slice(0, 4);
+  }
+
+  function centralMetricItems(matrix) {
+    const projection = centralProjection(matrix);
+    return [
+      { key: 'markets', label: 'Marchés gouvernés', value: String(projection.rows.length), tone: 'neutral' },
+      { key: 'members', label: 'Membres actifs', value: String(projection.members.length), tone: 'neutral' },
+      { key: 'leads', label: 'Responsables opérationnels', value: String(projection.leads.length), tone: projection.marketsWithoutLead.length ? 'warning' : 'positive' },
+      { key: 'capabilities', label: 'Capabilities accordées', value: String(projection.capabilityGrants), tone: 'neutral' },
+    ];
+  }
+
+  function centralMarketItems(matrix) {
+    return centralMatrixRows(matrix).map(row => {
+      const market = row && row.market || {};
+      const members = Array.isArray(row && row.members) ? row.members : [];
+      const lead = members.find(member => member && member.is_operating_lead === true);
+      const capabilityCount = members.reduce((total, member) => total + (Array.isArray(member && member.capabilities) ? member.capabilities.length : 0), 0);
+      const lastMutation = row && row.last_mutation;
+      const mutationLabel = lastMutation && lastMutation.action ? `Dernière mutation : ${lastMutation.action}` : 'Aucune mutation auditée';
+      return {
+        title: `${market.code || '—'}${market.name && market.name !== market.code ? ` · ${market.name}` : ''}`,
+        helper: [lead ? `Lead : ${lead.full_name || lead.email || lead.user_id}` : 'Aucun lead', `${members.length} membre(s)`, `${capabilityCount} capability(s)`, mutationLabel].join(' · '),
+        value: lead ? 'Pilotage attribué' : 'Lead manquant',
+        tone: lead ? (market.lifecycle_status === 'SUSPENDED' ? 'warning' : 'positive') : 'warning',
+      };
+    });
+  }
+
+  function centralTrust(matrix) {
+    return {
+      stateLabel: 'Autorité canonique',
+      scopeLabel: matrix && matrix.authority === 'dashboard_global_access_grants'
+        ? 'Lecture centrale explicitement autorisée'
+        : 'Lecture centrale',
+      qualityLabel: 'Assignments, memberships et capabilities — read-only',
+    };
+  }
+
   function localProducts(prices) {
     return Array.isArray(prices && prices.products) ? prices.products : [];
   }
@@ -259,6 +341,25 @@
 
   function renderAdminOverview(host, data, options = {}) {
     const root = typeof window !== 'undefined' ? window : globalThis;
+    const matrix = data && data.matrix;
+    if (matrix) {
+      return renderOverview(host, {
+        document: options.document || (root && root.document),
+        ui: options.ui || (root && root.KomerceCanonicalUI),
+        decisionUi: options.decisionUi || (root && root.KomerceDecisionUI),
+        eyebrow: 'MARCHÉS · GOUVERNANCE',
+        title: 'Pilotage central des marchés',
+        description: 'Voir les assignments actifs, responsables opérationnels, memberships, capabilities et dernières mutations auditées.',
+        decisions: centralDecisionItems(matrix),
+        metrics: centralMetricItems(matrix),
+        metricTitle: 'Couverture opérationnelle',
+        metricDescription: 'Lecture directe de la matrice canonique de délégation, sans reconstruire les droits depuis des scopes de compatibilité.',
+        rankedItems: centralMarketItems(matrix),
+        rankedTitle: 'Responsabilité par marché',
+        rankedDescription: 'Chaque ligne reprend le lead, les membres, les capabilities et la dernière mutation auditée.',
+        trust: centralTrust(matrix),
+      });
+    }
     const markets = data && data.markets;
     const users = data && data.users;
     return renderOverview(host, {
@@ -267,14 +368,14 @@
       decisionUi: options.decisionUi || (root && root.KomerceDecisionUI),
       eyebrow: 'MARCHÉS · GOUVERNANCE',
       title: 'Couverture des responsables pays',
-      description: 'Voir immédiatement quels marchés sont réellement couverts avant d’administrer les comptes et leurs scopes.',
+      description: 'Vue de compatibilité des scopes historiques.',
       decisions: adminDecisionItems(markets, users),
       metrics: adminMetricItems(markets, users),
       metricTitle: 'Couverture des accès',
-      metricDescription: 'Comptage pur des marchés, responsables et scopes déjà résolus côté serveur.',
+      metricDescription: 'Projection de compatibilité uniquement.',
       rankedItems: adminMarketItems(markets, users),
       rankedTitle: 'Couverture par marché',
-      rankedDescription: 'Manager et viewer sont distingués sans transformer le navigateur en autorité.',
+      rankedDescription: 'Projection historique non utilisée par le runtime central canonique.',
       trust: adminTrust(),
     });
   }
@@ -310,6 +411,12 @@
     adminMetricItems,
     adminMarketItems,
     adminTrust,
+    centralMatrixRows,
+    centralProjection,
+    centralDecisionItems,
+    centralMetricItems,
+    centralMarketItems,
+    centralTrust,
     countryProjection,
     countryDecisionItems,
     countryMetricItems,
