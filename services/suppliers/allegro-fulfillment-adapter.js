@@ -122,6 +122,33 @@ async function buildOrderPayload({ items, preflights } = {}) {
  *   Un seul élément pour Allegro (ALLEGRO_MULTI_ITEM_UNSUPPORTED sinon : verdict `rejected`).
  * @param {object} [params.context]
  */
+async function readOrderDetail(checkoutFormId, context = {}) {
+  const id = String(checkoutFormId || '').trim().toLowerCase();
+  if (!/^[0-9a-f-]{36}$/.test(id)) throw new Error('ALLEGRO_CHECKOUT_FORM_ID_INVALID');
+
+  const api = context.allegroSandboxClient || require('./allegro-sandbox-client');
+  if (!api || typeof api.getSellerOrder !== 'function') {
+    throw new Error('ALLEGRO_FULFILLMENT_CLIENT_INVALID');
+  }
+
+  const payload = await api.getSellerOrder(id);
+  const lines = Array.isArray(payload?.lineItems) ? payload.lineItems : [];
+  return {
+    raw: payload,
+    facts: {
+      checkout_form_id: String(payload?.id || id).trim().toLowerCase(),
+      order_status: String(payload?.status || '').trim().toUpperCase() || null,
+      fulfillment_status: String(payload?.fulfillment?.status || '').trim().toUpperCase() || null,
+      delivery_method: String(payload?.delivery?.method?.name || '').trim() || null,
+      line_items: lines.map((line) => ({
+        line_item_id: typeof line?.id === 'string' ? line.id : null,
+        offer_id: String(line?.offer?.id || '').trim() || null,
+        quantity: Number(line?.quantity ?? 0),
+      })),
+    },
+  };
+}
+
 async function reconcile({ externalRef, items, context = {} } = {}) {
   try {
     const checked = adapterContract.validateItems(items);
@@ -155,5 +182,5 @@ async function reconcile({ externalRef, items, context = {} } = {}) {
   }
 }
 
-module.exports = { provider, exactOfferId, evaluate, buildOrderPayload, reconcile };
+module.exports = { provider, exactOfferId, evaluate, buildOrderPayload, readOrderDetail, reconcile };
 
