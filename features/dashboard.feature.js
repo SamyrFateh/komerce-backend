@@ -353,6 +353,9 @@ module.exports = {
       test: 'tests/unit/admin-order-360-route.test.js' },
     { statement: 'Order 360 ne projette les bons de commande fournisseur et leurs drills vers /admin/workspaces/purchasing?po= que lorsque le caller satisfait déjà la même frontière de rôle admin que routes/purchasing.js ; market_operator conserve Order 360 sans données Purchasing. Le drill porte un return_to exact vers la commande et ne crée aucune nouvelle autorité ni mutation',
       test: 'tests/unit/admin-order-360-route.test.js' },
+    { statement: 'Golden Logistics Control Chain : une même commande conserve son identité de ORDER à RELAY malgré ses enveloppes successives ; le health peut RED puis GREEN sans changer d étape, trois causes canoniques identiques produisent un signal structurel unique, un split reste une seule commande à la branche nécessaire la moins avancée et COLLECTED sort de la chaîne active',
+      test: 'tests/e2e-api/dashboard.control-chain-golden.e2e.test.js' },
+
     { statement: 'Finance globale consomme le lecteur Purchasing propriétaire supplier-payment-review pour projeter une file exacte de revue fournisseur : status ambiguous/rejected ou reconciliation_status mismatched uniquement. Cette file est absente de Finance marché faute de ventilation canonique multi-marché ; requested n’est jamais qualifié de retard et real_debit_verified=false n’est jamais une exception à lui seul. Les montants restent natifs par devise, sans total multi-devise, aucun UUID paiement interne n’est publié et chaque ligne drille vers la PO Purchasing propriétaire',
       test: 'tests/unit/dashboard-finance-canonical.test.js' },
     'un filtre pays du DashboardSchema est présentationnel : canonical ne charge jamais un agrégat global pour le filtrer ensuite côté client',
@@ -647,6 +650,7 @@ module.exports = {
       'tests/unit/dashboard-operations.test.js',
       'tests/unit/decision-visual.test.js',
       'tests/unit/logistics-control-chain-projection.test.js',
+      'tests/e2e-api/dashboard.control-chain-golden.e2e.test.js',
       'tests/unit/canonical-order-360-app.test.js',
       'tests/unit/canonical-order-360-boundary.test.js',
       'tests/unit/canonical-order-360.test.js',
