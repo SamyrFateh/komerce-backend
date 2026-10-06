@@ -195,8 +195,8 @@
     if (cards.length) {
       const views = cardSection(
         doc,
-        'Flux impactés',
-        'Chaque carte est un point de descente vers le dashboard spécialisé, pas un second moteur de vérité.',
+        'Flux métier',
+        'Descendre vers le dashboard spécialisé sans dupliquer sa vérité.',
         'pilotage-flows'
       );
       decisionUi.SummaryCards.render(views.body, { items: cards });
