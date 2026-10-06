@@ -126,3 +126,16 @@ Run one bounded end-to-end scenario through the real application boundaries:
 Every boundary emits its own canonical verdict and preserved evidence.
 
 The final Golden is green only when all required capability verdicts are green independently.
+
+## Implemented Golden
+
+Canonical PostgreSQL proof:
+- `tests/e2e-api/customer-to-customer.golden.e2e.test.js`
+
+The scenario uses one customer order and preserves the independence of every boundary:
+- provider fulfillment + tracking remains Hub `PENDING` until a physical `RECEIVE` exists;
+- a parcel at the relay remains handoff `PENDING` until an authorized collection scan exists;
+- financial close remains `PENDING` until handoff is proven;
+- the terminal verdict is `FINANCIAL_CLOSE_MATCHED` only after all canonical facts agree.
+
+External network calls are intentionally outside this Golden. Provider/API capabilities remain certified independently and the Golden consumes only their canonical persisted facts.
