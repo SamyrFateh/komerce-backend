@@ -185,6 +185,61 @@
           "payment and confirmOrder remain outside the proved/activated contract"
         ]
       }
+    ],
+    "ebay": [
+      {
+        "capability": "sourcing.catalog_pipeline",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P3",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/external-providers/suppliers/EBAY.md",
+          "scripts/ebay-p3-pipeline-proof.js",
+          "services/suppliers/connectors/ebay-connector.js",
+          "tests/unit/ebay-p3-pipeline-proof.test.js"
+        ],
+        "limitations": [
+          "proof covers sourcing Browse/read pipeline only",
+          "buyer checkout/order entitlement remains unproved",
+          "no purchasing auto-order capability is implied"
+        ]
+      }
+    ],
+    "stripe": [
+      {
+        "capability": "payments.intent_webhook_confirmation",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "TEST",
+        "evidence": [
+          "docs/external-providers/payments/STRIPE.md"
+        ],
+        "limitations": [
+          "P4 applies to the tested payment intent + signed webhook + canonical DB transition path",
+          "refund P4 remains a separate capability"
+        ]
+      }
+    ],
+    "paypal": [
+      {
+        "capability": "payments.order_create_readback",
+        "classification": "RECLASSIFIED",
+        "availability": "REPORTED_PROOF_NOT_INDEPENDENTLY_RECHECKED",
+        "highest_proof": "P1",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/external-providers/payments/PAYPAL.md",
+          "docs/_archive/external-provider-proofs/PAYPAL_SANDBOX_ORDER_P1_2026-09-23.md",
+          "scripts/paypal-sandbox-order-contract-proof.js"
+        ],
+        "limitations": [
+          "operator-transcribed historical proof",
+          "provider order remained CREATED; no payer approval or capture",
+          "no webhook delivery, refund, or paid-state proof is implied"
+        ]
+      }
     ]
   }
 }
