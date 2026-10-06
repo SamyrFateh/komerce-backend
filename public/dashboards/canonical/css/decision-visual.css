@@ -587,3 +587,40 @@
   color: color-mix(in srgb, var(--kmc-muted) 55%, transparent);
   font-size: 10px;
 }
+
+
+.kmc-control-structural-alerts {
+  display: grid;
+  gap: 5px;
+  padding-top: 7px;
+}
+
+.kmc-control-structural-alert {
+  --control-health: var(--kmc-warning);
+  display: grid;
+  gap: 2px;
+  padding: 7px 8px;
+  border: 1px solid color-mix(in srgb, var(--control-health) 34%, var(--kmc-line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--control-health) 8%, white);
+}
+
+.kmc-control-structural-alert.is-critical {
+  --control-health: var(--kmc-critical);
+}
+
+.kmc-control-structural-alert.is-warning {
+  --control-health: var(--kmc-warning);
+}
+
+.kmc-control-structural-count {
+  color: var(--control-health);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.kmc-control-structural-summary {
+  color: var(--kmc-navy);
+  font-size: 9px;
+  line-height: 1.25;
+}
