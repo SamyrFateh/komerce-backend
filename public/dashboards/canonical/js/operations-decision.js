@@ -52,6 +52,74 @@
     return 'info';
   }
 
+
+  function controlHealthClass(health) {
+    if (health === 'RED') return 'is-critical';
+    if (health === 'ORANGE') return 'is-warning';
+    return 'is-positive';
+  }
+
+  function controlChainColumns(payload) {
+    const chain = payload && payload.control_chain && typeof payload.control_chain === 'object'
+      ? payload.control_chain
+      : {};
+    const stages = Array.isArray(chain.stages) ? chain.stages : [];
+    const byStage = chain.by_stage && typeof chain.by_stage === 'object' ? chain.by_stage : {};
+
+    return stages.map(stage => ({
+      key: stage.key,
+      label: stage.label,
+      orders: (Array.isArray(byStage[stage.key]) ? byStage[stage.key] : []).map(order => ({
+        reference: order.order_reference || 'Commande',
+        health: order.health || 'GREEN',
+        split: order.split === true,
+        href: order.order_reference ? `/admin/orders/${encodeURIComponent(order.order_reference)}` : null,
+      })),
+    }));
+  }
+
+  function renderControlChain(doc, host, payload) {
+    const columns = controlChainColumns(payload);
+    host.className = 'kmc-control-chain';
+
+    columns.forEach(column => {
+      const stage = doc.createElement('section');
+      stage.className = 'kmc-control-stage';
+      stage.setAttribute('data-control-stage', column.key);
+
+      const heading = doc.createElement('div');
+      heading.className = 'kmc-control-stage-heading';
+      heading.appendChild(text(doc, 'span', 'kmc-control-stage-title', column.label));
+      heading.appendChild(text(doc, 'span', 'kmc-control-stage-count', column.orders.length));
+      stage.appendChild(heading);
+
+      const list = doc.createElement('div');
+      list.className = 'kmc-control-order-list';
+
+      if (!column.orders.length) {
+        list.appendChild(text(doc, 'div', 'kmc-control-order-empty', '—'));
+      } else {
+        column.orders.forEach(order => {
+          const item = doc.createElement(order.href ? 'a' : 'div');
+          item.className = `kmc-control-order ${controlHealthClass(order.health)}`;
+          if (order.href) item.setAttribute('href', order.href);
+          item.setAttribute('aria-label', `${order.reference} · ${order.health}`);
+
+          const dot = doc.createElement('span');
+          dot.className = 'kmc-control-order-dot';
+          dot.setAttribute('aria-hidden', 'true');
+          item.appendChild(dot);
+
+          item.appendChild(text(doc, 'span', 'kmc-control-order-ref', order.reference));
+          list.appendChild(item);
+        });
+      }
+
+      stage.appendChild(list);
+      host.appendChild(stage);
+    });
+  }
+
   function decisionItems(payload, base) {
     const items = [];
     const signals = Array.isArray(payload && payload.signals) ? payload.signals : [];
@@ -272,6 +340,19 @@
       dashboard.appendChild(host);
     }
 
+    const controlColumns = controlChainColumns(payload);
+    if (controlColumns.length) {
+      const chain = cardSection(
+        doc,
+        'Chaîne de contrôle',
+        'Une commande reste une seule ligne de pilotage et avance d’étape en étape. La couleur signale uniquement son état opérationnel courant.',
+        'operations-control-chain'
+      );
+      chain.section.className += ' kmc-control-chain-card';
+      renderControlChain(doc, chain.body, payload);
+      dashboard.appendChild(chain.section);
+    }
+
     const kpis = cardSection(doc, 'État opérationnel', 'Les KPI disponibles sont affichés tels que fournis par la source canonique.', 'operations-kpis');
 
     kpis.section.className += ' is-cockpit-truth';
@@ -337,6 +418,7 @@
         }));
       },
       projectDecisionItems: payload => decisionItems(payload, base),
+      projectControlChainColumns: controlChainColumns,
       projectMetricItems: payload => metricItems(payload, base),
       projectWorkspaceSummary: payload => workspaceSummary(payload, base),
       projectNetworkProgress: payload => networkProgress(payload, base),
@@ -352,6 +434,9 @@
     displayMetric,
     severity,
     decisionItems,
+    controlHealthClass,
+    controlChainColumns,
+    renderControlChain,
     metricItems,
     workspaceSummary,
     networkProgress,
