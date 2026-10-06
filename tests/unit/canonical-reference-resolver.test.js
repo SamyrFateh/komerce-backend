@@ -17,6 +17,8 @@ jest.mock('../../services/logistics-control-chain-projection', () => ({
   getOrderControlSnapshot: (...args) => mockSnapshot(...args),
 }));
 
+const fs = require('fs');
+const path = require('path');
 const resolver = require('../../services/canonical-reference-resolver');
 
 describe('canonical reference resolver', () => {
@@ -199,4 +201,15 @@ describe('canonical reference resolver', () => {
     expect(sql).toMatch(/FROM customs_shipments cs/);
     expect(sql).not.toMatch(/INSERT|UPDATE|DELETE/i);
   });
+  test('la route Canonical impose auth + rôle interne + autorité operations.read ou globale', () => {
+    const source = fs.readFileSync(path.join(__dirname, '..', '..', 'routes', 'admin-dashboard-market.js'), 'utf8');
+    const block = source.match(/router\.get\(\n  '\/reference\/resolve',[\s\S]*?\n\);/);
+    expect(block).not.toBeNull();
+    expect(block[0]).toMatch(/authenticate/);
+    expect(block[0]).toMatch(/attachMarketDashboardDelegation/);
+    expect(block[0]).toMatch(/requireMarketDashboardReadRole/);
+    expect(block[0]).toMatch(/attachReferenceResolverAuthority/);
+    expect(block[0]).toMatch(/referenceResolver\.resolveReference/);
+  });
+
 });
