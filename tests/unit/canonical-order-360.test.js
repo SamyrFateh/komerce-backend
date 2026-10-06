@@ -35,6 +35,36 @@ test('metricItems ne recalcule aucune vérité économique', () => {
   expect(metrics.find(metric => metric.key === 'incidents').tone).toBe('critical');
 });
 
+test('controlPositionItem reste compact et ne fait que formater la projection backend', () => {
+  expect(order360.controlPositionItem({
+    control_position: {
+      stage: 'HUB_CONTROL',
+      health: 'RED',
+      exception: { summary: 'Unité HUB en quarantaine' },
+      envelope: { type: 'HUB_UNIT', refs: ['KOM-RCV-001'] },
+    },
+  })).toEqual({
+    level: 'critical',
+    title: 'Contrôle HUB · Bloquée',
+    message: 'Unité HUB en quarantaine · HUB_UNIT · KOM-RCV-001',
+  });
+
+  expect(order360.controlPositionItem({
+    control_position: {
+      stage: 'PURCHASING',
+      health: 'ORANGE',
+      exception: { summary: 'Paiement fournisseur bloqué' },
+      envelope: { type: 'PURCHASE_ORDER', refs: [] },
+    },
+  })).toEqual({
+    level: 'warning',
+    title: 'Achats · À risque',
+    message: 'Paiement fournisseur bloqué · PURCHASE_ORDER',
+  });
+
+  expect(order360.controlPositionItem({})).toBeNull();
+});
+
 test('productDrills ouvre Product 360 par product_ref et déduplique les lignes', () => {
   const drills = order360.productDrills([
     { product_ref: 'KPR-000123', product_name: 'Produit A' },

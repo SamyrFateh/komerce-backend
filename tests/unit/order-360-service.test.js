@@ -7,12 +7,17 @@
  */
 
 const mockQuery = jest.fn();
+const mockGetOrderControlSnapshot = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
+jest.mock('../../services/logistics-control-chain-projection', () => ({
+  getOrderControlSnapshot: (...args) => mockGetOrderControlSnapshot(...args),
+}));
 
 const service = require('../../services/order-360');
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockGetOrderControlSnapshot.mockResolvedValue(null);
 });
 
 test('normalizeReference accepte une référence lisible et refuse les caractères hors contrat', () => {
@@ -59,6 +64,14 @@ test('publicOrder ne publie aucun identifiant interne', () => {
 });
 
 test('loadOrder360 agrège les facettes sans exposer leurs UUID', async () => {
+  mockGetOrderControlSnapshot.mockResolvedValue({
+    order_reference: 'CMD-CM-001',
+    stage: 'HUB_CONTROL',
+    health: 'RED',
+    exception: { code: 'hub_quarantine', summary: 'Unité HUB en quarantaine', owner_role: 'hub' },
+    envelope: { type: 'HUB_UNIT', refs: ['KOM-RCV-001'] },
+    split: false,
+  });
   mockQuery.mockImplementation(async sql => {
     const text = String(sql);
     if (text.includes('FROM order_items oi') && !text.includes('parcel_items')) {
@@ -91,6 +104,17 @@ test('loadOrder360 agrège les facettes sans exposer leurs UUID', async () => {
     market_code: 'CM', market_name: 'Cameroun', market_currency: 'XAF',
   }, { includePurchasing: true });
 
+  expect(payload.control_position).toEqual({
+    stage: 'HUB_CONTROL',
+    health: 'RED',
+    exception: { code: 'hub_quarantine', summary: 'Unité HUB en quarantaine', owner_role: 'hub' },
+    envelope: { type: 'HUB_UNIT', refs: ['KOM-RCV-001'] },
+    split: false,
+  });
+  expect(mockGetOrderControlSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+    id: 'order-id',
+    reference: 'CMD-CM-001',
+  }));
   expect(payload.summary).toEqual(expect.objectContaining({ items: 1, quantity: 2, parcels: 1, open_incidents: 1, notifications: 1, documents: 1 }));
   expect(payload.parcels[0]).toEqual(expect.objectContaining({ reference: 'COL-001', tracking_number: 'TRK001' }));
   expect(payload.incidents[0].priority).toBe('high');
@@ -115,6 +139,14 @@ test('loadOrder360 agrège les facettes sans exposer leurs UUID', async () => {
 
 test('loadOrder360 n’expose pas la projection Purchasing quand le caller n’a pas le guard Achats', async () => {
   mockQuery.mockResolvedValue({ rows: [] });
+  mockGetOrderControlSnapshot.mockResolvedValue({
+    order_reference: 'CMD-CM-002',
+    stage: 'PURCHASING',
+    health: 'ORANGE',
+    exception: { code: 'supplier_payment_blocked', summary: 'Paiement fournisseur bloqué', owner_role: 'finance' },
+    envelope: { type: 'PURCHASE_ORDER', refs: ['33333333-3333-4333-8333-333333333333'] },
+    split: false,
+  });
 
   const payload = await service.loadOrder360({
     id: 'order-id', reference: 'CMD-CM-002', status: 'ordered',
@@ -122,6 +154,12 @@ test('loadOrder360 n’expose pas la projection Purchasing quand le caller n’a
   }, { includePurchasing: false });
 
   expect(payload).not.toHaveProperty('purchasing');
+  expect(payload.control_position).toEqual(expect.objectContaining({
+    stage: 'PURCHASING',
+    health: 'ORANGE',
+    envelope: { type: 'PURCHASE_ORDER', refs: [] },
+  }));
+  expect(JSON.stringify(payload.control_position)).not.toContain('33333333-3333-4333-8333-333333333333');
   expect(payload.data_quality.source_tables).not.toContain('purchase_orders');
   expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('FROM purchase_orders po'))).toBe(false);
 });

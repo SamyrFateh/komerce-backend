@@ -4,10 +4,10 @@
  * @domain        admin-dashboard
  * @layer         service
  * @criticality   high
- * @inputs        server_resolved_market
- * @outputs       canonical_logistics_control_chain_projection
+ * @inputs        server_resolved_market, optional_server_resolved_order
+ * @outputs       canonical_logistics_control_chain_projection, single_order_control_snapshot
  * @depends       db, dashboard-metrics/_helpers
- * @used-by       services/dashboard-operations.js
+ * @used-by       services/dashboard-operations.js, services/order-360.js
  * @db-read       orders, order_items, purchase_lines, purchase_orders, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, incidents, signals
  * @db-write      none
  * @db-txn        none
@@ -129,7 +129,8 @@ function projectRow(row) {
 
 async function getControlChain(options = {}) {
   const limit = Math.max(1, Math.min(Number(options.limit) || 250, 500));
-  const params = [marketId(options.market), ACTIVE_ORDER_STATUSES, limit];
+  const orderId = options.orderId || null;
+  const params = [marketId(options.market), ACTIVE_ORDER_STATUSES, limit, orderId];
 
   const { rows } = await db.query(`
     WITH scoped_orders AS (
@@ -143,6 +144,7 @@ async function getControlChain(options = {}) {
         FROM orders o
        WHERE ($1::uuid IS NULL OR o.market_id = $1)
          AND o.status::text = ANY($2::text[])
+         AND ($4::uuid IS NULL OR o.id = $4::uuid)
     ),
     purchase_facts AS (
       SELECT oi.order_id,
@@ -354,6 +356,16 @@ async function getControlChain(options = {}) {
   });
 }
 
+async function getOrderControlSnapshot(order) {
+  if (!order || !order.id) throw new Error('control_tower_resolved_order_required');
+  const result = await getControlChain({
+    market: order.market_id ? { id: order.market_id } : null,
+    orderId: order.id,
+    limit: 1,
+  });
+  return result.orders.find(row => row.order_reference === order.reference) || result.orders[0] || null;
+}
+
 module.exports = {
   STAGES,
   HEALTH,
@@ -362,4 +374,5 @@ module.exports = {
   buildStructuralAlerts,
   projectRow,
   getControlChain,
+  getOrderControlSnapshot,
 };

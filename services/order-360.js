@@ -5,8 +5,8 @@
  * @layer         service
  * @criticality   high
  * @inputs        server_resolved_order, projection_options
- * @outputs       order_360_projection, authorized_purchasing_projection
- * @depends       db
+ * @outputs       order_360_projection, authorized_purchasing_projection, logistics_control_position
+ * @depends       db, logistics-control-chain-projection
  * @used-by       routes/admin-order-360.js
  * @db-read       orders, users, relais, markets, order_items, products, parcels, parcel_items, order_status_history, scans, order_incidents, order_comments, client_notifications, invoices, transaction_documents, purchase_orders, purchase_lines, suppliers
  * @db-write      none
@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const controlChain = require('./logistics-control-chain-projection');
 
 const ORDER_REFERENCE = /^[A-Za-z0-9][A-Za-z0-9._-]{1,79}$/;
 
@@ -89,12 +90,39 @@ function publicOrder(order) {
   });
 }
 
+function publicControlPosition(position, { includePurchasing = false } = {}) {
+  if (!position) return null;
+  const envelope = position.envelope || { type: 'ORDER', refs: [] };
+  const refs = envelope.type === 'PURCHASE_ORDER' && !includePurchasing
+    ? []
+    : toSafeRefs(envelope.refs);
+
+  return Object.freeze({
+    stage: position.stage || null,
+    health: position.health || 'GREEN',
+    exception: position.exception ? Object.freeze({
+      code: position.exception.code || null,
+      summary: position.exception.summary || null,
+      owner_role: position.exception.owner_role || null,
+    }) : null,
+    envelope: Object.freeze({
+      type: envelope.type || 'ORDER',
+      refs: Object.freeze(refs),
+    }),
+    split: position.split === true,
+  });
+}
+
+function toSafeRefs(value) {
+  return Array.isArray(value) ? value.filter(Boolean).map(String) : [];
+}
+
 async function loadOrder360(order, { includePurchasing = false } = {}) {
   if (!order || !order.id) throw new Error('order_360_resolved_order_required');
 
   const orderId = order.id;
   const [itemsResult, parcelsResult, parcelItemsResult, historyResult, scansResult,
-    incidentsResult, commentsResult, notificationsResult, invoicesResult, documentsResult, purchasingResult] = await Promise.all([
+    incidentsResult, commentsResult, notificationsResult, invoicesResult, documentsResult, purchasingResult, controlPosition] = await Promise.all([
     db.query(`
       SELECT oi.id, oi.product_id, oi.quantity, oi.price_kmf,
              p.product_ref, p.name AS product_name, p.category, p.image_url
@@ -186,6 +214,7 @@ async function loadOrder360(order, { includePurchasing = false } = {}) {
            ORDER BY po.created_at ASC, po.id ASC
         `, [orderId])
       : Promise.resolve({ rows: [] }),
+    controlChain.getOrderControlSnapshot(order),
   ]);
 
   const parcelItemsByParcel = new Map();
@@ -266,6 +295,7 @@ async function loadOrder360(order, { includePurchasing = false } = {}) {
 
   return Object.freeze({
     order: publicOrder(order),
+    control_position: publicControlPosition(controlPosition, { includePurchasing }),
     summary: Object.freeze({
       items: items.length,
       quantity: totalQuantity,
@@ -315,4 +345,4 @@ async function loadOrder360(order, { includePurchasing = false } = {}) {
   });
 }
 
-module.exports = { ORDER_REFERENCE, normalizeReference, resolveOrder, publicOrder, loadOrder360 };
+module.exports = { ORDER_REFERENCE, normalizeReference, resolveOrder, publicOrder, publicControlPosition, loadOrder360 };
