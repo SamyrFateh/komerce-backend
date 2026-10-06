@@ -175,3 +175,49 @@ test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal sc
     highest_proof: 'P1',
   });
 });
+
+
+test('payment capability ledger keeps provider proofs scoped and fail-closed', () => {
+  const { loadCapabilityLedger, reconcileCapabilityLedger } = require('../../services/provider-capability-certifications');
+  const report = reconcileCapabilityLedger({ ledger: loadCapabilityLedger() });
+
+  expect(report.rows.find(
+    row => row.provider === 'stripe' && row.capability === 'payments.refund'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'mtn-momo-cg' && row.capability === 'payments.auth_collections'
+  )).toMatchObject({
+    classification: 'RECLASSIFIED',
+    availability: 'REPORTED_PROOF_NOT_INDEPENDENTLY_RECHECKED',
+    highest_proof: 'P1',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'mtn-momo-cg' && row.capability === 'payments.request_to_pay'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'IMPLEMENTED_NOT_PROVIDER_PROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'orange-money-cm' && row.capability === 'payments.request_to_pay'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'IMPLEMENTED_NOT_PROVIDER_PROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'kartapay-km' && row.capability === 'payments.webhook_status_recheck'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'IMPLEMENTED_NOT_PROVIDER_PROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+});
