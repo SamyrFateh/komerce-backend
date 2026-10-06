@@ -107,6 +107,24 @@ body.kmc-shell-v4 .kmc-admin-primary-nav {
   overflow-y: auto;
 }
 
+.kmc-admin-sidebar-group {
+  padding: 5px 0 7px;
+}
+
+.kmc-admin-sidebar-group + .kmc-admin-sidebar-group {
+  margin-top: 2px;
+}
+
+.kmc-admin-sidebar-group-label {
+  padding: 4px 10px 5px;
+  color: rgb(255 255 255 / 0.38);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
 body.kmc-shell-v4 .kmc-admin-primary-link {
   position: relative;
   width: 100%;
