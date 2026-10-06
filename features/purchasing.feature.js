@@ -37,6 +37,7 @@ module.exports = {
         'écrit orders/product_suppliers/purchase_orders/suppliers)',
       'Supplier Order Identity universelle : une unité vendable doit se résoudre sans ambiguïté vers exactement une unité commandable fournisseur avant tout engagement',
       'Procurement Route canonique : l\'achat fournisseur est routé vers un Procurement Hub explicite avant la jambe logistique Market ; aucune destination client/Market brute ne peut être assimilée à la destination fournisseur',
+      'Logistics Control Chain : Purchasing traduit le Procurement Hub résolu en destination fournisseur et conserve la filiation purchase line/PO vers order item ; il ne possède ni le HUB physique ni la jambe Market aval',
       'préflight fournisseur AliExpress avant engagement : réconciliation SKU, stock/prix live, fret Supplier → Procurement Hub et construction fail-closed du payload d\'achat sans exécution automatique',
       'Supplier Fulfillment Readiness dynamique : évaluer SKU × quantité × Procurement Route à partir de l\'identité fournisseur persistée, du refresh live et du fret, sans mutation fournisseur',
       'Supplier Fulfillment Adapter Contract universel : chaque fournisseur déclare son provider et renvoie exclusivement les verdicts canoniques Purchasing, tandis que son payload natif reste opaque au coeur Komerce',
@@ -61,6 +62,7 @@ module.exports = {
   docs: [
     'docs/doctrine/DOCTRINE_SUPPLIER_ORDER_IDENTITY.md',
     'docs/doctrine/DOCTRINE_PROCUREMENT_FULFILLMENT.md',
+    'docs/doctrine/DOCTRINE_LOGISTICS_CONTROL_CHAIN.md',
     'docs/doctrine/DOCTRINE_CANONICAL_UNIT_PURCHASING.md',
     'docs/doctrine/DOCTRINE_PURCHASING_PROVIDER_GOLDEN_E2E.md',
     'docs/doctrine/DOCTRINE_SUPPLIER_EXECUTION_PERSISTENCE.md',
