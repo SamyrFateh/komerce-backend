@@ -199,6 +199,21 @@ describe('logistics-control-chain-projection', () => {
     expect(params[3]).toBe('11111111-1111-4111-8111-777777777777');
   });
 
+  test('projette un signal paiement fournisseur global vers les commandes par filiation exacte', async () => {
+    mockQuery.mockResolvedValue({ rows: [] });
+    await projection.getControlChain({
+      market: { id: '11111111-1111-4111-8111-111111111111', code: 'CM' },
+    });
+
+    const [sql] = mockQuery.mock.calls[0];
+    expect(sql).toContain('JOIN supplier_execution_payments sep');
+    expect(sql).toContain("s.entity_type = 'supplier_payment'");
+    expect(sql).toContain('spl.purchase_order_id = sep.purchase_order_id');
+    expect(sql).toContain('JOIN order_items soi ON soi.id = spl.order_item_id');
+    expect(sql).toContain('JOIN scoped_orders so ON so.id = soi.order_id');
+    expect(sql).not.toContain("s.market_id = so.market_id");
+  });
+
   test('la lecture globale utilise NULL et ne fabrique aucun filtre market navigateur', async () => {
     mockQuery.mockResolvedValue({ rows: [] });
     await projection.getControlChain({ limit: 9999 });
