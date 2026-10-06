@@ -345,15 +345,21 @@
       {
         "capability": "purchasing.reconcile_fulfillment",
         "classification": "GAP",
-        "availability": "NOT_PROVIDER_PROVEN",
-        "highest_proof": "UNQUALIFIED",
-        "environment": "UNKNOWN",
+        "availability": "IMPLEMENTED_NOT_LIVE_PROVEN",
+        "highest_proof": "P1",
+        "environment": "CODE_AND_PROVIDER_CONTRACT",
         "evidence": [
-          "docs/doctrine/DOCTRINE_PURCHASING_PROVIDER_GOLDEN_E2E.md"
+          "services/suppliers/cj-fulfillment-reader.js",
+          "services/suppliers/cj-fulfillment-adapter.js",
+          "services/suppliers/cj-purchasing-contract.js",
+          "tests/unit/cj-fulfillment-reader.test.js",
+          "tests/unit/cj-fulfillment-adapter.test.js"
         ],
         "limitations": [
-          "order/payment state must not be reused as fulfillment proof",
-          "no preserved CJ tracking or fulfillment reconciliation proof found"
+          "read-only CJ getOrderDetail maps native orderStatus, quantity, carrier and tracking into the canonical FULFILLMENT reconciler",
+          "only SHIPPED or DELIVERED can leave the provider fulfillment reader as completed; CREATED/IN_CART/UNPAID/PENDING/PROCESSING/UNSHIPPED/CANCELLED remain fulfillment PENDING",
+          "order/payment proof is never reused as fulfillment proof",
+          "no preserved live CJ SHIPPED/DELIVERED observation has been captured yet, so capability remains GAP until provider evidence is observed and retained"
         ]
       },
       {
