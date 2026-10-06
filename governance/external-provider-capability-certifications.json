@@ -339,6 +339,21 @@
           "P4 applies to the tested payment intent + signed webhook + canonical DB transition path",
           "refund P4 remains a separate capability"
         ]
+      },
+      {
+        "capability": "payments.refund",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "TEST_AND_REAL_GOLDEN",
+        "evidence": [
+          "docs/external-providers/payments/STRIPE.md",
+          "scripts/stripe-golden-p4.js"
+        ],
+        "limitations": [
+          "refund capability is certified separately from payment intent confirmation",
+          "P4 applies only to the explicitly proved Stripe refund Golden path"
+        ]
       }
     ],
     "paypal": [
@@ -357,6 +372,36 @@
           "operator-transcribed historical proof",
           "provider order remained CREATED; no payer approval or capture",
           "no webhook delivery, refund, or paid-state proof is implied"
+        ]
+      },
+      {
+        "capability": "payments.capture",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "SANDBOX_CANDIDATE",
+        "evidence": [
+          "docs/external-providers/payments/PAYPAL.md",
+          "services/payment-paypal.js"
+        ],
+        "limitations": [
+          "create/read-back P1 does not prove payer approval or capture",
+          "no preserved provider capture proof found"
+        ]
+      },
+      {
+        "capability": "payments.webhook",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "SANDBOX_CANDIDATE",
+        "evidence": [
+          "docs/external-providers/payments/PAYPAL.md",
+          "services/payment-paypal-events.js"
+        ],
+        "limitations": [
+          "configured webhook/OAuth reads do not prove real provider webhook delivery",
+          "canonical consumption remains separately provable"
         ]
       }
     ],
@@ -576,6 +621,73 @@
         ],
         "limitations": [
           "only environment/documentation references were found; no active runtime client confirmed"
+        ]
+      }
+    ],
+    "mtn-momo-cg": [
+      {
+        "capability": "payments.auth_collections",
+        "classification": "RECLASSIFIED",
+        "availability": "REPORTED_PROOF_NOT_INDEPENDENTLY_RECHECKED",
+        "highest_proof": "P1",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/external-providers/payments/MTN_MOMO_CG.md",
+          "docs/_archive/external-provider-proofs/RAILWAY_SANDBOX_AUTH_2026-09-22.md",
+          "scripts/external-provider-batch-proof.js"
+        ],
+        "limitations": [
+          "proof concerns Collections Sandbox authentication only",
+          "does not prove RequestToPay, payment status, callback, reconciliation, or Congo production rights"
+        ]
+      },
+      {
+        "capability": "payments.request_to_pay",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "SANDBOX_CANDIDATE",
+        "evidence": [
+          "services/mobile-money/mtn-momo-cg.js",
+          "docs/contract/MOBILE_MONEY_PAYMENT.md"
+        ],
+        "limitations": [
+          "sandbox authentication does not prove transaction initiation or settlement"
+        ]
+      }
+    ],
+    "orange-money-cm": [
+      {
+        "capability": "payments.request_to_pay",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "MERCHANT_CONTRACT_REQUIRED",
+        "evidence": [
+          "services/mobile-money/orange-money-cm.js",
+          "tests/unit/mobile-money-providers.test.js",
+          "docs/contract/MOBILE_MONEY_PAYMENT.md"
+        ],
+        "limitations": [
+          "OAuth/payment/status adapter exists but merchant contract and real provider proof are not established",
+          "no provider transaction proof found"
+        ]
+      }
+    ],
+    "kartapay-km": [
+      {
+        "capability": "payments.webhook_status_recheck",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "STAGING_CANDIDATE",
+        "evidence": [
+          "services/mobile-money/kartapay-km.js",
+          "tests/unit/kartapay-webhook.test.js"
+        ],
+        "limitations": [
+          "signed webhook and server-to-server status recheck are implemented",
+          "no preserved real KartaPay staging transaction proof found"
         ]
       }
     ]
