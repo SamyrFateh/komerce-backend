@@ -184,15 +184,19 @@
     "cj": [
       {
         "capability": "sourcing.catalog_stock",
-        "classification": "GAP",
-        "availability": "EXISTING_EVIDENCE_NOT_RECONCILED",
-        "highest_proof": "UNQUALIFIED",
-        "environment": "LIVE_READ_ONLY",
+        "classification": "RECLASSIFIED",
+        "availability": "EXISTING_EVIDENCE_RECONCILED",
+        "highest_proof": "P2",
+        "environment": "LIVE_READ_ONLY_AND_STAGING_PIPELINE",
         "evidence": [
-          "services/suppliers/connectors/cj-connector.js"
+          "scripts/cj-three-real-staging-pilot.js",
+          "services/suppliers/connectors/cj-connector.js",
+          "docs/external-providers/EXTERNAL_PROVIDER_INVENTORY.md"
         ],
         "limitations": [
-          "historical sourcing and authoritative stock proofs must be projected capability-by-capability before assigning P-levels"
+          "real CJ catalog and stock authority are evidenced and adapter-normalized",
+          "no preserved provider-specific P3 Source/Capture/Observation/Resolution proof equivalent to eBay was found",
+          "do not infer purchasing, payment or fulfillment certification from sourcing proof"
         ]
       },
       {
@@ -302,6 +306,54 @@
           "billingHistory monetary reconciliation and bounded real-debit runner are implemented",
           "no preserved live production debit execution proof was found in this audit",
           "real_debit_verified must remain false until positive live monetary evidence is observed and persisted"
+        ]
+      },
+      {
+        "capability": "sourcing.catalog_live_read",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P1",
+        "environment": "LIVE_READ_ONLY",
+        "evidence": [
+          "scripts/external-provider-batch-proof.js",
+          "services/suppliers/connectors/cj-connector.js",
+          "docs/external-providers/EXTERNAL_PROVIDER_BATCH.md"
+        ],
+        "limitations": [
+          "bounded real CJ catalog reads are proved",
+          "this does not by itself prove canonical DB pipeline composition or bulk freshness"
+        ]
+      },
+      {
+        "capability": "purchasing.real_debit",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_LIVE_PROVEN",
+        "highest_proof": "P2",
+        "environment": "BOUNDED_RUNNER",
+        "evidence": [
+          "scripts/cj-real-debit-proof.js",
+          "services/suppliers/cj-billing-history-reconciliation.js",
+          "docs/doctrine/DOCTRINE_SUPPLIER_PAYMENT_FACT.md",
+          "tests/unit/cj-real-debit-proof.test.js"
+        ],
+        "limitations": [
+          "bounded real-debit execution and billingHistory verification machinery exist",
+          "no preserved successful live debit execution proof was found",
+          "real_debit_verified must remain false until positive live monetary evidence is persisted"
+        ]
+      },
+      {
+        "capability": "purchasing.reconcile_fulfillment",
+        "classification": "GAP",
+        "availability": "NOT_PROVIDER_PROVEN",
+        "highest_proof": "UNQUALIFIED",
+        "environment": "UNKNOWN",
+        "evidence": [
+          "docs/doctrine/DOCTRINE_PURCHASING_PROVIDER_GOLDEN_E2E.md"
+        ],
+        "limitations": [
+          "order/payment state must not be reused as fulfillment proof",
+          "no preserved CJ tracking or fulfillment reconciliation proof found"
         ]
       }
     ],
