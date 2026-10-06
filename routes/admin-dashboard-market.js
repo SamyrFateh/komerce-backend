@@ -22,7 +22,7 @@ const express = require('express');
 const db = require('../db');
 const { authenticate, requireAdmin, requireRole } = require('../middleware/auth');
 const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-delegated-role');
-const { requireMarketDelegatedCapability, attachAuthorizedMarketsForCapability } = require('../middleware/require-market-delegated-capability');
+const { requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const {
   hasDashboardGlobalAuthority,
   requireDashboardGlobalAuthority,
@@ -37,6 +37,7 @@ const operations = require('../services/dashboard-operations');
 const finance = require('../services/dashboard-finance-canonical');
 const orders = require('../services/dashboard-orders');
 const referenceResolver = require('../services/canonical-reference-resolver');
+const { listAuthorizedMarketsForCapability } = require('../services/market-delegation-service');
 const log = require('../utils/logger').child({ module: 'admin-dashboard-market' });
 
 const router = express.Router();
@@ -120,7 +121,6 @@ const requireCommerceMarketRead = requireDashboardMarketCapability('dashboard.ma
 const requireOrdersMarketRead = requireDashboardMarketCapability('dashboard.market.read');
 const requireOperationsMarketRead = requireDashboardMarketCapability('operations.read');
 const requireFinanceMarketRead = requireDashboardMarketCapability('finance.read');
-const attachReferenceResolverMarkets = attachAuthorizedMarketsForCapability('operations.read', { audit: false });
 
 async function attachReferenceResolverAuthority(req, res, next) {
   try {
@@ -129,8 +129,25 @@ async function attachReferenceResolverAuthority(req, res, next) {
       req.dashboardGlobalAuthority = true;
       return next();
     }
-    return attachReferenceResolverMarkets(req, res, next);
+
+    const rows = await listAuthorizedMarketsForCapability(db, {
+      userId: req.user && req.user.id,
+      requiredCapability: 'operations.read',
+    });
+    if (!rows.length) {
+      return res.status(403).json({
+        error: 'Capability operations.read requise sur au moins un marché actif.',
+        code: 'MARKET_CAPABILITY_REQUIRED',
+      });
+    }
+
+    req.authorizedMarkets = new Set(rows.map(row => row.market_id));
+    req.marketDelegatedMarkets = rows;
+    return next();
   } catch (err) {
+    if (err && err.code && err.status) {
+      return res.status(err.status).json({ error: err.message, code: err.code });
+    }
     return next(err);
   }
 }
