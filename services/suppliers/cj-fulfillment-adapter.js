@@ -156,6 +156,30 @@ async function buildOrderPayload({ items, preflights, context = {} } = {}) {
   };
 }
 
+async function readOrderDetail(supplierOrderId, context = {}) {
+  const orderId = String(supplierOrderId || '').trim();
+  if (!orderId) throw new Error('CJ_ORDER_ID_REQUIRED');
+
+  const accessToken = await connector.getAccessToken({
+    fetchImpl: context.fetchImpl,
+    env: context.env || process.env,
+    credentials: context.credentials || null,
+  });
+  const call = context.invoke || invoke;
+  const detail = await call(contract.ENDPOINTS.get_order_detail, {
+    method: 'GET',
+    query: contract.buildOrderDetailQuery(orderId),
+    accessToken,
+    fetchImpl: context.fetchImpl,
+  });
+
+  return {
+    raw: detail,
+    facts: contract.readOrderDetailFacts(detail),
+    request_id: detail?.requestId ? String(detail.requestId) : null,
+  };
+}
+
 async function placeOrder(payload, context = {}) {
   const env = context.env || process.env;
   const authorized = context.cj_execution_authorized === true || env.KOMERCE_CJ_AUTO_ORDER_ENABLED === '1';
@@ -241,6 +265,7 @@ module.exports = {
   provider,
   evaluate,
   buildOrderPayload,
+  readOrderDetail,
   placeOrder,
   _invoke: invoke,
 };
