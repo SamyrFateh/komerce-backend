@@ -185,15 +185,16 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       [poId, supplierId, SUPPLIER_ORDER_ID]
     );
 
+    // Une ligne destinée à une PO regroupée naît ouverte, puis est rattachée
+    // explicitement. La garde DB interdit volontairement un INSERT déjà attaché.
     await q(
       `INSERT INTO purchase_lines
          (id, purchase_order_id, order_item_id, supplier_id, product_sku_id,
           supplier_sku, supplier_unit_ref, supplier_order_identity, quantity,
           supplier_unit_price, supplier_currency, procurement_hub_ref)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,1,7,'USD','DXB')`,
+       VALUES ($1,NULL,$2,$3,$4,$5,$6,$7::jsonb,1,7,'USD','DXB')`,
       [
         lineId,
-        poId,
         itemId,
         supplierId,
         skuId,
@@ -201,6 +202,14 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
         SUPPLIER_UNIT_REF,
         JSON.stringify(soi),
       ]
+    );
+
+    await q(
+      `UPDATE purchase_lines
+          SET purchase_order_id = $2,
+              updated_at = NOW()
+        WHERE id = $1`,
+      [lineId, poId]
     );
 
     await q(
