@@ -63,6 +63,7 @@ module.exports = {
       'services/order-cost-snapshot.js',
       'services/order-display-snapshot.js',
       'services/order-status-machine.js',
+      'services/order-financial-closure-reconciliation.js',
       'services/order-checkout-service.js',
       'services/order-checkout-item-resolution.js',
       'services/order-checkout-persistence.js',
@@ -161,6 +162,7 @@ module.exports = {
       'tests/unit/cash-operations.test.js',
       'tests/unit/confirm-payment-cycle.test.js',
       'tests/unit/order-status-machine.test.js',
+      'tests/unit/order-financial-closure-reconciliation.test.js',
       'tests/unit/order-status-client-notifications.test.js',
       // Rapatriés depuis features/notification.feature.js (doublon singulier
       // supprimé, audit 2026-07-06 §2d) — mal rangés là-bas : ils testent en
@@ -339,6 +341,8 @@ module.exports = {
       test: 'tests/invariants/orders.refund-to-payer.test.js' },
     { statement: 'le workflow de statut d\'un litige (dispute-mutation-service.js) n\'écrit jamais refund_kmf ni refund_eur, quel que soit le statut atteint — le montant reste une décision distincte, jamais un effet de bord d\'un changement de statut',
       test: 'tests/unit/dispute-mutation-service.test.js' },
+    { statement: 'la fermeture financière est une projection read-only et fail-closed : le chemin normal exige HANDOFF_MATCHED + customer payment paid + aucun incident actif + aucun refund en attente + aucun supplier payment ambigu/mismatched/non prouvé ; les terminaux refunded/cancelled exigent leurs faits de remboursement cohérents et un remplacement résolu ne ferme qu après la vraie remise du lot de remplacement',
+      test: 'tests/unit/order-financial-closure-reconciliation.test.js' },
     { statement: 'reference de commande lisible et unique',
       test: 'tests/e2e-api/orders.cancellation-doctrine.e2e.test.js' },
     { statement: 'snapshot de cout figure a la creation, jamais recalcule retroactivement',
