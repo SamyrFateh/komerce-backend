@@ -179,6 +179,26 @@
           "live stock/price was observed for the Golden exact unit",
           "does not certify bulk catalog freshness"
         ]
+      },
+      {
+        "capability": "purchasing.reconcile_fulfillment",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_LIVE_PROVEN",
+        "highest_proof": "P1",
+        "environment": "CODE_AND_PROVIDER_CONTRACT",
+        "evidence": [
+          "services/suppliers/aliexpress-fulfillment-reader.js",
+          "services/suppliers/aliexpress-fulfillment-adapter.js",
+          "services/suppliers/aliexpress-purchase-preflight.js",
+          "tests/unit/aliexpress-fulfillment-reader.test.js",
+          "tests/unit/aliexpress-fulfillment-adapter.test.js"
+        ],
+        "limitations": [
+          "read-only aliexpress.trade.ds.order.get facts are mapped into the canonical FULFILLMENT reconciler",
+          "only explicit post-shipment statuses are allowed to leave the reader as completed; pre-shipment order/payment states remain PENDING",
+          "tracking/carrier are preserved only when present in provider order detail and are never treated as Hub receipt",
+          "no preserved live shipment fulfillment observation is claimed by this code-only step"
+        ]
       }
     ],
     "cj": [
