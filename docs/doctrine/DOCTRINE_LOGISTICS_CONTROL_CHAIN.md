@@ -258,6 +258,19 @@ Le clic sur le numéro révèle :
 
 Une exception unitaire reste attachée à la commande.
 
+Un fait structurel peut rester global tout en ayant un impact exact sur plusieurs commandes. Exemple canonique : un `supplier_payment_review` reste `market_id=NULL` si le paiement fournisseur est global/multi-Market, mais la Control Tower peut projeter son impact sur chaque commande reliée par la filiation canonique :
+
+```text
+supplier payment signal
+→ supplier payment
+→ purchase order
+→ purchase line
+→ order item
+→ order
+```
+
+Cette projection d'impact ne change jamais le scope du signal source et n'invente aucun `market_id`.
+
 Lorsque plusieurs commandes partagent une cause commune suffisamment forte, la Control Tower doit pouvoir projeter un **signal structurel** au-dessus de l'étape concernée.
 
 Exemples :

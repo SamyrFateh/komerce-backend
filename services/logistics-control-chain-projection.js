@@ -8,7 +8,7 @@
  * @outputs       canonical_logistics_control_chain_projection, single_order_control_snapshot
  * @depends       db, dashboard-metrics/_helpers
  * @used-by       services/dashboard-operations.js, services/order-360.js
- * @db-read       orders, order_items, purchase_lines, purchase_orders, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, incidents, signals
+ * @db-read       orders, order_items, purchase_lines, purchase_orders, supplier_execution_payments, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, incidents, signals
  * @db-write      none
  * @db-txn        none
  * @doctrine      DOCTRINE_LOGISTICS_CONTROL_CHAIN, dashboard_no_business_recompute, server_market_scope_is_authority
@@ -244,6 +244,26 @@ async function getControlChain(options = {}) {
         LEFT JOIN parcels ip ON ip.id = i.parcel_id
         JOIN scoped_orders so ON so.id = COALESCE(i.order_id, ip.order_id)
        WHERE i.status IN ('open','investigating')
+      UNION ALL
+      -- Un signal de paiement fournisseur reste un fait GLOBAL. La Control Tower
+      -- ne lui invente jamais un market_id : elle projette seulement son impact
+      -- sur les commandes reliées exactement par payment -> PO -> line -> item.
+      SELECT DISTINCT so.id AS order_id,
+             s.signal_type,
+             s.severity,
+             s.summary,
+             s.owner_role,
+             s.created_at
+        FROM signals s
+        JOIN supplier_execution_payments sep
+          ON s.entity_type = 'supplier_payment'
+         AND s.entity_id::text = sep.id::text
+        JOIN purchase_lines spl
+          ON spl.purchase_order_id = sep.purchase_order_id
+         AND spl.cancelled_at IS NULL
+        JOIN order_items soi ON soi.id = spl.order_item_id
+        JOIN scoped_orders so ON so.id = soi.order_id
+       WHERE s.status IN ('open','acknowledged','snoozed')
     ),
     ranked_signals AS (
       SELECT ls.*,
