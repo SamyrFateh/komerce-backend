@@ -199,8 +199,8 @@ describeE2E('E2E-DASHBOARD — Golden Logistics Control Chain', ({ db }) => {
     happyPoId = uuid();
     await q(
       `INSERT INTO purchase_orders
-         (id, supplier_id, status, trigger_mode, procurement_hub_ref)
-       VALUES ($1,$2,'draft','manual','DXB')`,
+         (id, order_id, supplier_id, status, trigger_mode, procurement_hub_ref, qty, supplier_sku)
+       VALUES ($1,NULL,$2,'draft','manual','DXB',NULL,NULL)`,
       [happyPoId, supplierId]
     );
     happyLineId = uuid();
