@@ -134,10 +134,11 @@ describe('supplier_execution_fulfillments persistence', () => {
          VALUES
           ($1,'cj','CJ-ORDER-A'),
           ($2,'cj','CJ-ORDER-B')
-         RETURNING id, supplier_order_id
-         ORDER BY supplier_order_id`,
+         RETURNING id, supplier_order_id`,
         [poA, poB]
       );
+
+      orders.sort((a, b) => a.supplier_order_id.localeCompare(b.supplier_order_id));
 
       const result = (externalRef) => ({
         scope: 'FULFILLMENT',
