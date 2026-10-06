@@ -153,13 +153,16 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const adminSourcingWorkspaceRouter = require('../routes/admin-sourcing-workspace');
   const adminPricingWorkspaceRouter = require('../routes/admin-pricing-workspace');
   const adminActionCenterRouter = require('../routes/admin-action-center');
+  const adminDashboardMarketRouter = require('../routes/admin-dashboard-market');
+  const adminDashboardLegacyRouter = require('../routes/admin-dashboard');
   // ZG-3: adminCollectiveRepairsRouter supprimé — system collective_workspaces démonté (2026-05-30)
   // Les services repair-collective-*.js et la route /api/admin/collective ne sont plus montés.
 
   app.use('/api/admin/risk-provisions',    adminRiskProvisionsRouter);
   // LOT 2C — route Pilotage market-scoped montée avant l'agrégateur global historique.
-  app.use('/api/admin/dashboard',   require('../routes/admin-dashboard-market'));
-  app.use('/api/admin/dashboard',   require('../routes/admin-dashboard'));
+  // Variables explicites : le route-registry suit les routers montés par identifiant.
+  app.use('/api/admin/dashboard',   adminDashboardMarketRouter);
+  app.use('/api/admin/dashboard',   adminDashboardLegacyRouter);
   app.use('/api/admin/entities',    adminOrder360Router);
   // LOT 4I — l'index doit précéder /clients/:clientPhone pour que /clients/market/:code ne soit jamais capturé comme téléphone.
   app.use('/api/admin/entities',    adminClientIndexRouter);

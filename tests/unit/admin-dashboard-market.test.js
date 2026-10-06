@@ -32,8 +32,11 @@ jest.mock('../../middleware/auth', () => ({
 // services/market-delegation-service.js (MARKET_MEMBERSHIP_REQUIRED,
 // MARKET_CAPABILITY_REQUIRED), plus jamais market_scope_denied.
 const mockResolveAuthorization = jest.fn();
+const mockListAuthorizedMarketsForCapability = jest.fn();
 jest.mock('../../services/market-delegation-service', () => ({
   resolveAuthorization: (...args) => mockResolveAuthorization(...args),
+  listAuthorizedMarketsForCapability: (...args) => mockListAuthorizedMarketsForCapability(...args),
+  audit: jest.fn(),
 }));
 
 jest.mock('../../middleware/require-dashboard-global-authority', () => ({
@@ -68,6 +71,13 @@ jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 const mockBuildMarketPilotage = jest.fn();
 jest.mock('../../services/dashboard-pilotage-market', () => ({
   buildMarketPilotage: (...args) => mockBuildMarketPilotage(...args),
+}));
+
+const mockResolveReference = jest.fn();
+class MockCanonicalReferenceResolverError extends Error {}
+jest.mock('../../services/canonical-reference-resolver', () => ({
+  CanonicalReferenceResolverError: MockCanonicalReferenceResolverError,
+  resolveReference: (...args) => mockResolveReference(...args),
 }));
 
 jest.mock('../../utils/logger', () => ({
@@ -112,6 +122,16 @@ beforeEach(() => {
       return { rows: [{ id: 'market-cg-id', code: 'CG', name: 'Congo', currency: 'XAF' }] };
     }
     return { rows: [] };
+  });
+  mockListAuthorizedMarketsForCapability.mockImplementation(async (_db, { requiredCapability }) => {
+    if (requiredCapability !== 'operations.read') return [];
+    return [{ market_id: 'market-cm-id', market_code: 'CM' }];
+  });
+  mockResolveReference.mockResolvedValue({
+    query: 'KOM-RCV-1',
+    found: true,
+    ambiguous: false,
+    matches: [{ entity_type: 'HUB_UNIT', customer_order_reference: 'K-1' }],
   });
   mockResolveAuthorization.mockImplementation(async (_db, { marketCode, requiredCapability }) => {
     if (requiredCapability === 'dashboard.market.read' && mockGrantedMarketCodes.has(marketCode)) {
@@ -276,6 +296,40 @@ describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
     expect(mockBuildMarketPilotage).toHaveBeenCalledTimes(1);
     expect(mockBuildMarketPilotage.mock.calls[0][1].code).toBe('CG');
     expect(mockResolveAuthorization).not.toHaveBeenCalled();
+  });
+});
+
+describe('GET /api/admin/dashboard/reference/resolve', () => {
+  test('market_operator résout une référence uniquement dans ses marchés operations.read', async () => {
+    mockCurrentUser = { id: 'partner-cm-1', role: 'market_operator' };
+    mockGlobalAllowed = false;
+
+    const res = await request(makeApp()).get('/api/admin/dashboard/reference/resolve?reference=KOM-RCV-1');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toContain('no-store');
+    expect(mockListAuthorizedMarketsForCapability).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      userId: 'partner-cm-1',
+      requiredCapability: 'operations.read',
+    }));
+    expect(mockResolveReference).toHaveBeenCalledWith('KOM-RCV-1', expect.objectContaining({
+      role: 'market_operator',
+      global: false,
+      authorizedMarketIds: expect.any(Set),
+    }));
+  });
+
+  test('autorité dashboard globale court-circuite la capability market', async () => {
+    mockGlobalAllowed = true;
+
+    const res = await request(makeApp()).get('/api/admin/dashboard/reference/resolve?reference=K-1');
+
+    expect(res.status).toBe(200);
+    expect(mockListAuthorizedMarketsForCapability).not.toHaveBeenCalled();
+    expect(mockResolveReference).toHaveBeenCalledWith('K-1', expect.objectContaining({
+      role: 'admin',
+      global: true,
+    }));
   });
 });
 
