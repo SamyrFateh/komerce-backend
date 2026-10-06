@@ -91,6 +91,27 @@
         "limitations": [
           "no supported buyer placeOrder API has been proved"
         ]
+      },
+      {
+        "capability": "purchasing.reconcile_fulfillment",
+        "classification": "GAP",
+        "availability": "IMPLEMENTED_NOT_LIVE_PROVEN",
+        "highest_proof": "P1",
+        "environment": "SANDBOX_CODE_AND_PROVIDER_CONTRACT",
+        "evidence": [
+          "services/suppliers/allegro-fulfillment-reader.js",
+          "services/suppliers/allegro-fulfillment-adapter.js",
+          "services/suppliers/allegro-sandbox-client.js",
+          "tests/unit/allegro-fulfillment-reader.test.js",
+          "tests/unit/allegro-fulfillment-adapter.test.js"
+        ],
+        "limitations": [
+          "seller checkoutForm read-back maps fulfillment.status, exact offer quantity and delivery method into the canonical FULFILLMENT reconciler",
+          "READY_FOR_PROCESSING remains an ORDER commitment fact and never counts as fulfillment completion",
+          "only fulfillment.status=SENT is currently accepted as provider fulfillment completion",
+          "tracking is not invented; no shipment tracking API is consumed by this reader yet",
+          "no preserved sandbox SENT observation is claimed by this code-only step"
+        ]
       }
     ],
     "aliexpress": [
