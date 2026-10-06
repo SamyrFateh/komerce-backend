@@ -209,10 +209,9 @@ describeE2E('E2E-DASHBOARD — Golden Logistics Control Chain', ({ db }) => {
          (id, purchase_order_id, order_item_id, supplier_id, product_sku_id,
           supplier_sku, supplier_unit_ref, supplier_order_identity, quantity,
           supplier_unit_price, supplier_currency, procurement_hub_ref)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,1,10,'USD','DXB')`,
+       VALUES ($1,NULL,$2,$3,$4,$5,$6,$7::jsonb,1,10,'USD','DXB')`,
       [
         happyLineId,
-        happyPoId,
         happyItemId,
         supplierId,
         skuId,
@@ -220,6 +219,10 @@ describeE2E('E2E-DASHBOARD — Golden Logistics Control Chain', ({ db }) => {
         SOI.payload.supplier_unit_ref,
         JSON.stringify(SOI),
       ]
+    );
+    await q(
+      `UPDATE purchase_lines SET purchase_order_id = $2, updated_at = NOW() WHERE id = $1`,
+      [happyLineId, happyPoId]
     );
     await q(
       `UPDATE purchase_orders
