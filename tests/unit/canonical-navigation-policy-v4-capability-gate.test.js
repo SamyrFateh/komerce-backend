@@ -119,3 +119,46 @@ describe('navigation-policy-v4 — domaine Live (coque noire des cockpits opéra
   });
 });
 
+
+
+describe('navigation-policy-v4 — grouped sidebar information architecture', () => {
+  test('admin sees six groups with existing destinations only', () => {
+    const nav = loadPolicy();
+    const groups = nav.sidebarGroupsFor({ role: 'admin' }, null);
+    expect(groups.map(group => group.id)).toEqual([
+      'pilot', 'flows', 'entities', 'workspaces', 'markets', 'administration',
+    ]);
+    expect(groups.find(group => group.id === 'pilot').items.map(item => item.label))
+      .toEqual(['Tour de contrôle', 'Action Center']);
+    expect(groups.find(group => group.id === 'flows').items.map(item => item.label))
+      .toEqual(['Commerce', 'Commandes & logistique', 'Finance']);
+  });
+
+  test('client entity remains capability-gated for a market operator', () => {
+    const nav = loadPolicy();
+    const withoutClient = nav.sidebarGroupsFor(
+      { role: 'market_operator' },
+      marketAdminContext([])
+    );
+    expect(withoutClient.find(group => group.id === 'entities').items.map(item => item.id))
+      .toEqual(['entity-orders']);
+
+    const withClient = nav.sidebarGroupsFor(
+      { role: 'market_operator' },
+      marketAdminContext(['client.read'])
+    );
+    expect(withClient.find(group => group.id === 'entities').items.map(item => item.id))
+      .toEqual(['entity-orders', 'entity-clients']);
+  });
+
+  test('field roles stay limited to their server-authorized workspace destinations', () => {
+    const nav = loadPolicy();
+    const transitaire = nav.sidebarGroupsFor({ role: 'agent_transitaire' }, null);
+    expect(transitaire.map(group => group.id)).toEqual(['workspaces']);
+    expect(transitaire[0].items.map(item => item.id)).toEqual(['workspace-shipping']);
+
+    const finance = nav.sidebarGroupsFor({ role: 'finance' }, null);
+    expect(finance.map(group => group.id)).toEqual(['workspaces']);
+    expect(finance[0].items.map(item => item.id)).toEqual(['workspace-accounting']);
+  });
+});
