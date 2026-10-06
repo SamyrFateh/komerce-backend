@@ -112,6 +112,7 @@ module.exports = {
       // Scénario vertical : orders est la feature PROPRIETAIRE ; auth,
       // catalog, payments et logistics sont traversées, pas co-proprietaires.
       'tests/e2e-api/orders.checkout-payment-cycle.e2e.test.js',
+      'tests/e2e-api/customer-to-customer.golden.e2e.test.js',
       // E2E fonctionnel — chantier currency debt (audit 09-2026), LOT 1a.
       // Preuve contre Postgres réel que orders.total_kmf (migration 213,
       // integer -> numeric) reste correcte : décodage number (pas string),
@@ -343,6 +344,8 @@ module.exports = {
       test: 'tests/unit/dispute-mutation-service.test.js' },
     { statement: 'la fermeture financière est une projection read-only et fail-closed : le chemin normal exige HANDOFF_MATCHED + customer payment paid + aucun incident actif + aucun refund en attente + aucun supplier payment ambigu/mismatched/non prouvé ; les terminaux refunded/cancelled exigent leurs faits de remboursement cohérents et un remplacement résolu ne ferme qu après la vraie remise du lot de remplacement',
       test: 'tests/unit/order-financial-closure-reconciliation.test.js' },
+    { statement: 'le Golden customer-to-customer PostgreSQL prouve sur une même commande que chaque couture est indépendante : tracking fournisseur ne vaut pas réception Hub, available ne vaut pas handoff, et FINANCIAL_CLOSE_MATCHED n apparaît qu après payment fournisseur prouvé, fulfillment, RECEIVE Hub, Market leg et scan de remise autorisé',
+      test: 'tests/e2e-api/customer-to-customer.golden.e2e.test.js' },
     { statement: 'reference de commande lisible et unique',
       test: 'tests/e2e-api/orders.cancellation-doctrine.e2e.test.js' },
     { statement: 'snapshot de cout figure a la creation, jamais recalcule retroactivement',
