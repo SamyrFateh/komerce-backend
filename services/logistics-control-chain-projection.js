@@ -208,12 +208,20 @@ async function getControlChain(options = {}) {
              COALESCE(paf.parcel_refs, ARRAY[]::text[]) AS parcel_refs,
              COALESCE(paf.parcels_count, 0) AS parcels_count,
              CASE
-               WHEN COALESCE(paf.has_relay, FALSE) THEN 'RELAY'
-               WHEN COALESCE(cf.has_customs, FALSE) OR COALESCE(paf.has_arrived, FALSE) THEN 'CUSTOMS'
-               WHEN COALESCE(paf.has_in_transit, FALSE) THEN 'TRANSIT'
-               WHEN COALESCE(paf.has_shipped, FALSE) OR COALESCE(hf.has_dispatched, FALSE) THEN 'FORWARDER'
-               WHEN COALESCE(hf.has_control, FALSE) OR COALESCE(paf.has_preparation, FALSE) OR COALESCE(hf.has_quarantine, FALSE) THEN 'HUB_CONTROL'
-               WHEN COALESCE(hf.has_received, FALSE) OR COALESCE(pf.po_count, 0) > 0 AND so.order_status = 'preparation' THEN 'HUB_RECEIVED'
+               -- orders.status est l'agrégat canonique "pire état visible" des colis.
+               -- Il garde une commande splittée à l'étape de son engagement restant
+               -- au lieu de la pousser vers le morceau le plus avancé.
+               WHEN so.order_status = 'available' THEN 'RELAY'
+               WHEN so.order_status = 'in_transit' AND COALESCE(paf.has_in_transit, FALSE) THEN 'TRANSIT'
+               WHEN so.order_status = 'in_transit'
+                    AND (COALESCE(paf.has_arrived, FALSE) OR COALESCE(cf.has_customs, FALSE)) THEN 'CUSTOMS'
+               WHEN so.order_status = 'in_transit' THEN 'TRANSIT'
+               WHEN so.order_status = 'shipped' THEN 'FORWARDER'
+               WHEN so.order_status = 'preparation'
+                    AND (COALESCE(hf.has_control, FALSE) OR COALESCE(hf.has_quarantine, FALSE) OR COALESCE(paf.has_preparation, FALSE)) THEN 'HUB_CONTROL'
+               WHEN so.order_status = 'preparation' AND COALESCE(hf.has_received, FALSE) THEN 'HUB_RECEIVED'
+               WHEN COALESCE(hf.has_control, FALSE) OR COALESCE(hf.has_quarantine, FALSE) THEN 'HUB_CONTROL'
+               WHEN COALESCE(hf.has_received, FALSE) THEN 'HUB_RECEIVED'
                WHEN COALESCE(pf.supplier_acknowledged, FALSE) THEN 'SUPPLIER'
                WHEN COALESCE(pf.po_count, 0) > 0 THEN 'PURCHASE_ORDER'
                WHEN so.payment_status = 'paid' THEN 'PAYMENT'
