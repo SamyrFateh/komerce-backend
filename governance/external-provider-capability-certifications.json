@@ -341,12 +341,14 @@
           "services/supplier-payment-proof-persistence.js",
           "scripts/cj-real-debit-proof.js",
           "tests/unit/cj-billing-history-reconciliation.test.js",
-          "tests/unit/cj-real-debit-proof.test.js"
+          "tests/unit/cj-real-debit-proof.test.js",
+          "services/suppliers/cj-supplier-payment-runtime.js",
+          "tests/unit/cj-supplier-payment-runtime.test.js"
         ],
         "limitations": [
-          "billingHistory monetary reconciliation and bounded real-debit runner are implemented",
-          "no preserved live production debit execution proof was found in this audit",
-          "real_debit_verified must remain false until positive live monetary evidence is observed and persisted"
+          "canonical supplier payment closure runtime now composes provider execution, billingHistory read-back and durable proof persistence",
+          "a provider payment success response never promotes real_debit_verified by itself",
+          "no preserved successful live monetary execution has been captured yet, so the capability remains GAP"
         ]
       },
       {
@@ -375,12 +377,14 @@
           "scripts/cj-real-debit-proof.js",
           "services/suppliers/cj-billing-history-reconciliation.js",
           "docs/doctrine/DOCTRINE_SUPPLIER_PAYMENT_FACT.md",
-          "tests/unit/cj-real-debit-proof.test.js"
+          "tests/unit/cj-real-debit-proof.test.js",
+          "services/suppliers/cj-supplier-payment-runtime.js",
+          "tests/unit/cj-supplier-payment-runtime.test.js"
         ],
         "limitations": [
-          "bounded real-debit execution and billingHistory verification machinery exist",
-          "no preserved successful live debit execution proof was found",
-          "real_debit_verified must remain false until positive live monetary evidence is persisted"
+          "real payment runtime is bounded by explicit operator authorization, USD-only scope and an absolute 20 USD ceiling",
+          "requested, ambiguous or rejected payments are never auto-retried; succeeded+matched unverified payments only re-read billingHistory",
+          "no preserved successful live debit execution proof has been captured yet, so real_debit remains GAP"
         ]
       },
       {
