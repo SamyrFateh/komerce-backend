@@ -111,11 +111,6 @@
           item.appendChild(dot);
 
           item.appendChild(text(doc, 'span', 'kmc-control-order-ref', order.reference));
-          if (order.split) {
-            const split = text(doc, 'span', 'kmc-control-order-split', 'split');
-            split.setAttribute('aria-label', 'Commande répartie sur plusieurs colis');
-            item.appendChild(split);
-          }
           list.appendChild(item);
         });
       }
