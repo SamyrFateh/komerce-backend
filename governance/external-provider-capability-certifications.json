@@ -355,6 +355,57 @@
           "order/payment state must not be reused as fulfillment proof",
           "no preserved CJ tracking or fulfillment reconciliation proof found"
         ]
+      },
+      {
+        "capability": "sourcing.catalog_pipeline",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P3",
+        "environment": "LIVE_READ_PLUS_ISOLATED_STAGING",
+        "evidence": [
+          "docs/_archive/external-provider-proofs/CJ_SOURCING_P3_2026-09-24.md",
+          "scripts/cj-three-real-staging-pilot.js",
+          "services/suppliers/connectors/cj-connector.js"
+        ],
+        "limitations": [
+          "real CJ data traversed the isolated canonical sourcing pipeline through CANONICAL_RESOLVED",
+          "published_products remained zero",
+          "does not certify sellability, purchasing, payment or fulfillment"
+        ]
+      },
+      {
+        "capability": "purchasing.auto_order",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/_archive/external-provider-proofs/CJ_PURCHASING_AUTO_ORDER_P4_2026-10-04.md",
+          "scripts/cj-golden-trigger-purchasing-proof.js",
+          "services/suppliers/cj-fulfillment-adapter.js",
+          "tests/unit/cj-golden-trigger-purchasing-proof.test.js"
+        ],
+        "limitations": [
+          "P4 is bounded to CJ Sandbox and the proved triggerPurchasing Golden path",
+          "payment_invoked=false and confirmation_invoked=false in the Golden",
+          "production activation remains separately guarded by KOMERCE_CJ_AUTO_ORDER_ENABLED=1 and destination configuration"
+        ]
+      },
+      {
+        "capability": "purchasing.reconcile_order",
+        "classification": "CONFIRMED",
+        "availability": "PROVEN",
+        "highest_proof": "P4",
+        "environment": "SANDBOX",
+        "evidence": [
+          "docs/_archive/external-provider-proofs/CJ_PURCHASING_AUTO_ORDER_P4_2026-10-04.md",
+          "scripts/cj-golden-trigger-purchasing-proof.js",
+          "services/suppliers/cj-purchasing-contract.js"
+        ],
+        "limitations": [
+          "exact provider read-back and persisted supplier_order_id are proved inside the Golden path",
+          "does not certify payment or fulfillment reconciliation"
+        ]
       }
     ],
     "ebay": [

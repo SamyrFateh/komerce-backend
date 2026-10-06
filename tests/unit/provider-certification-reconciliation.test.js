@@ -330,3 +330,41 @@ test('CJ validates the capability model without proof contamination', () => {
     highest_proof: 'UNQUALIFIED',
   });
 });
+
+
+test('CJ preserved executions promote only the proved sourcing and order capabilities', () => {
+  const report = reconciliation.run({ root: ROOT });
+
+  expect(report.rows.find(
+    row => row.provider === 'cj' && row.capability === 'sourcing.catalog_pipeline'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P3',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'cj' && row.capability === 'purchasing.auto_order'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+    environment: 'SANDBOX',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'cj' && row.capability === 'purchasing.reconcile_order'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+    environment: 'SANDBOX',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'cj' && row.capability === 'purchasing.real_debit'
+  )).toMatchObject({
+    classification: 'GAP',
+    highest_proof: 'P2',
+  });
+});
