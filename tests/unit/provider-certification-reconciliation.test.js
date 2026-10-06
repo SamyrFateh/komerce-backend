@@ -178,8 +178,7 @@ test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal sc
 
 
 test('payment capability ledger keeps provider proofs scoped and fail-closed', () => {
-  const { loadCapabilityLedger, reconcileCapabilityLedger } = require('../../services/provider-capability-certifications');
-  const report = reconcileCapabilityLedger({ ledger: loadCapabilityLedger() });
+  const report = reconciliation.run({ root: ROOT });
 
   expect(report.rows.find(
     row => row.provider === 'stripe' && row.capability === 'payments.refund'
