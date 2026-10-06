@@ -8,8 +8,8 @@
  * @outputs       market_scoped_logistics_control_chain_projection
  * @depends       db.js
  * @used-by       future canonical control-tower route
- * @db-read       orders, order_items, parcel_items, parcels, purchase_orders, purchase_lines,
- *                v_purchase_line_progress, hub_purchase_allocations, hub_physical_unit_placements,
+ * @db-read       orders, order_items, parcel_items, parcels, v_purchase_line_progress,
+ *                hub_purchase_allocations, hub_physical_unit_placements,
  *                hub_physical_units, customs_shipment_parcels, customs_shipments, incidents, signals
  * @db-write      none
  * @db-txn        none
