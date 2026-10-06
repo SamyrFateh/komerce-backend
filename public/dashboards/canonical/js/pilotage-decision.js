@@ -86,15 +86,18 @@
   }
 
   function summaryCards(payload, base) {
-    return (Array.isArray(payload && payload.view_blocks) ? payload.view_blocks : []).map((block, index) => ({
+    return (Array.isArray(payload && payload.view_blocks) ? payload.view_blocks : [])
+      .filter(block => block && block.view !== 'control_tower')
+      .map((block, index) => ({
       key: block.view || `view-${index + 1}`,
       title: block.title || 'Vue de décision',
       subtitle: block.subtitle || undefined,
       tone: ['info', 'positive', 'violet'][index % 3],
+      href: typeof base.canonicalAdminHref === 'function' ? base.canonicalAdminHref(block.url) : block.url,
       metrics: (Array.isArray(block.kpis_summary) ? block.kpis_summary : []).slice(0, 4).map(item => ({
         label: item.label || 'Indicateur', value: display(base, item),
       })),
-    }));
+      }));
   }
 
   function flowStages(payload, base) {
