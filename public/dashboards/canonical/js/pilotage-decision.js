@@ -155,9 +155,9 @@
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'DASHBOARD · PILOTAGE'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', payload && payload.scope && payload.scope.mode === 'market' ? 'Piloter le marché' : 'Piloter Komerce'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Une vue d’ensemble pour voir, décider et prioriser avant d’entrer dans le détail.'));
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'PILOTER · TOUR DE CONTRÔLE'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', payload && payload.scope && payload.scope.mode === 'market' ? 'Tour de contrôle du marché' : 'Tour de contrôle Komerce'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir ce qui mérite une attention, comprendre où descendre et ouvrir le bon espace d’action.'));
     dashboard.appendChild(header);
 
     const decisions = decisionItems(payload, base);
@@ -168,21 +168,37 @@
       dashboard.appendChild(host);
     }
 
+    const alerts = base.projectAlerts(payload);
+    const investigation = cardSection(
+      doc,
+      'À investiguer maintenant',
+      'Les signaux transverses remontés par les autorités métier. Aucun recalcul local.',
+      'pilotage-alerts'
+    );
+    const alertHost = doc.createElement('div');
+    ui.AlertPanel.render(alertHost, {
+      title: 'Signaux prioritaires',
+      items: alerts,
+      emptyText: 'Aucun signal prioritaire.',
+    });
+    investigation.body.appendChild(alertHost);
+
+    const actionLink = text(doc, 'a', 'kmc-decision-dashboard-link', 'Voir tout dans l’Action Center →');
+    actionLink.href = '/admin/action-center';
+    investigation.body.appendChild(actionLink);
+    dashboard.appendChild(investigation.section);
+
     const cards = summaryCards(payload, base);
     if (cards.length) {
-      const views = cardSection(doc, 'Les vues qui comptent maintenant', 'Les angles de décision déjà alimentés par le backend.', 'pilotage-views');
+      const views = cardSection(
+        doc,
+        'Flux impactés',
+        'Chaque carte est un point de descente vers le dashboard spécialisé, pas un second moteur de vérité.',
+        'pilotage-flows'
+      );
       decisionUi.SummaryCards.render(views.body, { items: cards });
       dashboard.appendChild(views.section);
     }
-
-    const bottom = doc.createElement('div');
-    bottom.className = 'kmc-decision-dashboard-grid-2';
-    const alertHost = doc.createElement('div');
-    alertHost.setAttribute('id', 'pilotage-alerts');
-    ui.AlertPanel.render(alertHost, { title: 'Alertes système transverses', items: base.projectAlerts(payload), emptyText: 'Aucun signal prioritaire.' });
-    bottom.appendChild(alertHost);
-
-    dashboard.appendChild(bottom);
 
     const footer = doc.createElement('div');
     decisionUi.TrustFooter.render(footer, trust(payload));
