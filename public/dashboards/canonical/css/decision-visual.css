@@ -460,3 +460,167 @@
 @media (prefers-reduced-motion: reduce) {
   .kmc-summary-card { transition: none; }
 }
+
+
+/* Operations Control Tower — chaîne E2E lisible avant les KPI. */
+.kmc-control-chain-card {
+  overflow: hidden;
+}
+
+.kmc-control-chain {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(148px, 1fr);
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 1px 7px;
+  scrollbar-width: thin;
+}
+
+.kmc-control-stage {
+  min-width: 0;
+  padding: 9px;
+  background: #f8fafc;
+  border: 1px solid var(--kmc-line);
+  border-radius: 11px;
+}
+
+.kmc-control-stage-heading {
+  min-height: 30px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 1px 1px 8px;
+  border-bottom: 1px solid var(--kmc-line);
+}
+
+.kmc-control-stage-title {
+  color: var(--kmc-navy);
+  font-size: 10px;
+  line-height: 1.25;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .035em;
+}
+
+.kmc-control-stage-count {
+  flex: 0 0 auto;
+  min-width: 20px;
+  padding: 2px 5px;
+  color: var(--kmc-muted);
+  background: #fff;
+  border: 1px solid var(--kmc-line);
+  border-radius: 999px;
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.kmc-control-order-list {
+  display: grid;
+  gap: 5px;
+  max-height: 292px;
+  overflow-y: auto;
+  padding-top: 7px;
+  scrollbar-width: thin;
+}
+
+.kmc-control-order {
+  --control-health: var(--kmc-positive);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 27px;
+  padding: 5px 7px;
+  color: var(--kmc-navy);
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--control-health) 16%, var(--kmc-line));
+  border-radius: 7px;
+  font-size: 10px;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.kmc-control-order.is-positive {
+  --control-health: var(--kmc-positive);
+  opacity: .58;
+}
+
+.kmc-control-order.is-warning {
+  --control-health: var(--kmc-warning);
+  background: color-mix(in srgb, var(--kmc-warning-soft) 58%, white);
+  font-weight: 750;
+}
+
+.kmc-control-order.is-critical {
+  --control-health: var(--kmc-critical);
+  background: color-mix(in srgb, var(--kmc-critical-soft) 62%, white);
+  font-weight: 800;
+}
+
+.kmc-control-order:hover,
+.kmc-control-order:focus-visible {
+  opacity: 1;
+  border-color: color-mix(in srgb, var(--control-health) 48%, var(--kmc-line));
+  outline: none;
+}
+
+.kmc-control-order-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  background: var(--control-health);
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--control-health) 10%, white);
+}
+
+.kmc-control-order-ref {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kmc-control-order-empty {
+  padding: 6px 2px;
+  color: color-mix(in srgb, var(--kmc-muted) 55%, transparent);
+  font-size: 10px;
+}
+
+
+.kmc-control-structural-alerts {
+  display: grid;
+  gap: 5px;
+  padding-top: 7px;
+}
+
+.kmc-control-structural-alert {
+  --control-health: var(--kmc-warning);
+  display: grid;
+  gap: 2px;
+  padding: 7px 8px;
+  border: 1px solid color-mix(in srgb, var(--control-health) 34%, var(--kmc-line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--control-health) 8%, white);
+}
+
+.kmc-control-structural-alert.is-critical {
+  --control-health: var(--kmc-critical);
+}
+
+.kmc-control-structural-alert.is-warning {
+  --control-health: var(--kmc-warning);
+}
+
+.kmc-control-structural-count {
+  color: var(--control-health);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.kmc-control-structural-summary {
+  color: var(--kmc-navy);
+  font-size: 9px;
+  line-height: 1.25;
+}

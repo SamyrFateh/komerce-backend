@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        server_resolved_market
  * @outputs       canonical_operations_projection
- * @depends       db, dashboard-metrics, dashboard-metrics/_helpers
+ * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, logistics-control-chain-projection
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       orders, parcels, relais, signals, scan_events
+ * @db-read       orders, order_items, purchase_lines, purchase_orders, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, relais, signals, scan_events
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, server_market_scope_is_authority
@@ -20,6 +20,7 @@
 
 const db = require('../db');
 const metrics = require('./dashboard-metrics');
+const controlChain = require('./logistics-control-chain-projection');
 const {
   buildFiltersClause,
   buildSignalMarketClause,
@@ -189,6 +190,7 @@ async function buildOperations(options = {}) {
     activeOrders,
     criticalDelays,
     signals,
+    controlChainProjection,
   ] = await Promise.all([
     metrics.getCmdsAujourdhui(filters),
     metrics.getPaiementsEnAttente(filters),
@@ -201,6 +203,7 @@ async function buildOperations(options = {}) {
     getActiveOrders(filters),
     getCriticalDelays(filters),
     getOperationalSignals(filters),
+    controlChain.getControlChain({ market }),
   ]);
 
   return Object.freeze({
@@ -218,10 +221,16 @@ async function buildOperations(options = {}) {
     active_orders: Object.freeze(activeOrders),
     critical_delays: Object.freeze(criticalDelays),
     signals: Object.freeze(signals),
+    control_chain: controlChainProjection,
     data_quality: Object.freeze({
       generated_at: new Date(options.now || Date.now()).toISOString(),
       scope_mode: market ? 'market' : 'global',
-      source_tables: Object.freeze(['orders', 'parcels', 'relais', 'signals', 'scan_events']),
+      source_tables: Object.freeze([
+        'orders', 'order_items', 'purchase_lines', 'purchase_orders',
+        'hub_purchase_allocations', 'hub_physical_unit_placements', 'hub_physical_units',
+        'parcels', 'customs_shipment_parcels', 'customs_shipments',
+        'relais', 'signals', 'scan_events',
+      ]),
     }),
   });
 }

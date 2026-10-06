@@ -20,6 +20,11 @@ const mockMetrics = {
 };
 jest.mock('../../services/dashboard-metrics', () => mockMetrics);
 
+const mockControlChain = jest.fn();
+jest.mock('../../services/logistics-control-chain-projection', () => ({
+  getControlChain: (...args) => mockControlChain(...args),
+}));
+
 const db = require('../../db');
 const operations = require('../../services/dashboard-operations');
 
@@ -51,6 +56,11 @@ beforeEach(() => {
   jest.clearAllMocks();
   seedMetrics();
   seedRows();
+  mockControlChain.mockResolvedValue(Object.freeze({
+    stages: Object.freeze([{ key: 'ORDER', label: 'Commande' }]),
+    orders: Object.freeze([]),
+    by_stage: Object.freeze({ ORDER: Object.freeze([]) }),
+  }));
 });
 
 describe('dashboard-operations', () => {
@@ -73,6 +83,12 @@ describe('dashboard-operations', () => {
     expect(String(signalSql)).toContain('scope_o.market_id = $2');
     expect(signalParams[1]).toBe('market-cm-id');
     expect(result.kpis).toHaveLength(8);
+    expect(mockControlChain).toHaveBeenCalledWith({ market });
+    expect(result.control_chain).toEqual({
+      stages: [{ key: 'ORDER', label: 'Commande' }],
+      orders: [],
+      by_stage: { ORDER: [] },
+    });
   });
 
   test('la projection globale n’invente aucun filtre marché', async () => {
@@ -81,5 +97,6 @@ describe('dashboard-operations', () => {
     Object.values(mockMetrics).forEach(fn => expect(fn).toHaveBeenCalledWith({}));
     db.query.mock.calls.forEach(([, params]) => expect(params).not.toContain('market-cm-id'));
     expect(String(db.query.mock.calls[2][0])).toContain('AND 1=1');
+    expect(mockControlChain).toHaveBeenCalledWith({ market: null });
   });
 });

@@ -57,6 +57,7 @@ module.exports = {
       'HUB-001 : placement physique et custody append-only ; SPLIT/MERGE/REPACK déplacent la matière sans réassigner la destination économique',
       'HUB-001 : inbound fournisseur potentiellement multi-market, outbound PACKED/DISPATCHED obligatoirement homogène sur exactement un Market',
       'HUB-001 : constat physique LOST/STOLEN/DESTROYED/DAMAGED_UNUSABLE atomique avec l outbox transactionnelle F0',
+      'Logistics Control Chain : le HUB est une primitive Logistics transverse aux fournisseurs et Markets ; il mutualise la custody puis spécialise la sortie en outbound Market sans posséder ni réécrire les vérités Orders/Purchasing/Market',
     ],
     out: [
       'cout du transport (feature economic-engine)',
@@ -81,6 +82,7 @@ module.exports = {
       'docs/doctrine/DOCTRINE_NON_CONFORMITE.md',
       'docs/doctrine/DOCTRINE_TRANSPORT_RAILS.md',
       'docs/doctrine/DOCTRINE_HUB_PHYSICAL_IDENTITY.md',
+      'docs/doctrine/DOCTRINE_LOGISTICS_CONTROL_CHAIN.md',
       'docs/ops/NOTE_OPS_CALIBRATION_DENSITE_V5.md',
     ],
     utils: [
@@ -391,6 +393,8 @@ module.exports = {
   authority: 'backend-core — logistics possède la vérité physique et la custody ; scan-engine.js reste autorité de la machine de scan colis legacy, hub-physical-identity.js possède HUB-001 sans jamais réassigner les vérités Purchasing/Orders/Market',
 
   invariants: [
+    'le HUB est une primitive logistics Komerce, jamais la propriété d un Market, d une source ou d un fournisseur ; Supplier Leg et Market Leg restent deux jambes distinctes',
+    'split/merge/repack changent les enveloppes physiques sans casser la filiation order item → purchase line/PO → allocation/unité Hub → parcel/shipment → relais',
     'le fret maritime ne se ventile jamais au poids : volume si snapshot, repartition egale confidence low sinon',
     'un produit tague fragile ne se repacke jamais (repack_exempt) : la protection prime sur le volume',
     'la photo de scelle Dubai est la borne 1 de responsabilite : avant = fournisseur, apres = transport',
