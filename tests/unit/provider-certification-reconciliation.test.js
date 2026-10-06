@@ -211,3 +211,40 @@ test('catalog and ops provider capabilities remain scoped to preserved evidence'
     highest_proof: 'UNQUALIFIED',
   });
 });
+
+
+test('messaging capability ledger does not confuse implementation with provider proof', () => {
+  const report = reconciliation.run({ root: ROOT });
+
+  expect(report.rows.find(
+    row => row.provider === 'meta-whatsapp' && row.capability === 'messaging.outbound_template_send'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'IMPLEMENTED_NOT_PROVIDER_PROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'authkey' && row.capability === 'auth.otp_delivery'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'IMPLEMENTED_NOT_PROVIDER_PROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'brevo' && row.capability === 'messaging.transactional_email_send'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'CLIENT_IMPLEMENTED_RUNTIME_USE_UNPROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'twilio' && row.capability === 'messaging.runtime'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'CLOSED_CONFIG_ONLY',
+    highest_proof: 'UNQUALIFIED',
+  });
+});
