@@ -350,9 +350,9 @@
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'DASHBOARD · OPÉRATIONS'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Opérations'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir ce qui doit avancer maintenant, où se trouvent les frictions et quels flux demandent une attention terrain.'));
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'FLUX · COMMANDES & LOGISTIQUE'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Commandes & logistique'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir où se trouvent les commandes, ce qui bloque leur progression et vers quel espace descendre.'));
     dashboard.appendChild(header);
 
     const decisions = decisionItems(payload, base);
@@ -367,8 +367,8 @@
     if (controlColumns.length) {
       const chain = cardSection(
         doc,
-        'Chaîne de contrôle',
-        'Une commande reste une seule ligne de pilotage et avance d’étape en étape. La couleur signale uniquement son état opérationnel courant.',
+        'Chaîne logistique client → relais',
+        'Une commande reste une seule ligne de pilotage sous son étape gouvernante. Vert : normal · orange : à risque · rouge : action requise.',
         'operations-control-chain'
       );
       chain.section.className += ' kmc-control-chain-card';
