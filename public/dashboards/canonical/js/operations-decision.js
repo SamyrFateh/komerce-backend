@@ -65,10 +65,19 @@
       : {};
     const stages = Array.isArray(chain.stages) ? chain.stages : [];
     const byStage = chain.by_stage && typeof chain.by_stage === 'object' ? chain.by_stage : {};
+    const structuralAlerts = Array.isArray(chain.structural_alerts) ? chain.structural_alerts : [];
 
     return stages.map(stage => ({
       key: stage.key,
       label: stage.label,
+      alerts: structuralAlerts
+        .filter(alert => alert && alert.stage === stage.key)
+        .map(alert => ({
+          health: alert.health || 'ORANGE',
+          count: Number(alert.order_count) || 0,
+          code: alert.reason_code || 'exception',
+          summary: alert.summary || alert.reason_code || 'Cause commune',
+        })),
       orders: (Array.isArray(byStage[stage.key]) ? byStage[stage.key] : []).map(order => ({
         reference: order.order_reference || 'Commande',
         health: order.health || 'GREEN',
@@ -92,6 +101,20 @@
       heading.appendChild(text(doc, 'span', 'kmc-control-stage-title', column.label));
       heading.appendChild(text(doc, 'span', 'kmc-control-stage-count', column.orders.length));
       stage.appendChild(heading);
+
+      if (Array.isArray(column.alerts) && column.alerts.length) {
+        const alerts = doc.createElement('div');
+        alerts.className = 'kmc-control-structural-alerts';
+        column.alerts.forEach(alert => {
+          const item = doc.createElement('div');
+          item.className = `kmc-control-structural-alert ${controlHealthClass(alert.health)}`;
+          item.setAttribute('data-control-root-cause', alert.code);
+          item.appendChild(text(doc, 'strong', 'kmc-control-structural-count', `${alert.count} commandes`));
+          item.appendChild(text(doc, 'span', 'kmc-control-structural-summary', alert.summary));
+          alerts.appendChild(item);
+        });
+        stage.appendChild(alerts);
+      }
 
       const list = doc.createElement('div');
       list.className = 'kmc-control-order-list';
