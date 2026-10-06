@@ -177,6 +177,42 @@ test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal sc
 });
 
 
+test('catalog and ops provider capabilities remain scoped to preserved evidence', () => {
+  const report = reconciliation.run({ root: ROOT });
+
+  expect(report.rows.find(
+    row => row.provider === 'aliexpress' && row.capability === 'sourcing.exact_unit'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'aliexpress' && row.capability === 'sourcing.live_stock_price'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'noon' && row.capability === 'sourcing.catalog_pipeline'
+  )).toMatchObject({
+    classification: 'GAP',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'cloudinary' && row.capability === 'media.upload'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'CLOSED_LEGACY_OR_CONFIG_ONLY',
+    highest_proof: 'UNQUALIFIED',
+  });
+});
+
+
 test('messaging capability ledger does not confuse implementation with provider proof', () => {
   const report = reconciliation.run({ root: ROOT });
 
