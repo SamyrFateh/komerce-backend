@@ -8,7 +8,7 @@
  * @outputs       canonical_logistics_control_chain_projection, single_order_control_snapshot
  * @depends       db, dashboard-metrics/_helpers
  * @used-by       services/dashboard-operations.js, services/order-360.js
- * @db-read       orders, order_items, purchase_lines, purchase_orders, supplier_execution_payments, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, incidents, signals
+ * @db-read       orders, order_items, purchase_lines, purchase_orders, supplier_execution_payments, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, incidents, alerts, signals
  * @db-write      none
  * @db-txn        none
  * @doctrine      DOCTRINE_LOGISTICS_CONTROL_CHAIN, dashboard_no_business_recompute, server_market_scope_is_authority
@@ -244,6 +244,25 @@ async function getControlChain(options = {}) {
         LEFT JOIN parcels ip ON ip.id = i.parcel_id
         JOIN scoped_orders so ON so.id = COALESCE(i.order_id, ip.order_id)
        WHERE i.status IN ('open','investigating')
+      UNION ALL
+      -- Les erreurs de création de PO sont déjà des faits Purchasing persistés
+      -- dans alerts et rattachés à la commande. La Control Tower les projette,
+      -- sans créer de nouveau statut métier ni recopier leur lifecycle.
+      SELECT so.id AS order_id,
+             a.type AS signal_type,
+             CASE a.severity
+               WHEN 'high' THEN 'high'
+               ELSE 'warning'
+             END AS severity,
+             COALESCE(a.title, a.description, a.type) AS summary,
+             'purchasing' AS owner_role,
+             a.created_at
+        FROM alerts a
+        JOIN scoped_orders so
+          ON a.entity_type = 'order'
+         AND a.entity_id = so.id
+       WHERE a.type = 'purchasing_po_creation_failed'
+         AND a.resolved_at IS NULL
       UNION ALL
       -- Un signal de paiement fournisseur reste un fait GLOBAL. La Control Tower
       -- ne lui invente jamais un market_id : elle projette seulement son impact
