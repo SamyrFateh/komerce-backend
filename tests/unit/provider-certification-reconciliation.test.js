@@ -106,3 +106,37 @@ test('résumé distingue CONFIRMED / RECLASSIFIED / GAP sans confondre highest p
     closed: 1,
   });
 });
+
+
+test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal scopes', () => {
+  const { loadCapabilityLedger, reconcileCapabilityLedger } = require('../../services/provider-capability-certifications');
+  const ledger = loadCapabilityLedger();
+  const report = reconcileCapabilityLedger({ ledger });
+
+  const ebay = report.rows.find(
+    row => row.provider === 'ebay' && row.capability === 'sourcing.catalog_pipeline'
+  );
+  expect(ebay).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P3',
+  });
+
+  const stripe = report.rows.find(
+    row => row.provider === 'stripe' && row.capability === 'payments.intent_webhook_confirmation'
+  );
+  expect(stripe).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'PROVEN',
+    highest_proof: 'P4',
+  });
+
+  const paypal = report.rows.find(
+    row => row.provider === 'paypal' && row.capability === 'payments.order_create_readback'
+  );
+  expect(paypal).toMatchObject({
+    classification: 'RECLASSIFIED',
+    availability: 'REPORTED_PROOF_NOT_INDEPENDENTLY_RECHECKED',
+    highest_proof: 'P1',
+  });
+});
