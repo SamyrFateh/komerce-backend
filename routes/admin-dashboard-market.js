@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_operator, requested_market_code, dashboard_filters
  * @outputs       authorized_market_pilotage_projection, authorized_market_commerce_projection, authorized_market_operations_projection, authorized_market_finance_projection, canonical_reference_resolution, global_dashboard_gate, canonical_admin_context
- * @depends       db, middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-finance-canonical, services/dashboard-admin-context, services/canonical-reference-resolver
+ * @depends       db, middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-finance-canonical, services/dashboard-admin-context, services/canonical-reference-resolver, services/market-delegation-service
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
  * @db-write      none
