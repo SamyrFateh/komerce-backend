@@ -59,6 +59,23 @@ describe('canonical reference resolver', () => {
       href: '/admin/workspaces/operations',
       fallback_href: '/admin/orders/K-104829',
     });
+
+
+    const parcel = {
+      entity_type: 'PARCEL',
+      canonical_id: 'parcel-1',
+      order_reference: 'K-104829',
+    };
+    expect(resolver.canonicalDestination(parcel, { role: 'market_operator', global: false })).toEqual({
+      owner: 'logistics',
+      href: '/admin/orders/K-104829',
+      fallback_href: '/admin/orders/K-104829',
+    });
+    expect(resolver.canonicalDestination(parcel, { role: 'admin', global: true })).toEqual({
+      owner: 'logistics',
+      href: '/admin/workspaces/shipping-customs',
+      fallback_href: '/admin/orders/K-104829',
+    });
   });
 
   test('résout une référence vers la lineage et la position courante sans créer de statut', async () => {
