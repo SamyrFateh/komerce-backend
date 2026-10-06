@@ -80,21 +80,15 @@ async function authorization(client, req, capability) {
   });
 }
 
-router.get(
-  '/central/team-matrix',
-  authenticate,
-  requireAdmin,
-  requireDashboardGlobalAuthority,
-  async (req, res, next) => {
-    try {
-      res.set('Cache-Control', 'private, no-store');
-      const matrix = await listCentralTeamMatrix(db);
-      res.json(matrix);
-    } catch (error) {
-      next(error);
-    }
+router.get('/central/team-matrix', authenticate, requireAdmin, requireDashboardGlobalAuthority, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'private, no-store');
+    const matrix = await listCentralTeamMatrix(db);
+    res.json(matrix);
+  } catch (error) {
+    next(error);
   }
-);
+});
 
 router.get('/markets/:marketCode/team', authenticate, async (req, res, next) => {
   try {
