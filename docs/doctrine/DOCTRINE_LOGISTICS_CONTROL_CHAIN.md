@@ -442,4 +442,19 @@ ORDER
 
 Cette matrice ne crée aucun nouveau lifecycle. Elle sert à révéler les trous de modèle, transitions ambiguës, reprises manuelles non formalisées, responsabilités mal définies et preuves manquantes.
 
+### 15.1 Premier tronçon — ORDER → PURCHASING → SUPPLIER
+
+Les premiers cas de référence sont :
+
+| Situation | Source canonique | Projection Control Tower |
+| --- | --- | --- |
+| besoin d'achat couvert et engagement fournisseur normal | purchase lines / PO | GREEN |
+| item non couvert après la fenêtre canonique | signal `ordered_without_purchase_order` | RED / PURCHASING |
+| création de PO impossible | alerte `purchasing_po_creation_failed` ouverte | RED / PURCHASING |
+| paiement fournisseur ambigu ou rejeté, ou rapprochement mismatch | signal global `supplier_payment_review` projeté par filiation PO → lignes → commandes | ORANGE ou RED selon la sévérité canonique |
+| achats reçus mais commande toujours `ordered` | signal `purchase_order_receipt_stuck` | ORANGE |
+| retard fournisseur sans preuve canonique d'échéance attendue | aucune déduction | GREEN tant qu'aucun fait canonique de risque/blocage n'existe |
+
+Une durée arbitraire ne doit jamais être utilisée pour fabriquer un `SUPPLIER_DELAY`. Le retard fournisseur ne devient projetable que lorsqu'une échéance attendue ou un signal canonique comparable existe.
+
 Le développement E2E doit progresser étape par étape, en privilégiant d'abord les invariants les plus structurants de `ORDER → PURCHASING → SUPPLIER`, puis en déroulant jusqu'au relais.
