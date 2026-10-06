@@ -110,6 +110,7 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
   test('le schéma Commerce respecte DashboardSchema V1', () => {
     const schema = schemaContract.validateDashboardSchema(commerce.COMMERCE_SCHEMA);
     expect(schema.id).toBe('commerce');
+    expect(schema.description).toMatch(/rythme/i);
     expect(schema.filters[0].key).toBe('period');
     expect(schema.metrics.source).toBe('commerce.metrics');
     expect(schema.sections.map(section => section.source)).toEqual([

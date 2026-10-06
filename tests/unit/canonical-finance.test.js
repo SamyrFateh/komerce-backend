@@ -106,6 +106,7 @@ describe('LOT 2F-CANON — Finance vivant', () => {
   test('le schéma Finance respecte DashboardSchema et couvre la rentabilité relais', () => {
     const schema = schemaContract.validateDashboardSchema(finance.FINANCE_SCHEMA);
     expect(schema.id).toBe('finance');
+    expect(schema.description).toMatch(/marge est fiable/i);
     expect(schema.metrics.source).toBe('finance.metrics');
     expect(schema.sections.map(section => section.source)).toEqual([
       'finance.trend',
@@ -171,6 +172,9 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     ]);
     expect(decisions.some(item => /variances élevées|à suivre|non rapprochés/i.test(item.label))).toBe(false);
 
+    expect(financeDecision.headlineMetrics(payload, finance).map(item => item.key)).toEqual([
+      'ca-encaisse', 'cout-reel', 'marge', 'completude',
+    ]);
     expect(financeDecision.overviewCards(payload, finance)).toHaveLength(4);
     expect(financeDecision.completenessProgress(payload, finance)[0]).toEqual({
       label: 'Complétude des coûts',

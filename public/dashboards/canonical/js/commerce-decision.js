@@ -339,9 +339,9 @@
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'DASHBOARD · COMMERCE'));
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'FLUX · COMMERCE'));
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Commerce'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir ce qui se vend, ce qui se perd et où concentrer l’attention commerciale.'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir ce qui se vend, à quel rythme et où concentrer l’attention commerciale.'));
     dashboard.appendChild(header);
     dashboard.appendChild(periodControl(doc, options.period || payload.period || '30', options.onPeriodChange));
 
@@ -351,6 +351,19 @@
       host.className = 'kmc-cockpit-decisions';
       decisionUi.DecisionStrip.render(host, { items: decisions });
       dashboard.appendChild(host);
+    }
+
+    const headline = metricItems(payload, base).slice(0, 4);
+    if (headline.length) {
+      const section = cardSection(
+        doc,
+        'Lecture commerciale',
+        'Quatre indicateurs canoniques : encaissement, volume, panier et produits vendus.',
+        'commerce-kpis'
+      );
+      section.section.className += ' is-cockpit-truth';
+      ui.MetricStrip.render(section.body, { items: headline });
+      dashboard.appendChild(section.section);
     }
 
     const viability = viabilityItems(payload, base);

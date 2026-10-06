@@ -136,6 +136,11 @@
     }));
   }
 
+  function headlineMetrics(payload, base) {
+    const keep = new Set(['ca-encaisse', 'cout-reel', 'marge', 'completude']);
+    return metricItems(payload, base).filter(item => keep.has(item.key));
+  }
+
   function pair(payload, base, key, label) {
     const item = kpi(payload, key);
     return item ? { label, value: displayMetric(base, item) } : null;
@@ -376,9 +381,9 @@
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'DASHBOARD · FINANCE'));
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'FLUX · FINANCE'));
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Finance'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Lire l’argent encaissé, la vérité des coûts, la marge et les écarts à traiter sans masquer les données incomplètes.'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir où est l’argent, si la marge est fiable et quelles anomalies exigent une action.'));
     dashboard.appendChild(header);
     dashboard.appendChild(periodControl(doc, options.period || payload.period || '30', options.onPeriodChange));
 
@@ -390,42 +395,24 @@
       dashboard.appendChild(host);
     }
 
+    const economics = cardSection(
+      doc,
+      'Économie',
+      'Encaissement, coût réel, marge consolidée et complétude : la lecture financière minimale.',
+      'finance-kpis'
+    );
+    economics.section.className += ' is-cockpit-truth';
+    ui.MetricStrip.render(economics.body, { items: headlineMetrics(payload, base) });
+    dashboard.appendChild(economics.section);
+
     const supplierPayments = supplierPaymentReviewItems(payload, base);
     if (supplierPayments.length) {
       const review = payload.supplier_payment_review || {};
       const description = review.truncated
         ? `${supplierPayments.length} sur ${base.formatNumber(review.count, 0)} affiché(s) — état courant, hors filtre période. Aucun total multi-devise.`
         : 'État courant des paiements fournisseur ambigus, rejetés ou mismatched. Aucun total multi-devise.';
-      const section = cardSection(doc, 'Paiements fournisseur à revoir', description, 'finance-supplier-payments');
+      const section = cardSection(doc, 'Trésorerie · paiements fournisseur à revoir', description, 'finance-supplier-payments');
       decisionUi.RankedList.render(section.body, { items: supplierPayments });
-      dashboard.appendChild(section.section);
-    }
-
-    const kpis = cardSection(doc, 'Indicateurs financiers', 'Valeurs canoniques de la période sélectionnée.', 'finance-kpis');
-
-    kpis.section.className += ' is-cockpit-truth';
-    ui.MetricStrip.render(kpis.body, { items: metricItems(payload, base) });
-    dashboard.appendChild(kpis.section);
-
-    const overview = overviewCards(payload, base);
-    if (overview.length) {
-      const section = cardSection(doc, 'Lecture financière', 'Encaissements, coûts, marge et remboursements sans double comptage côté navigateur.', 'finance-overview');
-      decisionUi.SummaryCards.render(section.body, { items: overview });
-      dashboard.appendChild(section.section);
-    }
-
-    const completeness = completenessProgress(payload, base);
-    if (completeness.length) {
-      const section = cardSection(doc, 'Complétude du costing', 'La marge réelle n’est fiable qu’à hauteur de la couverture réellement disponible.', 'finance-completeness');
-      decisionUi.ProgressCards.render(section.body, { items: completeness });
-      dashboard.appendChild(section.section);
-    }
-
-    const trend = trendItems(payload, base);
-    if (trend.length) {
-      const section = cardSection(doc, 'Trajectoire financière', 'Périodes et taux de couverture fournis par le backend.', 'finance-trend');
-
-      decisionUi.RankedList.render(section.body, { items: trend });
       dashboard.appendChild(section.section);
     }
 
@@ -434,49 +421,40 @@
     if (incompleteCostOrders.length || variances.length) {
       const grid = doc.createElement('div');
       grid.className = 'kmc-decision-dashboard-grid-2';
-      const incompleteCount = kpi(payload, 'cmds_cout_incomplet');
-      const incompleteDescription = incompleteCount && Number(incompleteCount.value) > incompleteCostOrders.length
-        ? `${incompleteCostOrders.length} sur ${base.formatNumber(incompleteCount.value, 0)} affichée(s) — les plus anciennes en priorité.`
-        : 'Commandes dont le coût réel n’est pas encore complet — mêmes commandes que le bandeau de décision.';
-      const incompleteSection = cardSection(doc, 'Coûts incomplets', incompleteDescription, 'finance-incomplete-costs');
-      decisionUi.RankedList.render(incompleteSection.body, { items: incompleteCostOrders });
-      grid.appendChild(incompleteSection.section);
-      const variance = cardSection(doc, 'Variances récentes', 'Écarts non nuls — mêmes commandes que le bandeau de décision, sans seuil « élevé » inventé côté navigateur.', 'finance-variances');
-      decisionUi.RankedList.render(variance.body, { items: variances });
-      grid.appendChild(variance.section);
+
+      if (incompleteCostOrders.length) {
+        const incompleteCount = kpi(payload, 'cmds_cout_incomplet');
+        const description = incompleteCount && Number(incompleteCount.value) > incompleteCostOrders.length
+          ? `${incompleteCostOrders.length} sur ${base.formatNumber(incompleteCount.value, 0)} affichée(s) — les plus anciennes en priorité.`
+          : 'Commandes dont le coût réel n’est pas encore complet.';
+        const section = cardSection(doc, 'Coûts incomplets', description, 'finance-incomplete-costs');
+        decisionUi.RankedList.render(section.body, { items: incompleteCostOrders });
+        grid.appendChild(section.section);
+      }
+
+      if (variances.length) {
+        const section = cardSection(
+          doc,
+          'Variances observées',
+          'Écarts non nuls, sans seuil inventé côté navigateur.',
+          'finance-variances'
+        );
+        decisionUi.RankedList.render(section.body, { items: variances });
+        grid.appendChild(section.section);
+      }
+
       dashboard.appendChild(grid);
     }
 
-    const costing = costingItems(payload, base);
-    if (costing.length) {
-      const section = cardSection(doc, 'Vérité du costing', 'Couverture et qualité du calcul de marge telles que fournies par les autorités métier — pas une liste de commandes.', 'finance-costing-quality');
-      decisionUi.RankedList.render(section.body, { items: costing });
-      dashboard.appendChild(section.section);
-    }
-
-    const payments = paymentItems(payload, base);
-    const relays = relayItems(payload, base);
-    if (payments.length || relays.length) {
-      const grid = doc.createElement('div');
-      grid.className = 'kmc-decision-dashboard-grid-2';
-      const paymentSection = cardSection(doc, 'Encaissements par mode', 'Mix de paiement fourni par le backend.', 'finance-payments');
-      decisionUi.RankedList.render(paymentSection.body, { items: payments });
-      grid.appendChild(paymentSection.section);
-      const relaySection = cardSection(doc, 'Rentabilité relais', 'La marge réelle reste inconnue si le costing n’est pas complet.', 'finance-relays');
-      decisionUi.RankedList.render(relaySection.body, { items: relays });
-      grid.appendChild(relaySection.section);
-      dashboard.appendChild(grid);
-    }
-
-    const refunds = refundItems(payload, base);
-    if (refunds.length) {
-      const refundCount = payload && payload.refunds && Number.isFinite(Number(payload.refunds.count))
-        ? Number(payload.refunds.count) : null;
-      const refundsDescription = refundCount != null && refundCount > refunds.length
-        ? `${refunds.length} sur ${base.formatNumber(refundCount, 0)} affiché(s) — les plus récents en priorité.`
-        : 'Remboursements finalisés de la période.';
-      const section = cardSection(doc, 'Remboursements récents', refundsDescription, 'finance-refunds');
-      decisionUi.RankedList.render(section.body, { items: refunds });
+    const trend = trendItems(payload, base);
+    if (trend.length) {
+      const section = cardSection(
+        doc,
+        'Trajectoire financière',
+        'Évolution fournie par le backend avec la couverture réelle des coûts.',
+        'finance-trend'
+      );
+      decisionUi.RankedList.render(section.body, { items: trend });
       dashboard.appendChild(section.section);
     }
 
@@ -511,6 +489,7 @@
       },
       projectDecisionItems: payload => decisionItems(payload, base),
       projectMetricItems: payload => metricItems(payload, base),
+      projectHeadlineMetrics: payload => headlineMetrics(payload, base),
       projectOverviewCards: payload => overviewCards(payload, base),
       projectCompletenessProgress: payload => completenessProgress(payload, base),
       projectTrendItems: payload => trendItems(payload, base),
@@ -532,6 +511,7 @@
     displayMetric,
     decisionItems,
     metricItems,
+    headlineMetrics,
     overviewCards,
     completenessProgress,
     trendItems,
