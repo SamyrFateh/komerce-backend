@@ -490,6 +490,25 @@ for (const { file, label } of baselineFiles) {
   });
 }
 
+// ── 6. Dette de contrat OpenAPI ───────────────────────────────
+//
+// Le rapport global doit inclure la dette contractuelle canonique, sinon un
+// backend peut apparaître "Debt Zero" alors que des réponses HTTP restent
+// UNKNOWN dans docs/contract/openapi.json.
+const openapiContract = readJson('docs/contract/openapi.json');
+if (openapiContract) {
+  const unknownResponses = Number(openapiContract['x-contract-debt']?.unknown_responses || 0);
+  if (unknownResponses > 0) {
+    addDebt({
+      rule: 'CONTRACT',
+      label: 'Réponses API 200 sans forme prouvée',
+      lot: 'Fermer chaque UNKNOWN par test, lecture de route/service fiable ou contrat explicite',
+      entries: Array.from({ length: unknownResponses }, (_, index) => `UNKNOWN response #${index + 1}`),
+      note: 'Source : docs/contract/openapi.json → x-contract-debt.unknown_responses',
+    });
+  }
+}
+
 // ════════════════════════════════════════════════════════════════
 // SYNTHÈSE & RAPPORT
 // ════════════════════════════════════════════════════════════════
