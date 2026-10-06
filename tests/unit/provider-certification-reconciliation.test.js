@@ -175,3 +175,41 @@ test('cross-domain capability ledger preserves proved eBay, Stripe and PayPal sc
     highest_proof: 'P1',
   });
 });
+
+
+test('messaging capability ledger does not confuse implementation with provider proof', () => {
+  const { loadCapabilityLedger, reconcileCapabilityLedger } = require('../../services/provider-capability-certifications');
+  const report = reconcileCapabilityLedger({ ledger: loadCapabilityLedger() });
+
+  expect(report.rows.find(
+    row => row.provider === 'meta-whatsapp' && row.capability === 'messaging.outbound_template_send'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'IMPLEMENTED_NOT_PROVIDER_PROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'authkey' && row.capability === 'auth.otp_delivery'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'IMPLEMENTED_NOT_PROVIDER_PROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'brevo' && row.capability === 'messaging.transactional_email_send'
+  )).toMatchObject({
+    classification: 'GAP',
+    availability: 'CLIENT_IMPLEMENTED_RUNTIME_USE_UNPROVEN',
+    highest_proof: 'UNQUALIFIED',
+  });
+
+  expect(report.rows.find(
+    row => row.provider === 'twilio' && row.capability === 'messaging.runtime'
+  )).toMatchObject({
+    classification: 'CONFIRMED',
+    availability: 'CLOSED_CONFIG_ONLY',
+    highest_proof: 'UNQUALIFIED',
+  });
+});
