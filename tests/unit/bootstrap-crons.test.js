@@ -46,6 +46,11 @@ jest.mock('../../utils/rules', () => ({
   getRuleNumber: (...args) => mockGetRuleNumber(...args),
 }));
 
+const mockGenerateSignals = jest.fn();
+jest.mock('../../services/signal-service', () => ({
+  generateSignals: (...args) => mockGenerateSignals(...args),
+}));
+
 const crons = require('../../bootstrap/crons');
 
 describe('bootstrap/crons', () => {
@@ -57,6 +62,7 @@ describe('bootstrap/crons', () => {
     mockProcessBackorderReminders.mockResolvedValue({ processed: 0, sms_sent: 0 });
     mockAutoConfirmExpired.mockResolvedValue({ auto_confirmed: 0 });
     mockGetRuleNumber.mockResolvedValue(60);
+    mockGenerateSignals.mockResolvedValue({ expired: 0, retired_obsolete: 0, generators: {} });
   });
 
   afterEach(() => {
@@ -339,6 +345,74 @@ describe('bootstrap/crons', () => {
     });
   });
 
+  // ── startSignalGenerationCron ───────────────────────────────────────────
+  describe('startSignalGenerationCron', () => {
+    test('génère les signaux après 60 secondes puis toutes les 15 minutes', async () => {
+      mockGenerateSignals.mockResolvedValue({
+        expired: 2,
+        retired_obsolete: 1,
+        generators: {
+          supplier_payment_review: { generated: 3 },
+          pickup_overdue: { generated: 1 },
+        },
+      });
+
+      crons.startSignalGenerationCron({ generateSignals: mockGenerateSignals });
+
+      await jest.advanceTimersByTimeAsync(59 * 1000);
+      expect(mockGenerateSignals).not.toHaveBeenCalled();
+
+      await jest.advanceTimersByTimeAsync(1 * 1000);
+      expect(mockGenerateSignals).toHaveBeenCalledTimes(1);
+      expect(mockLog.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          generated: 4,
+          expired: 2,
+          retired_obsolete: 1,
+          generator_count: 2,
+        }),
+        'Decision signal generation pass done'
+      );
+
+      await jest.advanceTimersByTimeAsync(15 * 60 * 1000);
+      expect(mockGenerateSignals).toHaveBeenCalledTimes(2);
+    });
+
+    test('empêche deux générations de se chevaucher', async () => {
+      let release;
+      mockGenerateSignals.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }))
+        .mockResolvedValueOnce({ expired: 0, retired_obsolete: 0, generators: {} });
+
+      crons.startSignalGenerationCron({ generateSignals: mockGenerateSignals });
+      await jest.advanceTimersByTimeAsync(60 * 1000);
+      expect(mockGenerateSignals).toHaveBeenCalledTimes(1);
+
+      await jest.advanceTimersByTimeAsync(15 * 60 * 1000);
+      expect(mockGenerateSignals).toHaveBeenCalledTimes(1);
+
+      release({ expired: 0, retired_obsolete: 0, generators: {} });
+      await Promise.resolve();
+      await jest.advanceTimersByTimeAsync(15 * 60 * 1000);
+      expect(mockGenerateSignals).toHaveBeenCalledTimes(2);
+    });
+
+    test('une erreur de génération est non fatale et le cycle suivant repart', async () => {
+      mockGenerateSignals
+        .mockRejectedValueOnce(new Error('signal db unavailable'))
+        .mockResolvedValueOnce({ expired: 0, retired_obsolete: 0, generators: {} });
+
+      crons.startSignalGenerationCron({ generateSignals: mockGenerateSignals });
+      await jest.advanceTimersByTimeAsync(60 * 1000);
+      expect(mockLog.error).toHaveBeenCalledWith(
+        expect.objectContaining({ err: expect.any(Error) }),
+        'Decision signal generation cron failed'
+      );
+
+      await jest.advanceTimersByTimeAsync(15 * 60 * 1000);
+      expect(mockGenerateSignals).toHaveBeenCalledTimes(2);
+    });
+  });
+
   // ── startOperationalCrons ────────────────────────────────────────────────
   describe('startOperationalCrons', () => {
     test('câble tous les sous-crons — au moins un appel de chaque service dépendant', async () => {
@@ -362,6 +436,7 @@ describe('bootstrap/crons', () => {
       await jest.advanceTimersByTimeAsync(60 * 60 * 1000);
       expect(mockProcessCashRelaisReminders).toHaveBeenCalled();
       expect(mockAutoConfirmExpired).toHaveBeenCalled();
+      expect(mockGenerateSignals).toHaveBeenCalled();
     });
 
     test('expose bien toutes les fonctions individuelles pour tests/monitoring ciblés', () => {
