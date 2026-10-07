@@ -157,6 +157,10 @@ function publicSignal(signal, entityMaps) {
     ? entityMap.get(String(signal.entity_id)) || { type: signal.entity_type, ref: null, label: signal.entity_type, href: null }
     : (signal.entity_type ? { type: signal.entity_type, ref: null, label: signal.entity_type, href: null } : null);
 
+  const ownerRole = signal.owner_role || null;
+  const recommendation = signal.recommendation || null;
+  const workHref = entity && entity.href ? entity.href : null;
+
   return {
     signal_ref: signal.signal_ref,
     family: signalAdminService.familyForType(signal.signal_type),
@@ -164,15 +168,21 @@ function publicSignal(signal, entityMaps) {
     severity: signal.severity,
     title: signal.title,
     summary: signal.summary || null,
-    recommendation: signal.recommendation || null,
+    recommendation,
     confidence: signal.confidence || null,
-    owner_role: signal.owner_role || null,
+    owner_role: ownerRole,
     status: signal.status,
     source_module: signal.source_module || null,
     created_at: signal.created_at,
     updated_at: signal.updated_at,
     expires_at: signal.expires_at || null,
     actions: actionSet(signal.status),
+    work_item: Object.freeze({
+      owner_role: ownerRole,
+      instruction: recommendation,
+      href: workHref,
+      actionable: Boolean(ownerRole && recommendation && workHref),
+    }),
     entity,
   };
 }
