@@ -251,6 +251,58 @@ describe('GENERATORS.supplier_payment_review', () => {
   });
 });
 
+describe('GENERATORS.supplier_order_ambiguous', () => {
+  test('projette une ambiguïté fournisseur bloquée vers la commande cliente propriétaire', async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{
+        id: 'order-1',
+        reference: 'CMD-AMB',
+        purchase_order_id: 'po-amb',
+        provider: 'aliexpress',
+        created_at: '2026-10-07T10:00:00Z',
+      }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig-amb' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.supplier_order_ambiguous()).toEqual({ generated: 1 });
+
+    const [selectSql] = mockQuery.mock.calls[0];
+    expect(selectSql).toContain("e.operation = 'create_order'");
+    expect(selectSql).toContain("lc.outcome = 'ambiguous'");
+    expect(selectSql).toContain("lc.facts->>'replay_blocked'");
+    expect(selectSql).toContain("po.status = 'pending'");
+
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[0]).toBe('supplier_order_ambiguous');
+    expect(params[1]).toBe('critical');
+    expect(params[3]).toMatch(/po-amb.*aliexpress/i);
+    expect(params[8]).toBe('purchasing');
+    expect(params[9]).toBe('order');
+    expect(params[10]).toBe('order-1');
+    expect(params[14]).toEqual(expect.objectContaining({
+      purchase_order_id: 'po-amb',
+      provider: 'aliexpress',
+      replay_blocked: true,
+    }));
+  });
+
+  test('condition disparue auto-résout les signaux de création ambiguë', async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rowCount: 2 });
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.supplier_order_ambiguous()).toEqual({ generated: 0 });
+    expect(mockQuery.mock.calls[1][1]).toEqual(['supplier_order_ambiguous', null]);
+  });
+
+  test('erreur DB reste non fatale pour le cycle de signaux', async () => {
+    mockQuery = jest.fn().mockRejectedValueOnce(new Error('db down'));
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.supplier_order_ambiguous()).toEqual({ generated: 0, error: 'db down' });
+  });
+});
+
 describe('GENERATORS.parcel_blocked', () => {
   test('aucune ligne → generated:0 et autoResolve global', async () => {
     mockQuery = jest.fn()
