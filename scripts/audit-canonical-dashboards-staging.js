@@ -10,6 +10,7 @@
  */
 'use strict';
 
+const { randomUUID } = require('crypto');
 const db = require('../db');
 const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
 const pilotage = require('../services/dashboard-pilotage-market');
@@ -17,6 +18,13 @@ const commerce = require('../services/dashboard-commerce');
 const operations = require('../services/dashboard-operations');
 const finance = require('../services/dashboard-finance-canonical');
 const referenceResolver = require('../services/canonical-reference-resolver');
+
+const EXACT_ASSERTION = Object.freeze({
+  stage: 'PURCHASING',
+  health: 'RED',
+  cause: 'supplier_payment_blocked',
+  owner: 'finance',
+});
 
 function parseArgs(argv = process.argv) {
   const out = { market: 'KM', period: '30' };
@@ -111,6 +119,79 @@ async function auditReferenceResolution(controlChain, market) {
   return Object.freeze(results);
 }
 
+async function seedExactBusinessAssertion(market) {
+  const userId = randomUUID();
+  const relaisId = randomUUID();
+  const orderId = randomUUID();
+  const signalId = randomUUID();
+  const suffix = Date.now().toString(36).toUpperCase();
+  const reference = `AUDIT-EXACT-${market.code}-${suffix}`;
+
+  await db.query(
+    `INSERT INTO users (id, full_name, email, phone, role)
+     VALUES ($1,$2,$3,$4,'client')`,
+    [userId, 'Audit Exact Client', `audit-exact-${suffix.toLowerCase()}@komerce.test`, `+2699${String(Date.now()).slice(-7)}`]
+  );
+  await db.query(
+    `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+     VALUES ($1,$2,'Audit Exact Agent',$3,'Audit Exact Address',$4)`,
+    [relaisId, `AUDIT EXACT ${market.code} ${suffix}`, `+2698${String(Date.now()).slice(-7)}`, market.id]
+  );
+  await db.query(
+    `INSERT INTO orders
+       (id, user_id, relais_id, market_id, reference, status, payment_status, payment_mode, total_kmf, total_eur, ordered_at)
+     VALUES ($1,$2,$3,$4,$5,'ordered','paid','cash_relais',25000,50,NOW())`,
+    [orderId, userId, relaisId, market.id, reference]
+  );
+  await db.query(
+    `INSERT INTO signals
+       (id, signal_type, severity, title, summary, owner_role, recommendation, status, entity_type, entity_id, market_id)
+     VALUES ($1,$2,'critical','Paiement fournisseur bloqué','Paiement fournisseur bloqué',$3,
+             'Traiter le paiement fournisseur avant poursuite','open','order',$4,$5)`,
+    [signalId, EXACT_ASSERTION.cause, EXACT_ASSERTION.owner, orderId, market.id]
+  );
+
+  return Object.freeze({ userId, relaisId, orderId, signalId, reference });
+}
+
+async function cleanupExactBusinessAssertion(fixture) {
+  if (!fixture) return;
+  await db.query('DELETE FROM signals WHERE id = $1', [fixture.signalId]);
+  await db.query('DELETE FROM orders WHERE id = $1', [fixture.orderId]);
+  await db.query('DELETE FROM relais WHERE id = $1', [fixture.relaisId]);
+  await db.query('DELETE FROM users WHERE id = $1', [fixture.userId]);
+}
+
+async function assertExactBusinessOutcome(market) {
+  const fixture = await seedExactBusinessAssertion(market);
+  try {
+    const resolved = await referenceResolver.resolveReference(fixture.reference, {
+      role: 'admin',
+      global: true,
+    });
+    assert(resolved.found === true, 'exact_assertion_reference_not_found');
+    const match = resolved.matches.find(row => row.entity_type === 'ORDER');
+    assert(match, 'exact_assertion_order_match_missing');
+    assert(match.customer_order_reference === fixture.reference, 'exact_assertion_order_reference_mismatch');
+    assert(match.current_position?.stage === EXACT_ASSERTION.stage, 'exact_assertion_stage_mismatch');
+    assert(match.current_position?.health === EXACT_ASSERTION.health, 'exact_assertion_health_mismatch');
+    assert(match.current_position?.cause?.code === EXACT_ASSERTION.cause, 'exact_assertion_cause_mismatch');
+    assert(match.current_position?.cause?.owner_role === EXACT_ASSERTION.owner, 'exact_assertion_owner_mismatch');
+
+    return Object.freeze({
+      reference: fixture.reference,
+      stage: match.current_position.stage,
+      health: match.current_position.health,
+      cause: match.current_position.cause.code,
+      owner: match.current_position.cause.owner_role,
+      expected: EXACT_ASSERTION,
+      passed: true,
+    });
+  } finally {
+    await cleanupExactBusinessAssertion(fixture);
+  }
+}
+
 async function resolveMarket(code) {
   const { rows } = await db.query(
     'SELECT id, code, name, currency FROM markets WHERE code = $1 AND is_active = TRUE LIMIT 1',
@@ -138,6 +219,7 @@ async function main(argv = process.argv) {
     finance.buildFinance({ period: args.period }, { market, now }),
   ]);
   const referenceSearch = await auditReferenceResolution(o.control_chain, market);
+  const exactBusinessAssertion = await assertExactBusinessOutcome(market);
 
   assert(p.scope?.market?.code === market.code, 'pilotage_scope_mismatch');
   assert(c.scope?.market?.code === market.code, 'commerce_scope_mismatch');
@@ -177,6 +259,7 @@ async function main(argv = process.argv) {
       },
     },
     reference_search: referenceSearch,
+    exact_business_assertion: exactBusinessAssertion,
     finance: {
       period: f.period,
       kpis: metricMap(f.kpis),
@@ -197,6 +280,7 @@ async function main(argv = process.argv) {
   }));
   console.log('[dashboard-audit] chain ' + JSON.stringify(summary.operations.control_chain));
   console.log('[dashboard-audit] reference_search ' + JSON.stringify(summary.reference_search));
+  console.log('[dashboard-audit] exact_business_assertion ' + JSON.stringify(summary.exact_business_assertion));
   console.log('[dashboard-audit] finance ' + JSON.stringify(summary.finance));
 }
 
@@ -209,4 +293,16 @@ if (require.main === module) {
     });
 }
 
-module.exports = { parseArgs, metricMap, representativeReferences, latestAuditCustomsReference, auditReferenceResolution, resolveMarket, main };
+module.exports = {
+  EXACT_ASSERTION,
+  parseArgs,
+  metricMap,
+  representativeReferences,
+  latestAuditCustomsReference,
+  auditReferenceResolution,
+  seedExactBusinessAssertion,
+  cleanupExactBusinessAssertion,
+  assertExactBusinessOutcome,
+  resolveMarket,
+  main,
+};
