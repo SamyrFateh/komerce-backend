@@ -6,6 +6,7 @@
 const contract = require('../../services/suppliers/supplier-fulfillment-adapter-contract');
 const readiness = require('../../services/suppliers/supplier-fulfillment-readiness');
 const aliexpress = require('../../services/suppliers/aliexpress-fulfillment-adapter');
+const cj = require('../../services/suppliers/cj-fulfillment-adapter');
 
 function dbWith(row) {
   return {
@@ -145,5 +146,36 @@ describe('Supplier Fulfillment Adapter Contract', () => {
     expect(out.status).toBe('PREFLIGHT_FAILED');
     expect(out.ready).toBe(false);
     expect(out.reason).toMatch(/erreur non normalisée.*provider exploded/i);
+  });
+});
+
+
+describe('Execution replay safety contract', () => {
+  test('fail-closed : une capability non déclarée ne vaut jamais idempotence', () => {
+    const adapter = {
+      provider: 'x',
+      evaluate: jest.fn(),
+      buildOrderPayload: jest.fn(),
+      placeOrder: jest.fn(),
+    };
+    expect(contract.supportsIdempotentReplay('x', adapter)).toBe(false);
+  });
+
+  test('CJ autorise explicitement le replay idempotent, AliExpress le ferme', () => {
+    expect(cj.supports_idempotent_replay).toBe(true);
+    expect(aliexpress.supports_idempotent_replay).toBe(false);
+    expect(contract.supportsIdempotentReplay('cj', cj)).toBe(true);
+    expect(contract.supportsIdempotentReplay('aliexpress', aliexpress)).toBe(false);
+  });
+
+  test('un provider mismatch ne peut jamais autoriser un replay', () => {
+    const adapter = {
+      provider: 'other',
+      supports_idempotent_replay: true,
+      evaluate: jest.fn(),
+      buildOrderPayload: jest.fn(),
+      placeOrder: jest.fn(),
+    };
+    expect(contract.supportsIdempotentReplay('expected', adapter)).toBe(false);
   });
 });

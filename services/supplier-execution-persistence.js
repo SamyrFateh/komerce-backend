@@ -105,4 +105,54 @@ async function persistSupplierOrderExecution(client, {
   return row;
 }
 
-module.exports = { persistSupplierOrderExecution };
+
+async function recordSupplierCreateAmbiguity(executor, {
+  purchaseOrderId,
+  provider,
+  evidence = {},
+  replayBlocked = true,
+} = {}) {
+  const q = executor && typeof executor.query === 'function' ? executor : require('../db');
+  const poId = text(purchaseOrderId);
+  const p = text(provider)?.toLowerCase();
+  if (!poId) throw new Error('PURCHASE_ORDER_ID_REQUIRED');
+  if (!p) throw new Error('SUPPLIER_EXECUTION_PROVIDER_REQUIRED');
+
+  const providerCode = evidence.provider_code == null ? null : bounded(evidence.provider_code, 100);
+  const providerMessage = evidence.provider_message == null ? null : bounded(evidence.provider_message, 300);
+  const facts = {
+    replay_blocked: replayBlocked === true,
+    supports_idempotent_replay: replayBlocked !== true,
+    ...(evidence.error_name ? { error_name: bounded(evidence.error_name, 100) } : {}),
+  };
+
+  await q.query(`
+    INSERT INTO supplier_execution_events
+      (purchase_order_id, provider, operation, outcome, provider_code, provider_message, facts)
+    VALUES ($1,$2,'create_order','ambiguous',$3,$4,$5::jsonb)
+  `, [poId, p, providerCode, providerMessage, JSON.stringify(facts)]);
+}
+
+async function hasBlockingSupplierCreateAmbiguity(executor, {
+  purchaseOrderId,
+  provider,
+} = {}) {
+  const q = executor && typeof executor.query === 'function' ? executor : require('../db');
+  const poId = text(purchaseOrderId);
+  const p = text(provider)?.toLowerCase();
+  if (!poId || !p) return false;
+  const { rows } = await q.query(`
+    SELECT outcome, facts
+      FROM supplier_execution_events
+     WHERE purchase_order_id = $1
+       AND provider = $2
+       AND operation = 'create_order'
+     ORDER BY created_at DESC, id DESC
+     LIMIT 1
+  `, [poId, p]);
+  const row = rows[0];
+  if (!row || row.outcome !== 'ambiguous') return false;
+  return row.facts?.replay_blocked === true;
+}
+
+module.exports = { persistSupplierOrderExecution, recordSupplierCreateAmbiguity, hasBlockingSupplierCreateAmbiguity };
