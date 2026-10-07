@@ -419,7 +419,7 @@ function traceApiEdges(code) {
   }
 
   for (const wrapper of wrappers) {
-    const re = new RegExp('\\\\b' + wrapper.name + '\\\\s*\\\\(', 'g');
+    const re = new RegExp('\\b' + wrapper.name + '\\s*\\(', 'g');
     for (const m of maskedCode.matchAll(re)) {
       // La signature du wrapper reste visible après masquage du corps :
       // l'exclure par le préfixe lexical plutôt qu'avec un lookbehind fragile.
