@@ -69,6 +69,14 @@ function validateExecutionAdapter(provider, adapter) {
  * validateAdapter pour le socle (provider match + evaluate), même
  * discipline que validateExecutionAdapter.
  */
+function supportsIdempotentReplay(provider, adapter) {
+  const base = validateExecutionAdapter(provider, adapter);
+  if (!base.ok) return false;
+  // Fail closed: only an explicit true declared by the same execution adapter
+  // authorizes an automatic retry after a provider create may have happened.
+  return base.adapter.supports_idempotent_replay === true;
+}
+
 function validateReconciliationAdapter(provider, adapter) {
   const base = validateAdapter(provider, adapter);
   if (!base.ok) return base;
@@ -129,6 +137,7 @@ module.exports = {
   normalizeProvider,
   validateAdapter,
   validateExecutionAdapter,
+  supportsIdempotentReplay,
   validateReconciliationAdapter,
   validateItems,
   validateVerdict,
