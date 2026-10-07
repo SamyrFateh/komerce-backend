@@ -17,6 +17,7 @@
 'use strict';
 
 const { reconcileCustomerHandoff } = require('./customer-handoff-reconciliation');
+const { getOrderMaturity } = require('./pricing-maturity');
 
 const VERDICT = Object.freeze({
   MATCHED: 'FINANCIAL_CLOSE_MATCHED',
@@ -174,6 +175,7 @@ function output({
   incidents,
   refunds,
   supplierPayments,
+  economicMaturity,
 } = {}) {
   return Object.freeze({
     scope: 'ORDER_FINANCIAL_CLOSE',
@@ -188,6 +190,13 @@ function output({
     incidents: exposeIncidents(incidents),
     refunds: exposeRefunds(refunds),
     supplier_payments: exposeSupplierPayments(supplierPayments),
+    economic_maturity: economicMaturity
+      ? Object.freeze({
+        mature: economicMaturity.mature === true,
+        maturity_status: economicMaturity.maturity_status || null,
+        blocking_reasons: Object.freeze([...(economicMaturity.blocking_reasons || [])]),
+      })
+      : null,
   });
 }
 
@@ -197,11 +206,12 @@ async function reconcileOrderFinancialClose(client, { orderId } = {}) {
   }
 
   const order = await loadOrder(client, orderId);
-  const [handoff, incidents, refunds, supplierPayments] = await Promise.all([
+  const [handoff, incidents, refunds, supplierPayments, economicMaturity] = await Promise.all([
     reconcileCustomerHandoff(client, { orderId: order.id }),
     loadIncidents(client, order.id),
     loadRefunds(client, order.id),
     loadSupplierPayments(client, order.id),
+    getOrderMaturity(order.id, client),
   ]);
 
   const incident = incidentAssessment(incidents);
@@ -214,6 +224,7 @@ async function reconcileOrderFinancialClose(client, { orderId } = {}) {
     incidents,
     refunds,
     supplierPayments,
+    economicMaturity,
   };
 
   if (incident.active.length > 0) {
@@ -333,6 +344,15 @@ async function reconcileOrderFinancialClose(client, { orderId } = {}) {
       verdict: VERDICT.MISMATCH,
       reason: 'FINANCIAL_CLOSE_CUSTOMER_PAYMENT_NOT_PAID',
       mode: 'normal',
+    });
+  }
+
+  if (!economicMaturity || economicMaturity.mature !== true) {
+    return output({
+      ...base,
+      verdict: VERDICT.PENDING,
+      reason: 'FINANCIAL_CLOSE_ECONOMIC_FACTS_PENDING',
+      mode: 'financial',
     });
   }
 
