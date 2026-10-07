@@ -278,7 +278,7 @@ describe('GENERATORS.customer_payment_attention', () => {
     expect(params[8]).toBe('finance');
     expect(params[9]).toBe('order');
     expect(params[10]).toBe('order-cash');
-    expect(params[14]).toEqual(expect.objectContaining({ reason: 'cash_payment_overdue', reminder_hours: 12 }));
+    expect(params[13]).toEqual(expect.objectContaining({ reason: 'cash_payment_overdue', reminder_hours: 12 }));
   });
 
   test('payment_status failed est immédiatement critique sans seuil inventé', async () => {
@@ -298,8 +298,8 @@ describe('GENERATORS.customer_payment_attention', () => {
     const [, params] = mockQuery.mock.calls[1];
     expect(params[1]).toBe('critical');
     expect(params[2]).toMatch(/Paiement client échoué/);
-    expect(params[14]).toEqual(expect.objectContaining({ reason: 'payment_failed' }));
-    expect(params[14]).not.toHaveProperty('reminder_hours');
+    expect(params[13]).toEqual(expect.objectContaining({ reason: 'payment_failed' }));
+    expect(params[13]).not.toHaveProperty('reminder_hours');
   });
 });
 
