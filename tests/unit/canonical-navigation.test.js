@@ -212,7 +212,7 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
 
     expect(identity.children[1].textContent).toBe('← Retour au commerce');
     expect(identity.children[1].href).toBe('/admin/commerce');
-    expect(orders.attributes['aria-current']).toBeUndefined();
+    expect(orders.attributes['aria-current']).toBe('page');
     expect(env.api.activePrimarySurface('order-360')).toBe('orders');
     // Order-360 reste un vrai drill-down Entity 360, pas un domaine N1 promu :
     // seuls les domaines canoniques (7 du mock + Live opérationnel) apparaissent, dans l'ordre.
