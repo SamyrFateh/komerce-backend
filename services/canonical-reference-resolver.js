@@ -120,7 +120,8 @@ async function queryMatches(reference) {
              o.id AS order_id,
              o.reference AS order_reference,
              o.market_id,
-             m.code AS market_code
+             m.code AS market_code,
+             NULL::uuid AS purchase_order_id
         FROM orders o
         LEFT JOIN markets m ON m.id = o.market_id
        WHERE lower(o.reference) = lower($1)
@@ -148,8 +149,6 @@ async function queryMatches(reference) {
         JOIN orders o ON o.id = por.order_id
         LEFT JOIN markets m ON m.id = o.market_id
        WHERE por.order_id IS NOT NULL
-
-      UNION ALL
 
       UNION ALL
 
