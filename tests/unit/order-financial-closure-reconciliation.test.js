@@ -3,8 +3,12 @@
 /** @test-kind unit @test-runner jest @test-requires none */
 
 const mockHandoff = jest.fn();
+const mockMaturity = jest.fn();
 jest.mock('../../services/customer-handoff-reconciliation', () => ({
   reconcileCustomerHandoff: (...args) => mockHandoff(...args),
+}));
+jest.mock('../../services/pricing-maturity', () => ({
+  getOrderMaturity: (...args) => mockMaturity(...args),
 }));
 
 const {
@@ -12,12 +16,19 @@ const {
   supplierPaymentAssessment,
 } = require('../../services/order-financial-closure-reconciliation');
 
-function client({ order, incidents = [], refunds = [], supplierPayments = [] }) {
+function client({
+  order,
+  incidents = [],
+  refunds = [],
+  supplierPayments = [],
+  realCostKmf = 10000,
+}) {
   const query = jest.fn()
     .mockResolvedValueOnce({ rows: [order] })
     .mockResolvedValueOnce({ rows: incidents })
     .mockResolvedValueOnce({ rows: refunds })
-    .mockResolvedValueOnce({ rows: supplierPayments });
+    .mockResolvedValueOnce({ rows: supplierPayments })
+    .mockResolvedValueOnce({ rows: [{ real_cost_kmf: String(realCostKmf) }] });
   return { query };
 }
 
@@ -51,6 +62,11 @@ beforeEach(() => {
     verdict: 'HANDOFF_MATCHED',
     reason: null,
   });
+  mockMaturity.mockResolvedValue({
+    mature: true,
+    maturity_status: 'MATURE',
+    blocking_reasons: [],
+  });
 });
 
 test('normal path closes only with proven handoff and reconciled finances', async () => {
@@ -67,6 +83,58 @@ test('normal path closes only with proven handoff and reconciled finances', asyn
       order_status: 'collected',
       payment_status: 'paid',
       handoff_verdict: 'HANDOFF_MATCHED',
+      economic_maturity: {
+        mature: true,
+        maturity_status: 'MATURE',
+        blocking_reasons: [],
+      },
+      economic_actuals: {
+        sale_total_kmf: 25000,
+        real_cost_kmf: 10000,
+        consolidated_margin_kmf: 15000,
+      },
+    });
+});
+
+test('matched financial close exposes real cost and consolidated margin from actual allocations', async () => {
+  const c = client({
+    order: baseOrder({ total_kmf: 30000 }),
+    supplierPayments: [supplierPayment()],
+    realCostKmf: 12000,
+  });
+
+  await expect(reconcileOrderFinancialClose(c, { orderId: baseOrder().id }))
+    .resolves.toMatchObject({
+      verdict: 'FINANCIAL_CLOSE_MATCHED',
+      economic_actuals: {
+        sale_total_kmf: 30000,
+        real_cost_kmf: 12000,
+        consolidated_margin_kmf: 18000,
+      },
+    });
+});
+
+test('normal path remains pending until economic facts are mature', async () => {
+  mockMaturity.mockResolvedValueOnce({
+    mature: false,
+    maturity_status: 'IMMATURE',
+    blocking_reasons: ['customs_cost_reconciled', 'freight_reconciled'],
+  });
+  const c = client({
+    order: baseOrder(),
+    supplierPayments: [supplierPayment()],
+  });
+
+  await expect(reconcileOrderFinancialClose(c, { orderId: baseOrder().id }))
+    .resolves.toMatchObject({
+      verdict: 'FINANCIAL_CLOSE_PENDING',
+      reason: 'FINANCIAL_CLOSE_ECONOMIC_FACTS_PENDING',
+      mode: 'financial',
+      economic_maturity: {
+        mature: false,
+        maturity_status: 'IMMATURE',
+        blocking_reasons: ['customs_cost_reconciled', 'freight_reconciled'],
+      },
     });
 });
 

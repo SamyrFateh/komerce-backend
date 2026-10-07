@@ -40,6 +40,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
   const { reconcileHubInbound } = require('../../services/hub-inbound-reconciliation');
   const { reconcileCustomerHandoff } = require('../../services/customer-handoff-reconciliation');
   const { reconcileOrderFinancialClose } = require('../../services/order-financial-closure-reconciliation');
+  const { transitionOrderStatus } = require('../../services/order-status-machine');
   const {
     createShipment,
     declareCustomsPayment,
@@ -104,6 +105,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
 
       DELETE FROM scans WHERE id = '${scanId}';
       DELETE FROM order_item_real_cost_allocations WHERE order_id = '${orderId}';
+      DELETE FROM order_item_cost_imputations WHERE order_id = '${orderId}';
       DELETE FROM customs_shipment_parcels
        WHERE shipment_id IN (SELECT id FROM customs_shipments WHERE reference = '${CUSTOMS_REF}')
           OR parcel_id = '${parcelId}';
@@ -152,8 +154,9 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     );
 
     await q(
-      `INSERT INTO products (id, name, price_kmf, stock, price_aed, inventory_model)
-       VALUES ($1,$2,25000,0,200,'SKU')`,
+      `INSERT INTO products
+         (id, name, price_kmf, cost_kmf, volume_cm3, stock, price_aed, inventory_model)
+       VALUES ($1,$2,25000,7000,100000,0,200,'SKU')`,
       [productId, `Golden Product ${tag('product')}`]
     );
 
@@ -185,6 +188,37 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
          (id, order_id, product_id, quantity, price_kmf, sku_id, fulfillment_source)
        VALUES ($1,$2,$3,1,25000,$4,'IMPORT')`,
       [itemId, orderId, productId, skuId]
+    );
+
+    // Snapshot économique minimal attendu par pricing-maturity :
+    // achat fournisseur + fret + douane doivent tous être réconciliés par du réel.
+    await q(
+      `INSERT INTO order_item_cost_imputations
+         (order_id, order_item_id, product_id, quantity,
+          sale_unit_price_kmf, sale_total_kmf,
+          estimated_landed_relay_cost_kmf, estimated_business_complete_cost_kmf,
+          estimated_margin_kmf, estimated_margin_pct,
+          cost_breakdown, pricing_source)
+       VALUES ($1,$2,$3,1,25000,25000,11000,11000,14000,56,
+               $4::jsonb,'golden-e2e')`,
+      [orderId, itemId, productId, JSON.stringify({
+        landed_relay: {
+          product_purchase: 7000,
+          freight: 1500,
+          customs: 2500,
+        },
+        business: { payment: 0 },
+      })]
+    );
+
+    // Le paiement fournisseur prouvé donne le coût d'achat réel au grain item.
+    await q(
+      `INSERT INTO order_item_real_cost_allocations
+         (order_id, order_item_id, cost_type, amount_kmf,
+          allocation_method, source, is_actual, confidence)
+       VALUES ($1,$2,'product_purchase',7000,'direct',
+               'supplier_execution_payment',TRUE,'high')`,
+      [orderId, itemId]
     );
 
     // 2 — PO + SUPPLIER ORDER exact
@@ -378,7 +412,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       reference: CUSTOMS_REF,
       shipment_date: new Date().toISOString().slice(0, 10),
       transitaire_name: 'Golden Forwarder',
-      transport_mode: 'air',
+      transport_mode: 'sea',
       cif_value_kmf: 25000,
       allocation_method: 'by_cif_value',
       parcel_ids: [parcelId],
@@ -432,12 +466,25 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       [parcelId]
     );
 
-    await q(
-      `UPDATE orders
-          SET status='available', available_at=NOW(), updated_at=NOW()
-        WHERE id=$1`,
-      [orderId]
+    // Passe par l'autorité canonique : le gate douane est revalidé et le
+    // shipment declared est promu confirmed de façon group-safe.
+    const availableTransition = await transitionOrderStatus({
+      orderId,
+      newStatus: 'available',
+      actor: { id: userId, role: 'admin' },
+      source: 'scan',
+      dbClient: db,
+    });
+    expect(availableTransition).toMatchObject({
+      success: true,
+      newStatus: 'available',
+    });
+
+    const confirmedCustoms = await one(
+      `SELECT status FROM customs_shipments WHERE id = $1`,
+      [customsShipmentId]
     );
+    expect(confirmedCustoms).toMatchObject({ status: 'confirmed' });
 
     let handoff = await reconcileCustomerHandoff(db, { orderId });
     expect(handoff).toMatchObject({
@@ -528,6 +575,16 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
           currency: 'USD',
         }),
       ],
+      economic_maturity: {
+        mature: true,
+        maturity_status: 'MATURE',
+        blocking_reasons: [],
+      },
+      economic_actuals: {
+        sale_total_kmf: 25000,
+        real_cost_kmf: 11000,
+        consolidated_margin_kmf: 14000,
+      },
     });
   });
 });

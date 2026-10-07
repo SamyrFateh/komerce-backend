@@ -37,6 +37,7 @@ const {
   deleteShipment,
   declareCustomsPayment,
   isCustomsDeclaredForOrder,
+  confirmCustomsShipmentsForOrder,
 } = require('../../services/customs-shipment-service');
 
 const costAllocation = require('../../services/cost-allocation');
@@ -57,6 +58,28 @@ const parcel3 = [
 ];
 
 // ── allocateCustoms ───────────────────────────────────────────────────────────
+
+describe('confirmCustomsShipmentsForOrder', () => {
+  it('confirme uniquement les shipments declared dont toutes les commandes liées sont post-douane', async () => {
+    const q = {
+      query: jest.fn().mockResolvedValue({
+        rows: [{ id: 'cs-1', reference: 'CUS-1', status: 'confirmed' }],
+      }),
+    };
+
+    const out = await confirmCustomsShipmentsForOrder(q, 'order-1');
+
+    expect(out).toEqual({
+      confirmed: 1,
+      shipments: [{ id: 'cs-1', reference: 'CUS-1', status: 'confirmed' }],
+    });
+    const [sql, params] = q.query.mock.calls[0];
+    expect(String(sql)).toContain("cs.status = 'declared'");
+    expect(String(sql)).toContain("o.status NOT IN ('available', 'collected', 'cancelled', 'refunded')");
+    expect(String(sql)).toContain('NOT EXISTS');
+    expect(params).toEqual(['order-1']);
+  });
+});
 
 describe('allocateCustoms', () => {
 

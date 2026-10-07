@@ -11,7 +11,10 @@ const mockResolveOrderMilestones = jest.fn();
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 jest.mock('../../utils/logger', () => ({ child: () => ({ info: jest.fn(), error: jest.fn() }) }));
 jest.mock('../../services/product-admin-service', () => ({ adjustStock: jest.fn() }));
-jest.mock('../../services/customs-shipment-service', () => ({ isCustomsDeclaredForOrder: jest.fn().mockResolvedValue({ allowed: true }) }));
+jest.mock('../../services/customs-shipment-service', () => ({
+  isCustomsDeclaredForOrder: jest.fn().mockResolvedValue({ allowed: true }),
+  confirmCustomsShipmentsForOrder: jest.fn().mockResolvedValue({ confirmed: 0, shipments: [] }),
+}));
 jest.mock('../../services/client-notification-service', () => ({
   emitOrderMilestone: (...args) => mockEmitOrderMilestone(...args),
   resolveOrderMilestones: (...args) => mockResolveOrderMilestones(...args),

@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        customer order id
  * @outputs       read-only financial closure verdict across handoff/incidents/refunds/supplier-payments
- * @depends       services/customer-handoff-reconciliation.js
+ * @depends       services/customer-handoff-reconciliation.js, services/pricing-maturity.js
  * @used-by       future Order 360 / Control Tower / Golden closure
- * @db-read       orders, parcels, incidents, refunds, purchase_lines, order_items, supplier_execution_payments
+ * @db-read       orders, parcels, incidents, refunds, purchase_lines, order_items, supplier_execution_payments, order_item_real_cost_allocations, order_item_cost_imputations, customs_shipments, customs_shipment_parcels
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/chantier/CUSTOMER_TO_CUSTOMER_CLOSURE.md
@@ -17,6 +17,7 @@
 'use strict';
 
 const { reconcileCustomerHandoff } = require('./customer-handoff-reconciliation');
+const { getOrderMaturity } = require('./pricing-maturity');
 
 const VERDICT = Object.freeze({
   MATCHED: 'FINANCIAL_CLOSE_MATCHED',
@@ -156,6 +157,24 @@ function exposeRefunds(rows) {
   })));
 }
 
+async function loadEconomicActuals(client, order) {
+  const { rows } = await client.query(`
+    SELECT COALESCE(SUM(amount_kmf), 0)::numeric AS real_cost_kmf
+      FROM order_item_real_cost_allocations
+     WHERE order_id = $1
+       AND is_actual = TRUE
+  `, [order.id]);
+
+  const realCost = asNumber(rows[0]?.real_cost_kmf);
+  const saleTotal = asNumber(order.total_kmf);
+
+  return Object.freeze({
+    sale_total_kmf: saleTotal,
+    real_cost_kmf: realCost,
+    consolidated_margin_kmf: saleTotal - realCost,
+  });
+}
+
 function exposeIncidents(rows) {
   return Object.freeze(rows.map(row => Object.freeze({
     id: row.id,
@@ -174,6 +193,8 @@ function output({
   incidents,
   refunds,
   supplierPayments,
+  economicMaturity,
+  economicActuals = null,
 } = {}) {
   return Object.freeze({
     scope: 'ORDER_FINANCIAL_CLOSE',
@@ -188,6 +209,14 @@ function output({
     incidents: exposeIncidents(incidents),
     refunds: exposeRefunds(refunds),
     supplier_payments: exposeSupplierPayments(supplierPayments),
+    economic_maturity: economicMaturity
+      ? Object.freeze({
+        mature: economicMaturity.mature === true,
+        maturity_status: economicMaturity.maturity_status || null,
+        blocking_reasons: Object.freeze([...(economicMaturity.blocking_reasons || [])]),
+      })
+      : null,
+    economic_actuals: economicActuals,
   });
 }
 
@@ -197,11 +226,12 @@ async function reconcileOrderFinancialClose(client, { orderId } = {}) {
   }
 
   const order = await loadOrder(client, orderId);
-  const [handoff, incidents, refunds, supplierPayments] = await Promise.all([
+  const [handoff, incidents, refunds, supplierPayments, economicMaturity] = await Promise.all([
     reconcileCustomerHandoff(client, { orderId: order.id }),
     loadIncidents(client, order.id),
     loadRefunds(client, order.id),
     loadSupplierPayments(client, order.id),
+    getOrderMaturity(order.id, client),
   ]);
 
   const incident = incidentAssessment(incidents);
@@ -214,6 +244,7 @@ async function reconcileOrderFinancialClose(client, { orderId } = {}) {
     incidents,
     refunds,
     supplierPayments,
+    economicMaturity,
   };
 
   if (incident.active.length > 0) {
@@ -336,11 +367,23 @@ async function reconcileOrderFinancialClose(client, { orderId } = {}) {
     });
   }
 
+  if (!economicMaturity || economicMaturity.mature !== true) {
+    return output({
+      ...base,
+      verdict: VERDICT.PENDING,
+      reason: 'FINANCIAL_CLOSE_ECONOMIC_FACTS_PENDING',
+      mode: 'financial',
+    });
+  }
+
+  const economicActuals = await loadEconomicActuals(client, order);
+
   return output({
     ...base,
     verdict: VERDICT.MATCHED,
     reason: null,
     mode: incident.reshipResolved.length ? 'replacement' : 'normal',
+    economicActuals,
   });
 }
 
@@ -349,5 +392,6 @@ module.exports = {
   supplierPaymentAssessment,
   refundAssessment,
   incidentAssessment,
+  loadEconomicActuals,
   reconcileOrderFinancialClose,
 };
