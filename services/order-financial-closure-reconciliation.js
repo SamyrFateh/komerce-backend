@@ -157,6 +157,24 @@ function exposeRefunds(rows) {
   })));
 }
 
+async function loadEconomicActuals(client, order) {
+  const { rows } = await client.query(`
+    SELECT COALESCE(SUM(amount_kmf), 0)::numeric AS real_cost_kmf
+      FROM order_item_real_cost_allocations
+     WHERE order_id = $1
+       AND is_actual = TRUE
+  `, [order.id]);
+
+  const realCost = asNumber(rows[0]?.real_cost_kmf);
+  const saleTotal = asNumber(order.total_kmf);
+
+  return Object.freeze({
+    sale_total_kmf: saleTotal,
+    real_cost_kmf: realCost,
+    consolidated_margin_kmf: saleTotal - realCost,
+  });
+}
+
 function exposeIncidents(rows) {
   return Object.freeze(rows.map(row => Object.freeze({
     id: row.id,
@@ -176,6 +194,7 @@ function output({
   refunds,
   supplierPayments,
   economicMaturity,
+  economicActuals = null,
 } = {}) {
   return Object.freeze({
     scope: 'ORDER_FINANCIAL_CLOSE',
@@ -197,6 +216,7 @@ function output({
         blocking_reasons: Object.freeze([...(economicMaturity.blocking_reasons || [])]),
       })
       : null,
+    economic_actuals: economicActuals,
   });
 }
 
@@ -356,11 +376,14 @@ async function reconcileOrderFinancialClose(client, { orderId } = {}) {
     });
   }
 
+  const economicActuals = await loadEconomicActuals(client, order);
+
   return output({
     ...base,
     verdict: VERDICT.MATCHED,
     reason: null,
     mode: incident.reshipResolved.length ? 'replacement' : 'normal',
+    economicActuals,
   });
 }
 
@@ -369,5 +392,6 @@ module.exports = {
   supplierPaymentAssessment,
   refundAssessment,
   incidentAssessment,
+  loadEconomicActuals,
   reconcileOrderFinancialClose,
 };
