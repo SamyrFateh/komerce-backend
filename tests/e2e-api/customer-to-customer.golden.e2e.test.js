@@ -40,6 +40,11 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
   const { reconcileHubInbound } = require('../../services/hub-inbound-reconciliation');
   const { reconcileCustomerHandoff } = require('../../services/customer-handoff-reconciliation');
   const { reconcileOrderFinancialClose } = require('../../services/order-financial-closure-reconciliation');
+  const {
+    createShipment,
+    declareCustomsPayment,
+    isCustomsDeclaredForOrder,
+  } = require('../../services/customs-shipment-service');
 
   const userId = uuid();
   const relaisId = uuid();
@@ -65,6 +70,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
   const PARCEL_REF = `KOM-BOX-GOLDEN-${RUN_TAG}`.toUpperCase();
   const TRACKING_REF = `TRK-GOLDEN-${RUN_TAG}`.toUpperCase();
   const PAYMENT_REF = `PAY-GOLDEN-${RUN_TAG}`.toUpperCase();
+  const CUSTOMS_REF = `CUS-GOLDEN-${RUN_TAG}`.toUpperCase();
 
   const soi = {
     provider: 'cj',
@@ -97,6 +103,11 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       DELETE FROM supplier_execution_orders WHERE id = '${executionOrderId}';
 
       DELETE FROM scans WHERE id = '${scanId}';
+      DELETE FROM order_item_real_cost_allocations WHERE order_id = '${orderId}';
+      DELETE FROM customs_shipment_parcels
+       WHERE shipment_id IN (SELECT id FROM customs_shipments WHERE reference = '${CUSTOMS_REF}')
+          OR parcel_id = '${parcelId}';
+      DELETE FROM customs_shipments WHERE reference = '${CUSTOMS_REF}';
       DELETE FROM parcel_events WHERE parcel_id = '${parcelId}';
       DELETE FROM parcel_items WHERE parcel_id = '${parcelId}';
       DELETE FROM parcels WHERE id = '${parcelId}';
@@ -343,16 +354,15 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       hub_unit_refs: [HUB_REF],
     });
 
-    // 6 — MARKET LEG jusqu'au relais. AVAILABLE n'est toujours pas un handoff.
+    // 6 — MARKET LEG arrive d'abord en douane : ARRIVED n'est pas AVAILABLE.
     await q(
       `INSERT INTO parcels
          (id, order_id, reference, status, type, relais_id,
-          shipped_at, in_transit_at, arrived_at, available_at)
-       VALUES ($1,$2,$3,'available','standard',$4,
+          shipped_at, in_transit_at, arrived_at)
+       VALUES ($1,$2,$3,'arrived','standard',$4,
                NOW() - INTERVAL '3 hours',
                NOW() - INTERVAL '2 hours',
-               NOW() - INTERVAL '1 hour',
-               NOW())`,
+               NOW() - INTERVAL '1 hour')`,
       [parcelId, orderId, PARCEL_REF, relaisId]
     );
 
@@ -361,6 +371,65 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
          (parcel_id, order_item_id, product_id, quantity)
        VALUES ($1,$2,$3,1)`,
       [parcelId, itemId, productId]
+    );
+
+    // 7 — CUSTOMS : le dossier pending bloque explicitement la progression.
+    const createdCustoms = await createShipment(db, {
+      reference: CUSTOMS_REF,
+      shipment_date: new Date().toISOString().slice(0, 10),
+      transitaire_name: 'Golden Forwarder',
+      transport_mode: 'air',
+      cif_value_kmf: 25000,
+      allocation_method: 'by_cif_value',
+      parcel_ids: [parcelId],
+    }, userId, { marketId });
+
+    const customsShipmentId = createdCustoms.shipment.id;
+
+    let customsGate = await isCustomsDeclaredForOrder(db, orderId);
+    expect(customsGate).toMatchObject({ allowed: false });
+    expect(customsGate.reason).toContain(CUSTOMS_REF);
+
+    const declaration = await declareCustomsPayment(db, customsShipmentId, {
+      customs_paid_kmf: 2500,
+      freight_kmf: 1500,
+      notes: 'Golden customs declaration',
+    }, userId);
+
+    expect(declaration).toMatchObject({
+      shipment_id: customsShipmentId,
+      status: 'declared',
+      customs_paid_kmf: 2500,
+      parcels_updated: 1,
+    });
+
+    customsGate = await isCustomsDeclaredForOrder(db, orderId);
+    expect(customsGate).toEqual({ allowed: true });
+
+    const customsFacts = await one(
+      `SELECT cs.status,
+              cs.customs_paid_kmf,
+              csp.customs_share_kmf,
+              p.customs_cleared_at
+         FROM customs_shipments cs
+         JOIN customs_shipment_parcels csp ON csp.shipment_id = cs.id
+         JOIN parcels p ON p.id = csp.parcel_id
+        WHERE cs.id = $1 AND p.id = $2`,
+      [customsShipmentId, parcelId]
+    );
+    expect(customsFacts).toMatchObject({
+      status: 'declared',
+      customs_paid_kmf: 2500,
+      customs_share_kmf: 2500,
+    });
+    expect(customsFacts.customs_cleared_at).toBeTruthy();
+
+    // 8 — Le colis peut maintenant devenir AVAILABLE au relais.
+    await q(
+      `UPDATE parcels
+          SET status='available', available_at=NOW(), updated_at=NOW()
+        WHERE id=$1`,
+      [parcelId]
     );
 
     await q(
@@ -393,7 +462,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       ],
     });
 
-    // 7 — CUSTOMER HANDOFF : preuve canonique, distincte du statut parcel.
+    // 9 — CUSTOMER HANDOFF : preuve canonique, distincte du statut parcel.
     await q(
       `INSERT INTO scans
          (id, order_id, parcel_id, step, scanned_by, scan_code, notes,
@@ -435,7 +504,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       ],
     });
 
-    // 8 — FINANCIAL CLOSE : toutes les frontières sont maintenant vertes.
+    // 10 — FINANCIAL CLOSE : toutes les frontières sont maintenant vertes.
     close = await reconcileOrderFinancialClose(db, { orderId });
     expect(close).toMatchObject({
       verdict: 'FINANCIAL_CLOSE_MATCHED',
