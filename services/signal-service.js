@@ -9,7 +9,7 @@
  * @depends       db, utils/logger.js, utils/rules.js, services/supplier-payment-review.js
  * @used-by       routes/signals.js, bootstrap/feature-wiring.js, services/action-center-workspace.js,
  *                services/incident-escalation.js
- * @db-read       cash_collections, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, parcels, purchase_orders, v_purchase_line_progress, supplier_execution_payments
+ * @db-read       cash_collections, customs_shipment_parcels, customs_shipments, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, parcels, purchase_orders, v_purchase_line_progress, supplier_execution_payments
  * @db-write      signals
  * @db-txn        optional_caller_owned_transaction_for_upsert
  * @doctrine      resolve_before_behavior_change, market_scope_is_server_authority, preserve_caller_transaction
