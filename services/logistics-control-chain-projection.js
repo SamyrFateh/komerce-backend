@@ -108,15 +108,40 @@ function envelopeFor(row) {
 
 function projectRow(row) {
   const health = Object.values(HEALTH).includes(row.health) ? row.health : HEALTH.GREEN;
+  const primaryException = row.exception_code ? Object.freeze({
+    code: row.exception_code,
+    summary: row.exception_summary || null,
+    owner_role: row.exception_owner_role || null,
+  }) : null;
+  const signalCauses = Array.isArray(row.exception_causes)
+    ? row.exception_causes.filter(Boolean).map(cause => Object.freeze({
+      code: cause.code || null,
+      summary: cause.summary || null,
+      owner_role: cause.owner_role || null,
+      severity: cause.severity || null,
+    }))
+    : [];
+  const causes = [];
+  if (primaryException) {
+    causes.push(Object.freeze({
+      ...primaryException,
+      severity: row.exception_code === 'hub_quarantine' ? 'critical' : (signalCauses[0]?.severity || null),
+    }));
+  }
+  for (const cause of signalCauses) {
+    if (causes.length >= 3) break;
+    if (causes.some(existing => existing.code === cause.code
+      && existing.owner_role === cause.owner_role
+      && existing.summary === cause.summary)) continue;
+    causes.push(cause);
+  }
+
   return Object.freeze({
     order_reference: row.order_reference,
     stage: row.current_stage,
     health,
-    exception: row.exception_code ? Object.freeze({
-      code: row.exception_code,
-      summary: row.exception_summary || null,
-      owner_role: row.exception_owner_role || null,
-    }) : null,
+    exception: primaryException,
+    causes: Object.freeze(causes),
     envelope: envelopeFor(row),
     split: Number(row.parcels_count || 0) > 1,
     lineage: Object.freeze({
@@ -300,6 +325,25 @@ async function getControlChain(options = {}) {
              ) AS rn
         FROM linked_signals ls
     ),
+    signal_rollup AS (
+      SELECT order_id,
+             MAX(signal_type) FILTER (WHERE rn = 1) AS primary_signal_type,
+             MAX(severity) FILTER (WHERE rn = 1) AS primary_severity,
+             MAX(summary) FILTER (WHERE rn = 1) AS primary_summary,
+             MAX(owner_role) FILTER (WHERE rn = 1) AS primary_owner_role,
+             JSONB_AGG(
+               JSONB_BUILD_OBJECT(
+                 'code', signal_type,
+                 'summary', summary,
+                 'owner_role', owner_role,
+                 'severity', severity
+               )
+               ORDER BY rn
+             ) FILTER (WHERE rn <= 3) AS exception_causes
+        FROM ranked_signals
+       WHERE rn <= 3
+       GROUP BY order_id
+    ),
     projected AS (
       SELECT so.*,
              COALESCE(pf.po_count, 0) AS po_count,
@@ -334,19 +378,20 @@ async function getControlChain(options = {}) {
              END AS current_stage,
              CASE
                WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'RED'
-               WHEN rs.severity IN ('urgent','critical','high') THEN 'RED'
-               WHEN rs.severity = 'warning' THEN 'ORANGE'
+               WHEN sr.primary_severity IN ('urgent','critical','high') THEN 'RED'
+               WHEN sr.primary_severity = 'warning' THEN 'ORANGE'
                ELSE 'GREEN'
              END AS health,
              CASE
                WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'hub_quarantine'
-               ELSE rs.signal_type
+               ELSE sr.primary_signal_type
              END AS exception_code,
              CASE
                WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'Unité HUB en quarantaine'
-               ELSE rs.summary
+               ELSE sr.primary_summary
              END AS exception_summary,
-             rs.owner_role AS exception_owner_role,
+             sr.primary_owner_role AS exception_owner_role,
+             COALESCE(sr.exception_causes, '[]'::jsonb) AS exception_causes,
              GREATEST(
                so.updated_at,
                COALESCE(pf.last_purchase_at, so.created_at),
@@ -359,7 +404,7 @@ async function getControlChain(options = {}) {
         LEFT JOIN hub_facts hf ON hf.order_id = so.id
         LEFT JOIN parcel_facts paf ON paf.order_id = so.id
         LEFT JOIN customs_facts cf ON cf.order_id = so.id
-        LEFT JOIN ranked_signals rs ON rs.order_id = so.id AND rs.rn = 1
+        LEFT JOIN signal_rollup sr ON sr.order_id = so.id
     )
     SELECT order_reference,
            current_stage,
@@ -367,6 +412,7 @@ async function getControlChain(options = {}) {
            exception_code,
            exception_summary,
            exception_owner_role,
+           exception_causes,
            purchase_order_refs,
            hub_unit_refs,
            parcel_refs,
