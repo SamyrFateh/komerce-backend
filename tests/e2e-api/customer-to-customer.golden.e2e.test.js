@@ -411,7 +411,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       reference: CUSTOMS_REF,
       shipment_date: new Date().toISOString().slice(0, 10),
       transitaire_name: 'Golden Forwarder',
-      transport_mode: 'air',
+      transport_mode: 'sea',
       cif_value_kmf: 25000,
       allocation_method: 'by_cif_value',
       parcel_ids: [parcelId],
