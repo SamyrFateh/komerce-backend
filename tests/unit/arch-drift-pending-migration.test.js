@@ -32,7 +32,7 @@ describe('arch drift pending migration classification', () => {
           {
             type: 'file',
             file: 'services/a.js',
-            dbRead: ['pending_table', 'missing_table'],
+            dbRead: ['pending_table', 'pending_view', 'missing_table'],
             dbWrite: [],
           },
         ],
@@ -46,9 +46,13 @@ describe('arch drift pending migration classification', () => {
       path.join(root, 'migrations', '200_pending.sql'),
       'CREATE TABLE pending_table (id uuid);\n'
     );
+    fs.writeFileSync(
+      path.join(root, 'migrations', '201_pending_view.sql'),
+      'CREATE OR REPLACE VIEW public.pending_view AS SELECT 1 AS id;\n'
+    );
 
     const result = core.analyze(root);
-    expect(result.fictionPendingMigration.map(f => f.token)).toEqual(['pending_table']);
+    expect(result.fictionPendingMigration.map(f => f.token)).toEqual(['pending_table', 'pending_view']);
     expect(result.fictionUnlisted.map(f => f.token)).toEqual(['missing_table']);
   });
 });
