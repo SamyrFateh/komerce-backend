@@ -59,3 +59,50 @@ test('absence de record et provider inconnu restent explicites, jamais convertis
   expect(evidence.projectPurchasingModeEvidence('unknown', registry).auto_order)
     .toEqual(expect.objectContaining({ resolution: 'UNSUPPORTED_PROVIDER', availability: null }));
 });
+
+
+describe('runtime certification guard', () => {
+  test('refuse une capability GAP avant toute exécution', () => {
+    const registry = {
+      providers: {
+        cj: [{
+          capability: 'purchasing.auto_order',
+          classification: 'GAP',
+          availability: 'IMPLEMENTED_NOT_LIVE_PROVEN',
+          highest_proof: 'P2',
+          environment: 'SANDBOX',
+          evidence: [],
+          limitations: [],
+        }],
+      },
+    };
+    expect(certifications.evaluateRuntimeCapability('cj', 'purchasing.auto_order', {
+      registry,
+      env: { KOMERCE_ENV: 'test' },
+    })).toMatchObject({
+      allowed: false,
+      reason: 'CERTIFICATION_CAPABILITY_NOT_CONFIRMED',
+    });
+  });
+
+  test('refuse une preuve SANDBOX dans un runtime production', () => {
+    expect(certifications.evaluateRuntimeCapability('cj', 'purchasing.auto_order', {
+      env: { KOMERCE_ENV: 'production' },
+    })).toMatchObject({
+      allowed: false,
+      reason: 'CERTIFICATION_ENVIRONMENT_MISMATCH',
+      runtime_environment: 'production',
+      certified_environment: 'SANDBOX',
+    });
+  });
+
+  test('autorise AliExpress uniquement dans le runtime staging prouvé', () => {
+    expect(certifications.evaluateRuntimeCapability('aliexpress', 'purchasing.auto_order', {
+      env: { KOMERCE_ENV: 'staging' },
+    })).toMatchObject({
+      allowed: true,
+      classification: 'CONFIRMED',
+      certified_environment: 'LIVE_STAGING_GUARDED',
+    });
+  });
+});
