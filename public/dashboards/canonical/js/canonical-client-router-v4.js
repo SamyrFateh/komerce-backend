@@ -92,7 +92,7 @@
   function canonicalPath(pathname) {
     const path = String(pathname || '');
     if (path === '/admin' || path === '/admin/' || path === '/admin/pilotage') return true;
-    if (['/admin/commerce', '/admin/orders', '/admin/clients', '/admin/operations', '/admin/finance', '/admin/action-center', '/admin/demo', '/admin/settings'].includes(path)) return true;
+    if (['/admin/commerce', '/admin/orders', '/admin/clients', '/admin/suppliers', '/admin/operations', '/admin/finance', '/admin/action-center', '/admin/demo', '/admin/settings'].includes(path)) return true;
     if (/^\/admin\/orders\/[^/]+$/.test(path)) return true;
     if (/^\/admin\/clients\/[^/]+$/.test(path)) return true;
     if (/^\/admin\/products\/[^/]+$/.test(path)) return true;
