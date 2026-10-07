@@ -16,12 +16,19 @@ const {
   supplierPaymentAssessment,
 } = require('../../services/order-financial-closure-reconciliation');
 
-function client({ order, incidents = [], refunds = [], supplierPayments = [] }) {
+function client({
+  order,
+  incidents = [],
+  refunds = [],
+  supplierPayments = [],
+  realCostKmf = 10000,
+}) {
   const query = jest.fn()
     .mockResolvedValueOnce({ rows: [order] })
     .mockResolvedValueOnce({ rows: incidents })
     .mockResolvedValueOnce({ rows: refunds })
-    .mockResolvedValueOnce({ rows: supplierPayments });
+    .mockResolvedValueOnce({ rows: supplierPayments })
+    .mockResolvedValueOnce({ rows: [{ real_cost_kmf: String(realCostKmf) }] });
   return { query };
 }
 
@@ -80,6 +87,29 @@ test('normal path closes only with proven handoff and reconciled finances', asyn
         mature: true,
         maturity_status: 'MATURE',
         blocking_reasons: [],
+      },
+      economic_actuals: {
+        sale_total_kmf: 25000,
+        real_cost_kmf: 10000,
+        consolidated_margin_kmf: 15000,
+      },
+    });
+});
+
+test('matched financial close exposes real cost and consolidated margin from actual allocations', async () => {
+  const c = client({
+    order: baseOrder({ total_kmf: 30000 }),
+    supplierPayments: [supplierPayment()],
+    realCostKmf: 12000,
+  });
+
+  await expect(reconcileOrderFinancialClose(c, { orderId: baseOrder().id }))
+    .resolves.toMatchObject({
+      verdict: 'FINANCIAL_CLOSE_MATCHED',
+      economic_actuals: {
+        sale_total_kmf: 30000,
+        real_cost_kmf: 12000,
+        consolidated_margin_kmf: 18000,
       },
     });
 });
