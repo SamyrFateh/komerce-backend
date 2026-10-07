@@ -224,6 +224,77 @@ GENERATORS.supplier_payment_review = async function() {
   }
 };
 
+GENERATORS.supplier_order_ambiguous = async function() {
+  try {
+    const rows = (await db.query(`
+      WITH latest_create AS (
+        SELECT DISTINCT ON (e.purchase_order_id, e.provider)
+               e.purchase_order_id,
+               e.provider,
+               e.outcome,
+               e.facts,
+               e.created_at
+          FROM supplier_execution_events e
+         WHERE e.operation = 'create_order'
+         ORDER BY e.purchase_order_id, e.provider, e.created_at DESC, e.id DESC
+      )
+      SELECT DISTINCT
+             o.id,
+             o.reference,
+             lc.purchase_order_id,
+             lc.provider,
+             lc.created_at
+        FROM latest_create lc
+        JOIN purchase_orders po ON po.id = lc.purchase_order_id
+        LEFT JOIN purchase_lines pl
+          ON pl.purchase_order_id = po.id
+         AND pl.cancelled_at IS NULL
+        LEFT JOIN order_items oi ON oi.id = pl.order_item_id
+        JOIN orders o ON o.id = COALESCE(oi.order_id, po.order_id)
+       WHERE lc.outcome = 'ambiguous'
+         AND COALESCE((lc.facts->>'replay_blocked')::boolean, FALSE) = TRUE
+         AND po.status = 'pending'
+       ORDER BY lc.created_at ASC
+       LIMIT 50
+    `)).rows;
+
+    let generated = 0;
+    const entityIds = [];
+    for (const r of rows) {
+      entityIds.push(r.id);
+      await upsertSignal({
+        signal_type: 'supplier_order_ambiguous',
+        severity: 'critical',
+        title: r.reference
+          ? 'Création fournisseur ambiguë — ' + r.reference
+          : 'Création fournisseur ambiguë',
+        summary: 'Replay automatique bloqué pour la PO ' + r.purchase_order_id
+          + ' (' + r.provider + ') : vérifier le fournisseur avant toute nouvelle commande.',
+        source_module: 'signal-service',
+        target_shell: 'bo',
+        target_view: 'purchasing',
+        target_filters: { purchase_order_id: r.purchase_order_id },
+        owner_role: 'purchasing',
+        entity_type: 'order',
+        entity_id: r.id,
+        recommendation: 'Réconcilier la création fournisseur puis décider explicitement de reprendre ou non l’achat',
+        confidence: 'high',
+        meta: {
+          purchase_order_id: r.purchase_order_id,
+          provider: r.provider,
+          replay_blocked: true,
+        },
+      });
+      generated++;
+    }
+    await autoResolveSignals('supplier_order_ambiguous', entityIds);
+    return { generated };
+  } catch (e) {
+    log.warn({ err: e }, '[signal-service] supplier_order_ambiguous error:');
+    return { generated: 0, error: e.message };
+  }
+};
+
 GENERATORS.parcel_blocked = async function() {
   try {
     const rows = (await db.query(`
