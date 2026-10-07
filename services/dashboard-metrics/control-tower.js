@@ -18,6 +18,10 @@
 
 /**
  * KOMERCE — Dashboard Metrics — Tour de contrôle (8 KPIs)
+ *
+ * `ca_encaisse` conserve sa clé API historique, mais sa période est une cohorte
+ * de commandes créées devenues payées tant qu'aucun timestamp universel de
+ * capture/encaissement n'est persisté pour tous les moyens de paiement.
  */
 
 'use strict';
@@ -58,7 +62,7 @@ async function getCAEncaisse(filters = {}) {
     delta = computeDelta(value, Number(prevR.rows[0].value), 'periode precedente');
   }
 
-  return makeKpi('ca_encaisse', 'CA encaissé', value, 'KMF', {
+  return makeKpi('ca_encaisse', 'CA commandes payées', value, 'KMF', {
     delta,
     itemsTotal,
     itemsWithData: itemsTotal,
