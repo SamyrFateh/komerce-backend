@@ -244,7 +244,7 @@ test('la file fournisseur utilise uniquement les états canoniques de revue, san
 
   const review = await finance.getSupplierPaymentReview({ limit: 25 });
 
-  expect(review).toEqual({ count: 0, items: [], truncated: false, basis: 'current_state_all_time' });
+  expect(review).toEqual({ count: 0, items: [], truncated: false, scope: 'global', basis: 'current_state_all_time' });
   const [sql, params] = mockQuery.mock.calls[0];
   const text = String(sql);
   expect(text).toContain("status IN ('ambiguous', 'rejected')");

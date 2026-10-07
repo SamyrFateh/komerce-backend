@@ -51,20 +51,26 @@ function buildStructuralAlerts(orders, minOrders = STRUCTURAL_ALERT_MIN_ORDERS) 
   const groups = new Map();
 
   for (const order of orders || []) {
-    if (!order || order.health === HEALTH.GREEN || !order.exception || !order.exception.code) continue;
-    const key = [order.stage, order.exception.code, order.exception.owner_role || ''].join('|');
-    const current = groups.get(key) || {
-      stage: order.stage,
-      health: order.health,
-      reason_code: order.exception.code,
-      summary: order.exception.summary || null,
-      owner_role: order.exception.owner_role || null,
-      order_references: [],
-    };
-    if (healthRank(order.health) > healthRank(current.health)) current.health = order.health;
-    if (!current.summary && order.exception.summary) current.summary = order.exception.summary;
-    current.order_references.push(order.order_reference);
-    groups.set(key, current);
+    if (!order || order.health === HEALTH.GREEN) continue;
+    const causes = Array.isArray(order.exceptions) && order.exceptions.length
+      ? order.exceptions
+      : (order.exception ? [order.exception] : []);
+    for (const cause of causes) {
+      if (!cause || !cause.code) continue;
+      const key = [order.stage, cause.code, cause.owner_role || ''].join('|');
+      const current = groups.get(key) || {
+        stage: order.stage,
+        health: order.health,
+        reason_code: cause.code,
+        summary: cause.summary || null,
+        owner_role: cause.owner_role || null,
+        order_references: [],
+      };
+      if (healthRank(order.health) > healthRank(current.health)) current.health = order.health;
+      if (!current.summary && cause.summary) current.summary = cause.summary;
+      current.order_references.push(order.order_reference);
+      groups.set(key, current);
+    }
   }
 
   return Object.freeze(
@@ -106,17 +112,41 @@ function envelopeFor(row) {
   return Object.freeze({ type: 'ORDER', refs: Object.freeze([String(row.order_reference)]) });
 }
 
+function normalizeExceptions(row) {
+  const causes = Array.isArray(row.exception_causes) ? row.exception_causes : [];
+  const normalized = causes.map(cause => ({
+    code: cause.signal_type || cause.code,
+    summary: cause.summary || null,
+    owner_role: cause.owner_role || null,
+    severity: cause.severity || null,
+  })).filter(cause => cause.code);
+
+  if (row.exception_code) {
+    const primary = {
+      code: row.exception_code,
+      summary: row.exception_summary || null,
+      owner_role: row.exception_owner_role || null,
+      severity: row.exception_severity || null,
+    };
+    const rest = normalized.filter(cause =>
+      cause.code !== primary.code
+      || cause.owner_role !== primary.owner_role
+    );
+    normalized.splice(0, normalized.length, primary, ...rest);
+  }
+
+  return Object.freeze(normalized.slice(0, 3).map(cause => Object.freeze(cause)));
+}
+
 function projectRow(row) {
   const health = Object.values(HEALTH).includes(row.health) ? row.health : HEALTH.GREEN;
+  const exceptions = normalizeExceptions(row);
   return Object.freeze({
     order_reference: row.order_reference,
     stage: row.current_stage,
     health,
-    exception: row.exception_code ? Object.freeze({
-      code: row.exception_code,
-      summary: row.exception_summary || null,
-      owner_role: row.exception_owner_role || null,
-    }) : null,
+    exception: exceptions[0] || null,
+    exceptions,
     envelope: envelopeFor(row),
     split: Number(row.parcels_count || 0) > 1,
     lineage: Object.freeze({
@@ -300,6 +330,25 @@ async function getControlChain(options = {}) {
              ) AS rn
         FROM linked_signals ls
     ),
+    signal_summary AS (
+      SELECT order_id,
+             MAX(severity) FILTER (WHERE rn = 1) AS primary_severity,
+             MAX(signal_type) FILTER (WHERE rn = 1) AS primary_signal_type,
+             MAX(summary) FILTER (WHERE rn = 1) AS primary_summary,
+             MAX(owner_role) FILTER (WHERE rn = 1) AS primary_owner_role,
+             JSONB_AGG(
+               JSONB_BUILD_OBJECT(
+                 'signal_type', signal_type,
+                 'severity', severity,
+                 'summary', summary,
+                 'owner_role', owner_role
+               )
+               ORDER BY rn
+             ) FILTER (WHERE rn <= 3) AS exception_causes
+        FROM ranked_signals
+       WHERE rn <= 3
+       GROUP BY order_id
+    ),
     projected AS (
       SELECT so.*,
              COALESCE(pf.po_count, 0) AS po_count,
@@ -334,19 +383,21 @@ async function getControlChain(options = {}) {
              END AS current_stage,
              CASE
                WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'RED'
-               WHEN rs.severity IN ('urgent','critical','high') THEN 'RED'
-               WHEN rs.severity = 'warning' THEN 'ORANGE'
+               WHEN ss.primary_severity IN ('urgent','critical','high') THEN 'RED'
+               WHEN ss.primary_severity = 'warning' THEN 'ORANGE'
                ELSE 'GREEN'
              END AS health,
              CASE
                WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'hub_quarantine'
-               ELSE rs.signal_type
+               ELSE ss.primary_signal_type
              END AS exception_code,
              CASE
                WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'Unité HUB en quarantaine'
-               ELSE rs.summary
+               ELSE ss.primary_summary
              END AS exception_summary,
-             rs.owner_role AS exception_owner_role,
+             ss.primary_owner_role AS exception_owner_role,
+             ss.primary_severity AS exception_severity,
+             COALESCE(ss.exception_causes, '[]'::jsonb) AS exception_causes,
              GREATEST(
                so.updated_at,
                COALESCE(pf.last_purchase_at, so.created_at),
@@ -359,7 +410,7 @@ async function getControlChain(options = {}) {
         LEFT JOIN hub_facts hf ON hf.order_id = so.id
         LEFT JOIN parcel_facts paf ON paf.order_id = so.id
         LEFT JOIN customs_facts cf ON cf.order_id = so.id
-        LEFT JOIN ranked_signals rs ON rs.order_id = so.id AND rs.rn = 1
+        LEFT JOIN signal_summary ss ON ss.order_id = so.id
     )
     SELECT order_reference,
            current_stage,
@@ -367,6 +418,8 @@ async function getControlChain(options = {}) {
            exception_code,
            exception_summary,
            exception_owner_role,
+           exception_severity,
+           exception_causes,
            purchase_order_refs,
            hub_unit_refs,
            parcel_refs,
@@ -411,6 +464,7 @@ module.exports = {
   STRUCTURAL_ALERT_MIN_ORDERS,
   healthRank,
   buildStructuralAlerts,
+  normalizeExceptions,
   projectRow,
   getControlChain,
   getOrderControlSnapshot,
