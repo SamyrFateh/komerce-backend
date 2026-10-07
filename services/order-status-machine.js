@@ -303,9 +303,16 @@ async function transitionOrderStatus({
   values.push(orderId);
 
   await q.query(
-    `UPDATE orders SET ${setParts.join(', ')} WHERE id = $${paramIdx}`,
+    `UPDATE orders SET ${setParts.join(', ')} WHERE id = ${paramIdx}`,
     values
   );
+
+  // Une expédition douane groupée ne devient confirmed qu'une fois toutes ses
+  // commandes liées effectivement post-douane. Le helper est group-safe.
+  if (newStatus === 'available') {
+    const { confirmCustomsShipmentsForOrder } = require('./customs-shipment-service');
+    await confirmCustomsShipmentsForOrder(q, orderId);
+  }
 
   // Auto-generate le code de retrait canonique quand → available (idempotent —
   // no-op si un secret existe déjà, ex. déjà généré à la confirmation du
