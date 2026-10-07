@@ -406,7 +406,7 @@ describe('auto-order externe — persistance avant mutation fournisseur', () => 
     expect(providerCallAt).toBeGreaterThan(postCommitLoopAt);
   });
 
-  test('une tentative provider ambiguë reste pending pour replay stable et ne bascule pas en manuel', () => {
+  test('une tentative provider ambiguë ne rejoue automatiquement que si l adapter prouve son idempotence', () => {
     const fs = require('fs');
     const path = require('path');
     const src = fs.readFileSync(
@@ -414,11 +414,13 @@ describe('auto-order externe — persistance avant mutation fournisseur', () => 
       'utf8'
     );
 
-    expect(src).toContain("status: 'api_pending_retry'");
+    expect(src).toContain("status: replayBlocked ? 'api_ambiguous_blocked' : 'api_pending_retry'");
     expect(src).toMatch(/apiResult\.place_order_invoked \|\| apiResult\.reason === 'PLACE_ORDER_ERROR'/);
-    expect(src).toContain("existingPo.status === 'pending'");
-    expect(src).toContain("!existingPo.supplier_order_id");
-    expect(src).toContain('buildSupplierTagRequest(existingPo.id)');
+    expect(src).toContain('supportsIdempotentReplay(provider, adapter)');
+    expect(src).toContain('hasBlockingSupplierCreateAmbiguity(client');
+    expect(src).toContain("existingPo.trigger_mode === 'auto'");
+    expect(src).toContain("SET trigger_mode='manual'");
+    expect(src).toContain('recordSupplierCreateAmbiguity(db');
   });
 
   test('les adapters sans placeOrder complet conservent le fallback manuel historique', () => {
@@ -436,7 +438,7 @@ describe('auto-order externe — persistance avant mutation fournisseur', () => 
 });
 
 
-test('api_pending_retry peut remonter une evidence provider bornée sans secret', () => {
+test('un résultat ambigu conserve une evidence provider bornée sans secret', () => {
   const fs = require('fs');
   const path = require('path');
   const src = fs.readFileSync(
