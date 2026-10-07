@@ -64,7 +64,7 @@ function findLocalMigrationFor(token, root) {
     path.join(root, 'migrations', 'scheduled')
   ];
   const re = new RegExp(
-    `create\\s+(table|view)\\s+(if\\s+not\\s+exists\\s+)?(?:"?public"?\\.)?"?${token}"?\\b`,
+    `create\\s+(?:or\\s+replace\\s+)?(table|view)\\s+(if\\s+not\\s+exists\\s+)?(?:"?public"?\\.)?"?${token}"?\\b`,
     'i'
   );
   for (const dir of dirs) {
