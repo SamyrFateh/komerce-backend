@@ -304,7 +304,7 @@ async function transitionOrderStatus({
   values.push(orderId);
 
   await q.query(
-    `UPDATE orders SET ${setParts.join(', ')} WHERE id = ${paramIdx}`,
+    `UPDATE orders SET ${setParts.join(', ')} WHERE id = $${paramIdx}`,
     values
   );
 
