@@ -21,11 +21,11 @@
 const db = require('../db');
 const { notifyText } = require('../services/notification-service');
 const { createAlert } = require('../utils/alerts');
-const { validateAdapter, validateExecutionAdapter } = require('./suppliers/supplier-fulfillment-adapter-contract');
+const { validateAdapter, validateExecutionAdapter, supportsIdempotentReplay } = require('./suppliers/supplier-fulfillment-adapter-contract');
 const { EXECUTION_ADAPTER_REGISTRY } = require('./suppliers/execution-adapter-registry');
 const { evaluateProcurementExecutionBoundary } = require('./suppliers/procurement-execution-boundary');
 const { buildProcurementExecutionContext } = require('./procurement-execution-context');
-const { persistSupplierOrderExecution } = require('./supplier-execution-persistence');
+const { persistSupplierOrderExecution, recordSupplierCreateAmbiguity, hasBlockingSupplierCreateAmbiguity } = require('./supplier-execution-persistence');
 const { buildSupplierTagRequest } = require('./hub-reference');
 const {
   requireSupplierMoney,
@@ -44,6 +44,43 @@ const log = require('../utils/logger').child({ module: 'purchasing-trigger' });
 
 const ADMIN_WA = process.env.ADMIN_WHATSAPP || process.env.WA_ADMIN;
 if (!ADMIN_WA) log.warn('⚠️ ADMIN_WHATSAPP env var not configured — WhatsApp notifications disabled');
+
+async function persistAmbiguousReplayDecision({ purchaseOrderId, provider, evidence = {}, replayBlocked }) {
+  let eventError = null;
+  let modeError = null;
+  try {
+    await recordSupplierCreateAmbiguity(db, {
+      purchaseOrderId,
+      provider,
+      evidence,
+      replayBlocked,
+    });
+  } catch (error) {
+    eventError = error;
+    log.error({ err: error, purchase_order_id: purchaseOrderId, provider }, 'Supplier create ambiguity event persistence failed');
+  }
+
+  if (replayBlocked) {
+    try {
+      // Existing enum/constraint only: manual means automatic execution is
+      // disabled until an operator has reconciled the ambiguous provider fact.
+      await db.query(
+        `UPDATE purchase_orders
+            SET trigger_mode='manual', updated_at=NOW()
+          WHERE id=$1 AND status='pending'`,
+        [purchaseOrderId]
+      );
+    } catch (error) {
+      modeError = error;
+      log.error({ err: error, purchase_order_id: purchaseOrderId, provider }, 'Supplier ambiguous replay fallback lock failed');
+    }
+  }
+
+  // Fail closed only if neither durable guard could be written.
+  if (replayBlocked && eventError && modeError) {
+    throw new AggregateError([eventError, modeError], 'SUPPLIER_AMBIGUOUS_REPLAY_GUARD_PERSISTENCE_FAILED');
+  }
+}
 
 async function notifyAdminNoSupplier(order, item) {
   const msg = [
@@ -279,16 +316,41 @@ async function triggerPurchasing(orderId, options = {}) {
         }
         const existingPo = await findExistingPo(client, orderId, item, ps.id);
         if (existingPo) {
-          const resumableAuto = Boolean(
+          const provider = String(ps.platform || '').trim().toLowerCase();
+          const executionAdapter = EXECUTION_ADAPTER_REGISTRY[provider];
+          const executionAdapterOk = validateExecutionAdapter(provider, executionAdapter).ok;
+          const replaySafe = executionAdapterOk && supportsIdempotentReplay(provider, executionAdapter);
+          const replayBlocked = Boolean(
             existingPo.id &&
             existingPo.status === 'pending' &&
             !existingPo.supplier_order_id &&
+            executionAdapterOk &&
+            !replaySafe &&
+            await hasBlockingSupplierCreateAmbiguity(client, {
+              purchaseOrderId: existingPo.id,
+              provider,
+            })
+          );
+          const resumableAuto = Boolean(
+            existingPo.id &&
+            existingPo.status === 'pending' &&
+            existingPo.trigger_mode === 'auto' &&
+            !existingPo.supplier_order_id &&
+            !replayBlocked &&
             ps.auto_order &&
-            validateExecutionAdapter(ps.platform, EXECUTION_ADAPTER_REGISTRY[String(ps.platform || '').trim().toLowerCase()]).ok &&
+            executionAdapterOk &&
             exactSku &&
             canonicalMoney
           );
-          if (resumableAuto) {
+          if (replayBlocked) {
+            results.push({
+              item: item.product_name,
+              status: 'api_ambiguous_blocked',
+              purchase_order_id: existingPo.id,
+              purchase_order_status: existingPo.status,
+              inbound_tag: buildSupplierTagRequest(existingPo.id).reference,
+            });
+          } else if (resumableAuto) {
             const { rows: [existingLine] } = await client.query(
               `SELECT id FROM purchase_lines
                 WHERE purchase_order_id = $1 AND cancelled_at IS NULL
@@ -415,10 +477,10 @@ async function triggerPurchasing(orderId, options = {}) {
   }
 
   // Les mutations fournisseur automatiques sont exécutées UNIQUEMENT après
-  // le COMMIT qui a figé purchase_order.id. Ainsi, un timeout/réponse perdue
-  // ne peut jamais faire disparaître la clé idempotente locale utilisée par
-  // l'adapter provider. Un rejeu retrouve la même PO pending et reprend avec
-  // la même execution_key.
+  // le COMMIT qui a figé purchase_order.id. Un replay n'est autorisé ensuite
+  // que si l'adapter déclare explicitement une idempotence provider prouvée.
+  // Toute ambiguïté d'un adapter non idempotent est journalisée et bloque
+  // l'auto-trigger ; une clé locale seule ne prouve jamais l'idempotence distante.
   for (const task of autoExecutionTasks) {
     try {
       const apiResult = await resolveAutoOrderResult(
@@ -475,12 +537,24 @@ async function triggerPurchasing(orderId, options = {}) {
       }
 
       if (apiResult.place_order_invoked || apiResult.reason === 'PLACE_ORDER_ERROR') {
-        // État fournisseur potentiellement ambigu : surtout ne pas dégrader
-        // en manuel ni changer la clé de replay. La PO reste pending et sera
-        // reprise avec le même id lors du prochain trigger.
+        const provider = String(
+          apiResult.evidence?.provider
+          || task.canonicalMoney?.supplier_order_identity?.provider
+          || task.purchaseTarget?.platform
+          || ''
+        ).trim().toLowerCase();
+        const adapter = EXECUTION_ADAPTER_REGISTRY[provider];
+        const replaySafe = supportsIdempotentReplay(provider, adapter);
+        const replayBlocked = !replaySafe;
+        await persistAmbiguousReplayDecision({
+          purchaseOrderId: task.purchaseOrderId,
+          provider,
+          evidence: apiResult.evidence || {},
+          replayBlocked,
+        });
         results[task.resultIndex] = {
           item: task.item.product_name,
-          status: 'api_pending_retry',
+          status: replayBlocked ? 'api_ambiguous_blocked' : 'api_pending_retry',
           purchase_order_id: task.purchaseOrderId,
           inbound_tag: task.supplierTagRequest.reference,
           error: apiResult.error,
@@ -504,13 +578,22 @@ async function triggerPurchasing(orderId, options = {}) {
         ...(apiResult?.error ? { error: apiResult.error } : {}),
       };
     } catch (error) {
-      // Après COMMIT, toute erreur inattendue laisse volontairement la PO
-      // pending : la clé d'exécution persiste et un replay peut récupérer
-      // l'ordre fournisseur par l'idempotency contract de l'adapter.
-      log.error(`[PURCHASING] Auto-order post-commit pending retry for ${task.purchaseOrderId}:`, error.message);
+      const provider = String(task.canonicalMoney?.supplier_order_identity?.provider || '').trim().toLowerCase();
+      const replaySafe = supportsIdempotentReplay(provider, EXECUTION_ADAPTER_REGISTRY[provider]);
+      if (!replaySafe) {
+        await persistAmbiguousReplayDecision({
+          purchaseOrderId: task.purchaseOrderId,
+          provider,
+          evidence: { error_name: error?.name || 'Error' },
+          replayBlocked: true,
+        }).catch(guardError => {
+          log.error({ err: guardError, purchase_order_id: task.purchaseOrderId, provider }, 'Supplier replay guard persistence failed after post-commit error');
+        });
+      }
+      log.error(`[PURCHASING] Auto-order post-commit ${replaySafe ? 'pending retry' : 'ambiguous blocked'} for ${task.purchaseOrderId}:`, error.message);
       results[task.resultIndex] = {
         item: task.item.product_name,
-        status: 'api_pending_retry',
+        status: replaySafe ? 'api_pending_retry' : 'api_ambiguous_blocked',
         purchase_order_id: task.purchaseOrderId,
         inbound_tag: task.supplierTagRequest.reference,
         error: error.message,
