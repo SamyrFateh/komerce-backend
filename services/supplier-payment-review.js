@@ -37,7 +37,25 @@ async function getSupplierPaymentReview(options = {}, q = db) {
 
   if (marketId) {
     params.push(marketId);
-    const marketParam = '
+    const marketParam = '$' + params.length;
+    marketClause = `
+      AND EXISTS (
+        SELECT 1
+        FROM purchase_lines pl
+        JOIN order_items oi ON oi.id = pl.order_item_id
+        JOIN orders o ON o.id = oi.order_id
+        WHERE pl.purchase_order_id = supplier_execution_payments.purchase_order_id
+          AND pl.cancelled_at IS NULL
+          AND o.market_id = ${marketParam}
+      )`;
+  }
+
+  let limitClause = '';
+  if (limit != null) {
+    params.push(limit);
+    const limitParam = '$' + params.length;
+    limitClause = `LIMIT ${limitParam}`;
+  }
 
   const { rows } = await q.query(`
     SELECT
