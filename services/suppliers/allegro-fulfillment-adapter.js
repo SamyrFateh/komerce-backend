@@ -182,5 +182,7 @@ async function reconcile({ externalRef, items, context = {} } = {}) {
   }
 }
 
-module.exports = { provider, exactOfferId, evaluate, buildOrderPayload, readOrderDetail, reconcile };
+const supports_idempotent_replay = false;
+
+module.exports = { provider, supports_idempotent_replay, exactOfferId, evaluate, buildOrderPayload, readOrderDetail, reconcile };
 
