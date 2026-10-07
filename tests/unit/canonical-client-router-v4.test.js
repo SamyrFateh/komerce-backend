@@ -33,6 +33,10 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
     });
   });
 
+  test('/admin/suppliers est une route canonique V4 sans reload document', () => {
+    expect(router.canonicalPath('/admin/suppliers')).toBe(true);
+  });
+
   test('Catalogue ne répète plus Sources, Raffinerie et Boutique comme onglets', () => {
     const policy = read('public/dashboards/canonical/js/navigation-policy-v4.js');
     const catalogBlock = policy.slice(
