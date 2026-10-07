@@ -88,6 +88,21 @@ test('server service resolves drill-down business refs and never exposes target_
   expect(service).not.toContain('entity_id: signal.entity_id');
 });
 
+test('Action Center separates business work from signal lifecycle controls', () => {
+  const source = fs.readFileSync(path.join(CANONICAL, 'js', 'action-center.js'), 'utf8');
+  const service = fs.readFileSync(path.join(ROOT, 'services', 'action-center-workspace.js'), 'utf8');
+
+  expect(service).toContain('work_item: Object.freeze');
+  expect(service).toContain('actionable: Boolean(ownerRole && recommendation && workHref)');
+  expect(service).toContain('work_queues: workQueues(list.signals)');
+  expect(source).toContain("'Traiter'");
+  expect(source).toContain('row.work_item.actionable');
+  expect(source).toContain('Action attendue ·');
+  expect(source).toContain("'Vu'");
+  expect(source).toContain("'Reporter 24 h'");
+  expect(source).toContain("'Résolu'");
+});
+
 test('Simulator remains outside Action Center / 4G', () => {
   const htmlRoutes = fs.readFileSync(path.join(ROOT, 'bootstrap', 'html-routes.js'), 'utf8');
   expect(htmlRoutes).toContain("'/admin/simulator'");
