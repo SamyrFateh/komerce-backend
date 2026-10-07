@@ -23,6 +23,11 @@ const mockMetricFunctions = Object.fromEntries(mockMetricNames.map(name => [
 
 jest.mock('../../services/dashboard-metrics', () => mockMetricFunctions);
 
+const mockControlChain = jest.fn();
+jest.mock('../../services/logistics-control-chain-projection', () => ({
+  getControlChain: (...args) => mockControlChain(...args),
+}));
+
 jest.mock('../../utils/logger', () => ({
   child: jest.fn(() => ({ warn: jest.fn(), error: jest.fn(), info: jest.fn(), debug: jest.fn() })),
 }));
@@ -32,6 +37,7 @@ const pilotage = require('../../services/dashboard-pilotage-market');
 beforeEach(() => {
   jest.clearAllMocks();
   mockQuery.mockResolvedValue({ rows: [] });
+  mockControlChain.mockResolvedValue({ structural_alerts: [] });
 });
 
 describe('dashboard-pilotage-market', () => {
@@ -64,6 +70,7 @@ describe('dashboard-pilotage-market', () => {
     expect(result.data_quality.filters.market_id).toBeUndefined();
     expect(result.kpis_global).toHaveLength(5);
     expect(result.view_blocks).toHaveLength(3);
+    expect(mockControlChain).toHaveBeenCalledWith({ market });
     expect(result.view_blocks.map(block => block.url)).toEqual([
       '/admin/pilotage',
       '/admin/costing',
@@ -93,6 +100,36 @@ describe('dashboard-pilotage-market', () => {
     expect(sql).toContain('scope_o.market_id = $1');
     expect(sql).toContain('LIMIT $2');
     expect(params).toEqual([market.id, 7]);
+  });
+
+  test('agrège une cause structurelle et retire ses symptômes du top alerts', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [
+      { id: 's1', level: 'critical', source: 'purchasing', message: 'B1', signal_type: 'supplier_payment_blocked', order_reference: 'K-1' },
+      { id: 's2', level: 'critical', source: 'purchasing', message: 'B2', signal_type: 'supplier_payment_blocked', order_reference: 'K-2' },
+      { id: 's3', level: 'critical', source: 'purchasing', message: 'B3', signal_type: 'supplier_payment_blocked', order_reference: 'K-3' },
+      { id: 's4', level: 'critical', source: 'hub', message: 'Hub', signal_type: 'hub_non_compliant', order_reference: 'K-4' },
+    ] });
+    mockControlChain.mockResolvedValueOnce({
+      structural_alerts: [{
+        stage: 'PURCHASING',
+        health: 'RED',
+        reason_code: 'supplier_payment_blocked',
+        summary: 'Paiement fournisseur bloqué',
+        owner_role: 'finance',
+        order_count: 3,
+        order_references: ['K-1', 'K-2', 'K-3'],
+      }],
+    });
+
+    const result = await pilotage.buildMarketPilotage(filters, market);
+
+    expect(result.system_alerts).toHaveLength(2);
+    expect(result.system_alerts[0]).toEqual(expect.objectContaining({
+      structural: true,
+      title: 'Paiement fournisseur bloqué',
+      order_count: 3,
+    }));
+    expect(result.system_alerts[1]).toEqual(expect.objectContaining({ id: 's4' }));
   });
 
   test('publicFilters ne laisse jamais fuiter l’UUID d’autorité interne', () => {

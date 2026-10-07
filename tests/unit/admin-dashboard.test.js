@@ -36,6 +36,11 @@ jest.mock('../../services/dashboard-cache', () => ({
   clear: jest.fn(() => 3),
 }));
 
+const mockControlChain = jest.fn();
+jest.mock('../../services/logistics-control-chain-projection', () => ({
+  getControlChain: (...args) => mockControlChain(...args),
+}));
+
 // Valeur KPI générique renvoyée par toutes les fonctions metrics.getXxx()
 const genericKpi = () => ({ value: 10, label: 'kpi', data_quality: { items_with_data: 5, items_total: 5 } });
 
@@ -78,6 +83,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockQuery.mockResolvedValue({ rows: [{ count: 0, day: '2026-01-01', status: 'shipped', orders_count: 0, ca_kmf: 0 }] });
   currentUser = { id: 'admin-1', role: 'admin' };
+  mockControlChain.mockResolvedValue({ structural_alerts: [] });
 
   app = express();
   app.use(express.json());
@@ -214,6 +220,7 @@ describe('GET /unified', () => {
     expect(res.body.economic_flow.stages.length).toBeGreaterThan(0);
     expect(res.body.principles.length).toBeGreaterThan(0);
     expect(Array.isArray(res.body.system_alerts)).toBe(true);
+    expect(mockControlChain).toHaveBeenCalledWith({ market: null });
   });
 });
 

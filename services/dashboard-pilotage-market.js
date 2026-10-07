@@ -20,6 +20,8 @@
 
 const db = require('../db');
 const metrics = require('./dashboard-metrics');
+const controlChain = require('./logistics-control-chain-projection');
+const { mergePilotageAlerts } = require('./dashboard-pilotage-alert-aggregation');
 const { buildSignalMarketClause } = require('./dashboard-metrics/_helpers');
 const log = require('../utils/logger').child({ module: 'dashboard-pilotage-market' });
 
@@ -37,8 +39,13 @@ async function fetchTopAlerts(filters, limit = 10) {
            s.severity      AS level,
            s.source_module AS source,
            s.title         AS message,
+           s.signal_type,
+           so.reference    AS order_reference,
            s.created_at
     FROM signals s
+    LEFT JOIN orders so
+      ON s.entity_type = 'order'
+     AND so.id::text = s.entity_id::text
     WHERE s.status IN ('open', 'acknowledged', 'snoozed')
       AND s.severity IN ('critical', 'urgent')
       AND ${marketScope.where}
@@ -55,6 +62,8 @@ async function fetchTopAlerts(filters, limit = 10) {
       level: row.level,
       source: row.source,
       message: row.message,
+      signal_type: row.signal_type || null,
+      order_reference: row.order_reference || null,
       created_at: row.created_at,
     }));
   } catch (err) {
@@ -76,6 +85,7 @@ async function buildMarketPilotage(filters, market) {
     coutReel, cmdsCoutIncomplet, coutMoyParCmd,
     cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans,
     topAlerts,
+    controlChainProjection,
   ] = await Promise.all([
     metrics.getCAEncaisse(filters),
     metrics.getCmdsActives(filters),
@@ -91,6 +101,7 @@ async function buildMarketPilotage(filters, market) {
     metrics.getRetardsCritiques(filters),
     metrics.getTauxCompletudeScans(filters),
     fetchTopAlerts(filters, 10),
+    controlChain.getControlChain({ market }),
   ]);
 
   const view_blocks = [
@@ -146,7 +157,7 @@ async function buildMarketPilotage(filters, market) {
       'cost_status visible : estimated, partial_real, actual, incomplete',
       'Le dashboard doit aider à décider',
     ],
-    system_alerts: topAlerts,
+    system_alerts: mergePilotageAlerts(topAlerts, controlChainProjection, 10),
     data_quality: {
       generated_at: new Date().toISOString(),
       filters: publicFilters(filters),
@@ -154,6 +165,8 @@ async function buildMarketPilotage(filters, market) {
       incomplete_fields: [],
       source_tables: [
         'orders', 'parcels', 'scan_events', 'signals',
+        'purchase_lines', 'purchase_orders', 'hub_purchase_allocations',
+        'hub_physical_units', 'customs_shipments',
         'order_item_cost_imputations', 'order_item_real_cost_allocations',
       ],
       scope_enforced: true,
