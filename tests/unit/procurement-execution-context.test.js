@@ -7,6 +7,7 @@
  */
 
 const {
+  resolveCertificationEnvironment,
   parseDestination,
   buildProcurementExecutionContext,
 } = require('../../services/procurement-execution-context');
@@ -14,6 +15,7 @@ const {
 test('construit un contexte provider-neutral stable depuis la vraie PO', () => {
   const env = {
     KOMERCE_PROCUREMENT_HUB_REF: 'DXB',
+    KOMERCE_PROVIDER_EXECUTION_ENV: 'SANDBOX',
     KOMERCE_PROCUREMENT_HUB_DESTINATION_JSON: JSON.stringify({
       postal_code: '00000',
       country_code: 'ae',
@@ -44,6 +46,7 @@ test('construit un contexte provider-neutral stable depuis la vraie PO', () => {
       customer_name: 'Komerce Hub',
     },
     supplier_tag_request: { reference: 'KOM-IN-X' },
+    certification_environment: 'SANDBOX',
   });
 });
 
@@ -71,4 +74,13 @@ test('destination invalide bloque fail-closed', () => {
 test('purchase_order_id est obligatoire pour une clé d exécution stable', () => {
   expect(() => buildProcurementExecutionContext({ env: {} }))
     .toThrow('PURCHASE_ORDER_ID_REQUIRED');
+});
+
+
+test('provider execution environment est explicite et borné', () => {
+  expect(resolveCertificationEnvironment({ KOMERCE_PROVIDER_EXECUTION_ENV: 'sandbox' })).toBe('SANDBOX');
+  expect(resolveCertificationEnvironment({ KOMERCE_PROVIDER_EXECUTION_ENV: 'LIVE_STAGING' })).toBe('LIVE_STAGING');
+  expect(resolveCertificationEnvironment({})).toBeNull();
+  expect(() => resolveCertificationEnvironment({ KOMERCE_PROVIDER_EXECUTION_ENV: 'prod-ish' }))
+    .toThrow('PROVIDER_EXECUTION_ENV_INVALID');
 });
