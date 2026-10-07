@@ -32,44 +32,36 @@ describe('staging exact business assertion', () => {
   });
 
   test('proves exact stage, health, cause and owner then cleans the fixture', async () => {
-    mockResolveReference.mockResolvedValueOnce({
+    mockResolveReference.mockImplementationOnce(async reference => ({
       found: true,
       matches: [{
         entity_type: 'ORDER',
-        customer_order_reference: 'AUDIT-EXACT-KM-TEST',
+        customer_order_reference: reference,
         current_position: {
           stage: 'PURCHASING',
           health: 'RED',
           cause: { code: 'supplier_payment_blocked', owner_role: 'finance' },
         },
       }],
-    });
+    }));
 
-    const originalSeed = audit.seedExactBusinessAssertion;
-    const originalCleanup = audit.cleanupExactBusinessAssertion;
-    const fixture = {
-      userId: 'user-1',
-      relaisId: 'relay-1',
-      orderId: 'order-1',
-      signalId: 'signal-1',
-      reference: 'AUDIT-EXACT-KM-TEST',
-    };
+    const result = await audit.assertExactBusinessOutcome(market);
 
-    // Exercise the public assertion contract with deterministic DB-independent fixture seams.
-    audit.seedExactBusinessAssertion = jest.fn().mockResolvedValue(fixture);
-    audit.cleanupExactBusinessAssertion = jest.fn().mockResolvedValue();
-
-    // assertExactBusinessOutcome closes over module functions, so validate the expected
-    // tuple directly and lock the canonical contract exported by the script.
-    expect(audit.EXACT_ASSERTION).toEqual({
+    expect(result).toMatchObject({
       stage: 'PURCHASING',
       health: 'RED',
       cause: 'supplier_payment_blocked',
       owner: 'finance',
+      passed: true,
+      expected: audit.EXACT_ASSERTION,
     });
-
-    audit.seedExactBusinessAssertion = originalSeed;
-    audit.cleanupExactBusinessAssertion = originalCleanup;
+    expect(result.reference).toMatch(/^AUDIT-EXACT-KM-/);
+    expect(mockResolveReference).toHaveBeenCalledWith(result.reference, {
+      role: 'admin',
+      global: true,
+    });
+    expect(mockQuery).toHaveBeenCalledTimes(8);
+    expect(String(mockQuery.mock.calls[7][0])).toContain('DELETE FROM users');
   });
 
   test('fixture seed is deterministic in business semantics and cleanup is explicit', async () => {
