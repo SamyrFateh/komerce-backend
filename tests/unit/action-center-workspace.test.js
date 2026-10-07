@@ -120,6 +120,61 @@ test('Order signal drill-down is resolved by business order reference inside sco
   expect(mockDbQuery.mock.calls[0][1]).toEqual([['order-uuid'], null]);
 });
 
+test('public signal exposes a separate human work item without conflating signal lifecycle', async () => {
+  mockAdmin.familyForType.mockReturnValue('ops');
+  mockAdmin.listSignals.mockResolvedValue({
+    signals: [{
+      signal_ref: 'KSG-000099',
+      signal_type: 'supplier_order_ambiguous',
+      severity: 'critical',
+      title: 'Commande fournisseur ambiguë',
+      recommendation: 'Vérifier la commande fournisseur puis réconcilier la PO',
+      owner_role: 'purchasing',
+      status: 'open',
+      entity_type: 'order',
+      entity_id: 'order-uuid',
+      market_id: null,
+    }],
+    total: 1, limit: 100, offset: 0,
+  });
+  mockDbQuery.mockResolvedValueOnce({ rows: [{
+    internal_id: 'order-uuid',
+    reference: 'KOM-AMB-1',
+  }] });
+
+  const result = await workspace.buildWorkspace();
+  const signal = result.signals[0];
+
+  expect(signal.work_item).toEqual({
+    owner_role: 'purchasing',
+    instruction: 'Vérifier la commande fournisseur puis réconcilier la PO',
+    href: '/admin/orders/KOM-AMB-1',
+    actionable: true,
+  });
+  expect(signal.actions).toEqual(['acknowledge', 'snooze', 'resolve']);
+});
+
+test('work item stays non-actionable when no safe business destination exists', () => {
+  const signal = workspace.publicSignal({
+    signal_ref: 'KSG-000100',
+    signal_type: 'supplier_payment_review',
+    severity: 'warning',
+    title: 'Paiement à revoir',
+    recommendation: 'Vérifier le paiement',
+    owner_role: 'finance',
+    status: 'open',
+    entity_type: 'supplier_payment',
+    entity_id: 'missing-payment',
+  }, { supplier_payment: new Map() });
+
+  expect(signal.work_item).toEqual({
+    owner_role: 'finance',
+    instruction: 'Vérifier le paiement',
+    href: null,
+    actionable: false,
+  });
+});
+
 test('Supplier payment signal resolves to Purchasing PO without exposing internal payment UUID', async () => {
   mockAdmin.familyForType.mockReturnValue('eco');
   mockAdmin.listSignals.mockResolvedValue({
