@@ -5,9 +5,9 @@
  * @layer         service
  * @criticality   high
  * @inputs        provider code, external provider capability certification ledger
- * @outputs       observational provider capability evidence, purchasing mode evidence
+ * @outputs       observational provider capability evidence, purchasing mode evidence, fail-closed execution certification verdict
  * @depends       services/suppliers/provider-authority.js, governance/external-provider-capability-certifications.json
- * @used-by       services/supplier-360.js, services/product-360.js, services/suppliers/procurement-execution-boundary.js, services/suppliers/procurement-execution-boundary.js
+ * @used-by       services/supplier-360.js, services/product-360.js, services/suppliers/procurement-execution-boundary.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
@@ -68,28 +68,23 @@ function projectMode(projection, capability) {
   });
 }
 
-function normalizeRuntimeEnvironment(env = process.env) {
-  const raw = String(env.KOMERCE_ENV || env.NODE_ENV || 'test').trim().toLowerCase();
-  if (['prod', 'production'].includes(raw)) return 'production';
-  if (raw === 'staging') return 'staging';
-  if (raw === 'sandbox') return 'sandbox';
-  if (raw === 'development' || raw === 'dev') return 'development';
-  return 'test';
+const RUNTIME_ENVIRONMENTS = Object.freeze(['SANDBOX', 'LIVE_STAGING', 'LIVE']);
+
+function normalizeRuntimeEnvironment(value) {
+  const normalized = String(value || '').trim().toUpperCase();
+  return RUNTIME_ENVIRONMENTS.includes(normalized) ? normalized : null;
 }
 
 function certificationEnvironmentAllows(environment, runtimeEnvironment) {
   const certified = String(environment || '').trim().toUpperCase();
-  const runtime = String(runtimeEnvironment || '').trim().toLowerCase();
-  if (!certified) return false;
-
-  if (certified === 'SANDBOX' || certified.includes('SANDBOX_') || certified.includes('_SANDBOX')) {
-    return runtime !== 'production';
+  const runtime = normalizeRuntimeEnvironment(runtimeEnvironment);
+  if (!runtime || !certified) return false;
+  if (runtime === 'SANDBOX') return certified.includes('SANDBOX');
+  if (runtime === 'LIVE_STAGING') {
+    return certified === 'LIVE_STAGING' || certified.startsWith('LIVE_STAGING_');
   }
-  if (certified.includes('LIVE_STAGING') || certified === 'STAGING') {
-    return runtime === 'staging';
-  }
-  if (certified.includes('PRODUCTION') || certified === 'LIVE') {
-    return runtime === 'production';
+  if (runtime === 'LIVE') {
+    return ['LIVE', 'PRODUCTION', 'LIVE_PRODUCTION'].includes(certified);
   }
   return false;
 }
@@ -98,7 +93,7 @@ function evaluateRuntimeCapability(platform, capability, options = {}) {
   const registry = options.registry || defaultRegistry;
   const projection = projectCapabilityCertifications(platform, registry);
   const record = projection.records.find(row => row.capability === capability) || null;
-  const runtimeEnvironment = normalizeRuntimeEnvironment(options.env || process.env);
+  const runtimeEnvironment = normalizeRuntimeEnvironment(options.runtime_environment);
 
   if (!record) {
     return Object.freeze({
@@ -113,10 +108,10 @@ function evaluateRuntimeCapability(platform, capability, options = {}) {
     });
   }
 
-  if (record.classification !== 'CONFIRMED') {
+  if (record.classification === 'GAP') {
     return Object.freeze({
       allowed: false,
-      reason: 'CERTIFICATION_CAPABILITY_NOT_CONFIRMED',
+      reason: 'CERTIFICATION_CAPABILITY_GAP',
       provider: projection.provider,
       capability,
       classification: record.classification,
@@ -126,15 +121,28 @@ function evaluateRuntimeCapability(platform, capability, options = {}) {
     });
   }
 
-  if (String(record.availability || '').toUpperCase() === 'CLOSED') {
+  if (record.classification !== 'CONFIRMED' || String(record.availability || '').toUpperCase() !== 'PROVEN') {
     return Object.freeze({
       allowed: false,
-      reason: 'CERTIFICATION_CAPABILITY_CLOSED',
+      reason: 'CERTIFICATION_CAPABILITY_NOT_PROVEN',
       provider: projection.provider,
       capability,
       classification: record.classification,
       availability: record.availability,
       runtime_environment: runtimeEnvironment,
+      certified_environment: record.environment,
+    });
+  }
+
+  if (!runtimeEnvironment) {
+    return Object.freeze({
+      allowed: false,
+      reason: 'CERTIFICATION_RUNTIME_ENVIRONMENT_REQUIRED',
+      provider: projection.provider,
+      capability,
+      classification: record.classification,
+      availability: record.availability,
+      runtime_environment: null,
       certified_environment: record.environment,
     });
   }
@@ -178,6 +186,7 @@ function projectPurchasingModeEvidence(platform, registry = defaultRegistry) {
 }
 
 module.exports = {
+  RUNTIME_ENVIRONMENTS,
   projectCapabilityCertifications,
   projectPurchasingModeEvidence,
   normalizeRuntimeEnvironment,
