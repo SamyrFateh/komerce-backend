@@ -42,6 +42,14 @@ describe('provider proof workflow ownership', () => {
     expect(owners).toEqual(['external-provider-contracts.feature.js']);
   });
 
+  test('le feature registry traite workflows comme un groupe backend audité', () => {
+    const source = fs.readFileSync(
+      path.join(ROOT, 'scripts', 'feature-registry-check.js'),
+      'utf8'
+    );
+    expect(source).toContain("'workflows'");
+  });
+
   test('le manifest external-provider-contracts garde explicitement la collection workflows', () => {
     const source = fs.readFileSync(
       path.join(FEATURES_DIR, 'external-provider-contracts.feature.js'),
