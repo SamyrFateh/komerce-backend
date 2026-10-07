@@ -450,7 +450,7 @@ async function buildFinance(query = {}, options = {}) {
     getCostFamilyBreakdown(window.filters),
     getRecentCostingOrders(window.filters, { limit: 20 }),
     getRelayProfitability(window.filters),
-    market ? Promise.resolve(null) : getSupplierPaymentReview({ limit: 50 }),
+    getSupplierPaymentReview({ limit: 50, ...(market && market.id ? { market_id: market.id } : {}) }),
   ]);
 
   return Object.freeze({
