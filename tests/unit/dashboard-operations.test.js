@@ -63,6 +63,17 @@ beforeEach(() => {
   }));
 });
 
+describe('dashboard-operations signal vocabulary', () => {
+  test('expose les signaux qui colorent réellement la chaîne', () => {
+    expect(operations.OPS_SIGNAL_TYPES).toEqual(expect.arrayContaining([
+      'parcel_blocked',
+      'customer_payment_attention',
+      'customs_declaration_pending',
+      'supplier_order_ambiguous',
+    ]));
+  });
+});
+
 describe('dashboard-operations', () => {
   test('la projection marché applique le market_id à toutes les sources sans exposer l’UUID', async () => {
     const market = { id: 'market-cm-id', code: 'CM', name: 'Cameroun', currency: 'XAF' };

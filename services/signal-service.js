@@ -6,10 +6,10 @@
  * @criticality   medium
  * @inputs        runtime_context, request_or_service_payload, optional_server_resolved_market_id, optional_transaction_executor
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js, services/supplier-payment-review.js
+ * @depends       db, utils/logger.js, utils/rules.js, services/supplier-payment-review.js
  * @used-by       routes/signals.js, bootstrap/feature-wiring.js, services/action-center-workspace.js,
  *                services/incident-escalation.js
- * @db-read       cash_collections, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, parcels, purchase_orders, v_purchase_line_progress, supplier_execution_payments
+ * @db-read       cash_collections, customs_shipment_parcels, customs_shipments, hub_physical_unit_placements, hub_purchase_allocations, order_items, orders, parcels, purchase_orders, v_purchase_line_progress, supplier_execution_payments
  * @db-write      signals
  * @db-txn        optional_caller_owned_transaction_for_upsert
  * @doctrine      resolve_before_behavior_change, market_scope_is_server_authority, preserve_caller_transaction
@@ -31,6 +31,7 @@
 let db = require('../db');
 let log = require('../utils/logger').child({ module: 'signal-service' });
 const { getSupplierPaymentReview } = require('./supplier-payment-review');
+const { getRuleNumber } = require('../utils/rules');
 
 /* ═══════════════════════════════════════════════════════════════
    UPSERT — insert or update one active derived fact
@@ -224,6 +225,140 @@ GENERATORS.supplier_payment_review = async function() {
   }
 };
 
+GENERATORS.customer_payment_attention = async function() {
+  try {
+    // Reuse the payment owner's existing business rule. No dashboard-specific
+    // timeout is invented here: cash becomes observable at the same H+N as
+    // the canonical reminder lifecycle, while an explicit failed payment is
+    // observable immediately.
+    const cashTimeoutHours = await getRuleNumber('CASH_PAYMENT_TIMEOUT_HOURS', 36);
+    const reminderHours = Math.max(1, Math.round(Number(cashTimeoutHours || 36) / 3));
+    const rows = (await db.query(`
+      SELECT o.id, o.reference, o.payment_mode::text AS payment_mode,
+             o.payment_status::text AS payment_status, o.created_at,
+             CASE
+               WHEN o.payment_status::text = 'failed' THEN 'payment_failed'
+               ELSE 'cash_payment_overdue'
+             END AS reason
+        FROM orders o
+       WHERE o.status::text NOT IN ('cancelled','collected','refunded')
+         AND (
+           o.payment_status::text = 'failed'
+           OR (
+             o.payment_mode::text = 'cash_relais'
+             AND o.payment_status::text = 'pending'
+             AND o.status::text = 'pending'
+             AND o.created_at <= NOW() - ($1 * INTERVAL '1 hour')
+           )
+         )
+       ORDER BY o.created_at ASC
+       LIMIT 50
+    `, [reminderHours])).rows;
+
+    let generated = 0;
+    const entityIds = [];
+    for (const r of rows) {
+      entityIds.push(r.id);
+      const failed = r.reason === 'payment_failed';
+      await upsertSignal({
+        signal_type: 'customer_payment_attention',
+        severity: failed ? 'critical' : 'warning',
+        title: r.reference
+          ? (failed ? 'Paiement client échoué — ' : 'Paiement client en attente — ') + r.reference
+          : (failed ? 'Paiement client échoué' : 'Paiement client en attente'),
+        summary: failed
+          ? 'Le paiement client est explicitement en échec.'
+          : `Paiement cash relais toujours en attente après ${reminderHours} h.`,
+        source_module: 'signal-service',
+        target_shell: 'bo',
+        target_view: 'orders',
+        target_filters: { payment_status: r.payment_status, payment_mode: r.payment_mode },
+        owner_role: 'finance',
+        entity_type: 'order',
+        entity_id: r.id,
+        recommendation: failed
+          ? 'Vérifier le rail de paiement et permettre une nouvelle tentative client'
+          : 'Relancer le paiement ou appliquer le lifecycle cash existant',
+        confidence: 'high',
+        meta: {
+          reason: r.reason,
+          payment_mode: r.payment_mode,
+          payment_status: r.payment_status,
+          ...(failed ? {} : { reminder_hours: reminderHours }),
+        },
+      });
+      generated++;
+    }
+    await autoResolveSignals('customer_payment_attention', entityIds);
+    return { generated, reminder_hours: reminderHours };
+  } catch (e) {
+    log.warn({ err: e }, '[signal-service] customer_payment_attention error:');
+    return { generated: 0, error: e.message };
+  }
+};
+
+GENERATORS.customs_declaration_pending = async function() {
+  try {
+    // A parcel physically arrived while its active customs shipment is still
+    // pending is already an actionable persisted fact. No arbitrary age
+    // threshold is required to expose it.
+    const rows = (await db.query(`
+      SELECT DISTINCT
+             o.id,
+             o.reference,
+             cs.id AS customs_shipment_id,
+             cs.reference AS customs_reference,
+             cs.status::text AS customs_status
+        FROM customs_shipments cs
+        JOIN customs_shipment_parcels csp ON csp.shipment_id = cs.id
+        JOIN parcels p ON p.id = csp.parcel_id
+        JOIN orders o ON o.id = p.order_id
+       WHERE cs.is_active = TRUE
+         AND cs.status::text = 'pending'
+         AND (p.status::text = 'arrived' OR p.arrived_at IS NOT NULL)
+         AND o.status::text NOT IN ('cancelled','collected','refunded')
+       ORDER BY o.reference ASC
+       LIMIT 50
+    `)).rows;
+
+    let generated = 0;
+    const entityIds = [];
+    for (const r of rows) {
+      entityIds.push(r.id);
+      await upsertSignal({
+        signal_type: 'customs_declaration_pending',
+        severity: 'warning',
+        title: r.reference
+          ? 'Déclaration douane attendue — ' + r.reference
+          : 'Déclaration douane attendue',
+        summary: r.customs_reference
+          ? 'Le colis est arrivé mais le dossier ' + r.customs_reference + ' est toujours pending.'
+          : 'Le colis est arrivé mais la déclaration douane est toujours pending.',
+        source_module: 'signal-service',
+        target_shell: 'bo',
+        target_view: 'shipping-customs',
+        target_filters: { customs_shipment_id: r.customs_shipment_id },
+        owner_role: 'customs',
+        entity_type: 'order',
+        entity_id: r.id,
+        recommendation: 'Ouvrir Expéditions & Douane et déclarer le dossier',
+        confidence: 'high',
+        meta: {
+          customs_shipment_id: r.customs_shipment_id,
+          customs_reference: r.customs_reference || null,
+          customs_status: r.customs_status,
+        },
+      });
+      generated++;
+    }
+    await autoResolveSignals('customs_declaration_pending', entityIds);
+    return { generated };
+  } catch (e) {
+    log.warn({ err: e }, '[signal-service] customs_declaration_pending error:');
+    return { generated: 0, error: e.message };
+  }
+};
+
 GENERATORS.parcel_blocked = async function() {
   try {
     const rows = (await db.query(`
@@ -232,7 +367,7 @@ GENERATORS.parcel_blocked = async function() {
              o.reference
       FROM parcels p
       LEFT JOIN orders o ON o.id = p.order_id
-      WHERE p.status NOT IN ('delivered','cancelled','returned')
+      WHERE p.status::text NOT IN ('collected','cancelled')
         AND p.updated_at < NOW() - INTERVAL '3 days'
       ORDER BY p.updated_at ASC
       LIMIT 50
@@ -248,7 +383,16 @@ GENERATORS.parcel_blocked = async function() {
         title: r.tracking_number ? 'Colis bloqué — ' + r.tracking_number.substring(0, 12) : 'Colis bloqué',
         summary: 'Statut "' + r.status + '" depuis ' + r.days_stuck + ' jours' + (r.reference ? ' (cmd ' + r.reference + ')' : ''),
         source_module: 'signal-service', target_shell: 'bo', target_view: 'parcels',
-        target_filters: { status: r.status }, owner_role: 'hub',
+        target_filters: { status: r.status },
+        owner_role: r.status === 'shipped'
+          ? 'transitaire'
+          : r.status === 'in_transit'
+            ? 'logistics'
+            : r.status === 'arrived'
+              ? 'customs'
+              : r.status === 'available'
+                ? 'relais'
+                : 'hub',
         entity_type: 'parcel', entity_id: r.id,
         recommendation: r.days_stuck > 5 ? 'Contacter le transitaire ou escalader' : 'Vérifier le suivi',
         confidence: 'high',
