@@ -753,18 +753,25 @@ test('audit : détail technique — contrôle, produit ou suivi selon l’origin
 });
 
 test('audit : filtres de Passages lus depuis l’URL (Back / Forward / rechargement) et conservés par la pagination', () => {
-  const p = scenario(); p.passages = PASSAGES; p.passages_page = { offset:50, next_offset:100 };
-  const html = render(p, `?run=${RUN}&view=passages&offset=50&f_source=CJ&f_state=ACTION_REQUIRED&f_period=week&f_q=0004`);
-  expect(html).toMatch(/<option value="CJ" selected>/);
-  expect(html).toMatch(/<option value="ACTION_REQUIRED" selected>/);
-  expect(html).toMatch(/<option value="week" selected>/);
-  expect(html).toContain('value="0004"');
-  expect((html.match(/data-row-href/g) || []).length).toBe(1); // KIR-000004 (CJ, Action requise)
-  const pagers = [...html.matchAll(/href="([^"]*view=passages[^"]*offset=[^"]*)"/g)].map(m => m[1].replace(/&amp;/g, '&'));
-  for (const href of pagers) expect(href).toContain('f_source=CJ&f_state=ACTION_REQUIRED&f_period=week&f_q=0004');
-  // URL sans filtre : retour aux valeurs par défaut (l'URL fait foi).
-  const clean = render(p, `?run=${RUN}&view=passages`);
-  expect((clean.match(/data-row-href/g) || []).length).toBe(3);
+  // Le scénario est daté du 30/09/2026 : figer l'horloge évite qu'un test
+  // de filtre "7 derniers jours" devienne rouge une semaine plus tard.
+  const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(new Date('2026-10-07T12:00:00Z').getTime());
+  try {
+    const p = scenario(); p.passages = PASSAGES; p.passages_page = { offset:50, next_offset:100 };
+    const html = render(p, `?run=${RUN}&view=passages&offset=50&f_source=CJ&f_state=ACTION_REQUIRED&f_period=week&f_q=0004`);
+    expect(html).toMatch(/<option value="CJ" selected>/);
+    expect(html).toMatch(/<option value="ACTION_REQUIRED" selected>/);
+    expect(html).toMatch(/<option value="week" selected>/);
+    expect(html).toContain('value="0004"');
+    expect((html.match(/data-row-href/g) || []).length).toBe(1); // KIR-000004 (CJ, Action requise)
+    const pagers = [...html.matchAll(/href="([^"]*view=passages[^"]*offset=[^"]*)"/g)].map(m => m[1].replace(/&amp;/g, '&'));
+    for (const href of pagers) expect(href).toContain('f_source=CJ&f_state=ACTION_REQUIRED&f_period=week&f_q=0004');
+    // URL sans filtre : retour aux valeurs par défaut (l'URL fait foi).
+    const clean = render(p, `?run=${RUN}&view=passages`);
+    expect((clean.match(/data-row-href/g) || []).length).toBe(3);
+  } finally {
+    nowSpy.mockRestore();
+  }
 });
 
 test('audit : aucune occurrence de « Retour au passage » ni « Retour au cockpit » dans aucune vue rendue', () => {
