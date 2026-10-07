@@ -360,6 +360,9 @@ describe('GENERATORS.parcel_blocked', () => {
     const { GENERATORS } = loadService();
     const result = await GENERATORS.parcel_blocked();
     expect(result.generated).toBe(1);
+    const [selectSql] = mockQuery.mock.calls[0];
+    expect(selectSql).toContain("p.status::text NOT IN ('collected','cancelled')");
+    expect(selectSql).not.toMatch(/delivered|returned/);
     const [, params] = mockQuery.mock.calls[1];
     expect(params[1]).toBe('critical');
     expect(params[2]).toMatch(/Colis bloqué — TRK1/);
