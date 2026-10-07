@@ -57,7 +57,7 @@ describe('caractérisation — capabilities runtime réelles', () => {
     const out = await evaluateProcurementExecutionBoundary({
       identity: soi('allegro', { offer_id: '1' }), quantity: 1, canonicalUnit: {}, adapters: EXECUTION_ADAPTER_REGISTRY,
     });
-    expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'CERTIFICATION_CAPABILITY_CLOSED' });
+    expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'CERTIFICATION_CAPABILITY_NOT_PROVEN' });
   });
 
   test('AliExpress est un execution adapter complet mais reste fail-closed sans destination/preflight', async () => {
@@ -69,7 +69,7 @@ describe('caractérisation — capabilities runtime réelles', () => {
       adapters: EXECUTION_ADAPTER_REGISTRY,
       context: {},
     });
-    expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'CERTIFICATION_ENVIRONMENT_MISMATCH' });
+    expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'CERTIFICATION_RUNTIME_ENVIRONMENT_REQUIRED' });
   });
 
   test('CJ est un execution adapter complet mais reste fail-closed sans contexte runtime', async () => {
