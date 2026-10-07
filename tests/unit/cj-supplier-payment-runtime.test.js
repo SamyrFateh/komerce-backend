@@ -49,30 +49,58 @@ const basePayment = {
 const env = {
   KOMERCE_ALLOW_CJ_REAL_PAYMENT: '1',
   KOMERCE_CJ_REAL_MAX_USD: '20',
+  KOMERCE_PROVIDER_EXECUTION_ENV: 'LIVE',
 };
+
+const certifiedRegistry = {
+  providers: {
+    cj: [{
+      capability: 'purchasing.real_debit',
+      classification: 'CONFIRMED',
+      availability: 'PROVEN',
+      highest_proof: 'P4',
+      environment: 'LIVE',
+      evidence: ['test'],
+      limitations: [],
+    }],
+  },
+};
+
+function certifiedContext(extra = {}) {
+  return {
+    env,
+    operator_authorized: true,
+    certification_registry: certifiedRegistry,
+    ...extra,
+  };
+}
 
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
-test('guard requires explicit operator authorization and bounded USD amount', () => {
-  expect(() => runtime.guardAuthorization({ env }, basePayment))
-    .toThrow('CJ_REAL_PAYMENT_NOT_AUTHORIZED');
+test('real debit is fail-closed on certification before operator authorization', () => {
+  expect(() => runtime.guardAuthorization({ env, operator_authorized: true }, basePayment))
+    .toThrow('CERTIFICATION_CAPABILITY_GAP');
+});
 
+test('certified real debit still requires explicit operator authorization and bounded USD amount', () => {
   expect(() => runtime.guardAuthorization({
+    env,
+    certification_registry: certifiedRegistry,
+  }, basePayment)).toThrow('CJ_REAL_PAYMENT_NOT_AUTHORIZED');
+
+  expect(() => runtime.guardAuthorization(certifiedContext({
     env: { ...env, KOMERCE_CJ_REAL_MAX_USD: '21' },
-    operator_authorized: true,
-  }, basePayment)).toThrow('CJ_REAL_MAX_USD_INVALID');
+  }), basePayment)).toThrow('CJ_REAL_MAX_USD_INVALID');
 
-  expect(() => runtime.guardAuthorization({
-    env,
-    operator_authorized: true,
-  }, { ...basePayment, expected_amount: '25' })).toThrow('CJ_REAL_DEBIT_CAP_EXCEEDED');
+  expect(() => runtime.guardAuthorization(
+    certifiedContext(),
+    { ...basePayment, expected_amount: '25' }
+  )).toThrow('CJ_REAL_DEBIT_CAP_EXCEEDED');
 
-  expect(runtime.guardAuthorization({
-    env,
-    operator_authorized: true,
-  }, basePayment)).toEqual({ cap: 20, amount: 7 });
+  expect(runtime.guardAuthorization(certifiedContext(), basePayment))
+    .toEqual({ cap: 20, amount: 7 });
 });
 
 test('prepared payment executes one provider payment then requires billingHistory proof', async () => {
@@ -115,8 +143,7 @@ test('prepared payment executes one provider payment then requires billingHistor
   const out = await runtime.closeCjSupplierPayment(client, {
     supplierPaymentId: 'pay-1',
     context: {
-      env,
-      operator_authorized: true,
+      ...certifiedContext(),
       invoke: mockInvoke,
     },
   });
@@ -150,8 +177,7 @@ test('succeeded+matched unverified payment performs billing read only and never 
   const out = await runtime.closeCjSupplierPayment(client, {
     supplierPaymentId: 'pay-1',
     context: {
-      env,
-      operator_authorized: true,
+      ...certifiedContext(),
       invoke: mockInvoke,
     },
   });
@@ -173,7 +199,7 @@ test.each(['requested', 'ambiguous', 'rejected'])('%s payment is never auto-retr
 
   await expect(runtime.closeCjSupplierPayment(client, {
     supplierPaymentId: 'pay-1',
-    context: { env, operator_authorized: true, invoke: mockInvoke },
+    context: certifiedContext({ invoke: mockInvoke }),
   })).resolves.toMatchObject({
     invoked: false,
     closed: false,
@@ -191,7 +217,7 @@ test('already verified payment is a no-op', async () => {
 
   const out = await runtime.closeCjSupplierPayment(client, {
     supplierPaymentId: 'pay-1',
-    context: { env, operator_authorized: true },
+    context: certifiedContext(),
   });
 
   expect(out).toMatchObject({ invoked: false, already_verified: true });
