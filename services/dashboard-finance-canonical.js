@@ -494,8 +494,16 @@ async function buildFinance(query = {}, options = {}) {
       scope_enforced: true,
       scope_mode: market ? 'market' : 'global',
       finance_period_basis: Object.freeze({
-        orders: 'orders.created_at',
-        refunds: 'refunds.completed_at',
+        orders: Object.freeze({
+          field: 'orders.created_at',
+          semantics: 'paid_order_creation_cohort',
+          cash_basis: false,
+          reason: 'no_universal_payment_received_timestamp_across_all_payment_modes',
+        }),
+        refunds: Object.freeze({
+          field: 'refunds.completed_at',
+          semantics: 'refund_completion_event',
+        }),
       }),
       relay_real_margin_basis: 'actual_cost_orders_only',
       economic_global_engine_consumed: false,
