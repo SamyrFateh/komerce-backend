@@ -162,3 +162,63 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(finance[0].items.map(item => item.id)).toEqual(['workspace-accounting']);
   });
 });
+
+describe('navigation-policy-v4 — canonical reference search', () => {
+  function fakeDoc() {
+    return {
+      createElement(tag) {
+        return {
+          tagName: tag.toUpperCase(),
+          attributes: {},
+          children: [],
+          setAttribute(key, val) { this.attributes[key] = val; },
+          appendChild(node) { this.children.push(node); return node; },
+          replaceChildren(...nodes) { this.children = nodes; },
+        };
+      },
+    };
+  }
+
+  test('uses the read-only server resolver, never infers an owner from a prefix', () => {
+    const nav = loadPolicy();
+    expect(nav.REFERENCE_SEARCH_ENDPOINT).toBe('/api/admin/dashboard/reference/resolve');
+    expect(nav.safeCanonicalHref('/admin/orders/CMD-1')).toBe('/admin/orders/CMD-1');
+    expect(nav.safeCanonicalHref('/admin/workspaces/purchasing?po=123')).toBe('/admin/workspaces/purchasing?po=123');
+    expect(nav.safeCanonicalHref('https://evil.example/path')).toBeNull();
+    expect(nav.safeCanonicalHref('//evil.example/path')).toBeNull();
+    expect(nav.safeCanonicalHref('/dashboards/legacy')).toBeNull();
+  });
+
+  test('renders all ambiguous matches and opens each server-supplied canonical destination', () => {
+    const nav = loadPolicy();
+    const doc = fakeDoc();
+    const host = doc.createElement('div');
+    nav.renderReferenceResults(doc, host, {
+      found: true,
+      ambiguous: true,
+      matches: [
+        { entity_type: 'PURCHASE_ORDER', matched_reference: 'PO-42', customer_order_reference: 'CMD-1', market_code: 'KM', current_position: { stage: 'PURCHASING', health: 'RED' }, canonical_href: '/admin/workspaces/purchasing?po=42' },
+        { entity_type: 'PURCHASE_ORDER', matched_reference: 'PO-42', customer_order_reference: 'CMD-2', market_code: 'KM', current_position: { stage: 'SUPPLIER', health: 'GREEN' }, canonical_href: '/admin/orders/CMD-2' },
+      ],
+    });
+    expect(host.children).toHaveLength(2);
+    expect(host.children.map(item => item.attributes.href)).toEqual([
+      '/admin/workspaces/purchasing?po=42',
+      '/admin/orders/CMD-2',
+    ]);
+    expect(host.children[0].children[1].textContent).toContain('PURCHASING');
+  });
+
+  test('empty and invalid destinations never generate unsafe links', () => {
+    const nav = loadPolicy();
+    const doc = fakeDoc();
+    const host = doc.createElement('div');
+    nav.renderReferenceResults(doc, host, { found: false, matches: [] });
+    expect(host.children[0].textContent).toMatch(/Aucune référence/);
+    nav.renderReferenceResults(doc, host, {
+      matches: [{ entity_type: 'PARCEL', matched_reference: 'P-1', canonical_href: 'https://evil.example' }],
+    });
+    expect(host.children[0].tagName).toBe('DIV');
+    expect(host.children[0].attributes.href).toBeUndefined();
+  });
+});
