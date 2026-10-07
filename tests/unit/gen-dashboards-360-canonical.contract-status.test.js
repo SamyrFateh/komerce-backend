@@ -28,6 +28,7 @@
 const {
   extractContractStatus,
   isProvenStatus,
+  traceApiEdges,
 } = require('../../scripts/gen-dashboards-360-canonical');
 
 describe('LOT 3 — extractContractStatus() retrouve le statut au bon endroit', () => {
@@ -136,5 +137,42 @@ describe('LOT 3 — régression : le contrat réel ne doit plus s\'effondrer ent
     // (639 opérations, 0 jamais "PROVEN"). Il doit maintenant refléter les
     // opérations réellement couvertes par un test d'intégration/unitaire.
     expect(provenCount).toBeGreaterThan(0);
+  });
+});
+
+
+describe('P3-4 — résolution des wrappers fetch locaux', () => {
+  test('trace le call-site réel de request(url) et masque le fetch interne du wrapper', () => {
+    const code = [
+      "const BASE = '/api/admin/example';",
+      "async function request(url, options = {}) {",
+      "  return global.fetch(url, { method: options.method || 'GET' });",
+      "}",
+      "request(\`${BASE}/items/${encodeURIComponent(id)}\`, { method: 'POST' });",
+    ].join('\n');
+
+    const edges = traceApiEdges(code);
+    expect(edges).toEqual([
+      expect.objectContaining({
+        candidates: ['/api/admin/example/items/${encodeURIComponent(id)}'],
+        methodLiteral: 'POST',
+      }),
+    ]);
+    expect(edges.some(edge => edge.raw === 'url')).toBe(false);
+  });
+
+  test('résout une concaténation API passée directement au wrapper', () => {
+    const code = [
+      "const BASE = '/api/admin/example/';",
+      "async function request(url) { return fetch(url); }",
+      "request(BASE + encodeURIComponent(id));",
+    ].join('\n');
+
+    const edges = traceApiEdges(code);
+    expect(edges).toEqual([
+      expect.objectContaining({
+        candidates: ['/api/admin/example/${param}'],
+      }),
+    ]);
   });
 });
