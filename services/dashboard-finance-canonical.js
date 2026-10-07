@@ -54,6 +54,7 @@ function buildPeriod(query = {}, marketId = null, now = new Date()) {
     filters: Object.freeze({
       from: from.toISOString(),
       to: to.toISOString(),
+      time_basis: 'confirmed_at',
       ...(marketId ? { market_id: marketId } : {}),
     }),
   });
@@ -494,7 +495,7 @@ async function buildFinance(query = {}, options = {}) {
       scope_enforced: true,
       scope_mode: market ? 'market' : 'global',
       finance_period_basis: Object.freeze({
-        orders: 'orders.created_at',
+        orders: 'orders.confirmed_at',
         refunds: 'refunds.completed_at',
       }),
       relay_real_margin_basis: 'actual_cost_orders_only',
