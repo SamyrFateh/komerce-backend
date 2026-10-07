@@ -52,7 +52,14 @@ describe('logistics-control-chain-projection', () => {
         code: 'hub_quarantine',
         summary: 'Unité HUB en quarantaine',
         owner_role: 'hub',
+        severity: null,
       },
+      exceptions: [{
+        code: 'hub_quarantine',
+        summary: 'Unité HUB en quarantaine',
+        owner_role: 'hub',
+        severity: null,
+      }],
       envelope: { type: 'HUB_UNIT', refs: ['HU-001'] },
       split: false,
       lineage: {
@@ -61,6 +68,38 @@ describe('logistics-control-chain-projection', () => {
         parcels: [],
       },
     });
+  });
+
+  test('expose au plus trois causes et conserve la cause gouvernante en premier', () => {
+    const row = projection.projectRow({
+      order_reference: 'K-MULTI-1',
+      current_stage: 'PURCHASING',
+      health: 'RED',
+      exception_code: 'supplier_order_ambiguous',
+      exception_summary: 'Commande fournisseur ambiguë',
+      exception_owner_role: 'purchasing',
+      exception_severity: 'critical',
+      exception_causes: [
+        { signal_type: 'supplier_payment_blocked', severity: 'high', summary: 'Paiement bloqué', owner_role: 'finance' },
+        { signal_type: 'supplier_order_ambiguous', severity: 'critical', summary: 'Commande fournisseur ambiguë', owner_role: 'purchasing' },
+        { signal_type: 'customer_payment_attention', severity: 'warning', summary: 'Paiement client à vérifier', owner_role: 'finance' },
+        { signal_type: 'fourth_should_not_surface', severity: 'warning', summary: '4e', owner_role: 'support' },
+      ],
+      purchase_order_refs: ['po-1'],
+      hub_unit_refs: [],
+      parcel_refs: [],
+      parcels_count: 0,
+    });
+
+    expect(row.exception).toMatchObject({
+      code: 'supplier_order_ambiguous',
+      owner_role: 'purchasing',
+    });
+    expect(row.exceptions.map(cause => cause.code)).toEqual([
+      'supplier_order_ambiguous',
+      'supplier_payment_blocked',
+      'customer_payment_attention',
+    ]);
   });
 
   test('un split reste une seule ligne de commande et conserve tous les colis de filiation', () => {
@@ -161,6 +200,10 @@ describe('logistics-control-chain-projection', () => {
 
     const [sql] = mockQuery.mock.calls[0];
     expect(sql).toContain('FROM incidents i');
+    expect(sql).toContain('JSONB_AGG');
+    expect(sql).toContain('WHERE rn <= 3');
+    expect(sql).toContain('LEFT JOIN signal_summary ss ON ss.order_id = so.id');
+    expect(sql).not.toContain('LEFT JOIN ranked_signals rs ON rs.order_id = so.id AND rs.rn = 1');
     expect(sql).toContain("i.status IN ('open','investigating')");
     expect(sql).toContain("WHEN 'high' THEN 'high'");
     expect(sql).toContain("ELSE 'warning'");
