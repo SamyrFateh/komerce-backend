@@ -125,9 +125,20 @@ test('Finance market applique le scope serveur aux métriques et projections', a
   expect(payload.costing_kpis.map(item => item.key)).toEqual(['cout_estime', 'cout_reel', 'marge_estimee', 'marge_variable_reelle', 'marge_consolidee']);
   expect(payload.data_quality.economic_global_engine_consumed).toBe(false);
   expect(payload.data_quality.relay_real_margin_basis).toBe('actual_cost_orders_only');
-  expect(payload).not.toHaveProperty('supplier_payment_review');
-  expect(payload.data_quality.supplier_payment_review_basis).toBeNull();
-  expect(mockQuery.mock.calls.some(([sql]) => String(sql).includes('FROM supplier_execution_payments'))).toBe(false);
+  expect(payload.supplier_payment_review).toEqual(expect.objectContaining({
+    count: 2,
+    basis: 'current_state_all_time_market_lineage',
+    truncated: false,
+  }));
+  expect(payload.data_quality.supplier_payment_review_basis).toBe('current_state_all_time_market_lineage');
+  const reviewCall = mockQuery.mock.calls.find(([sql]) => String(sql).includes('FROM supplier_execution_payments'));
+  expect(reviewCall).toBeTruthy();
+  expect(String(reviewCall[0])).toContain('EXISTS');
+  expect(String(reviewCall[0])).toContain('JOIN purchase_lines pl');
+  expect(String(reviewCall[0])).toContain('JOIN order_items oi');
+  expect(String(reviewCall[0])).toContain('JOIN orders o');
+  expect(String(reviewCall[0])).toContain('o.market_id = $1');
+  expect(reviewCall[1]).toEqual(['market-cm-id', 50]);
   expect(JSON.stringify(payload)).not.toContain('market-cm-id');
 });
 
