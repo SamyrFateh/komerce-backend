@@ -813,7 +813,7 @@ role: Evenement par produit d'un run d'import (debut, fin, issue, prix source) p
 object: market_cost_attributions
 kind: table
 migration: 267
-section: ### 4.7 Moteur économique
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
 role: Journal append-only d'attribution des charges de structure mutualisées (economic_structure_cost_events scope_kind GROUP) aux marchés. Événements ATTRIBUTION/REVERSAL, FK source_event_id, gardes immutabilité et validation reversal.
 -->
 
