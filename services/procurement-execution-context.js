@@ -21,6 +21,16 @@ function nonEmpty(value) {
   return text || null;
 }
 
+function resolveCertificationEnvironment(env = process.env) {
+  const raw = nonEmpty(env.KOMERCE_PROVIDER_EXECUTION_ENV);
+  if (!raw) return null;
+  const normalized = raw.toUpperCase();
+  if (!['SANDBOX', 'LIVE_STAGING', 'LIVE'].includes(normalized)) {
+    throw new Error('PROVIDER_EXECUTION_ENV_INVALID');
+  }
+  return normalized;
+}
+
 function parseDestination(env = process.env) {
   const raw = nonEmpty(env.KOMERCE_PROCUREMENT_HUB_DESTINATION_JSON);
   if (!raw) return null;
@@ -60,11 +70,13 @@ function buildProcurementExecutionContext({
     procurement_destination: parseDestination(env),
     store_line_item_id: nonEmpty(purchaseLineId) || nonEmpty(item?.id),
     supplier_tag_request: supplierTagRequest || null,
+    certification_environment: resolveCertificationEnvironment(env),
     env,
   });
 }
 
 module.exports = {
+  resolveCertificationEnvironment,
   parseDestination,
   buildProcurementExecutionContext,
 };

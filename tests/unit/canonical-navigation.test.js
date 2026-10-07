@@ -148,23 +148,21 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     expect(env.api.visibleDomainsFor({ role: 'admin' }).map(domain => domain.id)).toEqual([
       'dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'live', 'finance',
     ]);
-    expect(header.children[0].children[1].className).toContain('is-capability-map');
+    expect(header.children[0].children[1].className).toBe('kmc-admin-primary-nav');
+    expect(primaryIdsOf(header)).toEqual(['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'live', 'finance']);
   });
 
-  test('admin voit les 4 dashboards maîtres regroupés en tête de la sidebar', () => {
+  test('admin utilise la navigation canonique de domaines sans capability map parallèle', () => {
     const env = loadNavigation('/admin/pilotage', 'pilotage');
     const header = mountFor(env, '/admin/pilotage', 'pilotage', { role: 'admin' });
     const primary = header.children[0].children[1];
-    const dashboardsGroup = primary.children[0];
 
-    expect(dashboardsGroup.children[0].textContent).toBe('Dashboards');
-    expect(dashboardsGroup.children.slice(1).map(link => link.textContent)).toEqual([
-      'Pilotage', 'Commerce', 'Opérations', 'Finance',
+    expect(primary.className).toBe('kmc-admin-primary-nav');
+    expect(primary.children.map(link => link.attributes['data-dashboard'])).toEqual([
+      'dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'live', 'finance',
     ]);
-    expect(dashboardsGroup.children.slice(1).map(link => link.href)).toEqual([
-      '/admin/pilotage', '/admin/commerce', '/admin/operations', '/admin/finance',
-    ]);
-    expect(dashboardsGroup.children[1].attributes['aria-current']).toBe('page');
+    expect(primary.children[0].href).toBe('/admin/pilotage');
+    expect(primary.children[0].attributes['aria-current']).toBe('page');
   });
 
   test('Paramètres apparaît dans la zone utilitaire pour admin uniquement', () => {
@@ -195,7 +193,7 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     const inner = header.children[0];
     const identity = inner.children[0];
     const primary = inner.children[1];
-    const pricing = findPrimaryLink(header, 'pricing-workspace');
+    const pricing = findPrimaryLink(header, 'pricing');
 
     expect(identity.children).toHaveLength(1);
     expect(identity.children[0].children[0].textContent).toBe('KOMERCE');
@@ -210,11 +208,11 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     const inner = header.children[0];
     const identity = inner.children[0];
     const primary = inner.children[1];
-    const orders = findPrimaryLink(header, 'orders-overview');
+    const orders = findPrimaryLink(header, 'orders');
 
     expect(identity.children[1].textContent).toBe('← Retour au commerce');
     expect(identity.children[1].href).toBe('/admin/commerce');
-    expect(orders.attributes['aria-current']).toBeUndefined();
+    expect(orders.attributes['aria-current']).toBe('page');
     expect(env.api.activePrimarySurface('order-360')).toBe('orders');
     // Order-360 reste un vrai drill-down Entity 360, pas un domaine N1 promu :
     // seuls les domaines canoniques (7 du mock + Live opérationnel) apparaissent, dans l'ordre.
@@ -298,7 +296,7 @@ describe('canonical admin navigation — N2 domaine Opérations (doctrine V2 §4
     const env = loadNavigation('/admin/workspaces/shipping-customs', 'shipping-customs-workspace');
     const header = mountFor(env, '/admin/workspaces/shipping-customs', 'shipping-customs-workspace', { role: 'admin' });
 
-    const shippingCustoms = findPrimaryLink(header, 'shipping-customs-workspace');
+    const shippingCustoms = findPrimaryLink(header, 'operations');
     expect(shippingCustoms.attributes['aria-current']).toBe('page');
 
     const n2 = secondaryNav(header);
