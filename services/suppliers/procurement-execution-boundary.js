@@ -70,7 +70,10 @@ async function evaluateProcurementExecutionBoundary({
   const certification = capabilityCertifications.evaluateRuntimeCapability(
     identity.provider,
     'purchasing.auto_order',
-    { env: context.env || process.env, registry: context.certification_registry }
+    {
+      runtime_environment: context.certification_environment,
+      registry: context.certification_registry,
+    }
   );
   if (!certification.allowed) {
     return notReached(certification.reason, {
