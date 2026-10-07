@@ -51,6 +51,16 @@ describe('canonical reference resolver', () => {
     });
 
     expect(resolver.canonicalDestination({
+      entity_type: 'PARENT_ORDER',
+      canonical_id: 'group-1',
+      order_reference: 'K-104829',
+    }, { role: 'admin' })).toEqual({
+      owner: 'purchasing',
+      href: '/admin/workspaces/purchasing?po=group-1',
+      fallback_href: '/admin/orders/K-104829',
+    });
+
+    expect(resolver.canonicalDestination({
       entity_type: 'HUB_UNIT',
       canonical_id: 'hu-1',
       order_reference: 'K-104829',
@@ -180,6 +190,43 @@ describe('canonical reference resolver', () => {
     expect(new Set(result.matches.map(match => match.canonical_id))).toEqual(new Set(['po-group']));
   });
 
+  test('résout un supplier parent order groupé vers toutes ses commandes clientes', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [
+        {
+          entity_type: 'PARENT_ORDER',
+          matched_reference: 'CJ-PARENT-7',
+          canonical_id: 'group-7',
+          order_id: 'order-1',
+          order_reference: 'K-1',
+          market_id: 'market-cm',
+          market_code: 'CM',
+        },
+        {
+          entity_type: 'PARENT_ORDER',
+          matched_reference: 'CJ-PARENT-7',
+          canonical_id: 'group-7',
+          order_id: 'order-2',
+          order_reference: 'K-2',
+          market_id: 'market-cm',
+          market_code: 'CM',
+        },
+      ],
+    });
+    mockSnapshot
+      .mockResolvedValueOnce({ stage: 'SUPPLIER', health: 'GREEN', exception: null, envelope: { type: 'PURCHASE_ORDER', refs: ['po-1'] }, split: false, lineage: { purchase_orders: ['po-1'], hub_units: [], parcels: [] } })
+      .mockResolvedValueOnce({ stage: 'SUPPLIER', health: 'GREEN', exception: null, envelope: { type: 'PURCHASE_ORDER', refs: ['po-1'] }, split: false, lineage: { purchase_orders: ['po-1'], hub_units: [], parcels: [] } });
+
+    const result = await resolver.resolveReference('CJ-PARENT-7', { role: 'admin', global: true });
+
+    expect(result.found).toBe(true);
+    expect(result.ambiguous).toBe(true);
+    expect(result.matches).toHaveLength(2);
+    expect(result.matches.every(match => match.entity_type === 'PARENT_ORDER')).toBe(true);
+    expect(result.matches.map(match => match.customer_order_reference)).toEqual(['K-1', 'K-2']);
+    expect(result.matches.every(match => match.canonical_owner === 'purchasing')).toBe(true);
+  });
+
   test('ne révèle pas une référence hors des marchés operations.read autorisés', async () => {
     mockQuery.mockResolvedValueOnce({
       rows: [{
@@ -258,6 +305,7 @@ describe('canonical reference resolver', () => {
     await resolver.queryOrphans('po-orphan');
     const sql = mockQuery.mock.calls[0][0];
     expect(sql).toMatch(/FROM purchase_orders po/);
+    expect(sql).toMatch(/FROM supplier_execution_groups seg/);
     expect(sql).toMatch(/FROM hub_physical_units hpu/);
     expect(sql).toMatch(/FROM parcels p/);
     expect(sql).toMatch(/FROM customs_shipments cs/);
@@ -272,6 +320,8 @@ describe('canonical reference resolver', () => {
     const sql = mockQuery.mock.calls[0][0];
     expect(sql).toMatch(/FROM orders o/);
     expect(sql).toMatch(/FROM purchase_orders po/);
+    expect(sql).toMatch(/FROM supplier_execution_groups seg/);
+    expect(sql).toMatch(/supplier_parent_order_id/);
     expect(sql).toMatch(/FROM hub_physical_units hpu/);
     expect(sql).toMatch(/FROM parcels p/);
     expect(sql).toMatch(/FROM customs_shipments cs/);
