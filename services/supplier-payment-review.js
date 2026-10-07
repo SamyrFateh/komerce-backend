@@ -4,11 +4,11 @@
  * @domain        purchasing
  * @layer         service
  * @criticality   high
- * @inputs        supplier_payment_current_state, optional_limit, database_query_interface
+ * @inputs        supplier_payment_current_state, optional_limit, optional_market_lineage, database_query_interface
  * @outputs       canonical_supplier_payment_review_population
  * @depends       db.js
  * @used-by       services/dashboard-finance-canonical.js, services/signal-service.js
- * @db-read       supplier_execution_payments
+ * @db-read       supplier_execution_payments, purchase_lines, order_items, orders
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/doctrine/DOCTRINE_SUPPLIER_PAYMENT_FACT.md
@@ -31,8 +31,29 @@ function normalizeLimit(raw) {
 async function getSupplierPaymentReview(options = {}, q = db) {
   const limit = normalizeLimit(options.limit === undefined ? 50 : options.limit);
   const includeInternalIdentity = options.include_internal_identity === true;
-  const limitClause = limit == null ? '' : 'LIMIT $1';
-  const params = limit == null ? [] : [limit];
+  const marketId = options.market_id || null;
+  const params = [];
+  let marketClause = '';
+
+  if (marketId) {
+    params.push(marketId);
+    marketClause = `
+      AND EXISTS (
+        SELECT 1
+        FROM purchase_lines pl
+        JOIN order_items oi ON oi.id = pl.order_item_id
+        JOIN orders o ON o.id = oi.order_id
+        WHERE pl.purchase_order_id = supplier_execution_payments.purchase_order_id
+          AND pl.cancelled_at IS NULL
+          AND o.market_id = ${params.length}
+      )`;
+  }
+
+  let limitClause = '';
+  if (limit != null) {
+    params.push(limit);
+    limitClause = `LIMIT ${params.length}`;
+  }
 
   const { rows } = await q.query(`
     SELECT
@@ -57,6 +78,7 @@ async function getSupplierPaymentReview(options = {}, q = db) {
       END AS review_reason
     FROM supplier_execution_payments
     WHERE ${REVIEW_PREDICATE}
+      ${marketClause}
     ORDER BY updated_at DESC, id DESC
     ${limitClause}
   `, params);
@@ -83,7 +105,7 @@ async function getSupplierPaymentReview(options = {}, q = db) {
     count,
     items: Object.freeze(items),
     truncated: count > items.length,
-    basis: 'current_state_all_time',
+    basis: marketId ? 'current_state_all_time_market_lineage' : 'current_state_all_time',
   });
 }
 
