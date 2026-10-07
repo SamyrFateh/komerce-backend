@@ -8,3 +8,10 @@ test('Supplier 360 appartient au Catalogue et revient au Sourcing', () => {
   expect(source).toContain("'supplier-360': 'catalog'");
   expect(source).toContain("'supplier-360': Object.freeze({ href:'/admin/workspaces/sourcing'");
 });
+
+
+test('navigation base ne porte plus une taxonomie admin parallèle', () => {
+  expect(source).not.toContain('ADMIN_CAPABILITY_GROUPS');
+  expect(source).not.toContain('createAdminCapabilityGroup');
+  expect(source).toContain('visibleDomains.forEach');
+});
