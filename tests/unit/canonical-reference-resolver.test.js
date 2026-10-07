@@ -142,6 +142,43 @@ describe('canonical reference resolver', () => {
     });
   });
 
+  test('résout un parent provider groupé vers la PO propriétaire et ses commandes clientes', async () => {
+    mockQuery.mockResolvedValueOnce({
+      rows: [{
+        entity_type: 'PARENT_ORDER',
+        matched_reference: 'SHIPMENT-PARENT-42',
+        canonical_id: 'group-id-42',
+        purchase_order_id: 'po-group',
+        order_id: 'order-1',
+        order_reference: 'K-1',
+        market_id: 'market-cm',
+        market_code: 'CM',
+      }],
+    });
+    mockSnapshot.mockResolvedValueOnce({
+      stage: 'SUPPLIER',
+      health: 'GREEN',
+      exception: null,
+      envelope: { type: 'PURCHASE_ORDER', refs: ['po-group'] },
+      split: false,
+      lineage: { purchase_orders: ['po-group'], hub_units: [], parcels: [] },
+    });
+
+    const result = await resolver.resolveReference('SHIPMENT-PARENT-42', {
+      role: 'admin',
+      global: true,
+    });
+
+    expect(result.matches[0]).toMatchObject({
+      entity_type: 'PARENT_ORDER',
+      matched_reference: 'SHIPMENT-PARENT-42',
+      canonical_id: 'group-id-42',
+      canonical_owner: 'purchasing',
+      customer_order_reference: 'K-1',
+      canonical_href: '/admin/workspaces/purchasing?po=po-group',
+    });
+  });
+
   test('une PO groupée peut retourner plusieurs commandes clientes sans fausse unicité', async () => {
     mockQuery.mockResolvedValueOnce({
       rows: [
@@ -258,6 +295,7 @@ describe('canonical reference resolver', () => {
     await resolver.queryOrphans('po-orphan');
     const sql = mockQuery.mock.calls[0][0];
     expect(sql).toMatch(/FROM purchase_orders po/);
+    expect(sql).toMatch(/FROM supplier_execution_groups seg/);
     expect(sql).toMatch(/FROM hub_physical_units hpu/);
     expect(sql).toMatch(/FROM parcels p/);
     expect(sql).toMatch(/FROM customs_shipments cs/);
@@ -272,6 +310,7 @@ describe('canonical reference resolver', () => {
     const sql = mockQuery.mock.calls[0][0];
     expect(sql).toMatch(/FROM orders o/);
     expect(sql).toMatch(/FROM purchase_orders po/);
+    expect(sql).toMatch(/FROM supplier_execution_groups seg/);
     expect(sql).toMatch(/FROM hub_physical_units hpu/);
     expect(sql).toMatch(/FROM parcels p/);
     expect(sql).toMatch(/FROM customs_shipments cs/);
