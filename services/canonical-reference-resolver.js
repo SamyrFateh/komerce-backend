@@ -214,6 +214,94 @@ async function queryMatches(reference) {
   return rows;
 }
 
+function canonicalOwnerForEntity(entityType) {
+  if (['PURCHASE_ORDER', 'SUPPLIER_ORDER', 'SUPPLIER_UNIT'].includes(entityType)) return 'purchasing';
+  if (entityType === 'CUSTOMS_SHIPMENT') return 'customs';
+  if (['HUB_UNIT', 'PARCEL'].includes(entityType)) return 'logistics';
+  return 'orders';
+}
+
+async function queryOrphans(reference) {
+  const { rows } = await db.query(
+    `
+    WITH orphan_candidates AS (
+      SELECT CASE
+               WHEN po.id::text = $1 THEN 'PURCHASE_ORDER'
+               WHEN lower(COALESCE(po.supplier_order_id, '')) = lower($1) THEN 'SUPPLIER_ORDER'
+               ELSE 'SUPPLIER_UNIT'
+             END::text AS entity_type,
+             CASE
+               WHEN po.id::text = $1 THEN po.id::text
+               WHEN lower(COALESCE(po.supplier_order_id, '')) = lower($1) THEN po.supplier_order_id
+               ELSE po.supplier_unit_ref
+             END::text AS matched_reference,
+             po.id::text AS canonical_id
+        FROM purchase_orders po
+       WHERE (
+              po.id::text = $1
+           OR lower(COALESCE(po.supplier_order_id, '')) = lower($1)
+           OR lower(COALESCE(po.supplier_unit_ref, '')) = lower($1)
+       )
+         AND NOT (
+           (po.order_id IS NOT NULL AND EXISTS (
+             SELECT 1 FROM orders direct_order WHERE direct_order.id = po.order_id
+           ))
+           OR EXISTS (
+             SELECT 1
+               FROM purchase_lines pl
+               JOIN order_items oi ON oi.id = pl.order_item_id
+               JOIN orders linked_order ON linked_order.id = oi.order_id
+              WHERE pl.purchase_order_id = po.id
+                AND pl.cancelled_at IS NULL
+           )
+         )
+
+      UNION ALL
+
+      SELECT 'HUB_UNIT', hpu.reference, hpu.id::text
+        FROM hub_physical_units hpu
+       WHERE lower(hpu.reference) = lower($1)
+         AND NOT EXISTS (
+           SELECT 1
+             FROM hub_physical_unit_placements hp
+             JOIN hub_purchase_allocations hpa ON hpa.id = hp.allocation_id
+             JOIN orders o ON o.id = hpa.order_id
+            WHERE hp.physical_unit_id = hpu.id
+              AND hp.removed_at IS NULL
+         )
+
+      UNION ALL
+
+      SELECT 'PARCEL', p.reference, p.id::text
+        FROM parcels p
+       WHERE lower(p.reference) = lower($1)
+         AND NOT EXISTS (
+           SELECT 1 FROM orders o WHERE o.id = p.order_id
+         )
+
+      UNION ALL
+
+      SELECT 'CUSTOMS_SHIPMENT', cs.reference, cs.id::text
+        FROM customs_shipments cs
+       WHERE lower(cs.reference) = lower($1)
+         AND cs.is_active = TRUE
+         AND NOT EXISTS (
+           SELECT 1
+             FROM customs_shipment_parcels csp
+             JOIN parcels p ON p.id = csp.parcel_id
+             JOIN orders o ON o.id = p.order_id
+            WHERE csp.shipment_id = cs.id
+         )
+    )
+    SELECT DISTINCT entity_type, matched_reference, canonical_id
+      FROM orphan_candidates
+     ORDER BY entity_type, canonical_id
+    `,
+    [reference]
+  );
+  return rows;
+}
+
 async function resolveReference(value, options = {}) {
   const reference = normalizeReference(value);
   const rows = await queryMatches(reference);
@@ -222,6 +310,26 @@ async function resolveReference(value, options = {}) {
     : rows.filter(row => options.authorizedMarketIds instanceof Set
       && options.authorizedMarketIds.has(row.market_id));
   if (!visibleRows.length) {
+    if (options.global === true) {
+      const orphanRows = await queryOrphans(reference);
+      if (orphanRows.length) {
+        const orphans = orphanRows.map(row => Object.freeze({
+          entity_type: row.entity_type,
+          matched_reference: row.matched_reference,
+          canonical_id: row.canonical_id,
+          canonical_owner: canonicalOwnerForEntity(row.entity_type),
+          reason: 'missing_customer_order_lineage',
+        }));
+        return Object.freeze({
+          query: reference,
+          found: true,
+          orphaned: true,
+          ambiguous: orphans.length > 1,
+          matches: Object.freeze([]),
+          orphans: Object.freeze(orphans),
+        });
+      }
+    }
     return Object.freeze({
       query: reference,
       found: false,
@@ -277,6 +385,8 @@ module.exports = {
   CanonicalReferenceResolverError,
   normalizeReference,
   canonicalDestination,
+  canonicalOwnerForEntity,
   queryMatches,
+  queryOrphans,
   resolveReference,
 };

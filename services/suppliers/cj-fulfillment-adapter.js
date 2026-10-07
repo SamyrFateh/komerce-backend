@@ -261,8 +261,11 @@ async function placeOrder(payload, context = {}) {
   };
 }
 
+const supports_idempotent_replay = true;
+
 module.exports = {
   provider,
+  supports_idempotent_replay,
   evaluate,
   buildOrderPayload,
   readOrderDetail,

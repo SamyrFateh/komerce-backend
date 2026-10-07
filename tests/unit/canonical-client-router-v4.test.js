@@ -27,12 +27,10 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
     const hrefs = [...policy.matchAll(/href:\s*'([^']+)'/g)].map(match => match[1]);
     const adminRoutes = hrefs.filter(href => href.startsWith('/admin'));
     expect(adminRoutes.length).toBeGreaterThan(0);
-    const legacyRoutes = new Set(['/admin/suppliers']);
     adminRoutes.forEach(href => {
       const url = new URL(href, 'https://komerce.test');
-      expect(router.canonicalPath(url.pathname)).toBe(!legacyRoutes.has(url.pathname));
+      expect(router.canonicalPath(url.pathname)).toBe(true);
     });
-    expect(router.canonicalPath('/admin/suppliers/11111111-1111-4111-8111-111111111111')).toBe(true);
   });
 
   test('Catalogue ne répète plus Sources, Raffinerie et Boutique comme onglets', () => {

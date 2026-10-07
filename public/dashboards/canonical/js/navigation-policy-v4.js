@@ -76,7 +76,6 @@
       items: Object.freeze([
         Object.freeze({ id: 'entity-orders', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'], surfaces: ['orders', 'order-360'] }),
         Object.freeze({ id: 'entity-products', label: 'Produits', href: '/admin/workspaces/catalog?view=advanced', roles: ['admin'], surfaces: ['product-360'] }),
-        Object.freeze({ id: 'entity-suppliers', label: 'Fournisseurs', href: '/admin/suppliers', roles: ['admin'], surfaces: ['supplier-360'] }),
         Object.freeze({ id: 'entity-clients', label: 'Clients', href: '/admin/clients', roles: ['admin', 'market_operator'], capability: 'client.read', surfaces: ['client-index', 'client-360'] }),
       ]),
     }),
@@ -415,7 +414,8 @@
   function renderReferenceResults(doc, host, payload) {
     host.replaceChildren();
     const matches = Array.isArray(payload && payload.matches) ? payload.matches : [];
-    if (!matches.length) {
+    const orphans = Array.isArray(payload && payload.orphans) ? payload.orphans : [];
+    if (!matches.length && !orphans.length) {
       host.appendChild(createNode(doc, 'p', 'kmc-admin-reference-message', 'Aucune référence accessible trouvée.'));
       return;
     }
@@ -430,6 +430,16 @@
         match.market_code || null,
         position.stage || null,
         position.health || null,
+      ].filter(Boolean).join(' · ');
+      row.appendChild(createNode(doc, 'span', 'kmc-admin-reference-detail', details));
+      host.appendChild(row);
+    });
+    orphans.forEach(orphan => {
+      const row = createNode(doc, 'div', 'kmc-admin-reference-result kmc-admin-reference-orphan');
+      row.appendChild(createNode(doc, 'strong', 'kmc-admin-reference-name', 'Référence orpheline · ' + resultReferenceLabel(orphan)));
+      const details = [
+        orphan.canonical_owner ? 'Owner ' + orphan.canonical_owner : null,
+        orphan.reason === 'missing_customer_order_lineage' ? 'Rattachement à une commande introuvable' : null,
       ].filter(Boolean).join(' · ');
       row.appendChild(createNode(doc, 'span', 'kmc-admin-reference-detail', details));
       host.appendChild(row);

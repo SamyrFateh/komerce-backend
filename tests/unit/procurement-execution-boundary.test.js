@@ -146,3 +146,16 @@ test('PLACE_ORDER_ERROR conserve code et message provider non sensibles', async 
     },
   });
 });
+
+
+test('la boundary documente le replay comme capability séparée de placeOrder', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'services', 'suppliers', 'procurement-execution-boundary.js'),
+    'utf8'
+  );
+  expect(src).toContain('CJ et AliExpress exposent désormais les deux');
+  expect(src).toContain('une clé locale Komerce ne prouve jamais l\'idempotence');
+  expect(src).not.toContain('ce chemin n\'est jamais exercé en production');
+});

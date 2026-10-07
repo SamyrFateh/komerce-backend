@@ -157,6 +157,10 @@ function publicSignal(signal, entityMaps) {
     ? entityMap.get(String(signal.entity_id)) || { type: signal.entity_type, ref: null, label: signal.entity_type, href: null }
     : (signal.entity_type ? { type: signal.entity_type, ref: null, label: signal.entity_type, href: null } : null);
 
+  const ownerRole = signal.owner_role || null;
+  const recommendation = signal.recommendation || null;
+  const workHref = entity && entity.href ? entity.href : null;
+
   return {
     signal_ref: signal.signal_ref,
     family: signalAdminService.familyForType(signal.signal_type),
@@ -164,17 +168,34 @@ function publicSignal(signal, entityMaps) {
     severity: signal.severity,
     title: signal.title,
     summary: signal.summary || null,
-    recommendation: signal.recommendation || null,
+    recommendation,
     confidence: signal.confidence || null,
-    owner_role: signal.owner_role || null,
+    owner_role: ownerRole,
     status: signal.status,
     source_module: signal.source_module || null,
     created_at: signal.created_at,
     updated_at: signal.updated_at,
     expires_at: signal.expires_at || null,
     actions: actionSet(signal.status),
+    work_item: Object.freeze({
+      owner_role: ownerRole,
+      instruction: recommendation,
+      href: workHref,
+      actionable: Boolean(ownerRole && recommendation && workHref),
+    }),
     entity,
   };
+}
+
+function workQueues(signals) {
+  const counts = new Map();
+  for (const signal of signals || []) {
+    const owner = signal.owner_role || 'unassigned';
+    counts.set(owner, (counts.get(owner) || 0) + 1);
+  }
+  return Object.freeze([...counts.entries()]
+    .map(([owner_role, count]) => Object.freeze({ owner_role, count }))
+    .sort((a, b) => b.count - a.count || a.owner_role.localeCompare(b.owner_role)));
 }
 
 function summaryFromStats(stats) {
@@ -229,6 +250,7 @@ async function buildScopedWorkspace({ market = null, filters = {} } = {}) {
       market_note: 'Vue centrale limitée aux signaux globaux ; les signaux pays restent isolés dans leur Market ID.',
     },
     summary: summaryFromStats(stats),
+    work_queues: workQueues(list.signals),
     signals: list.signals.map(signal => publicSignal(signal, entityMaps)),
     pagination: { total: list.total, limit: list.limit, offset: list.offset },
   };
@@ -279,6 +301,7 @@ module.exports = {
   snooze,
   resolve,
   publicSignal,
+  workQueues,
   actionSet,
   requireSignalRef,
 };

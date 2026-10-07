@@ -99,12 +99,12 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     expect(source).toContain('MutationObserver');
   });
 
-  test('le shell n’invente aucune autorité métier', () => {
+  test('le shell n’invente aucune autorité métier et ne consomme que le resolver canonique read-only', () => {
     const js = read('public/dashboards/canonical/js/navigation-policy-v4.js');
     const sync = read('public/dashboards/canonical/js/navigation-shell-v4-sync.js');
     const css = read('public/dashboards/canonical/css/canonical-shell-v4.css');
-    const apiRefs = [...js.matchAll(/'\/api\/[^']+'/g)].map(match => match[0]);
-    expect(apiRefs).toEqual(["'/api/admin/dashboard/reference/resolve'"]);
+    const apiPaths = [...js.matchAll(/['"]((?:\/api\/)[^'"]+)['"]/g)].map(match => match[1]);
+    expect(apiPaths).toEqual(['/api/admin/dashboard/reference/resolve']);
     expect(sync).not.toMatch(/\/api\//);
     expect(js).not.toMatch(/price_kmf|supplier_order_identity|UPDATE |INSERT INTO/i);
     expect(css).not.toMatch(/\/api\//);
