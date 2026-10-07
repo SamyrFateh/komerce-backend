@@ -29,6 +29,9 @@ const {
 
 const OPS_SIGNAL_TYPES = Object.freeze([
   'parcel_blocked',
+  'customer_payment_attention',
+  'customs_declaration_pending',
+  'supplier_order_ambiguous',
   'cash_expiring',
   'sla_breach',
   'hub_tension',
