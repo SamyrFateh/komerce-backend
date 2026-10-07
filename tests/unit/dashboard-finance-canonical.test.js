@@ -96,7 +96,10 @@ test('Finance market applique le scope serveur aux métriques et projections', a
     mockMetrics.getCmdsCoutIncompletCount,
     mockMetrics.getPaiementsEnAttente,
   ]) {
-    expect(fn).toHaveBeenCalledWith(expect.objectContaining({ market_id: 'market-cm-id' }));
+    expect(fn).toHaveBeenCalledWith(expect.objectContaining({
+      market_id: 'market-cm-id',
+      time_basis: 'confirmed_at',
+    }));
   }
 
   const scopedCalls = mockQuery.mock.calls.filter(([sql]) => {
@@ -124,6 +127,7 @@ test('Finance market applique le scope serveur aux métriques et projections', a
   });
   expect(payload.costing_kpis.map(item => item.key)).toEqual(['cout_estime', 'cout_reel', 'marge_estimee', 'marge_variable_reelle', 'marge_consolidee']);
   expect(payload.data_quality.economic_global_engine_consumed).toBe(false);
+  expect(payload.data_quality.finance_period_basis.orders).toBe('orders.confirmed_at');
   expect(payload.data_quality.relay_real_margin_basis).toBe('actual_cost_orders_only');
   expect(payload.supplier_payment_review).toEqual(expect.objectContaining({
     count: 2,
