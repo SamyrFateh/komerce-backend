@@ -14,7 +14,7 @@ const control = require('../../services/dashboard-metrics/control-tower');
 describe('dashboard-metrics/control-tower', () => {
   test('CA payé est libellé comme cohorte de commandes payées, pas comme cash receipt', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ value: '150000', items_total: '12' }] });
-    const kpi = await controlTower.getCAEncaisse({});
+    const kpi = await control.getCAEncaisse({});
     expect(kpi).toMatchObject({
       key: 'ca_encaisse',
       label: 'CA commandes payées',
