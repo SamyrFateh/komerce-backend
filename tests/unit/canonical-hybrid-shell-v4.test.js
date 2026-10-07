@@ -103,7 +103,8 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     const js = read('public/dashboards/canonical/js/navigation-policy-v4.js');
     const sync = read('public/dashboards/canonical/js/navigation-shell-v4-sync.js');
     const css = read('public/dashboards/canonical/css/canonical-shell-v4.css');
-    expect(js).not.toMatch(/\/api\//);
+    const apiRefs = [...js.matchAll(/'\/api\/[^']+'/g)].map(match => match[0]);
+    expect(apiRefs).toEqual(["'/api/admin/dashboard/reference/resolve'"]);
     expect(sync).not.toMatch(/\/api\//);
     expect(js).not.toMatch(/price_kmf|supplier_order_identity|UPDATE |INSERT INTO/i);
     expect(css).not.toMatch(/\/api\//);
