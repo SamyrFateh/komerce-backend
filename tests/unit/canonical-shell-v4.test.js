@@ -23,5 +23,8 @@ describe('canonical-shell-v4 grouped sidebar', () => {
     expect(css).toContain('.kmc-admin-sidebar-group-label');
     expect(css).toContain('body.kmc-shell-v4 .kmc-admin-primary-link');
     expect(css).toContain('text-transform: uppercase');
+    expect(css).toContain('.kmc-admin-reference-results');
+    expect(css).toContain('.kmc-admin-reference-results[hidden]');
+    expect(css).toContain('.kmc-admin-reference-result');
   });
 });
