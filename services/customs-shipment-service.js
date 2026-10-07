@@ -537,6 +537,7 @@ async function deleteShipment(db, id) {
 module.exports = {
   declareCustomsPayment,
   isCustomsDeclaredForOrder,
+  confirmCustomsShipmentsForOrder,
   allocateCustoms,
   propagateCostDouane,
   listShipments,
@@ -689,6 +690,44 @@ async function declareCustomsPayment(db, shipmentId, payload, userId) {
  * @param {string} orderId
  * @returns {Promise<{ allowed: boolean, reason?: string }>}
  */
+async function confirmCustomsShipmentsForOrder(q, orderId) {
+  const { rows } = await q.query(
+    `
+    UPDATE customs_shipments cs
+       SET status = 'confirmed',
+           updated_at = NOW()
+     WHERE cs.is_active = TRUE
+       AND cs.status = 'declared'
+       AND EXISTS (
+         SELECT 1
+           FROM customs_shipment_parcels csp
+           JOIN parcels p ON p.id = csp.parcel_id
+          WHERE csp.shipment_id = cs.id
+            AND p.order_id = $1
+       )
+       AND NOT EXISTS (
+         SELECT 1
+           FROM customs_shipment_parcels csp
+           JOIN parcels p ON p.id = csp.parcel_id
+           JOIN orders o ON o.id = p.order_id
+          WHERE csp.shipment_id = cs.id
+            AND o.status NOT IN ('available', 'collected', 'cancelled', 'refunded')
+       )
+     RETURNING cs.id, cs.reference, cs.status
+    `,
+    [orderId]
+  );
+
+  return Object.freeze({
+    confirmed: rows.length,
+    shipments: Object.freeze(rows.map(row => Object.freeze({
+      id: row.id,
+      reference: row.reference,
+      status: row.status,
+    }))),
+  });
+}
+
 async function isCustomsDeclaredForOrder(q, orderId) {
   const { rows } = await q.query(
     `SELECT cs.status, cs.reference
