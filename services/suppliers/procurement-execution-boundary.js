@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        canonical procurement readiness verdict (GAP-4A), provider adapters
  * @outputs       execution_boundary_verdict (crossed_or_not_reached)
- * @depends       services/suppliers/supplier-fulfillment-adapter-contract.js
+ * @depends       services/suppliers/supplier-fulfillment-adapter-contract.js, services/suppliers/provider-capability-certifications.js
  * @used-by       services/purchasing-trigger-service.js (GAP-4B)
  * @db-read       none
  * @db-write      none
@@ -35,6 +35,7 @@
 'use strict';
 
 const adapterContract = require('./supplier-fulfillment-adapter-contract');
+const capabilityCertifications = require('./provider-capability-certifications');
 
 const NOT_REACHED = 'EXECUTION_BOUNDARY_NOT_REACHED';
 
@@ -64,6 +65,22 @@ async function evaluateProcurementExecutionBoundary({
 } = {}) {
   if (!identity || typeof identity !== 'object') {
     return notReached('IDENTITY_REQUIRED');
+  }
+
+  const certification = capabilityCertifications.evaluateRuntimeCapability(
+    identity.provider,
+    'purchasing.auto_order',
+    { env: context.env || process.env, registry: context.certification_registry }
+  );
+  if (!certification.allowed) {
+    return notReached(certification.reason, {
+      provider: identity.provider,
+      capability: 'purchasing.auto_order',
+      classification: certification.classification || null,
+      availability: certification.availability || null,
+      runtime_environment: certification.runtime_environment,
+      certified_environment: certification.certified_environment,
+    });
   }
 
   const adapterCheck = adapterContract.validateExecutionAdapter(identity.provider, adapters[identity.provider]);
