@@ -107,6 +107,7 @@ async function getSupplierPaymentReview(options = {}, q = db) {
     count,
     items: Object.freeze(items),
     truncated: count > items.length,
+    scope: marketId ? 'market_lineage' : 'global',
     basis: marketId ? 'current_state_all_time_market_lineage' : 'current_state_all_time',
   });
 }
