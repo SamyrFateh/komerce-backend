@@ -37,7 +37,7 @@ test('préserve identité paiement, montants texte et drill PO exact', async () 
 
   const review = await getSupplierPaymentReview({ limit: 1, include_internal_identity: true }, q);
 
-  expect(review).toMatchObject({ count: 2, truncated: true, basis: 'current_state_all_time' });
+  expect(review).toMatchObject({ count: 2, truncated: true, scope: 'global', basis: 'current_state_all_time' });
   expect(review.items[0]).toEqual(expect.objectContaining({
     payment_id: '11111111-1111-4111-8111-111111111111',
     purchase_order_id: '22222222-2222-4222-8222-222222222222',
@@ -99,6 +99,7 @@ test('market scope is proven only through PO -> line -> order lineage', async ()
   expect(text).toContain('o.market_id = $1');
   expect(text).toContain('LIMIT $2');
   expect(params).toEqual(['market-km-id', 25]);
+  expect(result.scope).toBe('market_lineage');
   expect(result.basis).toBe('current_state_all_time_market_lineage');
 });
 
@@ -112,6 +113,7 @@ test('global scope keeps the current population without market inference', async
   expect(text).not.toContain('o.market_id');
   expect(text).toContain('LIMIT $1');
   expect(params).toEqual([25]);
+  expect(result.scope).toBe('global');
   expect(result.basis).toBe('current_state_all_time');
 });
 

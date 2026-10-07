@@ -125,6 +125,18 @@ test('Finance market applique le scope serveur aux métriques et projections', a
   expect(payload.costing_kpis.map(item => item.key)).toEqual(['cout_estime', 'cout_reel', 'marge_estimee', 'marge_variable_reelle', 'marge_consolidee']);
   expect(payload.data_quality.economic_global_engine_consumed).toBe(false);
   expect(payload.data_quality.relay_real_margin_basis).toBe('actual_cost_orders_only');
+  expect(payload.data_quality.finance_period_basis).toEqual({
+    orders: {
+      field: 'orders.created_at',
+      semantics: 'paid_order_creation_cohort',
+      cash_basis: false,
+      reason: 'no_universal_payment_received_timestamp_across_all_payment_modes',
+    },
+    refunds: {
+      field: 'refunds.completed_at',
+      semantics: 'refund_completion_event',
+    },
+  });
   expect(payload.supplier_payment_review).toEqual(expect.objectContaining({
     count: 2,
     basis: 'current_state_all_time_market_lineage',
@@ -232,7 +244,7 @@ test('la file fournisseur utilise uniquement les états canoniques de revue, san
 
   const review = await finance.getSupplierPaymentReview({ limit: 25 });
 
-  expect(review).toEqual({ count: 0, items: [], truncated: false, basis: 'current_state_all_time' });
+  expect(review).toEqual({ count: 0, items: [], truncated: false, scope: 'global', basis: 'current_state_all_time' });
   const [sql, params] = mockQuery.mock.calls[0];
   const text = String(sql);
   expect(text).toContain("status IN ('ambiguous', 'rejected')");

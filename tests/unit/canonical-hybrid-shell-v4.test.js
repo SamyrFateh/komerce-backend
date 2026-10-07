@@ -86,6 +86,17 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     expect(source).toContain("data-shell', 'hybrid-sidebar-tabs");
   });
 
+  test('V4 porte seule la taxonomie cible et garde Sourcing/Fournisseurs découvrables', () => {
+    const base = read('public/dashboards/canonical/js/navigation.js');
+    const v4 = read('public/dashboards/canonical/js/navigation-policy-v4.js');
+    expect(base).not.toContain('ADMIN_CAPABILITY_GROUPS');
+    for (const label of ['Piloter', 'Flux', 'Entités', 'Workspaces', 'Marchés', 'Administration']) {
+      expect(v4).toContain(`label: '${label}'`);
+    }
+    expect(v4).toContain("id: 'workspace-sourcing'");
+    expect(v4).toContain("id: 'entity-suppliers'");
+  });
+
   test('le sync V4 est syntaxiquement valide et resynchronise après remplacement du header', () => {
     const source = read('public/dashboards/canonical/js/navigation-shell-v4-sync.js');
     expect(() => new vm.Script(source)).not.toThrow();

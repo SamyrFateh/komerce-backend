@@ -753,7 +753,13 @@ test('audit : détail technique — contrôle, produit ou suivi selon l’origin
 });
 
 test('audit : filtres de Passages lus depuis l’URL (Back / Forward / rechargement) et conservés par la pagination', () => {
-  const p = scenario(); p.passages = PASSAGES; p.passages_page = { offset:50, next_offset:100 };
+  // Les dates du jeu PASSAGES sont historiques. Pour tester "7 derniers jours",
+  // rendre la fixture relative à l'horloge du runtime au lieu de dépendre du calendrier réel.
+  const recentPassages = PASSAGES.map((item, index) => ({
+    ...item,
+    started_at: new Date(Date.now() - ((index + 1) * 60 * 60 * 1000)).toISOString(),
+  }));
+  const p = scenario(); p.passages = recentPassages; p.passages_page = { offset:50, next_offset:100 };
   const html = render(p, `?run=${RUN}&view=passages&offset=50&f_source=CJ&f_state=ACTION_REQUIRED&f_period=week&f_q=0004`);
   expect(html).toMatch(/<option value="CJ" selected>/);
   expect(html).toMatch(/<option value="ACTION_REQUIRED" selected>/);

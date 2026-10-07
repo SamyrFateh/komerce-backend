@@ -8,7 +8,7 @@
  * @outputs       canonical_identity_matches_with_order_lineage_and_current_position
  * @depends       db, services/logistics-control-chain-projection
  * @used-by       routes/admin-dashboard-market.js
- * @db-read       orders, markets, purchase_orders, purchase_lines, order_items, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments
+ * @db-read       orders, markets, purchase_orders, purchase_lines, order_items, supplier_execution_groups, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments
  * @db-write      none
  * @db-txn        none
  * @doctrine      dashboard_no_business_recompute, entity_identity_resolution_only, canonical_owner_navigation
@@ -61,11 +61,11 @@ function canonicalDestination(match, options = {}) {
       fallback_href: orderHref,
     });
   }
-  if (['PURCHASE_ORDER', 'SUPPLIER_ORDER', 'SUPPLIER_UNIT'].includes(match.entity_type)) {
+  if (['PURCHASE_ORDER', 'SUPPLIER_ORDER', 'SUPPLIER_UNIT', 'PARENT_ORDER'].includes(match.entity_type)) {
     return Object.freeze({
       owner: 'purchasing',
       href: role === 'admin'
-        ? '/admin/workspaces/purchasing?po=' + encodeURIComponent(match.canonical_id)
+        ? '/admin/workspaces/purchasing?po=' + encodeURIComponent(match.purchase_order_id || match.canonical_id)
         : orderHref,
       fallback_href: orderHref,
     });
@@ -120,7 +120,8 @@ async function queryMatches(reference) {
              o.id AS order_id,
              o.reference AS order_reference,
              o.market_id,
-             m.code AS market_code
+             m.code AS market_code,
+             NULL::uuid AS purchase_order_id
         FROM orders o
         LEFT JOIN markets m ON m.id = o.market_id
        WHERE lower(o.reference) = lower($1)
@@ -141,12 +142,33 @@ async function queryMatches(reference) {
              o.id,
              o.reference,
              o.market_id,
-             m.code
+             m.code,
+             po.id AS purchase_order_id
         FROM purchase_orders po
         JOIN po_orders por ON por.purchase_order_id = po.id
         JOIN orders o ON o.id = por.order_id
         LEFT JOIN markets m ON m.id = o.market_id
        WHERE por.order_id IS NOT NULL
+
+      UNION ALL
+
+      SELECT 'PARENT_ORDER',
+             seg.supplier_parent_order_id,
+             seg.id::text,
+             o.id,
+             o.reference,
+             o.market_id,
+             m.code,
+             seg.purchase_order_id
+        FROM supplier_execution_groups seg
+        JOIN purchase_orders po ON po.id = seg.purchase_order_id
+        LEFT JOIN purchase_lines pl
+          ON pl.purchase_order_id = po.id
+         AND pl.cancelled_at IS NULL
+        LEFT JOIN order_items oi ON oi.id = pl.order_item_id
+        JOIN orders o ON o.id = COALESCE(oi.order_id, po.order_id)
+        LEFT JOIN markets m ON m.id = o.market_id
+       WHERE lower(COALESCE(seg.supplier_parent_order_id, '')) = lower($1)
 
       UNION ALL
 
@@ -156,7 +178,8 @@ async function queryMatches(reference) {
              o.id,
              o.reference,
              o.market_id,
-             m.code
+             m.code,
+             NULL::uuid AS purchase_order_id
         FROM hub_physical_units hpu
         JOIN hub_physical_unit_placements hp
           ON hp.physical_unit_id = hpu.id
@@ -174,7 +197,8 @@ async function queryMatches(reference) {
              o.id,
              o.reference,
              o.market_id,
-             m.code
+             m.code,
+             NULL::uuid AS purchase_order_id
         FROM parcels p
         JOIN orders o ON o.id = p.order_id
         LEFT JOIN markets m ON m.id = o.market_id
@@ -188,7 +212,8 @@ async function queryMatches(reference) {
              o.id,
              o.reference,
              o.market_id,
-             m.code
+             m.code,
+             NULL::uuid AS purchase_order_id
         FROM customs_shipments cs
         JOIN customs_shipment_parcels csp ON csp.shipment_id = cs.id
         JOIN parcels p ON p.id = csp.parcel_id
@@ -204,7 +229,8 @@ async function queryMatches(reference) {
            order_id,
            order_reference,
            market_id,
-           market_code
+           market_code,
+           purchase_order_id
       FROM raw_matches
      WHERE order_id IS NOT NULL
      ORDER BY entity_type, canonical_id, order_id
@@ -215,7 +241,7 @@ async function queryMatches(reference) {
 }
 
 function canonicalOwnerForEntity(entityType) {
-  if (['PURCHASE_ORDER', 'SUPPLIER_ORDER', 'SUPPLIER_UNIT'].includes(entityType)) return 'purchasing';
+  if (['PURCHASE_ORDER', 'SUPPLIER_ORDER', 'SUPPLIER_UNIT', 'PARENT_ORDER'].includes(entityType)) return 'purchasing';
   if (entityType === 'CUSTOMS_SHIPMENT') return 'customs';
   if (['HUB_UNIT', 'PARCEL'].includes(entityType)) return 'logistics';
   return 'orders';
@@ -242,6 +268,28 @@ async function queryOrphans(reference) {
            OR lower(COALESCE(po.supplier_order_id, '')) = lower($1)
            OR lower(COALESCE(po.supplier_unit_ref, '')) = lower($1)
        )
+         AND NOT (
+           (po.order_id IS NOT NULL AND EXISTS (
+             SELECT 1 FROM orders direct_order WHERE direct_order.id = po.order_id
+           ))
+           OR EXISTS (
+             SELECT 1
+               FROM purchase_lines pl
+               JOIN order_items oi ON oi.id = pl.order_item_id
+               JOIN orders linked_order ON linked_order.id = oi.order_id
+              WHERE pl.purchase_order_id = po.id
+                AND pl.cancelled_at IS NULL
+           )
+         )
+
+      UNION ALL
+
+      SELECT 'PARENT_ORDER',
+             seg.supplier_parent_order_id,
+             seg.id::text
+        FROM supplier_execution_groups seg
+        JOIN purchase_orders po ON po.id = seg.purchase_order_id
+       WHERE lower(COALESCE(seg.supplier_parent_order_id, '')) = lower($1)
          AND NOT (
            (po.order_id IS NOT NULL AND EXISTS (
              SELECT 1 FROM orders direct_order WHERE direct_order.id = po.order_id
