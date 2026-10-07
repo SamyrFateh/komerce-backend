@@ -216,6 +216,20 @@ describe('logistics-control-chain-projection', () => {
     expect(params[4]).toBe(30);
   });
 
+  test('une observation stale porte une cause et un owner actionnables', async () => {
+    mockQuery.mockResolvedValue({ rows: [] });
+    await projection.getControlChain({
+      market: { id: '11111111-1111-4111-8111-111111111111', code: 'CM' },
+    });
+
+    const [sql] = mockQuery.mock.calls[0];
+    expect(sql).toContain("THEN 'observation_stale'");
+    expect(sql).toContain("THEN 'Observation métier trop ancienne'");
+    expect(sql).toContain("WHEN 'PURCHASING' THEN 'purchasing'");
+    expect(sql).toContain("WHEN 'CUSTOMS' THEN 'customs'");
+    expect(sql).toContain("WHEN 'RELAY' THEN 'relais'");
+  });
+
   test('les incidents ouverts alimentent orange/rouge sans créer un statut dashboard', async () => {
     mockQuery.mockResolvedValue({ rows: [] });
     await projection.getControlChain({
