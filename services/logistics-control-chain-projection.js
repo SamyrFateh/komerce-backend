@@ -51,20 +51,26 @@ function buildStructuralAlerts(orders, minOrders = STRUCTURAL_ALERT_MIN_ORDERS) 
   const groups = new Map();
 
   for (const order of orders || []) {
-    if (!order || order.health === HEALTH.GREEN || !order.exception || !order.exception.code) continue;
-    const key = [order.stage, order.exception.code, order.exception.owner_role || ''].join('|');
-    const current = groups.get(key) || {
-      stage: order.stage,
-      health: order.health,
-      reason_code: order.exception.code,
-      summary: order.exception.summary || null,
-      owner_role: order.exception.owner_role || null,
-      order_references: [],
-    };
-    if (healthRank(order.health) > healthRank(current.health)) current.health = order.health;
-    if (!current.summary && order.exception.summary) current.summary = order.exception.summary;
-    current.order_references.push(order.order_reference);
-    groups.set(key, current);
+    if (!order || order.health === HEALTH.GREEN) continue;
+    const causes = Array.isArray(order.exceptions) && order.exceptions.length
+      ? order.exceptions
+      : (order.exception ? [order.exception] : []);
+    for (const cause of causes) {
+      if (!cause || !cause.code) continue;
+      const key = [order.stage, cause.code, cause.owner_role || ''].join('|');
+      const current = groups.get(key) || {
+        stage: order.stage,
+        health: order.health,
+        reason_code: cause.code,
+        summary: cause.summary || null,
+        owner_role: cause.owner_role || null,
+        order_references: [],
+      };
+      if (healthRank(order.health) > healthRank(current.health)) current.health = order.health;
+      if (!current.summary && cause.summary) current.summary = cause.summary;
+      current.order_references.push(order.order_reference);
+      groups.set(key, current);
+    }
   }
 
   return Object.freeze(
