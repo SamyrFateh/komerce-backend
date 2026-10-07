@@ -62,7 +62,6 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
   const hubUnitId = uuid();
   const parcelId = uuid();
   const scanId = uuid();
-  const customsShipmentId = uuid();
 
   const ORDER_REF = `K-GOLDEN-${RUN_TAG}`.toUpperCase();
   const SUPPLIER_ORDER_ID = `CJ-GOLDEN-${RUN_TAG}`.toUpperCase();
@@ -105,8 +104,10 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
 
       DELETE FROM scans WHERE id = '${scanId}';
       DELETE FROM order_item_real_cost_allocations WHERE order_id = '${orderId}';
-      DELETE FROM customs_shipment_parcels WHERE shipment_id = '${customsShipmentId}' OR parcel_id = '${parcelId}';
-      DELETE FROM customs_shipments WHERE id = '${customsShipmentId}';
+      DELETE FROM customs_shipment_parcels
+       WHERE shipment_id IN (SELECT id FROM customs_shipments WHERE reference = '${CUSTOMS_REF}')
+          OR parcel_id = '${parcelId}';
+      DELETE FROM customs_shipments WHERE reference = '${CUSTOMS_REF}';
       DELETE FROM parcel_events WHERE parcel_id = '${parcelId}';
       DELETE FROM parcel_items WHERE parcel_id = '${parcelId}';
       DELETE FROM parcels WHERE id = '${parcelId}';
@@ -383,11 +384,7 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
       parcel_ids: [parcelId],
     }, userId, { marketId });
 
-    // Stabilise l'identité fixture pour permettre un cleanup exact.
-    await q(
-      `UPDATE customs_shipments SET id = $2 WHERE id = $1`,
-      [createdCustoms.shipment.id, customsShipmentId]
-    );
+    const customsShipmentId = createdCustoms.shipment.id;
 
     let customsGate = await isCustomsDeclaredForOrder(db, orderId);
     expect(customsGate).toMatchObject({ allowed: false });
