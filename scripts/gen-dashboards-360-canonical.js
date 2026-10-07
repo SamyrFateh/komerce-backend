@@ -257,7 +257,7 @@ function resolveUrlExpressionsForFile(code) {
     ...urlPropertyHelperCalls.flatMap(h => helperMap[h] || []),
   ])];
 
-  return { constMap, helperMap, substConsts, urlPropertyCandidates };
+  return { constMap, helperMap, substConsts, urlPropertyCandidates, resolveConcatExpression };
 }
 
 // Résout l'expression d'URL (2e argument de jsonRequest, ou 1er de fetch())
@@ -309,6 +309,13 @@ function resolveUrlArg(argText, resolver) {
     return resolver.urlPropertyCandidates;
   }
 
+  // Cas F : concaténation passée directement au call-site.
+  // Le resolver la convertit en template /api/... + segments dynamiques.
+  if (trimmed.includes('+') && resolver.resolveConcatExpression) {
+    const concat = resolver.resolveConcatExpression(trimmed);
+    if (concat) return [concat];
+  }
+
   return null; // non résolu statiquement — jamais inventé, reste UNRESOLVED
 }
 
@@ -318,24 +325,32 @@ function traceApiEdges(code) {
   const resolver = resolveUrlExpressionsForFile(code);
   const edges = [];
 
-  // Neutralise le corps de la fonction wrapper `jsonRequest(fetchFn, url, options)`
-  // elle-même : son propre `fetchFn(url, { ... })` interne matcherait sinon
-  // comme un faux appel réel (même piège que la définition déjà exclue plus
-  // bas pour l'appel `jsonRequest(...)` — ici c'est l'appel `fetchFn(...)`
-  // qu'il faut neutraliser, à l'intérieur de CETTE définition précise).
+  // Détecte les wrappers locaux qui ne font qu'acheminer une URL vers fetch :
+  //   request(url, ...)      -> global.fetch(url, ...)
+  //   _fetchJSON(url, ...)   -> global.fetch(url, ...)
+  //   jsonRequest(fetchFn,url) -> fetchFn(url, ...)
+  // On masque leur fetch interne puis on trace leurs CALL SITES réels. Ainsi
+  // un paramètre générique `url` n'est plus compté comme fetch UNRESOLVED.
+  const wrappers = [];
   let maskedCode = code;
-  const jsonRequestDefMatch = code.match(/function\s+jsonRequest\s*\([^)]*\)\s*\{/);
-  if (jsonRequestDefMatch) {
-    const start = jsonRequestDefMatch.index;
-    const bodyStart = start + jsonRequestDefMatch[0].length;
+  for (const m of code.matchAll(/(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)\s*\{/g)) {
+    const name = m[1];
+    const params = m[2].split(',').map(p => p.trim().replace(/\s*=.*$/, '')).filter(Boolean);
+    const bodyStart = m.index + m[0].length;
     let depth = 1, i = bodyStart;
     for (; i < code.length && depth > 0; i++) {
       if (code[i] === '{') depth++;
       else if (code[i] === '}') depth--;
     }
-    // Remplace le corps par des espaces (préserve les indices/longueurs pour
-    // que tout le reste du fichier continue de matcher aux mêmes positions).
-    maskedCode = code.slice(0, bodyStart) + code.slice(bodyStart, i).replace(/[^\n]/g, ' ') + code.slice(i);
+    const body = code.slice(bodyStart, i - 1);
+    const fetchMatch = body.match(/(?:global\.fetch|options\.fetch|context\.fetch|fetchFn|fetch)\(\s*(\w+)/);
+    if (!fetchMatch) continue;
+    const argIndex = params.indexOf(fetchMatch[1]);
+    if (argIndex < 0) continue;
+    wrappers.push({ name, argIndex });
+    maskedCode = maskedCode.slice(0, bodyStart)
+      + maskedCode.slice(bodyStart, i).replace(/[^\n]/g, ' ')
+      + maskedCode.slice(i);
   }
 
   function extractCallArg(source, calleeRe) {
@@ -373,6 +388,54 @@ function traceApiEdges(code) {
   for (const call of extractCallArg(maskedCode, /\b(?:global\.fetch|options\.fetch|context\.fetch|fetchFn|fetch)\(\s*/g)) {
     const candidates = resolveUrlArg(call.urlArgText, resolver);
     edges.push({ candidates, methodLiteral: call.methodLiteral, raw: call.urlArgText });
+  }
+
+  function splitCallArgs(source, startIdx) {
+    const args = [];
+    let depth = 0, current = '', quote = null, template = false;
+    for (let i = startIdx; i < source.length; i++) {
+      const ch = source[i];
+      if (quote) {
+        current += ch;
+        if (ch === quote && source[i - 1] !== '\\') quote = null;
+        continue;
+      }
+      if (template) {
+        current += ch;
+        if (ch === '`' && source[i - 1] !== '\\') template = false;
+        continue;
+      }
+      if (ch === "'" || ch === '"') { quote = ch; current += ch; continue; }
+      if (ch === '`') { template = true; current += ch; continue; }
+      if (ch === '(' || ch === '{' || ch === '[') { depth++; current += ch; continue; }
+      if (ch === ')' || ch === '}' || ch === ']') {
+        if (ch === ')' && depth === 0) { args.push(current.trim()); break; }
+        depth--; current += ch; continue;
+      }
+      if (ch === ',' && depth === 0) { args.push(current.trim()); current = ''; continue; }
+      current += ch;
+    }
+    return args;
+  }
+
+  for (const wrapper of wrappers) {
+    const re = new RegExp('(?<!function\\\\s{1,30})(?<!function\\\\s)' + wrapper.name + '\\\\(\\\\s*', 'g');
+    for (const m of maskedCode.matchAll(re)) {
+      const args = splitCallArgs(maskedCode, m.index + m[0].length);
+      const arg = args[wrapper.argIndex];
+      if (!arg) continue;
+      const candidates = resolveUrlArg(arg, resolver);
+      // Méthode volontairement inconnue ici sauf si le call-site la porte
+      // littéralement dans son objet options ; le shape matcher travaillera
+      // alors tous verbes confondus, sans supposer GET.
+      const tail = maskedCode.slice(m.index, m.index + 500);
+      const methodMatch = tail.match(/method:\s*['"](\w+)['"]/);
+      edges.push({
+        candidates,
+        methodLiteral: methodMatch ? methodMatch[1].toUpperCase() : null,
+        raw: arg,
+      });
+    }
   }
 
   return edges;
@@ -1000,6 +1063,7 @@ function runCheck(model) {
 module.exports = {
   build, renderMd, parseOpenApiContract,
   extractContractStatus, isProvenStatus,
+  resolveUrlExpressionsForFile, resolveUrlArg, traceApiEdges,
 };
 
 if (require.main === module) {
