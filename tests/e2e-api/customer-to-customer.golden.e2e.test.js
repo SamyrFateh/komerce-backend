@@ -154,8 +154,9 @@ describeE2E('E2E-GOLDEN — customer-to-customer complete closure', ({ db }) => 
     );
 
     await q(
-      `INSERT INTO products (id, name, price_kmf, cost_kmf, stock, price_aed, inventory_model)
-       VALUES ($1,$2,25000,7000,0,200,'SKU')`,
+      `INSERT INTO products
+         (id, name, price_kmf, cost_kmf, volume_cm3, stock, price_aed, inventory_model)
+       VALUES ($1,$2,25000,7000,100000,0,200,'SKU')`,
       [productId, `Golden Product ${tag('product')}`]
     );
 
