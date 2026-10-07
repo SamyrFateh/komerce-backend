@@ -398,6 +398,44 @@
     });
   }
 
+  // Navigation only: the server resolver owns entity identity, market scope and
+  // destination authority. Never infer a destination from the typed prefix.
+  const REFERENCE_SEARCH_ENDPOINT = '/api/admin/dashboard/reference/resolve';
+
+  function safeCanonicalHref(value) {
+    const href = String(value || '');
+    if (!href.startsWith('/admin/') || href.startsWith('//') || /[\\\\\r\n]/.test(href)) return null;
+    return href;
+  }
+
+  function resultReferenceLabel(match) {
+    return [match.entity_type || 'Référence', match.matched_reference || match.canonical_id || '—'].join(' · ');
+  }
+
+  function renderReferenceResults(doc, host, payload) {
+    host.replaceChildren();
+    const matches = Array.isArray(payload && payload.matches) ? payload.matches : [];
+    if (!matches.length) {
+      host.appendChild(createNode(doc, 'p', 'kmc-admin-reference-message', 'Aucune référence accessible trouvée.'));
+      return;
+    }
+    matches.forEach(match => {
+      const href = safeCanonicalHref(match.canonical_href) || safeCanonicalHref(match.fallback_href);
+      const row = createNode(doc, href ? 'a' : 'div', 'kmc-admin-reference-result');
+      if (href) row.setAttribute('href', href);
+      row.appendChild(createNode(doc, 'strong', 'kmc-admin-reference-name', resultReferenceLabel(match)));
+      const position = match.current_position || {};
+      const details = [
+        match.customer_order_reference ? 'Commande ' + match.customer_order_reference : null,
+        match.market_code || null,
+        position.stage || null,
+        position.health || null,
+      ].filter(Boolean).join(' · ');
+      row.appendChild(createNode(doc, 'span', 'kmc-admin-reference-detail', details));
+      host.appendChild(row);
+    });
+  }
+
   function createTopbar(doc, header) {
     let topbar = dedupeRole(doc, 'topbar');
     if (topbar) return topbar;
@@ -406,14 +444,69 @@
     topbar.id = 'canonical-admin-topbar';
     topbar.setAttribute('data-canonical-shell-role', 'topbar');
 
-    const search = createNode(doc, 'label', 'kmc-admin-search');
-    search.appendChild(createNode(doc, 'span', 'kmc-admin-search-icon', '⌕'));
+    const search = createNode(doc, 'form', 'kmc-admin-search');
+    search.setAttribute('role', 'search');
+    const icon = createNode(doc, 'span', 'kmc-admin-search-icon', '⌕');
+    icon.setAttribute('aria-hidden', 'true');
+    search.appendChild(icon);
     const input = createNode(doc, 'input', 'kmc-admin-search-input');
     input.type = 'search';
-    input.placeholder = 'Rechercher dans cette rubrique…';
-    input.setAttribute('aria-label', 'Rechercher dans la rubrique courante');
-    input.addEventListener('input', event => filterCurrentSurface(doc, event.target.value || ''));
+    input.name = 'reference';
+    input.maxLength = 200;
+    input.autocomplete = 'off';
+    input.placeholder = 'Référence commande, PO, colis, HUB…';
+    input.setAttribute('aria-label', 'Rechercher une référence opérationnelle');
     search.appendChild(input);
+    const submit = createNode(doc, 'button', 'kmc-admin-reference-submit', 'Trouver');
+    submit.type = 'submit';
+    search.appendChild(submit);
+    const results = createNode(doc, 'div', 'kmc-admin-reference-results');
+    results.hidden = true;
+    results.setAttribute('role', 'status');
+    results.setAttribute('aria-live', 'polite');
+    search.appendChild(results);
+
+    let requestSequence = 0;
+    search.addEventListener('submit', async event => {
+      event.preventDefault();
+      const reference = String(input.value || '').trim();
+      if (!reference || reference.length > 200) return;
+      const sequence = ++requestSequence;
+      results.hidden = false;
+      results.replaceChildren(createNode(doc, 'p', 'kmc-admin-reference-message', 'Recherche en cours…'));
+      submit.disabled = true;
+      try {
+        const response = await global.fetch(
+          REFERENCE_SEARCH_ENDPOINT + '?reference=' + encodeURIComponent(reference),
+          { method: 'GET', credentials: 'include', headers: { Accept: 'application/json' } }
+        );
+        if (sequence !== requestSequence) return;
+        if (!response.ok) throw new Error(response.status === 403 ? 'Référence non accessible.' : 'Recherche indisponible.');
+        const payload = await response.json();
+        if (sequence !== requestSequence) return;
+        renderReferenceResults(doc, results, payload);
+      } catch (_) {
+        if (sequence === requestSequence) {
+          results.replaceChildren(createNode(doc, 'p', 'kmc-admin-reference-message', 'Recherche indisponible ou accès refusé.'));
+        }
+      } finally {
+        if (sequence === requestSequence) submit.disabled = false;
+      }
+    });
+    input.addEventListener('input', () => {
+      requestSequence += 1;
+      submit.disabled = false;
+      results.hidden = true;
+      results.replaceChildren();
+    });
+    input.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        requestSequence += 1;
+        submit.disabled = false;
+        results.hidden = true;
+        results.replaceChildren();
+      }
+    });
     topbar.appendChild(search);
 
     const right = createNode(doc, 'div', 'kmc-admin-topbar-right');
@@ -489,6 +582,9 @@
     LOCAL_TABS,
     SIDEBAR_GROUPS,
     sidebarGroupsFor,
+    safeCanonicalHref,
+    renderReferenceResults,
+    REFERENCE_SEARCH_ENDPOINT,
     mount,
     _applyHybridShell: applyHybridShell,
     _activeLocalTab: activeLocalTab,
