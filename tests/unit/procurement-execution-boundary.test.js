@@ -34,7 +34,7 @@ describe('caractérisation — capabilities runtime réelles', () => {
     const out = await evaluateProcurementExecutionBoundary({
       identity: soi('allegro', { offer_id: '1' }), quantity: 1, canonicalUnit: {}, adapters: EXECUTION_ADAPTER_REGISTRY,
     });
-    expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'EXECUTION_ADAPTER_INCOMPLETE' });
+    expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'CERTIFICATION_CAPABILITY_CLOSED' });
   });
 
   test('AliExpress est un execution adapter complet mais reste fail-closed sans destination/preflight', async () => {
@@ -46,7 +46,7 @@ describe('caractérisation — capabilities runtime réelles', () => {
       adapters: EXECUTION_ADAPTER_REGISTRY,
       context: {},
     });
-    expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'BUILD_ORDER_PAYLOAD_ERROR' });
+    expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'CERTIFICATION_ENVIRONMENT_MISMATCH' });
   });
 
   test('CJ est un execution adapter complet mais reste fail-closed sans contexte runtime', async () => {
@@ -59,6 +59,59 @@ describe('caractérisation — capabilities runtime réelles', () => {
       context: {},
     });
     expect(out).toMatchObject({ crossed: false, status: NOT_REACHED, reason: 'BUILD_ORDER_PAYLOAD_ERROR' });
+  });
+});
+
+describe('certification runtime guard', () => {
+  test('une capability GAP bloque avant buildOrderPayload/placeOrder', async () => {
+    const adapter = fullAdapter('cj');
+    const registry = {
+      providers: {
+        cj: [{
+          capability: 'purchasing.auto_order',
+          classification: 'GAP',
+          availability: 'IMPLEMENTED_NOT_LIVE_PROVEN',
+          highest_proof: 'P2',
+          environment: 'SANDBOX',
+          evidence: [],
+          limitations: [],
+        }],
+      },
+    };
+    const out = await evaluateProcurementExecutionBoundary({
+      identity: soi('cj', { vid: 'V1' }),
+      quantity: 1,
+      canonicalUnit: {},
+      adapters: { cj: adapter },
+      context: { certification_registry: registry, env: { KOMERCE_ENV: 'test' } },
+    });
+    expect(out).toMatchObject({
+      crossed: false,
+      reason: 'CERTIFICATION_CAPABILITY_NOT_CONFIRMED',
+      place_order_invoked: false,
+    });
+    expect(adapter.buildOrderPayload).not.toHaveBeenCalled();
+    expect(adapter.placeOrder).not.toHaveBeenCalled();
+  });
+
+  test('une certification SANDBOX ne peut pas autoriser une exécution production', async () => {
+    const adapter = fullAdapter('cj');
+    const out = await evaluateProcurementExecutionBoundary({
+      identity: soi('cj', { vid: 'V1' }),
+      quantity: 1,
+      canonicalUnit: {},
+      adapters: { cj: adapter },
+      context: { env: { KOMERCE_ENV: 'production' } },
+    });
+    expect(out).toMatchObject({
+      crossed: false,
+      reason: 'CERTIFICATION_ENVIRONMENT_MISMATCH',
+      evidence: {
+        runtime_environment: 'production',
+        certified_environment: 'SANDBOX',
+      },
+    });
+    expect(adapter.placeOrder).not.toHaveBeenCalled();
   });
 });
 
