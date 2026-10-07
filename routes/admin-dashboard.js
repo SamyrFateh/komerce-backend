@@ -43,6 +43,8 @@ const express = require('express');
 const db = require('../db');
 const metrics = require('../services/dashboard-metrics');
 const cache = require('../services/dashboard-cache');
+const controlChain = require('../services/logistics-control-chain-projection');
+const { mergePilotageAlerts } = require('../services/dashboard-pilotage-alert-aggregation');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { requireDashboardGlobalAuthority } = require('../middleware/require-dashboard-global-authority');
 const log = require('../utils/logger').child({ module: 'admin-dashboard' });
@@ -298,7 +300,7 @@ router.get(
         ca, cmdsActives, margeConsolidee, alertesCritiques, tauxCouts,
         coutReel, cmdsCoutIncomplet, coutMoyParCmd,
         cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans,
-        topAlerts, pointsAttention,
+        topAlerts, pointsAttention, controlChainProjection,
       ] = await Promise.all([
         metrics.getCAEncaisse(filters),
         metrics.getCmdsActives(filters),
@@ -315,6 +317,7 @@ router.get(
         metrics.getTauxCompletudeScans(filters),
         _fetchTopAlerts(10),
         metrics.getPointsAttention(filters),
+        controlChain.getControlChain({ market: null }),
       ]);
 
       // Resume par vue (5 KPIs chacune) — ZERO await ici
@@ -367,7 +370,7 @@ router.get(
         view_blocks,
         economic_flow,
         principles,
-        system_alerts: topAlerts,
+        system_alerts: mergePilotageAlerts(topAlerts, controlChainProjection, 10),
         data_quality: makeDataQuality(filters, ['(toutes)']),
       });
     } catch (err) {
@@ -682,18 +685,22 @@ async function _buildLogisticsCharts(filters) {
  */
 async function _fetchTopAlerts(limit = 5) {
   const sql = `
-    SELECT id,
-           severity        AS level,
-           source_module   AS source,
-           title           AS message,
-           meta            AS payload,
-           created_at
-    FROM signals
-    WHERE status IN ('open', 'acknowledged', 'snoozed')
-      AND severity IN ('critical', 'urgent', 'warning')
+    SELECT s.id,
+           s.severity        AS level,
+           s.source_module   AS source,
+           s.title           AS message,
+           s.signal_type,
+           so.reference      AS order_reference,
+           s.created_at
+    FROM signals s
+    LEFT JOIN orders so
+      ON s.entity_type = 'order'
+     AND so.id::text = s.entity_id::text
+    WHERE s.status IN ('open', 'acknowledged', 'snoozed')
+      AND s.severity IN ('critical', 'urgent', 'warning')
     ORDER BY
-      CASE severity WHEN 'critical' THEN 1 WHEN 'urgent' THEN 2 WHEN 'warning' THEN 3 ELSE 4 END,
-      created_at DESC
+      CASE s.severity WHEN 'critical' THEN 1 WHEN 'urgent' THEN 2 WHEN 'warning' THEN 3 ELSE 4 END,
+      s.created_at DESC
     LIMIT $1
   `;
   try {
@@ -703,6 +710,8 @@ async function _fetchTopAlerts(limit = 5) {
       level:      row.level,
       source:     row.source,
       message:    row.message,
+      signal_type: row.signal_type || null,
+      order_reference: row.order_reference || null,
       created_at: row.created_at,
     }));
   } catch (e) {
