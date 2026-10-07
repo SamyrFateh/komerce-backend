@@ -367,7 +367,7 @@ GENERATORS.parcel_blocked = async function() {
              o.reference
       FROM parcels p
       LEFT JOIN orders o ON o.id = p.order_id
-      WHERE p.status NOT IN ('delivered','cancelled','returned')
+      WHERE p.status::text NOT IN ('collected','cancelled')
         AND p.updated_at < NOW() - INTERVAL '3 days'
       ORDER BY p.updated_at ASC
       LIMIT 50
