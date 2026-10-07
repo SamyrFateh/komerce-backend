@@ -187,6 +187,17 @@ function publicSignal(signal, entityMaps) {
   };
 }
 
+function workQueues(signals) {
+  const counts = new Map();
+  for (const signal of signals || []) {
+    const owner = signal.owner_role || 'unassigned';
+    counts.set(owner, (counts.get(owner) || 0) + 1);
+  }
+  return Object.freeze([...counts.entries()]
+    .map(([owner_role, count]) => Object.freeze({ owner_role, count }))
+    .sort((a, b) => b.count - a.count || a.owner_role.localeCompare(b.owner_role)));
+}
+
 function summaryFromStats(stats) {
   const bySeverity = countMap(stats.bySeverity, 'severity');
   const byFamily = countMap(stats.byFamily, 'family');
@@ -239,6 +250,7 @@ async function buildScopedWorkspace({ market = null, filters = {} } = {}) {
       market_note: 'Vue centrale limitée aux signaux globaux ; les signaux pays restent isolés dans leur Market ID.',
     },
     summary: summaryFromStats(stats),
+    work_queues: workQueues(list.signals),
     signals: list.signals.map(signal => publicSignal(signal, entityMaps)),
     pagination: { total: list.total, limit: list.limit, offset: list.offset },
   };
@@ -289,6 +301,7 @@ module.exports = {
   snooze,
   resolve,
   publicSignal,
+  workQueues,
   actionSet,
   requireSignalRef,
 };
