@@ -71,6 +71,7 @@ test('global projection is explicitly global-only and never exposes internal UUI
   expect(mockAdmin.listSignals).toHaveBeenCalledWith(expect.objectContaining({ market_id: null }));
   expect(mockAdmin.getStats).toHaveBeenCalledWith({ market_id: null });
   expect(result.scope).toMatchObject({ mode: 'global_decision_signals', market_dimension: 'canonical', market: null });
+  expect(result.work_queues).toEqual([{ owner_role: 'sourcing', count: 1 }]);
   expect(result.signals[0]).toMatchObject({
     signal_ref: 'KSG-000001',
     family: 'sourcing',
@@ -240,6 +241,19 @@ test('un signal supplier_payment market-scoped ne résout jamais une PO fourniss
     href: null,
   });
   expect(mockDbQuery).not.toHaveBeenCalled();
+});
+
+test('owner queues are derived only from active signal ownership', () => {
+  expect(workspace.workQueues([
+    { owner_role: 'purchasing' },
+    { owner_role: 'finance' },
+    { owner_role: 'purchasing' },
+    { owner_role: null },
+  ])).toEqual([
+    { owner_role: 'purchasing', count: 2 },
+    { owner_role: 'finance', count: 1 },
+    { owner_role: 'unassigned', count: 1 },
+  ]);
 });
 
 test('Canonical lifecycle delegates by signal_ref and exact market scope', async () => {
