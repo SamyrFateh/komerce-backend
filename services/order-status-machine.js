@@ -10,6 +10,7 @@
  * @used-by       order-payment-confirmation.js, routes/orders.js, cancellation-flows, admin-flows
  * @db-read       order_items, orders, products, relais
  * @db-write      order_items, order_status_history, orders
+ * @db-write-via:customs-shipment-service customs_shipments
  * @db-write-via:product-admin-service products, product_variants
  * @db-txn        single_status_transition_gate, append_history_before_side_effects
  * @doctrine      status_transition_source_unique, payment_to_stock_single_entry, annulation_tracee
