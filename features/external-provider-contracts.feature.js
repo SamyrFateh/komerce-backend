@@ -83,6 +83,15 @@ module.exports = {
       'scripts/stripe-provider-contract-proof.js',
       'scripts/ebay-sandbox-browse-proof.js',
     ],
+    workflows: [
+      '.github/workflows/external-provider-contract-batch.yml',
+      '.github/workflows/isolated-aliexpress-business-certification.yml',
+      '.github/workflows/isolated-cj-billing-history-readonly.yml',
+      '.github/workflows/isolated-cj-golden-trigger-purchasing.yml',
+      '.github/workflows/isolated-cj-p1-create-readback.yml',
+      '.github/workflows/isolated-cj-p2-confirm-pay-sandbox.yml',
+      '.github/workflows/isolated-cj-p2-grouped-parent-sandbox.yml',
+    ],
     config: [
       'governance/external-provider-registry.json',
       'governance/external-provider-capability-certifications.json',
@@ -95,6 +104,7 @@ module.exports = {
       'tests/unit/provider-certification-reconciliation.test.js',
       'tests/unit/stripe-provider-contract-proof.test.js',
       'tests/unit/ebay-sandbox-browse-proof.test.js',
+      'tests/unit/provider-proof-workflow-ownership.test.js',
     ],
   },
 
