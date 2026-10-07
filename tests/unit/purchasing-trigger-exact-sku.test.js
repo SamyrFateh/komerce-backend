@@ -222,7 +222,7 @@ describe('purchasing exact SKU procurement', () => {
       status: 'api_failed_notified',
       purchase_order_id: '00000000-0000-0000-0000-000000000201',
       inbound_tag: 'KOM-IN-00000000000000000000000000000201',
-      error: 'Procurement Execution Boundary non atteinte (BUILD_ORDER_PAYLOAD_ERROR)',
+      error: 'Procurement Execution Boundary non atteinte (CERTIFICATION_RUNTIME_ENVIRONMENT_REQUIRED)',
     });
     // Mode manuel — jamais 'confirmed' — car l'exécution AliExpress est fermée sans opt-in.
     const postCommitUpdate = db.query.mock.calls.find(([sql]) =>
