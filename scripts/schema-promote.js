@@ -90,8 +90,9 @@ function buildRow(b) {
 /**
  * Insere une ligne a la fin du tableau markdown situe sous le heading donne.
  * Un tableau = suite contigue de lignes commencant par '|'. On insere apres
- * la derniere. Erreur explicite si le heading ou le tableau est introuvable
- * (fail loud : mieux vaut bloquer qu'ecrire au mauvais endroit).
+ * la derniere. Si la section existe mais n'a pas encore de tableau, amorce
+ * un tableau adapte a la ligne promue (2 ou 3 colonnes). Le heading reste
+ * obligatoire : mieux vaut bloquer qu'ecrire au mauvais endroit.
  */
 function insertRowUnderSection(md, sectionHeading, row) {
   const lines = md.split('\n');
@@ -103,7 +104,20 @@ function insertRowUnderSection(md, sectionHeading, row) {
     if (/^#{1,6}\s/.test(lines[i])) break;            // section suivante sans tableau
     if (lines[i].startsWith('|')) { start = i; break; }
   }
-  if (start === -1) throw new Error(`Aucun tableau sous "${sectionHeading}"`);
+  if (start === -1) {
+    const cells = row.split('|').slice(1, -1).map(cell => cell.trim());
+    const headers = cells.length === 3
+      ? ['Objet', 'Rôle', 'Consommé par']
+      : ['Objet', 'Rôle'];
+    const table = [
+      `| ${headers.join(' | ')} |`,
+      `|${headers.map(() => '---').join('|')}|`,
+      row,
+      '',
+    ];
+    lines.splice(hIdx + 1, 0, '', ...table);
+    return lines.join('\n');
+  }
 
   let end = start;
   while (end + 1 < lines.length && lines[end + 1].startsWith('|')) end++;
@@ -172,4 +186,6 @@ function main() {
   process.exit(0);
 }
 
-main();
+if (require.main === module) main();
+
+module.exports = { insertRowUnderSection, buildRow };
