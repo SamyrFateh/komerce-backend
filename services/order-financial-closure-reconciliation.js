@@ -6,9 +6,9 @@
  * @criticality   high
  * @inputs        customer order id
  * @outputs       read-only financial closure verdict across handoff/incidents/refunds/supplier-payments
- * @depends       services/customer-handoff-reconciliation.js
+ * @depends       services/customer-handoff-reconciliation.js, services/pricing-maturity.js
  * @used-by       future Order 360 / Control Tower / Golden closure
- * @db-read       orders, parcels, incidents, refunds, purchase_lines, order_items, supplier_execution_payments
+ * @db-read       orders, parcels, incidents, refunds, purchase_lines, order_items, supplier_execution_payments, order_item_real_cost_allocations, order_item_cost_imputations, customs_shipments, customs_shipment_parcels
  * @db-write      none
  * @db-txn        none
  * @doctrine      docs/chantier/CUSTOMER_TO_CUSTOMER_CLOSURE.md
