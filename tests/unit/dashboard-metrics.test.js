@@ -86,6 +86,18 @@ describe('buildFiltersClause', () => {
     expect(params).toEqual(['2026-01-01', '2026-01-31']);
   });
 
+  it('utilise confirmed_at quand la projection Finance demande la date d encaissement', () => {
+    const { where, params } = buildFiltersClause({
+      from: '2026-01-01',
+      to: '2026-01-31',
+      time_basis: 'confirmed_at',
+    });
+    expect(where).toContain('o.confirmed_at >= $1');
+    expect(where).toContain('o.confirmed_at <= $2');
+    expect(where).not.toContain('o.created_at');
+    expect(params).toEqual(['2026-01-01', '2026-01-31']);
+  });
+
   it('ajoute filtre island sur destination_island', () => {
     const { where, params } = buildFiltersClause({ island: 'grande_comore' });
     expect(where).toContain('destination_island');
