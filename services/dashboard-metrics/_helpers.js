@@ -75,13 +75,14 @@ function buildFiltersClause(filters = {}, orderAlias = 'o') {
   const where = ['1=1'];
   const params = [];
   let i = 1;
+  const timeColumn = filters.time_basis === 'confirmed_at' ? 'confirmed_at' : 'created_at';
 
   if (filters.from) {
-    where.push(`${orderAlias}.created_at >= $${i++}`);
+    where.push(`${orderAlias}.${timeColumn} >= ${i++}`);
     params.push(filters.from);
   }
   if (filters.to) {
-    where.push(`${orderAlias}.created_at <= $${i++}`);
+    where.push(`${orderAlias}.${timeColumn} <= ${i++}`);
     params.push(filters.to);
   }
   if (filters.island) {
@@ -112,7 +113,7 @@ function buildFiltersClause(filters = {}, orderAlias = 'o') {
 
 function assertParameterizedWhereClause(where) {
   const clause = String(where || '');
-  const safePart = /^(?:1=1|[A-Za-z_][A-Za-z0-9_]*\.(?:created_at|destination_island|relais_id|status::text|payment_status::text|market_id)\s*(?:=|>=|<=)\s*\$\d+)$/;
+  const safePart = /^(?:1=1|[A-Za-z_][A-Za-z0-9_]*\.(?:created_at|confirmed_at|destination_island|relais_id|status::text|payment_status::text|market_id)\s*(?:=|>=|<=)\s*\$\d+)$/;
   const parts = clause.split(' AND ');
   if (!parts.length || parts.some((part) => !safePart.test(part))) {
     throw new Error('Unsafe dashboard WHERE clause');
