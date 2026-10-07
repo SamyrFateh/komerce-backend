@@ -5,14 +5,15 @@
  * @layer         cron
  * @criticality   critical
  * @inputs        timers, database_state, rules
- * @outputs       automatic_transitions, purges, reminders, incident_sla_escalations
+ * @outputs       automatic_transitions, purges, reminders, incident_sla_escalations, continuous_decision_signals
  * @depends       services/cash-reminder-service.js, services/inventory-service.js,
- *                services/mobile-money-reconciliation.js, services/incident-escalation.js, utils/rules.js
- * @db-write      economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
+ *                services/mobile-money-reconciliation.js, services/incident-escalation.js,
+ *                services/signal-service.js, utils/rules.js
+ * @db-write      economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens, signals
  * @db-read       economic_snapshots, pickup_print_tokens, pickup_reveal_codes, revoked_tokens
  * @used-by       server.js
  * @doctrine      idempotence_cron, retention_snapshots, bounded_mobile_money_reconciliation, bounded_incident_sla_escalation
- * @impact-areas  cash-reminders, inventory, auth-security, economic-engine, payments, incident-management
+ * @impact-areas  cash-reminders, inventory, auth-security, economic-engine, payments, incident-management, decision-signals, admin-dashboard
  * @version       2026-09
  */
 
@@ -89,6 +90,42 @@ function startBackorderCron({ processBackorderReminders }) {
   }, 30 * 1000);
 }
 
+// Decision signals — les dashboards ne doivent jamais dépendre d'un clic manuel
+// pour observer la santé de la chaîne. Le service reste l'unique autorité de
+// génération/déduplication/résolution ; ce cron ne fait que le déclencher.
+function startSignalGenerationCron(options = {}) {
+  const INTERVAL_MS = 15 * 60 * 1000;
+  const INITIAL_DELAY_MS = 60 * 1000;
+  const generateSignals = options.generateSignals
+    || require('../services/signal-service').generateSignals;
+  let running = false;
+
+  const run = async () => {
+    if (running) return;
+    running = true;
+    try {
+      const result = await generateSignals();
+      const generators = result && result.generators ? result.generators : {};
+      const generated = Object.values(generators)
+        .reduce((total, item) => total + (Number(item && item.generated) || 0), 0);
+      log.info({
+        generated,
+        expired: Number(result && result.expired) || 0,
+        retired_obsolete: Number(result && result.retired_obsolete) || 0,
+        generator_count: Object.keys(generators).length,
+      }, 'Decision signal generation pass done');
+    } catch (err) {
+      log.error({ err }, 'Decision signal generation cron failed');
+    } finally {
+      running = false;
+    }
+  };
+
+  setTimeout(run, INITIAL_DELAY_MS);
+  setInterval(run, INTERVAL_MS);
+  log.info({ interval_min: 15, initial_delay_s: 60 }, 'Decision signal generation cron scheduled');
+}
+
 function startOperationalCrons() {
   // ZG-1: migré de utils/sms (Africa's Talking, désactivé) → services/cash-reminder-service (WhatsApp)
   const { processCashRelaisReminders, processBackorderReminders } = require('../services/cash-reminder-service');
@@ -101,6 +138,7 @@ function startOperationalCrons() {
   startJwtRevocationCleanupCron(); // N4 migration 072
   startMobileMoneyReconciliationCron(); // migration 169
   startIncidentSlaEscalationCron(); // HUB-000 F3
+  startSignalGenerationCron(); // Control Tower / Action Center health feed
 }
 
 // HUB-000 F3 — SLA incident : composition root uniquement.
@@ -255,6 +293,7 @@ module.exports = {
   startCashRelaisCron,
   startBackorderCron,
   startIncidentSlaEscalationCron,
+  startSignalGenerationCron,
   startMobileMoneyReconciliationCron,
   startSnapshotRetentionCron,
   startPickupTokenCleanupCron,
