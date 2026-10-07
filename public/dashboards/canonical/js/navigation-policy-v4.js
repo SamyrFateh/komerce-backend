@@ -76,7 +76,6 @@
       items: Object.freeze([
         Object.freeze({ id: 'entity-orders', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'], surfaces: ['orders', 'order-360'] }),
         Object.freeze({ id: 'entity-products', label: 'Produits', href: '/admin/workspaces/catalog?view=advanced', roles: ['admin'], surfaces: ['product-360'] }),
-        Object.freeze({ id: 'entity-suppliers', label: 'Fournisseurs', href: '/admin/suppliers', roles: ['admin'], surfaces: ['supplier-360'] }),
         Object.freeze({ id: 'entity-clients', label: 'Clients', href: '/admin/clients', roles: ['admin', 'market_operator'], capability: 'client.read', surfaces: ['client-index', 'client-360'] }),
       ]),
     }),

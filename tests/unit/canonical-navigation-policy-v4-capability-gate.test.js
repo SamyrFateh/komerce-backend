@@ -132,6 +132,9 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
       .toEqual(['Tour de contrôle', 'Action Center']);
     expect(groups.find(group => group.id === 'flows').items.map(item => item.label))
       .toEqual(['Commerce', 'Commandes & logistique', 'Finance']);
+    expect(groups.find(group => group.id === 'entities').items.map(item => item.label))
+      .toEqual(['Commandes', 'Produits', 'Clients']);
+    expect(groups.flatMap(group => group.items).some(item => item.href === '/admin/suppliers')).toBe(false);
   });
 
   test('client entity remains capability-gated for a market operator', () => {
