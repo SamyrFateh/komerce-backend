@@ -8,6 +8,16 @@
 
 const { verifyRealDebitEvidence } = require('../../services/supplier-real-debit-verification');
 
+const fs = require('fs');
+
+test('le vérificateur de débit déclare ses consommateurs runtime réels', () => {
+  const src = fs.readFileSync(
+    require.resolve('../../services/supplier-real-debit-verification'),
+    'utf8'
+  );
+  expect(src).toContain('@used-by       services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-supplier-payment-runtime.js');
+});
+
 const payment = {
   provider:'cj',
   status:'succeeded',
