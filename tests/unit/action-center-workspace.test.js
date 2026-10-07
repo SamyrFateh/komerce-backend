@@ -71,6 +71,7 @@ test('global projection is explicitly global-only and never exposes internal UUI
   expect(mockAdmin.listSignals).toHaveBeenCalledWith(expect.objectContaining({ market_id: null }));
   expect(mockAdmin.getStats).toHaveBeenCalledWith({ market_id: null });
   expect(result.scope).toMatchObject({ mode: 'global_decision_signals', market_dimension: 'canonical', market: null });
+  expect(result.work_queues).toEqual([{ owner_role: 'sourcing', count: 1 }]);
   expect(result.signals[0]).toMatchObject({
     signal_ref: 'KSG-000001',
     family: 'sourcing',
@@ -118,6 +119,61 @@ test('Order signal drill-down is resolved by business order reference inside sco
   expect(result.signals[0].entity.href).toBe('/admin/orders/KOM-2026-42');
   expect(result.signals[0].actions).toEqual(['snooze', 'resolve']);
   expect(mockDbQuery.mock.calls[0][1]).toEqual([['order-uuid'], null]);
+});
+
+test('public signal exposes a separate human work item without conflating signal lifecycle', async () => {
+  mockAdmin.familyForType.mockReturnValue('ops');
+  mockAdmin.listSignals.mockResolvedValue({
+    signals: [{
+      signal_ref: 'KSG-000099',
+      signal_type: 'supplier_order_ambiguous',
+      severity: 'critical',
+      title: 'Commande fournisseur ambiguë',
+      recommendation: 'Vérifier la commande fournisseur puis réconcilier la PO',
+      owner_role: 'purchasing',
+      status: 'open',
+      entity_type: 'order',
+      entity_id: 'order-uuid',
+      market_id: null,
+    }],
+    total: 1, limit: 100, offset: 0,
+  });
+  mockDbQuery.mockResolvedValueOnce({ rows: [{
+    internal_id: 'order-uuid',
+    reference: 'KOM-AMB-1',
+  }] });
+
+  const result = await workspace.buildWorkspace();
+  const signal = result.signals[0];
+
+  expect(signal.work_item).toEqual({
+    owner_role: 'purchasing',
+    instruction: 'Vérifier la commande fournisseur puis réconcilier la PO',
+    href: '/admin/orders/KOM-AMB-1',
+    actionable: true,
+  });
+  expect(signal.actions).toEqual(['acknowledge', 'snooze', 'resolve']);
+});
+
+test('work item stays non-actionable when no safe business destination exists', () => {
+  const signal = workspace.publicSignal({
+    signal_ref: 'KSG-000100',
+    signal_type: 'supplier_payment_review',
+    severity: 'warning',
+    title: 'Paiement à revoir',
+    recommendation: 'Vérifier le paiement',
+    owner_role: 'finance',
+    status: 'open',
+    entity_type: 'supplier_payment',
+    entity_id: 'missing-payment',
+  }, { supplier_payment: new Map() });
+
+  expect(signal.work_item).toEqual({
+    owner_role: 'finance',
+    instruction: 'Vérifier le paiement',
+    href: null,
+    actionable: false,
+  });
 });
 
 test('Supplier payment signal resolves to Purchasing PO without exposing internal payment UUID', async () => {
@@ -185,6 +241,19 @@ test('un signal supplier_payment market-scoped ne résout jamais une PO fourniss
     href: null,
   });
   expect(mockDbQuery).not.toHaveBeenCalled();
+});
+
+test('owner queues are derived only from active signal ownership', () => {
+  expect(workspace.workQueues([
+    { owner_role: 'purchasing' },
+    { owner_role: 'finance' },
+    { owner_role: 'purchasing' },
+    { owner_role: null },
+  ])).toEqual([
+    { owner_role: 'purchasing', count: 2 },
+    { owner_role: 'finance', count: 1 },
+    { owner_role: 'unassigned', count: 1 },
+  ]);
 });
 
 test('Canonical lifecycle delegates by signal_ref and exact market scope', async () => {

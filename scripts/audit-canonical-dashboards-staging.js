@@ -10,12 +10,21 @@
  */
 'use strict';
 
+const { randomUUID } = require('crypto');
 const db = require('../db');
 const { resolveRuntimeEnvironment } = require('../middleware/require-non-production');
 const pilotage = require('../services/dashboard-pilotage-market');
 const commerce = require('../services/dashboard-commerce');
 const operations = require('../services/dashboard-operations');
 const finance = require('../services/dashboard-finance-canonical');
+const referenceResolver = require('../services/canonical-reference-resolver');
+
+const EXACT_ASSERTION = Object.freeze({
+  stage: 'PURCHASING',
+  health: 'RED',
+  cause: 'supplier_payment_blocked',
+  owner: 'finance',
+});
 
 function parseArgs(argv = process.argv) {
   const out = { market: 'KM', period: '30' };
@@ -34,6 +43,153 @@ function metricMap(items) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function representativeReferences(controlChain, customsReference = null) {
+  const orders = Array.isArray(controlChain && controlChain.orders) ? controlChain.orders : [];
+  const first = selector => {
+    for (const order of orders) {
+      const values = selector(order);
+      if (Array.isArray(values) && values.length) return values[0];
+    }
+    return null;
+  };
+  return Object.freeze([
+    { kind: 'ORDER', reference: orders[0]?.order_reference || null, owner: 'orders' },
+    { kind: 'PURCHASE_ORDER', reference: first(order => order.lineage?.purchase_orders), owner: 'purchasing' },
+    { kind: 'HUB_UNIT', reference: first(order => order.lineage?.hub_units), owner: 'logistics' },
+    { kind: 'PARCEL', reference: first(order => order.lineage?.parcels), owner: 'logistics' },
+    { kind: 'CUSTOMS_SHIPMENT', reference: customsReference, owner: 'customs' },
+  ].filter(item => item.reference));
+}
+
+async function latestAuditCustomsReference(marketId) {
+  const { rows } = await db.query(
+    `SELECT cs.reference
+       FROM customs_shipments cs
+       JOIN customs_shipment_parcels csp ON csp.shipment_id = cs.id
+       JOIN parcels p ON p.id = csp.parcel_id
+       JOIN orders o ON o.id = p.order_id
+      WHERE cs.is_active = TRUE
+        AND o.market_id = $1
+        AND o.reference LIKE 'AUDIT-%'
+      ORDER BY cs.created_at DESC
+      LIMIT 1`,
+    [marketId]
+  );
+  return rows[0]?.reference || null;
+}
+
+async function auditReferenceResolution(controlChain, market) {
+  const customsReference = await latestAuditCustomsReference(market.id);
+  const candidates = representativeReferences(controlChain, customsReference);
+  assert(candidates.some(item => item.kind === 'ORDER'), 'reference_audit_order_missing');
+
+  const results = [];
+  for (const candidate of candidates) {
+    const globalResult = await referenceResolver.resolveReference(candidate.reference, {
+      role: 'admin',
+      global: true,
+    });
+    assert(globalResult.found === true, 'reference_not_found:' + candidate.kind);
+    const globalMatch = globalResult.matches.find(match => match.entity_type === candidate.kind)
+      || globalResult.matches[0];
+    assert(globalMatch, 'reference_match_missing:' + candidate.kind);
+    assert(globalMatch.canonical_owner === candidate.owner, 'reference_owner_mismatch:' + candidate.kind);
+    assert(globalMatch.customer_order_reference, 'reference_parent_order_missing:' + candidate.kind);
+
+    const marketResult = await referenceResolver.resolveReference(candidate.reference, {
+      role: 'market_operator',
+      authorizedMarketIds: new Set([market.id]),
+    });
+    assert(marketResult.found === true, 'reference_market_scope_missing:' + candidate.kind);
+
+    results.push(Object.freeze({
+      kind: candidate.kind,
+      reference: candidate.reference,
+      owner: globalMatch.canonical_owner,
+      order: globalMatch.customer_order_reference,
+      stage: globalMatch.current_position?.stage || null,
+      health: globalMatch.current_position?.health || null,
+      global_href: globalMatch.canonical_href,
+      market_href: marketResult.matches[0]?.canonical_href || null,
+      ambiguous: globalResult.ambiguous === true,
+    }));
+  }
+  return Object.freeze(results);
+}
+
+async function seedExactBusinessAssertion(market) {
+  const userId = randomUUID();
+  const relaisId = randomUUID();
+  const orderId = randomUUID();
+  const signalId = randomUUID();
+  const suffix = Date.now().toString(36).toUpperCase();
+  const reference = `AUDIT-EXACT-${market.code}-${suffix}`;
+
+  await db.query(
+    `INSERT INTO users (id, full_name, email, phone, role)
+     VALUES ($1,$2,$3,$4,'client')`,
+    [userId, 'Audit Exact Client', `audit-exact-${suffix.toLowerCase()}@komerce.test`, `+2699${String(Date.now()).slice(-7)}`]
+  );
+  await db.query(
+    `INSERT INTO relais (id, name, agent_name, phone, address, market_id)
+     VALUES ($1,$2,'Audit Exact Agent',$3,'Audit Exact Address',$4)`,
+    [relaisId, `AUDIT EXACT ${market.code} ${suffix}`, `+2698${String(Date.now()).slice(-7)}`, market.id]
+  );
+  await db.query(
+    `INSERT INTO orders
+       (id, user_id, relais_id, market_id, reference, status, payment_status, payment_mode, total_kmf, total_eur, ordered_at)
+     VALUES ($1,$2,$3,$4,$5,'ordered','paid','cash_relais',25000,50,NOW())`,
+    [orderId, userId, relaisId, market.id, reference]
+  );
+  await db.query(
+    `INSERT INTO signals
+       (id, signal_type, severity, title, summary, owner_role, recommendation, status, entity_type, entity_id, market_id)
+     VALUES ($1,$2,'critical','Paiement fournisseur bloqué','Paiement fournisseur bloqué',$3,
+             'Traiter le paiement fournisseur avant poursuite','open','order',$4,$5)`,
+    [signalId, EXACT_ASSERTION.cause, EXACT_ASSERTION.owner, orderId, market.id]
+  );
+
+  return Object.freeze({ userId, relaisId, orderId, signalId, reference });
+}
+
+async function cleanupExactBusinessAssertion(fixture) {
+  if (!fixture) return;
+  await db.query('DELETE FROM signals WHERE id = $1', [fixture.signalId]);
+  await db.query('DELETE FROM orders WHERE id = $1', [fixture.orderId]);
+  await db.query('DELETE FROM relais WHERE id = $1', [fixture.relaisId]);
+  await db.query('DELETE FROM users WHERE id = $1', [fixture.userId]);
+}
+
+async function assertExactBusinessOutcome(market) {
+  const fixture = await seedExactBusinessAssertion(market);
+  try {
+    const resolved = await referenceResolver.resolveReference(fixture.reference, {
+      role: 'admin',
+      global: true,
+    });
+    assert(resolved.found === true, 'exact_assertion_reference_not_found');
+    const match = resolved.matches.find(row => row.entity_type === 'ORDER');
+    assert(match, 'exact_assertion_order_match_missing');
+    assert(match.customer_order_reference === fixture.reference, 'exact_assertion_order_reference_mismatch');
+    assert(match.current_position?.stage === EXACT_ASSERTION.stage, 'exact_assertion_stage_mismatch');
+    assert(match.current_position?.health === EXACT_ASSERTION.health, 'exact_assertion_health_mismatch');
+    assert(match.current_position?.cause?.code === EXACT_ASSERTION.cause, 'exact_assertion_cause_mismatch');
+    assert(match.current_position?.cause?.owner_role === EXACT_ASSERTION.owner, 'exact_assertion_owner_mismatch');
+
+    return Object.freeze({
+      reference: fixture.reference,
+      stage: match.current_position.stage,
+      health: match.current_position.health,
+      cause: match.current_position.cause.code,
+      owner: match.current_position.cause.owner_role,
+      expected: EXACT_ASSERTION,
+      passed: true,
+    });
+  } finally {
+    await cleanupExactBusinessAssertion(fixture);
+  }
 }
 
 async function resolveMarket(code) {
@@ -62,6 +218,8 @@ async function main(argv = process.argv) {
     operations.buildOperations({ market, now }),
     finance.buildFinance({ period: args.period }, { market, now }),
   ]);
+  const referenceSearch = await auditReferenceResolution(o.control_chain, market);
+  const exactBusinessAssertion = await assertExactBusinessOutcome(market);
 
   assert(p.scope?.market?.code === market.code, 'pilotage_scope_mismatch');
   assert(c.scope?.market?.code === market.code, 'commerce_scope_mismatch');
@@ -100,6 +258,8 @@ async function main(argv = process.argv) {
         ])),
       },
     },
+    reference_search: referenceSearch,
+    exact_business_assertion: exactBusinessAssertion,
     finance: {
       period: f.period,
       kpis: metricMap(f.kpis),
@@ -119,6 +279,8 @@ async function main(argv = process.argv) {
     signals: summary.operations.signals,
   }));
   console.log('[dashboard-audit] chain ' + JSON.stringify(summary.operations.control_chain));
+  console.log('[dashboard-audit] reference_search ' + JSON.stringify(summary.reference_search));
+  console.log('[dashboard-audit] exact_business_assertion ' + JSON.stringify(summary.exact_business_assertion));
   console.log('[dashboard-audit] finance ' + JSON.stringify(summary.finance));
 }
 
@@ -131,4 +293,16 @@ if (require.main === module) {
     });
 }
 
-module.exports = { parseArgs, metricMap, resolveMarket, main };
+module.exports = {
+  EXACT_ASSERTION,
+  parseArgs,
+  metricMap,
+  representativeReferences,
+  latestAuditCustomsReference,
+  auditReferenceResolution,
+  seedExactBusinessAssertion,
+  cleanupExactBusinessAssertion,
+  assertExactBusinessOutcome,
+  resolveMarket,
+  main,
+};

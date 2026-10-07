@@ -390,8 +390,11 @@ async function placeOrder(payload, context = {}) {
   };
 }
 
+const supports_idempotent_replay = false;
+
 module.exports = {
   provider,
+  supports_idempotent_replay,
   resolveSupplierProductRef,
   resolveSendGoodsCountry,
   classify,

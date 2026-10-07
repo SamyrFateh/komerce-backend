@@ -26,12 +26,11 @@
  * canonical-unit-purchasing-gate.js pour la doctrine complète).
  *
  * Exige placeOrder ET buildOrderPayload sur le MÊME adapter (jamais l'un
- * via un provider substitué). Aujourd'hui, aucun adapter du registry
- * d'exécution (allegro, aliexpress) n'a les deux — fait constaté, pas une
- * lacune de ce module — donc ce chemin n'est jamais exercé en production
- * et le comportement Golden (fallback vers notification manuelle) reste
- * inchangé. Le jour où un adapter réel aura les deux capacités, ce module
- * (et lui seul) est le point où l'exécution automatique s'active.
+ * via un provider substitué). CJ et AliExpress exposent désormais les deux
+ * capacités derrière leurs gardes runtime respectives. La possibilité de
+ * rejouer une création ambiguë est une capacité distincte et explicite du
+ * même adapter : une clé locale Komerce ne prouve jamais l'idempotence du
+ * provider. Le trigger purchasing bloque donc tout replay non certifié.
  */
 'use strict';
 

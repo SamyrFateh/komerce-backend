@@ -201,12 +201,17 @@
     card.appendChild(titleLine);
 
     if (row.summary) card.appendChild(text(doc, 'p', 'kmc-workspace-note', row.summary));
-    if (row.recommendation) card.appendChild(text(doc, 'p', 'kmc-workspace-note', `Recommandation · ${row.recommendation}`));
+    if (row.recommendation) card.appendChild(text(doc, 'p', 'kmc-workspace-note', `Action attendue · ${row.recommendation}`));
 
     const context = doc.createElement('div');
     context.className = 'kmc-workspace-nav';
-    context.appendChild(text(doc, 'span', 'kmc-workspace-note', `Type · ${row.signal_type} · propriétaire · ${row.owner_role || '—'} · statut · ${row.status}`));
-    if (row.entity && row.entity.href) {
+    context.appendChild(text(doc, 'span', 'kmc-workspace-note', `Type · ${row.signal_type} · owner · ${row.owner_role || '—'} · statut · ${row.status}`));
+    if (row.work_item && row.work_item.actionable && row.work_item.href) {
+      const work = text(doc, 'a', 'kmc-workspace-action', 'Traiter');
+      work.href = row.work_item.href;
+      work.dataset.actionCenterWorkItem = row.signal_ref;
+      context.appendChild(work);
+    } else if (row.entity && row.entity.href) {
       const link = text(doc, 'a', 'kmc-workspace-nav-link', `Voir ${row.entity.label || row.entity.ref || row.entity.type}`);
       link.href = row.entity.href;
       context.appendChild(link);
@@ -239,7 +244,7 @@
       rendered += rows.length;
       const section = ui.Section.create({
         title: `${FAMILY_LABELS[family] || family} · ${rows.length}`,
-        description: 'Le Centre d’actions change uniquement le cycle de vie du signal. Le traitement métier se fait dans la surface de drill-down autorisée.',
+        description: 'Traiter ouvre la surface métier propriétaire. Vu, Reporter et Résolu ne modifient que le cycle de vie du signal dérivé.',
       });
       rows.forEach(row => section.slot.appendChild(renderSignal(doc, row)));
       rootNode.appendChild(section.element);

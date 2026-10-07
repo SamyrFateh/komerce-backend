@@ -376,16 +376,21 @@
       dashboard.appendChild(chain.section);
     }
 
-    const executionGrid = doc.createElement('div');
-    executionGrid.className = 'kmc-decision-dashboard-grid-2';
-    const signals = cardSection(doc, 'Incidents & signaux', 'Signaux opérationnels ouverts et recommandations déjà fournies.', 'operations-signals');
-    ui.AlertPanel.render(signals.body, { title: 'Signaux opérationnels', items: base.projectSignals(payload), emptyText: 'Aucun incident opérationnel ouvert.' });
-    executionGrid.appendChild(signals.section);
-
+    const projectedSignals = base.projectSignals(payload);
     const orders = cardSection(doc, 'File d’exécution', 'Ordre du backend conservé ; le badge indique le temps sans avancement.', 'operations-orders');
     decisionUi.PriorityList.render(orders.body, { items: priorityOrders(payload, base) });
-    executionGrid.appendChild(orders.section);
-    dashboard.appendChild(executionGrid);
+
+    if (projectedSignals.length) {
+      const executionGrid = doc.createElement('div');
+      executionGrid.className = 'kmc-decision-dashboard-grid-2';
+      const signals = cardSection(doc, 'Incidents & signaux', 'Signaux opérationnels ouverts et recommandations déjà fournies.', 'operations-signals');
+      ui.AlertPanel.render(signals.body, { title: 'Signaux opérationnels', items: projectedSignals });
+      executionGrid.appendChild(signals.section);
+      executionGrid.appendChild(orders.section);
+      dashboard.appendChild(executionGrid);
+    } else {
+      dashboard.appendChild(orders.section);
+    }
 
     const delays = delayItems(payload, base);
     if (delays.length) {

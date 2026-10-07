@@ -17,6 +17,7 @@
 
 let mockQuery;
 let mockSupplierPaymentReview;
+let mockGetRuleNumber;
 jest.mock('../../db', () => ({
   get query() { return mockQuery; }
 }));
@@ -28,6 +29,7 @@ jest.mock('../../utils/logger', () => ({
 beforeEach(() => {
   mockQuery = jest.fn();
   mockSupplierPaymentReview = jest.fn().mockResolvedValue({ count: 0, items: [], truncated: false, basis: 'current_state_all_time' });
+  mockGetRuleNumber = jest.fn(async (_key, fallback) => fallback);
   jest.resetModules();
 });
 
@@ -38,6 +40,7 @@ function loadService() {
     child: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
   }));
   jest.mock('../../services/supplier-payment-review', () => ({ getSupplierPaymentReview: (...args) => mockSupplierPaymentReview(...args) }));
+  jest.mock('../../utils/rules', () => ({ getRuleNumber: (...args) => mockGetRuleNumber(...args) }));
   return require('../../services/signal-service');
 }
 
@@ -251,6 +254,144 @@ describe('GENERATORS.supplier_payment_review', () => {
   });
 });
 
+describe('GENERATORS.customer_payment_attention', () => {
+  test('cash pending devient observable au même seuil que le rappel canonique', async () => {
+    mockGetRuleNumber.mockResolvedValueOnce(36);
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{
+        id: 'order-cash',
+        reference: 'CMD-CASH',
+        payment_mode: 'cash_relais',
+        payment_status: 'pending',
+        reason: 'cash_payment_overdue',
+      }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig-cash' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.customer_payment_attention()).toEqual({ generated: 1, reminder_hours: 12 });
+    expect(mockGetRuleNumber).toHaveBeenCalledWith('CASH_PAYMENT_TIMEOUT_HOURS', 36);
+    expect(mockQuery.mock.calls[0][1]).toEqual([12]);
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[0]).toBe('customer_payment_attention');
+    expect(params[1]).toBe('warning');
+    expect(params[8]).toBe('finance');
+    expect(params[9]).toBe('order');
+    expect(params[10]).toBe('order-cash');
+    expect(JSON.parse(params[13])).toEqual(expect.objectContaining({ reason: 'cash_payment_overdue', reminder_hours: 12 }));
+  });
+
+  test('payment_status failed est immédiatement critique sans seuil inventé', async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{
+        id: 'order-failed',
+        reference: 'CMD-FAILED',
+        payment_mode: 'stripe_eur',
+        payment_status: 'failed',
+        reason: 'payment_failed',
+      }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig-failed' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    await GENERATORS.customer_payment_attention();
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[1]).toBe('critical');
+    expect(params[2]).toMatch(/Paiement client échoué/);
+    const meta = JSON.parse(params[13]);
+    expect(meta).toEqual(expect.objectContaining({ reason: 'payment_failed' }));
+    expect(meta).not.toHaveProperty('reminder_hours');
+  });
+});
+
+describe('GENERATORS.customs_declaration_pending', () => {
+  test('un colis arrivé avec shipment pending rend la douane ORANGE sans délai arbitraire', async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{
+        id: 'order-customs',
+        reference: 'CMD-CUSTOMS',
+        customs_shipment_id: 'cus-1',
+        customs_reference: 'CUS-REF-1',
+        customs_status: 'pending',
+      }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig-customs' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.customs_declaration_pending()).toEqual({ generated: 1 });
+    const [selectSql] = mockQuery.mock.calls[0];
+    expect(selectSql).toContain("cs.status::text = 'pending'");
+    expect(selectSql).toContain("p.status::text = 'arrived'");
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[0]).toBe('customs_declaration_pending');
+    expect(params[1]).toBe('warning');
+    expect(params[8]).toBe('customs');
+    expect(params[9]).toBe('order');
+    expect(params[10]).toBe('order-customs');
+  });
+
+  test('plus aucun dossier pending auto-résout la cause douane', async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rowCount: 1 });
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.customs_declaration_pending()).toEqual({ generated: 0 });
+    expect(mockQuery.mock.calls[1][1]).toEqual(['customs_declaration_pending', null]);
+  });
+});
+
+describe('GENERATORS.supplier_order_ambiguous', () => {
+  test('projette une ambiguïté fournisseur bloquée vers la commande cliente propriétaire', async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{
+        id: 'order-1',
+        reference: 'CMD-AMB',
+        purchase_order_id: 'po-amb',
+        provider: 'aliexpress',
+        created_at: '2026-10-07T10:00:00Z',
+      }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig-amb' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.supplier_order_ambiguous()).toEqual({ generated: 1 });
+
+    const [selectSql] = mockQuery.mock.calls[0];
+    expect(selectSql).toContain("e.operation = 'create_order'");
+    expect(selectSql).toContain("lc.outcome = 'ambiguous'");
+    expect(selectSql).toContain("lc.facts->>'replay_blocked'");
+    expect(selectSql).toContain("po.status = 'pending'");
+
+    const [, params] = mockQuery.mock.calls[1];
+    expect(params[0]).toBe('supplier_order_ambiguous');
+    expect(params[1]).toBe('critical');
+    expect(params[3]).toMatch(/po-amb.*aliexpress/i);
+    expect(params[8]).toBe('purchasing');
+    expect(params[9]).toBe('order');
+    expect(params[10]).toBe('order-1');
+    expect(JSON.parse(params[13])).toEqual(expect.objectContaining({
+      purchase_order_id: 'po-amb',
+      provider: 'aliexpress',
+      replay_blocked: true,
+    }));
+  });
+
+  test('condition disparue auto-résout les signaux de création ambiguë', async () => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rowCount: 2 });
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.supplier_order_ambiguous()).toEqual({ generated: 0 });
+    expect(mockQuery.mock.calls[1][1]).toEqual(['supplier_order_ambiguous', null]);
+  });
+
+  test('erreur DB reste non fatale pour le cycle de signaux', async () => {
+    mockQuery = jest.fn().mockRejectedValueOnce(new Error('db down'));
+    const { GENERATORS } = loadService();
+    expect(await GENERATORS.supplier_order_ambiguous()).toEqual({ generated: 0, error: 'db down' });
+  });
+});
+
 describe('GENERATORS.parcel_blocked', () => {
   test('aucune ligne → generated:0 et autoResolve global', async () => {
     mockQuery = jest.fn()
@@ -272,6 +413,9 @@ describe('GENERATORS.parcel_blocked', () => {
     const { GENERATORS } = loadService();
     const result = await GENERATORS.parcel_blocked();
     expect(result.generated).toBe(1);
+    const [selectSql] = mockQuery.mock.calls[0];
+    expect(selectSql).toContain("p.status::text NOT IN ('collected','cancelled')");
+    expect(selectSql).not.toMatch(/delivered|returned/);
     const [, params] = mockQuery.mock.calls[1];
     expect(params[1]).toBe('critical');
     expect(params[2]).toMatch(/Colis bloqué — TRK1/);
@@ -303,6 +447,22 @@ describe('GENERATORS.parcel_blocked', () => {
     const [, params] = mockQuery.mock.calls[1];
     expect(params[1]).toBe('info');
     expect(params[11]).toMatch(/Vérifier le suivi/);
+  });
+
+  test.each([
+    ['shipped', 'transitaire'],
+    ['in_transit', 'logistics'],
+    ['arrived', 'customs'],
+    ['available', 'relais'],
+    ['preparation', 'hub'],
+  ])('route le fait colis %s vers le bon owner sans créer un second générateur', async (status, owner) => {
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce({ rows: [{ id: 'p-owner', tracking_number: 'P-1', status, days_stuck: 6 }] })
+      .mockResolvedValueOnce({ rows: [{ id: 'sig-owner' }] })
+      .mockResolvedValueOnce({ rowCount: 0 });
+    const { GENERATORS } = loadService();
+    await GENERATORS.parcel_blocked();
+    expect(mockQuery.mock.calls[1][1][8]).toBe(owner);
   });
 
   test('erreur DB → catch non-fatal', async () => {

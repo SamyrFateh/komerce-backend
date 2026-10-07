@@ -206,6 +206,65 @@ describe('canonical reference resolver', () => {
     expect(mockSnapshot).not.toHaveBeenCalled();
   });
 
+  test('un owner existant sans commande devient un orphan explicite pour l autorité globale', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{
+        entity_type: 'PURCHASE_ORDER',
+        matched_reference: 'po-orphan',
+        canonical_id: 'po-orphan',
+      }] });
+
+    const result = await resolver.resolveReference('po-orphan', {
+      role: 'admin',
+      global: true,
+    });
+
+    expect(result).toEqual({
+      query: 'po-orphan',
+      found: true,
+      orphaned: true,
+      ambiguous: false,
+      matches: [],
+      orphans: [{
+        entity_type: 'PURCHASE_ORDER',
+        matched_reference: 'po-orphan',
+        canonical_id: 'po-orphan',
+        canonical_owner: 'purchasing',
+        reason: 'missing_customer_order_lineage',
+      }],
+    });
+    expect(mockSnapshot).not.toHaveBeenCalled();
+  });
+
+  test('un orphan sans marché prouvable n est jamais révélé à un opérateur scoped', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+
+    const result = await resolver.resolveReference('po-orphan', {
+      role: 'market_operator',
+      authorizedMarketIds: new Set(['market-cm']),
+    });
+
+    expect(result).toEqual({
+      query: 'po-orphan',
+      found: false,
+      matches: [],
+    });
+    expect(mockQuery).toHaveBeenCalledTimes(1);
+  });
+
+  test('la détection des orphans reste read-only et vérifie la lineage au lieu d inventer un statut', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await resolver.queryOrphans('po-orphan');
+    const sql = mockQuery.mock.calls[0][0];
+    expect(sql).toMatch(/FROM purchase_orders po/);
+    expect(sql).toMatch(/FROM hub_physical_units hpu/);
+    expect(sql).toMatch(/FROM parcels p/);
+    expect(sql).toMatch(/FROM customs_shipments cs/);
+    expect(sql).toMatch(/NOT EXISTS/);
+    expect(sql).not.toMatch(/INSERT|UPDATE|DELETE/i);
+  });
+
   test('la requête reste une résolution d’identité read-only sur les owners existants', async () => {
     mockQuery.mockResolvedValueOnce({ rows: [] });
     await resolver.queryMatches('K-104829');

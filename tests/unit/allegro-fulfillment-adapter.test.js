@@ -137,3 +137,8 @@ test('readOrderDetail relit le checkout vendeur et expose les faits fulfillment 
   });
   expect(out.facts).not.toHaveProperty('tracking_number');
 });
+
+
+test('Allegro ne revendique aucune sécurité de replay automatique', () => {
+  expect(adapter.supports_idempotent_replay).toBe(false);
+});

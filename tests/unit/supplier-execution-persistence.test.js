@@ -6,7 +6,7 @@
  * @test-requires none
  */
 
-const { persistSupplierOrderExecution } = require('../../services/supplier-execution-persistence');
+const { persistSupplierOrderExecution, recordSupplierCreateAmbiguity, hasBlockingSupplierCreateAmbiguity } = require('../../services/supplier-execution-persistence');
 
 function clientWith(rowsByCall) {
   const query = jest.fn();
@@ -125,4 +125,50 @@ test('le service canonique ne contient aucun champ natif CJ', () => {
     'utf8'
   );
   expect(src).not.toMatch(/shipmentOrderId|cjOrderCode|payId|CJ_/);
+});
+
+
+test('persiste une création ambiguë avec la décision de blocage de replay', async () => {
+  const client = clientWith([[]]);
+  await recordSupplierCreateAmbiguity(client, {
+    purchaseOrderId: 'po-amb',
+    provider: 'AliExpress',
+    evidence: {
+      provider_code: 'TIMEOUT',
+      provider_message: 'response lost',
+      error_name: 'TimeoutError',
+    },
+    replayBlocked: true,
+  });
+
+  const [sql, params] = client.query.mock.calls[0];
+  expect(sql).toContain("'create_order','ambiguous'");
+  expect(params.slice(0, 4)).toEqual(['po-amb', 'aliexpress', 'TIMEOUT', 'response lost']);
+  expect(JSON.parse(params[4])).toEqual({
+    replay_blocked: true,
+    supports_idempotent_replay: false,
+    error_name: 'TimeoutError',
+  });
+});
+
+test('le dernier create ambigu bloquant interdit le replay, un succès ultérieur le libère', async () => {
+  const blocked = clientWith([[{ outcome: 'ambiguous', facts: { replay_blocked: true } }]]);
+  await expect(hasBlockingSupplierCreateAmbiguity(blocked, {
+    purchaseOrderId: 'po-1',
+    provider: 'aliexpress',
+  })).resolves.toBe(true);
+
+  const recovered = clientWith([[{ outcome: 'observed', facts: {} }]]);
+  await expect(hasBlockingSupplierCreateAmbiguity(recovered, {
+    purchaseOrderId: 'po-1',
+    provider: 'aliexpress',
+  })).resolves.toBe(false);
+});
+
+test('une ambiguïté explicitement rejouable ne crée pas de verrou', async () => {
+  const client = clientWith([[{ outcome: 'ambiguous', facts: { replay_blocked: false } }]]);
+  await expect(hasBlockingSupplierCreateAmbiguity(client, {
+    purchaseOrderId: 'po-cj',
+    provider: 'cj',
+  })).resolves.toBe(false);
 });
