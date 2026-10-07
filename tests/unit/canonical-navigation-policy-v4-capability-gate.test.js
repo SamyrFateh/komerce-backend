@@ -212,6 +212,31 @@ describe('navigation-policy-v4 — canonical reference search', () => {
     expect(host.children[0].children[1].textContent).toContain('PURCHASING');
   });
 
+  test('renders canonical orphans as explicit non-clickable lineage anomalies', () => {
+    const nav = loadPolicy();
+    const doc = fakeDoc();
+    const host = doc.createElement('div');
+    nav.renderReferenceResults(doc, host, {
+      found: true,
+      orphaned: true,
+      matches: [],
+      orphans: [{
+        entity_type: 'PURCHASE_ORDER',
+        matched_reference: 'PO-ORPHAN',
+        canonical_id: 'po-orphan',
+        canonical_owner: 'purchasing',
+        reason: 'missing_customer_order_lineage',
+      }],
+    });
+
+    expect(host.children).toHaveLength(1);
+    expect(host.children[0].tagName).toBe('DIV');
+    expect(host.children[0].attributes.href).toBeUndefined();
+    expect(host.children[0].children[0].textContent).toMatch(/Référence orpheline/);
+    expect(host.children[0].children[1].textContent).toMatch(/Owner purchasing/);
+    expect(host.children[0].children[1].textContent).toMatch(/Rattachement à une commande introuvable/);
+  });
+
   test('empty and invalid destinations never generate unsafe links', () => {
     const nav = loadPolicy();
     const doc = fakeDoc();
