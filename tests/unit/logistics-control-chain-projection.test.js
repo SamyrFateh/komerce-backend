@@ -16,6 +16,16 @@ beforeEach(() => {
 });
 
 describe('logistics-control-chain-projection', () => {
+  test('la santé canonique expose GREEN / ORANGE / RED / UNKNOWN et une fenêtre de fraîcheur explicite', () => {
+    expect(projection.HEALTH).toEqual({
+      GREEN: 'GREEN',
+      ORANGE: 'ORANGE',
+      RED: 'RED',
+      UNKNOWN: 'UNKNOWN',
+    });
+    expect(projection.CONTROL_CHAIN_STALE_AFTER_MINUTES).toBe(30);
+  });
+
   test('le vocabulaire d’étapes reste aligné sur la doctrine canonique', () => {
     expect(projection.STAGES.map(stage => stage.key)).toEqual([
       'ORDER',
@@ -190,6 +200,20 @@ describe('logistics-control-chain-projection', () => {
     expect(sql).toContain("WHEN so.order_status = 'ordered' THEN 'PURCHASING'");
     expect(sql).toContain("WHEN so.order_status = 'preparation' AND COALESCE(hf.has_dispatched, FALSE) THEN 'FORWARDER'");
     expect(sql).not.toContain("OR so.payment_status = 'paid' THEN 'PURCHASING'");
+  });
+
+  test('GREEN exige un fait récent ; une observation vieillissante devient ORANGE et l absence de fait reste UNKNOWN', async () => {
+    mockQuery.mockResolvedValue({ rows: [] });
+    await projection.getControlChain({
+      market: { id: '11111111-1111-4111-8111-111111111111', code: 'CM' },
+    });
+
+    const [sql, params] = mockQuery.mock.calls[0];
+    expect(sql).toContain("THEN 'ORANGE'");
+    expect(sql).toContain("$5::int * INTERVAL '1 minute'");
+    expect(sql).toContain("IS NOT NULL THEN 'GREEN'");
+    expect(sql).toContain("ELSE 'UNKNOWN'");
+    expect(params[4]).toBe(30);
   });
 
   test('les incidents ouverts alimentent orange/rouge sans créer un statut dashboard', async () => {
