@@ -6,7 +6,7 @@
  * @criticality   critical
  * @inputs        persisted CJ supplier payment id + explicit operator authorization
  * @outputs       replay-safe provider payment execution + billingHistory real-debit proof
- * @depends       services/supplier-payment-orchestrator.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-fulfillment-adapter.js, services/suppliers/cj-purchasing-contract.js, services/suppliers/connectors/cj-connector.js
+ * @depends       services/supplier-payment-orchestrator.js, services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-fulfillment-adapter.js, services/suppliers/cj-purchasing-contract.js, services/suppliers/connectors/cj-connector.js, services/suppliers/provider-capability-certifications.js
  * @used-by       bounded operator flow / future admin action
  * @db-read       supplier_execution_payments, supplier_execution_orders, supplier_execution_groups
  * @db-write      supplier_execution_payments, supplier_execution_payment_proofs, supplier_execution_events
@@ -21,6 +21,7 @@ const { reconcileCjBillingHistory } = require('./cj-billing-history-reconciliati
 const adapter = require('./cj-fulfillment-adapter');
 const contract = require('./cj-purchasing-contract');
 const connector = require('./connectors/cj-connector');
+const { evaluateRuntimeCapability } = require('./provider-capability-certifications');
 
 const ABSOLUTE_MAX_USD = 20;
 
@@ -31,6 +32,16 @@ function text(value) {
 
 function guardAuthorization(context = {}, payment) {
   const env = context.env || process.env;
+  const certification = evaluateRuntimeCapability('cj', 'purchasing.real_debit', {
+    runtime_environment: env.KOMERCE_PROVIDER_EXECUTION_ENV,
+    ...(context.certification_registry ? { registry: context.certification_registry } : {}),
+  });
+  if (!certification.allowed) {
+    const error = new Error(certification.reason);
+    error.certification = certification;
+    throw error;
+  }
+
   const authorized = context.operator_authorized === true
     && env.KOMERCE_ALLOW_CJ_REAL_PAYMENT === '1';
 

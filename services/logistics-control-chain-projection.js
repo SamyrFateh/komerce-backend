@@ -37,13 +37,17 @@ const HEALTH = Object.freeze({
   GREEN: 'GREEN',
   ORANGE: 'ORANGE',
   RED: 'RED',
+  UNKNOWN: 'UNKNOWN',
 });
+
+const CONTROL_CHAIN_STALE_AFTER_MINUTES = 30;
 
 const STRUCTURAL_ALERT_MIN_ORDERS = 3;
 
 function healthRank(health) {
-  if (health === HEALTH.RED) return 2;
-  if (health === HEALTH.ORANGE) return 1;
+  if (health === HEALTH.RED) return 3;
+  if (health === HEALTH.ORANGE) return 2;
+  if (health === HEALTH.UNKNOWN) return 1;
   return 0;
 }
 
@@ -139,7 +143,7 @@ function normalizeExceptions(row) {
 }
 
 function projectRow(row) {
-  const health = Object.values(HEALTH).includes(row.health) ? row.health : HEALTH.GREEN;
+  const health = Object.values(HEALTH).includes(row.health) ? row.health : HEALTH.UNKNOWN;
   const exceptions = normalizeExceptions(row);
   return Object.freeze({
     order_reference: row.order_reference,
@@ -160,7 +164,7 @@ function projectRow(row) {
 async function getControlChain(options = {}) {
   const limit = Math.max(1, Math.min(Number(options.limit) || 250, 500));
   const orderId = options.orderId || null;
-  const params = [marketId(options.market), ACTIVE_ORDER_STATUSES, limit, orderId];
+  const params = [marketId(options.market), ACTIVE_ORDER_STATUSES, limit, orderId, CONTROL_CHAIN_STALE_AFTER_MINUTES];
 
   const { rows } = await db.query(`
     WITH scoped_orders AS (
@@ -385,7 +389,21 @@ async function getControlChain(options = {}) {
                WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'RED'
                WHEN ss.primary_severity IN ('urgent','critical','high') THEN 'RED'
                WHEN ss.primary_severity = 'warning' THEN 'ORANGE'
-               ELSE 'GREEN'
+               WHEN GREATEST(
+                 so.updated_at,
+                 COALESCE(pf.last_purchase_at, so.created_at),
+                 COALESCE(hf.last_hub_at, so.created_at),
+                 COALESCE(paf.last_parcel_at, so.created_at),
+                 COALESCE(cf.last_customs_at, so.created_at)
+               ) < NOW() - ($5::int * INTERVAL '1 minute') THEN 'ORANGE'
+               WHEN GREATEST(
+                 so.updated_at,
+                 COALESCE(pf.last_purchase_at, so.created_at),
+                 COALESCE(hf.last_hub_at, so.created_at),
+                 COALESCE(paf.last_parcel_at, so.created_at),
+                 COALESCE(cf.last_customs_at, so.created_at)
+               ) IS NOT NULL THEN 'GREEN'
+               ELSE 'UNKNOWN'
              END AS health,
              CASE
                WHEN COALESCE(hf.has_quarantine, FALSE) THEN 'hub_quarantine'
@@ -426,7 +444,7 @@ async function getControlChain(options = {}) {
            parcels_count
       FROM projected
      ORDER BY
-       CASE health WHEN 'RED' THEN 1 WHEN 'ORANGE' THEN 2 ELSE 3 END,
+       CASE health WHEN 'RED' THEN 1 WHEN 'ORANGE' THEN 2 WHEN 'UNKNOWN' THEN 3 ELSE 4 END,
        last_fact_at ASC,
        order_reference ASC
      LIMIT $3
@@ -462,6 +480,7 @@ module.exports = {
   STAGES,
   HEALTH,
   STRUCTURAL_ALERT_MIN_ORDERS,
+  CONTROL_CHAIN_STALE_AFTER_MINUTES,
   healthRank,
   buildStructuralAlerts,
   normalizeExceptions,

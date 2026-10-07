@@ -105,7 +105,7 @@ function loadCapabilities() {
 // existence est vérifiée par leur propre outillage (ex. scripts/gen-ownership.js côté
 // bout). Un manifest qui déclare repos.boutique / repos.dash documente l'intention
 // cross-repo ; ce script ne la valide pas, il ne ferait que produire de faux positifs.
-const BACKEND_FILE_GROUPS = new Set(['services', 'routes', 'middleware', 'utils', 'validators', 'core', 'migrations', 'tests', 'bootstrap', 'ci', 'db']);
+const BACKEND_FILE_GROUPS = new Set(['services', 'routes', 'middleware', 'utils', 'validators', 'core', 'migrations', 'tests', 'bootstrap', 'ci', 'workflows', 'db']);
 
 function declaredFiles(manifests) {
   const declared = new Map(); // file → [feature name, ...] (plusieurs entrées = violation d'unicité)
