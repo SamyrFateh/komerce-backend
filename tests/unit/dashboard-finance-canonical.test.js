@@ -134,10 +134,11 @@ test('Finance market applique le scope serveur aux métriques et projections', a
   const reviewCall = mockQuery.mock.calls.find(([sql]) => String(sql).includes('FROM supplier_execution_payments'));
   expect(reviewCall).toBeTruthy();
   expect(String(reviewCall[0])).toContain('EXISTS');
-  expect(String(reviewCall[0])).toContain('JOIN purchase_lines pl');
+  expect(String(reviewCall[0])).toContain('FROM purchase_lines pl');
   expect(String(reviewCall[0])).toContain('JOIN order_items oi');
   expect(String(reviewCall[0])).toContain('JOIN orders o');
   expect(String(reviewCall[0])).toContain('o.market_id = $1');
+  expect(String(reviewCall[0])).toContain("WHERE (status IN ('ambiguous', 'rejected') OR reconciliation_status = 'mismatched')");
   expect(reviewCall[1]).toEqual(['market-cm-id', 50]);
   expect(JSON.stringify(payload)).not.toContain('market-cm-id');
 });
