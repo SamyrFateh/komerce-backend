@@ -7,7 +7,7 @@
  * @inputs        persisted supplier payment + provider monetary evidence
  * @outputs       deterministic real-debit verification verdict
  * @depends       none
- * @used-by       future provider payment reconciliation runtime
+ * @used-by       services/suppliers/cj-billing-history-reconciliation.js, services/suppliers/cj-supplier-payment-runtime.js
  * @db-read       none
  * @db-write      none
  * @db-txn        none
