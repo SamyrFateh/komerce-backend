@@ -109,7 +109,17 @@ async function main(argv = process.argv) {
     },
   };
 
-  console.log('[dashboard-audit] ' + JSON.stringify(summary));
+  console.log('[dashboard-audit] env=' + summary.environment.env + ' market=' + summary.market.code + ' period=' + summary.commerce.period);
+  console.log('[dashboard-audit] pilotage ' + JSON.stringify(summary.pilotage));
+  console.log('[dashboard-audit] commerce ' + JSON.stringify(summary.commerce));
+  console.log('[dashboard-audit] operations ' + JSON.stringify({
+    kpis: summary.operations.kpis,
+    active_orders: summary.operations.active_orders,
+    critical_delays: summary.operations.critical_delays,
+    signals: summary.operations.signals,
+  }));
+  console.log('[dashboard-audit] chain ' + JSON.stringify(summary.operations.control_chain));
+  console.log('[dashboard-audit] finance ' + JSON.stringify(summary.finance));
 }
 
 if (require.main === module) {
