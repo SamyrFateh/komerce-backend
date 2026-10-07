@@ -82,3 +82,45 @@ test('par défaut le contrat public ne publie jamais l’UUID interne du paiemen
   expect(review.items[0]).not.toHaveProperty('payment_id');
   expect(JSON.stringify(review)).not.toContain('11111111-1111-4111-8111-111111111111');
 });
+
+
+test('market scope is proven only through PO -> line -> order lineage', async () => {
+  const q = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+  const result = await getSupplierPaymentReview({ limit: 25, market_id: 'market-km-id' }, q);
+
+  const [sql, params] = q.query.mock.calls[0];
+  const text = String(sql);
+  expect(text).toContain('AND EXISTS');
+  expect(text).toContain('FROM purchase_lines pl');
+  expect(text).toContain('JOIN order_items oi ON oi.id = pl.order_item_id');
+  expect(text).toContain('JOIN orders o ON o.id = oi.order_id');
+  expect(text).toContain('pl.purchase_order_id = supplier_execution_payments.purchase_order_id');
+  expect(text).toContain('pl.cancelled_at IS NULL');
+  expect(text).toContain('o.market_id = $1');
+  expect(text).toContain('LIMIT $2');
+  expect(params).toEqual(['market-km-id', 25]);
+  expect(result.basis).toBe('current_state_all_time_market_lineage');
+});
+
+test('global scope keeps the current population without market inference', async () => {
+  const q = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+  const result = await getSupplierPaymentReview({ limit: 25 }, q);
+
+  const [sql, params] = q.query.mock.calls[0];
+  const text = String(sql);
+  expect(text).not.toContain('JOIN order_items oi');
+  expect(text).not.toContain('o.market_id');
+  expect(text).toContain('LIMIT $1');
+  expect(params).toEqual([25]);
+  expect(result.basis).toBe('current_state_all_time');
+});
+
+test('null limit preserves the market parameter index without adding LIMIT', async () => {
+  const q = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+  await getSupplierPaymentReview({ limit: null, market_id: 'market-km-id' }, q);
+
+  const [sql, params] = q.query.mock.calls[0];
+  expect(String(sql)).toContain('o.market_id = $1');
+  expect(String(sql)).not.toContain('LIMIT $');
+  expect(params).toEqual(['market-km-id']);
+});
