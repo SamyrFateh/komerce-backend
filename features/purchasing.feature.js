@@ -154,6 +154,7 @@ module.exports = {
       'scripts/cj-p2-grouped-parent-sandbox-proof.js',
       'scripts/cj-billing-history-readonly-proof.js',
       'scripts/cj-real-debit-proof.js',
+      'scripts/cj-real-debit-canonical-proof.js',
       'scripts/check-supplier-execution-certification-manifest.js',
     ],
     tests: [
@@ -178,6 +179,7 @@ module.exports = {
       'tests/unit/cj-supplier-payment-runtime.test.js',
       'tests/unit/cj-billing-history-readonly-proof.test.js',
       'tests/unit/cj-real-debit-proof.test.js',
+      'tests/unit/cj-real-debit-canonical-proof.test.js',
       'tests/integration/supplier-payment-proofs-postgres.test.js',
       'tests/unit/supplier-execution-persistence.test.js',
       'tests/unit/supplier-execution-certification.test.js',
