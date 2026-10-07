@@ -1,0 +1,19 @@
+name: Audit arch drift probe
+on:
+  push:
+    branches:
+      - diag/arch-drift-audit-close
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run arch drift report
+        run: npm run arch:drift -- --report
