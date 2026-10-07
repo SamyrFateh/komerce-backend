@@ -280,7 +280,7 @@ describe('GENERATORS.supplier_order_ambiguous', () => {
     expect(params[8]).toBe('purchasing');
     expect(params[9]).toBe('order');
     expect(params[10]).toBe('order-1');
-    expect(params[13]).toEqual(expect.objectContaining({
+    expect(JSON.parse(params[13])).toEqual(expect.objectContaining({
       purchase_order_id: 'po-amb',
       provider: 'aliexpress',
       replay_blocked: true,
