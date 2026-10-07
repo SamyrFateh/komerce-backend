@@ -108,21 +108,28 @@ function envelopeFor(row) {
 
 function normalizeExceptions(row) {
   const causes = Array.isArray(row.exception_causes) ? row.exception_causes : [];
-  if (causes.length) {
-    return Object.freeze(causes.slice(0, 3).map(cause => Object.freeze({
-      code: cause.signal_type || cause.code,
-      summary: cause.summary || null,
-      owner_role: cause.owner_role || null,
-      severity: cause.severity || null,
-    })));
+  const normalized = causes.map(cause => ({
+    code: cause.signal_type || cause.code,
+    summary: cause.summary || null,
+    owner_role: cause.owner_role || null,
+    severity: cause.severity || null,
+  })).filter(cause => cause.code);
+
+  if (row.exception_code) {
+    const primary = {
+      code: row.exception_code,
+      summary: row.exception_summary || null,
+      owner_role: row.exception_owner_role || null,
+      severity: row.exception_severity || null,
+    };
+    const rest = normalized.filter(cause =>
+      cause.code !== primary.code
+      || cause.owner_role !== primary.owner_role
+    );
+    normalized.splice(0, normalized.length, primary, ...rest);
   }
-  if (!row.exception_code) return Object.freeze([]);
-  return Object.freeze([Object.freeze({
-    code: row.exception_code,
-    summary: row.exception_summary || null,
-    owner_role: row.exception_owner_role || null,
-    severity: row.exception_severity || null,
-  })]);
+
+  return Object.freeze(normalized.slice(0, 3).map(cause => Object.freeze(cause)));
 }
 
 function projectRow(row) {
