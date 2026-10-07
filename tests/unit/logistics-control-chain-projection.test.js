@@ -38,6 +38,9 @@ describe('logistics-control-chain-projection', () => {
       exception_code: 'hub_quarantine',
       exception_summary: 'Unité HUB en quarantaine',
       exception_owner_role: 'hub',
+      exception_causes: [
+        { code: 'supplier_delay', summary: 'Fournisseur en retard', owner_role: 'purchasing', severity: 'warning' },
+      ],
       purchase_order_refs: ['po-1'],
       hub_unit_refs: ['HU-001'],
       parcel_refs: [],
@@ -53,6 +56,20 @@ describe('logistics-control-chain-projection', () => {
         summary: 'Unité HUB en quarantaine',
         owner_role: 'hub',
       },
+      causes: [
+        {
+          code: 'hub_quarantine',
+          summary: 'Unité HUB en quarantaine',
+          owner_role: 'hub',
+          severity: 'critical',
+        },
+        {
+          code: 'supplier_delay',
+          summary: 'Fournisseur en retard',
+          owner_role: 'purchasing',
+          severity: 'warning',
+        },
+      ],
       envelope: { type: 'HUB_UNIT', refs: ['HU-001'] },
       split: false,
       lineage: {
@@ -71,6 +88,10 @@ describe('logistics-control-chain-projection', () => {
       exception_code: 'parcel_blocked',
       exception_summary: 'Retard transitaire',
       exception_owner_role: 'hub',
+      exception_causes: [
+        { code: 'parcel_blocked', summary: 'Retard transitaire', owner_role: 'hub', severity: 'warning' },
+        { code: 'customs_declaration_pending', summary: 'Douane à déclarer', owner_role: 'customs', severity: 'warning' },
+      ],
       purchase_order_refs: ['po-2'],
       hub_unit_refs: ['HU-002'],
       parcel_refs: ['KOM-P-1', 'KOM-P-2'],
@@ -136,6 +157,20 @@ describe('logistics-control-chain-projection', () => {
     }]);
 
     expect(projection.buildStructuralAlerts(impacted.slice(0, 2))).toEqual([]);
+  });
+
+  test('conserve les trois causes les plus graves au lieu de masquer les causes secondaires', async () => {
+    mockQuery.mockResolvedValue({ rows: [] });
+    await projection.getControlChain({
+      market: { id: '11111111-1111-4111-8111-111111111111', code: 'CM' },
+    });
+
+    const [sql] = mockQuery.mock.calls[0];
+    expect(sql).toContain('signal_rollup AS');
+    expect(sql).toContain('FILTER (WHERE rn <= 3)');
+    expect(sql).toContain('JSONB_AGG');
+    expect(sql).toContain('exception_causes');
+    expect(sql).not.toContain('LEFT JOIN ranked_signals rs ON rs.order_id = so.id AND rs.rn = 1');
   });
 
   test('la projection reste conservative entre Purchasing, Supplier et Hub', async () => {
