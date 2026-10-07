@@ -586,8 +586,6 @@ async function triggerPurchasing(orderId, options = {}) {
           provider,
           evidence: { error_name: error?.name || 'Error' },
           replayBlocked: true,
-        }).catch(guardError => {
-          log.error({ err: guardError, purchase_order_id: task.purchaseOrderId, provider }, 'Supplier replay guard persistence failed after post-commit error');
         });
       }
       log.error(`[PURCHASING] Auto-order post-commit ${replaySafe ? 'pending retry' : 'ambiguous blocked'} for ${task.purchaseOrderId}:`, error.message);
