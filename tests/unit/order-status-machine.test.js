@@ -404,6 +404,36 @@ describe('transitionOrderStatus() — gate douane (→ available)', () => {
   });
 });
 
+describe('transitionOrderStatus() — confirmation douane post-available', () => {
+  test('available confirme les shipments declared via la règle group-safe', async () => {
+    mockQuery
+      .mockResolvedValueOnce({ rows: [{
+        ...mockOrder,
+        status: 'in_transit',
+        pickup_secret_hash: 'already-set',
+        relais_id: 'relay-1',
+      }] })
+      .mockResolvedValueOnce({ rows: [] }) // gate customs: aucun pending
+      .mockResolvedValueOnce({ rows: [{}] }) // UPDATE orders -> available
+      .mockResolvedValueOnce({ rows: [{ id: 'cs-1', reference: 'CUS-1', status: 'confirmed' }] })
+      .mockResolvedValue({ rows: [] }); // history / side effects
+
+    const result = await transitionOrderStatus({
+      orderId: mockOrder.id,
+      newStatus: 'available',
+      actor: { id: 'admin-1', role: 'admin' },
+      source: 'patch',
+      dbClient: mockDb,
+    });
+
+    expect(result.success).toBe(true);
+    expect(String(mockQuery.mock.calls[3][0])).toContain('UPDATE customs_shipments cs');
+    expect(String(mockQuery.mock.calls[3][0])).toContain("cs.status = 'declared'");
+    expect(String(mockQuery.mock.calls[3][0])).toContain('NOT EXISTS');
+    expect(mockQuery.mock.calls[3][1]).toEqual([mockOrder.id]);
+  });
+});
+
 describe('transitionOrderStatus() — cancel_reason persisté', () => {
   test('cancelReason fourni → inclus dans le SET et les values de l\'UPDATE', async () => {
     mockQuery
