@@ -340,8 +340,10 @@
           "services/supplier-real-debit-verification.js",
           "services/supplier-payment-proof-persistence.js",
           "scripts/cj-real-debit-proof.js",
+          "scripts/cj-real-debit-canonical-proof.js",
           "tests/unit/cj-billing-history-reconciliation.test.js",
           "tests/unit/cj-real-debit-proof.test.js",
+          "tests/unit/cj-real-debit-canonical-proof.test.js",
           "services/suppliers/cj-supplier-payment-runtime.js",
           "tests/unit/cj-supplier-payment-runtime.test.js"
         ],
@@ -375,9 +377,11 @@
         "environment": "BOUNDED_RUNNER",
         "evidence": [
           "scripts/cj-real-debit-proof.js",
+          "scripts/cj-real-debit-canonical-proof.js",
           "services/suppliers/cj-billing-history-reconciliation.js",
           "docs/doctrine/DOCTRINE_SUPPLIER_PAYMENT_FACT.md",
           "tests/unit/cj-real-debit-proof.test.js",
+          "tests/unit/cj-real-debit-canonical-proof.test.js",
           "services/suppliers/cj-supplier-payment-runtime.js",
           "tests/unit/cj-supplier-payment-runtime.test.js"
         ],
