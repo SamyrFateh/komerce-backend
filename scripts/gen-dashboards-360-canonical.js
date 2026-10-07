@@ -424,7 +424,7 @@ function traceApiEdges(code) {
       // La signature du wrapper reste visible après masquage du corps :
       // l'exclure par le préfixe lexical plutôt qu'avec un lookbehind fragile.
       const prefix = maskedCode.slice(Math.max(0, m.index - 40), m.index);
-      if (/function\\s+$/.test(prefix)) continue;
+      if (/function\s+$/.test(prefix)) continue;
       const args = splitCallArgs(maskedCode, m.index + m[0].length);
       const arg = args[wrapper.argIndex];
       if (!arg) continue;
