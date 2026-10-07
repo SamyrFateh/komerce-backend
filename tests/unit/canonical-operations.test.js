@@ -10,6 +10,8 @@ const schemaContract = require('../../public/dashboards/canonical/js/dashboard-s
 const adminContextContract = require('../../public/dashboards/canonical/js/admin-context');
 const operations = require('../../public/dashboards/canonical/js/operations');
 const operationsDecision = require('../../public/dashboards/canonical/js/operations-decision');
+const fs = require('fs');
+const path = require('path');
 
 function payloadFixture() {
   return {
@@ -164,6 +166,16 @@ describe('LOT 2E-CANON — Operations vivant', () => {
       },
     ]);
     expect(operationsDecision.drillCards(operations, { role: 'admin' })).toHaveLength(2);
+  });
+
+  test('ne peint pas un faux panneau rassurant quand operations.signals est vide', () => {
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'operations-decision.js'),
+      'utf8'
+    );
+    expect(source).toContain('if (projectedSignals.length)');
+    expect(source).not.toContain("emptyText: 'Aucun incident opérationnel ouvert.'");
+    expect(operations.projectSignals({ signals: [] })).toEqual([]);
   });
 
   test('résout la source uniquement depuis AdminContext', () => {
