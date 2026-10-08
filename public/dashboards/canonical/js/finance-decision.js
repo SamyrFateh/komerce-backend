@@ -158,7 +158,8 @@
       },
       {
         key: 'margin', title: 'Marge', tone: 'positive',
-        metrics: [pair(payload, base, 'marge_consolidee', 'Marge consolidée')],
+        // Rang 1 : consolidée (réelle) ; rang 2 : estimée, explicitement non définitive.
+        metrics: [pair(payload, base, 'marge_consolidee', 'Marge consolidée (réelle)'), pair(payload, base, 'marge_estimee', 'Marge estimée — non définitive')],
       },
       {
         key: 'refunds', title: 'Remboursements', tone: 'violet',
@@ -274,6 +275,21 @@
       value: base.formatKmf(row.amount_kmf),
       tone: 'violet',
     }));
+  }
+
+  // L'absence de la file n'est jamais muette : vide (vue globale) ≠ non fournie (vue marché).
+  function supplierReviewState(payload) {
+    const review = payload && payload.supplier_payment_review;
+    if (review === undefined || review === null) {
+      return {
+        state: 'not-provided',
+        message: 'Non disponible dans cette vue : la file de revue fournisseur est centrale (vue globale uniquement), faute de ventilation canonique multi-marché.',
+      };
+    }
+    const rows = Array.isArray(review.items) ? review.items : [];
+    return rows.length
+      ? { state: 'rows', message: null }
+      : { state: 'empty', message: 'Aucun paiement fournisseur ambigu, rejeté ou mismatched.' };
   }
 
   function supplierPaymentReviewItems(payload, base) {
@@ -414,6 +430,12 @@
       const section = cardSection(doc, 'Trésorerie · paiements fournisseur à revoir', description, 'finance-supplier-payments');
       decisionUi.RankedList.render(section.body, { items: supplierPayments });
       dashboard.appendChild(section.section);
+    } else {
+      // L'absence n'est jamais muette : file vide (vue globale) ≠ file non fournie (vue marché).
+      const state = supplierReviewState(payload);
+      const section = cardSection(doc, 'Trésorerie · paiements fournisseur à revoir', state.message, 'finance-supplier-payments');
+      section.section.setAttribute('data-supplier-review-state', state.state);
+      dashboard.appendChild(section.section);
     }
 
     const incompleteCostOrders = incompleteCostOrderItems(payload, base);
@@ -522,6 +544,7 @@
     relayItems,
     refundItems,
     supplierPaymentReviewItems,
+    supplierReviewState,
     drillCards,
     trust,
     render,
