@@ -33,6 +33,7 @@ const DASHBOARD_SPECS = [
   'dashboard-role-matrix',
   'order-360-lineage',
   'b9-ui-truth-paths',
+  'control-tower-visual',
 ];
 
 module.exports = defineConfig({
