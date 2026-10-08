@@ -38,3 +38,16 @@ describe('decision visual — operations control tower', () => {
     expect(css).toMatch(/\.kmc-control-order-ref\s*\{[^}]*text-overflow:\s*ellipsis/s);
   });
 });
+
+describe('decision visual — UNKNOWN distinct de GREEN', () => {
+  test('is-unknown utilise le gris neutre des tokens, sans le vert ni l’atténuation du sain', () => {
+    const block = (css.match(/\.kmc-control-order\.is-unknown\s*\{([^}]*)\}/s) || [])[1] || '';
+    expect(block).toContain('--health-unknown-fg');
+    expect(block).not.toContain('--kmc-positive');
+    expect(block).not.toMatch(/opacity/);
+  });
+  test('l’état porte une icône en plus de la couleur', () => {
+    expect(css).toMatch(/\.kmc-control-order-state\s*\{/);
+  });
+});
+

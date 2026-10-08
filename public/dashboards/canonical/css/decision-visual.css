@@ -559,6 +559,26 @@
   font-weight: 800;
 }
 
+.kmc-control-order.is-unknown {
+  --control-health: var(--health-unknown-fg);
+  background: var(--health-unknown-bg);
+}
+
+.kmc-control-order-state {
+  flex: 0 0 auto;
+  color: var(--control-health);
+  font-weight: 800;
+}
+
+.kmc-control-order-cause {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--kmc-muted);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .kmc-control-order:hover,
 .kmc-control-order:focus-visible {
   opacity: 1;
