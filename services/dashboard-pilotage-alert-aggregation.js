@@ -74,6 +74,7 @@ function summarizeControlChain(chain) {
       owner_role: row.owner_role || null,
       order_count: Number(row.order_count) || 0,
       order_references: Object.freeze(Array.isArray(row.order_references) ? [...row.order_references] : []),
+      href: '/admin/operations#operations-control-chain',
     }))),
   });
 }
