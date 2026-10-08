@@ -833,7 +833,7 @@ const KNOWN_RESPONSES = {
     get: { fields: ['actor','access'], source: 'test' }
   },
   '/api/admin/dashboard/unified/market/{marketCode}': {
-    get: { fields: ['scope','kpis_global','view_blocks','economic_flow','principles','system_alerts','data_quality'], source: 'test' }
+    get: { fields: ['scope','kpis_global','view_blocks','economic_flow','principles','control_chain','system_alerts','data_quality'], source: 'test' }
   },
   // AUTH-2/AUTH-4 — WebAuthn option shapes come from services/webauthn-service.js.
   '/api/auth/passkey/register/options': { post: { fields: ['challenge','rp','user','pubKeyCredParams','timeout','attestation','excludeCredentials','authenticatorSelection','extensions'], source: 'service-read' } },
