@@ -46,6 +46,7 @@
     "dashboards:legacy:360": "node scripts/gen-dashboards-360.js",
     "dashboards:legacy:360:check": "node scripts/gen-dashboards-360.js --check",
     "dashboards:legacy:360:save": "node scripts/gen-dashboards-360.js --save",
+    "css:tokens-guard": "node scripts/css-tokens-guard.js",
     "dashboards:canonical:360": "node scripts/gen-dashboards-360-canonical.js",
     "dashboards:canonical:360:check": "node scripts/gen-dashboards-360-canonical.js --check-zero && node scripts/check-dashboards-360-canonical-zero.js --tmp",
     "dashboards:canonical:360:save": "node scripts/gen-dashboards-360-canonical.js && node scripts/check-dashboards-360-canonical-zero.js",

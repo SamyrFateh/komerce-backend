@@ -355,6 +355,184 @@
     },
   });
 
+  // ── Primitives de pilotage (B3) : 4 états de santé, causes, fraîcheur, tableau
+  // dense, squelette, contrôle inactif. Elles REÇOIVENT et AFFICHENT : aucune
+  // ne calcule une vérité métier (santé, péremption, droit d'agir).
+  // Un état inconnu ou absent est UNKNOWN (gris « non observé »), jamais GREEN.
+  const HEALTH_STATES = Object.freeze({
+    GREEN: Object.freeze({ key: 'green', icon: '✓', label: 'Sain' }),
+    ORANGE: Object.freeze({ key: 'orange', icon: '▲', label: 'À surveiller' }),
+    RED: Object.freeze({ key: 'red', icon: '✖', label: 'Bloqué' }),
+    UNKNOWN: Object.freeze({ key: 'unknown', icon: '?', label: 'Non observé' }),
+  });
+
+  function healthState(value) {
+    const key = String(value == null ? '' : value).trim().toUpperCase();
+    return Object.prototype.hasOwnProperty.call(HEALTH_STATES, key) ? HEALTH_STATES[key] : HEALTH_STATES.UNKNOWN;
+  }
+
+  function parseDate(value) {
+    if (value == null || value === '') return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const HealthBadge = Object.freeze({
+    STATES: HEALTH_STATES,
+    stateFor: healthState,
+    render(container, config = {}) {
+      clear(container, 'HealthBadge');
+      const doc = documentFor(container);
+      const state = healthState(config.health);
+      const badge = doc.createElement('span');
+      badge.className = `kmc-health is-${state.key}`;
+      badge.setAttribute('data-health', state.key.toUpperCase());
+      // Jamais la couleur seule : icône + libellé.
+      badge.appendChild(text(doc, 'span', 'kmc-health-icon', state.icon));
+      badge.appendChild(text(doc, 'span', 'kmc-health-label', state.label));
+      if (state.key === 'orange' || state.key === 'red') {
+        if (config.cause) badge.appendChild(text(doc, 'span', 'kmc-health-cause', config.cause));
+        const owner = config.owner ? link(doc, config.href, config.owner, 'kmc-health-owner') : null;
+        // Une alerte sans propriétaire est elle-même un défaut : on l'affiche.
+        badge.appendChild(owner || text(doc, 'span', 'kmc-health-owner is-missing', 'Propriétaire non défini'));
+      }
+      if (config.observedAt !== undefined) {
+        const stamp = doc.createElement('span');
+        stamp.className = 'kmc-health-fresh';
+        FreshnessStamp.render(stamp, { observedAt: config.observedAt, stale: config.stale, staleAfterMinutes: config.staleAfterMinutes, now: config.now });
+        badge.appendChild(stamp);
+      }
+      container.appendChild(badge);
+      return badge;
+    },
+  });
+
+  const CauseList = Object.freeze({
+    MAX: 3,
+    render(container, config = {}) {
+      clear(container, 'CauseList');
+      const doc = documentFor(container);
+      const all = Array.isArray(config.exceptions) ? config.exceptions : [];
+      const list = doc.createElement('ul');
+      list.className = 'kmc-cause-list';
+      list.setAttribute('data-cause-count', String(all.length));
+      all.slice(0, CauseList.MAX).forEach(item => {
+        const row = doc.createElement('li');
+        const state = healthState(item && item.health);
+        row.className = `kmc-cause is-${state.key}`;
+        row.appendChild(text(doc, 'span', 'kmc-health-icon', state.icon));
+        row.appendChild(text(doc, 'span', 'kmc-cause-text', (item && (item.cause || item.label || item.code)) || 'Cause non précisée'));
+        if (item && item.owner) optional(row, link(doc, item.href, item.owner, 'kmc-health-owner'));
+        list.appendChild(row);
+      });
+      if (all.length > CauseList.MAX) {
+        list.appendChild(text(doc, 'li', 'kmc-cause-more', `+ ${all.length - CauseList.MAX} autre(s)`));
+      }
+      container.appendChild(list);
+      return list;
+    },
+  });
+
+  // Le seuil de péremption appartient au serveur (CONTROL_CHAIN_STALE_AFTER_MINUTES) :
+  // il est reçu en entrée (`stale` ou `staleAfterMinutes`), jamais redéfini ici.
+  const FreshnessStamp = Object.freeze({
+    render(container, config = {}) {
+      clear(container, 'FreshnessStamp');
+      const doc = documentFor(container);
+      const observed = parseDate(config.observedAt);
+      const node = doc.createElement('time');
+      if (!observed) {
+        node.className = 'kmc-fresh is-unknown';
+        node.setAttribute('data-fresh', 'unknown');
+        node.textContent = 'Jamais observé';
+        container.appendChild(node);
+        return node;
+      }
+      const now = parseDate(config.now) || new Date();
+      const ageMin = Math.max(0, Math.round((now.getTime() - observed.getTime()) / 60000));
+      let stale = null;
+      if (typeof config.stale === 'boolean') stale = config.stale;
+      else if (Number.isFinite(Number(config.staleAfterMinutes)) && Number(config.staleAfterMinutes) > 0) stale = ageMin > Number(config.staleAfterMinutes);
+      node.className = `kmc-fresh${stale === true ? ' is-stale' : ''}`;
+      node.setAttribute('data-fresh', stale === true ? 'stale' : stale === false ? 'fresh' : 'unjudged');
+      node.setAttribute('datetime', observed.toISOString());
+      const age = ageMin < 1 ? 'à l’instant' : ageMin < 60 ? `il y a ${ageMin} min` : ageMin < 1440 ? `il y a ${Math.floor(ageMin / 60)} h` : `il y a ${Math.floor(ageMin / 1440)} j`;
+      node.textContent = stale === true ? `Observé ${age} · périmé` : `Observé ${age}`;
+      container.appendChild(node);
+      return node;
+    },
+  });
+
+  const DenseTable = Object.freeze({
+    render(container, config = {}) {
+      clear(container, 'DenseTable');
+      const doc = documentFor(container);
+      const columns = Array.isArray(config.columns) ? config.columns : [];
+      const rows = Array.isArray(config.rows) ? config.rows : [];
+      const table = doc.createElement('table');
+      table.className = 'kmc-dense-table';
+      const head = doc.createElement('thead');
+      const headRow = doc.createElement('tr');
+      columns.forEach(col => {
+        const th = text(doc, 'th', col.numeric ? 'is-numeric' : '', col.label || col.key);
+        th.setAttribute('scope', 'col');
+        headRow.appendChild(th);
+      });
+      head.appendChild(headRow);
+      table.appendChild(head);
+      const body = doc.createElement('tbody');
+      rows.forEach(row => {
+        const tr = doc.createElement('tr');
+        columns.forEach(col => {
+          const raw = row ? row[col.key] : null;
+          const td = text(doc, 'td', col.numeric ? 'is-numeric' : '', raw == null || raw === '' ? '—' : raw);
+          // Dégradation mobile par colonne : le libellé voyage avec la cellule.
+          td.setAttribute('data-label', col.label || col.key);
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+      table.appendChild(body);
+      container.appendChild(table);
+      return table;
+    },
+  });
+
+  const Skeleton = Object.freeze({
+    SHAPES: Object.freeze(['line', 'card', 'table']),
+    render(container, config = {}) {
+      clear(container, 'Skeleton');
+      const doc = documentFor(container);
+      const shape = Skeleton.SHAPES.includes(config.shape) ? config.shape : 'line';
+      const node = doc.createElement('div');
+      node.className = `kmc-skeleton is-${shape}`;
+      node.setAttribute('aria-busy', 'true');
+      node.setAttribute('aria-label', 'Chargement');
+      node.setAttribute('data-skeleton', shape);
+      container.appendChild(node);
+      return node;
+    },
+  });
+
+  // Un contrôle non actionnable ne rend AUCUN bouton : seulement sa raison.
+  const DisabledControl = Object.freeze({
+    render(container, config = {}) {
+      clear(container, 'DisabledControl');
+      const doc = documentFor(container);
+      if (config.actionable === false) {
+        const note = text(doc, 'span', 'kmc-disabled-reason', config.reason || 'Action indisponible');
+        note.setAttribute('data-disabled-reason', '');
+        container.appendChild(note);
+        return note;
+      }
+      const button = text(doc, 'button', 'kmc-action', config.label || 'Agir');
+      button.setAttribute('type', 'button');
+      if (config.href) button.setAttribute('data-href', String(config.href));
+      container.appendChild(button);
+      return button;
+    },
+  });
+
   return Object.freeze({
     DecisionStrip,
     SummaryCards,
@@ -365,5 +543,11 @@
     PriorityList,
     InfoList,
     TrustFooter,
+    HealthBadge,
+    CauseList,
+    FreshnessStamp,
+    DenseTable,
+    Skeleton,
+    DisabledControl,
   });
 });
