@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-08T05:34:12.801Z",
+  "generatedAt": "2026-10-08T09:13:01.129Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 704,
-    "protected": 649,
+    "total": 705,
+    "protected": 650,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2557,6 +2557,15 @@
       "roles": [
         "admin",
         "sourcing"
+      ]
+    },
+    {
+      "key": "GET /api/agent/action-center",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_hub",
+        "agent_relais",
+        "agent_transitaire"
       ]
     },
     {

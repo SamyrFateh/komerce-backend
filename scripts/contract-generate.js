@@ -202,6 +202,8 @@ const ROUTE_SCHEMA_MAP = [
   { prefix: '/api/admin/entities/suppliers/{supplierId}', method: 'get', schema: null },
   // Providers & certifications — projection read-only du registre de preuves + décision runtime
   { prefix: '/api/admin/providers/capabilities', method: 'get', schema: null },
+  // Action Center agent — projection bornée par rôle + relais (session serveur)
+  { prefix: '/api/agent/action-center', method: 'get', schema: null },
   // LOT 4A — Canonical Operations / Hub-Relais Workspace (single-market actions)
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}', method: 'get', schema: null },
   { prefix: '/api/admin/workspaces/operations/market/{marketCode}/orders/{reference}/mark-ordered', method: 'post', schema: null },
@@ -782,6 +784,9 @@ const KNOWN_RESPONSES = {
   // LOT 4 — réponse Supplier 360 read-only consommée par Canonical.
   '/api/admin/entities/suppliers/{supplierId}': {
     get: { fields: ['supplier','mappings','purchase_orders','execution','payments','data_quality'], source: 'test' }
+  },
+  '/api/agent/action-center': {
+    get: { fields: ['role','owner_roles','relay_bound','total','signals'], source: 'test' }
   },
   '/api/admin/providers/capabilities': {
     get: { fields: ['runtime_environment','runtime_environment_error','authority','activation_notice','source','providers'], source: 'test' }

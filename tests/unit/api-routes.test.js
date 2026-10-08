@@ -22,3 +22,8 @@ test('monte /api/admin/providers sur le routeur de capacités certifiées', () =
   expect(source).toContain("require('../routes/admin-providers-capabilities')");
   expect(source).toContain("app.use('/api/admin/providers',   adminProvidersCapabilitiesRouter)");
 });
+
+test('monte /api/agent/action-center (Action Center agent borné par rôle et périmètre)', () => {
+  expect(source).toContain("require('../routes/agent-action-center')");
+  expect(source).toContain("app.use('/api/agent/action-center', agentActionCenterRouter)");
+});

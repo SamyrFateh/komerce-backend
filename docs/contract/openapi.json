@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 0,
-    "total_routes": 643,
+    "total_routes": 644,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -12000,6 +12000,51 @@
                       "x-observed": true
                     },
                     "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/agent/action-center": {
+      "get": {
+        "summary": "GET /api/agent/action-center",
+        "x-route-file": "routes/agent-action-center.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "owner_roles": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "relay_bound": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "signals": {
                       "type": "string",
                       "x-observed": true
                     }
