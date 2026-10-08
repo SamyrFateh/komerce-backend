@@ -89,6 +89,8 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] {
   gap: 14px;
   padding: 24px 28px 34px;
   font-family: var(--ct-font);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
   background:
     radial-gradient(circle at 78% 0%, rgb(219 234 254 / 0.58), transparent 30%),
     linear-gradient(180deg, #f7fbff 0%, #f8fafc 36%, #f6f8fb 100%);
@@ -197,7 +199,8 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decisio
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-card-helper {
   color: var(--ct-muted);
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 /* Shared pilotage sections */
@@ -219,7 +222,8 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decisio
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-dashboard-section-copy {
   color: var(--ct-muted);
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 /* Structural causes — deliberate visual gravity */
@@ -271,7 +275,9 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-causes .kmc-priority-helper {
-  color: #a9bad0;
+  color: #b7c6da;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-causes .kmc-priority-badge {
@@ -395,7 +401,8 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-actions .kmc-priority-helper {
   color: var(--ct-muted);
-  font-size: 10px;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-actions .kmc-priority-row.is-critical .kmc-priority-check {
