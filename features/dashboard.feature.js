@@ -672,6 +672,7 @@ module.exports = {
       'tests/unit/canonical-order-360-app.test.js',
       'tests/unit/canonical-order-360-boundary.test.js',
       'tests/unit/canonical-order-360.test.js',
+      'tests/unit/admin-providers-capabilities.test.js',
       'tests/unit/provider-certification-overview.test.js',
       'tests/unit/providers-admin.test.js',
       'tests/unit/canonical-pilotage.test.js',

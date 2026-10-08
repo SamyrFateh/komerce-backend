@@ -13,3 +13,8 @@ test('canonical app route Supplier 360 vers sa surface dédiée',()=>{
   expect(canonicalApp).toContain("return SURFACES.SUPPLIER_360");
   expect(canonicalApp).toContain('KomerceCanonicalSupplier360.mount');
 });
+
+test('canonical app route Providers (Administration) vers sa surface dédiée', () => {
+  expect(canonicalApp).toContain("PROVIDERS_ADMIN: 'providers-admin'");
+  expect(canonicalApp).toContain("if (path === '/admin/providers') return SURFACES.PROVIDERS_ADMIN");
+});

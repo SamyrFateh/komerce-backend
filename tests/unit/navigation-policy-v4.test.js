@@ -14,3 +14,9 @@ test('navigation policy V4 porte la taxonomie métier cible complète', () => {
   expect(source).toContain("id: 'workspace-sourcing'");
   expect(source).toContain("id: 'entity-suppliers'");
 });
+
+test('Administration expose l’entrée Providers (lecture seule)', () => {
+  const source = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/navigation-policy-v4.js'), 'utf8');
+  expect(source).toContain("'admin-providers'");
+  expect(source).toContain('/admin/providers');
+});
