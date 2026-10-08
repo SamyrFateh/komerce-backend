@@ -3,8 +3,12 @@
  * Presentation only. Business health, counts, causes and ownership stay server-authoritative.
  */
 
-/* Shared shell foundation — visual language validated from the control-tower mock. */
+/* Shared shell foundation — measured from the historical control-tower.html. */
+body.kmc-shell-v4 {
+  --kmc-shell-sidebar-width: 260px;
+}
 body.kmc-shell-v4 > .kmc-admin-navigation {
+  width: 260px;
   background: #0f172a;
   color: #ffffff;
   border-right: 3px solid #3b82f6;
@@ -22,9 +26,16 @@ body.kmc-shell-v4 .kmc-admin-home-label {
   background-clip: text;
 }
 
-body.kmc-shell-v4 .kmc-admin-home::after,
+body.kmc-shell-v4 .kmc-admin-home::after {
+  color: #64748b;
+}
 body.kmc-shell-v4 .kmc-admin-sidebar-group-label {
+  padding: 16px 20px 6px;
   color: #475569;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: 1.5px;
 }
 
 body.kmc-shell-v4 .kmc-admin-sidebar-group + .kmc-admin-sidebar-group {
@@ -32,6 +43,9 @@ body.kmc-shell-v4 .kmc-admin-sidebar-group + .kmc-admin-sidebar-group {
 }
 
 body.kmc-shell-v4 .kmc-admin-primary-link {
+  min-height: 37px;
+  height: 37px;
+  padding: 9px 20px;
   color: #94a3b8;
   font-size: 14px;
   font-weight: 400;
@@ -205,8 +219,8 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decisio
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-card-helper {
   color: var(--ct-muted);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 11.52px;
+  line-height: normal;
 }
 
 /* Shared pilotage sections */
@@ -244,7 +258,8 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-causes .kmc-decision-dashboard-section-title {
   color: var(--ct-ink);
-  font-size: 17px;
+  font-size: 14.08px;
+  font-weight: 700;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-causes .kmc-decision-dashboard-section-copy {
@@ -275,14 +290,14 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-causes .kmc-priority-title {
   color: var(--ct-ink);
-  font-size: 13px;
-  font-weight: 650;
+  font-size: 12.8px;
+  font-weight: 600;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-causes .kmc-priority-helper {
   color: var(--ct-muted);
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 11.52px;
+  line-height: normal;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-causes .kmc-priority-badge {
