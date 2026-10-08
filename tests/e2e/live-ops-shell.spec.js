@@ -54,12 +54,13 @@ test.describe('Coque Live — menu dédié et noir complet', () => {
       id: el.getAttribute('data-dashboard'), label: el.textContent.trim(), active: el.classList.contains('is-active'), href: el.getAttribute('href'),
     })));
     const ids = links.map((l) => l.id);
-    expect(ids).toContain('live');
-    expect(ids.indexOf('live')).toBe(ids.indexOf('operations') + 1);
-    const live = links.find((l) => l.id === 'live');
+    expect(ids).toContain('live-import-runtime');
+    // Le groupe Live suit immédiatement le groupe Flux (Commerce, Commandes & logistique, Finance).
+    expect(ids.indexOf('live-import-runtime')).toBe(ids.indexOf('flow-finance') + 1);
+    const live = links.find((l) => l.id === 'live-import-runtime');
     expect(live.active).toBe(true);
     expect(live.href).toBe('/admin/import-runtime');
-    expect(links.find((l) => l.id === 'operations').active).toBe(false);
+    expect(links.find((l) => l.id === 'flow-operations').active).toBe(false);
   });
 
   test('sidebar, barre du haut, recherche et contenu sont noirs (aucune surface claire)', async ({ page }) => {
@@ -126,9 +127,9 @@ test.describe('Coque Live — menu dédié et noir complet', () => {
 });
 
 test.describe('Coque Live — rôle sourcing', () => {
-  test('ne voit que Live (aucun faux Dashboard, pas d’Opérations)', async ({ page }) => {
+  test('ne voit que son workspace Sourcing et le cockpit Live (aucun faux Dashboard, pas d’Opérations)', async ({ page }) => {
     await mountShell(page, { role: 'sourcing' });
     const ids = await page.$$eval('.kmc-admin-primary-link', (els) => els.map((el) => el.getAttribute('data-dashboard')));
-    expect(ids).toEqual(['live']);
+    expect(ids).toEqual(['live-import-runtime', 'workspace-sourcing']);
   });
 });

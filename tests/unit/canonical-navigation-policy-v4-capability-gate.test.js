@@ -120,16 +120,18 @@ describe('navigation-policy-v4 — domaine Live (coque noire des cockpits opéra
 
 
 describe('navigation-policy-v4 — grouped sidebar information architecture', () => {
-  test('admin sees six groups with existing destinations only', () => {
+  test('admin sees seven groups with existing destinations only', () => {
     const nav = loadPolicy();
     const groups = nav.sidebarGroupsFor({ role: 'admin' }, null);
     expect(groups.map(group => group.id)).toEqual([
-      'pilot', 'flows', 'entities', 'workspaces', 'markets', 'administration',
+      'pilot', 'flows', 'live', 'entities', 'workspaces', 'markets', 'administration',
     ]);
     expect(groups.find(group => group.id === 'pilot').items.map(item => item.label))
       .toEqual(['Tour de contrôle', 'Action Center']);
     expect(groups.find(group => group.id === 'flows').items.map(item => item.label))
       .toEqual(['Commerce', 'Commandes & logistique', 'Finance']);
+    expect(groups.find(group => group.id === 'live').items.map(item => item.href))
+      .toEqual(['/admin/import-runtime', '/admin/hub-live', '/admin/relais-live']);
     expect(groups.find(group => group.id === 'entities').items.map(item => item.label))
       .toEqual(['Commandes', 'Produits', 'Fournisseurs', 'Clients']);
     expect(groups.flatMap(group => group.items).some(item => item.href === '/admin/suppliers')).toBe(true);
@@ -159,6 +161,14 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(transitaire.map(group => group.id)).toEqual(['pilot', 'workspaces']);
     expect(transitaire[0].items.map(item => item.id)).toEqual(['action-center']);
     expect(transitaire[1].items.map(item => item.id)).toEqual(['workspace-shipping']);
+
+    // Les cockpits Live restent accessibles depuis la sidebar, chacun à son seul rôle.
+    const ids = role => nav.sidebarGroupsFor({ role }, null).flatMap(group => group.items.map(item => item.id));
+    expect(ids('agent_hub')).toContain('live-hub');
+    expect(ids('agent_hub')).not.toContain('live-relais');
+    expect(ids('agent_relais')).toContain('live-relais');
+    expect(ids('agent_transitaire').filter(id => id.startsWith('live-'))).toEqual([]);
+    expect(ids('sourcing').filter(id => id.startsWith('live-'))).toEqual(['live-import-runtime']);
 
     const finance = nav.sidebarGroupsFor({ role: 'finance' }, null);
     expect(finance.map(group => group.id)).toEqual(['workspaces']);
