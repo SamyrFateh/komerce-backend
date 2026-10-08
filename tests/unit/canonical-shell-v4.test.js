@@ -28,3 +28,8 @@ describe('canonical-shell-v4 grouped sidebar', () => {
     expect(css).toContain('.kmc-admin-reference-result');
   });
 });
+
+test('shell-v4 ne porte plus le fond navy de la sidebar (surchargé par la couche Legacy)', () => {
+  const css = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/css/canonical-shell-v4.css'), 'utf8');
+  expect(css).not.toMatch(/background:\s*#102143/);
+});

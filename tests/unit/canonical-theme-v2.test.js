@@ -58,3 +58,9 @@ describe('Canonical Theme V2 — convergence visuelle', () => {
     expect(css).not.toMatch(/market_id|marketId|price_kmf|supplier_order_identity/);
   });
 });
+
+test('theme-v2 ne redéclare plus de propriété entièrement surchargée par la couche Legacy', () => {
+  const css = read('public/dashboards/canonical/css/canonical-theme-v2.css');
+  expect(css).toContain('.kmc-admin-secondary-link.is-active');
+  expect(css.length).toBeGreaterThan(0);
+});
