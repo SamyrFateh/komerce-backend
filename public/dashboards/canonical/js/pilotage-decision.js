@@ -61,8 +61,6 @@
     const critical = metric(payload, 'alertes_critiques');
     const attention = metric(payload, 'points_attention');
     const incomplete = incompleteCost(payload);
-    const qualityWarnings = payload && payload.data_quality && Array.isArray(payload.data_quality.warnings)
-      ? payload.data_quality.warnings.length : 0;
 
     if (critical) items.push({
       key: 'critical-open', label: 'Critiques ouvertes', helper: 'Nécessitent une action immédiate',
@@ -78,11 +76,7 @@
       key: 'costing-incomplete', label: 'Problèmes costing', helper: incomplete.label || 'Coûts incomplets',
       value: display(base, incomplete), tone: Number(incomplete.value) > 0 ? 'violet' : 'positive', icon: '¤',
     });
-    if (qualityWarnings) items.push({
-      key: 'data-quality', label: 'Qualité des données', helper: 'Warnings pouvant affecter la décision',
-      value: qualityWarnings, tone: 'warning', icon: 'i',
-    });
-    return items.slice(0, 4);
+    return items.slice(0, 3);
   }
 
   function summaryCards(payload, base) {
@@ -107,6 +101,55 @@
       label: stage.label || 'Étape',
       helper: stage.key && base.FLOW_DESTINATIONS ? base.FLOW_DESTINATIONS[stage.key] : undefined,
     }));
+  }
+
+  function structuralCauses(payload) {
+    const chain = payload && payload.control_chain && typeof payload.control_chain === 'object' ? payload.control_chain : {};
+    return (Array.isArray(chain.structural_alerts) ? chain.structural_alerts : []).slice(0, 5).map(row => ({
+      title: row.summary || row.reason_code || 'Cause structurelle',
+      helper: [
+        row.stage || 'Étape inconnue',
+        row.owner_role ? `owner · ${row.owner_role}` : null,
+      ].filter(Boolean).join(' · '),
+      priority: `${Number(row.order_count) || 0} cmd`,
+      tone: row.health === 'RED' ? 'critical' : (row.health === 'ORANGE' ? 'warning' : 'info'),
+      href: row.href || '/admin/operations#operations-control-chain',
+      actionLabel: 'Voir la chaîne →',
+    }));
+  }
+
+  function controlStages(payload) {
+    const chain = payload && payload.control_chain && typeof payload.control_chain === 'object' ? payload.control_chain : {};
+    return (Array.isArray(chain.stages) ? chain.stages : []).map(stage => {
+      const counts = stage && stage.health_counts && typeof stage.health_counts === 'object' ? stage.health_counts : {};
+      const helper = [
+        `${Number(stage.order_count) || 0} commande(s)`,
+        Number(counts.RED) > 0 ? `${counts.RED} bloquée(s)` : null,
+        Number(counts.ORANGE) > 0 ? `${counts.ORANGE} à surveiller` : null,
+        Number(counts.UNKNOWN) > 0 ? `${counts.UNKNOWN} non observée(s)` : null,
+      ].filter(Boolean).join(' · ');
+      return {
+        label: stage.label || stage.key || 'Étape',
+        helper,
+        tone: stage.health === 'RED' ? 'critical' : (stage.health === 'ORANGE' ? 'warning' : (stage.health === 'GREEN' ? 'positive' : 'neutral')),
+        href: '/admin/operations#operations-control-chain',
+      };
+    });
+  }
+
+  function residualActions(payload, base) {
+    const alerts = Array.isArray(payload && payload.system_alerts) ? payload.system_alerts : [];
+    return alerts.filter(row => !row.structural).slice(0, 5).map(row => {
+      const projected = base.projectAlert(row) || {};
+      return {
+        title: row.title || row.message || projected.title || 'Signal à traiter',
+        helper: [row.source, projected.message && projected.message !== row.message ? projected.message : null].filter(Boolean).join(' · '),
+        priority: projected.level === 'critical' ? 'Critique' : (projected.level === 'warning' ? 'Attention' : 'Info'),
+        tone: projected.level === 'critical' ? 'critical' : (projected.level === 'warning' ? 'warning' : 'info'),
+        href: projected.href || '/admin/action-center',
+        actionLabel: projected.href ? (projected.actionLabel || 'Ouvrir →') : 'Action Center →',
+      };
+    });
   }
 
   function principles(payload) {
@@ -171,36 +214,43 @@
       dashboard.appendChild(host);
     }
 
-    const alerts = base.projectAlerts(payload);
-    const investigation = cardSection(
-      doc,
-      'À investiguer maintenant',
-      'Les signaux transverses remontés par les autorités métier. Aucun recalcul local.',
-      'pilotage-alerts'
-    );
-    const alertHost = doc.createElement('div');
-    ui.AlertPanel.render(alertHost, {
-      title: 'Signaux prioritaires',
-      items: alerts,
-      emptyText: 'Aucun signal prioritaire.',
-    });
-    investigation.body.appendChild(alertHost);
-
-    const actionLink = text(doc, 'a', 'kmc-decision-dashboard-link', 'Voir tout dans l’Action Center →');
-    actionLink.href = '/admin/action-center';
-    investigation.body.appendChild(actionLink);
-    dashboard.appendChild(investigation.section);
-
-    const cards = summaryCards(payload, base);
-    if (cards.length) {
-      const views = cardSection(
+    const causes = structuralCauses(payload);
+    if (causes.length) {
+      const causeSection = cardSection(
         doc,
-        'Flux métier',
-        'Descendre vers le dashboard spécialisé sans dupliquer sa vérité.',
-        'pilotage-flows'
+        'Causes structurelles',
+        'Les causes communes déjà agrégées par la chaîne canonique. Une cause remplace ses symptômes individuels.',
+        'pilotage-causes'
       );
-      decisionUi.SummaryCards.render(views.body, { items: cards });
-      dashboard.appendChild(views.section);
+      decisionUi.PriorityList.render(causeSection.body, { items: causes });
+      dashboard.appendChild(causeSection.section);
+    }
+
+    const stages = controlStages(payload);
+    if (stages.length) {
+      const flowSection = cardSection(
+        doc,
+        'Santé de la chaîne',
+        'Où se trouvent les commandes et quelles étapes sont réellement bloquées, à surveiller ou non observées.',
+        'pilotage-flow-health'
+      );
+      decisionUi.FlowStrip.render(flowSection.body, { stages });
+      dashboard.appendChild(flowSection.section);
+    }
+
+    const actions = residualActions(payload, base);
+    if (actions.length) {
+      const actionSection = cardSection(
+        doc,
+        'À traiter',
+        'Signaux restants qui ne sont pas déjà couverts par une cause structurelle.',
+        'pilotage-alerts'
+      );
+      decisionUi.PriorityList.render(actionSection.body, { items: actions });
+      const actionLink = text(doc, 'a', 'kmc-decision-dashboard-link', 'Voir tout dans l’Action Center →');
+      actionLink.href = '/admin/action-center';
+      actionSection.body.appendChild(actionLink);
+      dashboard.appendChild(actionSection.section);
     }
 
     const footer = doc.createElement('div');
@@ -221,10 +271,13 @@
       projectDecisionItems: payload => decisionItems(payload, base),
       projectSummaryCards: payload => summaryCards(payload, base),
       projectFlowStages: payload => flowStages(payload, base),
+      projectStructuralCauses: structuralCauses,
+      projectControlStages: controlStages,
+      projectResidualActions: payload => residualActions(payload, base),
       projectPrinciples: principles,
       projectTrust: trust,
     });
   }
 
-  return Object.freeze({ metric, incompleteCost, decisionItems, summaryCards, flowStages, principles, trust, render, enhance });
+  return Object.freeze({ metric, incompleteCost, decisionItems, summaryCards, flowStages, structuralCauses, controlStages, residualActions, principles, trust, render, enhance });
 });
