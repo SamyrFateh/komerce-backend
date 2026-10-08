@@ -217,7 +217,7 @@ test.describe('B9 — quatre états de santé', () => {
         const host = document.createElement('div');
         host.dataset.case = health;
         root.appendChild(host);
-        window.KomerceDecisionPrimitives.HealthBadge.render(host, {
+        window.KomerceDecisionUI.HealthBadge.render(host, {
           health,
           cause: 'Cause test',
           owner: 'Owner test',
