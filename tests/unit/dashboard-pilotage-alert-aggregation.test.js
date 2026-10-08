@@ -9,10 +9,23 @@
 const {
   structuralAlertsFromChain,
   mergePilotageAlerts,
+  summarizeControlChain,
 } = require('../../services/dashboard-pilotage-alert-aggregation');
 
 describe('pilotage structural alert aggregation', () => {
   const chain = {
+    stages: [
+      { key: 'PURCHASING', label: 'Achats' },
+      { key: 'HUB_CONTROL', label: 'Contrôle HUB' },
+    ],
+    by_stage: {
+      PURCHASING: [
+        { health: 'RED' },
+        { health: 'ORANGE' },
+        { health: 'GREEN' },
+      ],
+      HUB_CONTROL: [{ health: 'UNKNOWN' }],
+    },
     structural_alerts: [{
       stage: 'PURCHASING',
       health: 'RED',
@@ -23,6 +36,34 @@ describe('pilotage structural alert aggregation', () => {
       order_references: ['K-1', 'K-2', 'K-3'],
     }],
   };
+
+
+  test('summarizes stage health without client recompute', () => {
+    expect(summarizeControlChain(chain)).toEqual(expect.objectContaining({
+      stages: [
+        expect.objectContaining({
+          key: 'PURCHASING',
+          label: 'Achats',
+          health: 'RED',
+          order_count: 3,
+          health_counts: { GREEN: 1, ORANGE: 1, RED: 1, UNKNOWN: 0 },
+        }),
+        expect.objectContaining({
+          key: 'HUB_CONTROL',
+          health: 'UNKNOWN',
+          order_count: 1,
+          health_counts: { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 1 },
+        }),
+      ],
+      structural_alerts: [
+        expect.objectContaining({
+          reason_code: 'supplier_payment_blocked',
+          order_count: 3,
+          href: '/admin/operations#operations-control-chain',
+        }),
+      ],
+    }));
+  });
 
   test('projects one structural cause for many impacted orders', () => {
     expect(structuralAlertsFromChain(chain)).toEqual([
