@@ -44,7 +44,7 @@ test('canonical import runtime is loaded without legacy dependency', () => {
 
 test('canonical app and navigation expose import runtime under the Live domain', () => {
   const app = fs.readFileSync(path.join(CANONICAL, 'js', 'app.js'), 'utf8');
-  const nav = fs.readFileSync(path.join(CANONICAL, 'js', 'navigation-policy-v3.js'), 'utf8');
+  const nav = fs.readFileSync(path.join(CANONICAL, 'js', 'navigation-policy-v4.js'), 'utf8');
   expect(app).toContain("IMPORT_RUNTIME: 'import-runtime'");
   expect(app).toContain("path === '/admin/import-runtime'");
   expect(app).toContain('KomerceCanonicalImportRuntime');

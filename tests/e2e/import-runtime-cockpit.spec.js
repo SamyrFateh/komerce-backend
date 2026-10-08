@@ -361,7 +361,7 @@ async function mountLive(page, data) {
       return route.fulfill({ contentType:'text/html', body:`<!doctype html><html lang="fr"><head><meta charset="utf-8"></head>
         <body><main id="canonical-admin-root"><h1>Produit Catalogue P-42</h1></main>
         <script>window.KomerceCanonicalAdmin={surfaceForPath:()=> 'product-360'};window.KOMERCE_CANONICAL_AUTH_USER={role:'catalog_manager'};</script>
-        <script src="/dashboards/canonical/js/navigation.js"></script></body></html>` });
+        <script src="/dashboards/canonical/js/navigation-policy-v4.js"></script></body></html>` });
     }
     if (url.pathname.startsWith('/dashboards/canonical/')) {
       const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));

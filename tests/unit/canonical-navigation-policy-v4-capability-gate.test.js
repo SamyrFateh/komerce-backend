@@ -18,8 +18,6 @@ function loadPolicy() {
   delete global.KomerceCanonicalNavigation;
   delete global.window;
   delete global.document;
-  require('../../public/dashboards/canonical/js/navigation.js');
-  require('../../public/dashboards/canonical/js/navigation-policy-v3.js');
   require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
   return global.KomerceCanonicalNavigation;
 }

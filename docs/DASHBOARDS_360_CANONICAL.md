@@ -1,14 +1,14 @@
 # Dashboards 360 — Canonical (généré)
 
 > ⚠️ Fichier **généré** par `scripts/gen-dashboards-360-canonical.js`. Ne pas éditer à la main.
-> Régénéré le 2026-10-07T17:28:55.913Z.
+> Régénéré le 2026-10-07T23:58:25.318Z.
 > Contrepartie de `docs/DASHBOARDS_360.md` (Legacy 1). Les deux coexistent tant que le rollback `?legacy=1` existe (`bootstrap/html-routes.js`).
-> Chaîne de preuve : `navigation.js` (item × rôle) → `hrefFor()` → `app.js::surfaceForPath()` → module (`global.Komerce*`) → `fetch()` → `docs/contract/openapi.json`.
+> Chaîne de preuve : `navigation-policy-v4.js` (item × rôle) → `hrefFor()` → `app.js::surfaceForPath()` → module (`global.Komerce*`) → `fetch()` → `docs/contract/openapi.json`.
 
 ## Synthèse
 
-- Items de navigation déclarés : **16** → **42** entrées (item × rôle visible)
-- Modules JS Canonical scannés : **71**
+- Items de navigation déclarés : **12** → **28** entrées (item × rôle visible)
+- Modules JS Canonical scannés : **69**
 - Arêtes API tracées (`fetch()` vers `/api/`) : **189**
 - 🔴 Surfaces de navigation sans module résolu : **0**
 - 🔴 Destination de navigation dont l'URL ne résout vers aucune surface connue (retombe sur Pilotage par défaut) : **0**
@@ -34,26 +34,14 @@
 | agent_relais | Comptabilité | `/admin/workspaces/accounting` | accounting-workspace | `finance-accounting-workspace-decision.js`, `finance-accounting-workspace.js` |
 | finance | Comptabilité | `/admin/workspaces/accounting` | accounting-workspace | `finance-accounting-workspace-decision.js`, `finance-accounting-workspace.js` |
 | market_operator | Comptabilité | `/admin/workspaces/accounting` | accounting-workspace | `finance-accounting-workspace-decision.js`, `finance-accounting-workspace.js` |
-| admin | Catalogue | `/admin/workspaces/catalog` | catalog-workspace | `catalog-control-tower.js`, `catalog-workspace-decision.js`, `catalog-workspace.js` |
-| market_operator | Catalogue | `/dashboards/canonical/market-catalog.html` | market-catalog | _(page HTML autonome — voir §5)_ |
 | admin | Commerce | `/admin/commerce` | commerce | `commerce-decision.js`, `commerce.js` |
 | market_operator | Commerce | `/admin/commerce` | commerce | `commerce-decision.js`, `commerce.js` |
-| admin | Dashboard | `/admin/pilotage` | pilotage | `pilotage-decision.js`, `pilotage.js` |
-| agent_hub | Dashboard | `/admin/pilotage` | pilotage | `pilotage-decision.js`, `pilotage.js` |
-| agent_relais | Dashboard | `/admin/pilotage` | pilotage | `pilotage-decision.js`, `pilotage.js` |
-| agent_transitaire | Dashboard | `/admin/pilotage` | pilotage | `pilotage-decision.js`, `pilotage.js` |
-| finance | Dashboard | `/admin/pilotage` | pilotage | `pilotage-decision.js`, `pilotage.js` |
-| market_operator | Dashboard | `/admin/pilotage` | pilotage | `pilotage-decision.js`, `pilotage.js` |
-| sourcing | Dashboard | `/admin/pilotage` | pilotage | `pilotage-decision.js`, `pilotage.js` |
-| support | Dashboard | `/admin/pilotage` | pilotage | `pilotage-decision.js`, `pilotage.js` |
 | admin | Vue d’ensemble | `/admin/finance` | finance | `finance-decision.js`, `finance.js` |
 | market_operator | Vue d’ensemble | `/admin/finance` | finance | `finance-decision.js`, `finance.js` |
 | admin | Hub live | `/admin/hub-live` | hub-live | `hub-live.js` |
 | agent_hub | Hub live | `/admin/hub-live` | hub-live | `hub-live.js` |
 | admin | Sourcing live | `/admin/import-runtime` | import-runtime | `import-runtime.js` |
 | sourcing | Sourcing live | `/admin/import-runtime` | import-runtime | `import-runtime.js` |
-| admin | Marchés | `/dashboards/canonical/access.html` | market-access | _(page HTML autonome — voir §5)_ |
-| market_operator | Marchés | `/dashboards/canonical/market-autonomy.html` | market-autonomy | _(page HTML autonome — voir §5)_ |
 | admin | Vue d’ensemble | `/admin/operations` | operations | `operations-decision.js`, `operations.js` |
 | market_operator | Vue d’ensemble | `/admin/operations` | operations | `operations-decision.js`, `operations.js` |
 | admin | Hub / Relais | `/admin/workspaces/operations` | operations-workspace | `operations-workspace-decision.js`, `operations-workspace.js` |
@@ -62,8 +50,6 @@
 | market_operator | Hub / Relais | `/admin/workspaces/operations` | operations-workspace | `operations-workspace-decision.js`, `operations-workspace.js` |
 | admin | Suivi des commandes | `/admin/orders` | orders | `orders-decision.js`, `orders.js` |
 | market_operator | Suivi des commandes | `/admin/orders` | orders | `orders-decision.js`, `orders.js` |
-| admin | Atelier économique | `/admin/workspaces/pricing` | pricing-workspace | `pricing-workspace.js` |
-| market_operator | Atelier économique | `/admin/workspaces/pricing` | pricing-workspace | `pricing-workspace.js` |
 | admin | Achats fournisseurs | `/admin/workspaces/purchasing` | purchasing-workspace | `purchasing-workspace.js` |
 | admin | Relais live | `/admin/relais-live` | relais-live | `relay-live.js` |
 | agent_relais | Relais live | `/admin/relais-live` | relais-live | `relay-live.js` |
@@ -179,10 +165,10 @@
 | `markets-decision-bootstrap.js` | `GET` | `/api/admin/dashboard/context` | 🟢 prouvé |
 | `markets-decision-bootstrap.js` | `GET` | `/api/admin/workspaces/pricing/market/${encodeURIComponent(marketCode)}` | 🟢 prouvé |
 | `markets-decision-bootstrap.js` | `GET` | `/api/admin/workspaces/pricing/market/${encodeURIComponent(marketCode)}/commercial-prices` | ⚪ non prouvé |
+| `navigation-policy-v4.js` | `POST` | `/api/auth/logout` | 🟢 prouvé |
 | `navigation-policy-v4.js` | `GET` | `/api/admin/dashboard/reference/resolve?reference=${param}` | 🟢 prouvé |
-| `navigation.js` | `POST` | `/api/auth/logout` | 🟢 prouvé |
-| `navigation.js` | `POST` | `/api/admin/reset` | ⚪ non prouvé |
-| `navigation.js` | `POST` | `/api/admin/seed-test` | ⚪ non prouvé |
+| `navigation-policy-v4.js` | `POST` | `/api/admin/reset` | ⚪ non prouvé |
+| `navigation-policy-v4.js` | `POST` | `/api/admin/seed-test` | ⚪ non prouvé |
 | `operations-workspace.js` | `POST` | `/api/admin/workspaces/operations/market/${param}${param}` | 🟠 absent (dynamique) |
 | `operations-workspace.js` | `GET*` | `/api/admin/workspaces/operations/market/${param}${param}` | 🟠 absent (dynamique) |
 | `operations-workspace.js` | `POST` | `/api/admin/workspaces/operations/market/${param}${param}` | 🟠 absent (dynamique) |

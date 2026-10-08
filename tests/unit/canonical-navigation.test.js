@@ -85,10 +85,16 @@ function loadNavigation(pathname, surface, options = {}) {
   };
   global.document = document;
 
-  require('../../public/dashboards/canonical/js/navigation.js');
+  require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
+
+  // Le rendu structurel (header N1/N2, Retour, marché, utilitaires) est testé
+  // sans la coque hybride V4 : `_buildHeader` est la couche de construction du
+  // fichier de navigation unique, `mount` y ajoute seulement le shell.
+  const full = global.window.KomerceCanonicalNavigation;
+  const api = { ...full, mount: options => full._buildHeader(options) };
 
   return {
-    api: global.window.KomerceCanonicalNavigation,
+    api,
     document,
     body,
     root,
@@ -270,22 +276,23 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     expect(operatorMarkets.href).toBe('/dashboards/canonical/market-autonomy.html');
   });
 
-  test('Catalogue reste global pour admin et devient Catalogue pays pour market_operator', () => {
+  test('Catalogue global est réservé à admin ; le responsable pays y accède via Marchés (Catalogue pays)', () => {
     const adminEnv = loadNavigation('/admin/pilotage', 'pilotage');
     const adminHeader = mountFor(adminEnv, '/admin/pilotage', 'pilotage', { role: 'admin' });
-    const adminCatalog = findPrimaryLink(adminHeader, 'catalog');
-    expect(adminCatalog.href).toBe('/admin/workspaces/catalog');
+    expect(findPrimaryLink(adminHeader, 'catalog').href).toBe('/admin/workspaces/catalog');
 
     const operatorEnv = loadNavigation('/dashboards/canonical/market-catalog.html', 'market-catalog');
     const operatorHeader = mountFor(operatorEnv, '/dashboards/canonical/market-catalog.html', 'market-catalog', { role: 'market_operator' });
-    const operatorCatalog = operatorHeader.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'catalog');
-    expect(operatorCatalog.href).toBe('/dashboards/canonical/market-catalog.html');
-    expect(operatorCatalog.attributes['aria-current']).toBe('page');
+    const operatorLinks = operatorHeader.children[0].children[1].children;
+    expect(operatorLinks.find(link => link.attributes['data-dashboard'] === 'catalog')).toBeUndefined();
+    const markets = operatorLinks.find(link => link.attributes['data-dashboard'] === 'markets');
+    expect(markets.href).toBe('/dashboards/canonical/market-autonomy.html');
+    expect(markets.attributes['aria-current']).toBe('page');
   });
 
   test('Dashboard reste actif pour les surfaces techniques non exposées dans le mock', () => {
     const env = loadNavigation('/admin/demo', 'demo');
-    const header = env.api.mount({ document: env.document, pathname: '/admin/demo', surface: 'demo' });
+    const header = mountFor(env, '/admin/demo', 'demo', { role: 'admin' });
     const dashboard = header.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'dashboard');
     expect(dashboard.attributes['aria-current']).toBe('page');
   });
@@ -403,58 +410,6 @@ describe('canonical admin navigation — N2 domaine Finance (doctrine V2 §4)', 
       const finance = header.children[0].children[1].children.find(link => link.attributes['data-dashboard'] === 'finance');
       expect(finance.href).toBe('/admin/workspaces/accounting');
     });
-  });
-});
-
-describe('canonical admin navigation — filtrage par rôle des domaines N1 (docs/admin-nav-capability-map.md + doctrine V2)', () => {
-  test.each([
-    ['admin', ['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'live', 'finance']],
-    ['market_operator', ['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'finance']],
-    ['finance', ['dashboard', 'finance']],
-    ['sourcing', ['dashboard', 'live']],
-    ['agent_hub', ['dashboard', 'operations', 'live']],
-    ['agent_relais', ['dashboard', 'operations', 'live', 'finance']],
-    ['agent_transitaire', ['dashboard', 'operations']],
-    ['support', ['dashboard']],
-    ['inconnu', ['dashboard']],
-  ])('%s voit exactement ses domaines N1 — jamais un domaine qui 403', (role, expected) => {
-    const env = loadNavigation('/admin/pilotage', 'pilotage');
-    const header = mountFor(env, '/admin/pilotage', 'pilotage', { role });
-    const renderedOrCanonical = role === 'admin'
-      ? env.api.visibleDomainsFor({ role }).map(domain => domain.id)
-      : primaryIdsOf(header);
-    expect(renderedOrCanonical).toEqual(expected);
-  });
-
-  test('chaque rôle connu voit au moins Dashboard, toujours en premier', () => {
-    const env = loadNavigation('/admin/pilotage', 'pilotage');
-    const allRoles = ['admin', 'market_operator', 'finance', 'sourcing', 'agent_hub', 'agent_relais', 'agent_transitaire', 'support'];
-    allRoles.forEach(role => {
-      const domains = env.api.visibleDomainsFor({ role });
-      expect(domains.length).toBeGreaterThanOrEqual(1);
-      expect(domains[0].id).toBe('dashboard');
-    });
-  });
-
-  test('visibleDomainsFor / visibleSpacesFor / landingForDomain sont exposées et cohérentes avec le rendu de mount()', () => {
-    const env = loadNavigation('/admin/pilotage', 'pilotage');
-    const domains = env.api.visibleDomainsFor({ role: 'market_operator' });
-    expect(domains.map(d => d.id)).toEqual(['dashboard', 'pricing', 'catalog', 'orders', 'markets', 'operations', 'finance']);
-
-    const operationsDomain = env.api.DOMAINS.find(d => d.id === 'operations');
-    const spaces = env.api.visibleSpacesFor(operationsDomain, 'market_operator');
-    expect(spaces.map(s => s.id)).toEqual(['operations-overview', 'operations-workspace', 'shipping-customs-workspace']);
-    expect(env.api.landingForDomain(operationsDomain, { role: 'market_operator' })).toBe('/admin/operations');
-
-    const financeDomain = env.api.DOMAINS.find(d => d.id === 'finance');
-    expect(env.api.landingForDomain(financeDomain, { role: 'agent_relais' })).toBe('/admin/workspaces/accounting');
-  });
-
-  test('aucun onglet N1 ni espace N2 non prouvé côté serveur n’est jamais rendu (defense en profondeur rôle inconnu)', () => {
-    const env = loadNavigation('/admin/pilotage', 'pilotage');
-    const header = mountFor(env, '/admin/pilotage', 'pilotage', { role: 'inconnu' });
-    expect(primaryIdsOf(header)).toEqual(['dashboard']);
-    expect(secondaryNav(header)).toBeUndefined();
   });
 });
 

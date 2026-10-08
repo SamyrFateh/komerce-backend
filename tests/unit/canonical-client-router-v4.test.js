@@ -25,7 +25,10 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
   test('toutes les routes admin portées par les tabs V4 sont routables sans reload document', () => {
     const policy = read('public/dashboards/canonical/js/navigation-policy-v4.js');
     const hrefs = [...policy.matchAll(/href:\s*'([^']+)'/g)].map(match => match[1]);
-    const adminRoutes = hrefs.filter(href => href.startsWith('/admin'));
+    // Les cockpits Live (coque noire dédiée) sont des documents complets par
+    // conception : ils ne passent volontairement pas par le routeur client.
+    const LIVE_DOCUMENT_ROUTES = ['/admin/import-runtime', '/admin/hub-live', '/admin/relais-live'];
+    const adminRoutes = hrefs.filter(href => href.startsWith('/admin') && !LIVE_DOCUMENT_ROUTES.includes(href));
     expect(adminRoutes.length).toBeGreaterThan(0);
     adminRoutes.forEach(href => {
       const url = new URL(href, 'https://komerce.test');

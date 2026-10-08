@@ -79,7 +79,7 @@ module.exports = {
   ],
 
   // ── Fichiers de ce lot ───────────────────────────────────────────────────
-  // routes/admin-operations-workspace.js, public/dashboards/canonical/js/navigation.js
+  // routes/admin-operations-workspace.js, public/dashboards/canonical/js/navigation-policy-v4.js
   // et public/dashboards/canonical/js/app.js ne sont PAS listés ici : ce sont
   // des fichiers possédés par la feature `dashboard` (canonical/** + workspace
   // routes, cf. APP_FEATURE_REGISTRY.md). Ce lot ne fait que des rattachements

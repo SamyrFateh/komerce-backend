@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-07T17:28:55.913Z",
+  "generatedAt": "2026-10-07T23:58:25.318Z",
   "summary": {
-    "navItems": 16,
-    "navMatrixEntries": 42,
-    "canonicalModules": 71,
+    "navItems": 12,
+    "navMatrixEntries": 28,
+    "canonicalModules": 69,
     "apiEdgesTraced": 189,
     "surfaceWithoutModule": 0,
     "navHrefUnresolved": 0,
@@ -18,146 +18,6 @@
   "navMatrix": [
     {
       "role": "admin",
-      "itemId": "dashboard",
-      "label": "Dashboard",
-      "href": "/admin/pilotage",
-      "surfaceId": "pilotage",
-      "resolvedVia": "app-default-fallback",
-      "moduleFiles": [
-        "pilotage-decision.js",
-        "pilotage.js"
-      ]
-    },
-    {
-      "role": "market_operator",
-      "itemId": "dashboard",
-      "label": "Dashboard",
-      "href": "/admin/pilotage",
-      "surfaceId": "pilotage",
-      "resolvedVia": "app-default-fallback",
-      "moduleFiles": [
-        "pilotage-decision.js",
-        "pilotage.js"
-      ]
-    },
-    {
-      "role": "finance",
-      "itemId": "dashboard",
-      "label": "Dashboard",
-      "href": "/admin/pilotage",
-      "surfaceId": "pilotage",
-      "resolvedVia": "app-default-fallback",
-      "moduleFiles": [
-        "pilotage-decision.js",
-        "pilotage.js"
-      ]
-    },
-    {
-      "role": "sourcing",
-      "itemId": "dashboard",
-      "label": "Dashboard",
-      "href": "/admin/pilotage",
-      "surfaceId": "pilotage",
-      "resolvedVia": "app-default-fallback",
-      "moduleFiles": [
-        "pilotage-decision.js",
-        "pilotage.js"
-      ]
-    },
-    {
-      "role": "agent_hub",
-      "itemId": "dashboard",
-      "label": "Dashboard",
-      "href": "/admin/pilotage",
-      "surfaceId": "pilotage",
-      "resolvedVia": "app-default-fallback",
-      "moduleFiles": [
-        "pilotage-decision.js",
-        "pilotage.js"
-      ]
-    },
-    {
-      "role": "agent_relais",
-      "itemId": "dashboard",
-      "label": "Dashboard",
-      "href": "/admin/pilotage",
-      "surfaceId": "pilotage",
-      "resolvedVia": "app-default-fallback",
-      "moduleFiles": [
-        "pilotage-decision.js",
-        "pilotage.js"
-      ]
-    },
-    {
-      "role": "agent_transitaire",
-      "itemId": "dashboard",
-      "label": "Dashboard",
-      "href": "/admin/pilotage",
-      "surfaceId": "pilotage",
-      "resolvedVia": "app-default-fallback",
-      "moduleFiles": [
-        "pilotage-decision.js",
-        "pilotage.js"
-      ]
-    },
-    {
-      "role": "support",
-      "itemId": "dashboard",
-      "label": "Dashboard",
-      "href": "/admin/pilotage",
-      "surfaceId": "pilotage",
-      "resolvedVia": "app-default-fallback",
-      "moduleFiles": [
-        "pilotage-decision.js",
-        "pilotage.js"
-      ]
-    },
-    {
-      "role": "admin",
-      "itemId": "pricing",
-      "label": "Atelier économique",
-      "href": "/admin/workspaces/pricing",
-      "surfaceId": "pricing-workspace",
-      "resolvedVia": "app-equality",
-      "moduleFiles": [
-        "pricing-workspace.js"
-      ]
-    },
-    {
-      "role": "market_operator",
-      "itemId": "pricing",
-      "label": "Atelier économique",
-      "href": "/admin/workspaces/pricing",
-      "surfaceId": "pricing-workspace",
-      "resolvedVia": "app-equality",
-      "moduleFiles": [
-        "pricing-workspace.js"
-      ]
-    },
-    {
-      "role": "admin",
-      "itemId": "catalog",
-      "label": "Catalogue",
-      "href": "/admin/workspaces/catalog",
-      "surfaceId": "catalog-workspace",
-      "resolvedVia": "app-equality",
-      "moduleFiles": [
-        "catalog-control-tower.js",
-        "catalog-workspace-decision.js",
-        "catalog-workspace.js"
-      ]
-    },
-    {
-      "role": "market_operator",
-      "itemId": "catalog",
-      "label": "Catalogue",
-      "href": "/dashboards/canonical/market-catalog.html",
-      "surfaceId": "market-catalog",
-      "resolvedVia": "standalone-html",
-      "moduleFiles": []
-    },
-    {
-      "role": "admin",
       "itemId": "commerce",
       "label": "Commerce",
       "href": "/admin/commerce",
@@ -203,24 +63,6 @@
         "orders-decision.js",
         "orders.js"
       ]
-    },
-    {
-      "role": "admin",
-      "itemId": "markets",
-      "label": "Marchés",
-      "href": "/dashboards/canonical/access.html",
-      "surfaceId": "market-access",
-      "resolvedVia": "standalone-html",
-      "moduleFiles": []
-    },
-    {
-      "role": "market_operator",
-      "itemId": "markets",
-      "label": "Marchés",
-      "href": "/dashboards/canonical/market-autonomy.html",
-      "surfaceId": "market-autonomy",
-      "resolvedVia": "standalone-html",
-      "moduleFiles": []
     },
     {
       "role": "admin",
@@ -1322,14 +1164,6 @@
     },
     {
       "module": "navigation-policy-v4.js",
-      "rawUrl": "/api/admin/dashboard/reference/resolve?reference=${param}",
-      "httpMethod": "GET",
-      "normalized": "/api/admin/dashboard/reference/resolve",
-      "matchedRoute": "/api/admin/dashboard/reference/resolve",
-      "contractStatus": "PROVEN"
-    },
-    {
-      "module": "navigation.js",
       "rawUrl": "/api/auth/logout",
       "httpMethod": "POST",
       "normalized": "/api/auth/logout",
@@ -1337,7 +1171,15 @@
       "contractStatus": "PROVEN"
     },
     {
-      "module": "navigation.js",
+      "module": "navigation-policy-v4.js",
+      "rawUrl": "/api/admin/dashboard/reference/resolve?reference=${param}",
+      "httpMethod": "GET",
+      "normalized": "/api/admin/dashboard/reference/resolve",
+      "matchedRoute": "/api/admin/dashboard/reference/resolve",
+      "contractStatus": "PROVEN"
+    },
+    {
+      "module": "navigation-policy-v4.js",
       "rawUrl": "/api/admin/reset",
       "httpMethod": "POST",
       "normalized": "/api/admin/reset",
@@ -1345,7 +1187,7 @@
       "contractStatus": "UNKNOWN"
     },
     {
-      "module": "navigation.js",
+      "module": "navigation-policy-v4.js",
       "rawUrl": "/api/admin/seed-test",
       "httpMethod": "POST",
       "normalized": "/api/admin/seed-test",
@@ -2666,41 +2508,25 @@
       "fetchCount": 0
     },
     {
-      "file": "navigation-policy-v3.js",
-      "hasHeader": true,
-      "isLite": false,
-      "role": "canonical-admin-navigation-policy-v3",
-      "domain": "admin-dashboard",
-      "layer": "ui-navigation",
-      "criticality": "high",
-      "doctrine": [
-        "visible_destination_must_have_server_guard",
-        "n1_business_domains_only",
-        "n2_contextual_workspaces_only",
-        "market_id_is_transverse_context"
-      ],
-      "exportsGlobals": [
-        "KomerceCanonicalNavigation"
-      ],
-      "fetchCount": 0
-    },
-    {
       "file": "navigation-policy-v4.js",
       "hasHeader": true,
       "isLite": false,
-      "role": "canonical-admin-navigation-policy-v4",
+      "role": "canonical-admin-navigation",
       "domain": "admin-dashboard",
       "layer": "ui-navigation",
       "criticality": "high",
       "doctrine": [
+        "single_navigation_structure",
         "single_shell_sidebar_n1_horizontal_n2_local_n3",
         "visible_destination_must_have_server_guard",
+        "country_manager_owns_market_scope",
+        "client_market_id_never_authority",
         "market_id_is_transverse_context"
       ],
       "exportsGlobals": [
         "KomerceCanonicalNavigation"
       ],
-      "fetchCount": 1
+      "fetchCount": 4
     },
     {
       "file": "navigation-shell-v4-sync.js",
@@ -2715,24 +2541,6 @@
       ],
       "exportsGlobals": [],
       "fetchCount": 0
-    },
-    {
-      "file": "navigation.js",
-      "hasHeader": true,
-      "isLite": false,
-      "role": "canonical-admin-navigation",
-      "domain": "admin-dashboard",
-      "layer": "ui-navigation",
-      "criticality": "medium",
-      "doctrine": [
-        "country_manager_owns_market_scope",
-        "visible_destination_must_have_server_guard",
-        "client_market_id_never_authority"
-      ],
-      "exportsGlobals": [
-        "KomerceCanonicalNavigation"
-      ],
-      "fetchCount": 3
     },
     {
       "file": "operations-decision.js",
