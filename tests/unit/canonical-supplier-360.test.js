@@ -37,7 +37,7 @@ test('certificationRows garde disponibilité, environnement, preuve et limites s
     availability: 'PROVEN',
     environment: 'SANDBOX',
     proof: 'P4',
-    classification: 'RECLASSIFIED',
+    classification: '↻ RECLASSIFIED',
     evidence: 'proof/a · proof/b',
     limitations: 'human buyer',
   }]);
@@ -57,4 +57,22 @@ test('mount charge le namespace Supplier 360', async () => {
     '/api/admin/entities/suppliers/11111111-1111-4111-8111-111111111111',
     expect.objectContaining({ method: 'GET', credentials: 'include' })
   );
+});
+
+describe('Supplier 360 — registre de preuves affiché littéralement', () => {
+  const supplier360 = require('../../public/dashboards/canonical/js/supplier-360');
+  test('GAP est visuellement distinct de CONFIRMED, valeurs du registre conservées', () => {
+    const rows = supplier360.certificationRows({ records: [
+      { capability: 'purchasing.real_debit', availability: 'available', environment: 'live', highest_proof: 'P4', classification: 'CONFIRMED' },
+      { capability: 'reconcile_payment', availability: 'unavailable', environment: 'sandbox', highest_proof: null, classification: 'GAP' },
+      { capability: 'x', classification: null },
+    ] });
+    expect(rows[0].classification).toBe('✓ CONFIRMED');
+    expect(rows[0].proof).toBe('P4');
+    expect(rows[0].environment).toBe('live');
+    expect(rows[1].classification).toBe('✖ GAP — non disponible');
+    expect(rows[1].proof).toBe('— aucune preuve');
+    expect(rows[2].classification).toBe('? non classé');
+    expect(rows[1].classification).not.toBe(rows[0].classification);
+  });
 });
