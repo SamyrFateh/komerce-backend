@@ -942,7 +942,8 @@ body.kmc-shell-v4 #market-catalog-root{
   body.kmc-shell-v4 > .kmc-admin-navigation{width:72px}
   body.kmc-shell-v4 .kmc-admin-navigation-identity{padding:14px 8px;align-items:center;justify-content:center}
   body.kmc-shell-v4 .kmc-admin-home-label,
-  body.kmc-shell-v4 .kmc-admin-home::after{display:none}
+  body.kmc-shell-v4 .kmc-admin-home::after,
+  body.kmc-shell-v4 .kmc-admin-sidebar-group-label{display:none}
 }
 @media(max-width:680px){
   :root{
