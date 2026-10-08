@@ -250,6 +250,8 @@ function isDashboardFile(file) {
   return /^public\/dashboards\/.+/i.test(f)
     || /^docs\/DASHBOARDS_360\.(?:json|md)$/i.test(f)
     || f === 'scripts/gen-dashboards-360.js'
+    || f === 'playwright.config.js'
+    || /^tests\/e2e\/(?:live-ops-shell|hub-live-cockpit|relais-live-cockpit|import-runtime-[a-z-]+|purchasing-workspace)\.spec\.js$/i.test(f)
     || f === 'scripts/.dashboards-360-baseline.json'
     || f === 'scripts/agent-remediation-contract.js'
     || f === 'scripts/gen-agent-remediation-index.js'

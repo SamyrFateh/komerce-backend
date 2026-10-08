@@ -628,7 +628,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.rebase_no_impact != 'true' && needs.changes.outputs.unit_repair_only != 'true' && needs.changes.outputs.reuse_dashboard != 'true' && needs.changes.outputs.dashboard == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -638,6 +638,14 @@ jobs:
           node-version: '20'
       - name: Dashboard 360 structural ratchet
         run: npm run dashboards:360:check
+      - name: Install dependencies for dashboard E2E
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install Chromium for dashboard E2E
+        run: npm run test:e2e:dashboards:install
+      - name: Dashboard E2E (Playwright, API simulée)
+        env:
+          CI: 'true'
+        run: npm run test:e2e:dashboards
       - name: Prove gates did not mutate the tree
         run: git diff --exit-code
 

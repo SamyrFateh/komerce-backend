@@ -264,8 +264,7 @@ test.describe('Achats fournisseurs — espace canonique', () => {
   test('détail PO : affiche ordres, paiements, preuves et états ambigus sans les convertir en succès', async ({ page }) => {
     const api = createFakeApi();
     await mountWorkspace(page, api);
-    await page.locator('tr[data-purchasing-line] input[type=checkbox]').nth(0).check();
-    await page.locator('[data-workspace-action="prepare-po"]').click();
+    // L'exécution fournisseur est posée avant l'ouverture du PO : la lecture qui suit « prepare-po » la relit.
     const poId = 'cccccccc-cccc-4ccc-8ccc-000000000001';
     api.state.executions.set(poId, {
       orders: [{
@@ -297,7 +296,8 @@ test.describe('Achats fournisseurs — espace canonique', () => {
       }],
     });
 
-    await page.evaluate(() => window.__mounted.reload());
+    await page.locator('tr[data-purchasing-line] input[type=checkbox]').nth(0).check();
+    await page.locator('[data-workspace-action="prepare-po"]').click();
 
     const execution = page.locator('[data-purchasing-execution]');
     await expect(execution).toBeVisible();
