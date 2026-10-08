@@ -64,7 +64,8 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     expect(css).toContain('--kmc-shell-topbar-height: 52px');
     expect(css).toContain('body.kmc-shell-v4 > .kmc-admin-navigation');
     expect(css).toMatch(/position:\s*fixed/);
-    expect(css).toContain('background: #102143');
+    // Fond de la sidebar : la couche Legacy (blanche) gagne la cascade ; le navy du mock n'est plus effectif.
+    expect(read('public/dashboards/canonical/css/canonical-legacy-theme-v1.css')).toMatch(/body\.kmc-shell-v4 > \.kmc-admin-navigation\{[^}]*background:#fff/);
     expect(css).toContain('.kmc-admin-topbar');
     expect(css).toContain('.kmc-admin-domain-tabs');
     expect(css).toContain('.kmc-admin-domain-tab.is-active::after');

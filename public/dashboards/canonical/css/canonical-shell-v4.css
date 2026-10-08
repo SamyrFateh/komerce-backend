@@ -26,13 +26,8 @@ body.kmc-shell-v4 > .kmc-admin-navigation {
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 100;
-  width: var(--kmc-shell-sidebar-width);
   height: 100vh;
-  color: #fff;
   border: 0;
-  border-right: 1px solid rgb(255 255 255 / 0.08);
-  background: #102143;
-  box-shadow: 3px 0 18px rgb(16 33 67 / 0.08);
 }
 
 body.kmc-shell-v4 .kmc-admin-navigation-inner {
@@ -40,7 +35,6 @@ body.kmc-shell-v4 .kmc-admin-navigation-inner {
   height: 100%;
   min-height: 100%;
   margin: 0;
-  padding: 14px 11px 12px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -49,18 +43,11 @@ body.kmc-shell-v4 .kmc-admin-navigation-inner {
 
 body.kmc-shell-v4 .kmc-admin-navigation-identity {
   width: 100%;
-  min-height: 52px;
-  padding: 0 4px 12px;
   display: flex;
-  align-items: center;
-  border-bottom: 1px solid rgb(255 255 255 / 0.08);
 }
 
 body.kmc-shell-v4 .kmc-admin-home {
   width: 100%;
-  min-height: 36px;
-  padding: 0 5px;
-  display: flex;
   align-items: center;
   gap: 9px;
   color: #fff;
@@ -75,17 +62,8 @@ body.kmc-shell-v4 .kmc-admin-home {
   align-items: center;
   justify-content: center;
   border-radius: 7px;
-  color: #fff;
-  background: #4f67ff;
   font-size: 15px;
   font-weight: 900;
-  box-shadow: 0 2px 7px rgb(79 103 255 / 0.22);
-}
-
-body.kmc-shell-v4 .kmc-admin-home-label {
-  font-size: 16px;
-  font-weight: 850;
-  letter-spacing: -0.02em;
 }
 
 body.kmc-shell-v4 .kmc-admin-back {
@@ -98,11 +76,9 @@ body.kmc-shell-v4 .kmc-admin-primary-nav {
   min-height: 0;
   flex: 1 1 auto;
   margin: 0;
-  padding: 13px 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 3px;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -128,31 +104,16 @@ body.kmc-shell-v4 .kmc-admin-primary-nav {
 body.kmc-shell-v4 .kmc-admin-primary-link {
   position: relative;
   width: 100%;
-  height: 38px;
-  min-height: 38px;
-  padding: 0 10px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: rgb(255 255 255 / 0.70);
-  border-radius: 8px;
   background: transparent;
-  font-size: 12px;
-  font-weight: 720;
   text-decoration: none;
   transition: color 120ms ease, background 120ms ease;
 }
 
 body.kmc-shell-v4 .kmc-admin-primary-link:hover,
 body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible {
-  color: #fff;
-  background: rgb(255 255 255 / 0.055);
   outline: none;
-}
-
-body.kmc-shell-v4 .kmc-admin-primary-link.is-active {
-  color: #fff;
-  background: rgb(79 103 255 / 0.22);
 }
 
 body.kmc-shell-v4 .kmc-admin-primary-link.is-active::after {
@@ -172,7 +133,6 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active::after {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: rgb(255 255 255 / 0.78);
   font-size: 15px;
   line-height: 1;
 }
@@ -187,39 +147,20 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active::after {
 body.kmc-shell-v4 .kmc-admin-utility-nav {
   width: 100%;
   margin-top: auto;
-  padding: 12px 0 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
-  border-top: 1px solid rgb(255 255 255 / 0.08);
 }
 
 body.kmc-shell-v4 .kmc-admin-settings-link,
 body.kmc-shell-v4 .kmc-admin-logout {
   width: 100%;
-  min-height: 34px;
-  padding: 0 10px;
   justify-content: flex-start;
-  color: rgb(255 255 255 / 0.72);
   border: 0;
   border-radius: 7px;
   background: transparent;
-  font-size: 11px;
   box-shadow: none;
-}
-
-body.kmc-shell-v4 .kmc-admin-settings-link:hover,
-body.kmc-shell-v4 .kmc-admin-settings-link:focus-visible,
-body.kmc-shell-v4 .kmc-admin-logout:hover,
-body.kmc-shell-v4 .kmc-admin-logout:focus-visible {
-  color: #fff;
-  background: rgb(255 255 255 / 0.06);
-}
-
-body.kmc-shell-v4 .kmc-admin-settings-link.is-active {
-  color: #fff;
-  background: rgb(79 103 255 / 0.22);
 }
 
 /* ---------- Topbar transverse ---------- */
@@ -229,32 +170,16 @@ body.kmc-shell-v4 .kmc-admin-settings-link.is-active {
   top: 0;
   z-index: 90;
   width: 100%;
-  height: var(--kmc-shell-topbar-height);
-  padding: 0 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  border-bottom: 1px solid #dfe7f2;
-  background: rgb(255 255 255 / 0.97);
-  backdrop-filter: blur(12px);
 }
 
 .kmc-admin-search {
-  width: min(620px, 60%);
-  height: 34px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 10px;
-  border: 1px solid #e2e9f3;
-  border-radius: 7px;
-  background: #f8fbff;
-}
-
-.kmc-admin-search:focus-within {
-  border-color: #cfd7ff;
-  box-shadow: 0 0 0 3px rgb(79 103 255 / 0.07);
 }
 
 .kmc-admin-search-icon {
@@ -268,12 +193,10 @@ body.kmc-shell-v4 .kmc-admin-settings-link.is-active {
   min-width: 0;
   height: 30px;
   padding: 0;
-  color: #26385a;
   border: 0;
   outline: 0;
   background: transparent;
   font: inherit;
-  font-size: 11px;
 }
 
 .kmc-admin-search-input::placeholder {
@@ -377,29 +300,19 @@ a.kmc-admin-reference-result:focus-visible { background: #edf2ff; }
   top: var(--kmc-shell-topbar-height);
   z-index: 80;
   width: 100%;
-  min-height: var(--kmc-shell-tabs-height);
-  padding: 0 18px;
   display: flex;
   align-items: stretch;
-  gap: 22px;
   overflow-x: auto;
   scrollbar-width: none;
-  border-bottom: 1px solid #dfe7f2;
-  background: rgb(255 255 255 / 0.97);
-  backdrop-filter: blur(12px);
 }
 
 .kmc-admin-domain-tabs::-webkit-scrollbar { display: none; }
 
 .kmc-admin-domain-tab {
   position: relative;
-  min-height: var(--kmc-shell-tabs-height);
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
-  color: #7685a2;
-  font-size: 11px;
-  font-weight: 720;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -420,9 +333,7 @@ a.kmc-admin-reference-result:focus-visible { background: #edf2ff; }
   left: 0;
   right: 0;
   bottom: 0;
-  height: 2px;
   border-radius: 2px 2px 0 0;
-  background: #4f67ff;
 }
 
 body.kmc-shell-v4 .kmc-admin-secondary-nav {
@@ -434,10 +345,7 @@ body.kmc-shell-v4 .kmc-admin-secondary-nav {
 body.kmc-shell-v4 #canonical-admin-root,
 body.kmc-shell-v4 #market-autonomy-root,
 body.kmc-shell-v4 #market-catalog-root {
-  width: min(var(--kmc-shell-max, 1480px), calc(100% - 32px));
   max-width: var(--kmc-shell-max, 1480px);
-  margin: 0 auto;
-  padding-top: 12px;
 }
 
 body.kmc-shell-v4 .kmc-section[id^='pricing-'],

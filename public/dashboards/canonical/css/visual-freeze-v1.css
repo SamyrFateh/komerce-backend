@@ -22,13 +22,6 @@
   --kmc-freeze-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 10px 28px rgb(15 23 42 / 0.055);
 }
 
-body[data-admin-generation="canonical"] {
-  background:
-    radial-gradient(circle at 12% -8%, rgb(59 130 246 / 0.055), transparent 30rem),
-    radial-gradient(circle at 90% 0%, rgb(244 184 96 / 0.055), transparent 28rem),
-    var(--kmc-paper);
-}
-
 .kmc-admin-navigation-inner,
 .kmc-admin-secondary-nav,
 .kmc-dashboard,
@@ -89,9 +82,7 @@ body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-
 }
 
 .kmc-admin-navigation {
-  background: var(--kmc-freeze-nav);
   border-bottom-color: rgb(255 255 255 / 0.07);
-  box-shadow: 0 7px 22px rgb(15 23 42 / 0.13);
 }
 
 .kmc-admin-navigation-inner { min-height: 64px; gap: 16px; }
@@ -104,21 +95,17 @@ body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-
 }
 .kmc-admin-primary-link {
   padding-inline: 12px;
-  color: rgb(255 255 255 / 0.70);
-  font-size: 12.5px;
 }
-.kmc-admin-primary-link.is-active { background: rgb(255 255 255 / 0.065); }
 .kmc-admin-primary-link.is-active::after {
   left: 12px;
   right: 12px;
-  background: #73a6ff;
 }
 .kmc-admin-utility-nav { gap: 8px; }
 .kmc-admin-market-select,
 .kmc-admin-account,
 .kmc-admin-settings-link,
 .kmc-admin-logout { min-height: 34px; }
-.kmc-admin-market-select { min-width: 156px; background: #17253d; }
+.kmc-admin-market-select { min-width: 156px; }
 .kmc-admin-account { padding-inline: 10px; }
 .kmc-admin-settings-link,
 .kmc-admin-logout { background: rgb(255 255 255 / 0.055); }
@@ -128,14 +115,11 @@ body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-
   margin: 0 auto;
   padding: 7px 0 8px;
   color: var(--kmc-ink);
-  background: var(--kmc-freeze-n2);
   border-top: 0;
   border-bottom: 1px solid var(--kmc-freeze-border);
-  box-shadow: 0 1px 0 rgb(15 23 42 / 0.02);
 }
 .kmc-admin-secondary-link {
   height: 31px;
-  color: #58667a;
   border: 1px solid transparent;
 }
 .kmc-admin-secondary-link:hover,
@@ -143,12 +127,6 @@ body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-
   color: var(--kmc-navy);
   background: #fff;
   border-color: var(--kmc-line);
-}
-.kmc-admin-secondary-link.is-active {
-  color: #174ea6;
-  background: var(--kmc-freeze-n2-active);
-  border-color: #cfe0ff;
-  box-shadow: inset 0 0 0 1px rgb(79 140 255 / 0.05);
 }
 
 @media (min-width: 1321px) and (max-width: 1660px) {
@@ -164,21 +142,8 @@ body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-
   .kmc-admin-primary-nav { height: 64px; margin-top: 0; }
   .kmc-admin-primary-link { height: 64px; }
 }
-
-.kmc-dashboard-header,
-.kmc-workspace-header,
-.kmc-access-hero {
-  border: 1px solid var(--kmc-freeze-border);
-  border-left: 4px solid var(--surface-accent, var(--kmc-amber-strong));
-  border-radius: 14px;
-  background: linear-gradient(100deg, color-mix(in srgb, var(--surface-soft, #fffaf0) 72%, #fff) 0%, #fff 72%);
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.03);
-}
 .kmc-dashboard-header { padding: 17px 20px 18px; gap: 6px; }
 .kmc-dashboard-header::after { opacity: .8; }
-.kmc-dashboard-title,
-.kmc-workspace-title,
-.kmc-access-hero h1 { letter-spacing: -0.03em; }
 .kmc-dashboard-title { font-size: clamp(26px, 3vw, 36px); }
 .kmc-dashboard-description,
 .kmc-workspace-subtitle,
@@ -208,56 +173,14 @@ body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-
   border-color: var(--kmc-freeze-border);
   box-shadow: var(--kmc-freeze-shadow);
 }
-.kmc-decision-surface-card { padding: 17px 18px; border-radius: 14px; }
-.kmc-decision-strip,
-.kmc-summary-card-grid,
-.kmc-progress-grid,
-.kmc-metric-strip { gap: 10px; }
-.kmc-decision-card,
-.kmc-summary-card,
-.kmc-progress-card,
-.kmc-ranked-row,
-.kmc-priority-row,
-.kmc-info-row,
-.kmc-metric-card {
-  border-color: color-mix(in srgb, var(--decision-accent, var(--metric-accent, var(--kmc-blue))) 18%, var(--kmc-freeze-border));
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.035), 0 6px 18px rgb(15 23 42 / 0.035);
-  background: linear-gradient(145deg, color-mix(in srgb, var(--decision-soft, var(--metric-soft, #f8fafc)) 72%, #fff) 0%, #fff 62%);
-}
+.kmc-decision-surface-card { border-radius: 14px; }
 .kmc-decision-card { min-height: 132px; gap: 11px; padding: 14px 15px; }
 .kmc-decision-card-value { font-size: clamp(24px, 2.2vw, 32px); }
 .kmc-summary-card { min-height: 118px; gap: 11px; padding: 14px 15px; }
 .kmc-metric-card { min-height: 96px; gap: 5px; padding: 15px 16px 14px; }
-.kmc-metric-card::after {
-  width: 30px;
-  height: 30px;
-  top: 12px;
-  right: 12px;
-  border-radius: 10px;
-}
-.kmc-ranked-row,
-.kmc-priority-row,
-.kmc-info-row { min-height: 48px; padding: 10px 11px; }
-.kmc-section-header,
-.kmc-chart-header { padding: 17px 18px 0; }
-.kmc-section-body,
-.kmc-chart-slot { padding: 17px 18px 18px; }
 .kmc-section-title,
 .kmc-chart-title,
 .kmc-alert-panel-title { font-size: 15px; }
-.kmc-section-title::before {
-  width: 5px;
-  height: 16px;
-  box-shadow: 0 0 0 3px rgb(244 184 96 / 0.10);
-}
-
-.kmc-workspace-action,
-.kmc-access-button.is-primary {
-  color: #fff;
-  border-color: #203a63;
-  background: linear-gradient(180deg, #294d7c 0%, #203d67 100%);
-  box-shadow: 0 1px 2px rgb(15 23 42 / .12);
-}
 .kmc-workspace-action:hover,
 .kmc-workspace-action:focus-visible,
 .kmc-access-button.is-primary:hover,
@@ -266,32 +189,13 @@ body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-
   border-color: #142b4c;
   background: linear-gradient(180deg, #24466f 0%, #19365d 100%);
 }
-.kmc-workspace-action.is-secondary,
-.kmc-access-button:not(.is-primary):not(.is-danger) {
-  color: #26364d;
-  border-color: var(--kmc-line-strong);
-  background: #fff;
-  box-shadow: none;
-}
 .kmc-workspace-action:disabled,
 .kmc-access-button:disabled { opacity: .56; box-shadow: none; }
 
 .kmc-table-wrap,
 .kmc-workspace-table-wrap {
   border-color: var(--kmc-freeze-border);
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgb(15 23 42 / 0.025);
 }
-.kmc-data-table th,
-.kmc-workspace-table th { color: #5f6e82; background: #f8fafc; }
-.kmc-data-table tbody tr:hover,
-.kmc-workspace-table tbody tr:hover { background: #f8fbff; }
-.kmc-ui-state.is-empty,
-.kmc-workspace-empty {
-  border-color: var(--kmc-freeze-border);
-  background: radial-gradient(circle at 50% 0%, rgb(59 130 246 / .055), transparent 18rem), #fff;
-}
-.kmc-trust-footer { background: #f8fafc; border-color: var(--kmc-freeze-border); }
 
 @media (max-width: 1320px) {
   .kmc-admin-navigation-inner {

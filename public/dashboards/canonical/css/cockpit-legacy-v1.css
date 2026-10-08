@@ -35,7 +35,6 @@ body.kmc-shell-v4 .kmc-domain-cockpit {
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit > .kmc-dashboard-header {
-  padding: 8px 4px 4px;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -44,20 +43,11 @@ body.kmc-shell-v4 .kmc-domain-cockpit > .kmc-dashboard-header {
 body.kmc-shell-v4 .kmc-domain-cockpit .canonical-eyebrow {
   width: fit-content;
   margin: 0 0 7px;
-  padding: 3px 7px;
-  color: var(--kmc-cockpit-orange-strong);
-  border: 1px solid rgb(245 166 35 / 0.28);
-  border-radius: 999px;
-  background: var(--kmc-cockpit-orange-soft);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .07em;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-dashboard-title {
   margin: 0;
   color: var(--kmc-cockpit-ink);
-  font-size: clamp(28px, 2.4vw, 34px);
   font-weight: 700;
   line-height: 1.08;
   letter-spacing: -.025em;
@@ -66,23 +56,13 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kmc-dashboard-title {
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-dashboard-description {
   max-width: 880px;
   margin: 6px 0 0;
-  color: var(--kmc-cockpit-muted);
-  font-size: 13px;
   line-height: 1.45;
 }
 
 /* Open decisions: visually important, but still Legacy-light. */
-body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-strip {
-  gap: 8px;
-}
 
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card {
-  min-height: 92px;
-  padding: 13px 15px;
   border: 1px solid var(--kmc-cockpit-line);
-  border-left-width: 3px;
-  border-radius: 10px;
-  background: var(--kmc-cockpit-surface);
   box-shadow: none;
 }
 
@@ -120,7 +100,6 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card-helper {
 
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card-value {
   color: var(--kmc-cockpit-ink);
-  font-size: clamp(21px, 2vw, 28px);
   font-weight: 700;
 }
 
@@ -145,21 +124,15 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-link {
 /* Situation / detail panels: white, dense, no decorative shadows. */
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-surface-card {
   border: 1px solid var(--kmc-cockpit-line);
-  border-radius: 10px;
   background: var(--kmc-cockpit-surface);
   box-shadow: none;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-dashboard-section-title {
-  color: var(--kmc-cockpit-copy);
-  font-size: 12px;
-  font-weight: 700;
   letter-spacing: .025em;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-dashboard-section-copy {
-  color: var(--kmc-cockpit-faint);
-  font-size: 11px;
   font-weight: 400;
 }
 

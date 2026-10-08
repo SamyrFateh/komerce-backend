@@ -50,7 +50,8 @@ describe('canonical visual freeze v1', () => {
     const css = read('public/dashboards/canonical/css/visual-freeze-v1.css');
     expect(css).toContain('--kmc-freeze-nav: #0f1a2e');
     expect(css).toContain('--kmc-freeze-n2: #f8fafc');
-    expect(css).toContain('.kmc-admin-secondary-link.is-active');
+    // Les déclarations de l'état actif N2 sont portées par la couche qui gagne la cascade (theme-v2).
+    expect(read('public/dashboards/canonical/css/canonical-theme-v2.css')).toContain('.kmc-admin-secondary-link.is-active');
     expect(css).toContain('@media (min-width: 1321px) and (max-width: 1660px)');
     expect(css).toContain('grid-template-columns: auto minmax(0, 1fr) auto');
   });
@@ -63,7 +64,7 @@ describe('canonical visual freeze v1', () => {
     expect(css).toContain('.kmc-metric-card');
     expect(css).toContain('.kmc-workspace-action');
     expect(css).toContain('.kmc-workspace-table-wrap');
-    expect(css).toContain('.kmc-ui-state.is-empty');
+    expect(read('public/dashboards/canonical/css/canonical-theme-v2.css')).toContain('.kmc-ui-state.is-empty');
     expect(css).toContain('@media (max-width: 720px)');
     expect(css).not.toMatch(/\.is-(?:critical|warning|positive)\s*\{\s*display\s*:\s*none/);
   });
