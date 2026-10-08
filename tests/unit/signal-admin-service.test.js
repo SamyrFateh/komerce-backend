@@ -122,3 +122,7 @@ test('findActiveByEntity includes market in active fact identity', async () => {
   expect(sql).toContain('market_id IS NOT DISTINCT FROM $4::uuid');
   expect(params).toEqual(['parcel_blocked', 'parcel', 'parcel-uuid', 'market-cm']);
 });
+
+test('financial_close_economic_facts_pending est classé dans la famille eco', () => {
+  expect(require('../../services/signal-admin-service').familyForType('financial_close_economic_facts_pending')).toBe('eco');
+});

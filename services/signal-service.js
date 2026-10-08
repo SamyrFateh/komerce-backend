@@ -32,6 +32,7 @@ let db = require('../db');
 let log = require('../utils/logger').child({ module: 'signal-service' });
 const { getSupplierPaymentReview } = require('./supplier-payment-review');
 const { getRuleNumber } = require('../utils/rules');
+const { reconcileOrderFinancialClose, VERDICT: FINANCIAL_CLOSE_VERDICT } = require('./order-financial-closure-reconciliation');
 
 /* ═══════════════════════════════════════════════════════════════
    UPSERT — insert or update one active derived fact
@@ -537,6 +538,86 @@ async function retireObsoleteSignalTypes() {
     return 0;
   }
 }
+
+// Clôture financière : commande encaissée et payée dont les faits économiques ne sont pas mûrs.
+// Le verdict vient de reconcileOrderFinancialClose (seule autorité) ; ce générateur ne recalcule rien.
+// Fenêtre et plafond bornent le coût (≈5 requêtes par commande) ; un plafond atteint est rapporté
+// (`truncated`) et journalisé, jamais silencieux. Un signal n'est résolu que si sa commande a été
+// réévaluée et n'est plus en attente, ou si elle n'est plus candidate.
+const FINANCIAL_CLOSE_WINDOW_DAYS = 60;
+const FINANCIAL_CLOSE_MAX_EVALUATIONS = 200;
+const FINANCIAL_CLOSE_CANDIDATES_SQL = `
+  FROM orders o
+ WHERE o.status::text = 'collected'
+   AND o.payment_status::text = 'paid'
+   AND o.updated_at > NOW() - ($1::int * INTERVAL '1 day')`;
+
+GENERATORS.financial_close_economic_facts_pending = async function() {
+  try {
+    const rows = (await db.query(
+      `SELECT o.id, o.reference ${FINANCIAL_CLOSE_CANDIDATES_SQL}
+        ORDER BY o.updated_at ASC
+        LIMIT $2`,
+      [FINANCIAL_CLOSE_WINDOW_DAYS, FINANCIAL_CLOSE_MAX_EVALUATIONS + 1]
+    )).rows;
+    const truncated = rows.length > FINANCIAL_CLOSE_MAX_EVALUATIONS;
+    const evaluated = rows.slice(0, FINANCIAL_CLOSE_MAX_EVALUATIONS);
+
+    let generated = 0;
+    const notPendingIds = [];
+    for (const r of evaluated) {
+      let verdict;
+      try {
+        verdict = await reconcileOrderFinancialClose(db, { orderId: r.id });
+      } catch (error) {
+        // Évaluation impossible : on ne résout rien (fail-closed) et on continue.
+        log.warn({ err: error, order_id: r.id }, '[signal-service] financial_close evaluation failed');
+        continue;
+      }
+      if (verdict.verdict === FINANCIAL_CLOSE_VERDICT.PENDING && verdict.reason === 'FINANCIAL_CLOSE_ECONOMIC_FACTS_PENDING') {
+        await upsertSignal({
+          signal_type: 'financial_close_economic_facts_pending', severity: 'warning',
+          title: r.reference ? 'Clôture financière en attente des faits économiques — ' + r.reference : 'Clôture financière en attente des faits économiques',
+          summary: 'Commande encaissée et payée, mais les faits économiques ne sont pas mûrs : la clôture financière ne peut pas être prononcée.',
+          source_module: 'signal-service', target_shell: 'bo', target_view: 'orders',
+          target_filters: { status: 'collected' }, owner_role: 'finance', entity_type: 'order', entity_id: r.id,
+          recommendation: 'Compléter les faits économiques de la commande (imputations de coûts, disposition) puis relancer la clôture',
+          confidence: 'high',
+          meta: { reason: verdict.reason },
+        });
+        generated++;
+      } else {
+        notPendingIds.push(r.id);
+      }
+    }
+
+    // Résolution bornée : commandes réévaluées et non en attente, ou sorties du périmètre candidat.
+    await db.query(
+      `UPDATE signals s
+          SET status = 'resolved', resolved_at = NOW(), snoozed_until = NULL, updated_at = NOW()
+        WHERE s.signal_type = 'financial_close_economic_facts_pending'
+          AND s.status IN ('open','acknowledged','snoozed')
+          AND s.entity_id IS NOT NULL
+          AND (
+            s.entity_id::text = ANY($1::text[])
+            OR NOT EXISTS (
+              SELECT 1 FROM orders o
+               WHERE o.id::text = s.entity_id::text
+                 AND o.status::text = 'collected'
+                 AND o.payment_status::text = 'paid'
+                 AND o.updated_at > NOW() - ($2::int * INTERVAL '1 day')
+            )
+          )`,
+      [notPendingIds.map(String), FINANCIAL_CLOSE_WINDOW_DAYS]
+    );
+
+    if (truncated) log.warn({ max: FINANCIAL_CLOSE_MAX_EVALUATIONS }, '[signal-service] financial_close candidates truncated');
+    return { generated, evaluated: evaluated.length, truncated };
+  } catch (e) {
+    log.warn({ err: e }, '[signal-service] financial_close_economic_facts_pending error:');
+    return { generated: 0, error: e.message };
+  }
+};
 
 // PR 7 — « couverture » d'achat lue sur les lignes (v_purchase_line_progress) : un item non LOCAL_STOCK est couvert
 // quand la somme des quantités effectives de ses lignes non annulées (ouvertes, en brouillon ou engagées) atteint sa
