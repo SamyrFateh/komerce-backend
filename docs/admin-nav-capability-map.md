@@ -220,7 +220,7 @@ nécessite un mock. Son accès Legacy (`/admin/clients`, `/admin/shared-carts`,
 `/admin/problems`) reste inchangé, non touché par cette PR.
 
 `sourcing-workspace` a changé de parent dans `SURFACE_PARENT`
-(`navigation.js`) : il pointait vers l'onglet `catalog` par défaut (nesting
+(`navigation-policy-v4.js`, ex-`navigation.js`) : il pointait vers l'onglet `catalog` par défaut (nesting
 arbitraire, faute de mieux) ; il pointe maintenant vers lui-même, cohérent
 avec son statut de nouvel onglet primaire.
 

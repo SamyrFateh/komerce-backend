@@ -185,7 +185,7 @@ La cible finale est : **un shell interne, une authentification, une politique de
 - `/admin` sert déjà `public/dashboards/canonical/index.html`.
 - `canonical/js/app.js` accepte déjà `admin`, `market_operator`, `finance`, `sourcing`, `agent_hub`, `agent_relais`, `agent_transitaire`, `support`.
 - les landings métier existent déjà dans `ROLE_DEFAULT_LANDING` pour Finance, Sourcing, Hub, Relais et Transitaire.
-- `navigation.js` filtre déjà les onglets selon les rôles et les guards serveur connus.
+- `navigation-policy-v4.js` filtre déjà les onglets selon les rôles et les guards serveur connus.
 - Operations, Shipping/Customs, Sourcing et Accounting existent déjà comme workspaces Canonical.
 - les workspaces d’action sont déjà market-scopés et réautorisés côté serveur.
 - les deep-links non authentifiés conservent déjà leur destination via `?next=`.
@@ -209,6 +209,6 @@ La cible finale est : **un shell interne, une authentification, une politique de
 - `docs/admin-nav-capability-map.md` — routes, rôles et guards vérifiés.
 - `docs/contract/OPERATIONS_WORKSPACE_4A.md` — séparation Dashboard / Workspace, MarketScope et responsabilités Hub/Relais.
 - `public/dashboards/canonical/js/app.js` — boot, session, contexte et landings.
-- `public/dashboards/canonical/js/navigation.js` — navigation role-aware.
+- `public/dashboards/canonical/js/navigation-policy-v4.js` — navigation role-aware.
 - `public/js/login.js` — authentification commune.
 - `bootstrap/html-routes.js` — `/admin` et routes Canonical stables.

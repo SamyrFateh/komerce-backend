@@ -71,6 +71,8 @@ module.exports = {
     ],
     dash: [
       'dashboards/canonical/market-autonomy.html',
+      'dashboards/canonical/access.html',
+      'dashboards/canonical/market-catalog.html',
       'dashboards/canonical/js/market-autonomy.js',
       'dashboards/canonical/css/market-team.css',
       'dashboards/canonical/js/market-team.js',

@@ -25,8 +25,6 @@ async function mountShell(page, { role = 'admin', surface = 'import-runtime', pa
         body: `<!doctype html><html lang="fr"><head><meta charset="utf-8">${links}</head>
           <body data-admin-generation="canonical"><main id="canonical-admin-root"></main>
           <script>window.KOMERCE_CANONICAL_AUTH_USER=${JSON.stringify({ role })};</script>
-          <script src="/dashboards/canonical/js/navigation.js"></script>
-          <script src="/dashboards/canonical/js/navigation-policy-v3.js"></script>
           <script src="/dashboards/canonical/js/navigation-policy-v4.js"></script>
           <script src="/dashboards/canonical/js/import-runtime.js"></script></body></html>`,
       });

@@ -1,25 +1,707 @@
 /**
  * @komerce-arch
- * @role          canonical-admin-navigation-policy-v4
+ * @role          canonical-admin-navigation
  * @domain        admin-dashboard
  * @layer         ui-navigation
  * @criticality   high
- * @inputs        authenticated_user, canonical_surface, canonical_navigation_v3
- * @outputs       hybrid_sidebar_n1_horizontal_n2_shell
- * @depends       public/dashboards/canonical/js/navigation-policy-v3.js
+ * @inputs        authenticated_user, canonical_surface, url_path, server_admin_context
+ * @outputs       hybrid_sidebar_n1_horizontal_n2_shell, logical_back_navigation, market_selector_proxy
+ * @depends       canonical admin app surface contract
  * @used-by       canonical admin runtime, standalone market canonical pages
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      single_shell_sidebar_n1_horizontal_n2_local_n3, visible_destination_must_have_server_guard, market_id_is_transverse_context
+ * @doctrine      single_navigation_structure, single_shell_sidebar_n1_horizontal_n2_local_n3, visible_destination_must_have_server_guard, country_manager_owns_market_scope, client_market_id_never_authority, market_id_is_transverse_context
  * @impact-areas  admin-dashboard, navigation, market-authorization
- * @version       2026-09-v4.2-business-truth
+ * @version       2026-10-v5.0-single-navigation
  */
 'use strict';
 
-(function initCanonicalNavigationPolicyV4(global) {
-  const base = global.KomerceCanonicalNavigation;
-  if (!base) return;
+// Fichier unique de navigation Canonical. Il remplace l'empilement
+// navigation.js (V2.1) -> navigation-policy-v3.js -> navigation-policy-v4.js :
+// une seule structure (DOMAINS / SIDEBAR_GROUPS / LOCAL_TABS), un seul mount.
+(function initCanonicalNavigation(global) {
+
+  const DOMAINS = Object.freeze([
+    Object.freeze({
+      id: 'dashboard',
+      label: 'Dashboard',
+      href: '/admin/pilotage',
+      roles: Object.freeze(['admin', 'market_operator']),
+    }),
+    Object.freeze({
+      id: 'pricing',
+      label: 'Atelier économique',
+      href: '/admin/workspaces/pricing',
+      roles: Object.freeze(['admin', 'market_operator']),
+    }),
+    Object.freeze({
+      id: 'catalog',
+      label: 'Catalogue',
+      href: '/admin/workspaces/catalog',
+      roles: Object.freeze(['admin']),
+    }),
+    Object.freeze({
+      id: 'orders',
+      label: 'Commandes',
+      spaces: Object.freeze([
+        Object.freeze({ id: 'commerce', label: 'Commerce', href: '/admin/commerce', roles: Object.freeze(['admin', 'market_operator']) }),
+        Object.freeze({ id: 'orders-overview', label: 'Suivi des commandes', href: '/admin/orders', roles: Object.freeze(['admin', 'market_operator']) }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'markets',
+      label: 'Marchés',
+      href: '/dashboards/canonical/access.html',
+      roles: Object.freeze(['admin', 'market_operator']),
+    }),
+    Object.freeze({
+      id: 'operations',
+      label: 'Opérations',
+      spaces: Object.freeze([
+        Object.freeze({ id: 'operations-overview', label: 'Vue d’ensemble', href: '/admin/operations', roles: Object.freeze(['admin', 'market_operator']) }),
+        Object.freeze({ id: 'operations-workspace', label: 'Hub / Relais', href: '/admin/workspaces/operations', roles: Object.freeze(['admin', 'agent_hub', 'agent_relais', 'market_operator']) }),
+        Object.freeze({ id: 'shipping-customs-workspace', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: Object.freeze(['admin', 'agent_hub', 'agent_transitaire', 'market_operator']) }),
+        Object.freeze({ id: 'purchasing-workspace', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: Object.freeze(['admin']) }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'live',
+      label: 'Live',
+      // Cockpits opérationnels temps réel (coque noire dédiée). Hub live et
+      // Relais live viendront ici comme espaces N2 ; les écrans de gestion
+      // restent dans Opérations.
+      spaces: Object.freeze([
+        Object.freeze({ id: 'import-runtime', label: 'Sourcing live', href: '/admin/import-runtime', roles: Object.freeze(['admin', 'sourcing']) }),
+        Object.freeze({ id: 'hub-live', label: 'Hub live', href: '/admin/hub-live', roles: Object.freeze(['admin', 'agent_hub']) }),
+        Object.freeze({ id: 'relais-live', label: 'Relais live', href: '/admin/relais-live', roles: Object.freeze(['admin', 'agent_relais']) }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'finance',
+      label: 'Finance',
+      spaces: Object.freeze([
+        Object.freeze({ id: 'finance-overview', label: 'Vue d’ensemble', href: '/admin/finance', roles: Object.freeze(['admin', 'market_operator']) }),
+        Object.freeze({ id: 'accounting-workspace', label: 'Comptabilité', href: '/admin/workspaces/accounting', roles: Object.freeze(['admin', 'finance', 'agent_relais', 'market_operator']) }),
+      ]),
+    }),
+  ]);
+
+  const ROLE_HOME = Object.freeze({
+    admin: '/admin/pilotage',
+    market_operator: '/admin/pilotage',
+    finance: '/admin/workspaces/accounting',
+    sourcing: '/admin/import-runtime',
+    agent_hub: '/admin/workspaces/operations',
+    agent_relais: '/admin/workspaces/operations',
+    agent_transitaire: '/admin/workspaces/shipping-customs',
+    support: '/portail',
+  });
+
+  const SURFACE_TO_DOMAIN = Object.freeze({
+    pilotage: 'dashboard',
+    'action-center': 'dashboard',
+    demo: 'dashboard',
+    'pricing-workspace': 'pricing',
+    'catalog-workspace': 'catalog',
+    'market-catalog': 'markets',
+    'product-360': 'catalog',
+    commerce: 'orders',
+    orders: 'orders',
+    'order-360': 'orders',
+    'client-index': 'orders',
+    'client-360': 'orders',
+    'market-access': 'markets',
+    'market-autonomy': 'markets',
+    operations: 'operations',
+    'operations-workspace': 'operations',
+    'shipping-customs-workspace': 'operations',
+    'purchasing-workspace': 'operations',
+    'sourcing-workspace': 'catalog',
+    'import-runtime': 'live',
+    'hub-live': 'live',
+    'relais-live': 'live',
+    finance: 'finance',
+    'accounting-workspace': 'finance',
+    settings: 'settings',
+  });
+
+  const SURFACE_TO_SPACE = Object.freeze({
+    commerce: 'commerce',
+    orders: 'orders-overview',
+    'order-360': 'commerce',
+    'client-index': 'commerce',
+    'client-360': 'commerce',
+    operations: 'operations-overview',
+    'operations-workspace': 'operations-workspace',
+    'shipping-customs-workspace': 'shipping-customs-workspace',
+    'purchasing-workspace': 'purchasing-workspace',
+    'import-runtime': 'import-runtime',
+    'hub-live': 'hub-live',
+    'relais-live': 'relais-live',
+    finance: 'finance-overview',
+    'accounting-workspace': 'accounting-workspace',
+  });
+
+  const SETTINGS_UTILITY = Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: Object.freeze(['admin']) });
+
+  const BACK_TARGETS = Object.freeze({
+    'action-center': Object.freeze({ href:'/admin/pilotage', label:'Retour au pilotage' }),
+    'order-360': Object.freeze({ href:'/admin/commerce', label:'Retour au commerce' }),
+    'client-index': Object.freeze({ href:'/admin/commerce', label:'Retour au commerce' }),
+    'client-360': Object.freeze({ href:'/admin/clients', label:'Retour aux clients' }),
+    'product-360': Object.freeze({ href:'/admin/workspaces/catalog', label:'Retour au catalogue' }),
+    'supplier-360': Object.freeze({ href:'/admin/workspaces/sourcing', label:'Retour au sourcing' }),
+    demo: Object.freeze({ href:'/admin/pilotage', label:'Retour au pilotage' }),
+  });
+
+  function safeReturnTarget(value) {
+    const target = String(value || '').trim();
+    if (!target || !target.startsWith('/') || target.startsWith('//') || target.includes('\\')) return null;
+    const pathname = target.split(/[?#]/, 1)[0];
+    if (pathname === '/admin' || pathname.startsWith('/admin/')) return target;
+    if (pathname.startsWith('/dashboards/canonical/')) return target;
+    return null;
+  }
+
+  function withReturnTo(path, returnTo, label = 'Retour') {
+    const target = safeReturnTarget(returnTo);
+    if (!target) return String(path || '');
+    const q = new URLSearchParams();
+    q.set('return_to', target);
+    if (label) q.set('return_label', String(label));
+    const base = String(path || '');
+    return base + (base.includes('?') ? '&' : '?') + q.toString();
+  }
+
+  function resolveBackTarget(surface, search) {
+    let requestedHref = null;
+    let requestedLabel = null;
+    try {
+      const query = new URLSearchParams(String(search || '').replace(/^\?/, ''));
+      requestedHref = safeReturnTarget(query.get('return_to'));
+      const rawLabel = String(query.get('return_label') || '').trim();
+      requestedLabel = rawLabel && rawLabel.length <= 48 ? rawLabel : null;
+    } catch (_) {
+      requestedHref = null;
+      requestedLabel = null;
+    }
+    if (requestedHref) {
+      return Object.freeze({
+        href: requestedHref,
+        label: requestedLabel || 'Retour',
+        contextual: true,
+      });
+    }
+    const fallback = BACK_TARGETS[surface];
+    return fallback ? Object.freeze({ ...fallback, contextual:false }) : null;
+  }
+
+  function textNode(doc, tagName, className, value) {
+    const node = doc.createElement(tagName);
+    if (className) node.className = className;
+    node.textContent = value;
+    return node;
+  }
+
+  function surfaceForPath(pathname) {
+    const path = String(pathname || '');
+    if (
+      path === '/dashboards/canonical/access.html'
+      || path === '/dashboards/canonical/market-autonomy.html'
+      || path === '/dashboards/canonical/market-catalog.html'
+    ) {
+      if (path.includes('access')) return 'market-access';
+      if (path.includes('market-catalog')) return 'market-catalog';
+      return 'market-autonomy';
+    }
+    if (path === '/admin/settings') return 'settings';
+
+    const app = global.KomerceCanonicalAdmin;
+    if (!app || typeof app.surfaceForPath !== 'function') return 'pilotage';
+    return app.surfaceForPath(pathname);
+  }
+
+  function roleOf(user) {
+    return String(user && user.role || '');
+  }
+
+  function visibleSpacesFor(domain, role) {
+    if (!domain || !Array.isArray(domain.spaces)) return Object.freeze([]);
+    return Object.freeze(domain.spaces.filter(space => (space.roles || []).includes(role)));
+  }
+
+  function domainIsVisible(domain, role) {
+    if (!domain) return false;
+    if (Array.isArray(domain.spaces)) return visibleSpacesFor(domain, role).length > 0;
+    return (domain.roles || []).includes(role);
+  }
+
+  function visibleDomainsFor(user) {
+    const role = roleOf(user);
+    return Object.freeze(DOMAINS.filter(domain => domainIsVisible(domain, role)));
+  }
+
+  function visibleNavigationFor(user) {
+    return visibleDomainsFor(user);
+  }
+
+  function hrefFor(item, user) {
+    const role = roleOf(user);
+    if (item.id === 'markets' && role === 'market_operator') {
+      return '/dashboards/canonical/market-autonomy.html';
+    }
+    return item.href;
+  }
+
+  function landingForDomain(domain, user) {
+    if (!domain) return null;
+    if (!Array.isArray(domain.spaces)) return hrefFor(domain, user);
+    const spaces = visibleSpacesFor(domain, roleOf(user));
+    return spaces.length ? spaces[0].href : null;
+  }
+
+  function defaultLandingFor(user) {
+    return ROLE_HOME[roleOf(user)] || '/';
+  }
+
+  function activePrimarySurface(surface) {
+    return SURFACE_TO_DOMAIN[surface] || 'dashboard';
+  }
+
+  function activeSpaceFor(surface) {
+    return SURFACE_TO_SPACE[surface] || null;
+  }
+
+  function createLink(doc, item, href, isActive, className) {
+    const link = doc.createElement('a');
+    link.className = className;
+    link.href = href;
+    link.textContent = item.label;
+    link.setAttribute('data-dashboard', item.id);
+    if (isActive) {
+      link.className += ' is-active';
+      link.setAttribute('aria-current', 'page');
+    }
+    return link;
+  }
+
+  function createDomainLink(doc, domain, activeDomainId, user) {
+    const href = Array.isArray(domain.spaces) ? landingForDomain(domain, user) : hrefFor(domain, user);
+    return createLink(doc, domain, href, domain.id === activeDomainId, 'kmc-admin-primary-link');
+  }
+
+
+  function createSpaceLink(doc, space, activeSpaceId) {
+    return createLink(doc, space, space.href, space.id === activeSpaceId, 'kmc-admin-secondary-link');
+  }
+
+  function runtimeIsStaging(payload) {
+    return String(payload && payload.komerce_env || '').trim().toLowerCase() === 'staging';
+  }
+
+  async function postStagingAdminAction(path, body) {
+    const response = await global.fetch(path, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    let payload = {};
+    try { payload = await response.json(); } catch (_) { /* réponse non JSON */ }
+    if (!response.ok) {
+      throw new Error(payload.error || payload.message || `HTTP ${response.status}`);
+    }
+    return payload;
+  }
+
+  async function mountStagingAdminTools(doc, configurationGroup) {
+    if (!configurationGroup || typeof global.fetch !== 'function') return false;
+
+    try {
+      // Fail closed: les outils destructifs ne sont projetés que lorsque
+      // le serveur lui-même déclare KOMERCE_ENV=staging.
+      const response = await global.fetch('/health', {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) return false;
+      const runtime = await response.json();
+      if (!runtimeIsStaging(runtime)) return false;
+
+      const tools = doc.createElement('div');
+      tools.className = 'kmc-admin-staging-tools';
+      tools.setAttribute('data-staging-tools', 'true');
+
+      const badge = textNode(doc, 'div', 'kmc-admin-staging-badge', 'STAGING');
+      tools.appendChild(badge);
+
+      const reset = textNode(doc, 'button', 'kmc-admin-staging-action is-danger', 'Reset commandes');
+      reset.type = 'button';
+      reset.setAttribute('data-admin-action', 'reset-orders');
+
+      const seed = textNode(doc, 'button', 'kmc-admin-staging-action is-seed', 'Seed test');
+      seed.type = 'button';
+      seed.setAttribute('data-admin-action', 'seed-test');
+
+      const status = textNode(doc, 'div', 'kmc-admin-staging-status', '');
+      status.setAttribute('aria-live', 'polite');
+
+      reset.addEventListener('click', async () => {
+        const confirmFn = typeof global.confirm === 'function' ? global.confirm.bind(global) : null;
+        if (!confirmFn || !confirmFn('Supprimer toutes les commandes et données de session de test sur STAGING ?')) return;
+        reset.disabled = true;
+        seed.disabled = true;
+        status.className = 'kmc-admin-staging-status';
+        status.textContent = 'Reset en cours…';
+        try {
+          const result = await postStagingAdminAction('/api/admin/reset', { mode: 'orders', confirm: true });
+          status.className = 'kmc-admin-staging-status is-success';
+          status.textContent = result.message || 'Reset terminé.';
+        } catch (error) {
+          status.className = 'kmc-admin-staging-status is-error';
+          status.textContent = error.message || 'Échec du reset.';
+        } finally {
+          reset.disabled = false;
+          seed.disabled = false;
+        }
+      });
+
+      seed.addEventListener('click', async () => {
+        const confirmFn = typeof global.confirm === 'function' ? global.confirm.bind(global) : null;
+        if (!confirmFn || !confirmFn('Injecter les données de test sur STAGING ?')) return;
+        reset.disabled = true;
+        seed.disabled = true;
+        status.className = 'kmc-admin-staging-status';
+        status.textContent = 'Seed en cours…';
+        try {
+          const result = await postStagingAdminAction('/api/admin/seed-test', { confirm: true });
+          status.className = 'kmc-admin-staging-status is-success';
+          status.textContent = result.message || 'Seed terminé.';
+        } catch (error) {
+          status.className = 'kmc-admin-staging-status is-error';
+          status.textContent = error.message || 'Échec du seed.';
+        } finally {
+          reset.disabled = false;
+          seed.disabled = false;
+        }
+      });
+
+      tools.appendChild(reset);
+      tools.appendChild(seed);
+      tools.appendChild(status);
+      configurationGroup.appendChild(tools);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function roleLabel(user) {
+    if (!user || !user.role) return 'Admin';
+    if (user.role === 'market_operator') return 'Responsable pays';
+    if (user.role === 'admin') return 'Admin';
+    return String(user.role).replaceAll('_', ' ');
+  }
+
+  function createLogoutButton(doc) {
+    const button = textNode(doc, 'button', 'kmc-admin-logout', 'Déconnexion');
+    button.type = 'button';
+    button.setAttribute('aria-label', 'Se déconnecter');
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      try {
+        if (typeof global.fetch === 'function') {
+          await global.fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { Accept: 'application/json' },
+          });
+        }
+      } catch (error) {
+        console.error('[canonical-admin] logout request failed', error);
+      } finally {
+        global.KOMERCE_CANONICAL_AUTH_USER = null;
+        global.KOMERCE_AUTH_USER = null;
+        if (global.location) {
+          if (typeof global.location.replace === 'function') global.location.replace('/login.html');
+          else global.location.href = '/login.html';
+        }
+      }
+    });
+    return button;
+  }
+
+  function currentRequestedMarket(adminContext, requireMarket = false) {
+    const access = adminContext && adminContext.access;
+    if (!access || !Array.isArray(access.allowedMarkets)) return null;
+
+    try {
+      const params = new URLSearchParams((global.location && global.location.search) || '');
+      const requested = String(params.get('market') || '').toUpperCase();
+      if (requested && access.allowedMarkets.includes(requested)) return requested;
+    } catch (_) {
+      // Le contexte serveur reste l'autorité si URLSearchParams est absent.
+    }
+
+    if (access.mode === 'global' && !requireMarket) return null;
+    if (access.defaultMarket && access.allowedMarkets.includes(access.defaultMarket)) return access.defaultMarket;
+    return access.allowedMarkets[0] || null;
+  }
+
+  function marketChoices(adminContext, requireMarket = false) {
+    const app = global.KomerceCanonicalAdmin;
+    if (app && typeof app.marketChoices === 'function') {
+      try { return app.marketChoices(adminContext, { requireMarket }); } catch (_) { /* fallback ci-dessous */ }
+    }
+
+    const access = adminContext && adminContext.access;
+    if (!access || !Array.isArray(access.allowedMarkets)) return [];
+    const choices = [];
+    if (access.mode === 'global' && !requireMarket) choices.push({ value: '', label: 'Tous les marchés' });
+    access.allowedMarkets.forEach(code => choices.push({ value: code, label: code }));
+    return choices;
+  }
+
+  const MARKET_FLAG_ASSETS = Object.freeze({
+    CM: '/dashboards/canonical/assets/flags/CM.svg',
+    CG: '/dashboards/canonical/assets/flags/CG.svg',
+    KM: '/dashboards/canonical/assets/flags/KM.svg',
+  });
+
+  function marketFlagAsset(code) {
+    return MARKET_FLAG_ASSETS[String(code || '').trim().toUpperCase()] || '';
+  }
+
+  function stripRegionalFlagPrefix(label) {
+    return String(label || '').replace(/^[\u{1F1E6}-\u{1F1FF}]{2}\s*/u, '');
+  }
+
+  function proxyMarketChange(doc, value) {
+    if (doc && typeof doc.querySelector === 'function') {
+      const canonicalSelect = doc.querySelector('.kmc-market-context-select');
+      if (canonicalSelect && canonicalSelect !== doc.activeElement) {
+        canonicalSelect.value = value;
+        if (typeof canonicalSelect.dispatchEvent === 'function' && typeof global.Event === 'function') {
+          canonicalSelect.dispatchEvent(new global.Event('change', { bubbles: true }));
+          return;
+        }
+      }
+    }
+
+    if (global.location) {
+      const url = new URL(global.location.href);
+      if (value) url.searchParams.set('market', value);
+      else url.searchParams.delete('market');
+      global.location.href = url.toString();
+    }
+  }
+
+  function createMarketControl(doc, adminContext, requireMarket = false) {
+    const choices = marketChoices(adminContext, requireMarket);
+    if (!choices.length) return null;
+
+    const wrap = doc.createElement('label');
+    wrap.className = 'kmc-admin-market-control';
+    wrap.setAttribute('aria-label', 'Marché actif');
+
+    const flag = doc.createElement('img');
+    flag.className = 'kmc-admin-market-flag';
+    flag.alt = '';
+    flag.setAttribute('aria-hidden', 'true');
+
+    const select = doc.createElement('select');
+    select.className = 'kmc-admin-market-select';
+    select.setAttribute('aria-label', 'Sélectionner le marché');
+    const current = currentRequestedMarket(adminContext, requireMarket);
+
+    const syncFlag = marketCode => {
+      const asset = marketFlagAsset(marketCode);
+      flag.src = asset;
+      flag.hidden = !asset;
+      flag.setAttribute('data-market-flag', asset ? String(marketCode || '').toUpperCase() : '');
+      select.className = `kmc-admin-market-select${asset ? ' has-flag' : ''}`;
+    };
+
+    choices.forEach(choice => {
+      const option = doc.createElement('option');
+      option.value = choice.value;
+      option.textContent = stripRegionalFlagPrefix(choice.label);
+      if ((choice.marketCode || choice.value || null) === current) option.selected = true;
+      select.appendChild(option);
+    });
+    select.value = current || '';
+    syncFlag(current);
+    if (typeof select.addEventListener === 'function') {
+      select.addEventListener('change', () => {
+        syncFlag(select.value || '');
+        proxyMarketChange(doc, select.value || '');
+      });
+    }
+
+    wrap.appendChild(flag);
+    wrap.appendChild(select);
+    return wrap;
+  }
+
+  function buildHeader(options = {}) {
+    const doc = options.document || global.document;
+    const pathname = options.pathname || (global.location && global.location.pathname) || '/admin/pilotage';
+    const user = options.user || global.KOMERCE_CANONICAL_AUTH_USER || global.KOMERCE_AUTH_USER || null;
+    const adminContext = options.adminContext || global.KOMERCE_CANONICAL_ADMIN_CONTEXT || null;
+    if (!doc || !doc.body || typeof doc.createElement !== 'function') {
+      throw new Error('canonical_navigation_document_missing');
+    }
+
+    const existing = doc.getElementById && doc.getElementById('canonical-admin-navigation');
+    if (existing) return existing;
+
+    const surface = options.surface || surfaceForPath(pathname);
+    const role = (user && user.role) || '';
+    const activeDomainId = activePrimarySurface(surface);
+    const activeSpaceId = activeSpaceFor(surface);
+
+    const header = doc.createElement('header');
+    header.id = 'canonical-admin-navigation';
+    header.className = 'kmc-admin-navigation';
+    header.setAttribute('data-canonical-navigation', 'true');
+    header.setAttribute('data-mock-contract', 'approved');
+
+    const inner = doc.createElement('div');
+    inner.className = 'kmc-admin-navigation-inner';
+
+    const identity = doc.createElement('div');
+    identity.className = 'kmc-admin-navigation-identity';
+
+    const home = doc.createElement('a');
+    home.className = 'kmc-admin-home';
+    home.href = '/admin/pilotage';
+    home.appendChild(textNode(doc, 'span', 'kmc-admin-home-label', 'KOMERCE'));
+    identity.appendChild(home);
+
+    const backTarget = resolveBackTarget(
+      surface,
+      options.search != null ? options.search : (global.location && global.location.search) || ''
+    );
+    if (backTarget) {
+      const back = doc.createElement('a');
+      back.className = 'kmc-admin-back';
+      back.href = backTarget.href;
+      back.setAttribute('aria-label', backTarget.label);
+      back.setAttribute('data-back-context', backTarget.contextual ? 'contextual' : 'canonical');
+      back.textContent = `← ${backTarget.label}`;
+      identity.appendChild(back);
+    }
+
+    const primary = doc.createElement('nav');
+    primary.className = 'kmc-admin-primary-nav';
+    primary.setAttribute('aria-label', 'Navigation Komerce');
+    const visibleDomains = visibleDomainsFor(user);
+    visibleDomains.forEach(domain => primary.appendChild(createDomainLink(doc, domain, activeDomainId, user)));
+
+    const utilities = doc.createElement('div');
+    utilities.className = 'kmc-admin-utility-nav';
+
+    const requireMarket = ['pricing-workspace', 'market-catalog', 'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace'].includes(surface);
+    const marketControl = createMarketControl(doc, adminContext, requireMarket);
+    if (marketControl) utilities.appendChild(marketControl);
+
+    const account = textNode(doc, 'span', 'kmc-admin-account', roleLabel(user));
+    account.setAttribute('aria-label', `Profil : ${roleLabel(user)}`);
+    utilities.appendChild(account);
+
+    if (SETTINGS_UTILITY.roles.includes(role)) {
+      const settingsLink = doc.createElement('a');
+      settingsLink.className = 'kmc-admin-settings-link';
+      settingsLink.href = SETTINGS_UTILITY.href;
+      settingsLink.textContent = SETTINGS_UTILITY.label;
+      settingsLink.setAttribute('data-dashboard', SETTINGS_UTILITY.id);
+      if (surface === 'settings') {
+        settingsLink.className += ' is-active';
+        settingsLink.setAttribute('aria-current', 'page');
+      }
+      utilities.appendChild(settingsLink);
+    }
+
+    utilities.appendChild(createLogoutButton(doc));
+
+    inner.appendChild(identity);
+    inner.appendChild(primary);
+    inner.appendChild(utilities);
+    header.appendChild(inner);
+
+    const activeDomain = visibleDomains.find(domain => domain.id === activeDomainId);
+    if (activeDomain && Array.isArray(activeDomain.spaces)) {
+      const spaces = visibleSpacesFor(activeDomain, role);
+      if (spaces.length > 1) {
+        const secondary = doc.createElement('nav');
+        secondary.className = 'kmc-admin-secondary-nav';
+        secondary.setAttribute('aria-label', `Sous-navigation ${activeDomain.label}`);
+        spaces.forEach(space => secondary.appendChild(createSpaceLink(doc, space, activeSpaceId)));
+        header.appendChild(secondary);
+      }
+    }
+
+    const root = doc.getElementById && doc.getElementById('canonical-admin-root');
+    if (root && root.parentNode && typeof root.parentNode.insertBefore === 'function') {
+      root.parentNode.insertBefore(header, root);
+    } else if (typeof doc.body.prepend === 'function') {
+      doc.body.prepend(header);
+    } else if (typeof doc.body.appendChild === 'function') {
+      doc.body.appendChild(header);
+    }
+
+    return header;
+  }
+
+  function replaceNavigationStructure(header, options = {}) {
+    if (!header) return header;
+    const doc = options.document || global.document;
+    const user = options.user || global.KOMERCE_CANONICAL_AUTH_USER || global.KOMERCE_AUTH_USER || null;
+    const surface = options.surface || surfaceForPath(options.pathname || global.location?.pathname);
+    const role = roleOf(user);
+    const activeDomainId = activePrimarySurface(surface);
+    const activeSpaceId = activeSpaceFor(surface);
+    const domains = visibleDomainsFor(user);
+
+    const home = header.querySelector?.('.kmc-admin-home');
+    if (home) home.href = defaultLandingFor(user);
+
+    const primary = header.querySelector?.('.kmc-admin-primary-nav');
+    if (primary) {
+      primary.replaceChildren();
+      domains.forEach(domain => {
+        const href = Array.isArray(domain.spaces)
+          ? landingForDomain(domain, user)
+          : hrefFor(domain, user);
+        if (!href) return;
+        primary.appendChild(createLink(doc, domain, href, domain.id === activeDomainId, 'kmc-admin-primary-link'));
+      });
+    }
+
+    const oldSecondary = header.querySelector?.('.kmc-admin-secondary-nav');
+    if (oldSecondary && oldSecondary.parentNode) oldSecondary.parentNode.removeChild(oldSecondary);
+
+    const activeDomain = domains.find(domain => domain.id === activeDomainId);
+    if (activeDomain && Array.isArray(activeDomain.spaces)) {
+      const spaces = visibleSpacesFor(activeDomain, role);
+      if (spaces.length > 1) {
+        const secondary = doc.createElement('nav');
+        secondary.className = 'kmc-admin-secondary-nav';
+        secondary.setAttribute('aria-label', `Sous-navigation ${activeDomain.label}`);
+        spaces.forEach(space => {
+          secondary.appendChild(createLink(doc, space, space.href, space.id === activeSpaceId, 'kmc-admin-secondary-link'));
+        });
+        header.appendChild(secondary);
+      }
+    }
+
+    return header;
+  }
 
   const ICONS = Object.freeze({
     dashboard: '⌂',
@@ -262,15 +944,11 @@
 
   function currentSurface(options) {
     if (options.surface) return options.surface;
-    if (typeof base.surfaceForPath === 'function') {
-      return base.surfaceForPath(options.pathname || global.location?.pathname || '');
-    }
-    return 'pilotage';
+    return surfaceForPath(options.pathname || global.location?.pathname || '');
   }
 
   function currentDomain(surface) {
-    if (typeof base.activePrimarySurface === 'function') return base.activePrimarySurface(surface);
-    return base.SURFACE_TO_DOMAIN?.[surface] || 'dashboard';
+    return activePrimarySurface(surface);
   }
 
   // Une tab déclarant `capability` (ex. 'clients' → 'client.read') n'est
@@ -296,9 +974,9 @@
       return local.filter(tab => tab.roles.includes(role) && tabCapabilityGranted(tab, adminContext));
     }
 
-    const domain = (base.visibleDomainsFor?.(user) || []).find(row => row.id === domainId);
+    const domain = visibleDomainsFor(user).find(row => row.id === domainId);
     if (!domain || !Array.isArray(domain.spaces)) return [];
-    return base.visibleSpacesFor(domain, role).map(space => ({
+    return visibleSpacesFor(domain, role).map(space => ({
       id: space.id,
       label: space.label,
       href: space.href,
@@ -328,8 +1006,7 @@
       if (surface === 'market-catalog') return 'catalog-country';
       return surface === 'market-autonomy' ? 'market-autonomy' : 'market-access';
     }
-    if (typeof base.activeSpaceFor === 'function') return base.activeSpaceFor(surface);
-    return path;
+    return activeSpaceFor(surface) || path;
   }
 
   function createTabs(doc, domainId, surface, user, adminContext) {
@@ -581,15 +1258,37 @@
     return header;
   }
 
+
   function mount(options = {}) {
     const doc = options.document || global.document;
     dedupeShell(doc);
-    const header = base.mount(options);
+    const header = buildHeader(options);
+    replaceNavigationStructure(header, options);
     return applyHybridShell(header, options);
   }
 
   const api = Object.freeze({
-    ...base,
+    DOMAINS,
+    ROLE_HOME,
+    SETTINGS_UTILITY,
+    SURFACE_TO_DOMAIN,
+    SURFACE_TO_SPACE,
+    BACK_TARGETS,
+    safeReturnTarget,
+    withReturnTo,
+    resolveBackTarget,
+    runtimeIsStaging,
+    mountStagingAdminTools,
+    visibleDomainsFor,
+    visibleSpacesFor,
+    visibleNavigationFor,
+    landingForDomain,
+    defaultLandingFor,
+    activePrimarySurface,
+    activeSpaceFor,
+    surfaceForPath,
+    marketChoices,
+    currentRequestedMarket,
     LOCAL_TABS,
     SIDEBAR_GROUPS,
     sidebarGroupsFor,
@@ -597,6 +1296,8 @@
     renderReferenceResults,
     REFERENCE_SEARCH_ENDPOINT,
     mount,
+    _buildHeader: buildHeader,
+    _replaceNavigationStructure: replaceNavigationStructure,
     _applyHybridShell: applyHybridShell,
     _activeLocalTab: activeLocalTab,
     _localTabsFor: localTabsFor,
@@ -606,22 +1307,17 @@
 
   global.KomerceCanonicalNavigation = api;
 
-  function finalizeExistingNavigation() {
-    const doc = global.document;
-    if (!doc) return;
-    const existing = dedupeRole(doc, 'navigation');
-    if (!existing) return;
-    applyHybridShell(existing, {
-      document: doc,
-      user: global.KOMERCE_CANONICAL_AUTH_USER || global.KOMERCE_AUTH_USER || null,
-      surface: typeof base.surfaceForPath === 'function' ? base.surfaceForPath(global.location?.pathname) : undefined,
-      pathname: global.location?.pathname,
-    });
+  function autoMount() {
+    try {
+      mount();
+    } catch (error) {
+      console.error('[canonical-admin] navigation mount failed', error);
+    }
   }
 
   if (global.document?.readyState === 'loading') {
-    global.document.addEventListener('DOMContentLoaded', finalizeExistingNavigation, { once: true });
-  } else {
-    finalizeExistingNavigation();
+    global.document.addEventListener('DOMContentLoaded', autoMount, { once: true });
+  } else if (global.document) {
+    autoMount();
   }
 })(typeof window !== 'undefined' ? window : globalThis);

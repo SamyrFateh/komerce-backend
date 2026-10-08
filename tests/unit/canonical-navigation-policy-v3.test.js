@@ -16,8 +16,7 @@ function loadPolicy() {
   delete global.KomerceCanonicalNavigation;
   delete global.window;
   delete global.document;
-  require('../../public/dashboards/canonical/js/navigation.js');
-  require('../../public/dashboards/canonical/js/navigation-policy-v3.js');
+  require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
   return global.KomerceCanonicalNavigation;
 }
 
@@ -142,7 +141,7 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(nav.activeSpaceFor('client-index')).toBe('commerce');
   });
 
-  test('toutes les entrées Canonical chargent la policy après navigation.js', () => {
+  test('toutes les entrées Canonical chargent UNE seule navigation (plus de couche V2.1/V3)', () => {
     const htmlFiles = [
       'public/dashboards/canonical/index.html',
       'public/dashboards/canonical/access.html',
@@ -151,10 +150,9 @@ describe('Canonical Navigation Policy V3.1', () => {
     ];
     htmlFiles.forEach(relative => {
       const html = fs.readFileSync(path.join(ROOT, relative), 'utf8');
-      const baseIndex = html.indexOf('/dashboards/canonical/js/navigation.js');
-      const policyIndex = html.indexOf('/dashboards/canonical/js/navigation-policy-v3.js');
-      expect(baseIndex).toBeGreaterThanOrEqual(0);
-      expect(policyIndex).toBeGreaterThan(baseIndex);
+      expect(html).not.toMatch(/js\/navigation\.js/);
+      expect(html).not.toMatch(/js\/navigation-policy-v3\.js/);
+      expect(html.match(/js\/navigation-policy-v4\.js/g)).toHaveLength(1);
     });
   });
 });

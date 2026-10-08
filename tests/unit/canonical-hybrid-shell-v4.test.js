@@ -44,17 +44,17 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     expect(contract).toContain('Les mocks ne sont pas une inspiration');
   });
 
-  test.each(HTML_SURFACES)('%s charge Shell V4 après Theme V2 et Policy V4 après V3', relative => {
+  test.each(HTML_SURFACES)('%s charge Shell V4 après Theme V2 et une seule Policy de navigation', relative => {
     const html = read(relative);
     const theme = html.indexOf('/dashboards/canonical/css/canonical-theme-v2.css?v=1901');
     const shell = html.indexOf('/dashboards/canonical/css/canonical-shell-v4.css?v=2101');
-    const v3 = html.indexOf('/dashboards/canonical/js/navigation-policy-v3.js?v=260930-1');
-    const v4 = html.indexOf('/dashboards/canonical/js/navigation-policy-v4.js?v=2501');
+    const v4 = html.indexOf('/dashboards/canonical/js/navigation-policy-v4.js?v=2502');
     const sync = html.indexOf('/dashboards/canonical/js/navigation-shell-v4-sync.js?v=2101');
     expect(theme).toBeGreaterThanOrEqual(0);
     expect(shell).toBeGreaterThan(theme);
-    expect(v3).toBeGreaterThanOrEqual(0);
-    expect(v4).toBeGreaterThan(v3);
+    expect(html).not.toContain('/dashboards/canonical/js/navigation.js');
+    expect(html).not.toContain('/dashboards/canonical/js/navigation-policy-v3.js');
+    expect(v4).toBeGreaterThan(shell);
     expect(sync).toBeGreaterThan(v4);
   });
 
@@ -87,9 +87,8 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
   });
 
   test('V4 porte seule la taxonomie cible et garde Sourcing/Fournisseurs découvrables', () => {
-    const base = read('public/dashboards/canonical/js/navigation.js');
     const v4 = read('public/dashboards/canonical/js/navigation-policy-v4.js');
-    expect(base).not.toContain('ADMIN_CAPABILITY_GROUPS');
+    expect(v4).not.toContain('ADMIN_CAPABILITY_GROUPS');
     for (const label of ['Piloter', 'Flux', 'Entités', 'Workspaces', 'Marchés', 'Administration']) {
       expect(v4).toContain(`label: '${label}'`);
     }
@@ -115,7 +114,15 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     const sync = read('public/dashboards/canonical/js/navigation-shell-v4-sync.js');
     const css = read('public/dashboards/canonical/css/canonical-shell-v4.css');
     const apiPaths = [...js.matchAll(/['"]((?:\/api\/)[^'"]+)['"]/g)].map(match => match[1]);
-    expect(apiPaths).toEqual(['/api/admin/dashboard/reference/resolve']);
+    // Hors resolver de référence (read-only), le fichier unique porte seulement
+    // les actions de session/staging historiques du header : déconnexion, et
+    // Reset/Seed projetés uniquement si le serveur annonce staging (fail-closed).
+    expect(apiPaths.sort()).toEqual([
+      '/api/admin/dashboard/reference/resolve',
+      '/api/admin/reset',
+      '/api/admin/seed-test',
+      '/api/auth/logout',
+    ].sort());
     expect(sync).not.toMatch(/\/api\//);
     expect(js).not.toMatch(/price_kmf|supplier_order_identity|UPDATE |INSERT INTO/i);
     expect(css).not.toMatch(/\/api\//);

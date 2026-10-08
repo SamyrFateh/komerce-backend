@@ -8,11 +8,11 @@
  *   système nerveux : le portail Canonical n'a ni registre de routes serveur
  *   (app.js Legacy) ni api-client.js centralisé. Sa chaîne de preuve réelle est :
  *
- *     NAVIGATION (navigation.js, DOMAINS/spaces, roles)
+ *     NAVIGATION (navigation-policy-v4.js, DOMAINS/spaces, roles)
  *           │  hrefFor(item, user) — peut dévier par rôle (ex: Catalogue/Marchés
  *           │  redirigent market_operator vers une page HTML différente)
  *           ▼
- *     SURFACE (app.js::surfaceForPath, ou navigation.js::surfaceForPath pour
+ *     SURFACE (app.js::surfaceForPath, ou navigation-policy-v4.js::surfaceForPath pour
  *              les pages HTML autonomes /dashboards/canonical/*.html)
  *           │
  *           ▼
@@ -60,7 +60,7 @@ const ROOT = path.resolve(__dirname, '..');
 const CANON_DIR = path.join(ROOT, 'public/dashboards/canonical');
 const JS_DIR = path.join(CANON_DIR, 'js');
 const APP_FILE = path.join(JS_DIR, 'app.js');
-const NAV_FILE = path.join(JS_DIR, 'navigation.js');
+const NAV_FILE = path.join(JS_DIR, 'navigation-policy-v4.js');
 const OPENAPI_FILE = path.join(ROOT, 'docs/contract/openapi.json');
 const HTML_ROUTES_FILE = path.join(ROOT, 'bootstrap/html-routes.js');
 const DOCS = path.join(ROOT, 'docs');
@@ -131,7 +131,7 @@ const LEGACY_TOKENS = [
   'portal-pilotage',
 ];
 
-// Heuristique doctrine `client_market_id_never_authority` (navigation.js) —
+// Heuristique doctrine `client_market_id_never_authority` (navigation-policy-v4.js) —
 // jamais une preuve formelle de faille (le serveur rejette de toute façon,
 // cf. rejectBrowserAuthority côté Action Center), mais un signal fort si le
 // navigateur construit lui-même une clé market_id/marketId à envoyer.
@@ -570,7 +570,7 @@ function parseAppRouting() {
   return { surfaces, pathRules, surfaceToModule };
 }
 
-// ── 3. navigation.js : DOMAINS/spaces, roles, hrefFor() overrides, surfaceForPath html ──
+// ── 3. navigation-policy-v4.js : DOMAINS/spaces, roles, hrefFor() overrides, surfaceForPath html ──
 function parseNavigation() {
   if (!fs.existsSync(NAV_FILE)) return { items: [], hrefOverrides: [], htmlSurfaceForPath: {} };
   const raw = fs.readFileSync(NAV_FILE, 'utf8');
@@ -592,7 +592,7 @@ function parseNavigation() {
     }
   }
 
-  // surfaceForPath() propre à navigation.js — gère les pages HTML autonomes.
+  // surfaceForPath() propre à navigation-policy-v4.js — gère les pages HTML autonomes.
   const htmlSurfaceForPath = { ...STANDALONE_HTML_SURFACES };
 
   return { items, hrefOverrides, htmlSurfaceForPath };
@@ -934,7 +934,7 @@ function renderMd(model) {
   L.push('> ⚠️ Fichier **généré** par `scripts/gen-dashboards-360-canonical.js`. Ne pas éditer à la main.');
   L.push(`> Régénéré le ${model.generatedAt}.`);
   L.push('> Contrepartie de `docs/DASHBOARDS_360.md` (Legacy 1). Les deux coexistent tant que le rollback `?legacy=1` existe (`bootstrap/html-routes.js`).');
-  L.push('> Chaîne de preuve : `navigation.js` (item × rôle) → `hrefFor()` → `app.js::surfaceForPath()` → module (`global.Komerce*`) → `fetch()` → `docs/contract/openapi.json`.');
+  L.push('> Chaîne de preuve : `navigation-policy-v4.js` (item × rôle) → `hrefFor()` → `app.js::surfaceForPath()` → module (`global.Komerce*`) → `fetch()` → `docs/contract/openapi.json`.');
   L.push('');
   L.push('## Synthèse');
   L.push('');

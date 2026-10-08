@@ -57,7 +57,7 @@ describe('Achats fournisseurs — frontière canonique', () => {
   });
 
   test('navigation : espace réservé à admin dans Opérations', () => {
-    const nav = read('public/dashboards/canonical/js/navigation.js');
+    const nav = read('public/dashboards/canonical/js/navigation-policy-v4.js');
     expect(nav).toMatch(/id: 'purchasing-workspace', label: 'Achats fournisseurs', href: '\/admin\/workspaces\/purchasing', roles: Object\.freeze\(\['admin'\]\)/);
   });
 });
