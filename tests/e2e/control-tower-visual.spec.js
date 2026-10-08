@@ -191,7 +191,9 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
       const color = (sel, prop = 'backgroundColor') => getComputedStyle(document.querySelector(sel))[prop];
       return {
         sidebar: color('.kmc-admin-navigation'),
+        canvas: color('[data-dashboard-id="pilotage"]'),
         causes: color('.is-control-tower-causes'),
+        decision: color('.kmc-decision-card'),
         activeNavGradient: color('.kmc-admin-primary-link.is-active', 'backgroundImage'),
         activeNavText: color('.kmc-admin-primary-link.is-active', 'color'),
         red: color('.kmc-flow-stage.is-critical', 'borderTopColor'),
@@ -207,11 +209,35 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     };
 
     expect(lum(colors.sidebar)).toBeLessThan(80);
-    expect(lum(colors.causes)).toBeLessThan(90);
+    expect(lum(colors.canvas)).toBeGreaterThan(230);
+    expect(lum(colors.causes)).toBeGreaterThan(230);
+    expect(lum(colors.decision)).toBeGreaterThan(230);
     expect(colors.activeNavGradient).toContain('linear-gradient');
     expect(colors.activeNavGradient).toMatch(/rgb\(245, 158, 11\)|rgb\(255, 178, 41\)/);
     expect(lum(colors.activeNavText)).toBeLessThan(90);
     expect(new Set([colors.red, colors.warning, colors.green, colors.unknown]).size).toBe(4);
+  });
+
+
+  test('langage Legacy : surfaces claires, couleurs portées par les accents', async ({ page }) => {
+    const surfaces = await page.evaluate(() => {
+      const bg = (sel) => getComputedStyle(document.querySelector(sel)).backgroundColor;
+      const border = (sel, prop) => getComputedStyle(document.querySelector(sel))[prop];
+      return {
+        canvas: bg('[data-dashboard-id="pilotage"]'),
+        causes: bg('.is-control-tower-causes'),
+        criticalCard: bg('.kmc-decision-card.is-critical'),
+        warningCard: bg('.kmc-decision-card.is-warning'),
+        criticalAccent: border('.kmc-decision-card.is-critical', 'borderLeftColor'),
+        warningAccent: border('.kmc-decision-card.is-warning', 'borderLeftColor'),
+      };
+    });
+
+    for (const value of [surfaces.canvas, surfaces.causes, surfaces.criticalCard, surfaces.warningCard]) {
+      const rgb = value.match(/\d+/g).slice(0, 3).map(Number);
+      expect(rgb.reduce((a, b) => a + b, 0) / 3).toBeGreaterThan(230);
+    }
+    expect(surfaces.criticalAccent).not.toBe(surfaces.warningAccent);
   });
 
   test('aucun libellé technique signal-service dans la vue utilisateur', async ({ page }) => {
