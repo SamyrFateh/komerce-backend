@@ -41,7 +41,7 @@
   const OPERATIONS_SCHEMA = Object.freeze({
     id: 'operations',
     title: 'Commandes & logistique',
-    description: 'Suivre la position opérationnelle des commandes de bout en bout, du client au relais.',
+    description: 'Ce qui s’exécute : la position opérationnelle des commandes de bout en bout, du client au relais. Les ventes et la performance commerciale se lisent dans Commerce.',
     metrics: {
       source: 'operations.metrics',
       pick: [

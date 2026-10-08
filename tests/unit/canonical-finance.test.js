@@ -328,3 +328,23 @@ describe('LOT 2F-CANON — Finance vivant', () => {
     }));
   });
 });
+
+describe('Finance — vérité d’affichage', () => {
+  test('la file de revue fournisseur absente est signalée « non disponible », pas masquée', () => {
+    expect(financeDecision.supplierReviewState({}).state).toBe('not-provided');
+    expect(financeDecision.supplierReviewState({ supplier_payment_review: null }).message).toMatch(/Non disponible/);
+    expect(financeDecision.supplierReviewState({ supplier_payment_review: { items: [] } }).state).toBe('empty');
+    expect(financeDecision.supplierReviewState({ supplier_payment_review: { items: [{}] } }).state).toBe('rows');
+  });
+
+  test('marge : consolidée (réelle) d’abord, estimée explicitement non définitive ; consolidée nulle = « — », jamais 0', () => {
+    const payload = { kpis: [
+      { key: 'marge_consolidee', label: 'Marge consolidée', value: null, unit: 'KMF' },
+      { key: 'marge_estimee', label: 'Marge estimée', value: 12000, unit: 'KMF' },
+    ] };
+    const card = financeDecision.overviewCards(payload, finance).find(item => item.key === 'margin');
+    expect(card.metrics.map(metric => metric.label)).toEqual(['Marge consolidée (réelle)', 'Marge estimée — non définitive']);
+    expect(card.metrics[0].value).not.toMatch(/^0/);
+  });
+});
+

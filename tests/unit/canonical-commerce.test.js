@@ -281,3 +281,8 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
     expect(commerce.normalizePeriod('365')).toBe('30');
   });
 });
+
+test('commerce : la frontière Commerce / Commandes & logistique est énoncée dans le sous-titre', () => {
+  expect(commerce.COMMERCE_SCHEMA.description).toContain('Ce qui se vend');
+});
+

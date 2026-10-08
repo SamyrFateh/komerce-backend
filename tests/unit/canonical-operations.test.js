@@ -251,3 +251,8 @@ describe('Control Chain — UNKNOWN jamais GREEN, causes serveur affichées', ()
     expect(causes[1].owner).toBeNull();
   });
 });
+
+test('operations : la frontière Commerce / Commandes & logistique est énoncée dans le sous-titre', () => {
+  expect(operations.OPERATIONS_SCHEMA.description).toContain('Ce qui s’exécute');
+});
+

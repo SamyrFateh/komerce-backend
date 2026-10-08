@@ -48,7 +48,7 @@
   const COMMERCE_SCHEMA = Object.freeze({
     id: 'commerce',
     title: 'Commerce',
-    description: 'Comprendre ce qui se vend, à quel rythme et où concentrer l’attention commerciale.',
+    description: 'Ce qui se vend : à quel rythme et où concentrer l’attention commerciale. L’exécution (achats, HUB, transport, relais) se suit dans Commandes & logistique.',
     filters: [
       {
         key: 'period',
