@@ -30,6 +30,8 @@ const DASHBOARD_SPECS = [
   'import-runtime-credentials',
   'import-runtime-source-registry',
   'purchasing-workspace',
+  'dashboard-role-matrix',
+  'order-360-lineage',
 ];
 
 module.exports = defineConfig({
