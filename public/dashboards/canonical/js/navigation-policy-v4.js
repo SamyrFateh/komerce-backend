@@ -917,6 +917,7 @@
     const primary = header.querySelector?.('.kmc-admin-primary-nav');
     if (!primary) return;
     primary.replaceChildren();
+    primary.scrollTop = 0;
 
     sidebarGroupsFor(user, adminContext).forEach(group => {
       const wrap = createNode(doc, 'div', 'kmc-admin-sidebar-group');
@@ -937,6 +938,13 @@
       });
       primary.appendChild(wrap);
     });
+
+    // Le navigateur peut restaurer une ancienne position de scroll de la sidebar.
+    // Le montage d'une nouvelle surface Canonical repart toujours du début du menu.
+    primary.scrollTop = 0;
+    if (typeof global.requestAnimationFrame === 'function') {
+      global.requestAnimationFrame(() => { primary.scrollTop = 0; });
+    }
   }
 
   function decoratePrimaryLinks(header) {
