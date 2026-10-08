@@ -40,6 +40,45 @@ function structuralAlertsFromChain(chain) {
   }));
 }
 
+
+function summarizeControlChain(chain) {
+  const stages = Array.isArray(chain && chain.stages) ? chain.stages : [];
+  const byStage = chain && chain.by_stage && typeof chain.by_stage === 'object' ? chain.by_stage : {};
+  const structural = Array.isArray(chain && chain.structural_alerts) ? chain.structural_alerts : [];
+
+  const stage_health = stages.map(stage => {
+    const orders = Array.isArray(byStage[stage.key]) ? byStage[stage.key] : [];
+    const counts = { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 0 };
+    orders.forEach(order => {
+      const health = ['GREEN', 'ORANGE', 'RED', 'UNKNOWN'].includes(order && order.health) ? order.health : 'UNKNOWN';
+      counts[health] += 1;
+    });
+    const health = counts.RED > 0 ? 'RED'
+      : (counts.ORANGE > 0 ? 'ORANGE' : (counts.UNKNOWN > 0 ? 'UNKNOWN' : 'GREEN'));
+    return Object.freeze({
+      key: stage.key,
+      label: stage.label,
+      health,
+      order_count: orders.length,
+      health_counts: Object.freeze(counts),
+    });
+  });
+
+  return Object.freeze({
+    stages: Object.freeze(stage_health),
+    structural_alerts: Object.freeze(structural.map(row => Object.freeze({
+      stage: row.stage || 'UNKNOWN',
+      health: ['GREEN', 'ORANGE', 'RED', 'UNKNOWN'].includes(row.health) ? row.health : 'UNKNOWN',
+      reason_code: row.reason_code || 'exception',
+      summary: row.summary || row.reason_code || 'Cause structurelle',
+      owner_role: row.owner_role || null,
+      order_count: Number(row.order_count) || 0,
+      order_references: Object.freeze(Array.isArray(row.order_references) ? [...row.order_references] : []),
+      href: '/admin/operations#operations-control-chain',
+    }))),
+  });
+}
+
 function publicRawAlert(row) {
   return Object.freeze({
     id: row.id,
@@ -78,4 +117,5 @@ module.exports = {
   levelRank,
   structuralAlertsFromChain,
   mergePilotageAlerts,
+  summarizeControlChain,
 };

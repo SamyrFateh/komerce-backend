@@ -21,6 +21,22 @@ function payloadFixture() {
       { key: 'taux_completude_couts', value: 75, unit: '%', data_quality: {} },
       { key: 'points_attention', value: 1, unit: 'count', data_quality: {}, drill_to: '/admin/action-center?severity=warning' },
     ],
+    control_chain: {
+      stages: [
+        { key: 'PURCHASING', label: 'Achats', health: 'RED', order_count: 3, health_counts: { GREEN: 0, ORANGE: 0, RED: 3, UNKNOWN: 0 } },
+        { key: 'HUB_CONTROL', label: 'Contrôle HUB', health: 'GREEN', order_count: 2, health_counts: { GREEN: 2, ORANGE: 0, RED: 0, UNKNOWN: 0 } },
+      ],
+      structural_alerts: [{
+        stage: 'PURCHASING',
+        health: 'RED',
+        reason_code: 'supplier_payment_blocked',
+        summary: 'Paiement fournisseur bloqué',
+        owner_role: 'purchasing',
+        order_count: 3,
+        order_references: ['K-1', 'K-2', 'K-3'],
+        href: '/admin/operations#operations-control-chain',
+      }],
+    },
     system_alerts: [
       {
         level: 'urgent',
@@ -147,7 +163,6 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
       'Critiques ouvertes',
       'Points d’attention',
       'Problèmes costing',
-      'Qualité des données',
     ]);
     expect(decisions.some(item => /aujourd/i.test(item.label))).toBe(false);
     const flowCards = pilotageDecision.summaryCards(payload, pilotage);
@@ -160,6 +175,24 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
     expect(pilotageDecision.flowStages(payload, pilotage)[0]).toEqual(expect.objectContaining({
       label: 'Commande',
       helper: 'Opérations',
+    }));
+    expect(pilotageDecision.structuralCauses(payload)).toEqual([
+      expect.objectContaining({
+        title: 'Paiement fournisseur bloqué',
+        helper: 'PURCHASING · owner · purchasing',
+        priority: '3 cmd',
+        tone: 'critical',
+        href: '/admin/operations#operations-control-chain',
+      }),
+    ]);
+    expect(pilotageDecision.controlStages(payload)).toEqual([
+      expect.objectContaining({ label: 'Achats', tone: 'critical', helper: '3 commande(s) · 3 bloquée(s)' }),
+      expect.objectContaining({ label: 'Contrôle HUB', tone: 'positive', helper: '2 commande(s)' }),
+    ]);
+    expect(pilotageDecision.residualActions(payload, pilotage)[0]).toEqual(expect.objectContaining({
+      title: 'Deux commandes bloquées',
+      tone: 'critical',
+      href: '/admin/action-center?severity=critical',
     }));
     expect(pilotageDecision.principles(payload)).toHaveLength(3);
     expect(pilotageDecision.trust(payload)).toEqual(expect.objectContaining({

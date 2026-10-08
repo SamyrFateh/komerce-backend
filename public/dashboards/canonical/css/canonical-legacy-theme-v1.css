@@ -810,6 +810,22 @@ body.kmc-shell-v4 .kmc-admin-primary-nav{
   padding:14px 0;
   gap:0;
 }
+body.kmc-shell-v4 .kmc-admin-sidebar-group{
+  padding:8px 0 9px;
+}
+body.kmc-shell-v4 .kmc-admin-sidebar-group + .kmc-admin-sidebar-group{
+  margin-top:3px;
+  border-top:1px solid #F1F5F9;
+}
+body.kmc-shell-v4 .kmc-admin-sidebar-group-label{
+  padding:5px 22px 6px;
+  color:#94A3B8;
+  font-size:9px;
+  font-weight:700;
+  line-height:1;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+}
 body.kmc-shell-v4 .kmc-admin-primary-link{
   min-height:38px;
   height:38px;
@@ -926,7 +942,8 @@ body.kmc-shell-v4 #market-catalog-root{
   body.kmc-shell-v4 > .kmc-admin-navigation{width:72px}
   body.kmc-shell-v4 .kmc-admin-navigation-identity{padding:14px 8px;align-items:center;justify-content:center}
   body.kmc-shell-v4 .kmc-admin-home-label,
-  body.kmc-shell-v4 .kmc-admin-home::after{display:none}
+  body.kmc-shell-v4 .kmc-admin-home::after,
+  body.kmc-shell-v4 .kmc-admin-sidebar-group-label{display:none}
 }
 @media(max-width:680px){
   :root{

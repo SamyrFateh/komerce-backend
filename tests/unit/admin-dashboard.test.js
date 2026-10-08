@@ -219,6 +219,10 @@ describe('GET /unified', () => {
     expect(res.body.view_blocks).toHaveLength(3);
     expect(res.body.economic_flow.stages.length).toBeGreaterThan(0);
     expect(res.body.principles.length).toBeGreaterThan(0);
+    expect(res.body.control_chain).toEqual(expect.objectContaining({
+      stages: expect.any(Array),
+      structural_alerts: expect.any(Array),
+    }));
     expect(Array.isArray(res.body.system_alerts)).toBe(true);
     expect(mockControlChain).toHaveBeenCalledWith({ market: null });
   });

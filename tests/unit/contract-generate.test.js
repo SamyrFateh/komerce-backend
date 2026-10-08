@@ -17,3 +17,10 @@ test('le contrat généré enregistre Supplier 360 avec sa forme top-level prouv
     'supplier', 'mappings', 'purchase_orders', 'execution', 'payments', 'data_quality',
   ]);
 });
+
+
+test('le contrat Pilotage marché expose le résumé control_chain', () => {
+  expect(source).toContain(
+    "fields: ['scope','kpis_global','view_blocks','economic_flow','principles','control_chain','system_alerts','data_quality']"
+  );
+});

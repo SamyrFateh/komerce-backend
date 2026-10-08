@@ -21,7 +21,7 @@
 const db = require('../db');
 const metrics = require('./dashboard-metrics');
 const controlChain = require('./logistics-control-chain-projection');
-const { mergePilotageAlerts } = require('./dashboard-pilotage-alert-aggregation');
+const { mergePilotageAlerts, summarizeControlChain } = require('./dashboard-pilotage-alert-aggregation');
 const { buildSignalMarketClause } = require('./dashboard-metrics/_helpers');
 const log = require('../utils/logger').child({ module: 'dashboard-pilotage-market' });
 
@@ -157,6 +157,7 @@ async function buildMarketPilotage(filters, market) {
       'cost_status visible : estimated, partial_real, actual, incomplete',
       'Le dashboard doit aider à décider',
     ],
+    control_chain: summarizeControlChain(controlChainProjection),
     system_alerts: mergePilotageAlerts(topAlerts, controlChainProjection, 10),
     data_quality: {
       generated_at: new Date().toISOString(),
