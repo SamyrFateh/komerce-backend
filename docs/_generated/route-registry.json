@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-08T00:08:40.536Z",
+  "generatedAt": "2026-10-08T00:34:26.701Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 696,
+  "count": 697,
   "routes": [
     {
       "method": "GET",
@@ -1343,6 +1343,16 @@
       "mountPrefix": "/api/admin/pricing-matrices",
       "localPath": "/taxes/:category",
       "routeFile": "routes/admin-pricing-matrices.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/providers/capabilities",
+      "mountPrefix": "/api/admin/providers",
+      "localPath": "/capabilities",
+      "routeFile": "routes/admin-providers-capabilities.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]

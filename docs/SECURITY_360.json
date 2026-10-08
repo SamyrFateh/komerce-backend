@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-03T14:37:53.913Z",
+  "generatedAt": "2026-10-08T00:34:04.080Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 703,
-    "protected": 648,
+    "total": 704,
+    "protected": 649,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1307,6 +1307,13 @@
     },
     {
       "key": "GET /api/admin/pricing-matrices/taxes",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "GET /api/admin/providers/capabilities",
       "level": "PROTECTED",
       "roles": [
         "admin"

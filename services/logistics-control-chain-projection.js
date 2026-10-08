@@ -440,8 +440,7 @@ async function getControlChain(options = {}) {
                       COALESCE(paf.last_parcel_at, so.created_at),
                       COALESCE(cf.last_customs_at, so.created_at)
                     ) < NOW() - ($5::int * INTERVAL '1 minute')
-                 THEN CASE
-                   WHEN (
+                 THEN CASE (
                      CASE
                        WHEN so.order_status = 'available' THEN 'RELAY'
                        WHEN so.order_status = 'in_transit' AND COALESCE(paf.has_in_transit, FALSE) THEN 'TRANSPORT'

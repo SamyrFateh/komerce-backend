@@ -17,3 +17,8 @@ test('API bootstrap monte les routers dashboard par identifiant pour le route re
   expect(source).toContain("app.use('/api/admin/dashboard',   adminDashboardLegacyRouter)");
   expect(source).not.toContain("app.use('/api/admin/dashboard',   require('../routes/admin-dashboard-market'))");
 });
+
+test('monte /api/admin/providers sur le routeur de capacités certifiées', () => {
+  expect(source).toContain("require('../routes/admin-providers-capabilities')");
+  expect(source).toContain("app.use('/api/admin/providers',   adminProvidersCapabilitiesRouter)");
+});

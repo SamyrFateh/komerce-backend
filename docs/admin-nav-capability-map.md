@@ -45,6 +45,7 @@ soit via les workspaces Canonical secondaires, soit via le portail Legacy 1.
 | agent_hub            | `admin-operations-workspace.js` — `/admin/workspaces/operations` | `requireRole(['admin','agent_hub','agent_relais','market_operator'])` | `/admin/hub-relais`, `/admin/transitaire`, `/admin/inventory`, `/admin/control-tower` |
 | agent_relais         | idem operations-workspace + `admin-finance-accounting-workspace.js` (dépôts) | idem | `/admin/hub-relais`, `/admin/control-tower` |
 | agent_transitaire    | `admin-shipping-customs-workspace.js` — `/admin/workspaces/shipping-customs` | `requireRole(['admin','agent_hub','agent_transitaire'])` | `/admin/transitaire`, `/admin/control-tower` |
+| admin (Administration › Providers) | `admin-providers-capabilities.js` — `/admin/providers` (lecture seule : registre de certifications + décision runtime ; activer un provider ≠ autoriser son exécution) | `requireRole(['admin'])` | — |
 | support              | aucune surface Canonical dédiée trouvée | — | `/admin/clients`, `/admin/shared-carts`, `/admin/problems`, `/admin/alerts` |
 
 Ces workspaces existent comme `SURFACES` dans `app.js` (`OPERATIONS_WORKSPACE`,

@@ -46,6 +46,7 @@
     SUPPLIER_360: 'supplier-360',
     DEMO: 'demo',
     SETTINGS: 'settings',
+    PROVIDERS_ADMIN: 'providers-admin',
   });
 
   // Landing par défaut par rôle — voir docs/admin-nav-capability-map.md.
@@ -184,6 +185,7 @@
     }
     if (path === '/admin/demo' || path === '/admin-next/demo') return SURFACES.DEMO;
     if (path === '/admin/settings') return SURFACES.SETTINGS;
+    if (path === '/admin/providers') return SURFACES.PROVIDERS_ADMIN;
     if (path === '/admin/commerce' || path === '/admin-next/commerce') return SURFACES.COMMERCE;
     if (path === '/admin/operations' || path === '/admin-next/operations') return SURFACES.OPERATIONS;
     if (path === '/admin/finance' || path === '/admin-next/finance') return SURFACES.FINANCE;
@@ -704,9 +706,20 @@
     await global.KomerceCanonicalSettingsWorkspace.render(root);
   }
 
+  // Providers & certifications : module Canonical natif, lecture seule.
+  async function renderProvidersAdmin(root) {
+    root.innerHTML = '';
+    if (!global.KomerceCanonicalProvidersAdmin || typeof global.KomerceCanonicalProvidersAdmin.render !== 'function') {
+      root.textContent = 'KomerceCanonicalProvidersAdmin indisponible — script non chargé';
+      return;
+    }
+    await global.KomerceCanonicalProvidersAdmin.render(root);
+  }
+
   function renderReady(root, user, adminContext) {
     const surface = surfaceForPath(global.location.pathname);
     if (surface === SURFACES.SETTINGS) return renderSettingsWorkspace(root, user);
+    if (surface === SURFACES.PROVIDERS_ADMIN) return renderProvidersAdmin(root);
     if (surface === SURFACES.ORDER_360) return renderOrder360(root, user);
     if (surface === SURFACES.CLIENT_INDEX) return renderClientIndexShell(root, user, adminContext);
     if (surface === SURFACES.CLIENT_360) return renderClient360(root, user, adminContext);

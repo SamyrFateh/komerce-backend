@@ -327,3 +327,9 @@ describe('logistics-control-chain-projection', () => {
     expect(src).not.toMatch(/\b(?:INSERT|UPDATE|DELETE)\s+(?:INTO|FROM|[a-z_])/i);
   });
 });
+
+test('SQL : le CASE simple de propriétaire n’a pas de WHEN parasite avant son opérande (régression syntaxe PG)', () => {
+  const source = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'services', 'logistics-control-chain-projection.js'), 'utf8');
+  expect(source).toContain('THEN CASE (\n');
+  expect(source).not.toMatch(/THEN CASE\s+WHEN \(\s+CASE/);
+});

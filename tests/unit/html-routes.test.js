@@ -12,3 +12,9 @@ test('la fiche Supplier 360 est Canonical et la liste reste Legacy', () => {
   expect(entity).toBeGreaterThan(-1);
   expect(legacy).toBeGreaterThan(entity);
 });
+
+test('/admin/providers sert le shell canonique', () => {
+  const i = source.indexOf("app.get('/admin/providers'");
+  expect(i).toBeGreaterThanOrEqual(0);
+  expect(source.slice(i, i + 120)).toContain('sendCanonicalAdmin(res)');
+});

@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 0,
-    "total_routes": 642,
+    "total_routes": 643,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -5928,6 +5928,55 @@
                       "x-observed": true
                     },
                     "data_quality": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/providers/capabilities": {
+      "get": {
+        "summary": "GET /api/admin/providers/capabilities",
+        "x-route-file": "routes/admin-providers-capabilities.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "runtime_environment": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "runtime_environment_error": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "authority": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "activation_notice": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "source": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "providers": {
                       "type": "string",
                       "x-observed": true
                     }
