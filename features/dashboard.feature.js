@@ -636,6 +636,7 @@ module.exports = {
       'tests/e2e/dashboard-role-matrix.spec.js',
       'tests/e2e/order-360-lineage.spec.js',
       'tests/e2e/b9-ui-truth-paths.spec.js',
+      'tests/e2e/control-tower-visual.spec.js',
       'tests/unit/dashboard-market-scope-helpers.test.js',
       'tests/unit/dashboard-contracts-0c.test.js',
       'tests/unit/operations-workspace-state-source.test.js',
