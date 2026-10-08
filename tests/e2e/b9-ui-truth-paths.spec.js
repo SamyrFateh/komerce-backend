@@ -156,13 +156,7 @@ test.describe('B9 — résolution de référence', () => {
           contentType: 'text/html',
           body: `<!doctype html><html lang="fr"><body data-admin-generation="canonical">
             <main id="canonical-admin-root"></main>
-            <script>
-              window.KOMERCE_CANONICAL_AUTH_USER={"role":"admin"};
-              window.KomerceCanonicalAdmin={
-                surfaceForPath:()=> 'pilotage',
-                marketChoices:()=> []
-              };
-            </script>
+            <script>window.KOMERCE_CANONICAL_AUTH_USER={"role":"admin"};</script>
             <script src="/dashboards/canonical/js/navigation-policy-v4.js"></script></body></html>`,
         });
       }
