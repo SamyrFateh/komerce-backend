@@ -176,6 +176,13 @@ describe('DASHBOARD DECISION VISUAL V1 — primitives', () => {
       'PriorityList',
       'InfoList',
       'TrustFooter',
+      // B3 — primitives de pilotage (4 états, causes, fraîcheur, densité).
+      'HealthBadge',
+      'CauseList',
+      'FreshnessStamp',
+      'DenseTable',
+      'Skeleton',
+      'DisabledControl',
     ]);
     expect(Object.isFrozen(ui)).toBe(true);
   });

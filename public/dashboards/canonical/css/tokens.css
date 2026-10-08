@@ -1,0 +1,61 @@
+/*
+ * @komerce-arch tokens.css — source unique des tokens de pilotage Canonical.
+ * Toute couleur de santé / fraîcheur vit ici ; aucun hex de pilotage ailleurs
+ * (css-tokens-guard). UNKNOWN est un gris neutre, jamais une absence de couleur
+ * et jamais le vert. Contrastes texte/fond ≥ 4.5:1 (AA).
+ */
+:root {
+  --health-green-fg: #0f6b3a;
+  --health-green-bg: #e6f5ec;
+  --health-orange-fg: #8a4f00;
+  --health-orange-bg: #fff1d9;
+  --health-red-fg: #a3231b;
+  --health-red-bg: #fde8e6;
+  --health-unknown-fg: #4a5361;
+  --health-unknown-bg: #eceff3;
+  --kmc-skeleton-base: #e8ecf2;
+  --kmc-skeleton-shine: #f5f7fa;
+  --kmc-dense-line: #dde3ec;
+  --kmc-dense-head-bg: #f3f5f9;
+  --kmc-dense-head-fg: #3a4352;
+}
+
+.kmc-health { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; line-height: 1.5; flex-wrap: wrap; }
+.kmc-health.is-green { color: var(--health-green-fg); background: var(--health-green-bg); }
+.kmc-health.is-orange { color: var(--health-orange-fg); background: var(--health-orange-bg); }
+.kmc-health.is-red { color: var(--health-red-fg); background: var(--health-red-bg); }
+.kmc-health.is-unknown { color: var(--health-unknown-fg); background: var(--health-unknown-bg); }
+.kmc-health-cause, .kmc-health-owner, .kmc-health-fresh { font-weight: 500; }
+.kmc-health-owner.is-missing { text-decoration: underline dotted; }
+
+.kmc-cause-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.kmc-cause { display: flex; gap: 6px; align-items: baseline; font-size: 13px; }
+.kmc-cause.is-green .kmc-health-icon { color: var(--health-green-fg); }
+.kmc-cause.is-orange .kmc-health-icon { color: var(--health-orange-fg); }
+.kmc-cause.is-red .kmc-health-icon { color: var(--health-red-fg); }
+.kmc-cause.is-unknown .kmc-health-icon { color: var(--health-unknown-fg); }
+.kmc-cause-more { font-size: 12px; color: var(--health-unknown-fg); }
+
+.kmc-fresh { font-size: 12px; color: var(--health-unknown-fg); }
+.kmc-fresh.is-stale { color: var(--health-orange-fg); font-weight: 600; }
+.kmc-fresh.is-unknown { color: var(--health-unknown-fg); font-style: italic; }
+
+.kmc-dense-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.kmc-dense-table th, .kmc-dense-table td { padding: 5px 10px; border-bottom: 1px solid var(--kmc-dense-line); text-align: left; }
+.kmc-dense-table th { position: sticky; top: 0; background: var(--kmc-dense-head-bg); color: var(--kmc-dense-head-fg); font-weight: 600; }
+.kmc-dense-table .is-numeric { text-align: right; }
+@media (max-width: 640px) {
+  .kmc-dense-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .kmc-dense-table tr { display: block; border-bottom: 1px solid var(--kmc-dense-line); padding: 4px 0; }
+  .kmc-dense-table td { display: flex; justify-content: space-between; gap: 12px; border: 0; padding: 2px 8px; }
+  .kmc-dense-table td::before { content: attr(data-label); color: var(--kmc-dense-head-fg); font-weight: 600; }
+}
+
+.kmc-skeleton { border-radius: 6px; background: linear-gradient(90deg, var(--kmc-skeleton-base), var(--kmc-skeleton-shine), var(--kmc-skeleton-base)); background-size: 200% 100%; animation: kmc-skeleton-shine 1.2s linear infinite; }
+.kmc-skeleton.is-line { height: 14px; width: 60%; }
+.kmc-skeleton.is-card { height: 96px; width: 100%; }
+.kmc-skeleton.is-table { height: 160px; width: 100%; }
+@keyframes kmc-skeleton-shine { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .kmc-skeleton { animation: none; } }
+
+.kmc-disabled-reason { font-size: 12px; color: var(--health-unknown-fg); font-style: italic; }

@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-03T12:32:48.515Z",
+  "generatedAt": "2026-10-08T00:08:40.536Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 674,
+  "count": 696,
   "routes": [
     {
       "method": "GET",
@@ -540,6 +540,166 @@
       ]
     },
     {
+      "method": "POST",
+      "fullPath": "/api/admin/dashboard/cache/clear",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/cache/clear",
+      "routeFile": "routes/admin-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/commerce",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/commerce",
+      "routeFile": "routes/admin-dashboard-market.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/commerce/market/:marketCode",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/commerce/market/:marketCode",
+      "routeFile": "routes/admin-dashboard-market.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/context",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/context",
+      "routeFile": "routes/admin-dashboard-market.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/control-tower",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/control-tower",
+      "routeFile": "routes/admin-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/costing",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/costing",
+      "routeFile": "routes/admin-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/finance",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/finance",
+      "routeFile": "routes/admin-dashboard-market.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/finance/market/:marketCode",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/finance/market/:marketCode",
+      "routeFile": "routes/admin-dashboard-market.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/logistics",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/logistics",
+      "routeFile": "routes/admin-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/operations",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/operations",
+      "routeFile": "routes/admin-dashboard-market.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/operations/market/:marketCode",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/operations/market/:marketCode",
+      "routeFile": "routes/admin-dashboard-market.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/orders",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/orders",
+      "routeFile": "routes/admin-dashboard-market.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/orders/market/:marketCode",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/orders/market/:marketCode",
+      "routeFile": "routes/admin-dashboard-market.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/reference/resolve",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/reference/resolve",
+      "routeFile": "routes/admin-dashboard-market.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/unified",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/unified",
+      "routeFile": "routes/admin-dashboard.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/dashboard/unified/market/:marketCode",
+      "mountPrefix": "/api/admin/dashboard",
+      "localPath": "/unified/market/:marketCode",
+      "routeFile": "routes/admin-dashboard-market.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "GET",
       "fullPath": "/api/admin/demo/orders/:orderId/timeline",
       "mountPrefix": "/api/admin",
@@ -749,6 +909,16 @@
     },
     {
       "method": "GET",
+      "fullPath": "/api/admin/entities/suppliers/:supplierId",
+      "mountPrefix": "/api/admin/entities",
+      "localPath": "/suppliers/:supplierId",
+      "routeFile": "routes/admin-supplier-360.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
       "fullPath": "/api/admin/finance-config",
       "mountPrefix": "/api/admin/finance-config",
       "localPath": "/",
@@ -920,10 +1090,50 @@
       ]
     },
     {
+      "method": "POST",
+      "fullPath": "/api/admin/markets",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/",
+      "routeFile": "routes/admin-market-control-plane.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "GET",
       "fullPath": "/api/admin/markets/:marketCode/control-plane",
       "mountPrefix": "/api/admin/markets",
       "localPath": "/:marketCode/control-plane",
+      "routeFile": "routes/admin-market-control-plane.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/markets/:marketCode/lifecycle",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/:marketCode/lifecycle",
+      "routeFile": "routes/admin-market-control-plane.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/admin/markets/:marketCode/reprovision",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/:marketCode/reprovision",
+      "routeFile": "routes/admin-market-control-plane.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/markets/central-authority",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/central-authority",
       "routeFile": "routes/admin-market-control-plane.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
@@ -4263,6 +4473,16 @@
       "mountPrefix": "/api/loyalty",
       "localPath": "/users",
       "routeFile": "routes/loyalty.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/central/team-matrix",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/central/team-matrix",
+      "routeFile": "routes/market-delegation-team.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
