@@ -233,6 +233,8 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
         decisionRadius: cs('.kmc-decision-card').borderRadius,
         sectionRadius: cs('.kmc-decision-surface-card').borderRadius,
         sectionShadow: cs('.kmc-decision-surface-card').boxShadow,
+        sectionBorder: cs('.kmc-decision-surface-card').borderTopColor,
+        sectionBorderWidth: cs('.kmc-decision-surface-card').borderTopWidth,
       };
     });
 
@@ -243,6 +245,9 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(surfaces.decisionRadius).toBe('10px');
     expect(surfaces.sectionRadius).toBe('12px');
     expect(surfaces.sectionShadow).toContain('0px 1px 3px');
+    expect(surfaces.sectionShadow).toContain('0px 8px 18px');
+    expect(surfaces.sectionBorder).toBe('rgb(226, 232, 240)');
+    expect(surfaces.sectionBorderWidth).toBe('1px');
     expect(surfaces.criticalAccent).not.toBe(surfaces.warningAccent);
   });
 
