@@ -61,6 +61,23 @@
     return 'is-unknown';
   }
 
+
+  const CONTROL_STAGE_META = Object.freeze({
+    ORDER: Object.freeze({ icon: '▤', accent: 'blue' }),
+    PURCHASING: Object.freeze({ icon: '🛒', accent: 'violet' }),
+    SUPPLIER: Object.freeze({ icon: '◆', accent: 'orange' }),
+    HUB_RECEIVING: Object.freeze({ icon: '⌂', accent: 'teal' }),
+    HUB_CONTROL: Object.freeze({ icon: '✓', accent: 'violet' }),
+    FORWARDER: Object.freeze({ icon: '⚓', accent: 'blue' }),
+    TRANSPORT: Object.freeze({ icon: '▣', accent: 'teal' }),
+    CUSTOMS: Object.freeze({ icon: '⌂', accent: 'red' }),
+    RELAY: Object.freeze({ icon: '●', accent: 'green' }),
+  });
+
+  function controlStageMeta(key) {
+    return CONTROL_STAGE_META[key] || Object.freeze({ icon: '•', accent: 'blue' });
+  }
+
   const CONTROL_HEALTH_ICON = Object.freeze({ GREEN: '✓', ORANGE: '▲', RED: '✖', UNKNOWN: '?' });
 
   function controlHealthIcon(health) {
@@ -88,6 +105,7 @@
     return stages.map(stage => ({
       key: stage.key,
       label: stage.label,
+      meta: controlStageMeta(stage.key),
       alerts: structuralAlerts
         .filter(alert => alert && alert.stage === stage.key)
         .map(alert => ({
@@ -117,7 +135,14 @@
 
       const heading = doc.createElement('div');
       heading.className = 'kmc-control-stage-heading';
-      heading.appendChild(text(doc, 'span', 'kmc-control-stage-title', column.label));
+
+      const identity = doc.createElement('div');
+      identity.className = 'kmc-control-stage-identity';
+      const icon = text(doc, 'span', `kmc-control-stage-icon is-${column.meta.accent}`, column.meta.icon);
+      icon.setAttribute('aria-hidden', 'true');
+      identity.appendChild(icon);
+      identity.appendChild(text(doc, 'span', 'kmc-control-stage-title', column.label));
+      heading.appendChild(identity);
       heading.appendChild(text(doc, 'span', 'kmc-control-stage-count', column.orders.length));
       stage.appendChild(heading);
 
@@ -169,6 +194,28 @@
       stage.appendChild(list);
       host.appendChild(stage);
     });
+  }
+
+
+  function renderControlLegend(doc) {
+    const legend = doc.createElement('div');
+    legend.className = 'kmc-control-chain-legend';
+    [
+      ['positive', 'Normal'],
+      ['warning', 'À risque'],
+      ['critical', 'Bloqué'],
+      ['unknown', 'Non observé'],
+    ].forEach(([tone, label]) => {
+      const item = doc.createElement('span');
+      item.className = `kmc-control-chain-legend-item is-${tone}`;
+      const dot = doc.createElement('span');
+      dot.className = 'kmc-control-chain-legend-dot';
+      dot.setAttribute('aria-hidden', 'true');
+      item.appendChild(dot);
+      item.appendChild(text(doc, 'span', '', label));
+      legend.appendChild(item);
+    });
+    return legend;
   }
 
   function decisionItems(payload, base) {
@@ -378,18 +425,10 @@
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'FLUX · COMMANDES & LOGISTIQUE'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Commandes & logistique'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir où se trouvent les commandes, ce qui bloque leur progression et vers quel espace descendre.'));
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'KOMERCE · ADMIN CANONICAL'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Opérations — Tour de contrôle'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Une commande, une position opérationnelle, une cause actionnable.'));
     dashboard.appendChild(header);
-
-    const decisions = decisionItems(payload, base);
-    if (decisions.length) {
-      const host = doc.createElement('div');
-      host.className = 'kmc-cockpit-decisions';
-      decisionUi.DecisionStrip.render(host, { items: decisions });
-      dashboard.appendChild(host);
-    }
 
     const controlColumns = controlChainColumns(payload);
     if (controlColumns.length) {
@@ -400,8 +439,17 @@
         'operations-control-chain'
       );
       chain.section.className += ' kmc-control-chain-card';
+      chain.section.insertBefore(renderControlLegend(doc), chain.body);
       renderControlChain(doc, chain.body, payload);
       dashboard.appendChild(chain.section);
+    }
+
+    const decisions = decisionItems(payload, base);
+    if (decisions.length) {
+      const host = doc.createElement('div');
+      host.className = 'kmc-cockpit-decisions';
+      decisionUi.DecisionStrip.render(host, { items: decisions });
+      dashboard.appendChild(host);
     }
 
     const projectedSignals = base.projectSignals(payload);
@@ -453,6 +501,8 @@
           decisionFirst: true,
         }));
       },
+      CONTROL_STAGE_META,
+      controlStageMeta,
       projectDecisionItems: payload => decisionItems(payload, base),
       projectControlChainColumns: controlChainColumns,
       projectMetricItems: payload => metricItems(payload, base),
@@ -466,6 +516,8 @@
   }
 
   return Object.freeze({
+    CONTROL_STAGE_META,
+    controlStageMeta,
     kpi,
     displayMetric,
     severity,
