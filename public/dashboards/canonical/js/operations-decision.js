@@ -53,10 +53,28 @@
   }
 
 
+  // UNKNOWN (ou toute valeur absente/inconnue) n'est JAMAIS rendu comme GREEN.
   function controlHealthClass(health) {
     if (health === 'RED') return 'is-critical';
     if (health === 'ORANGE') return 'is-warning';
-    return 'is-positive';
+    if (health === 'GREEN') return 'is-positive';
+    return 'is-unknown';
+  }
+
+  const CONTROL_HEALTH_ICON = Object.freeze({ GREEN: '✓', ORANGE: '▲', RED: '✖', UNKNOWN: '?' });
+
+  function controlHealthIcon(health) {
+    return CONTROL_HEALTH_ICON[health] || CONTROL_HEALTH_ICON.UNKNOWN;
+  }
+
+  // Jusqu'à 3 causes fournies par le serveur (exceptions[]) ; l'UI n'en calcule aucune.
+  function controlCauses(order) {
+    const list = Array.isArray(order && order.exceptions) ? order.exceptions : [];
+    return list.slice(0, 3).map(cause => ({
+      code: cause.code || 'exception',
+      summary: cause.summary || cause.code || 'Cause non précisée',
+      owner: cause.owner_role || null,
+    }));
   }
 
   function controlChainColumns(payload) {
@@ -80,7 +98,8 @@
         })),
       orders: (Array.isArray(byStage[stage.key]) ? byStage[stage.key] : []).map(order => ({
         reference: order.order_reference || 'Commande',
-        health: order.health || 'GREEN',
+        health: ['GREEN', 'ORANGE', 'RED', 'UNKNOWN'].includes(order.health) ? order.health : 'UNKNOWN',
+        causes: controlCauses(order),
         split: order.split === true,
         href: order.order_reference ? `/admin/orders/${encodeURIComponent(order.order_reference)}` : null,
       })),
@@ -132,8 +151,17 @@
           dot.className = 'kmc-control-order-dot';
           dot.setAttribute('aria-hidden', 'true');
           item.appendChild(dot);
+          item.appendChild(text(doc, 'span', 'kmc-control-order-state', controlHealthIcon(order.health)));
 
           item.appendChild(text(doc, 'span', 'kmc-control-order-ref', order.reference));
+          if (order.causes.length) {
+            const first = order.causes[0];
+            const more = order.causes.length > 1 ? ` +${order.causes.length - 1}` : '';
+            const owner = first.owner ? ` · ${first.owner}` : ' · propriétaire non défini';
+            const cause = text(doc, 'span', 'kmc-control-order-cause', `${first.summary}${owner}${more}`);
+            cause.setAttribute('title', order.causes.map(c => `${c.summary}${c.owner ? ` (${c.owner})` : ''}`).join(' · '));
+            item.appendChild(cause);
+          }
           list.appendChild(item);
         });
       }

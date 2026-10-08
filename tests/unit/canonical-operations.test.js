@@ -149,6 +149,7 @@ describe('LOT 2E-CANON — Operations vivant', () => {
         orders: [{
           reference: 'CMD-1',
           health: 'RED',
+          causes: [],
           split: false,
           href: '/admin/orders/CMD-1',
         }],
@@ -160,6 +161,7 @@ describe('LOT 2E-CANON — Operations vivant', () => {
         orders: [{
           reference: 'CMD-3',
           health: 'GREEN',
+          causes: [],
           split: false,
           href: '/admin/orders/CMD-3',
         }],
@@ -213,5 +215,39 @@ describe('LOT 2E-CANON — Operations vivant', () => {
     expect(render).toHaveBeenNthCalledWith(2, root, operations.OPERATIONS_SCHEMA, expect.objectContaining({
       data: expect.objectContaining({ 'operations.metrics': expect.any(Object) }),
     }));
+  });
+});
+
+describe('Control Chain — UNKNOWN jamais GREEN, causes serveur affichées', () => {
+  test('santé absente ou inconnue → UNKNOWN (classe is-unknown), jamais is-positive', () => {
+    expect(operationsDecision.controlHealthClass('GREEN')).toBe('is-positive');
+    expect(operationsDecision.controlHealthClass('ORANGE')).toBe('is-warning');
+    expect(operationsDecision.controlHealthClass('RED')).toBe('is-critical');
+    for (const value of ['UNKNOWN', undefined, null, '', 'green', 'OK']) {
+      expect(operationsDecision.controlHealthClass(value)).toBe('is-unknown');
+    }
+    const columns = operationsDecision.controlChainColumns({
+      control_chain: { stages: [{ key: 'ORDER', label: 'Commande' }], by_stage: { ORDER: [{ order_reference: 'CMD-9' }] } },
+    });
+    expect(columns[0].orders[0].health).toBe('UNKNOWN');
+  });
+
+  test('jusqu’à 3 causes du serveur sont projetées avec leur propriétaire', () => {
+    const columns = operationsDecision.controlChainColumns({
+      control_chain: {
+        stages: [{ key: 'HUB_CONTROL', label: 'Contrôle HUB' }],
+        by_stage: { 'HUB_CONTROL': [{
+          order_reference: 'CMD-2', health: 'ORANGE',
+          exceptions: [
+            { code: 'observation_stale', summary: 'Observation métier trop ancienne', owner_role: 'hub' },
+            { code: 'b' }, { code: 'c' }, { code: 'd' },
+          ],
+        }] },
+      },
+    });
+    const causes = columns[0].orders[0].causes;
+    expect(causes).toHaveLength(3);
+    expect(causes[0]).toEqual({ code: 'observation_stale', summary: 'Observation métier trop ancienne', owner: 'hub' });
+    expect(causes[1].owner).toBeNull();
   });
 });

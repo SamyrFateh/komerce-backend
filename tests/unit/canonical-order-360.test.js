@@ -65,6 +65,28 @@ test('controlPositionItem reste compact et ne fait que formater la projection ba
   expect(order360.controlPositionItem({})).toBeNull();
 });
 
+test('controlPositionItem : santé absente/inconnue = Non observé (jamais Normal) ; 3 causes + propriétaire', () => {
+  for (const health of [undefined, null, 'UNKNOWN', 'green']) {
+    const item = order360.controlPositionItem({ control_position: { stage: 'HUB_CONTROL', health } });
+    expect(item.title).toBe('Contrôle HUB · Non observé');
+    expect(item.title).not.toContain('Normal');
+    expect(item.level).toBe('info');
+  }
+  expect(order360.controlPositionItem({ control_position: { stage: 'PURCHASING', health: 'GREEN' } }).title).toBe('Achats · Normal');
+  const multi = order360.controlPositionItem({
+    control_position: {
+      stage: 'HUB_CONTROL', health: 'RED',
+      exceptions: [
+        { code: 'a', summary: 'Cause A', owner_role: 'hub' },
+        { code: 'b', summary: 'Cause B' },
+        { code: 'c', summary: 'Cause C', owner_role: 'finance' },
+        { code: 'd', summary: 'Cause D' },
+      ],
+    },
+  });
+  expect(multi.message).toBe('Cause A — hub · Cause B · Cause C — finance');
+});
+
 test('productDrills ouvre Product 360 par product_ref et déduplique les lignes', () => {
   const drills = order360.productDrills([
     { product_ref: 'KPR-000123', product_name: 'Produit A' },

@@ -126,10 +126,12 @@
     const position = payload && payload.control_position;
     if (!position) return null;
 
-    const health = position.health || 'GREEN';
+    // Une santé absente ou inconnue est UNKNOWN : jamais présentée comme normale.
+    const health = ['GREEN', 'ORANGE', 'RED'].includes(position.health) ? position.health : 'UNKNOWN';
     const stateLabel = health === 'RED' ? 'Bloquée'
       : health === 'ORANGE' ? 'À risque'
-        : 'Normal';
+        : health === 'GREEN' ? 'Normal'
+          : 'Non observé';
     const level = health === 'RED' ? 'critical'
       : health === 'ORANGE' ? 'warning'
         : 'info';
@@ -143,7 +145,10 @@
       level,
       title: `${CONTROL_STAGE_LABELS[position.stage] || position.stage || 'Étape'} · ${stateLabel}`,
       message: [
-        position.exception && position.exception.summary,
+        // Jusqu'à 3 causes fournies par le serveur, avec leur propriétaire.
+        ...(Array.isArray(position.exceptions) && position.exceptions.length
+          ? position.exceptions.slice(0, 3).map(cause => [cause.summary || cause.code, cause.owner_role].filter(Boolean).join(' — '))
+          : [position.exception && position.exception.summary]),
         envelopeLabel,
       ].filter(Boolean).join(' · ') || 'Encapsulation courante disponible.',
     };
