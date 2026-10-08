@@ -327,6 +327,11 @@ function mountHtmlRoutes(app, rootDir) {
     sendCanonicalAdmin(res);
   });
 
+  // Utilisateurs (Administration) — lecture seule ; mutations hors périmètre.
+  app.get('/admin/users', (req, res) => {
+    sendCanonicalAdmin(res);
+  });
+
   app.get('/admin/settings', (req, res) => {
     if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
     sendCanonicalAdmin(res);
