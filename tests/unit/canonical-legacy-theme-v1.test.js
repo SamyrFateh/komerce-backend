@@ -85,4 +85,10 @@ describe('couches de thème canoniques — aucune déclaration morte', () => {
     expect(css).toMatch(/body\.kmc-shell-v4 > \.kmc-admin-navigation\{[^}]*width:220px/);
     expect(css).toMatch(/body\.kmc-shell-v4 > \.kmc-admin-navigation\{[^}]*background:#fff/);
   });
+
+  test('les groupes de navigation restent visibles sur la sidebar claire', () => {
+    const css = fs.readFileSync(path.join(CSS_DIR, 'canonical-legacy-theme-v1.css'), 'utf8');
+    expect(css).toMatch(/\.kmc-admin-sidebar-group-label\{[^}]*color:#94A3B8/);
+    expect(css).toMatch(/\.kmc-admin-sidebar-group \+ \.kmc-admin-sidebar-group\{[^}]*border-top:1px solid #F1F5F9/);
+  });
 });
