@@ -1,0 +1,223 @@
+/**
+ * @e2e   control-tower-visual.spec.js
+ * @feature dashboard (Tour de contrôle)
+ * @brief Revue visuelle déterministe de la Tour 1672×941 : typographie, shell,
+ *        hiérarchie Situation → Causes → Chaîne → Actions et états de santé.
+ *        API simulée : aucun serveur ni base requis.
+ */
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const { test, expect } = require('@playwright/test');
+
+const CANONICAL = path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical');
+const ORIGIN = 'http://komerce.test';
+const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
+const CSS = [...index.matchAll(/href="\/dashboards\/canonical\/css\/([^"?]+)\.css/g)].map((m) => m[1]);
+
+const payload = {
+  kpis_global: [
+    { key: 'cmds_actives', label: 'Commandes actives', value: 11, unit: 'count', data_quality: {} },
+    { key: 'alertes_critiques', label: 'Alertes critiques', value: 7, unit: 'count', data_quality: {}, drill_to: '/admin/action-center?severity=critical,urgent' },
+    { key: 'points_attention', label: 'Points attention', value: 1, unit: 'count', data_quality: {}, drill_to: '/admin/action-center?severity=warning' },
+  ],
+  view_blocks: [
+    {
+      view: 'costing',
+      title: 'Coût rendu relais',
+      subtitle: 'Dire la vérité économique',
+      url: '/admin/finance',
+      kpis_summary: [
+        { key: 'cmds_cout_incomplet', label: 'Commandes coût incomplet', value: 11, unit: 'count' },
+      ],
+    },
+  ],
+  economic_flow: { stages: [] },
+  principles: [],
+  control_chain: {
+    stages: [
+      { key: 'ORDER', label: 'Commande', health: 'ORANGE', order_count: 2, health_counts: { GREEN: 0, ORANGE: 2, RED: 0, UNKNOWN: 0 } },
+      { key: 'PURCHASING', label: 'Achats', health: 'RED', order_count: 3, health_counts: { GREEN: 0, ORANGE: 0, RED: 3, UNKNOWN: 0 } },
+      { key: 'SUPPLIER', label: 'Fournisseur', health: 'ORANGE', order_count: 1, health_counts: { GREEN: 0, ORANGE: 1, RED: 0, UNKNOWN: 0 } },
+      { key: 'HUB_RECEIVING', label: 'Réception HUB', health: 'ORANGE', order_count: 1, health_counts: { GREEN: 0, ORANGE: 1, RED: 0, UNKNOWN: 0 } },
+      { key: 'HUB_CONTROL', label: 'Contrôle HUB', health: 'RED', order_count: 1, health_counts: { GREEN: 0, ORANGE: 0, RED: 1, UNKNOWN: 0 } },
+      { key: 'FORWARDER', label: 'Transitaire', health: 'GREEN', order_count: 0, health_counts: { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 0 } },
+      { key: 'TRANSPORT', label: 'Transport', health: 'ORANGE', order_count: 1, health_counts: { GREEN: 0, ORANGE: 1, RED: 0, UNKNOWN: 0 } },
+      { key: 'CUSTOMS', label: 'Douane', health: 'UNKNOWN', order_count: 1, health_counts: { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 1 } },
+      { key: 'RELAY', label: 'Relais', health: 'GREEN', order_count: 0, health_counts: { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 0 } },
+    ],
+    structural_alerts: [
+      {
+        stage: 'PURCHASING', health: 'RED', reason_code: 'purchase_line_missing',
+        summary: '1 item(s) non couvert(s) par une ligne d’achat depuis 2091 min',
+        owner_role: 'sourcing', order_count: 3, order_references: ['K-1', 'K-2', 'K-3'],
+        href: '/admin/operations#operations-control-chain',
+      },
+      {
+        stage: 'PURCHASING', health: 'RED', reason_code: 'supplier_payment_blocked',
+        summary: 'Paiement fournisseur bloqué',
+        owner_role: 'finance', order_count: 3, order_references: ['K-4', 'K-5', 'K-6'],
+        href: '/admin/operations#operations-control-chain',
+      },
+    ],
+  },
+  system_alerts: [
+    {
+      id: 'S-1', level: 'critical', source: 'signal-service',
+      title: 'Article non conforme au contrôle HUB',
+      message: 'Article non conforme au contrôle HUB',
+      action_url: '/admin/action-center', action_label: 'Action Center',
+    },
+    {
+      id: 'S-2', level: 'warning', source: 'finance',
+      title: 'Paiement fournisseur à revoir',
+      message: 'Paiement fournisseur à revoir',
+      action_url: '/admin/action-center', action_label: 'Action Center',
+    },
+  ],
+  data_quality: { generated_at: '2026-10-08T18:00:00.000Z', warnings: [], scope_enforced: true },
+};
+
+async function mountControlTower(page) {
+  await page.route(`${ORIGIN}/**`, async (route) => {
+    const url = new URL(route.request().url());
+
+    if (url.pathname === '/admin/pilotage') {
+      const links = CSS.map((n) => `<link rel="stylesheet" href="/dashboards/canonical/css/${n}.css">`).join('');
+      return route.fulfill({
+        contentType: 'text/html',
+        body: `<!doctype html><html lang="fr"><head><meta charset="utf-8">${links}</head>
+          <body data-admin-generation="canonical">
+          <main id="canonical-admin-root"></main>
+          <script>window.KOMERCE_CANONICAL_AUTH_USER={"role":"admin"};</script>
+          <script src="/dashboards/canonical/js/primitives.js"></script>
+          <script src="/dashboards/canonical/js/decision-primitives.js"></script>
+          <script src="/dashboards/canonical/js/cockpit-pattern.js"></script>
+          <script src="/dashboards/canonical/js/dashboard-schema.js"></script>
+          <script src="/dashboards/canonical/js/dashboard-renderer.js"></script>
+          <script src="/dashboards/canonical/js/pilotage.js"></script>
+          <script src="/dashboards/canonical/js/pilotage-decision.js"></script>
+          <script src="/dashboards/canonical/js/navigation-policy-v4.js"></script>
+          </body></html>`,
+      });
+    }
+
+    if (url.pathname.startsWith('/dashboards/canonical/')) {
+      const file = path.join(CANONICAL, url.pathname.replace('/dashboards/canonical/', ''));
+      return fs.existsSync(file) ? route.fulfill({ path: file }) : route.fulfill({ status: 404, body: '' });
+    }
+
+    if (url.pathname === '/api/admin/dashboard/unified') {
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify(payload) });
+    }
+
+    return route.fulfill({ status: 404, body: '' });
+  });
+
+  await page.setViewportSize({ width: 1672, height: 941 });
+  await page.goto(`${ORIGIN}/admin/pilotage`);
+
+  await page.evaluate(async () => {
+    window.KomerceCanonicalNavigation.mount({
+      user: { role: 'admin' },
+      surface: 'pilotage',
+      document,
+    });
+
+    await window.KomerceCanonicalPilotage.mount({
+      root: document.getElementById('canonical-admin-root'),
+      document,
+      ui: window.KomerceCanonicalUI,
+      renderer: window.KomerceDashboardRenderer,
+      fetch: window.fetch.bind(window),
+      adminContext: { actor: { role: 'admin' }, access: { mode: 'global' } },
+      contextContract: { resolveMarketView: () => ({ mode: 'global' }) },
+    });
+  });
+
+  await expect(page.locator('[data-dashboard-id="pilotage"]')).toBeVisible();
+}
+
+test.describe('Tour de contrôle — revue visuelle déterministe', () => {
+  test.beforeEach(async ({ page }) => {
+    await mountControlTower(page);
+  });
+
+  test('typographie de référence : sans serif, titre fort et lisible', async ({ page }) => {
+    const typo = await page.evaluate(() => {
+      const read = (sel) => {
+        const el = document.querySelector(sel);
+        const cs = getComputedStyle(el);
+        return {
+          family: cs.fontFamily,
+          size: parseFloat(cs.fontSize),
+          weight: Number(cs.fontWeight),
+          lineHeight: parseFloat(cs.lineHeight),
+          letterSpacing: cs.letterSpacing,
+        };
+      };
+      return {
+        body: read('body'),
+        title: read('.kmc-dashboard-title'),
+        section: read('.kmc-decision-dashboard-section-title'),
+        card: read('.kmc-decision-card-label'),
+      };
+    });
+
+    expect(typo.body.family).toMatch(/Segoe UI|Inter|-apple-system|BlinkMacSystemFont/i);
+    expect(typo.title.family).not.toMatch(/Times New Roman|Georgia|serif/i);
+    expect(typo.title.size).toBeGreaterThanOrEqual(31);
+    expect(typo.title.size).toBeLessThanOrEqual(42);
+    expect(typo.title.weight).toBeGreaterThanOrEqual(700);
+    expect(typo.section.size).toBeGreaterThanOrEqual(15);
+    expect(typo.card.size).toBeGreaterThanOrEqual(11);
+  });
+
+  test('structure visuelle : shell + 4 décisions + causes + chaîne + actions', async ({ page }) => {
+    await expect(page.locator('.kmc-admin-navigation')).toBeVisible();
+    await expect(page.locator('.kmc-decision-card')).toHaveCount(4);
+    await expect(page.locator('#pilotage-causes.is-control-tower-causes')).toBeVisible();
+    await expect(page.locator('#pilotage-flow-health.is-control-tower-flow')).toBeVisible();
+    await expect(page.locator('#pilotage-alerts.is-control-tower-actions')).toBeVisible();
+    await expect(page.locator('.is-control-tower-causes .kmc-priority-row')).toHaveCount(2);
+    await expect(page.locator('.is-control-tower-flow .kmc-flow-stage')).toHaveCount(9);
+  });
+
+  test('contraste du cockpit et états de chaîne restent distincts', async ({ page }) => {
+    const colors = await page.evaluate(() => {
+      const color = (sel, prop = 'backgroundColor') => getComputedStyle(document.querySelector(sel))[prop];
+      return {
+        sidebar: color('.kmc-admin-navigation'),
+        causes: color('.is-control-tower-causes'),
+        activeNav: color('.kmc-admin-primary-link.is-active'),
+        red: color('.kmc-flow-stage.is-critical', 'borderTopColor'),
+        warning: color('.kmc-flow-stage.is-warning', 'borderTopColor'),
+        green: color('.kmc-flow-stage.is-positive', 'borderTopColor'),
+        unknown: color('.kmc-flow-stage.is-neutral', 'borderTopColor'),
+      };
+    });
+
+    const lum = (value) => {
+      const rgb = value.match(/\d+/g).slice(0, 3).map(Number);
+      return rgb.reduce((a, b) => a + b, 0) / 3;
+    };
+
+    expect(lum(colors.sidebar)).toBeLessThan(80);
+    expect(lum(colors.causes)).toBeLessThan(90);
+    expect(lum(colors.activeNav)).toBeGreaterThan(120);
+    expect(new Set([colors.red, colors.warning, colors.green, colors.unknown]).size).toBe(4);
+  });
+
+  test('aucun libellé technique signal-service dans la vue utilisateur', async ({ page }) => {
+    await expect(page.locator('[data-dashboard-id="pilotage"]')).not.toContainText('signal-service');
+    await expect(page.locator('[data-dashboard-id="pilotage"]')).toContainText('Signal métier');
+  });
+
+  test('capture de revue 1672×941', async ({ page }, testInfo) => {
+    await page.screenshot({
+      path: testInfo.outputPath('control-tower-1672x941.png'),
+      fullPage: false,
+    });
+  });
+});
