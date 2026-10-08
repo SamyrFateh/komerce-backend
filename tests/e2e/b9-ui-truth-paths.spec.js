@@ -177,7 +177,10 @@ test.describe('B9 — résolution de référence', () => {
         });
       }
       if (url.pathname === '/admin/orders/KOM-360-001') {
-        return route.fulfill({ contentType: 'text/html', body: '<h1>ORDER 360 · KOM-360-001</h1>' });
+        return route.fulfill({
+          contentType: 'text/html',
+          body: '<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body><h1>ORDER 360 · KOM-360-001</h1></body></html>',
+        });
       }
       return route.fulfill({ status: 404, body: '' });
     });
