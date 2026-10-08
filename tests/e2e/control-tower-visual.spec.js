@@ -168,12 +168,10 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(typo.body.family).toMatch(/Segoe UI|Inter|-apple-system|BlinkMacSystemFont/i);
     expect(typo.title.family).not.toMatch(/Times New Roman|Georgia/i);
     expect(typo.title.family).toMatch(/Segoe UI|Inter|-apple-system|BlinkMacSystemFont|Helvetica Neue|Arial|sans-serif/i);
-    expect(typo.title.size).toBeGreaterThanOrEqual(31);
-    expect(typo.title.size).toBeLessThanOrEqual(42);
-    expect(typo.title.weight).toBeGreaterThanOrEqual(650);
-    expect(typo.title.weight).toBeLessThanOrEqual(700);
-    expect(typo.section.size).toBeGreaterThanOrEqual(17);
-    expect(typo.card.size).toBeGreaterThanOrEqual(12);
+    expect(typo.title.size).toBe(24);
+    expect(typo.title.weight).toBe(700);
+    expect(typo.section.size).toBeCloseTo(14.08, 1);
+    expect(typo.card.size).toBeCloseTo(10.88, 1);
   });
 
   test('structure visuelle : shell + 4 décisions + causes + chaîne + actions', async ({ page }) => {
@@ -191,6 +189,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
       const color = (sel, prop = 'backgroundColor') => getComputedStyle(document.querySelector(sel))[prop];
       return {
         sidebar: color('.kmc-admin-navigation'),
+        sidebarWidth: document.querySelector('.kmc-admin-navigation').getBoundingClientRect().width,
         canvas: color('[data-dashboard-id="pilotage"]'),
         causes: color('.is-control-tower-causes'),
         decision: color('.kmc-decision-card'),
@@ -208,21 +207,22 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
       return rgb.reduce((a, b) => a + b, 0) / 3;
     };
 
-    expect(lum(colors.sidebar)).toBeLessThan(80);
-    expect(lum(colors.canvas)).toBeGreaterThan(230);
-    expect(lum(colors.causes)).toBeGreaterThan(230);
-    expect(lum(colors.decision)).toBeGreaterThan(230);
-    expect(colors.activeNavGradient).toContain('linear-gradient');
-    expect(colors.activeNavGradient).toMatch(/rgb\(245, 158, 11\)|rgb\(255, 178, 41\)/);
-    expect(lum(colors.activeNavText)).toBeLessThan(90);
+    expect(colors.sidebar).toBe('rgb(15, 23, 42)');
+    expect(colors.sidebarWidth).toBe(260);
+    expect(colors.canvas).toBe('rgb(241, 245, 249)');
+    expect(colors.causes).toBe('rgb(255, 255, 255)');
+    expect(colors.decision).toBe('rgb(255, 255, 255)');
+    expect(colors.activeNavGradient).toBe('none');
+    expect(colors.activeNavText).toBe('rgb(255, 255, 255)');
     expect(new Set([colors.red, colors.warning, colors.green, colors.unknown]).size).toBe(4);
   });
 
 
-  test('langage Legacy : surfaces claires, couleurs portées par les accents', async ({ page }) => {
+  test('langage Legacy mesuré : F1F5F9 + cartes blanches + rayons/ombres historiques', async ({ page }) => {
     const surfaces = await page.evaluate(() => {
       const bg = (sel) => getComputedStyle(document.querySelector(sel)).backgroundColor;
       const border = (sel, prop) => getComputedStyle(document.querySelector(sel))[prop];
+      const cs = (sel) => getComputedStyle(document.querySelector(sel));
       return {
         canvas: bg('[data-dashboard-id="pilotage"]'),
         causes: bg('.is-control-tower-causes'),
@@ -230,13 +230,19 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
         warningCard: bg('.kmc-decision-card.is-warning'),
         criticalAccent: border('.kmc-decision-card.is-critical', 'borderLeftColor'),
         warningAccent: border('.kmc-decision-card.is-warning', 'borderLeftColor'),
+        decisionRadius: cs('.kmc-decision-card').borderRadius,
+        sectionRadius: cs('.kmc-decision-surface-card').borderRadius,
+        sectionShadow: cs('.kmc-decision-surface-card').boxShadow,
       };
     });
 
-    for (const value of [surfaces.canvas, surfaces.causes, surfaces.criticalCard, surfaces.warningCard]) {
-      const rgb = value.match(/\d+/g).slice(0, 3).map(Number);
-      expect(rgb.reduce((a, b) => a + b, 0) / 3).toBeGreaterThan(230);
-    }
+    expect(surfaces.canvas).toBe('rgb(241, 245, 249)');
+    expect(surfaces.causes).toBe('rgb(255, 255, 255)');
+    expect(surfaces.criticalCard).toBe('rgb(255, 255, 255)');
+    expect(surfaces.warningCard).toBe('rgb(255, 255, 255)');
+    expect(surfaces.decisionRadius).toBe('10px');
+    expect(surfaces.sectionRadius).toBe('12px');
+    expect(surfaces.sectionShadow).toContain('0px 1px 3px');
     expect(surfaces.criticalAccent).not.toBe(surfaces.warningAccent);
   });
 
