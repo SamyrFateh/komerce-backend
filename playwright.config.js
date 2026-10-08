@@ -32,6 +32,7 @@ const DASHBOARD_SPECS = [
   'purchasing-workspace',
   'dashboard-role-matrix',
   'order-360-lineage',
+  'b9-ui-truth-paths',
 ];
 
 module.exports = defineConfig({
