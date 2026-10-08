@@ -726,6 +726,9 @@
     'entity-products': '◇',
     'entity-suppliers': '▦',
     'entity-clients': '♙',
+    'live-import-runtime': '◉',
+    'live-hub': '◉',
+    'live-relais': '◉',
     'workspace-pricing': '▥',
     'workspace-catalog': '▣',
     'workspace-sourcing': '◉',
@@ -754,6 +757,15 @@
         Object.freeze({ id: 'flow-commerce', label: 'Commerce', href: '/admin/commerce', roles: ['admin', 'market_operator'], surfaces: ['commerce'] }),
         Object.freeze({ id: 'flow-operations', label: 'Commandes & logistique', href: '/admin/operations', roles: ['admin', 'market_operator'], surfaces: ['operations'] }),
         Object.freeze({ id: 'flow-finance', label: 'Finance', href: '/admin/finance', roles: ['admin', 'market_operator'], surfaces: ['finance'] }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'live',
+      label: 'Live',
+      items: Object.freeze([
+        Object.freeze({ id: 'live-import-runtime', label: 'Sourcing live', href: '/admin/import-runtime', roles: ['admin', 'sourcing'], surfaces: ['import-runtime'] }),
+        Object.freeze({ id: 'live-hub', label: 'Hub live', href: '/admin/hub-live', roles: ['admin', 'agent_hub'], surfaces: ['hub-live'] }),
+        Object.freeze({ id: 'live-relais', label: 'Relais live', href: '/admin/relais-live', roles: ['admin', 'agent_relais'], surfaces: ['relais-live'] }),
       ]),
     }),
     Object.freeze({
