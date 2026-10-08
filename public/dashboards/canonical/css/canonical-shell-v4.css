@@ -44,6 +44,7 @@ body.kmc-shell-v4 .kmc-admin-navigation-inner {
 body.kmc-shell-v4 .kmc-admin-navigation-identity {
   width: 100%;
   display: flex;
+  flex: 0 0 auto;
 }
 
 body.kmc-shell-v4 .kmc-admin-home {
@@ -79,8 +80,11 @@ body.kmc-shell-v4 .kmc-admin-primary-nav {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  justify-content: flex-start;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .kmc-admin-sidebar-group {
@@ -146,6 +150,7 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active::after {
 
 body.kmc-shell-v4 .kmc-admin-utility-nav {
   width: 100%;
+  flex: 0 0 auto;
   margin-top: auto;
   display: flex;
   flex-direction: column;
