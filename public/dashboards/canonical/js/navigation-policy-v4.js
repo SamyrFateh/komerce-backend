@@ -744,7 +744,7 @@
       label: 'Piloter',
       items: Object.freeze([
         Object.freeze({ id: 'control-tower', label: 'Tour de contrôle', href: '/admin/pilotage', roles: ['admin', 'market_operator'], surfaces: ['pilotage'] }),
-        Object.freeze({ id: 'action-center', label: 'Action Center', href: '/admin/action-center', roles: ['admin', 'market_operator'], surfaces: ['action-center'] }),
+        Object.freeze({ id: 'action-center', label: 'Action Center', href: '/admin/action-center', roles: ['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire'], surfaces: ['action-center'] }),
       ]),
     }),
     Object.freeze({

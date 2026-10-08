@@ -11,7 +11,7 @@
  * @db-read       none
  * @db-write      none
  * @db-txn        none
- * @doctrine      action_center_handles_derived_signals_only, server_admin_context_selects_market_endpoint, browser_signal_ref_only, canonical_admin_no_legacy_imports
+ * @doctrine      action_center_handles_derived_signals_only, server_admin_context_selects_market_endpoint, browser_signal_ref_only, canonical_admin_no_legacy_imports, agent_view_is_same_surface_filtered_by_server_scope, agent_actions_acknowledge_snooze_only
  * @impact-areas  admin-dashboard, decision-signals, market-authorization
  * @version       2026-09
  */
@@ -25,6 +25,12 @@
 })(typeof globalThis !== 'undefined' ? globalThis : null, function createActionCenter() {
   const ENDPOINT = '/api/admin/action-center';
   const CONTEXT_ENDPOINT = '/api/admin/dashboard/context';
+  const AGENT_ENDPOINT = '/api/agent/action-center';
+  const AGENT_ROLES = Object.freeze(['agent_hub', 'agent_relais', 'agent_transitaire']);
+
+  function isAgentUser(user) {
+    return Boolean(user && AGENT_ROLES.includes(user.role));
+  }
 
   const FAMILY_LABELS = Object.freeze({
     ops: 'Opérations',
@@ -134,6 +140,17 @@
     const market = payload && payload.scope && payload.scope.market;
 
     const copy = doc.createElement('div');
+    if (payload && payload.role) {
+      copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'ACTION CENTER · MON PÉRIMÈTRE'));
+      copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Mes signaux à traiter'));
+      copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Signaux de votre périmètre uniquement · acquitter ou reporter ; la résolution est décidée par la chaîne canonique'));
+      node.appendChild(copy);
+      const feedbackAgent = text(doc, 'div', 'kmc-workspace-feedback', '');
+      feedbackAgent.dataset.actionCenterFeedback = '';
+      feedbackAgent.setAttribute('role', 'status');
+      node.appendChild(feedbackAgent);
+      return node;
+    }
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', market ? `ACTION CENTER · ${market.code}` : 'ACTION CENTER · CANONICAL'));
     copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', market ? `Décisions · ${market.name || market.code}` : 'Décider sur les signaux, pas sur des écrans'));
     copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', market
@@ -228,6 +245,18 @@
     return card;
   }
 
+  function renderAgentSignals(rootNode, ui, doc, payload) {
+    const rows = payload.signals || [];
+    const section = ui.Section.create({
+      title: rows.length ? `Signaux de mon périmètre · ${rows.length}` : 'Aucun signal actif',
+      description: rows.length
+        ? 'Vu et Reporter ne modifient que le cycle de vie du signal. La résolution reste décidée par la chaîne canonique.'
+        : 'Aucune décision n’est actuellement requise dans votre périmètre.',
+    });
+    rows.forEach(row => section.slot.appendChild(renderSignal(doc, row)));
+    rootNode.appendChild(section.element);
+  }
+
   function renderFamilies(rootNode, ui, doc, payload) {
     const grouped = new Map();
     (payload.signals || []).forEach(signal => {
@@ -288,7 +317,9 @@
         return;
       }
       if (!signalRef) return;
-      const signalPath = `${context.endpoint}/signals/${encodeURIComponent(signalRef)}`;
+      const signalPath = context.scopeMode === 'agent'
+        ? `${context.endpoint}/${encodeURIComponent(signalRef)}`
+        : `${context.endpoint}/signals/${encodeURIComponent(signalRef)}`;
       if (action === 'acknowledge') {
         await runAction(context, button, `${signalPath}/acknowledge`, {}, 'Signal acquitté.');
       }
@@ -302,7 +333,9 @@
   }
 
   async function mount(options) {
-    const runtime = await resolveRuntimeScope(options);
+    const runtime = isAgentUser(options.user)
+      ? { mode: 'agent', marketCode: null, severity: null, endpoint: AGENT_ENDPOINT, loadEndpoint: AGENT_ENDPOINT }
+      : await resolveRuntimeScope(options);
     const context = {
       root: options.root,
       user: options.user,
@@ -323,6 +356,11 @@
       rootNode.replaceChildren();
       rootNode.appendChild(header(context.document, payload, context.severity));
       rootNode.appendChild(context.ui.KpiStrip.create(metricItems(payload.summary)).element);
+      if (context.scopeMode === 'agent') {
+        renderAgentSignals(rootNode, context.ui, context.document, payload);
+        bind(rootNode, context);
+        return payload;
+      }
 
       const controls = context.ui.Section.create({
         title: context.scopeMode === 'market' ? 'Périmètre de décision' : 'Actualiser le constat',
@@ -347,7 +385,9 @@
 
   return {
     ENDPOINT,
+    AGENT_ENDPOINT,
     CONTEXT_ENDPOINT,
+    isAgentUser,
     mount,
     jsonRequest,
     metricItems,

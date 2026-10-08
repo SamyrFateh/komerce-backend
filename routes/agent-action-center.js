@@ -4,14 +4,14 @@
  * @domain        decision-signals
  * @layer         route
  * @criticality   high
- * @inputs        authenticated_agent_user, limit, offset
+ * @inputs        authenticated_agent_user, limit, offset, signal_ref, snooze_hours
  * @outputs       agent_scoped_action_center_projection
  * @depends       middleware/auth.js, services/action-center-agent-scope.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       signals, orders, parcels
- * @db-write      none
+ * @db-write      signals
  * @db-txn        none
- * @doctrine      server_side_scope_is_authority, role_alone_is_not_enough, signal_ref_only, read_only_projection
+ * @doctrine      server_side_scope_is_authority, role_alone_is_not_enough, signal_ref_only, agent_actions_acknowledge_snooze_only
  * @impact-areas  decision-signals, admin-dashboard, relay-network
  * @version       2026-10
  */
@@ -31,7 +31,7 @@ const FORBIDDEN_KEYS = new Set([
 ]);
 
 function rejectBrowserAuthority(req, res, next) {
-  const keys = Object.keys(req.query || {});
+  const keys = [...Object.keys(req.query || {}), ...Object.keys(req.body || {})];
   if (keys.some(key => FORBIDDEN_KEYS.has(key))) {
     return res.status(400).json({ error: 'Le périmètre est résolu côté serveur', code: 'agent_action_center_browser_authority_rejected' });
   }
@@ -53,5 +53,25 @@ router.get(
     }
   }
 );
+
+function agentAction(handler) {
+  return [
+    authenticate,
+    requireRole(['agent_hub', 'agent_relais', 'agent_transitaire']),
+    rejectBrowserAuthority,
+    async (req, res, next) => {
+      try {
+        res.set('Cache-Control', 'private, no-store');
+        res.json(await handler(req));
+      } catch (error) {
+        if (error && error.status) return res.status(error.status).json({ error: error.message, code: error.code });
+        return next(error);
+      }
+    },
+  ];
+}
+
+router.post('/:signalRef/acknowledge', ...agentAction(req => scopeService.acknowledge(req.user, req.params.signalRef)));
+router.post('/:signalRef/snooze', ...agentAction(req => scopeService.snooze(req.user, req.params.signalRef, req.body && req.body.hours)));
 
 module.exports = router;
