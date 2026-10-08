@@ -1,0 +1,150 @@
+/*
+ * KOMERCE CANONICAL — ACTION CENTER VISUAL POLISH V1
+ * Presentation-only layer. No business authority or lifecycle semantics.
+ */
+
+body.kmc-shell-v4 .kmc-action-center {
+  display: grid;
+  gap: 14px;
+  padding: 20px 24px 28px;
+  background: var(--kmc-cockpit-bg, #f8f9fa);
+}
+
+body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header {
+  align-items: flex-end;
+  gap: 18px;
+  padding: 0 0 4px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-workspace-title {
+  margin: 3px 0 4px;
+  color: #111827;
+  font-size: clamp(28px, 2.15vw, 34px);
+  line-height: 1.08;
+  letter-spacing: -.025em;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-workspace-subtitle {
+  max-width: 900px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+body.kmc-shell-v4 .kmc-action-center > .kmc-metric-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-metric-card {
+  min-height: 82px;
+  padding: 11px 13px;
+  border: 1px solid #dfe5ec;
+  border-left-width: 3px;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: none;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-metric-card.is-critical { border-left-color: #c2412d; }
+body.kmc-shell-v4 .kmc-action-center .kmc-metric-card.is-warning { border-left-color: #f5a623; }
+body.kmc-shell-v4 .kmc-action-center .kmc-metric-card.is-neutral { border-left-color: #94a3b8; }
+
+body.kmc-shell-v4 .kmc-action-center .kmc-section {
+  padding: 14px 16px 16px;
+  border-color: #dfe5ec;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-action-signal {
+  position: relative;
+  display: grid;
+  gap: 9px;
+  margin-top: 8px;
+  padding: 12px 14px 12px 16px;
+  border: 1px solid #e1e7ee;
+  border-left: 4px solid #94a3b8;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: none;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-action-signal.is-urgent,
+body.kmc-shell-v4 .kmc-action-center .kmc-action-signal.is-critical {
+  border-left-color: #c2412d;
+  background: #fffafa;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-action-signal.is-warning {
+  border-left-color: #f5a623;
+  background: #fffdf8;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-action-signal.is-info {
+  border-left-color: #3b82f6;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-workspace-detail-title {
+  align-items: baseline;
+  gap: 10px;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-workspace-detail-title strong {
+  color: #17233a;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-action-signal > .kmc-workspace-note {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-workspace-action {
+  min-height: 30px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  box-shadow: none;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-workspace-action:not(.is-secondary) {
+  border-color: #17233a;
+  background: #17233a;
+  color: #fff;
+}
+
+body.kmc-shell-v4 .kmc-action-center .kmc-workspace-action.is-secondary {
+  border-color: #d6dee8;
+  background: #fff;
+}
+
+@media (max-width: 1050px) {
+  body.kmc-shell-v4 .kmc-action-center {
+    padding: 16px;
+  }
+
+  body.kmc-shell-v4 .kmc-action-center > .kmc-metric-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  body.kmc-shell-v4 .kmc-action-center {
+    padding: 12px;
+  }
+
+  body.kmc-shell-v4 .kmc-action-center > .kmc-metric-strip {
+    grid-template-columns: 1fr;
+  }
+
+  body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header {
+    align-items: stretch;
+  }
+}

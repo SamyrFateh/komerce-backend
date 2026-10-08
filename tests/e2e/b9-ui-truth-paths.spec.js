@@ -139,6 +139,11 @@ test.describe('B9 — Action Center vers propriétaire', () => {
       });
     });
 
+    await expect(page.locator('#canonical-admin-root')).toHaveClass(/kmc-action-center/);
+    const signalCard = page.locator('.kmc-action-signal[data-signal-ref="KSG-PAY-001"]');
+    await expect(signalCard).toHaveClass(/is-urgent/);
+    await expect(signalCard).toHaveAttribute('data-severity', 'urgent');
+
     const traiter = page.getByRole('link', { name: 'Traiter' });
     await expect(traiter).toHaveAttribute('href', '/admin/workspaces/purchasing?po=PO-42');
     await traiter.click();

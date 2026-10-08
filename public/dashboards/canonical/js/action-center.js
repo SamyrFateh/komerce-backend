@@ -208,8 +208,12 @@
 
   function renderSignal(doc, row) {
     const card = doc.createElement('article');
-    card.className = 'kmc-workspace-detail';
+    const severity = ['urgent', 'critical', 'warning', 'info'].includes(String(row.severity || '').toLowerCase())
+      ? String(row.severity).toLowerCase()
+      : 'info';
+    card.className = `kmc-workspace-detail kmc-action-signal is-${severity}`;
     card.dataset.signalRef = row.signal_ref;
+    card.dataset.severity = severity;
 
     const titleLine = doc.createElement('div');
     titleLine.className = 'kmc-workspace-detail-title';
@@ -354,6 +358,8 @@
       const payload = await jsonRequest(context.fetch, context.loadEndpoint);
       const rootNode = context.root;
       rootNode.replaceChildren();
+      rootNode.classList.add('kmc-action-center');
+      rootNode.dataset.actionCenterMode = context.scopeMode;
       rootNode.appendChild(header(context.document, payload, context.severity));
       rootNode.appendChild(context.ui.KpiStrip.create(metricItems(payload.summary)).element);
       if (context.scopeMode === 'agent') {
