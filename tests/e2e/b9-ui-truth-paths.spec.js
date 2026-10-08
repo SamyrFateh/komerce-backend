@@ -35,6 +35,7 @@ test.describe('B9 — descente de vérité', () => {
           contentType: 'text/html',
           body: `<!doctype html><html lang="fr"><body><main id="canonical-admin-root"></main>
             <script src="/dashboards/canonical/js/primitives.js"></script>
+            <script src="/dashboards/canonical/js/dashboard-schema.js"></script>
             <script src="/dashboards/canonical/js/dashboard-renderer.js"></script>
             <script src="/dashboards/canonical/js/pilotage.js"></script></body></html>`,
         });
@@ -68,7 +69,7 @@ test.describe('B9 — descente de vérité', () => {
         root: document.getElementById('canonical-admin-root'),
         document,
         ui: window.KomerceCanonicalUI,
-        renderer: window.KomerceCanonicalDashboardRenderer,
+        renderer: window.KomerceDashboardRenderer,
         fetch: window.fetch.bind(window),
         adminContext: {},
         contextContract: { resolveMarketView: () => ({ mode: 'global' }) },
@@ -182,6 +183,11 @@ test.describe('B9 — résolution de référence', () => {
     });
 
     await page.goto(`${ORIGIN}/admin/pilotage`);
+    await page.evaluate(() => window.KomerceCanonicalNavigation.mount({
+      user: window.KOMERCE_CANONICAL_AUTH_USER,
+      surface: 'pilotage',
+      document,
+    }));
     const search = page.getByRole('searchbox', { name: 'Rechercher une référence opérationnelle' });
     await search.fill('PCL-9001');
     await page.getByRole('button', { name: 'Trouver' }).click();
@@ -203,7 +209,7 @@ test.describe('B9 — quatre états de santé', () => {
       if (url.pathname === '/health') {
         return route.fulfill({
           contentType: 'text/html',
-          body: `<!doctype html><html lang="fr"><body><main id="root"></main>
+          body: `<!doctype html><html lang="fr"><head><meta charset="utf-8"></head><body><main id="root"></main>
             <script src="/dashboards/canonical/js/decision-primitives.js"></script></body></html>`,
         });
       }
