@@ -47,3 +47,16 @@ test('does not turn an unavailable execution source into an empty successful pro
   db.query.mockRejectedValueOnce(error);
   await expect(getPurchaseOrderDetail(PO)).rejects.toBe(error);
 });
+
+test('l’état bloquant api_ambiguous_blocked est calculé côté serveur avec la règle de replay bloqué', async () => {
+  getGroupedPurchaseOrder.mockResolvedValueOnce(detail);
+  db.query.mockResolvedValueOnce({ rows: [{ execution: { ...empty, blocking: [{ state: 'api_ambiguous_blocked', provider: 'cj', owner_role: 'purchasing' }] } }] });
+  const result = await getPurchaseOrderDetail(PO);
+  expect(result.supplier_execution.blocking[0]).toEqual(expect.objectContaining({ state: 'api_ambiguous_blocked', owner_role: 'purchasing' }));
+  const sql = db.query.mock.calls[0][0];
+  expect(sql).toContain("'api_ambiguous_blocked'");
+  expect(sql).toContain("operation = 'create_order'");
+  expect(sql).toContain('DISTINCT ON (provider)');
+  expect(sql).toContain("l.outcome = 'ambiguous'");
+  expect(sql).toContain("(l.facts->>'replay_blocked')::boolean");
+});

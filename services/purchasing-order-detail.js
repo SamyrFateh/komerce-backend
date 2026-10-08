@@ -65,7 +65,17 @@ const EXECUTION_SQL = `
       SELECT id, provider, supplier_execution_order_id, supplier_execution_group_id, operation, outcome,
              provider_request_id, provider_code, created_at
         FROM supplier_execution_events WHERE purchase_order_id = $1
-    ) r), '[]'::jsonb)
+    ) r), '[]'::jsonb),
+    -- État bloquant calculé côté serveur (même règle que hasBlockingSupplierCreateAmbiguity) :
+    -- dernier événement create_order d'un provider = ambigu avec replay bloqué. Le front ne l'infère pas.
+    'blocking', COALESCE((SELECT jsonb_agg(jsonb_build_object(
+        'state', 'api_ambiguous_blocked', 'provider', l.provider, 'since', l.created_at, 'owner_role', 'purchasing'
+      ) ORDER BY l.created_at, l.provider) FROM (
+      SELECT DISTINCT ON (provider) provider, outcome, facts, created_at
+        FROM supplier_execution_events
+       WHERE purchase_order_id = $1 AND operation = 'create_order'
+       ORDER BY provider, created_at DESC, id DESC
+    ) l WHERE l.outcome = 'ambiguous' AND COALESCE((l.facts->>'replay_blocked')::boolean, FALSE) = TRUE), '[]'::jsonb)
   ) AS execution
 `;
 

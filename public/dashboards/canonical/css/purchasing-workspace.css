@@ -137,3 +137,15 @@
   min-width: 0;
   margin-top: 14px;
 }
+
+/* État bloquant fourni par le serveur (api_ambiguous_blocked) — lisible sans couleur : titre explicite + role="alert". */
+.kmc-purchasing-blocking {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--health-red-fg, #b42318);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: var(--health-red-bg, #fef3f2);
+}
+.kmc-purchasing-blocking-title { display: block; color: var(--health-red-fg, #b42318); }
+.kmc-purchasing-blocking-detail { margin: 4px 0 0; }
