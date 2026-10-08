@@ -64,6 +64,7 @@ module.exports = {
       'services/order-display-snapshot.js',
       'services/order-status-machine.js',
       'services/order-financial-closure-reconciliation.js',
+      'services/order-financial-closure-signal.js',
       'services/order-checkout-service.js',
       'services/order-checkout-item-resolution.js',
       'services/order-checkout-persistence.js',
@@ -164,6 +165,7 @@ module.exports = {
       'tests/unit/confirm-payment-cycle.test.js',
       'tests/unit/order-status-machine.test.js',
       'tests/unit/order-financial-closure-reconciliation.test.js',
+      'tests/unit/order-financial-closure-signal.test.js',
       'tests/unit/order-status-client-notifications.test.js',
       // Rapatriés depuis features/notification.feature.js (doublon singulier
       // supprimé, audit 2026-07-06 §2d) — mal rangés là-bas : ils testent en
@@ -300,6 +302,7 @@ module.exports = {
     consumes: [
       'platform-ops (monitoring/exploitation transverse observé dans le code)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
+      'decision-signals (sink durable Action Center pour le signal de clôture financière en attente des faits économiques via signal-service)',
       "business-rules (FF-C1 2026-07-29 — lecture du référentiel de règles métier ; preuve: routes/orders/create.js -> utils/rules.js ; routes/orders/qr.js -> utils/rules.js ; routes/orders/list.js -> utils/rules.js ; +1)",
 'wallet (application credit)',
       'economic-engine (cout figure a la commande)',

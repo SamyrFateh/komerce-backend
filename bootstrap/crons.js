@@ -98,6 +98,9 @@ function startSignalGenerationCron(options = {}) {
   const INITIAL_DELAY_MS = 60 * 1000;
   const generateSignals = options.generateSignals
     || require('../services/signal-service').generateSignals;
+  // Producteur Orders → puits decision-signals : même cadence, même garde anti-chevauchement.
+  const generateFinancialCloseSignals = options.generateFinancialCloseSignals
+    || require('../services/order-financial-closure-signal').generateFinancialCloseSignals;
   let running = false;
 
   const run = async () => {
@@ -105,7 +108,8 @@ function startSignalGenerationCron(options = {}) {
     running = true;
     try {
       const result = await generateSignals();
-      const generators = result && result.generators ? result.generators : {};
+      const generators = { ...(result && result.generators ? result.generators : {}) };
+      generators.financial_close_economic_facts_pending = await generateFinancialCloseSignals();
       const generated = Object.values(generators)
         .reduce((total, item) => total + (Number(item && item.generated) || 0), 0);
       log.info({

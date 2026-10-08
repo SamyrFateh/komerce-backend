@@ -22,7 +22,7 @@ const db = require('../db');
 
 const FAMILY_TYPES = Object.freeze({
   ops: Object.freeze(['parcel_blocked', 'cash_expiring', 'ordered_without_purchase_order', 'purchase_order_overreceived', 'purchase_order_receipt_stuck', 'pickup_overdue', 'preparation_stuck', 'sla_breach', 'hub_tension', 'relay_tension', 'loyalty_pending']),
-  eco: Object.freeze(['margin_drift', 'pricing_outlier', 'category_drift', 'recon_anomaly', 'sku_non_viable', 'sku_viable_under_conditions', 'market_evidence_insufficient', 'negative_margin', 'costing_incomplete', 'supplier_payment_review']),
+  eco: Object.freeze(['margin_drift', 'pricing_outlier', 'category_drift', 'recon_anomaly', 'sku_non_viable', 'sku_viable_under_conditions', 'market_evidence_insufficient', 'negative_margin', 'costing_incomplete', 'supplier_payment_review', 'financial_close_economic_facts_pending']),
   sourcing: Object.freeze(['sourcing_arbitrage', 'product_dead', 'product_star', 'stock_rupture', 'best_seller_local_unavailable']),
   disputes: Object.freeze(['dispute_sensitive']),
 });
