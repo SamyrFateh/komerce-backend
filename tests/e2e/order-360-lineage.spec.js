@@ -123,7 +123,7 @@ test.describe('Order 360 — lignage métier', () => {
 
     await expect(page.locator('.kmc-entity-subtitle')).toContainText('KM');
     await expect(page.locator('.kmc-entity-subtitle')).toContainText('Amina M.');
-    await expect(page.getByText('Golden Elite Pro')).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Golden Elite Pro' })).toBeVisible();
     await expect(page.getByText(/CJ Dropshipping · PO 11111111/)).toBeVisible();
     await expect(page.getByText('CJ-ORDER-42')).toBeVisible();
     await expect(page.getByText('TRK-C2C-001')).toBeVisible();
@@ -151,7 +151,7 @@ test.describe('Order 360 — lignage métier', () => {
 
   test('Order 360 reste une surface de compréhension sans contrôle mutant', async ({ page }) => {
     await mount(page);
-    await expect(page.locator('button')).toHaveCount(1); // bouton "Trouver" du shell uniquement
-    await expect(page.locator('[data-workspace-action], [data-admin-action]')).toHaveCount(0);
+    await expect(page.locator('#canonical-admin-root button')).toHaveCount(0);
+    await expect(page.locator('#canonical-admin-root [data-workspace-action], #canonical-admin-root [data-admin-action]')).toHaveCount(0);
   });
 });
