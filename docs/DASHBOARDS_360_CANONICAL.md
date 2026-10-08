@@ -1,14 +1,14 @@
 # Dashboards 360 — Canonical (généré)
 
 > ⚠️ Fichier **généré** par `scripts/gen-dashboards-360-canonical.js`. Ne pas éditer à la main.
-> Régénéré le 2026-10-07T23:58:25.318Z.
+> Régénéré le 2026-10-08T00:31:57.286Z.
 > Contrepartie de `docs/DASHBOARDS_360.md` (Legacy 1). Les deux coexistent tant que le rollback `?legacy=1` existe (`bootstrap/html-routes.js`).
 > Chaîne de preuve : `navigation-policy-v4.js` (item × rôle) → `hrefFor()` → `app.js::surfaceForPath()` → module (`global.Komerce*`) → `fetch()` → `docs/contract/openapi.json`.
 
 ## Synthèse
 
 - Items de navigation déclarés : **12** → **28** entrées (item × rôle visible)
-- Modules JS Canonical scannés : **69**
+- Modules JS Canonical scannés : **70**
 - Arêtes API tracées (`fetch()` vers `/api/`) : **189**
 - 🔴 Surfaces de navigation sans module résolu : **0**
 - 🔴 Destination de navigation dont l'URL ne résout vers aucune surface connue (retombe sur Pilotage par défaut) : **0**

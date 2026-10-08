@@ -322,6 +322,11 @@ function mountHtmlRoutes(app, rootDir) {
   // Paramètres migré dans le shell Canonical (SettingsView portée telle
   // quelle, montée dans le root Canonical). ?legacy=1 reste un rollback
   // immédiat si la gouvernance le demande — même pattern que /admin/pilotage.
+  // Providers & certifications (Administration) — lecture seule.
+  app.get('/admin/providers', (req, res) => {
+    sendCanonicalAdmin(res);
+  });
+
   app.get('/admin/settings', (req, res) => {
     if (req.query && req.query.legacy === '1') return sendLegacyAdmin(res);
     sendCanonicalAdmin(res);
