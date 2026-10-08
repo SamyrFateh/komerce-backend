@@ -183,12 +183,21 @@ test.describe('B9 — résolution de référence', () => {
     });
 
     await page.goto(`${ORIGIN}/admin/pilotage`);
-    await page.evaluate(() => window.KomerceCanonicalNavigation.mount({
-      user: window.KOMERCE_CANONICAL_AUTH_USER,
-      surface: 'pilotage',
-      document,
-    }));
-    const search = page.getByRole('searchbox', { name: 'Rechercher une référence opérationnelle' });
+    await page.evaluate(() => {
+      const nav = window.KomerceCanonicalNavigation;
+      const options = {
+        user: window.KOMERCE_CANONICAL_AUTH_USER,
+        surface: 'pilotage',
+        document,
+      };
+      const header = nav._buildHeader(options);
+      nav._replaceNavigationStructure(header, options);
+      nav._applyHybridShell(header, options);
+      if (!document.querySelector('.kmc-admin-search-input')) {
+        throw new Error('canonical_reference_search_not_mounted');
+      }
+    });
+    const search = page.locator('.kmc-admin-search-input');
     await search.fill('PCL-9001');
     await page.getByRole('button', { name: 'Trouver' }).click();
 
