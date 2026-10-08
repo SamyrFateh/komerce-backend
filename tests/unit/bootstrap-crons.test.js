@@ -347,6 +347,8 @@ describe('bootstrap/crons', () => {
 
   // ── startSignalGenerationCron ───────────────────────────────────────────
   describe('startSignalGenerationCron', () => {
+    const mockFinancialClose = jest.fn();
+    beforeEach(() => { mockFinancialClose.mockReset().mockResolvedValue({ generated: 0, evaluated: 0, truncated: false }); });
     test('génère les signaux après 60 secondes puis toutes les 15 minutes', async () => {
       mockGenerateSignals.mockResolvedValue({
         expired: 2,
@@ -357,7 +359,7 @@ describe('bootstrap/crons', () => {
         },
       });
 
-      crons.startSignalGenerationCron({ generateSignals: mockGenerateSignals });
+      crons.startSignalGenerationCron({ generateSignals: mockGenerateSignals, generateFinancialCloseSignals: mockFinancialClose });
 
       await jest.advanceTimersByTimeAsync(59 * 1000);
       expect(mockGenerateSignals).not.toHaveBeenCalled();
@@ -369,7 +371,7 @@ describe('bootstrap/crons', () => {
           generated: 4,
           expired: 2,
           retired_obsolete: 1,
-          generator_count: 2,
+          generator_count: 3,
         }),
         'Decision signal generation pass done'
       );
@@ -378,12 +380,26 @@ describe('bootstrap/crons', () => {
       expect(mockGenerateSignals).toHaveBeenCalledTimes(2);
     });
 
+    test('le producteur Orders de clôture financière tourne dans la même passe et son total est compté', async () => {
+      mockGenerateSignals.mockResolvedValue({ expired: 0, retired_obsolete: 0, generators: { pickup_overdue: { generated: 1 } } });
+      mockFinancialClose.mockResolvedValue({ generated: 2, evaluated: 5, truncated: false });
+
+      crons.startSignalGenerationCron({ generateSignals: mockGenerateSignals, generateFinancialCloseSignals: mockFinancialClose });
+      await jest.advanceTimersByTimeAsync(60 * 1000);
+
+      expect(mockFinancialClose).toHaveBeenCalledTimes(1);
+      expect(mockLog.info).toHaveBeenCalledWith(
+        expect.objectContaining({ generated: 3, generator_count: 2 }),
+        'Decision signal generation pass done'
+      );
+    });
+
     test('empêche deux générations de se chevaucher', async () => {
       let release;
       mockGenerateSignals.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }))
         .mockResolvedValueOnce({ expired: 0, retired_obsolete: 0, generators: {} });
 
-      crons.startSignalGenerationCron({ generateSignals: mockGenerateSignals });
+      crons.startSignalGenerationCron({ generateSignals: mockGenerateSignals, generateFinancialCloseSignals: mockFinancialClose });
       await jest.advanceTimersByTimeAsync(60 * 1000);
       expect(mockGenerateSignals).toHaveBeenCalledTimes(1);
 
@@ -401,7 +417,7 @@ describe('bootstrap/crons', () => {
         .mockRejectedValueOnce(new Error('signal db unavailable'))
         .mockResolvedValueOnce({ expired: 0, retired_obsolete: 0, generators: {} });
 
-      crons.startSignalGenerationCron({ generateSignals: mockGenerateSignals });
+      crons.startSignalGenerationCron({ generateSignals: mockGenerateSignals, generateFinancialCloseSignals: mockFinancialClose });
       await jest.advanceTimersByTimeAsync(60 * 1000);
       expect(mockLog.error).toHaveBeenCalledWith(
         expect.objectContaining({ err: expect.any(Error) }),

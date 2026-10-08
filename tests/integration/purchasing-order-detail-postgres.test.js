@@ -74,9 +74,9 @@ describeDb('purchasing order detail — real PostgreSQL', () => {
     await pool.end();
   });
 
-  test('PO without execution has seven empty collections', async () => {
+  test('PO without execution has eight empty collections (incl. blocking)', async () => {
     const { supplier_execution } = await getPurchaseOrderDetail(id(2), client);
-    expect(supplier_execution).toEqual({ orders: [], order_lines: [], groups: [], group_members: [], payments: [], proofs: [], events: [] });
+    expect(supplier_execution).toEqual({ orders: [], order_lines: [], groups: [], group_members: [], payments: [], proofs: [], events: [], blocking: [] });
   });
 
   test('keeps parent, children, lines, payments and proofs separate and within the PO', async () => {
