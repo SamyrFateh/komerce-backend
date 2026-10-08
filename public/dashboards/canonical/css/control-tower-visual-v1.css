@@ -225,11 +225,31 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decisio
 
 /* Shared pilotage sections */
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-surface-card {
+  position: relative;
   padding: 20px;
-  border: 0;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 8px 18px rgba(15,23,42,.035);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-surface-card::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: 0;
+  width: 3px;
+  height: 28px;
+  border-radius: 0 3px 3px 0;
+  background: #f59e0b;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-flow::before {
+  background: #3b82f6;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-actions::before {
+  background: #64748b;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-dashboard-section-title {
@@ -253,7 +273,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-
   border-color: transparent;
   border-left: 4px solid var(--ct-orange);
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 8px 18px rgba(15,23,42,.035);
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-causes .kmc-decision-dashboard-section-title {
