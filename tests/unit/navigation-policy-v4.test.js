@@ -26,3 +26,28 @@ test('Administration expose l’entrée Utilisateurs (lecture seule, admin)', ()
   expect(source).toContain("id: 'admin-users'");
   expect(source).toContain("href: '/admin/users', roles: ['admin']");
 });
+
+
+test('la navigation groupée repart en haut au montage', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'navigation-policy-v4.js'),
+    'utf8'
+  );
+  expect(source).toMatch(/primary\.scrollTop\s*=\s*0/);
+  expect(source).toMatch(/requestAnimationFrame\(\(\)\s*=>\s*\{\s*primary\.scrollTop\s*=\s*0/);
+});
+
+test('la sidebar verticale commence en haut et garde identité/utilitaires fixes', () => {
+  const css = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'css', 'canonical-shell-v4.css'),
+    'utf8'
+  );
+  const primary = (css.match(/body\.kmc-shell-v4 \.kmc-admin-primary-nav\s*\{([\s\S]*?)\}/) || [])[1] || '';
+  const identity = (css.match(/body\.kmc-shell-v4 \.kmc-admin-navigation-identity\s*\{([\s\S]*?)\}/) || [])[1] || '';
+  const utility = (css.match(/body\.kmc-shell-v4 \.kmc-admin-utility-nav\s*\{([\s\S]*?)\}/) || [])[1] || '';
+
+  expect(primary).toMatch(/justify-content:\s*flex-start/);
+  expect(primary).toMatch(/overflow-y:\s*auto/);
+  expect(identity).toMatch(/flex:\s*0 0 auto/);
+  expect(utility).toMatch(/flex:\s*0 0 auto/);
+});
