@@ -34,6 +34,7 @@ const DASHBOARD_SPECS = [
   'order-360-lineage',
   'b9-ui-truth-paths',
   'control-tower-visual',
+  'legacy-theme-audit',
 ];
 
 module.exports = defineConfig({
