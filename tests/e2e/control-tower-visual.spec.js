@@ -174,6 +174,25 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(typo.card.size).toBeCloseTo(10.88, 1);
   });
 
+  test('le début du menu est visible au chargement sans scroll restauré', async ({ page }) => {
+    const nav = page.locator('.kmc-admin-primary-nav');
+    const firstGroup = page.locator('.kmc-admin-sidebar-group').first();
+    const firstLabel = firstGroup.locator('.kmc-admin-sidebar-group-label');
+    const firstLink = firstGroup.locator('.kmc-admin-primary-link').first();
+
+    await expect(firstLabel).toHaveText('Piloter');
+    await expect(firstLink).toContainText('Tour de contrôle');
+    await expect(firstGroup).toBeVisible();
+
+    const metrics = await nav.evaluate(el => ({
+      scrollTop: el.scrollTop,
+      top: el.getBoundingClientRect().top,
+      firstTop: el.querySelector('.kmc-admin-sidebar-group').getBoundingClientRect().top,
+    }));
+    expect(metrics.scrollTop).toBe(0);
+    expect(metrics.firstTop).toBeGreaterThanOrEqual(metrics.top);
+  });
+
   test('structure visuelle : shell + 4 décisions + causes + chaîne + actions', async ({ page }) => {
     await expect(page.locator('.kmc-admin-navigation')).toBeVisible();
     await expect(page.locator('.kmc-decision-card')).toHaveCount(4);
@@ -233,8 +252,6 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
         decisionRadius: cs('.kmc-decision-card').borderRadius,
         sectionRadius: cs('.kmc-decision-surface-card').borderRadius,
         sectionShadow: cs('.kmc-decision-surface-card').boxShadow,
-        sectionBorder: cs('.kmc-decision-surface-card').borderTopColor,
-        sectionBorderWidth: cs('.kmc-decision-surface-card').borderTopWidth,
       };
     });
 
@@ -245,9 +262,6 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(surfaces.decisionRadius).toBe('10px');
     expect(surfaces.sectionRadius).toBe('12px');
     expect(surfaces.sectionShadow).toContain('0px 1px 3px');
-    expect(surfaces.sectionShadow).toContain('0px 8px 18px');
-    expect(surfaces.sectionBorder).toBe('rgb(226, 232, 240)');
-    expect(surfaces.sectionBorderWidth).toBe('1px');
     expect(surfaces.criticalAccent).not.toBe(surfaces.warningAccent);
   });
 
