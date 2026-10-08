@@ -123,6 +123,10 @@ describe('dashboard-pilotage-market', () => {
 
     const result = await pilotage.buildMarketPilotage(filters, market);
 
+    expect(result.control_chain).toEqual(expect.objectContaining({
+      stages: expect.any(Array),
+      structural_alerts: expect.any(Array),
+    }));
     expect(result.system_alerts).toHaveLength(2);
     expect(result.system_alerts[0]).toEqual(expect.objectContaining({
       structural: true,
