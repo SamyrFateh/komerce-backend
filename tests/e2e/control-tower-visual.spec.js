@@ -166,7 +166,8 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     });
 
     expect(typo.body.family).toMatch(/Segoe UI|Inter|-apple-system|BlinkMacSystemFont/i);
-    expect(typo.title.family).not.toMatch(/Times New Roman|Georgia|serif/i);
+    expect(typo.title.family).not.toMatch(/Times New Roman|Georgia/i);
+    expect(typo.title.family).toMatch(/Segoe UI|Inter|-apple-system|BlinkMacSystemFont|Helvetica Neue|Arial|sans-serif/i);
     expect(typo.title.size).toBeGreaterThanOrEqual(31);
     expect(typo.title.size).toBeLessThanOrEqual(42);
     expect(typo.title.weight).toBeGreaterThanOrEqual(700);
@@ -190,7 +191,8 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
       return {
         sidebar: color('.kmc-admin-navigation'),
         causes: color('.is-control-tower-causes'),
-        activeNav: color('.kmc-admin-primary-link.is-active'),
+        activeNavGradient: color('.kmc-admin-primary-link.is-active', 'backgroundImage'),
+        activeNavText: color('.kmc-admin-primary-link.is-active', 'color'),
         red: color('.kmc-flow-stage.is-critical', 'borderTopColor'),
         warning: color('.kmc-flow-stage.is-warning', 'borderTopColor'),
         green: color('.kmc-flow-stage.is-positive', 'borderTopColor'),
@@ -205,7 +207,9 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
 
     expect(lum(colors.sidebar)).toBeLessThan(80);
     expect(lum(colors.causes)).toBeLessThan(90);
-    expect(lum(colors.activeNav)).toBeGreaterThan(120);
+    expect(colors.activeNavGradient).toContain('linear-gradient');
+    expect(colors.activeNavGradient).toMatch(/rgb\(245, 158, 11\)|rgb\(255, 178, 41\)/);
+    expect(lum(colors.activeNavText)).toBeLessThan(90);
     expect(new Set([colors.red, colors.warning, colors.green, colors.unknown]).size).toBe(4);
   });
 
