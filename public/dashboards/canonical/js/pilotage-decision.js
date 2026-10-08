@@ -140,7 +140,9 @@
   function residualActions(payload, base) {
     const alerts = Array.isArray(payload && payload.system_alerts) ? payload.system_alerts : [];
     return alerts.filter(row => !row.structural).slice(0, 5).map(row => {
-      const projected = base.projectAlert(row) || {};
+      const projected = typeof base.projectAlerts === 'function'
+        ? (base.projectAlerts({ system_alerts: [row] })[0] || {})
+        : {};
       return {
         title: row.title || row.message || projected.title || 'Signal à traiter',
         helper: [row.source, projected.message && projected.message !== row.message ? projected.message : null].filter(Boolean).join(' · '),
