@@ -404,7 +404,8 @@
     const payments = source.payments || [];
     const proofs = source.proofs || [];
     const events = source.events || [];
-    const total = orders.length + orderLines.length + groups.length + groupMembers.length + payments.length + proofs.length + events.length;
+    const blocking = source.blocking || [];
+    const total = orders.length + orderLines.length + groups.length + groupMembers.length + payments.length + proofs.length + events.length + blocking.length;
 
     const section = doc.createElement('div');
     section.className = 'kmc-purchasing-execution';
@@ -416,6 +417,22 @@
       'kmc-workspace-subtitle',
       'Faits persistés par Purchasing : ordres, liens, paiements, preuves et événements. Les statuts sont affichés sans interprétation locale.'
     ));
+
+    // État bloquant fourni par le serveur (api_ambiguous_blocked) : affiché tel quel, jamais inféré ici.
+    blocking.forEach((row) => {
+      const alert = doc.createElement('div');
+      alert.className = 'kmc-purchasing-blocking';
+      alert.setAttribute('data-purchasing-blocking', row.state || '');
+      alert.setAttribute('role', 'alert');
+      alert.appendChild(text(doc, 'strong', 'kmc-purchasing-blocking-title', 'Bloqué — création fournisseur ambiguë'));
+      alert.appendChild(text(
+        doc,
+        'p',
+        'kmc-purchasing-blocking-detail',
+        `Provider ${row.provider || '—'} · propriétaire : ${row.owner_role === 'purchasing' ? 'Achats' : (row.owner_role || '—')} · depuis ${row.since || '—'}. Réconcilier le fournisseur avant toute reprise de l’achat.`
+      ));
+      section.appendChild(alert);
+    });
 
     if (!total) {
       section.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune exécution fournisseur persistée pour cette commande.'));

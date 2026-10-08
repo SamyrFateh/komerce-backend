@@ -83,3 +83,15 @@ describe('describeError', () => {
     expect(describeError(error)).toMatch(/pas activés/);
   });
 });
+
+test('purchasing-workspace affiche l’état bloquant fourni par le serveur sans l’inférer', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/js/purchasing-workspace.js'), 'utf8');
+  expect(source).toContain('source.blocking');
+  expect(source).toContain('data-purchasing-blocking');
+  expect(source).toContain("'role', 'alert'");
+  expect(source).toContain('Bloqué — création fournisseur ambiguë');
+  // aucune règle métier locale : le front ne lit jamais les événements pour décider du blocage
+  expect(source).not.toMatch(/outcome\s*===\s*'ambiguous'/);
+});
