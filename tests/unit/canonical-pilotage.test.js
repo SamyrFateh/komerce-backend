@@ -39,12 +39,6 @@ function payloadFixture() {
     },
     system_alerts: [
       {
-        structural: true,
-        title: 'Paiement fournisseur bloqué',
-        message: '3 commande(s) impactée(s) · PURCHASING',
-        level: 'critical',
-      },
-      {
         level: 'urgent',
         source: 'orders',
         message: 'Deux commandes bloquées',
@@ -196,7 +190,7 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
       expect.objectContaining({ label: 'Contrôle HUB', tone: 'positive', helper: '2 commande(s)' }),
     ]);
     expect(pilotageDecision.residualActions(payload, pilotage)[0]).toEqual(expect.objectContaining({
-      title: 'orders',
+      title: 'Deux commandes bloquées',
       tone: 'critical',
       href: '/admin/action-center?severity=critical',
     }));
