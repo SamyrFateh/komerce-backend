@@ -54,7 +54,7 @@ function measure() {
     const css = stripComments(fs.readFileSync(path.join(CSS_DIR, name), 'utf8'));
     const count = (css.match(/!important/g) || []).length;
     if (count) important[name] = count;
-    if (name !== 'tokens.css' && /--health-(green|orange|red|unknown)/.test(css)) healthOutsideTokens.push(name);
+    if (name !== 'tokens.css' && /--health-(green|orange|red|unknown)[a-z-]*\s*:/.test(css)) healthOutsideTokens.push(name);
   }
   return { important, healthOutsideTokens };
 }
