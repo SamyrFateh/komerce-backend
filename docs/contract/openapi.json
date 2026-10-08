@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 0,
-    "total_routes": 643,
+    "total_routes": 644,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -12000,6 +12000,55 @@
                       "x-observed": true
                     },
                     "result": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/agent/action-center": {
+      "get": {
+        "summary": "GET /api/agent/action-center",
+        "x-route-file": "routes/agent-action-center.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "role": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "owner_roles": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "relay_bound": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "total": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "summary": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "signals": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -30187,6 +30236,104 @@
                       "x-observed": true
                     },
                     "markets": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/agent/action-center/{signalRef}/acknowledge": {
+      "post": {
+        "summary": "POST /api/agent/action-center/{signalRef}/acknowledge",
+        "x-route-file": "routes/agent-action-center.js",
+        "parameters": [
+          {
+            "name": "signalRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "signal_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actions": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/agent/action-center/{signalRef}/snooze": {
+      "post": {
+        "summary": "POST /api/agent/action-center/{signalRef}/snooze",
+        "x-route-file": "routes/agent-action-center.js",
+        "parameters": [
+          {
+            "name": "signalRef",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "signal_ref": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "status": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "snoozed_until": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "actions": {
                       "type": "string",
                       "x-observed": true
                     }

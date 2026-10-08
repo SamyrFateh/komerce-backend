@@ -155,8 +155,10 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
   test('field roles stay limited to their server-authorized workspace destinations', () => {
     const nav = loadPolicy();
     const transitaire = nav.sidebarGroupsFor({ role: 'agent_transitaire' }, null);
-    expect(transitaire.map(group => group.id)).toEqual(['workspaces']);
-    expect(transitaire[0].items.map(item => item.id)).toEqual(['workspace-shipping']);
+    // Les agents voient l'Action Center canonique filtré par le serveur (périmètre + actions autorisées) et leur workspace.
+    expect(transitaire.map(group => group.id)).toEqual(['pilot', 'workspaces']);
+    expect(transitaire[0].items.map(item => item.id)).toEqual(['action-center']);
+    expect(transitaire[1].items.map(item => item.id)).toEqual(['workspace-shipping']);
 
     const finance = nav.sidebarGroupsFor({ role: 'finance' }, null);
     expect(finance.map(group => group.id)).toEqual(['workspaces']);

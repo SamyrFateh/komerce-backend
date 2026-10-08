@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-08T05:34:12.801Z",
+  "generatedAt": "2026-10-08T10:55:18.507Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 704,
-    "protected": 649,
+    "total": 707,
+    "protected": 652,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -2557,6 +2557,33 @@
       "roles": [
         "admin",
         "sourcing"
+      ]
+    },
+    {
+      "key": "POST /api/agent/action-center/{signalRef}/acknowledge",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_hub",
+        "agent_relais",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "POST /api/agent/action-center/{signalRef}/snooze",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_hub",
+        "agent_relais",
+        "agent_transitaire"
+      ]
+    },
+    {
+      "key": "GET /api/agent/action-center",
+      "level": "PROTECTED",
+      "roles": [
+        "agent_hub",
+        "agent_relais",
+        "agent_transitaire"
       ]
     },
     {

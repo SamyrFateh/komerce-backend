@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-08T00:34:26.701Z",
+  "generatedAt": "2026-10-08T10:54:48.796Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 697,
+  "count": 700,
   "routes": [
     {
       "method": "GET",
@@ -3107,6 +3107,36 @@
       "mountPrefix": "/api/admin/workspaces/sourcing",
       "localPath": "/suppliers/:partnerRef/update",
       "routeFile": "routes/admin-sourcing-workspace.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/agent/action-center",
+      "mountPrefix": "/api/agent/action-center",
+      "localPath": "/",
+      "routeFile": "routes/agent-action-center.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/agent/action-center/:signalRef/acknowledge",
+      "mountPrefix": "/api/agent/action-center",
+      "localPath": "/:signalRef/acknowledge",
+      "routeFile": "routes/agent-action-center.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "POST",
+      "fullPath": "/api/agent/action-center/:signalRef/snooze",
+      "mountPrefix": "/api/agent/action-center",
+      "localPath": "/:signalRef/snooze",
+      "routeFile": "routes/agent-action-center.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]

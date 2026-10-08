@@ -108,3 +108,15 @@ test('Simulator remains outside Action Center / 4G', () => {
   expect(htmlRoutes).toContain("'/admin/simulator'");
   expect(htmlRoutes).not.toContain("'/admin/action-center',\n    '/admin/simulator'");
 });
+
+test('vue agent : même surface Action Center, endpoint agent, acquitter/reporter seulement (jamais résoudre)', () => {
+  const source = fs.readFileSync(path.join(CANONICAL, 'js', 'action-center.js'), 'utf8');
+  expect(source).toContain("const AGENT_ENDPOINT = '/api/agent/action-center'");
+  const ui = require(path.join(CANONICAL, 'js', 'action-center.js'));
+  expect(ui.isAgentUser({ role: 'agent_relais' })).toBe(true);
+  expect(ui.isAgentUser({ role: 'admin' })).toBe(false);
+  expect(ui.isAgentUser(null)).toBe(false);
+  // Le bouton « Résolu » n'apparaît que si le serveur l'annonce ; le backend agent ne l'annonce jamais.
+  const service = fs.readFileSync(path.join(ROOT, 'services', 'action-center-agent-scope.js'), 'utf8');
+  expect(service).not.toMatch(/'resolve'/);
+});
