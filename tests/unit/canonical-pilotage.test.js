@@ -163,6 +163,7 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
       'Critiques ouvertes',
       'Points d’attention',
       'Problèmes costing',
+      'Commandes actives',
     ]);
     expect(decisions.some(item => /aujourd/i.test(item.label))).toBe(false);
     const flowCards = pilotageDecision.summaryCards(payload, pilotage);
@@ -179,14 +180,14 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
     expect(pilotageDecision.structuralCauses(payload)).toEqual([
       expect.objectContaining({
         title: 'Paiement fournisseur bloqué',
-        helper: 'PURCHASING · owner · purchasing',
+        helper: 'Achats fournisseurs · Responsable : Achats fournisseurs',
         priority: '3 cmd',
         tone: 'critical',
         href: '/admin/operations#operations-control-chain',
       }),
     ]);
     expect(pilotageDecision.controlStages(payload)).toEqual([
-      expect.objectContaining({ label: 'Achats', tone: 'critical', helper: '3 commande(s) · 3 bloquée(s)' }),
+      expect.objectContaining({ label: 'Achats fournisseurs', tone: 'critical', helper: '3 commande(s) · 3 bloquée(s)' }),
       expect.objectContaining({ label: 'Contrôle HUB', tone: 'positive', helper: '2 commande(s)' }),
     ]);
     expect(pilotageDecision.residualActions(payload, pilotage)[0]).toEqual(expect.objectContaining({
@@ -194,6 +195,8 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
       tone: 'critical',
       href: '/admin/action-center?severity=critical',
     }));
+    expect(pilotageDecision.humanLabel('sources', 'signal-service')).toBe('Signal métier');
+    expect(pilotageDecision.humanLabel('owners', 'finance')).toBe('Finance');
     expect(pilotageDecision.principles(payload)).toHaveLength(3);
     expect(pilotageDecision.trust(payload)).toEqual(expect.objectContaining({
       stateLabel: 'Données à jour',
