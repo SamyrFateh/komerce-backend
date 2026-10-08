@@ -16,6 +16,8 @@
     "test:e2e:features": "node scripts/run-e2e-feature-tests.js",
     "test:e2e:feature": "node scripts/run-e2e-feature-tests.js",
     "test:e2e:lot": "node scripts/run-e2e-feature-tests.js",
+    "test:e2e:dashboards": "playwright test",
+    "test:e2e:dashboards:install": "playwright install --with-deps chromium",
     "test:unit:coverage": "jest --config jest.unit.config.js --ci --coverage --forceExit",
     "test:unit:v41": "jest tests/unit/shared-cart-v41-transitions.test.js --no-coverage",
     "check:wording:v41": "node public/boutique/scripts/check-group-wording.js --v41",
@@ -169,6 +171,7 @@
     "stripe": "^15.11.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.56.1",
     "dotenv": "^17.4.2",
     "jest": "^30.5.0",
     "nodemon": "^3.1.4",

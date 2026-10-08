@@ -632,6 +632,7 @@ module.exports = {
       'tests/e2e/hub-live-cockpit.spec.js',
       'tests/e2e/relais-live-cockpit.spec.js',
       'tests/e2e/live-ops-shell.spec.js',
+      'playwright.config.js',
       'tests/unit/dashboard-market-scope-helpers.test.js',
       'tests/unit/dashboard-contracts-0c.test.js',
       'tests/unit/operations-workspace-state-source.test.js',

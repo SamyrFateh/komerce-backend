@@ -472,3 +472,19 @@ return db.query(\`UPDATE products SET name = $2 WHERE id = $1\`, [id, name]);`;
     expect(result.governanceFiles).toEqual(['services/a.js', 'services/z.js']);
   });
 });
+
+describe('scope dashboard — gate Playwright officiel', () => {
+  const { classify } = require('../../scripts/pr-enforcement-scope');
+  test.each([
+    'playwright.config.js',
+    'tests/e2e/live-ops-shell.spec.js',
+    'tests/e2e/purchasing-workspace.spec.js',
+    'tests/e2e/import-runtime-source-registry.spec.js',
+  ])('%s déclenche le job dashboard', file => {
+    expect(classify([file]).dashboard).toBe(true);
+  });
+
+  test('les specs boutique historiques ne déclenchent pas le job dashboard', () => {
+    expect(classify(['tests/e2e/search.spec.js']).dashboard).toBe(false);
+  });
+});

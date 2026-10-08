@@ -226,14 +226,17 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
 
     // D — certification réelle (premier passage) puis source prête.
     await wizard(page).locator('[data-wizard-prepare]').click();
-    await expect(wizard(page).locator('[data-wizard-ready]')).toBeVisible();
+    // La certification ouvre le suivi du premier passage ; on revient ensuite au registre des sources.
+    await expect(page.getByText('Premier passage terminé')).toBeVisible();
+    await page.locator('.kir-domain-nav a', { hasText: 'Sources' }).click();
+    await expect(page.locator('[data-source-wizard]')).toHaveCount(0);
     await expect(card(page).locator('.kir-source-badge')).toHaveText('PRÊTE');
     await expect(card(page).locator('[data-source-toggle]')).toBeEnabled();
     await expect(card(page).locator('[data-source-toggle]')).toHaveAttribute('aria-checked', 'false');
     expect(backend.source.enabled).toBe(false);
 
     // E — activation explicite → ON → nouveau passage visible dans Suivi.
-    await wizard(page).locator('[data-wizard-activate]').click();
+    await card(page).locator('[data-source-toggle]').click();
     await expect.poll(() => backend.source.enabled).toBe(true);
     await expect.poll(() => backend.calls.filter((c) => c === 'activate').length).toBe(1);
     await page.locator('.kir-domain-nav a', { hasText: 'Sources' }).click().catch(() => {});
@@ -257,7 +260,8 @@ test.describe('Sources — assistant « + Ajouter une source »', () => {
     await expect(card(page).locator('[data-source-toggle]')).toBeDisabled();
     await expect(wizard(page).locator('[data-wizard-prepare]')).toHaveCount(0);
     const text = await page.locator('.kmc-import-runtime, #root').first().innerText();
-    expect(text).not.toMatch(/api[_ -]?key|access[_ -]?token|bearer|cj-connector|\.js\b|Error:/i);
+    // Les libellés d'aide (« API Key », « Access Token ») sont légitimes ; seules des valeurs de secret ou des traces techniques sont interdites.
+    expect(text).not.toMatch(/bearer\s+\S+|cj-connector|\.js\b|Error:|(?:api[_ -]?key|access[_ -]?token)\s*[:=]\s*[A-Za-z0-9._-]{12,}/i);
   });
 
   test('F : Retour au suivi puis navigateur Back → Sources', async ({ page }) => {

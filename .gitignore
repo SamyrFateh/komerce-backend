@@ -63,3 +63,10 @@ _audit/
 
 # Sortie de l’inventaire hors ligne des fournisseurs (preflight et CI), jamais committée
 artifacts/provider-contract-batch/
+
+# Playwright (gate dashboards)
+.playwright-output/
+playwright-report/
+
+# Captures de revue générées par les specs dashboards (non versionnées)
+/test-results/

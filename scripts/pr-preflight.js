@@ -105,6 +105,8 @@ const CI_ONLY = Object.freeze({
   'scripts/e2e-impact-scope.js': 'exige un PostgreSQL reconstruit (job from-scratch)',
   'scripts/run-e2e-feature-tests.js': 'exige un PostgreSQL reconstruit (job from-scratch)',
   'test:e2e:features': 'exige un PostgreSQL reconstruit (job from-scratch)',
+  'test:e2e:dashboards': 'exige Chromium (installé dans le job dashboard) ; rejouable en local après `npm run test:e2e:dashboards:install`',
+  'test:e2e:dashboards:install': 'installe Chromium dans le runner du job dashboard',
 });
 
 function list(value) {
