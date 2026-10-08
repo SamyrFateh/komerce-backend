@@ -125,6 +125,7 @@
     'accounting-workspace': 'finance',
     settings: 'settings',
     'providers-admin': 'settings',
+    'users-admin': 'settings',
   });
 
   const SURFACE_TO_SPACE = Object.freeze({
@@ -715,6 +716,7 @@
     finance: '▤',
     settings: '⚙',
     'admin-providers': '⛭',
+    'admin-users': '⛭',
     'control-tower': '⌂',
     'action-center': '!',
     'flow-commerce': '▥',
@@ -790,6 +792,7 @@
       id: 'administration',
       label: 'Administration',
       items: Object.freeze([
+        Object.freeze({ id: 'admin-users', label: 'Utilisateurs', href: '/admin/users', roles: ['admin'], surfaces: ['users-admin'] }),
         Object.freeze({ id: 'admin-providers', label: 'Providers', href: '/admin/providers', roles: ['admin'], surfaces: ['providers-admin'] }),
         Object.freeze({ id: 'settings', label: 'Paramètres', href: '/admin/settings', roles: ['admin'], surfaces: ['settings'] }),
       ]),

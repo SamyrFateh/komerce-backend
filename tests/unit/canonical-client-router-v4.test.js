@@ -168,3 +168,7 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
 test('/admin/providers est une route canonique sans reload document', () => {
   expect(router.canonicalPath('/admin/providers')).toBe(true);
 });
+
+test('/admin/users est une route canonique sans reload document', () => {
+  expect(router.canonicalPath('/admin/users')).toBe(true);
+});

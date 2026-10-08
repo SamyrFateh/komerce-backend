@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-08T00:31:57.286Z",
+  "generatedAt": "2026-10-08T05:34:09.831Z",
   "summary": {
     "navItems": 12,
     "navMatrixEntries": 28,
-    "canonicalModules": 70,
+    "canonicalModules": 71,
     "apiEdgesTraced": 189,
     "surfaceWithoutModule": 0,
     "navHrefUnresolved": 0,
@@ -3109,6 +3109,24 @@
       ],
       "exportsGlobals": [],
       "fetchCount": 4
+    },
+    {
+      "file": "users-admin.js",
+      "hasHeader": true,
+      "isLite": false,
+      "role": "canonical-users-admin",
+      "domain": "admin-dashboard",
+      "layer": "ui-orchestration",
+      "criticality": "medium",
+      "doctrine": [
+        "read_only_projection",
+        "no_user_mutation_until_role_model_aligned",
+        "dashboard_no_business_recompute"
+      ],
+      "exportsGlobals": [
+        "KomerceCanonicalUsersAdmin"
+      ],
+      "fetchCount": 0
     }
   ],
   "diagnostics": {

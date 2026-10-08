@@ -18,3 +18,9 @@ test('/admin/providers sert le shell canonique', () => {
   expect(i).toBeGreaterThanOrEqual(0);
   expect(source.slice(i, i + 120)).toContain('sendCanonicalAdmin(res)');
 });
+
+test('/admin/users sert le shell canonique (lecture seule)', () => {
+  const i = source.indexOf("app.get('/admin/users'");
+  expect(i).toBeGreaterThanOrEqual(0);
+  expect(source.slice(i, i + 120)).toContain('sendCanonicalAdmin(res)');
+});

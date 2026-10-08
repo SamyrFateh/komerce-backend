@@ -18,3 +18,8 @@ test('canonical app route Providers (Administration) vers sa surface dédiée', 
   expect(canonicalApp).toContain("PROVIDERS_ADMIN: 'providers-admin'");
   expect(canonicalApp).toContain("if (path === '/admin/providers') return SURFACES.PROVIDERS_ADMIN");
 });
+
+test('canonical app route Utilisateurs (Administration) vers sa surface dédiée lecture seule', () => {
+  expect(canonicalApp).toContain("USERS_ADMIN: 'users-admin'");
+  expect(canonicalApp).toContain("if (path === '/admin/users') return SURFACES.USERS_ADMIN");
+});
