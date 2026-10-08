@@ -67,14 +67,24 @@
     ];
   }
 
+  // Valeurs du registre affichées LITTÉRALEMENT ; un marqueur (jamais la couleur
+  // seule) distingue une capability GAP (non disponible) d'une preuve confirmée.
+  const CLASSIFICATION_MARK = Object.freeze({ CONFIRMED: '✓', RECLASSIFIED: '↻', GAP: '✖' });
+
+  function classificationLabel(value) {
+    if (!value) return '? non classé';
+    const mark = CLASSIFICATION_MARK[value] || '?';
+    return value === 'GAP' ? `${mark} GAP — non disponible` : `${mark} ${value}`;
+  }
+
   function certificationRows(certifications) {
     const records = certifications && Array.isArray(certifications.records) ? certifications.records : [];
     return records.map(row => ({
       capability: row.capability,
       availability: row.availability,
       environment: row.environment,
-      proof: row.highest_proof,
-      classification: row.classification,
+      proof: row.highest_proof || '— aucune preuve',
+      classification: classificationLabel(row.classification),
       evidence: (row.evidence || []).join(' · '),
       limitations: (row.limitations || []).join(' · '),
     }));
