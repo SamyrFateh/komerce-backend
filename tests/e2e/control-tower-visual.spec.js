@@ -170,9 +170,10 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(typo.title.family).toMatch(/Segoe UI|Inter|-apple-system|BlinkMacSystemFont|Helvetica Neue|Arial|sans-serif/i);
     expect(typo.title.size).toBeGreaterThanOrEqual(31);
     expect(typo.title.size).toBeLessThanOrEqual(42);
-    expect(typo.title.weight).toBeGreaterThanOrEqual(700);
-    expect(typo.section.size).toBeGreaterThanOrEqual(15);
-    expect(typo.card.size).toBeGreaterThanOrEqual(11);
+    expect(typo.title.weight).toBeGreaterThanOrEqual(650);
+    expect(typo.title.weight).toBeLessThanOrEqual(700);
+    expect(typo.section.size).toBeGreaterThanOrEqual(17);
+    expect(typo.card.size).toBeGreaterThanOrEqual(12);
   });
 
   test('structure visuelle : shell + 4 décisions + causes + chaîne + actions', async ({ page }) => {
