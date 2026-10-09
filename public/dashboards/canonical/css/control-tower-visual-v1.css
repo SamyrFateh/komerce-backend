@@ -492,3 +492,53 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-trust-f
     min-width: 122px;
   }
 }
+
+
+/* Pilotage contextual hero: simple, distinct from Operations. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] > .kmc-dashboard-header {
+  position: relative;
+  min-height: 132px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 18px 28% 18px 20px;
+  border: 1px solid #dbe7f4;
+  border-radius: 14px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 82% 28%, rgba(59,130,246,.16) 0 54px, transparent 55px),
+    radial-gradient(circle at 91% 72%, rgba(245,158,11,.13) 0 42px, transparent 43px),
+    linear-gradient(115deg, #f8fbff 0%, #eef6ff 58%, #f8fafc 100%);
+  box-shadow: 0 1px 3px rgba(15,23,42,.05);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] > .kmc-dashboard-header::after {
+  content: "◉  ◆  ●";
+  position: absolute;
+  right: 28px;
+  bottom: 20px;
+  color: #93c5fd;
+  font-size: 25px;
+  letter-spacing: 12px;
+  opacity: .85;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .canonical-eyebrow {
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-dashboard-title {
+  margin-top: 3px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-dashboard-description {
+  max-width: 680px;
+  color: #64748b;
+  font-size: 12px;
+}
