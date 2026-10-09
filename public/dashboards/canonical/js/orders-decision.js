@@ -257,71 +257,55 @@
     dashboard.className = 'kmc-dashboard kmc-decision-dashboard';
     dashboard.setAttribute('data-dashboard-id', 'orders');
     dashboard.setAttribute('data-dashboard-visual', 'decision-first-v1');
+    dashboard.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'DASHBOARD · SUIVI DES COMMANDES'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Commandes'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Les files de travail commande et le cycle de vie, sans recalcul côté navigateur.'));
+    header.setAttribute('data-dashboard-role', 'hero');
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'COMMANDES'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Suivi des commandes'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir où en sont les commandes et ce qui attend une action.'));
     dashboard.appendChild(header);
 
     // Bloc 1 — bandeau de décision
     const decisions = decisionItems(payload, base);
     if (decisions.length) {
       const host = doc.createElement('div');
+      host.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';
+      host.setAttribute('data-dashboard-role', 'attention');
       decisionUi.DecisionStrip.render(host, { items: decisions });
       dashboard.appendChild(host);
     }
 
-    // Bloc 2 — KPI de tête
-    const kpisSection = cardSection(doc, 'État des commandes', 'Les KPI disponibles sont affichés tels que fournis par la source canonique.', 'orders-kpis');
-    ui.MetricStrip.render(kpisSection.body, { items: metricItems(payload, base) });
-    dashboard.appendChild(kpisSection.section);
+    // Objet principal — état + progression des commandes.
+    const overview = cardSection(
+      doc,
+      'État des commandes',
+      'Les chiffres essentiels et la progression réelle des commandes.',
+      'orders-overview'
+    );
+    overview.section.className += ' is-cockpit-truth is-cockpit-flow';
+    overview.section.setAttribute('data-dashboard-role', 'primary');
 
-    // Bloc 2b — funnel métier + SLA (additif, cf. buildSignals côté serveur)
-    const businessGrid = doc.createElement('div');
-    businessGrid.className = 'kmc-decision-dashboard-grid-2';
+    const metricsHost = doc.createElement('div');
+    metricsHost.className = 'kmc-orders-essential-metrics';
+    ui.MetricStrip.render(metricsHost, { items: metricItems(payload, base) });
+    overview.body.appendChild(metricsHost);
 
     const businessFunnel = businessFunnelStages(payload, base);
     if (businessFunnel.some(stage => stage.value !== '—')) {
-      const funnelSection = cardSection(doc, 'Funnel de conversion', 'Du clic à la livraison : suivez chaque étape et identifiez les pertes.', 'orders-business-funnel');
-      decisionUi.Funnel.render(funnelSection.body, { stages: businessFunnel });
-      businessGrid.appendChild(funnelSection.section);
+      overview.body.appendChild(text(doc, 'h3', 'kmc-orders-flow-title', 'Progression des commandes'));
+      const funnelHost = doc.createElement('div');
+      funnelHost.className = 'kmc-orders-essential-funnel';
+      decisionUi.Funnel.render(funnelHost, { stages: businessFunnel });
+      overview.body.appendChild(funnelHost);
     }
-
-    const slaSection = cardSection(doc, 'SLA & promesse client', 'Tenez vos engagements et offrez une expérience fiable.', 'orders-sla');
-    decisionUi.SummaryCards.render(slaSection.body, { items: slaItems(payload, base) });
-    businessGrid.appendChild(slaSection.section);
-
-    dashboard.appendChild(businessGrid);
-
-    // Bloc 2c — commandes prioritaires
-    const priorityItems = priorityOrderItems(payload, base);
-    if (priorityItems.length) {
-      const prioritySection = cardSection(doc, 'Commandes prioritaires', 'Les commandes qui nécessitent votre attention en priorité.', 'orders-priority');
-      decisionUi.RankedList.render(prioritySection.body, { items: priorityItems });
-      dashboard.appendChild(prioritySection.section);
-    }
-
-    // Bloc 3 — funnel du cycle de vie
-    const stages = lifecycleStages(payload, base);
-    if (stages.length) {
-      const section = cardSection(doc, 'Cycle de vie', 'Comptes serveur par étape, ordre canonique de la state machine commande.', 'orders-lifecycle');
-      decisionUi.Funnel.render(section.body, { stages });
-      dashboard.appendChild(section.section);
-    }
-
-    // Bloc 4 — mix de paiement
-    const paymentMix = paymentMixCards(payload, base);
-    if (paymentMix.length) {
-      const section = cardSection(doc, 'Mix de paiement', 'Répartition par mode de paiement, comptage serveur.', 'orders-payment-mix');
-      decisionUi.SummaryCards.render(section.body, { items: paymentMix });
-      dashboard.appendChild(section.section);
-    }
+    dashboard.appendChild(overview.section);
 
     // Blocs 5 & 6 — files de travail
     const queuesGrid = doc.createElement('div');
-    queuesGrid.className = 'kmc-decision-dashboard-grid-2';
+    queuesGrid.className = 'kmc-decision-dashboard-grid-2 kmc-orders-action-queues';
+    queuesGrid.setAttribute('data-dashboard-role', 'secondary');
 
     function queueDescription(base_text, shown, total) {
       if (total != null && shown != null && total > shown) {
@@ -332,7 +316,7 @@
 
     const pendingCash = workQueueItems((payload && payload.work_queues && payload.work_queues.pending_cash) || [], base);
     const cashSection = cardSection(doc, 'Cash à confirmer', queueDescription(
-      'Commandes en attente de confirmation de paiement cash, les plus anciennes en premier.',
+      'Paiements cash qui attendent une confirmation.',
       payload && payload.work_queues && payload.work_queues.pending_cash_shown,
       payload && payload.work_queues && payload.work_queues.pending_cash_total,
     ), 'orders-pending-cash');
@@ -341,7 +325,7 @@
 
     const readyForParcel = workQueueItems((payload && payload.work_queues && payload.work_queues.ready_for_parcel) || [], base);
     const parcelSection = cardSection(doc, 'Colis à créer', queueDescription(
-      'Commandes payées prêtes à passer en logistique, les plus anciennes en premier.',
+      'Commandes payées prêtes à passer en logistique.',
       payload && payload.work_queues && payload.work_queues.ready_for_parcel_shown,
       payload && payload.work_queues && payload.work_queues.ready_for_parcel_total,
     ), 'orders-ready-for-parcel');
@@ -349,11 +333,6 @@
     queuesGrid.appendChild(parcelSection.section);
 
     dashboard.appendChild(queuesGrid);
-
-    // Bloc 7 — empreinte de confiance
-    const footer = doc.createElement('div');
-    decisionUi.TrustFooter.render(footer, trust(payload));
-    dashboard.appendChild(footer);
 
     rootNode.appendChild(dashboard);
     return { element: dashboard, visual: 'decision-first-v1' };
