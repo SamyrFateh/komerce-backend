@@ -259,15 +259,21 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
   padding: 9px 8px 12px;
 }
 
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-row {
+  display: grid;
+  gap: 6px;
+}
+
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order {
   --control-health: var(--ocb-green);
   position: relative;
-  min-height: 48px;
+  width: 100%;
+  min-height: 42px;
   display: grid;
   grid-template-columns: 9px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  padding: 10px 11px;
+  padding: 8px 10px;
   color: var(--ocb-ink);
   background: #ffffff;
   border: 1px solid #dfe5ec;
@@ -275,6 +281,9 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
   box-shadow: 0 1px 2px rgba(0,0,0,.035), 0 4px 10px rgba(15,23,42,.025);
   text-decoration: none;
   opacity: 1;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order.is-positive {
@@ -320,21 +329,96 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
   font-weight: 750;
 }
 
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order[href]::after {
-  content: "›";
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-disclosure {
   grid-column: 3;
-  grid-row: 1;
   color: #94a3b8;
   font-size: 17px;
   line-height: 1;
+  transition: transform 120ms ease;
 }
 
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-cause {
-  grid-column: 2 / 4;
-  color: var(--ocb-muted);
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order[aria-expanded="true"] .kmc-control-order-disclosure {
+  transform: rotate(90deg);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-detail {
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--control-health) 26%, var(--ocb-line));
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(15,23,42,.045);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-detail[hidden] {
+  display: none;
+}
+
+body.kmc-shell-v4 .kmc-control-order-focus,
+body.kmc-shell-v4 .kmc-control-order-lineage-group {
+  display: grid;
+  gap: 2px;
+}
+
+body.kmc-shell-v4 .kmc-control-order-detail-label {
+  color: #94a3b8;
   font-size: 9px;
-  line-height: 1.25;
-  white-space: normal;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+body.kmc-shell-v4 .kmc-control-order-focus-value,
+body.kmc-shell-v4 .kmc-control-order-lineage-value {
+  color: var(--ocb-ink);
+  font-size: 11px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+body.kmc-shell-v4 .kmc-control-order-causes {
+  display: grid;
+  gap: 6px;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid #eef2f7;
+}
+
+body.kmc-shell-v4 .kmc-control-order-cause-line {
+  display: grid;
+  gap: 2px;
+}
+
+body.kmc-shell-v4 .kmc-control-order-cause-summary {
+  color: #475569;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+body.kmc-shell-v4 .kmc-control-order-owner {
+  color: #64748b;
+  font-size: 9px;
+}
+
+body.kmc-shell-v4 .kmc-control-order-lineage {
+  display: grid;
+  gap: 7px;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid #eef2f7;
+}
+
+body.kmc-shell-v4 .kmc-control-order-open {
+  display: inline-flex;
+  margin-top: 9px;
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+body.kmc-shell-v4 .kmc-control-order-open:hover,
+body.kmc-shell-v4 .kmc-control-order-open:focus-visible {
+  text-decoration: underline;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order:hover,

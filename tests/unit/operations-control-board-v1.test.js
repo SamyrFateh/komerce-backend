@@ -44,3 +44,12 @@ describe('Operations logistics control board V1',()=>{
     expect(css).toContain('--ocb-line: #e2e8f0');
   });
 });
+
+
+test('les cartes commandes restent compactes et le détail est progressif',()=>{
+  expect(css).toMatch(/\.kmc-control-order\s*\{[^}]*min-height:\s*42px/s);
+  expect(css).toContain('.kmc-control-order-detail[hidden]');
+  expect(css).toContain('.kmc-control-order-focus');
+  expect(css).toContain('.kmc-control-order-lineage');
+  expect(css).toContain('.kmc-control-order-open');
+});
