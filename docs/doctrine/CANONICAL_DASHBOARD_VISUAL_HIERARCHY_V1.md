@@ -50,3 +50,18 @@ Chaque dashboard migré vers ce contrat doit prouver au minimum :
 - une capture de revue déterministe.
 
 Operations et Pilotage sont les premières surfaces couvertes.
+
+
+## Principe de sobriété
+
+Un dashboard doit porter un message opérationnel essentiel, pas exposer toutes les données disponibles.
+
+- Les surfaces secondaires sont **optionnelles**.
+- Une information déjà accessible par drill ne doit pas être répétée en permanence dans la vue d'ensemble.
+- Une liste, un panneau ou un KPI sans décision associée doit être retiré de la vue principale.
+- Les agrégats narratifs ne doivent pas remplacer les objets métier en mouvement.
+- Le résumé global peut être porté par quelques indicateurs sémantiques compacts (par exemple santé GREEN / ORANGE / RED / UNKNOWN).
+- Le détail explicatif appartient à l'encapsulation, au drill ou à la vue 360.
+
+La question de contrôle est : **« Si je retire ce bloc, le message principal du dashboard devient-il moins clair ? »**
+Si la réponse est non, le bloc n'appartient probablement pas à la vue d'ensemble.
