@@ -256,19 +256,19 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
       return rgb.reduce((a, b) => a + b, 0) / 3;
     };
 
-    expect(colors.sidebar).toBe('rgb(15, 23, 42)');
+    expect(colors.sidebar).toBe('rgb(7, 26, 61)');
     expect(colors.sidebarWidth).toBe(260);
-    expect(colors.canvas).toBe('rgb(241, 245, 249)');
+    expect(colors.canvas).toBe('rgb(248, 246, 241)');
     expect(colors.flow).toBe('rgb(255, 255, 255)');
     expect(colors.decisionGradient).toContain('linear-gradient');
     expect(colors.decisionBorderLeft).toBe('5px');
-    expect(colors.activeNavGradient).toBe('none');
+    expect(colors.activeNavGradient).toContain('linear-gradient');
     expect(colors.activeNavText).toBe('rgb(255, 255, 255)');
     expect(new Set([colors.red, colors.warning, colors.green, colors.unknown]).size).toBe(4);
   });
 
 
-  test('langage Legacy mesuré : F1F5F9 + cartes blanches + rayons/ombres historiques', async ({ page }) => {
+  test('langage Canonical Komerce : canvas chaud + cartes blanches + états distincts', async ({ page }) => {
     const surfaces = await page.evaluate(() => {
       const bg = (sel) => getComputedStyle(document.querySelector(sel)).backgroundColor;
       const border = (sel, prop) => getComputedStyle(document.querySelector(sel))[prop];
@@ -288,14 +288,14 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
       };
     });
 
-    expect(surfaces.canvas).toBe('rgb(241, 245, 249)');
+    expect(surfaces.canvas).toBe('rgb(248, 246, 241)');
     expect(surfaces.flow).toBe('rgb(255, 255, 255)');
     expect(surfaces.criticalGradient).toContain('linear-gradient');
     expect(surfaces.warningGradient).toContain('linear-gradient');
     expect(surfaces.criticalGradient).not.toBe(surfaces.warningGradient);
     expect(surfaces.decisionRadius).toBe('12px');
     expect(surfaces.sectionRadius).toBe('12px');
-    expect(surfaces.sectionShadow).toContain('0px 1px 3px');
+    expect(surfaces.sectionShadow).toContain('0px 2px 8px');
     expect(surfaces.criticalAccent).not.toBe(surfaces.warningAccent);
   });
 
