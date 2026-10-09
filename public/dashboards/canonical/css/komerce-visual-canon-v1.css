@@ -45,7 +45,8 @@ body.kmc-shell-v4 {
 
 /* Shell = Navy. Gold is signature, not a large fill. */
 body.kmc-shell-v4 > .kmc-admin-navigation {
-  background:
+  background-color: var(--kmc-brand-navy);
+  background-image:
     linear-gradient(180deg, #081831 0%, var(--kmc-brand-navy) 42%, #06152f 100%);
   border-right-color: color-mix(in srgb, var(--kmc-brand-gold) 72%, #ffffff);
 }
