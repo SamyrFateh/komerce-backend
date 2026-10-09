@@ -12,6 +12,7 @@ const path=require('path');
 const ROOT=path.join(__dirname,'..','..');
 const css=fs.readFileSync(path.join(ROOT,'public/dashboards/canonical/css/dashboard-hierarchy-v1.css'),'utf8');
 const ops=fs.readFileSync(path.join(ROOT,'public/dashboards/canonical/js/operations-decision.js'),'utf8');
+const pilotage=fs.readFileSync(path.join(ROOT,'public/dashboards/canonical/js/pilotage-decision.js'),'utf8');
 const html=fs.readFileSync(path.join(ROOT,'public/dashboards/canonical/index.html'),'utf8');
 
 describe('Dashboard visual hierarchy V1',()=>{
@@ -31,11 +32,14 @@ describe('Dashboard visual hierarchy V1',()=>{
     expect(css).toMatch(/\.kmc-decision-card-value[^}]*font-size:\s*clamp\(29px/s);
   });
 
-  test('Operations déclare explicitement les quatre niveaux',()=>{
-    expect(ops).toContain("data-dashboard-hierarchy', 'hero-attention-primary-secondary");
-    expect(ops).toContain("data-dashboard-role', 'hero");
-    expect(ops).toContain("data-dashboard-role', 'attention");
-    expect(ops).toContain("data-dashboard-role', 'primary");
-    expect(ops).toContain("data-dashboard-role', 'secondary");
+  test.each([
+    ['Operations', ops],
+    ['Pilotage', pilotage],
+  ])('%s déclare explicitement les quatre niveaux',(_name,source)=>{
+    expect(source).toContain("data-dashboard-hierarchy', 'hero-attention-primary-secondary");
+    expect(source).toContain("data-dashboard-role', 'hero");
+    expect(source).toContain("data-dashboard-role', 'attention");
+    expect(source).toContain("data-dashboard-role', 'primary");
+    expect(source).toContain("data-dashboard-role', 'secondary");
   });
 });
