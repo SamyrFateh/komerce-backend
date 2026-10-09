@@ -35,6 +35,7 @@ const DASHBOARD_SPECS = [
   'b9-ui-truth-paths',
   'control-tower-visual',
   'legacy-theme-audit',
+  'operations-control-board',
 ];
 
 module.exports = defineConfig({
