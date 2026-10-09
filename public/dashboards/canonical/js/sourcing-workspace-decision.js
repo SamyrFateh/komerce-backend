@@ -144,7 +144,7 @@
       documentRef,
       'p',
       'kmc-decision-dashboard-section-copy',
-      'Lecture du pipeline global sourcing. Aucun besoin urgent, rupture, retard fournisseur ou seuil de stock n’est déduit côté navigateur.'
+      'Les candidats qui demandent une décision maintenant.'
     ));
     container.appendChild(heading);
 
@@ -155,9 +155,6 @@
       container.appendChild(host);
     }
 
-    const summaryHost = documentRef.createElement('div');
-    decisionUi.SummaryCards.render(summaryHost, { items: summaryCards(items) });
-    container.appendChild(summaryHost);
     return container;
   }
 
