@@ -2,8 +2,7 @@
 
 ## Objet
 
-Ce contrat fixe la hiérarchie visuelle des dashboards Canonical Komerce.
-Il ne définit aucune vérité métier et ne remplace aucun contrat de données.
+Ce contrat fixe la hiérarchie visuelle des dashboards Canonical Komerce.\nIl ne définit aucune vérité métier et ne remplace aucun contrat de données.\n\nLe langage de marque, les matériaux et la palette sont définis par **KOMERCE_VISUAL_CANON_V1.md**. La hiérarchie et le canon de marque sont complémentaires et obligatoires.
 
 ## Ordre obligatoire
 
@@ -18,7 +17,7 @@ Le DOM et le rendu doivent respecter cet ordre.
 
 - Le hero donne du caractère à la rubrique sans masquer l'information.
 - La bande Attention doit être lisible en moins de deux secondes.
-- Rouge = action requise, orange = à risque / à surveiller, vert = normal, gris = non observé.
+- Rouge = action requise, ambre = à risque / à surveiller, vert = normal, ardoise = non observé. Ces couleurs sont sémantiques et ne constituent jamais l'identité visuelle d'une rubrique.
 - La couleur seule ne porte jamais l'importance : position, taille et contraste doivent également guider l'œil.
 - Les listes compactes restent compactes. Les descriptions longues sont révélées par drill/encapsulation.
 - L'objet métier principal doit avoir plus de masse visuelle que les surfaces secondaires.
