@@ -33,7 +33,7 @@ body.kmc-shell-v4 {
   /* Material */
   --kmc-canon-radius-sm: 10px;
   --kmc-canon-radius-md: 14px;
-  --kmc-canon-radius-lg: 18px;
+  --kmc-canon-radius-lg: 16px;
   --kmc-canon-shadow: 0 8px 24px rgba(7,26,61,.06);
   --kmc-canon-shadow-soft: 0 2px 8px rgba(7,26,61,.045);
   --kmc-canon-font: "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
