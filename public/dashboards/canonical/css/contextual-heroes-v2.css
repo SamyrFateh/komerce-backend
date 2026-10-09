@@ -23,7 +23,8 @@ body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header::before {
   content: "";
   position: absolute;
   z-index: -1;
-  inset: 0 0 0 auto;
+  /* Starts below the controls row (search / market / period) so the scene is never covered. */
+  inset: 34px 0 0 auto;
   width: min(52%, 760px);
   opacity: 1;
   pointer-events: none;
