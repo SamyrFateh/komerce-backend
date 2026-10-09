@@ -71,3 +71,8 @@ test('Commandes et Finance partagent le même mécanisme d\'illustration or que 
   expect(css).not.toContain('POSITION • RAPPROCHEMENT • CLÔTURE');
   expect(css).not.toContain('01 • 02 • 03 • 04');
 });
+
+test('le Hero démarre son illustration sous la rangée de contrôles (recherche / marché)', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/contextual-heroes-v2.css'), 'utf8');
+  expect(css).toContain('inset: 34px 0 0 auto;');
+});
