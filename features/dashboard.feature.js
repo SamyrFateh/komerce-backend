@@ -638,6 +638,7 @@ module.exports = {
       'tests/e2e/b9-ui-truth-paths.spec.js',
       'tests/e2e/control-tower-visual.spec.js',
       'tests/e2e/legacy-theme-audit.spec.js',
+      'tests/e2e/operations-control-board.spec.js',
       'tests/unit/dashboard-market-scope-helpers.test.js',
       'tests/unit/dashboard-contracts-0c.test.js',
       'tests/unit/operations-workspace-state-source.test.js',

@@ -1,0 +1,411 @@
+/*
+ * KOMERCE — OPERATIONS LOGISTICS CONTROL BOARD V1
+ * Presentation only. Stage, health, causes and order positions are server-authoritative.
+ */
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] {
+  --ocb-paper: #f1f5f9;
+  --ocb-card: #ffffff;
+  --ocb-line: #e2e8f0;
+  --ocb-ink: #1e293b;
+  --ocb-muted: #64748b;
+  --ocb-blue: #3b82f6;
+  --ocb-orange: #f59e0b;
+  --ocb-red: #dc2626;
+  --ocb-green: #16a34a;
+  gap: 16px;
+  padding: 24px 28px 34px;
+  background: var(--ocb-paper);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] > .kmc-dashboard-header {
+  position: relative;
+  padding: 4px 4px 8px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .canonical-eyebrow {
+  color: #d97706;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-dashboard-title {
+  margin-top: 4px;
+  color: var(--ocb-ink);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -.02em;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-dashboard-description {
+  color: var(--ocb-muted);
+  font-size: 14px;
+}
+
+/* The detailed logistics board is the primary object on this screen. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain-card {
+  position: relative;
+  padding: 20px 18px 18px;
+  border: 1px solid var(--ocb-line);
+  border-radius: 14px;
+  background: var(--ocb-card);
+  box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 10px 26px rgba(15,23,42,.045);
+  overflow: hidden;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain-card::before {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: 0;
+  width: 4px;
+  height: 30px;
+  border-radius: 0 3px 3px 0;
+  background: var(--ocb-orange);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain-card > .kmc-decision-dashboard-section-title {
+  margin-bottom: 4px;
+  color: var(--ocb-ink);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain-card > .kmc-decision-dashboard-section-copy {
+  margin-bottom: 0;
+  color: var(--ocb-muted);
+  font-size: 12px;
+}
+
+body.kmc-shell-v4 .kmc-control-chain-legend {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
+  margin: -26px 2px 16px auto;
+  color: var(--ocb-muted);
+  font-size: 11px;
+}
+
+body.kmc-shell-v4 .kmc-control-chain-legend-item {
+  --legend-health: #94a3b8;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+body.kmc-shell-v4 .kmc-control-chain-legend-item.is-positive { --legend-health: var(--ocb-green); }
+body.kmc-shell-v4 .kmc-control-chain-legend-item.is-warning { --legend-health: var(--ocb-orange); }
+body.kmc-shell-v4 .kmc-control-chain-legend-item.is-critical { --legend-health: var(--ocb-red); }
+body.kmc-shell-v4 .kmc-control-chain-legend-item.is-unknown { --legend-health: #94a3b8; }
+
+body.kmc-shell-v4 .kmc-control-chain-legend-dot {
+  width: 9px;
+  height: 9px;
+  background: var(--legend-health);
+  border-radius: 999px;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--legend-health) 12%, white);
+}
+
+/* Board columns */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(190px, 1fr);
+  gap: 10px;
+  min-height: 500px;
+  overflow-x: auto;
+  padding: 8px 2px 14px;
+  scrollbar-width: thin;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 48px;
+  left: 36px;
+  right: 36px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #bfdbfe 0%, #c7d2fe 24%, #bae6fd 48%, #bfdbfe 72%, #bbf7d0 100%);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  min-height: 470px;
+  flex-direction: column;
+  padding: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.96) 0%, #f8fafc 100%);
+  border: 1px solid var(--ocb-line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-stage-heading {
+  min-height: 112px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 8px;
+  padding: 10px 10px 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,.72), #ffffff 72%);
+  border-bottom: 1px solid var(--ocb-line);
+}
+
+body.kmc-shell-v4 .kmc-control-stage-identity {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+body.kmc-shell-v4 .kmc-control-stage-icon {
+  --stage-accent: var(--ocb-blue);
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #ffffff;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--stage-accent) 72%, white), var(--stage-accent));
+  border: 4px solid color-mix(in srgb, var(--stage-accent) 15%, white);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--stage-accent) 30%, white), 0 6px 14px color-mix(in srgb, var(--stage-accent) 18%, transparent);
+  font-size: 21px;
+  font-weight: 800;
+}
+
+body.kmc-shell-v4 .kmc-control-stage-icon.is-orange { --stage-accent: #f59e0b; }
+body.kmc-shell-v4 .kmc-control-stage-icon.is-violet { --stage-accent: #7c3aed; }
+body.kmc-shell-v4 .kmc-control-stage-icon.is-teal { --stage-accent: #0d9488; }
+body.kmc-shell-v4 .kmc-control-stage-icon.is-red { --stage-accent: #dc2626; }
+body.kmc-shell-v4 .kmc-control-stage-icon.is-green { --stage-accent: #16a34a; }
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-stage-title {
+  color: var(--ocb-ink);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-stage-count {
+  align-self: end;
+  min-width: 25px;
+  margin-bottom: 1px;
+  padding: 3px 7px;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* Structural banner inside the responsible stage. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-alerts {
+  display: grid;
+  gap: 6px;
+  padding: 9px 8px 0;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-alert {
+  min-height: 48px;
+  padding: 9px 10px;
+  border: 1px solid #fed7aa;
+  border-left: 4px solid var(--ocb-orange);
+  border-radius: 9px;
+  background: #fff7ed;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-alert.is-critical {
+  border-color: #fecaca;
+  border-left-color: var(--ocb-red);
+  background: #fef2f2;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-count {
+  color: var(--ocb-red);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-summary {
+  color: #475569;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+/* Orders */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-list {
+  flex: 1 1 auto;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 9px 8px 12px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order {
+  --control-health: var(--ocb-green);
+  position: relative;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 11px;
+  color: var(--ocb-ink);
+  background: #ffffff;
+  border: 1px solid #dfe5ec;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.035), 0 4px 10px rgba(15,23,42,.025);
+  text-decoration: none;
+  opacity: 1;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order.is-positive {
+  --control-health: var(--ocb-green);
+  opacity: 1;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order.is-warning {
+  --control-health: var(--ocb-orange);
+  border-color: #fcd89b;
+  background: #fffbeb;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order.is-critical {
+  --control-health: var(--ocb-red);
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order.is-unknown {
+  --control-health: #94a3b8;
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-dot {
+  grid-column: 1;
+  width: 9px;
+  height: 9px;
+  background: var(--control-health);
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--control-health) 11%, white);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-state {
+  display: none;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-ref {
+  grid-column: 2;
+  color: var(--ocb-ink);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order[href]::after {
+  content: "›";
+  grid-column: 3;
+  grid-row: 1;
+  color: #94a3b8;
+  font-size: 17px;
+  line-height: 1;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-cause {
+  grid-column: 2 / 4;
+  color: var(--ocb-muted);
+  font-size: 9px;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order:hover,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order:focus-visible {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--control-health) 48%, var(--ocb-line));
+  box-shadow: 0 4px 10px rgba(15,23,42,.07);
+}
+
+/* Secondary operational surfaces remain clearly secondary. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-cockpit-decisions,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] #operations-signals,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] #operations-orders,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] #operations-delays,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] #operations-drill {
+  font-family: inherit;
+}
+
+@media (max-width: 1000px) {
+  body.kmc-shell-v4 .kmc-control-chain-legend {
+    justify-content: flex-start;
+    margin: 8px 0 12px;
+    flex-wrap: wrap;
+  }
+
+  body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain {
+    grid-auto-columns: 180px;
+  }
+}
+
+@media (max-width: 720px) {
+  body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] {
+    padding: 16px 12px 24px;
+  }
+
+  body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-dashboard-title {
+    font-size: 24px;
+  }
+
+  body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain {
+    grid-auto-columns: 168px;
+    min-height: 410px;
+  }
+
+  body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-stage {
+    min-height: 390px;
+  }
+}
+
+/* Visual connector cue between successive stages without altering stage truth. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-stage:not(:last-child) .kmc-control-stage-heading::after {
+  content: "→";
+  position: absolute;
+  top: 36px;
+  right: -17px;
+  z-index: 4;
+  color: #3b82f6;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 0 #fff, 0 0 6px #fff;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-stage-heading {
+  position: relative;
+  overflow: visible;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-stage {
+  overflow: visible;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-list,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-alerts {
+  position: relative;
+  z-index: 2;
+}
