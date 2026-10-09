@@ -248,9 +248,11 @@
     }
     dashboard.setAttribute('data-dashboard-id', 'pilotage');
     dashboard.setAttribute('data-dashboard-visual', 'control-tower-v2');
+    dashboard.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
+    header.setAttribute('data-dashboard-role', 'hero');
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'PILOTER · TOUR DE CONTRÔLE'));
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', payload && payload.scope && payload.scope.mode === 'market' ? 'Tour de contrôle du marché' : 'Tour de contrôle Komerce'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Vue opérationnelle de toute la chaîne. Identifiez ce qui mérite une attention et passez à l’action.'));
@@ -259,7 +261,8 @@
     const decisions = decisionItems(payload, base);
     if (decisions.length) {
       const host = doc.createElement('div');
-      host.className = 'kmc-cockpit-decisions';
+      host.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';
+      host.setAttribute('data-dashboard-role', 'attention');
       decisionUi.DecisionStrip.render(host, { items: decisions });
       dashboard.appendChild(host);
     }
@@ -273,6 +276,7 @@
         'pilotage-causes'
       );
       causeSection.section.className += ' is-control-tower-causes';
+      causeSection.section.setAttribute('data-dashboard-role', 'primary');
       decisionUi.PriorityList.render(causeSection.body, { items: causes });
       dashboard.appendChild(causeSection.section);
     }
@@ -286,6 +290,7 @@
         'pilotage-flow-health'
       );
       flowSection.section.className += ' is-control-tower-flow';
+      flowSection.section.setAttribute('data-dashboard-role', 'secondary');
       decisionUi.FlowStrip.render(flowSection.body, { stages });
       dashboard.appendChild(flowSection.section);
     }
@@ -299,6 +304,7 @@
         'pilotage-alerts'
       );
       actionSection.section.className += ' is-control-tower-actions';
+      actionSection.section.setAttribute('data-dashboard-role', 'secondary');
       decisionUi.PriorityList.render(actionSection.body, { items: actions });
       const actionLink = text(doc, 'a', 'kmc-decision-dashboard-link', 'Voir tout dans l’Action Center →');
       actionLink.href = '/admin/action-center';
