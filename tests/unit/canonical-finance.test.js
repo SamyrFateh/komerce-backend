@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 /**
  * @test-kind unit
  * @test-runner jest
@@ -348,3 +351,23 @@ describe('Finance — vérité d’affichage', () => {
   });
 });
 
+
+
+test('Finance overview garde uniquement Hero + décisions + situation financière', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'finance-decision.js'),
+    'utf8'
+  );
+  const start = source.indexOf('function render(rootNode');
+  const renderSource = source.slice(start, source.indexOf('function enhance', start));
+  expect(renderSource).toContain("data-dashboard-role', 'hero");
+  expect(renderSource).toContain("data-dashboard-role', 'attention");
+  expect(renderSource).toContain("data-dashboard-role', 'primary");
+  expect(renderSource).toContain("'Situation financière'");
+  expect(renderSource).toContain("'Paiements fournisseurs à revoir'");
+  expect(renderSource).not.toContain("'Coûts incomplets'");
+  expect(renderSource).not.toContain("'Variances observées'");
+  expect(renderSource).not.toContain("'Trajectoire financière'");
+  expect(renderSource).not.toContain("'Approfondir'");
+  expect(renderSource).not.toContain("TrustFooter.render");
+});

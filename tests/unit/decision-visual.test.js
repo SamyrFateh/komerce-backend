@@ -16,3 +16,10 @@ describe('decision visual — contextual Commerce hero',()=>{
     expect(css).toContain('.kmc-commerce-flow-title');
   });
 });
+
+
+test('Finance possède un Hero contextuel propre',()=>{
+  expect(css).toContain('[data-dashboard-id="finance"] > .kmc-dashboard-header');
+  expect(css).toContain('.kmc-finance-essential-metrics');
+  expect(css).toContain('.kmc-finance-review-title');
+});

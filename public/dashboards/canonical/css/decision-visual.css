@@ -707,3 +707,71 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] .kmc-commerc
   font-size: 12px;
   font-weight: 800;
 }
+
+/* Finance contextual hero + essential financial situation. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] > .kmc-dashboard-header {
+  position: relative;
+  min-height: 126px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  gap: 3px 18px;
+  padding: 18px 22px;
+  border: 1px solid #d9e9df;
+  border-radius: 14px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 86% 32%, rgba(22,163,74,.13) 0 48px, transparent 49px),
+    radial-gradient(circle at 94% 74%, rgba(59,130,246,.10) 0 38px, transparent 39px),
+    linear-gradient(112deg, #f6fbf8 0%, #fff 62%, #f8fbff 100%);
+  box-shadow: 0 1px 3px rgba(15,23,42,.05);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] > .kmc-dashboard-header > .canonical-eyebrow,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] > .kmc-dashboard-header > .kmc-dashboard-title,
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] > .kmc-dashboard-header > .kmc-dashboard-description {
+  grid-column: 1;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] > .kmc-dashboard-header .kmc-period-control {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .canonical-eyebrow {
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-dashboard-title {
+  margin-top: 2px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-dashboard-description {
+  max-width: 650px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-finance-essential-metrics {
+  margin-bottom: 14px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-finance-review-title {
+  margin: 2px 0 8px;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-finance-review-empty {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+}
