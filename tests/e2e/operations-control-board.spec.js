@@ -153,14 +153,47 @@ test.describe('Operations — logistics control board', () => {
     expect(visual.radius).toBe('16px');
   });
 
-  test('le tableau est le premier objet métier sous le header', async ({ page }) => {
+  test('la hiérarchie suit Hero → Attention → Objet principal → Secondaire', async ({ page }) => {
     const order = await page.locator('[data-dashboard-id="operations"] > *').evaluateAll(nodes =>
-      nodes.map(n => ({ cls:n.className, id:n.id }))
+      nodes.map(n => ({
+        cls:n.className,
+        id:n.id,
+        role:n.getAttribute('data-dashboard-role')
+      }))
     );
-    const chainIndex = order.findIndex(x => String(x.cls).includes('kmc-control-chain-card'));
-    const decisionsIndex = order.findIndex(x => String(x.cls).includes('kmc-cockpit-decisions'));
-    expect(chainIndex).toBeGreaterThan(0);
-    expect(decisionsIndex).toBeGreaterThan(chainIndex);
+    const heroIndex = order.findIndex(x => x.role === 'hero');
+    const attentionIndex = order.findIndex(x => x.role === 'attention');
+    const primaryIndex = order.findIndex(x => x.role === 'primary');
+    const secondaryIndex = order.findIndex(x => x.role === 'secondary');
+
+    expect(heroIndex).toBeGreaterThanOrEqual(0);
+    expect(attentionIndex).toBeGreaterThan(heroIndex);
+    expect(primaryIndex).toBeGreaterThan(attentionIndex);
+    expect(secondaryIndex).toBeGreaterThan(primaryIndex);
+  });
+
+  test('les rubriques d’attention sont visibles et dominantes dans le premier écran', async ({ page }) => {
+    const attention = page.locator('[data-dashboard-role="attention"]');
+    await expect(attention).toBeVisible();
+
+    const geometry = await attention.evaluate(el => {
+      const box = el.getBoundingClientRect();
+      const cards = [...el.querySelectorAll('.kmc-decision-card')];
+      return {
+        top: box.top,
+        bottom: box.bottom,
+        cardCount: cards.length,
+        minCardHeight: Math.min(...cards.map(card => card.getBoundingClientRect().height)),
+        borderWidths: cards.map(card => getComputedStyle(card).borderLeftWidth),
+      };
+    });
+
+    expect(geometry.top).toBeGreaterThan(0);
+    expect(geometry.top).toBeLessThan(500);
+    expect(geometry.bottom).toBeLessThanOrEqual(941);
+    expect(geometry.cardCount).toBeGreaterThanOrEqual(1);
+    expect(geometry.minCardHeight).toBeGreaterThanOrEqual(100);
+    expect(geometry.borderWidths.every(value => value === '5px')).toBe(true);
   });
 
   test('affiche les 9 étapes et la légende santé', async ({ page }) => {
