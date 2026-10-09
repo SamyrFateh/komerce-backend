@@ -68,3 +68,8 @@ describe('navigation-policy-v4.js — Atelier prix', () => {
     expect(__src).not.toContain('#pricing-');
   });
 });
+
+
+test('la coque expose la surface courante pour le layout Hero-first', () => {
+  expect(__src).toContain('doc.body.dataset.kmcSurface = surface');
+});
