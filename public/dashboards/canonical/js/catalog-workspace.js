@@ -802,7 +802,7 @@
   }
 
   function renderApproval(rootNode, ui, doc, payload, context) {
-    const slot = createSection(rootNode, ui, 'File de curation', 'Le scanner sourcing priorise la revue ; seule une décision humaine ajoute, corrige ou écarte un produit.');
+    const slot = createSection(rootNode, ui, 'Produits à valider', 'Relisez, corrigez ou ajoutez les produits proposés.');
     const rows = payload.approval || [];
     const breakdown = payload.approval_breakdown || {};
     const strategy = payload.approval_strategy || {};
