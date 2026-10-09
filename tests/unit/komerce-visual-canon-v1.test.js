@@ -19,7 +19,7 @@ describe('Komerce visual canon v1', () => {
     expect(css).toContain('--kmc-state-critical: #DC2626');
     expect(css).toContain('--kmc-state-warning: #D97706');
     expect(css).toContain('--kmc-state-positive: #16A34A');
-    expect(doctrine).toContain('Une couleur d’état ne sert jamais à décorer un Hero');
+    expect(doctrine).toContain("Une couleur d'état ne sert jamais à décorer un Hero");
   });
 
   test('la couche canonique est chargée après les thèmes historiques', () => {
@@ -33,7 +33,7 @@ describe('Komerce visual canon v1', () => {
 
   test('les heroes sont reliés aux tokens canon et couvrent les domaines clés', () => {
     expect(heroes).toContain('var(--kmc-brand-gold)');
-    expect(heroes).toContain('var(--kmc-brand-navy)');
+    expect(heroes).toContain('var(--kmc-brand-navy');
     expect(heroes).toContain('[data-dashboard-id="commerce"]');
     expect(heroes).toContain('[data-dashboard-id="finance"]');
     expect(heroes).toContain('.kmc-action-center');
