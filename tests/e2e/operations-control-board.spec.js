@@ -150,7 +150,7 @@ test.describe('Operations — logistics control board', () => {
     });
     expect(visual.height).toBeGreaterThanOrEqual(150);
     expect(visual.backgroundImage).toContain('operations-logistics-hero.svg');
-    expect(visual.radius).toBe('14px');
+    expect(visual.radius).toBe('16px');
   });
 
   test('le tableau est le premier objet métier sous le header', async ({ page }) => {
