@@ -73,7 +73,7 @@ describe('finance / comptabilité decision-first', () => {
     const index = read('public/dashboards/canonical/index.html');
     const source = read('public/dashboards/canonical/js/finance-accounting-workspace-decision.js');
     const baseIndex = index.indexOf('/dashboards/canonical/js/finance-accounting-workspace.js');
-    const decisionIndex = index.indexOf('/dashboards/canonical/js/finance-accounting-workspace-decision.js?v=1611');
+    const decisionIndex = index.indexOf('/dashboards/canonical/js/finance-accounting-workspace-decision.js?v=261009-2');
 
     expect(baseIndex).toBeGreaterThanOrEqual(0);
     expect(decisionIndex).toBeGreaterThan(baseIndex);
