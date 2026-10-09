@@ -1261,6 +1261,7 @@
     const domainId = currentDomain(surface);
 
     doc.body?.classList?.add('kmc-shell-v4');
+    if (doc.body && doc.body.dataset) doc.body.dataset.kmcSurface = surface;
     // Cockpits Live : coque entièrement noire (sidebar, barre du haut, onglets, contenu).
     doc.body?.classList?.toggle?.('kmc-shell-live', domainId === 'live');
     header.setAttribute('data-navigation-policy', 'v4');
