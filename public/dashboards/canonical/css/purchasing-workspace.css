@@ -149,3 +149,40 @@
 }
 .kmc-purchasing-blocking-title { display: block; color: var(--health-red-fg, #b42318); }
 .kmc-purchasing-blocking-detail { margin: 4px 0 0; }
+
+
+/* Achats fournisseurs contextual hero. */
+.kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header {
+  min-height: 126px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px 24px;
+  padding: 20px 24px;
+  border: 1px solid #eadcf8;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 88% 30%, rgba(124,58,237,.13) 0 48px, transparent 49px),
+    radial-gradient(circle at 95% 76%, rgba(245,158,11,.10) 0 36px, transparent 37px),
+    linear-gradient(112deg, #faf7ff 0%, #ffffff 60%, #fffaf3 100%);
+  box-shadow: 0 1px 3px rgba(15,23,42,.05);
+}
+
+.kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header .kmc-workspace-kicker {
+  color: #6d28d9;
+  background: #f5f3ff;
+}
+
+.kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header .kmc-workspace-kicker::before {
+  background: #7c3aed;
+}
+
+.kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header .kmc-workspace-title {
+  font-size: clamp(25px, 2.5vw, 32px);
+  font-weight: 800;
+}
+
+.kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header .kmc-workspace-subtitle {
+  max-width: 680px;
+  font-size: 12px;
+}
