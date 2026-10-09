@@ -42,3 +42,18 @@ describe('Dashboard visual hierarchy V1',()=>{
     expect(source).toContain("data-dashboard-role', 'primary");
   });
 });
+
+const __css = fs.readFileSync(
+  path.join(__dirname, '../../public/dashboards/canonical/css/dashboard-hierarchy-v1.css'),
+  'utf8'
+);
+
+describe('dashboard-hierarchy-v1.css', () => {
+  test('ne contient aucun !important (la spécificité résout le conflit)', () => {
+    expect(__css).not.toMatch(/!important/);
+  });
+
+  test('garde le liseré gauche d’accent de la carte décision', () => {
+    expect(__css).toMatch(/border-left:\s*5px solid var\(--decision-accent\)/);
+  });
+});

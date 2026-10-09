@@ -51,3 +51,20 @@ test('la sidebar verticale commence en haut et garde identité/utilitaires fixes
   expect(identity).toMatch(/flex:\s*0 0 auto/);
   expect(utility).toMatch(/flex:\s*0 0 auto/);
 });
+
+const __src = fs.readFileSync(
+  path.join(__dirname, '../../public/dashboards/canonical/js/navigation-policy-v4.js'),
+  'utf8'
+);
+
+describe('navigation-policy-v4.js — Atelier prix', () => {
+  test('la navigation locale prix se limite à la vue d’ensemble', () => {
+    expect(__src).toContain("id: 'pricing-overview'");
+    expect(__src).not.toMatch(/id: 'pricing-(products|costs|strategy)'/);
+  });
+
+  test('plus aucune ancre de section prix ne subsiste', () => {
+    expect(__src).toMatch(/PRICING_SECTION_IDS = Object\.freeze\(\{\}\)/);
+    expect(__src).not.toContain('#pricing-');
+  });
+});
