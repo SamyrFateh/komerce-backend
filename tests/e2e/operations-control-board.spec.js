@@ -20,11 +20,13 @@ const stages = [
   ['TRANSPORT','Transport'],['CUSTOMS','Douane'],['RELAY','Relais'],
 ];
 
-const order = (reference, health, summary) => ({
+const order = (reference, health, summary, envelope, lineage) => ({
   order_reference: reference,
   health,
   split: false,
   exceptions: summary ? [{ code: 'cause', summary, owner_role: 'operations' }] : [],
+  envelope: envelope || { type: 'ORDER', refs: [reference] },
+  lineage: lineage || { purchase_orders: [], hub_units: [], parcels: [] },
 });
 
 const payload = {
@@ -45,11 +47,40 @@ const payload = {
     by_stage: {
       ORDER:[order('K-104901','GREEN'),order('K-104907','GREEN')],
       PURCHASING:[order('K-104829','RED'),order('K-104833','RED'),order('K-104840','RED'),order('K-104852','GREEN')],
-      SUPPLIER:[order('K-104812','GREEN'),order('K-104816','ORANGE','Confirmation fournisseur à surveiller')],
+      SUPPLIER:[
+        order('K-104812','GREEN'),
+        order(
+          'K-104816',
+          'ORANGE',
+          'Confirmation fournisseur à surveiller',
+          { type:'PURCHASE_ORDER', refs:['PO-104816'] },
+          { purchase_orders:['PO-104816'], hub_units:[], parcels:[] }
+        )
+      ],
       HUB_RECEIVING:[order('K-104791','GREEN'),order('K-104797','ORANGE')],
-      HUB_CONTROL:[order('K-104766','RED','Article non conforme au contrôle HUB'),order('K-104772','GREEN'),order('K-104781','GREEN')],
+      HUB_CONTROL:[
+        order(
+          'K-104766',
+          'RED',
+          'Article non conforme au contrôle HUB',
+          { type:'HUB_UNIT', refs:['HU-104766'] },
+          { purchase_orders:['PO-104766'], hub_units:['HU-104766'], parcels:[] }
+        ),
+        order('K-104772','GREEN'),
+        order('K-104781','GREEN')
+      ],
       FORWARDER:[order('K-104744','GREEN'),order('K-104751','GREEN')],
-      TRANSPORT:[order('K-104701','GREEN'),order('K-104709','GREEN'),order('K-104715','ORANGE')],
+      TRANSPORT:[
+        order('K-104701','GREEN'),
+        order('K-104709','GREEN'),
+        order(
+          'K-104715',
+          'ORANGE',
+          'Transit à surveiller',
+          { type:'PARCEL', refs:['P-104715'] },
+          { purchase_orders:['PO-104715'], hub_units:['HU-104715'], parcels:['P-104715'] }
+        )
+      ],
       CUSTOMS:[order('K-104688','UNKNOWN')],
       RELAY:[order('K-104661','GREEN'),order('K-104672','GREEN')],
     },
@@ -141,14 +172,37 @@ test.describe('Operations — logistics control board', () => {
     expect(icon.height).toBeGreaterThanOrEqual(54);
   });
 
-  test('les commandes gardent leur état et ouvrent Order 360', async ({ page }) => {
-    const critical = page.locator('.kmc-control-order.is-critical[href="/admin/orders/K-104829"]');
-    const warning = page.locator('.kmc-control-order.is-warning[href="/admin/orders/K-104816"]');
-    const unknown = page.locator('.kmc-control-order.is-unknown[href="/admin/orders/K-104688"]');
-    await expect(critical).toBeVisible();
+  test('les cartes restent compactes puis révèlent l’objet précis au clic', async ({ page }) => {
+    const warning = page.locator('.kmc-control-order.is-warning').filter({ hasText:'K-104816' });
     await expect(warning).toBeVisible();
+    await expect(page.locator('.kmc-control-order-cause-summary')).toHaveCount(0);
+
+    await warning.click();
+
+    const detail = page.locator('.kmc-control-order-row.is-expanded .kmc-control-order-detail');
+    await expect(detail).toBeVisible();
+    await expect(detail).toContainText('Objet en cause');
+    await expect(detail).toContainText('PO fournisseur · PO-104816');
+    await expect(detail).toContainText('Confirmation fournisseur à surveiller');
+    await expect(detail).toContainText('Responsable : operations');
+    await expect(detail.locator('.kmc-control-order-open')).toHaveAttribute('href','/admin/orders/K-104816');
+
+    const unknown = page.locator('.kmc-control-order.is-unknown').filter({ hasText:'K-104688' });
     await expect(unknown).toBeVisible();
     await expect(page.locator('.kmc-control-structural-alert.is-critical')).toContainText('Paiement fournisseur bloqué');
+  });
+
+  test('l’encapsulation distingue PO, unité HUB et colis avec le lineage serveur', async ({ page }) => {
+    await page.locator('.kmc-control-order.is-critical').filter({ hasText:'K-104766' }).click();
+    let detail = page.locator('.kmc-control-order-row.is-expanded .kmc-control-order-detail');
+    await expect(detail).toContainText('Unité HUB · HU-104766');
+    await expect(detail).toContainText('PO-104766');
+
+    await page.locator('.kmc-control-order.is-warning').filter({ hasText:'K-104715' }).click();
+    detail = page.locator('.kmc-control-order-row.is-expanded .kmc-control-order-detail').last();
+    await expect(detail).toContainText('Colis · P-104715');
+    await expect(detail).toContainText('HU-104715');
+    await expect(detail).toContainText('PO-104715');
   });
 
   test('capture de revue 1672×941', async ({ page }, testInfo) => {
