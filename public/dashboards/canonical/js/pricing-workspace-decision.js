@@ -289,64 +289,44 @@
     overview.className = 'kmc-dashboard kmc-decision-dashboard kmc-pricing-decision-overview';
     overview.dataset.dashboardId = 'pricing';
     overview.dataset.dashboardVisual = 'decision-first-v1';
+    overview.dataset.dashboardHierarchy = 'hero-attention-primary';
     overview.dataset.pricingDecisionOverview = '';
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', marketMode ? 'ATELIER ÉCONOMIQUE · MARCHÉ' : 'ATELIER ÉCONOMIQUE · GLOBAL'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', marketMode ? `État économique · ${options.requestedMarket}` : 'Atelier économique'));
+    header.setAttribute('data-dashboard-role', 'hero');
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'ATELIER ÉCONOMIQUE'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', marketMode ? `Économie · ${options.requestedMarket}` : 'Prix & économie'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', marketMode
-      ? 'Lire d’abord la couverture, la maturité et les frontières serveur avant de manipuler les leviers pays.'
-      : 'Lire d’abord la santé du moteur, les alertes et les frontières de prix avant de modifier les hypothèses.'));
+      ? 'Voir si le marché est économiquement sain et ce qui demande une décision.'
+      : 'Voir la santé économique et ce qui demande une décision avant d’agir sur les prix.'));
     overview.appendChild(header);
 
     const decisions = marketMode ? marketDecisionItems(decision) : globalDecisionItems(payload);
     if (decisions.length) {
       const host = doc.createElement('div');
+      host.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';
+      host.setAttribute('data-dashboard-role', 'attention');
       decisionUi.DecisionStrip.render(host, { items: decisions });
       overview.appendChild(host);
     }
 
-    const metrics = cardSection(doc, marketMode ? 'État de la période' : 'État du moteur', marketMode
-      ? 'Contribution, structure et maturité reprises de la décision serveur ; aucun seuil n’est recalculé côté navigateur.'
-      : 'Indicateurs du workspace et du moteur économique, sans reconstruction métier dans la couche visuelle.', marketMode ? 'pricing-market-decision' : 'pricing-engine-state');
+    const metrics = cardSection(doc, marketMode ? 'Situation économique' : 'Situation économique',
+      marketMode ? 'Les chiffres essentiels de ce marché.' : 'Les chiffres essentiels du moteur économique.',
+      marketMode ? 'pricing-market-decision' : 'pricing-engine-state');
+    metrics.section.setAttribute('data-dashboard-role', 'primary');
     ui.MetricStrip.render(metrics.body, { items: marketMode ? marketMetricItems(payload, decision, workspace) : globalMetricItems(payload) });
     overview.appendChild(metrics.section);
-
-    const rankedItems = marketMode ? marketCostItems(payload) : globalProductItems(payload);
-    if (rankedItems.length) {
-      const ranked = cardSection(doc, marketMode ? 'Overrides pays' : 'Frontières prix produit', marketMode
-        ? 'Lignes dont la valeur pays remplace explicitement l’héritage global.'
-        : 'Prix actuel, plancher sûr et recommandation déjà produits par le moteur.', marketMode ? 'pricing-market-overrides' : 'pricing-products');
-      decisionUi.RankedList.render(ranked.body, { items: rankedItems });
-      overview.appendChild(ranked.section);
-    }
-
-    if (!marketMode) {
-      const costItems = globalCostItems(payload);
-      if (costItems.length) {
-        const costs = cardSection(doc, 'Coûts', 'Composants de coûts actifs, autorité centrale cost_components. Gestion détaillée réservée à l’Atelier des coûts.', 'pricing-costs');
-        decisionUi.RankedList.render(costs.body, { items: costItems });
-        overview.appendChild(costs.section);
-      }
-
-      const strategy = cardSection(doc, 'Stratégie & concurrence', 'Comparaison CDR / concurrence / prix actuel. Les observations concurrentes sont adressées par une référence métier KPC.', 'pricing-strategy');
-      const competitorCount = number(payload && payload.summary && payload.summary.competitor_observations);
-      strategy.body.appendChild(text(doc, 'p', 'kmc-workspace-note', competitorCount
-        ? `${competitorCount} observation(s) concurrentielle(s) enregistrée(s) sur la période. Le détail par produit reste à construire — cette synthèse globale ne recalcule aucun prix, elle reporte le compte déjà produit par le moteur.`
-        : 'Aucune observation concurrentielle enregistrée pour l’instant sur ce périmètre. Cette section affichera les écarts CDR/concurrence dès que des observations existeront.'));
-      overview.appendChild(strategy.section);
-    }
-
-    const footer = doc.createElement('div');
-    decisionUi.TrustFooter.render(footer, marketMode ? marketTrust(payload, decision, options.requestedMarket) : globalTrust(payload));
-    overview.appendChild(footer);
 
     const existing = rootNode.querySelector('[data-pricing-decision-overview]');
     if (existing) existing.remove();
     const workspaceHeader = rootNode.querySelector('.kmc-workspace-header');
-    if (workspaceHeader && workspaceHeader.parentNode) workspaceHeader.parentNode.insertBefore(overview, workspaceHeader.nextSibling);
-    else rootNode.prepend(overview);
+    if (workspaceHeader) {
+      const feedback = workspaceHeader.querySelector('[data-workspace-feedback]');
+      if (feedback) header.appendChild(feedback);
+      workspaceHeader.remove();
+    }
+    rootNode.prepend(overview);
     return overview;
   }
 

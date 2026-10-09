@@ -130,7 +130,7 @@ describe('decision-first Atelier économique', () => {
     const index = fs.readFileSync(path.join(ROOT, 'public', 'dashboards', 'canonical', 'index.html'), 'utf8');
     const source = fs.readFileSync(path.join(ROOT, 'public', 'dashboards', 'canonical', 'js', 'pricing-workspace-decision.js'), 'utf8');
     const structureIndex = index.indexOf('/dashboards/canonical/js/pricing-structure-event-panel.js');
-    const overviewIndex = index.indexOf('/dashboards/canonical/js/pricing-workspace-decision.js?v=1610');
+    const overviewIndex = index.indexOf('/dashboards/canonical/js/pricing-workspace-decision.js');
 
     expect(structureIndex).toBeGreaterThanOrEqual(0);
     expect(overviewIndex).toBeGreaterThan(structureIndex);
@@ -139,4 +139,23 @@ describe('decision-first Atelier économique', () => {
     expect(source).not.toContain('market_id');
     expect(source).not.toContain('product_id');
   });
+});
+
+
+test('pricing workspace decision — overview essential-only', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(
+    path.join(__dirname,'..','..','public','dashboards','canonical','js','pricing-workspace-decision.js'),
+    'utf8'
+  );
+  const start = source.indexOf('function renderOverview');
+  const render = source.slice(start, source.indexOf('async function fetchMarketDecision', start));
+  expect(render).toContain("data-dashboard-role', 'hero");
+  expect(render).toContain("data-dashboard-role', 'attention");
+  expect(render).toContain("data-dashboard-role', 'primary");
+  expect(render).toContain("'Situation économique'");
+  expect(render).not.toContain("'Frontières prix produit'");
+  expect(render).not.toContain("'Stratégie & concurrence'");
+  expect(render).not.toContain('TrustFooter.render');
 });
