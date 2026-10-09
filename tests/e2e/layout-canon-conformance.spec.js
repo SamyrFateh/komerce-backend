@@ -177,11 +177,18 @@ async function geometry(page, pathname) {
       ? root.querySelector(':scope > .kmc-section')
       : root.querySelector(':scope > [data-dashboard-role="primary"]');
     const market = document.querySelector('.kmc-admin-shell > .kmc-market-context');
+    const search = document.querySelector('.kmc-admin-search');
+    const tabs = document.querySelector('.kmc-admin-domain-tabs');
+    const topbar = document.querySelector('.kmc-admin-topbar');
     const hr = hero.getBoundingClientRect();
     const ar = attention.getBoundingClientRect();
     const pr = primary.getBoundingClientRect();
     const rr = root.getBoundingClientRect();
     const mr = market ? market.getBoundingClientRect() : null;
+    const sr = search ? search.getBoundingClientRect() : null;
+    const tr = tabs ? tabs.getBoundingClientRect() : null;
+    const topbarStyle = topbar ? getComputedStyle(topbar) : null;
+    const tabsStyle = tabs ? getComputedStyle(tabs) : null;
     return {
       rootTop:rr.top,
       heroTop:hr.top,
@@ -195,6 +202,11 @@ async function geometry(page, pathname) {
       primaryBottom:pr.bottom,
       marketTop:mr && mr.top,
       marketBottom:mr && mr.bottom,
+      searchTop:sr && sr.top,
+      searchBottom:sr && sr.bottom,
+      topbarPosition:topbarStyle && topbarStyle.position,
+      tabsDisplay:tabsStyle && tabsStyle.display,
+      tabsHeight:tr && tr.height,
       horizontalOverflow:document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
   }, { actionCenterPage });
@@ -223,6 +235,11 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
       expect(g.primaryTop).toBeGreaterThan(g.attentionTop);
       expect(g.primaryTop).toBeLessThan(941);
       expect(g.horizontalOverflow).toBeLessThanOrEqual(1);
+      expect(g.searchTop).not.toBeNull();
+      expect(g.searchTop).toBeGreaterThanOrEqual(g.heroTop + 8);
+      expect(g.searchBottom).toBeLessThanOrEqual(g.heroBottom - 8);
+      expect(g.topbarPosition).toBe('absolute');
+      expect(g.tabsDisplay === null || g.tabsDisplay === 'none' || g.tabsHeight === 0).toBe(true);
     }
 
     for (const route of ['/admin/pilotage','/admin/commerce','/admin/operations']) {
