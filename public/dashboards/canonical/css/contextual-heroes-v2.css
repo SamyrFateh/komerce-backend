@@ -24,7 +24,8 @@ body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header::before {
   position: absolute;
   z-index: -1;
   inset: 0 0 0 auto;
-  width: min(39%, 520px);
+  width: min(43%, 620px);
+  opacity: .96;
   pointer-events: none;
 }
 
@@ -45,11 +46,8 @@ body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header::after {
 /* PILOTAGE — global network and route. */
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] > .kmc-dashboard-header::before {
   background:
-    radial-gradient(circle at 20% 67%, var(--kmc-brand-gold) 0 6px, transparent 7px),
-    radial-gradient(circle at 48% 36%, var(--kmc-brand-gold) 0 6px, transparent 7px),
-    radial-gradient(circle at 77% 61%, var(--kmc-brand-gold) 0 6px, transparent 7px),
-    radial-gradient(ellipse at 64% 48%, rgba(231,215,163,.58) 0 32%, transparent 33%),
-    linear-gradient(155deg, transparent 0 46%, rgba(7,26,61,.10) 47% 48%, transparent 49% 100%);
+    linear-gradient(90deg, transparent 0%, rgba(255,249,240,.10) 18%, rgba(255,255,255,.28) 100%),
+    url('/dashboards/canonical/assets/pilotage-control-tower-hero-gold.svg') right center / contain no-repeat;
 }
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] > .kmc-dashboard-header::after {
   content: "GLOBAL • ROUTES • DÉCISIONS";
@@ -58,11 +56,8 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] > .kmc-dashb
 /* COMMERCE — storefront / momentum. */
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashboard-header::before {
   background:
-    linear-gradient(to top, rgba(201,162,39,.22) 0 32%, transparent 32%) 16% 76% / 10% 72% no-repeat,
-    linear-gradient(to top, rgba(201,162,39,.38) 0 53%, transparent 53%) 33% 76% / 10% 72% no-repeat,
-    linear-gradient(to top, rgba(7,26,61,.14) 0 68%, transparent 68%) 50% 76% / 10% 72% no-repeat,
-    linear-gradient(to top, rgba(201,162,39,.52) 0 88%, transparent 88%) 67% 76% / 10% 72% no-repeat,
-    radial-gradient(circle at 84% 24%, rgba(231,215,163,.7) 0 54px, transparent 55px);
+    linear-gradient(90deg, transparent 0%, rgba(255,249,240,.10) 18%, rgba(255,255,255,.28) 100%),
+    url('/dashboards/canonical/assets/commerce-hero-gold.svg') right center / contain no-repeat;
 }
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashboard-header::after {
   content: "VENTE • VALEUR • PROGRESSION";
@@ -122,10 +117,8 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="markets"] > .kmc-dashbo
 /* ACTION CENTER — priority queue; red appears only in actual state cards below. */
 body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header::before {
   background:
-    linear-gradient(90deg, rgba(201,162,39,.16), rgba(201,162,39,.16)) 24% 28% / 56% 9px no-repeat,
-    linear-gradient(90deg, rgba(7,26,61,.10), rgba(7,26,61,.10)) 24% 49% / 44% 9px no-repeat,
-    linear-gradient(90deg, rgba(201,162,39,.28), rgba(201,162,39,.28)) 24% 70% / 64% 9px no-repeat,
-    radial-gradient(circle at 85% 30%, rgba(231,215,163,.78) 0 45px, transparent 46px);
+    linear-gradient(90deg, transparent 0%, rgba(255,249,240,.10) 18%, rgba(255,255,255,.28) 100%),
+    url('/dashboards/canonical/assets/action-center-hero-gold.svg') right center / contain no-repeat;
 }
 body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header::after {
   content: "VOIR • DÉCIDER • AGIR";
