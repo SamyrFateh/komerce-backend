@@ -563,3 +563,56 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
     grid-auto-columns: minmax(142px, 1fr);
   }
 }
+
+
+/* Essential-message view: compact health recap, then the chain. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-health-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-health-summary-item {
+  --summary-health: #94a3b8;
+  min-height: 68px;
+  display: grid;
+  grid-template-columns: 10px auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 13px;
+  border: 1px solid color-mix(in srgb, var(--summary-health) 24%, #e2e8f0);
+  border-left: 4px solid var(--summary-health);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--summary-health) 5%, #ffffff);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-health-summary-item.is-positive { --summary-health: #16a34a; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-health-summary-item.is-warning { --summary-health: #f59e0b; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-health-summary-item.is-critical { --summary-health: #dc2626; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-health-summary-item.is-unknown { --summary-health: #94a3b8; }
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-health-summary-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--summary-health);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-health-summary-value {
+  color: var(--ocb-ink);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-health-summary-label {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (max-width: 800px) {
+  body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-health-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

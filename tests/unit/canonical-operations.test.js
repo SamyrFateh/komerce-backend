@@ -175,7 +175,12 @@ describe('LOT 2E-CANON — Operations vivant', () => {
         }],
       },
     ]);
-    expect(operationsDecision.drillCards(operations, { role: 'admin' })).toHaveLength(2);
+    expect(operationsDecision.controlHealthSummary(payload)).toEqual({
+      GREEN: 1,
+      ORANGE: 0,
+      RED: 1,
+      UNKNOWN: 0,
+    });
     expect(operationsDecision.controlStageMeta('CUSTOMS')).toEqual({ icon: '⌂', accent: 'red' });
     expect(operationsDecision.controlEnvelope({ envelope: { type: 'PURCHASE_ORDER', refs: ['PO-42'] } }))
       .toEqual({ type: 'PURCHASE_ORDER', label: 'PO fournisseur', refs: ['PO-42'] });
@@ -183,14 +188,15 @@ describe('LOT 2E-CANON — Operations vivant', () => {
       .toEqual({ purchase_orders: ['PO-42'], hub_units: [], parcels: ['P-42'] });
   });
 
-  test('ne peint pas un faux panneau rassurant quand operations.signals est vide', () => {
+  test('la vue d’ensemble ne rend aucun panneau secondaire non demandé', () => {
     const source = fs.readFileSync(
       path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'operations-decision.js'),
       'utf8'
     );
-    expect(source).toContain('if (projectedSignals.length)');
-    expect(source).not.toContain("emptyText: 'Aucun incident opérationnel ouvert.'");
-    expect(operations.projectSignals({ signals: [] })).toEqual([]);
+    expect(source).not.toContain("cardSection(doc, 'File d’exécution'");
+    expect(source).not.toContain("cardSection(doc, 'Colis en retard critique'");
+    expect(source).not.toContain("cardSection(doc, 'Approfondir'");
+    expect(source).not.toContain('kmc-control-structural-alerts');
   });
 
   test('résout la source uniquement depuis AdminContext', () => {
