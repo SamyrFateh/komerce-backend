@@ -108,3 +108,20 @@ test('deposit_ref existant hors marché est invisible', async () => {
   });
   expect(mockVerifyDeposit).not.toHaveBeenCalled();
 });
+
+
+test('UI essentielle place les filtres dans le Hero et retire les historiques par défaut', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const source = fs.readFileSync(
+    path.join(__dirname,'..','..','public','dashboards','canonical','js','finance-accounting-workspace.js'),
+    'utf8'
+  );
+  expect(source).toContain("data-workspace-kind', 'accounting");
+  expect(source).toContain('header.appendChild(filterControls(doc, payload, context))');
+  const start = source.indexOf('function renderPayload');
+  const render = source.slice(start, source.indexOf('async function mount', start));
+  expect(render).not.toContain('renderFilters(rootNode');
+  expect(render).not.toContain('renderCollections(rootNode');
+  expect(render).not.toContain('renderInvoices(rootNode');
+});

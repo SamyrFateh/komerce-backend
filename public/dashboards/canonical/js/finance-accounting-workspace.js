@@ -93,29 +93,22 @@
     target.textContent = message || '';
   }
 
-  function createHeader(doc, payload) {
+  function createHeader(doc, payload, context) {
     const header = doc.createElement('header');
     header.className = 'kmc-workspace-header';
+    header.setAttribute('data-dashboard-role', 'hero');
+
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · FINANCE / COMPTABILITÉ'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Rapprocher le cash et contrôler les dépôts'));
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'FINANCE / COMPTABILITÉ'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Cash & dépôts'));
     copy.appendChild(text(
       doc,
       'p',
       'kmc-workspace-subtitle',
-      `${payload.scope.code} · ${payload.scope.name} · aucune validation globale`
+      `${payload.scope.code} · ${payload.scope.name} · voir les écarts et dépôts à traiter`
     ));
     header.appendChild(copy);
-
-    const nav = doc.createElement('nav');
-    nav.className = 'kmc-workspace-nav';
-    const finance = text(doc, 'a', 'kmc-workspace-nav-link', '← Dashboard Finance');
-    finance.setAttribute('href', '/admin/finance');
-    nav.appendChild(finance);
-    const operations = text(doc, 'a', 'kmc-workspace-nav-link', 'Operations / Relais');
-    operations.setAttribute('href', '/admin/workspaces/operations');
-    nav.appendChild(operations);
-    header.appendChild(nav);
+    header.appendChild(filterControls(doc, payload, context));
 
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
     feedback.setAttribute('data-workspace-feedback', '');
@@ -167,18 +160,20 @@
     }
   }
 
-  function renderFilters(rootNode, ui, doc, payload, context) {
-    const slot = createSection(rootNode, ui, 'Période de rapprochement', 'Le marché reste imposé par le contexte serveur ; seuls la période et le seuil d’alerte sont modifiables.');
+  function filterControls(doc, payload, context) {
     const form = doc.createElement('div');
-    form.className = 'kmc-workspace-section-actions';
+    form.className = 'kmc-workspace-section-actions kmc-accounting-hero-controls';
+
     const from = doc.createElement('input');
     from.type = 'date';
     from.value = payload.filters.from;
     from.setAttribute('aria-label', 'Début de période');
+
     const to = doc.createElement('input');
     to.type = 'date';
     to.value = payload.filters.to;
     to.setAttribute('aria-label', 'Fin de période');
+
     const hours = doc.createElement('select');
     hours.setAttribute('aria-label', 'Seuil non encaissé');
     [24, 48, 72, 168].forEach(value => {
@@ -188,16 +183,18 @@
       if (Number(payload.filters.hours) === value) option.selected = true;
       hours.appendChild(option);
     });
+
     const apply = makeButton(doc, 'Appliquer', 'apply-accounting-filters');
     form.appendChild(from);
     form.appendChild(to);
     form.appendChild(hours);
     form.appendChild(apply);
-    slot.appendChild(form);
+
     apply.addEventListener('click', async () => {
       context.filters = { from: from.value, to: to.value, hours: Number(hours.value) };
       await context.reload();
     });
+    return form;
   }
 
   function renderReconciliation(rootNode, ui, doc, payload) {
@@ -254,7 +251,7 @@
   }
 
   function renderDeposits(rootNode, ui, doc, payload, context) {
-    const slot = createSection(rootNode, ui, 'Dépôts relais', 'Les actions utilisent deposit_ref ; l’UUID du dépôt reste exclusivement côté serveur.');
+    const slot = createSection(rootNode, ui, 'Dépôts relais', 'Vérifiez ou contestez les dépôts du marché.');
     const rows = payload.deposits || [];
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucun dépôt rattaché à ce marché.'));
@@ -318,7 +315,7 @@
   }
 
   function renderUncollected(rootNode, ui, doc, payload) {
-    const slot = createSection(rootNode, ui, 'Cash non encaissé', 'Commandes du marché dépassant le seuil sans cash_collection.');
+    const slot = createSection(rootNode, ui, 'Cash non encaissé', 'Commandes cash qui dépassent le délai sélectionné.');
     const rows = payload.uncollected || [];
     if (!rows.length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune commande cash en anomalie.'));
@@ -404,19 +401,17 @@
 
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
+    rootNode.setAttribute('data-workspace-kind', 'accounting');
     rootNode.replaceChildren();
-    rootNode.appendChild(createHeader(doc, payload));
+    rootNode.appendChild(createHeader(doc, payload, context));
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-workspace-metrics';
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
-    renderFilters(rootNode, ui, doc, payload, context);
     renderReconciliation(rootNode, ui, doc, payload);
     renderDepositCreation(rootNode, ui, doc, context);
     renderDeposits(rootNode, ui, doc, payload, context);
     renderUncollected(rootNode, ui, doc, payload);
-    renderCollections(rootNode, ui, doc, payload);
-    renderInvoices(rootNode, ui, doc, payload);
   }
 
   async function mount(options = {}) {

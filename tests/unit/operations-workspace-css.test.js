@@ -25,3 +25,10 @@ test('Sourcing possède un Hero contextuel propre',()=>{
   expect(css).toContain('.kmc-operations-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header');
   expect(css).toContain('linear-gradient(112deg, #fffaf1');
 });
+
+
+test('Finance / Comptabilité possède un Hero contextuel propre',()=>{
+  expect(css).toContain('.kmc-operations-workspace[data-workspace-kind="accounting"] > .kmc-workspace-header');
+  expect(css).toContain('linear-gradient(112deg, #f6fbf8');
+  expect(css).toContain('.kmc-accounting-hero-controls');
+});
