@@ -171,7 +171,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(typo.title.size).toBe(24);
     expect(typo.title.weight).toBe(700);
     expect(typo.section.size).toBeCloseTo(14.08, 1);
-    expect(typo.card.size).toBeCloseTo(10.88, 1);
+    expect(typo.card.size).toBeGreaterThanOrEqual(13);
   });
 
   test('le début du menu est visible au chargement sans scroll restauré', async ({ page }) => {
@@ -203,6 +203,33 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     await expect(page.locator('.is-control-tower-flow .kmc-flow-stage')).toHaveCount(9);
   });
 
+  test('hiérarchie Canonical : Hero → Attention → Primary → Secondary', async ({ page }) => {
+    const dashboard = page.locator('[data-dashboard-id="pilotage"]');
+    await expect(dashboard).toHaveAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
+
+    const order = await dashboard.locator(':scope > *').evaluateAll(nodes =>
+      nodes.map(node => ({
+        role: node.getAttribute('data-dashboard-role'),
+        top: node.getBoundingClientRect().top,
+        bottom: node.getBoundingClientRect().bottom,
+      }))
+    );
+
+    const hero = order.findIndex(item => item.role === 'hero');
+    const attention = order.findIndex(item => item.role === 'attention');
+    const primary = order.findIndex(item => item.role === 'primary');
+    const secondary = order.findIndex(item => item.role === 'secondary');
+
+    expect(hero).toBeGreaterThanOrEqual(0);
+    expect(attention).toBeGreaterThan(hero);
+    expect(primary).toBeGreaterThan(attention);
+    expect(secondary).toBeGreaterThan(primary);
+
+    const attentionBox = order[attention];
+    expect(attentionBox.top).toBeLessThan(520);
+    expect(attentionBox.bottom).toBeLessThanOrEqual(941);
+  });
+
   test('contraste du cockpit et états de chaîne restent distincts', async ({ page }) => {
     const colors = await page.evaluate(() => {
       const color = (sel, prop = 'backgroundColor') => getComputedStyle(document.querySelector(sel))[prop];
@@ -211,7 +238,9 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
         sidebarWidth: document.querySelector('.kmc-admin-navigation').getBoundingClientRect().width,
         canvas: color('[data-dashboard-id="pilotage"]'),
         causes: color('.is-control-tower-causes'),
-        decision: color('.kmc-decision-card'),
+        decisionBg: color('.kmc-decision-card'),
+        decisionGradient: color('.kmc-decision-card', 'backgroundImage'),
+        decisionBorderLeft: color('.kmc-decision-card', 'borderLeftWidth'),
         activeNavGradient: color('.kmc-admin-primary-link.is-active', 'backgroundImage'),
         activeNavText: color('.kmc-admin-primary-link.is-active', 'color'),
         red: color('.kmc-flow-stage.is-critical', 'borderTopColor'),
@@ -230,7 +259,8 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(colors.sidebarWidth).toBe(260);
     expect(colors.canvas).toBe('rgb(241, 245, 249)');
     expect(colors.causes).toBe('rgb(255, 255, 255)');
-    expect(colors.decision).toBe('rgb(255, 255, 255)');
+    expect(colors.decisionGradient).toContain('linear-gradient');
+    expect(colors.decisionBorderLeft).toBe('5px');
     expect(colors.activeNavGradient).toBe('none');
     expect(colors.activeNavText).toBe('rgb(255, 255, 255)');
     expect(new Set([colors.red, colors.warning, colors.green, colors.unknown]).size).toBe(4);
@@ -257,9 +287,8 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
 
     expect(surfaces.canvas).toBe('rgb(241, 245, 249)');
     expect(surfaces.causes).toBe('rgb(255, 255, 255)');
-    expect(surfaces.criticalCard).toBe('rgb(255, 255, 255)');
-    expect(surfaces.warningCard).toBe('rgb(255, 255, 255)');
-    expect(surfaces.decisionRadius).toBe('10px');
+    expect(surfaces.criticalCard).not.toBe(surfaces.warningCard);
+    expect(surfaces.decisionRadius).toBe('12px');
     expect(surfaces.sectionRadius).toBe('12px');
     expect(surfaces.sectionShadow).toContain('0px 1px 3px');
     expect(surfaces.criticalAccent).not.toBe(surfaces.warningAccent);
