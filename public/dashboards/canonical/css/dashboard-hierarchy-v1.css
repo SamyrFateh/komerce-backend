@@ -118,16 +118,16 @@ body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] 
 }
 
 /* The primary object owns more visual mass than secondary cards. */
-body.kmc-shell-v4 [data-dashboard-role="primary"] {
+body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="primary"] {
   box-shadow: 0 2px 4px rgba(15,31,54,.05), 0 12px 28px rgba(15,31,54,.055);
 }
 
-body.kmc-shell-v4 [data-dashboard-role="primary"] > .kmc-decision-dashboard-section-title {
+body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="primary"] > .kmc-decision-dashboard-section-title {
   color: var(--hierarchy-ink);
   font-weight: 800;
 }
 
-body.kmc-shell-v4 [data-dashboard-role="secondary"] {
+body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="secondary"] {
   opacity: .96;
 }
 
