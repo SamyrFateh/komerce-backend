@@ -1,0 +1,52 @@
+# CANONICAL DASHBOARD VISUAL HIERARCHY V1
+
+## Objet
+
+Ce contrat fixe la hiérarchie visuelle des dashboards Canonical Komerce.
+Il ne définit aucune vérité métier et ne remplace aucun contrat de données.
+
+## Ordre obligatoire
+
+1. **Hero** — identité de la surface, contexte, titre et promesse opérationnelle.
+2. **Attention** — ce qui demande une décision ou une surveillance immédiate.
+3. **Primary object** — l'objet métier principal de la page (chaîne, portefeuille, trésorerie, catalogue, etc.).
+4. **Secondary surfaces** — détail, historique, files, approfondissements et contexte.
+
+Le DOM et le rendu doivent respecter cet ordre.
+
+## Règles
+
+- Le hero donne du caractère à la rubrique sans masquer l'information.
+- La bande Attention doit être lisible en moins de deux secondes.
+- Rouge = action requise, orange = à risque / à surveiller, vert = normal, gris = non observé.
+- La couleur seule ne porte jamais l'importance : position, taille et contraste doivent également guider l'œil.
+- Les listes compactes restent compactes. Les descriptions longues sont révélées par drill/encapsulation.
+- L'objet métier principal doit avoir plus de masse visuelle que les surfaces secondaires.
+- Les surfaces secondaires ne doivent pas concurrencer les alertes.
+- Aucun composant visuel ne recalcule un statut métier.
+
+## Contrat DOM
+
+Une surface conforme porte :
+
+`data-dashboard-hierarchy="hero-attention-primary-secondary"`
+
+et ses blocs structurants portent :
+
+- `data-dashboard-role="hero"`
+- `data-dashboard-role="attention"`
+- `data-dashboard-role="primary"`
+- `data-dashboard-role="secondary"`
+
+## Preuve Playwright
+
+Chaque dashboard migré vers ce contrat doit prouver au minimum :
+
+- l'ordre Hero → Attention → Primary → Secondary ;
+- la visibilité de la bande Attention dans le premier viewport desktop de référence ;
+- la présence d'un contraste visuel mesurable entre Attention et Secondary ;
+- la dominance géométrique de l'objet Primary ;
+- l'absence de descriptions longues dans les cartes compactes fermées ;
+- une capture de revue déterministe.
+
+Operations et Pilotage sont les premières surfaces couvertes.
