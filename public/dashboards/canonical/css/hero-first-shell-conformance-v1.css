@@ -32,6 +32,9 @@ body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"
 
 /* Action Center is its own root: it carries the page padding itself. */
 body.kmc-shell-v4[data-kmc-surface="action-center"] #canonical-admin-root {
+  box-sizing: border-box;
+  width: min(100%, var(--kmc-layout-max, 1680px));
+  margin: 0 auto;
   padding: var(--kmc-layout-page-pad-top, 18px) var(--kmc-layout-page-pad-x, 24px) var(--kmc-layout-page-pad-bottom, 24px);
 }
 
@@ -184,6 +187,7 @@ body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"
 /* Orders renders a decision dashboard without the cockpit class: same page frame as the others. */
 body.kmc-shell-v4[data-kmc-surface="orders"] .kmc-dashboard.kmc-decision-dashboard {
   width: min(100%, var(--kmc-layout-max, 1680px));
+  max-width: none;
   margin: 0 auto;
   box-sizing: border-box;
   display: grid;
