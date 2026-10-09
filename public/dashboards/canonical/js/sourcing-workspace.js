@@ -92,24 +92,12 @@
   function createHeader(doc) {
     const header = doc.createElement('header');
     header.className = 'kmc-workspace-header';
+    header.setAttribute('data-dashboard-role', 'hero');
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · SOURCING'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Sourcer et qualifier le catalogue'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Surface centrale · portefeuille sourcing, candidats, imports et fournisseurs · aucun périmètre pays'));
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'SOURCING'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Produits à qualifier'));
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Voir ce qui doit être qualifié, corrigé ou promu.'));
     header.appendChild(copy);
-
-    const nav = doc.createElement('nav');
-    nav.className = 'kmc-workspace-nav';
-    const cockpit = text(doc, 'a', 'kmc-workspace-nav-link', 'Cockpit des imports');
-    cockpit.href = '/admin/import-runtime';
-    nav.appendChild(cockpit);
-    const catalog = text(doc, 'a', 'kmc-workspace-nav-link', 'Catalogue global →');
-    catalog.href = '/admin/workspaces/catalog';
-    nav.appendChild(catalog);
-    const diagnostic = text(doc, 'a', 'kmc-workspace-nav-link', 'Diagnostic technique');
-    diagnostic.href = '/admin/workspaces/sourcing?diagnostic=1';
-    nav.appendChild(diagnostic);
-    header.appendChild(nav);
 
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
     feedback.setAttribute('data-workspace-feedback', '');
@@ -163,8 +151,8 @@
     const slot = createSection(
       rootNode,
       ui,
-      'Candidats sourcing',
-      'Le candidat reste hors catalogue tant qu’il n’est pas explicitement promu. Les décisions et scans restent côté serveur.'
+      'Candidats à qualifier',
+      'Relisez, corrigez, scannez ou promouvez les candidats proposés.'
     );
     const rows = payload.candidates || [];
     if (!rows.length) {
@@ -440,6 +428,7 @@
 
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace kmc-sourcing-workspace';
+    rootNode.setAttribute('data-workspace-kind', 'sourcing');
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc));
     const metrics = doc.createElement('section');
@@ -477,7 +466,7 @@
         rootNode.replaceChildren();
         const panel = doc.createElement('section');
         panel.className = 'kmc-workspace-header';
-        panel.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · SOURCING'));
+        panel.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'SOURCING'));
         panel.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Accès Sourcing indisponible'));
         panel.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', error.message));
         rootNode.appendChild(panel);
