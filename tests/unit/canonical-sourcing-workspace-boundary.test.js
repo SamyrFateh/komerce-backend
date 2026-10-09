@@ -106,5 +106,5 @@ test('Sourcing ne duplique plus le registre KIR et garde la santé technique en 
 
   expect(decision).toContain("get('diagnostic') === '1'");
   expect(decision).toContain('renderHealth');
-  expect(source).toContain('?diagnostic=1');
+  expect(source).not.toContain('?diagnostic=1');
 });

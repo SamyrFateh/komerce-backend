@@ -48,3 +48,22 @@ test('sidebar verticale démarre en haut et isole le scroll dans la navigation c
   expect(identity).toMatch(/flex:\s*0 0 auto/);
   expect(utility).toMatch(/flex:\s*0 0 auto/);
 });
+
+const __css = fs.readFileSync(
+  path.join(__dirname, '../../public/dashboards/canonical/css/canonical-shell-v4.css'),
+  'utf8'
+);
+
+describe('canonical-shell-v4.css', () => {
+  test('la navigation primaire garde son défilement vertical contenu', () => {
+    const block = __css.match(/\.kmc-admin-primary-nav\s*\{[^}]*\}/);
+    expect(block).not.toBeNull();
+    expect(block[0]).toMatch(/overflow-y:\s*auto/);
+    expect(block[0]).toMatch(/overscroll-behavior:\s*contain/);
+  });
+
+  test('ne déclare plus scrollbar-gutter sur la navigation (surchargé par le polish)', () => {
+    const block = __css.match(/\.kmc-admin-primary-nav\s*\{[^}]*\}/);
+    expect(block[0]).not.toMatch(/scrollbar-gutter/);
+  });
+});

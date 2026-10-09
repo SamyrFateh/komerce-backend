@@ -80,8 +80,9 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     // n'existent pas côté produit — voir @version 2026-09-v4.2-business-truth.
     expect(source).toContain("label: 'Vue catalogue'");
     expect(source).toContain("label: 'Produits'");
-    expect(source).toContain("label: 'Coûts'");
-    expect(source).toContain("label: 'Stratégie'");
+    // Atelier prix : plus d'ancres #pricing-* (vue d'ensemble unique).
+    expect(source).not.toContain('#pricing-costs');
+    expect(source).not.toContain('#pricing-strategy');
     expect(source).not.toContain("label: 'Sources'");
     expect(source).not.toContain("label: 'Raffinerie'");
     expect(source).toContain("data-shell', 'hybrid-sidebar-tabs");

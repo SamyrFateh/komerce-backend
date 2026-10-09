@@ -41,7 +41,7 @@ body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] 
   gap: 7px;
   padding: 13px 15px 12px;
   border: 1px solid color-mix(in srgb, var(--decision-accent) 25%, #dce5ef);
-  border-left: 5px solid var(--decision-accent) !important;
+  border-left: 5px solid var(--decision-accent);
   border-top-width: 1px;
   border-radius: 12px;
   background:
@@ -50,6 +50,13 @@ body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] 
       #fff 66%);
   box-shadow: 0 4px 14px rgba(15,31,54,.055);
 }
+
+/* Le liseré d'accent garde 5px face aux états du cockpit pilotage (4px) :
+   gagné par spécificité (classe répétée), sans surcharge forcée. */
+body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-card.kmc-decision-card.kmc-decision-card {
+  border-left-width: 5px;
+}
+
 
 body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-card-heading {
   align-items: center;

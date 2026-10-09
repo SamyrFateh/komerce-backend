@@ -84,7 +84,6 @@ body.kmc-shell-v4 .kmc-admin-primary-nav {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
 }
 
 .kmc-admin-sidebar-group {

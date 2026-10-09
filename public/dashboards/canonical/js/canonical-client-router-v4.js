@@ -36,11 +36,7 @@
     'settings',
   ]);
 
-  const PRICING_ANCHORS = Object.freeze({
-    'pricing-products': 'Décision produit',
-    'pricing-costs': 'Atelier des coûts',
-    'pricing-strategy': 'Stratégie & concurrence',
-  });
+  const PRICING_ANCHORS = Object.freeze({});
 
   function normalizeSourceLanguage(value) {
     const locale = String(value || 'en').trim().toLowerCase().replace(/_/g, '-');

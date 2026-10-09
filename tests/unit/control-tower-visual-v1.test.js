@@ -29,7 +29,7 @@ describe('Control Tower visual rebuild V1', () => {
   test('le shell visuel commun passe en navy sans toucher aux vérités métier', () => {
     const css = read('public/dashboards/canonical/css/control-tower-visual-v1.css');
     expect(css).toContain('body.kmc-shell-v4 > .kmc-admin-navigation');
-    expect(css).toContain('linear-gradient(180deg, #0b1f3a');
+    expect(css).toContain('background: #0f172a;');
     expect(css).toContain('.kmc-admin-primary-link.is-active');
     expect(css).not.toMatch(/\/api\//);
     expect(css).not.toMatch(/market_id|supplier_order_identity|reconciliation_id/);
