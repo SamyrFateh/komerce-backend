@@ -478,6 +478,7 @@ module.exports = {
       'dashboards/canonical/css/visual-freeze-v1.css',
       'dashboards/canonical/css/canonical-theme-v2.css',
       'dashboards/canonical/css/canonical-shell-v4.css',
+      'dashboards/canonical/css/dashboard-hierarchy-v1.css',
       'dashboards/canonical/css/canonical-legacy-theme-v1.css',
       'dashboards/canonical/css/cockpit-legacy-v1.css',
       'dashboards/canonical/css/renderer.css',
