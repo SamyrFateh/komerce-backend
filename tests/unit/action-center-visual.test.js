@@ -24,6 +24,13 @@ describe('Action Center visual polish V1', () => {
     expect(action).toBeGreaterThan(cockpit);
   });
 
+  test('le Hero contextuel porte le caractère Action Center sans navigation générique', () => {
+    const css = read('public/dashboards/canonical/css/action-center-visual.css');
+    expect(css).toContain('.kmc-action-center > .kmc-workspace-header');
+    expect(css).toContain('linear-gradient(112deg, #fff8f7');
+    expect(css).toContain('min-height: 126px');
+  });
+
   test('les quatre sévérités ont une signalétique explicite sans logique métier', () => {
     const css = read('public/dashboards/canonical/css/action-center-visual.css');
     expect(css).toContain('.kmc-action-signal.is-urgent');
