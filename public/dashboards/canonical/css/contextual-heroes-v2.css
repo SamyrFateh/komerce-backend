@@ -222,7 +222,7 @@ body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="hub-relay"] > .
 
 /* Keep the richer Operations visual untouched; only tighten viewport geometry. */
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] > .kmc-dashboard-header {
-  min-height: 148px;
+  min-height: 150px;
 }
 
 /* Small desktop: visual signature stays, copy remains primary. */
