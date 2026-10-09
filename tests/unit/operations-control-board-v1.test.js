@@ -21,9 +21,9 @@ describe('Operations logistics control board V1',()=>{
   test('le tableau garde neuf colonnes potentielles et une géométrie de poste opérationnel',()=>{
     expect(css).toMatch(/\.kmc-control-chain\s*\{[^}]*grid-auto-flow:\s*column/s);
     expect(css).toMatch(/grid-auto-columns:\s*minmax\(145px,\s*1fr\)/);
-    expect(css).toMatch(/\.kmc-control-stage\s*\{[^}]*min-height:\s*470px/s);
+    expect(css).toMatch(/\.kmc-control-stage\s*\{[^}]*min-height:\s*380px/s);
     expect(css).toMatch(/\.kmc-control-chain::before\s*\{[^}]*height:\s*4px/s);
-    expect(css).toMatch(/\.kmc-control-stage-icon\s*\{[^}]*width:\s*60px[^}]*height:\s*60px/s);
+    expect(css).toMatch(/\.kmc-control-stage-icon\s*\{[^}]*width:\s*50px[^}]*height:\s*50px/s);
   });
 
   test('les cartes commandes distinguent normal, risque, bloqué et inconnu',()=>{
@@ -50,7 +50,7 @@ describe('Operations logistics control board V1',()=>{
 
 
 test('les cartes commandes restent compactes et le détail est progressif',()=>{
-  expect(css).toMatch(/\.kmc-control-order\s*\{[^}]*min-height:\s*42px/s);
+  expect(css).toMatch(/\.kmc-control-order\s*\{[^}]*min-height:\s*36px/s);
   expect(css).toContain('.kmc-control-order-detail[hidden]');
   expect(css).toContain('.kmc-control-order-focus');
   expect(css).toContain('.kmc-control-order-lineage');
@@ -60,8 +60,17 @@ test('les cartes commandes restent compactes et le détail est progressif',()=>{
 
 test('la composition Operations suit le mock : hero + pipeline flottant + colonnes sous le rail',()=>{
   expect(css).toContain("operations-logistics-hero.svg");
-  expect(css).toMatch(/\.kmc-control-stage::after\s*\{[^}]*top:\s*112px/s);
+  expect(css).toMatch(/\.kmc-control-stage::after\s*\{[^}]*top:\s*92px/s);
   expect(css).toMatch(/\.kmc-control-chain::before\s*\{[^}]*height:\s*4px/s);
   expect(css).toMatch(/grid-auto-columns:\s*minmax\(145px,\s*1fr\)/);
-  expect(css).toMatch(/\.kmc-control-stage-icon\s*\{[^}]*width:\s*60px[^}]*height:\s*60px/s);
+  expect(css).toMatch(/\.kmc-control-stage-icon\s*\{[^}]*width:\s*50px[^}]*height:\s*50px/s);
+});
+
+
+test('le Hero Operations contient les contrôles contexte et le cockpit tient sur un seul viewport desktop',()=>{
+  expect(css).toContain('.kmc-context-hero-controls');
+  expect(css).toContain('.kmc-context-hero-controls .kmc-admin-search');
+  expect(css).toContain('.kmc-context-hero-controls .kmc-market-context-field');
+  expect(css).toMatch(/\.kmc-control-chain\s*\{[^}]*min-height:\s*392px/s);
+  expect(css).toMatch(/\.kmc-control-stage\s*\{[^}]*min-height:\s*380px/s);
 });
