@@ -69,6 +69,29 @@ describeE2E('E2E-MA-05 — market-delegation · dashboards pays', ({ db }) => {
     }
   });
 
+  it('2 bis — les KPI monétaires d’un marché XAF sont exprimés en XAF, jamais en KMF', async () => {
+    const units = [];
+    const walk = node => {
+      if (Array.isArray(node)) return node.forEach(walk);
+      if (node && typeof node === 'object') {
+        if (typeof node.unit === 'string' && 'value' in node) units.push(node);
+        Object.values(node).forEach(walk);
+      }
+    };
+    for (const surface of ['unified', 'commerce', 'operations', 'finance']) {
+      const res = await request(app)
+        .get(`/api/admin/dashboard/${surface}/market/${fx.marketA.code}`)
+        .set('Authorization', fx.managerA.token);
+      expect(res.status).toBe(200);
+      walk(res.body);
+    }
+    expect(units.filter(k => k.unit === 'KMF')).toEqual([]);
+    for (const k of units.filter(k => k.base_currency)) {
+      expect(k.unit).toBe(fx.marketA.currency);
+      expect(k.base_currency).toBe('KMF');
+    }
+  });
+
   it('3 — le manager A obtient 403 sur le Market ID B', async () => {
     for (const surface of ['unified', 'commerce', 'operations', 'finance']) {
       const res = await request(app)

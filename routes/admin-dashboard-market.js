@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        authenticated_operator, requested_market_code, dashboard_filters
  * @outputs       authorized_market_pilotage_projection, authorized_market_commerce_projection, authorized_market_operations_projection, authorized_market_finance_projection, canonical_reference_resolution, global_dashboard_gate, canonical_admin_context
- * @depends       db, middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-finance-canonical, services/dashboard-admin-context, services/canonical-reference-resolver, services/market-delegation-service
+ * @depends       db, middleware/auth, middleware/require-market-delegated-role, middleware/require-market-delegated-capability, middleware/require-dashboard-global-authority, services/dashboard-pilotage-market, services/dashboard-commerce, services/dashboard-operations, services/dashboard-finance-canonical, services/dashboard-admin-context, services/canonical-reference-resolver, services/market-delegation-service, services/dashboard-metrics/market-currency
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, dashboard_global_access_grants
  * @db-write      none
@@ -32,6 +32,7 @@ const {
   resolveDashboardAdminContext,
 } = require('../services/dashboard-admin-context');
 const pilotage = require('../services/dashboard-pilotage-market');
+const { projectMarketPayload } = require('../services/dashboard-metrics/market-currency');
 const commerce = require('../services/dashboard-commerce');
 const operations = require('../services/dashboard-operations');
 const finance = require('../services/dashboard-finance-canonical');
@@ -65,7 +66,7 @@ async function resolveRequestedMarket(req, res, next) {
 
   try {
     const { rows } = await db.query(
-      `SELECT id, code, name, currency
+      `SELECT id, code, name, currency, minor_unit
        FROM markets
        WHERE code = $1 AND is_active = TRUE
        LIMIT 1`,
@@ -187,7 +188,7 @@ router.get(
     try {
       res.set('Cache-Control', 'private, no-store');
       const filters = parseFilters(req);
-      const payload = await pilotage.buildMarketPilotage(filters, req.dashboardMarket);
+      const payload = await projectMarketPayload(await pilotage.buildMarketPilotage(filters, req.dashboardMarket), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] unified market error');
@@ -207,7 +208,7 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await commerce.buildCommerce(req.query, { market: req.dashboardMarket });
+      const payload = await projectMarketPayload(await commerce.buildCommerce(req.query, { market: req.dashboardMarket }), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] commerce market error');
@@ -227,7 +228,7 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await operations.buildOperations({ market: req.dashboardMarket });
+      const payload = await projectMarketPayload(await operations.buildOperations({ market: req.dashboardMarket }), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] operations market error');
@@ -247,7 +248,7 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await orders.buildOrders({ market: req.dashboardMarket });
+      const payload = await projectMarketPayload(await orders.buildOrders({ market: req.dashboardMarket }), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] orders market error');
@@ -267,7 +268,7 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await finance.buildFinance(req.query, { market: req.dashboardMarket });
+      const payload = await projectMarketPayload(await finance.buildFinance(req.query, { market: req.dashboardMarket }), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] finance market error');
