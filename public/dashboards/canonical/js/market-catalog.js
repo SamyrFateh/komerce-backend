@@ -94,40 +94,29 @@
     copy.appendChild(el(
       'p',
       'kmc-workspace-subtitle',
-      `Market ID ${marketCode} · ${payload.market.currency || '—'} · choisissez les produits qui ont leur place sur ce marché`
+      `${payload.market.currency || '—'} · choisissez les produits qui ont leur place sur ce marché`
     ));
     header.appendChild(copy);
-
-    const nav = el('nav', 'kmc-workspace-nav');
-    const pricing = el('a', 'kmc-workspace-nav-link', 'Atelier économique →');
-    pricing.href = `/admin/workspaces/pricing?market=${encodeURIComponent(marketCode)}`;
-    nav.appendChild(pricing);
-    const buyer = el('a', 'kmc-workspace-nav-link', 'Voir la boutique →');
-    buyer.href = `/?market=${encodeURIComponent(marketCode)}`;
-    buyer.target = '_blank';
-    nav.appendChild(buyer);
-    header.appendChild(nav);
 
     const feedback = el('div', 'kmc-workspace-feedback', 'Prêt.');
     feedback.dataset.catalogFeedback = '';
     feedback.setAttribute('role', 'status');
     header.appendChild(feedback);
     root.appendChild(header);
+    return header;
   }
 
-  function renderMarketSelector(context, marketCode) {
+  function renderMarketSelector(context, marketCode, header) {
     const allowed = context.access && Array.isArray(context.access.allowedMarkets)
       ? context.access.allowedMarkets
       : [];
-    if (allowed.length <= 1) return;
+    if (allowed.length <= 1 || !header) return null;
 
-    // Conservé comme proxy technique pour le sélecteur transverse N1. Le
-    // Visual Freeze masque ce bloc quand la navigation Canonical est montée.
-    const section = el('section', 'kmc-section');
-    section.appendChild(el('h2', 'kmc-section-title', 'Marché actif'));
+    const controls = el('div', 'kmc-market-catalog-hero-controls');
+    const label = el('label', 'kmc-market-catalog-market-label', 'Marché');
     const select = global.document.createElement('select');
     select.className = 'kmc-workspace-input kmc-market-context-select';
-    select.setAttribute('aria-label', 'Sélectionner le Market ID');
+    select.setAttribute('aria-label', 'Sélectionner le marché');
     allowed.forEach(code => {
       const option = global.document.createElement('option');
       option.value = code;
@@ -140,8 +129,10 @@
       url.searchParams.set('market', select.value);
       global.location.href = url.toString();
     });
-    section.appendChild(select);
-    root.appendChild(section);
+    label.appendChild(select);
+    controls.appendChild(label);
+    header.appendChild(controls);
+    return controls;
   }
 
   function renderDecisionOverview(payload) {
@@ -152,42 +143,37 @@
       throw new Error('market_catalog_decision_primitives_missing');
     }
 
-    const section = el('section', 'kmc-decision-surface-card');
+    const decisions = projection.decisionItems(payload);
+    if (decisions.length) {
+      const decisionHost = el('div', 'kmc-cockpit-decisions kmc-dashboard-attention-band');
+      decisionHost.setAttribute('data-dashboard-role', 'attention');
+      decisionUi.DecisionStrip.render(decisionHost, { items: decisions });
+      root.appendChild(decisionHost);
+    }
+
+    const section = el('section', 'kmc-decision-surface-card kmc-market-catalog-essential');
     section.setAttribute('data-market-catalog-overview', 'decision-first-v1');
-    section.appendChild(el('h2', 'kmc-decision-dashboard-section-title', 'Produits à décider'));
+    section.setAttribute('data-dashboard-role', 'primary');
+    section.appendChild(el('h2', 'kmc-decision-dashboard-section-title', 'Catalogue du marché'));
     section.appendChild(el(
       'p',
       'kmc-decision-dashboard-section-copy',
-      'Les nouveaux produits arrivent ici prêts à être examinés. Validez ceux qui conviennent à votre marché ; les autres restent masqués.'
+      'Voir ce qui est visible, ce qui reste à décider et les références à relire.'
     ));
 
-    const decisions = projection.decisionItems(payload);
-    if (decisions.length) {
-      const decisionHost = el('div');
-      decisionUi.DecisionStrip.render(decisionHost, { items: decisions });
-      section.appendChild(decisionHost);
-    }
-
-    const metricHost = el('div');
-    metricHost.className = 'kmc-workspace-metrics';
+    const metricHost = el('div', 'kmc-workspace-metrics kmc-market-catalog-essential-metrics');
     ui.MetricStrip.render(metricHost, { items: projection.metricItems(payload) });
     section.appendChild(metricHost);
-    root.appendChild(section);
 
     const priorities = projection.priorityRows(payload);
     if (priorities.length) {
-      const prioritySection = el('section', 'kmc-decision-surface-card');
-      prioritySection.appendChild(el('h2', 'kmc-decision-dashboard-section-title', 'À arbitrer maintenant'));
-      prioritySection.appendChild(el(
-        'p',
-        'kmc-decision-dashboard-section-copy',
-        'Références visibles à relire ou références encore sans décision pays.'
-      ));
-      const priorityHost = el('div');
+      section.appendChild(el('h3', 'kmc-market-catalog-priority-title', 'À arbitrer maintenant'));
+      const priorityHost = el('div', 'kmc-market-catalog-essential-priorities');
       decisionUi.PriorityList.render(priorityHost, { items: priorities });
-      prioritySection.appendChild(priorityHost);
-      root.appendChild(prioritySection);
+      section.appendChild(priorityHost);
     }
+
+    root.appendChild(section);
   }
 
   function actionButton(label, tone, handler) {
@@ -310,10 +296,13 @@
       const payload = await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/catalog/exposure`);
 
       root.className = 'kmc-workspace';
+      root.setAttribute('data-workspace-kind', 'market-catalog');
+      root.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
       root.replaceChildren();
       refreshNavigation(user, context);
-      renderHeader(payload, marketCode);
-      renderMarketSelector(context, marketCode);
+      const header = renderHeader(payload, marketCode);
+      header.setAttribute('data-dashboard-role', 'hero');
+      renderMarketSelector(context, marketCode, header);
       renderDecisionOverview(payload);
       renderReadyToSell(payload, marketCode);
       renderExposure(payload, marketCode);
