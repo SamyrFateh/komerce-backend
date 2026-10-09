@@ -12,9 +12,12 @@ const SRC=fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','c
 describe('operations-decision visual hierarchy contract',()=>{
   test('keeps Operations to Hero → health recap → primary chain only',()=>{
     expect(SRC).toContain("data-dashboard-hierarchy', 'hero-attention-primary-secondary");
-    const hero=SRC.indexOf("data-dashboard-role', 'hero");
-    const attention=SRC.indexOf("data-dashboard-role', 'attention");
-    const primary=SRC.indexOf("data-dashboard-role', 'primary");
+    const renderStart=SRC.indexOf('function render(rootNode');
+    const renderSource=SRC.slice(renderStart);
+    const hero=renderSource.indexOf('dashboard.appendChild(header)');
+    const attention=renderSource.indexOf('dashboard.appendChild(renderControlHealthSummary');
+    const primary=renderSource.indexOf('dashboard.appendChild(chain.section)');
+    expect(renderStart).toBeGreaterThanOrEqual(0);
     expect(hero).toBeGreaterThanOrEqual(0);
     expect(attention).toBeGreaterThan(hero);
     expect(primary).toBeGreaterThan(attention);
