@@ -962,3 +962,29 @@
 .kmc-operations-workspace[data-workspace-kind="shipping-customs"] > .kmc-workspace-header .kmc-workspace-subtitle {
   font-size: 12px;
 }
+
+
+/* Sourcing contextual hero. */
+.kmc-operations-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header {
+  min-height: 126px;
+  align-items: center;
+  border-color: #f0dfbf;
+  background:
+    radial-gradient(circle at 88% 30%, rgba(217,144,26,.15) 0 48px, transparent 49px),
+    radial-gradient(circle at 95% 76%, rgba(124,58,237,.09) 0 36px, transparent 37px),
+    linear-gradient(112deg, #fffaf1 0%, #ffffff 60%, #faf7ff 100%);
+}
+.kmc-operations-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header .kmc-workspace-kicker {
+  color: #a15c00;
+  background: #fff8e6;
+}
+.kmc-operations-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header .kmc-workspace-kicker::before {
+  background: #d9901a;
+}
+.kmc-operations-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header .kmc-workspace-title {
+  font-size: clamp(25px, 2.5vw, 32px);
+  font-weight: 800;
+}
+.kmc-operations-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header .kmc-workspace-subtitle {
+  font-size: 12px;
+}
