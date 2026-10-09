@@ -140,8 +140,20 @@ async function mount(page) {
 test.describe('Operations — logistics control board', () => {
   test.beforeEach(async ({ page }) => mount(page));
 
-  test('le tableau est le premier objet métier sous le header', async ({ page }) => {
+  test('le hero logistique précède le tableau et porte l’identité Operations', async ({ page }) => {
+    const header = page.locator('[data-dashboard-id="operations"] > .kmc-dashboard-header');
     await expect(page.locator('.kmc-dashboard-title')).toHaveText('Opérations — Tour de contrôle');
+    const visual = await header.evaluate(el => {
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return { height:r.height, backgroundImage:cs.backgroundImage, radius:cs.borderRadius };
+    });
+    expect(visual.height).toBeGreaterThanOrEqual(150);
+    expect(visual.backgroundImage).toContain('operations-logistics-hero.svg');
+    expect(visual.radius).toBe('16px');
+  });
+
+  test('le tableau est le premier objet métier sous le header', async ({ page }) => {
     const order = await page.locator('[data-dashboard-id="operations"] > *').evaluateAll(nodes =>
       nodes.map(n => ({ cls:n.className, id:n.id }))
     );
@@ -168,8 +180,26 @@ test.describe('Operations — logistics control board', () => {
       const r = el.getBoundingClientRect();
       return { width:r.width, height:r.height };
     });
-    expect(icon.width).toBeGreaterThanOrEqual(54);
-    expect(icon.height).toBeGreaterThanOrEqual(54);
+    expect(icon.width).toBeGreaterThanOrEqual(60);
+    expect(icon.height).toBeGreaterThanOrEqual(60);
+  });
+
+
+  test('les 9 étapes tiennent ensemble sur le viewport desktop de référence', async ({ page }) => {
+    const board = page.locator('.kmc-control-chain');
+    const geometry = await board.evaluate(el => ({
+      clientWidth: el.clientWidth,
+      scrollWidth: el.scrollWidth,
+    }));
+    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 2);
+
+    const stages = page.locator('.kmc-control-stage');
+    await expect(stages).toHaveCount(9);
+    const first = await stages.first().boundingBox();
+    const last = await stages.last().boundingBox();
+    expect(first).not.toBeNull();
+    expect(last).not.toBeNull();
+    expect(last.x + last.width).toBeLessThanOrEqual(1672);
   });
 
   test('les cartes restent compactes puis révèlent l’objet précis au clic', async ({ page }) => {
