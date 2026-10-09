@@ -113,3 +113,24 @@ describe('decision-first Marchés', () => {
     expect(bootstrap).toContain("pricesSection.id = 'market-local-prices'");
   });
 });
+
+
+test('Marchés overview garde Hero + décisions + responsabilité dans un seul objet principal', () => {
+  const source = read('public/dashboards/canonical/js/markets-decision.js');
+  const start = source.indexOf('function renderOverview');
+  const render = source.slice(start, source.indexOf('function renderAdminOverview', start));
+  expect(render).toContain("data-dashboard-role', 'hero");
+  expect(render).toContain("data-dashboard-role', 'attention");
+  expect(render).toContain("data-dashboard-role', 'primary");
+  expect(render).toContain('kmc-markets-essential-metrics');
+  expect(render).toContain('kmc-markets-essential-list');
+  expect(render).not.toContain('TrustFooter.render');
+});
+
+test('les libellés Marchés restent métier et sans jargon de gouvernance interne', () => {
+  const source = read('public/dashboards/canonical/js/markets-decision.js');
+  expect(source).toContain("'Pilotage des marchés'");
+  expect(source).toContain("'Voir qui pilote chaque marché et ce qui demande une décision.'");
+  expect(source).not.toContain('memberships, capabilities');
+  expect(source).not.toContain('scopes de compatibilité');
+});

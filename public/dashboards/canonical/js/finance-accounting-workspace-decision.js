@@ -156,7 +156,7 @@
     heading.appendChild(title);
     const copy = documentRef.createElement('p');
     copy.className = 'kmc-decision-dashboard-section-copy';
-    copy.textContent = 'Lecture des files cash et dépôts fournies par le serveur, sans seuil ni score inventé côté navigateur.';
+    copy.textContent = 'Les écarts et dépôts qui demandent une intervention maintenant.';
     heading.appendChild(copy);
     container.appendChild(heading);
 
@@ -167,9 +167,6 @@
       container.appendChild(decisionHost);
     }
 
-    const summaryHost = documentRef.createElement('div');
-    decisionUi.SummaryCards.render(summaryHost, { items: summaryCards(items) });
-    container.appendChild(summaryHost);
     return container;
   }
 
@@ -232,10 +229,7 @@
         return Promise.resolve(baseMount({
           ...options,
           ui: decorateUi(options && options.ui, decisionUi, options && options.document),
-        })).then(payload => {
-          appendReconciliationOverview(options && options.root, payload, decisionUi, options && options.document);
-          return Object.freeze({ ...payload, decisionFirst: true });
-        });
+        })).then(payload => Object.freeze({ ...payload, decisionFirst: true }));
       },
       projectDecisionItems(summary) {
         return decisionItems(base.metricItems(summary));
