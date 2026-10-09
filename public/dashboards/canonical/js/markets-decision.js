@@ -308,9 +308,11 @@
     dashboard.className = 'kmc-dashboard kmc-decision-dashboard kmc-markets-decision-overview';
     dashboard.setAttribute('data-dashboard-id', 'markets');
     dashboard.setAttribute('data-dashboard-visual', 'decision-first-v1');
+    dashboard.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
+    header.setAttribute('data-dashboard-role', 'hero');
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', config.eyebrow));
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', config.title));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', config.description));
@@ -318,23 +320,32 @@
 
     if (config.decisions.length) {
       const decisions = doc.createElement('div');
+      decisions.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';
+      decisions.setAttribute('data-dashboard-role', 'attention');
       decisionUi.DecisionStrip.render(decisions, { items: config.decisions });
       dashboard.appendChild(decisions);
     }
 
     const metrics = cardSection(doc, config.metricTitle, config.metricDescription);
-    ui.MetricStrip.render(metrics.body, { items: config.metrics });
-    dashboard.appendChild(metrics.section);
+    metrics.section.className += ' is-cockpit-truth';
+    metrics.section.setAttribute('data-dashboard-role', 'primary');
+    const metricsHost = doc.createElement('div');
+    metricsHost.className = 'kmc-markets-essential-metrics';
+    ui.MetricStrip.render(metricsHost, { items: config.metrics });
+    metrics.body.appendChild(metricsHost);
 
     if (config.rankedItems.length) {
-      const ranked = cardSection(doc, config.rankedTitle, config.rankedDescription);
-      decisionUi.RankedList.render(ranked.body, { items: config.rankedItems });
-      dashboard.appendChild(ranked.section);
+      metrics.body.appendChild(text(doc, 'h3', 'kmc-markets-list-title', config.rankedTitle));
+      if (config.rankedDescription) {
+        metrics.body.appendChild(text(doc, 'p', 'kmc-markets-list-copy', config.rankedDescription));
+      }
+      const rankedHost = doc.createElement('div');
+      rankedHost.className = 'kmc-markets-essential-list';
+      decisionUi.RankedList.render(rankedHost, { items: config.rankedItems });
+      metrics.body.appendChild(rankedHost);
     }
 
-    const footer = doc.createElement('div');
-    decisionUi.TrustFooter.render(footer, config.trust);
-    dashboard.appendChild(footer);
+    dashboard.appendChild(metrics.section);
     host.appendChild(dashboard);
     return dashboard;
   }
@@ -347,16 +358,16 @@
         document: options.document || (root && root.document),
         ui: options.ui || (root && root.KomerceCanonicalUI),
         decisionUi: options.decisionUi || (root && root.KomerceDecisionUI),
-        eyebrow: 'MARCHÉS · GOUVERNANCE',
-        title: 'Pilotage central des marchés',
-        description: 'Voir les assignments actifs, responsables opérationnels, memberships, capabilities et dernières mutations auditées.',
+        eyebrow: 'MARCHÉS',
+        title: 'Pilotage des marchés',
+        description: 'Voir qui pilote chaque marché et ce qui demande une décision.',
         decisions: centralDecisionItems(matrix),
         metrics: centralMetricItems(matrix),
-        metricTitle: 'Couverture opérationnelle',
-        metricDescription: 'Lecture directe de la matrice canonique de délégation, sans reconstruire les droits depuis des scopes de compatibilité.',
+        metricTitle: 'Responsabilité des marchés',
+        metricDescription: 'Responsables actifs et couverture des marchés.',
         rankedItems: centralMarketItems(matrix),
         rankedTitle: 'Responsabilité par marché',
-        rankedDescription: 'Chaque ligne reprend le lead, les membres, les capabilities et la dernière mutation auditée.',
+        rankedDescription: 'Le responsable et l’état de chaque marché.',
         trust: centralTrust(matrix),
       });
     }
@@ -367,15 +378,15 @@
       ui: options.ui || (root && root.KomerceCanonicalUI),
       decisionUi: options.decisionUi || (root && root.KomerceDecisionUI),
       eyebrow: 'MARCHÉS · GOUVERNANCE',
-      title: 'Couverture des responsables pays',
-      description: 'Vue de compatibilité des scopes historiques.',
+      title: 'Responsables des marchés',
+      description: 'Voir les marchés couverts et ceux qui demandent une décision.',
       decisions: adminDecisionItems(markets, users),
       metrics: adminMetricItems(markets, users),
-      metricTitle: 'Couverture des accès',
-      metricDescription: 'Projection de compatibilité uniquement.',
+      metricTitle: 'Responsabilité des marchés',
+      metricDescription: 'Responsables actifs et couverture des marchés.',
       rankedItems: adminMarketItems(markets, users),
       rankedTitle: 'Couverture par marché',
-      rankedDescription: 'Projection historique non utilisée par le runtime central canonique.',
+      rankedDescription: 'Le responsable associé à chaque marché.',
       trust: adminTrust(),
     });
   }
@@ -389,16 +400,16 @@
       document: options.document || (root && root.document),
       ui: options.ui || (root && root.KomerceCanonicalUI),
       decisionUi: options.decisionUi || (root && root.KomerceDecisionUI),
-      eyebrow: 'MARCHÉ · PILOTAGE LOCAL',
-      title: `${workspace && workspace.scope && workspace.scope.market_name || marketCode || 'Marché'} · autonomie`,
-      description: 'Voir l’état des décisions commerciales locales avant d’entrer dans les outils d’exécution pays.',
+      eyebrow: 'MARCHÉ',
+      title: `${workspace && workspace.scope && workspace.scope.market_name || marketCode || 'Marché'} · pilotage`,
+      description: 'Voir les décisions locales et ce qui demande une action.',
       decisions: countryDecisionItems(workspace, prices),
       metrics: countryMetricItems(workspace, prices),
-      metricTitle: 'État des décisions locales',
-      metricDescription: 'Aucun prix ni statut n’est recalculé : la projection reprend les décisions du workspace pays.',
+      metricTitle: 'État du marché',
+      metricDescription: 'Les décisions locales utiles au pilotage du marché.',
       rankedItems: countryPriceItems(prices),
       rankedTitle: 'Décisions de prix locales',
-      rankedDescription: 'Les références ayant déjà une décision locale, avec leur statut canonique.',
+      rankedDescription: 'Les références avec une décision locale.',
       trust: countryTrust(marketCode, workspace),
     });
   }
