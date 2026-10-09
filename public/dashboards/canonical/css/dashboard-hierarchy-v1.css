@@ -1,0 +1,118 @@
+/*
+ * KOMERCE — DASHBOARD VISUAL HIERARCHY V1
+ * Shared contract: Hero → Attention → Primary object → Secondary surfaces.
+ * Presentation only; no business truth is derived here.
+ */
+
+body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] {
+  --hierarchy-ink: #0f1f36;
+  --hierarchy-muted: #60708a;
+  --hierarchy-line: #dce5ef;
+}
+
+body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="hero"] {
+  order: 10;
+}
+
+body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] {
+  order: 20;
+  position: relative;
+  z-index: 3;
+}
+
+body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="primary"] {
+  order: 30;
+  position: relative;
+  z-index: 2;
+}
+
+body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="secondary"] {
+  order: 40;
+}
+
+/* Attention must scan in < 2 seconds. */
+body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-strip {
+  gap: 12px;
+}
+
+body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-card {
+  min-height: 106px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  padding: 13px 15px 12px;
+  border: 1px solid color-mix(in srgb, var(--decision-accent) 25%, #dce5ef);
+  border-left: 5px solid var(--decision-accent);
+  border-top-width: 1px;
+  border-radius: 12px;
+  background:
+    linear-gradient(105deg,
+      color-mix(in srgb, var(--decision-soft) 76%, white) 0%,
+      #fff 66%);
+  box-shadow: 0 4px 14px rgba(15,31,54,.055);
+}
+
+body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-card-heading {
+  align-items: center;
+  gap: 10px;
+}
+
+body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  font-size: 17px;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--decision-soft) 55%, transparent);
+}
+
+body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-card-label {
+  color: var(--hierarchy-ink);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-card-helper {
+  max-width: 34ch;
+  color: var(--hierarchy-muted);
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-card-value {
+  color: var(--decision-accent);
+  font-size: clamp(29px, 2.1vw, 36px);
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+
+body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-link {
+  color: color-mix(in srgb, var(--decision-accent) 88%, #0f1f36);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+/* The primary object owns more visual mass than secondary cards. */
+body.kmc-shell-v4 [data-dashboard-role="primary"] {
+  box-shadow: 0 2px 4px rgba(15,31,54,.05), 0 12px 28px rgba(15,31,54,.055);
+}
+
+body.kmc-shell-v4 [data-dashboard-role="primary"] > .kmc-decision-dashboard-section-title {
+  color: var(--hierarchy-ink);
+  font-weight: 800;
+}
+
+body.kmc-shell-v4 [data-dashboard-role="secondary"] {
+  opacity: .96;
+}
+
+@media (max-width: 900px) {
+  body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-strip {
+    grid-template-columns: 1fr;
+  }
+}
