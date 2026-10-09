@@ -1,250 +1,228 @@
 /*
  * KOMERCE — CONTEXTUAL HEROES V2
- * Presentation only. No business authority, lifecycle or metric recompute.
- * Goal: one compact visual identity per business context while keeping
- * first-viewport decision density.
+ * Presentation only. One Komerce language, one business illustration per domain.
+ * Palette authority lives in komerce-visual-canon-v1.css.
  */
 
 body.kmc-shell-v4 {
-  --kmc-hero-ink: #172033;
-  --kmc-hero-muted: #64748b;
-  --kmc-hero-radius: 16px;
-  --kmc-hero-shadow: 0 8px 24px rgba(15,23,42,.055);
+  --kmc-hero-ink: var(--kmc-brand-navy, #071A3D);
+  --kmc-hero-muted: var(--kmc-brand-muted, #65718A);
+  --kmc-hero-radius: 18px;
+  --kmc-hero-shadow: 0 8px 24px rgba(7,26,61,.06);
 }
 
-/* Shared compact geometry — identity comes from each context below. */
 body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header,
 body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header {
   position: relative;
-  min-height: 124px;
   overflow: hidden;
-  border-radius: var(--kmc-hero-radius);
-  box-shadow: var(--kmc-hero-shadow);
+  isolation: isolate;
 }
 
 body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header::before,
 body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header::before {
   content: "";
   position: absolute;
+  z-index: -1;
   inset: 0 0 0 auto;
-  width: min(34%, 360px);
+  width: min(39%, 520px);
   pointer-events: none;
-  opacity: .95;
 }
 
 body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header::after,
 body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header::after {
   position: absolute;
-  right: 24px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  font-size: 26px;
+  z-index: -1;
+  right: 28px;
+  bottom: 18px;
+  color: var(--kmc-brand-gold-strong);
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: .16em;
-  opacity: .72;
+  letter-spacing: .12em;
+  opacity: .82;
+  pointer-events: none;
 }
 
-/* COMMERCE — demand, conversion, momentum. */
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashboard-header {
-  border-color: #f6d9aa;
+/* PILOTAGE — global network and route. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] > .kmc-dashboard-header::before {
   background:
-    linear-gradient(110deg, rgba(255,250,240,.98) 0 62%, rgba(255,255,255,.78) 78%),
-    linear-gradient(135deg, #fff8eb, #fff);
+    radial-gradient(circle at 20% 67%, var(--kmc-brand-gold) 0 6px, transparent 7px),
+    radial-gradient(circle at 48% 36%, var(--kmc-brand-gold) 0 6px, transparent 7px),
+    radial-gradient(circle at 77% 61%, var(--kmc-brand-gold) 0 6px, transparent 7px),
+    radial-gradient(ellipse at 64% 48%, rgba(231,215,163,.58) 0 32%, transparent 33%),
+    linear-gradient(155deg, transparent 0 46%, rgba(7,26,61,.10) 47% 48%, transparent 49% 100%);
 }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] > .kmc-dashboard-header::after {
+  content: "GLOBAL • ROUTES • DÉCISIONS";
+}
+
+/* COMMERCE — storefront / momentum. */
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashboard-header::before {
   background:
-    linear-gradient(90deg, transparent 0 8%, rgba(245,158,11,.16) 8% 17%, transparent 17% 24%, rgba(245,158,11,.25) 24% 34%, transparent 34% 43%, rgba(37,99,235,.16) 43% 55%, transparent 55% 62%, rgba(245,158,11,.34) 62% 76%, transparent 76%);
-  clip-path: polygon(6% 78%, 22% 54%, 36% 66%, 53% 35%, 70% 46%, 88% 18%, 100% 18%, 100% 100%, 6% 100%);
+    linear-gradient(to top, rgba(201,162,39,.22) 0 32%, transparent 32%) 16% 76% / 10% 72% no-repeat,
+    linear-gradient(to top, rgba(201,162,39,.38) 0 53%, transparent 53%) 33% 76% / 10% 72% no-repeat,
+    linear-gradient(to top, rgba(7,26,61,.14) 0 68%, transparent 68%) 50% 76% / 10% 72% no-repeat,
+    linear-gradient(to top, rgba(201,162,39,.52) 0 88%, transparent 88%) 67% 76% / 10% 72% no-repeat,
+    radial-gradient(circle at 84% 24%, rgba(231,215,163,.7) 0 54px, transparent 55px);
 }
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashboard-header::after {
-  content: "↗  €";
-  color: #d97706;
+  content: "VENTE • VALEUR • PROGRESSION";
 }
 
-/* COMMANDES — sequence and fulfilment progression. */
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] > .kmc-dashboard-header {
-  border-color: #d8ddfb;
-  background: linear-gradient(112deg, #f6f7ff 0%, #fff 62%, #f4f8ff 100%);
-}
+/* COMMANDES — lifecycle sequence. */
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] > .kmc-dashboard-header::before {
   background:
-    radial-gradient(circle at 18% 50%, #6366f1 0 8px, transparent 9px),
-    radial-gradient(circle at 50% 50%, #818cf8 0 8px, transparent 9px),
-    radial-gradient(circle at 82% 50%, #3b82f6 0 8px, transparent 9px),
-    linear-gradient(#c7d2fe,#c7d2fe) 18% 50% / 64% 2px no-repeat;
+    radial-gradient(circle at 15% 52%, var(--kmc-brand-navy-2) 0 8px, transparent 9px),
+    radial-gradient(circle at 38% 52%, var(--kmc-brand-gold) 0 8px, transparent 9px),
+    radial-gradient(circle at 61% 52%, var(--kmc-brand-gold) 0 8px, transparent 9px),
+    radial-gradient(circle at 84% 52%, var(--kmc-brand-navy-2) 0 8px, transparent 9px),
+    linear-gradient(var(--kmc-brand-champagne),var(--kmc-brand-champagne)) 15% 52% / 69% 2px no-repeat;
 }
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] > .kmc-dashboard-header::after {
-  content: "01  02  03";
-  color: #4f46e5;
-  font-size: 13px;
-  letter-spacing: .22em;
+  content: "01 • 02 • 03 • 04";
 }
 
-/* FINANCE — position, cash and reconciliation. */
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] > .kmc-dashboard-header {
-  border-color: #cfe4d6;
-  background: linear-gradient(112deg, #f3fbf6 0%, #fff 62%, #f5faff 100%);
-}
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] > .kmc-dashboard-header::before {
-  background:
-    linear-gradient(to top, rgba(22,163,74,.18) 0 28%, transparent 28%) 12% 76% / 13% 72% no-repeat,
-    linear-gradient(to top, rgba(22,163,74,.28) 0 47%, transparent 47%) 34% 76% / 13% 72% no-repeat,
-    linear-gradient(to top, rgba(37,99,235,.20) 0 66%, transparent 66%) 56% 76% / 13% 72% no-repeat,
-    linear-gradient(to top, rgba(22,163,74,.40) 0 86%, transparent 86%) 78% 76% / 13% 72% no-repeat;
-}
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] > .kmc-dashboard-header::after {
-  content: "KMF  ✓";
-  color: #15803d;
-  font-size: 16px;
-}
-
-/* MARCHÉS — distributed responsibility around a common core. */
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="markets"] > .kmc-dashboard-header {
-  border: 1px solid #dcd8f4;
-  padding: 18px 31% 18px 22px;
-  background: linear-gradient(112deg, #faf8ff 0%, #fff 62%, #f7fbff 100%);
-}
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="markets"] > .kmc-dashboard-header::before {
-  background:
-    radial-gradient(circle at 50% 50%, rgba(124,58,237,.18) 0 22px, transparent 23px),
-    radial-gradient(circle at 18% 24%, rgba(59,130,246,.24) 0 10px, transparent 11px),
-    radial-gradient(circle at 82% 24%, rgba(14,165,233,.24) 0 10px, transparent 11px),
-    radial-gradient(circle at 20% 78%, rgba(245,158,11,.24) 0 10px, transparent 11px),
-    radial-gradient(circle at 80% 78%, rgba(22,163,74,.24) 0 10px, transparent 11px);
-}
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="markets"] > .kmc-dashboard-header::after {
-  content: "CM  CG  GA";
-  color: #7c3aed;
-  font-size: 13px;
-}
-
-/* ACTION CENTER — urgency without visual panic. */
-body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header {
-  border-color: #f2ccc7;
-  background: linear-gradient(112deg, #fff7f6 0%, #fff 60%, #fff9f2 100%);
-}
-body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header::before {
-  background:
-    linear-gradient(135deg, transparent 0 36%, rgba(220,38,38,.13) 36% 43%, transparent 43% 53%, rgba(245,158,11,.18) 53% 61%, transparent 61%),
-    radial-gradient(circle at 78% 48%, rgba(220,38,38,.16) 0 34px, transparent 35px);
-}
-body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header::after {
-  content: "!  →";
-  color: #dc2626;
-}
-
-/* SOURCING — discovery funnel, qualification before commitment. */
-body.kmc-shell-v4 .kmc-sourcing-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header {
-  border: 1px solid #cfe5ea;
-  background: linear-gradient(112deg, #f3fbfc 0%, #fff 62%, #f8fbff 100%);
-}
-body.kmc-shell-v4 .kmc-sourcing-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header::before {
-  background:
-    radial-gradient(circle at 24% 30%, rgba(8,145,178,.20) 0 13px, transparent 14px),
-    radial-gradient(circle at 47% 55%, rgba(14,165,233,.22) 0 17px, transparent 18px),
-    radial-gradient(circle at 76% 28%, rgba(37,99,235,.18) 0 10px, transparent 11px),
-    linear-gradient(145deg, transparent 0 47%, rgba(8,145,178,.22) 48% 50%, transparent 51%);
-}
-body.kmc-shell-v4 .kmc-sourcing-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header::after {
-  content: "◇  ✓";
-  color: #0891b2;
-}
-
-/* ACHATS — supplier commitment and PO confirmation. */
-body.kmc-shell-v4 .kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header {
-  border-color: #ddd3f4;
-  background: linear-gradient(112deg, #faf7ff 0%, #fff 61%, #fffaf3 100%);
-}
-body.kmc-shell-v4 .kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header::before {
-  background:
-    linear-gradient(#8b5cf6,#8b5cf6) 17% 28% / 50% 3px no-repeat,
-    linear-gradient(#c4b5fd,#c4b5fd) 17% 50% / 66% 3px no-repeat,
-    linear-gradient(#f59e0b,#f59e0b) 17% 72% / 38% 3px no-repeat,
-    radial-gradient(circle at 84% 50%, rgba(139,92,246,.18) 0 34px, transparent 35px);
-}
-body.kmc-shell-v4 .kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header::after {
-  content: "PO  ✓";
-  color: #7c3aed;
-}
-
-/* EXPÉDITIONS & DOUANE — route, border, release. */
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="shipping-customs"] > .kmc-workspace-header {
-  border: 1px solid #cfdfea;
-  background: linear-gradient(112deg, #f5faff 0%, #fff 60%, #f7fbfb 100%);
-}
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="shipping-customs"] > .kmc-workspace-header::before {
-  background:
-    linear-gradient(90deg, transparent 0 15%, rgba(14,116,144,.18) 15% 18%, transparent 18% 42%, rgba(14,116,144,.18) 42% 45%, transparent 45% 69%, rgba(22,163,74,.22) 69% 72%, transparent 72%),
-    radial-gradient(circle at 16% 52%, #0e7490 0 7px, transparent 8px),
-    radial-gradient(circle at 44% 52%, #0ea5e9 0 7px, transparent 8px),
-    radial-gradient(circle at 71% 52%, #16a34a 0 7px, transparent 8px);
-}
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="shipping-customs"] > .kmc-workspace-header::after {
-  content: "✈  ◫  ✓";
-  color: #0e7490;
-  font-size: 18px;
-}
-
-/* COMPTABILITÉ — matching, deposit, closure. */
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="accounting"] > .kmc-workspace-header {
-  border: 1px solid #d8e1d3;
-  background: linear-gradient(112deg, #f7fbf4 0%, #fff 61%, #f7fafc 100%);
-}
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="accounting"] > .kmc-workspace-header::before {
-  background:
-    repeating-linear-gradient(0deg, rgba(71,85,105,.10) 0 1px, transparent 1px 15px),
-    linear-gradient(90deg, transparent 0 15%, rgba(22,163,74,.16) 15% 18%, transparent 18% 72%);
-}
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="accounting"] > .kmc-workspace-header::after {
-  content: "≡  =  ✓";
-  color: #3f7a4b;
-  font-size: 20px;
-}
-
-/* HUB / RELAIS — local physical flow. */
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header {
-  border-color: #cbe2df;
-  background: linear-gradient(112deg, #f3fbfa 0%, #fff 60%, #f6fbff 100%);
-}
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header::before {
-  background:
-    radial-gradient(circle at 18% 52%, #0d9488 0 9px, transparent 10px),
-    radial-gradient(circle at 50% 52%, #14b8a6 0 9px, transparent 10px),
-    radial-gradient(circle at 82% 52%, #3b82f6 0 9px, transparent 10px),
-    linear-gradient(#99f6e4,#99f6e4) 18% 52% / 64% 3px no-repeat;
-}
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header::after {
-  content: "HUB  →  RELAIS";
-  color: #0f766e;
-  font-size: 12px;
-}
-
-/* Keep the richer Operations visual untouched; only tighten viewport geometry. */
+/* OPERATIONS — richer logistics illustration, same palette. */
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] > .kmc-dashboard-header {
   min-height: 150px;
+  background:
+    linear-gradient(90deg, rgba(255,249,240,.99) 0%, rgba(255,249,240,.96) 39%, rgba(255,255,255,.38) 64%, rgba(231,215,163,.12) 100%),
+    url('/dashboards/canonical/assets/operations-logistics-hero-gold.svg') right center / cover no-repeat,
+    url('/dashboards/canonical/assets/operations-logistics-hero.svg') right center / cover no-repeat;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] > .kmc-dashboard-header::before { display:none; }
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] > .kmc-dashboard-header::after {
+  content: "CLIENT → HUB → TRANSIT → RELAIS";
 }
 
-/* Small desktop: visual signature stays, copy remains primary. */
+/* FINANCE — value, matching, closure. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] > .kmc-dashboard-header::before {
+  background:
+    repeating-linear-gradient(0deg, rgba(7,26,61,.075) 0 1px, transparent 1px 16px),
+    linear-gradient(to top, rgba(201,162,39,.20) 0 28%, transparent 28%) 18% 76% / 11% 68% no-repeat,
+    linear-gradient(to top, rgba(201,162,39,.34) 0 55%, transparent 55%) 40% 76% / 11% 68% no-repeat,
+    linear-gradient(to top, rgba(7,26,61,.18) 0 76%, transparent 76%) 62% 76% / 11% 68% no-repeat;
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] > .kmc-dashboard-header::after {
+  content: "POSITION • RAPPROCHEMENT • CLÔTURE";
+}
+
+/* MARCHÉS — territories around common authority. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="markets"] > .kmc-dashboard-header::before {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(201,162,39,.25) 0 26px, transparent 27px),
+    radial-gradient(circle at 18% 24%, var(--kmc-brand-navy-2) 0 9px, transparent 10px),
+    radial-gradient(circle at 82% 24%, var(--kmc-brand-gold) 0 9px, transparent 10px),
+    radial-gradient(circle at 20% 78%, var(--kmc-brand-gold) 0 9px, transparent 10px),
+    radial-gradient(circle at 80% 78%, var(--kmc-brand-navy-2) 0 9px, transparent 10px);
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="markets"] > .kmc-dashboard-header::after {
+  content: "MARCHÉS • RESPONSABILITÉS";
+}
+
+/* ACTION CENTER — priority queue; red appears only in actual state cards below. */
+body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header::before {
+  background:
+    linear-gradient(90deg, rgba(201,162,39,.16), rgba(201,162,39,.16)) 24% 28% / 56% 9px no-repeat,
+    linear-gradient(90deg, rgba(7,26,61,.10), rgba(7,26,61,.10)) 24% 49% / 44% 9px no-repeat,
+    linear-gradient(90deg, rgba(201,162,39,.28), rgba(201,162,39,.28)) 24% 70% / 64% 9px no-repeat,
+    radial-gradient(circle at 85% 30%, rgba(231,215,163,.78) 0 45px, transparent 46px);
+}
+body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header::after {
+  content: "VOIR • DÉCIDER • AGIR";
+}
+
+/* SOURCING — discovery / qualification funnel. */
+body.kmc-shell-v4 .kmc-sourcing-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header::before {
+  background:
+    conic-gradient(from 215deg at 48% 38%, transparent 0 24%, rgba(201,162,39,.32) 25% 40%, transparent 41% 100%),
+    radial-gradient(circle at 72% 68%, rgba(7,26,61,.16) 0 22px, transparent 23px),
+    radial-gradient(circle at 28% 30%, rgba(231,215,163,.78) 0 32px, transparent 33px);
+}
+body.kmc-shell-v4 .kmc-sourcing-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header::after {
+  content: "DÉCOUVRIR • QUALIFIER • RETENIR";
+}
+
+/* ACHATS — PO / commitment. */
+body.kmc-shell-v4 .kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header::before {
+  background:
+    linear-gradient(var(--kmc-brand-gold),var(--kmc-brand-gold)) 18% 30% / 54% 3px no-repeat,
+    linear-gradient(var(--kmc-brand-champagne),var(--kmc-brand-champagne)) 18% 50% / 68% 3px no-repeat,
+    linear-gradient(var(--kmc-brand-navy-2),var(--kmc-brand-navy-2)) 18% 70% / 42% 3px no-repeat,
+    radial-gradient(circle at 82% 50%, rgba(201,162,39,.22) 0 36px, transparent 37px);
+}
+body.kmc-shell-v4 .kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header::after {
+  content: "PO • CONFIRMATION • PREUVE";
+}
+
+/* SHIPPING & CUSTOMS — international route / release. */
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="shipping-customs"] > .kmc-workspace-header::before {
+  background:
+    radial-gradient(circle at 16% 52%, var(--kmc-brand-navy-2) 0 7px, transparent 8px),
+    radial-gradient(circle at 46% 52%, var(--kmc-brand-gold) 0 7px, transparent 8px),
+    radial-gradient(circle at 76% 52%, var(--kmc-brand-navy-2) 0 7px, transparent 8px),
+    linear-gradient(var(--kmc-brand-champagne),var(--kmc-brand-champagne)) 16% 52% / 60% 2px no-repeat;
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="shipping-customs"] > .kmc-workspace-header::after {
+  content: "TRANSIT • FRONTIÈRE • LIBÉRATION";
+}
+
+/* ACCOUNTING — matching lines. */
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="accounting"] > .kmc-workspace-header::before {
+  background:
+    repeating-linear-gradient(0deg, rgba(7,26,61,.08) 0 1px, transparent 1px 15px),
+    linear-gradient(90deg, transparent 0 14%, rgba(201,162,39,.24) 14% 17%, transparent 17% 72%);
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="accounting"] > .kmc-workspace-header::after {
+  content: "RAPPROCHER • JUSTIFIER • CLÔTURER";
+}
+
+/* HUB / RELAIS — local physical handoff. */
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header::before {
+  background:
+    radial-gradient(circle at 18% 52%, var(--kmc-brand-navy-2) 0 9px, transparent 10px),
+    radial-gradient(circle at 50% 52%, var(--kmc-brand-gold) 0 9px, transparent 10px),
+    radial-gradient(circle at 82% 52%, var(--kmc-brand-navy-2) 0 9px, transparent 10px),
+    linear-gradient(var(--kmc-brand-champagne),var(--kmc-brand-champagne)) 18% 52% / 64% 3px no-repeat;
+}
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header::after {
+  content: "HUB → RELAIS";
+}
+
+/* CATALOGUE — curate / validate / publish. */
+body.kmc-shell-v4 .kmc-catalog-decision-overview > .kmc-dashboard-header::before {
+  background:
+    linear-gradient(rgba(201,162,39,.20),rgba(201,162,39,.20)) 16% 28% / 24% 44% no-repeat,
+    linear-gradient(rgba(7,26,61,.11),rgba(7,26,61,.11)) 46% 28% / 24% 44% no-repeat,
+    linear-gradient(rgba(231,215,163,.62),rgba(231,215,163,.62)) 76% 28% / 14% 44% no-repeat;
+}
+body.kmc-shell-v4 .kmc-catalog-decision-overview > .kmc-dashboard-header::after {
+  content: "SÉLECTION • VALIDATION • EXPOSITION";
+}
+
+/* ATELIER ÉCONOMIQUE — equilibrium. */
+body.kmc-shell-v4 .kmc-pricing-decision-overview > .kmc-dashboard-header::before {
+  background:
+    radial-gradient(circle at 26% 58%, rgba(201,162,39,.28) 0 24px, transparent 25px),
+    radial-gradient(circle at 70% 38%, rgba(7,26,61,.13) 0 34px, transparent 35px),
+    linear-gradient(145deg, transparent 0 48%, rgba(201,162,39,.24) 49% 51%, transparent 52%);
+}
+body.kmc-shell-v4 .kmc-pricing-decision-overview > .kmc-dashboard-header::after {
+  content: "PRIX • COÛTS • ÉQUILIBRE";
+}
+
 @media (max-width: 1180px) {
   body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header::before,
   body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header::before {
-    width: 30%;
+    width: 31%;
+    opacity: .78;
   }
   body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header::after,
   body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header::after {
-    right: 18px;
-    opacity: .55;
+    opacity: .58;
   }
 }
 
-/* Mobile: do not spend vertical space on decorative signatures. */
 @media (max-width: 760px) {
-  body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header,
-  body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header {
-    min-height: auto;
-    border-radius: 13px;
-  }
   body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header::before,
   body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header::before,
   body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header::after,
