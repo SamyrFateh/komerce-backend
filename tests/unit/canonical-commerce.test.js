@@ -6,6 +6,9 @@
 
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 const schemaContract = require('../../public/dashboards/canonical/js/dashboard-schema');
 const adminContextContract = require('../../public/dashboards/canonical/js/admin-context');
 const commerce = require('../../public/dashboards/canonical/js/commerce');
@@ -286,3 +289,19 @@ test('commerce : la frontière Commerce / Commandes & logistique est énoncée d
   expect(commerce.COMMERCE_SCHEMA.description).toContain('Ce qui se vend');
 });
 
+
+
+test('Commerce overview garde uniquement Hero + décisions + activité commerciale', () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'commerce-decision.js'),
+    'utf8'
+  );
+  expect(source).toContain("data-dashboard-role', 'hero");
+  expect(source).toContain("data-dashboard-role', 'attention");
+  expect(source).toContain("data-dashboard-role', 'primary");
+  expect(source).toContain("'Activité commerciale'");
+  expect(source).toContain("'Progression des commandes'");
+  expect(source).not.toContain("'Viabilité des meilleures ventes'");
+  expect(source).not.toContain("'Rentabilité produits'");
+  expect(source).not.toContain("TrustFooter.render");
+});
