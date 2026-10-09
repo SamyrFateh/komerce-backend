@@ -814,9 +814,6 @@
   const LOCAL_TABS = Object.freeze({
     pricing: Object.freeze([
       Object.freeze({ id: 'pricing-overview', label: 'Vue d’ensemble', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'] }),
-      Object.freeze({ id: 'pricing-products', label: 'Produits', href: '/admin/workspaces/pricing#pricing-products', roles: ['admin', 'market_operator'] }),
-      Object.freeze({ id: 'pricing-costs', label: 'Coûts', href: '/admin/workspaces/pricing#pricing-costs', roles: ['admin', 'market_operator'] }),
-      Object.freeze({ id: 'pricing-strategy', label: 'Stratégie', href: '/admin/workspaces/pricing#pricing-strategy', roles: ['admin', 'market_operator'] }),
     ]),
     catalog: Object.freeze([
       Object.freeze({ id: 'catalog-overview', label: 'Vue catalogue', href: '/admin/workspaces/catalog', roles: ['admin'] }),
@@ -839,11 +836,7 @@
     ]),
   });
 
-  const PRICING_SECTION_IDS = Object.freeze({
-    'Décision produit': 'pricing-products',
-    'Atelier des coûts': 'pricing-costs',
-    'Stratégie & concurrence': 'pricing-strategy',
-  });
+  const PRICING_SECTION_IDS = Object.freeze({});
 
   const SHELL_SELECTORS = Object.freeze({
     navigation: '#canonical-admin-navigation, [data-canonical-navigation="true"], [data-canonical-shell-role="navigation"]',
