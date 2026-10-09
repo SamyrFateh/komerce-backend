@@ -520,13 +520,24 @@
     }
     dashboard.setAttribute('data-dashboard-id', 'operations');
     dashboard.setAttribute('data-dashboard-visual', 'decision-first-v1');
+    dashboard.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
+    header.setAttribute('data-dashboard-role', 'hero');
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'KOMERCE · ADMIN CANONICAL'));
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Opérations — Tour de contrôle'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Une commande, une position opérationnelle, une cause actionnable.'));
     dashboard.appendChild(header);
+
+    const decisions = decisionItems(payload, base);
+    if (decisions.length) {
+      const host = doc.createElement('div');
+      host.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';
+      host.setAttribute('data-dashboard-role', 'attention');
+      decisionUi.DecisionStrip.render(host, { items: decisions });
+      dashboard.appendChild(host);
+    }
 
     const controlColumns = controlChainColumns(payload);
     if (controlColumns.length) {
@@ -537,17 +548,10 @@
         'operations-control-chain'
       );
       chain.section.className += ' kmc-control-chain-card';
+      chain.section.setAttribute('data-dashboard-role', 'primary');
       chain.section.insertBefore(renderControlLegend(doc), chain.body);
       renderControlChain(doc, chain.body, payload);
       dashboard.appendChild(chain.section);
-    }
-
-    const decisions = decisionItems(payload, base);
-    if (decisions.length) {
-      const host = doc.createElement('div');
-      host.className = 'kmc-cockpit-decisions';
-      decisionUi.DecisionStrip.render(host, { items: decisions });
-      dashboard.appendChild(host);
     }
 
     const projectedSignals = base.projectSignals(payload);
@@ -561,8 +565,10 @@
       ui.AlertPanel.render(signals.body, { title: 'Signaux opérationnels', items: projectedSignals });
       executionGrid.appendChild(signals.section);
       executionGrid.appendChild(orders.section);
+      executionGrid.setAttribute('data-dashboard-role', 'secondary');
       dashboard.appendChild(executionGrid);
     } else {
+      orders.section.setAttribute('data-dashboard-role', 'secondary');
       dashboard.appendChild(orders.section);
     }
 
@@ -570,6 +576,7 @@
     if (delays.length) {
       const section = cardSection(doc, 'Colis en retard critique', 'Transit critique tel que fourni par la source opérationnelle.', 'operations-delays');
       decisionUi.RankedList.render(section.body, { items: delays });
+      section.section.setAttribute('data-dashboard-role', 'secondary');
       dashboard.appendChild(section.section);
     }
 
