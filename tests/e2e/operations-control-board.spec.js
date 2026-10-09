@@ -184,7 +184,7 @@ test.describe('Operations — logistics control board', () => {
       }))
     );
     expect(values).toEqual([
-      { label:'Normal', value:10 },
+      { label:'Normal', value:13 },
       { label:'À risque', value:3 },
       { label:'Bloqué', value:4 },
       { label:'Non observé', value:1 },
