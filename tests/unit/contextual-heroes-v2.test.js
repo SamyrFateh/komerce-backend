@@ -27,15 +27,17 @@ describe('contextual heroes v2', () => {
   });
 
   test('le langage visuel reste compact et presentation-only', () => {
-    expect(css).toContain('min-height: 124px');
+    expect(css).toContain('Palette authority lives in komerce-visual-canon-v1.css');
     expect(css).toContain('Presentation only');
     expect(css).toContain('@media (max-width: 760px)');
   });
 
-  test('la couche V2 est chargée après les thèmes existants', () => {
+  test('la couche V2 est chargée après les thèmes existants et avant le canon final', () => {
     const legacy = html.indexOf('/dashboards/canonical/css/canonical-legacy-theme-v1.css');
     const heroes = html.indexOf('/dashboards/canonical/css/contextual-heroes-v2.css');
     expect(legacy).toBeGreaterThan(-1);
     expect(heroes).toBeGreaterThan(legacy);
+    const canon = html.indexOf('/dashboards/canonical/css/komerce-visual-canon-v1.css');
+    expect(canon).toBeGreaterThan(heroes);
   });
 });

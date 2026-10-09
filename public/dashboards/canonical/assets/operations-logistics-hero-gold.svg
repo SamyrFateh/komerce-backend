@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 260" role="img" aria-label="Komerce logistics route">
+  <defs>
+    <linearGradient id="sky" x1="0" x2="1">
+      <stop offset="0" stop-color="#FFF9F0"/>
+      <stop offset="1" stop-color="#F3EBDD"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" x2="1">
+      <stop offset="0" stop-color="#E7D7A3"/>
+      <stop offset="1" stop-color="#C9A227"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="260" fill="url(#sky)"/>
+  <g opacity=".24" fill="#C9A227">
+    <path d="M460 42c35-16 73-9 95 11 27-7 65 2 79 23 39-2 68 13 83 31-35 9-69 14-103 12-40-2-76-15-112-23-31-7-59-12-88-10 4-19 18-34 46-44z"/>
+    <path d="M702 74c26-16 64-12 83 7 37-5 73 6 90 27-21 8-49 10-76 7-34-4-66-12-97-12 1-10 1-19 0-29z"/>
+  </g>
+  <path d="M418 129c75-55 148-53 220-8 70 45 146 51 232 6" fill="none" stroke="#C9A227" stroke-width="4" stroke-dasharray="10 9" opacity=".85"/>
+  <g fill="#C9A227">
+    <circle cx="458" cy="106" r="8"/><circle cx="638" cy="121" r="8"/><circle cx="847" cy="116" r="8"/>
+  </g>
+  <g transform="translate(382 148)">
+    <path d="M0 47h224l-29 35H37z" fill="#071A3D"/>
+    <rect x="52" y="5" width="33" height="42" rx="3" fill="#E7D7A3"/>
+    <rect x="88" y="5" width="33" height="42" rx="3" fill="#C9A227"/>
+    <rect x="124" y="5" width="33" height="42" rx="3" fill="#E7D7A3"/>
+    <rect x="160" y="5" width="33" height="42" rx="3" fill="#C9A227"/>
+  </g>
+  <g transform="translate(825 155)">
+    <rect x="0" y="24" width="125" height="50" rx="6" fill="#C9A227"/>
+    <path d="M125 39h42l21 21v14h-63z" fill="#071A3D"/>
+    <rect x="137" y="44" width="25" height="15" rx="2" fill="#FFF9F0"/>
+    <circle cx="36" cy="77" r="13" fill="#071A3D"/>
+    <circle cx="151" cy="77" r="13" fill="#071A3D"/>
+  </g>
+  <g transform="translate(1030 62)" fill="none" stroke="#071A3D" stroke-width="6" opacity=".68">
+    <path d="M12 150V32h70v118M47 32V5M47 5l66 27M82 32l31 0M112 32v103"/>
+    <path d="M112 32l43 44"/>
+  </g>
+</svg>
