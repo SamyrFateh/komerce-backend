@@ -1,0 +1,208 @@
+/*
+ * KOMERCE — VISUAL CANON V1
+ * Brand/presentation authority for the Canonical Admin.
+ * No business state, lifecycle, metric or authorization authority.
+ *
+ * Brand language:
+ *   Navy = structure / authority
+ *   Gold + champagne = Komerce signature
+ *   Ivory + sand = surfaces
+ *   Red / amber / green / slate = business state only
+ */
+
+body.kmc-shell-v4 {
+  /* Brand */
+  --kmc-brand-navy: #071A3D;
+  --kmc-brand-navy-2: #0D2A52;
+  --kmc-brand-gold: #C9A227;
+  --kmc-brand-gold-strong: #A67C12;
+  --kmc-brand-champagne: #E7D7A3;
+  --kmc-brand-ivory: #FFF9F0;
+  --kmc-brand-sand: #F3EBDD;
+  --kmc-brand-canvas: #F8F6F1;
+  --kmc-brand-ink: #15213A;
+  --kmc-brand-muted: #65718A;
+  --kmc-brand-line: #E8DFD1;
+
+  /* State — never brand decoration */
+  --kmc-state-critical: #DC2626;
+  --kmc-state-warning: #D97706;
+  --kmc-state-positive: #16A34A;
+  --kmc-state-unknown: #8B98AA;
+
+  /* Material */
+  --kmc-canon-radius-sm: 10px;
+  --kmc-canon-radius-md: 14px;
+  --kmc-canon-radius-lg: 18px;
+  --kmc-canon-shadow: 0 8px 24px rgba(7,26,61,.06);
+  --kmc-canon-shadow-soft: 0 2px 8px rgba(7,26,61,.045);
+  --kmc-canon-font: "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+
+  color: var(--kmc-brand-ink);
+  background: var(--kmc-brand-canvas);
+  font-family: var(--kmc-canon-font);
+}
+
+/* Shell = Navy. Gold is signature, not a large fill. */
+body.kmc-shell-v4 > .kmc-admin-navigation {
+  background:
+    linear-gradient(180deg, #081831 0%, var(--kmc-brand-navy) 42%, #06152f 100%);
+  border-right-color: color-mix(in srgb, var(--kmc-brand-gold) 72%, #ffffff);
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link.is-active {
+  color: #fff;
+  background: linear-gradient(90deg, rgba(201,162,39,.18), rgba(13,42,82,.78));
+  box-shadow: inset 3px 0 0 var(--kmc-brand-gold);
+}
+
+body.kmc-shell-v4 .kmc-admin-primary-link:hover,
+body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible {
+  background: rgba(231,215,163,.08);
+}
+
+body.kmc-shell-v4 .kmc-admin-sidebar-group-label,
+body.kmc-shell-v4 .canonical-eyebrow,
+body.kmc-shell-v4 .kmc-workspace-kicker {
+  color: var(--kmc-brand-gold-strong);
+}
+
+/* Main canvas must start as high as the shell allows and stay warm-neutral. */
+body.kmc-shell-v4 #canonical-admin-root {
+  background: var(--kmc-brand-canvas);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit,
+body.kmc-shell-v4 .kmc-action-center,
+body.kmc-shell-v4 .kmc-operations-workspace,
+body.kmc-shell-v4 .kmc-purchasing-workspace,
+body.kmc-shell-v4 .kmc-workspace {
+  color: var(--kmc-brand-ink);
+}
+
+/* Shared cards: white/ivory, never pink/blue/purple brand fills. */
+body.kmc-shell-v4 .kmc-decision-card,
+body.kmc-shell-v4 .kmc-summary-card,
+body.kmc-shell-v4 .kmc-progress-card,
+body.kmc-shell-v4 .kmc-ranked-row,
+body.kmc-shell-v4 .kmc-priority-row,
+body.kmc-shell-v4 .kmc-info-row,
+body.kmc-shell-v4 .kmc-decision-surface-card,
+body.kmc-shell-v4 .kmc-section,
+body.kmc-shell-v4 .kmc-control-chain-card,
+body.kmc-shell-v4 .kmc-workspace-metrics,
+body.kmc-shell-v4 .kmc-workspace-table-wrap {
+  background: linear-gradient(180deg, #ffffff 0%, #fffdfa 100%);
+  border-color: var(--kmc-brand-line);
+  box-shadow: var(--kmc-canon-shadow-soft);
+}
+
+/* Generic information = Navy/Gold. State tones remain state tones. */
+body.kmc-shell-v4 .kmc-decision-card:not(.is-critical):not(.is-warning):not(.is-positive),
+body.kmc-shell-v4 .kmc-summary-card:not(.is-critical):not(.is-warning):not(.is-positive),
+body.kmc-shell-v4 .kmc-progress-card:not(.is-critical):not(.is-warning):not(.is-positive) {
+  --decision-accent: var(--kmc-brand-navy-2);
+  --decision-soft: var(--kmc-brand-ivory);
+}
+
+body.kmc-shell-v4 .kmc-decision-card.is-critical,
+body.kmc-shell-v4 .kmc-summary-card.is-critical,
+body.kmc-shell-v4 .kmc-progress-card.is-critical {
+  --decision-accent: var(--kmc-state-critical);
+  --decision-soft: #FFF7F5;
+}
+
+body.kmc-shell-v4 .kmc-decision-card.is-warning,
+body.kmc-shell-v4 .kmc-summary-card.is-warning,
+body.kmc-shell-v4 .kmc-progress-card.is-warning {
+  --decision-accent: var(--kmc-state-warning);
+  --decision-soft: #FFF9EE;
+}
+
+body.kmc-shell-v4 .kmc-decision-card.is-positive,
+body.kmc-shell-v4 .kmc-summary-card.is-positive,
+body.kmc-shell-v4 .kmc-progress-card.is-positive {
+  --decision-accent: var(--kmc-state-positive);
+  --decision-soft: #F3FBF6;
+}
+
+/* Purple is no longer a brand state in Canonical surfaces. */
+body.kmc-shell-v4 .kmc-decision-card.is-violet,
+body.kmc-shell-v4 .kmc-summary-card.is-violet,
+body.kmc-shell-v4 .kmc-progress-card.is-violet,
+body.kmc-shell-v4 .kmc-ranked-row.is-violet,
+body.kmc-shell-v4 .kmc-priority-row.is-violet,
+body.kmc-shell-v4 .kmc-info-row.is-violet {
+  --decision-accent: var(--kmc-brand-gold-strong);
+  --decision-soft: var(--kmc-brand-ivory);
+}
+
+/* Typography */
+body.kmc-shell-v4 .kmc-dashboard-title,
+body.kmc-shell-v4 .kmc-workspace-title,
+body.kmc-shell-v4 .kmc-decision-dashboard-section-title,
+body.kmc-shell-v4 .kmc-section-title {
+  color: var(--kmc-brand-navy);
+}
+
+body.kmc-shell-v4 .kmc-dashboard-description,
+body.kmc-shell-v4 .kmc-workspace-subtitle,
+body.kmc-shell-v4 .kmc-decision-dashboard-section-copy,
+body.kmc-shell-v4 .kmc-workspace-note {
+  color: var(--kmc-brand-muted);
+}
+
+/* Controls: same material everywhere. */
+body.kmc-shell-v4 select,
+body.kmc-shell-v4 input,
+body.kmc-shell-v4 .kmc-period-control,
+body.kmc-shell-v4 .kmc-market-context-select,
+body.kmc-shell-v4 .kmc-workspace-input {
+  color: var(--kmc-brand-navy);
+  background: rgba(255,255,255,.94);
+  border-color: color-mix(in srgb, var(--kmc-brand-navy) 14%, var(--kmc-brand-line));
+  border-radius: var(--kmc-canon-radius-sm);
+}
+
+body.kmc-shell-v4 button.kmc-workspace-action,
+body.kmc-shell-v4 .kmc-priority-action,
+body.kmc-shell-v4 .kmc-decision-dashboard-link {
+  color: #fff;
+  background: var(--kmc-brand-navy);
+  border-color: var(--kmc-brand-navy);
+}
+
+body.kmc-shell-v4 button.kmc-workspace-action.is-secondary {
+  color: var(--kmc-brand-navy);
+  background: #fff;
+  border-color: var(--kmc-brand-line);
+}
+
+/* Gold is the editorial accent. */
+body.kmc-shell-v4 .kmc-decision-surface-card::before,
+body.kmc-shell-v4 .kmc-control-chain-card::before {
+  background: var(--kmc-brand-gold);
+}
+
+/* Status legend remains semantic. */
+body.kmc-shell-v4 .is-critical { --kmc-canon-status: var(--kmc-state-critical); }
+body.kmc-shell-v4 .is-warning { --kmc-canon-status: var(--kmc-state-warning); }
+body.kmc-shell-v4 .is-positive { --kmc-canon-status: var(--kmc-state-positive); }
+body.kmc-shell-v4 .is-neutral,
+body.kmc-shell-v4 .is-unknown { --kmc-canon-status: var(--kmc-state-unknown); }
+
+/* First viewport discipline. */
+@media (min-width: 1181px) and (min-height: 820px) {
+  body.kmc-shell-v4 .kmc-domain-cockpit,
+  body.kmc-shell-v4 .kmc-action-center,
+  body.kmc-shell-v4 .kmc-operations-workspace,
+  body.kmc-shell-v4 .kmc-purchasing-workspace {
+    align-content: start;
+  }
+}
+
+@media (max-width: 760px) {
+  body.kmc-shell-v4 {
+    --kmc-canon-radius-lg: 14px;
+  }
+}
