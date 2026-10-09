@@ -19,3 +19,9 @@ test('Expéditions & Douane possède un Hero contextuel propre',()=>{
   expect(css).toContain('.kmc-operations-workspace[data-workspace-kind="shipping-customs"] > .kmc-workspace-header');
   expect(css).toContain('linear-gradient(112deg, #f5f9ff');
 });
+
+
+test('Sourcing possède un Hero contextuel propre',()=>{
+  expect(css).toContain('.kmc-operations-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header');
+  expect(css).toContain('linear-gradient(112deg, #fffaf1');
+});
