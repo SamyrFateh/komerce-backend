@@ -92,14 +92,14 @@
     const header = doc.createElement('header');
     header.className = 'kmc-workspace-header';
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · EXPÉDITIONS & DOUANE'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Piloter le flux international'));
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'EXPÉDITIONS & DOUANE'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Flux international'));
     const supervisionOnly = context.user && context.user.role === 'market_operator';
     copy.appendChild(text(
       doc,
       'p',
       'kmc-workspace-subtitle',
-      `${payload.scope.code} · ${payload.scope.name} · ${supervisionOnly ? 'supervision pays · gestes terrain délégués' : 'aucune action globale'}`
+      `${payload.scope.code} · ${payload.scope.name} · ${supervisionOnly ? 'suivre les dossiers à traiter' : 'agir sur les dossiers autorisés'}`
     ));
     header.appendChild(copy);
 
@@ -108,9 +108,6 @@
     const operations = text(doc, 'a', 'kmc-workspace-nav-link', '← Dashboard Opérations');
     operations.setAttribute('href', '/admin/operations');
     nav.appendChild(operations);
-    const hub = text(doc, 'a', 'kmc-workspace-nav-link', 'Hub / Relais');
-    hub.setAttribute('href', '/admin/workspaces/operations');
-    nav.appendChild(hub);
     header.appendChild(nav);
 
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
@@ -214,8 +211,8 @@
       ui,
       canAct ? 'Transitaire · Confirmer le transit' : 'Expéditions · Supervision transit',
       canAct
-        ? 'Seuls les colis déjà expédiés de ce marché sont actionnables. Le scan transit_confirmed est appliqué par le moteur logistique.'
-        : 'Le Responsable pays voit le flux de son marché. La confirmation physique du transit reste réservée aux agents habilités.'
+        ? 'Colis expédiés prêts à passer en transit.'
+        : 'Colis à suivre sur ce marché.'
     );
     const rows = payload.transit.ready || [];
     if (!rows.length) {
@@ -267,8 +264,8 @@
       ui,
       'Douane · Expéditions',
       context.user && context.user.role === 'market_operator'
-        ? 'Visibilité complète du dossier douane du marché. Les déclarations et mutations sensibles restent réservées à leurs capacités spécialisées.'
-        : 'Création, déclaration et activation restent limitées au marché sélectionné. Les identifiants techniques ne quittent pas le serveur.'
+        ? 'Dossiers douane à suivre sur ce marché.'
+        : 'Créer, déclarer ou mettre à jour les dossiers autorisés.'
     );
 
     if (context.user && context.user.role === 'admin') {
@@ -380,16 +377,15 @@
 
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
+    rootNode.setAttribute('data-workspace-kind', 'shipping-customs');
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload, context));
-    renderSignals(rootNode, ui, doc, payload);
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-workspace-metrics';
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
     renderTransit(rootNode, ui, doc, payload, context);
     renderCustoms(rootNode, ui, doc, payload, context);
-    renderHistory(rootNode, ui, doc, payload);
   }
 
   async function mount(options = {}) {
