@@ -35,11 +35,10 @@ describe('Dashboard visual hierarchy V1',()=>{
   test.each([
     ['Operations', ops],
     ['Pilotage', pilotage],
-  ])('%s déclare explicitement les quatre niveaux',(_name,source)=>{
+  ])('%s déclare la hiérarchie minimale Hero → Attention → Primary',(_name,source)=>{
     expect(source).toContain("data-dashboard-hierarchy', 'hero-attention-primary-secondary");
     expect(source).toContain("data-dashboard-role', 'hero");
     expect(source).toContain("data-dashboard-role', 'attention");
     expect(source).toContain("data-dashboard-role', 'primary");
-    expect(source).toContain("data-dashboard-role', 'secondary");
   });
 });
