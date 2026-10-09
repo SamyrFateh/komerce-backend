@@ -6,8 +6,11 @@
  * @test-requires none
  */
 
+const fs = require('fs');
+const path = require('path');
 const workspace = require('../../public/dashboards/canonical/js/operations-workspace');
 const decision = require('../../public/dashboards/canonical/js/operations-workspace-decision');
+const SOURCE = fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','canonical','js','operations-workspace-decision.js'),'utf8');
 
 function summaryFixture() {
   return {
@@ -99,4 +102,13 @@ describe('Hub / Relais — decision-first visual', () => {
     expect(result.decisionFirst).toBe(true);
     expect(result.marketCode).toBe('CM');
   });
+});
+
+
+test('la vue décision Hub / Relais rend seulement la bande À traiter, sans cartes de synthèse redondantes', () => {
+  const start = SOURCE.indexOf('function renderMetricOverview');
+  const renderSource = SOURCE.slice(start, SOURCE.indexOf('function decorateUi', start));
+  expect(renderSource).toContain("'À traiter maintenant'");
+  expect(renderSource).toContain("'Les actions qui attendent une intervention sur ce marché.'");
+  expect(renderSource).not.toContain('SummaryCards.render');
 });
