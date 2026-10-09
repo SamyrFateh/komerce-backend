@@ -66,3 +66,11 @@ describe('Hero-first shell conformance v1 — cadre des contrôles', () => {
     expect(css).toContain('flex-wrap: nowrap');
   });
 });
+
+describe('Hero-first shell conformance v1 — cadre commun Action Center / Commandes', () => {
+  test('Action Center et Commandes plafonnent leur cadre au Layout Canon (comme les cockpits)', () => {
+    expect(css).toContain('width: min(100%, var(--kmc-layout-max, 1680px))');
+    expect(css).toContain('max-width: none;');
+    expect(css).toContain('[data-kmc-surface="action-center"] #canonical-admin-root {\n  box-sizing: border-box;');
+  });
+});

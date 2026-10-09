@@ -277,6 +277,17 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
 
   test('recherche et marché restent à l\'intérieur du Hero sur écran large (cadre de page centré)', async ({ page }) => {
     await page.setViewportSize({ width: 2142, height: 760 });
+    const heroFrames = [];
+    for (const route of ['/admin/pilotage','/admin/action-center','/admin/commerce','/admin/operations']) {
+      await page.goto(`${ORIGIN}${route}`);
+      await page.waitForSelector('[data-dashboard-role="hero"]');
+      heroFrames.push(await page.evaluate(() => {
+        const b = document.querySelector('[data-dashboard-role="hero"]').getBoundingClientRect();
+        return [Math.round(b.left), Math.round(b.right)];
+      }));
+    }
+    // Même cadre de page centré sur les quatre écrans, quelle que soit la largeur de l'écran.
+    for (const frame of heroFrames) expect(frame).toEqual(heroFrames[0]);
     for (const route of ['/admin/pilotage','/admin/commerce','/admin/operations']) {
       await page.goto(`${ORIGIN}${route}`);
       await page.waitForSelector('[data-dashboard-role="hero"]');
