@@ -26,9 +26,9 @@ const HTML_SURFACES = [
 describe('Canonical Finish Polish V1', () => {
   test.each(HTML_SURFACES)('%s charge le polish apres le shell V4', relative => {
     const html = read(relative);
-    const shellCss = html.indexOf('/dashboards/canonical/css/canonical-shell-v4.css?v=2101');
-    const polishCss = html.indexOf('/dashboards/canonical/css/canonical-finish-polish-v1.css?v=2401');
-    const shellJs = html.indexOf('/dashboards/canonical/js/navigation-shell-v4-sync.js?v=2101');
+    const shellCss = html.search(/\/dashboards\/canonical\/css\/canonical-shell-v4\.css\?v=[^"'<>\s]+/);
+    const polishCss = html.search(/\/dashboards\/canonical\/css\/canonical-finish-polish-v1\.css\?v=[^"'<>\s]+/);
+    const shellJs = html.search(/\/dashboards\/canonical\/js\/navigation-shell-v4-sync\.js\?v=[^"'<>\s]+/);
     const polishJs = html.search(/\/dashboards\/canonical\/js\/canonical-finish-polish-v1\.js\?v=[^\"'<>\\s]+/);
 
     expect(shellCss).toBeGreaterThanOrEqual(0);

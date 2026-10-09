@@ -46,10 +46,10 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
 
   test.each(HTML_SURFACES)('%s charge Shell V4 après Theme V2 et une seule Policy de navigation', relative => {
     const html = read(relative);
-    const theme = html.indexOf('/dashboards/canonical/css/canonical-theme-v2.css?v=1901');
-    const shell = html.indexOf('/dashboards/canonical/css/canonical-shell-v4.css?v=2101');
-    const v4 = html.indexOf('/dashboards/canonical/js/navigation-policy-v4.js?v=2502');
-    const sync = html.indexOf('/dashboards/canonical/js/navigation-shell-v4-sync.js?v=2101');
+    const theme = html.search(/\/dashboards\/canonical\/css\/canonical-theme-v2\.css\?v=[^"'<>\s]+/);
+    const shell = html.search(/\/dashboards\/canonical\/css\/canonical-shell-v4\.css\?v=[^"'<>\s]+/);
+    const v4 = html.search(/\/dashboards\/canonical\/js\/navigation-policy-v4\.js\?v=[^"'<>\s]+/);
+    const sync = html.search(/\/dashboards\/canonical\/js\/navigation-shell-v4-sync\.js\?v=[^"'<>\s]+/);
     expect(theme).toBeGreaterThanOrEqual(0);
     expect(shell).toBeGreaterThan(theme);
     expect(html).not.toContain('/dashboards/canonical/js/navigation.js');
