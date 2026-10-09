@@ -277,6 +277,8 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
         causes: bg('.is-control-tower-causes'),
         criticalCard: bg('.kmc-decision-card.is-critical'),
         warningCard: bg('.kmc-decision-card.is-warning'),
+        criticalGradient: cs('.kmc-decision-card.is-critical').backgroundImage,
+        warningGradient: cs('.kmc-decision-card.is-warning').backgroundImage,
         criticalAccent: border('.kmc-decision-card.is-critical', 'borderLeftColor'),
         warningAccent: border('.kmc-decision-card.is-warning', 'borderLeftColor'),
         decisionRadius: cs('.kmc-decision-card').borderRadius,
@@ -287,7 +289,9 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
 
     expect(surfaces.canvas).toBe('rgb(241, 245, 249)');
     expect(surfaces.causes).toBe('rgb(255, 255, 255)');
-    expect(surfaces.criticalCard).not.toBe(surfaces.warningCard);
+    expect(surfaces.criticalGradient).toContain('linear-gradient');
+    expect(surfaces.warningGradient).toContain('linear-gradient');
+    expect(surfaces.criticalGradient).not.toBe(surfaces.warningGradient);
     expect(surfaces.decisionRadius).toBe('12px');
     expect(surfaces.sectionRadius).toBe('12px');
     expect(surfaces.sectionShadow).toContain('0px 1px 3px');
