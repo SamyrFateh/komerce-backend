@@ -193,17 +193,18 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(metrics.firstTop).toBeGreaterThanOrEqual(metrics.top);
   });
 
-  test('structure visuelle : shell + 4 décisions + causes + chaîne + actions', async ({ page }) => {
+  test('structure visuelle : Hero + décisions + santé de la chaîne uniquement', async ({ page }) => {
     await expect(page.locator('.kmc-admin-navigation')).toBeVisible();
     await expect(page.locator('.kmc-decision-card')).toHaveCount(4);
-    await expect(page.locator('#pilotage-causes.is-control-tower-causes')).toBeVisible();
     await expect(page.locator('#pilotage-flow-health.is-control-tower-flow')).toBeVisible();
-    await expect(page.locator('#pilotage-alerts.is-control-tower-actions')).toBeVisible();
-    await expect(page.locator('.is-control-tower-causes .kmc-priority-row')).toHaveCount(2);
     await expect(page.locator('.is-control-tower-flow .kmc-flow-stage')).toHaveCount(9);
+    await expect(page.locator('#pilotage-causes')).toHaveCount(0);
+    await expect(page.locator('#pilotage-alerts')).toHaveCount(0);
+    await expect(page.getByText('Causes structurelles', { exact:true })).toHaveCount(0);
+    await expect(page.getByText('À traiter', { exact:true })).toHaveCount(0);
   });
 
-  test('hiérarchie Canonical : Hero → Attention → Primary → Secondary', async ({ page }) => {
+  test('hiérarchie Canonical : Hero → Attention → Objet principal, sans secondaire', async ({ page }) => {
     const dashboard = page.locator('[data-dashboard-id="pilotage"]');
     await expect(dashboard).toHaveAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
 
@@ -223,7 +224,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(hero).toBeGreaterThanOrEqual(0);
     expect(attention).toBeGreaterThan(hero);
     expect(primary).toBeGreaterThan(attention);
-    expect(secondary).toBeGreaterThan(primary);
+    expect(secondary).toBe(-1);
 
     const attentionBox = order[attention];
     expect(attentionBox.top).toBeLessThan(520);
@@ -237,7 +238,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
         sidebar: color('.kmc-admin-navigation'),
         sidebarWidth: document.querySelector('.kmc-admin-navigation').getBoundingClientRect().width,
         canvas: color('[data-dashboard-id="pilotage"]'),
-        causes: color('.is-control-tower-causes'),
+        flow: color('.is-control-tower-flow'),
         decisionBg: color('.kmc-decision-card'),
         decisionGradient: color('.kmc-decision-card', 'backgroundImage'),
         decisionBorderLeft: color('.kmc-decision-card', 'borderLeftWidth'),
@@ -258,7 +259,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(colors.sidebar).toBe('rgb(15, 23, 42)');
     expect(colors.sidebarWidth).toBe(260);
     expect(colors.canvas).toBe('rgb(241, 245, 249)');
-    expect(colors.causes).toBe('rgb(255, 255, 255)');
+    expect(colors.flow).toBe('rgb(255, 255, 255)');
     expect(colors.decisionGradient).toContain('linear-gradient');
     expect(colors.decisionBorderLeft).toBe('5px');
     expect(colors.activeNavGradient).toBe('none');
@@ -274,7 +275,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
       const cs = (sel) => getComputedStyle(document.querySelector(sel));
       return {
         canvas: bg('[data-dashboard-id="pilotage"]'),
-        causes: bg('.is-control-tower-causes'),
+        flow: bg('.is-control-tower-flow'),
         criticalCard: bg('.kmc-decision-card.is-critical'),
         warningCard: bg('.kmc-decision-card.is-warning'),
         criticalGradient: cs('.kmc-decision-card.is-critical').backgroundImage,
@@ -288,7 +289,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     });
 
     expect(surfaces.canvas).toBe('rgb(241, 245, 249)');
-    expect(surfaces.causes).toBe('rgb(255, 255, 255)');
+    expect(surfaces.flow).toBe('rgb(255, 255, 255)');
     expect(surfaces.criticalGradient).toContain('linear-gradient');
     expect(surfaces.warningGradient).toContain('linear-gradient');
     expect(surfaces.criticalGradient).not.toBe(surfaces.warningGradient);
