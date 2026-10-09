@@ -253,9 +253,9 @@
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
     header.setAttribute('data-dashboard-role', 'hero');
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'PILOTER · TOUR DE CONTRÔLE'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', payload && payload.scope && payload.scope.mode === 'market' ? 'Tour de contrôle du marché' : 'Tour de contrôle Komerce'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Vue opérationnelle de toute la chaîne. Identifiez ce qui mérite une attention et passez à l’action.'));
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'PILOTAGE'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', payload && payload.scope && payload.scope.mode === 'market' ? 'Situation du marché' : 'Situation Komerce'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir ce qui demande une décision maintenant, puis agir au bon endroit.'));
     dashboard.appendChild(header);
 
     const decisions = decisionItems(payload, base);
@@ -267,54 +267,20 @@
       dashboard.appendChild(host);
     }
 
-    const causes = structuralCauses(payload);
-    if (causes.length) {
-      const causeSection = cardSection(
-        doc,
-        'Causes structurelles',
-        'Les causes communes déjà agrégées par la chaîne canonique. Une cause remplace ses symptômes individuels.',
-        'pilotage-causes'
-      );
-      causeSection.section.className += ' is-control-tower-causes';
-      causeSection.section.setAttribute('data-dashboard-role', 'primary');
-      decisionUi.PriorityList.render(causeSection.body, { items: causes });
-      dashboard.appendChild(causeSection.section);
-    }
-
     const stages = controlStages(payload);
     if (stages.length) {
       const flowSection = cardSection(
         doc,
-        'Santé de la chaîne',
-        'Où se trouvent les commandes et quelles étapes sont réellement bloquées, à surveiller ou non observées.',
+        'Où ça bloque',
+        'Les étapes à surveiller ou bloquées dans la chaîne.',
         'pilotage-flow-health'
       );
       flowSection.section.className += ' is-control-tower-flow';
-      flowSection.section.setAttribute('data-dashboard-role', 'secondary');
+      flowSection.section.setAttribute('data-dashboard-role', 'primary');
       decisionUi.FlowStrip.render(flowSection.body, { stages });
       dashboard.appendChild(flowSection.section);
     }
 
-    const actions = residualActions(payload, base);
-    if (actions.length) {
-      const actionSection = cardSection(
-        doc,
-        'À traiter',
-        'Signaux restants qui ne sont pas déjà couverts par une cause structurelle.',
-        'pilotage-alerts'
-      );
-      actionSection.section.className += ' is-control-tower-actions';
-      actionSection.section.setAttribute('data-dashboard-role', 'secondary');
-      decisionUi.PriorityList.render(actionSection.body, { items: actions });
-      const actionLink = text(doc, 'a', 'kmc-decision-dashboard-link', 'Voir tout dans l’Action Center →');
-      actionLink.href = '/admin/action-center';
-      actionSection.body.appendChild(actionLink);
-      dashboard.appendChild(actionSection.section);
-    }
-
-    const footer = doc.createElement('div');
-    decisionUi.TrustFooter.render(footer, trust(payload));
-    dashboard.appendChild(footer);
     rootNode.appendChild(dashboard);
     return { element: dashboard, visual: 'control-tower-v2' };
   }
