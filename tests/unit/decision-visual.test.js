@@ -23,3 +23,10 @@ test('Finance possède un Hero contextuel propre',()=>{
   expect(css).toContain('.kmc-finance-essential-metrics');
   expect(css).toContain('.kmc-finance-review-title');
 });
+
+
+test('Commandes possède un Hero contextuel propre',()=>{
+  expect(css).toContain('[data-dashboard-id="orders"] > .kmc-dashboard-header');
+  expect(css).toContain('.kmc-orders-essential-metrics');
+  expect(css).toContain('.kmc-orders-flow-title');
+});

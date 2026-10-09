@@ -775,3 +775,52 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-finance-
   color: #64748b;
   font-size: 11px;
 }
+
+/* Orders contextual hero + essential order control. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] > .kmc-dashboard-header {
+  position: relative;
+  min-height: 126px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 18px 28% 18px 22px;
+  border: 1px solid #dbe4f7;
+  border-radius: 14px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 86% 32%, rgba(79,70,229,.14) 0 48px, transparent 49px),
+    radial-gradient(circle at 94% 75%, rgba(59,130,246,.11) 0 36px, transparent 37px),
+    linear-gradient(112deg, #f7f8ff 0%, #ffffff 62%, #f5f9ff 100%);
+  box-shadow: 0 1px 3px rgba(15,23,42,.05);
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] .canonical-eyebrow {
+  color: #4f46e5;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] .kmc-dashboard-title {
+  margin-top: 2px;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] .kmc-dashboard-description {
+  max-width: 650px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] .kmc-orders-essential-metrics {
+  margin-bottom: 14px;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] .kmc-orders-flow-title {
+  margin: 2px 0 8px;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 800;
+}
