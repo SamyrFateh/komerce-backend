@@ -137,46 +137,32 @@
   function header(doc, payload, severity) {
     const node = doc.createElement('header');
     node.className = 'kmc-workspace-header';
+    node.setAttribute('data-dashboard-role', 'hero');
     const market = payload && payload.scope && payload.scope.market;
 
     const copy = doc.createElement('div');
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'ACTION CENTER'));
     if (payload && payload.role) {
-      copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'ACTION CENTER · MON PÉRIMÈTRE'));
-      copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Mes signaux à traiter'));
-      copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Signaux de votre périmètre uniquement · acquitter ou reporter ; la résolution est décidée par la chaîne canonique'));
-      node.appendChild(copy);
-      const feedbackAgent = text(doc, 'div', 'kmc-workspace-feedback', '');
-      feedbackAgent.dataset.actionCenterFeedback = '';
-      feedbackAgent.setAttribute('role', 'status');
-      node.appendChild(feedbackAgent);
-      return node;
+      copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Mes actions'));
+      copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Ce qui demande votre intervention maintenant.'));
+    } else {
+      copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', market ? `Décisions · ${market.name || market.code}` : 'Décisions à traiter'));
+      copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', market
+        ? 'Les points qui demandent une décision sur ce marché.'
+        : 'Les points qui demandent une décision maintenant.'));
     }
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', market ? `ACTION CENTER · ${market.code}` : 'ACTION CENTER · CANONICAL'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', market ? `Décisions · ${market.name || market.code}` : 'Décider sur les signaux, pas sur des écrans'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', market
-      ? 'Signaux dérivés de ce marché uniquement · acquitter, reporter ou résoudre sans modifier la donnée métier source'
-      : 'Surface centrale globale · signaux dérivés · acquitter, reporter ou résoudre sans modifier la donnée métier source'));
+
     if (severity) {
       const filterLine = doc.createElement('p');
-      filterLine.className = 'kmc-workspace-subtitle';
-      filterLine.appendChild(text(doc, 'strong', '', `Filtré · ${severity.split(',').map(severityLabel).join(', ')}`));
-      filterLine.appendChild(doc.createTextNode(' — '));
-      const clear = text(doc, 'a', 'kmc-workspace-nav-link', 'Voir tous les signaux');
+      filterLine.className = 'kmc-workspace-subtitle kmc-action-center-filter';
+      filterLine.appendChild(text(doc, 'strong', '', `Filtre · ${severity.split(',').map(severityLabel).join(', ')}`));
+      filterLine.appendChild(doc.createTextNode(' · '));
+      const clear = text(doc, 'a', 'kmc-workspace-nav-link', 'Tout afficher');
       clear.href = market ? `/admin/action-center?market=${encodeURIComponent(market.code)}` : '/admin/action-center';
       filterLine.appendChild(clear);
       copy.appendChild(filterLine);
     }
     node.appendChild(copy);
-
-    const nav = doc.createElement('nav');
-    nav.className = 'kmc-workspace-nav';
-    const pilotage = text(doc, 'a', 'kmc-workspace-nav-link', 'Pilotage →');
-    pilotage.href = '/admin/pilotage';
-    nav.appendChild(pilotage);
-    const operations = text(doc, 'a', 'kmc-workspace-nav-link', 'Opérations →');
-    operations.href = '/admin/operations';
-    nav.appendChild(operations);
-    node.appendChild(nav);
 
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
     feedback.dataset.actionCenterFeedback = '';
@@ -218,7 +204,7 @@
     const titleLine = doc.createElement('div');
     titleLine.className = 'kmc-workspace-detail-title';
     titleLine.appendChild(text(doc, 'strong', '', row.title));
-    titleLine.appendChild(text(doc, 'span', 'kmc-workspace-note', `${severityLabel(row.severity)} · ${row.signal_ref}`));
+    titleLine.appendChild(text(doc, 'span', 'kmc-workspace-note', severityLabel(row.severity)));
     card.appendChild(titleLine);
 
     if (row.summary) card.appendChild(text(doc, 'p', 'kmc-workspace-note', row.summary));
@@ -226,7 +212,6 @@
 
     const context = doc.createElement('div');
     context.className = 'kmc-workspace-nav';
-    context.appendChild(text(doc, 'span', 'kmc-workspace-note', `Type · ${row.signal_type} · owner · ${row.owner_role || '—'} · statut · ${row.status}`));
     if (row.work_item && row.work_item.actionable && row.work_item.href) {
       const work = text(doc, 'a', 'kmc-workspace-action', 'Traiter');
       work.href = row.work_item.href;
@@ -254,7 +239,7 @@
     const section = ui.Section.create({
       title: rows.length ? `Signaux de mon périmètre · ${rows.length}` : 'Aucun signal actif',
       description: rows.length
-        ? 'Vu et Reporter ne modifient que le cycle de vie du signal. La résolution reste décidée par la chaîne canonique.'
+        ? 'Traitez uniquement ce qui demande votre intervention.'
         : 'Aucune décision n’est actuellement requise dans votre périmètre.',
     });
     rows.forEach(row => section.slot.appendChild(renderSignal(doc, row)));
@@ -277,7 +262,7 @@
       rendered += rows.length;
       const section = ui.Section.create({
         title: `${FAMILY_LABELS[family] || family} · ${rows.length}`,
-        description: 'Traiter ouvre la surface métier propriétaire. Vu, Reporter et Résolu ne modifient que le cycle de vie du signal dérivé.',
+        description: 'Traiter ouvre directement le bon contexte.',
       });
       rows.forEach(row => section.slot.appendChild(renderSignal(doc, row)));
       rootNode.appendChild(section.element);
@@ -368,17 +353,7 @@
         return payload;
       }
 
-      const controls = context.ui.Section.create({
-        title: context.scopeMode === 'market' ? 'Périmètre de décision' : 'Actualiser le constat',
-        description: payload.scope && payload.scope.market_note ? payload.scope.market_note : 'Les signaux sont calculés côté serveur.',
-      });
-      if (context.scopeMode === 'global') {
-        const generate = actionButton(context.document, 'Régénérer les signaux', 'generate', '', false);
-        controls.slot.appendChild(generate);
-      } else {
-        controls.slot.appendChild(text(context.document, 'div', 'kmc-workspace-note', `Marché autorisé · ${context.marketCode}`));
-      }
-      rootNode.appendChild(controls.element);
+
 
       renderFamilies(rootNode, context.ui, context.document, payload);
       bind(rootNode, context);
