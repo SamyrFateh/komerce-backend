@@ -109,8 +109,17 @@ test.describe('Coque Live — menu dédié et noir complet', () => {
   test('les écrans de gestion gardent la coque claire (pas de contamination)', async ({ page }) => {
     await mountShell(page, { surface: 'operations', pathname: '/admin/operations' });
     await expect(page.locator('body')).not.toHaveClass(/kmc-shell-live/);
-    const topbar = await page.evaluate(() => getComputedStyle(document.querySelector('.kmc-admin-topbar')).backgroundColor);
-    expect(lum(topbar)).toBeGreaterThan(200);
+    const surfaces = await page.evaluate(() => ({
+      topbar: getComputedStyle(document.querySelector('.kmc-admin-topbar')).backgroundColor,
+      search: getComputedStyle(document.querySelector('.kmc-admin-search')).backgroundColor,
+      body: getComputedStyle(document.body).backgroundColor,
+      position: getComputedStyle(document.querySelector('.kmc-admin-topbar')).position,
+    }));
+    // La topbar de gestion est désormais un overlay transparent du Hero :
+    // l'absence de contamination Live se mesure sur le contrôle de recherche et le canvas.
+    expect(surfaces.position).toBe('absolute');
+    expect(lum(surfaces.search)).toBeGreaterThan(200);
+    expect(lum(surfaces.body)).toBeGreaterThan(180);
   });
 
   test('Sourcing live n’apparaît plus dans les onglets Opérations ; le rôle sourcing ne voit que Live', async ({ page }) => {
