@@ -166,6 +166,17 @@ body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"
   border: 0;
 }
 
+/* Orders renders a decision dashboard without the cockpit class: same page frame as the others. */
+body.kmc-shell-v4[data-kmc-surface="orders"] .kmc-dashboard.kmc-decision-dashboard {
+  width: min(100%, var(--kmc-layout-max, 1680px));
+  margin: 0 auto;
+  box-sizing: border-box;
+  display: grid;
+  align-content: start;
+  gap: var(--kmc-layout-gap, 12px);
+  padding: var(--kmc-layout-page-pad-top, 18px) var(--kmc-layout-page-pad-x, 24px) var(--kmc-layout-page-pad-bottom, 24px);
+}
+
 /* Search dropdown must escape the Hero visually without clipping. */
 body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) .kmc-admin-reference-results {
   right: 0;

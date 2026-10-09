@@ -20,14 +20,21 @@ describe('decision visual — contextual Commerce hero',()=>{
 
 
 test('Finance possède un Hero contextuel propre',()=>{
-  expect(css).toContain('[data-dashboard-id="finance"] > .kmc-dashboard-header');
+  expect(css).not.toContain('[data-dashboard-id="finance"] > .kmc-dashboard-header {');
   expect(css).toContain('.kmc-finance-essential-metrics');
   expect(css).toContain('.kmc-finance-review-title');
 });
 
 
 test('Commandes possède un Hero contextuel propre',()=>{
-  expect(css).toContain('[data-dashboard-id="orders"] > .kmc-dashboard-header');
+  expect(css).not.toContain('[data-dashboard-id="orders"] > .kmc-dashboard-header {');
   expect(css).toContain('.kmc-orders-essential-metrics');
   expect(css).toContain('.kmc-orders-flow-title');
+});
+
+test('Finance et Commandes ne redéfinissent plus leur Hero (propriété Layout Canon)', () => {
+  expect(css).not.toContain('[data-dashboard-id="finance"] > .kmc-dashboard-header {');
+  expect(css).not.toContain('[data-dashboard-id="orders"] > .kmc-dashboard-header {');
+  expect(css).not.toContain('color: #15803d');
+  expect(css).not.toContain('color: #4f46e5');
 });
