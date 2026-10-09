@@ -55,17 +55,9 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashb
   background: url('/dashboards/canonical/assets/commerce-hero-gold.svg') right center / auto 100% no-repeat;
 }
 
-/* COMMANDES — lifecycle sequence. */
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] > .kmc-dashboard-header::before {
-  background:
-    radial-gradient(circle at 15% 52%, var(--kmc-brand-navy-2) 0 8px, transparent 9px),
-    radial-gradient(circle at 38% 52%, var(--kmc-brand-gold) 0 8px, transparent 9px),
-    radial-gradient(circle at 61% 52%, var(--kmc-brand-gold) 0 8px, transparent 9px),
-    radial-gradient(circle at 84% 52%, var(--kmc-brand-navy-2) 0 8px, transparent 9px),
-    linear-gradient(var(--kmc-brand-champagne),var(--kmc-brand-champagne)) 15% 52% / 69% 2px no-repeat;
-}
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] > .kmc-dashboard-header::after {
-  content: "01 • 02 • 03 • 04";
+/* COMMANDES — lifecycle sequence, parcels on the belt. */
+body.kmc-shell-v4 [data-dashboard-id="orders"] > .kmc-dashboard-header::before {
+  background: url('/dashboards/canonical/assets/orders-hero-gold.svg') right center / auto 100% no-repeat;
 }
 
 /* OPERATIONS — logistics port scene, same palette and mechanism as the other domains. */
@@ -74,15 +66,8 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] > .kmc-das
 }
 
 /* FINANCE — value, matching, closure. */
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] > .kmc-dashboard-header::before {
-  background:
-    repeating-linear-gradient(0deg, rgba(7,26,61,.075) 0 1px, transparent 1px 16px),
-    linear-gradient(to top, rgba(201,162,39,.20) 0 28%, transparent 28%) 18% 76% / 11% 68% no-repeat,
-    linear-gradient(to top, rgba(201,162,39,.34) 0 55%, transparent 55%) 40% 76% / 11% 68% no-repeat,
-    linear-gradient(to top, rgba(7,26,61,.18) 0 76%, transparent 76%) 62% 76% / 11% 68% no-repeat;
-}
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] > .kmc-dashboard-header::after {
-  content: "POSITION • RAPPROCHEMENT • CLÔTURE";
+body.kmc-shell-v4 [data-dashboard-id="finance"] > .kmc-dashboard-header::before {
+  background: url('/dashboards/canonical/assets/finance-hero-gold.svg') right center / auto 100% no-repeat;
 }
 
 /* MARCHÉS — territories around common authority. */

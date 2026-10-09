@@ -51,3 +51,10 @@ describe('Hero-first shell conformance v1', () => {
     expect(css).toContain('position: static');
   });
 });
+
+describe('Hero-first shell conformance v1 — Commandes', () => {
+  test('Commandes (decision dashboard sans classe cockpit) reçoit le même cadre de page', () => {
+    expect(css).toContain('[data-kmc-surface="orders"] .kmc-dashboard.kmc-decision-dashboard');
+    expect(css).toContain('padding: var(--kmc-layout-page-pad-top, 18px)');
+  });
+});

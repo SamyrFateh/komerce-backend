@@ -59,3 +59,15 @@ describe('contextual-heroes-v2 — canon visuel validé (parité mocks)', () => 
     expect(css).toContain('mask-image: linear-gradient(90deg, transparent 0, #000 24%)');
   });
 });
+
+test('Commandes et Finance partagent le même mécanisme d\'illustration or que les autres domaines', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const css = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/css/contextual-heroes-v2.css'), 'utf8');
+  for (const svg of ['orders-hero-gold.svg', 'finance-hero-gold.svg']) {
+    expect(css).toContain(svg);
+    expect(fs.existsSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/assets', svg))).toBe(true);
+  }
+  expect(css).not.toContain('POSITION • RAPPROCHEMENT • CLÔTURE');
+  expect(css).not.toContain('01 • 02 • 03 • 04');
+});
