@@ -53,3 +53,12 @@ test('les cartes commandes restent compactes et le détail est progressif',()=>{
   expect(css).toContain('.kmc-control-order-lineage');
   expect(css).toContain('.kmc-control-order-open');
 });
+
+
+test('la composition Operations suit le mock : hero + pipeline flottant + colonnes sous le rail',()=>{
+  expect(css).toContain("operations-logistics-hero.svg");
+  expect(css).toMatch(/\.kmc-control-stage::after\s*\{[^}]*top:\s*112px/s);
+  expect(css).toMatch(/\.kmc-control-chain::before\s*\{[^}]*height:\s*4px/s);
+  expect(css).toMatch(/grid-auto-columns:\s*minmax\(145px,\s*1fr\)/);
+  expect(css).toMatch(/\.kmc-control-stage-icon\s*\{[^}]*width:\s*60px[^}]*height:\s*60px/s);
+});
