@@ -349,3 +349,12 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"],
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="markets"] {
   background: var(--kmc-brand-canvas);
 }
+
+
+/* Pilotage legacy section material — Canon V1 owns the final shadow/accent. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-surface-card {
+  box-shadow: var(--kmc-canon-shadow-soft);
+}
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-surface-card::before {
+  background: var(--kmc-brand-gold);
+}
