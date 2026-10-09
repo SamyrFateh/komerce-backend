@@ -186,6 +186,10 @@ async function geometry(page, pathname) {
     const rr = root.getBoundingClientRect();
     const mr = market ? market.getBoundingClientRect() : null;
     const sr = search ? search.getBoundingClientRect() : null;
+    const heroStyle = getComputedStyle(hero);
+    const heroBefore = getComputedStyle(hero, '::before');
+    const title = hero.querySelector('.kmc-dashboard-title, .kmc-workspace-title');
+    const titleStyle = title ? getComputedStyle(title) : null;
     const tr = tabs ? tabs.getBoundingClientRect() : null;
     const topbarStyle = topbar ? getComputedStyle(topbar) : null;
     const tabsStyle = tabs ? getComputedStyle(tabs) : null;
@@ -207,6 +211,11 @@ async function geometry(page, pathname) {
       topbarPosition:topbarStyle && topbarStyle.position,
       tabsDisplay:tabsStyle && tabsStyle.display,
       tabsHeight:tr && tr.height,
+      heroBackground:heroStyle.backgroundImage,
+      heroBackgroundColor:heroStyle.backgroundColor,
+      heroBorderColor:heroStyle.borderTopColor,
+      heroBeforeBackground:heroBefore.backgroundImage,
+      titleColor:titleStyle && titleStyle.color,
       horizontalOverflow:document.documentElement.scrollWidth - document.documentElement.clientWidth,
     };
   }, { actionCenterPage });
@@ -247,6 +256,22 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
       expect(g.marketTop).not.toBeNull();
       expect(g.marketBottom).toBeLessThanOrEqual(g.heroBottom - 12);
       expect(g.marketTop).toBeGreaterThanOrEqual(g.heroTop + 12);
+    }
+
+    const illustrations = {
+      '/admin/pilotage': 'pilotage-control-tower-hero-gold.svg',
+      '/admin/commerce': 'commerce-hero-gold.svg',
+      '/admin/action-center': 'action-center-hero-gold.svg',
+      '/admin/operations': 'operations-logistics-hero-gold.svg',
+    };
+
+    for (const route of routes) {
+      const g = measured[route];
+      const image = route === '/admin/operations' ? g.heroBackground : g.heroBeforeBackground;
+      expect(image).toContain(illustrations[route]);
+      expect(g.titleColor).toBe('rgb(7, 26, 61)');
+      expect(g.heroBorderColor).not.toBe('rgb(243, 215, 210)');
+      expect(g.heroBackground).toContain('linear-gradient');
     }
   });
 
