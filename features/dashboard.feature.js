@@ -69,6 +69,7 @@ module.exports = {
       'docs/doctrine/DOCTRINE_ADMIN_DASHBOARDS.md',
       'docs/doctrine/ADMIN_INTERNAL_PORTAL_DOCTRINE.md',
       'docs/doctrine/DECISION_COCKPIT_CANON_V1.md',
+      'docs/doctrine/CANONICAL_DASHBOARD_VISUAL_HIERARCHY_V1.md',
       'docs/doctrine/DOCTRINE_LOGISTICS_CONTROL_CHAIN.md',
       'docs/contract/DASHBOARD_MARKET_SCOPE_2C.md',
       'docs/contract/ACTION_CENTER_4G.md',
