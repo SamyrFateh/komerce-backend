@@ -178,7 +178,7 @@
       documentRef,
       'p',
       'kmc-decision-dashboard-section-copy',
-      'Lecture directe des files serveur de ce marché, sans score ni priorité inventés côté navigateur.'
+      'Les actions qui attendent une intervention sur ce marché.'
     ));
     container.appendChild(heading);
 
@@ -189,9 +189,6 @@
       container.appendChild(decisionHost);
     }
 
-    const summaryHost = documentRef.createElement('div');
-    decisionUi.SummaryCards.render(summaryHost, { items: summaryCards(items) });
-    container.appendChild(summaryHost);
     return container;
   }
 
