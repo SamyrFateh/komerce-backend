@@ -914,3 +914,25 @@
 .kmc-catalog-curation-table td.kmc-catalog-actions-cell {
   display: table-cell;
 }
+
+/* Hub / Relais contextual hero. */
+.kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header {
+  min-height: 126px;
+  align-items: center;
+  border-color: #cfe8e4;
+  background:
+    radial-gradient(circle at 88% 30%, rgba(13,148,136,.15) 0 48px, transparent 49px),
+    radial-gradient(circle at 95% 76%, rgba(59,130,246,.10) 0 36px, transparent 37px),
+    linear-gradient(112deg, #f4fbfa 0%, #ffffff 60%, #f7fbff 100%);
+}
+.kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header .kmc-workspace-kicker {
+  color: #0f766e;
+  background: #ecfdf5;
+}
+.kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header .kmc-workspace-kicker::before { background: #0d9488; }
+.kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header .kmc-workspace-title {
+  font-size: clamp(25px, 2.5vw, 32px);
+  font-weight: 800;
+}
+.kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header .kmc-workspace-subtitle { font-size: 12px; }
+

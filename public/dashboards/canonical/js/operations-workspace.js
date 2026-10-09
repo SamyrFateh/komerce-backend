@@ -87,13 +87,13 @@
     header.className = 'kmc-workspace-header';
 
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · OPERATIONS / HUB-RELAIS'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Traiter le flux opérationnel'));
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'HUB / RELAIS'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Flux à traiter'));
     copy.appendChild(text(
       doc,
       'p',
       'kmc-workspace-subtitle',
-      `${payload.scope.code} · ${payload.scope.name} · actions limitées à ce marché`
+      `${payload.scope.code} · ${payload.scope.name} · voir ce qui attend une action`
     ));
     header.appendChild(copy);
 
@@ -325,10 +325,9 @@
 
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
+    rootNode.setAttribute('data-workspace-kind', 'hub-relay');
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload));
-
-    renderSignals(rootNode, ui, doc, payload);
 
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-workspace-metrics';
