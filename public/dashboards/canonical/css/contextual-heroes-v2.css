@@ -7,7 +7,7 @@
 body.kmc-shell-v4 {
   --kmc-hero-ink: var(--kmc-brand-navy, #071A3D);
   --kmc-hero-muted: var(--kmc-brand-muted, #65718A);
-  --kmc-hero-radius: 18px;
+  --kmc-hero-radius: 16px;
   --kmc-hero-shadow: 0 8px 24px rgba(7,26,61,.06);
 }
 
