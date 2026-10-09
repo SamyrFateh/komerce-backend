@@ -67,8 +67,8 @@
         value: String(review.length || Number(summary.needs_review)),
         tone: 'warning',
         icon: 'i',
-        href: '#catalog-products',
-        actionLabel: 'Voir la sélection →',
+        href: '#catalog-curation',
+        actionLabel: 'Voir les produits →',
       });
     }
 
@@ -150,38 +150,24 @@
     host.className = 'kmc-dashboard kmc-decision-dashboard kmc-catalog-decision-overview';
     host.setAttribute('data-dashboard-id', 'catalog');
     host.setAttribute('data-dashboard-visual', 'decision-first-v1');
+    host.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary');
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'CATALOGUE · GLOBAL'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Catalogue global commercial'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Assortiment approuvé issu des KIR clos. Les produits encore en préparation restent dans le cockpit et les files d’action.'));
+    header.setAttribute('data-dashboard-role', 'hero');
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'CATALOGUE'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Produits à valider'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir ce qui doit être relu, corrigé ou ajouté au catalogue.'));
     host.appendChild(header);
 
     const decisions = decisionItems(payload);
     if (decisions.length) {
       const decisionHost = doc.createElement('div');
+      decisionHost.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';
+      decisionHost.setAttribute('data-dashboard-role', 'attention');
       decisionUi.DecisionStrip.render(decisionHost, { items: decisions });
       host.appendChild(decisionHost);
     }
-
-    const metrics = cardSection(doc, 'État du catalogue', 'Les compteurs viennent du workspace canonique, sans reconstruction métier côté navigateur.', 'catalog-kpis');
-    ui.MetricStrip.render(metrics.body, { items: metricItems(payload, base) });
-    host.appendChild(metrics.section);
-
-    const grid = doc.createElement('div');
-    grid.className = 'kmc-decision-dashboard-grid-2';
-    const products = cardSection(doc, 'Assortiment commercial', 'Produits approuvés à la vente provenant de lots clos.', 'catalog-products');
-    decisionUi.RankedList.render(products.body, { items: productItems(payload) });
-    grid.appendChild(products.section);
-    const categories = cardSection(doc, 'Santé de la taxonomie', 'Catégories globales actives et présence dans les rails.', 'catalog-categories');
-    decisionUi.RankedList.render(categories.body, { items: categoryItems(payload) });
-    grid.appendChild(categories.section);
-    host.appendChild(grid);
-
-    const footer = doc.createElement('div');
-    decisionUi.TrustFooter.render(footer, trust(payload));
-    host.appendChild(footer);
 
     const firstChild = rootNode.children && rootNode.children.length ? rootNode.children[0] : null;
     if (firstChild && typeof rootNode.insertBefore === 'function') rootNode.insertBefore(host, firstChild);
@@ -196,8 +182,9 @@
     // La liste de curation est le travail principal : elle vient immédiatement
     // sous le titre Catalogue, avant les KPI et l'assortiment déjà approuvé.
     if (approvalSection && approvalSection.classList && approvalSection.classList.contains('kmc-section')) {
-      const headerNext = header.nextSibling;
-      if (headerNext) host.insertBefore(approvalSection, headerNext);
+      approvalSection.setAttribute('data-dashboard-role', 'primary');
+      const attention = host.querySelector('[data-dashboard-role="attention"]');
+      if (attention && attention.nextSibling) host.insertBefore(approvalSection, attention.nextSibling);
       else host.appendChild(approvalSection);
     }
 
