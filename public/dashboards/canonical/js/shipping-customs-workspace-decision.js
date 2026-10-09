@@ -140,7 +140,7 @@
       documentRef,
       'p',
       'kmc-decision-dashboard-section-copy',
-      'Lecture des états transit et douane fournis par le serveur, sans délai cible, score de blocage ni conformité documentaire inventés.'
+      'Les dossiers qui attendent une intervention sur ce marché.'
     ));
     container.appendChild(heading);
 
@@ -151,9 +151,6 @@
       container.appendChild(host);
     }
 
-    const summaryHost = documentRef.createElement('div');
-    decisionUi.SummaryCards.render(summaryHost, { items: summaryCards(items) });
-    container.appendChild(summaryHost);
     return container;
   }
 
