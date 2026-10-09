@@ -367,3 +367,23 @@ describe('D6 capability authority contract', () => {
     expect(source).toContain('requireDashboardGlobalAuthority');
   });
 });
+
+describe('devise du marché sur les vues de marché', () => {
+  test('unified/market/CM : KPI KMF projetés en XAF, source non mutée', async () => {
+    const base = mockQuery.getMockImplementation();
+    mockQuery.mockImplementation(async (sql, params) => {
+      if (String(sql).includes('currency_parities')) {
+        return { rows: [{ eur_rate: { KMF: 491.96775, XAF: 655.957 }[params[0]] }] };
+      }
+      return base(sql, params);
+    });
+    require('../../utils/currency').invalidateCurrencyParityCache();
+    const source = { kpis: [{ key: 'ca', value: 491.96775 * 10, unit: 'KMF', delta: null }] };
+    mockBuildMarketPilotage.mockResolvedValue(source);
+
+    const res = await request(makeApp()).get('/api/admin/dashboard/unified/market/CM');
+    expect(res.status).toBe(200);
+    expect(res.body.kpis[0]).toMatchObject({ unit: 'XAF', base_currency: 'KMF', value: Math.round(10 * 655.957) });
+    expect(source.kpis[0].unit).toBe('KMF');
+  });
+});
