@@ -168,8 +168,8 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(typo.body.family).toMatch(/Segoe UI|Inter|-apple-system|BlinkMacSystemFont/i);
     expect(typo.title.family).not.toMatch(/Times New Roman|Georgia/i);
     expect(typo.title.family).toMatch(/Segoe UI|Inter|-apple-system|BlinkMacSystemFont|Helvetica Neue|Arial|sans-serif/i);
-    expect(typo.title.size).toBe(24);
-    expect(typo.title.weight).toBe(700);
+    expect(typo.title.size).toBe(28);
+    expect(typo.title.weight).toBe(800);
     expect(typo.section.size).toBeCloseTo(14.08, 1);
     expect(typo.card.size).toBeGreaterThanOrEqual(13);
   });
@@ -299,9 +299,11 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(surfaces.criticalAccent).not.toBe(surfaces.warningAccent);
   });
 
-  test('aucun libellé technique signal-service dans la vue utilisateur', async ({ page }) => {
-    await expect(page.locator('[data-dashboard-id="pilotage"]')).not.toContainText('signal-service');
-    await expect(page.locator('[data-dashboard-id="pilotage"]')).toContainText('Signal métier');
+  test('aucun libellé technique interne dans la vue utilisateur', async ({ page }) => {
+    const dashboard = page.locator('[data-dashboard-id="pilotage"]');
+    await expect(dashboard).not.toContainText('signal-service');
+    await expect(dashboard).not.toContainText('Causes structurelles');
+    await expect(dashboard).not.toContainText('signaux restants');
   });
 
   test('capture de revue 1672×941', async ({ page }, testInfo) => {
