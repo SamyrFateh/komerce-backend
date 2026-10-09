@@ -1,0 +1,204 @@
+/*
+ * KOMERCE — LAYOUT CANON V1
+ * Composition authority for Canonical Admin.
+ * Reference: approved Komerce dashboard mocks.
+ * Presentation only — no business truth or lifecycle semantics.
+ */
+
+body.kmc-shell-v4 {
+  --kmc-layout-page-pad-x: 24px;
+  --kmc-layout-page-pad-top: 18px;
+  --kmc-layout-page-pad-bottom: 24px;
+  --kmc-layout-gap: 12px;
+  --kmc-layout-gap-tight: 10px;
+  --kmc-layout-hero-h: 150px;
+  --kmc-layout-attention-h: 104px;
+  --kmc-layout-max: 1680px;
+}
+
+/* One page frame. Every management surface starts at the same Y position. */
+body.kmc-shell-v4 [data-canonical-surface],
+body.kmc-shell-v4 .kmc-action-center,
+body.kmc-shell-v4 .kmc-domain-cockpit,
+body.kmc-shell-v4 .kmc-operations-workspace,
+body.kmc-shell-v4 .kmc-purchasing-workspace,
+body.kmc-shell-v4 .kmc-sourcing-workspace,
+body.kmc-shell-v4 .kmc-workspace {
+  width: min(100%, var(--kmc-layout-max));
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+body.kmc-shell-v4 .kmc-domain-cockpit,
+body.kmc-shell-v4 .kmc-action-center,
+body.kmc-shell-v4 .kmc-operations-workspace,
+body.kmc-shell-v4 .kmc-purchasing-workspace,
+body.kmc-shell-v4 .kmc-sourcing-workspace,
+body.kmc-shell-v4 .kmc-workspace {
+  display: grid;
+  align-content: start;
+  gap: var(--kmc-layout-gap);
+  padding: var(--kmc-layout-page-pad-top) var(--kmc-layout-page-pad-x) var(--kmc-layout-page-pad-bottom);
+}
+
+/* Canonical order: Hero → Attention/KPI → Primary → Secondary. */
+body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] {
+  display: grid;
+  grid-auto-rows: max-content;
+  gap: var(--kmc-layout-gap);
+}
+
+/* Hero composition from mocks. */
+body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header,
+body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header {
+  width: 100%;
+  height: var(--kmc-layout-hero-h);
+  min-height: var(--kmc-layout-hero-h);
+  max-height: var(--kmc-layout-hero-h);
+  margin: 0;
+  align-content: center;
+}
+
+/* Controls always live inside the Hero's right zone. */
+body.kmc-shell-v4 [data-dashboard-role="hero"] .kmc-period-control,
+body.kmc-shell-v4 [data-dashboard-role="hero"] .kmc-workspace-controls,
+body.kmc-shell-v4 [data-dashboard-role="hero"] .kmc-action-center-filter {
+  position: relative;
+  z-index: 2;
+  justify-self: end;
+  align-self: start;
+}
+
+/* The global market selector visually belongs to the same Hero band. */
+body.kmc-shell-v4 .kmc-admin-shell {
+  position: relative;
+}
+
+body.kmc-shell-v4 .kmc-admin-shell > .kmc-market-context {
+  top: calc(var(--kmc-layout-page-pad-top) + 18px);
+  right: calc(var(--kmc-layout-page-pad-x) + 18px);
+  width: min(290px, 25vw);
+}
+
+/* Attention/KPI row: one compact horizontal decision band. */
+body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-strip,
+body.kmc-shell-v4 .kmc-metric-strip,
+body.kmc-shell-v4 .kmc-commerce-essential-metrics,
+body.kmc-shell-v4 .kmc-finance-essential-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--kmc-layout-gap-tight);
+  margin: 0;
+}
+
+body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-card,
+body.kmc-shell-v4 .kmc-metric-strip > *,
+body.kmc-shell-v4 .kmc-commerce-essential-metrics > *,
+body.kmc-shell-v4 .kmc-finance-essential-metrics > * {
+  min-height: var(--kmc-layout-attention-h);
+  height: var(--kmc-layout-attention-h);
+  box-sizing: border-box;
+}
+
+/* Primary object gets the remaining first-viewport mass. */
+body.kmc-shell-v4 [data-dashboard-role="primary"],
+body.kmc-shell-v4 .is-control-tower-flow,
+body.kmc-shell-v4 .kmc-control-chain-card {
+  min-width: 0;
+  margin: 0;
+}
+
+/* Two-column decision surfaces follow the mock proportions. */
+body.kmc-shell-v4 .kmc-decision-dashboard-grid-2 {
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, .75fr);
+  gap: var(--kmc-layout-gap);
+}
+
+/* Remove historical extra breathing room that made screens start differently. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"],
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"],
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"],
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"],
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"],
+body.kmc-shell-v4 .kmc-action-center {
+  gap: var(--kmc-layout-gap);
+  padding: var(--kmc-layout-page-pad-top) var(--kmc-layout-page-pad-x) var(--kmc-layout-page-pad-bottom);
+}
+
+/* First viewport contract at reference desktop size (1672×941 class). */
+@media (min-width: 1280px) and (min-height: 820px) {
+  body.kmc-shell-v4 .kmc-domain-cockpit,
+  body.kmc-shell-v4 .kmc-action-center {
+    min-height: calc(100vh - 1px);
+    grid-auto-rows: max-content;
+  }
+
+  body.kmc-shell-v4 [data-dashboard-role="secondary"] {
+    margin-top: 0;
+  }
+
+  body.kmc-shell-v4 .kmc-decision-surface-card,
+  body.kmc-shell-v4 .kmc-section {
+    padding: 12px 14px;
+  }
+
+  body.kmc-shell-v4 .kmc-control-chain-card {
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 1180px) {
+  body.kmc-shell-v4 {
+    --kmc-layout-page-pad-x: 16px;
+    --kmc-layout-page-pad-top: 14px;
+    --kmc-layout-hero-h: 142px;
+  }
+
+  body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-strip,
+  body.kmc-shell-v4 .kmc-metric-strip,
+  body.kmc-shell-v4 .kmc-commerce-essential-metrics,
+  body.kmc-shell-v4 .kmc-finance-essential-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-card,
+  body.kmc-shell-v4 .kmc-metric-strip > *,
+  body.kmc-shell-v4 .kmc-commerce-essential-metrics > *,
+  body.kmc-shell-v4 .kmc-finance-essential-metrics > * {
+    height: auto;
+    min-height: 96px;
+  }
+}
+
+@media (max-width: 760px) {
+  body.kmc-shell-v4 {
+    --kmc-layout-page-pad-x: 12px;
+    --kmc-layout-page-pad-top: 10px;
+    --kmc-layout-page-pad-bottom: 18px;
+    --kmc-layout-gap: 10px;
+  }
+
+  body.kmc-shell-v4 .kmc-domain-cockpit,
+  body.kmc-shell-v4 .kmc-action-center,
+  body.kmc-shell-v4 .kmc-operations-workspace,
+  body.kmc-shell-v4 .kmc-purchasing-workspace,
+  body.kmc-shell-v4 .kmc-sourcing-workspace,
+  body.kmc-shell-v4 .kmc-workspace {
+    padding: var(--kmc-layout-page-pad-top) var(--kmc-layout-page-pad-x) var(--kmc-layout-page-pad-bottom);
+  }
+
+  body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header,
+  body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  body.kmc-shell-v4 [data-dashboard-role="attention"] .kmc-decision-strip,
+  body.kmc-shell-v4 .kmc-metric-strip,
+  body.kmc-shell-v4 .kmc-commerce-essential-metrics,
+  body.kmc-shell-v4 .kmc-finance-essential-metrics,
+  body.kmc-shell-v4 .kmc-decision-dashboard-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
