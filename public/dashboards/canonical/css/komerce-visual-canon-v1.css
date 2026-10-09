@@ -79,6 +79,14 @@ body.kmc-shell-v4 .kmc-operations-workspace,
 body.kmc-shell-v4 .kmc-purchasing-workspace,
 body.kmc-shell-v4 .kmc-workspace {
   color: var(--kmc-brand-ink);
+  background-color: var(--kmc-brand-canvas);
+}
+
+/* Dashboard roots historically carried their own gray canvas.
+ * Canon V1 owns that surface now. */
+body.kmc-shell-v4 [data-dashboard-id],
+body.kmc-shell-v4 [data-canonical-surface] {
+  background-color: var(--kmc-brand-canvas);
 }
 
 /* Shared cards: white/ivory, never pink/blue/purple brand fills. */
