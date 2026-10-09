@@ -41,7 +41,7 @@ body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] 
   gap: 7px;
   padding: 13px 15px 12px;
   border: 1px solid color-mix(in srgb, var(--decision-accent) 25%, #dce5ef);
-  border-left: 5px solid var(--decision-accent);
+  border-left: 5px solid var(--decision-accent) !important;
   border-top-width: 1px;
   border-radius: 12px;
   background:
