@@ -1,5 +1,8 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+
 /**
  * @test-kind unit
  * @test-runner jest
@@ -8,6 +11,7 @@
 
 const workspace = require('../../public/dashboards/canonical/js/shipping-customs-workspace');
 const decision = require('../../public/dashboards/canonical/js/shipping-customs-workspace-decision');
+const SOURCE = fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','canonical','js','shipping-customs-workspace-decision.js'),'utf8');
 
 function summaryFixture() {
   return {
@@ -88,4 +92,13 @@ describe('Expéditions & Douane — decision-first visual', () => {
     expect(baseMount.mock.calls[0][0].ui.MetricStrip.render).not.toBe(ui.MetricStrip.render);
     expect(result).toBe(payload);
   });
+});
+
+
+test('la vue décision Expéditions & Douane rend seulement les dossiers à traiter', () => {
+  const start = SOURCE.indexOf('function renderMetricOverview');
+  const renderSource = SOURCE.slice(start, SOURCE.indexOf('function decorateUi', start));
+  expect(renderSource).toContain("'Flux à traiter'");
+  expect(renderSource).toContain("'Les dossiers qui attendent une intervention sur ce marché.'");
+  expect(renderSource).not.toContain('SummaryCards.render');
 });
