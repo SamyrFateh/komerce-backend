@@ -153,7 +153,7 @@ test.describe('Operations — logistics control board', () => {
     expect(visual.radius).toBe('16px');
   });
 
-  test('la hiérarchie suit Hero → Attention → Objet principal → Secondaire', async ({ page }) => {
+  test('la hiérarchie Operations reste essentielle : Hero → résumé couleur → chaîne', async ({ page }) => {
     const order = await page.locator('[data-dashboard-id="operations"] > *').evaluateAll(nodes =>
       nodes.map(n => ({
         cls:n.className,
@@ -169,31 +169,26 @@ test.describe('Operations — logistics control board', () => {
     expect(heroIndex).toBeGreaterThanOrEqual(0);
     expect(attentionIndex).toBeGreaterThan(heroIndex);
     expect(primaryIndex).toBeGreaterThan(attentionIndex);
-    expect(secondaryIndex).toBeGreaterThan(primaryIndex);
+    expect(secondaryIndex).toBe(-1);
   });
 
-  test('les rubriques d’attention sont visibles et dominantes dans le premier écran', async ({ page }) => {
-    const attention = page.locator('[data-dashboard-role="attention"]');
+  test('le récapitulatif couleur est compact et reflète uniquement la santé du tableau', async ({ page }) => {
+    const attention = page.locator('.kmc-control-health-summary');
     await expect(attention).toBeVisible();
+    await expect(attention.locator('.kmc-control-health-summary-item')).toHaveCount(4);
 
-    const geometry = await attention.evaluate(el => {
-      const box = el.getBoundingClientRect();
-      const cards = [...el.querySelectorAll('.kmc-decision-card')];
-      return {
-        top: box.top,
-        bottom: box.bottom,
-        cardCount: cards.length,
-        minCardHeight: Math.min(...cards.map(card => card.getBoundingClientRect().height)),
-        borderWidths: cards.map(card => getComputedStyle(card).borderLeftWidth),
-      };
-    });
-
-    expect(geometry.top).toBeGreaterThan(0);
-    expect(geometry.top).toBeLessThan(650);
-    expect(geometry.bottom).toBeLessThanOrEqual(941);
-    expect(geometry.cardCount).toBeGreaterThanOrEqual(1);
-    expect(geometry.minCardHeight).toBeGreaterThanOrEqual(100);
-    expect(geometry.borderWidths.every(value => value === '5px')).toBe(true);
+    const values = await attention.locator('.kmc-control-health-summary-item').evaluateAll(nodes =>
+      nodes.map(node => ({
+        label: node.querySelector('.kmc-control-health-summary-label')?.textContent?.trim(),
+        value: Number(node.querySelector('.kmc-control-health-summary-value')?.textContent?.trim()),
+      }))
+    );
+    expect(values).toEqual([
+      { label:'Normal', value:10 },
+      { label:'À risque', value:3 },
+      { label:'Bloqué', value:4 },
+      { label:'Non observé', value:1 },
+    ]);
   });
 
   test('affiche les 9 étapes et la légende santé', async ({ page }) => {
@@ -257,7 +252,7 @@ test.describe('Operations — logistics control board', () => {
 
     const unknown = page.locator('.kmc-control-order.is-unknown').filter({ hasText:'K-104688' });
     await expect(unknown).toBeVisible();
-    await expect(page.locator('.kmc-control-structural-alert.is-critical')).toContainText('Paiement fournisseur bloqué');
+    await expect(page.locator('.kmc-control-structural-alert')).toHaveCount(0);
   });
 
   test('l’encapsulation distingue PO, unité HUB et colis avec le lineage serveur', async ({ page }) => {
@@ -271,6 +266,16 @@ test.describe('Operations — logistics control board', () => {
     await expect(detail).toContainText('Colis · P-104715');
     await expect(detail).toContainText('HU-104715');
     await expect(detail).toContainText('PO-104715');
+  });
+
+  test('aucun bloc superflu ne concurrence le tableau', async ({ page }) => {
+    await expect(page.getByText('Approfondir', { exact:true })).toHaveCount(0);
+    await expect(page.getByText('File d’exécution', { exact:true })).toHaveCount(0);
+    await expect(page.getByText('Colis en retard critique', { exact:true })).toHaveCount(0);
+    await expect(page.locator('#operations-drill')).toHaveCount(0);
+    await expect(page.locator('#operations-orders')).toHaveCount(0);
+    await expect(page.locator('#operations-delays')).toHaveCount(0);
+    await expect(page.locator('.kmc-control-structural-alert')).toHaveCount(0);
   });
 
   test('capture de revue 1672×941', async ({ page }, testInfo) => {
