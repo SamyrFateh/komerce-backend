@@ -58,12 +58,14 @@ function payloadFixture() {
           health: 'RED',
           split: false,
           envelope: { type: 'HUB_UNIT', refs: ['HU-1'] },
+          lineage: { purchase_orders: ['PO-1'], hub_units: ['HU-1'], parcels: [] },
         }],
         RELAY: [{
           order_reference: 'CMD-3',
           health: 'GREEN',
           split: false,
           envelope: { type: 'PARCEL', refs: ['P-3'] },
+          lineage: { purchase_orders: ['PO-3'], hub_units: ['HU-3'], parcels: ['P-3'] },
         }],
       },
     },
@@ -151,6 +153,8 @@ describe('LOT 2E-CANON — Operations vivant', () => {
           reference: 'CMD-1',
           health: 'RED',
           causes: [],
+          envelope: { type: 'HUB_UNIT', label: 'Unité HUB', refs: ['HU-1'] },
+          lineage: { purchase_orders: ['PO-1'], hub_units: ['HU-1'], parcels: [] },
           split: false,
           href: '/admin/orders/CMD-1',
         }],
@@ -164,6 +168,8 @@ describe('LOT 2E-CANON — Operations vivant', () => {
           reference: 'CMD-3',
           health: 'GREEN',
           causes: [],
+          envelope: { type: 'PARCEL', label: 'Colis', refs: ['P-3'] },
+          lineage: { purchase_orders: ['PO-3'], hub_units: ['HU-3'], parcels: ['P-3'] },
           split: false,
           href: '/admin/orders/CMD-3',
         }],
@@ -171,6 +177,10 @@ describe('LOT 2E-CANON — Operations vivant', () => {
     ]);
     expect(operationsDecision.drillCards(operations, { role: 'admin' })).toHaveLength(2);
     expect(operationsDecision.controlStageMeta('CUSTOMS')).toEqual({ icon: '⌂', accent: 'red' });
+    expect(operationsDecision.controlEnvelope({ envelope: { type: 'PURCHASE_ORDER', refs: ['PO-42'] } }))
+      .toEqual({ type: 'PURCHASE_ORDER', label: 'PO fournisseur', refs: ['PO-42'] });
+    expect(operationsDecision.controlLineage({ lineage: { purchase_orders: ['PO-42'], parcels: ['P-42'] } }))
+      .toEqual({ purchase_orders: ['PO-42'], hub_units: [], parcels: ['P-42'] });
   });
 
   test('ne peint pas un faux panneau rassurant quand operations.signals est vide', () => {
