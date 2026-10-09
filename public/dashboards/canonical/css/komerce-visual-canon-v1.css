@@ -337,3 +337,15 @@ body.kmc-shell-v4 .kmc-action-center {
     padding: 18px 16px;
   }
 }
+
+
+/* Specificity bridge for historical cockpit roots.
+ * These selectors intentionally match the old theme specificity so Canon V1 wins. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"],
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"],
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"],
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"],
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"],
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="markets"] {
+  background: var(--kmc-brand-canvas);
+}
