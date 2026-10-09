@@ -336,59 +336,52 @@
     }
     dashboard.setAttribute('data-dashboard-id', 'commerce');
     dashboard.setAttribute('data-dashboard-visual', 'decision-first-v1');
+    dashboard.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'FLUX · COMMERCE'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Commerce'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir ce qui se vend, à quel rythme et où concentrer l’attention commerciale.'));
+    header.setAttribute('data-dashboard-role', 'hero');
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'COMMERCE'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Activité commerciale'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir ce qui se vend, combien, et où les commandes se perdent.'));
+    header.appendChild(periodControl(doc, options.period || payload.period || '30', options.onPeriodChange));
     dashboard.appendChild(header);
-    dashboard.appendChild(periodControl(doc, options.period || payload.period || '30', options.onPeriodChange));
 
     const decisions = decisionItems(payload, base);
     if (decisions.length) {
       const host = doc.createElement('div');
-      host.className = 'kmc-cockpit-decisions';
+      host.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';
+      host.setAttribute('data-dashboard-role', 'attention');
       decisionUi.DecisionStrip.render(host, { items: decisions });
       dashboard.appendChild(host);
     }
 
+    const activity = cardSection(
+      doc,
+      'Activité commerciale',
+      'Les chiffres essentiels et la progression réelle des commandes.',
+      'commerce-activity'
+    );
+    activity.section.className += ' is-cockpit-truth is-cockpit-flow';
+    activity.section.setAttribute('data-dashboard-role', 'primary');
+
     const headline = metricItems(payload, base).slice(0, 4);
     if (headline.length) {
-      const section = cardSection(
-        doc,
-        'Lecture commerciale',
-        'Quatre indicateurs canoniques : encaissement, volume, panier et produits vendus.',
-        'commerce-kpis'
-      );
-      section.section.className += ' is-cockpit-truth';
-      ui.MetricStrip.render(section.body, { items: headline });
-      dashboard.appendChild(section.section);
+      const metricsHost = doc.createElement('div');
+      metricsHost.className = 'kmc-commerce-essential-metrics';
+      ui.MetricStrip.render(metricsHost, { items: headline });
+      activity.body.appendChild(metricsHost);
     }
 
-    const viability = viabilityItems(payload, base);
-    if (viability.length) {
-      const section = cardSection(doc, 'Viabilité des meilleures ventes', 'Lecture market-scoped du corridor de prix et du moteur économique canonique.', 'commerce-viability');
-      decisionUi.RankedList.render(section.body, { items: viability });
-      dashboard.appendChild(section.section);
-    }
+    const flowTitle = text(doc, 'h3', 'kmc-commerce-flow-title', 'Progression des commandes');
+    activity.body.appendChild(flowTitle);
+    const funnelHost = doc.createElement('div');
+    funnelHost.className = 'kmc-commerce-essential-funnel';
+    decisionUi.Funnel.render(funnelHost, { stages: funnelStages(payload, base) });
+    activity.body.appendChild(funnelHost);
 
-    const funnel = cardSection(doc, 'Funnel commandes', 'Progression réelle des commandes sans taux recalculé côté navigateur.', 'commerce-funnel');
+    dashboard.appendChild(activity.section);
 
-      funnel.section.className += ' is-cockpit-flow';
-    decisionUi.Funnel.render(funnel.body, { stages: funnelStages(payload, base) });
-    dashboard.appendChild(funnel.section);
-
-    const profitability = profitabilityItems(payload, base);
-    if (profitability.length) {
-      const section = cardSection(doc, 'Rentabilité produits', 'La marge réelle reste inconnue tant que le costing n’est pas complet.', 'commerce-profitability');
-      decisionUi.RankedList.render(section.body, { items: profitability });
-      dashboard.appendChild(section.section);
-    }
-
-    const footer = doc.createElement('div');
-    decisionUi.TrustFooter.render(footer, trust(payload, base));
-    dashboard.appendChild(footer);
     rootNode.appendChild(dashboard);
     return { element: dashboard, visual: 'decision-first-v1' };
   }
