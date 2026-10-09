@@ -139,9 +139,9 @@
     const header = doc.createElement('header');
     header.className = 'kmc-workspace-header';
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · ACHATS FOURNISSEURS'));
-    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Acheter auprès des fournisseurs'));
-    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Lignes à acheter regroupées par fournisseur et Hub d’approvisionnement · le marché reste une propriété de chaque ligne'));
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'ACHATS FOURNISSEURS'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Achats à traiter'));
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Voir ce qui doit être commandé ou confirmé auprès des fournisseurs.'));
     header.appendChild(copy);
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
     feedback.setAttribute('data-workspace-feedback', '');
@@ -259,7 +259,7 @@
       rootNode,
       ui,
       'Lignes à acheter',
-      'Regroupement par fournisseur et Hub. Cochez les lignes d’un même groupe puis préparez une commande ; un brouillon reste modifiable avant soumission.'
+      'Sélectionnez les lignes d’un même fournisseur puis préparez la commande.'
     );
     if (!(payload.groups || []).length) {
       slot.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Aucune ligne à acheter.'));
@@ -594,6 +594,7 @@
   function renderPayload(rootNode, ui, doc, state, context) {
     rootNode.replaceChildren();
     rootNode.classList.add('kmc-purchasing-workspace');
+    rootNode.setAttribute('data-workspace-kind', 'purchasing');
     rootNode.appendChild(createHeader(doc));
     if (state.detail) renderPurchaseOrder(rootNode, ui, doc, state.detail, context);
     if (state.detailError) {
@@ -661,7 +662,7 @@
         rootNode.replaceChildren();
         const panel = doc.createElement('section');
         panel.className = 'kmc-workspace-header';
-        panel.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'WORKSPACE · ACHATS FOURNISSEURS'));
+        panel.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'ACHATS FOURNISSEURS'));
         panel.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Achats fournisseurs indisponibles'));
         panel.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', describeError(error)));
         rootNode.appendChild(panel);
