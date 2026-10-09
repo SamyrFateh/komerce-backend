@@ -68,3 +68,13 @@ test('jsonRequest POST sérialise uniquement le body métier fourni', async () =
     })
   );
 });
+
+
+test('Hub / Relais overview ne rend plus le doublon Signaux réseau et porte son Hero contextuel', () => {
+  expect(SOURCE).toContain("data-workspace-kind', 'hub-relay");
+  const renderStart = SOURCE.indexOf('function renderPayload');
+  const renderSource = SOURCE.slice(renderStart);
+  expect(renderSource).not.toContain('renderSignals(rootNode');
+  expect(SOURCE).toContain("'HUB / RELAIS'");
+  expect(SOURCE).toContain("'Flux à traiter'");
+});
