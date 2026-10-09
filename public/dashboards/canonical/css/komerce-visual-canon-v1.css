@@ -206,3 +206,125 @@ body.kmc-shell-v4 .is-unknown { --kmc-canon-status: var(--kmc-state-unknown); }
     --kmc-canon-radius-lg: 14px;
   }
 }
+
+
+/* Canonical overview composition — context is part of the Hero, not a card above it. */
+body.kmc-shell-v4 .kmc-admin-shell {
+  position: relative;
+}
+
+body.kmc-shell-v4 .kmc-admin-shell > .kmc-market-context {
+  position: absolute;
+  z-index: 6;
+  top: 18px;
+  right: 42px;
+  width: min(300px, 28vw);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+body.kmc-shell-v4 .kmc-admin-shell > .kmc-market-context .kmc-market-context-copy {
+  display: none;
+}
+
+body.kmc-shell-v4 .kmc-admin-shell > .kmc-market-context .kmc-market-context-field {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+body.kmc-shell-v4 .kmc-admin-shell > .kmc-market-context .kmc-market-context-label {
+  color: var(--kmc-brand-gold-strong);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .10em;
+  text-transform: uppercase;
+}
+
+body.kmc-shell-v4 .kmc-admin-shell > .kmc-market-context .kmc-market-context-select {
+  min-height: 34px;
+  padding: 6px 34px 6px 11px;
+  color: var(--kmc-brand-navy);
+  background: rgba(255,255,255,.92);
+  border: 1px solid color-mix(in srgb, var(--kmc-brand-gold) 42%, var(--kmc-brand-line));
+  box-shadow: 0 2px 8px rgba(7,26,61,.04);
+  font-weight: 700;
+}
+
+body.kmc-shell-v4 .kmc-admin-shell > [data-canonical-surface] {
+  min-width: 0;
+}
+
+/* One Hero geometry for overview/workspace surfaces. */
+body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header,
+body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header {
+  min-height: 150px;
+  box-sizing: border-box;
+  padding: 24px 34% 22px 24px;
+  border: 1px solid color-mix(in srgb, var(--kmc-brand-gold) 40%, var(--kmc-brand-line));
+  border-radius: var(--kmc-canon-radius-lg);
+  background:
+    linear-gradient(108deg, rgba(255,249,240,.99) 0 54%, rgba(255,255,255,.92) 67%, rgba(231,215,163,.34) 100%);
+  box-shadow: var(--kmc-canon-shadow);
+}
+
+body.kmc-shell-v4 [data-dashboard-role="hero"] .canonical-eyebrow,
+body.kmc-shell-v4 [data-dashboard-role="hero"] .kmc-workspace-kicker {
+  color: var(--kmc-brand-gold-strong);
+}
+
+body.kmc-shell-v4 [data-dashboard-role="hero"] .kmc-dashboard-title,
+body.kmc-shell-v4 [data-dashboard-role="hero"] .kmc-workspace-title {
+  color: var(--kmc-brand-navy);
+  font-size: clamp(27px, 2.15vw, 36px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -.025em;
+}
+
+body.kmc-shell-v4 [data-dashboard-role="hero"] .kmc-dashboard-description,
+body.kmc-shell-v4 [data-dashboard-role="hero"] .kmc-workspace-subtitle {
+  max-width: 720px;
+  color: var(--kmc-brand-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Action Center has no market strip but obeys the exact same top geometry. */
+body.kmc-shell-v4 .kmc-action-center {
+  padding-top: 18px;
+}
+
+@media (max-width: 1180px) {
+  body.kmc-shell-v4 .kmc-admin-shell > .kmc-market-context {
+    right: 24px;
+    width: 260px;
+  }
+
+  body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header,
+  body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header {
+    padding-right: 32%;
+  }
+}
+
+@media (max-width: 760px) {
+  body.kmc-shell-v4 .kmc-admin-shell > .kmc-market-context {
+    position: static;
+    width: auto;
+    margin: 10px 12px 0;
+  }
+
+  body.kmc-shell-v4 .kmc-admin-shell > .kmc-market-context .kmc-market-context-copy {
+    display: none;
+  }
+
+  body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header,
+  body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header {
+    min-height: auto;
+    padding: 18px 16px;
+  }
+}
