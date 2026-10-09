@@ -175,7 +175,12 @@ test.describe('Operations — logistics control board', () => {
   test('les cartes restent compactes puis révèlent l’objet précis au clic', async ({ page }) => {
     const warning = page.locator('.kmc-control-order.is-warning').filter({ hasText:'K-104816' });
     await expect(warning).toBeVisible();
-    await expect(page.locator('.kmc-control-order-cause-summary')).toHaveCount(0);
+    await expect(warning).not.toContainText('Confirmation fournisseur à surveiller');
+    const hiddenDetails = page.locator('.kmc-control-order-detail');
+    const visibleBeforeClick = await hiddenDetails.evaluateAll(nodes =>
+      nodes.filter(node => !node.hidden && getComputedStyle(node).display !== 'none').length
+    );
+    expect(visibleBeforeClick).toBe(0);
 
     await warning.click();
 
