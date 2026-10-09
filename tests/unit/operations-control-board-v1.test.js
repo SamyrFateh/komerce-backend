@@ -20,10 +20,10 @@ describe('Operations logistics control board V1',()=>{
 
   test('le tableau garde neuf colonnes potentielles et une géométrie de poste opérationnel',()=>{
     expect(css).toMatch(/\.kmc-control-chain\s*\{[^}]*grid-auto-flow:\s*column/s);
-    expect(css).toMatch(/grid-auto-columns:\s*minmax\(190px,\s*1fr\)/);
+    expect(css).toMatch(/grid-auto-columns:\s*minmax\(145px,\s*1fr\)/);
     expect(css).toMatch(/\.kmc-control-stage\s*\{[^}]*min-height:\s*470px/s);
-    expect(css).toMatch(/\.kmc-control-chain::before\s*\{[^}]*height:\s*3px/s);
-    expect(css).toMatch(/\.kmc-control-stage-icon\s*\{[^}]*width:\s*54px[^}]*height:\s*54px/s);
+    expect(css).toMatch(/\.kmc-control-chain::before\s*\{[^}]*height:\s*4px/s);
+    expect(css).toMatch(/\.kmc-control-stage-icon\s*\{[^}]*width:\s*60px[^}]*height:\s*60px/s);
   });
 
   test('les cartes commandes distinguent normal, risque, bloqué et inconnu',()=>{
