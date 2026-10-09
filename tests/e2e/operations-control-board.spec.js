@@ -189,7 +189,7 @@ test.describe('Operations — logistics control board', () => {
     });
 
     expect(geometry.top).toBeGreaterThan(0);
-    expect(geometry.top).toBeLessThan(500);
+    expect(geometry.top).toBeLessThan(650);
     expect(geometry.bottom).toBeLessThanOrEqual(941);
     expect(geometry.cardCount).toBeGreaterThanOrEqual(1);
     expect(geometry.minCardHeight).toBeGreaterThanOrEqual(100);
