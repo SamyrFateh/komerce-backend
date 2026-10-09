@@ -176,20 +176,6 @@
       heading.appendChild(text(doc, 'span', 'kmc-control-stage-count', column.orders.length));
       stage.appendChild(heading);
 
-      if (Array.isArray(column.alerts) && column.alerts.length) {
-        const alerts = doc.createElement('div');
-        alerts.className = 'kmc-control-structural-alerts';
-        column.alerts.forEach(alert => {
-          const item = doc.createElement('div');
-          item.className = `kmc-control-structural-alert ${controlHealthClass(alert.health)}`;
-          item.setAttribute('data-control-root-cause', alert.code);
-          item.appendChild(text(doc, 'strong', 'kmc-control-structural-count', `${alert.count} commandes`));
-          item.appendChild(text(doc, 'span', 'kmc-control-structural-summary', alert.summary));
-          alerts.appendChild(item);
-        });
-        stage.appendChild(alerts);
-      }
-
       const list = doc.createElement('div');
       list.className = 'kmc-control-order-list';
 
@@ -294,6 +280,43 @@
     });
   }
 
+
+  function controlHealthSummary(payload) {
+    const summary = { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 0 };
+    controlChainColumns(payload).forEach(column => {
+      column.orders.forEach(order => {
+        const health = Object.prototype.hasOwnProperty.call(summary, order.health) ? order.health : 'UNKNOWN';
+        summary[health] += 1;
+      });
+    });
+    return Object.freeze(summary);
+  }
+
+  function renderControlHealthSummary(doc, payload) {
+    const summary = controlHealthSummary(payload);
+    const host = doc.createElement('div');
+    host.className = 'kmc-control-health-summary kmc-dashboard-attention-band';
+    host.setAttribute('data-dashboard-role', 'attention');
+
+    [
+      ['GREEN', 'positive', 'Normal'],
+      ['ORANGE', 'warning', 'À risque'],
+      ['RED', 'critical', 'Bloqué'],
+      ['UNKNOWN', 'unknown', 'Non observé'],
+    ].forEach(([health, tone, label]) => {
+      const item = doc.createElement('div');
+      item.className = `kmc-control-health-summary-item is-${tone}`;
+      const dot = doc.createElement('span');
+      dot.className = 'kmc-control-health-summary-dot';
+      dot.setAttribute('aria-hidden', 'true');
+      item.appendChild(dot);
+      item.appendChild(text(doc, 'strong', 'kmc-control-health-summary-value', summary[health]));
+      item.appendChild(text(doc, 'span', 'kmc-control-health-summary-label', label));
+      host.appendChild(item);
+    });
+
+    return host;
+  }
 
   function renderControlLegend(doc) {
     const legend = doc.createElement('div');
@@ -530,16 +553,11 @@
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Une commande, une position opérationnelle, une cause actionnable.'));
     dashboard.appendChild(header);
 
-    const decisions = decisionItems(payload, base);
-    if (decisions.length) {
-      const host = doc.createElement('div');
-      host.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';
-      host.setAttribute('data-dashboard-role', 'attention');
-      decisionUi.DecisionStrip.render(host, { items: decisions });
-      dashboard.appendChild(host);
+    const controlColumns = controlChainColumns(payload);
+    if (controlColumns.length) {
+      dashboard.appendChild(renderControlHealthSummary(doc, payload));
     }
 
-    const controlColumns = controlChainColumns(payload);
     if (controlColumns.length) {
       const chain = cardSection(
         doc,
@@ -554,42 +572,6 @@
       dashboard.appendChild(chain.section);
     }
 
-    const projectedSignals = base.projectSignals(payload);
-    const orders = cardSection(doc, 'File d’exécution', 'Ordre du backend conservé ; le badge indique le temps sans avancement.', 'operations-orders');
-    decisionUi.PriorityList.render(orders.body, { items: priorityOrders(payload, base) });
-
-    if (projectedSignals.length) {
-      const executionGrid = doc.createElement('div');
-      executionGrid.className = 'kmc-decision-dashboard-grid-2';
-      const signals = cardSection(doc, 'Incidents & signaux', 'Signaux opérationnels ouverts et recommandations déjà fournies.', 'operations-signals');
-      ui.AlertPanel.render(signals.body, { title: 'Signaux opérationnels', items: projectedSignals });
-      executionGrid.appendChild(signals.section);
-      executionGrid.appendChild(orders.section);
-      executionGrid.setAttribute('data-dashboard-role', 'secondary');
-      dashboard.appendChild(executionGrid);
-    } else {
-      orders.section.setAttribute('data-dashboard-role', 'secondary');
-      dashboard.appendChild(orders.section);
-    }
-
-    const delays = delayItems(payload, base);
-    if (delays.length) {
-      const section = cardSection(doc, 'Colis en retard critique', 'Transit critique tel que fourni par la source opérationnelle.', 'operations-delays');
-      decisionUi.RankedList.render(section.body, { items: delays });
-      section.section.setAttribute('data-dashboard-role', 'secondary');
-      dashboard.appendChild(section.section);
-    }
-
-    const drills = drillCards(base, options.user);
-    if (drills.length) {
-      const section = cardSection(doc, 'Approfondir', 'Workspaces visibles selon le rôle et les droits existants.', 'operations-drill');
-      decisionUi.SummaryCards.render(section.body, { items: drills });
-      dashboard.appendChild(section.section);
-    }
-
-    const footer = doc.createElement('div');
-    decisionUi.TrustFooter.render(footer, trust(payload));
-    dashboard.appendChild(footer);
     rootNode.appendChild(dashboard);
     return { element: dashboard, visual: 'decision-first-v1' };
   }
@@ -632,6 +614,8 @@
     decisionItems,
     controlHealthClass,
     controlChainColumns,
+    controlHealthSummary,
+    renderControlHealthSummary,
     renderControlChain,
     metricItems,
     workspaceSummary,
