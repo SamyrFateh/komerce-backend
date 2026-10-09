@@ -275,6 +275,29 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
     }
   });
 
+  test('recherche et marché restent à l\'intérieur du Hero sur écran large (cadre de page centré)', async ({ page }) => {
+    await page.setViewportSize({ width: 2142, height: 760 });
+    for (const route of ['/admin/pilotage','/admin/commerce','/admin/operations']) {
+      await page.goto(`${ORIGIN}${route}`);
+      await page.waitForSelector('[data-dashboard-role="hero"]');
+      const r = await page.evaluate(() => {
+        const box = el => { const b = el.getBoundingClientRect(); return { left:b.left, right:b.right, top:b.top, bottom:b.bottom }; };
+        return {
+          hero: box(document.querySelector('[data-dashboard-role="hero"]')),
+          search: box(document.querySelector('.kmc-admin-topbar .kmc-admin-search')),
+          market: box(document.querySelector('.kmc-admin-topbar .kmc-admin-market-select')),
+        };
+      });
+      for (const control of [r.search, r.market]) {
+        expect(control.right).toBeLessThanOrEqual(r.hero.right - 8);
+        expect(control.left).toBeGreaterThanOrEqual(r.hero.left);
+        expect(control.top).toBeGreaterThanOrEqual(r.hero.top);
+        expect(control.bottom).toBeLessThanOrEqual(r.hero.bottom);
+      }
+      expect(r.search.right).toBeLessThanOrEqual(r.market.left + 1);
+    }
+  });
+
   test('les quatre écrans produisent une capture de référence au même viewport', async ({ page }, testInfo) => {
     for (const route of ['/admin/pilotage','/admin/action-center','/admin/commerce','/admin/operations']) {
       await geometry(page, route);

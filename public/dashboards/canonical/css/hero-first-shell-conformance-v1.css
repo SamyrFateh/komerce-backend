@@ -17,6 +17,7 @@ body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"
   --kmc-hero-search-w: 280px;
   --kmc-hero-market-w: 240px;
   --kmc-hero-lane: 560px;
+  --kmc-hero-sidebar-w: var(--kmc-shell-sidebar-width, 260px);
 }
 
 /* One page frame: the shell root is a full-width canvas, the surface owns its own padding.
@@ -34,24 +35,38 @@ body.kmc-shell-v4[data-kmc-surface="action-center"] #canonical-admin-root {
   padding: var(--kmc-layout-page-pad-top, 18px) var(--kmc-layout-page-pad-x, 24px) var(--kmc-layout-page-pad-bottom, 24px);
 }
 
-/* The former global topbar becomes the Hero's control row. */
+/* The former global topbar becomes the Hero's control row.
+ * It spans the same centered page frame as the Hero (sidebar excluded, --kmc-layout-max,
+ * page padding), so on wide screens the controls stay inside the Hero instead of sticking
+ * to the viewport edge. The frame itself ignores pointer events; only the controls take them. */
 body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar {
   position: absolute;
   z-index: 22;
   top: var(--kmc-hero-controls-top);
-  right: var(--kmc-hero-controls-right);
-  left: auto;
+  left: var(--kmc-hero-sidebar-w);
+  right: 0;
   width: auto;
   height: 34px;
   min-height: 0;
+  box-sizing: border-box;
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  padding: 0;
+  padding: 0 calc(max(0px, (100% - var(--kmc-hero-sidebar-w) - var(--kmc-layout-max, 1680px)) / 2) + var(--kmc-hero-controls-right)) 0 0;
   background: transparent;
   border: 0;
   box-shadow: none;
+  pointer-events: none;
+}
+
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar > * {
+  pointer-events: auto;
+}
+
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar .kmc-admin-market-control {
+  flex: 0 0 auto;
 }
 
 /* Universal reference search. */

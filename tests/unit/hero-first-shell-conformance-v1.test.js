@@ -58,3 +58,11 @@ describe('Hero-first shell conformance v1 — Commandes', () => {
     expect(css).toContain('padding: var(--kmc-layout-page-pad-top, 18px)');
   });
 });
+
+describe('Hero-first shell conformance v1 — cadre des contrôles', () => {
+  test('les contrôles suivent le cadre de page centré du Hero (écran large) sans capter les clics', () => {
+    expect(css).toContain('--kmc-hero-sidebar-w: var(--kmc-shell-sidebar-width, 260px)');
+    expect(css).toContain('pointer-events: none');
+    expect(css).toContain('flex-wrap: nowrap');
+  });
+});
