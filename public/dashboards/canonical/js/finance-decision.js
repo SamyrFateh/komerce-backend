@@ -394,102 +394,56 @@
     }
     dashboard.setAttribute('data-dashboard-id', 'finance');
     dashboard.setAttribute('data-dashboard-visual', 'decision-first-v1');
+    dashboard.setAttribute('data-dashboard-hierarchy', 'hero-attention-primary-secondary');
 
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'FLUX · FINANCE'));
-    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Finance'));
-    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir où est l’argent, si la marge est fiable et quelles anomalies exigent une action.'));
+    header.setAttribute('data-dashboard-role', 'hero');
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'FINANCE'));
+    header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Situation financière'));
+    header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir où est l’argent et ce qui exige une action maintenant.'));
+    header.appendChild(periodControl(doc, options.period || payload.period || '30', options.onPeriodChange));
     dashboard.appendChild(header);
-    dashboard.appendChild(periodControl(doc, options.period || payload.period || '30', options.onPeriodChange));
 
     const decisions = decisionItems(payload, base);
     if (decisions.length) {
       const host = doc.createElement('div');
-      host.className = 'kmc-cockpit-decisions';
+      host.className = 'kmc-cockpit-decisions kmc-dashboard-attention-band';
+      host.setAttribute('data-dashboard-role', 'attention');
       decisionUi.DecisionStrip.render(host, { items: decisions });
       dashboard.appendChild(host);
     }
 
-    const economics = cardSection(
+    const situation = cardSection(
       doc,
-      'Économie',
-      'Encaissement, coût réel, marge consolidée et complétude : la lecture financière minimale.',
-      'finance-kpis'
+      'Situation financière',
+      'Les chiffres essentiels et les paiements qui demandent une vérification.',
+      'finance-situation'
     );
-    economics.section.className += ' is-cockpit-truth';
-    ui.MetricStrip.render(economics.body, { items: headlineMetrics(payload, base) });
-    dashboard.appendChild(economics.section);
+    situation.section.className += ' is-cockpit-truth';
+    situation.section.setAttribute('data-dashboard-role', 'primary');
+
+    const metricsHost = doc.createElement('div');
+    metricsHost.className = 'kmc-finance-essential-metrics';
+    ui.MetricStrip.render(metricsHost, { items: headlineMetrics(payload, base) });
+    situation.body.appendChild(metricsHost);
 
     const supplierPayments = supplierPaymentReviewItems(payload, base);
+    const reviewTitle = text(doc, 'h3', 'kmc-finance-review-title', 'Paiements fournisseurs à revoir');
+    situation.body.appendChild(reviewTitle);
+
     if (supplierPayments.length) {
-      const review = payload.supplier_payment_review || {};
-      const description = review.truncated
-        ? `${supplierPayments.length} sur ${base.formatNumber(review.count, 0)} affiché(s) — état courant, hors filtre période. Aucun total multi-devise.`
-        : 'État courant des paiements fournisseur ambigus, rejetés ou mismatched. Aucun total multi-devise.';
-      const section = cardSection(doc, 'Trésorerie · paiements fournisseur à revoir', description, 'finance-supplier-payments');
-      decisionUi.RankedList.render(section.body, { items: supplierPayments });
-      dashboard.appendChild(section.section);
+      const reviewHost = doc.createElement('div');
+      reviewHost.className = 'kmc-finance-essential-review';
+      decisionUi.RankedList.render(reviewHost, { items: supplierPayments });
+      situation.body.appendChild(reviewHost);
     } else {
-      // L'absence n'est jamais muette : file vide (vue globale) ≠ file non fournie (vue marché).
       const state = supplierReviewState(payload);
-      const section = cardSection(doc, 'Trésorerie · paiements fournisseur à revoir', state.message, 'finance-supplier-payments');
-      section.section.setAttribute('data-supplier-review-state', state.state);
-      dashboard.appendChild(section.section);
+      situation.body.appendChild(text(doc, 'p', 'kmc-finance-review-empty', state.message));
     }
 
-    const incompleteCostOrders = incompleteCostOrderItems(payload, base);
-    const variances = varianceItems(payload, base);
-    if (incompleteCostOrders.length || variances.length) {
-      const grid = doc.createElement('div');
-      grid.className = 'kmc-decision-dashboard-grid-2';
+    dashboard.appendChild(situation.section);
 
-      if (incompleteCostOrders.length) {
-        const incompleteCount = kpi(payload, 'cmds_cout_incomplet');
-        const description = incompleteCount && Number(incompleteCount.value) > incompleteCostOrders.length
-          ? `${incompleteCostOrders.length} sur ${base.formatNumber(incompleteCount.value, 0)} affichée(s) — les plus anciennes en priorité.`
-          : 'Commandes dont le coût réel n’est pas encore complet.';
-        const section = cardSection(doc, 'Coûts incomplets', description, 'finance-incomplete-costs');
-        decisionUi.RankedList.render(section.body, { items: incompleteCostOrders });
-        grid.appendChild(section.section);
-      }
-
-      if (variances.length) {
-        const section = cardSection(
-          doc,
-          'Variances observées',
-          'Écarts non nuls, sans seuil inventé côté navigateur.',
-          'finance-variances'
-        );
-        decisionUi.RankedList.render(section.body, { items: variances });
-        grid.appendChild(section.section);
-      }
-
-      dashboard.appendChild(grid);
-    }
-
-    const trend = trendItems(payload, base);
-    if (trend.length) {
-      const section = cardSection(
-        doc,
-        'Trajectoire financière',
-        'Évolution fournie par le backend avec la couverture réelle des coûts.',
-        'finance-trend'
-      );
-      decisionUi.RankedList.render(section.body, { items: trend });
-      dashboard.appendChild(section.section);
-    }
-
-    const drills = drillCards(base, options.user);
-    if (drills.length) {
-      const section = cardSection(doc, 'Approfondir', 'Workspaces visibles selon le rôle et les droits existants.', 'finance-drill');
-      decisionUi.SummaryCards.render(section.body, { items: drills });
-      dashboard.appendChild(section.section);
-    }
-
-    const footer = doc.createElement('div');
-    decisionUi.TrustFooter.render(footer, trust(payload, base));
-    dashboard.appendChild(footer);
     rootNode.appendChild(dashboard);
     return { element: dashboard, visual: 'decision-first-v1' };
   }
