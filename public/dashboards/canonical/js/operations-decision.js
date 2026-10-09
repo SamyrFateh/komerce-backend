@@ -551,12 +551,11 @@
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'KOMERCE · ADMIN CANONICAL'));
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Opérations — Tour de contrôle'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Une commande, une position opérationnelle, une cause actionnable.'));
-    dashboard.appendChild(header);
-
     const controlColumns = controlChainColumns(payload);
     if (controlColumns.length) {
-      dashboard.appendChild(renderControlHealthSummary(doc, payload));
+      header.appendChild(renderControlHealthSummary(doc, payload));
     }
+    dashboard.appendChild(header);
 
     if (controlColumns.length) {
       const chain = cardSection(

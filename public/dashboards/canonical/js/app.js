@@ -559,6 +559,43 @@
     });
   }
 
+  function embedSurfaceContextInHero(surface, selector, options = {}) {
+    if (!options.heroContext || !surface || !selector) return;
+    const doc = options.document || global.document;
+    const hero = surface.querySelector?.('[data-dashboard-role="hero"]');
+    if (!hero) return;
+
+    let controls = hero.querySelector?.('.kmc-context-hero-controls');
+    if (!controls) {
+      controls = doc.createElement('div');
+      controls.className = 'kmc-context-hero-controls';
+      hero.appendChild(controls);
+    } else {
+      controls.replaceChildren();
+    }
+
+    const search = options.searchControl || doc.querySelector?.('.kmc-admin-search');
+    if (search) {
+      search.classList.add('is-hero-context-search');
+      controls.appendChild(search);
+      options.searchControl = search;
+    }
+
+    const marketField = selector.element?.querySelector?.('.kmc-market-context-field');
+    if (marketField) {
+      marketField.classList.add('is-hero-context-market');
+      controls.appendChild(marketField);
+    }
+
+    const topbar = doc.querySelector?.('.kmc-admin-topbar');
+    if (topbar) topbar.setAttribute('hidden', 'hidden');
+
+    const perimeter = selector.element;
+    if (perimeter && perimeter.parentNode) perimeter.parentNode.removeChild(perimeter);
+
+    doc.body?.classList?.add('kmc-context-controls-in-hero');
+  }
+
   function renderMarketSurfaceShell(root, user, adminContext, options) {
     if (!root || typeof root.replaceChildren !== 'function' || typeof root.appendChild !== 'function') {
       throw new Error('canonical_admin_shell_root_missing');
@@ -573,7 +610,23 @@
     const surface = global.document.createElement('div');
     surface.setAttribute('data-canonical-surface', options.surface);
 
-    const renderCurrent = requestedMarket => options.render(surface, user, adminContext, requestedMarket);
+    const heroContextState = options.heroContext
+      ? { searchControl: global.document.querySelector?.('.kmc-admin-search') || null }
+      : null;
+
+    const renderCurrent = async requestedMarket => {
+      const result = await options.render(surface, user, adminContext, requestedMarket);
+      if (options.heroContext) {
+        embedSurfaceContextInHero(surface, selector, {
+          heroContext: true,
+          document: global.document,
+          searchControl: heroContextState.searchControl,
+        });
+        heroContextState.searchControl = surface.querySelector?.('.kmc-context-hero-controls .kmc-admin-search')
+          || heroContextState.searchControl;
+      }
+      return result;
+    };
     const renderAtomically = async requestedMarket => {
       // Pricing garde l'Atelier courant visible pendant que le marché suivant
       // se construit hors DOM. Le swap n'arrive qu'après un rendu réussi :
@@ -586,9 +639,10 @@
       return stage;
     };
 
+    const selectorContainer = options.heroContext ? global.document.createElement('div') : root;
     const selector = mountMarketSelector({
       document: global.document,
-      container: root,
+      container: selectorContainer,
       adminContext,
       contextContract: global.KomerceAdminContext,
       title: options.title,
@@ -630,6 +684,7 @@
     return renderMarketSurfaceShell(root, user, adminContext, {
       surface: 'operations',
       title: 'Vue Opérations',
+      heroContext: true,
       render: renderOperations,
     });
   }

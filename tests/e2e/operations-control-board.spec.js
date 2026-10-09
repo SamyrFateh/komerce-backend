@@ -133,6 +133,35 @@ async function mount(page) {
       contextContract:{ resolveMarketView:() => ({mode:'global'}) },
       user:{role:'admin'},
     });
+
+    const hero = document.querySelector('[data-dashboard-role="hero"]');
+    const controls = document.createElement('div');
+    controls.className = 'kmc-context-hero-controls';
+
+    const search = document.querySelector('.kmc-admin-search');
+    if (search) {
+      search.classList.add('is-hero-context-search');
+      controls.appendChild(search);
+    }
+
+    const market = document.createElement('label');
+    market.className = 'kmc-market-context-field is-hero-context-market';
+    const marketLabel = document.createElement('span');
+    marketLabel.className = 'kmc-market-context-label';
+    marketLabel.textContent = 'Marché';
+    const select = document.createElement('select');
+    select.className = 'kmc-market-context-select';
+    select.setAttribute('aria-label', 'Sélectionner le périmètre marché');
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'Global · Tous les marchés';
+    select.appendChild(option);
+    market.appendChild(marketLabel);
+    market.appendChild(select);
+    controls.appendChild(market);
+    hero.appendChild(controls);
+
+    document.querySelector('.kmc-admin-topbar')?.setAttribute('hidden','hidden');
   });
   await expect(page.locator('[data-dashboard-id="operations"]')).toBeVisible();
 }
@@ -148,28 +177,33 @@ test.describe('Operations — logistics control board', () => {
       const r = el.getBoundingClientRect();
       return { height:r.height, backgroundImage:cs.backgroundImage, radius:cs.borderRadius };
     });
-    expect(visual.height).toBeGreaterThanOrEqual(150);
+    expect(visual.height).toBeGreaterThanOrEqual(140);
+    expect(visual.height).toBeLessThanOrEqual(190);
     expect(visual.backgroundImage).toContain('operations-logistics-hero.svg');
     expect(visual.radius).toBe('16px');
+    await expect(header.locator('.kmc-admin-search-input')).toBeVisible();
+    await expect(header.locator('.kmc-market-context-select')).toBeVisible();
+    await expect(header.locator('.kmc-control-health-summary')).toBeVisible();
+    await expect(page.locator('.kmc-admin-topbar')).toBeHidden();
   });
 
-  test('la hiérarchie Operations reste essentielle : Hero → résumé couleur → chaîne', async ({ page }) => {
-    const order = await page.locator('[data-dashboard-id="operations"] > *').evaluateAll(nodes =>
+  test('la hiérarchie Operations reste essentielle : Hero contextuel → chaîne', async ({ page }) => {
+    const dashboard = page.locator('[data-dashboard-id="operations"]');
+    const direct = await dashboard.locator(':scope > *').evaluateAll(nodes =>
       nodes.map(n => ({
         cls:n.className,
         id:n.id,
         role:n.getAttribute('data-dashboard-role')
       }))
     );
-    const heroIndex = order.findIndex(x => x.role === 'hero');
-    const attentionIndex = order.findIndex(x => x.role === 'attention');
-    const primaryIndex = order.findIndex(x => x.role === 'primary');
-    const secondaryIndex = order.findIndex(x => x.role === 'secondary');
+    const heroIndex = direct.findIndex(x => x.role === 'hero');
+    const primaryIndex = direct.findIndex(x => x.role === 'primary');
+    const secondaryIndex = direct.findIndex(x => x.role === 'secondary');
 
     expect(heroIndex).toBeGreaterThanOrEqual(0);
-    expect(attentionIndex).toBeGreaterThan(heroIndex);
-    expect(primaryIndex).toBeGreaterThan(attentionIndex);
+    expect(primaryIndex).toBeGreaterThan(heroIndex);
     expect(secondaryIndex).toBe(-1);
+    await expect(dashboard.locator('[data-dashboard-role="hero"] [data-dashboard-role="attention"]')).toHaveCount(1);
   });
 
   test('le récapitulatif couleur est compact et reflète uniquement la santé du tableau', async ({ page }) => {
@@ -202,14 +236,15 @@ test.describe('Operations — logistics control board', () => {
       const cs=getComputedStyle(el), r=el.getBoundingClientRect();
       return { height:r.height, radius:cs.borderRadius, background:cs.backgroundColor };
     });
-    expect(geometry.height).toBeGreaterThanOrEqual(440);
+    expect(geometry.height).toBeGreaterThanOrEqual(340);
+    expect(geometry.height).toBeLessThanOrEqual(410);
     expect(geometry.radius).toBe('12px');
     const icon = await page.locator('.kmc-control-stage-icon').first().evaluate(el => {
       const r = el.getBoundingClientRect();
       return { width:r.width, height:r.height };
     });
-    expect(icon.width).toBeGreaterThanOrEqual(60);
-    expect(icon.height).toBeGreaterThanOrEqual(60);
+    expect(icon.width).toBeGreaterThanOrEqual(50);
+    expect(icon.height).toBeGreaterThanOrEqual(50);
   });
 
 
@@ -276,6 +311,28 @@ test.describe('Operations — logistics control board', () => {
     await expect(page.locator('#operations-orders')).toHaveCount(0);
     await expect(page.locator('#operations-delays')).toHaveCount(0);
     await expect(page.locator('.kmc-control-structural-alert')).toHaveCount(0);
+  });
+
+  test('tout le cockpit utile tient dans 1672×941 sans scroll vertical', async ({ page }) => {
+    const geometry = await page.evaluate(() => {
+      const scrolling = document.scrollingElement;
+      const dashboard = document.querySelector('[data-dashboard-id="operations"]');
+      const board = document.querySelector('.kmc-control-chain-card');
+      const hero = document.querySelector('[data-dashboard-role="hero"]');
+      return {
+        viewportHeight: window.innerHeight,
+        scrollHeight: scrolling ? scrolling.scrollHeight : document.body.scrollHeight,
+        dashboardBottom: dashboard?.getBoundingClientRect().bottom ?? Infinity,
+        boardBottom: board?.getBoundingClientRect().bottom ?? Infinity,
+        heroTop: hero?.getBoundingClientRect().top ?? Infinity,
+      };
+    });
+
+    expect(geometry.viewportHeight).toBe(941);
+    expect(geometry.heroTop).toBeGreaterThanOrEqual(0);
+    expect(geometry.dashboardBottom).toBeLessThanOrEqual(941);
+    expect(geometry.boardBottom).toBeLessThanOrEqual(941);
+    expect(geometry.scrollHeight).toBeLessThanOrEqual(943);
   });
 
   test('capture de revue 1672×941', async ({ page }, testInfo) => {

@@ -65,3 +65,18 @@ Un dashboard doit porter un message opérationnel essentiel, pas exposer toutes 
 
 La question de contrôle est : **« Si je retire ce bloc, le message principal du dashboard devient-il moins clair ? »**
 Si la réponse est non, le bloc n'appartient probablement pas à la vue d'ensemble.
+
+
+## Hero contextuel et viewport
+
+Chaque contexte métier possède un Hero simple qui lui est propre.
+
+Pour une vue d'ensemble opérationnelle desktop :
+- le Hero contient les contrôles de contexte indispensables (recherche, marché, résumé court) ;
+- ces contrôles ne sont pas répétés dans une barre séparée ;
+- le Hero reste compact : il oriente, il ne raconte pas toute la page ;
+- l'objet métier principal suit immédiatement ;
+- au viewport de référence `1672×941`, **tout le message utile du dashboard doit être visible sans scroll vertical** ;
+- un clic doit ouvrir uniquement le détail ou l'action pertinente au contexte observé, jamais une suggestion de navigation générique.
+
+Le viewport n'est pas obtenu en masquant du contenu : Playwright doit prouver que le bas de l'objet métier principal se situe réellement dans la fenêtre.
