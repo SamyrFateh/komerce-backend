@@ -88,110 +88,31 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] {
   --ct-font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
   --ct-navy: #0f2544;
   --ct-navy-2: #152f53;
-  --ct-blue: #2563eb;
-  --ct-blue-soft: #eff6ff;
+  --ct-blue: var(--kmc-brand-navy-2, #0D2A52);
+  --ct-blue-soft: #f3f5fa;
   --ct-red: #dc2626;
   --ct-red-soft: #fff1f2;
   --ct-orange: #f59e0b;
   --ct-orange-soft: #fff7ed;
   --ct-green: #16a34a;
   --ct-green-soft: #ecfdf3;
-  --ct-violet: #7c3aed;
-  --ct-violet-soft: #f5f3ff;
+  --ct-violet: var(--kmc-brand-navy-2, #0D2A52);
+  --ct-violet-soft: #f3f5fa;
   --ct-line: #e2e8f0;
   --ct-ink: #1e293b;
   --ct-copy: #475569;
   --ct-muted: #64748b;
-  gap: 14px;
-  padding: 24px 28px 34px;
   font-family: var(--ct-font);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  background: #f1f5f9;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] > .kmc-dashboard-header {
-  min-height: auto;
-  padding: 0 0 4px;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .canonical-eyebrow {
-  color: #64748b;
-  font-size: 11.52px;
-  line-height: normal;
-  letter-spacing: .12em;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-dashboard-title {
-  color: var(--ct-ink);
-  font-size: 24px;
-  font-weight: 700;
-  line-height: normal;
-  letter-spacing: normal;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-dashboard-description {
-  max-width: 820px;
-  color: #64748b;
-  font-size: 14px;
-  line-height: normal;
 }
 
 /* Situation cards */
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-strip {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-card {
-  position: relative;
-  min-height: 92px;
-  padding: 14px 16px;
-  border: 1px solid var(--ct-line);
-  border-left-width: 1px;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: none;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-card::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 0 auto;
-  width: 74px;
-  height: 48px;
-  opacity: .18;
-  background:
-    linear-gradient(90deg, transparent 0 8%, currentColor 8% 18%, transparent 18% 26%, currentColor 26% 40%, transparent 40% 49%, currentColor 49% 65%, transparent 65% 73%, currentColor 73% 88%, transparent 88%);
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-card.is-critical {
-  color: var(--ct-red);
-  border-color: #e5e7eb;
-  border-left: 4px solid var(--ct-red);
-  background: #ffffff;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-card.is-warning {
-  color: #d97706;
-  border-color: #e5e7eb;
-  border-left: 4px solid var(--ct-orange);
-  background: #ffffff;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-card.is-violet {
-  color: var(--ct-violet);
-  border-color: #e5e7eb;
-  border-left: 4px solid var(--ct-violet);
-  background: #ffffff;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-card.is-info {
-  color: var(--ct-blue);
-  border-color: #e5e7eb;
-  border-left: 4px solid var(--ct-blue);
-  background: #ffffff;
-}
+/* Decision card surface/state tones are owned by Dashboard Hierarchy V1 + Visual Canon V1. */
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-decision-card-icon {
   width: 33px;
@@ -350,7 +271,8 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .is-control-tower-flow .kmc-flow-stage {
-  min-width: 138px;
+  flex: 1 1 0;
+  min-width: 0;
   min-height: 59px;
   padding: 10px 8px;
   border: 1px solid var(--ct-line);
@@ -493,52 +415,3 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-trust-f
   }
 }
 
-
-/* Pilotage contextual hero: simple, distinct from Operations. */
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] > .kmc-dashboard-header {
-  position: relative;
-  min-height: 132px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 18px 28% 18px 20px;
-  border: 1px solid #dbe7f4;
-  border-radius: 14px;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 82% 28%, rgba(59,130,246,.16) 0 54px, transparent 55px),
-    radial-gradient(circle at 91% 72%, rgba(245,158,11,.13) 0 42px, transparent 43px),
-    linear-gradient(115deg, #f8fbff 0%, #eef6ff 58%, #f8fafc 100%);
-  box-shadow: 0 1px 3px rgba(15,23,42,.05);
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] > .kmc-dashboard-header::after {
-  content: "◉  ◆  ●";
-  position: absolute;
-  right: 28px;
-  bottom: 20px;
-  color: #93c5fd;
-  font-size: 25px;
-  letter-spacing: 12px;
-  opacity: .85;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .canonical-eyebrow {
-  color: #2563eb;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .08em;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-dashboard-title {
-  margin-top: 3px;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -.02em;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] .kmc-dashboard-description {
-  max-width: 680px;
-  color: #64748b;
-  font-size: 12px;
-}

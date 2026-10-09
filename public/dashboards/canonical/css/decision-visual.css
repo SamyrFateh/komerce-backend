@@ -645,58 +645,6 @@
   line-height: 1.25;
 }
 
-
-/* Commerce contextual hero + essential activity surface. */
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashboard-header {
-  position: relative;
-  min-height: 126px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-content: center;
-  gap: 3px 18px;
-  padding: 18px 22px;
-  border: 1px solid #fde7c3;
-  border-radius: 14px;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 86% 34%, rgba(245,158,11,.16) 0 48px, transparent 49px),
-    radial-gradient(circle at 94% 76%, rgba(59,130,246,.12) 0 38px, transparent 39px),
-    linear-gradient(112deg, #fffaf2 0%, #fff 62%, #f8fbff 100%);
-  box-shadow: 0 1px 3px rgba(15,23,42,.05);
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashboard-header > .canonical-eyebrow,
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashboard-header > .kmc-dashboard-title,
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashboard-header > .kmc-dashboard-description {
-  grid-column: 1;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashboard-header .kmc-period-control {
-  grid-column: 2;
-  grid-row: 1 / span 3;
-  align-self: center;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] .canonical-eyebrow {
-  color: #d97706;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .08em;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] .kmc-dashboard-title {
-  margin-top: 2px;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -.02em;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] .kmc-dashboard-description {
-  max-width: 650px;
-  color: #64748b;
-  font-size: 12px;
-}
-
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] .kmc-commerce-essential-metrics {
   margin-bottom: 14px;
 }

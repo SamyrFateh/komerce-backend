@@ -1,39 +1,131 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 260" role="img" aria-label="Komerce logistics route">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 260" preserveAspectRatio="xMaxYMid meet" role="img" aria-label="Opérations : port, navire, grue et conteneurs">
   <defs>
-    <linearGradient id="sky" x1="0" x2="1">
-      <stop offset="0" stop-color="#FFF9F0"/>
-      <stop offset="1" stop-color="#F3EBDD"/>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#E7D7A3" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#E7D7A3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1B3C6E"/>
+      <stop offset="1" stop-color="#071A3D"/>
     </linearGradient>
-    <linearGradient id="gold" x1="0" x2="1">
-      <stop offset="0" stop-color="#E7D7A3"/>
-      <stop offset="1" stop-color="#C9A227"/>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1B3C6E" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#0D2A52"/>
     </linearGradient>
+    <linearGradient id="cGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#D8B53F"/>
+      <stop offset="1" stop-color="#B58C18"/>
+    </linearGradient>
+    <linearGradient id="cChamp" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F1E4B8"/>
+      <stop offset="1" stop-color="#E0CB8B"/>
+    </linearGradient>
+    <linearGradient id="cNavy" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1B3C6E"/>
+      <stop offset="1" stop-color="#0D2A52"/>
+    </linearGradient>
+    <pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="3" cy="3" r="1.5" fill="#C9A227"/>
+    </pattern>
+    <clipPath id="land">
+      <path d="M470 70c30-18 70-20 100-8s48 26 40 44-40 26-78 22-80-20-62-58z"/>
+      <path d="M640 52c26-12 62-10 84 6s18 40-8 52-62 6-82-10-18-34 6-48z"/>
+      <path d="M780 96c22-10 52-6 68 10s6 38-18 46-52-2-62-22 0-26 12-34z"/>
+      <path d="M860 40c18-8 44-4 56 10s0 32-22 36-42-8-44-24 2-16 10-22z"/>
+    </clipPath>
   </defs>
-  <rect width="1200" height="260" fill="url(#sky)"/>
-  <g opacity=".24" fill="#C9A227">
-    <path d="M460 42c35-16 73-9 95 11 27-7 65 2 79 23 39-2 68 13 83 31-35 9-69 14-103 12-40-2-76-15-112-23-31-7-59-12-88-10 4-19 18-34 46-44z"/>
-    <path d="M702 74c26-16 64-12 83 7 37-5 73 6 90 27-21 8-49 10-76 7-34-4-66-12-97-12 1-10 1-19 0-29z"/>
+
+  <!-- backdrop -->
+  <circle cx="700" cy="140" r="190" fill="url(#glow)"/>
+  <rect x="440" y="30" width="520" height="140" fill="url(#dots)" opacity=".34" clip-path="url(#land)"/>
+
+  <!-- route arc + pin -->
+  <path d="M470 126C560 40 700 38 800 78" fill="none" stroke="#C9A227" stroke-width="2.5" stroke-dasharray="2 9" stroke-linecap="round"/>
+  <g>
+    <path d="M806 64c-9 0-15 7-15 15 0 11 15 26 15 26s15-15 15-26c0-8-6-15-15-15z" fill="#C9A227" stroke="#A67C12" stroke-width="1.5"/>
+    <circle cx="806" cy="79" r="5.5" fill="#071A3D"/>
   </g>
-  <path d="M418 129c75-55 148-53 220-8 70 45 146 51 232 6" fill="none" stroke="#C9A227" stroke-width="4" stroke-dasharray="10 9" opacity=".85"/>
-  <g fill="#C9A227">
-    <circle cx="458" cy="106" r="8"/><circle cx="638" cy="121" r="8"/><circle cx="847" cy="116" r="8"/>
+
+  <!-- quay + water -->
+  <rect x="400" y="218" width="580" height="22" fill="url(#water)"/>
+  <path d="M410 226q14-6 28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0t28 0" fill="none" stroke="#E7D7A3" stroke-opacity=".55" stroke-width="1.6"/>
+  <path d="M400 218h580" stroke="#C9A227" stroke-opacity=".7" stroke-width="2"/>
+
+  <!-- cargo ship -->
+  <g>
+    <path d="M420 190h246l-30 30H452z" fill="url(#hull)"/>
+    <path d="M436 202h206" stroke="#C9A227" stroke-width="2.5"/>
+    <!-- bridge -->
+    <rect x="578" y="146" width="54" height="44" rx="3" fill="#FFF9F0" stroke="#E0CB8B" stroke-width="1.5"/>
+    <rect x="570" y="138" width="70" height="10" rx="2" fill="#071A3D"/>
+    <rect x="586" y="154" width="38" height="8" rx="2" fill="#1B3C6E"/>
+    <path d="M586 170h38M586 178h38" stroke="#E0CB8B" stroke-width="2"/>
+    <path d="M605 138V122" stroke="#071A3D" stroke-width="3"/>
+    <circle cx="605" cy="119" r="4" fill="#C9A227"/>
+    <!-- containers on deck -->
+    <rect x="430" y="168" width="44" height="22" rx="1.5" fill="url(#cGold)"/>
+    <rect x="476" y="168" width="44" height="22" rx="1.5" fill="url(#cNavy)"/>
+    <rect x="522" y="168" width="44" height="22" rx="1.5" fill="url(#cChamp)"/>
+    <rect x="430" y="146" width="44" height="22" rx="1.5" fill="url(#cNavy)"/>
+    <rect x="476" y="146" width="44" height="22" rx="1.5" fill="url(#cGold)"/>
+    <rect x="522" y="146" width="44" height="22" rx="1.5" fill="url(#cNavy)"/>
+    <rect x="450" y="124" width="44" height="22" rx="1.5" fill="url(#cChamp)"/>
+    <rect x="496" y="124" width="44" height="22" rx="1.5" fill="url(#cGold)"/>
+    <g stroke="#071A3D" stroke-opacity=".28" stroke-width="1.2">
+      <path d="M440 168v22M452 168v22M462 168v22M486 168v22M498 168v22M508 168v22M532 168v22M544 168v22M554 168v22"/>
+      <path d="M440 146v22M452 146v22M462 146v22M486 146v22M498 146v22M508 146v22M532 146v22M544 146v22M554 146v22"/>
+      <path d="M460 124v22M472 124v22M482 124v22M506 124v22M518 124v22M528 124v22"/>
+    </g>
   </g>
-  <g transform="translate(382 148)">
-    <path d="M0 47h224l-29 35H37z" fill="#071A3D"/>
-    <rect x="52" y="5" width="33" height="42" rx="3" fill="#E7D7A3"/>
-    <rect x="88" y="5" width="33" height="42" rx="3" fill="#C9A227"/>
-    <rect x="124" y="5" width="33" height="42" rx="3" fill="#E7D7A3"/>
-    <rect x="160" y="5" width="33" height="42" rx="3" fill="#C9A227"/>
+
+  <!-- gantry crane -->
+  <g>
+    <path d="M700 218V92M752 218V92" stroke="#071A3D" stroke-width="7" stroke-linecap="round"/>
+    <path d="M700 218l52-60M752 218l-52-60M700 158l52-66" stroke="#0D2A52" stroke-width="2.5" stroke-opacity=".55"/>
+    <rect x="684" y="80" width="84" height="14" rx="3" fill="#C9A227" stroke="#A67C12" stroke-width="1.5"/>
+    <path d="M684 86H596" stroke="#071A3D" stroke-width="7" stroke-linecap="round"/>
+    <path d="M768 86h56" stroke="#071A3D" stroke-width="7" stroke-linecap="round"/>
+    <path d="M726 80L618 86M726 80l92 6" stroke="#0D2A52" stroke-width="2" stroke-opacity=".6"/>
+    <rect x="636" y="82" width="24" height="12" rx="2" fill="#0D2A52"/>
+    <path d="M648 94v26" stroke="#071A3D" stroke-width="2"/>
+    <rect x="632" y="120" width="32" height="16" rx="1.5" fill="url(#cGold)" stroke="#A67C12" stroke-width="1"/>
+    <path d="M642 120v16M654 120v16" stroke="#071A3D" stroke-opacity=".28" stroke-width="1.2"/>
   </g>
-  <g transform="translate(825 155)">
-    <rect x="0" y="24" width="125" height="50" rx="6" fill="#C9A227"/>
-    <path d="M125 39h42l21 21v14h-63z" fill="#071A3D"/>
-    <rect x="137" y="44" width="25" height="15" rx="2" fill="#FFF9F0"/>
-    <circle cx="36" cy="77" r="13" fill="#071A3D"/>
-    <circle cx="151" cy="77" r="13" fill="#071A3D"/>
+
+  <!-- quay containers -->
+  <g>
+    <rect x="800" y="196" width="46" height="22" rx="1.5" fill="url(#cNavy)"/>
+    <rect x="848" y="196" width="46" height="22" rx="1.5" fill="url(#cGold)"/>
+    <rect x="896" y="196" width="46" height="22" rx="1.5" fill="url(#cChamp)"/>
+    <rect x="820" y="174" width="46" height="22" rx="1.5" fill="url(#cChamp)"/>
+    <rect x="868" y="174" width="46" height="22" rx="1.5" fill="url(#cNavy)"/>
+    <rect x="844" y="152" width="46" height="22" rx="1.5" fill="url(#cGold)"/>
+    <g stroke="#071A3D" stroke-opacity=".28" stroke-width="1.2">
+      <path d="M812 196v22M824 196v22M834 196v22M860 196v22M872 196v22M882 196v22M908 196v22M920 196v22M930 196v22"/>
+      <path d="M832 174v22M844 174v22M854 174v22M880 174v22M892 174v22M902 174v22"/>
+      <path d="M856 152v22M868 152v22M878 152v22"/>
+    </g>
   </g>
-  <g transform="translate(1030 62)" fill="none" stroke="#071A3D" stroke-width="6" opacity=".68">
-    <path d="M12 150V32h70v118M47 32V5M47 5l66 27M82 32l31 0M112 32v103"/>
-    <path d="M112 32l43 44"/>
+
+  <!-- truck -->
+  <g>
+    <rect x="944" y="198" width="36" height="20" rx="2" fill="#C9A227"/>
+    <path d="M980 204h10l6 8v6h-16z" fill="#071A3D"/>
+    <circle cx="954" cy="219" r="5" fill="#071A3D" stroke="#FFF9F0" stroke-width="1.5"/>
+    <circle cx="986" cy="219" r="5" fill="#071A3D" stroke="#FFF9F0" stroke-width="1.5"/>
   </g>
+
+  <!-- left extension: shared territory, route and ground so the scene fills the lane -->
+  <circle cx="300" cy="150" r="150" fill="url(#glow)" opacity=".8"/>
+  <defs><clipPath id="landL">
+    <path d="M60 110c26-20 66-24 96-10s44 30 30 48-52 24-92 14-52-30-34-52z"/>
+    <path d="M220 56c26-14 62-12 84 4s16 40-10 52-60 6-80-10-16-34 6-46z"/>
+    <path d="M300 150c24-10 56-6 72 10s4 36-20 44-52-2-60-22 0-24 8-32z"/>
+  </clipPath></defs>
+  <rect x="40" y="40" width="360" height="170" fill="url(#dots)" opacity=".34" clip-path="url(#landL)"/>
+  <path d="M60 232h340" stroke="#C9A227" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>
+  <path d="M110 190C170 96 260 70 390 112" fill="none" stroke="#C9A227" stroke-width="2.2" stroke-dasharray="2 8" stroke-linecap="round"/>
+  <g transform="translate(110 190)"><circle r="9" fill="#FFF9F0" stroke="#A67C12" stroke-width="2"/><circle r="3.5" fill="#071A3D"/></g>
+  <g transform="translate(250 84)"><circle r="8" fill="#FFF9F0" stroke="#A67C12" stroke-width="2"/><circle r="3" fill="#071A3D"/></g>
+  <g transform="translate(150 214)"><rect x="0" y="-22" width="46" height="22" rx="1.5" fill="url(#cNavy)"/><rect x="48" y="-22" width="46" height="22" rx="1.5" fill="url(#cGold)"/><rect x="24" y="-44" width="46" height="22" rx="1.5" fill="url(#cChamp)"/></g>
 </svg>

@@ -548,7 +548,7 @@
     const header = doc.createElement('header');
     header.className = 'kmc-dashboard-header';
     header.setAttribute('data-dashboard-role', 'hero');
-    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'KOMERCE · ADMIN CANONICAL'));
+    header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'LOGISTIQUE'));
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Opérations — Tour de contrôle'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Une commande, une position opérationnelle, une cause actionnable.'));
     dashboard.appendChild(header);
