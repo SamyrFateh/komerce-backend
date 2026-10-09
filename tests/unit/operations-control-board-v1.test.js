@@ -33,9 +33,12 @@ describe('Operations logistics control board V1',()=>{
     expect(css).toContain('.kmc-control-order.is-unknown');
   });
 
-  test('la cause structurelle reste visible dans la colonne propriétaire',()=>{
-    expect(css).toMatch(/\.kmc-control-structural-alert\s*\{[^}]*border-left:\s*4px solid/s);
-    expect(css).toContain('.kmc-control-structural-alert.is-critical');
+  test('le récapitulatif santé reste compact et sémantique',()=>{
+    expect(css).toContain('.kmc-control-health-summary');
+    expect(css).toContain('.kmc-control-health-summary-item.is-positive');
+    expect(css).toContain('.kmc-control-health-summary-item.is-warning');
+    expect(css).toContain('.kmc-control-health-summary-item.is-critical');
+    expect(css).toContain('.kmc-control-health-summary-item.is-unknown');
   });
 
   test('le board respecte le thème legacy mesuré',()=>{
