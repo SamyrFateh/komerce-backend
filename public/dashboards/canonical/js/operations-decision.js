@@ -94,6 +94,34 @@
     }));
   }
 
+  const CONTROL_ENVELOPE_LABEL = Object.freeze({
+    ORDER: 'Commande',
+    PURCHASE_ORDER: 'PO fournisseur',
+    HUB_UNIT: 'Unité HUB',
+    PARCEL: 'Colis',
+  });
+
+  function controlEnvelope(order) {
+    const raw = order && order.envelope && typeof order.envelope === 'object' ? order.envelope : {};
+    const type = CONTROL_ENVELOPE_LABEL[raw.type] ? raw.type : 'ORDER';
+    const refs = Array.isArray(raw.refs) ? raw.refs.filter(Boolean).map(String) : [];
+    return Object.freeze({
+      type,
+      label: CONTROL_ENVELOPE_LABEL[type],
+      refs: Object.freeze(refs),
+    });
+  }
+
+  function controlLineage(order) {
+    const raw = order && order.lineage && typeof order.lineage === 'object' ? order.lineage : {};
+    const normalize = value => Object.freeze((Array.isArray(value) ? value : []).filter(Boolean).map(String));
+    return Object.freeze({
+      purchase_orders: normalize(raw.purchase_orders),
+      hub_units: normalize(raw.hub_units),
+      parcels: normalize(raw.parcels),
+    });
+  }
+
   function controlChainColumns(payload) {
     const chain = payload && payload.control_chain && typeof payload.control_chain === 'object'
       ? payload.control_chain
@@ -118,6 +146,8 @@
         reference: order.order_reference || 'Commande',
         health: ['GREEN', 'ORANGE', 'RED', 'UNKNOWN'].includes(order.health) ? order.health : 'UNKNOWN',
         causes: controlCauses(order),
+        envelope: controlEnvelope(order),
+        lineage: controlLineage(order),
         split: order.split === true,
         href: order.order_reference ? `/admin/orders/${encodeURIComponent(order.order_reference)}` : null,
       })),
@@ -167,27 +197,95 @@
         list.appendChild(text(doc, 'div', 'kmc-control-order-empty', '—'));
       } else {
         column.orders.forEach(order => {
-          const item = doc.createElement(order.href ? 'a' : 'div');
+          const row = doc.createElement('div');
+          row.className = 'kmc-control-order-row';
+
+          const item = doc.createElement('button');
+          item.type = 'button';
           item.className = `kmc-control-order ${controlHealthClass(order.health)}`;
-          if (order.href) item.setAttribute('href', order.href);
           item.setAttribute('aria-label', `${order.reference} · ${order.health}`);
+          item.setAttribute('aria-expanded', 'false');
+
+          const detailId = `control-detail-${String(column.key).toLowerCase()}-${String(order.reference).replace(/[^a-z0-9_-]+/gi, '-')}`;
+          item.setAttribute('aria-controls', detailId);
 
           const dot = doc.createElement('span');
           dot.className = 'kmc-control-order-dot';
           dot.setAttribute('aria-hidden', 'true');
           item.appendChild(dot);
           item.appendChild(text(doc, 'span', 'kmc-control-order-state', controlHealthIcon(order.health)));
-
           item.appendChild(text(doc, 'span', 'kmc-control-order-ref', order.reference));
+
+          const disclosure = text(doc, 'span', 'kmc-control-order-disclosure', '›');
+          disclosure.setAttribute('aria-hidden', 'true');
+          item.appendChild(disclosure);
+
+          const detail = doc.createElement('div');
+          detail.id = detailId;
+          detail.className = 'kmc-control-order-detail';
+          detail.hidden = true;
+
+          const focus = doc.createElement('div');
+          focus.className = 'kmc-control-order-focus';
+          focus.appendChild(text(doc, 'span', 'kmc-control-order-detail-label', 'Objet en cause'));
+          focus.appendChild(text(
+            doc,
+            'strong',
+            'kmc-control-order-focus-value',
+            order.envelope.refs.length
+              ? `${order.envelope.label} · ${order.envelope.refs.join(', ')}`
+              : order.envelope.label
+          ));
+          detail.appendChild(focus);
+
           if (order.causes.length) {
-            const first = order.causes[0];
-            const more = order.causes.length > 1 ? ` +${order.causes.length - 1}` : '';
-            const owner = first.owner ? ` · ${first.owner}` : ' · propriétaire non défini';
-            const cause = text(doc, 'span', 'kmc-control-order-cause', `${first.summary}${owner}${more}`);
-            cause.setAttribute('title', order.causes.map(c => `${c.summary}${c.owner ? ` (${c.owner})` : ''}`).join(' · '));
-            item.appendChild(cause);
+            const causes = doc.createElement('div');
+            causes.className = 'kmc-control-order-causes';
+            order.causes.forEach(cause => {
+              const line = doc.createElement('div');
+              line.className = 'kmc-control-order-cause-line';
+              line.appendChild(text(doc, 'span', 'kmc-control-order-cause-summary', cause.summary));
+              if (cause.owner) line.appendChild(text(doc, 'span', 'kmc-control-order-owner', `Responsable : ${cause.owner}`));
+              causes.appendChild(line);
+            });
+            detail.appendChild(causes);
           }
-          list.appendChild(item);
+
+          const lineageGroups = [
+            ['PO', order.lineage.purchase_orders],
+            ['HUB', order.lineage.hub_units],
+            ['Colis', order.lineage.parcels],
+          ].filter(([, refs]) => refs.length);
+
+          if (lineageGroups.length) {
+            const lineage = doc.createElement('div');
+            lineage.className = 'kmc-control-order-lineage';
+            lineageGroups.forEach(([label, refs]) => {
+              const group = doc.createElement('div');
+              group.className = 'kmc-control-order-lineage-group';
+              group.appendChild(text(doc, 'span', 'kmc-control-order-detail-label', label));
+              group.appendChild(text(doc, 'span', 'kmc-control-order-lineage-value', refs.join(', ')));
+              lineage.appendChild(group);
+            });
+            detail.appendChild(lineage);
+          }
+
+          if (order.href) {
+            const link = text(doc, 'a', 'kmc-control-order-open', 'Ouvrir Order 360 →');
+            link.setAttribute('href', order.href);
+            detail.appendChild(link);
+          }
+
+          item.addEventListener('click', () => {
+            const expanded = item.getAttribute('aria-expanded') === 'true';
+            item.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+            detail.hidden = expanded;
+            row.classList.toggle('is-expanded', !expanded);
+          });
+
+          row.appendChild(item);
+          row.appendChild(detail);
+          list.appendChild(row);
         });
       }
 
@@ -517,7 +615,10 @@
 
   return Object.freeze({
     CONTROL_STAGE_META,
+    CONTROL_ENVELOPE_LABEL,
     controlStageMeta,
+    controlEnvelope,
+    controlLineage,
     kpi,
     displayMetric,
     severity,
