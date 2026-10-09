@@ -17,3 +17,11 @@ test('cockpit-legacy-v1 reste une couche chargée uniquement par le shell index,
   expect(index.indexOf('cockpit-legacy-v1.css')).toBeGreaterThan(index.indexOf('canonical-legacy-theme-v1.css'));
   expect(css.length).toBeGreaterThan(0);
 });
+
+describe('cockpit-legacy-v1 — canon visuel validé (parité mocks)', () => {
+  test('contrat de la feuille', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/cockpit-legacy-v1.css'), 'utf8');
+    expect(css).not.toContain("content: 'FLUX'");
+    expect(css).not.toContain('SUIVI DE VÉRITÉ');
+  });
+});

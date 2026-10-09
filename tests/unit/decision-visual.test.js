@@ -11,7 +11,8 @@ const css=fs.readFileSync(path.join(__dirname,'..','..','public','dashboards','c
 
 describe('decision visual — contextual Commerce hero',()=>{
   test('Commerce possède un Hero distinct et la surface activité essentielle',()=>{
-    expect(css).toContain('[data-dashboard-id="commerce"] > .kmc-dashboard-header');
+    // Le Hero Commerce (150px, illustration or) est possédé par contextual-heroes-v2 / Layout Canon.
+    expect(css).not.toContain('[data-dashboard-id="commerce"] > .kmc-dashboard-header');
     expect(css).toContain('.kmc-commerce-essential-metrics');
     expect(css).toContain('.kmc-commerce-flow-title');
   });

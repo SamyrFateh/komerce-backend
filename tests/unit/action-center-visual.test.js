@@ -27,8 +27,11 @@ describe('Action Center visual polish V1', () => {
   test('le Hero contextuel porte le caractère Action Center sans navigation générique', () => {
     const css = read('public/dashboards/canonical/css/action-center-visual.css');
     expect(css).toContain('.kmc-action-center > .kmc-workspace-header');
-    expect(css).toContain('linear-gradient(112deg, #fff8f7');
-    expect(css).toContain('min-height: 126px');
+    // Le Hero (150px, palette Navy/Or) est possédé par Layout Canon + contextual-heroes-v2 :
+    // cette couche ne redéfinit ni cadre de page, ni Hero, ni kicker rose.
+    expect(css).not.toContain('linear-gradient(112deg, #fff8f7');
+    expect(css).not.toContain('min-height: 126px');
+    expect(css).not.toMatch(/#(fff1f0|f3d7d2|fecdd3)/i);
   });
 
   test('les quatre sévérités ont une signalétique explicite sans logique métier', () => {

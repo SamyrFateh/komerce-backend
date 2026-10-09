@@ -27,3 +27,9 @@ describe('operations-decision visual hierarchy contract',()=>{
     expect(SRC).not.toContain("cardSection(doc, 'Colis en retard critique'");
   });
 });
+
+test('le Hero Operations porte le kicker LOGISTIQUE (canon visuel)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/operations-decision.js'), 'utf8');
+  expect(src).toContain("'LOGISTIQUE'");
+  expect(src).not.toContain('KOMERCE · ADMIN CANONICAL');
+});

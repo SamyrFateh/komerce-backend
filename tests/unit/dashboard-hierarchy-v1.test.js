@@ -57,3 +57,11 @@ describe('dashboard-hierarchy-v1.css', () => {
     expect(__css).toMatch(/border-left:\s*5px solid var\(--decision-accent\)/);
   });
 });
+
+describe('dashboard-hierarchy-v1 — canon visuel validé (parité mocks)', () => {
+  test('contrat de la feuille', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/dashboard-hierarchy-v1.css'), 'utf8');
+    expect(css).toContain('grid-template-areas');
+    expect(css).not.toMatch(/#7c3aed|#3b82f6|#eff6ff|#bfdbfe/i);
+  });
+});

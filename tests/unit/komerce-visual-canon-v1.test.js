@@ -41,3 +41,11 @@ describe('Komerce visual canon v1', () => {
     expect(heroes).toContain('[data-workspace-kind="shipping-customs"]');
   });
 });
+
+describe('komerce-visual-canon-v1 — canon visuel validé (parité mocks)', () => {
+  test('contrat de la feuille', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/komerce-visual-canon-v1.css'), 'utf8');
+    expect(css).toContain('--metric-accent');
+    expect(css).toContain('#071A3D');
+  });
+});
