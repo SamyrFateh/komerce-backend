@@ -92,3 +92,11 @@ describe('couches de thème canoniques — aucune déclaration morte', () => {
     expect(css).toMatch(/\.kmc-admin-sidebar-group \+ \.kmc-admin-sidebar-group\{[^}]*border-top:1px solid #F1F5F9/);
   });
 });
+
+describe('canonical-legacy-theme-v1 — canon visuel validé (parité mocks)', () => {
+  test('contrat de la feuille', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/canonical-legacy-theme-v1.css'), 'utf8');
+    expect(css).toContain(':not([data-dashboard-role="hero"])::before');
+    expect(css).toContain('background:var(--kmc-brand-canvas, #F8F6F1) !important');
+  });
+});

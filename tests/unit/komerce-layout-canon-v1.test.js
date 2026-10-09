@@ -40,3 +40,11 @@ describe('Komerce layout canon v1', () => {
     expect(css).toContain('max-height: none');
   });
 });
+
+describe('komerce-layout-canon-v1 — canon visuel validé (parité mocks)', () => {
+  test('contrat de la feuille', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/komerce-layout-canon-v1.css'), 'utf8');
+    expect(css).toContain('grid-auto-flow: column');
+    expect(css).toContain('--kmc-layout-hero-h: 150px');
+  });
+});

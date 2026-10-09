@@ -1,20 +1,95 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" fill="none">
-  <g opacity=".94">
-    <rect x="116" y="55" width="218" height="150" rx="18" fill="#FFF9F0" stroke="#E7D7A3" stroke-width="2"/>
-    <circle cx="151" cy="94" r="11" fill="#C9A227" opacity=".9"/>
-    <path d="m145 94 5 5 9-11" stroke="#071A3D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M180 87h112M180 101h76" stroke="#0D2A52" stroke-width="5" stroke-linecap="round" opacity=".6"/>
-    <circle cx="151" cy="137" r="11" fill="#E7D7A3"/>
-    <path d="M180 130h91M180 144h124" stroke="#0D2A52" stroke-width="5" stroke-linecap="round" opacity=".42"/>
-    <circle cx="151" cy="180" r="11" fill="#C9A227" opacity=".45"/>
-    <path d="M180 173h126M180 187h67" stroke="#0D2A52" stroke-width="5" stroke-linecap="round" opacity=".28"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 260" preserveAspectRatio="xMaxYMid meet" role="img" aria-label="Action Center : décisions, cible et horloge">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#E7D7A3" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#E7D7A3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F6EFDF"/>
+    </linearGradient>
+    <linearGradient id="goldF" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E0C25A"/>
+      <stop offset="1" stop-color="#B58C18"/>
+    </linearGradient>
+    <pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse">
+      <circle cx="3" cy="3" r="1.5" fill="#C9A227"/>
+    </pattern>
+    <clipPath id="land">
+      <path d="M470 70c30-18 70-20 100-8s48 26 40 44-40 26-78 22-80-20-62-58z"/>
+      <path d="M640 52c26-12 62-10 84 6s18 40-8 52-62 6-82-10-18-34 6-48z"/>
+      <path d="M780 96c22-10 52-6 68 10s6 38-18 46-52-2-62-22 0-26 12-34z"/>
+      <path d="M860 40c18-8 44-4 56 10s0 32-22 36-42-8-44-24 2-16 10-22z"/>
+    </clipPath>
+  </defs>
+
+  <!-- backdrop -->
+  <circle cx="700" cy="140" r="190" fill="url(#glow)"/>
+  <rect x="440" y="30" width="520" height="140" fill="url(#dots)" opacity=".34" clip-path="url(#land)"/>
+
+  <!-- ground -->
+  <ellipse cx="690" cy="236" rx="330" ry="9" fill="#071A3D" opacity=".07"/>
+  <path d="M400 232h580" stroke="#C9A227" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- stacked decision cards -->
   <g>
-    <circle cx="464" cy="127" r="72" fill="#E7D7A3" fill-opacity=".22" stroke="#C9A227" stroke-width="3"/>
-    <circle cx="464" cy="127" r="43" fill="#FFF9F0" stroke="#0D2A52" stroke-width="3"/>
-    <path d="M464 102v31l23 13" stroke="#0D2A52" stroke-width="5" stroke-linecap="round"/>
-    <circle cx="464" cy="127" r="5" fill="#C9A227"/>
+    <rect x="462" y="104" width="186" height="116" rx="10" fill="#F3EBDD" stroke="#E0CB8B" stroke-width="1.5" transform="rotate(-5 555 162)"/>
+    <rect x="474" y="96" width="186" height="116" rx="10" fill="#FBF3E1" stroke="#E0CB8B" stroke-width="1.5" transform="rotate(-2 567 154)"/>
+    <rect x="488" y="92" width="190" height="126" rx="11" fill="url(#card)" stroke="#C9A227" stroke-width="1.8"/>
+    <rect x="488" y="92" width="190" height="14" rx="7" fill="#071A3D"/>
+    <g>
+      <circle cx="512" cy="132" r="11" fill="url(#goldF)"/>
+      <path d="M506.5 132l4 4.2 7.5-8.2" fill="none" stroke="#FFF9F0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="532" y="124" width="104" height="6" rx="3" fill="#0D2A52"/>
+      <rect x="532" y="136" width="70" height="5" rx="2.5" fill="#E0CB8B"/>
+      <circle cx="512" cy="166" r="11" fill="url(#goldF)"/>
+      <path d="M506.5 166l4 4.2 7.5-8.2" fill="none" stroke="#FFF9F0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="532" y="158" width="116" height="6" rx="3" fill="#0D2A52"/>
+      <rect x="532" y="170" width="84" height="5" rx="2.5" fill="#E0CB8B"/>
+      <circle cx="512" cy="200" r="11" fill="#FFFFFF" stroke="#C9A227" stroke-width="2.4"/>
+      <rect x="532" y="192" width="96" height="6" rx="3" fill="#0D2A52" fill-opacity=".75"/>
+      <rect x="532" y="204" width="60" height="5" rx="2.5" fill="#E0CB8B"/>
+    </g>
   </g>
-  <path d="M542 73h72M553 92h48" stroke="#C9A227" stroke-width="5" stroke-linecap="round" opacity=".68"/>
-  <path d="M542 178h72M553 197h48" stroke="#0D2A52" stroke-width="5" stroke-linecap="round" opacity=".26"/>
+
+  <!-- decision target + dart -->
+  <g>
+    <circle cx="790" cy="154" r="62" fill="#FBF3E1" stroke="#E0CB8B" stroke-width="1.5"/>
+    <circle cx="790" cy="154" r="46" fill="#F1E4B8"/>
+    <circle cx="790" cy="154" r="32" fill="url(#goldF)"/>
+    <circle cx="790" cy="154" r="18" fill="#071A3D"/>
+    <circle cx="790" cy="154" r="7" fill="#FFF9F0"/>
+    <path d="M790 154L868 92" stroke="#071A3D" stroke-width="4" stroke-linecap="round"/>
+    <path d="M868 92l18-10-4 18zM858 86l22-14-2 20z" fill="#C9A227" stroke="#A67C12" stroke-width="1.3" stroke-linejoin="round"/>
+  </g>
+
+  <!-- clock -->
+  <g>
+    <circle cx="928" cy="182" r="30" fill="#FFFFFF" stroke="#071A3D" stroke-width="4"/>
+    <circle cx="928" cy="182" r="24" fill="none" stroke="#E0CB8B" stroke-width="1.5"/>
+    <path d="M928 182V164M928 182l13 8" stroke="#071A3D" stroke-width="3.4" stroke-linecap="round"/>
+    <circle cx="928" cy="182" r="3.4" fill="#C9A227"/>
+    <path d="M928 154v4M928 206v4M900 182h4M952 182h4" stroke="#A67C12" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M908 154l-6-8M948 154l6-8" stroke="#071A3D" stroke-width="3.4" stroke-linecap="round"/>
+  </g>
+
+  <!-- priority flag -->
+  <g>
+    <path d="M706 232V176" stroke="#071A3D" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M706 178h34l-8 11 8 11h-34z" fill="#C9A227" stroke="#A67C12" stroke-width="1.5" stroke-linejoin="round"/>
+  </g>
+
+  <!-- left extension: shared territory, route and ground so the scene fills the lane -->
+  <circle cx="300" cy="150" r="150" fill="url(#glow)" opacity=".8"/>
+  <defs><clipPath id="landL">
+    <path d="M60 110c26-20 66-24 96-10s44 30 30 48-52 24-92 14-52-30-34-52z"/>
+    <path d="M220 56c26-14 62-12 84 4s16 40-10 52-60 6-80-10-16-34 6-46z"/>
+    <path d="M300 150c24-10 56-6 72 10s4 36-20 44-52-2-60-22 0-24 8-32z"/>
+  </clipPath></defs>
+  <rect x="40" y="40" width="360" height="170" fill="url(#dots)" opacity=".34" clip-path="url(#landL)"/>
+  <path d="M60 232h340" stroke="#C9A227" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>
+  <path d="M110 190C170 96 260 70 390 112" fill="none" stroke="#C9A227" stroke-width="2.2" stroke-dasharray="2 8" stroke-linecap="round"/>
+  <g transform="translate(110 190)"><circle r="9" fill="#FFF9F0" stroke="#A67C12" stroke-width="2"/><circle r="3.5" fill="#071A3D"/></g>
+  <g transform="translate(250 84)"><circle r="8" fill="#FFF9F0" stroke="#A67C12" stroke-width="2"/><circle r="3" fill="#071A3D"/></g>
+  <g transform="translate(150 214)"><rect x="0" y="-34" width="90" height="48" rx="8" fill="#FFFFFF" stroke="#C9A227" stroke-width="1.6"/><rect x="0" y="-34" width="90" height="10" rx="5" fill="#071A3D"/><circle cx="16" cy="-6" r="7" fill="url(#goldF)"/><rect x="30" y="-10" width="46" height="5" rx="2.5" fill="#0D2A52"/><rect x="30" y="0" width="30" height="4" rx="2" fill="#E0CB8B"/></g>
 </svg>

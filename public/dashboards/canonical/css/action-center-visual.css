@@ -3,47 +3,7 @@
  * Presentation-only layer. No business authority or lifecycle semantics.
  */
 
-body.kmc-shell-v4 .kmc-action-center {
-  display: grid;
-  gap: 14px;
-  padding: 20px 24px 28px;
-  background: var(--kmc-cockpit-bg, #f8f9fa);
-}
-
-body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header {
-  position: relative;
-  min-height: 126px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: stretch;
-  gap: 3px;
-  padding: 18px 28% 18px 22px;
-  overflow: hidden;
-  border: 1px solid #f3d7d2;
-  border-radius: 14px;
-  background:
-    radial-gradient(circle at 86% 30%, rgba(194,65,45,.13) 0 48px, transparent 49px),
-    radial-gradient(circle at 94% 75%, rgba(245,166,35,.13) 0 36px, transparent 37px),
-    linear-gradient(112deg, #fff8f7 0%, #ffffff 62%, #fffaf2 100%);
-  box-shadow: 0 1px 3px rgba(15,23,42,.05);
-}
-
-body.kmc-shell-v4 .kmc-action-center .kmc-workspace-title {
-  margin: 3px 0 4px;
-  color: #111827;
-  font-size: 28px;
-  font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -.025em;
-}
-
-body.kmc-shell-v4 .kmc-action-center .kmc-workspace-subtitle {
-  max-width: 900px;
-  color: #6b7280;
-  font-size: 12px;
-  line-height: 1.45;
-}
+/* Page frame, Hero surface and title belong to Layout/Visual Canon. */
 
 body.kmc-shell-v4 .kmc-action-center > .kmc-metric-strip {
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -160,15 +120,6 @@ body.kmc-shell-v4 .kmc-action-center .kmc-workspace-action.is-secondary {
   }
 }
 
-
-body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header .kmc-workspace-kicker {
-  color: #b42318;
-  background: #fff1ef;
-}
-
-body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header .kmc-workspace-kicker::before {
-  background: #c2412d;
-}
 
 body.kmc-shell-v4 .kmc-action-center .kmc-action-center-filter {
   margin-top: 5px;

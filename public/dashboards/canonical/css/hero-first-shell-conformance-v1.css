@@ -2,172 +2,209 @@
  * KOMERCE — HERO FIRST SHELL CONFORMANCE V1
  * Makes the real canonical shell match the approved mocks on overview dashboards.
  * Presentation only.
+ *
+ * Composition: Sidebar → Hero (first visible block, 150px) → Attention/KPI → Primary → Secondary.
+ * Universal search and market context live INSIDE the Hero's top-right lane; no topbar row,
+ * no domain tabs push the Hero down.
+ *
+ * Surfaces: pilotage, commerce, orders, operations, finance, action-center.
  */
 
-body.kmc-shell-v4[data-kmc-surface="pilotage"],
-body.kmc-shell-v4[data-kmc-surface="commerce"],
-body.kmc-shell-v4[data-kmc-surface="orders"],
-body.kmc-shell-v4[data-kmc-surface="operations"],
-body.kmc-shell-v4[data-kmc-surface="finance"],
-body.kmc-shell-v4[data-kmc-surface="action-center"] {
-  --kmc-hero-shell-right: 42px;
-  --kmc-hero-shell-control-w: 300px;
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) {
+  --kmc-hero-inset: 16px;
+  --kmc-hero-controls-top: calc(var(--kmc-layout-page-pad-top, 18px) + 14px);
+  --kmc-hero-controls-right: calc(var(--kmc-layout-page-pad-x, 24px) + var(--kmc-hero-inset));
+  --kmc-hero-search-w: 280px;
+  --kmc-hero-market-w: 240px;
+  --kmc-hero-lane: 560px;
 }
 
-/* The page must start with the Hero. The former global topbar becomes a Hero overlay. */
-body.kmc-shell-v4[data-kmc-surface="pilotage"] > .kmc-admin-topbar,
-body.kmc-shell-v4[data-kmc-surface="commerce"] > .kmc-admin-topbar,
-body.kmc-shell-v4[data-kmc-surface="orders"] > .kmc-admin-topbar,
-body.kmc-shell-v4[data-kmc-surface="operations"] > .kmc-admin-topbar,
-body.kmc-shell-v4[data-kmc-surface="finance"] > .kmc-admin-topbar,
-body.kmc-shell-v4[data-kmc-surface="action-center"] > .kmc-admin-topbar {
+/* One page frame: the shell root is a full-width canvas, the surface owns its own padding.
+ * (The legacy theme framed #canonical-admin-root at 1480px with a 20px top offset, which made
+ * every domain start at a different Y and X.) */
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) #canonical-admin-root {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Action Center is its own root: it carries the page padding itself. */
+body.kmc-shell-v4[data-kmc-surface="action-center"] #canonical-admin-root {
+  padding: var(--kmc-layout-page-pad-top, 18px) var(--kmc-layout-page-pad-x, 24px) var(--kmc-layout-page-pad-bottom, 24px);
+}
+
+/* The former global topbar becomes the Hero's control row. */
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar {
   position: absolute;
   z-index: 22;
-  top: calc(var(--kmc-layout-page-pad-top, 18px) + 16px);
-  right: var(--kmc-hero-shell-right);
+  top: var(--kmc-hero-controls-top);
+  right: var(--kmc-hero-controls-right);
   left: auto;
-  width: var(--kmc-hero-shell-control-w);
+  width: auto;
   height: 34px;
   min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
   padding: 0;
-  gap: 0;
   background: transparent;
   border: 0;
   box-shadow: none;
 }
 
-/* Only the universal reference search belongs here.
- * Market context is rendered by the surface itself; account chrome stays out of the Hero. */
-body.kmc-shell-v4[data-kmc-surface="pilotage"] > .kmc-admin-topbar .kmc-admin-topbar-right,
-body.kmc-shell-v4[data-kmc-surface="commerce"] > .kmc-admin-topbar .kmc-admin-topbar-right,
-body.kmc-shell-v4[data-kmc-surface="orders"] > .kmc-admin-topbar .kmc-admin-topbar-right,
-body.kmc-shell-v4[data-kmc-surface="operations"] > .kmc-admin-topbar .kmc-admin-topbar-right,
-body.kmc-shell-v4[data-kmc-surface="finance"] > .kmc-admin-topbar .kmc-admin-topbar-right,
-body.kmc-shell-v4[data-kmc-surface="action-center"] > .kmc-admin-topbar .kmc-admin-topbar-right {
-  display: none;
-}
-
-body.kmc-shell-v4[data-kmc-surface="pilotage"] > .kmc-admin-topbar .kmc-admin-search,
-body.kmc-shell-v4[data-kmc-surface="commerce"] > .kmc-admin-topbar .kmc-admin-search,
-body.kmc-shell-v4[data-kmc-surface="orders"] > .kmc-admin-topbar .kmc-admin-search,
-body.kmc-shell-v4[data-kmc-surface="operations"] > .kmc-admin-topbar .kmc-admin-search,
-body.kmc-shell-v4[data-kmc-surface="finance"] > .kmc-admin-topbar .kmc-admin-search,
-body.kmc-shell-v4[data-kmc-surface="action-center"] > .kmc-admin-topbar .kmc-admin-search {
-  width: 100%;
+/* Universal reference search. */
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar .kmc-admin-search {
+  flex: 0 0 var(--kmc-hero-search-w);
+  width: var(--kmc-hero-search-w);
   min-width: 0;
   height: 34px;
-  padding: 0 8px 0 10px;
+  padding: 0 4px 0 10px;
   border: 1px solid color-mix(in srgb, var(--kmc-brand-gold) 34%, var(--kmc-brand-line));
   border-radius: var(--kmc-canon-radius-sm, 10px);
-  background: rgba(255,255,255,.94);
-  box-shadow: 0 2px 8px rgba(7,26,61,.04);
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 2px 8px rgba(7, 26, 61, .05);
 }
 
-body.kmc-shell-v4[data-kmc-surface="pilotage"] > .kmc-admin-topbar .kmc-admin-reference-submit,
-body.kmc-shell-v4[data-kmc-surface="commerce"] > .kmc-admin-topbar .kmc-admin-reference-submit,
-body.kmc-shell-v4[data-kmc-surface="orders"] > .kmc-admin-topbar .kmc-admin-reference-submit,
-body.kmc-shell-v4[data-kmc-surface="operations"] > .kmc-admin-topbar .kmc-admin-reference-submit,
-body.kmc-shell-v4[data-kmc-surface="finance"] > .kmc-admin-topbar .kmc-admin-reference-submit,
-body.kmc-shell-v4[data-kmc-surface="action-center"] > .kmc-admin-topbar .kmc-admin-reference-submit {
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar .kmc-admin-search-input {
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar .kmc-admin-reference-submit {
   color: #fff;
   background: var(--kmc-brand-navy);
 }
 
-/* N2 no longer owns a row above overview dashboards.
- * The sidebar already owns navigation; overview pages must start on their Hero. */
-body.kmc-shell-v4[data-kmc-surface="pilotage"] > .kmc-admin-domain-tabs,
-body.kmc-shell-v4[data-kmc-surface="commerce"] > .kmc-admin-domain-tabs,
-body.kmc-shell-v4[data-kmc-surface="orders"] > .kmc-admin-domain-tabs,
-body.kmc-shell-v4[data-kmc-surface="operations"] > .kmc-admin-domain-tabs,
-body.kmc-shell-v4[data-kmc-surface="finance"] > .kmc-admin-domain-tabs,
-body.kmc-shell-v4[data-kmc-surface="action-center"] > .kmc-admin-domain-tabs {
+/* Market context = the topbar market select (it drives the surface reload); account chrome
+ * stays out of the Hero. The surface-owned duplicate stays hidden by navigation.css. */
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar .kmc-admin-topbar-right {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 0;
+}
+
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar .kmc-admin-account {
   display: none;
 }
 
-/* The page-owned market selector is the single visible market context.
- * Place it under search, still inside the 150px Hero band. */
-body.kmc-shell-v4[data-kmc-surface="pilotage"] .kmc-admin-shell > .kmc-market-context,
-body.kmc-shell-v4[data-kmc-surface="commerce"] .kmc-admin-shell > .kmc-market-context,
-body.kmc-shell-v4[data-kmc-surface="orders"] .kmc-admin-shell > .kmc-market-context,
-body.kmc-shell-v4[data-kmc-surface="operations"] .kmc-admin-shell > .kmc-market-context,
-body.kmc-shell-v4[data-kmc-surface="finance"] .kmc-admin-shell > .kmc-market-context {
-  top: calc(var(--kmc-layout-page-pad-top, 18px) + 58px);
-  right: var(--kmc-hero-shell-right);
-  width: var(--kmc-hero-shell-control-w);
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar .kmc-admin-market-select {
+  width: var(--kmc-hero-market-w);
+  min-width: 0;
+  height: 34px;
+  padding: 0 26px 0 12px;
+  text-overflow: ellipsis;
+  color: var(--kmc-brand-navy);
+  border: 1px solid color-mix(in srgb, var(--kmc-brand-gold) 34%, var(--kmc-brand-line));
+  border-radius: var(--kmc-canon-radius-sm, 10px);
+  background-color: rgba(255, 255, 255, .96);
+  box-shadow: 0 2px 8px rgba(7, 26, 61, .05);
+  font-size: 12px;
+  font-weight: 700;
 }
 
-/* Preserve the right-hand Hero visual/control lane from the approved mocks. */
-body.kmc-shell-v4[data-kmc-surface="pilotage"] [data-dashboard-role="hero"],
-body.kmc-shell-v4[data-kmc-surface="commerce"] [data-dashboard-role="hero"],
-body.kmc-shell-v4[data-kmc-surface="orders"] [data-dashboard-role="hero"],
-body.kmc-shell-v4[data-kmc-surface="operations"] [data-dashboard-role="hero"],
-body.kmc-shell-v4[data-kmc-surface="finance"] [data-dashboard-role="hero"],
-body.kmc-shell-v4[data-kmc-surface="action-center"] [data-dashboard-role="hero"] {
-  padding-right: 350px;
+/* Globe glyph when the selected market has no flag (Global — Tous les marchés). */
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar .kmc-admin-market-select:not(.has-flag) {
+  padding-left: 34px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23071A3D' stroke-width='2' stroke-linecap='round'><circle cx='12' cy='12' r='9'/><path d='M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18'/></svg>");
+  background-repeat: no-repeat;
+  background-position: 11px center;
+}
+
+/* N2 no longer owns a row above overview dashboards.
+ * The sidebar already owns navigation; overview pages must start on their Hero. */
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-domain-tabs {
+  display: none;
+}
+
+/* Hero text column leaves the right lane (illustration + controls) free. */
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) [data-dashboard-role="hero"] {
+  padding-right: var(--kmc-hero-lane);
+}
+
+/* Hero-owned period/filter control: compact chip on the controls row, left of search + market. */
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) [data-dashboard-role="hero"] > .kmc-decision-toolbar {
+  position: absolute;
+  z-index: 23;
+  top: calc(var(--kmc-hero-controls-top) - var(--kmc-layout-page-pad-top, 18px));
+  right: calc(var(--kmc-hero-inset) + var(--kmc-hero-search-w) + var(--kmc-hero-market-w) + 16px);
+  width: 150px;
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) [data-dashboard-role="hero"] > .kmc-decision-toolbar :is(label, span, strong, small) {
+  display: none;
+}
+
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) [data-dashboard-role="hero"] > .kmc-decision-toolbar .kmc-decision-toolbar-select {
+  width: 100%;
+  height: 34px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--kmc-brand-navy);
+  border: 1px solid color-mix(in srgb, var(--kmc-brand-gold) 34%, var(--kmc-brand-line));
+  border-radius: var(--kmc-canon-radius-sm, 10px);
+  background-color: rgba(255, 255, 255, .96);
+}
+
+/* An empty feedback line must not push the Hero copy off-centre. */
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) [data-dashboard-role="hero"] .kmc-workspace-feedback:empty {
+  display: none;
+}
+
+/* Spacing between bands is owned by the layout gap only: legacy cockpit margins and the
+ * boot frame border must not shift the Hero or the attention band. */
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) .kmc-domain-cockpit > .kmc-cockpit-decisions {
+  margin: 0;
+}
+
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) #canonical-admin-root.canonical-boot {
+  border: 0;
 }
 
 /* Search dropdown must escape the Hero visually without clipping. */
-body.kmc-shell-v4[data-kmc-surface="pilotage"] .kmc-admin-reference-results,
-body.kmc-shell-v4[data-kmc-surface="commerce"] .kmc-admin-reference-results,
-body.kmc-shell-v4[data-kmc-surface="orders"] .kmc-admin-reference-results,
-body.kmc-shell-v4[data-kmc-surface="operations"] .kmc-admin-reference-results,
-body.kmc-shell-v4[data-kmc-surface="finance"] .kmc-admin-reference-results,
-body.kmc-shell-v4[data-kmc-surface="action-center"] .kmc-admin-reference-results {
+body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) .kmc-admin-reference-results {
   right: 0;
   left: auto;
   width: min(520px, 78vw);
 }
 
 @media (max-width: 1180px) {
-  body.kmc-shell-v4[data-kmc-surface="pilotage"],
-  body.kmc-shell-v4[data-kmc-surface="commerce"],
-  body.kmc-shell-v4[data-kmc-surface="orders"],
-  body.kmc-shell-v4[data-kmc-surface="operations"],
-  body.kmc-shell-v4[data-kmc-surface="finance"],
-  body.kmc-shell-v4[data-kmc-surface="action-center"] {
-    --kmc-hero-shell-right: 24px;
-    --kmc-hero-shell-control-w: 260px;
-  }
-
-  body.kmc-shell-v4[data-kmc-surface="pilotage"] [data-dashboard-role="hero"],
-  body.kmc-shell-v4[data-kmc-surface="commerce"] [data-dashboard-role="hero"],
-  body.kmc-shell-v4[data-kmc-surface="orders"] [data-dashboard-role="hero"],
-  body.kmc-shell-v4[data-kmc-surface="operations"] [data-dashboard-role="hero"],
-  body.kmc-shell-v4[data-kmc-surface="finance"] [data-dashboard-role="hero"],
-  body.kmc-shell-v4[data-kmc-surface="action-center"] [data-dashboard-role="hero"] {
-    padding-right: 300px;
+  body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) {
+    --kmc-hero-search-w: 200px;
+    --kmc-hero-market-w: 168px;
+    --kmc-hero-lane: 400px;
   }
 }
 
 @media (max-width: 760px) {
-  body.kmc-shell-v4[data-kmc-surface="pilotage"] > .kmc-admin-topbar,
-  body.kmc-shell-v4[data-kmc-surface="commerce"] > .kmc-admin-topbar,
-  body.kmc-shell-v4[data-kmc-surface="orders"] > .kmc-admin-topbar,
-  body.kmc-shell-v4[data-kmc-surface="operations"] > .kmc-admin-topbar,
-  body.kmc-shell-v4[data-kmc-surface="finance"] > .kmc-admin-topbar,
-  body.kmc-shell-v4[data-kmc-surface="action-center"] > .kmc-admin-topbar {
+  body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar {
     position: static;
     width: auto;
     height: auto;
+    flex-wrap: wrap;
     margin: 10px 12px 0;
   }
 
-  body.kmc-shell-v4[data-kmc-surface="pilotage"] .kmc-admin-shell > .kmc-market-context,
-  body.kmc-shell-v4[data-kmc-surface="commerce"] .kmc-admin-shell > .kmc-market-context,
-  body.kmc-shell-v4[data-kmc-surface="orders"] .kmc-admin-shell > .kmc-market-context,
-  body.kmc-shell-v4[data-kmc-surface="operations"] .kmc-admin-shell > .kmc-market-context,
-  body.kmc-shell-v4[data-kmc-surface="finance"] .kmc-admin-shell > .kmc-market-context {
-    position: static;
+  body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar .kmc-admin-search {
+    flex: 1 1 100%;
     width: auto;
-    margin: 8px 12px 0;
   }
 
-  body.kmc-shell-v4[data-kmc-surface="pilotage"] [data-dashboard-role="hero"],
-  body.kmc-shell-v4[data-kmc-surface="commerce"] [data-dashboard-role="hero"],
-  body.kmc-shell-v4[data-kmc-surface="orders"] [data-dashboard-role="hero"],
-  body.kmc-shell-v4[data-kmc-surface="operations"] [data-dashboard-role="hero"],
-  body.kmc-shell-v4[data-kmc-surface="finance"] [data-dashboard-role="hero"],
-  body.kmc-shell-v4[data-kmc-surface="action-center"] [data-dashboard-role="hero"] {
+  body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) > .kmc-admin-topbar .kmc-admin-market-select {
+    width: 100%;
+  }
+
+  body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) [data-dashboard-role="hero"] {
     padding-right: 16px;
+  }
+
+  body.kmc-shell-v4:is([data-kmc-surface="pilotage"], [data-kmc-surface="commerce"], [data-kmc-surface="orders"], [data-kmc-surface="operations"], [data-kmc-surface="finance"], [data-kmc-surface="action-center"]) [data-dashboard-role="hero"] > .kmc-decision-toolbar {
+    position: static;
+    max-width: none;
   }
 }

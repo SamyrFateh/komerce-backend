@@ -36,10 +36,15 @@ body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] 
 }
 
 body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-card {
-  min-height: 106px;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 7px;
-  padding: 13px 15px 12px;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "head head"
+    "value link";
+  align-content: center;
+  align-items: end;
+  gap: 4px 12px;
+  padding: 12px 16px;
   border: 1px solid color-mix(in srgb, var(--decision-accent) 25%, #dce5ef);
   border-left: 5px solid var(--decision-accent);
   border-top-width: 1px;
@@ -59,8 +64,13 @@ body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] 
 
 
 body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-card-heading {
+  grid-area: head;
   align-items: center;
   gap: 10px;
+}
+
+body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-card-value-row {
+  grid-area: value;
 }
 
 body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-card-icon {
@@ -93,6 +103,10 @@ body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] 
 }
 
 body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-link {
+  grid-area: link;
+  align-self: end;
+  justify-self: end;
+  white-space: nowrap;
   color: color-mix(in srgb, var(--decision-accent) 88%, #0f1f36);
   font-size: 11px;
   font-weight: 850;
@@ -100,29 +114,8 @@ body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] 
 
 
 
-body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-card.is-critical {
-  background: linear-gradient(105deg, #fff1f2 0%, #ffffff 68%);
-  border-color: #fecaca;
-  border-left-color: #dc2626;
-}
-
-body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-card.is-warning {
-  background: linear-gradient(105deg, #fff7ed 0%, #ffffff 68%);
-  border-color: #fed7aa;
-  border-left-color: #f59e0b;
-}
-
-body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-card.is-violet {
-  background: linear-gradient(105deg, #f5f3ff 0%, #ffffff 68%);
-  border-color: #ddd6fe;
-  border-left-color: #7c3aed;
-}
-
-body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="attention"] .kmc-decision-card.is-info {
-  background: linear-gradient(105deg, #eff6ff 0%, #ffffff 68%);
-  border-color: #bfdbfe;
-  border-left-color: #3b82f6;
-}
+/* State tones (critical / warning / positive / neutral navy-gold) come from the
+ * --decision-accent / --decision-soft variables owned by Visual Canon V1. */
 
 /* The primary object owns more visual mass than secondary cards. */
 body.kmc-shell-v4 [data-dashboard-hierarchy="hero-attention-primary-secondary"] [data-dashboard-role="primary"] {

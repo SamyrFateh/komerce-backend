@@ -332,8 +332,10 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active,
   position: relative;
 }
 
-.kmc-dashboard-header::before,
-.kmc-workspace-header::before,
+/* The orange accent bar belongs to plain headers only: a role="hero" header owns its
+ * ::before as the domain illustration lane (contextual-heroes-v2.css). */
+.kmc-dashboard-header:not([data-dashboard-role="hero"])::before,
+.kmc-workspace-header:not([data-dashboard-role="hero"])::before,
 .kmc-access-hero::before {
   content: "";
   display: block;
@@ -957,13 +959,12 @@ body.kmc-shell-v4 #market-catalog-root{
 }
 
 
-/* V1.6 — the historical admin canvas is white.
- * Contrast comes from card borders, semantic accents and status surfaces,
- * not from a grey page wash. */
+/* V1.6 — the admin canvas is the warm Komerce canvas (Visual Canon V1), never a grey wash
+ * and no longer pure white. Contrast comes from white cards, borders and semantic accents. */
 body.kmc-shell-v4,
 body[data-admin-generation="canonical"],
 body.kmc-shell-v4 #canonical-admin-root,
 body.kmc-shell-v4 #market-autonomy-root,
 body.kmc-shell-v4 #market-catalog-root{
-  background:#FFFFFF !important;
+  background:var(--kmc-brand-canvas, #F8F6F1) !important;
 }

@@ -146,10 +146,10 @@ test.describe('Operations — logistics control board', () => {
     const visual = await header.evaluate(el => {
       const cs = getComputedStyle(el);
       const r = el.getBoundingClientRect();
-      return { height:r.height, backgroundImage:cs.backgroundImage, radius:cs.borderRadius };
+      return { height:r.height, backgroundImage:getComputedStyle(el, '::before').backgroundImage, radius:cs.borderRadius };
     });
     expect(visual.height).toBeGreaterThanOrEqual(150);
-    expect(visual.backgroundImage).toContain('operations-logistics-hero.svg');
+    expect(visual.backgroundImage).toContain('operations-logistics-hero-gold.svg');
     expect(visual.radius).toBe('16px');
   });
 

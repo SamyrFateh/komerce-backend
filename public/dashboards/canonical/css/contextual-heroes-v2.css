@@ -24,9 +24,11 @@ body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header::before {
   position: absolute;
   z-index: -1;
   inset: 0 0 0 auto;
-  width: min(43%, 620px);
-  opacity: .96;
+  width: min(52%, 760px);
+  opacity: 1;
   pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 24%);
 }
 
 body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header::after,
@@ -45,22 +47,12 @@ body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header::after {
 
 /* PILOTAGE — global network and route. */
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] > .kmc-dashboard-header::before {
-  background:
-    linear-gradient(90deg, transparent 0%, rgba(255,249,240,.10) 18%, rgba(255,255,255,.28) 100%),
-    url('/dashboards/canonical/assets/pilotage-control-tower-hero-gold.svg') right center / contain no-repeat;
-}
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="pilotage"] > .kmc-dashboard-header::after {
-  content: "GLOBAL • ROUTES • DÉCISIONS";
+  background: url('/dashboards/canonical/assets/pilotage-control-tower-hero-gold.svg') right center / auto 100% no-repeat;
 }
 
 /* COMMERCE — storefront / momentum. */
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashboard-header::before {
-  background:
-    linear-gradient(90deg, transparent 0%, rgba(255,249,240,.10) 18%, rgba(255,255,255,.28) 100%),
-    url('/dashboards/canonical/assets/commerce-hero-gold.svg') right center / contain no-repeat;
-}
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] > .kmc-dashboard-header::after {
-  content: "VENTE • VALEUR • PROGRESSION";
+  background: url('/dashboards/canonical/assets/commerce-hero-gold.svg') right center / auto 100% no-repeat;
 }
 
 /* COMMANDES — lifecycle sequence. */
@@ -76,17 +68,9 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] > .kmc-dashboa
   content: "01 • 02 • 03 • 04";
 }
 
-/* OPERATIONS — richer logistics illustration, same palette. */
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] > .kmc-dashboard-header {
-  min-height: 150px;
-  background:
-    linear-gradient(90deg, rgba(255,249,240,.99) 0%, rgba(255,249,240,.96) 39%, rgba(255,255,255,.38) 64%, rgba(231,215,163,.12) 100%),
-    url('/dashboards/canonical/assets/operations-logistics-hero-gold.svg') right center / cover no-repeat,
-    url('/dashboards/canonical/assets/operations-logistics-hero.svg') right center / cover no-repeat;
-}
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] > .kmc-dashboard-header::before { display:none; }
-body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] > .kmc-dashboard-header::after {
-  content: "CLIENT → HUB → TRANSIT → RELAIS";
+/* OPERATIONS — logistics port scene, same palette and mechanism as the other domains. */
+body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] > .kmc-dashboard-header::before {
+  background: url('/dashboards/canonical/assets/operations-logistics-hero-gold.svg') right center / auto 100% no-repeat;
 }
 
 /* FINANCE — value, matching, closure. */
@@ -116,12 +100,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="markets"] > .kmc-dashbo
 
 /* ACTION CENTER — priority queue; red appears only in actual state cards below. */
 body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header::before {
-  background:
-    linear-gradient(90deg, transparent 0%, rgba(255,249,240,.10) 18%, rgba(255,255,255,.28) 100%),
-    url('/dashboards/canonical/assets/action-center-hero-gold.svg') right center / contain no-repeat;
-}
-body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header::after {
-  content: "VOIR • DÉCIDER • AGIR";
+  background: url('/dashboards/canonical/assets/action-center-hero-gold.svg') right center / auto 100% no-repeat;
 }
 
 /* SOURCING — discovery / qualification funnel. */

@@ -176,7 +176,7 @@ async function geometry(page, pathname) {
     const primary = actionCenterPage
       ? root.querySelector(':scope > .kmc-section')
       : root.querySelector(':scope > [data-dashboard-role="primary"]');
-    const market = document.querySelector('.kmc-admin-shell > .kmc-market-context');
+    const market = document.querySelector('.kmc-admin-topbar .kmc-admin-market-select');
     const search = document.querySelector('.kmc-admin-search');
     const tabs = document.querySelector('.kmc-admin-domain-tabs');
     const topbar = document.querySelector('.kmc-admin-topbar');
@@ -267,7 +267,7 @@ test.describe('Layout Canon — conformité aux mocks approuvés', () => {
 
     for (const route of routes) {
       const g = measured[route];
-      const image = route === '/admin/operations' ? g.heroBackground : g.heroBeforeBackground;
+      const image = g.heroBeforeBackground;
       expect(image).toContain(illustrations[route]);
       expect(g.titleColor).toBe('rgb(7, 26, 61)');
       expect(g.heroBorderColor).not.toBe('rgb(243, 215, 210)');

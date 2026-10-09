@@ -51,3 +51,11 @@ describe('contextual heroes v2', () => {
   });
 
 });
+
+describe('contextual-heroes-v2 — canon visuel validé (parité mocks)', () => {
+  test('contrat de la feuille', () => {
+    const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/contextual-heroes-v2.css'), 'utf8');
+    for (const svg of ['pilotage-control-tower-hero-gold.svg','commerce-hero-gold.svg','action-center-hero-gold.svg','operations-logistics-hero-gold.svg']) expect(css).toContain(svg);
+    expect(css).toContain('mask-image: linear-gradient(90deg, transparent 0, #000 24%)');
+  });
+});

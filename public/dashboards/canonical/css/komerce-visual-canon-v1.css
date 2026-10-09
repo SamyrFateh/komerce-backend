@@ -217,6 +217,39 @@ body.kmc-shell-v4 .is-unknown { --kmc-canon-status: var(--kmc-state-unknown); }
 }
 
 
+/* Metric cards: white card, one neutral navy accent; red/amber/green only for real state.
+ * (base/legacy themes cycled orange-blue-teal-coral-violet by position, which is decoration.) */
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center) .kmc-metric-card:nth-child(n) {
+  --metric-accent: var(--kmc-brand-navy);
+  --metric-soft: #ffffff;
+}
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center) .kmc-metric-card.is-positive { --metric-accent: var(--kmc-state-positive); }
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center) .kmc-metric-card.is-warning  { --metric-accent: var(--kmc-state-warning); }
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center) .kmc-metric-card.is-critical { --metric-accent: var(--kmc-state-critical); }
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center) .kmc-metric-card.is-neutral  { --metric-accent: var(--kmc-state-unknown); }
+
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center) .kmc-metric-card {
+  background: #ffffff;
+  border: 1px solid var(--kmc-brand-line);
+  border-left: 3px solid var(--metric-accent);
+  border-radius: var(--kmc-canon-radius-md);
+  box-shadow: var(--kmc-canon-shadow-soft);
+}
+
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center) .kmc-metric-card::before {
+  display: none;
+}
+
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center) .kmc-metric-card::after {
+  top: 16px;
+  right: 16px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--metric-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--metric-accent) 14%, #ffffff);
+}
+
 /* Canonical overview composition — context is part of the Hero, not a card above it. */
 body.kmc-shell-v4 .kmc-admin-shell {
   position: relative;
@@ -281,9 +314,25 @@ body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header {
   box-shadow: var(--kmc-canon-shadow);
 }
 
+/* Hero eyebrow = one champagne pill per domain (COMMERCE, LOGISTIQUE, …), same as the mocks. */
 body.kmc-shell-v4 [data-dashboard-role="hero"] .canonical-eyebrow,
 body.kmc-shell-v4 [data-dashboard-role="hero"] .kmc-workspace-kicker {
-  color: var(--kmc-brand-gold-strong);
+  display: inline-flex;
+  align-items: center;
+  align-self: start;
+  justify-self: start;
+  width: fit-content;
+  margin: 0 0 6px;
+  padding: 3px 10px;
+  color: var(--kmc-brand-navy);
+  background: var(--kmc-brand-champagne);
+  border: 1px solid color-mix(in srgb, var(--kmc-brand-gold) 55%, var(--kmc-brand-champagne));
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .09em;
+  line-height: 1.3;
+  text-transform: uppercase;
 }
 
 body.kmc-shell-v4 [data-dashboard-role="hero"] .kmc-dashboard-title,

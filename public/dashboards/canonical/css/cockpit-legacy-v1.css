@@ -302,18 +302,8 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-dashboard-section-copy {
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-surface-card.is-cockpit-flow {
   position: relative;
   padding: 14px 18px 17px;
-  border-left: 3px solid var(--kmc-cockpit-orange);
+  border-left: 3px solid var(--kmc-brand-gold-strong, #A67C12);
   background: #fff;
-}
-
-body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-surface-card.is-cockpit-flow::before {
-  content: 'FLUX';
-  display: block;
-  margin-bottom: 4px;
-  color: #71819b;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: .08em;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-decision-dashboard-section-title {
@@ -356,17 +346,6 @@ body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-funnel-label {
   color: #17233a;
   font-size: 10px;
   font-weight: 750;
-}
-
-/* Suivi de vérité — équivalent visuel de "SUIVI DU LOT". */
-body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-surface-card.is-cockpit-truth::before {
-  content: 'SUIVI DE VÉRITÉ';
-  display: block;
-  margin-bottom: 4px;
-  color: #71819b;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: .08em;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-truth .kmc-decision-dashboard-section-title {
