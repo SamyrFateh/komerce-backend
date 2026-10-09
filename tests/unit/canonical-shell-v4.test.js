@@ -33,3 +33,18 @@ test('shell-v4 ne porte plus le fond navy de la sidebar (surchargé par la couch
   const css = fs.readFileSync(path.join(__dirname, '..', '..', 'public/dashboards/canonical/css/canonical-shell-v4.css'), 'utf8');
   expect(css).not.toMatch(/background:\s*#102143/);
 });
+
+
+test('sidebar verticale démarre en haut et isole le scroll dans la navigation centrale', () => {
+  const css = fs.readFileSync(CSS_PATH, 'utf8');
+  const primary = (css.match(/body\.kmc-shell-v4 \.kmc-admin-primary-nav\s*\{([\s\S]*?)\}/) || [])[1] || '';
+  const identity = (css.match(/body\.kmc-shell-v4 \.kmc-admin-navigation-identity\s*\{([\s\S]*?)\}/) || [])[1] || '';
+  const utility = (css.match(/body\.kmc-shell-v4 \.kmc-admin-utility-nav\s*\{([\s\S]*?)\}/) || [])[1] || '';
+
+  expect(primary).toMatch(/flex-direction:\s*column/);
+  expect(primary).toMatch(/justify-content:\s*flex-start/);
+  expect(primary).toMatch(/overflow-y:\s*auto/);
+  expect(primary).toMatch(/overflow-x:\s*hidden/);
+  expect(identity).toMatch(/flex:\s*0 0 auto/);
+  expect(utility).toMatch(/flex:\s*0 0 auto/);
+});
