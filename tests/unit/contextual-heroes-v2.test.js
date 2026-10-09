@@ -40,4 +40,14 @@ describe('contextual heroes v2', () => {
     const canon = html.indexOf('/dashboards/canonical/css/komerce-visual-canon-v1.css');
     expect(canon).toBeGreaterThan(heroes);
   });
+  test('les quatre écrans de référence portent une illustration métier réelle dans la palette Komerce', () => {
+    expect(css).toContain('/dashboards/canonical/assets/pilotage-control-tower-hero-gold.svg');
+    expect(css).toContain('/dashboards/canonical/assets/commerce-hero-gold.svg');
+    expect(css).toContain('/dashboards/canonical/assets/action-center-hero-gold.svg');
+    expect(css).toContain('/dashboards/canonical/assets/operations-logistics-hero-gold.svg');
+    expect(css).toContain('var(--kmc-brand-gold');
+    expect(css).toContain('var(--kmc-brand-navy');
+    expect(css).not.toMatch(/#(?:ec4899|db2777|f472b6)/i);
+  });
+
 });
