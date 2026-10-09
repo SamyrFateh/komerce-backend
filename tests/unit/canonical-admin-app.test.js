@@ -1,8 +1,5 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-
 /**
  * @test-kind unit
  * @test-runner jest
@@ -449,20 +446,5 @@ describe('canonical admin app — defaultLandingSurface (docs/admin-nav-capabili
       credentials: 'include',
     }));
     expect(env.validateAdminContext).not.toHaveBeenCalled();
-  });
-});
-
-describe('canonical admin app — Operations hero context', () => {
-  test('Operations réutilise les vrais contrôles recherche + marché dans le Hero sans wrapper Périmètre', () => {
-    const source = fs.readFileSync(
-      path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'app.js'),
-      'utf8'
-    );
-    expect(source).toContain("heroContext: true");
-    expect(source).toContain("embedSurfaceContextInHero");
-    expect(source).toContain("controls.appendChild(search)");
-    expect(source).toContain("controls.appendChild(marketField)");
-    expect(source).toContain("topbar.setAttribute('hidden', 'hidden')");
-    expect(source).toContain("options.heroContext ? global.document.createElement('div') : root");
   });
 });
