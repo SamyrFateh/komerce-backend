@@ -96,3 +96,26 @@ describe('Catalogue pays decision-first', () => {
     expect(source).not.toMatch(/[?&]market_id=|body\.market_id|body\.marketId/);
   });
 });
+
+
+test('Catalogue pays garde Hero + décisions + un seul bloc d’arbitrage', () => {
+  const source = read('public/dashboards/canonical/js/market-catalog.js');
+  expect(source).toContain("data-workspace-kind', 'market-catalog");
+  expect(source).toContain("data-dashboard-role', 'hero");
+  expect(source).toContain("data-dashboard-role', 'attention");
+  expect(source).toContain("data-dashboard-role', 'primary");
+  expect(source).toContain("'Catalogue du marché'");
+  expect(source).toContain("'À arbitrer maintenant'");
+  expect(source).not.toContain("'Atelier économique →'");
+  expect(source).not.toContain("'Voir la boutique →'");
+  expect(source).not.toContain("'Market ID ");
+});
+
+test('le sélecteur marché est rendu dans le Hero et non dans une section séparée', () => {
+  const source = read('public/dashboards/canonical/js/market-catalog.js');
+  expect(source).toContain("kmc-market-catalog-hero-controls");
+  expect(source).toContain("renderMarketSelector(context, marketCode, header)");
+  const selectorStart = source.indexOf('function renderMarketSelector');
+  const selectorSource = source.slice(selectorStart, source.indexOf('function renderDecisionOverview', selectorStart));
+  expect(selectorSource).not.toContain("el('section', 'kmc-section')");
+});
