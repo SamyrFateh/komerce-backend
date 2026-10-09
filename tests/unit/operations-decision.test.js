@@ -14,13 +14,13 @@ describe('operations-decision visual hierarchy contract',()=>{
     expect(SRC).toContain("data-dashboard-hierarchy', 'hero-attention-primary-secondary");
     const renderStart=SRC.indexOf('function render(rootNode');
     const renderSource=SRC.slice(renderStart);
+    const attention=renderSource.indexOf('header.appendChild(renderControlHealthSummary');
     const hero=renderSource.indexOf('dashboard.appendChild(header)');
-    const attention=renderSource.indexOf('dashboard.appendChild(renderControlHealthSummary');
     const primary=renderSource.indexOf('dashboard.appendChild(chain.section)');
     expect(renderStart).toBeGreaterThanOrEqual(0);
-    expect(hero).toBeGreaterThanOrEqual(0);
-    expect(attention).toBeGreaterThan(hero);
-    expect(primary).toBeGreaterThan(attention);
+    expect(attention).toBeGreaterThanOrEqual(0);
+    expect(hero).toBeGreaterThan(attention);
+    expect(primary).toBeGreaterThan(hero);
     expect(SRC).not.toContain("data-dashboard-role', 'secondary");
     expect(SRC).not.toContain("cardSection(doc, 'File d’exécution'");
     expect(SRC).not.toContain("cardSection(doc, 'Approfondir'");
