@@ -236,3 +236,7 @@ test('processBoard : états du flux — focus sur la 1re étape alimentée, aler
 test('live-kit.css : aucun fond jaune/crème pâle (fond blanc)', () => {
   expect(require('../helpers/noYellowFill').paleYellowFills('live-kit.css')).toEqual([]);
 });
+
+test('live-kit.css : plancher typographique (aucun texte sous 10 px)', () => {
+  expect(require('../helpers/fontFloor').tinyFonts('live-kit.css')).toEqual([]);
+});

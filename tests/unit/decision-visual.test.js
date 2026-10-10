@@ -38,3 +38,7 @@ test('Finance et Commandes ne redéfinissent plus leur Hero (propriété Layout 
   expect(css).not.toContain('color: #15803d');
   expect(css).not.toContain('color: #4f46e5');
 });
+
+test('decision-visual.css : plancher typographique (aucun texte sous 10 px)', () => {
+  expect(require('../helpers/fontFloor').tinyFonts('decision-visual.css')).toEqual([]);
+});

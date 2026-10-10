@@ -94,3 +94,7 @@ test('Utilisateurs et Providers partagent la scène tour de contrôle, portée p
   const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/contextual-heroes-v2.css'), 'utf8');
   expect(css).toContain('body.kmc-shell-v4:is([data-kmc-surface="users-admin"], [data-kmc-surface="providers-admin"]) #canonical-admin-root > .kmc-workspace-header::before');
 });
+
+test('contextual-heroes-v2.css : plancher typographique (aucun texte sous 10 px)', () => {
+  expect(require('../helpers/fontFloor').tinyFonts('contextual-heroes-v2.css')).toEqual([]);
+});

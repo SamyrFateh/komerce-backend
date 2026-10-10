@@ -100,3 +100,7 @@ describe('canonical-legacy-theme-v1 — canon visuel validé (parité mocks)', (
     expect(css).toContain('background:var(--kmc-brand-canvas, #FFFFFF) !important');
   });
 });
+
+test('canonical-legacy-theme-v1.css : plancher typographique (aucun texte sous 10 px)', () => {
+  expect(require('../helpers/fontFloor').tinyFonts('canonical-legacy-theme-v1.css')).toEqual([]);
+});

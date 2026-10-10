@@ -16,3 +16,7 @@ test('hero : dégradé blanc/bleu pâle, sans crème', () => {
   expect(css).not.toContain('rgba(255,249,240');
   expect(css).not.toContain('rgba(231,215,163');
 });
+
+test('komerce-visual-canon-v1.css : plancher typographique (aucun texte sous 10 px)', () => {
+  expect(require('../helpers/fontFloor').tinyFonts('komerce-visual-canon-v1.css')).toEqual([]);
+});

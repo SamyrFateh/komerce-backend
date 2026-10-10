@@ -58,3 +58,7 @@ describe('Control Tower visual rebuild V1', () => {
     expect(css).toMatch(/grid-template-columns:\s*1fr/);
   });
 });
+
+test('control-tower-visual-v1.css : plancher typographique (aucun texte sous 10 px)', () => {
+  expect(require('../helpers/fontFloor').tinyFonts('control-tower-visual-v1.css')).toEqual([]);
+});
