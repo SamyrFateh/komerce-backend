@@ -57,3 +57,48 @@ body .kmc-workspace-action.is-danger:hover:not(:disabled) { background: #FEF2F3;
 .kmc-pricing-product-focus .kmc-workspace-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .kmc-pricing-product-focus [data-pricing-focus-result] .kmc-workspace-actions { margin-top: 4px; }
 @media (max-width: 900px) { .kmc-pricing-product-focus .kmc-workspace-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Échelle typographique unique (écrans Canonical) : titres 18, textes 13, libellés 14/12, tableaux 13/11.
+ * Remplace les tailles 10–12 px héritées du thème Legacy ; la Tour de contrôle garde ses valeurs figées. */
+body.kmc-shell-v4 .kmc-admin-shell .kmc-section-title,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-decision-dashboard-section-title,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-domain-cockpit .kmc-decision-dashboard-section-title,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-domain-cockpit .is-cockpit-flow .kmc-decision-dashboard-section-title {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.25;
+  color: #0F172A;
+}
+body.kmc-shell-v4 .kmc-admin-shell .kmc-section-description,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-decision-dashboard-section-copy,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-domain-cockpit .kmc-decision-dashboard-section-copy {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748B;
+}
+body.kmc-shell-v4 .kmc-admin-shell .kmc-decision-card-label,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-domain-cockpit .kmc-decision-card-label {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #0F172A;
+}
+body.kmc-shell-v4 .kmc-admin-shell .kmc-decision-card-helper,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-decision-card-copy,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-domain-cockpit .kmc-decision-card-helper {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: #64748B;
+}
+body.kmc-shell-v4 .kmc-admin-shell .kmc-workspace-table td,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-data-table td { font-size: 13px; }
+body.kmc-shell-v4 .kmc-admin-shell .kmc-workspace-table th,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-data-table th { font-size: 11px; }
+body.kmc-shell-v4 .kmc-admin-shell .kmc-workspace-subtitle,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-workspace-note { font-size: 13px; }
+body.kmc-shell-v4 .kmc-admin-shell .kmc-workspace-action,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-workspace-nav-link { font-size: 12.5px; }
+body.kmc-shell-v4 .kmc-admin-shell .kmc-catalog-curation-table .kmc-catalog-actions-cell .kmc-workspace-action,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-sourcing-candidates-table td:last-child .kmc-workspace-action,
+body.kmc-shell-v4 .kmc-admin-shell .kmc-sourcing-candidates-table td:last-child .kmc-workspace-nav-link { font-size: 12px; }
+.kmc-pill { font-size: 12px; }
