@@ -134,7 +134,7 @@
   const HERO_FIRST_SURFACES = new Set([
     'pilotage', 'commerce', 'orders', 'operations', 'finance', 'action-center',
     'pricing-workspace', 'catalog-workspace', 'sourcing-workspace', 'purchasing-workspace',
-    'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace',
+    'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace', 'client-index',
   ]);
 
   const SURFACE_TO_SPACE = Object.freeze({

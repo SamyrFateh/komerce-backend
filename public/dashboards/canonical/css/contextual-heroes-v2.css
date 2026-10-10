@@ -111,6 +111,14 @@ body.kmc-shell-v4 :is(.kmc-sourcing-workspace, .kmc-purchasing-workspace, .kmc-o
   content: none;
 }
 
+/* CLIENTS — directory entry, same gold family as Commerce. */
+body.kmc-shell-v4 .kmc-client-index > .kmc-workspace-header::before {
+  background: url('/dashboards/canonical/assets/commerce-hero-gold.svg') right center / auto 100% no-repeat;
+}
+body.kmc-shell-v4 .kmc-client-index > .kmc-workspace-header::after {
+  content: none;
+}
+
 @media (max-width: 1180px) {
   body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-dashboard-header::before,
   body.kmc-shell-v4 [data-dashboard-role="hero"].kmc-workspace-header::before {

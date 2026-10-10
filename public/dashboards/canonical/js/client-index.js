@@ -100,19 +100,14 @@
 
   function createHeader(doc) {
     const header = doc.createElement('header');
-    header.className = 'kmc-entity-header';
-    header.appendChild(text(doc, 'span', 'kmc-entity-kicker', 'CLIENTS'));
-    header.appendChild(text(doc, 'h1', 'kmc-entity-title', 'Trouver un client'));
-    header.appendChild(text(doc, 'p', 'kmc-entity-subtitle', 'Recherche et navigation vers Client 360. Les analyses commerciales restent dans Commerce.'));
+    header.className = 'kmc-workspace-header';
+    header.setAttribute('data-dashboard-role', 'hero');
+    const copy = doc.createElement('div');
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'CLIENTS'));
+    copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Trouver un client'));
+    copy.appendChild(text(doc, 'p', 'kmc-workspace-subtitle', 'Recherche et navigation vers Client 360. Les analyses commerciales restent dans Commerce.'));
 
-    const nav = doc.createElement('nav');
-    nav.className = 'kmc-entity-nav';
-    [['/admin/commerce', 'Commerce'], ['/admin/pilotage', 'Pilotage']].forEach(([href, label]) => {
-      const link = text(doc, 'a', 'kmc-entity-nav-link', label);
-      link.setAttribute('href', href);
-      nav.appendChild(link);
-    });
-    header.appendChild(nav);
+    header.appendChild(copy);
     return header;
   }
 

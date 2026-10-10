@@ -84,3 +84,8 @@ test('les workspaces empruntent les scènes or des domaines qu\'ils servent, san
   expect(css).toMatch(/\.kmc-purchasing-workspace\[data-workspace-kind="purchasing"\][^{]*::before \{\s*background: url\('\/dashboards\/canonical\/assets\/orders-hero-gold\.svg'\)/);
   expect(css).toMatch(/\.kmc-operations-workspace\) > \.kmc-workspace-header::after \{\s*content: none;/);
 });
+
+test('la page Clients porte l\'illustration Commerce or', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/contextual-heroes-v2.css'), 'utf8');
+  expect(css).toMatch(/\.kmc-client-index > \.kmc-workspace-header::before \{\s*background: url\('\/dashboards\/canonical\/assets\/commerce-hero-gold\.svg'\)/);
+});
