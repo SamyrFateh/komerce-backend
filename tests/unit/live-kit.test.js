@@ -193,6 +193,7 @@ test('processBoard : une pastille par étape, flèches entre étapes, cartes col
     ], more:{ href:'/a', label:'Voir les 3 commandes →' } },
     { label:'Relais', icon:'⌂', hue:'green', count:0, cards:[], countLabel:'Aucun colis' },
   ]);
+  expect(html).toContain('lk-pb lk-pb-n2');
   expect((html.match(/lk-pb-stage"/g) || []).length).toBe(2);
   expect((html.match(/lk-pb-arrow/g) || []).length).toBe(1);
   expect(html).toContain('lk-pb-circle is-blue is-attention');

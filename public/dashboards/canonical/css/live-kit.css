@@ -43,6 +43,7 @@
 
 /* ── Chaîne de processus (Hub live) : même langage que « Où en sont les commandes ? » ───────── */
 .kmc-import-runtime .lk-pb{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 22px;align-items:start;padding:6px 4px 4px}
+.kmc-import-runtime .lk-pb.lk-pb-n3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .kmc-import-runtime .lk-pb-stage{position:relative;display:grid;gap:10px;min-width:0}
 .kmc-import-runtime .lk-pb-arrow{position:absolute;left:-19px;top:20px;width:16px;text-align:center;color:#D4A63C;font-size:15px;line-height:1}
 .kmc-import-runtime .lk-pb-head{display:grid;justify-items:center;gap:6px;text-decoration:none;color:#0F172A}
@@ -68,7 +69,7 @@
 .kmc-import-runtime .lk-pb-empty{padding:18px 6px;color:#94A3B8;font-size:12.5px;text-align:center}
 .kmc-import-runtime .lk-pb-more{padding:2px 4px;color:#B45309;font-size:12.5px;font-weight:700;text-decoration:none}
 @media(max-width:900px){
-  .kmc-import-runtime .lk-pb{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 16px}
+  .kmc-import-runtime .lk-pb,.kmc-import-runtime .lk-pb.lk-pb-n3{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 16px}
   .kmc-import-runtime .lk-pb-arrow{display:none}
 }
-@media(max-width:560px){.kmc-import-runtime .lk-pb{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:560px){.kmc-import-runtime .lk-pb,.kmc-import-runtime .lk-pb.lk-pb-n3{grid-template-columns:minmax(0,1fr)}}

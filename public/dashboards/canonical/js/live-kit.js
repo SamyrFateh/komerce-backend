@@ -97,7 +97,7 @@
       const cls = `lk-pb-card is-${c.tone || 'ok'}`;
       return c.href ? `<a class="${cls}" href="${c.href}" data-cockpit-nav>${body}</a>` : `<div class="${cls}">${body}</div>`;
     };
-    return `<div class="lk-pb" role="list">${stages.map((stage, index) => {
+    return `<div class="lk-pb lk-pb-n${stages.length}" role="list">${stages.map((stage, index) => {
       const head = `<span class="lk-pb-circle is-${stage.hue || 'blue'}${stage.tone === 'attention' ? ' is-attention' : ''}" aria-hidden="true">${esc(stage.icon || '●')}</span>
         <strong class="lk-pb-label">${esc(stage.label)}</strong>
         <span class="lk-pb-count">${esc(String(stage.count))}</span>`;
