@@ -21,3 +21,10 @@ describe('operations-workspace.css — chaîne et actions du Catalogue', () => {
     expect(css).toMatch(/@media \(max-width:760px\)\{\.kmc-catalog-chain\{grid-template-columns:1fr/);
   });
 });
+
+describe('tableau des candidats Sourcing', () => {
+  test('colonnes État et Décision élargies pour les libellés français', () => {
+    expect(css).toMatch(/td:nth-child\(5\) \{ width: 14%; \}/);
+    expect(css).toMatch(/td:nth-child\(6\) \{ width: 11%; \}/);
+  });
+});
