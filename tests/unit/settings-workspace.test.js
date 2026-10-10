@@ -25,3 +25,10 @@ test('les matrices pricing legacy restent forensic read-only dans Paramètres Ca
   expect(source).not.toMatch(/pricing-matrices\/taxes\/\$\{[^}]+\}.*method:\s*['"]PUT['"]/s);
   expect(source).not.toMatch(/pricing-matrices\/dims\/\$\{[^}]+\}.*method:\s*['"]PUT['"]/s);
 });
+
+test('UX-03 — Paramètres ouvre sur un Hero canon (kicker + h1), plus sur l’ancien bandeau', () => {
+  expect(source).toContain('data-dashboard-role="hero"');
+  expect(source).toContain('<span class="kmc-workspace-kicker">CONFIGURATION</span>');
+  expect(source).toContain('<h1 class="kmc-workspace-title">Paramètres business</h1>');
+  expect(source).not.toContain('class="sv-header"');
+});

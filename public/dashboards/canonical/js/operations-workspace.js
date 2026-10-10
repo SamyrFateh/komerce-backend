@@ -88,7 +88,7 @@
     header.setAttribute('data-dashboard-role', 'hero');
 
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'HUB / RELAIS'));
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'HUB & RELAIS'));
     copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Flux à traiter'));
     copy.appendChild(text(
       doc,
@@ -324,6 +324,31 @@
     }
   }
 
+  const WORKSPACE_VIEWS = Object.freeze([
+    { id: 'hub', label: 'Hub' },
+    { id: 'relay', label: 'Relais' },
+    { id: 'inventory', label: 'Stock à affecter' },
+  ]);
+
+  function createViewTabs(doc, activeView, onSelect) {
+    const bar = doc.createElement('div');
+    bar.className = 'kmc-workspace-tabs';
+    bar.setAttribute('role', 'tablist');
+    bar.setAttribute('data-workspace-views', '');
+    WORKSPACE_VIEWS.forEach(item => {
+      const button = doc.createElement('button');
+      button.type = 'button';
+      button.className = `kmc-workspace-tab${item.id === activeView ? ' is-active' : ''}`;
+      button.setAttribute('role', 'tab');
+      button.setAttribute('aria-selected', item.id === activeView ? 'true' : 'false');
+      button.setAttribute('data-workspace-view', item.id);
+      button.textContent = item.label;
+      button.addEventListener('click', () => onSelect(item.id));
+      bar.appendChild(button);
+    });
+    return bar;
+  }
+
   function renderPayload(rootNode, ui, doc, payload, context) {
     rootNode.className = 'kmc-operations-workspace';
     rootNode.setAttribute('data-workspace-kind', 'hub-relay');
@@ -335,6 +360,14 @@
     rootNode.appendChild(metrics);
     ui.MetricStrip.render(metrics, { items: metricItems(payload.summary) });
 
+    // UX-07 : une vue = une question. Un seul groupe de sections à la fois.
+    const view = WORKSPACE_VIEWS.some(item => item.id === context.view) ? context.view : 'hub';
+    rootNode.appendChild(createViewTabs(doc, view, nextView => {
+      context.view = nextView;
+      renderPayload(rootNode, ui, doc, payload, context);
+    }));
+
+    if (view === 'hub') {
     renderOrderActionSection(rootNode, ui, doc, context, {
       title: 'Hub · Commander',
       description: 'Commandes confirmées à envoyer au sourcing. La transition reste exécutée par la state machine commande.',
@@ -387,7 +420,9 @@
       confirm: row => `Confirmer l’expédition de ${row.reference} ?`,
       empty: 'Aucun colis à expédier.',
     });
+    }
 
+    if (view === 'relay') {
     renderOrderActionSection(rootNode, ui, doc, context, {
       title: 'Relais · Encaisser',
       description: 'Paiements cash en attente dans ce marché. La confirmation appelle l’autorité paiement + auto-colis existante.',
@@ -420,8 +455,9 @@
       confirm: row => `Confirmer la remise de ${row.reference} au client ?`,
       empty: 'Aucun colis à remettre.',
     });
+    }
 
-    renderInventorySection(rootNode, ui, doc, payload, context);
+    if (view === 'inventory') renderInventorySection(rootNode, ui, doc, payload, context);
   }
 
   function renderOrderActionSection(rootNode, ui, doc, context, config) {

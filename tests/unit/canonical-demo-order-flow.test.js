@@ -306,3 +306,10 @@ test('le garde de clic refuse aussi une trace devenue non avançable', async () 
   await settle();
   expect(fetchMock).toHaveBeenCalledTimes(2);
 });
+
+test('UX-03 — Démo : en-tête au canon hero-first (data-dashboard-role hero, kicker, titre)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/demo-order-flow.js'), 'utf8');
+  expect(src).toContain("'demo-flow__header kmc-workspace-header'");
+  expect(src).toContain("header.setAttribute('data-dashboard-role', 'hero')");
+  expect(src).toContain("'kmc-workspace-kicker', 'DÉMO · COCKPIT TEST'");
+});

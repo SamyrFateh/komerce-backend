@@ -93,13 +93,14 @@
     rootNode.textContent = '';
     rootNode.className = 'demo-flow';
 
-    const header = node(doc, 'header', 'demo-flow__header');
+    const header = node(doc, 'header', 'demo-flow__header kmc-workspace-header');
     const heading = node(doc, 'div', 'demo-flow__heading');
     heading.append(
-      node(doc, 'p', 'canonical-eyebrow', 'KOMERCE · COCKPIT TEST'),
-      node(doc, 'h1', '', 'Démo parcours commande'),
-      node(doc, 'p', 'demo-flow__intro', `Session ${user.first_name || user.name || user.email || user.role || 'admin'} · données réelles de staging`)
+      node(doc, 'span', 'kmc-workspace-kicker', 'DÉMO · COCKPIT TEST'),
+      node(doc, 'h1', 'kmc-workspace-title', 'Démo parcours commande'),
+      node(doc, 'p', 'demo-flow__intro kmc-workspace-subtitle', `Session ${user.first_name || user.name || user.email || user.role || 'admin'} · données réelles de staging`)
     );
+    header.setAttribute('data-dashboard-role', 'hero');
     header.append(heading, node(doc, 'span', 'demo-flow__env', 'STAGING'));
 
     const toolbar = node(doc, 'section', 'demo-flow__toolbar');

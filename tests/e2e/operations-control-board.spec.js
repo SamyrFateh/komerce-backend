@@ -148,7 +148,7 @@ test.describe('Operations — logistics control board', () => {
 
   test('le hero logistique précède le tableau et porte l’identité Operations', async ({ page }) => {
     const header = page.locator('[data-dashboard-id="operations"] > .kmc-dashboard-header');
-    await expect(page.locator('.kmc-dashboard-title')).toHaveText('Opérations');
+    await expect(page.locator('.kmc-dashboard-title')).toHaveText('Où en sont les commandes ?');
     const visual = await header.evaluate(el => {
       const cs = getComputedStyle(el);
       const r = el.getBoundingClientRect();

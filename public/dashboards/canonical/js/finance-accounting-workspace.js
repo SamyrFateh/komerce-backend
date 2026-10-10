@@ -99,7 +99,7 @@
     header.setAttribute('data-dashboard-role', 'hero');
 
     const copy = doc.createElement('div');
-    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'FINANCE / COMPTABILITÉ'));
+    copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'COMPTABILITÉ'));
     copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Cash & dépôts'));
     copy.appendChild(text(
       doc,
@@ -108,8 +108,6 @@
       `${payload.scope.code} · ${payload.scope.name} · voir les écarts et dépôts à traiter`
     ));
     header.appendChild(copy);
-    header.appendChild(filterControls(doc, payload, context));
-
     const feedback = text(doc, 'div', 'kmc-workspace-feedback', '');
     feedback.setAttribute('data-workspace-feedback', '');
     feedback.setAttribute('role', 'status');
@@ -404,6 +402,9 @@
     rootNode.setAttribute('data-workspace-kind', 'accounting');
     rootNode.replaceChildren();
     rootNode.appendChild(createHeader(doc, payload, context));
+    // UX-04 : le filtre de période n'est plus dans le Hero, il ouvre la première section.
+    createSection(rootNode, ui, 'Période', 'Dates et seuil de cash non encaissé appliqués à toute la page.')
+      .appendChild(filterControls(doc, payload, context));
     const metrics = doc.createElement('section');
     metrics.className = 'kmc-workspace-metrics';
     rootNode.appendChild(metrics);
