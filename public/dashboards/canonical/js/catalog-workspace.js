@@ -1263,6 +1263,8 @@
       confirm: options.confirm || (typeof window !== 'undefined' ? window.confirm.bind(window) : () => true),
       prompt: options.prompt || (typeof window !== 'undefined' ? window.prompt.bind(window) : () => null),
       reload: null,
+      // Hook de présentation : rejoué après CHAQUE rendu (le rendu vide la racine).
+      afterRender: typeof options.afterRender === 'function' ? options.afterRender : null,
       approvalLimit: 50,
       approvalOffset: 0,
       focusedProductRef: String(focusedProductRef || '').trim() || null,
@@ -1279,6 +1281,7 @@
         if (context.focusedProductRef) params.set('product_ref', context.focusedProductRef);
         const payload = await jsonRequest(fetchFn, `${ENDPOINT}?${params.toString()}`);
         renderPayload(rootNode, ui, doc, payload, context);
+        if (context.afterRender) context.afterRender(payload);
         activeContext = context;
         activePayload = payload;
         if (!reloadOptions.skipAutoFrenchSchedule) scheduleAutoFrenchPreparation(context, payload);

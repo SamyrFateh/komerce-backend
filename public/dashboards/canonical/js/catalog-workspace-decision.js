@@ -211,10 +211,16 @@
     return Object.freeze({
       ...base,
       mount(options) {
-        return Promise.resolve(baseMount(options)).then(payload => {
-          prependDecisionView(options.root, payload, options, base, decisionUi);
-          return payload;
-        });
+        // Le Hero « Produits à valider » doit survivre aux rechargements (après une action,
+        // renderPayload vide la racine) : on le repose après chaque rendu, pas seulement au montage.
+        let first = true;
+        const afterRender = payload => {
+          // Le focus produit (scroll) ne vaut que pour le premier rendu.
+          const renderOptions = first ? options : { ...options, location: { search: '' } };
+          first = false;
+          prependDecisionView(options.root, payload, renderOptions, base, decisionUi);
+        };
+        return Promise.resolve(baseMount({ ...options, afterRender }));
       },
       projectDecisionItems: decisionItems,
       projectMetricItems: payload => metricItems(payload, base),
