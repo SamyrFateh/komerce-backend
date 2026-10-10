@@ -126,7 +126,7 @@ body.kmc-catalog-business-mode #canonical-admin-root {
 }
 
 .kmc-cbt-status.is-source { background: #f7f9fc; }
-.kmc-cbt-status.is-ready { background: #fff9ec; border-color: #f4dfab; }
+.kmc-cbt-status.is-ready { background: #FFFFFF; border-color: #f4dfab; }
 .kmc-cbt-status.is-published { background: #f2f5ff; border-color: #dbe1ff; }
 .kmc-cbt-status.is-visible { background: #eefaf4; border-color: #cbeedb; }
 
@@ -228,7 +228,7 @@ body.kmc-catalog-business-mode #canonical-admin-root {
 
 .kmc-cbt-action-row.is-attention {
   border-color: #efdfb7;
-  background: #fffaf0;
+  background: #FFFFFF;
 }
 
 .kmc-cbt-action-row.is-positive {

@@ -22,7 +22,7 @@ body.kmc-shell-v4 #market-catalog-root[data-workspace-kind="market-catalog"] > .
   background:
     radial-gradient(circle at 86% 28%, rgba(147,51,234,.12) 0 48px, transparent 49px),
     radial-gradient(circle at 95% 76%, rgba(245,158,11,.10) 0 36px, transparent 37px),
-    linear-gradient(112deg, #fbf8ff 0%, #ffffff 62%, #fffaf4 100%);
+    linear-gradient(112deg, #fbf8ff 0%, #ffffff 62%, #FFFFFF 100%);
   box-shadow: 0 1px 3px rgba(15,23,42,.05);
 }
 

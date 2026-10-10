@@ -77,6 +77,8 @@ module.exports = {
       'dashboards/canonical/js/market-access.js',
       'dashboards/canonical/js/markets-management.js',
       'dashboards/canonical/css/market-access.css',
+      'dashboards/canonical/css/market-catalog-essential.css',
+      'dashboards/canonical/css/market-ready-to-sell.css',
       'dashboards/canonical/js/markets-decision-bootstrap.js',
       'dashboards/canonical/css/market-team.css',
       'dashboards/canonical/js/market-team.js',

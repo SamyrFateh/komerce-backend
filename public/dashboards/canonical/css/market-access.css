@@ -21,7 +21,7 @@
   gap: 12px;
   background:
     radial-gradient(circle at 100% 0%, rgb(244 184 96 / 0.18), transparent 22rem),
-    linear-gradient(135deg, #fffdfa 0%, #ffffff 62%);
+    linear-gradient(135deg, #FFFFFF 0%, #ffffff 62%);
 }
 
 .kmc-access-hero.is-section {

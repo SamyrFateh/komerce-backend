@@ -27,7 +27,7 @@
   padding: 4px 8px;
   border-radius: 999px;
   color: var(--kmc-warning, #a15c00);
-  background: var(--kmc-warning-soft, #fff8e6);
+  background: var(--kmc-warning-soft, #FFFFFF);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: .08em;
@@ -202,7 +202,7 @@
 }
 
 .kmc-workspace-table tbody tr.is-context-target {
-  background: #fff8e8;
+  background: #FFFFFF;
   box-shadow: inset 3px 0 0 #e18a00;
 }
 
@@ -225,7 +225,7 @@
   padding: 8px 10px;
   border: 1px solid #f0cf91;
   border-radius: 8px;
-  background: #fff8e8;
+  background: #FFFFFF;
   color: #6f4a00;
   font-size: 12px;
   font-weight: 750;
@@ -705,7 +705,7 @@
 }
 
 .kmc-catalog-curation-table tbody tr.is-context-target .kmc-catalog-actions-cell {
-  background: #fff8e8;
+  background: #FFFFFF;
 }
 
 .kmc-catalog-curation-table .kmc-catalog-actions-cell .kmc-workspace-action {
@@ -736,7 +736,7 @@
   border-radius: 12px;
   background:
     radial-gradient(circle at 50% 0%, rgb(244 184 96 / .12), transparent 14rem),
-    #fffdfa;
+    #FFFFFF;
   color: var(--kmc-muted, #64748b);
   text-align: center;
 }
@@ -969,7 +969,7 @@
   background:
     radial-gradient(circle at 88% 30%, rgba(59,130,246,.15) 0 48px, transparent 49px),
     radial-gradient(circle at 95% 76%, rgba(245,158,11,.11) 0 36px, transparent 37px),
-    linear-gradient(112deg, #f5f9ff 0%, #ffffff 60%, #fffaf3 100%);
+    linear-gradient(112deg, #f5f9ff 0%, #ffffff 60%, #FFFFFF 100%);
 }
 .kmc-operations-workspace[data-workspace-kind="shipping-customs"] > .kmc-workspace-header .kmc-workspace-kicker {
   color: #2563eb;
@@ -995,11 +995,11 @@
   background:
     radial-gradient(circle at 88% 30%, rgba(217,144,26,.15) 0 48px, transparent 49px),
     radial-gradient(circle at 95% 76%, rgba(124,58,237,.09) 0 36px, transparent 37px),
-    linear-gradient(112deg, #fffaf1 0%, #ffffff 60%, #faf7ff 100%);
+    linear-gradient(112deg, #FFFFFF 0%, #ffffff 60%, #faf7ff 100%);
 }
 .kmc-operations-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header .kmc-workspace-kicker {
   color: #a15c00;
-  background: #fff8e6;
+  background: #FFFFFF;
 }
 .kmc-operations-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header .kmc-workspace-kicker::before {
   background: #d9901a;
@@ -1023,7 +1023,7 @@
   background:
     radial-gradient(circle at 88% 30%, rgba(22,163,74,.13) 0 48px, transparent 49px),
     radial-gradient(circle at 95% 76%, rgba(245,158,11,.09) 0 36px, transparent 37px),
-    linear-gradient(112deg, #f6fbf8 0%, #ffffff 60%, #fffaf3 100%);
+    linear-gradient(112deg, #f6fbf8 0%, #ffffff 60%, #FFFFFF 100%);
 }
 .kmc-operations-workspace[data-workspace-kind="accounting"] > .kmc-workspace-header .kmc-workspace-kicker {
   color: #15803d;
@@ -1106,7 +1106,7 @@
 .kmc-catalog-chain-label{flex:1;min-width:0;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#0F172A}
 .kmc-catalog-chain-count{flex:none;min-width:26px;padding:2px 8px;border:1px solid #E2E8F0;border-radius:999px;background:#fff;color:#0F172A;font-size:13px;font-weight:800;text-align:center}
 .kmc-catalog-chain-stage.is-current{border-color:#93B4F5;background:#F5F9FF;box-shadow:0 0 0 4px rgb(37 99 235 / .10)}
-.kmc-catalog-chain-stage.is-current.is-warn{border-color:#F3C46B;background:#FFFBF0;box-shadow:0 0 0 4px rgb(245 158 11 / .16)}
+.kmc-catalog-chain-stage.is-current.is-warn{border-color:#F3C46B;background:#FFFFFF;box-shadow:0 0 0 4px rgb(245 158 11 / .16)}
 .kmc-catalog-chain-stage.is-current .kmc-catalog-chain-label{color:#B45309}
 .kmc-catalog-chain-stage.is-current.is-ok .kmc-catalog-chain-label{color:#15803D}
 .kmc-catalog-chain-stage.is-pending{border-style:dashed;background:#FCFCFD}

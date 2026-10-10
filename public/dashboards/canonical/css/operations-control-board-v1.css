@@ -213,7 +213,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
   border: 1px solid #fed7aa;
   border-left: 4px solid var(--ocb-orange);
   border-radius: 9px;
-  background: #fff7ed;
+  background: #FFFFFF;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-alert.is-critical {
@@ -280,7 +280,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order.is-warning {
   --control-health: var(--ocb-orange);
   border-color: #fcd89b;
-  background: #fffbeb;
+  background: #FFFFFF;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order.is-critical {

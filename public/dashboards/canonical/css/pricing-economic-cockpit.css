@@ -474,7 +474,7 @@
 .kmc-cockpit-badge.is-direct { background: #eaf2ff; color: #1d5fae; }
 .kmc-cockpit-badge.is-mutualized { background: #eaf8f2; color: #18845a; }
 .kmc-cockpit-badge.is-observed { background: #e8f8ee; color: #16804c; }
-.kmc-cockpit-badge.is-warning { background: #fff6df; color: #9a6712; }
+.kmc-cockpit-badge.is-warning { background: #FFFFFF; color: #9a6712; }
 
 .kmc-cockpit-card-foot {
   margin: 0;

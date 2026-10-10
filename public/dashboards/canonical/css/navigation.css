@@ -417,7 +417,7 @@ body:has(.kmc-admin-market-select) .kmc-market-context {
   padding: 10px;
   border: 1px solid #fed7aa;
   border-radius: 10px;
-  background: #fffaf3;
+  background: #FFFFFF;
 }
 
 .kmc-admin-staging-badge {
@@ -446,7 +446,7 @@ body:has(.kmc-admin-market-select) .kmc-market-context {
 
 .kmc-admin-staging-action:hover:not(:disabled) {
   border-color: #f5a623;
-  background: #fffbf2;
+  background: #F8FAFC;
 }
 
 .kmc-admin-staging-action.is-danger {

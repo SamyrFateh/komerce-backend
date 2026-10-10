@@ -129,7 +129,7 @@ test('chaque ligne de coût expose provenance, hypothèse, mouvement, impact et 
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-workspace.css'), 'utf8');
   const service = fs.readFileSync(path.join(ROOT, 'services', 'pricing-cost-explainability.js'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/css/pricing-workspace.css?v=1218');
+  expect(index).toContain('/dashboards/canonical/css/pricing-workspace.css?v=261010-2');
   expect(presentation).toContain('Comprendre cette ligne');
   expect(presentation).toContain('D’où vient la valeur');
   expect(presentation).toContain('Hypothèse portée');

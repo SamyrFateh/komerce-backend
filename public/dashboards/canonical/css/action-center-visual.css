@@ -52,7 +52,7 @@ body.kmc-shell-v4 .kmc-action-center .kmc-action-signal.is-critical {
 
 body.kmc-shell-v4 .kmc-action-center .kmc-action-signal.is-warning {
   border-left-color: #f5a623;
-  background: #fffdf8;
+  background: #FFFFFF;
 }
 
 body.kmc-shell-v4 .kmc-action-center .kmc-action-signal.is-info {
