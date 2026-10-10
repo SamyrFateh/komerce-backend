@@ -130,3 +130,16 @@ body :is(.kir-status, .kir-status-large, .kir-source-pill, .kmc-ready-status, .k
   font-weight: 700;
 }
 body .kir-source-pill.is-warning .kir-source-dot { background: #E8710A; }
+
+/* Candidats sourcing : colonnes réajustées pour les fenêtres moyennes (outils ouverts, laptop) —
+   en-têtes jamais coupés au milieu d'un mot, pastilles État/Décision qui passent à la ligne au lieu d'être tronquées. */
+.kmc-sourcing-candidates-table th:nth-child(1), .kmc-sourcing-candidates-table td:nth-child(1) { width: 10%; }
+.kmc-sourcing-candidates-table th:nth-child(2), .kmc-sourcing-candidates-table td:nth-child(2) { width: 12%; }
+.kmc-sourcing-candidates-table th:nth-child(3), .kmc-sourcing-candidates-table td:nth-child(3) { width: 20%; }
+.kmc-sourcing-candidates-table th:nth-child(4), .kmc-sourcing-candidates-table td:nth-child(4) { width: 9%; }
+.kmc-sourcing-candidates-table th:nth-child(5), .kmc-sourcing-candidates-table td:nth-child(5) { width: 17%; }
+.kmc-sourcing-candidates-table th:nth-child(6), .kmc-sourcing-candidates-table td:nth-child(6) { width: 14%; }
+.kmc-sourcing-candidates-table th:nth-child(7), .kmc-sourcing-candidates-table td:nth-child(7) { width: 18%; }
+.kmc-sourcing-candidates-table th { overflow-wrap: normal; word-break: normal; letter-spacing: .04em; }
+.kmc-sourcing-candidates-table td:nth-child(5), .kmc-sourcing-candidates-table td:nth-child(6) { white-space: normal; }
+.kmc-sourcing-candidates-table .kmc-pill { white-space: normal; text-align: center; line-height: 1.25; }
