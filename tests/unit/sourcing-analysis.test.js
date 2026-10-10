@@ -35,6 +35,7 @@ const {
   getAnalysis,
   getAnalysisById,
   getSynthesis,
+  getPortfolioView,
   getConfig,
   getProductVariants,
 } = require('../../services/sourcing-analysis');
@@ -946,5 +947,43 @@ describe('getProductVariants', () => {
     expect(result.has_variants).toBe(false);
     expect(result.variants).toEqual([]);
     expect(result.total).toBe(0);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 14. getPortfolioView — une seule passe pour l'écran Sourcing
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('getPortfolioView', () => {
+  const products = [
+    makeProductA({ id: 1, lifecycle_status: 'star', is_active: true }),
+    makeProductA({ id: 2, lifecycle_status: 'dead', quality_validated: false, is_active: true }),
+    makeProductA({ id: 3, is_active: false }),
+  ];
+  const stripTime = (o) => ({ ...o, generated_at: undefined });
+  const wire = () => db.query.mockImplementation((sql) => {
+    if (sql.includes('business_rules')) return Promise.resolve({ rows: [] });
+    if (sql.includes('order_items'))   return Promise.resolve({ rows: [{ product_id: 1, sales_count: '5' }] });
+    if (sql.includes('FROM products')) {
+      return Promise.resolve({ rows: sql.includes('is_active = TRUE') ? products.filter(p => p.is_active) : products });
+    }
+    return Promise.resolve({ rows: [] });
+  });
+
+  it('lit produits et ventes une seule fois', async () => {
+    wire();
+    db.query.mockClear();
+    await getPortfolioView();
+    const sqls = db.query.mock.calls.map(c => c[0]);
+    expect(sqls.filter(q => q.includes('FROM products'))).toHaveLength(1);
+    expect(sqls.filter(q => q.includes('order_items'))).toHaveLength(1);
+  });
+
+  it('donne la même analyse et la même synthèse que les deux appels séparés', async () => {
+    wire();
+    const view = await getPortfolioView();
+    const [analysis, synthesis] = [await getAnalysis({}), await getSynthesis()];
+    expect(stripTime(view.analysis)).toEqual(stripTime(analysis));
+    expect(stripTime(view.synthesis)).toEqual(stripTime(synthesis));
   });
 });

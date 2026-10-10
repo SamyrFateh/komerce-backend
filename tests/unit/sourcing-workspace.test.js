@@ -12,7 +12,7 @@ const mockSetSourceActive = jest.fn();
 const mockHandoffImportResult = jest.fn();
 
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
-jest.mock('../../services/sourcing-analysis', () => ({ getSynthesis: jest.fn(), getAnalysis: jest.fn() }));
+jest.mock('../../services/sourcing-analysis', () => ({ getSynthesis: jest.fn(), getAnalysis: jest.fn(), getPortfolioView: jest.fn() }));
 jest.mock('../../services/sourcing-mutations', () => ({ updateProduct: jest.fn() }));
 jest.mock('../../services/sourcing-candidate-actions', () => ({
   updateCandidate: jest.fn(), scanCandidate: jest.fn(), watchlistCandidate: jest.fn(),
