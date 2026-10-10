@@ -234,6 +234,10 @@ describe('canonical admin app — server AdminContext bootstrap', () => {
     expect(typeof env.api.renderRelayLive).toBe('function');
     expect(env.api.surfaceForPath('/admin/commerce')).toBe(env.api.SURFACES.COMMERCE);
     expect(env.api.surfaceForPath('/admin/operations')).toBe(env.api.SURFACES.OPERATIONS);
+    // Le suivi des commandes est absorbé par Opérations ; la fiche Order 360 reste une surface propre.
+    expect(env.api.SURFACES.ORDERS).toBeUndefined();
+    expect(env.api.surfaceForPath('/admin/orders')).toBe(env.api.SURFACES.OPERATIONS);
+    expect(env.api.surfaceForPath('/admin/orders/CMD-1')).toBe(env.api.SURFACES.ORDER_360);
     expect(env.api.surfaceForPath('/admin/finance')).toBe(env.api.SURFACES.FINANCE);
     expect(env.api.surfaceForPath('/admin/demo')).toBe(env.api.SURFACES.DEMO);
     expect(env.api.surfaceForPath('/admin-next/commerce')).toBe(env.api.SURFACES.COMMERCE);

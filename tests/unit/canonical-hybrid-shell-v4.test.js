@@ -91,7 +91,7 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
   test('V4 porte seule la taxonomie cible et garde Sourcing/Fournisseurs découvrables', () => {
     const v4 = read('public/dashboards/canonical/js/navigation-policy-v4.js');
     expect(v4).not.toContain('ADMIN_CAPABILITY_GROUPS');
-    for (const label of ['Piloter', 'Flux', 'Entités', 'Workspaces', 'Marchés', 'Administration']) {
+    for (const label of ['Piloter', 'Commerce', 'Opérations', 'Finance', 'Live', 'Marchés', 'Administration']) {
       expect(v4).toContain(`label: '${label}'`);
     }
     expect(v4).toContain("id: 'workspace-sourcing'");

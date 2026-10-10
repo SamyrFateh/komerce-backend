@@ -13,7 +13,7 @@ jest.mock('../../db', () => ({ query: jest.fn() }));
 const db = require('../../db');
 const { VALID_TRANSITIONS } = require('../../services/order-status-machine');
 const { ACTIVE_ORDER_STATUSES, LATE_THRESHOLDS } = require('../../services/dashboard-metrics/_helpers');
-const { LIFECYCLE, buildOrders } = require('../../services/dashboard-orders');
+const { LIFECYCLE, buildOrders, getWorkQueues } = require('../../services/dashboard-orders');
 
 describe('dashboard-orders — vérité des statuts', () => {
   it('le cycle de vie n\'affiche que des statuts de la machine d\'états (jamais `paid`)', () => {
@@ -45,3 +45,26 @@ describe('dashboard-orders — vérité des statuts', () => {
     expect(LATE_THRESHOLDS).toEqual({ shipped_late_days: 14, pickup_late_hours: 72, payment_pending_hours: 72, stale_hours: 72 });
   });
 });
+
+describe('dashboard-orders — files de travail partagées avec Opérations', () => {
+  it('getWorkQueues borne les deux files au marché et garde le vrai total (pas la troncature)', async () => {
+    db.query.mockImplementation(async (sql, params) => {
+      if (/COUNT\(\*\)::int AS value/.test(sql)) return { rows: [{ value: 40 }] };
+      return { rows: [{ id: 'o1', reference: 'CMD-1', status: 'pending', total_kmf: 1000, payment_mode: 'cash' }] };
+    });
+    const queues = await getWorkQueues({ id: '11111111-1111-1111-1111-111111111111', code: 'KM' });
+    expect(queues.pending_cash_total).toBe(40);
+    expect(queues.pending_cash_shown).toBe(1);
+    expect(queues.ready_for_parcel_total).toBe(40);
+    expect(queues.ready_for_parcel[0].reference).toBe('CMD-1');
+    expect(db.query.mock.calls.every(([, params]) => params[0] === '11111111-1111-1111-1111-111111111111')).toBe(true);
+  });
+
+  it('getWorkQueues sans marché lit la vue globale', async () => {
+    db.query.mockResolvedValue({ rows: [{ value: 0 }] });
+    const queues = await getWorkQueues();
+    expect(queues.pending_cash_total).toBe(0);
+    expect(db.query.mock.calls.every(([, params]) => params[0] === null)).toBe(true);
+  });
+});
+

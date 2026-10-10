@@ -46,7 +46,6 @@
       label: 'Commandes',
       spaces: Object.freeze([
         Object.freeze({ id: 'commerce', label: 'Commerce', href: '/admin/commerce', roles: Object.freeze(['admin', 'market_operator']) }),
-        Object.freeze({ id: 'orders-overview', label: 'Suivi des commandes', href: '/admin/orders', roles: Object.freeze(['admin', 'market_operator']) }),
       ]),
     }),
     Object.freeze({
@@ -107,7 +106,6 @@
     'market-catalog': 'markets',
     'product-360': 'catalog',
     commerce: 'orders',
-    orders: 'orders',
     'order-360': 'orders',
     'client-index': 'orders',
     'client-360': 'orders',
@@ -132,7 +130,7 @@
   });
 
   const HERO_FIRST_SURFACES = new Set([
-    'pilotage', 'commerce', 'orders', 'operations', 'finance', 'action-center',
+    'pilotage', 'commerce', 'operations', 'finance', 'action-center',
     'pricing-workspace', 'catalog-workspace', 'sourcing-workspace', 'purchasing-workspace',
     'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace', 'client-index',
     'users-admin', 'providers-admin',
@@ -140,7 +138,6 @@
 
   const SURFACE_TO_SPACE = Object.freeze({
     commerce: 'commerce',
-    orders: 'orders-overview',
     'order-360': 'commerce',
     'client-index': 'commerce',
     'client-360': 'commerce',
@@ -159,7 +156,7 @@
 
   const BACK_TARGETS = Object.freeze({
     'action-center': Object.freeze({ href:'/admin/pilotage', label:'Retour au pilotage' }),
-    'order-360': Object.freeze({ href:'/admin/commerce', label:'Retour au commerce' }),
+    'order-360': Object.freeze({ href:'/admin/operations', label:'Retour aux opérations' }),
     'client-index': Object.freeze({ href:'/admin/commerce', label:'Retour au commerce' }),
     'client-360': Object.freeze({ href:'/admin/clients', label:'Retour aux clients' }),
     'product-360': Object.freeze({ href:'/admin/workspaces/catalog', label:'Retour au catalogue' }),
@@ -750,7 +747,6 @@
       label: 'Commerce',
       items: Object.freeze([
         Object.freeze({ id: 'flow-commerce', label: 'Vue commerce', href: '/admin/commerce', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read', surfaces: ['commerce'] }),
-        Object.freeze({ id: 'entity-orders', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read', surfaces: ['orders', 'order-360'] }),
         Object.freeze({ id: 'entity-clients', label: 'Clients', href: '/admin/clients', roles: ['admin', 'market_operator'], capability: 'client.read', surfaces: ['client-index', 'client-360'] }),
         Object.freeze({ id: 'workspace-pricing', label: 'Prix & économie', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], capability: 'pricing.read', surfaces: ['pricing-workspace'] }),
         Object.freeze({ id: 'workspace-catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace', 'product-360'] }),
@@ -760,7 +756,7 @@
       id: 'operations',
       label: 'Opérations',
       items: Object.freeze([
-        Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations'] }),
+        Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations', 'order-360'] }),
         Object.freeze({ id: 'workspace-operations', label: 'Hub & Relais', href: '/admin/workspaces/operations', roles: ['admin', 'agent_hub', 'agent_relais', 'market_operator'], capability: 'operations.read', surfaces: ['operations-workspace'] }),
         Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], capability: 'operations.read', surfaces: ['shipping-customs-workspace'] }),
         Object.freeze({ id: 'workspace-sourcing', label: 'Sourcing', href: '/admin/workspaces/sourcing', roles: ['admin', 'sourcing'], surfaces: ['sourcing-workspace', 'supplier-360'] }),
@@ -814,7 +810,6 @@
     ]),
     orders: Object.freeze([
       Object.freeze({ id: 'commerce', label: 'Vue d’ensemble', href: '/admin/commerce', roles: ['admin', 'market_operator'] }),
-      Object.freeze({ id: 'orders-overview', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'] }),
       // GAP 3 / LOT A (A2) : 'client.read' est une capability DELEGATION
       // (cf. config/market-delegation-capabilities.js) — un market_operator
       // qui la détient sur son marché doit voir la tab, un admin (global ou
@@ -1011,7 +1006,6 @@
     }
     if (domainId === 'orders') {
       if (surface === 'client-index' || surface === 'client-360') return 'clients';
-      if (surface === 'orders' || surface === 'order-360') return 'orders-overview';
       return 'commerce';
     }
     if (domainId === 'markets') {

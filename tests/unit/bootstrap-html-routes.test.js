@@ -569,4 +569,20 @@ describe('bootstrap/html-routes', () => {
     expect(wildcardRegistrations).toHaveLength(1);
     expect(app._allRegistrations[app._allRegistrations.length - 1]).toBe('*'); // catch-all monté en dernier
   });
+
+  describe('/admin/orders — absorbé par Opérations', () => {
+    test('redirige en 302 vers /admin/operations (signets conservés)', () => {
+      const res = fakeRes();
+      app._routes['/admin/orders']({ query: {} }, res);
+      expect(res.redirect).toHaveBeenCalledWith(302, '/admin/operations');
+      expect(res.sendFile).not.toHaveBeenCalled();
+    });
+
+    test('la fiche /admin/orders/:orderReference reste servie par le shell canonique', () => {
+      const res = fakeRes();
+      app._routes['/admin/orders/:orderReference']({ params: { orderReference: 'CMD-1' }, query: {} }, res);
+      expect(res.redirect).not.toHaveBeenCalled();
+      expect(res.sendFile).toHaveBeenCalled();
+    });
+  });
 });

@@ -32,7 +32,7 @@ describe('dashboard-metrics/logistics', () => {
 
     const result = await logistics.getPaiementsEnAttente({ relais_id: 'r1' });
 
-    expect(result).toMatchObject({ key: 'paiements_en_attente', value: 5, drill_to: '/admin/orders' });
+    expect(result).toMatchObject({ key: 'paiements_en_attente', value: 5, drill_to: '/admin/operations' });
     // Exclusion alignée sur services/dashboard-orders.js#getPendingCash — même
     // définition métier partout où "paiements en attente" est affiché (une
     // seule source de vérité par KPI, cf. principe affiché sur Pilotage).

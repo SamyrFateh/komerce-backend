@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        server_resolved_market
  * @outputs       canonical_operations_projection
- * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, logistics-control-chain-projection
+ * @depends       db, dashboard-metrics, dashboard-metrics/_helpers, dashboard-orders, logistics-control-chain-projection
  * @used-by       routes/admin-dashboard-market.js
  * @db-read       orders, order_items, purchase_lines, purchase_orders, hub_purchase_allocations, hub_physical_unit_placements, hub_physical_units, parcels, customs_shipment_parcels, customs_shipments, relais, signals, scan_events
  * @db-write      none
@@ -21,6 +21,7 @@
 const db = require('../db');
 const metrics = require('./dashboard-metrics');
 const controlChain = require('./logistics-control-chain-projection');
+const orders = require('./dashboard-orders');
 const {
   buildFiltersClause,
   buildSignalMarketClause,
@@ -195,6 +196,7 @@ async function buildOperations(options = {}) {
     criticalDelays,
     signals,
     controlChainProjection,
+    workQueues,
   ] = await Promise.all([
     metrics.getCmdsAujourdhui(filters),
     metrics.getPaiementsEnAttente(filters),
@@ -208,6 +210,7 @@ async function buildOperations(options = {}) {
     getCriticalDelays(filters),
     getOperationalSignals(filters),
     controlChain.getControlChain({ market }),
+    orders.getWorkQueues(market),
   ]);
 
   return Object.freeze({
@@ -228,6 +231,8 @@ async function buildOperations(options = {}) {
     critical_delays: Object.freeze(criticalDelays),
     signals: Object.freeze(signals),
     control_chain: controlChainProjection,
+    // Files d'action commandes (cash à confirmer, colis à créer) — projection partagée avec dashboard-orders.
+    work_queues: workQueues,
     data_quality: Object.freeze({
       generated_at: new Date(options.now || Date.now()).toISOString(),
       scope_mode: market ? 'market' : 'global',

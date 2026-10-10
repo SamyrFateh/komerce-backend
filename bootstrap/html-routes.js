@@ -107,10 +107,13 @@ function mountHtmlRoutes(app, rootDir) {
     sendCanonicalAdmin(res);
   });
 
+  // « Suivi des commandes » a été absorbé par Opérations (files Cash à confirmer / Colis à créer).
+  // Les signets existants arrivent sur l'écran qui porte désormais ces files ; /admin/orders/:ref est inchangé.
+  app.get('/admin/orders', (req, res) => res.redirect(302, '/admin/operations'));
+
   [
     '/admin',
     '/admin/commerce',
-    '/admin/orders',
     '/admin/operations',
     '/admin/finance',
     '/admin/workspaces/operations',
