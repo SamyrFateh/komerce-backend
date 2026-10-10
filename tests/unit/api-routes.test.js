@@ -27,3 +27,8 @@ test('monte /api/agent/action-center (Action Center agent borné par rôle et p�
   expect(source).toContain("require('../routes/agent-action-center')");
   expect(source).toContain("app.use('/api/agent/action-center', agentActionCenterRouter)");
 });
+
+test('monte /api/market-delegation/.../cost-statement (relevé de coûts du marché, lecture seule)', () => {
+  expect(source).toContain("require('../routes/market-delegation-cost-statement')");
+  expect(source).toContain("app.use('/api/market-delegation', marketDelegationCostStatementRouter)");
+});

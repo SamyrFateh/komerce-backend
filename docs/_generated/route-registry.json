@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-10T21:33:56.996Z",
+  "generatedAt": "2026-10-10T21:51:47.670Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 702,
+  "count": 703,
   "routes": [
     {
       "method": "GET",
@@ -4643,6 +4643,16 @@
       "mountPrefix": "/api/market-delegation",
       "localPath": "/markets/:marketCode/config",
       "routeFile": "routes/market-delegation-market-config.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/market-delegation/markets/:marketCode/cost-statement",
+      "mountPrefix": "/api/market-delegation",
+      "localPath": "/markets/:marketCode/cost-statement",
+      "routeFile": "routes/market-delegation-cost-statement.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"
       ]
