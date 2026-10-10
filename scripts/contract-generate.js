@@ -544,6 +544,9 @@ const KNOWN_RESPONSES = {
   '/api/admin/markets/{marketCode}/lifecycle': {
     post: { fields: ['before','after','changed'], source: 'route-read' }
   },
+  '/api/market-delegation/markets/{marketCode}/cost-statement': {
+    get: { fields: ['market_code','period','currency_basis','lines','truncated','totals','not_covered'], source: 'test' }
+  },
   '/api/admin/markets/{marketCode}/assignment/status': {
     post: { fields: ['changed','assignment_id','status','previous_status'], source: 'test' }
   },
