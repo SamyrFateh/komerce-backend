@@ -2379,6 +2379,11 @@ body.kmc-shell-v4:has(.kmc-import-runtime) .kmc-admin-domain-tab{
   .kmc-import-runtime .kir-run-truth-grid,.kmc-import-runtime .kir-lot-summary{grid-template-columns:1fr}
 }
 
+/* Libellés d'étape : même typographie que la chaîne de processus de Hub / Relais (présentation seule). */
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step strong{text-transform:uppercase;letter-spacing:.05em;font-weight:800;color:#0F172A}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-pending strong{color:#64748B}
+.kmc-import-runtime .kir-run-flow .kir-run-flow-step.is-current strong{color:#1D5CD6}
+
 /* ==========================================================================
  * ANIMATION CIBLÉE — seule l'étape courante du pipeline « respire ».
  * Ce bloc doit rester le DERNIER du fichier.
