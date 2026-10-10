@@ -116,6 +116,7 @@ module.exports = {
     tests: [
       'tests/unit/stripe-golden-p4.test.js',
       'tests/unit/market-payment-accounts.test.js',
+      'tests/unit/market-delegation-payment-accounts.test.js',
       'tests/unit/isweep-transactional-flows.test.js',
       'tests/unit/payment-fx-authority.test.js',
       'tests/unit/paypal-webhook.test.js',
