@@ -66,7 +66,7 @@
         { key: 'marge', label: 'Marge consolidée' },
         { key: 'completude', label: 'Complétude coûts' },
         { key: 'cout-incomplet', label: 'Coûts incomplets' },
-        { key: 'paiement-attente', label: 'Paiements en attente' },
+        { key: 'paiement-attente', label: 'Paiements en attente (période)' },
         { key: 'remboursements', label: 'Remboursements' },
       ],
     },

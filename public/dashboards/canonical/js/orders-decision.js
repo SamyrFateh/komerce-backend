@@ -72,7 +72,7 @@
     if (signals.paiements_en_attente > 0) {
       items.push({
         key: 'paiements-en-attente',
-        label: 'Paiements en attente',
+        label: 'Paiements en attente > 72 h',
         helper: 'À relancer pour éviter l’annulation (cash non confirmé depuis +72h)',
         value: base.formatNumber(signals.paiements_en_attente, 0),
         tone: 'warning',

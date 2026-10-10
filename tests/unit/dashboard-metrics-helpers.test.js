@@ -205,3 +205,8 @@ describe('makeKpi', () => {
     expect(kpi.data_quality.items_with_data).toBe(0);
   });
 });
+
+test('LATE_THRESHOLDS est gelé (une seule source de seuils)', () => {
+  const { LATE_THRESHOLDS } = require('../../services/dashboard-metrics/_helpers');
+  expect(Object.isFrozen(LATE_THRESHOLDS)).toBe(true);
+});

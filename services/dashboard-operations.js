@@ -25,6 +25,7 @@ const {
   buildFiltersClause,
   buildSignalMarketClause,
   ACTIVE_ORDER_STATUSES,
+  LATE_THRESHOLDS,
 } = require('./dashboard-metrics/_helpers');
 
 const OPS_SIGNAL_TYPES = Object.freeze([
@@ -105,7 +106,7 @@ async function getCriticalDelays(filters = {}) {
     LEFT JOIN relais r ON r.id = o.relais_id
     WHERE ${where}
       AND p.shipped_at IS NOT NULL
-      AND p.shipped_at < NOW() - INTERVAL '14 days'
+      AND p.shipped_at < NOW() - INTERVAL '${LATE_THRESHOLDS.shipped_late_days} days'
       AND p.status NOT IN ('available', 'collected', 'cancelled')
     ORDER BY p.shipped_at ASC
     LIMIT 20
@@ -211,6 +212,8 @@ async function buildOperations(options = {}) {
 
   return Object.freeze({
     scope: publicScope(market),
+    // Seuils nommés (source unique : dashboard-metrics/_helpers) — l'écran les affiche, il ne les code pas.
+    thresholds: LATE_THRESHOLDS,
     kpis: Object.freeze([
       cmdsAujourdhui,
       paiementsAttente,

@@ -375,7 +375,7 @@
       items.push({
         key: 'critical-delays',
         label: 'Retards critiques',
-        helper: 'Colis au-delà du seuil opérationnel',
+        helper: `Colis expédiés depuis plus de ${(payload && payload.thresholds && payload.thresholds.shipped_late_days) || 14} jours, pas encore au relais`,
         value: displayMetric(base, delays),
         tone: 'critical',
         icon: '⌛',

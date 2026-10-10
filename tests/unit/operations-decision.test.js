@@ -33,3 +33,8 @@ test('le Hero Operations porte le kicker LOGISTIQUE (canon visuel)', () => {
   expect(src).toContain("'LOGISTIQUE'");
   expect(src).not.toContain('KOMERCE · ADMIN CANONICAL');
 });
+
+test('le helper des retards critiques affiche le seuil serveur (thresholds.shipped_late_days)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/operations-decision.js'), 'utf8');
+  expect(src).toContain('payload.thresholds.shipped_late_days');
+});

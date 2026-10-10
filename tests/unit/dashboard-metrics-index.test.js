@@ -27,3 +27,9 @@ describe('dashboard-metrics/index', () => {
     expect(metrics.EXPECTED_PAYMENT_COSTS).toEqual(['payment']);
   });
 });
+
+test('LATE_THRESHOLDS est ré-exporté par l’index des métriques et par les helpers', () => {
+  const idx = require('../../services/dashboard-metrics');
+  const helpers = require('../../services/dashboard-metrics/_helpers');
+  expect(idx.LATE_THRESHOLDS).toBe(helpers.LATE_THRESHOLDS);
+});

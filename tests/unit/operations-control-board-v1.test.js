@@ -22,7 +22,7 @@ describe('Operations logistics control board V1',()=>{
     expect(css).toMatch(/\.kmc-control-chain\s*\{[^}]*grid-auto-flow:\s*column/s);
     expect(css).toMatch(/grid-auto-columns:\s*minmax\(145px,\s*1fr\)/);
     expect(css).toMatch(/\.kmc-control-stage\s*\{[^}]*min-height:\s*470px/s);
-    expect(css).toMatch(/\.kmc-control-chain::before\s*\{[^}]*height:\s*4px/s);
+    expect(css).toMatch(/\.kmc-control-chain-card::before\s*\{[^}]*width:\s*4px/s);
     expect(css).toMatch(/\.kmc-control-stage-icon\s*\{[^}]*width:\s*60px[^}]*height:\s*60px/s);
   });
 
@@ -42,9 +42,10 @@ describe('Operations logistics control board V1',()=>{
   });
 
   test('le board respecte le thème legacy mesuré',()=>{
-    expect(css).toContain('--ocb-paper: #f1f5f9');
+    // La palette vient désormais des tokens du canon Komerce (komerce-visual-canon-v1) : plus de hex local.
+    expect(css).toContain('--ocb-paper: var(--kmc-brand-canvas)');
     expect(css).toContain('--ocb-card: #ffffff');
-    expect(css).toContain('--ocb-line: #e2e8f0');
+    expect(css).toContain('--ocb-line: var(--kmc-brand-line)');
   });
 });
 
@@ -59,9 +60,11 @@ test('les cartes commandes restent compactes et le détail est progressif',()=>{
 
 
 test('la composition Operations suit le mock : hero + pipeline flottant + colonnes sous le rail',()=>{
-  expect(css).toContain("operations-logistics-hero.svg");
-  expect(css).toMatch(/\.kmc-control-stage::after\s*\{[^}]*top:\s*112px/s);
-  expect(css).toMatch(/\.kmc-control-chain::before\s*\{[^}]*height:\s*4px/s);
+  // L'illustration est portée par contextual-heroes-v2 (scène or) ; ce fichier ne garde que le board.
+  const heroes = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/contextual-heroes-v2.css'), 'utf8');
+  expect(heroes).toContain('operations-logistics-hero-gold.svg');
+  expect(css).toMatch(/\.kmc-control-stage::after\s*\{[^}]*top:\s*126px/s);
+  expect(css).toMatch(/\.kmc-control-chain-card::before\s*\{[^}]*width:\s*4px/s);
   expect(css).toMatch(/grid-auto-columns:\s*minmax\(145px,\s*1fr\)/);
   expect(css).toMatch(/\.kmc-control-stage-icon\s*\{[^}]*width:\s*60px[^}]*height:\s*60px/s);
 });

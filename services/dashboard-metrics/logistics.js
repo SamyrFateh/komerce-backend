@@ -23,7 +23,7 @@
 'use strict';
 
 const db = require('../../db');
-const { buildFiltersClause, computeDelta, makeKpi } = require('./_helpers');
+const { buildFiltersClause, computeDelta, makeKpi, LATE_THRESHOLDS } = require('./_helpers');
 const { getColisEnTransit } = require('./control-tower');
 
 async function getCmdsAujourdhui(filters = {}) {
@@ -112,7 +112,7 @@ async function getRetardsCritiques(filters = {}) {
     JOIN orders o ON o.id = p.order_id
     WHERE ${where}
       AND p.shipped_at IS NOT NULL
-      AND p.shipped_at < NOW() - INTERVAL '14 days'
+      AND p.shipped_at < NOW() - INTERVAL '${LATE_THRESHOLDS.shipped_late_days} days'
       AND p.status NOT IN ('available', 'collected', 'cancelled')
   `;
   const r = await db.query(sql, params);
