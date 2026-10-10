@@ -74,8 +74,8 @@ describe('import-runtime — fidélité visuelle au mock', () => {
     expect(source).toContain("enabled ? 'deactivate' : 'activate'");
     expect(source).not.toMatch(/\/(stop|restart|reset)['`"]/);
     expect(css).toContain('.kmc-import-runtime .kir-cmd-update{background:#1D5CD6');
-    expect(css).toContain('.kmc-import-runtime .kir-cmd-stop{background:#3A1218');
-    expect(css).toContain('.kmc-import-runtime .kir-cmd-restart{background:#0F3D2A');
+    expect(css).toContain('.kmc-import-runtime .kir-cmd-stop{background:#F7E4E7');
+    expect(css).toContain('.kmc-import-runtime .kir-cmd-restart{background:#E3F7EF');
   });
 
   test('l’activité est en phrases métier, sans libellé technique ; le produit courant reste honnête', () => {
@@ -153,10 +153,9 @@ describe('import-runtime — doctrine LIVE Operations', () => {
     expect(source).toContain('ouvrir le détail');
   });
 
-  test('le cockpit live porte le langage noir dédié aux surfaces opérationnelles', () => {
-    expect(css).toContain('LIVE OPS dark authority');
-    expect(css).toContain('--kir-bg:#07111F');
-    expect(css).toContain('background:#07111F !important');
+  test('le cockpit live porte la coque claire standard (aucun fond noir)', () => {
+    expect(css).toContain('LIVE OPS — écrans opérationnels');
+    expect(css).not.toMatch(/#07111F|#081421|#050C17|#0B1828/i);
     expect(source).toContain("data-cockpit-language', 'live-ops'");
   });
 

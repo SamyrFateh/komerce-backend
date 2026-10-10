@@ -81,7 +81,7 @@ async function mountCockpit(page, data = payload) {
   }, data);
 }
 
-test.describe('Cockpit imports — conformité au mock noir', () => {
+test.describe('Cockpit imports — conformité au mock clair', () => {
   test.beforeEach(async ({ page }) => { await mountCockpit(page); });
 
   test('les zones suivent l’ordre du mock, activité live visible sans scroller loin', async ({ page }) => {
@@ -103,7 +103,7 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
     expect(tops.activity).toBeLessThan(941);
   });
 
-  test('fond noir de bout en bout, titre lisible, pas de carte blanche', async ({ page }) => {
+  test('fond clair de bout en bout, titre lisible (aucun fond noir)', async ({ page }) => {
     const info = await page.evaluate(() => {
       const bg = (el) => getComputedStyle(el).backgroundColor;
       const page = document.querySelector('.kir-page');
@@ -111,18 +111,19 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
       return { pageBg: bg(page), bodyBg: bg(document.body), h1Color: getComputedStyle(h1).color };
     });
     expect(info.pageBg).toBe('rgba(0, 0, 0, 0)');
-    expect(info.bodyBg).toBe('rgb(7, 17, 31)');
+    expect(info.bodyBg.match(/\d+/g).slice(0, 3).every((v) => Number(v) > 200)).toBe(true);
     const [r, g, b] = info.h1Color.match(/\d+/g).map(Number);
-    expect((r + g + b) / 3).toBeGreaterThan(200);
+    expect((r + g + b) / 3).toBeLessThan(90);
   });
 
-  test('rail de progression et étapes en attente restent sombres (pas de règle claire résiduelle)', async ({ page }) => {
+  test('rail de progression et étapes en attente sont clairs (aucune règle sombre résiduelle)', async ({ page }) => {
     const colors = await page.evaluate(() => ({
       track: getComputedStyle(document.querySelector('.kir-run-progress-track')).backgroundColor,
       pending: getComputedStyle(document.querySelector('.kir-run-flow-step.is-pending .kir-run-flow-marker')).backgroundColor,
     }));
-    expect(colors.track).toBe('rgb(23, 38, 58)');
-    expect(colors.pending).toBe('rgb(12, 25, 40)');
+    const light = (c) => c.match(/\d+/g).slice(0, 3).map(Number).every((v) => v > 200);
+    expect(light(colors.track)).toBe(true);
+    expect(light(colors.pending)).toBe(true);
   });
 
   test('LIVE à côté du titre, progression globale avec le ratio réel de l’étape active', async ({ page }) => {
@@ -141,7 +142,7 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
     await expect(page.locator('.kir-current-item')).toContainText('Dernier produit mis à jour');
   });
 
-  test('barre de commandes : Mettre à jour (bleu, généreux) puis Arrêter (rouge sombre) quand la source est active', async ({ page }) => {
+  test('barre de commandes : Mettre à jour (bleu, généreux) puis Arrêter (rouge clair) quand la source est active', async ({ page }) => {
     const bar = await page.evaluate(() => {
       const box = (sel) => {
         const el = document.querySelector(sel);
@@ -164,7 +165,7 @@ test.describe('Cockpit imports — conformité au mock noir', () => {
     expect(bar.stripBelow).toBe(false);
     expect(bar.label).toBe('Mettre à jour maintenant');
     expect(bar.update.bg).toBe('rgb(29, 92, 214)');
-    expect(bar.stop.bg).toBe('rgb(58, 18, 24)');
+    expect(bar.stop.bg).toBe('rgb(247, 228, 231)');
     for (const b of [bar.update, bar.stop]) { expect(b.h).toBeGreaterThanOrEqual(48); expect(b.svg).toBe(true); }
     expect(bar.update.w).toBeGreaterThan(bar.stop.w);
     expect(bar.update.x).toBeLessThan(bar.stop.x);
@@ -439,7 +440,7 @@ test.describe('Cockpit imports — commandes opérateur', () => {
     const order = await page.$$eval('.kir-command-actions .kir-cmd', (els) => els.map((el) => el.dataset.sourceCommand));
     expect(order).toEqual(['restart', 'update']);
     const bg = await page.$eval('.kir-cmd-restart', (el) => getComputedStyle(el).backgroundColor);
-    expect(bg).toBe('rgb(15, 61, 42)');
+    expect(bg).toBe('rgb(227, 247, 239)');
   });
 
   test('Redémarrer : réutilise activate (même mécanique que l’interrupteur historique)', async ({ page }) => {

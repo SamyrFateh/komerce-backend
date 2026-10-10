@@ -1,21 +1,21 @@
 /* Cockpits Live Hub / Relais : compléments au gabarit noir du cockpit Sourcing (import-runtime.css). */
-.kmc-import-runtime .lk-table-wrap{overflow-x:auto;border:1px solid #1D3148;border-radius:11px;background:#0A1625}
-.kmc-import-runtime .lk-table{width:100%;border-collapse:collapse;color:#E4ECF6}
-.kmc-import-runtime .lk-table th{background:#0B1828;color:#9FB2C8;font-weight:500;text-align:left;padding:11px 14px;font-size:13px;white-space:nowrap}
-.kmc-import-runtime .lk-table td{padding:11px 14px;border-top:1px solid #1D3148;font-size:14.5px;vertical-align:top}
-.kmc-import-runtime .lk-table td a{color:#E4ECF6;font-weight:700;text-decoration:none}
-.kmc-import-runtime .lk-table td a:hover{text-decoration:underline;color:#fff}
-.kmc-import-runtime .lk-table small{color:#7D91A8}
-.kmc-import-runtime .lk-late{color:#FFC766;font-weight:700}
+.kmc-import-runtime .lk-table-wrap{overflow-x:auto;border:1px solid #D0D6DC;border-radius:11px;background:#FFFFFF}
+.kmc-import-runtime .lk-table{width:100%;border-collapse:collapse;color:#1D2631}
+.kmc-import-runtime .lk-table th{background:#FFFFFF;color:#3C4F65;font-weight:500;text-align:left;padding:11px 14px;font-size:13px;white-space:nowrap}
+.kmc-import-runtime .lk-table td{padding:11px 14px;border-top:1px solid #D0D6DC;font-size:14.5px;vertical-align:top}
+.kmc-import-runtime .lk-table td a{color:#1D2631;font-weight:700;text-decoration:none}
+.kmc-import-runtime .lk-table td a:hover{text-decoration:underline;color:#1A1A1A}
+.kmc-import-runtime .lk-table small{color:#566A80}
+.kmc-import-runtime .lk-late{color:#DD8C00;font-weight:700}
 .kmc-import-runtime .lk-block{display:grid;gap:10px}
 .kmc-import-runtime .lk-block-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.kmc-import-runtime .lk-signals{display:flex;flex-wrap:wrap;gap:6px 0;color:#9FB2C8}
+.kmc-import-runtime .lk-signals{display:flex;flex-wrap:wrap;gap:6px 0;color:#3C4F65}
 .kmc-import-runtime .lk-signals span+span::before{content:"·";margin:0 12px;color:#3B4B60}
-.kmc-import-runtime .lk-signals strong{color:#F1F6FC}
+.kmc-import-runtime .lk-signals strong{color:#181F28}
 .kmc-import-runtime .lk-facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.kmc-import-runtime .lk-facts>div{display:grid;gap:4px;padding:12px 14px;border:1px solid #1D3148;border-radius:11px;background:#0A1625}
-.kmc-import-runtime .lk-facts span{font-size:12.5px;color:#8EA1B8}
-.kmc-import-runtime .lk-facts strong{color:#F1F6FC;font-size:15px;overflow-wrap:anywhere}
+.kmc-import-runtime .lk-facts>div{display:grid;gap:4px;padding:12px 14px;border:1px solid #D0D6DC;border-radius:11px;background:#FFFFFF}
+.kmc-import-runtime .lk-facts span{font-size:12.5px;color:#4B5F77}
+.kmc-import-runtime .lk-facts strong{color:#181F28;font-size:15px;overflow-wrap:anywhere}
 @media(max-width:900px){.kmc-import-runtime .lk-facts{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.kmc-import-runtime .lk-facts{grid-template-columns:minmax(0,1fr)}}
 .kmc-import-runtime .lk-block,.kmc-import-runtime .lk-table-wrap,.kmc-import-runtime .kir-main>.lk-table-wrap{min-width:0;max-width:100%}
@@ -31,12 +31,44 @@
   .kmc-import-runtime .kir-run-truth-grid.is-four.lk-tiles-grid>* *{min-width:0;overflow-wrap:anywhere}
 }
 /* Le calque legacy peint les lignes de tableau en blanc : on garde le gabarit noir des cockpits. */
-.kmc-import-runtime .lk-table tbody tr,.kmc-import-runtime .lk-table tbody td{background:#0A1625 !important;color:#E4ECF6 !important}
-.kmc-import-runtime .lk-table tbody tr:hover td{background:#0F2036 !important}
-.kmc-import-runtime .lk-table tbody td a{color:#E4ECF6 !important}
-.kmc-import-runtime .lk-table tbody td small{color:#7D91A8 !important}
-.kmc-import-runtime .lk-table .lk-late{color:#FFC766 !important}
-.kmc-import-runtime .lk-table thead th{background:#0B1828 !important;color:#9FB2C8 !important}
+.kmc-import-runtime .lk-table tbody tr,.kmc-import-runtime .lk-table tbody td{background:#FFFFFF !important;color:#1D2631 !important}
+.kmc-import-runtime .lk-table tbody tr:hover td{background:#FFFFFF !important}
+.kmc-import-runtime .lk-table tbody td a{color:#1D2631 !important}
+.kmc-import-runtime .lk-table tbody td small{color:#566A80 !important}
+.kmc-import-runtime .lk-table .lk-late{color:#DD8C00 !important}
+.kmc-import-runtime .lk-table thead th{background:#FFFFFF !important;color:#3C4F65 !important}
 .kmc-import-runtime .kir-run-truth-grid.is-four.lk-tiles-grid>*{grid-template-columns:minmax(0,1fr) !important;justify-items:start;text-align:left}
 .kmc-import-runtime .lk-signals{padding:0 2px}
 .kmc-import-runtime .kir-run-truth-grid.is-four.lk-tiles-grid>*{padding-left:20px !important;padding-right:16px !important}
+
+/* ── Chaîne de processus (Hub live) : même langage que « Où en sont les commandes ? » ───────── */
+.kmc-import-runtime .lk-pb{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 22px;align-items:start;padding:6px 4px 4px}
+.kmc-import-runtime .lk-pb-stage{position:relative;display:grid;gap:10px;min-width:0}
+.kmc-import-runtime .lk-pb-arrow{position:absolute;left:-19px;top:20px;width:16px;text-align:center;color:#D4A63C;font-size:15px;line-height:1}
+.kmc-import-runtime .lk-pb-head{display:grid;justify-items:center;gap:6px;text-decoration:none;color:#0F172A}
+.kmc-import-runtime .lk-pb-circle{display:grid;place-items:center;width:46px;height:46px;border-radius:50%;color:#fff;font-size:19px;box-shadow:0 0 0 5px rgb(15 23 42 / .05)}
+.kmc-import-runtime .lk-pb-circle.is-blue{background:linear-gradient(135deg,#60A5FA,#2563EB)}
+.kmc-import-runtime .lk-pb-circle.is-violet{background:linear-gradient(135deg,#A78BFA,#7C3AED)}
+.kmc-import-runtime .lk-pb-circle.is-teal{background:linear-gradient(135deg,#2DD4BF,#0F9488)}
+.kmc-import-runtime .lk-pb-circle.is-green{background:linear-gradient(135deg,#4ADE80,#16A34A)}
+.kmc-import-runtime .lk-pb-circle.is-attention{box-shadow:0 0 0 5px rgb(245 158 11 / .28)}
+.kmc-import-runtime .lk-pb-label{font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;text-align:center}
+.kmc-import-runtime .lk-pb-count{display:inline-grid;place-items:center;min-width:24px;height:20px;padding:0 7px;border:1px solid #E2E8F0;border-radius:999px;background:#fff;color:#0F172A;font-size:12px;font-weight:800}
+.kmc-import-runtime .lk-pb-col{display:grid;align-content:start;gap:8px;min-height:150px;padding:10px;border:1px solid #F1E4BE;border-radius:12px;background:#FCFCFD}
+.kmc-import-runtime .lk-pb-card{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid #F3DDA0;border-radius:10px;background:#FFFBEB;color:#0F172A;text-decoration:none;min-width:0}
+.kmc-import-runtime .lk-pb-card.is-ok{border-color:#D8EBDD;background:#F5FBF7}
+.kmc-import-runtime .lk-pb-card.is-blocked{border-color:#F6C9CE;background:#FEF2F3}
+.kmc-import-runtime a.lk-pb-card:hover{box-shadow:0 2px 8px rgb(15 23 42 / .10)}
+.kmc-import-runtime .lk-pb-dot{flex:none;width:8px;height:8px;border-radius:50%;background:#F59E0B}
+.kmc-import-runtime .lk-pb-card.is-ok .lk-pb-dot{background:#16A34A}
+.kmc-import-runtime .lk-pb-card.is-blocked .lk-pb-dot{background:#DC2626}
+.kmc-import-runtime .lk-pb-card-text{display:grid;min-width:0}
+.kmc-import-runtime .lk-pb-card-text strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kmc-import-runtime .lk-pb-card-text small{font-size:11.5px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kmc-import-runtime .lk-pb-empty{padding:18px 6px;color:#94A3B8;font-size:12.5px;text-align:center}
+.kmc-import-runtime .lk-pb-more{padding:2px 4px;color:#B45309;font-size:12.5px;font-weight:700;text-decoration:none}
+@media(max-width:900px){
+  .kmc-import-runtime .lk-pb{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 16px}
+  .kmc-import-runtime .lk-pb-arrow{display:none}
+}
+@media(max-width:560px){.kmc-import-runtime .lk-pb{grid-template-columns:minmax(0,1fr)}}
