@@ -8,7 +8,7 @@ test('navigation policy V4 porte la taxonomie métier cible complète', () => {
     path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'navigation-policy-v4.js'),
     'utf8'
   );
-  ['Piloter', 'Flux', 'Entités', 'Workspaces', 'Marchés', 'Administration'].forEach(label => {
+  ['Piloter', 'Commerce', 'Opérations', 'Finance', 'Live', 'Marchés', 'Administration'].forEach(label => {
     expect(source).toContain(`label: '${label}'`);
   });
   expect(source).toContain("id: 'workspace-sourcing'");

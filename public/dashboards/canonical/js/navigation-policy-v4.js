@@ -31,7 +31,7 @@
     }),
     Object.freeze({
       id: 'pricing',
-      label: 'Atelier économique',
+      label: 'Prix & économie',
       href: '/admin/workspaces/pricing',
       roles: Object.freeze(['admin', 'market_operator']),
     }),
@@ -626,19 +626,6 @@
     account.setAttribute('aria-label', `Profil : ${roleLabel(user)}`);
     utilities.appendChild(account);
 
-    if (SETTINGS_UTILITY.roles.includes(role)) {
-      const settingsLink = doc.createElement('a');
-      settingsLink.className = 'kmc-admin-settings-link';
-      settingsLink.href = SETTINGS_UTILITY.href;
-      settingsLink.textContent = SETTINGS_UTILITY.label;
-      settingsLink.setAttribute('data-dashboard', SETTINGS_UTILITY.id);
-      if (surface === 'settings') {
-        settingsLink.className += ' is-active';
-        settingsLink.setAttribute('aria-current', 'page');
-      }
-      utilities.appendChild(settingsLink);
-    }
-
     utilities.appendChild(createLogoutButton(doc));
 
     inner.appendChild(identity);
@@ -733,7 +720,6 @@
     'flow-operations': '⇄',
     'flow-finance': '▤',
     'entity-orders': '◇',
-    'entity-products': '◇',
     'entity-clients': '♙',
     'live-import-runtime': '◉',
     'live-hub': '◉',
@@ -755,17 +741,38 @@
       id: 'pilot',
       label: 'Piloter',
       items: Object.freeze([
-        Object.freeze({ id: 'control-tower', label: 'Tour de contrôle', href: '/admin/pilotage', roles: ['admin', 'market_operator'], surfaces: ['pilotage'] }),
-        Object.freeze({ id: 'action-center', label: 'Action Center', href: '/admin/action-center', roles: ['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire'], surfaces: ['action-center'] }),
+        Object.freeze({ id: 'control-tower', label: 'Tour de contrôle', href: '/admin/pilotage', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read', surfaces: ['pilotage'] }),
+        Object.freeze({ id: 'action-center', label: 'À traiter', href: '/admin/action-center', roles: ['admin', 'market_operator', 'agent_hub', 'agent_relais', 'agent_transitaire'], capability: 'decision_signal.manage', surfaces: ['action-center'] }),
       ]),
     }),
     Object.freeze({
-      id: 'flows',
-      label: 'Flux',
+      id: 'commerce',
+      label: 'Commerce',
       items: Object.freeze([
-        Object.freeze({ id: 'flow-commerce', label: 'Commerce', href: '/admin/commerce', roles: ['admin', 'market_operator'], surfaces: ['commerce'] }),
-        Object.freeze({ id: 'flow-operations', label: 'Commandes & logistique', href: '/admin/operations', roles: ['admin', 'market_operator'], surfaces: ['operations'] }),
-        Object.freeze({ id: 'flow-finance', label: 'Finance', href: '/admin/finance', roles: ['admin', 'market_operator'], surfaces: ['finance'] }),
+        Object.freeze({ id: 'flow-commerce', label: 'Vue commerce', href: '/admin/commerce', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read', surfaces: ['commerce'] }),
+        Object.freeze({ id: 'entity-orders', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'], capability: 'dashboard.market.read', surfaces: ['orders', 'order-360'] }),
+        Object.freeze({ id: 'entity-clients', label: 'Clients', href: '/admin/clients', roles: ['admin', 'market_operator'], capability: 'client.read', surfaces: ['client-index', 'client-360'] }),
+        Object.freeze({ id: 'workspace-pricing', label: 'Prix & économie', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], capability: 'pricing.read', surfaces: ['pricing-workspace'] }),
+        Object.freeze({ id: 'workspace-catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace', 'product-360'] }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'operations',
+      label: 'Opérations',
+      items: Object.freeze([
+        Object.freeze({ id: 'flow-operations', label: 'Vue opérations', href: '/admin/operations', roles: ['admin', 'market_operator'], capability: 'operations.read', surfaces: ['operations'] }),
+        Object.freeze({ id: 'workspace-operations', label: 'Hub & Relais', href: '/admin/workspaces/operations', roles: ['admin', 'agent_hub', 'agent_relais', 'market_operator'], capability: 'operations.read', surfaces: ['operations-workspace'] }),
+        Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], capability: 'operations.read', surfaces: ['shipping-customs-workspace'] }),
+        Object.freeze({ id: 'workspace-sourcing', label: 'Sourcing', href: '/admin/workspaces/sourcing', roles: ['admin', 'sourcing'], surfaces: ['sourcing-workspace', 'supplier-360'] }),
+        Object.freeze({ id: 'workspace-purchasing', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: ['admin'], surfaces: ['purchasing-workspace'] }),
+      ]),
+    }),
+    Object.freeze({
+      id: 'finance',
+      label: 'Finance',
+      items: Object.freeze([
+        Object.freeze({ id: 'flow-finance', label: 'Vue finance', href: '/admin/finance', roles: ['admin', 'market_operator'], capability: 'finance.read', surfaces: ['finance'] }),
+        Object.freeze({ id: 'workspace-accounting', label: 'Comptabilité', href: '/admin/workspaces/accounting', roles: ['admin', 'finance', 'agent_relais', 'market_operator'], capability: 'finance.read', surfaces: ['accounting-workspace'] }),
       ]),
     }),
     Object.freeze({
@@ -778,32 +785,10 @@
       ]),
     }),
     Object.freeze({
-      id: 'entities',
-      label: 'Entités',
-      items: Object.freeze([
-        Object.freeze({ id: 'entity-orders', label: 'Commandes', href: '/admin/orders', roles: ['admin', 'market_operator'], surfaces: ['orders', 'order-360'] }),
-        Object.freeze({ id: 'entity-products', label: 'Produits', href: '/admin/workspaces/catalog?view=advanced', roles: ['admin'], surfaces: ['product-360'] }),
-        Object.freeze({ id: 'entity-clients', label: 'Clients', href: '/admin/clients', roles: ['admin', 'market_operator'], capability: 'client.read', surfaces: ['client-index', 'client-360'] }),
-      ]),
-    }),
-    Object.freeze({
-      id: 'workspaces',
-      label: 'Workspaces',
-      items: Object.freeze([
-        Object.freeze({ id: 'workspace-pricing', label: 'Atelier économique', href: '/admin/workspaces/pricing', roles: ['admin', 'market_operator'], surfaces: ['pricing-workspace'] }),
-        Object.freeze({ id: 'workspace-catalog', label: 'Catalogue', href: '/admin/workspaces/catalog', roles: ['admin'], surfaces: ['catalog-workspace'] }),
-        Object.freeze({ id: 'workspace-sourcing', label: 'Sourcing', href: '/admin/workspaces/sourcing', roles: ['admin', 'sourcing'], surfaces: ['sourcing-workspace', 'supplier-360'] }),
-        Object.freeze({ id: 'workspace-purchasing', label: 'Achats fournisseurs', href: '/admin/workspaces/purchasing', roles: ['admin'], surfaces: ['purchasing-workspace'] }),
-        Object.freeze({ id: 'workspace-operations', label: 'Hub & Relais', href: '/admin/workspaces/operations', roles: ['admin', 'agent_hub', 'agent_relais', 'market_operator'], surfaces: ['operations-workspace'] }),
-        Object.freeze({ id: 'workspace-shipping', label: 'Expéditions & Douane', href: '/admin/workspaces/shipping-customs', roles: ['admin', 'agent_hub', 'agent_transitaire', 'market_operator'], surfaces: ['shipping-customs-workspace'] }),
-        Object.freeze({ id: 'workspace-accounting', label: 'Finance / Comptabilité', href: '/admin/workspaces/accounting', roles: ['admin', 'finance', 'agent_relais', 'market_operator'], surfaces: ['accounting-workspace'] }),
-      ]),
-    }),
-    Object.freeze({
       id: 'markets',
       label: 'Marchés',
       items: Object.freeze([
-        Object.freeze({ id: 'markets-home', label: 'Marchés', href: '/dashboards/canonical/access.html', roles: ['admin'], surfaces: ['market-access'] }),
+        Object.freeze({ id: 'markets-home', label: 'Responsables pays', href: '/dashboards/canonical/access.html', roles: ['admin'], surfaces: ['market-access'] }),
         Object.freeze({ id: 'market-autonomy', label: 'Autonomie marché', href: '/dashboards/canonical/market-autonomy.html', roles: ['market_operator'], surfaces: ['market-autonomy'] }),
         Object.freeze({ id: 'market-catalog', label: 'Catalogue pays', href: '/dashboards/canonical/market-catalog.html', roles: ['market_operator'], surfaces: ['market-catalog'] }),
       ]),
@@ -908,19 +893,7 @@
       .filter(group => group.items.length > 0);
   }
 
-  // Une même surface peut porter deux entrées du menu (Catalogue / Produits partagent le
-  // workspace Catalogue) : la vue demandée désigne alors l'unique entrée active.
-  const SURFACE_VIEW_OWNERS = Object.freeze({
-    'catalog-workspace': Object.freeze({ advanced: 'entity-products' }),
-  });
-
   function sidebarItemActive(item, surface) {
-    const owners = SURFACE_VIEW_OWNERS[surface];
-    if (owners) {
-      const view = new URLSearchParams(String(global.location?.search || '')).get('view');
-      if (owners[view]) return item.id === owners[view];
-      if (Object.values(owners).includes(item.id)) return false;
-    }
     if ((item.surfaces || []).includes(surface)) return true;
     const current = String(global.location?.pathname || '');
     return current && current === String(item.href || '').split('?')[0];

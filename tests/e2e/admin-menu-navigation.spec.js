@@ -46,28 +46,22 @@ test.describe('Menu latéral — une entrée active, accès administration', () 
     await serve(page);
   });
 
-  test('Catalogue et Produits ne sont jamais allumés ensemble (chargement direct)', async ({ page }) => {
+  test('Catalogue seul est allumé, y compris en vue avancée', async ({ page }) => {
     await page.goto(`${ORIGIN}/admin/workspaces/catalog`);
     await page.waitForSelector('.kmc-admin-primary-link.is-active');
     expect(await activeLabels(page)).toEqual(['Catalogue']);
 
+    // « Produits » n'est plus une entrée de menu : la vue avancée reste dans le Catalogue.
     await page.goto(`${ORIGIN}/admin/workspaces/catalog?view=advanced`);
     await page.waitForSelector('.kmc-admin-primary-link.is-active');
-    expect(await activeLabels(page)).toEqual(['Produits']);
+    expect(await activeLabels(page)).toEqual(['Catalogue']);
+    expect(await page.locator('.kmc-admin-navigation a[data-dashboard="entity-products"]').count()).toBe(0);
   });
 
-  test('Catalogue et Produits ne sont jamais allumés ensemble (navigation sans rechargement)', async ({ page }) => {
-    await page.goto(`${ORIGIN}/admin/workspaces/catalog`);
+  test('Paramètres n’existe qu’une fois dans le menu', async ({ page }) => {
+    await page.goto(`${ORIGIN}/admin/pilotage`);
     await page.waitForSelector('.kmc-admin-primary-link.is-active');
-    await page.click('.kmc-admin-navigation a[data-dashboard="entity-products"]');
-    await page.waitForURL('**view=advanced*');
-    await page.waitForTimeout(500);
-    expect(await activeLabels(page)).toEqual(['Produits']);
-
-    await page.click('.kmc-admin-navigation a[data-dashboard="workspace-catalog"]');
-    await page.waitForURL(url => url.pathname === '/admin/workspaces/catalog' && !url.search);
-    await page.waitForTimeout(500);
-    expect(await activeLabels(page)).toEqual(['Catalogue']);
+    expect(await page.locator('.kmc-admin-navigation a[data-dashboard="settings"]').count()).toBe(1);
   });
 
   for (const [route, label] of [['/admin/users', 'Utilisateurs'], ['/admin/providers', 'Providers'], ['/admin/settings', 'Paramètres']]) {
