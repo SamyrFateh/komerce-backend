@@ -187,8 +187,8 @@ test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
   expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261009-2');
-  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261009-8');
-  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261009-5');
+  expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261010-1');
+  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261010-1');
 });
 
 test('Vue Catalogue ne duplique plus le pipeline Import', () => {
@@ -259,6 +259,9 @@ test('la file de curation garde les décisions et actions dans le viewport', () 
   expect(workspace).toContain('<th>Produit</th><th>Catégorie</th><th>Signal sourcing</th><th>État</th><th>Action</th>');
   expect(workspace).toContain('kmc-catalog-reason');
   expect(workspace).toContain('curationState');
+  expect(workspace).toContain('renderCurationChain');
+  expect(css).toContain('.kmc-catalog-chain-stage.is-current');
+  expect(css).toContain('.kmc-workspace-action.is-approve');
   expect(css).toContain('position: sticky');
   expect(css).toContain('.kmc-catalog-actions-cell');
   expect(css).toContain('display: table-cell');
