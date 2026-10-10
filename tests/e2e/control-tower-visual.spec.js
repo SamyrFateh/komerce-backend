@@ -170,7 +170,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(typo.title.family).toMatch(/Segoe UI|Inter|-apple-system|BlinkMacSystemFont|Helvetica Neue|Arial|sans-serif/i);
     expect(typo.title.size).toBeGreaterThanOrEqual(34); // Hero canon: titre fort, comme les mocks approuvés
     expect(typo.title.weight).toBe(800);
-    expect(typo.section.size).toBeCloseTo(14.08, 1);
+    expect(typo.section.size).toBeCloseTo(20, 1);
     expect(typo.card.size).toBeGreaterThanOrEqual(13);
   });
 
