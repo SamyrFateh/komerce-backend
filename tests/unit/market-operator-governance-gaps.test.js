@@ -96,15 +96,16 @@ describe('GAP-1 — Hub read scoping', () => {
       .mockResolvedValueOnce({ rows: [KPI_ROW] })
       .mockResolvedValueOnce({ rows: [{ c: 1 }] })
       .mockResolvedValueOnce({ rows: [{ c: 0 }] }) // expédiées aujourd'hui (historique de statut, borné au marché)
-      .mockResolvedValueOnce({ rows: [{ draft: 0, preparation: 0, shipped: 0, in_transit: 0, at_relay: 0 }] })
+      .mockResolvedValueOnce({ rows: [{ available: 0, in_transit: 0 }] }) // projection colis unique (LIVE-06)
+      .mockResolvedValueOnce({ rows: [{ draft: 0, preparation: 0, shipped: 0 }] })
       .mockResolvedValueOnce({ rows: [{ open_count: 0, critical_count: 0 }] });
 
     const result = await hubQueries.getDashboardKPIs({ authorizedMarkets: KM });
     expect(result.stock.low_stock_count).toBe(0);
-    expect(mockDbQuery).toHaveBeenCalledTimes(5);
+    expect(mockDbQuery).toHaveBeenCalledTimes(6);
     for (const [sql, params] of mockDbQuery.mock.calls) {
       expect(sql).toContain('market_id');
-      expect(params).toEqual([[...KM]]);
+      expect(params[0]).toEqual([...KM]);
     }
     expect(mockDbQuery.mock.calls.some(([sql]) => sql.includes('FROM products'))).toBe(false);
   });

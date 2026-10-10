@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db, utils/logger.js
+ * @depends       db, utils/logger.js, services/operations-relay-projection.js
  * @used-by       routes/hub-dashboard.js
  * @db-read       order_comments, order_incidents, order_items, order_status_history, orders, parcel_items, parcels, products, relais, scans, users
  * @db-write      none
@@ -20,6 +20,7 @@
 
 const log = require('../utils/logger').child({ module: 'hub-dashboard-queries' });
 const db  = require('../db');
+const { countRelayParcels } = require('./operations-relay-projection');
 
 function getMarketScope(authorizedMarkets) {
   const scoped = authorizedMarkets !== null && authorizedMarkets !== undefined;
@@ -83,13 +84,13 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
   try {
     const params = scoped ? [marketIds] : [];
     const marketWhere = scoped ? 'WHERE o.market_id = ANY($1::uuid[])' : '';
+    // « En transit » et « Au relais » : projection unique du workspace Opérations (LIVE-06).
+    const shared = await countRelayParcels({ marketIds: scoped ? marketIds : null });
     const { rows: [r] } = await db.query(`
       SELECT
         COUNT(*) FILTER (WHERE p.status = 'draft') AS draft,
         COUNT(*) FILTER (WHERE p.status = 'preparation') AS preparation,
-        COUNT(*) FILTER (WHERE p.status = 'shipped') AS shipped,
-        COUNT(*) FILTER (WHERE p.status = 'in_transit') AS in_transit,
-        COUNT(*) FILTER (WHERE p.status = 'available') AS at_relay
+        COUNT(*) FILTER (WHERE p.status = 'shipped') AS shipped
       FROM parcels p
       LEFT JOIN orders o ON o.id = p.order_id
       ${marketWhere}
@@ -98,8 +99,8 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
       draft: parseInt(r.draft) || 0,
       preparation: parseInt(r.preparation) || 0,
       shipped: parseInt(r.shipped) || 0,
-      in_transit: parseInt(r.in_transit) || 0,
-      at_relay: parseInt(r.at_relay) || 0,
+      in_transit: shared.in_transit,
+      at_relay: shared.available,
     };
   } catch(e) { log.error({ err: e }, '[HUB-DASH] Parcels KPI error'); throw e; }
 

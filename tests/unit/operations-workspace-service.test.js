@@ -14,6 +14,7 @@ const mockScanIntoParcel = jest.fn();
 const mockConfirmCash = jest.fn();
 
 jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
+jest.mock('../../services/operations-relay-projection', () => ({ countRelayParcels: jest.fn(() => Promise.resolve({ available: 0, in_transit: 0 })) }));
 jest.mock('../../services/order-status-machine', () => ({
   transitionOrderStatus: (...args) => mockTransition(...args),
 }));

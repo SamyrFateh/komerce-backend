@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        server_resolved_market, authenticated_actor, operation_reference
  * @outputs       market_scoped_operations_work_queue, delegated_domain_mutations
- * @depends       db, services/order-status-machine.js, services/auto-parcel.js, services/scan-engine.js, services/inventory-service.js, services/parcel-auto-create-service.js
+ * @depends       db, services/order-status-machine.js, services/auto-parcel.js, services/scan-engine.js, services/inventory-service.js, services/parcel-auto-create-service.js, services/operations-relay-projection.js
  * @used-by       routes/admin-operations-workspace.js
  * @db-read       orders, order_items, parcels, parcel_items, products, relais, users, inventory_items, order_incidents
  * @db-write      order_comments
@@ -29,6 +29,7 @@ const autoParcel = require('./auto-parcel');
 const scanEngine = require('./scan-engine');
 const inventory = require('./inventory-service');
 const { confirmCashAndCreateParcel } = require('./parcel-auto-create-service');
+const { countRelayParcels } = require('./operations-relay-projection');
 const { cacheCodeForReveal } = require('./pickup-secret-service');
 const log = require('../utils/logger').child({ module: 'operations-workspace' });
 
@@ -329,10 +330,16 @@ async function buildWorkspace(options = {}) {
     querySignals(market.id),
   ]);
   const queues = buildQueues(orders, parcels);
+  // LIVE-06 : « À remettre au client » vient de la projection unique consommée aussi par les Live.
+  const relayCounts = await countRelayParcels({ marketIds: [market.id] });
+  const summary = Object.freeze({
+    ...buildSummary(queues, distribution, inventoryState),
+    relay_to_collect: relayCounts.available,
+  });
 
   return Object.freeze({
     scope: publicMarket(market),
-    summary: buildSummary(queues, distribution, inventoryState),
+    summary,
     signals,
     queues,
     distribution,
@@ -666,4 +673,5 @@ module.exports = {
   confirmCash,
   assignInventory,
   SCAN_ACTIONS,
+  countRelayParcels,
 };

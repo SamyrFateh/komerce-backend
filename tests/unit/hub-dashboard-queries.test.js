@@ -28,11 +28,13 @@
 let mockQuery;
 jest.mock('../../db', () => ({ get query() { return mockQuery; } }));
 jest.mock('../../utils/logger', () => ({ child: () => ({ error: jest.fn(), warn: jest.fn() }) }));
+jest.mock('../../services/operations-relay-projection', () => ({ countRelayParcels: jest.fn(() => Promise.resolve({ available: 4, in_transit: 2 })) }));
 
 function loadService() {
   jest.resetModules();
   jest.mock('../../db', () => ({ query: (...a) => mockQuery(...a) }));
   jest.mock('../../utils/logger', () => ({ child: () => ({ error: jest.fn(), warn: jest.fn() }) }));
+  jest.mock('../../services/operations-relay-projection', () => ({ countRelayParcels: jest.fn(() => Promise.resolve({ available: 4, in_transit: 2 })) }));
   return require('../../services/hub-dashboard-queries');
 }
 

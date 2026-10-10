@@ -49,6 +49,7 @@
 
 const db  = require('../db');
 const { maskLast4 } = require('./pickup-secret-service');
+const { countRelayParcels } = require('./operations-relay-projection');
 const log = require('../utils/logger').child({ module: 'relay-dashboard-queries' });
 
 async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
@@ -64,8 +65,6 @@ async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
 
   const { rows: [kpi] } = await db.query(`
     SELECT
-      COUNT(*) FILTER (WHERE status = 'in_transit')   AS en_transit,
-      COUNT(*) FILTER (WHERE status = 'available')    AS disponibles,
       COUNT(*) FILTER (WHERE status = 'available'
         AND payment_mode = 'cash_relais' AND payment_status = 'pending') AS cash_a_encaisser,
       COUNT(*) FILTER (WHERE status = 'collected'
@@ -80,6 +79,12 @@ async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
     FROM orders
     ${kpiWhere}
   `, kpiParams);
+
+  // « En transit » et « Disponibles » : projection colis unique du workspace Opérations (LIVE-06).
+  const shared = await countRelayParcels({
+    marketIds: user.role === 'market_operator' ? (authorizedMarkets ? Array.from(authorizedMarkets) : []) : null,
+    relaisId: user.role === 'agent_relais' ? user.relais_id : null,
+  });
 
   let incidents_ouverts = 0;
   try {
@@ -112,8 +117,8 @@ async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
 
   return {
     kpi: {
-      en_transit: Number(kpi.en_transit),
-      disponibles: Number(kpi.disponibles),
+      en_transit: shared.in_transit,
+      disponibles: shared.available,
       cash_a_encaisser: Number(kpi.cash_a_encaisser),
       montant_cash_pending: Math.round(Number(kpi.montant_cash_pending)),
       collectes_aujourd_hui: Number(kpi.collectes_aujourd_hui),

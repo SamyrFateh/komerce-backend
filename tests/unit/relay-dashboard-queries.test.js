@@ -12,6 +12,9 @@
 
 jest.mock('../../db', () => ({ query: jest.fn() }));
 
+const mockCountRelayParcels = jest.fn(() => Promise.resolve({ available: 5, in_transit: 3 }));
+jest.mock('../../services/operations-relay-projection', () => ({ countRelayParcels: (...a) => mockCountRelayParcels(...a) }));
+
 const db = require('../../db');
 const relayQueries = require('../../services/relay-dashboard-queries');
 
@@ -38,6 +41,15 @@ describe('getDashboardKPIs', () => {
     const [incSql, incParams] = db.query.mock.calls[1];
     expect(incSql).toContain('o.relais_id = $1');
     expect(incParams).toEqual([7]);
+    expect(mockCountRelayParcels).toHaveBeenCalledWith({ marketIds: null, relaisId: 7 });
+  });
+
+  it('LIVE-06 : en_transit et disponibles viennent de la projection colis unique', async () => {
+    db.query.mockResolvedValueOnce({ rows: [KPI_ROW] }).mockResolvedValueOnce({ rows: [{ c: 0 }] });
+    const res = await relayQueries.getDashboardKPIs(ADMIN);
+    expect(mockCountRelayParcels).toHaveBeenCalledWith({ marketIds: null, relaisId: null });
+    expect(res.kpi.disponibles).toBe(5);
+    expect(res.kpi.en_transit).toBe(3);
   });
 
   it('GAP-2 : scope KPI et incidents par market_id pour market_operator', async () => {
