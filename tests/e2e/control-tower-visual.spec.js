@@ -295,7 +295,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     expect(surfaces.criticalGradient).not.toBe(surfaces.warningGradient);
     expect(surfaces.decisionRadius).toBe('12px');
     expect(surfaces.sectionRadius).toBe('12px');
-    expect(surfaces.sectionShadow).toContain('0px 2px 8px');
+    expect(surfaces.sectionShadow).toContain('0px 2px 10px');
     expect(surfaces.criticalAccent).not.toBe(surfaces.warningAccent);
   });
 
