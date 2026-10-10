@@ -258,7 +258,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
 
     expect(colors.sidebar).toBe('rgb(7, 26, 61)');
     expect(colors.sidebarWidth).toBe(260);
-    expect(colors.canvas).toBe('rgb(248, 246, 241)');
+    expect(colors.canvas).toBe('rgb(255, 255, 255)');
     expect(colors.flow).toBe('rgb(255, 255, 255)');
     expect(colors.decisionGradient).toContain('linear-gradient');
     expect(colors.decisionBorderLeft).toBe('5px');
@@ -268,7 +268,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
   });
 
 
-  test('langage Canonical Komerce : canvas chaud + cartes blanches + états distincts', async ({ page }) => {
+  test('langage Canonical Komerce : canvas blanc + cartes blanches + états distincts', async ({ page }) => {
     const surfaces = await page.evaluate(() => {
       const bg = (sel) => getComputedStyle(document.querySelector(sel)).backgroundColor;
       const border = (sel, prop) => getComputedStyle(document.querySelector(sel))[prop];
@@ -288,7 +288,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
       };
     });
 
-    expect(surfaces.canvas).toBe('rgb(248, 246, 241)');
+    expect(surfaces.canvas).toBe('rgb(255, 255, 255)');
     expect(surfaces.flow).toBe('rgb(255, 255, 255)');
     expect(surfaces.criticalGradient).toContain('linear-gradient');
     expect(surfaces.warningGradient).toContain('linear-gradient');
