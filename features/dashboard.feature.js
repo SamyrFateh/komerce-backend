@@ -515,6 +515,7 @@ module.exports = {
       'dashboards/canonical/js/finance-accounting-workspace.js',
       'dashboards/canonical/js/sourcing-workspace.js',
       'dashboards/canonical/js/catalog-workspace.js',
+      'dashboards/canonical/js/catalog-workspace-decision.js',
       'dashboards/canonical/css/operations-workspace.css',
       'dashboards/canonical/js/finance.js',
       'dashboards/canonical/js/purchasing-workspace.js',

@@ -415,3 +415,9 @@ test('ordre de curation privilégie le signal sourcing sans densité de valeur',
   expect(String(approvalCall[0])).toContain("candidate.state = 'imported_to_catalog'");
   expect(approvalCall[1]).toEqual([50, 0]);
 });
+
+test('le montage rejoue afterRender après chaque rendu (le rendu vide la racine)',()=>{
+  const src=require('fs').readFileSync(require('path').join(__dirname,'..','..','public/dashboards/canonical/js/catalog-workspace.js'),'utf8');
+  expect(src).toContain('afterRender: typeof options.afterRender');
+  expect(src).toContain('if (context.afterRender) context.afterRender(payload);');
+});
