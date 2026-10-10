@@ -54,3 +54,8 @@ test('boot : le placeholder « ADMIN CANONICAL » ne flashe pas avant la page', 
   expect(css).toMatch(/#canonical-admin-root\.canonical-boot\s*\{[^}]*opacity:\s*0;[^}]*animation:\s*kmc-boot-reveal[^}]*\.7s/);
   expect(css).toMatch(/@keyframes kmc-boot-reveal/);
 });
+
+test('attention : orange conservé avec liseré gauche et pastilles à bord orange', () => {
+  expect(css).toMatch(/inset 4px 0 0 #E8710A/);
+  expect(css).toMatch(/\.kir-status[\s\S]*is-warning, \.is-attention\)\s*\{[^}]*border: 1\.5px solid #E8710A;[^}]*color: #B54708/);
+});

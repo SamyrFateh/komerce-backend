@@ -114,3 +114,19 @@ body.kmc-shell-v4 .kmc-admin-shell .kmc-sourcing-candidates-table td:last-child 
 @media (prefers-reduced-motion: reduce) {
   #canonical-admin-root.canonical-boot { animation-duration: .01s; }
 }
+
+/* Attention = orange (on le garde), mais avec des repères nets pour se distinguer du bleu
+   d'information : liseré gauche épais sur cartes/lignes, bord + texte orange sur pastilles. */
+body :is(.kmc-summary-card, .kmc-decision-card, .kmc-metric-card, .kmc-progress-card,
+  .kmc-priority-row, .kmc-ranked-row, .kmc-info-row, .kmc-ready-row, .kmc-control-order,
+  .kir-action-card, .kir-business-step):is(.is-warning, .is-attention) {
+  border-color: #F2B27A;
+  box-shadow: inset 4px 0 0 #E8710A;
+}
+body :is(.kir-status, .kir-status-large, .kir-source-pill, .kmc-ready-status, .kmc-pill):is(.is-warning, .is-attention) {
+  background: #fff;
+  border: 1.5px solid #E8710A;
+  color: #B54708;
+  font-weight: 700;
+}
+body .kir-source-pill.is-warning .kir-source-dot { background: #E8710A; }
