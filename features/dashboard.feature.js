@@ -513,6 +513,8 @@ module.exports = {
       'dashboards/canonical/js/catalog-workspace.js',
       'dashboards/canonical/css/operations-workspace.css',
       'dashboards/canonical/js/purchasing-workspace.js',
+      'dashboards/canonical/js/operations-workspace.js',
+      'dashboards/canonical/js/shipping-customs-workspace.js',
       'dashboards/canonical/css/purchasing-workspace.css',
       'dashboards/canonical/js/import-runtime.js',
       'dashboards/canonical/js/live-kit.js',

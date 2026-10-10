@@ -89,83 +89,26 @@ body.kmc-shell-v4 .kmc-action-center > .kmc-workspace-header::before {
   background: url('/dashboards/canonical/assets/action-center-hero-gold.svg') right center / auto 100% no-repeat;
 }
 
-/* SOURCING — discovery / qualification funnel. */
-body.kmc-shell-v4 .kmc-sourcing-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header::before {
-  background:
-    conic-gradient(from 215deg at 48% 38%, transparent 0 24%, rgba(201,162,39,.32) 25% 40%, transparent 41% 100%),
-    radial-gradient(circle at 72% 68%, rgba(7,26,61,.16) 0 22px, transparent 23px),
-    radial-gradient(circle at 28% 30%, rgba(231,215,163,.78) 0 32px, transparent 33px);
-}
-body.kmc-shell-v4 .kmc-sourcing-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header::after {
-  content: "DÉCOUVRIR • QUALIFIER • RETENIR";
-}
-
-/* ACHATS — PO / commitment. */
-body.kmc-shell-v4 .kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header::before {
-  background:
-    linear-gradient(var(--kmc-brand-gold),var(--kmc-brand-gold)) 18% 30% / 54% 3px no-repeat,
-    linear-gradient(var(--kmc-brand-champagne),var(--kmc-brand-champagne)) 18% 50% / 68% 3px no-repeat,
-    linear-gradient(var(--kmc-brand-navy-2),var(--kmc-brand-navy-2)) 18% 70% / 42% 3px no-repeat,
-    radial-gradient(circle at 82% 50%, rgba(201,162,39,.22) 0 36px, transparent 37px);
-}
-body.kmc-shell-v4 .kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header::after {
-  content: "PO • CONFIRMATION • PREUVE";
-}
-
-/* SHIPPING & CUSTOMS — international route / release. */
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="shipping-customs"] > .kmc-workspace-header::before {
-  background:
-    radial-gradient(circle at 16% 52%, var(--kmc-brand-navy-2) 0 7px, transparent 8px),
-    radial-gradient(circle at 46% 52%, var(--kmc-brand-gold) 0 7px, transparent 8px),
-    radial-gradient(circle at 76% 52%, var(--kmc-brand-navy-2) 0 7px, transparent 8px),
-    linear-gradient(var(--kmc-brand-champagne),var(--kmc-brand-champagne)) 16% 52% / 60% 2px no-repeat;
-}
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="shipping-customs"] > .kmc-workspace-header::after {
-  content: "TRANSIT • FRONTIÈRE • LIBÉRATION";
-}
-
-/* ACCOUNTING — matching lines. */
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="accounting"] > .kmc-workspace-header::before {
-  background:
-    repeating-linear-gradient(0deg, rgba(7,26,61,.08) 0 1px, transparent 1px 15px),
-    linear-gradient(90deg, transparent 0 14%, rgba(201,162,39,.24) 14% 17%, transparent 17% 72%);
-}
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="accounting"] > .kmc-workspace-header::after {
-  content: "RAPPROCHER • JUSTIFIER • CLÔTURER";
-}
-
-/* HUB / RELAIS — local physical handoff. */
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header::before {
-  background:
-    radial-gradient(circle at 18% 52%, var(--kmc-brand-navy-2) 0 9px, transparent 10px),
-    radial-gradient(circle at 50% 52%, var(--kmc-brand-gold) 0 9px, transparent 10px),
-    radial-gradient(circle at 82% 52%, var(--kmc-brand-navy-2) 0 9px, transparent 10px),
-    linear-gradient(var(--kmc-brand-champagne),var(--kmc-brand-champagne)) 18% 52% / 64% 3px no-repeat;
-}
-body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header::after {
-  content: "HUB → RELAIS";
-}
-
-/* CATALOGUE — curate / validate / publish. */
+/* WORKSPACES — same gold illustration family as the overview domains; no decorative caption.
+ * Each workspace borrows the scene of the domain it serves until a dedicated one is drawn. */
 body.kmc-shell-v4 .kmc-catalog-decision-overview > .kmc-dashboard-header::before {
-  background:
-    linear-gradient(rgba(201,162,39,.20),rgba(201,162,39,.20)) 16% 28% / 24% 44% no-repeat,
-    linear-gradient(rgba(7,26,61,.11),rgba(7,26,61,.11)) 46% 28% / 24% 44% no-repeat,
-    linear-gradient(rgba(231,215,163,.62),rgba(231,215,163,.62)) 76% 28% / 14% 44% no-repeat;
+  background: url('/dashboards/canonical/assets/commerce-hero-gold.svg') right center / auto 100% no-repeat;
 }
-body.kmc-shell-v4 .kmc-catalog-decision-overview > .kmc-dashboard-header::after {
-  content: "SÉLECTION • VALIDATION • EXPOSITION";
+body.kmc-shell-v4 .kmc-pricing-decision-overview > .kmc-dashboard-header::before,
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="accounting"] > .kmc-workspace-header::before {
+  background: url('/dashboards/canonical/assets/finance-hero-gold.svg') right center / auto 100% no-repeat;
 }
-
-/* ATELIER ÉCONOMIQUE — equilibrium. */
-body.kmc-shell-v4 .kmc-pricing-decision-overview > .kmc-dashboard-header::before {
-  background:
-    radial-gradient(circle at 26% 58%, rgba(201,162,39,.28) 0 24px, transparent 25px),
-    radial-gradient(circle at 70% 38%, rgba(7,26,61,.13) 0 34px, transparent 35px),
-    linear-gradient(145deg, transparent 0 48%, rgba(201,162,39,.24) 49% 51%, transparent 52%);
+body.kmc-shell-v4 .kmc-sourcing-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header::before,
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="shipping-customs"] > .kmc-workspace-header::before,
+body.kmc-shell-v4 .kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header::before {
+  background: url('/dashboards/canonical/assets/operations-logistics-hero-gold.svg') right center / auto 100% no-repeat;
 }
-body.kmc-shell-v4 .kmc-pricing-decision-overview > .kmc-dashboard-header::after {
-  content: "PRIX • COÛTS • ÉQUILIBRE";
+body.kmc-shell-v4 .kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header::before {
+  background: url('/dashboards/canonical/assets/orders-hero-gold.svg') right center / auto 100% no-repeat;
+}
+body.kmc-shell-v4 :is(.kmc-catalog-decision-overview, .kmc-pricing-decision-overview) > .kmc-dashboard-header::after,
+body.kmc-shell-v4 :is(.kmc-sourcing-workspace, .kmc-purchasing-workspace, .kmc-operations-workspace) > .kmc-workspace-header::after {
+  content: none;
 }
 
 @media (max-width: 1180px) {

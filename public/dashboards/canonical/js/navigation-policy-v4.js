@@ -131,6 +131,12 @@
     'users-admin': 'dashboard',
   });
 
+  const HERO_FIRST_SURFACES = new Set([
+    'pilotage', 'commerce', 'orders', 'operations', 'finance', 'action-center',
+    'pricing-workspace', 'catalog-workspace', 'sourcing-workspace', 'purchasing-workspace',
+    'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace',
+  ]);
+
   const SURFACE_TO_SPACE = Object.freeze({
     commerce: 'commerce',
     orders: 'orders-overview',
@@ -1275,6 +1281,8 @@
 
     doc.body?.classList?.add('kmc-shell-v4');
     if (doc.body && doc.body.dataset) doc.body.dataset.kmcSurface = surface;
+    // Surfaces dont le Hero est la première ligne (contrôles dans le Hero, pas de rangée d'onglets).
+    doc.body?.classList?.toggle?.('kmc-hero-first', HERO_FIRST_SURFACES.has(surface));
     // Cockpits Live : coque entièrement noire (sidebar, barre du haut, onglets, contenu).
     doc.body?.classList?.toggle?.('kmc-shell-live', domainId === 'live');
     header.setAttribute('data-navigation-policy', 'v4');

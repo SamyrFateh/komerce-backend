@@ -219,16 +219,16 @@ body.kmc-shell-v4 .is-unknown { --kmc-canon-status: var(--kmc-state-unknown); }
 
 /* Metric cards: white card, one neutral navy accent; red/amber/green only for real state.
  * (base/legacy themes cycled orange-blue-teal-coral-violet by position, which is decoration.) */
-body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard) .kmc-metric-card:nth-child(n) {
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard, .kmc-workspace-metrics) .kmc-metric-card:nth-child(n) {
   --metric-accent: var(--kmc-brand-navy);
   --metric-soft: #ffffff;
 }
-body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard) .kmc-metric-card.is-positive { --metric-accent: var(--kmc-state-positive); }
-body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard) .kmc-metric-card.is-warning  { --metric-accent: var(--kmc-state-warning); }
-body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard) .kmc-metric-card.is-critical { --metric-accent: var(--kmc-state-critical); }
-body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard) .kmc-metric-card.is-neutral  { --metric-accent: var(--kmc-state-unknown); }
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard, .kmc-workspace-metrics) .kmc-metric-card.is-positive { --metric-accent: var(--kmc-state-positive); }
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard, .kmc-workspace-metrics) .kmc-metric-card.is-warning  { --metric-accent: var(--kmc-state-warning); }
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard, .kmc-workspace-metrics) .kmc-metric-card.is-critical { --metric-accent: var(--kmc-state-critical); }
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard, .kmc-workspace-metrics) .kmc-metric-card.is-neutral  { --metric-accent: var(--kmc-state-unknown); }
 
-body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard) .kmc-metric-card {
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard, .kmc-workspace-metrics) .kmc-metric-card {
   background: #ffffff;
   border: 1px solid var(--kmc-brand-line);
   border-left: 3px solid var(--metric-accent);
@@ -236,11 +236,11 @@ body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-das
   box-shadow: var(--kmc-canon-shadow-soft);
 }
 
-body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard) .kmc-metric-card::before {
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard, .kmc-workspace-metrics) .kmc-metric-card::before {
   display: none;
 }
 
-body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard) .kmc-metric-card::after {
+body.kmc-shell-v4 :is(.kmc-domain-cockpit, .kmc-action-center, .kmc-decision-dashboard, .kmc-workspace-metrics) .kmc-metric-card::after {
   top: 16px;
   right: 16px;
   width: 10px;
