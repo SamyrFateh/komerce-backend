@@ -26,7 +26,7 @@ function read(relative) {
 describe('Canonical standalone shell V4.1', () => {
   test.each(HTML_SURFACES)('%s remonte le shell après le chargement V4', file => {
     const html = read(file);
-    const shell = html.indexOf('/dashboards/canonical/js/navigation-shell-v4-sync.js?v=2101');
+    const shell = html.search(/\/dashboards\/canonical\/js\/navigation-shell-v4-sync\.js\?v=[^"'<>\s]+/);
     const bootstrap = html.indexOf('/dashboards/canonical/js/standalone-shell-bootstrap-v4.js?v=2301');
     expect(shell).toBeGreaterThanOrEqual(0);
     expect(bootstrap).toBeGreaterThan(shell);

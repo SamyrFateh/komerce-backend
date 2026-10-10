@@ -35,6 +35,7 @@ const DASHBOARD_SPECS = [
   'b9-ui-truth-paths',
   'control-tower-visual',
   'layout-canon-conformance',
+  'admin-menu-navigation',
   'legacy-theme-audit',
   'operations-control-board',
 ];
