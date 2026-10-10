@@ -63,7 +63,7 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     await mountRelay(page);
     await expect(page.locator('.kir-hero h1')).toContainText('Suivi des Relais');
     await expect(page.locator('.kir-domain-nav .is-active')).toHaveText('Suivi');
-    await expect(page.locator('.kir-run-flow-step')).toHaveCount(3);
+    await expect(page.locator('.lk-pb-stage')).toHaveCount(3);
     await expect(page.locator('.kir-run-truth-grid > *')).toHaveCount(4);
     await expect(page.locator('.lk-signals')).toContainText('14 retirés sur 7 jours');
     await expect(page.locator('.lk-block tbody tr')).toHaveCount(5);
@@ -132,7 +132,7 @@ test.describe('Cockpit Relais — navigation canonique', () => {
     test(`responsive ${name} : aucun débordement`, async ({ page }) => {
       await mountRelay(page);
       await page.setViewportSize({ width, height });
-      await expect(page.locator('.kir-run-flow-step')).toHaveCount(3);
+      await expect(page.locator('.lk-pb-stage')).toHaveCount(3);
       const geo = await page.evaluate(() => ({ scroll:document.documentElement.scrollWidth, inner:window.innerWidth }));
       expect(geo.scroll).toBeLessThanOrEqual(geo.inner);
     });

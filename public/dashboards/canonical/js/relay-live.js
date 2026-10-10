@@ -22,7 +22,7 @@
 (function initRelayLive(global) {
   const kit = global.KomerceLiveKit;
   if (!kit) throw new Error('live_kit_missing');
-  const { esc, num, fmtDate, fmtKmf, ageLabel, queryString, flowTrack, tiles, table } = kit;
+  const { esc, num, fmtDate, fmtKmf, ageLabel, queryString, processBoard, tiles, table } = kit;
 
   const BASE = '/admin/relais-live';
   const PAGE_SIZE = 25;
@@ -81,15 +81,23 @@
     const k = data?.dash?.kpi || {};
     const late = num(k.en_attente_72h);
     const incidents = num(k.incidents_ouverts);
-    const steps = [
-      { label:'En transit', n:num(k.en_transit), count:`${num(k.en_transit)} colis`, href:listUrl('in_transit') },
-      { label:'Disponibles au retrait', n:num(k.disponibles), count:`${num(k.disponibles)} colis`, href:listUrl('available') },
-      { label:'Retirés aujourd’hui', n:num(k.collectes_aujourd_hui), count:`${num(k.collectes_aujourd_hui)} colis`, href:null },
+    const asCards = (list, from) => (Array.isArray(list?.orders) ? list.orders : []).map(order => ({
+      label:order.reference,
+      sub:order.client_nom || order.user_name || order.relais_nom || '',
+      href:orderUrl(order.id, from),
+      tone:num(order.incidents_ouverts) > 0 ? 'blocked' : (order.urgence === 'haute' || order.urgence === 'critique') ? 'attention' : 'ok',
+    }));
+    const more = (n, shown, list) => (n > shown ? { href:listUrl(list), label:`Voir les ${n} colis →` } : null);
+    const transitCards = asCards(data?.transit, 'in_transit');
+    const availableCards = asCards(data?.first, 'available');
+    const stages = [
+      { label:'En transit', icon:'➤', hue:'blue', count:num(k.en_transit), href:listUrl('in_transit'), cards:transitCards,
+        more:more(num(k.en_transit), transitCards.length, 'in_transit'), countLabel:'Aucun colis en transit' },
+      { label:'Disponibles au retrait', icon:'⌂', hue:'teal', count:num(k.disponibles), tone:late > 0 ? 'attention' : 'ok', href:listUrl('available'), cards:availableCards,
+        more:more(num(k.disponibles), availableCards.length, 'available'), countLabel:'Aucun colis à retirer' },
+      { label:'Retirés aujourd’hui', icon:'✓', hue:'green', count:num(k.collectes_aujourd_hui), href:listUrl('collected'), cards:[],
+        countLabel:`${num(k.collectes_aujourd_hui)} colis retiré${num(k.collectes_aujourd_hui) > 1 ? 's' : ''} aujourd’hui` },
     ];
-    const firstWork = steps.findIndex(step => step.n > 0);
-    steps.forEach((step, index) => {
-      step.state = index === 1 && late > 0 ? 'attention' : index === firstWork ? 'running' : step.n > 0 ? 'done' : 'pending';
-    });
     const title = late > 0
       ? `${late} colis en attente de retrait depuis plus de 72 h`
       : num(k.disponibles) > 0 ? 'Des colis attendent leur retrait' : 'Aucun colis à traiter';
@@ -109,7 +117,7 @@
       </header>`,
       body:`<section class="kir-run-flow is-live" aria-label="Flux des relais">
           <div class="kir-run-flow-head"><div><span class="kir-section-kicker">FLUX DES RELAIS</span><strong>${esc(title)}</strong><small>Transit → disponible au retrait → retiré. Les chiffres ouvrent la liste exacte.</small></div></div>
-          ${flowTrack(steps.map(step => ({ ...step })))}
+          ${processBoard(stages)}
         </section>
         ${tiles('RÉSULTAT DES RELAIS', [
           { label:'En transit', value:num(k.en_transit), sub:'en route vers les relais', href:listUrl('in_transit'), cls:'is-received' },
@@ -198,8 +206,12 @@
     overview:{
       tab:() => 'suivi',
       async load(p, api) {
-        const [dash, first] = await Promise.all([api('/api/relay/dashboard'), api('/api/relay/orders?status=available&limit=5&projection=live')]);
-        return { dash, first, fetched_at:dash?.generated_at || new Date().toISOString() };
+        const [dash, first, transit] = await Promise.all([
+          api('/api/relay/dashboard'),
+          api('/api/relay/orders?status=available&limit=5&projection=live'),
+          api('/api/relay/orders?status=in_transit&limit=5&projection=live'),
+        ]);
+        return { dash, first, transit, fetched_at:dash?.generated_at || new Date().toISOString() };
       },
       render:renderOverview,
       nav:() => ({ crumbs:[], back:null }),
