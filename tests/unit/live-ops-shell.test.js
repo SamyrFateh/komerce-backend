@@ -32,9 +32,9 @@ test('tarification produit : KPI en grille et actions sur une ligne', () => {
   expect(css).toContain('.kmc-pricing-product-focus .kmc-workspace-actions');
 });
 
-test('échelle typographique unique : titres 18, textes 13, tableaux 13/11', () => {
-  expect(css).toMatch(/kmc-decision-dashboard-section-title[\s\S]*?font-size: 18px/);
-  expect(css).toMatch(/kmc-section-description[\s\S]*?font-size: 13px/);
-  expect(css).toMatch(/kmc-workspace-table td[\s\S]*?font-size: 13px/);
-  expect(css).toMatch(/kmc-workspace-table th[\s\S]*?font-size: 11px/);
+test('échelle typographique unique : titres 20, textes 14, tableaux 14/12', () => {
+  expect(css).toMatch(/kmc-decision-dashboard-section-title[\s\S]*?font-size: 20px/);
+  expect(css).toMatch(/kmc-section-description[\s\S]*?font-size: 14px/);
+  expect(css).toMatch(/kmc-workspace-table td[\s\S]*?font-size: 14px/);
+  expect(css).toMatch(/kmc-workspace-table th[\s\S]*?font-size: 12px/);
 });
