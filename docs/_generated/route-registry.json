@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-10-08T10:54:48.796Z",
+  "generatedAt": "2026-10-10T21:33:56.996Z",
   "generator": "scripts/gen-route-registry.js",
-  "count": 700,
+  "count": 702,
   "routes": [
     {
       "method": "GET",
@@ -1100,10 +1100,30 @@
       ]
     },
     {
+      "method": "POST",
+      "fullPath": "/api/admin/markets/:marketCode/assignment/status",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/:marketCode/assignment/status",
+      "routeFile": "routes/admin-market-control-plane.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
       "method": "GET",
       "fullPath": "/api/admin/markets/:marketCode/control-plane",
       "mountPrefix": "/api/admin/markets",
       "localPath": "/:marketCode/control-plane",
+      "routeFile": "routes/admin-market-control-plane.js",
+      "mountedFrom": [
+        "bootstrap/api-routes.js"
+      ]
+    },
+    {
+      "method": "GET",
+      "fullPath": "/api/admin/markets/:marketCode/exit-readiness",
+      "mountPrefix": "/api/admin/markets",
+      "localPath": "/:marketCode/exit-readiness",
       "routeFile": "routes/admin-market-control-plane.js",
       "mountedFrom": [
         "bootstrap/api-routes.js"

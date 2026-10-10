@@ -593,8 +593,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 
 **Architectural debt** : _aucune_
 
-**Implementation** : 383 fichier(s) déclaré(s)
-  - dash : 138
+**Implementation** : 395 fichier(s) déclaré(s)
+  - dash : 150
   - middleware : 1
   - migrations : 2
   - routes : 28
@@ -1448,8 +1448,8 @@ _Détails complets (fichiers, tables, interfaces) : voir docs/FEATURE_360.json �
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "auth-identity" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 - `DECLARED_NOT_OBSERVED` (low) — contract.consumes déclare "market-delegation" — aucune preuve O5 (ni DECLARED_AND_OBSERVED, ni OBSERVED_UNDECLARED)
 
-**Implementation** : 25 fichier(s) déclaré(s)
-  - dash : 14
+**Implementation** : 28 fichier(s) déclaré(s)
+  - dash : 17
   - migrations : 1
   - services : 4
   - tests : 6

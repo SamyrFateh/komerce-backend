@@ -108,7 +108,7 @@ async function createAssignment(executor, { marketId, actorUserId = null, effect
   return assignment;
 }
 
-async function setAssignmentStatus(executor, { assignmentId, status, actorUserId = null, correlationId = null }) {
+async function setAssignmentStatus(executor, { assignmentId, status, reason = null, actorUserId = null, correlationId = null }) {
   const db = requireExecutor(executor);
   const { rows: beforeRows } = await db.query(`SELECT id, market_id, status FROM market_operating_assignments WHERE id=$1::uuid FOR UPDATE`, [assignmentId]);
   if (!beforeRows[0]) return null;
@@ -116,7 +116,7 @@ async function setAssignmentStatus(executor, { assignmentId, status, actorUserId
     `UPDATE market_operating_assignments SET status=$2, updated_at=NOW() WHERE id=$1::uuid RETURNING *`,
     [assignmentId, status]
   );
-  await audit(db, { actorUserId, assignmentId, action: 'ASSIGNMENT_STATUS_CHANGED', before: beforeRows[0], after: { status }, correlationId });
+  await audit(db, { actorUserId, assignmentId, action: 'ASSIGNMENT_STATUS_CHANGED', before: beforeRows[0], after: reason ? { status, reason } : { status }, correlationId });
   return rows[0];
 }
 

@@ -8,7 +8,7 @@
  * @outputs       PROVISIONING market, ACTIVE assignment, first lead invitation/membership, readiness
  * @depends       services/market-lifecycle-service.js, services/market-delegation-service.js, services/market-operator-provisioning.js, services/market-delegation-team-service.js, services/market-scope-projector.js, services/market-cash-control-policy-service.js, services/market-payment-provider-config-service.js, services/relais-mutation-service.js, services/central-authority.js, services/market-control-plane.js
  * @used-by       routes/admin-market-control-plane.js
- * @db-read       central authority grant tables
+ * @db-read       central authority grant tables, markets, market_operating_assignments
  * @db-write      none
  * @db-write-via:market-lifecycle-service markets
  * @db-write-via:market-delegation-service market_operating_assignments, assignment_capability_ceiling, market_delegation_audit
@@ -257,4 +257,55 @@ async function setMarketLifecycle(executor, {
   return result;
 }
 
-module.exports = { assertCentralReferent, configureProvisioningMarket, provisionMarket, reprovisionMarket, setMarketLifecycle };
+const ASSIGNMENT_TRANSITIONS = Object.freeze({
+  ACTIVE: ['SUSPENDED', 'ENDED'],
+  SUSPENDED: ['ACTIVE', 'ENDED'],
+});
+
+/**
+ * Cycle de vie du mandat (suspendre / reprendre / terminer), distinct du cycle de vie du marché.
+ * Le mandat non ACTIVE coupe l'accès délégué (projection des scopes révoquée, gardes fail-closed).
+ * ENDED est terminal et refusé tant qu'un règlement reste non reçu.
+ */
+async function setAssignmentLifecycle(executor, {
+  actorUserId, marketCode, targetStatus, reason = null, correlationId = null,
+}) {
+  const target = String(targetStatus || '').trim().toUpperCase();
+  if (!['ACTIVE', 'SUSPENDED', 'ENDED'].includes(target)) {
+    throw provisionError('ASSIGNMENT_STATUS_INVALID', 'Statut de mandat invalide (ACTIVE, SUSPENDED ou ENDED).', 400);
+  }
+  const code = delegation.normalizeMarketCode(marketCode);
+  if (!code) throw provisionError('MARKET_CODE_INVALID', 'Code marché invalide.', 400);
+
+  const { rows } = await executor.query(
+    `SELECT a.id, a.status
+       FROM market_operating_assignments a
+       JOIN markets m ON m.id = a.market_id
+      WHERE m.code = $1 AND a.status IN ('ACTIVE','SUSPENDED')
+      ORDER BY (a.status = 'ACTIVE') DESC, a.created_at DESC
+      LIMIT 1
+      FOR UPDATE OF a`, [code]
+  );
+  const assignment = rows[0];
+  if (!assignment) throw provisionError('ASSIGNMENT_NOT_FOUND', 'Aucun mandat actif ou suspendu pour ce marché.', 404);
+  if (assignment.status === target) return { changed: false, assignment_id: assignment.id, status: target };
+
+  if (!(ASSIGNMENT_TRANSITIONS[assignment.status] || []).includes(target)) {
+    throw provisionError('ASSIGNMENT_TRANSITION_FORBIDDEN', `Transition ${assignment.status} → ${target} interdite.`, 409);
+  }
+  if (target === 'ENDED') {
+    const exit = await controlPlane.getExitReadiness(executor, code);
+    if (!exit.ready_to_end) {
+      throw provisionError('ASSIGNMENT_EXIT_BLOCKED', 'Fin de mandat refusée : règlements non reçus (' + exit.blockers.join(', ') + ').', 409);
+    }
+  }
+
+  const cleanReason = reason == null ? null : String(reason).trim().slice(0, 500) || null;
+  await delegation.setAssignmentStatus(executor, {
+    assignmentId: assignment.id, status: target, reason: cleanReason, actorUserId, correlationId,
+  });
+  await projectAssignment(executor, assignment.id);
+  return { changed: true, assignment_id: assignment.id, status: target, previous_status: assignment.status };
+}
+
+module.exports = { assertCentralReferent, configureProvisioningMarket, provisionMarket, reprovisionMarket, setMarketLifecycle, setAssignmentLifecycle };

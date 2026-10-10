@@ -534,7 +534,22 @@ const KNOWN_RESPONSES = {
   },
   // Control Plane marché (lecture seule) : clés vérifiées par
   // tests/unit/market-control-plane-service.test.js et admin-market-control-plane-routes.test.js.
-  '/api/admin/markets': { get: { fields: ['markets'], source: 'test' } },
+  '/api/admin/markets': {
+    get: { fields: ['markets'], source: 'test' },
+    post: { fields: ['market','assignment_id','central_referent_user_id','lead','readiness','gaps'], source: 'route-read' }
+  },
+  '/api/admin/markets/{marketCode}/reprovision': {
+    post: { fields: ['market','assignment_id','central_referent_user_id','lead','readiness','gaps'], source: 'route-read' }
+  },
+  '/api/admin/markets/{marketCode}/lifecycle': {
+    post: { fields: ['before','after','changed'], source: 'route-read' }
+  },
+  '/api/admin/markets/{marketCode}/assignment/status': {
+    post: { fields: ['changed','assignment_id','status','previous_status'], source: 'test' }
+  },
+  '/api/admin/markets/{marketCode}/exit-readiness': {
+    get: { fields: ['market_code','assignment','open_settlements','active_members','open_disputes','blockers','ready_to_end','not_covered'], source: 'test' }
+  },
   '/api/admin/markets/central-authority': { get: { fields: ['domains','group_capabilities'], source: 'test' } },
   '/api/admin/markets/{marketCode}/control-plane': {
     get: { fields: ['market','assignment','ceiling','team','paymentProviders','cashPolicy','relaisActive','gaps'], source: 'test' }

@@ -5,7 +5,7 @@
  * @layer         route
  * @criticality   medium
  * @inputs        central admin actor, canonical market code in path
- * @outputs       market list/control view, provisioning/reprovisioning/lifecycle mutations, central authority overview
+ * @outputs       market list/control view, provisioning/reprovisioning/lifecycle and assignment-status mutations, exit-readiness read, central authority overview
  * @depends       db.js, middleware/auth.js, services/market-control-plane.js, services/central-authority.js
  * @used-by       bootstrap/api-routes.js, central admin workspace
  * @db-read       none
@@ -25,7 +25,7 @@ const db = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const controlPlane = require('../services/market-control-plane');
 const centralAuthority = require('../services/central-authority');
-const { provisionMarket, reprovisionMarket, setMarketLifecycle } = require('../services/market-provisioning-service');
+const { provisionMarket, reprovisionMarket, setMarketLifecycle, setAssignmentLifecycle } = require('../services/market-provisioning-service');
 
 // Vue centrale par rôle (Q4 du chantier) : déclarée ici, jamais implicite.
 const centralAdmin = [authenticate, requireRole(['admin'])];
@@ -104,6 +104,29 @@ router.post('/:marketCode/lifecycle', ...centralAdmin, async (req, res, next) =>
       correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
     }));
     res.json(result);
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+router.post('/:marketCode/assignment/status', ...centralAdmin, async (req, res, next) => {
+  try {
+    const result = await withTransaction(client => setAssignmentLifecycle(client, {
+      actorUserId: req.user.id,
+      marketCode: req.params.marketCode,
+      targetStatus: req.body && req.body.status,
+      reason: req.body && req.body.reason,
+      correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
+    }));
+    res.json(result);
+  } catch (error) {
+    if (!sendKnownError(res, error)) next(error);
+  }
+});
+
+router.get('/:marketCode/exit-readiness', ...centralAdmin, async (req, res, next) => {
+  try {
+    res.json(await controlPlane.getExitReadiness(db, req.params.marketCode));
   } catch (error) {
     if (!sendKnownError(res, error)) next(error);
   }

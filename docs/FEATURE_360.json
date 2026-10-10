@@ -6334,7 +6334,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 138,
+            "count": 150,
             "files": [
               {
                 "declared": "chart.umd.min.js",
@@ -6702,6 +6702,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/catalog-control-tower.css",
+                "resolvedPath": "public/dashboards/canonical/css/catalog-control-tower.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/css/cockpit-legacy-v1.css",
                 "resolvedPath": "public/dashboards/canonical/css/cockpit-legacy-v1.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6722,6 +6727,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/decision-controls.css",
+                "resolvedPath": "public/dashboards/canonical/css/decision-controls.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/css/decision-visual.css",
                 "resolvedPath": "public/dashboards/canonical/css/decision-visual.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6729,6 +6739,11 @@
               {
                 "declared": "dashboards/canonical/css/demo-order-flow.css",
                 "resolvedPath": "public/dashboards/canonical/css/demo-order-flow.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/entity-360.css",
+                "resolvedPath": "public/dashboards/canonical/css/entity-360.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6762,6 +6777,11 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/navigation.css",
+                "resolvedPath": "public/dashboards/canonical/css/navigation.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/css/operations-control-board-v1.css",
                 "resolvedPath": "public/dashboards/canonical/css/operations-control-board-v1.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -6769,6 +6789,36 @@
               {
                 "declared": "dashboards/canonical/css/operations-workspace.css",
                 "resolvedPath": "public/dashboards/canonical/css/operations-workspace.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/pricing-decision-chain.css",
+                "resolvedPath": "public/dashboards/canonical/css/pricing-decision-chain.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/pricing-economic-cockpit.css",
+                "resolvedPath": "public/dashboards/canonical/css/pricing-economic-cockpit.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/pricing-equilibrium-panel.css",
+                "resolvedPath": "public/dashboards/canonical/css/pricing-equilibrium-panel.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/pricing-simulation.css",
+                "resolvedPath": "public/dashboards/canonical/css/pricing-simulation.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/pricing-workspace-economic-v3.css",
+                "resolvedPath": "public/dashboards/canonical/css/pricing-workspace-economic-v3.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/pricing-workspace.css",
+                "resolvedPath": "public/dashboards/canonical/css/pricing-workspace.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6814,6 +6864,11 @@
               {
                 "declared": "dashboards/canonical/js/canonical-client-router-v4.js",
                 "resolvedPath": "public/dashboards/canonical/js/canonical-client-router-v4.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/catalog-workspace-decision.js",
+                "resolvedPath": "public/dashboards/canonical/js/catalog-workspace-decision.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -6944,6 +6999,11 @@
               {
                 "declared": "dashboards/canonical/js/relay-live.js",
                 "resolvedPath": "public/dashboards/canonical/js/relay-live.js",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/js/settings-workspace.js",
+                "resolvedPath": "public/dashboards/canonical/js/settings-workspace.js",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -8279,7 +8339,7 @@
             ]
           }
         },
-        "totalFiles": 383,
+        "totalFiles": 395,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
@@ -18858,7 +18918,7 @@
       "implementation": {
         "byCategory": {
           "dash": {
-            "count": 14,
+            "count": 17,
             "files": [
               {
                 "declared": "dashboards/canonical/access.html",
@@ -18876,8 +18936,23 @@
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
+                "declared": "dashboards/canonical/css/market-catalog-essential.css",
+                "resolvedPath": "public/dashboards/canonical/css/market-catalog-essential.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/market-ready-to-sell.css",
+                "resolvedPath": "public/dashboards/canonical/css/market-ready-to-sell.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
                 "declared": "dashboards/canonical/css/market-team.css",
                 "resolvedPath": "public/dashboards/canonical/css/market-team.css",
+                "status": "resolved-on-disk-out-of-arch-scan-scope"
+              },
+              {
+                "declared": "dashboards/canonical/css/markets-essential.css",
+                "resolvedPath": "public/dashboards/canonical/css/markets-essential.css",
                 "status": "resolved-on-disk-out-of-arch-scan-scope"
               },
               {
@@ -19003,7 +19078,7 @@
             ]
           }
         },
-        "totalFiles": 25,
+        "totalFiles": 28,
         "boutiqueManifest": null,
         "boutiqueFiles": {
           "count": 0,
