@@ -59,3 +59,8 @@ test('attention : orange conservé avec liseré gauche et pastilles à bord oran
   expect(css).toMatch(/inset 4px 0 0 #E8710A/);
   expect(css).toMatch(/\.kir-status[\s\S]*is-warning, \.is-attention\)\s*\{[^}]*border: 1\.5px solid #E8710A;[^}]*color: #B54708/);
 });
+
+test('candidats sourcing : en-têtes non coupés et pastilles qui passent à la ligne', () => {
+  expect(css).toMatch(/\.kmc-sourcing-candidates-table th \{ overflow-wrap: normal; word-break: normal;/);
+  expect(css).toMatch(/\.kmc-sourcing-candidates-table \.kmc-pill \{ white-space: normal;/);
+});
