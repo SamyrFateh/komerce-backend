@@ -130,7 +130,7 @@ describe('dashboard-metrics/control-tower', () => {
 
     expect(result).toMatchObject({ key: 'taux_completude_couts', value: 40, unit: '%', drill_to: '/admin/finance#finance-incomplete-costs' });
     expect(result.data_quality.completeness).toBe('partial');
-    expect(result.data_quality.warning).toBe('Beaucoup de commandes sans cout consolide');
+    expect(result.data_quality.warning).toBe('Beaucoup de commandes sans coût consolidé');
     expect(db.query.mock.calls[0][1][0]).toBe('available');
     expect(db.query.mock.calls[0][1][1]).toEqual(expect.arrayContaining(['product_purchase', 'fixed_overhead', 'payment']));
   });

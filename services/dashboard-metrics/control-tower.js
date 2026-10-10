@@ -295,7 +295,7 @@ async function getTauxCompletudeCouts(filters = {}) {
     itemsTotal,
     itemsWithData,
     completeness: itemsTotal > 0 ? (itemsWithData === itemsTotal ? 'complete' : 'partial') : 'provisional',
-    warning: value != null && value < 50 ? 'Beaucoup de commandes sans cout consolide' : null,
+    warning: value != null && value < 50 ? 'Beaucoup de commandes sans coût consolidé' : null,
     drillTo: '/admin/finance#finance-incomplete-costs',
   });
 }
