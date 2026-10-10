@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-10T22:29:08.882Z",
+  "generatedAt": "2026-10-10T22:56:52.609Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 715,
-    "protected": 660,
+    "total": 716,
+    "protected": 661,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -1109,6 +1109,13 @@
     },
     {
       "key": "POST /api/admin/market-payment-accounts/{accountId}/status",
+      "level": "PROTECTED",
+      "roles": [
+        "admin"
+      ]
+    },
+    {
+      "key": "POST /api/admin/market-payment-accounts/{accountId}/verify",
       "level": "PROTECTED",
       "roles": [
         "admin"
