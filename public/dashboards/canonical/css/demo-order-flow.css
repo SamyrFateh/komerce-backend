@@ -20,7 +20,7 @@
 .demo-flow__summary { justify-content: space-between; }
 .demo-flow__heading h1 { margin: 0; color: var(--kmc-navy); font-size: clamp(28px, 4vw, 44px); }
 .demo-flow__intro { margin: 8px 0 0; color: var(--kmc-muted); }
-.demo-flow__env { padding: 7px 11px; color: #7a3e00; background: #fff2cc; border: 1px solid #efcf75; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+.demo-flow__env { padding: 7px 11px; color: #7a3e00; background: #FFFFFF; border: 1px solid #efcf75; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
 
 .demo-flow__toolbar { margin-top: 24px; padding: 14px; background: var(--kmc-card); border: 1px solid var(--kmc-line); border-radius: var(--kmc-radius-md); flex-wrap: wrap; }
 .demo-flow__field { display: grid; gap: 6px; flex: 1 1 360px; color: var(--kmc-muted); font-size: 12px; font-weight: 700; }

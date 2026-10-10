@@ -14,7 +14,7 @@ test('Atelier économique charge la surface cockpit fidèle au mock approuvé', 
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-economic-cockpit.css'), 'utf8');
 
   expect(index).toContain('/dashboards/canonical/js/pricing-economic-cockpit.js?v=1406');
-  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=1404');
+  expect(index).toContain('/dashboards/canonical/css/pricing-economic-cockpit.css?v=261010-2');
   expect(source).toContain('Charges structurelles à couvrir');
   expect(source).toContain('Coûts variables');
   expect(source).toContain('Charges fixes directes');

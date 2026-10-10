@@ -249,7 +249,7 @@
 
 .kmc-cost-pill.is-override {
   border-color: #fde68a;
-  background: #fffbeb;
+  background: #FFFFFF;
   color: #a15c00;
 }
 
@@ -542,7 +542,7 @@
 .kmc-market-decision-period { margin-top: 14px; border-radius: 12px; background: #eff6ff; color: #1e3a8a; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
 .kmc-market-decision-period small { color: #64748b; flex-basis: 100%; }
 .kmc-market-policy { margin-top: 14px; border: 1px solid #c7d2fe; border-radius: 16px; background: #eef2ff; padding: 16px; }
-.kmc-market-policy.is-missing { border-color: #fecaca; background: #fff7ed; }
+.kmc-market-policy.is-missing { border-color: #fecaca; background: #FFFFFF; }
 .kmc-market-policy-heading { display: grid; gap: 3px; margin-bottom: 8px; }
 .kmc-market-policy-title { color: #1e1b4b; font-size: 18px; }
 .kmc-market-policy-facts { margin-top: 14px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }

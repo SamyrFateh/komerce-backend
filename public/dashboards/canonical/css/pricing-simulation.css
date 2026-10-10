@@ -222,7 +222,7 @@
 
 .kmc-observed-maturity.is-mature { background: #dcfce7; color: #166534; }
 .kmc-observed-maturity.is-usable { background: #ecfdf5; color: #047857; }
-.kmc-observed-maturity.is-caution { background: #fff7ed; color: #9a3412; }
+.kmc-observed-maturity.is-caution { background: #FFFFFF; color: #9a3412; }
 .kmc-observed-maturity.is-stale { background: #fef2f2; color: #991b1b; }
 .kmc-observed-maturity.is-emerging { background: #f8fafc; color: #64748b; }
 
@@ -271,7 +271,7 @@
   font-weight: 800;
 }
 
-.kmc-observed-trend.is-up { background: #fff7ed; color: #b45309; }
+.kmc-observed-trend.is-up { background: #FFFFFF; color: #b45309; }
 .kmc-observed-trend.is-down { background: #ecfdf5; color: #047857; }
 .kmc-observed-trend.is-stable { background: #eff6ff; color: #1d4ed8; }
 

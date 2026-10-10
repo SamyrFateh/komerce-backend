@@ -69,7 +69,7 @@
 
 .kmc-decision-chain-missing {
   border: 1px solid #fed7aa;
-  background: #fff7ed;
+  background: #FFFFFF;
   color: #9a3412;
 }
 
@@ -119,7 +119,7 @@
 .kmc-decision-chain-step.is-warning,
 .kmc-decision-chain-step.is-critical {
   border-top: 3px solid #b45309;
-  background: #fffbeb;
+  background: #FFFFFF;
 }
 
 .kmc-decision-chain-step.is-derived {
@@ -230,7 +230,7 @@
   padding: 8px;
   border: 1px solid #fde68a;
   border-radius: 9px;
-  background: #fffbeb;
+  background: #FFFFFF;
 }
 
 .kmc-decision-chain-activate {

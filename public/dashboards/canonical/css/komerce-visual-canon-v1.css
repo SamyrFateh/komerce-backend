@@ -19,7 +19,7 @@ body.kmc-shell-v4 {
   --kmc-brand-champagne: #E7D7A3;
   --kmc-brand-ivory: #FFF9F0;
   --kmc-brand-sand: #F3EBDD;
-  --kmc-brand-canvas: #F8F6F1;
+  --kmc-brand-canvas: #FFFFFF;
   --kmc-brand-ink: #15213A;
   --kmc-brand-muted: #65718A;
   --kmc-brand-line: #E8DFD1;
@@ -101,7 +101,7 @@ body.kmc-shell-v4 .kmc-section,
 body.kmc-shell-v4 .kmc-control-chain-card,
 body.kmc-shell-v4 .kmc-workspace-metrics,
 body.kmc-shell-v4 .kmc-workspace-table-wrap {
-  background: linear-gradient(180deg, #ffffff 0%, #fffdfa 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #FFFFFF 100%);
   border-color: var(--kmc-brand-line);
   box-shadow: var(--kmc-canon-shadow-soft);
 }

@@ -17,7 +17,7 @@
 .kmc-ready-price-editor span { display: grid; place-items: center; padding: 0 9px; border-left: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-size: 11px; font-weight: 800; }
 .kmc-ready-status { display: inline-flex; width: fit-content; padding: 5px 8px; border-radius: 999px; font-size: 11px; font-weight: 850; white-space: nowrap; }
 .kmc-ready-status.is-positive { background: #ecfdf5; color: #047857; }
-.kmc-ready-status.is-warning { background: #fffbeb; color: #a15c00; }
+.kmc-ready-status.is-warning { background: #FFFFFF; color: #a15c00; }
 .kmc-ready-status.is-critical { background: #fef2f2; color: #b91c1c; }
 .kmc-ready-status.is-neutral { background: #f1f5f9; color: #475569; }
 .kmc-ready-evidence { display: block; margin-top: 5px; color: #64748b; font-size: 10px; }

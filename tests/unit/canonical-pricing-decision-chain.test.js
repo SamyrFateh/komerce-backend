@@ -14,7 +14,7 @@ test('la chaîne économique canonical consomme les projections serveur sans rec
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
 
   expect(index).toContain('/dashboards/canonical/js/pricing-decision-chain.js?v=1302');
-  expect(index).toContain('/dashboards/canonical/css/pricing-decision-chain.css?v=1302');
+  expect(index).toContain('/dashboards/canonical/css/pricing-decision-chain.css?v=261010-2');
   expect(source).toContain('/corridor?product_ref=');
   expect(source).toContain('`${endpoint}/decision`');
   expect(source).toContain('economics.variable_cost_complete_kmf');

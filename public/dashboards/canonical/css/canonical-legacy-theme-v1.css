@@ -364,7 +364,7 @@ body.kmc-shell-v4 .kmc-admin-primary-link.is-active,
 }
 
 .kmc-metric-card:nth-child(5n + 1) {
-  background: linear-gradient(145deg, #fff7e8 0%, #ffffff 62%);
+  background: linear-gradient(145deg, #FFFFFF 0%, #ffffff 62%);
 }
 
 .kmc-workspace-action,
@@ -845,7 +845,7 @@ body.kmc-shell-v4 .kmc-admin-primary-link:focus-visible{
 }
 body.kmc-shell-v4 .kmc-admin-primary-link.is-active{
   color:#D97706;
-  background:#FFF7ED;
+  background:#FFFFFF;
   font-weight:500;
   box-shadow:inset 2px 0 0 #F59E0B;
 }
@@ -966,5 +966,5 @@ body[data-admin-generation="canonical"],
 body.kmc-shell-v4 #canonical-admin-root,
 body.kmc-shell-v4 #market-autonomy-root,
 body.kmc-shell-v4 #market-catalog-root{
-  background:var(--kmc-brand-canvas, #F8F6F1) !important;
+  background:var(--kmc-brand-canvas, #FFFFFF) !important;
 }

@@ -186,9 +186,9 @@ function candidate(overrides = {}) {
 test('Catalogue charge les assets business-truth versionnés', () => {
   const index = read('public/dashboards/canonical/index.html');
   expect(index).toContain('/dashboards/canonical/js/catalog-control-tower.js?v=260929-2');
-  expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261009-2');
+  expect(index).toContain('/dashboards/canonical/css/catalog-control-tower.css?v=261010-2');
   expect(index).toContain('/dashboards/canonical/js/catalog-workspace.js?v=261010-1');
-  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261010-1');
+  expect(index).toContain('/dashboards/canonical/css/operations-workspace.css?v=261010-2');
 });
 
 test('Vue Catalogue ne duplique plus le pipeline Import', () => {

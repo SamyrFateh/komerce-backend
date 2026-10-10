@@ -15,7 +15,7 @@ test('le panneau équilibre reste dérivé serveur et limite la vue principale a
   const v3 = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-workspace-economic-v3.css'), 'utf8');
 
   expect(index).toContain('/dashboards/canonical/js/pricing-equilibrium-panel.js?v=1302');
-  expect(index).toContain('/dashboards/canonical/css/pricing-equilibrium-panel.css?v=1302');
+  expect(index).toContain('/dashboards/canonical/css/pricing-equilibrium-panel.css?v=261010-2');
   expect(source).toContain('decision.flow_break_even');
   expect(source).toContain('additional_equivalent_articles');
   expect(source).toContain('additional_equivalent_orders');
