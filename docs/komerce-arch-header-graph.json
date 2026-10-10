@@ -21,7 +21,7 @@
     "filesWithMisplacedHeaders": 0,
     "liteWithoutOwner": 0,
     "graphNodes": 1697,
-    "edges": 8545,
+    "edges": 8548,
     "dbTables": 194,
     "doctrines": 606,
     "impactAreas": 196,
@@ -6434,7 +6434,8 @@
       ],
       "outputs": [
         "market list/control view",
-        "provisioning/reprovisioning/lifecycle mutations",
+        "provisioning/reprovisioning/lifecycle and assignment-status mutations",
+        "exit-readiness read",
         "central authority overview"
       ],
       "depends": [
@@ -18849,6 +18850,9 @@
         "routes/admin-market-control-plane.js"
       ],
       "dbRead": [
+        "market_settlements",
+        "disputes",
+        "orders",
         "markets",
         "capability_registry",
         "market_operating_assignments",
@@ -67467,6 +67471,24 @@
     },
     {
       "from": "services/market-control-plane.js",
+      "to": "db:market_settlements",
+      "type": "db-read",
+      "label": "market_settlements"
+    },
+    {
+      "from": "services/market-control-plane.js",
+      "to": "db:disputes",
+      "type": "db-read",
+      "label": "disputes"
+    },
+    {
+      "from": "services/market-control-plane.js",
+      "to": "db:orders",
+      "type": "db-read",
+      "label": "orders"
+    },
+    {
+      "from": "services/market-control-plane.js",
       "to": "db:markets",
       "type": "db-read",
       "label": "markets"
@@ -109139,6 +109161,9 @@
       ],
       "ownedFiles": [],
       "dbRead": [
+        "market_settlements",
+        "disputes",
+        "orders",
         "markets",
         "capability_registry",
         "market_operating_assignments",
@@ -109166,11 +109191,14 @@
         "db:assignment_capability_ceiling",
         "db:assignment_memberships",
         "db:capability_registry",
+        "db:disputes",
         "db:market_cash_control_policies",
         "db:market_operating_assignments",
         "db:market_payment_providers",
+        "db:market_settlements",
         "db:markets",
         "db:membership_capabilities",
+        "db:orders",
         "db:relais",
         "doctrine:control_plane_is_read_only",
         "doctrine:gaps_are_reported_never_repaired",

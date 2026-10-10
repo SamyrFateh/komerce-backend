@@ -5213,6 +5213,13 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/settings-workspace.js",
+        "resolvedPath": "public/dashboards/canonical/js/settings-workspace.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/js/finance-accounting-workspace.js",
         "resolvedPath": "public/dashboards/canonical/js/finance-accounting-workspace.js",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -5234,8 +5241,22 @@
       {
         "feature": "dashboard",
         "category": "dash",
+        "declared": "dashboards/canonical/js/catalog-workspace-decision.js",
+        "resolvedPath": "public/dashboards/canonical/js/catalog-workspace-decision.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
         "declared": "dashboards/canonical/css/operations-workspace.css",
         "resolvedPath": "public/dashboards/canonical/css/operations-workspace.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/catalog-control-tower.css",
+        "resolvedPath": "public/dashboards/canonical/css/catalog-control-tower.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -5306,6 +5327,69 @@
         "category": "dash",
         "declared": "dashboards/canonical/js/navigation-policy-v4.js",
         "resolvedPath": "public/dashboards/canonical/js/navigation-policy-v4.js",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/decision-controls.css",
+        "resolvedPath": "public/dashboards/canonical/css/decision-controls.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/entity-360.css",
+        "resolvedPath": "public/dashboards/canonical/css/entity-360.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/pricing-workspace-economic-v3.css",
+        "resolvedPath": "public/dashboards/canonical/css/pricing-workspace-economic-v3.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/navigation.css",
+        "resolvedPath": "public/dashboards/canonical/css/navigation.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/pricing-decision-chain.css",
+        "resolvedPath": "public/dashboards/canonical/css/pricing-decision-chain.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/pricing-economic-cockpit.css",
+        "resolvedPath": "public/dashboards/canonical/css/pricing-economic-cockpit.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/pricing-equilibrium-panel.css",
+        "resolvedPath": "public/dashboards/canonical/css/pricing-equilibrium-panel.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/pricing-simulation.css",
+        "resolvedPath": "public/dashboards/canonical/css/pricing-simulation.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "dashboard",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/pricing-workspace.css",
+        "resolvedPath": "public/dashboards/canonical/css/pricing-workspace.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -13020,6 +13104,27 @@
         "category": "dash",
         "declared": "dashboards/canonical/css/market-access.css",
         "resolvedPath": "public/dashboards/canonical/css/market-access.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/markets-essential.css",
+        "resolvedPath": "public/dashboards/canonical/css/markets-essential.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/market-catalog-essential.css",
+        "resolvedPath": "public/dashboards/canonical/css/market-catalog-essential.css",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "market-autonomy",
+        "category": "dash",
+        "declared": "dashboards/canonical/css/market-ready-to-sell.css",
+        "resolvedPath": "public/dashboards/canonical/css/market-ready-to-sell.css",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
       },
       {
@@ -44651,7 +44756,7 @@
     },
     "coverage": {
       "backend": {
-        "filesObserved": 2002
+        "filesObserved": 2004
       },
       "boutique": {
         "filesObserved": 214,
