@@ -540,6 +540,10 @@ async function getAnalysis(filters = {}) {
   if (rail) filtered = filtered.filter(a => a.computed.inferred_rail === rail.toUpperCase());
   if (status) filtered = filtered.filter(a => a.status === status);
 
+  return buildAnalysis(filtered, cfg);
+}
+
+function buildAnalysis(filtered, cfg) {
   return {
     generated_at: new Date().toISOString(),
     config: {
@@ -580,8 +584,28 @@ async function getSynthesis() {
     `SELECT * FROM products WHERE is_active = TRUE ORDER BY sort_order ASC`
   );
 
-  const analyses = products.map(p => analyzeProduct(p, cfg, salesMap));
+  return buildSynthesis(products.map(p => analyzeProduct(p, cfg, salesMap)), cfg);
+}
 
+/**
+ * getPortfolioView() — synthèse + analyse en UNE passe (config, ventes 30j et
+ * produits lus une seule fois). Même résultat que getSynthesis() + getAnalysis({}),
+ * sans doubler les ~40 requêtes de l'écran Sourcing.
+ */
+async function getPortfolioView() {
+  const cfg = await loadSourcingConfig();
+  const salesMap = await getSales30d();
+  const { rows: products } = await db.query(
+    `SELECT * FROM products ORDER BY sort_order ASC, name ASC`
+  );
+  const analyses = products.map(p => analyzeProduct(p, cfg, salesMap));
+  return {
+    analysis: buildAnalysis(analyses, cfg),
+    synthesis: buildSynthesis(analyses.filter(a => a.is_active === true), cfg),
+  };
+}
+
+function buildSynthesis(analyses, cfg) {
   // Compteurs par statut
   const byStatus = { en_phase: [], sous_reserve: [], test_requis: [], hors_phase: [] };
   for (const a of analyses) {
@@ -745,6 +769,7 @@ module.exports = {
   getAnalysis,
   getAnalysisById,
   getSynthesis,
+  getPortfolioView,
   getConfig,
   getProductVariants,
   // Exportés aussi pour usage interne (PUT /products/:id renvoie une analyse fraîche)

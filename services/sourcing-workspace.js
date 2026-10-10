@@ -88,10 +88,7 @@ async function resolvePartnerRef(partnerRef, q = db) {
 }
 
 async function listPortfolio() {
-  const [synthesis, analysis] = await Promise.all([
-    sourcingAnalysis.getSynthesis(),
-    sourcingAnalysis.getAnalysis(),
-  ]);
+  const { synthesis, analysis } = await sourcingAnalysis.getPortfolioView();
   const products = Array.isArray(analysis?.products) ? analysis.products : [];
   const ids = products.map(p => p.id).filter(Boolean);
   const refById = new Map();
