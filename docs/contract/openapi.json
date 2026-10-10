@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 0,
-    "total_routes": 648,
+    "total_routes": 649,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -29356,6 +29356,69 @@
                       "x-observed": true
                     },
                     "evaluated_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/market-delegation/markets/{marketCode}/cost-statement": {
+      "get": {
+        "summary": "GET /api/market-delegation/markets/{marketCode}/cost-statement",
+        "x-route-file": "routes/market-delegation-team.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "market_code": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "period": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "currency_basis": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "lines": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "truncated": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "totals": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "not_covered": {
                       "type": "string",
                       "x-observed": true
                     }

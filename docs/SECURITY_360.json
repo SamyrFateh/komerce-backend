@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-10T21:33:01.168Z",
+  "generatedAt": "2026-10-10T21:51:36.088Z",
   "source": "hybrid: runtime inventory + static guard analysis + exact route dispositions",
   "summary": {
-    "total": 709,
-    "protected": 654,
+    "total": 710,
+    "protected": 655,
     "public": 55,
     "unprotected": 0,
     "admin_no_guard": 0,
@@ -3556,6 +3556,11 @@
     },
     {
       "key": "GET /api/market-delegation/markets/{marketCode}/config",
+      "level": "PROTECTED",
+      "roles": []
+    },
+    {
+      "key": "GET /api/market-delegation/markets/{marketCode}/cost-statement",
       "level": "PROTECTED",
       "roles": []
     },

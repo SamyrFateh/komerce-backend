@@ -160,6 +160,7 @@ module.exports = {
       'services/market-delegation-settlement-service.js',
       'services/market-delegation-structure-event-service.js',
       'services/market-delegation-performance-service.js',
+      'services/market-delegation-cost-statement-service.js',
     ],
     routes: [
       'routes/market-delegation-team.js',
@@ -173,6 +174,7 @@ module.exports = {
       'routes/market-delegation-settlement.js',
       'routes/market-delegation-structure-event.js',
       'routes/market-delegation-performance.js',
+      'routes/market-delegation-cost-statement.js',
       'routes/market-delegation-market-config.js',
     ],
     tests: [
@@ -213,6 +215,7 @@ module.exports = {
       'tests/unit/market-delegation-structure-event-routes.test.js',
       'tests/unit/market-delegation-performance-service.test.js',
       'tests/unit/market-delegation-performance-routes.test.js',
+      'tests/unit/market-delegation-cost-statement.test.js',
       'tests/unit/market-delegation-execution-capability.test.js',
       'tests/e2e-api/market-delegation.execution-bridge.e2e.test.js',
       'tests/e2e-api/market-delegation.authority-team-network.e2e.test.js',
