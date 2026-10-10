@@ -173,3 +173,20 @@ describe('Canonical Navigation Policy — utilitaires d\'administration', () => 
     for (const surface of surfaces) expect(visible).toContain(nav.activePrimarySurface(surface));
   });
 });
+
+describe('Canonical Navigation Policy — cadre hero-first', () => {
+  const source = require('fs').readFileSync(
+    require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/navigation-policy-v4.js'),
+    'utf8'
+  );
+
+  test('les overviews et les workspaces reçoivent la classe kmc-hero-first', () => {
+    const block = source.match(/const HERO_FIRST_SURFACES = new Set\(\[([\s\S]*?)\]\)/)[1];
+    for (const surface of ['pilotage', 'commerce', 'orders', 'operations', 'finance', 'action-center',
+      'pricing-workspace', 'catalog-workspace', 'sourcing-workspace', 'purchasing-workspace',
+      'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace']) {
+      expect(block).toContain(`'${surface}'`);
+    }
+    expect(source).toContain("classList?.toggle?.('kmc-hero-first', HERO_FIRST_SURFACES.has(surface))");
+  });
+});

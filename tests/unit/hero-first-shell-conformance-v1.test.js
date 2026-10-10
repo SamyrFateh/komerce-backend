@@ -15,10 +15,10 @@ const html = fs.readFileSync(
 
 describe('Hero-first shell conformance v1', () => {
   test('les dashboards overview démarrent sur le Hero, sans rangée N2 au-dessus', () => {
-    expect(css).toContain('[data-kmc-surface="pilotage"]');
+    expect(css).toContain('body.kmc-shell-v4.kmc-hero-first');
+    expect(css).not.toContain(':is([data-kmc-surface=');
     expect(css).toContain('> .kmc-admin-domain-tabs');
     expect(css).toContain('display: none');
-    expect(css).toContain('[data-kmc-surface="operations"]');
     expect(css).toContain('> .kmc-admin-topbar'); 
     expect(css).toContain('position: absolute');
   });
@@ -72,5 +72,23 @@ describe('Hero-first shell conformance v1 — cadre commun Action Center / Comma
     expect(css).toContain('width: min(100%, var(--kmc-layout-max, 1680px))');
     expect(css).toContain('max-width: none;');
     expect(css).toContain('[data-kmc-surface="action-center"] #canonical-admin-root {\n  box-sizing: border-box;');
+  });
+});
+
+describe('Hero-first shell conformance v1 — workspaces', () => {
+  test('les workspaces partagent le cadre de page des overviews', () => {
+    expect(css).toContain('[data-kmc-surface$="-workspace"] #canonical-admin-root {');
+    expect(css).toContain('#canonical-admin-root .kmc-dashboard.kmc-decision-dashboard');
+    expect(css).toContain('#canonical-admin-root > div');
+  });
+
+  test('le second en-tête legacy du Catalogue est rétrogradé en liens rapides', () => {
+    expect(css).toContain('.kmc-catalog-decision-overview ~ .kmc-workspace-header');
+    expect(css).toContain('.kmc-workspace-header > div:first-child');
+  });
+
+  test('les kickers des workspaces reprennent la pastille champagne des overviews', () => {
+    expect(css).toMatch(/\[data-dashboard-role="hero"\] \.kmc-workspace-kicker \{[^}]*color: var\(--kmc-brand-navy, #071A3D\)/);
+    expect(css).toMatch(/\.kmc-workspace-kicker::before \{\s*display: none;/);
   });
 });

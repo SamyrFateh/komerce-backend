@@ -76,3 +76,11 @@ test('le Hero démarre son illustration sous la rangée de contrôles (recherche
   const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/contextual-heroes-v2.css'), 'utf8');
   expect(css).toContain('inset: 34px 0 0 auto;');
 });
+
+test('les workspaces empruntent les scènes or des domaines qu\'ils servent, sans légende décorative', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/contextual-heroes-v2.css'), 'utf8');
+  expect(css).toContain('.kmc-catalog-decision-overview > .kmc-dashboard-header::before');
+  expect(css).toContain('.kmc-pricing-decision-overview > .kmc-dashboard-header::before');
+  expect(css).toMatch(/\.kmc-purchasing-workspace\[data-workspace-kind="purchasing"\][^{]*::before \{\s*background: url\('\/dashboards\/canonical\/assets\/orders-hero-gold\.svg'\)/);
+  expect(css).toMatch(/\.kmc-operations-workspace\) > \.kmc-workspace-header::after \{\s*content: none;/);
+});

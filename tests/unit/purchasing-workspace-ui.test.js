@@ -17,3 +17,8 @@ test('Achats fournisseurs garde une vue d’ensemble centrée sur les achats à 
   expect(source).toContain("'Lignes à acheter'");
   expect(source).toContain("'Sélectionnez les lignes d’un même fournisseur puis préparez la commande.'");
 });
+
+test('l\'en-tête du workspace porte le rôle hero (cadre et illustration communs aux overviews)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/purchasing-workspace.js'), 'utf8');
+  expect(src).toContain("header.setAttribute('data-dashboard-role', 'hero')");
+});

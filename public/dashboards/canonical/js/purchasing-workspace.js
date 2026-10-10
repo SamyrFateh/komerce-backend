@@ -138,6 +138,7 @@
   function createHeader(doc) {
     const header = doc.createElement('header');
     header.className = 'kmc-workspace-header';
+    header.setAttribute('data-dashboard-role', 'hero');
     const copy = doc.createElement('div');
     copy.appendChild(text(doc, 'span', 'kmc-workspace-kicker', 'ACHATS FOURNISSEURS'));
     copy.appendChild(text(doc, 'h1', 'kmc-workspace-title', 'Achats à traiter'));
