@@ -129,6 +129,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   const marketDelegationStructureEventRouter = require('../routes/market-delegation-structure-event');
   const marketDelegationPerformanceRouter = require('../routes/market-delegation-performance');
   const marketDelegationCostStatementRouter = require('../routes/market-delegation-cost-statement');
+  const marketDelegationCustomsRouter = require('../routes/market-delegation-customs');
   const marketDelegationMarketConfigRouter = require('../routes/market-delegation-market-config');
   const sharedCartSavedRouter = require('../routes/shared-cart-saved');
   const metaWhatsAppRoutes = require('../routes/meta-whatsapp');
@@ -266,6 +267,7 @@ function mountApiRoutesAfterStripeOwnedBlocks(app) {
   app.use('/api/market-delegation', marketDelegationStructureEventRouter);
   app.use('/api/market-delegation', marketDelegationPerformanceRouter);
   app.use('/api/market-delegation', marketDelegationCostStatementRouter);
+  app.use('/api/market-delegation', marketDelegationCustomsRouter);
   app.use('/api/market-delegation', marketDelegationMarketConfigRouter);
   // Vague 2 D6 — GET read-only, aucune mutation, jamais de champ interne
   // (téléphone, provider_id, pourquoi d'une indisponibilité). commercial_

@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 0,
-    "total_routes": 649,
+    "total_routes": 650,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -29373,7 +29373,7 @@
     "/api/market-delegation/markets/{marketCode}/cost-statement": {
       "get": {
         "summary": "GET /api/market-delegation/markets/{marketCode}/cost-statement",
-        "x-route-file": "routes/market-delegation-team.js",
+        "x-route-file": "routes/market-delegation-cost-statement.js",
         "parameters": [
           {
             "name": "marketCode",
@@ -29419,6 +29419,61 @@
                       "x-observed": true
                     },
                     "not_covered": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/market-delegation/markets/{marketCode}/customs-shipments": {
+      "get": {
+        "summary": "GET /api/market-delegation/markets/{marketCode}/customs-shipments",
+        "x-route-file": "routes/market-delegation-team.js",
+        "parameters": [
+          {
+            "name": "marketCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "market_code": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "period": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "shipments": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "truncated": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "read_only": {
                       "type": "string",
                       "x-observed": true
                     }
