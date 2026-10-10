@@ -32,3 +32,8 @@ test('monte /api/market-delegation/.../cost-statement (relevé de coûts du marc
   expect(source).toContain("require('../routes/market-delegation-cost-statement')");
   expect(source).toContain("app.use('/api/market-delegation', marketDelegationCostStatementRouter)");
 });
+
+test('monte /api/market-delegation/.../customs-shipments (douane du marché, lecture seule)', () => {
+  expect(source).toContain("require('../routes/market-delegation-customs')");
+  expect(source).toContain("app.use('/api/market-delegation', marketDelegationCustomsRouter)");
+});
