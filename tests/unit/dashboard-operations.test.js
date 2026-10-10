@@ -25,6 +25,11 @@ jest.mock('../../services/logistics-control-chain-projection', () => ({
   getControlChain: (...args) => mockControlChain(...args),
 }));
 
+const mockWorkQueues = jest.fn();
+jest.mock('../../services/dashboard-orders', () => ({
+  getWorkQueues: (...args) => mockWorkQueues(...args),
+}));
+
 const db = require('../../db');
 const operations = require('../../services/dashboard-operations');
 
@@ -56,6 +61,10 @@ beforeEach(() => {
   jest.clearAllMocks();
   seedMetrics();
   seedRows();
+  mockWorkQueues.mockResolvedValue(Object.freeze({
+    pending_cash: [], pending_cash_shown: 0, pending_cash_total: 0,
+    ready_for_parcel: [], ready_for_parcel_shown: 0, ready_for_parcel_total: 0,
+  }));
   mockControlChain.mockResolvedValue(Object.freeze({
     stages: Object.freeze([{ key: 'ORDER', label: 'Commande' }]),
     orders: Object.freeze([]),
@@ -95,6 +104,9 @@ describe('dashboard-operations', () => {
     expect(signalParams[1]).toBe('market-cm-id');
     expect(result.kpis).toHaveLength(8);
     expect(mockControlChain).toHaveBeenCalledWith({ market });
+    // Les files « Cash à confirmer » / « Colis à créer » viennent de la projection dashboard-orders, bornée au même marché.
+    expect(mockWorkQueues).toHaveBeenCalledWith(market);
+    expect(result.work_queues).toMatchObject({ pending_cash_total: 0, ready_for_parcel_total: 0 });
     expect(result.control_chain).toEqual({
       stages: [{ key: 'ORDER', label: 'Commande' }],
       orders: [],

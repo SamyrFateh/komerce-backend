@@ -334,6 +334,21 @@ async function getBusinessFunnel(mid) {
   });
 }
 
+// Files de travail « Cash à confirmer » / « Colis à créer » : source unique, réutilisée par
+// l'écran Opérations (qui a absorbé le suivi des commandes) — aucune requête dupliquée.
+async function getWorkQueues(market) {
+  const mid = marketId(market || null);
+  const [pendingCash, readyForParcel] = await Promise.all([getPendingCash(mid), getReadyForParcel(mid)]);
+  return Object.freeze({
+    pending_cash: pendingCash.items,
+    pending_cash_shown: pendingCash.items.length,
+    pending_cash_total: pendingCash.count_total,
+    ready_for_parcel: readyForParcel.items,
+    ready_for_parcel_shown: readyForParcel.items.length,
+    ready_for_parcel_total: readyForParcel.count_total,
+  });
+}
+
 async function buildOrders(options = {}) {
   const market = options.market || null;
   const mid = marketId(market);
@@ -396,4 +411,5 @@ module.exports = {
   LIFECYCLE,
   publicScope,
   buildOrders,
+  getWorkQueues,
 };

@@ -68,7 +68,7 @@ async function getPaiementsEnAttente(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('paiements_en_attente', 'Paiements en attente', value, 'count', {
-    drillTo: '/admin/orders',
+    drillTo: '/admin/operations',
   });
 }
 

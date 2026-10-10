@@ -137,7 +137,8 @@ describe('Canonical Navigation Policy V3.1', () => {
     expect(nav.activePrimarySurface('client-360')).toBe('orders');
     expect(nav.activePrimarySurface('product-360')).toBe('catalog');
     expect(nav.activePrimarySurface('market-catalog')).toBe('markets');
-    expect(nav.activeSpaceFor('orders')).toBe('orders-overview');
+    // Le suivi des commandes vit dans Opérations : plus d'espace « orders-overview ».
+    expect(nav.activeSpaceFor('orders')).toBeNull();
     expect(nav.activeSpaceFor('client-index')).toBe('commerce');
   });
 
@@ -182,7 +183,7 @@ describe('Canonical Navigation Policy — cadre hero-first', () => {
 
   test('les overviews et les workspaces reçoivent la classe kmc-hero-first', () => {
     const block = source.match(/const HERO_FIRST_SURFACES = new Set\(\[([\s\S]*?)\]\)/)[1];
-    for (const surface of ['pilotage', 'commerce', 'orders', 'operations', 'finance', 'action-center',
+    for (const surface of ['pilotage', 'commerce', 'operations', 'finance', 'action-center',
       'pricing-workspace', 'catalog-workspace', 'sourcing-workspace', 'purchasing-workspace',
       'operations-workspace', 'shipping-customs-workspace', 'accounting-workspace', 'client-index', 'users-admin', 'providers-admin']) {
       expect(block).toContain(`'${surface}'`);

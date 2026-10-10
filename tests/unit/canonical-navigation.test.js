@@ -207,8 +207,8 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     const primary = inner.children[1];
     const orders = findPrimaryLink(header, 'orders');
 
-    expect(identity.children[1].textContent).toBe('← Retour au commerce');
-    expect(identity.children[1].href).toBe('/admin/commerce');
+    expect(identity.children[1].textContent).toBe('← Retour aux opérations');
+    expect(identity.children[1].href).toBe('/admin/operations');
     expect(orders.attributes['aria-current']).toBe('page');
     expect(env.api.activePrimarySurface('order-360')).toBe('orders');
     // Order-360 reste un vrai drill-down Entity 360, pas un domaine N1 promu :

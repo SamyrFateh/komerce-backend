@@ -17,7 +17,7 @@ const PAGE_PATH = '/admin/pilotage';
 const EXPECTED = Object.freeze({
   admin: [
     'control-tower', 'action-center',
-    'flow-commerce', 'entity-orders', 'entity-clients', 'workspace-pricing', 'workspace-catalog',
+    'flow-commerce', 'entity-clients', 'workspace-pricing', 'workspace-catalog',
     'flow-operations', 'workspace-operations', 'workspace-shipping', 'workspace-sourcing', 'workspace-purchasing',
     'flow-finance', 'workspace-accounting',
     'live-import-runtime', 'live-hub', 'live-relais',
@@ -26,7 +26,7 @@ const EXPECTED = Object.freeze({
   ],
   market_operator: [
     'control-tower', 'action-center',
-    'flow-commerce', 'entity-orders', 'entity-clients', 'workspace-pricing',
+    'flow-commerce', 'entity-clients', 'workspace-pricing',
     'flow-operations', 'workspace-operations', 'workspace-shipping',
     'flow-finance', 'workspace-accounting',
     'market-autonomy', 'market-catalog',

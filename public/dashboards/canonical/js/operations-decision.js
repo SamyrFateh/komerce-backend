@@ -490,6 +490,32 @@
     }));
   }
 
+  function contextualHref(path, returnTo, label) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    return nav && typeof nav.withReturnTo === 'function'
+      ? nav.withReturnTo(path, returnTo, label)
+      : path;
+  }
+
+  // Files d'action commandes (ex-écran « Suivi des commandes ») — ordre serveur conservé.
+  function workQueueItems(rows, base) {
+    return (Array.isArray(rows) ? rows : []).map(row => ({
+      title: row.reference || row.id || 'Commande',
+      helper: [row.status, row.payment_mode, row.total_kmf != null ? `${base.formatNumber(row.total_kmf, 0)} KMF` : null]
+        .filter(Boolean).join(' · '),
+      tone: 'warning',
+      href: row.reference ? contextualHref(`/admin/orders/${encodeURIComponent(row.reference)}`, '/admin/operations', 'Retour aux opérations') : undefined,
+      actionLabel: row.reference ? 'Ouvrir →' : undefined,
+    }));
+  }
+
+  function queueDescription(baseText, shown, total) {
+    if (total != null && shown != null && total > shown) {
+      return `${baseText} ${shown} sur ${total} affichée(s) — les plus anciennes en priorité.`;
+    }
+    return baseText;
+  }
+
   function drillCards(base, user) {
     const schema = base.visibleDrillSchema(base.OPERATIONS_SCHEMA, user);
     return (Array.isArray(schema.drill) ? schema.drill : []).map(item => ({
@@ -572,6 +598,24 @@
       dashboard.appendChild(chain.section);
     }
 
+    const queues = (payload && payload.work_queues) || null;
+    if (queues && decisionUi && decisionUi.RankedList) {
+      const grid = doc.createElement('div');
+      grid.className = 'kmc-decision-dashboard-grid-2 kmc-orders-action-queues';
+      grid.setAttribute('data-dashboard-role', 'secondary');
+      const cash = cardSection(doc, 'Cash à confirmer', queueDescription(
+        'Paiements cash qui attendent une confirmation.', queues.pending_cash_shown, queues.pending_cash_total,
+      ), 'orders-pending-cash');
+      decisionUi.RankedList.render(cash.body, { items: workQueueItems(queues.pending_cash, base) });
+      grid.appendChild(cash.section);
+      const parcels = cardSection(doc, 'Colis à créer', queueDescription(
+        'Commandes payées prêtes à passer en logistique.', queues.ready_for_parcel_shown, queues.ready_for_parcel_total,
+      ), 'orders-ready-for-parcel');
+      decisionUi.RankedList.render(parcels.body, { items: workQueueItems(queues.ready_for_parcel, base) });
+      grid.appendChild(parcels.section);
+      dashboard.appendChild(grid);
+    }
+
     rootNode.appendChild(dashboard);
     return { element: dashboard, visual: 'decision-first-v1' };
   }
@@ -597,6 +641,7 @@
       projectNetworkProgress: payload => networkProgress(payload, base),
       projectPriorityOrders: payload => priorityOrders(payload, base),
       projectDelayItems: payload => delayItems(payload, base),
+      projectWorkQueueItems: rows => workQueueItems(rows, base),
       projectDrillCards: user => drillCards(base, user),
       projectTrust: trust,
     });
@@ -622,6 +667,7 @@
     networkProgress,
     priorityOrders,
     delayItems,
+    workQueueItems,
     drillCards,
     trust,
     render,

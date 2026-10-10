@@ -36,6 +36,12 @@ const payload = {
   ],
   active_orders: [],
   critical_delays: [],
+  work_queues: {
+    pending_cash: [{ id: 'o1', reference: 'CMD-CASH-1', status: 'pending', payment_mode: 'cash', total_kmf: 12000 }],
+    pending_cash_shown: 1, pending_cash_total: 3,
+    ready_for_parcel: [{ id: 'o2', reference: 'CMD-PARCEL-1', status: 'confirmed', payment_mode: 'card', total_kmf: 8000 }],
+    ready_for_parcel_shown: 1, ready_for_parcel_total: 1,
+  },
   signals: [],
   control_chain: {
     stages: stages.map(([key,label]) => ({ key, label })),
@@ -169,7 +175,18 @@ test.describe('Operations — logistics control board', () => {
     expect(heroIndex).toBeGreaterThanOrEqual(0);
     expect(attentionIndex).toBeGreaterThan(heroIndex);
     expect(primaryIndex).toBeGreaterThan(attentionIndex);
-    expect(secondaryIndex).toBe(-1);
+    // Seul bloc secondaire : les files d'action commandes, après la chaîne.
+    expect(secondaryIndex).toBeGreaterThan(primaryIndex);
+    expect(order.filter(x => x.role === 'secondary')).toHaveLength(1);
+  });
+
+  test('les files Cash à confirmer et Colis à créer sont visibles et ouvrent Order 360 avec retour Opérations', async ({ page }) => {
+    await expect(page.locator('#orders-pending-cash')).toContainText('CMD-CASH-1');
+    await expect(page.locator('#orders-pending-cash')).toContainText('1 sur 3 affichée(s)');
+    await expect(page.locator('#orders-ready-for-parcel')).toContainText('CMD-PARCEL-1');
+    const href = await page.locator('#orders-pending-cash a').first().getAttribute('href');
+    expect(href).toContain('/admin/orders/CMD-CASH-1');
+    expect(decodeURIComponent(href)).toContain('/admin/operations');
   });
 
   test('le récapitulatif couleur est compact et reflète uniquement la santé du tableau', async ({ page }) => {
