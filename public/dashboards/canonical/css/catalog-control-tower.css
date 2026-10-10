@@ -177,11 +177,12 @@ body.kmc-catalog-business-mode #canonical-admin-root {
 }
 
 .kmc-cbt-table td:first-child {
-  display: grid;
-  gap: 2px;
+  display: table-cell;
 }
 
 .kmc-cbt-table td:first-child small {
+  display: block;
+  margin-top: 2px;
   color: #8491a6;
 }
 

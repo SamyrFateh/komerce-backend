@@ -235,12 +235,21 @@
   border-bottom: 0;
 }
 
+/* La dernière cellule reste une VRAIE cellule de tableau (un display:flex ici casse la ligne :
+   bordures tronquées, colonnes décalées). L'alignement se fait par text-align. */
 .kmc-workspace-table td:last-child {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 7px;
+  display: table-cell;
+  text-align: right;
+  vertical-align: middle;
   min-width: 220px;
+}
+
+.kmc-workspace-table th:last-child {
+  text-align: right;
+}
+
+.kmc-workspace-table td:last-child > * + * {
+  margin-left: 7px;
 }
 
 .kmc-workspace-table td:last-child .kmc-workspace-nav-link {
@@ -257,15 +266,19 @@
   background: var(--kmc-blue-soft, #eef5ff);
 }
 
-.kmc-catalog-curation-table {
+/* Spécificité doublée : canonical-finish-polish-v1 impose `min-width: max-content` aux tables
+   workspace et chargeait après ; la table s'étirait à la largeur du plus long titre, débordait
+   du conteneur et la colonne Action (sticky) recouvrait la colonne État. */
+.kmc-workspace-table.kmc-catalog-curation-table {
   table-layout: auto;
+  width: 100%;
   min-width: 980px;
 }
 
 .kmc-catalog-curation-table th:nth-child(1),
 .kmc-catalog-curation-table td:nth-child(1) {
-  min-width: 340px;
-  width: 42%;
+  min-width: 300px;
+  width: auto;
 }
 
 .kmc-catalog-curation-table th:nth-child(2),
@@ -292,6 +305,10 @@
   min-width: 250px;
 }
 
+.kmc-catalog-curation-table th:nth-child(5) {
+  text-align: right;
+}
+
 .kmc-catalog-curation-table td {
   white-space: normal;
   overflow-wrap: normal;
@@ -299,8 +316,13 @@
 }
 
 .kmc-catalog-product-cell {
-  display: grid;
-  gap: 5px;
+  /* Doit rester une vraie cellule de tableau : un display:grid ici casse la ligne
+     (bordures tronquées, colonnes décalées, colonne « État » écrasée). */
+  display: table-cell;
+}
+
+.kmc-catalog-product-cell > * + * {
+  margin-top: 5px;
 }
 
 .kmc-catalog-product-title {
@@ -883,11 +905,12 @@
 
 .kmc-sourcing-candidates-table td:last-child {
   min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 5px;
+  display: table-cell;
+  text-align: right;
+}
+
+.kmc-sourcing-candidates-table td:last-child > * + * {
+  margin-left: 5px;
 }
 
 .kmc-sourcing-candidates-table td:last-child .kmc-workspace-action,
