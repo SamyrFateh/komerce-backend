@@ -118,3 +118,11 @@ test('mount gère état vide et erreur HTTP via UIState', async () => {
     .rejects.toThrow('down');
   expect(fakeUi.UIState.render).toHaveBeenCalledWith(expect.any(Object), 'error', 'down');
 });
+
+test('l\'en-tête de la page Clients est un hero au canon (kicker, titre, sous-titre), sans liens redondants avec le menu', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/client-index.js'), 'utf8');
+  expect(src).toContain("header.className = 'kmc-workspace-header'");
+  expect(src).toContain("header.setAttribute('data-dashboard-role', 'hero')");
+  expect(src).toContain("'kmc-workspace-kicker', 'CLIENTS'");
+  expect(src).not.toContain("['/admin/commerce', 'Commerce']");
+});

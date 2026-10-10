@@ -77,7 +77,7 @@ describe('Hero-first shell conformance v1 — cadre commun Action Center / Comma
 
 describe('Hero-first shell conformance v1 — workspaces', () => {
   test('les workspaces partagent le cadre de page des overviews', () => {
-    expect(css).toContain('[data-kmc-surface$="-workspace"] #canonical-admin-root {');
+    expect(css).toContain('[data-kmc-surface$="-workspace"], [data-kmc-surface="client-index"], [data-kmc-surface="users-admin"], [data-kmc-surface="providers-admin"]) #canonical-admin-root {');
     expect(css).toContain('#canonical-admin-root .kmc-dashboard.kmc-decision-dashboard');
     expect(css).toContain('#canonical-admin-root > div');
   });
@@ -90,5 +90,13 @@ describe('Hero-first shell conformance v1 — workspaces', () => {
   test('les kickers des workspaces reprennent la pastille champagne des overviews', () => {
     expect(css).toMatch(/\[data-dashboard-role="hero"\] \.kmc-workspace-kicker \{[^}]*color: var\(--kmc-brand-navy, #071A3D\)/);
     expect(css).toMatch(/\.kmc-workspace-kicker::before \{\s*display: none;/);
+  });
+});
+
+describe('Hero-first shell conformance v1 — Clients', () => {
+  test('la page Clients reçoit le cadre des workspaces', () => {
+    expect(css).toContain('[data-kmc-surface="client-index"]');
+    expect(css).toContain('[data-kmc-surface="users-admin"]');
+    expect(css).toContain('[data-kmc-surface="providers-admin"]');
   });
 });
