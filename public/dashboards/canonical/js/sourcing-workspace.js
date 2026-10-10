@@ -167,12 +167,26 @@
 
     rows.forEach(row => {
       const tr = doc.createElement('tr');
-      tr.appendChild(td(doc, row.candidate_ref));
+      // Hiérarchie visuelle seule : mêmes valeurs, classes de style (référence, produit, prix, pastilles).
+      const pillCell = (value, kind) => {
+        const cell = doc.createElement('td');
+        const label = value == null || value === '' ? '—' : String(value);
+        const tone = String(label).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        cell.appendChild(text(doc, 'span', `kmc-pill is-${kind}-${tone}`, label));
+        return cell;
+      };
+      const refCell = td(doc, row.candidate_ref);
+      refCell.className = 'kmc-cand-ref';
+      tr.appendChild(refCell);
       tr.appendChild(td(doc, row.supplier_name));
-      tr.appendChild(td(doc, row.product_name));
-      tr.appendChild(td(doc, row.purchase_price_kmf == null ? `${row.purchase_price || '—'} ${row.currency || ''}` : formatKmf(row.purchase_price_kmf)));
-      tr.appendChild(td(doc, row.state));
-      tr.appendChild(td(doc, row.scan_result?.sourcing_decision || row.promotion_status || '—'));
+      const nameCell = td(doc, row.product_name);
+      nameCell.className = 'kmc-cand-product';
+      tr.appendChild(nameCell);
+      const priceCell = td(doc, row.purchase_price_kmf == null ? `${row.purchase_price || '—'} ${row.currency || ''}` : formatKmf(row.purchase_price_kmf));
+      priceCell.className = 'kmc-cand-price';
+      tr.appendChild(priceCell);
+      tr.appendChild(pillCell(row.state, 'state'));
+      tr.appendChild(pillCell(row.scan_result?.sourcing_decision || row.promotion_status || '—', 'decision'));
 
       const actions = doc.createElement('td');
       if (row.product_ref) {
@@ -220,6 +234,7 @@
         actions.appendChild(watch);
 
         const promote = makeButton(doc, 'Promouvoir', 'promote-candidate');
+        promote.className += ' is-approve';
         promote.addEventListener('click', () => {
           if (!context.confirm(`Promouvoir ${row.candidate_ref} vers le catalogue en brouillon ?`)) return;
           runAction(context, promote, {
@@ -230,6 +245,7 @@
         actions.appendChild(promote);
 
         const reject = makeButton(doc, 'Rejeter', 'reject-candidate', true);
+        reject.className += ' is-danger';
         reject.addEventListener('click', () => {
           const reason = context.prompt(`Raison du rejet · ${row.candidate_ref}`);
           if (!reason || !reason.trim()) return;
