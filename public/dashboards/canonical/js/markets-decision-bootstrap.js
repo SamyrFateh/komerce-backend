@@ -95,8 +95,8 @@
     if (!host) {
       host = doc.createElement('div');
       host.id = 'markets-decision-admin-overview';
-      const hero = root.querySelector('.kmc-access-hero');
-      if (!insertAfter(hero, host)) root.prepend(host);
+      // Hero d'abord : la vue décision ouvre la page, l'en-tête d'accès suit.
+      root.prepend(host);
     }
 
     // Legacy compatibility source intentionally not used by the central runtime:

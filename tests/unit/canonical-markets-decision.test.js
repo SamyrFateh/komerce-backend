@@ -134,3 +134,17 @@ test('les libellés Marchés restent métier et sans jargon de gouvernance inter
   expect(source).not.toContain('memberships, capabilities');
   expect(source).not.toContain('scopes de compatibilité');
 });
+
+test('UX-02 — les pages Marchés autonomes chargent les feuilles canon à jour et un seul Hero', () => {
+  for (const page of ['access', 'market-autonomy', 'market-catalog']) {
+    const html = read(`public/dashboards/canonical/${page}.html`);
+    for (const sheet of ['contextual-heroes-v2', 'komerce-visual-canon-v1', 'komerce-layout-canon-v1', 'hero-first-shell-conformance-v1']) {
+      expect(html).toContain(`/dashboards/canonical/css/${sheet}.css?v=`);
+    }
+    expect(html).not.toContain('canonical-shell-v4.css?v=2101');
+  }
+  const access = read('public/dashboards/canonical/js/market-access.js');
+  expect(access).toContain("el(doc, 'h2', '', 'Responsables pays')");
+  const bootstrap = read('public/dashboards/canonical/js/markets-decision-bootstrap.js');
+  expect(bootstrap).toContain('root.prepend(host)');
+});

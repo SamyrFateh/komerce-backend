@@ -329,9 +329,11 @@
     root.className = 'kmc-access-shell';
     root.replaceChildren();
 
-    const hero = el(doc, 'section', 'kmc-access-hero');
+    // UX-02 : le Hero de la page est « Pilotage des marchés » (markets-decision) ;
+    // cet en-tête n'est qu'un titre de section — un seul h1/Hero par page.
+    const hero = el(doc, 'section', 'kmc-access-hero is-section');
     hero.appendChild(el(doc, 'p', 'kmc-access-kicker', 'GOUVERNANCE · ACCÈS PAYS'));
-    hero.appendChild(el(doc, 'h1', '', 'Responsables pays'));
+    hero.appendChild(el(doc, 'h2', '', 'Responsables pays'));
     hero.appendChild(el(doc, 'p', '', 'Créer un market_operator, attribuer ses marchés, choisir viewer ou manager et administrer ses identifiants. Les droits restent résolus côté serveur ; aucun market_id du navigateur ne fait autorité.'));
 
     const demo = el(doc, 'div', 'kmc-access-demo');

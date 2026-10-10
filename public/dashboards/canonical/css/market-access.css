@@ -24,6 +24,17 @@
     linear-gradient(135deg, #fffdfa 0%, #ffffff 62%);
 }
 
+.kmc-access-hero.is-section {
+  padding: 16px 20px;
+  gap: 6px;
+  background: var(--kmc-card);
+}
+
+.kmc-access-hero.is-section h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
 .kmc-access-kicker {
   margin: 0;
   color: var(--kmc-amber-strong);
