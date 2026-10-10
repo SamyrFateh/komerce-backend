@@ -9,20 +9,7 @@ body.kmc-shell-live{
   color:#E4ECF6;
 }
 
-/* N1 : barre latérale */
-body.kmc-shell-live.kmc-shell-v4 > .kmc-admin-navigation{
-  background:#050C17 !important;
-  border-right:1px solid #14263B !important;
-  box-shadow:none !important;
-}
-body.kmc-shell-live.kmc-shell-v4 .kmc-admin-navigation-identity{border-bottom-color:#14263B}
-body.kmc-shell-live.kmc-shell-v4 .kmc-admin-primary-link{color:#9FB2C8}
-body.kmc-shell-live.kmc-shell-v4 .kmc-admin-primary-link:hover,
-body.kmc-shell-live.kmc-shell-v4 .kmc-admin-primary-link:focus-visible{background:#0D1D2F !important;color:#F3F7FC}
-body.kmc-shell-live.kmc-shell-v4 .kmc-admin-primary-link.is-active{background:#1D5CD6 !important;color:#FFFFFF !important}
-body.kmc-shell-live.kmc-shell-v4 .kmc-admin-primary-link.is-active::after{background:transparent !important}
-body.kmc-shell-live.kmc-shell-v4 .kmc-admin-settings-link,
-body.kmc-shell-live.kmc-shell-v4 .kmc-admin-logout{background:#0B1828 !important;color:#9FB2C8 !important;border-color:#14263B !important}
+/* Menu latéral et logo : coque standard (identique aux autres rubriques). */
 
 /* Barre du haut, recherche, marché, compte */
 body.kmc-shell-live .kmc-admin-topbar{
@@ -47,9 +34,3 @@ body.kmc-shell-live .kmc-admin-domain-tab.is-active{color:#4C9DFF !important;bor
 
 /* Contenu */
 body.kmc-shell-live #canonical-admin-root{background:#07111F !important}
-
-/* Logo lisible sur fond noir : pastille orange + libellé clair */
-body.kmc-shell-live .kmc-admin-home-mark{background:#F5A623 !important;color:#1C1611 !important}
-body.kmc-shell-live .kmc-admin-home-label{
-  color:#F3F7FC !important;-webkit-text-fill-color:#F3F7FC !important;background:none !important
-}

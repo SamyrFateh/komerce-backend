@@ -63,13 +63,13 @@ test.describe('Coque Live — menu dédié et noir complet', () => {
     expect(links.find((l) => l.id === 'flow-operations').active).toBe(false);
   });
 
-  test('sidebar, barre du haut, recherche et contenu sont noirs (aucune surface claire)', async ({ page }) => {
+  test('barre du haut, recherche et contenu sont noirs (le menu garde la coque standard)', async ({ page }) => {
     await mountShell(page);
     await expect(page.locator('body')).toHaveClass(/kmc-shell-live/);
     const bg = await page.evaluate(() => {
       const c = (sel) => { const el = document.querySelector(sel); return el ? getComputedStyle(el).backgroundColor : null; };
       return {
-        body: c('body'), sidebar: c('body > .kmc-admin-navigation'), topbar: c('.kmc-admin-topbar'),
+        body: c('body'), topbar: c('.kmc-admin-topbar'),
         search: c('.kmc-admin-search'), root: c('#canonical-admin-root'), tabs: c('.kmc-admin-domain-tabs'),
       };
     });
@@ -92,18 +92,16 @@ test.describe('Coque Live — menu dédié et noir complet', () => {
     expect(lum(info.text)).toBeGreaterThan(150);
   });
 
-  test('aucune grande surface blanche dans la page Live, logo lisible', async ({ page }) => {
+  test('aucune grande surface blanche dans la page Live', async ({ page }) => {
     await mountShell(page);
     const info = await page.evaluate(() => {
       const whites = [...document.querySelectorAll('body *')].filter((el) => {
         const r = el.getBoundingClientRect();
         return r.width > 300 && r.height > 30 && getComputedStyle(el).backgroundColor === 'rgb(255, 255, 255)';
       }).map((el) => el.className || el.tagName);
-      const label = getComputedStyle(document.querySelector('.kmc-admin-home-label'));
-      return { whites, labelFill: label.webkitTextFillColor };
+      return { whites };
     });
     expect(info.whites).toEqual([]);
-    expect(lum(info.labelFill)).toBeGreaterThan(200);
   });
 
   test('les écrans de gestion gardent la coque claire (pas de contamination)', async ({ page }) => {
