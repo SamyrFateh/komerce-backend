@@ -44,7 +44,7 @@ body.kmc-shell-v4 #market-catalog-root[data-workspace-kind="market-catalog"] > .
 
 body.kmc-shell-v4 #market-catalog-root[data-workspace-kind="market-catalog"] > .kmc-workspace-header .kmc-workspace-subtitle {
   max-width: 680px;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-market-catalog-hero-controls {
@@ -58,7 +58,7 @@ body.kmc-shell-v4 #market-catalog-root[data-workspace-kind="market-catalog"] > .
   display: grid;
   gap: 4px;
   color: #64748b;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .05em;
@@ -73,7 +73,7 @@ body.kmc-shell-v4 #market-catalog-root[data-workspace-kind="market-catalog"] > .
   background: #fff;
   color: #17233a;
   font: inherit;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
 }
 
@@ -88,7 +88,7 @@ body.kmc-shell-v4 #market-catalog-root .kmc-market-catalog-essential-metrics {
 body.kmc-shell-v4 #market-catalog-root .kmc-market-catalog-priority-title {
   margin: 2px 0 8px;
   color: #1e293b;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 800;
 }
 

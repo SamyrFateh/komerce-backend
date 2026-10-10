@@ -65,3 +65,7 @@ describe('dashboard-hierarchy-v1 — canon visuel validé (parité mocks)', () =
     expect(css).not.toMatch(/#7c3aed|#3b82f6|#eff6ff|#bfdbfe/i);
   });
 });
+
+test('dashboard-hierarchy-v1.css : plancher typographique (aucun texte sous 10 px)', () => {
+  expect(require('../helpers/fontFloor').tinyFonts('dashboard-hierarchy-v1.css')).toEqual([]);
+});

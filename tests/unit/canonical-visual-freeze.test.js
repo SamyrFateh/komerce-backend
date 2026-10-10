@@ -26,7 +26,7 @@ describe('canonical visual freeze v1', () => {
 
     files.forEach(relative => {
       const html = read(relative);
-      const freeze = html.indexOf('/dashboards/canonical/css/visual-freeze-v1.css?v=1701');
+      const freeze = html.indexOf('/dashboards/canonical/css/visual-freeze-v1.css?v=261010-9');
       const navigation = html.indexOf('/dashboards/canonical/css/navigation.css');
       expect(freeze).toBeGreaterThan(navigation);
       expect(freeze).toBeGreaterThanOrEqual(0);

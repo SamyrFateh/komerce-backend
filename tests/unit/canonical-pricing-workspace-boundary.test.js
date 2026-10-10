@@ -77,7 +77,7 @@ test('Atelier market rend le viewer en lecture seule et réserve les mutations a
   const index = fs.readFileSync(path.join(CANONICAL, 'index.html'), 'utf8');
   const presentation = fs.readFileSync(path.join(CANONICAL, 'js', 'pricing-workspace-presentation.js'), 'utf8');
   expect(index).toContain('/dashboards/canonical/js/pricing-workspace-presentation.js?v=1301');
-  expect(index).toContain('/dashboards/canonical/css/pricing-workspace-economic-v3.css?v=261009-2');
+  expect(index).toContain('/dashboards/canonical/css/pricing-workspace-economic-v3.css?v=261010-9');
   expect(presentation).toContain('payload.capabilities?.cost_overrides');
   expect(presentation).toContain("payload.access?.read_only !== true");
   expect(presentation).toContain('input.disabled = true');
@@ -129,7 +129,7 @@ test('chaque ligne de coût expose provenance, hypothèse, mouvement, impact et 
   const css = fs.readFileSync(path.join(CANONICAL, 'css', 'pricing-workspace.css'), 'utf8');
   const service = fs.readFileSync(path.join(ROOT, 'services', 'pricing-cost-explainability.js'), 'utf8');
 
-  expect(index).toContain('/dashboards/canonical/css/pricing-workspace.css?v=261010-2');
+  expect(index).toContain('/dashboards/canonical/css/pricing-workspace.css?v=261010-9');
   expect(presentation).toContain('Comprendre cette ligne');
   expect(presentation).toContain('D’où vient la valeur');
   expect(presentation).toContain('Hypothèse portée');

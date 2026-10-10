@@ -67,3 +67,7 @@ describe('canonical-shell-v4.css', () => {
     expect(block[0]).not.toMatch(/scrollbar-gutter/);
   });
 });
+
+test('canonical-shell-v4.css : plancher typographique (aucun texte sous 10 px)', () => {
+  expect(require('../helpers/fontFloor').tinyFonts('canonical-shell-v4.css')).toEqual([]);
+});

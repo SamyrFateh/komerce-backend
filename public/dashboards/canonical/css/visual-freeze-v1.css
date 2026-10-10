@@ -151,7 +151,7 @@ body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-
 .kmc-workspace-header { padding: 18px 20px; gap: 12px 20px; }
 .kmc-workspace-kicker,
 .kmc-dashboard-header .canonical-eyebrow,
-.kmc-access-kicker { font-size: 10px; letter-spacing: .105em; }
+.kmc-access-kicker { font-size: 12px; letter-spacing: .105em; }
 .kmc-workspace-title { font-size: clamp(24px, 2.6vw, 33px); }
 .kmc-workspace-nav { align-self: start; justify-content: flex-end; }
 .kmc-workspace-nav-link {
@@ -249,7 +249,7 @@ body:has(.kmc-admin-market-select) #market-catalog-root > .kmc-section:has(.kmc-
 
 @media (max-width: 520px) {
   .kmc-admin-settings-link,
-  .kmc-admin-logout { padding-inline: 8px; font-size: 10.5px; }
+  .kmc-admin-logout { padding-inline: 8px; font-size: 12px; }
   .kmc-admin-market-flag { left: 9px; }
   .kmc-admin-market-select.has-flag { padding-left: 36px; }
   .kmc-ranked-row,

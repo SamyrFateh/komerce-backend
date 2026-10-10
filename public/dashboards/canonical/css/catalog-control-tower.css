@@ -33,7 +33,7 @@ body.kmc-catalog-business-mode #canonical-admin-root {
 .kmc-cbt-eyebrow {
   margin: 0 0 5px;
   color: #60708f;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 800;
   letter-spacing: .08em;
 }
@@ -72,7 +72,7 @@ body.kmc-catalog-business-mode #canonical-admin-root {
   background: #fff;
   color: #314768;
   text-decoration: none;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 750;
 }
 
@@ -103,7 +103,7 @@ body.kmc-catalog-business-mode #canonical-admin-root {
 .kmc-cbt-panel-copy {
   margin: 4px 0 14px;
   color: #74829a;
-  font-size: 12px;
+  font-size: 13.5px;
   line-height: 1.45;
 }
 
@@ -132,7 +132,7 @@ body.kmc-catalog-business-mode #canonical-admin-root {
 
 .kmc-cbt-status-label {
   color: #67758d;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .045em;
@@ -152,7 +152,7 @@ body.kmc-catalog-business-mode #canonical-admin-root {
 
 .kmc-cbt-status-help {
   color: #75839a;
-  font-size: 11px;
+  font-size: 12.5px;
   line-height: 1.4;
 }
 
@@ -166,12 +166,12 @@ body.kmc-catalog-business-mode #canonical-admin-root {
   padding: 10px 8px;
   border-bottom: 1px solid #edf0f5;
   text-align: left;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-cbt-table th {
   color: #74829a;
-  font-size: 10px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: .045em;
 }
@@ -212,12 +212,12 @@ body.kmc-catalog-business-mode #canonical-admin-root {
 
 .kmc-cbt-action-row strong {
   color: #203252;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-cbt-action-row span {
   color: #75839a;
-  font-size: 11px;
+  font-size: 12.5px;
   line-height: 1.4;
 }
 
@@ -245,21 +245,21 @@ body.kmc-catalog-business-mode #canonical-admin-root {
 
 .kmc-cbt-defs dt {
   color: #203252;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 800;
 }
 
 .kmc-cbt-defs dd {
   margin: 0;
   color: #6f7d94;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-cbt-note,
 .kmc-cbt-empty {
   margin: 14px 0 0;
   color: #74829a;
-  font-size: 11px;
+  font-size: 12.5px;
   line-height: 1.5;
 }
 
@@ -307,7 +307,7 @@ body.kmc-shell-v4 .kmc-catalog-decision-overview > .kmc-dashboard-header {
 
 body.kmc-shell-v4 .kmc-catalog-decision-overview .canonical-eyebrow {
   color: #047857;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .08em;
 }
@@ -322,5 +322,5 @@ body.kmc-shell-v4 .kmc-catalog-decision-overview .kmc-dashboard-title {
 body.kmc-shell-v4 .kmc-catalog-decision-overview .kmc-dashboard-description {
   max-width: 650px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 13.5px;
 }

@@ -26,8 +26,8 @@ const HTML_SURFACES = [
 describe('Canonical Theme V2 — convergence visuelle', () => {
   test.each(HTML_SURFACES)('%s charge Theme V2 après Visual Freeze V1', relative => {
     const html = read(relative);
-    const freeze = html.indexOf('/dashboards/canonical/css/visual-freeze-v1.css?v=1701');
-    const theme = html.indexOf('/dashboards/canonical/css/canonical-theme-v2.css?v=1901');
+    const freeze = html.indexOf('/dashboards/canonical/css/visual-freeze-v1.css?v=261010-9');
+    const theme = html.indexOf('/dashboards/canonical/css/canonical-theme-v2.css?v=261010-9');
     expect(freeze).toBeGreaterThanOrEqual(0);
     expect(theme).toBeGreaterThan(freeze);
   });

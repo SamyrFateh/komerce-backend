@@ -28,7 +28,7 @@
   border-radius: 999px;
   color: var(--kmc-warning, #a15c00);
   background: var(--kmc-warning-soft, #FFFFFF);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .08em;
 }
@@ -187,7 +187,7 @@
 .kmc-workspace-table th {
   color: var(--kmc-muted, #64748b);
   background: linear-gradient(180deg, #fbfcfe, #f7f9fc);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .055em;
@@ -210,7 +210,7 @@
   display: block;
   margin-top: 3px;
   color: #225bb5;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 750;
   text-decoration: none;
 }
@@ -227,7 +227,7 @@
   border-radius: 8px;
   background: #FFFFFF;
   color: #6f4a00;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 750;
 }
 
@@ -357,7 +357,7 @@
   cursor: pointer;
   color: #225bb5;
   font: inherit;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 750;
   text-align: left;
 }
@@ -416,7 +416,7 @@
   border: 1px solid var(--kmc-line, #e2e8f0);
   border-radius: 10px;
   background: #fbfcfe;
-  font-size: 12px;
+  font-size: 13.5px;
   line-height: 1.5;
 }
 
@@ -500,7 +500,7 @@
   display: block;
   margin-bottom: 12px;
   color: var(--kmc-navy, #0f1a2e);
-  font-size: 12px;
+  font-size: 13.5px;
   letter-spacing: .04em;
   text-transform: uppercase;
 }
@@ -534,7 +534,7 @@
 
 .kmc-catalog-fr-label {
   color: var(--kmc-navy, #0f1a2e);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 800;
 }
 
@@ -568,7 +568,7 @@
 .kmc-catalog-fr-prompt-details {
   margin-top: 14px;
   color: var(--kmc-muted, #64748b);
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-catalog-fr-prompt-details > summary {
@@ -580,13 +580,13 @@
 .kmc-catalog-fr-prompt {
   margin-top: 8px;
   min-height: 140px;
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .kmc-catalog-fr-status {
   min-height: 18px;
   margin-top: 10px;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
 }
 
@@ -673,7 +673,7 @@
   margin-top: 7px;
   padding: 7px 8px;
   border-radius: 7px;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 750;
   line-height: 1.35;
   text-align: left;
@@ -711,7 +711,7 @@
 .kmc-catalog-curation-table .kmc-catalog-actions-cell .kmc-workspace-action {
   min-height: 30px;
   padding: 5px 8px;
-  font-size: 11px;
+  font-size: 12.5px;
   white-space: nowrap;
 }
 
@@ -773,7 +773,7 @@
 
 .kmc-workspace-muted {
   color: var(--kmc-muted, #64748b);
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-workspace-proposal {
@@ -781,7 +781,7 @@
   border-radius: 999px;
   background: var(--kmc-teal-soft, #ecfdf8);
   color: #047857;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 800;
 }
 
@@ -918,7 +918,7 @@
   flex: 0 0 auto;
   min-height: 28px;
   padding: 5px 8px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 @media (max-width: 1180px) {
@@ -957,7 +957,7 @@
   font-size: clamp(25px, 2.5vw, 32px);
   font-weight: 800;
 }
-.kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header .kmc-workspace-subtitle { font-size: 12px; }
+.kmc-operations-workspace[data-workspace-kind="hub-relay"] > .kmc-workspace-header .kmc-workspace-subtitle { font-size: 13.5px; }
 
 
 
@@ -983,7 +983,7 @@
   font-weight: 800;
 }
 .kmc-operations-workspace[data-workspace-kind="shipping-customs"] > .kmc-workspace-header .kmc-workspace-subtitle {
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 
@@ -1009,7 +1009,7 @@
   font-weight: 800;
 }
 .kmc-operations-workspace[data-workspace-kind="sourcing"] > .kmc-workspace-header .kmc-workspace-subtitle {
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 /* Finance / Comptabilité contextual hero. */
@@ -1053,7 +1053,7 @@
   background: #fff;
   color: var(--kmc-ink, #0f172a);
   font: inherit;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 .kmc-operations-workspace[data-workspace-kind="accounting"] > .kmc-workspace-header .kmc-workspace-feedback {
   grid-column: 1 / -1;
@@ -1103,7 +1103,7 @@
 .kmc-catalog-chain-stage.is-current::before,.kmc-catalog-chain-stage.is-done::before{color:#D4A63C}
 .kmc-catalog-chain-icon{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#FBBF24,#D97706);color:#fff;font-size:15px;font-weight:800}
 .kmc-catalog-chain-stage.is-ok .kmc-catalog-chain-icon{background:linear-gradient(135deg,#4ADE80,#16A34A)}
-.kmc-catalog-chain-label{flex:1;min-width:0;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#0F172A}
+.kmc-catalog-chain-label{flex:1;min-width:0;font-size:13.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#0F172A}
 .kmc-catalog-chain-count{flex:none;min-width:26px;padding:2px 8px;border:1px solid #E2E8F0;border-radius:999px;background:#fff;color:#0F172A;font-size:13px;font-weight:800;text-align:center}
 .kmc-catalog-chain-stage.is-current{border-color:#93B4F5;background:#F5F9FF;box-shadow:0 0 0 4px rgb(37 99 235 / .10)}
 .kmc-catalog-chain-stage.is-current.is-warn{border-color:#F3C46B;background:#FFFFFF;box-shadow:0 0 0 4px rgb(245 158 11 / .16)}

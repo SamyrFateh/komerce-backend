@@ -23,7 +23,7 @@
 
 .kmc-sim-kicker {
   color: #4338ca;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: .07em;
 }
@@ -37,7 +37,7 @@
   max-width: 78ch;
   margin: 0;
   color: var(--kmc-muted, #64748b);
-  font-size: 11px;
+  font-size: 12.5px;
   line-height: 1.45;
 }
 
@@ -57,7 +57,7 @@
   background: #fff;
   color: var(--kmc-ink, #0f172a);
   font: inherit;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-sim-state {
@@ -65,7 +65,7 @@
   border-radius: 8px;
   background: #f8fafc;
   color: #64748b;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 750;
 }
 
@@ -98,14 +98,14 @@
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: rgb(255 255 255 / .9);
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .kmc-sim-head {
   border: 0;
   background: transparent;
   color: #64748b;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: .05em;
   text-transform: uppercase;
@@ -121,7 +121,7 @@
 .kmc-sim-delta {
   text-align: right;
   color: #0f172a;
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .kmc-sim-delta.is-up { color: #b45309; }
@@ -141,13 +141,13 @@
   border-left: 3px solid #6366f1;
   border-radius: 7px;
   background: #fff;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .kmc-sim-change strong { color: #312e81; }
 .kmc-sim-change span { color: #334155; font-weight: 800; }
 .kmc-sim-change small { color: #64748b; line-height: 1.35; }
-.kmc-sim-no-change { color: #64748b; font-size: 10px; }
+.kmc-sim-no-change { color: #64748b; font-size: 12px; }
 
 [data-simulation-only="true"] {
   background: #eef2ff !important;
@@ -164,7 +164,7 @@
   cursor: pointer;
   padding: 9px 11px;
   color: #0f172a;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 850;
   list-style-position: inside;
 }
@@ -194,18 +194,18 @@
 
 .kmc-observed-cost-copy strong {
   color: #0f172a;
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .kmc-observed-cost-copy small {
   color: #64748b;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.4;
 }
 
 .kmc-observed-cost-kicker {
   color: #0f766e;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: .06em;
 }
@@ -216,7 +216,7 @@
   border-radius: 999px;
   background: #f1f5f9;
   color: #475569;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 900;
 }
 
@@ -243,7 +243,7 @@
 
 .kmc-observed-value-card span {
   color: #64748b;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 750;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -251,7 +251,7 @@
 
 .kmc-observed-value-card strong {
   color: #0f172a;
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .kmc-observed-value-card.is-real {
@@ -267,7 +267,7 @@
   border-radius: 7px;
   background: #f8fafc;
   color: #475569;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
 }
 
@@ -286,7 +286,7 @@
   border-radius: 999px;
   background: #fff;
   color: #64748b;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 750;
 }
 
@@ -294,7 +294,7 @@
 .kmc-observed-empty {
   margin: 0;
   color: #64748b;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -320,7 +320,7 @@
   .kmc-sim-metric {
     grid-template-columns: minmax(120px, 1fr) repeat(3, minmax(70px, .7fr));
     gap: 5px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .kmc-sim-change { grid-template-columns: 1fr; }
   .kmc-observed-cost-header { display: grid; }

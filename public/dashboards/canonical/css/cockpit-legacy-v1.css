@@ -88,13 +88,13 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card.is-info {
 
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card-label {
   color: var(--kmc-cockpit-copy);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 650;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card-helper {
   color: var(--kmc-cockpit-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 400;
 }
 
@@ -117,7 +117,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card.is-critical .kmc-decisi
 
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-link {
   color: var(--kmc-cockpit-orange-strong);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -224,7 +224,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit .canonical-eyebrow {
   border: 0;
   border-radius: 0;
   background: transparent;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .075em;
 }
@@ -236,7 +236,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kmc-dashboard-title {
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-dashboard-description {
   margin-top: 4px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 /* Barre de décisions — analogue au badge "Décisions attendues" du cockpit Import. */
@@ -263,7 +263,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card-icon {
   width: 25px;
   height: 25px;
   border-radius: 7px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-card-heading {
@@ -295,7 +295,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-dashboard-section-title {
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-decision-dashboard-section-copy {
   margin: 0 0 10px;
   color: #71819b;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 /* Le flux est le coeur du cockpit — même présence que "FLUX DU LOT". */
@@ -344,7 +344,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-funnel-arrow {
 body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-flow-stage-label,
 body.kmc-shell-v4 .kmc-domain-cockpit .is-cockpit-flow .kmc-funnel-label {
   color: #17233a;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 750;
 }
 
@@ -368,7 +368,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit .kmc-metric-value {
 
 body.kmc-shell-v4 .kmc-domain-cockpit .kmc-metric-label {
   color: #71819b;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 750;
   letter-spacing: .035em;
   text-transform: uppercase;

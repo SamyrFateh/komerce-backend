@@ -25,3 +25,7 @@ describe('cockpit-legacy-v1 — canon visuel validé (parité mocks)', () => {
     expect(css).not.toContain('SUIVI DE VÉRITÉ');
   });
 });
+
+test('cockpit-legacy-v1.css : plancher typographique (aucun texte sous 10 px)', () => {
+  expect(require('../helpers/fontFloor').tinyFonts('cockpit-legacy-v1.css')).toEqual([]);
+});

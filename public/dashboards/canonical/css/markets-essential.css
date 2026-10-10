@@ -27,7 +27,7 @@ body.kmc-shell-v4 .kmc-markets-decision-overview > .kmc-dashboard-header {
 
 body.kmc-shell-v4 .kmc-markets-decision-overview .canonical-eyebrow {
   color: #0e7490;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .08em;
 }
@@ -42,7 +42,7 @@ body.kmc-shell-v4 .kmc-markets-decision-overview .kmc-dashboard-title {
 body.kmc-shell-v4 .kmc-markets-decision-overview .kmc-dashboard-description {
   max-width: 680px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 body.kmc-shell-v4 .kmc-markets-decision-overview .kmc-markets-essential-metrics {
@@ -52,12 +52,12 @@ body.kmc-shell-v4 .kmc-markets-decision-overview .kmc-markets-essential-metrics 
 body.kmc-shell-v4 .kmc-markets-decision-overview .kmc-markets-list-title {
   margin: 2px 0 4px;
   color: #1e293b;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 800;
 }
 
 body.kmc-shell-v4 .kmc-markets-decision-overview .kmc-markets-list-copy {
   margin: 0 0 8px;
   color: #64748b;
-  font-size: 11px;
+  font-size: 12.5px;
 }

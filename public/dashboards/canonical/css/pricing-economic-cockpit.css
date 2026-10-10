@@ -26,7 +26,7 @@
 .kmc-cockpit-page-subtitle {
   margin: 3px 0 0;
   color: #5e7089;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 .kmc-cockpit-page-header-right {
   display: flex;
@@ -41,7 +41,7 @@
 }
 .kmc-cockpit-period-label {
   color: #5e7089;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
 }
 .kmc-cockpit-period-select {
@@ -51,7 +51,7 @@
   background: #fff;
   color: #10213b;
   font: inherit;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -67,8 +67,8 @@
   background: #e8f8ee;
   text-align: right;
 }
-.kmc-cockpit-live-badge strong { color: #166534; font-size: 11px; }
-.kmc-cockpit-live-badge small { color: #3d8b5c; font-size: 9px; }
+.kmc-cockpit-live-badge strong { color: #166534; font-size: 12.5px; }
+.kmc-cockpit-live-badge small { color: #3d8b5c; font-size: 11px; }
 
 /* ── Equilibrium metric icons ────────────────────────────── */
 .kmc-flow-equilibrium-icon {
@@ -100,13 +100,13 @@
 .kmc-cockpit-cost-total-row .kmc-cockpit-cell.is-total-label {
   font-weight: 850;
   color: #10213b;
-  font-size: 10px;
+  font-size: 12px;
   background: transparent;
 }
 .kmc-cockpit-cost-total-row .kmc-cockpit-cell.is-total-value {
   font-weight: 900;
   color: #1d4ed8;
-  font-size: 11px;
+  font-size: 12.5px;
   text-align: right;
   background: transparent;
 }
@@ -145,12 +145,12 @@
   align-items: center;
   padding: 8px 12px;
   color: #718096;
-  font-size: 10px;
+  font-size: 12px;
 }
 .kmc-cockpit-view-all {
   color: #1676e8;
   font-weight: 800;
-  font-size: 11px;
+  font-size: 12.5px;
   text-decoration: none;
 }
 .kmc-cockpit-view-all:hover { text-decoration: underline; }
@@ -197,10 +197,10 @@
   display: grid;
   gap: 2px;
 }
-.kmc-cockpit-product-identity-copy small { color: #6b7c93; font-size: 10px; }
+.kmc-cockpit-product-identity-copy small { color: #6b7c93; font-size: 12px; }
 .kmc-cockpit-product-link {
   color: #1676e8;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   text-decoration: none;
   margin-top: 4px;
@@ -216,12 +216,12 @@
   padding: 5px 0;
   border-bottom: 1px solid #edf1f6;
   color: #4e6078;
-  font-size: 10px;
+  font-size: 12px;
 }
 .kmc-cockpit-sensitivity-table > div.is-head {
   font-weight: 850;
   color: #405570;
-  font-size: 9px;
+  font-size: 11px;
   border-bottom: 2px solid #d0dae8;
 }
 .kmc-cockpit-sensitivity-table .is-negative { color: #dc2626; }
@@ -246,7 +246,7 @@
   align-items: center;
   gap: 6px;
   color: #718096;
-  font-size: 10px;
+  font-size: 12px;
 }
 .kmc-cockpit-footer-info-icon { font-size: 14px; }
 .kmc-cockpit-footer-save {
@@ -360,7 +360,7 @@
 
 .kmc-cockpit-cost-identity small {
   color: #64748b;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -385,7 +385,7 @@
   background: #fff;
   color: #16355f;
   font: inherit;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -410,7 +410,7 @@
 
 .kmc-cockpit-cost-table {
   display: grid;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .kmc-cockpit-cost-table.is-variable {
@@ -438,7 +438,7 @@
 .kmc-cockpit-cell.is-head {
   background: #f7f9fc;
   color: #4d6078;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 850;
 }
 
@@ -467,7 +467,7 @@
   border-radius: 999px;
   background: #f1f5f9;
   color: #475569;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 850;
 }
 
@@ -480,7 +480,7 @@
   margin: 0;
   padding: 7px 10px;
   color: #718096;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .kmc-cockpit-principle {
@@ -501,7 +501,7 @@
   margin: 12px 0 0;
   padding-left: 18px;
   color: #41546e;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -510,7 +510,7 @@
   display: inline-block;
   margin-top: 12px;
   color: #1676e8;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   text-decoration: none;
 }
@@ -659,7 +659,7 @@
   gap: 8px;
   align-items: center;
   color: #4b5f78;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .kmc-cockpit-detail-metric strong {
@@ -682,7 +682,7 @@
 
 .kmc-cockpit-final-price-label {
   color: #1459a7;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -696,12 +696,12 @@
 .kmc-cockpit-price-reason {
   grid-column: 1 / -1;
   color: #61728a;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .kmc-cockpit-price-reason summary { cursor: pointer; }
 .kmc-cockpit-price-reason input { width: 100%; margin-top: 5px; }
-.kmc-cockpit-final-price small { color: #61728a; font-size: 9px; line-height: 1.4; }
+.kmc-cockpit-final-price small { color: #61728a; font-size: 11px; line-height: 1.4; }
 .kmc-cockpit-readonly-price { color: #173b6e; font-size: 18px; }
 
 .kmc-cockpit-sensitivity-table {
@@ -710,7 +710,7 @@
 }
 
 .kmc-cockpit-sensitivity-table .is-positive { color: #18945d; }
-.kmc-cockpit-detail-note { margin: 10px 0 0; color: #68798f; font-size: 9px; line-height: 1.4; }
+.kmc-cockpit-detail-note { margin: 10px 0 0; color: #68798f; font-size: 11px; line-height: 1.4; }
 
 .kmc-cockpit-market-head {
   display: flex;
@@ -727,7 +727,7 @@
   padding-top: 10px;
   border-top: 1px solid #e7edf5;
   color: #36516f;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .kmc-cockpit-global-reference small { color: #738398; }
@@ -741,7 +741,7 @@
 .kmc-cockpit-advanced > summary {
   cursor: pointer;
   color: #24476e;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 850;
 }
 
@@ -759,7 +759,7 @@
   padding: 7px 9px;
   border-radius: 8px;
   background: #f7f9fc;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .kmc-cockpit-observation-row > div { display: grid; gap: 2px; }
@@ -790,7 +790,7 @@
   grid-column: 1 / -1;
   padding: 9px 10px;
   color: #718096;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .kmc-cockpit-error {
@@ -885,7 +885,7 @@
 .kmc-variable-cost-panel-identity small,
 .kmc-variable-cost-panel-control span {
   color: #64748b;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-variable-cost-panel-control input {
@@ -982,7 +982,7 @@
 .kmc-flow-equilibrium-panel--cockpit .kmc-flow-equilibrium-label {
   grid-area: label;
   color: #18376f;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 850;
 }
 .kmc-flow-equilibrium-panel--cockpit .kmc-flow-equilibrium-value {
@@ -994,7 +994,7 @@
 .kmc-flow-equilibrium-panel--cockpit .kmc-flow-equilibrium-helper {
   grid-area: helper;
   color: #5c79bd;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.25;
 }
 .kmc-flow-equilibrium-panel--cockpit .kmc-flow-equilibrium-metric.is-reste .kmc-flow-equilibrium-value {
@@ -1011,7 +1011,7 @@
   border-radius: 5px;
   background: #fff7f7;
   color: #b42318;
-  font-size: 10px;
+  font-size: 12px;
 }
 .kmc-flow-equilibrium-panel--cockpit .kmc-flow-equilibrium-unavailable strong { white-space: nowrap; }
 
@@ -1029,7 +1029,7 @@
 }
 .kmc-cockpit-cost-head { padding: 10px 11px 9px; }
 .kmc-cockpit-cost-identity strong { color: #102a72; font-size: 13px; }
-.kmc-cockpit-cost-identity small { color: #607dbf; font-size: 9px; }
+.kmc-cockpit-cost-identity small { color: #607dbf; font-size: 11px; }
 .kmc-cockpit-cost-icon { width: 34px; height: 34px; flex-basis: 34px; border-radius: 8px; }
 .kmc-cockpit-cost-card.is-variable { --cockpit-accent: #0b84f3; --cockpit-soft: #edf7ff; }
 .kmc-cockpit-cost-card.is-fixed-direct { --cockpit-accent: #ef3154; --cockpit-soft: #fff0f3; }
@@ -1064,12 +1064,12 @@
 .kmc-cockpit-cell.is-head {
   background: #f7faff;
   color: #375481;
-  font-size: 8.5px;
+  font-size: 10.5px;
 }
 .kmc-cockpit-cell.is-derived { background: #f8fafc; color: #59709a; }
 .kmc-cockpit-cost-total-row { background: #f7faff; border-top-color: #d8e3f2; }
 .kmc-cockpit-cost-total-row .kmc-cockpit-cell.is-total-value { color: #102a72; }
-.kmc-cockpit-cost-total-row .kmc-cockpit-cell.is-textual { font-size: 9px; font-weight: 750; }
+.kmc-cockpit-cost-total-row .kmc-cockpit-cell.is-textual { font-size: 11px; font-weight: 750; }
 
 .kmc-cockpit-portfolio { gap: 8px; padding: 12px; }
 .kmc-cockpit-portfolio-head h3 { color: #102a72; font-size: 18px; }
@@ -1103,7 +1103,7 @@
   background: #f4f7fb;
   border-color: #e2e8f1;
   color: #50678f;
-  font-size: 10px;
+  font-size: 12px;
 }
 .kmc-cockpit-detail-metric.is-price-row { align-items: center; }
 .kmc-cockpit-final-price-form.is-inline {
@@ -1131,7 +1131,7 @@
   padding: 9px 18px;
   border-radius: 6px;
   background: #0b84f3;
-  font-size: 11px;
+  font-size: 12.5px;
 }
 .kmc-cockpit-footer-save:hover { background: #0872d2; }
 

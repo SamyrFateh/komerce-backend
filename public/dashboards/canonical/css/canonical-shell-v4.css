@@ -97,7 +97,7 @@ body.kmc-shell-v4 .kmc-admin-primary-nav {
 .kmc-admin-sidebar-group-label {
   padding: 4px 10px 5px;
   color: rgb(255 255 255 / 0.38);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: 0.09em;
@@ -216,7 +216,7 @@ body.kmc-shell-v4 .kmc-admin-logout {
   background: #e6ebff;
   color: #4053bd;
   font: inherit;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -247,11 +247,11 @@ body.kmc-shell-v4 .kmc-admin-logout {
 }
 a.kmc-admin-reference-result:hover,
 a.kmc-admin-reference-result:focus-visible { background: #edf2ff; }
-.kmc-admin-reference-name { font-size: 12px; }
+.kmc-admin-reference-name { font-size: 13.5px; }
 .kmc-admin-reference-detail, .kmc-admin-reference-message {
   margin: 0;
   color: #75839d;
-  font-size: 11px;
+  font-size: 12.5px;
 }
 .kmc-admin-reference-message { padding: 10px 12px; }
 
@@ -274,7 +274,7 @@ a.kmc-admin-reference-result:focus-visible { background: #edf2ff; }
   border: 1px solid #dfe7f2;
   border-radius: 7px;
   background: #fff;
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .kmc-admin-topbar .kmc-admin-market-select:hover,
@@ -294,7 +294,7 @@ a.kmc-admin-reference-result:focus-visible { background: #edf2ff; }
   border: 1px solid #dfe7f2;
   border-radius: 7px;
   background: #fff;
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 /* ---------- N2 : tabs horizontaux ---------- */

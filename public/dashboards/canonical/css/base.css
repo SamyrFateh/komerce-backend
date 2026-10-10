@@ -61,7 +61,7 @@ select {
 .canonical-eyebrow {
   margin: 0 0 8px;
   color: var(--kmc-amber);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
   letter-spacing: 0.14em;
 }
@@ -212,7 +212,7 @@ select {
 
 .kmc-filter-label {
   color: var(--kmc-muted);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -323,7 +323,7 @@ select {
 .kmc-metric-helper {
   max-width: calc(100% - 46px);
   color: var(--kmc-muted);
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-metric-label {
@@ -390,14 +390,14 @@ select {
 
 .kmc-alert-message {
   color: var(--kmc-muted);
-  font-size: 12px;
+  font-size: 13.5px;
   line-height: 1.4;
 }
 
 .kmc-alert-action {
   flex: 0 0 auto;
   color: var(--kmc-navy);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
   text-decoration: none;
 }
@@ -433,7 +433,7 @@ select {
 .kmc-data-table th {
   color: var(--kmc-muted);
   background: linear-gradient(180deg, #fbfcfe, #f7f9fc);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;

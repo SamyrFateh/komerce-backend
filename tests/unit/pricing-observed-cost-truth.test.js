@@ -115,7 +115,7 @@ test('UI expose le réel, la preuve et le bouton de simulation sans application 
   const css = fs.readFileSync(path.join(canonical, 'css', 'pricing-simulation.css'), 'utf8');
 
   expect(index).toContain('pricing-workspace-simulation.js?v=1217');
-  expect(index).toContain('pricing-simulation.css?v=261010-2');
+  expect(index).toContain('pricing-simulation.css?v=261010-9');
   expect(simulation).toContain('Réel terrain');
   expect(simulation).toContain('Dernière preuve');
   expect(simulation).toContain('Tester ce réel dans le scénario');

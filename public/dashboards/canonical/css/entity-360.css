@@ -26,7 +26,7 @@
   border-radius: 999px;
   color: #225bb5;
   background: var(--kmc-blue-soft, #eef5ff);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -63,7 +63,7 @@
   border: 1px solid var(--kmc-line-strong, #cbd5e1);
   color: var(--kmc-navy, #0f1a2e);
   text-decoration: none;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 750;
   background: rgb(255 255 255 / .82);
   transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;

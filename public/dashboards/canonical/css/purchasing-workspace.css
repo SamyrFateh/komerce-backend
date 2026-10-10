@@ -28,7 +28,7 @@
 
 .kmc-purchasing-hub,
 .kmc-purchasing-currency {
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
   color: var(--kmc-muted, #64748b);
 }
@@ -46,7 +46,7 @@
   padding: 2px 8px;
   border-radius: 999px;
   background: #eef2f7;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
 }
 
@@ -184,5 +184,5 @@
 
 .kmc-purchasing-workspace[data-workspace-kind="purchasing"] > .kmc-workspace-header .kmc-workspace-subtitle {
   max-width: 680px;
-  font-size: 12px;
+  font-size: 13.5px;
 }

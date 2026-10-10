@@ -20,10 +20,10 @@
 .demo-flow__summary { justify-content: space-between; }
 .demo-flow__heading h1 { margin: 0; color: var(--kmc-navy); font-size: clamp(28px, 4vw, 44px); }
 .demo-flow__intro { margin: 8px 0 0; color: var(--kmc-muted); }
-.demo-flow__env { padding: 7px 11px; color: #7a3e00; background: #FFFFFF; border: 1px solid #efcf75; border-radius: 999px; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+.demo-flow__env { padding: 7px 11px; color: #7a3e00; background: #FFFFFF; border: 1px solid #efcf75; border-radius: 999px; font-size: 13.5px; font-weight: 800; letter-spacing: .08em; }
 
 .demo-flow__toolbar { margin-top: 24px; padding: 14px; background: var(--kmc-card); border: 1px solid var(--kmc-line); border-radius: var(--kmc-radius-md); flex-wrap: wrap; }
-.demo-flow__field { display: grid; gap: 6px; flex: 1 1 360px; color: var(--kmc-muted); font-size: 12px; font-weight: 700; }
+.demo-flow__field { display: grid; gap: 6px; flex: 1 1 360px; color: var(--kmc-muted); font-size: 13.5px; font-weight: 700; }
 .demo-flow__select { min-height: 42px; padding: 8px 12px; color: var(--kmc-ink); background: #fff; border: 1px solid var(--kmc-line-strong); border-radius: var(--kmc-radius-sm); }
 .demo-flow__button { min-height: 42px; padding: 9px 14px; border-radius: var(--kmc-radius-sm); border: 1px solid transparent; cursor: pointer; font-weight: 750; }
 .demo-flow__button:disabled { cursor: not-allowed; opacity: .5; }
@@ -38,10 +38,10 @@
 .demo-flow__summary h2 { margin: 0; font-size: clamp(22px, 3vw, 32px); }
 .demo-flow__meta { margin: 7px 0 0; color: #cbd5e1; }
 .demo-flow__actions { justify-content: flex-end; flex-wrap: wrap; max-width: 560px; }
-.demo-flow__hint { flex-basis: 100%; margin: 0; color: #fed7aa; font-size: 12px; text-align: right; }
+.demo-flow__hint { flex-basis: 100%; margin: 0; color: #fed7aa; font-size: 13.5px; text-align: right; }
 
 .demo-flow__progress { display: grid; grid-template-columns: repeat(8, minmax(94px, 1fr)); gap: 8px; margin: 16px 0; padding: 0; list-style: none; overflow-x: auto; }
-.demo-flow__step { min-width: 94px; padding: 10px; color: var(--kmc-muted); background: #fff; border: 1px solid var(--kmc-line); border-radius: var(--kmc-radius-sm); font-size: 11px; text-align: center; }
+.demo-flow__step { min-width: 94px; padding: 10px; color: var(--kmc-muted); background: #fff; border: 1px solid var(--kmc-line); border-radius: var(--kmc-radius-sm); font-size: 12.5px; text-align: center; }
 .demo-flow__step.is-done { color: #166534; background: #ecfdf3; border-color: #86d3aa; }
 .demo-flow__step.is-current { color: #fff; background: #c45124; border-color: #c45124; font-weight: 800; }
 

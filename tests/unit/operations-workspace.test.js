@@ -28,3 +28,7 @@ describe('tableau des candidats Sourcing', () => {
     expect(css).toMatch(/td:nth-child\(6\) \{ width: 11%; \}/);
   });
 });
+
+test('operations-workspace.css : plancher typographique (aucun texte sous 10 px)', () => {
+  expect(require('../helpers/fontFloor').tinyFonts('operations-workspace.css')).toEqual([]);
+});
