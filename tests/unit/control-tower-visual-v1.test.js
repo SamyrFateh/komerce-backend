@@ -62,3 +62,9 @@ describe('Control Tower visual rebuild V1', () => {
 test('control-tower-visual-v1.css : plancher typographique (aucun texte sous 10 px)', () => {
   expect(require('../helpers/fontFloor').tinyFonts('control-tower-visual-v1.css')).toEqual([]);
 });
+
+test('Tour de contrôle : échelle alignée sur le reste (titres 20, libellés 15)', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '../../public/dashboards/canonical/css/control-tower-visual-v1.css'), 'utf8');
+  expect(css).not.toContain('font-size: 14.08px');
+  expect(css).toMatch(/kmc-decision-dashboard-section-title \{[^}]*font-size: 20px/);
+});
