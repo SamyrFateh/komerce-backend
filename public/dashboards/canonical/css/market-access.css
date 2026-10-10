@@ -220,3 +220,17 @@
   .kmc-access-field.is-wide,
   .kmc-access-actions { grid-column: auto; }
 }
+
+.kmc-markets-mgmt { display: grid; gap: 12px; }
+.kmc-markets-mgmt h2 { margin: 0; }
+.kmc-markets-mgmt-table { width: 100%; border-collapse: collapse; }
+.kmc-markets-mgmt-table th,
+.kmc-markets-mgmt-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--kmc-line); vertical-align: middle; }
+.kmc-markets-mgmt-table th { color: var(--kmc-muted); font-size: 12px; font-weight: 700; }
+.kmc-markets-mgmt-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.kmc-markets-mgmt-status { font-weight: 700; }
+.kmc-markets-mgmt-gaps td { background: var(--kmc-card); color: var(--kmc-muted); }
+.kmc-markets-mgmt-gaps ul { margin: 0; padding-left: 18px; }
+@media (max-width: 720px) {
+  .kmc-markets-mgmt { overflow-x: auto; }
+}
