@@ -111,6 +111,18 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
     expect(source).toContain('MutationObserver');
   });
 
+  test('le sync rend le marché et le compte au header avant de détruire la topbar (sinon la topbar reconstruite naît sans marché)', () => {
+    const source = read('public/dashboards/canonical/js/navigation-shell-v4-sync.js');
+    const rescue = source.indexOf("'.kmc-admin-market-control', '.kmc-admin-account'");
+    const destroy = source.indexOf('topbars.forEach(node => node.remove');
+    expect(rescue).toBeGreaterThan(-1);
+    expect(destroy).toBeGreaterThan(rescue);
+    expect(source).toContain("header.querySelector?.('.kmc-admin-utility-nav')");
+    expect(source).toContain('utilities.prepend(...hosted)');
+    // ne duplique jamais un contrôle que le nouveau header possède déjà
+    expect(source).toContain('!utilities.querySelector(selector)');
+  });
+
   test('le shell n’invente aucune autorité métier et ne consomme que le resolver canonique read-only', () => {
     const js = read('public/dashboards/canonical/js/navigation-policy-v4.js');
     const sync = read('public/dashboards/canonical/js/navigation-shell-v4-sync.js');

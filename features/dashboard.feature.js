@@ -519,6 +519,7 @@ module.exports = {
       'dashboards/canonical/js/hub-live.js',
       'dashboards/canonical/js/relay-live.js',
       'dashboards/canonical/js/navigation-policy-v4.js',
+      'dashboards/canonical/js/navigation-shell-v4-sync.js',
       'dashboards/canonical/js/canonical-client-router-v4.js',
       'dashboards/canonical/css/import-runtime.css',
       'dashboards/canonical/css/live-kit.css',

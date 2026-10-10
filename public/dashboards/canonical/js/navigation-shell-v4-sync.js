@@ -35,8 +35,20 @@
     // Topbar et tabs sont des projections du header courant. Lorsqu'un
     // nouveau header devient propriétaire, on détruit toutes les projections
     // précédentes avant de reconstruire le chrome une seule fois.
-    Array.from(doc.querySelectorAll?.('#canonical-admin-topbar, [data-canonical-shell-role="topbar"]') || [])
-      .forEach(node => node.remove?.());
+    // Le sélecteur de marché et le compte appartiennent au header : la topbar ne
+    // fait que les héberger. Sans les rendre au header avant la destruction, la
+    // topbar reconstruite naît sans marché (le header ne les possède plus) et le
+    // bloc « Marché » de la surface, normalement masqué, réapparaît dans le Hero.
+    const utilities = header.querySelector?.('.kmc-admin-utility-nav');
+    const topbars = Array.from(doc.querySelectorAll?.('#canonical-admin-topbar, [data-canonical-shell-role="topbar"]') || []);
+    if (utilities) {
+      const hosted = ['.kmc-admin-market-control', '.kmc-admin-account']
+        .filter(selector => !utilities.querySelector(selector))
+        .map(selector => topbars.map(topbar => topbar.querySelector?.(selector)).find(Boolean))
+        .filter(Boolean);
+      if (hosted.length) utilities.prepend(...hosted);
+    }
+    topbars.forEach(node => node.remove?.());
     Array.from(doc.querySelectorAll?.('#canonical-admin-domain-tabs, [data-canonical-shell-role="domain-tabs"]') || [])
       .forEach(node => node.remove?.());
 
