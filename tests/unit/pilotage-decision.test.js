@@ -25,3 +25,12 @@ describe('pilotage-decision visual hierarchy contract',()=>{
     expect(renderSource).not.toContain("cardSection(\n        doc,\n        'À traiter'");
   });
 });
+
+test('les liens du Pilotage vers fiches 360 / PO portent le retour vers le Pilotage ; plus de filtres ignorés', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/pilotage-decision.js'), 'utf8');
+  expect(src).toContain("nav.withEntityReturnTo(href, '/admin/pilotage', 'Retour au pilotage')");
+  expect(src).toContain("href: withReturn(row.href || '/admin/operations#operations-control-chain')");
+  expect(src).toContain("href: withReturn(projected.href || '/admin/action-center')");
+  expect(src).not.toContain('cost_status=');
+  expect(src).toContain("'/admin/finance#finance-incomplete-costs'");
+});

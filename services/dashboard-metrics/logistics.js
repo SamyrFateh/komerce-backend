@@ -100,7 +100,7 @@ async function getDisponiblesRelais(filters = {}) {
   const r = await db.query(sql, params);
   const value = Number(r.rows[0].value) || 0;
   return makeKpi('disponibles_relais', 'Disponibles relais', value, 'count', {
-    drillTo: '/admin/operations?parcel_status=available',
+    drillTo: '/admin/operations#operations-control-chain',
   });
 }
 

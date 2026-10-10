@@ -64,3 +64,12 @@ test('Operations affiche les files Cash à confirmer et Colis à créer (ex-écr
   expect(mod.workQueueItems(undefined, base)).toEqual([]);
 });
 
+
+test('les signaux d’Opérations mènent à l’Action Center (« Traiter ») et plus à des ancres mortes', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/operations-decision.js'), 'utf8');
+  expect(src).toContain("'/admin/action-center?severity=critical'");
+  expect(src).toContain("'/admin/action-center?severity=warning'");
+  ['#operations-signals', '#operations-delays', '#operations-kpis'].forEach(anchor => expect(src).not.toContain(anchor));
+  // Les lignes de la chaîne ouvrent Order 360 avec le retour vers Opérations.
+  expect(src).toContain("contextualHref(`/admin/orders/${encodeURIComponent(order.order_reference)}`, '/admin/operations', 'Retour aux opérations')");
+});

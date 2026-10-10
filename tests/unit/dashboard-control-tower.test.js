@@ -68,7 +68,7 @@ describe('dashboard-metrics/control-tower', () => {
 
     const result = await control.getCmdsActives({ island: 'Anjouan' });
 
-    expect(result).toMatchObject({ key: 'cmds_actives', value: 7, unit: 'count', drill_to: '/admin/operations?status=active' });
+    expect(result).toMatchObject({ key: 'cmds_actives', value: 7, unit: 'count', drill_to: '/admin/operations#operations-control-chain' });
     expect(db.query.mock.calls[0][1][0]).toBe('Anjouan');
     expect(db.query.mock.calls[0][1][1]).toEqual(expect.arrayContaining(['confirmed', 'available']));
   });
@@ -78,7 +78,7 @@ describe('dashboard-metrics/control-tower', () => {
 
     const result = await control.getColisEnTransit();
 
-    expect(result).toMatchObject({ key: 'colis_transit', value: 3, drill_to: '/admin/operations?parcel_status=in_transit' });
+    expect(result).toMatchObject({ key: 'colis_transit', value: 3, drill_to: '/admin/operations#operations-control-chain' });
     expect(db.query.mock.calls[0][1][0]).toEqual(expect.arrayContaining(['shipped', 'in_transit', 'arrived']));
   });
 
@@ -107,7 +107,7 @@ describe('dashboard-metrics/control-tower', () => {
 
     const result = await control.getCmdsBloquees();
 
-    expect(result).toMatchObject({ key: 'cmds_bloquees', value: 2, drill_to: '/admin/operations?anomalie=stock_blocked' });
+    expect(result).toMatchObject({ key: 'cmds_bloquees', value: 2, drill_to: '/admin/operations#operations-control-chain' });
     expect(result.data_quality.warning).toBe('2 commande(s) payée(s) sans stock');
   });
 
@@ -125,7 +125,7 @@ describe('dashboard-metrics/control-tower', () => {
 
     const result = await control.getTauxCompletudeCouts({ status: 'available' });
 
-    expect(result).toMatchObject({ key: 'taux_completude_couts', value: 40, unit: '%', drill_to: '/admin/costing?cost_status=incomplete' });
+    expect(result).toMatchObject({ key: 'taux_completude_couts', value: 40, unit: '%', drill_to: '/admin/finance#finance-incomplete-costs' });
     expect(result.data_quality.completeness).toBe('partial');
     expect(result.data_quality.warning).toBe('Beaucoup de commandes sans cout consolide');
     expect(db.query.mock.calls[0][1][0]).toBe('available');

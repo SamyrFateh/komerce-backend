@@ -86,7 +86,7 @@ async function getPanierMoyen(filters) {
   return makeKpi('panier_moyen', 'Panier moyen encaissé', value, 'KMF', {
     itemsTotal,
     itemsWithData: itemsTotal,
-    drillTo: '/admin/operations?payment_status=paid',
+    drillTo: '/admin/operations',
   });
 }
 

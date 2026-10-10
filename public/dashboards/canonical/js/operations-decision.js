@@ -149,7 +149,7 @@
         envelope: controlEnvelope(order),
         lineage: controlLineage(order),
         split: order.split === true,
-        href: order.order_reference ? `/admin/orders/${encodeURIComponent(order.order_reference)}` : null,
+        href: order.order_reference ? contextualHref(`/admin/orders/${encodeURIComponent(order.order_reference)}`, '/admin/operations', 'Retour aux opérations') : null,
       })),
     }));
   }
@@ -355,8 +355,8 @@
         value: base.formatNumber(criticalSignals, 0),
         tone: 'critical',
         icon: '!',
-        href: '#operations-signals',
-        actionLabel: 'Voir les incidents →',
+        href: '/admin/action-center?severity=critical',
+        actionLabel: 'Traiter →',
       });
     }
     if (warningSignals > 0) {
@@ -367,8 +367,8 @@
         value: base.formatNumber(warningSignals, 0),
         tone: 'warning',
         icon: '•',
-        href: '#operations-signals',
-        actionLabel: 'Voir les signaux →',
+        href: '/admin/action-center?severity=warning',
+        actionLabel: 'Traiter →',
       });
     }
     if (delays && Number(delays.value) > 0) {
@@ -379,7 +379,7 @@
         value: displayMetric(base, delays),
         tone: 'critical',
         icon: '⌛',
-        href: '#operations-delays',
+        href: '#operations-control-chain',
         actionLabel: 'Voir les retards →',
       });
     }
@@ -391,8 +391,8 @@
         value: displayMetric(base, payments),
         tone: 'warning',
         icon: '¤',
-        href: '#operations-kpis',
-        actionLabel: 'Voir les KPI →',
+        href: '#orders-pending-cash',
+        actionLabel: 'Voir les paiements →',
       });
     }
     return items.slice(0, 4);

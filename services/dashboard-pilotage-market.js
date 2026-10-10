@@ -143,11 +143,11 @@ async function buildMarketPilotage(filters, market) {
       stages: [
         { key: 'estimated_price', label: 'Prix estimé', url: '/admin/workspaces/pricing' },
         { key: 'order', label: 'Commande', url: '/admin/operations' },
-        { key: 'payment', label: 'Paiement', url: '/admin/operations?payment_status=paid' },
-        { key: 'parcels_scans', label: 'Colis & scans', url: '/admin/operations?parcel_status=in_transit' },
+        { key: 'payment', label: 'Paiement', url: '/admin/operations' },
+        { key: 'parcels_scans', label: 'Colis & scans', url: '/admin/operations#operations-control-chain' },
         { key: 'real_cost', label: 'Coût réel reventilé', url: '/admin/costing' },
-        { key: 'real_margin', label: 'Marge consolidée', url: '/admin/costing?cost_status=actual' },
-        { key: 'recalibration', label: 'Recalibrage pricing', url: '/admin/costing/recalibration' },
+        { key: 'real_margin', label: 'Marge consolidée', url: '/admin/finance' },
+        { key: 'recalibration', label: 'Recalibrage pricing', url: '/admin/workspaces/pricing' },
       ],
     },
     principles: [

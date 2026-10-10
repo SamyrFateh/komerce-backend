@@ -183,6 +183,15 @@
     return base + (base.includes('?') ? '&' : '?') + q.toString();
   }
 
+  // Fiches 360 (commande, client, produit, fournisseur) et bons de commande : seuls liens qui
+  // doivent ramener à l'écran d'origine. Les autres destinations (dashboards, workspaces) restent telles quelles.
+  const ENTITY_HREF = /^\/admin\/(?:orders|clients|products|suppliers)\/[^/?#]+|^\/admin\/workspaces\/purchasing\?(?:[^#]*&)?po=/;
+
+  function withEntityReturnTo(href, returnTo, label) {
+    const value = String(href || '');
+    return ENTITY_HREF.test(value) && !/[?&]return_to=/.test(value) ? withReturnTo(value, returnTo, label) : value;
+  }
+
   function resolveBackTarget(surface, search) {
     let requestedHref = null;
     let requestedLabel = null;
@@ -1285,6 +1294,7 @@
     BACK_TARGETS,
     safeReturnTarget,
     withReturnTo,
+    withEntityReturnTo,
     resolveBackTarget,
     runtimeIsStaging,
     mountStagingAdminTools,

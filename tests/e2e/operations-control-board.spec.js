@@ -265,7 +265,9 @@ test.describe('Operations — logistics control board', () => {
     await expect(detail).toContainText('PO fournisseur · PO-104816');
     await expect(detail).toContainText('Confirmation fournisseur à surveiller');
     await expect(detail).toContainText('Responsable : operations');
-    await expect(detail.locator('.kmc-control-order-open')).toHaveAttribute('href','/admin/orders/K-104816');
+    const openHref = await detail.locator('.kmc-control-order-open').getAttribute('href');
+    expect(openHref.startsWith('/admin/orders/K-104816')).toBe(true);
+    expect(decodeURIComponent(openHref)).toContain('return_to=/admin/operations');
 
     const unknown = page.locator('.kmc-control-order.is-unknown').filter({ hasText:'K-104688' });
     await expect(unknown).toBeVisible();

@@ -42,3 +42,10 @@ describe('Canonical Action Center — presentation contract', () => {
     expect(source).not.toMatch(/severity\s*[<>]=?\s*\d/);
   });
 });
+
+test('les liens Traiter / Voir vers fiches 360 et PO passent par le retour contextuel de l’Action Center', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/action-center.js'), 'utf8');
+  expect(src).toContain('work.href = withReturn(row.work_item.href);');
+  expect(src).toContain('link.href = withReturn(row.entity.href);');
+  expect(src).toContain("'Retour à À traiter'");
+});

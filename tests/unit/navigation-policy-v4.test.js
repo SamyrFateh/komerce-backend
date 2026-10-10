@@ -75,3 +75,21 @@ describe('navigation-policy-v4.js — Atelier prix', () => {
 test('la coque expose la surface courante pour le layout Hero-first', () => {
   expect(__src).toContain('doc.body.dataset.kmcSurface = surface');
 });
+
+test('withEntityReturnTo ne contextualise que les fiches 360 et les PO', () => {
+  jest.resetModules();
+  delete global.KomerceCanonicalNavigation;
+  require('../../public/dashboards/canonical/js/navigation-policy-v4.js');
+  const nav = global.KomerceCanonicalNavigation;
+  const wrap = href => nav.withEntityReturnTo(href, '/admin/operations', 'Retour aux opérations');
+  expect(wrap('/admin/orders/CMD-1')).toContain('return_to=%2Fadmin%2Foperations');
+  expect(wrap('/admin/clients/+269123')).toContain('return_label=');
+  expect(wrap('/admin/workspaces/purchasing?po=PO-42')).toMatch(/^\/admin\/workspaces\/purchasing\?po=PO-42&return_to=/);
+  expect(wrap('/admin/operations')).toBe('/admin/operations');
+  expect(wrap('/admin/workspaces/pricing')).toBe('/admin/workspaces/pricing');
+  // jamais de double contexte
+  const once = wrap('/admin/orders/CMD-1');
+  expect(wrap(once)).toBe(once);
+  // retour invalide : lien inchangé
+  expect(nav.withEntityReturnTo('/admin/orders/CMD-1', 'https://evil.test', 'x')).toBe('/admin/orders/CMD-1');
+});
