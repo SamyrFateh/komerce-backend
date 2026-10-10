@@ -1,7 +1,7 @@
 /* Cockpits Live Hub / Relais : compléments au gabarit noir du cockpit Sourcing (import-runtime.css). */
 .kmc-import-runtime .lk-table-wrap{overflow-x:auto;border:1px solid #D0D6DC;border-radius:11px;background:#FFFFFF}
 .kmc-import-runtime .lk-table{width:100%;border-collapse:collapse;color:#1D2631}
-.kmc-import-runtime .lk-table th{background:#FFFFFF;color:#3C4F65;font-weight:500;text-align:left;padding:11px 14px;font-size:13px;white-space:nowrap}
+.kmc-import-runtime .lk-table th{background:#F8FAFC;color:#3C4F65;font-weight:500;text-align:left;padding:11px 14px;font-size:13px;white-space:nowrap}
 .kmc-import-runtime .lk-table td{padding:11px 14px;border-top:1px solid #D0D6DC;font-size:14.5px;vertical-align:top}
 .kmc-import-runtime .lk-table td a{color:#1D2631;font-weight:700;text-decoration:none}
 .kmc-import-runtime .lk-table td a:hover{text-decoration:underline;color:#1A1A1A}
@@ -36,7 +36,7 @@
 .kmc-import-runtime .lk-table tbody td a{color:#1D2631 !important}
 .kmc-import-runtime .lk-table tbody td small{color:#566A80 !important}
 .kmc-import-runtime .lk-table .lk-late{color:#DD8C00 !important}
-.kmc-import-runtime .lk-table thead th{background:#FFFFFF !important;color:#3C4F65 !important}
+.kmc-import-runtime .lk-table thead th{background:#F8FAFC !important;color:#3C4F65 !important}
 .kmc-import-runtime .kir-run-truth-grid.is-four.lk-tiles-grid>*{grid-template-columns:minmax(0,1fr) !important;justify-items:start;text-align:left}
 .kmc-import-runtime .lk-signals{padding:0 2px}
 .kmc-import-runtime .kir-run-truth-grid.is-four.lk-tiles-grid>*{padding-left:20px !important;padding-right:16px !important}
