@@ -15,3 +15,12 @@ describe('admin-market-control-plane lifecycle route', () => {
     expect(source).toMatch(/setMarketLifecycle/);
   });
 });
+
+describe('mandat : route de statut et projection de sortie (D2)', () => {
+  test('POST assignment/status et GET exit-readiness sont admin central et passent par les services', () => {
+    expect(source).toMatch(/router\.post\('\/:marketCode\/assignment\/status', \.\.\.centralAdmin/);
+    expect(source).toMatch(/setAssignmentLifecycle/);
+    expect(source).toMatch(/router\.get\('\/:marketCode\/exit-readiness', \.\.\.centralAdmin/);
+    expect(source).toContain('controlPlane.getExitReadiness(db, req.params.marketCode)');
+  });
+});
