@@ -85,21 +85,24 @@ describe('dashboard-metrics/control-tower', () => {
   it('getAlertesCritiques applique les filtres et drill vers Action Center', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ value: '11' }] });
 
-    const result = await control.getAlertesCritiques({ from: '2026-06-01', to: '2026-06-30' });
+    const result = await control.getAlertesCritiques({});
 
     expect(result).toMatchObject({ key: 'alertes_critiques', value: 11, drill_to: '/admin/action-center?severity=critical,urgent' });
     expect(result.data_quality.warning).toBe('Beaucoup de signaux non resolus');
-    expect(db.query.mock.calls[0][1]).toEqual(['2026-06-01', '2026-06-30']);
+    expect(db.query.mock.calls[0][0]).toContain("s.status IN ('open', 'acknowledged')");
+    expect(db.query.mock.calls[0][0]).toContain('s.market_id IS NULL');
+    expect(db.query.mock.calls[0][1]).toEqual([]);
   });
 
   it('getPointsAttention compte les signaux warning et drill vers Action Center', async () => {
     db.query.mockResolvedValueOnce({ rows: [{ value: '4' }] });
 
-    const result = await control.getPointsAttention({ from: '2026-06-01', to: '2026-06-30' });
+    const result = await control.getPointsAttention({ market_id: 'm-1' });
 
     expect(result).toMatchObject({ key: 'points_attention', value: 4, drill_to: '/admin/action-center?severity=warning' });
     expect(db.query.mock.calls[0][0]).toContain("s.severity = 'warning'");
-    expect(db.query.mock.calls[0][1]).toEqual(['2026-06-01', '2026-06-30']);
+    expect(db.query.mock.calls[0][0]).toContain('s.market_id = $1::uuid');
+    expect(db.query.mock.calls[0][1]).toEqual(['m-1']);
   });
 
   it('getCmdsBloquees signale les commandes payees sans stock et drill vers Operations', async () => {

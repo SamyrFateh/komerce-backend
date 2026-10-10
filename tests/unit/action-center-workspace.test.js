@@ -17,6 +17,8 @@ const mockAdmin = {
   acknowledgeByRef: jest.fn(),
   snoozeByRef: jest.fn(),
   resolveByRef: jest.fn(),
+  isAutoResolved: jest.fn(type => type === 'parcel_blocked'),
+  normalizeResolutionNote: jest.fn(note => (typeof note === 'string' && note.trim().length >= 3 ? note.trim() : null)),
 };
 jest.mock('../../services/signal-admin-service', () => mockAdmin);
 
@@ -263,11 +265,11 @@ test('Canonical lifecycle delegates by signal_ref and exact market scope', async
 
   await workspace.acknowledge('KSG-000003', 'market-cm');
   await workspace.snooze('KSG-000003', 24, 'market-cm');
-  await workspace.resolve('KSG-000003', { id: 'admin-1' }, 'market-cm');
+  await workspace.resolve('KSG-000003', { id: 'admin-1' }, 'market-cm', 'Fournisseur relancé');
 
   expect(mockAdmin.acknowledgeByRef).toHaveBeenCalledWith('KSG-000003', 'market-cm');
   expect(mockAdmin.snoozeByRef).toHaveBeenCalledWith('KSG-000003', 24, 'market-cm');
-  expect(mockAdmin.resolveByRef).toHaveBeenCalledWith('KSG-000003', 'admin-1', 'market-cm');
+  expect(mockAdmin.resolveByRef).toHaveBeenCalledWith('KSG-000003', 'admin-1', 'market-cm', undefined, 'Fournisseur relancé');
 });
 
 test('invalid browser signal reference is rejected before DB mutation', async () => {
@@ -279,4 +281,13 @@ test('generate delegates only to the existing global signal generator authority'
   mockGenerateSignals.mockResolvedValue({ expired: 0, generators: {} });
   await workspace.generateSignals(['parcel_blocked']);
   expect(mockGenerateSignals).toHaveBeenCalledWith(['parcel_blocked']);
+});
+
+test('D3 — resolution requires a note and auto-resolved types expose no manual resolve', async () => {
+  mockAdmin.resolveByRef.mockClear();
+  await expect(workspace.resolve('KSG-000003', { id: 'admin-1' }, null, '  ')).rejects.toMatchObject({ status: 400, code: 'action_center_resolution_note_required' });
+  expect(mockAdmin.resolveByRef).not.toHaveBeenCalled();
+  expect(workspace.actionSet('open', 'parcel_blocked')).toEqual(['acknowledge', 'snooze']);
+  expect(workspace.actionSet('snoozed', 'parcel_blocked')).toEqual([]);
+  expect(workspace.actionSet('open', 'margin_drift')).toEqual(['acknowledge', 'snooze', 'resolve']);
 });

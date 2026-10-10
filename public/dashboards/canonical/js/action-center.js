@@ -238,6 +238,9 @@
     if (allowed.has('acknowledge')) actions.appendChild(actionButton(doc, 'Vu', 'acknowledge', row.signal_ref));
     if (allowed.has('snooze')) actions.appendChild(actionButton(doc, 'Reporter 24 h', 'snooze', row.signal_ref));
     if (allowed.has('resolve')) actions.appendChild(actionButton(doc, 'Résolu', 'resolve', row.signal_ref, false));
+    if (row.auto_resolves) {
+      actions.appendChild(text(doc, 'span', 'kmc-workspace-note', 'Se ferme automatiquement quand la cause disparaît.'));
+    }
     card.appendChild(actions);
     return card;
   }
@@ -324,7 +327,13 @@
         await runAction(context, button, `${signalPath}/snooze`, { hours: 24 }, 'Signal reporté de 24 h.');
       }
       if (action === 'resolve') {
-        await runAction(context, button, `${signalPath}/resolve`, {}, 'Signal résolu.');
+        const ask = context.prompt || (typeof globalThis.prompt === 'function' ? globalThis.prompt.bind(globalThis) : null);
+        const note = ask ? String(ask('Preuve de résolution (obligatoire) : qu’est-ce qui a été fait ?', '') || '').trim() : '';
+        if (note.length < 3) {
+          setFeedback(context.root, 'Une note de résolution est obligatoire pour clore ce signal.', 'critical');
+          return;
+        }
+        await runAction(context, button, `${signalPath}/resolve`, { note }, 'Signal résolu.');
       }
     });
   }

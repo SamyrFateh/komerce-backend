@@ -292,17 +292,22 @@ describe('POST /api/admin/signals/:id/snooze', () => {
 describe('POST /api/admin/signals/:id/resolve', () => {
   it('signal introuvable → 404', async () => {
     mockDbQuery.mockResolvedValueOnce({ rowCount: 0, rows: [] });
-    const res = await request(buildApp()).post('/api/admin/signals/s1/resolve').send({});
+    const res = await request(buildApp()).post('/api/admin/signals/s1/resolve').send({ note: 'Traité' });
     expect(res.status).toBe(404);
+  });
+
+  it('sans note → 400', async () => {
+    const res = await request(buildApp()).post('/api/admin/signals/s1/resolve').send({});
+    expect(res.status).toBe(400);
   });
 
   it('nominal → 200, resolved_by = req.user.id', async () => {
     mockDbQuery.mockResolvedValueOnce({ rowCount: 1, rows: [{ id: 's1', status: 'resolved' }] });
-    const res = await request(buildApp()).post('/api/admin/signals/s1/resolve').send({ notes: 'Traité' });
+    const res = await request(buildApp()).post('/api/admin/signals/s1/resolve').send({ note: 'Traité' });
     expect(res.status).toBe(200);
     const [sql, params] = mockDbQuery.mock.calls[0];
     expect(sql).toContain("status IN ('open','acknowledged','snoozed')");
-    expect(params).toEqual(['s1', 'admin-1', null]);
+    expect(params.slice(0, 4)).toEqual(['s1', 'admin-1', null, 'Traité']);
   });
 });
 

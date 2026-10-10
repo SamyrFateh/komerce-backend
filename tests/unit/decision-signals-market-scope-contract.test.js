@@ -71,7 +71,7 @@ describe('CAP-003 — decision-signals Market ID contract', () => {
     expect(route).toContain('db.withTransaction(async client =>');
     expect(route).toContain('signalAdminService.acknowledgeByRef(ref, authz.market_id, client)');
     expect(route).toContain('signalAdminService.snoozeByRef(ref, req.body && req.body.hours, authz.market_id, client)');
-    expect(route).toContain('signalAdminService.resolveByRef(ref, req.user && req.user.id, authz.market_id, client)');
+    expect(route).toContain('signalAdminService.resolveByRef(ref, req.user && req.user.id, authz.market_id, client, note)');
     expect(route).toContain('auditMarketLifecycle(client, req, authz');
   });
 

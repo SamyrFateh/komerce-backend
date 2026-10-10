@@ -36,10 +36,11 @@ function requireSignalRef(signalRef) {
   return ref;
 }
 
-function actionSet(status) {
-  if (status === 'open') return ['acknowledge', 'snooze', 'resolve'];
-  if (status === 'acknowledged') return ['snooze', 'resolve'];
-  if (status === 'snoozed') return ['resolve'];
+function actionSet(status, signalType = null) {
+  const manual = signalType && signalAdminService.isAutoResolved(signalType) ? [] : ['resolve'];
+  if (status === 'open') return ['acknowledge', 'snooze', ...manual];
+  if (status === 'acknowledged') return ['snooze', ...manual];
+  if (status === 'snoozed') return manual;
   return [];
 }
 
@@ -176,7 +177,8 @@ function publicSignal(signal, entityMaps) {
     created_at: signal.created_at,
     updated_at: signal.updated_at,
     expires_at: signal.expires_at || null,
-    actions: actionSet(signal.status),
+    auto_resolves: signalAdminService.isAutoResolved(signal.signal_type),
+    actions: actionSet(signal.status, signal.signal_type),
     work_item: Object.freeze({
       owner_role: ownerRole,
       instruction: recommendation,
@@ -285,10 +287,17 @@ async function snooze(signalRef, hours, marketId = null) {
   return { signal_ref: result.signal_ref, status: result.status, snoozed_until: result.snoozed_until };
 }
 
-async function resolve(signalRef, user, marketId = null) {
+function requireResolutionNote(note) {
+  if (!signalAdminService.normalizeResolutionNote(note)) {
+    throw httpError(400, 'Une note de résolution (3 à 500 caractères) est obligatoire', 'action_center_resolution_note_required');
+  }
+}
+
+async function resolve(signalRef, user, marketId = null, note = null) {
   const ref = requireSignalRef(signalRef);
-  const result = await signalAdminService.resolveByRef(ref, user && user.id, marketId);
-  if (!result) throw httpError(404, 'Signal introuvable ou non actif', 'action_center_signal_not_active');
+  requireResolutionNote(note);
+  const result = await signalAdminService.resolveByRef(ref, user && user.id, marketId, undefined, note);
+  if (!result) throw httpError(404, 'Signal introuvable, non actif ou fermé automatiquement', 'action_center_signal_not_active');
   return { signal_ref: result.signal_ref, status: result.status, resolved_at: result.resolved_at };
 }
 
@@ -304,4 +313,5 @@ module.exports = {
   workQueues,
   actionSet,
   requireSignalRef,
+  requireResolutionNote,
 };
