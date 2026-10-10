@@ -232,3 +232,7 @@ test('processBoard : états du flux — focus sur la 1re étape alimentée, aler
   const forced = kit.processBoard([{ label:'X', count:0, state:'done' }]);
   expect(forced).toContain('lk-pb-stage is-done');
 });
+
+test('live-kit.css : aucun fond jaune/crème pâle (fond blanc)', () => {
+  expect(require('../helpers/noYellowFill').paleYellowFills('live-kit.css')).toEqual([]);
+});
