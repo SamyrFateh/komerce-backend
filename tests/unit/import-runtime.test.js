@@ -11,4 +11,8 @@ describe('import-runtime.css — le menu latéral appartient à la coque standar
     const offenders = rules.filter((r) => /kmc-admin-(navigation|primary|home|secondary-link|account|settings-link|logout|utility-nav|capability-group-label)|padding-left|sidebar-width/.test(r));
     expect(offenders).toEqual([]);
   });
+
+  test('les libellés d’étape du flux Sourcing reprennent la typographie de Hub / Relais (visuel seul)', () => {
+    expect(css).toContain('.kmc-import-runtime .kir-run-flow .kir-run-flow-step strong{text-transform:uppercase');
+  });
 });
