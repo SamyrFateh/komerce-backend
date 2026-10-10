@@ -38,7 +38,8 @@ body .kmc-workspace-action.is-danger:hover:not(:disabled) { background: #FEF2F3;
 .kmc-sourcing-candidates-table .kmc-cand-product { color: #0F172A; font-weight: 700; }
 .kmc-sourcing-candidates-table .kmc-cand-price { text-align: right; font-weight: 800; color: #0F172A; font-variant-numeric: tabular-nums; }
 .kmc-sourcing-candidates-table th:nth-child(4) { text-align: right; }
-.kmc-pill { display: inline-block; padding: 2px 9px; border: 1px solid #E2E8F0; border-radius: 999px; background: #F8FAFC; color: #475569; font-size: 11px; font-weight: 800; letter-spacing: .03em; white-space: nowrap; }
+.kmc-sourcing-candidates-table td:nth-child(5), .kmc-sourcing-candidates-table td:nth-child(6) { padding-right: 18px; }
+.kmc-pill { display: inline-block; padding: 3px 10px; border: 1px solid #E2E8F0; border-radius: 999px; background: #F8FAFC; color: #475569; font-size: 11px; font-weight: 800; letter-spacing: .03em; white-space: nowrap; }
 .kmc-pill.is-state-imported-to-catalog, .kmc-pill.is-decision-priority { border-color: #BBE5C8; background: #F0FAF3; color: #15803D; }
 .kmc-pill.is-decision-test { border-color: #BFD4F8; background: #F3F8FF; color: #1D5CD6; }
 .kmc-pill.is-decision-watch { border-color: #D9D2F5; background: #F7F5FF; color: #6D4FD3; }

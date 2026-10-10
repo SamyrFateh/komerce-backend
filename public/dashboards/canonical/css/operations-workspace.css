@@ -871,25 +871,25 @@
 }
 
 .kmc-sourcing-candidates-table th:nth-child(1),
-.kmc-sourcing-candidates-table td:nth-child(1) { width: 12%; }
+.kmc-sourcing-candidates-table td:nth-child(1) { width: 11%; }
 
 .kmc-sourcing-candidates-table th:nth-child(2),
-.kmc-sourcing-candidates-table td:nth-child(2) { width: 12%; }
+.kmc-sourcing-candidates-table td:nth-child(2) { width: 11%; }
 
 .kmc-sourcing-candidates-table th:nth-child(3),
-.kmc-sourcing-candidates-table td:nth-child(3) { width: 24%; }
+.kmc-sourcing-candidates-table td:nth-child(3) { width: 22%; }
 
 .kmc-sourcing-candidates-table th:nth-child(4),
-.kmc-sourcing-candidates-table td:nth-child(4) { width: 10%; }
+.kmc-sourcing-candidates-table td:nth-child(4) { width: 9%; }
 
 .kmc-sourcing-candidates-table th:nth-child(5),
-.kmc-sourcing-candidates-table td:nth-child(5) { width: 8%; }
+.kmc-sourcing-candidates-table td:nth-child(5) { width: 14%; }
 
 .kmc-sourcing-candidates-table th:nth-child(6),
-.kmc-sourcing-candidates-table td:nth-child(6) { width: 9%; }
+.kmc-sourcing-candidates-table td:nth-child(6) { width: 11%; }
 
 .kmc-sourcing-candidates-table th:nth-child(7),
-.kmc-sourcing-candidates-table td:nth-child(7) { width: 25%; }
+.kmc-sourcing-candidates-table td:nth-child(7) { width: 22%; }
 
 .kmc-sourcing-candidates-table th,
 .kmc-sourcing-candidates-table td {

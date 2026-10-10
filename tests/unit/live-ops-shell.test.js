@@ -21,3 +21,8 @@ test('candidats sourcing : pastilles état/décision et prix aligné', () => {
   expect(css).toContain('.kmc-pill');
   expect(css).toContain('.kmc-cand-price');
 });
+
+test('pastilles candidats : cellules état/décision aérées (pas collées à la colonne suivante)', () => {
+  expect(css).toContain('td:nth-child(5)');
+  expect(css).toContain('padding-right: 18px');
+});
