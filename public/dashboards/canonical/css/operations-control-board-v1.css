@@ -50,7 +50,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-chain-card > .kmc-decision-dashboard-section-copy {
   margin-bottom: 0;
   color: var(--ocb-muted);
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 body.kmc-shell-v4 .kmc-control-chain-legend {
@@ -60,7 +60,7 @@ body.kmc-shell-v4 .kmc-control-chain-legend {
   gap: 14px;
   margin: -26px 2px 16px auto;
   color: var(--ocb-muted);
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 body.kmc-shell-v4 .kmc-control-chain-legend-item {
@@ -179,7 +179,7 @@ body.kmc-shell-v4 .kmc-control-stage-icon.is-green { --stage-accent: #16a34a; }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-stage-title {
   color: var(--ocb-ink);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 800;
   line-height: 1.25;
   text-transform: uppercase;
@@ -195,7 +195,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
   background: color-mix(in srgb, var(--kmc-brand-navy) 7%, #ffffff);
   border: 1px solid color-mix(in srgb, var(--kmc-brand-navy) 14%, #ffffff);
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   text-align: center;
 }
@@ -224,13 +224,13 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-count {
   color: var(--ocb-red);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 800;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-structural-summary {
   color: #475569;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.3;
 }
 
@@ -311,7 +311,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-order-ref {
   grid-column: 2;
   color: var(--ocb-ink);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 750;
 }
 
@@ -347,7 +347,7 @@ body.kmc-shell-v4 .kmc-control-order-lineage-group {
 
 body.kmc-shell-v4 .kmc-control-order-detail-label {
   color: #94a3b8;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: .05em;
   text-transform: uppercase;
@@ -356,7 +356,7 @@ body.kmc-shell-v4 .kmc-control-order-detail-label {
 body.kmc-shell-v4 .kmc-control-order-focus-value,
 body.kmc-shell-v4 .kmc-control-order-lineage-value {
   color: var(--ocb-ink);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
   overflow-wrap: anywhere;
 }
@@ -376,13 +376,13 @@ body.kmc-shell-v4 .kmc-control-order-cause-line {
 
 body.kmc-shell-v4 .kmc-control-order-cause-summary {
   color: #475569;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.3;
 }
 
 body.kmc-shell-v4 .kmc-control-order-owner {
   color: #64748b;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 body.kmc-shell-v4 .kmc-control-order-lineage {
@@ -397,7 +397,7 @@ body.kmc-shell-v4 .kmc-control-order-open {
   display: inline-flex;
   margin-top: 9px;
   color: var(--kmc-brand-gold-strong);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   text-decoration: none;
 }
@@ -576,7 +576,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-contr
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="operations"] .kmc-control-health-summary-label {
   grid-column: 2;
   color: var(--kmc-brand-muted);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
 }
 

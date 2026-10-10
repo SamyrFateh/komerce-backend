@@ -281,7 +281,7 @@ body.kmc-shell-v4 .kmc-admin-shell > .kmc-market-context .kmc-market-context-fie
 
 body.kmc-shell-v4 .kmc-admin-shell > .kmc-market-context .kmc-market-context-label {
   color: var(--kmc-brand-gold-strong);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: .10em;
   text-transform: uppercase;
@@ -328,7 +328,7 @@ body.kmc-shell-v4 [data-dashboard-role="hero"] .kmc-workspace-kicker {
   background: var(--kmc-brand-champagne);
   border: 1px solid color-mix(in srgb, var(--kmc-brand-gold) 55%, var(--kmc-brand-champagne));
   border-radius: 6px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: .09em;
   line-height: 1.3;

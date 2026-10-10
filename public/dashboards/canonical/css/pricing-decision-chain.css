@@ -24,7 +24,7 @@
 .kmc-decision-chain-kicker,
 .kmc-decision-chain-period-kicker {
   color: #475569;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: .075em;
 }
@@ -38,7 +38,7 @@
 .kmc-decision-chain-note {
   margin: 0;
   color: #64748b;
-  font-size: 12px;
+  font-size: 13.5px;
   line-height: 1.5;
 }
 
@@ -63,7 +63,7 @@
   border-radius: 10px;
   background: #f8fafc;
   color: #64748b;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 700;
 }
 
@@ -128,7 +128,7 @@
 
 .kmc-decision-chain-step-label {
   color: #64748b;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 850;
   letter-spacing: .045em;
   text-transform: uppercase;
@@ -146,7 +146,7 @@
 .kmc-decision-chain-corridor small,
 .kmc-decision-chain-observation small {
   color: #64748b;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -193,20 +193,20 @@
 
 .kmc-decision-chain-corridor-point > span {
   color: #64748b;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .kmc-decision-chain-corridor-point > strong {
   color: #1e293b;
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-decision-chain-reference,
 .kmc-decision-chain-observations,
 .kmc-decision-chain-price-editor {
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .kmc-decision-chain-reference > summary,

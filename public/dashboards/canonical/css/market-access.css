@@ -38,7 +38,7 @@
 .kmc-access-kicker {
   margin: 0;
   color: var(--kmc-amber-strong);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 800;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -92,7 +92,7 @@
 
 .kmc-access-field span {
   color: var(--kmc-muted);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 800;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -193,7 +193,7 @@
   border-radius: 999px;
   color: var(--kmc-navy);
   background: var(--kmc-blue-soft);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 750;
 }
 
@@ -226,7 +226,7 @@
 .kmc-markets-mgmt-table { width: 100%; border-collapse: collapse; }
 .kmc-markets-mgmt-table th,
 .kmc-markets-mgmt-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--kmc-line); vertical-align: middle; }
-.kmc-markets-mgmt-table th { color: var(--kmc-muted); font-size: 12px; font-weight: 700; }
+.kmc-markets-mgmt-table th { color: var(--kmc-muted); font-size: 13.5px; font-weight: 700; }
 .kmc-markets-mgmt-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .kmc-markets-mgmt-status { font-weight: 700; }
 .kmc-markets-mgmt-gaps td { background: var(--kmc-card); color: var(--kmc-muted); }

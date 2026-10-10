@@ -120,7 +120,7 @@
 .kmc-priority-helper,
 .kmc-info-helper {
   color: var(--kmc-muted);
-  font-size: 11px;
+  font-size: 12.5px;
   line-height: 1.38;
 }
 
@@ -143,7 +143,7 @@
   color: var(--kmc-muted);
   background: #f8fafc;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -157,7 +157,7 @@
 .kmc-info-action {
   justify-self: start;
   color: color-mix(in srgb, var(--decision-accent) 82%, var(--kmc-navy));
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 800;
   text-decoration: none;
 }
@@ -220,7 +220,7 @@
 
 .kmc-summary-card-metric-label {
   color: var(--kmc-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.35;
 }
 
@@ -259,7 +259,7 @@
   background: #fff;
   border: 1px solid color-mix(in srgb, var(--kmc-blue) 18%, var(--kmc-line));
   border-radius: 9px;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 900;
 }
 
@@ -272,14 +272,14 @@
 .kmc-flow-stage-label,
 .kmc-funnel-label {
   color: var(--kmc-navy);
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .kmc-flow-stage-helper,
 .kmc-funnel-rate,
 .kmc-funnel-loss {
   color: var(--kmc-muted);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.25;
 }
 
@@ -362,7 +362,7 @@
   color: var(--decision-accent);
   background: color-mix(in srgb, var(--decision-soft) 70%, white);
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 900;
 }
 
@@ -387,7 +387,7 @@
   color: var(--decision-accent);
   background: color-mix(in srgb, var(--decision-soft) 78%, white);
   border-radius: 999px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -401,7 +401,7 @@
   background: rgb(255 255 255 / 0.76);
   border: 1px solid var(--kmc-line);
   border-radius: 10px;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .kmc-trust-footer-left,
@@ -412,7 +412,7 @@
   flex-wrap: wrap;
 }
 
-.kmc-trust-dot { color: var(--kmc-positive); font-size: 9px; }
+.kmc-trust-dot { color: var(--kmc-positive); font-size: 11px; }
 .kmc-trust-state { color: var(--kmc-positive); font-weight: 800; }
 .kmc-trust-warning { color: var(--kmc-warning); font-weight: 700; }
 
@@ -431,7 +431,7 @@
 .kmc-decision-dashboard-section-copy {
   margin: -4px 0 11px;
   color: var(--kmc-muted);
-  font-size: 11px;
+  font-size: 12.5px;
   line-height: 1.4;
 }
 
@@ -497,7 +497,7 @@
 
 .kmc-control-stage-title {
   color: var(--kmc-navy);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.25;
   font-weight: 850;
   text-transform: uppercase;
@@ -512,7 +512,7 @@
   background: #fff;
   border: 1px solid var(--kmc-line);
   border-radius: 999px;
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.2;
   text-align: center;
 }
@@ -537,7 +537,7 @@
   background: #fff;
   border: 1px solid color-mix(in srgb, var(--control-health) 16%, var(--kmc-line));
   border-radius: 7px;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.2;
   text-decoration: none;
 }
@@ -605,7 +605,7 @@
 .kmc-control-order-empty {
   padding: 6px 2px;
   color: color-mix(in srgb, var(--kmc-muted) 55%, transparent);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 
@@ -635,13 +635,13 @@
 
 .kmc-control-structural-count {
   color: var(--control-health);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
 }
 
 .kmc-control-structural-summary {
   color: var(--kmc-navy);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.25;
 }
 
@@ -652,7 +652,7 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] .kmc-commerc
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="commerce"] .kmc-commerce-flow-title {
   margin: 2px 0 8px;
   color: #1e293b;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 800;
 }
 
@@ -664,14 +664,14 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-finance-
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-finance-review-title {
   margin: 2px 0 8px;
   color: #1e293b;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 800;
 }
 
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="finance"] .kmc-finance-review-empty {
   margin: 0;
   color: #64748b;
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 /* Orders Hero is owned by Layout Canon + contextual-heroes-v2. */
@@ -682,6 +682,6 @@ body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] .kmc-orders-es
 body.kmc-shell-v4 .kmc-domain-cockpit[data-dashboard-id="orders"] .kmc-orders-flow-title {
   margin: 2px 0 8px;
   color: #1e293b;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 800;
 }

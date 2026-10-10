@@ -49,7 +49,7 @@
 .kmc-market-context-kicker,
 .kmc-market-context-label {
   color: var(--kmc-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -67,7 +67,7 @@
 .kmc-market-context-description {
   grid-column: 1 / -1;
   color: var(--kmc-muted);
-  font-size: 11px;
+  font-size: 12.5px;
   line-height: 1.35;
 }
 
@@ -160,7 +160,7 @@
   z-index: 1;
   margin: 0;
   color: var(--surface-accent);
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: .12em;
 }
 

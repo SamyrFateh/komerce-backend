@@ -38,3 +38,14 @@ test('échelle typographique unique : titres 20, textes 14, tableaux 14/12', () 
   expect(css).toMatch(/kmc-workspace-table td[\s\S]*?font-size: 14px/);
   expect(css).toMatch(/kmc-workspace-table th[\s\S]*?font-size: 12px/);
 });
+
+test('plancher typographique : aucune feuille Canonical (hors menu) sous 10 px', () => {
+  const dir = path.join(__dirname, '../../public/dashboards/canonical/css');
+  const tiny = [];
+  fs.readdirSync(dir).filter(f => f.endsWith('.css') && f !== 'navigation.css').forEach(f => {
+    for (const m of fs.readFileSync(path.join(dir, f), 'utf8').matchAll(/font-size\s*:\s*([0-9.]+)px/g)) {
+      if (Number(m[1]) < 10) tiny.push(`${f}:${m[1]}`);
+    }
+  });
+  expect(tiny).toEqual([]);
+});

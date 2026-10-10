@@ -21,7 +21,7 @@
   border-radius: 999px;
   background: #f8fafc;
   color: #475569;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 750;
 }
 
@@ -95,14 +95,14 @@
 .kmc-team-capability strong {
   display: block;
   color: var(--kmc-navy, #0f1a2e);
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-team-capability small {
   display: block;
   margin-top: 2px;
   color: var(--kmc-muted, #64748b);
-  font-size: 10px;
+  font-size: 12px;
   overflow-wrap: anywhere;
 }
 
@@ -142,7 +142,7 @@
 .kmc-team-pending-copy small,
 .kmc-team-help {
   color: var(--kmc-muted, #64748b);
-  font-size: 11px;
+  font-size: 12.5px;
   line-height: 1.45;
 }
 
@@ -154,7 +154,7 @@
 .kmc-team-member summary {
   color: #1d4ed8;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 750;
 }
 
@@ -188,7 +188,7 @@
   border: 1px dashed var(--kmc-line-strong, #cbd5e1);
   border-radius: 12px;
   color: var(--kmc-muted, #64748b);
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-team-invite-page {

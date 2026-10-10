@@ -24,7 +24,7 @@
 .kmc-cost-formula-kicker,
 .kmc-cost-group-eyebrow {
   color: var(--kmc-muted, #64748b);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 850;
   letter-spacing: .075em;
 }
@@ -66,7 +66,7 @@
 
 .kmc-cost-formula-step-key {
   color: var(--kmc-muted, #64748b);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: .06em;
   text-transform: uppercase;
@@ -79,7 +79,7 @@
 
 .kmc-cost-formula-step small {
   color: var(--kmc-muted, #64748b);
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .kmc-cost-formula-plus {
@@ -204,7 +204,7 @@
   max-width: 72ch;
   margin: 0;
   color: var(--kmc-muted, #64748b);
-  font-size: 12px;
+  font-size: 13.5px;
   line-height: 1.45;
 }
 
@@ -224,7 +224,7 @@
   border-radius: 999px;
   background: #f8fafc;
   color: #475569;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -269,7 +269,7 @@
   display: grid;
   gap: 5px;
   color: var(--kmc-muted, #64748b);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 850;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -309,7 +309,7 @@
   border-left: 1px solid var(--kmc-line, #e2e8f0);
   background: #f8fafc;
   color: var(--kmc-muted, #64748b);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 750;
 }
 
@@ -321,7 +321,7 @@
   border-radius: 9px;
   background: #f8fafc;
   color: var(--kmc-muted, #64748b);
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .kmc-cost-comparison strong {
@@ -339,7 +339,7 @@
   border-radius: 9px;
   background: #f1f5f9;
   color: #64748b;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 700;
 }
 
@@ -354,7 +354,7 @@
   cursor: pointer;
   padding: 9px 10px;
   color: var(--kmc-navy, #0f1a2e);
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 850;
   list-style-position: inside;
 }
@@ -383,7 +383,7 @@
 
 .kmc-cost-explain-label {
   color: var(--cost-accent, #64748b);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: .045em;
   text-transform: uppercase;
@@ -391,13 +391,13 @@
 
 .kmc-cost-explain-value {
   color: var(--kmc-navy, #0f1a2e);
-  font-size: 11px;
+  font-size: 12.5px;
   line-height: 1.4;
 }
 
 .kmc-cost-explain-helper {
   color: var(--kmc-muted, #64748b);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -410,12 +410,12 @@
 .kmc-cost-card-actions .kmc-workspace-action {
   min-height: 32px;
   padding: 6px 9px;
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
 .kmc-cost-technical {
   color: var(--kmc-muted, #64748b);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .kmc-cost-technical summary {
@@ -451,7 +451,7 @@
 .kmc-cost-create-help {
   margin: 9px 0;
   color: var(--kmc-muted, #64748b);
-  font-size: 12px;
+  font-size: 13.5px;
 }
 
 .kmc-cost-create-form {
@@ -529,14 +529,14 @@
 .kmc-market-decision-hero.is-warning { --decision-accent: #b45309; --decision-surface: #fffbeb; }
 .kmc-market-decision-hero.is-critical { --decision-accent: #b91c1c; --decision-surface: #fef2f2; }
 .kmc-market-decision-hero.is-neutral { --decision-accent: #475569; --decision-surface: #f8fafc; }
-.kmc-market-decision-kicker, .kmc-market-policy-kicker { color: var(--decision-accent, #475569); font-size: 11px; font-weight: 800; letter-spacing: .09em; }
+.kmc-market-decision-kicker, .kmc-market-policy-kicker { color: var(--decision-accent, #475569); font-size: 12.5px; font-weight: 800; letter-spacing: .09em; }
 .kmc-market-decision-title { color: #0f172a; font-size: clamp(22px, 3vw, 32px); line-height: 1.1; }
 .kmc-market-decision-summary, .kmc-market-decision-reason, .kmc-market-policy-rationale { margin: 0; color: #475569; line-height: 1.55; }
 .kmc-market-decision-authorization { width: fit-content; border-radius: 999px; background: color-mix(in srgb, var(--decision-accent) 12%, white); color: var(--decision-accent); font-weight: 800; padding: 7px 11px; font-size: 13px; }
 .kmc-market-decision-code { color: #64748b; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; overflow-wrap: anywhere; }
 .kmc-market-decision-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
 .kmc-market-decision-metric { border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; padding: 14px; display: grid; gap: 5px; }
-.kmc-market-decision-metric-label, .kmc-market-policy-fact-label { color: #64748b; font-size: 12px; font-weight: 700; }
+.kmc-market-decision-metric-label, .kmc-market-policy-fact-label { color: #64748b; font-size: 13.5px; font-weight: 700; }
 .kmc-market-decision-metric-value { color: #0f172a; font-size: 21px; }
 .kmc-market-decision-metric-helper { color: #94a3b8; }
 .kmc-market-decision-period { margin-top: 14px; border-radius: 12px; background: #eff6ff; color: #1e3a8a; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
