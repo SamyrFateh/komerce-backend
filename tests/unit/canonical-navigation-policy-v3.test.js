@@ -156,3 +156,20 @@ describe('Canonical Navigation Policy V3.1', () => {
     });
   });
 });
+
+describe('Canonical Navigation Policy — utilitaires d\'administration', () => {
+  test('Paramètres, Utilisateurs et Providers restent autorisés à l\'admin (le garde de landing ne les renvoie pas au Pilotage)', () => {
+    const nav = loadPolicy();
+    const visible = domainIds(nav, 'admin');
+    for (const surface of ['settings', 'users-admin', 'providers-admin']) {
+      expect(visible).toContain(nav.activePrimarySurface(surface));
+    }
+  });
+
+  test('chaque surface du menu latéral se rattache à un domaine visible pour l\'admin', () => {
+    const nav = loadPolicy();
+    const visible = domainIds(nav, 'admin');
+    const surfaces = nav.SIDEBAR_GROUPS.flatMap(group => group.items.filter(item => item.roles.includes('admin')).flatMap(item => item.surfaces));
+    for (const surface of surfaces) expect(visible).toContain(nav.activePrimarySurface(surface));
+  });
+});

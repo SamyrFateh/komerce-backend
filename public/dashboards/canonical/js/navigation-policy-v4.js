@@ -123,9 +123,12 @@
     'relais-live': 'live',
     finance: 'finance',
     'accounting-workspace': 'finance',
-    settings: 'settings',
-    'providers-admin': 'settings',
-    'users-admin': 'settings',
+    // Utilitaires d'administration : pas de domaine N1 propre (aucun domaine « settings »
+    // dans DOMAINS). Les rattacher à un domaine inexistant les faisait refuser par le garde
+    // de landing (redirection vers le Pilotage) ; « dashboard » est toujours autorisé.
+    settings: 'dashboard',
+    'providers-admin': 'dashboard',
+    'users-admin': 'dashboard',
   });
 
   const SURFACE_TO_SPACE = Object.freeze({
@@ -900,7 +903,19 @@
       .filter(group => group.items.length > 0);
   }
 
+  // Une même surface peut porter deux entrées du menu (Catalogue / Produits partagent le
+  // workspace Catalogue) : la vue demandée désigne alors l'unique entrée active.
+  const SURFACE_VIEW_OWNERS = Object.freeze({
+    'catalog-workspace': Object.freeze({ advanced: 'entity-products' }),
+  });
+
   function sidebarItemActive(item, surface) {
+    const owners = SURFACE_VIEW_OWNERS[surface];
+    if (owners) {
+      const view = new URLSearchParams(String(global.location?.search || '')).get('view');
+      if (owners[view]) return item.id === owners[view];
+      if (Object.values(owners).includes(item.id)) return false;
+    }
     if ((item.surfaces || []).includes(surface)) return true;
     const current = String(global.location?.pathname || '');
     return current && current === String(item.href || '').split('?')[0];

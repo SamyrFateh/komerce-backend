@@ -146,7 +146,7 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
 
   test('index charge le routeur après le shell V4', () => {
     const html = read('public/dashboards/canonical/index.html');
-    const shell = html.indexOf('/dashboards/canonical/js/navigation-shell-v4-sync.js?v=2101');
+    const shell = html.search(/\/dashboards\/canonical\/js\/navigation-shell-v4-sync\.js\?v=[^"'<>\s]+/);
     const clientRouter = html.indexOf('/dashboards/canonical/js/canonical-client-router-v4.js?v=261003-2');
     expect(shell).toBeGreaterThanOrEqual(0);
     expect(clientRouter).toBeGreaterThan(shell);
