@@ -71,7 +71,7 @@
       <td>${esc(order.client_name || '—')}</td>
       <td>${esc(order.relais_name || order.destination_island || '—')}</td>
       <td>${esc(STATUS[order.status] || order.status)}</td>
-      <td>${esc(ageLabel(order.age_hours))}${num(order.age_hours) > 48 && ['confirmed', 'ordered'].includes(order.status) ? ' <b class="lk-late">en retard</b>' : ''}</td>
+      <td>${esc(ageLabel(order.age_hours))}${order.is_urgent ? ' <b class="lk-late">en retard</b>' : ''}</td>
       <td>${num(order.items_assigned)}/${num(order.items_count)} <small>${esc(COMPLETENESS[order.completeness] || '')}</small></td>
       <td>${num(order.parcels_count)}</td>
       <td>${esc(paymentLabel(order))}</td>
@@ -210,23 +210,23 @@
       async load(p, api) {
         const [dash, first, blocked] = await Promise.all([
           api('/api/hub-dash/dashboard'),
-          api('/api/hub-dash/queue?tab=to_prepare&limit=5'),
-          api('/api/hub-dash/queue?tab=blocked&limit=1'),
+          api('/api/hub-dash/queue?tab=to_prepare&limit=5&projection=live'),
+          api('/api/hub-dash/queue?tab=blocked&limit=1&projection=live'),
         ]);
-        return { dash, first, blocked, fetched_at:new Date().toISOString() };
+        return { dash, first, blocked, fetched_at:dash?.generated_at || new Date().toISOString() };
       },
       render:renderOverview,
       nav:() => ({ crumbs:[], back:null }),
     },
     queue:{
       tab:p => (tabOf(p) === 'all' ? 'commandes' : 'suivi'),
-      load:(p, api) => api(`/api/hub-dash/queue${queryString({ tab:tabOf(p), page:Math.max(1, num(p.page) || 1), limit:PAGE_SIZE })}`),
+      load:(p, api) => api(`/api/hub-dash/queue${queryString({ tab:tabOf(p), page:Math.max(1, num(p.page) || 1), limit:PAGE_SIZE, projection:'live' })}`),
       render:renderQueue,
       nav:navQueue,
     },
     order:{
       tab:p => (fromOf(p) === 'all' ? 'commandes' : 'suivi'),
-      load:(p, api) => api(`/api/hub-dash/orders/${encodeURIComponent(p.order || '')}`),
+      load:(p, api) => api(`/api/hub-dash/orders/${encodeURIComponent(p.order || '')}?projection=live`),
       render:renderOrder,
       nav:navOrder,
     },

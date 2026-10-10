@@ -117,3 +117,69 @@ test('moteur : une première lecture en erreur garde la coque noire et affiche l
   expect(root.innerHTML).toContain('Cockpit indisponible · Erreur interne du serveur');
   expect(root.innerHTML).toContain('kir-domain-nav');
 });
+
+// ── LIVE-01 / LIVE-02 : un seul jeu d'écouteurs, pause onglet masqué, état périmé ──
+function liveHarness() {
+  const handlers = new Map(); // `${targetName}:${type}` -> Set
+  const track = name => ({
+    addEventListener:(type, fn) => { const k = `${name}:${type}`; (handlers.get(k) || handlers.set(k, new Set()).get(k)).add(fn); },
+    removeEventListener:(type, fn) => { handlers.get(`${name}:${type}`)?.delete(fn); },
+  });
+  const intervals = [];
+  const doc = { contains:() => true, visibilityState:'visible', ...track('doc') };
+  let loads = 0;
+  let failing = false;
+  const views = { home:{ tab:() => 'a', load:async () => { loads += 1; if (failing) throw new Error('réseau'); return {}; }, render:() => ({ hero:'<header>HOME</header>', body:'' }) } };
+  const { kit, win } = loadKit({
+    document:doc, ...track('win'),
+    setInterval:fn => { intervals.push(fn); return intervals.length; }, clearInterval:id => { intervals[id - 1] = null; },
+  });
+  const cockpit = engine(kit, views);
+  const makeRoot = () => { const attrs = {}; return { className:'', innerHTML:'', attrs, setAttribute:(k, v) => { attrs[k] = v; }, removeAttribute:k => { delete attrs[k]; }, addEventListener() {}, removeEventListener() {}, querySelector:() => null }; };
+  return { cockpit, doc, win, handlers, intervals, makeRoot, loadsCount:() => loads, setFailing:v => { failing = v; } };
+}
+
+test('LIVE-01 : après 5 navigations (5 montages) il reste un seul écouteur par évènement et un seul minuteur actif', async () => {
+  const h = liveHarness();
+  for (let i = 0; i < 5; i += 1) await h.cockpit.mount({ root:h.makeRoot() });
+  expect(h.handlers.get('win:popstate').size).toBe(1);
+  expect(h.handlers.get('win:focus').size).toBe(1);
+  expect(h.handlers.get('doc:visibilitychange').size).toBe(1);
+  expect(h.intervals.filter(Boolean)).toHaveLength(1);
+});
+
+test('LIVE-02 : l’onglet masqué ne relit pas ; au retour de visibilité la lecture reprend', async () => {
+  const h = liveHarness();
+  await h.cockpit.mount({ root:h.makeRoot() });
+  const tick = h.intervals.find(Boolean);
+  const before = h.loadsCount();
+  h.doc.visibilityState = 'hidden';
+  tick();
+  expect(h.loadsCount()).toBe(before);
+  h.doc.visibilityState = 'visible';
+  [...h.handlers.get('doc:visibilitychange')][0]();
+  await Promise.resolve();
+  expect(h.loadsCount()).toBe(before + 1);
+});
+
+test('LIVE-02 : plus de 3 intervalles sans lecture réussie → l’écran se déclare périmé ; une lecture réussie l’efface', async () => {
+  const h = liveHarness();
+  const root = h.makeRoot();
+  const realNow = Date.now;
+  let now = 1_000_000;
+  Date.now = () => now;
+  try {
+    await h.cockpit.mount({ root });
+    const tick = h.intervals.find(Boolean);
+    h.setFailing(true);
+    now += 20_000;                      // 2 intervalles : encore récent
+    await tick(); await new Promise(r => setImmediate(r));
+    expect(root.attrs['data-live-stale']).toBeUndefined();
+    now += 20_000;                      // 4 intervalles sans lecture réussie
+    await tick(); await new Promise(r => setImmediate(r));
+    expect(root.attrs['data-live-stale']).toBe('true');
+    h.setFailing(false);
+    await tick(); await new Promise(r => setImmediate(r));
+    expect(root.attrs['data-live-stale']).toBeUndefined();
+  } finally { Date.now = realNow; }
+});

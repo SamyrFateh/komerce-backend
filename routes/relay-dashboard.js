@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/*
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/*, services/live-projection.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, orders
  * @db-write      order_comments, order_incidents
@@ -42,6 +42,7 @@ const { attachMarketDelegatedRoleFor } = require('../middleware/require-market-d
 const { attachAuthorizedMarketsForCapability, requireMarketDelegatedCapability } = require('../middleware/require-market-delegated-capability');
 const log = require('../utils/logger').child({ module: 'relay-dashboard' });
 const { getDashboardKPIs, getOrders, getOrderDetail } = require('../services/relay-dashboard-queries');
+const { applyLiveProjection } = require('../services/live-projection');
 
 // D5 Market Control Plane — admin reste central, agent_relais reste borné par
 // son relais_id serveur. Un market_operator doit prouver operations.read pour
@@ -139,7 +140,7 @@ router.get('/dashboard', ...relayRead, async (req, res, next) => {
 router.get('/orders', ...relayRead, async (req, res, next) => {
   try {
     const { status, search, limit = 50, offset = 0 } = req.query;
-    res.json(await getOrders(req.user, { status, search, limit, offset }, { authorizedMarkets: req.authorizedMarkets }));
+    res.json(applyLiveProjection(req, await getOrders(req.user, { status, search, limit, offset }, { authorizedMarkets: req.authorizedMarkets })));
   } catch(err) { next(err); }
 });
 
@@ -149,7 +150,7 @@ router.get('/orders/:id', ...relayRead, async (req, res, next) => {
     const result = await getOrderDetail(req.user, req.params.id, { authorizedMarkets: req.authorizedMarkets });
     if (!result) return res.status(404).json({ error: 'Commande introuvable' });
     if (result.forbidden) return res.status(403).json({ error: "Cette commande n'appartient pas à votre relais ou marché", code: 'market_scope_denied' });
-    res.json(result);
+    res.json(applyLiveProjection(req, result));
   } catch(err) { next(err); }
 });
 

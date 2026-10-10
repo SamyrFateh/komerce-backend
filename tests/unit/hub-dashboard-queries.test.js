@@ -49,6 +49,8 @@ describe("getDashboardKPIs", () => {
         shipped_total: '10', urgent: '2', cash_pending: '1', pending: '0', total_active: '8' }] })
       // orders today count
       .mockResolvedValueOnce({ rows: [{ c: '4' }] })
+      // expédiées aujourd'hui (transition shipped dans l'historique de statut)
+      .mockResolvedValueOnce({ rows: [{ c: '1' }] })
       // parcels
       .mockResolvedValueOnce({ rows: [{ draft: '2', preparation: '3', shipped: '1', in_transit: '2', at_relay: '0' }] })
       // incidents
@@ -66,19 +68,33 @@ describe("getDashboardKPIs", () => {
     expect(kpis.parcels.draft).toBe(2);
     expect(kpis.incidents.open).toBe(1);
     expect(kpis.stock.low_stock_count).toBe(3);
+    expect(kpis.orders.shipped_today).toBe(1);
+    // Heure serveur de la lecture, affichée par l'écran Live.
+    expect(new Date(kpis.generated_at).toString()).not.toBe('Invalid Date');
   });
 
-  test("une erreur sur orders ne fait pas planter, retourne défaut 0", async () => {
-    mockQuery = jest.fn()
-      .mockRejectedValueOnce(new Error('DB down')) // orders KPI error
-      .mockRejectedValueOnce(new Error('DB down')) // orders today error
-      .mockResolvedValueOnce({ rows: [{ draft: '0', preparation: '0', shipped: '0', in_transit: '0', at_relay: '0' }] })
-      .mockResolvedValueOnce({ rows: [{ open_count: '0', critical_count: '0' }] })
-      .mockResolvedValueOnce({ rows: [{ c: '0' }] });
+  test("« expédiées aujourd'hui » vient de l'historique de statut, pas de orders.updated_at (LIVE-05)", async () => {
+    mockQuery = successMocks();
     const svc = loadService();
-    const kpis = await svc.getDashboardKPIs();
-    expect(kpis.orders.to_prepare).toBe(0);
-    expect(kpis.parcels).toBeDefined();
+    await svc.getDashboardKPIs();
+    const sqls = mockQuery.mock.calls.map(call => call[0]);
+    expect(sqls.some(sql => /order_status_history/.test(sql) && /h\.status = 'shipped'/.test(sql))).toBe(true);
+    expect(sqls[0]).not.toMatch(/shipped_today/);
+    expect(sqls[0]).not.toMatch(/updated_at >= CURRENT_DATE/);
+  });
+
+  test("une erreur SQL est propagée : jamais un faux calme à 0 (LIVE-03)", async () => {
+    mockQuery = jest.fn().mockRejectedValueOnce(new Error('DB down'));
+    const svc = loadService();
+    await expect(svc.getDashboardKPIs()).rejects.toThrow('DB down');
+  });
+
+  test("une erreur sur les colis ou les incidents est propagée aussi", async () => {
+    const ok = { rows: [{ to_prepare: '0', in_preparation: '0', shipped_total: '0', urgent: '0', cash_pending: '0', pending: '0', total_active: '0' }] };
+    mockQuery = jest.fn()
+      .mockResolvedValueOnce(ok).mockResolvedValueOnce({ rows: [{ c: '0' }] }).mockResolvedValueOnce({ rows: [{ c: '0' }] })
+      .mockRejectedValueOnce(new Error('parcels down'));
+    await expect(loadService().getDashboardKPIs()).rejects.toThrow('parcels down');
   });
 });
 

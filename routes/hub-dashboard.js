@@ -6,7 +6,7 @@
  * @criticality   high
  * @inputs        runtime_context, request_or_service_payload
  * @outputs       response_or_domain_result, side_effects
- * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/*
+ * @depends       db.js, middleware/auth.js, middleware/require-market-delegated-role.js, middleware/require-market-delegated-capability.js, services/*, services/live-projection.js
  * @used-by       bootstrap/api-routes.js
  * @db-read       markets, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, order_items, orders, parcel_items, parcels, products
  * @db-write      order_comments, order_incidents
@@ -65,6 +65,7 @@ const {
 } = require('../services/parcel-mutation-service');
 const log = require('../utils/logger').child({ module: 'hub-dashboard' });
 const hubQueries = require('../services/hub-dashboard-queries');
+const { applyLiveProjection } = require('../services/live-projection');
 
 const hubAuth = [authenticate, requireRole(['admin', 'agent_hub'])];
 
@@ -139,7 +140,7 @@ router.get('/queue', ...hubRead, async (req, res, next) => {
     const data = req.user.role === 'market_operator'
       ? await hubQueries.getQueue(req.query, { authorizedMarkets: req.authorizedMarkets })
       : await hubQueries.getQueue(req.query);
-    res.json(data);
+    res.json(applyLiveProjection(req, data));
   } catch(e) { next(e); }
 });
 
@@ -150,7 +151,7 @@ router.get('/orders/:id', ...hubRead, async (req, res, next) => {
       : await hubQueries.getOrderDetail(req.params.id);
     if (!data) return res.status(404).json({ error: 'Commande introuvable' });
     if (data.forbidden) return res.status(403).json({ error: 'Commande hors de votre périmètre marché', code: 'market_scope_denied' });
-    res.json(data);
+    res.json(applyLiveProjection(req, data));
   } catch(e) { next(e); }
 });
 

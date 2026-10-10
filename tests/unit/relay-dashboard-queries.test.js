@@ -168,7 +168,8 @@ describe('getOrders — filtres, enum et urgence', () => {
   it('sans statut, limite aux statuts du parcours relais', async () => {
     db.query.mockResolvedValueOnce({ rows: [] });
     await relayQueries.getOrders(ADMIN, {});
-    expect(db.query.mock.calls[0][0]).toContain("o.status IN ('shipped','available','collected')");
+    // « Tous les colis » inclut in_transit, comme la tuile du tableau de bord (LIVE-04).
+    expect(db.query.mock.calls[0][0]).toContain("o.status IN ('shipped','in_transit','available','collected')");
   });
 
   it('recherche : ajoute le paramètre ILIKE avant limite et décalage', async () => {
@@ -236,11 +237,15 @@ describe('getDashboardKPIs — alertes et incidents', () => {
     expect(res.alertes.map(a => a.type)).toEqual(['warning', 'info']);
   });
 
-  it('une table d’incidents indisponible n’empêche pas le tableau de bord', async () => {
+  it('une table d’incidents indisponible est une erreur, pas un 0 silencieux', async () => {
     db.query.mockResolvedValueOnce({ rows: [ROW] }).mockRejectedValueOnce(new Error('relation absente'));
+    await expect(relayQueries.getDashboardKPIs(ADMIN)).rejects.toThrow('relation absente');
+  });
+
+  it('publie l’heure serveur de la lecture (generated_at)', async () => {
+    db.query.mockResolvedValueOnce({ rows: [ROW] }).mockResolvedValueOnce({ rows: [{ c: 0 }] });
     const res = await relayQueries.getDashboardKPIs(ADMIN);
-    expect(res.kpi.incidents_ouverts).toBe(0);
-    expect(res.alertes).toEqual([]);
+    expect(new Date(res.generated_at).toString()).not.toBe('Invalid Date');
   });
 });
 

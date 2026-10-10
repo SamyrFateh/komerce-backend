@@ -21,6 +21,8 @@
 // historique navigateur fidèle, relecture périodique. Lecture seule : aucune action métier ici.
 (function initKomerceLiveKit(global) {
   const POLL_MS = 10000;
+  // Au-delà de 3 intervalles sans lecture réussie, l'écran se déclare périmé.
+  const STALE_AFTER_MS = POLL_MS * 3;
 
   function esc(value) {
     return String(value == null ? '' : value)
@@ -120,6 +122,23 @@
     let timer = null;
     let epoch = 0;
     let last = null;
+    let lastOkAt = 0;
+    // Écouteurs de la fenêtre / du document : un seul jeu actif, retiré avant chaque nouveau montage
+    // (sinon chaque navigation SPA ajoutait des relectures supplémentaires — LIVE-01).
+    let detach = [];
+
+    function release() {
+      detach.forEach(fn => { try { fn(); } catch (_) { /* écouteur déjà retiré */ } });
+      detach = [];
+      if (timer) clearInterval(timer);
+      timer = null;
+    }
+
+    function listen(target, type, handler) {
+      if (!target || typeof target.addEventListener !== 'function') return;
+      target.addEventListener(type, handler);
+      detach.push(() => target.removeEventListener?.(type, handler));
+    }
 
     function parseSearch(search) {
       const q = new URLSearchParams(search || '');
@@ -176,8 +195,7 @@
 
     async function refresh() {
       if (!mountedRoot || !global.document.contains(mountedRoot) || global.location.pathname !== basePath) {
-        if (timer) clearInterval(timer);
-        timer = null;
+        release();
         return;
       }
       const token = ++epoch;
@@ -187,6 +205,8 @@
         const data = await views[p.view].load(p, api);
         if (token !== epoch) return;
         last = { key, data };
+        lastOkAt = Date.now();
+        mountedRoot.removeAttribute?.('data-live-stale');
         render(mountedRoot, global.location.search, data);
       } catch (error) {
         if (token !== epoch) return;
@@ -194,6 +214,8 @@
         // Une relecture qui échoue garde la vue affichée si c'est la même ; jamais l'écran d'une autre vue.
         if (last && last.key === key) {
           render(mountedRoot, global.location.search, last.data);
+          // Données figées : l'écran le dit (état périmé) au lieu de paraître « live ».
+          if (Date.now() - lastOkAt > STALE_AFTER_MS) mountedRoot.setAttribute?.('data-live-stale', 'true');
           mountedRoot.querySelector?.('.kir-main')?.insertAdjacentHTML('afterbegin', message.replace('indisponible', 'actualisation impossible'));
         } else {
           mountedRoot.innerHTML = `<section class="kir-page">${domainNav(views[p.view].tab(p))}<main class="kir-main">${message}</main></section>`;
@@ -216,17 +238,22 @@
       mountedRoot = options.root;
       applyShell(mountedRoot);
       last = null;
+      lastOkAt = 0;
       epoch += 1;
-      if (timer) clearInterval(timer);
+      release();
       mountedRoot.innerHTML = `<section class="kir-page"><div class="kir-empty">Chargement…</div></section>`;
-      mountedRoot.addEventListener?.('click', onClick);
-      global.addEventListener?.('popstate', () => refresh());
-      global.addEventListener?.('focus', () => refresh());
-      global.document?.addEventListener?.('visibilitychange', () => {
+      listen(mountedRoot, 'click', onClick);
+      listen(global, 'popstate', () => refresh());
+      listen(global, 'focus', () => refresh());
+      listen(global.document, 'visibilitychange', () => {
         if (global.document.visibilityState === 'visible') refresh();
       });
       await refresh();
-      timer = setInterval(refresh, POLL_MS);
+      // Onglet masqué : aucune relecture (elle reprend à la visibilité, ci-dessus).
+      timer = setInterval(() => {
+        if (global.document?.visibilityState === 'hidden') return;
+        refresh();
+      }, POLL_MS);
     }
 
     return Object.freeze({ mount, renderHtml, urlFor, parseSearch });

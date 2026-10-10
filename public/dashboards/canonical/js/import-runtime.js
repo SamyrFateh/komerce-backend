@@ -27,6 +27,19 @@
   const LEGACY_VIEWS = Object.freeze({ registry:'passages' });
   const POPULATION_KINDS = Object.freeze(['received', 'ready', 'discarded']);
   let timer = null;
+  // Écouteurs fenêtre / document : un seul jeu actif, retiré avant chaque montage (LIVE-01).
+  let detachListeners = [];
+  function releaseListeners() {
+    detachListeners.forEach(fn => { try { fn(); } catch (_) { /* déjà retiré */ } });
+    detachListeners = [];
+    if (timer) clearInterval(timer);
+    timer = null;
+  }
+  function listen(target, type, handler) {
+    if (!target || typeof target.addEventListener !== 'function') return;
+    target.addEventListener(type, handler);
+    detachListeners.push(() => target.removeEventListener?.(type, handler));
+  }
   let activationTimer = null;
   let activationState = null;
   let commandState = null;
@@ -2480,8 +2493,7 @@
 
   async function refresh({ preserve = false } = {}) {
     if (!mountedRoot || !global.document.contains(mountedRoot) || global.location.pathname !== '/admin/import-runtime') {
-      if (timer) clearInterval(timer);
-      timer = null;
+      releaseListeners();
       return;
     }
     const token = beginRefreshRead();
@@ -2552,18 +2564,22 @@
     wizardState = null;
     stopActivationPolling();
     renderLoading(mountedRoot);
-    if (timer) clearInterval(timer);
-    global.addEventListener?.('popstate', () => refresh({ preserve:true }), { once:false });
+    releaseListeners();
+    listen(global, 'popstate', () => refresh({ preserve:true }));
     // Retour sur l'onglet après une correction ailleurs : la vérité est relue immédiatement.
-    global.addEventListener?.('focus', () => refresh({ preserve:true }), { once:false });
-    global.document?.addEventListener?.('visibilitychange', () => {
+    listen(global, 'focus', () => refresh({ preserve:true }));
+    listen(global.document, 'visibilitychange', () => {
       if (global.document.visibilityState === 'visible') refresh({ preserve:true });
-    }, { once:false });
-    global.document?.addEventListener?.('keydown', event => {
+    });
+    listen(global.document, 'keydown', event => {
       if (event.key === 'Escape' && wizardState) closeWizard();
-    }, { once:false });
+    });
     await refresh({ preserve:true });
-    timer = setInterval(() => refresh({ preserve:true }), POLL_MS);
+    // Onglet masqué : aucune relecture (elle reprend à la visibilité, ci-dessus).
+    timer = setInterval(() => {
+      if (global.document?.visibilityState === 'hidden') return;
+      refresh({ preserve:true });
+    }, POLL_MS);
   }
 
   global.KomerceCanonicalImportRuntime = Object.freeze({ mount, render, businessLabel, urlFor, withReturnTo });

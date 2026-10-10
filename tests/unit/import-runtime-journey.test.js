@@ -855,3 +855,12 @@ test('Sources : état d’erreur (preuve runtime) et liste vide sans carte fant�
   expect(none).toContain('Aucune source récurrente configurée');
   expect(none).not.toContain('data-source-card');
 });
+
+test('LIVE-01/02 : écouteurs retirés avant chaque montage et aucune relecture quand l’onglet est masqué', () => {
+  const src = require('fs').readFileSync(require.resolve('../../public/dashboards/canonical/js/import-runtime.js'), 'utf8');
+  expect(src).toContain('releaseListeners();');
+  expect(src).toContain("listen(global, 'popstate'");
+  expect(src).toContain("listen(global.document, 'visibilitychange'");
+  expect(src).not.toMatch(/global\.addEventListener\?\.\('popstate'/);
+  expect(src).toMatch(/visibilityState === 'hidden'\) return;/);
+});
