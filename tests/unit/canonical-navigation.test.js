@@ -171,25 +171,16 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     expect(primary.children[0].attributes['aria-current']).toBe('page');
   });
 
-  test('Paramètres apparaît dans la zone utilitaire pour admin uniquement', () => {
+  test('Paramètres n’est plus dupliqué dans la zone utilitaire (une seule entrée, dans la sidebar Administration)', () => {
     const adminEnv = loadNavigation('/admin/pilotage', 'pilotage');
     const adminHeader = mountFor(adminEnv, '/admin/pilotage', 'pilotage', { role: 'admin' });
-    const adminUtilities = utilitiesOf(adminHeader);
-    const adminSettings = adminUtilities.children.find(node => node.attributes['data-dashboard'] === 'settings');
-    expect(adminSettings).toBeDefined();
-    expect(adminSettings.href).toBe('/admin/settings');
+    expect(utilitiesOf(adminHeader).children.find(node => node.attributes['data-dashboard'] === 'settings')).toBeUndefined();
+    const ids = adminEnv.api.sidebarGroupsFor({ role: 'admin' }, null).flatMap(group => group.items.map(item => item.id));
+    expect(ids.filter(id => id === 'settings')).toHaveLength(1);
 
     const operatorEnv = loadNavigation('/admin/pilotage', 'pilotage');
-    const operatorHeader = mountFor(operatorEnv, '/admin/pilotage', 'pilotage', { role: 'market_operator' });
-    const operatorUtilities = utilitiesOf(operatorHeader);
-    expect(operatorUtilities.children.find(node => node.attributes['data-dashboard'] === 'settings')).toBeUndefined();
-  });
-
-  test('Paramètres est marqué actif quand on est sur /admin/settings', () => {
-    const env = loadNavigation('/admin/settings', 'settings');
-    const header = mountFor(env, '/admin/settings', 'settings', { role: 'admin' });
-    const settings = utilitiesOf(header).children.find(node => node.attributes['data-dashboard'] === 'settings');
-    expect(settings.attributes['aria-current']).toBe('page');
+    const operatorIds = operatorEnv.api.sidebarGroupsFor({ role: 'market_operator' }, null).flatMap(group => group.items.map(item => item.id));
+    expect(operatorIds).not.toContain('settings');
   });
 
   test('Atelier économique est un domaine direct actif, sans bouton Retour parasite', () => {
@@ -223,7 +214,7 @@ describe('canonical admin navigation — contrat N1 du mock (doctrine V2 §2)', 
     // Order-360 reste un vrai drill-down Entity 360, pas un domaine N1 promu :
     // seuls les domaines canoniques (7 du mock + Live opérationnel) apparaissent, dans l'ordre.
     expect(env.api.visibleDomainsFor({ role: 'admin' }).map(domain => domain.label)).toEqual([
-      'Dashboard', 'Atelier économique', 'Catalogue', 'Commandes', 'Marchés', 'Opérations', 'Live', 'Finance',
+      'Dashboard', 'Prix & économie', 'Catalogue', 'Commandes', 'Marchés', 'Opérations', 'Live', 'Finance',
     ]);
   });
 

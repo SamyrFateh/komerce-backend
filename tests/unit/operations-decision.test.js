@@ -38,3 +38,9 @@ test('le helper des retards critiques affiche le seuil serveur (thresholds.shipp
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/operations-decision.js'), 'utf8');
   expect(src).toContain('payload.thresholds.shipped_late_days');
 });
+
+test('le titre du Hero Operations n’est plus doublé (« Tour de contrôle » vit dans Piloter)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/operations-decision.js'), 'utf8');
+  expect(src).toContain("'kmc-dashboard-title', 'Opérations')");
+  expect(src).not.toContain('Opérations — Tour de contrôle');
+});

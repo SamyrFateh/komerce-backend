@@ -201,7 +201,7 @@ test.describe('Tour de contrôle — revue visuelle déterministe', () => {
     await expect(page.locator('#pilotage-causes')).toHaveCount(0);
     await expect(page.locator('#pilotage-alerts')).toHaveCount(0);
     await expect(page.getByText('Causes structurelles', { exact:true })).toHaveCount(0);
-    await expect(page.getByText('À traiter', { exact:true })).toHaveCount(0);
+    await expect(page.locator('[data-dashboard-id="pilotage"]').getByText('À traiter', { exact:true })).toHaveCount(0);
   });
 
   test('hiérarchie Canonical : Hero → Attention → Objet principal, sans secondaire', async ({ page }) => {

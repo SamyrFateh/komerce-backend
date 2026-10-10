@@ -55,8 +55,8 @@ test.describe('Coque Live — menu dédié et noir complet', () => {
     })));
     const ids = links.map((l) => l.id);
     expect(ids).toContain('live-import-runtime');
-    // Le groupe Live suit immédiatement le groupe Flux (Commerce, Commandes & logistique, Finance).
-    expect(ids.indexOf('live-import-runtime')).toBe(ids.indexOf('flow-finance') + 1);
+    // Le groupe Live suit immédiatement le groupe Finance (Vue finance, Comptabilité).
+    expect(ids.indexOf('live-import-runtime')).toBe(ids.indexOf('workspace-accounting') + 1);
     const live = links.find((l) => l.id === 'live-import-runtime');
     expect(live.active).toBe(true);
     expect(live.href).toBe('/admin/import-runtime');
@@ -139,6 +139,6 @@ test.describe('Coque Live — rôle sourcing', () => {
   test('ne voit que son workspace Sourcing et le cockpit Live (aucun faux Dashboard, pas d’Opérations)', async ({ page }) => {
     await mountShell(page, { role: 'sourcing' });
     const ids = await page.$$eval('.kmc-admin-primary-link', (els) => els.map((el) => el.getAttribute('data-dashboard')));
-    expect(ids).toEqual(['live-import-runtime', 'workspace-sourcing']);
+    expect(ids).toEqual(['workspace-sourcing', 'live-import-runtime']);
   });
 });

@@ -120,45 +120,75 @@ describe('navigation-policy-v4 — domaine Live (coque noire des cockpits opéra
 
 
 describe('navigation-policy-v4 — grouped sidebar information architecture', () => {
-  test('admin sees seven groups with existing destinations only', () => {
+  test('admin sees domain groups (Commerce / Opérations / Finance) with existing destinations only', () => {
     const nav = loadPolicy();
     const groups = nav.sidebarGroupsFor({ role: 'admin' }, null);
     expect(groups.map(group => group.id)).toEqual([
-      'pilot', 'flows', 'live', 'entities', 'workspaces', 'markets', 'administration',
+      'pilot', 'commerce', 'operations', 'finance', 'live', 'markets', 'administration',
     ]);
-    expect(groups.find(group => group.id === 'pilot').items.map(item => item.label))
-      .toEqual(['Tour de contrôle', 'Action Center']);
-    expect(groups.find(group => group.id === 'flows').items.map(item => item.label))
-      .toEqual(['Commerce', 'Commandes & logistique', 'Finance']);
+    const labels = id => groups.find(group => group.id === id).items.map(item => item.label);
+    expect(labels('pilot')).toEqual(['Tour de contrôle', 'À traiter']);
+    expect(labels('commerce')).toEqual(['Vue commerce', 'Commandes', 'Clients', 'Prix & économie', 'Catalogue']);
+    expect(labels('operations')).toEqual(['Vue opérations', 'Hub & Relais', 'Expéditions & Douane', 'Sourcing', 'Achats fournisseurs']);
+    expect(labels('finance')).toEqual(['Vue finance', 'Comptabilité']);
     expect(groups.find(group => group.id === 'live').items.map(item => item.href))
       .toEqual(['/admin/import-runtime', '/admin/hub-live', '/admin/relais-live']);
-    expect(groups.find(group => group.id === 'entities').items.map(item => item.label))
-      .toEqual(['Commandes', 'Produits', 'Clients']);
-    expect(groups.flatMap(group => group.items).some(item => item.href === '/admin/suppliers')).toBe(false);
+    expect(labels('markets')).toEqual(['Responsables pays']);
+    const all = groups.flatMap(group => group.items);
+    expect(all.some(item => item.href === '/admin/suppliers')).toBe(false);
+    // « Produits » n'est plus une entrée de menu : onglet local du Catalogue uniquement.
+    expect(all.some(item => item.id === 'entity-products')).toBe(false);
+    expect(all.filter(item => item.id === 'settings')).toHaveLength(1);
+  });
+
+  test('chaque entrée de menu d’un market_operator déclare la capability serveur qui la protège', () => {
+    const nav = loadPolicy();
+    const expected = {
+      'control-tower': 'dashboard.market.read',
+      'action-center': 'decision_signal.manage',
+      'flow-commerce': 'dashboard.market.read',
+      'entity-orders': 'dashboard.market.read',
+      'entity-clients': 'client.read',
+      'workspace-pricing': 'pricing.read',
+      'flow-operations': 'operations.read',
+      'workspace-operations': 'operations.read',
+      'workspace-shipping': 'operations.read',
+      'flow-finance': 'finance.read',
+      'workspace-accounting': 'finance.read',
+    };
+    const items = nav.sidebarGroupsFor({ role: 'market_operator' }, null).flatMap(group => group.items);
+    items.filter(item => expected[item.id]).forEach(item => {
+      expect([item.id, item.capability]).toEqual([item.id, expected[item.id]]);
+    });
+    expect(items.map(item => item.id)).toEqual(expect.arrayContaining(Object.keys(expected)));
+  });
+
+  test('un market_operator sans capability déléguée ne voit que les entrées sans capability', () => {
+    const nav = loadPolicy();
+    const none = nav.sidebarGroupsFor({ role: 'market_operator' }, marketAdminContext([]))
+      .flatMap(group => group.items.map(item => item.id));
+    expect(none).toEqual(expect.arrayContaining(['market-autonomy', 'market-catalog']));
+    ['control-tower', 'flow-finance', 'flow-operations', 'entity-clients', 'workspace-pricing', 'workspace-accounting']
+      .forEach(id => expect(none).not.toContain(id));
+
+    const finance = nav.sidebarGroupsFor({ role: 'market_operator' }, marketAdminContext(['finance.read']))
+      .flatMap(group => group.items.map(item => item.id));
+    expect(finance).toEqual(expect.arrayContaining(['flow-finance', 'workspace-accounting']));
+    expect(finance).not.toContain('flow-operations');
   });
 
   test('client entity remains capability-gated for a market operator', () => {
     const nav = loadPolicy();
-    const withoutClient = nav.sidebarGroupsFor(
-      { role: 'market_operator' },
-      marketAdminContext([])
-    );
-    expect(withoutClient.find(group => group.id === 'entities').items.map(item => item.id))
-      .toEqual(['entity-orders']);
-
-    const withClient = nav.sidebarGroupsFor(
-      { role: 'market_operator' },
-      marketAdminContext(['client.read'])
-    );
-    expect(withClient.find(group => group.id === 'entities').items.map(item => item.id))
-      .toEqual(['entity-orders', 'entity-clients']);
+    const ids = ctx => nav.sidebarGroupsFor({ role: 'market_operator' }, ctx).flatMap(group => group.items.map(item => item.id));
+    expect(ids(marketAdminContext([]))).not.toContain('entity-clients');
+    expect(ids(marketAdminContext(['client.read']))).toContain('entity-clients');
   });
 
   test('field roles stay limited to their server-authorized workspace destinations', () => {
     const nav = loadPolicy();
     const transitaire = nav.sidebarGroupsFor({ role: 'agent_transitaire' }, null);
     // Les agents voient l'Action Center canonique filtré par le serveur (périmètre + actions autorisées) et leur workspace.
-    expect(transitaire.map(group => group.id)).toEqual(['pilot', 'workspaces']);
+    expect(transitaire.map(group => group.id)).toEqual(['pilot', 'operations']);
     expect(transitaire[0].items.map(item => item.id)).toEqual(['action-center']);
     expect(transitaire[1].items.map(item => item.id)).toEqual(['workspace-shipping']);
 
@@ -171,7 +201,7 @@ describe('navigation-policy-v4 — grouped sidebar information architecture', ()
     expect(ids('sourcing').filter(id => id.startsWith('live-'))).toEqual(['live-import-runtime']);
 
     const finance = nav.sidebarGroupsFor({ role: 'finance' }, null);
-    expect(finance.map(group => group.id)).toEqual(['workspaces']);
+    expect(finance.map(group => group.id)).toEqual(['finance']);
     expect(finance[0].items.map(item => item.id)).toEqual(['workspace-accounting']);
   });
 });

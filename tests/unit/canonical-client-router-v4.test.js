@@ -36,8 +36,8 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
     });
   });
 
-  test('/admin/suppliers est une route canonique V4 sans reload document', () => {
-    expect(router.canonicalPath('/admin/suppliers')).toBe(true);
+  test('/admin/suppliers n’est plus une route canonique (aucune liste fournisseurs, NAV-08)', () => {
+    expect(router.canonicalPath('/admin/suppliers')).toBe(false);
   });
 
   test('Catalogue ne répète plus Sources, Raffinerie et Boutique comme onglets', () => {
@@ -147,7 +147,7 @@ describe('Canonical Client Router V4.2 — no flash + tabs fonctionnels', () => 
   test('index charge le routeur après le shell V4', () => {
     const html = read('public/dashboards/canonical/index.html');
     const shell = html.search(/\/dashboards\/canonical\/js\/navigation-shell-v4-sync\.js\?v=[^"'<>\s]+/);
-    const clientRouter = html.indexOf('/dashboards/canonical/js/canonical-client-router-v4.js?v=261003-2');
+    const clientRouter = html.indexOf('/dashboards/canonical/js/canonical-client-router-v4.js?v=261010-2');
     expect(shell).toBeGreaterThanOrEqual(0);
     expect(clientRouter).toBeGreaterThan(shell);
   });
