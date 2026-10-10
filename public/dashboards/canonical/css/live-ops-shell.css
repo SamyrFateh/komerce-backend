@@ -102,3 +102,15 @@ body.kmc-shell-v4 .kmc-admin-shell .kmc-catalog-curation-table .kmc-catalog-acti
 body.kmc-shell-v4 .kmc-admin-shell .kmc-sourcing-candidates-table td:last-child .kmc-workspace-action,
 body.kmc-shell-v4 .kmc-admin-shell .kmc-sourcing-candidates-table td:last-child .kmc-workspace-nav-link { font-size: 12.5px; }
 .kmc-pill { font-size: 12.5px; }
+
+/* Pas de flash « ADMIN CANONICAL » avant une page : le placeholder de boot reste
+   invisible et n'apparaît (fondu) que si le chargement dépasse 700 ms. Quand la page
+   monte, root.className est remplacé : la règle cesse de s'appliquer. */
+#canonical-admin-root.canonical-boot {
+  opacity: 0;
+  animation: kmc-boot-reveal .2s ease .7s forwards;
+}
+@keyframes kmc-boot-reveal { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  #canonical-admin-root.canonical-boot { animation-duration: .01s; }
+}

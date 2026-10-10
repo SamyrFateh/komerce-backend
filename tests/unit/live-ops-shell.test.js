@@ -49,3 +49,8 @@ test('plancher typographique : aucune feuille Canonical (hors menu) sous 10 px',
   });
   expect(tiny).toEqual([]);
 });
+
+test('boot : le placeholder « ADMIN CANONICAL » ne flashe pas avant la page', () => {
+  expect(css).toMatch(/#canonical-admin-root\.canonical-boot\s*\{[^}]*opacity:\s*0;[^}]*animation:\s*kmc-boot-reveal[^}]*\.7s/);
+  expect(css).toMatch(/@keyframes kmc-boot-reveal/);
+});
