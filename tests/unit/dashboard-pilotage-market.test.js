@@ -79,11 +79,11 @@ describe('dashboard-pilotage-market', () => {
     expect(result.economic_flow.stages.map(stage => stage.url)).toEqual([
       '/admin/workspaces/pricing',
       '/admin/operations',
-      '/admin/operations?payment_status=paid',
-      '/admin/operations?parcel_status=in_transit',
+      '/admin/operations',
+      '/admin/operations#operations-control-chain',
       '/admin/costing',
-      '/admin/costing?cost_status=actual',
-      '/admin/costing/recalibration',
+      '/admin/finance',
+      '/admin/workspaces/pricing',
     ]);
   });
 

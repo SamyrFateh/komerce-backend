@@ -273,7 +273,7 @@ async function getCmdsCoutIncompletCount(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('cmds_cout_incomplet', 'Commandes coût incomplet', value, 'count', {
-    drillTo: '/admin/costing?cost_status=incomplete,partial_real,estimated',
+    drillTo: '/admin/finance#finance-incomplete-costs',
     warning: value > 0 ? 'Cliquer pour voir le detail' : null,
   });
 }

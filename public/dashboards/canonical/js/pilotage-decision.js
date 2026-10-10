@@ -117,7 +117,7 @@
     if (incomplete) items.push({
       key: 'costing-incomplete', label: 'Problèmes costing', helper: incomplete.label || 'Coûts incomplets',
       value: display(base, incomplete), tone: Number(incomplete.value) > 0 ? 'violet' : 'positive', icon: '◇',
-      href: '/admin/finance?cost_status=incomplete,partial_real,estimated', actionLabel: 'Voir les coûts →',
+      href: '/admin/finance#finance-incomplete-costs', actionLabel: 'Voir les coûts →',
     });
     if (activeOrders) items.push({
       key: 'active-orders', label: 'Commandes actives', helper: 'En cours dans la chaîne',
@@ -151,6 +151,13 @@
     }));
   }
 
+  function withReturn(href) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    return nav && typeof nav.withEntityReturnTo === 'function'
+      ? nav.withEntityReturnTo(href, '/admin/pilotage', 'Retour au pilotage')
+      : href;
+  }
+
   function structuralCauses(payload) {
     const chain = payload && payload.control_chain && typeof payload.control_chain === 'object' ? payload.control_chain : {};
     return (Array.isArray(chain.structural_alerts) ? chain.structural_alerts : []).slice(0, 5).map(row => ({
@@ -161,7 +168,7 @@
       ].filter(Boolean).join(' · '),
       priority: `${Number(row.order_count) || 0} cmd`,
       tone: row.health === 'RED' ? 'critical' : (row.health === 'ORANGE' ? 'warning' : 'info'),
-      href: row.href || '/admin/operations#operations-control-chain',
+      href: withReturn(row.href || '/admin/operations#operations-control-chain'),
       actionLabel: 'Voir la chaîne →',
     }));
   }
@@ -196,7 +203,7 @@
         helper: [humanLabel('sources', row.source, 'Signal métier'), projected.message && projected.message !== row.message ? projected.message : null].filter(Boolean).join(' · '),
         priority: projected.level === 'critical' ? 'Critique' : (projected.level === 'warning' ? 'Attention' : 'Info'),
         tone: projected.level === 'critical' ? 'critical' : (projected.level === 'warning' ? 'warning' : 'info'),
-        href: projected.href || '/admin/action-center',
+        href: withReturn(projected.href || '/admin/action-center'),
         actionLabel: projected.href ? (projected.actionLabel || 'Ouvrir →') : 'Action Center →',
       };
     });

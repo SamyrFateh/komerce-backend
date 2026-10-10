@@ -192,6 +192,14 @@
     return ({ urgent: 'Urgent', critical: 'Critique', warning: 'Attention', info: 'Info' })[severity] || severity || '—';
   }
 
+  // Retour vers l'Action Center (filtres conservés) depuis les fiches 360 et les PO.
+  function withReturn(href) {
+    const nav = globalThis.KomerceCanonicalNavigation;
+    const loc = globalThis.location;
+    if (!nav || typeof nav.withEntityReturnTo !== 'function' || !loc) return href;
+    return nav.withEntityReturnTo(href, `${loc.pathname || '/admin/action-center'}${loc.search || ''}`, 'Retour à À traiter');
+  }
+
   function renderSignal(doc, row) {
     const card = doc.createElement('article');
     const severity = ['urgent', 'critical', 'warning', 'info'].includes(String(row.severity || '').toLowerCase())
@@ -214,12 +222,12 @@
     context.className = 'kmc-workspace-nav';
     if (row.work_item && row.work_item.actionable && row.work_item.href) {
       const work = text(doc, 'a', 'kmc-workspace-action', 'Traiter');
-      work.href = row.work_item.href;
+      work.href = withReturn(row.work_item.href);
       work.dataset.actionCenterWorkItem = row.signal_ref;
       context.appendChild(work);
     } else if (row.entity && row.entity.href) {
       const link = text(doc, 'a', 'kmc-workspace-nav-link', `Voir ${row.entity.label || row.entity.ref || row.entity.type}`);
-      link.href = row.entity.href;
+      link.href = withReturn(row.entity.href);
       context.appendChild(link);
     }
     card.appendChild(context);

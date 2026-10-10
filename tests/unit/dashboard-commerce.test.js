@@ -144,7 +144,7 @@ describe('dashboard-commerce', () => {
     expect(result.kpis.map(item => item.key)).toEqual([
       'ca_encaisse', 'cmds_creees', 'panier_moyen', 'marge_consolidee', 'produits_actifs_vendus',
     ]);
-    expect(result.kpis[2].drill_to).toBe('/admin/operations?payment_status=paid');
+    expect(result.kpis[2].drill_to).toBe('/admin/operations');
     expect(result.kpis[4].unit).toBe('count');
     expect(result.top_products[0]).toEqual({
       product_ref: 'PRD-1', name: 'Téléphone', category: 'Électronique', quantity: 3, revenue_kmf: 90000,

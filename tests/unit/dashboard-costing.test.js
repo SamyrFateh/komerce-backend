@@ -81,7 +81,7 @@ describe('dashboard-metrics/costing', () => {
 
     const result = await costing.getCmdsCoutIncompletCount();
 
-    expect(result).toMatchObject({ key: 'cmds_cout_incomplet', value: 4, unit: 'count', drill_to: '/admin/costing?cost_status=incomplete,partial_real,estimated' });
+    expect(result).toMatchObject({ key: 'cmds_cout_incomplet', value: 4, unit: 'count', drill_to: '/admin/finance#finance-incomplete-costs' });
     expect(result.data_quality.warning).toBe('Cliquer pour voir le detail');
   });
 

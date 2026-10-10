@@ -60,7 +60,7 @@ describe('dashboard-metrics/logistics', () => {
 
     const result = await logistics.getDisponiblesRelais();
 
-    expect(result).toMatchObject({ key: 'disponibles_relais', value: 9, drill_to: '/admin/operations?parcel_status=available' });
+    expect(result).toMatchObject({ key: 'disponibles_relais', value: 9, drill_to: '/admin/operations#operations-control-chain' });
   });
 
   it('getRetardsCritiques ajoute un warning si retard present', async () => {

@@ -139,7 +139,7 @@ async function getCmdsActives(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('cmds_actives', 'Commandes actives', value, 'count', {
-    drillTo: '/admin/operations?status=active',
+    drillTo: '/admin/operations#operations-control-chain',
   });
 }
 
@@ -156,7 +156,7 @@ async function getColisEnTransit(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('colis_transit', 'Colis en transit', value, 'count', {
-    drillTo: '/admin/operations?parcel_status=in_transit',
+    drillTo: '/admin/operations#operations-control-chain',
   });
 }
 
@@ -248,7 +248,7 @@ async function getCmdsBloquees(filters = {}) {
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('cmds_bloquees', 'Commandes bloquées', value, 'count', {
-    drillTo: '/admin/operations?anomalie=stock_blocked',
+    drillTo: '/admin/operations#operations-control-chain',
     warning: value > 0 ? `${value} commande(s) payée(s) sans stock` : null,
   });
 }
@@ -317,7 +317,7 @@ async function getTauxCompletudeCouts(filters = {}) {
     itemsWithData,
     completeness: itemsTotal > 0 ? (itemsWithData === itemsTotal ? 'complete' : 'partial') : 'provisional',
     warning: value != null && value < 50 ? 'Beaucoup de commandes sans cout consolide' : null,
-    drillTo: '/admin/costing?cost_status=incomplete',
+    drillTo: '/admin/finance#finance-incomplete-costs',
   });
 }
 
