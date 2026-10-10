@@ -90,7 +90,11 @@ router.post('/:id/snooze', async function(req, res, next) {
 
 router.post('/:id/resolve', async function(req, res, next) {
   try {
-    const signal = await signalAdminService.resolveById(req.params.id, req.user.id);
+    const note = req.body && req.body.note;
+    if (!signalAdminService.normalizeResolutionNote(note)) {
+      return res.status(400).json({ error: 'Resolution note required (3-500 characters)' });
+    }
+    const signal = await signalAdminService.resolveById(req.params.id, req.user.id, null, undefined, note);
     if (!signal) return res.status(404).json({ error: 'Signal not found' });
     res.json({
       ok: true,

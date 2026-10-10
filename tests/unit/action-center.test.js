@@ -49,3 +49,10 @@ test('les liens Traiter / Voir vers fiches 360 et PO passent par le retour conte
   expect(src).toContain('link.href = withReturn(row.entity.href);');
   expect(src).toContain("'Retour à À traiter'");
 });
+
+test('D3 — « Résolu » exige une note de preuve et les types auto-fermés l’annoncent', () => {
+  const source = read('public/dashboards/canonical/js/action-center.js');
+  expect(source).toContain('Preuve de résolution (obligatoire)');
+  expect(source).toContain('{ note }');
+  expect(source).toContain('Se ferme automatiquement quand la cause disparaît.');
+});

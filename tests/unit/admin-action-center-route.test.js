@@ -57,6 +57,7 @@ const mockWorkspace = {
   acknowledge: jest.fn(),
   snooze: jest.fn(),
   resolve: jest.fn(),
+  requireResolutionNote: jest.fn(note => { if (!note) throw Object.assign(new Error('note'), { status: 400, code: 'action_center_resolution_note_required' }); }),
   requireSignalRef: jest.fn(ref => {
     const normalized = String(ref || '').trim().toUpperCase();
     if (!/^KSG-\d{6,}$/.test(normalized)) {
@@ -169,12 +170,12 @@ test('snooze and resolve market lifecycle also use exact market scope and same t
   mockSignalAdmin.resolveByRef.mockResolvedValue({ signal_ref: 'KSG-000012', status: 'resolved', resolved_at: 'now' });
 
   const snooze = await request(app()).post('/api/admin/action-center/market/CM/signals/KSG-000011/snooze').send({ hours: 24 });
-  const resolve = await request(app()).post('/api/admin/action-center/market/CM/signals/KSG-000012/resolve').send({});
+  const resolve = await request(app()).post('/api/admin/action-center/market/CM/signals/KSG-000012/resolve').send({ note: 'Stock réceptionné' });
 
   expect(snooze.status).toBe(200);
   expect(resolve.status).toBe(200);
   expect(mockSignalAdmin.snoozeByRef).toHaveBeenCalledWith('KSG-000011', 24, MARKET_AUTHZ.market_id, mockClient);
-  expect(mockSignalAdmin.resolveByRef).toHaveBeenCalledWith('KSG-000012', 'operator-cm', MARKET_AUTHZ.market_id, mockClient);
+  expect(mockSignalAdmin.resolveByRef).toHaveBeenCalledWith('KSG-000012', 'operator-cm', MARKET_AUTHZ.market_id, mockClient, 'Stock réceptionné');
   expect(mockAudit).toHaveBeenCalledTimes(2);
   expect(mockAudit.mock.calls.every(call => call[0] === mockClient)).toBe(true);
 });
@@ -245,12 +246,12 @@ test('global snooze and resolve delegate with authenticated actor but no browser
   mockWorkspace.resolve.mockResolvedValue({ signal_ref: 'KSG-000002', status: 'resolved' });
 
   const snooze = await request(app()).post('/api/admin/action-center/signals/KSG-000002/snooze').send({ hours: 24 });
-  const resolve = await request(app()).post('/api/admin/action-center/signals/KSG-000002/resolve').send({});
+  const resolve = await request(app()).post('/api/admin/action-center/signals/KSG-000002/resolve').send({ note: 'Cas clos' });
 
   expect(snooze.status).toBe(200);
   expect(resolve.status).toBe(200);
   expect(mockWorkspace.snooze).toHaveBeenCalledWith('KSG-000002', 24);
-  expect(mockWorkspace.resolve).toHaveBeenCalledWith('KSG-000002', mockUser);
+  expect(mockWorkspace.resolve).toHaveBeenCalledWith('KSG-000002', mockUser, null, 'Cas clos');
 });
 
 test('domain errors preserve status and code', async () => {

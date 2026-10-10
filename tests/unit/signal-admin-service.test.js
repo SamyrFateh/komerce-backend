@@ -95,12 +95,22 @@ test('snooze defaults to 24h and keeps exact scope', async () => {
 
 test('resolve clears snooze and resolves only the exact market lifecycle', async () => {
   mockQuery.mockResolvedValue({ rows: [{ signal_ref: 'KSG-000003', status: 'resolved' }] });
-  await service.resolveByRef('KSG-000003', 'admin-1', 'market-km');
+  await service.resolveByRef('KSG-000003', 'admin-1', 'market-km', undefined, ' Fait ');
   const [sql, params] = mockQuery.mock.calls[0];
   expect(sql).toContain("status IN ('open','acknowledged','snoozed')");
   expect(sql).toContain('snoozed_until = NULL');
   expect(sql).toContain('market_id IS NOT DISTINCT FROM $3::uuid');
-  expect(params).toEqual(['KSG-000003', 'admin-1', 'market-km']);
+  expect(sql).toContain('signal_type <> ALL($5::text[])');
+  expect(sql).toContain("'resolution_note'");
+  expect(params).toEqual(['KSG-000003', 'admin-1', 'market-km', 'Fait', service.AUTO_RESOLVED_TYPES]);
+});
+
+test('auto-resolved types are never manually resolvable and note is bounded', () => {
+  expect(service.isAutoResolved('parcel_blocked')).toBe(true);
+  expect(service.isAutoResolved('margin_drift')).toBe(false);
+  expect(service.normalizeResolutionNote('ab')).toBeNull();
+  expect(service.normalizeResolutionNote('x'.repeat(501))).toBeNull();
+  expect(service.normalizeResolutionNote(null)).toBeNull();
 });
 
 test('reactivateExpiredSnoozes is scoped too', async () => {

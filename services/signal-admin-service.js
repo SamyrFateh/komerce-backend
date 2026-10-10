@@ -32,6 +32,27 @@ const TYPE_FAMILY = Object.freeze(Object.entries(FAMILY_TYPES).reduce((map, [fam
   return map;
 }, {}));
 
+// D3 — types fermés par leur générateur (autoResolveSignals) : aucune
+// résolution manuelle, le signal se ferme quand la cause disparaît.
+const AUTO_RESOLVED_TYPES = Object.freeze([
+  'supplier_payment_review', 'customer_payment_attention', 'customs_declaration_pending',
+  'supplier_order_ambiguous', 'parcel_blocked', 'cash_expiring', 'ordered_without_purchase_order',
+  'purchase_order_overreceived', 'purchase_order_receipt_stuck', 'pickup_overdue', 'preparation_stuck',
+]);
+
+function isAutoResolved(signalType) {
+  return AUTO_RESOLVED_TYPES.includes(signalType);
+}
+
+const RESOLUTION_NOTE_MIN = 3;
+const RESOLUTION_NOTE_MAX = 500;
+
+function normalizeResolutionNote(note) {
+  const value = typeof note === 'string' ? note.trim() : '';
+  if (value.length < RESOLUTION_NOTE_MIN || value.length > RESOLUTION_NOTE_MAX) return null;
+  return value;
+}
+
 function familyForType(signalType) {
   return TYPE_FAMILY[signalType] || 'other';
 }
@@ -224,7 +245,7 @@ async function snoozeByRef(signalRef, rawHours, marketId = null, executor = db) 
   return result.rows[0] || null;
 }
 
-async function resolveById(id, userId, marketId = null, executor = db) {
+async function resolveById(id, userId, marketId = null, executor = db, note = null) {
   const q = executorOrDefault(executor);
   const result = await q.query(
     `UPDATE signals
@@ -232,17 +253,19 @@ async function resolveById(id, userId, marketId = null, executor = db) {
             resolved_at = NOW(),
             resolved_by = $2,
             snoozed_until = NULL,
+            meta = COALESCE(meta, '{}'::jsonb) || jsonb_build_object('resolution_note', $4::text),
             updated_at = NOW()
       WHERE id = $1
         AND market_id IS NOT DISTINCT FROM $3::uuid
         AND status IN ('open','acknowledged','snoozed')
+        AND signal_type <> ALL($5::text[])
       RETURNING id, signal_ref, status, resolved_at`,
-    [id, userId, exactMarketId(marketId)]
+    [id, userId, exactMarketId(marketId), normalizeResolutionNote(note), AUTO_RESOLVED_TYPES]
   );
   return result.rows[0] || null;
 }
 
-async function resolveByRef(signalRef, userId, marketId = null, executor = db) {
+async function resolveByRef(signalRef, userId, marketId = null, executor = db, note = null) {
   const q = executorOrDefault(executor);
   const result = await q.query(
     `UPDATE signals
@@ -250,12 +273,14 @@ async function resolveByRef(signalRef, userId, marketId = null, executor = db) {
             resolved_at = NOW(),
             resolved_by = $2,
             snoozed_until = NULL,
+            meta = COALESCE(meta, '{}'::jsonb) || jsonb_build_object('resolution_note', $4::text),
             updated_at = NOW()
       WHERE signal_ref = $1
         AND market_id IS NOT DISTINCT FROM $3::uuid
         AND status IN ('open','acknowledged','snoozed')
+        AND signal_type <> ALL($5::text[])
       RETURNING id, signal_ref, status, resolved_at`,
-    [signalRef, userId, exactMarketId(marketId)]
+    [signalRef, userId, exactMarketId(marketId), normalizeResolutionNote(note), AUTO_RESOLVED_TYPES]
   );
   return result.rows[0] || null;
 }
@@ -310,6 +335,9 @@ module.exports = {
   snoozeById,
   snoozeByRef,
   resolveById,
+  AUTO_RESOLVED_TYPES,
+  isAutoResolved,
+  normalizeResolutionNote,
   resolveByRef,
   hardDeleteById,
   reactivateExpiredSnoozes,

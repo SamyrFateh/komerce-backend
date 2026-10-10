@@ -135,7 +135,9 @@ async function snoozeMarketSignal(req, authz) {
 async function resolveMarketSignal(req, authz) {
   return db.withTransaction(async client => {
     const ref = workspace.requireSignalRef(req.params.signalRef);
-    const row = await signalAdminService.resolveByRef(ref, req.user && req.user.id, authz.market_id, client);
+    const note = req.body && req.body.note;
+    workspace.requireResolutionNote(note);
+    const row = await signalAdminService.resolveByRef(ref, req.user && req.user.id, authz.market_id, client, note);
     if (!row) throw routeError(404, 'Signal introuvable ou non actif', 'action_center_signal_not_active');
     const result = { signal_ref: row.signal_ref, status: row.status, resolved_at: row.resolved_at };
     await auditMarketLifecycle(client, req, authz, 'DECISION_SIGNAL_RESOLVED', result);
@@ -219,7 +221,7 @@ router.post('/signals/:signalRef/snooze', async (req, res, next) => {
 });
 
 router.post('/signals/:signalRef/resolve', async (req, res, next) => {
-  try { sendAction(res, 'resolve_signal', await workspace.resolve(req.params.signalRef, req.user)); }
+  try { sendAction(res, 'resolve_signal', await workspace.resolve(req.params.signalRef, req.user, null, req.body && req.body.note)); }
   catch (error) { handleError(error, res, next); }
 });
 

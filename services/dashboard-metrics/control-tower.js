@@ -28,7 +28,7 @@
 
 const db = require('../../db');
 const {
-  buildFiltersClause, buildSignalMarketClause, buildPreviousPeriod, computeDelta, makeKpi,
+  buildFiltersClause, buildPreviousPeriod, computeDelta, makeKpi,
   ACTIVE_ORDER_STATUSES, TRANSIT_PARCEL_STATUSES,
   EXPECTED_VARIABLE_COSTS, EXPECTED_FIXED_COSTS, EXPECTED_PAYMENT_COSTS,
 } = require('./_helpers');
@@ -160,32 +160,26 @@ async function getColisEnTransit(filters = {}) {
   });
 }
 
+// DASH-04 — le compteur Pilotage lit EXACTEMENT le même périmètre que la liste
+// Action Center (signal-admin-service.listSignals) : statuts open/acknowledged,
+// global = market_id NULL, marché = signals.market_id exact. Pas de filtre
+// période : un signal actif est un stock, pas un flux.
+function actionCenterScope(filters = {}) {
+  if (!filters.market_id) return { where: 's.market_id IS NULL', params: [] };
+  return { where: 's.market_id = $1::uuid', params: [filters.market_id] };
+}
+
 async function getAlertesCritiques(filters = {}) {
-  const params = [];
-  const temporal = [];
-
-  if (filters.from) {
-    params.push(filters.from);
-    temporal.push(`s.created_at >= $${params.length}`);
-  }
-  if (filters.to) {
-    params.push(filters.to);
-    temporal.push(`s.created_at <= $${params.length}`);
-  }
-
-  const marketScope = buildSignalMarketClause(filters, 's', params.length + 1);
-  params.push(...marketScope.params);
-
+  const scope = actionCenterScope(filters);
   const sql = `
     SELECT COUNT(*)::int AS value
     FROM signals s
     WHERE s.severity IN ('critical', 'urgent')
-      AND s.status IN ('open', 'acknowledged', 'snoozed')
-      ${temporal.length ? `AND ${temporal.join(' AND ')}` : ''}
-      AND ${marketScope.where}
+      AND s.status IN ('open', 'acknowledged')
+      AND ${scope.where}
   `;
 
-  const r = await db.query(sql, params);
+  const r = await db.query(sql, scope.params);
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('alertes_critiques', 'Alertes critiques', value, 'count', {
@@ -202,31 +196,16 @@ async function getAlertesCritiques(filters = {}) {
 // COUNT(*) dédié, comme pour les critiques, plutôt qu'un comptage
 // approximatif reconstruit côté navigateur depuis une liste tronquée.
 async function getPointsAttention(filters = {}) {
-  const params = [];
-  const temporal = [];
-
-  if (filters.from) {
-    params.push(filters.from);
-    temporal.push(`s.created_at >= $${params.length}`);
-  }
-  if (filters.to) {
-    params.push(filters.to);
-    temporal.push(`s.created_at <= $${params.length}`);
-  }
-
-  const marketScope = buildSignalMarketClause(filters, 's', params.length + 1);
-  params.push(...marketScope.params);
-
+  const scope = actionCenterScope(filters);
   const sql = `
     SELECT COUNT(*)::int AS value
     FROM signals s
     WHERE s.severity = 'warning'
-      AND s.status IN ('open', 'acknowledged', 'snoozed')
-      ${temporal.length ? `AND ${temporal.join(' AND ')}` : ''}
-      AND ${marketScope.where}
+      AND s.status IN ('open', 'acknowledged')
+      AND ${scope.where}
   `;
 
-  const r = await db.query(sql, params);
+  const r = await db.query(sql, scope.params);
   const value = Number(r.rows[0].value) || 0;
 
   return makeKpi('points_attention', 'Points d’attention', value, 'count', {
