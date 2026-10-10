@@ -198,21 +198,21 @@
     overview:{
       tab:() => 'suivi',
       async load(p, api) {
-        const [dash, first] = await Promise.all([api('/api/relay/dashboard'), api('/api/relay/orders?status=available&limit=5')]);
-        return { dash, first, fetched_at:new Date().toISOString() };
+        const [dash, first] = await Promise.all([api('/api/relay/dashboard'), api('/api/relay/orders?status=available&limit=5&projection=live')]);
+        return { dash, first, fetched_at:dash?.generated_at || new Date().toISOString() };
       },
       render:renderOverview,
       nav:() => ({ crumbs:[], back:null }),
     },
     orders:{
       tab:p => (listOf(p) === 'all' ? 'colis' : 'suivi'),
-      load:(p, api) => api(`/api/relay/orders${queryString({ status:listOf(p) === 'all' ? '' : listOf(p), limit:PAGE_SIZE, offset:offsetOf(p) })}`),
+      load:(p, api) => api(`/api/relay/orders${queryString({ status:listOf(p) === 'all' ? '' : listOf(p), limit:PAGE_SIZE, offset:offsetOf(p), projection:'live' })}`),
       render:renderOrders,
       nav:navOrders,
     },
     order:{
       tab:p => (fromOf(p) === 'all' ? 'colis' : 'suivi'),
-      load:(p, api) => api(`/api/relay/orders/${encodeURIComponent(p.order || '')}`),
+      load:(p, api) => api(`/api/relay/orders/${encodeURIComponent(p.order || '')}?projection=live`),
       render:renderOrder,
       nav:navOrder,
     },

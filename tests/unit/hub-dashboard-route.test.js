@@ -178,6 +178,24 @@ describe('routes/hub-dashboard', () => {
     });
   });
 
+  describe('projection Live sans contact (LIVE-07)', () => {
+    const FULL_ROW = { reference: 'CMD-1', client_name: 'A', client_phone: '+2691', client_email: 'a@b.c' };
+
+    test('/queue?projection=live ne renvoie ni téléphone ni e-mail ; sans paramètre (/hub) la réponse est complète', async () => {
+      hubQueries.getQueue.mockResolvedValueOnce({ data: [FULL_ROW] }).mockResolvedValueOnce({ data: [FULL_ROW] });
+      const live = await request(buildApp()).get('/api/hub-dashboard/queue').query({ projection: 'live' });
+      expect(live.body.data[0]).toEqual({ reference: 'CMD-1', client_name: 'A' });
+      const full = await request(buildApp()).get('/api/hub-dashboard/queue');
+      expect(full.body.data[0]).toEqual(FULL_ROW);
+    });
+
+    test('/orders/:id?projection=live retire les contacts du détail', async () => {
+      hubQueries.getOrderDetail.mockResolvedValueOnce({ id: 'o1', client_phone: '+2691', relais_phone: '+2693', relais_name: 'R' });
+      const res = await request(buildApp()).get('/api/hub-dashboard/orders/o1').query({ projection: 'live' });
+      expect(res.body).toEqual({ id: 'o1', relais_name: 'R' });
+    });
+  });
+
   describe('GET /orders/:id', () => {
     test('404 si commande introuvable', async () => {
       hubQueries.getOrderDetail.mockResolvedValueOnce(null);

@@ -102,3 +102,16 @@ test('le module Hub est en lecture seule : aucune méthode d’écriture, aucun 
   expect(source).not.toMatch(/\/(start-prep|create-parcel|ship|ready|escalate|backorder)\b/);
   expect(source).toContain('/api/hub-dash/dashboard');
 });
+
+test('LIVE-08 : le badge « en retard » vient du drapeau serveur is_urgent, plus d’un seuil recalculé dans le navigateur', () => {
+  const h = html('?view=queue', { ...QUEUE, data:[ORDER({ age_hours:60, is_urgent:true }), ORDER({ id:'o-2', reference:'KMC-0002', age_hours:200, is_urgent:false })] });
+  expect(h.match(/en retard/g)).toHaveLength(1);
+  expect(read('hub-live.js')).not.toMatch(/age_hours\)\s*>\s*48/);
+});
+
+test('LIVE-02/07 : l’écran lit les endpoints en projection Live et affiche l’heure serveur', () => {
+  const src = read('hub-live.js');
+  expect(src).toContain('fetched_at:dash?.generated_at');
+  expect((src.match(/projection=live|projection:'live'/g) || []).length).toBeGreaterThanOrEqual(4);
+  expect(src).toContain("/api/hub-dash/dashboard'"); // KPI : aucun contact, pas de projection nécessaire
+});

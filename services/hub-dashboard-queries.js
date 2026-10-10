@@ -43,7 +43,6 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
       SELECT
         COUNT(*) FILTER (WHERE status IN ('confirmed','ordered')) AS to_prepare,
         COUNT(*) FILTER (WHERE status = 'preparation') AS in_preparation,
-        COUNT(*) FILTER (WHERE status = 'shipped' AND updated_at >= CURRENT_DATE) AS shipped_today,
         COUNT(*) FILTER (WHERE status = 'shipped') AS shipped_total,
         COUNT(*) FILTER (WHERE status IN ('confirmed','ordered')
           AND created_at < NOW() - INTERVAL '48 hours') AS urgent,
@@ -59,10 +58,19 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
       `SELECT COUNT(*) AS c FROM orders WHERE created_at >= CURRENT_DATE${marketClause}`,
       params
     );
+    // « Expédiées aujourd'hui » = commandes dont la TRANSITION vers shipped date d'aujourd'hui
+    // (historique de statut), pas toute mise à jour d'une commande déjà expédiée (LIVE-05).
+    const { rows: [sh] } = await db.query(
+      `SELECT COUNT(DISTINCT h.order_id) AS c
+         FROM order_status_history h
+         JOIN orders o ON o.id = h.order_id
+        WHERE h.status = 'shipped' AND h.created_at >= CURRENT_DATE${scoped ? ' AND o.market_id = ANY($1::uuid[])' : ''}`,
+      params
+    );
     ordersData = {
       to_prepare: parseInt(r.to_prepare) || 0,
       in_preparation: parseInt(r.in_preparation) || 0,
-      shipped_today: parseInt(r.shipped_today) || 0,
+      shipped_today: parseInt(sh.c) || 0,
       shipped_total: parseInt(r.shipped_total) || 0,
       urgent: parseInt(r.urgent) || 0,
       cash_pending: parseInt(r.cash_pending) || 0,
@@ -70,7 +78,7 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
       total_active: parseInt(r.total_active) || 0,
       today: parseInt(t.c) || 0,
     };
-  } catch(e) { log.error({ err: e }, '[HUB-DASH] Orders KPI error'); }
+  } catch(e) { log.error({ err: e }, '[HUB-DASH] Orders KPI error'); throw e; }
 
   try {
     const params = scoped ? [marketIds] : [];
@@ -93,7 +101,7 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
       in_transit: parseInt(r.in_transit) || 0,
       at_relay: parseInt(r.at_relay) || 0,
     };
-  } catch(e) { log.error({ err: e }, '[HUB-DASH] Parcels KPI error'); }
+  } catch(e) { log.error({ err: e }, '[HUB-DASH] Parcels KPI error'); throw e; }
 
   try {
     const params = scoped ? [marketIds] : [];
@@ -112,7 +120,7 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
       open: parseInt(r.open_count) || 0,
       critical: parseInt(r.critical_count) || 0,
     };
-  } catch(e) { log.error({ err: e }, '[HUB-DASH] Incidents error'); }
+  } catch(e) { log.error({ err: e }, '[HUB-DASH] Incidents error'); throw e; }
 
   // Le stock produit n'a pas de dimension market_id. Ne jamais exposer ce
   // compteur global à un market_operator : la forme de réponse reste stable,
@@ -124,10 +132,11 @@ async function getDashboardKPIs({ authorizedMarkets = null } = {}) {
         WHERE stock IS NOT NULL AND stock <= 2 AND stock >= 0
       `);
       stockData = { low_stock_count: parseInt(r.c) || 0 };
-    } catch(e) { log.error({ err: e }, '[HUB-DASH] Stock error'); }
+    } catch(e) { log.error({ err: e }, '[HUB-DASH] Stock error'); throw e; }
   }
 
-  return { orders: ordersData, parcels: parcelsData, incidents: incidentsData, stock: stockData };
+  // Heure serveur de la lecture : les écrans Live l'affichent à la place de l'horloge du navigateur.
+  return { orders: ordersData, parcels: parcelsData, incidents: incidentsData, stock: stockData, generated_at: new Date().toISOString() };
 }
 
 async function getQueue(filters = {}, { authorizedMarkets = null } = {}) {
@@ -192,6 +201,7 @@ async function getQueue(filters = {}, { authorizedMarkets = null } = {}) {
        WHERE p.order_id = o.id AND p.status != 'cancelled') AS items_assigned,
       (SELECT COUNT(*) FROM order_incidents inc WHERE inc.order_id = o.id AND inc.status = 'open') AS open_incidents,
       EXTRACT(EPOCH FROM (NOW() - o.created_at)) / 3600 AS age_hours,
+      (o.status IN ('confirmed','ordered') AND o.created_at < NOW() - INTERVAL '48 hours') AS is_urgent,
       CASE
         WHEN (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) = 0 THEN 'empty'
         WHEN (SELECT COUNT(*) FROM parcel_items pi

@@ -100,7 +100,7 @@ async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
     }
     const { rows: [inc] } = await db.query(incQuery, incParams);
     incidents_ouverts = inc.c;
-  } catch(e) {}
+  } catch(e) { log.error({ err: e }, '[RELAY-DASH] Incidents KPI error'); throw e; }
 
   const alertes = [];
   if (Number(kpi.en_attente_72h) > 0)
@@ -123,6 +123,8 @@ async function getDashboardKPIs(user, { authorizedMarkets = null } = {}) {
       incidents_ouverts,
     },
     alertes,
+    // Heure serveur de la lecture (affichée par l'écran Live).
+    generated_at: new Date().toISOString(),
   };
 }
 
@@ -147,7 +149,8 @@ async function getOrders(user, { status, search, limit = 50, offset = 0 }, { aut
     params.push(statuses);
     pi++;
   } else {
-    where += ` AND o.status IN ('shipped','available','collected')`;
+    // « Tous les colis » inclut ceux en transit, comme la tuile du tableau de bord (LIVE-04).
+    where += ` AND o.status IN ('shipped','in_transit','available','collected')`;
   }
 
   if (search) {

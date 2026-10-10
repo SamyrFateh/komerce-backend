@@ -145,6 +145,23 @@ describe('routes/relay-dashboard', () => {
     });
   });
 
+  describe('projection Live sans contact (LIVE-07)', () => {
+    test('/orders?projection=live retire téléphone, e-mail et code de retrait ; sans paramètre la réponse est complète', async () => {
+      const row = { reference: 'CMD-1', client_nom: 'A', client_phone: '+2691', client_email: 'a@b.c', pickup_code: '••••AB12' };
+      queries.getOrders.mockResolvedValueOnce({ total: 1, orders: [row] }).mockResolvedValueOnce({ total: 1, orders: [row] });
+      const live = await request(buildApp()).get('/api/relay-dashboard/orders').query({ projection: 'live' });
+      expect(live.body.orders[0]).toEqual({ reference: 'CMD-1', client_nom: 'A' });
+      const full = await request(buildApp()).get('/api/relay-dashboard/orders');
+      expect(full.body.orders[0]).toEqual(row);
+    });
+
+    test('/orders/:id?projection=live retire les contacts du détail', async () => {
+      queries.getOrderDetail.mockResolvedValueOnce({ id: 'o1', order: { client_phone: '+2691', user_phone: '+2692', relais_nom: 'R' } });
+      const res = await request(buildApp()).get('/api/relay-dashboard/orders/o1').query({ projection: 'live' });
+      expect(res.body).toEqual({ id: 'o1', order: { relais_nom: 'R' } });
+    });
+  });
+
   describe('GET /orders/:id', () => {
     test('404 si commande introuvable', async () => {
       queries.getOrderDetail.mockResolvedValueOnce(null);

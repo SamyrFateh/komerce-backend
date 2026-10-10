@@ -91,3 +91,9 @@ test('le module Relais est en lecture seule', () => {
   expect(source).not.toMatch(/\/(collect|pay-cash|incident|comment|verify)\b/);
   expect(source).toContain('/api/relay/dashboard');
 });
+
+test('LIVE-02/07 : l’écran lit les endpoints en projection Live et affiche l’heure serveur', () => {
+  const src = fs.readFileSync(require.resolve('../../public/dashboards/canonical/js/relay-live.js'), 'utf8');
+  expect(src).toContain('fetched_at:dash?.generated_at');
+  expect((src.match(/projection=live|projection:'live'/g) || []).length).toBeGreaterThanOrEqual(3);
+});

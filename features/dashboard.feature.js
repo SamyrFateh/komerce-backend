@@ -415,6 +415,7 @@ module.exports = {
       'services/dashboard-ops-queries.js',
       'services/hub-dashboard-queries.js',
       'services/relay-dashboard-queries.js',
+      'services/live-projection.js',
       'services/finance-accounting-workspace.js',
       'services/partner-admin-service.js',
       'services/client-360.js',
