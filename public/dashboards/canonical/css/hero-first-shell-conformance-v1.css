@@ -32,21 +32,21 @@ body.kmc-shell-v4.kmc-hero-first #canonical-admin-root {
 
 /* Workspaces carry the page frame on the shell root (like Action Center); the decision articles
  * and wrappers inside them must not add their own width cap or margin. */
-body.kmc-shell-v4.kmc-hero-first:is([data-kmc-surface$="-workspace"], [data-kmc-surface="client-index"]) #canonical-admin-root {
+body.kmc-shell-v4.kmc-hero-first:is([data-kmc-surface$="-workspace"], [data-kmc-surface="client-index"], [data-kmc-surface="users-admin"], [data-kmc-surface="providers-admin"]) #canonical-admin-root {
   box-sizing: border-box;
   width: min(100%, var(--kmc-layout-max, 1680px));
   margin: 0 auto;
   padding: var(--kmc-layout-page-pad-top, 18px) var(--kmc-layout-page-pad-x, 24px) var(--kmc-layout-page-pad-bottom, 24px);
 }
 
-body.kmc-shell-v4.kmc-hero-first:is([data-kmc-surface$="-workspace"], [data-kmc-surface="client-index"]) #canonical-admin-root > div,
-body.kmc-shell-v4.kmc-hero-first:is([data-kmc-surface$="-workspace"], [data-kmc-surface="client-index"]) #canonical-admin-root .kmc-dashboard.kmc-decision-dashboard {
+body.kmc-shell-v4.kmc-hero-first:is([data-kmc-surface$="-workspace"], [data-kmc-surface="client-index"], [data-kmc-surface="users-admin"], [data-kmc-surface="providers-admin"]) #canonical-admin-root > div,
+body.kmc-shell-v4.kmc-hero-first:is([data-kmc-surface$="-workspace"], [data-kmc-surface="client-index"], [data-kmc-surface="users-admin"], [data-kmc-surface="providers-admin"]) #canonical-admin-root .kmc-dashboard.kmc-decision-dashboard {
   width: auto;
   max-width: none;
   margin: 0;
 }
 
-body.kmc-shell-v4.kmc-hero-first:is([data-kmc-surface$="-workspace"], [data-kmc-surface="client-index"]) #canonical-admin-root > div {
+body.kmc-shell-v4.kmc-hero-first:is([data-kmc-surface$="-workspace"], [data-kmc-surface="client-index"], [data-kmc-surface="users-admin"], [data-kmc-surface="providers-admin"]) #canonical-admin-root > div {
   padding: 0;
 }
 

@@ -89,3 +89,8 @@ test('la page Clients porte l\'illustration Commerce or', () => {
   const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/contextual-heroes-v2.css'), 'utf8');
   expect(css).toMatch(/\.kmc-client-index > \.kmc-workspace-header::before \{\s*background: url\('\/dashboards\/canonical\/assets\/commerce-hero-gold\.svg'\)/);
 });
+
+test('Utilisateurs et Providers partagent la scène tour de contrôle, portée par le body', () => {
+  const css = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/css/contextual-heroes-v2.css'), 'utf8');
+  expect(css).toContain('body.kmc-shell-v4:is([data-kmc-surface="users-admin"], [data-kmc-surface="providers-admin"]) #canonical-admin-root > .kmc-workspace-header::before');
+});

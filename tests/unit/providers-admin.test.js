@@ -68,3 +68,10 @@ describe('Providers admin — câblage de la surface', () => {
     expect(texts.some(t => /non déclaré — toute exécution certifiée est refusée/.test(t))).toBe(true);
   });
 });
+
+test('l\'en-tête est un hero au canon (rôle hero, kicker/titre/sous-titre workspace)', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/providers-admin.js'), 'utf8');
+  expect(src).toContain("header.setAttribute('data-dashboard-role', 'hero')");
+  expect(src).toContain("'kmc-workspace-kicker', 'ADMINISTRATION'");
+  expect(src).not.toContain("'header', 'kmc-entity-header'");
+});

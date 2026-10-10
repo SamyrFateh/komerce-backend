@@ -80,10 +80,13 @@
   function renderPayload(rootNode, payload, doc, ui) {
     rootNode.className = 'kmc-admin-shell kmc-entity-shell';
     rootNode.replaceChildren();
-    const header = node(doc, 'header', 'kmc-entity-header');
-    header.appendChild(node(doc, 'span', 'kmc-entity-kicker', 'ADMINISTRATION'));
-    header.appendChild(node(doc, 'h1', 'kmc-entity-title', 'Utilisateurs'));
-    header.appendChild(node(doc, 'p', 'kmc-entity-subtitle', 'Consultation seule : rôles actuels et périmètres marché. Aucune création, modification ni suppression depuis cet écran.'));
+    const header = node(doc, 'header', 'kmc-workspace-header');
+    header.setAttribute('data-dashboard-role', 'hero');
+    const copy = node(doc, 'div', '');
+    header.appendChild(copy);
+    copy.appendChild(node(doc, 'span', 'kmc-workspace-kicker', 'ADMINISTRATION'));
+    copy.appendChild(node(doc, 'h1', 'kmc-workspace-title', 'Utilisateurs'));
+    copy.appendChild(node(doc, 'p', 'kmc-workspace-subtitle', 'Consultation seule : rôles actuels et périmètres marché. Aucune création, modification ni suppression depuis cet écran.'));
     rootNode.appendChild(header);
 
     const section = node(doc, 'section', 'kmc-decision-surface-card');
